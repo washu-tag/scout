@@ -1,0 +1,14 @@
+---
+# Ensure the namespace exists before deploy.yaml creates the OPA workload —
+# the opa role runs before the trino role, so we cannot rely on Trino's
+# namespace task to have run yet.
+- name: Ensure OPA namespace exists
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ opa_namespace }}'
+  when: not aws_deployment
+
+- name: Deploy OPA for Trino access control
+  ansible.builtin.include_tasks: deploy.yaml

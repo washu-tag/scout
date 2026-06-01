@@ -97,10 +97,11 @@ launchpad_namespace: '{{ scout_core_namespace }}'
 
 # Data layer
 minio_tenant_namespace: '{{ scout_data_namespace }}'
-# Shared by every component that addresses the MinIO tenant by DNS
-# (Trino S3A connector, the Keycloak OpaUserBundlePublisher SPI, OPA's
-# bundle plugin) — kept in scout_common so cross-role consumers see one
-# source of truth.
+# Tenant name used by the MinIO operator. Surfaced here (rather than
+# only in roles/minio/defaults) so cross-namespace consumers — Keycloak
+# event listener publishing the OPA bundle, OPA pulling it (ADR 0021) —
+# can reference the headless service name `{tenant}-hl.{namespace}:9000`
+# without depending on role-local defaults.
 minio_tenant_name: scout
 hive_namespace: '{{ scout_data_namespace }}'
 dcm4chee_namespace: '{{ scout_data_namespace }}'
@@ -111,10 +112,20 @@ extractor_namespace: '{{ scout_extractor_namespace }}'
 
 # Analytics & user services
 trino_namespace: '{{ scout_analytics_namespace }}'
+# HTTPS listener port for client traffic. Lives in scout_common (not the
+# trino role) so consumer roles (jupyter, superset, scout-dashboards)
+# can reference it without depending on the trino role being loaded.
+trino_https_port: 8443
 trino_rw_namespace: '{{ scout_extractor_namespace }}'
 trino_rw_release_name: trino-rw
 trino_rw_endpoint_host: '{{ trino_rw_release_name }}.{{ trino_rw_namespace }}'
 trino_rw_endpoint_port: 8080
+# OPA enforces Trino's access-control policy. Deployed alongside Trino so
+# the query path stays in-cluster. Surfaced in scout_common so consumer
+# roles (grafana for the decision-log dashboard, future
+# NetworkPolicy/alerts) can reference it without depending on the opa
+# role being loaded.
+opa_namespace: '{{ trino_namespace }}'
 superset_namespace: '{{ scout_analytics_namespace }}'
 jupyter_namespace: '{{ scout_analytics_namespace }}'
 chatbot_namespace: '{{ scout_analytics_namespace }}'
@@ -163,17 +174,21 @@ s3_username: minio
 s3_lake_reader: lake-reader
 s3_lake_writer: lake-writer
 s3_loki_writer: loki-writer
-# OPA bundle credentials — writer is the Keycloak-side SPI's MinIO
-# service account (ADR 0021). Reader is set up by the OPA foundation
-# slice when OPA itself lands.
+# OPA bundle service accounts (ADR 0021). Writer is mounted into the
+# Keycloak pod (event listener publishes the bundle); reader is mounted
+# into each OPA pod (bundle plugin pulls).
 s3_opa_bundle_writer: opa-bundle-writer
+s3_opa_bundle_reader: opa-bundle-reader
 lake_bucket: lake
 scratch_bucket: scratch
 loki_chunks_bucket: loki-chunks
 loki_ruler_bucket: loki-ruler
 loki_admin_bucket: loki-admin
-# OPA user-attribute bundle (ADR 0021): Keycloak SPI publishes here,
-# OPA's bundle plugin pulls from here.
+# OPA bundle storage (ADR 0021). One object per Scout deployment:
+# {{ opa_bundles_bucket }}/{{ opa_bundle_object_key }}, replacing
+# per-request Keycloak admin API fetches with a periodic pull from MinIO.
+# Both the Keycloak SPI publisher and the OPA bundle plugin consume the
+# same two vars so the path stays in lockstep.
 opa_bundles_bucket: opa-bundles
 opa_bundle_object_key: scout/bundle.tar.gz
 
@@ -236,8 +251,6 @@ keycloak_subdomain: keycloak
 enable_chat: false
 enable_playbooks: false
 
-# Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
-# Jupyter singleuser) or are cluster-wide storage layers that span every
 # node by design (MinIO pool). With this on, the GPU node gets
 # `nvidia.com/gpu=present:NoSchedule` and the above workloads carry
 # matching tolerations; everything else avoids the GPU node. Disable
@@ -321,6 +334,16 @@ keycloak_oidc_userinfo_url: '{{ keycloak_realm_url }}/protocol/openid-connect/us
 keycloak_oidc_certs_url: '{{ keycloak_realm_url }}/protocol/openid-connect/certs'
 keycloak_oidc_logout_url: '{{ keycloak_realm_url }}/protocol/openid-connect/logout'
 keycloak_wellknown_url: '{{ keycloak_realm_url }}/.well-known/openid-configuration'
+
+# Internal Keycloak URL for in-cluster service-to-service token minting
+# (e.g. Superset/Voila minting a *_svc client_credentials JWT for Trino).
+# Bypasses Traefik + TLS entirely — avoids self-signed-cert trust issues
+# in CI smoke-test (which can't reach the external hostname over a
+# verified cert) and reduces a network hop on every token mint in
+# production. The same pattern the Trino role already uses for its
+# JWKS endpoint (trino_keycloak_jwks_url).
+keycloak_internal_url: 'http://keycloak-service.{{ keycloak_namespace }}:8080'
+keycloak_internal_token_url: '{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/token'
 oauth2_proxy_base_url: 'https://{{ oauth2_proxy_subdomain }}.{{ server_hostname }}'
 oauth2_proxy_callback_url: '{{ oauth2_proxy_base_url }}/oauth2/callback'
 oauth2_proxy_signout_url: '{{ oauth2_proxy_base_url }}/oauth2/sign_out'

@@ -62,6 +62,15 @@ spec:
             - name: dashboard-config
               mountPath: /app/dashboard-config
               readOnly: true
+            {{- if .Values.supersetRelease.trinoCaSecret }}
+            # Mirrors the trino-ca mount on the Superset Deployment so the
+            # import process's DB_CONNECTION_MUTATOR can verify Trino's
+            # self-signed cert at /etc/trino-ca/ca.crt when validating
+            # dataset references during import.
+            - name: trino-ca
+              mountPath: /etc/trino-ca
+              readOnly: true
+            {{- end }}
       volumes:
         - name: superset-config
           secret:
@@ -71,3 +80,11 @@ spec:
             name: dashboard-config
             items:
               {{- include "scout-dashboards.configMapItems" . | nindent 14 }}
+        {{- if .Values.supersetRelease.trinoCaSecret }}
+        - name: trino-ca
+          secret:
+            secretName: {{ .Values.supersetRelease.trinoCaSecret }}
+            items:
+              - key: ca.crt
+                path: ca.crt
+        {{- end }}

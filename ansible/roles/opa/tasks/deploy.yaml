@@ -1,0 +1,130 @@
+---
+# Deploy OPA via the scout-opa Helm chart (helm/scout-opa/).
+#
+# The chart owns the ConfigMap / Deployment / Service shape; this role's job
+# is to source the policy file, render the static data + bundle config from
+# inventory, hash the bundle-reader credentials, and hand the resulting
+# values to helm upgrade. Per-user attribute data is layered on top by
+# OPA's bundle plugin (ADR 0021): the Keycloak SPI listener publishes a
+# bundle to MinIO; OPA polls and atomically swaps the `data.users` subtree.
+
+- name: Resolve OPA policy path on disk
+  ansible.builtin.set_fact:
+    # policy/trino/ at repo root. Relative from this role:
+    #   ansible/roles/opa/tasks → ../../../../policy/trino
+    opa_policy_path: '{{ role_path }}/../../../policy/trino/main.rego'
+
+- name: Render OPA static data document
+  ansible.builtin.set_fact:
+    opa_data_json: >-
+      {{ {
+        "filtered_tables": (trino_filtered_tables | default([])),
+        "hidden_tables": (trino_hidden_tables | default([])),
+        "view_owner_principals": (trino_view_owner_principals | default([])),
+        "attribute_filters": (trino_attribute_filters | default({})),
+        "masked_columns": (trino_masked_columns | default([])),
+      } | to_json }}
+
+- name: Render OPA bundle plugin config
+  ansible.builtin.set_fact:
+    # `services.minio` + `bundles.scout-users` wire the bundle plugin to
+    # the MinIO endpoint and credentials. `roots: ["users"]` in the
+    # bundle's .manifest scopes the atomic swap to the `data.users`
+    # subtree, so the static document isn't replaced on every pull.
+    # `persist: true` writes the last successfully loaded bundle to a
+    # pod-local emptyDir so a restart during a MinIO outage doesn't
+    # drop OPA to deny-all. Polling interval 5–10s comfortably hits
+    # ADR 0020's real-time-offboarding requirement.
+    opa_config_yaml: >-
+      {{ {
+        'services': {
+          'minio': {
+            'url': opa_bundle_minio_url,
+            'credentials': {'s3_signing': {'environment_credentials': {}}},
+          },
+        },
+        'bundles': {
+          'scout-users': {
+            'service': 'minio',
+            'resource': opa_bundles_bucket ~ '/' ~ opa_bundle_object_key,
+            'polling': {
+              'min_delay_seconds': opa_bundle_min_delay_seconds,
+              'max_delay_seconds': opa_bundle_max_delay_seconds,
+            },
+            'persist': true,
+          },
+        },
+        'decision_logs': {
+          'console': true,
+          'reporting': {
+            'min_delay_seconds': opa_decision_log_min_delay_seconds,
+            'max_delay_seconds': opa_decision_log_max_delay_seconds,
+          },
+        },
+        'status': {
+          'console': true,
+        },
+      } | to_nice_yaml(indent=2, width=200) }}
+
+- name: Create OPA bundle reader Secret
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: opa-bundle-reader
+        namespace: '{{ opa_namespace }}'
+        labels:
+          app: opa-trino
+      type: Opaque
+      stringData:
+        # AWS-style env vars are what OPA's `environment_credentials`
+        # reads at bundle-pull time. AWS_REGION is required even for
+        # MinIO (the SDK's credential resolver fails closed if it's
+        # unset — "no AWS_REGION set in environment" — regardless of
+        # whether the target server actually cares about region). The
+        # access/secret pair are the same values rendered into MinIO's
+        # `{{ s3_opa_bundle_reader }}-creds` Secret in scout-data;
+        # mirrored here so the cross-namespace dependency stays
+        # explicit.
+        AWS_ACCESS_KEY_ID: '{{ s3_opa_bundle_reader }}'
+        AWS_SECRET_ACCESS_KEY: '{{ s3_opa_bundle_reader_secret }}'
+        AWS_REGION: '{{ s3_region }}'
+
+- name: Deploy OPA via scout-opa Helm chart
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: scout-opa
+    helm_chart_ref: '{{ scout_repo_dir }}/helm/scout-opa'
+    helm_chart_namespace: '{{ opa_namespace }}'
+    helm_chart_values:
+      replicaCount: '{{ opa_replicas }}'
+      image:
+        repository: '{{ opa_image }}'
+        tag: '{{ opa_image_tag }}'
+        pullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: '{{ opa_cpu_request }}'
+          memory: '{{ opa_memory_request }}'
+        limits:
+          cpu: '{{ opa_cpu_limit }}'
+          memory: '{{ opa_memory_limit }}'
+      policy:
+        rego: "{{ lookup('file', opa_policy_path) }}"
+      data:
+        json: '{{ opa_data_json }}'
+      config:
+        yaml: '{{ opa_config_yaml }}'
+      bundleReader:
+        secretName: opa-bundle-reader
+        # The chart concatenates this with the rendered policy / data /
+        # config to compute the pod's policy-hash annotation. Including
+        # the bundle-reader creds here makes a Secret rotation trigger a
+        # rollout without leaking the values into the manifest.
+        credsHash: '{{ (s3_opa_bundle_reader ~ s3_opa_bundle_reader_secret ~ s3_region) | hash("sha256") | truncate(8, True, "") }}'

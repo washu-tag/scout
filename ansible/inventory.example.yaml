@@ -296,9 +296,6 @@ k3s_cluster:
     keycloak_superset_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_voila_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_openwebui_mcp_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # Trino file-based PASSWORD authenticator entry for the Open WebUI MCP
-    # (tuannvm/mcp-trino speaks HTTP Basic outbound only — ADR 0022).
-    trino_openwebui_mcp_svc_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
@@ -400,10 +397,10 @@ k3s_cluster:
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_lake_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_lake_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # OPA bundle writer credentials (ADR 0021): the Keycloak SPI uses
-    # this to PUT the user-attribute bundle. The matching reader
-    # credential lands in inventory once OPA is deployed.
+    # OPA bundle bucket credentials (ADR 0021): the Keycloak SPI writes the
+    # user-attribute bundle; each OPA pod reads it.
     s3_opa_bundle_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    s3_opa_bundle_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     minio_resources:
       requests:
         cpu: 2
