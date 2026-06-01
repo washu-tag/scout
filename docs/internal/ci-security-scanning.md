@@ -215,7 +215,7 @@ When scanners are first enabled, expect a large initial set of findings from pre
 Each subproject can have its own `.trivyignore.yaml` alongside its `Dockerfile`. The composite action automatically detects and uses it if present. For example:
 
 ```
-helm/jupyter/notebook/
+helm/scout-notebook/
 ├── Dockerfile
 └── .trivyignore.yaml    # CVE suppressions for this image only
 ```

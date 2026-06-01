@@ -43,7 +43,7 @@ jobs:
             hl7-transformer:
               - 'extractor/hl7-transformer/**'
             scout-notebook:
-              - 'helm/jupyter/scout-notebook/**'
+              - 'helm/scout-notebook/**'
             launchpad:
               - 'launchpad/**'
             superset:
@@ -83,7 +83,7 @@ jobs:
             subproject: extractor/hl7-transformer
             allow-failure: true
           - image-name: scout-notebook
-            subproject: helm/jupyter/scout-notebook
+            subproject: helm/scout-notebook
             allow-failure: true
           - image-name: launchpad
             subproject: launchpad
@@ -378,7 +378,7 @@ jobs:
       - name: 'Push image to k3s - scout-notebook'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
-          subproject: helm/jupyter/scout-notebook
+          subproject: helm/scout-notebook
           image-name: scout-notebook
       - name: 'Install helm and helm diff'
         shell: bash
