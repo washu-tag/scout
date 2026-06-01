@@ -3,6 +3,7 @@ package edu.washu.tag.extractor.hl7log.util;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -12,6 +13,32 @@ import org.springframework.retry.annotation.Retryable;
  * Provides methods for uploading files, reading files, and listing directories with retry capabilities.
  */
 public interface FileHandler {
+
+    /** URI scheme used for S3 (and S3-compatible) object storage. */
+    String S3_SCHEME = "s3";
+
+    /** Prefix that identifies an S3 URI in string form, e.g. {@code s3://bucket/key}. */
+    String S3_URI_PREFIX = S3_SCHEME + "://";
+
+    /**
+     * Returns {@code true} if the given path-or-URI string is an {@code s3://} URI.
+     */
+    static boolean isS3Uri(String pathOrUri) {
+        return pathOrUri != null && pathOrUri.startsWith(S3_URI_PREFIX);
+    }
+
+    /**
+     * Extract the basename from either a filesystem path or an {@code s3://bucket/key} URI.
+     * {@link Paths#get(String, String...)} doesn't accept S3 URIs, so we handle them separately.
+     */
+    static String extractFileName(String pathOrUri) {
+        if (isS3Uri(pathOrUri)) {
+            int lastSlash = pathOrUri.lastIndexOf('/');
+            return lastSlash < 0 ? pathOrUri : pathOrUri.substring(lastSlash + 1);
+        }
+        return Paths.get(pathOrUri).getFileName().toString();
+    }
+
     /**
      * Uploads a file to the specified destination with retry capabilities.
      *
@@ -104,4 +131,16 @@ public interface FileHandler {
      */
     @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 1000, multiplier = 2))
     List<String> ls(URI source);
+
+    /**
+     * Returns {@code true} if the URI refers to an existing single file (or S3 object), as opposed
+     * to a directory/prefix. For S3 URIs this is determined via {@code HeadObject}; for filesystem
+     * URIs via {@link java.nio.file.Files#isRegularFile}. A non-existent S3 key returns {@code false}
+     * so the caller can fall back to treating the URI as a prefix to list.
+     *
+     * @param source The URI to inspect.
+     * @return {@code true} if the URI points at a single existing file/object.
+     */
+    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 1000, multiplier = 2))
+    boolean isFile(URI source);
 }
