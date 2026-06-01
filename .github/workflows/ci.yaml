@@ -157,6 +157,22 @@ jobs:
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v
+      - name: 'Install OPA'
+        shell: bash
+        # Pinned to match the OPA image we deploy (opa_image_tag in
+        # group_vars/all/versions.yaml). Builtin behavior — especially
+        # `regex.match` and `http.send` semantics — can drift across
+        # OPA versions; testing against the same binary the policy will
+        # evaluate under in production keeps test/prod aligned.
+        run: |
+          OPA_VERSION=$(yq '.opa_image_tag' ansible/group_vars/all/versions.yaml)
+          curl -fsSL -o /tmp/opa "https://openpolicyagent.org/downloads/v${OPA_VERSION}/opa_linux_amd64_static"
+          chmod +x /tmp/opa
+          sudo mv /tmp/opa /usr/local/bin/opa
+          opa version
+      - name: 'Unit tests: OPA policy (Trino AuthZ)'
+        shell: bash
+        run: opa test policy/ -v
       - name: 'Molecule tests: postgres role'
         shell: bash
         run: cd ansible/roles/postgres && molecule test -s default
