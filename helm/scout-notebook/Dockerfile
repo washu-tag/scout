@@ -1,4 +1,4 @@
-FROM quay.io/jupyter/scipy-notebook:python-3.11
+FROM quay.io/jupyter/scipy-notebook:python-3.13.13
 
 # Install Scout platform packages and Jupyter extensions via mamba.
 # Everything else (torch, transformers, scikit-learn, etc.) is user-installed
