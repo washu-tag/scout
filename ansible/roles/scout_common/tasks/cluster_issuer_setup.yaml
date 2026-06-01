@@ -13,10 +13,8 @@
 # duration (10y) and renews 1y before expiry, so re-deploys don't churn it.
 
 - name: Create Scout SelfSigned bootstrap ClusterIssuer
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
     definition:
       apiVersion: cert-manager.io/v1
       kind: ClusterIssuer
@@ -26,10 +24,8 @@
         selfSigned: {}
 
 - name: Create Scout internal CA Certificate
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
     definition:
       apiVersion: cert-manager.io/v1
       kind: Certificate
@@ -51,9 +47,7 @@
           group: cert-manager.io
 
 - name: Wait for Scout CA Secret to exist
-  delegate_to: localhost
   kubernetes.core.k8s_info:
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
     api_version: v1
     kind: Secret
     name: scout-ca
@@ -64,10 +58,8 @@
   delay: 5
 
 - name: Create Scout internal CA ClusterIssuer
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
     definition:
       apiVersion: cert-manager.io/v1
       kind: ClusterIssuer

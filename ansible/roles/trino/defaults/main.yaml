@@ -15,7 +15,7 @@ trino_helm_chart_name: trino
 # loading the trino role.
 trino_keystore_password: trinokeystorepass # protects the in-pod keystore; not a network secret
 
-trino_keycloak_jwks_url: 'http://keycloak-service.{{ keycloak_namespace }}:8080/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs'
+trino_keycloak_jwks_url: '{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs'
 trino_keycloak_required_audience: trino
 trino_opa_endpoint: 'http://opa-trino.{{ trino_namespace }}:8181'
 

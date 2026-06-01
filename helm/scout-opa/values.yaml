@@ -37,3 +37,10 @@ bundleReader:
 
 service:
   port: 8181
+
+# Ingress NetworkPolicy admitting only the Trino coordinator (see
+# templates/networkpolicy.yaml). Default off so a bare `helm install` (e.g.
+# chart tests, where no Trino coordinator exists) stays reachable; the opa
+# Ansible role renders this enabled for Scout deployments.
+networkPolicy:
+  enabled: false
