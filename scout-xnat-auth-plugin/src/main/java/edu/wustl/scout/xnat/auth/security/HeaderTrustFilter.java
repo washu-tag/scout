@@ -92,8 +92,7 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
         try {
             claims = jwtValidator.validate(accessToken);
         } catch (JwtValidator.InvalidJwtException e) {
-            log.warn("HeaderTrustFilter rejecting request: forwarded access token in {} is invalid ({})",
-                    properties.getAccessTokenHeader(), e.getMessage());
+            log.warn("HeaderTrustFilter rejecting request: forwarded access token is invalid ({})", e.getMessage());
             SecurityContextHolder.clearContext();
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Scout auth: invalid access token");
             return;
