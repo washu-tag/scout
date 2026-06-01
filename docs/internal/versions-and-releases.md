@@ -446,7 +446,7 @@ This section documents all files containing version strings. The Release Workflo
 | `helm/hive-metastore/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Hive version |
 | `helm/voila/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Voila version |
 | `helm/open-webui-bootstrap/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` is unused — chart orchestrates a Job against the runtime-discovered OWUI image |
-| `helm/voila/values.yaml` | `image.tag` | `latest` | Uses pyspark-notebook image |
+| `helm/voila/values.yaml` | `image.tag` | `latest` | Uses scout-notebook image (shared with JupyterHub singleuser) |
 | `helm/scout-dashboards/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` is unused — chart orchestrates Superset asset imports |
 
 ### VERSION Files

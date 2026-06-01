@@ -151,6 +151,22 @@ jobs:
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v
+      - name: 'Install OPA'
+        shell: bash
+        # Pinned to match the OPA image we deploy (opa_image_tag in
+        # group_vars/all/versions.yaml). Builtin behavior — especially
+        # `regex.match` and `http.send` semantics — can drift across
+        # OPA versions; testing against the same binary the policy will
+        # evaluate under in production keeps test/prod aligned.
+        run: |
+          OPA_VERSION=$(yq '.opa_image_tag' ansible/group_vars/all/versions.yaml)
+          curl -fsSL -o /tmp/opa "https://openpolicyagent.org/downloads/v${OPA_VERSION}/opa_linux_amd64_static"
+          chmod +x /tmp/opa
+          sudo mv /tmp/opa /usr/local/bin/opa
+          opa version
+      - name: 'Unit tests: OPA policy (Trino AuthZ)'
+        shell: bash
+        run: opa test policy/ -v
       - name: 'Molecule tests: postgres role'
         shell: bash
         run: cd ansible/roles/postgres && molecule test -s default
@@ -380,6 +396,17 @@ jobs:
         with:
           subproject: helm/scout-notebook
           image-name: scout-notebook
+      # hl7-transformer image is needed by the data-authorization seed
+      # Job (writes the synthetic test_reports Delta table via PySpark
+      # + Hive-Metastore-registered saveAsTable). The transformer
+      # itself isn't deployed in smoke-test (no extractor playbook),
+      # we just reuse the image as a vehicle for its Spark + Delta +
+      # s3a + Hive client.
+      - name: 'Push image to k3s - hl7-transformer'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: extractor/hl7-transformer
+          image-name: hl7-transformer
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
@@ -411,12 +438,94 @@ jobs:
           sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
           echo "=== All pods ==="
           sudo -E kubectl get pods -A
-      # Trino connectivity check
+      # Trino connectivity check. Auth (PASSWORD,JWT) is now required so
+      # the trino CLI's default http://localhost:8080 listener returns 403
+      # ("Authentication over HTTP is not enabled"). Hit /v1/info on the
+      # HTTPS listener instead — it's the same endpoint the kubelet
+      # readiness probe uses, and it requires no auth, so this still
+      # catches "coordinator process started but HTTPS not listening"
+      # regressions. The data-authorization-tests Job below exercises
+      # the full authenticated query path with a real JWT.
       - name: 'Trino connectivity check'
         shell: bash
         run: |
-          sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- trino \
-            --execute "SHOW CATALOGS; SHOW SCHEMAS FROM delta"
+          sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- \
+            curl -sk -f https://localhost:8443/v1/info
+      # Data authorization tests. Seeds a synthetic
+      # delta.default.test_reports table, then exercises the end-to-end
+      # AuthZ pipeline (Keycloak admin -> SPI listener -> MinIO bundle ->
+      # OPA pull -> Trino JWT auth + impersonation -> row filter +
+      # column mask). See tests/data-authorization/.
+      - name: 'Derive hl7-transformer image version'
+        id: hl7-transformer-version
+        uses: ./.github/actions/derive-version
+        with:
+          subproject: extractor/hl7-transformer
+      - name: 'Data authorization tests - seed'
+        shell: bash
+        env:
+          # docker.io/local/... is the tag k3s-image-import-or-pull
+          # imports under for in-cluster use; production's
+          # ghcr.io/... ref isn't loaded into k3s here.
+          IMAGE: docker.io/local/washu-tag/hl7-transformer:${{ steps.hl7-transformer-version.outputs.raw-version }}
+        run: |
+          set -euo pipefail
+          # lake_bucket differs between production ("lake") and CI
+          # ("ci-lake"); read the rendered inventory so the Delta
+          # warehouse path matches whichever bucket MinIO provisioned.
+          export WAREHOUSE_DIR="s3a://$(yq '.k3s_cluster.vars.lake_bucket' ansible/inventory.yaml)/delta"
+
+          # ConfigMap carries the script verbatim -- kubectl handles
+          # multi-line file content correctly, so no template
+          # substitution needed for seed.py.
+          sudo -E kubectl create configmap data-authz-seed-script \
+            -n scout-data \
+            --from-file=seed.py=tests/data-authorization/seed/seed.py \
+            --dry-run=client -o yaml | sudo -E kubectl apply -f -
+
+          yq '.spec.template.spec.containers[0].image = strenv(IMAGE)
+            | (.spec.template.spec.containers[0].env[]
+               | select(.name == "SPARK_SQL_WAREHOUSE_DIR")).value = strenv(WAREHOUSE_DIR)' \
+            tests/data-authorization/seed/job.yaml \
+            | sudo -E kubectl apply -f -
+
+          KUBECTL='sudo -E kubectl' bash tests/data-authorization/wait-for-job.sh \
+            scout-data data-authz-seed 300
+      - name: 'Data authorization tests - logs (seed)'
+        if: always()
+        shell: bash
+        run: |
+          sudo -E kubectl -n scout-data logs job/data-authz-seed --tail=200 || true
+      - name: 'Data authorization tests - run'
+        shell: bash
+        run: |
+          set -euo pipefail
+          KC_ADMIN_PW=$(yq '.k3s_cluster.vars.keycloak_bootstrap_admin_password' ansible/inventory.yaml)
+          SUPERSET_SVC_SECRET=$(yq '.k3s_cluster.vars.keycloak_superset_svc_client_secret' ansible/inventory.yaml)
+
+          # Script in a ConfigMap (kubectl handles file content
+          # correctly), secrets in a Secret. The Job manifest
+          # references both by name -- no template substitution.
+          sudo -E kubectl create configmap data-authz-test-script \
+            -n scout-analytics \
+            --from-file=run.sh=tests/data-authorization/authz-tests/run.sh \
+            --dry-run=client -o yaml | sudo -E kubectl apply -f -
+
+          sudo -E kubectl create secret generic data-authz-test-creds \
+            -n scout-analytics \
+            --from-literal=KC_ADMIN_PASSWORD="$KC_ADMIN_PW" \
+            --from-literal=SUPERSET_SVC_CLIENT_SECRET="$SUPERSET_SVC_SECRET" \
+            --dry-run=client -o yaml | sudo -E kubectl apply -f -
+
+          sudo -E kubectl apply -f tests/data-authorization/authz-tests/job.yaml
+
+          KUBECTL='sudo -E kubectl' bash tests/data-authorization/wait-for-job.sh \
+            scout-analytics data-authz-tests 300
+      - name: 'Data authorization tests - logs (run)'
+        if: always()
+        shell: bash
+        run: |
+          sudo -E kubectl -n scout-analytics logs job/data-authz-tests --tail=500 || true
       # Auth tests — verify OAuth2 Proxy blocks unauthenticated access
       - name: 'Auth curl tests'
         shell: bash
