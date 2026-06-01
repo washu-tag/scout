@@ -2,8 +2,8 @@
 replicaCount: {{ voila_replicas }}
 
 image:
-  repository: "{{ voila_image_name }}"
-  tag: "{{ voila_image_tag }}"
+  repository: "{{ scout_notebook_image_name }}"
+  tag: "{{ scout_notebook_image_tag }}"
 
 resources: {{ voila_resources_default | combine(voila_resources | default({}), recursive=true) | to_json }}
 
