@@ -148,6 +148,12 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
         if (scheduler != null) {
             scheduler.shutdownNow();
         }
+        // uploader is null if init() early-returned (missing config /
+        // enabled=false). When present, closing releases its S3Client's
+        // HTTP connection pool.
+        if (uploader != null) {
+            uploader.close();
+        }
     }
 
     @Override

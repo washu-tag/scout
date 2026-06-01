@@ -135,6 +135,22 @@
         "FROM\\s+(?<depName>quay\\.io/keycloak/keycloak):(?<currentValue>[\\d\\.]+)"
       ],
       "datasourceTemplate": "docker"
+    },
+    // kcVersion in the SPI build.gradle pins the Keycloak API the SPI
+    // compiles against (keycloak-core/keycloak-services). If the server
+    // bumps but kcVersion doesn't, the SPI keeps building against the
+    // old API surface — easy way to miss an internal-API break (the
+    // eventsListener + RequiredAction SPIs are KC-SERVICES0047 internal
+    // and have had compat breaks at major boundaries). Same depName as
+    // the three managers above so the bump arrives as one PR.
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["keycloak/event-listener/build.gradle"],
+      "matchStrings": [
+        "def\\s+kcVersion\\s*=\\s*\"(?<currentValue>[\\d\\.]+)\""
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "quay.io/keycloak/keycloak"
     }
   ]
 }
