@@ -151,7 +151,9 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             log.warn("HeaderTrustFilter rejected request from {}: {}", preferredUsername, e.getMessage());
             SecurityContextHolder.clearContext();
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: " + e.getMessage());
+            // Don't echo the provisioning exception detail to the client — it can
+            // leak internal state. The reason is logged above for operators.
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: user provisioning failed");
             return;
         }
 

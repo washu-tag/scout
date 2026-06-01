@@ -123,7 +123,9 @@ public class BearerTokenFilter extends OncePerRequestFilter {
         } catch (AuthenticationException e) {
             log.warn("BearerTokenFilter provisioning failed for {}: {}", identity.getPreferredUsername(), e.getMessage());
             SecurityContextHolder.clearContext();
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: " + e.getMessage());
+            // Don't echo the provisioning exception detail to the client — it can
+            // leak internal state. The reason is logged above for operators.
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: user provisioning failed");
             return;
         }
 
