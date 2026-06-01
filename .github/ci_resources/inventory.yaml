@@ -152,7 +152,7 @@ k3s_cluster:
     keycloak_minio_client_secret: ci-secret-00000006
     keycloak_launchpad_client_secret: ci-secret-00000007
     keycloak_open_webui_client_secret: ci-secret-00000008
-    keycloak_xnat_client_secret: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+    keycloak_xnat_client_secret: ci-secret-00000009
 
     # Superset
     superset_secret: Y2ktc3VwZXJzZXQtc2VjcmV0LWtleS1mb3ItdGVzdGluZw==
