@@ -36,18 +36,13 @@
     },
     "eventsListeners": [
       "user-approval-email",
+      {#- ADR 0021: consumes USER admin events to keep its in-memory snapshot
+          in sync; uses event.getDetails() (gated by adminEventsDetailsEnabled
+          at the top of this realm) on DELETE to recover the deleted user's
+          username, since the user row is gone by event-fire time. -#}
       "opa-user-bundle-publisher",
       "jboss-logging"
     ],
-    {#- adminEventsEnabled drives admin-event delivery to listeners. The
-        opa-user-bundle-publisher listener (ADR 0021) consumes USER admin
-        events (CREATE, UPDATE, DELETE) to keep its in-memory snapshot
-        in sync and republishes the OPA bundle to MinIO on every change.
-        adminEventsDetailsEnabled exposes event.getDetails(), which the
-        listener reads on DELETE to recover the deleted user's username
-        (the user row itself is gone by event-fire time). -#}
-    "adminEventsEnabled": true,
-    "adminEventsDetailsEnabled": true,
     "smtpServer": {
       "debug": "{{ keycloak_smtp_debug }}",
       "replyToDisplayName": "{{ keycloak_smtp_reply_to_display_name }}",
