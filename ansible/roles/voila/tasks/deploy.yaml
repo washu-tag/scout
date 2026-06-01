@@ -6,17 +6,72 @@
   vars:
     ns: '{{ voila_namespace }}'
 
-- name: Setup Spark defaults ConfigMap
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: spark_config_setup
-  vars:
-    spark_defaults_configmap_name: '{{ voila_spark_defaults_configmap_name }}'
-    spark_defaults_configmap_namespace: '{{ voila_namespace }}'
-    spark_memory: '{{ voila_spark_driver_memory }}'
-    spark_hive_metastore_uri: '{{ hive_metastore_endpoint }}'
-    spark_s3_username: '{{ s3_lake_writer }}'
-    spark_s3_password: '{{ s3_lake_writer_secret }}'
+- name: Create ConfigMap with Scout Python helpers (scout_trino, scout_voila, jupyter_server_config)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: voila-scout-python
+        namespace: '{{ voila_namespace }}'
+        labels:
+          app.kubernetes.io/name: voila
+          app.kubernetes.io/component: scout-python
+      data:
+        scout_trino.py: "{{ lookup('file', role_path + '/files/scout_trino.py') }}"
+        scout_voila.py: "{{ lookup('file', role_path + '/files/scout_voila.py') }}"
+        voila.py: "{{ lookup('file', role_path + '/files/voila.py') }}"
+
+- name: Create Secret with voila_svc Keycloak client credentials
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: voila-svc-keycloak
+        namespace: '{{ voila_namespace }}'
+        labels:
+          app.kubernetes.io/name: voila
+      type: Opaque
+      stringData:
+        KEYCLOAK_VOILA_SVC_CLIENT_SECRET: '{{ keycloak_voila_svc_client_secret }}'
+
+- name: Restrict Voila ingress to Traefik
+  # The X-Trino-User impersonation pattern trusts that the
+  # X-Auth-Request-Access-Token header on each request came from
+  # oauth2-proxy via Traefik. Without this NetworkPolicy, an in-cluster
+  # pod could connect directly to Voila on :8866 and forge the header,
+  # bypassing the per-user AuthZ. Egress is unrestricted (Voila needs
+  # to reach Keycloak + Trino + DNS).
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: voila-ingress
+        namespace: '{{ voila_namespace }}'
+        labels:
+          app.kubernetes.io/name: voila
+      spec:
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: voila
+        policyTypes:
+          - Ingress
+        ingress:
+          - from:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: '{{ traefik_namespace }}'
+                podSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: traefik
+            ports:
+              - protocol: TCP
+                port: 8866
 
 - name: Find all playbook directories
   ansible.builtin.find:

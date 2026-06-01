@@ -28,6 +28,10 @@ spec:
       serviceAccountName: {{ include "voila.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -62,6 +66,10 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
@@ -70,22 +78,58 @@ spec:
               mountPath: /home/jovyan/notebooks/{{ . }}
               readOnly: true
             {{- end }}
-            - name: spark-config
-              mountPath: /usr/local/spark/conf/spark-defaults.conf
-              subPath: spark-defaults.conf
+            - name: scout-python
+              mountPath: /opt/scout/scout_trino.py
+              subPath: scout_trino.py
+              readOnly: true
+            - name: scout-python
+              mountPath: /opt/scout/scout_voila.py
+              subPath: scout_voila.py
+              readOnly: true
+            - name: scout-python
+              mountPath: /etc/jupyter/voila.py
+              subPath: voila.py
+              readOnly: true
+            - name: trino-ca
+              mountPath: /etc/trino-ca
+              readOnly: true
             - name: exports
               mountPath: /home/jovyan/notebooks/exports
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       volumes:
         {{- range .Values.playbooks }}
         - name: playbook-{{ . }}
           configMap:
             name: voila-playbook-{{ . }}
         {{- end }}
-        - name: spark-config
+        - name: scout-python
           configMap:
-            name: {{ .Values.sparkConfigMapName | default "spark-defaults" }}
+            name: voila-scout-python
+        - name: trino-ca
+          secret:
+            secretName: trino-tls
+            # Tolerate the Secret being briefly missing -- cert-manager
+            # issues it as part of the analytics playbook, so during a
+            # cold deploy or a cert renewal there's a window where the
+            # Secret doesn't exist yet. With `optional: true`, the Pod
+            # starts (mount is empty) instead of hanging until the
+            # 15m helm-install timeout. scout_trino passes
+            # `verify=$TRINO_CA_CERT` to requests; with no file at
+            # that path, TLS handshake fails with FileNotFoundError
+            # rather than silently bypassing verification -- queries
+            # error out loudly until kubelet's next Secret-volume sync
+            # picks up the issued Secret (~60s default).
+            optional: true
+            items:
+              - key: ca.crt
+                path: ca.crt
         - name: exports
           emptyDir: {}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
