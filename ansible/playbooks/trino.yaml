@@ -1,9 +1,8 @@
 ---
-- name: Install components for Analytics service
+- name: Install components for Trino service
   hosts: server
   gather_facts: false
   environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: opa
     - role: trino
-    - role: superset
