@@ -43,27 +43,6 @@ hub:
       c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
     templates: |
       c.JupyterHub.template_paths = ['/usr/local/share/jupyterhub/custom-templates']
-    # Grant each singleuser pod's JUPYTERHUB_API_TOKEN the scope needed to
-    # read its own auth_state via the Hub API. The scout_trino helper in
-    # the samples directory uses this to fetch fresh Keycloak access tokens
-    # transparently — the user's refresh_token stays in the Hub's
-    # auth_state and is never placed in the notebook pod's environment.
-    # Hub-side OAuthenticator.refresh_user runs on each API call, so the
-    # act of reading auth_state also refreshes it when near expiry.
-    #
-    # `admin:auth_state` is the only scope that exposes auth_state; the
-    # `!user` filter restricts it to the calling user's own auth_state,
-    # so this isn't a real admin grant. We deliberately do NOT override
-    # `Spawner.oauth_client_allowed_scopes` here — its default includes
-    # `access:servers!server=<name>` which the singleuser server needs to
-    # validate visitor OAuth callbacks. Replacing it causes a redirect
-    # loop. Only `server_token_scopes` (what the API token can do) needs
-    # the auth_state scope for the helper to work.
-    singleuser_auth_state_scope: |
-      c.Spawner.server_token_scopes = [
-          "users:activity!user",
-          "admin:auth_state!user",
-      ]
   config:
     Authenticator:
       auto_login: true
@@ -152,13 +131,6 @@ singleuser:
       value: present
       effect: NoSchedule
   cmd: null
-  # Keep this as an explicit empty list when the staging-CA init container
-  # isn't present — bare `initContainers:` renders as null in the Helm
-  # values, and the JupyterHub chart's image-puller helper does
-  # `concat .Values.singleuser.initContainers .Values.singleuser.extraContainers`,
-  # which nil-derefs on a null arg.
-  initContainers:{% if not (_package_proxy_needs_staging_cert | default(false) | bool) %} []{% endif %}
-
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
   initContainers:
     - name: staging-ca-setup
@@ -166,18 +138,8 @@ singleuser:
       command: ["/bin/sh", "-c"]
       args:
         - |
-          # Combined CA bundle: system CAs + staging self-signed CA + Trino's
-          # internal CA. Required because REQUESTS_CA_BUNDLE / SSL_CERT_FILE /
-          # CURL_CA_BUNDLE below cause requests.merge_environment_settings to
-          # override per-call verify= kwargs — meaning `verify=TRINO_CA_CERT`
-          # in user notebooks is silently replaced with this bundle. The
-          # bundle must therefore trust every CA the notebook reaches:
-          # public registries (system CAs), staging proxies (staging CA),
-          # and Trino's HTTPS listener (scout-internal-ca via trino-ca).
-          cat /etc/ssl/certs/ca-certificates.crt \
-              {{ _staging_ca_cert_pod_path }} \
-              /etc/trino-ca/ca.crt \
-              > /etc/pki/staging/ca-bundle.crt
+          # Build combined CA bundle: system CAs + staging self-signed CA
+          cat /etc/ssl/certs/ca-certificates.crt {{ _staging_ca_cert_pod_path }} > /etc/pki/staging/ca-bundle.crt
       volumeMounts:
         - name: staging-ca-cert
           mountPath: {{ _staging_ca_cert_pod_path }}
@@ -185,9 +147,6 @@ singleuser:
           readOnly: true
         - name: staging-ca-bundle
           mountPath: /etc/pki/staging
-        - name: trino-ca
-          mountPath: /etc/trino-ca
-          readOnly: true
 {% endif %}
   lifecycleHooks:
     postStart:
@@ -223,26 +182,14 @@ singleuser:
     # HuggingFace model cache directory - models downloaded from HF Hub are stored here
     # This directory is created in postStart hook and persists with user's home directory
     HF_HOME: '/home/jovyan/models'
-    # Ensure `from scout_trino import query` works from any notebook, not
-    # only ones opened inside ~/Scout/. The postStart hook copies the
-    # helper there from /opt/scout/samples; PYTHONPATH makes it
-    # importable regardless of the kernel's working directory.
-    PYTHONPATH: '/home/jovyan/Scout'
-    # Trino connection information for read-only access from notebooks.
-    # Notebooks use the `scout_trino` helper module copied into the
-    # user's ~/Scout/ directory on first login:
-    #   from scout_trino import query
-    #   query("SELECT COUNT(*) FROM reports_latest")
-    # The helper fetches Keycloak access tokens from the JupyterHub API
-    # on demand (refreshing transparently); the notebook pod never holds
-    # the user's refresh_token or any long-lived credential. See the
-    # Quickstart sample for the recommended usage.
+    # Trino connection information for read-only access from notebooks
+    # Users can connect with: trino.dbapi.connect(host=os.getenv('TRINO_HOST'), ...)
     TRINO_HOST: 'trino.{{ trino_namespace }}'
-    TRINO_PORT: '{{ trino_https_port }}'
-    TRINO_SCHEME: 'https'
+    TRINO_PORT: '8080'
+    TRINO_SCHEME: 'http'
+    TRINO_USER: '{{ trino_user }}'
     TRINO_CATALOG: 'delta'
     TRINO_SCHEMA: 'default'
-    TRINO_CA_CERT: '/etc/trino-ca/ca.crt'
     # Ollama service for LLM calls from notebooks
     OLLAMA_URL: 'http://ollama.{{ chatbot_namespace }}:11434'
     OLLAMA_MODEL: '{{ ollama_default_model }}'
@@ -315,16 +262,6 @@ singleuser:
         configMap:
           name: scout-quickstart-samples
           defaultMode: 0644
-      # CA cert from the same Secret cert-manager populates for Trino's TLS
-      # listener. Notebooks pass /etc/trino-ca/ca.crt as the `verify=` arg
-      # to trino-python-client so the self-signed cert is trusted.
-      trino-ca:
-        name: trino-ca
-        secret:
-          secretName: trino-tls
-          items:
-            - key: ca.crt
-              path: ca.crt
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
       staging-ca-cert:
         name: staging-ca-cert
@@ -347,10 +284,6 @@ singleuser:
         name: scout-samples
         mountPath: /opt/scout/samples
         readOnly: true
-      trino-ca:
-        name: trino-ca
-        mountPath: /etc/trino-ca
-        readOnly: true
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
       staging-ca-bundle:
         name: staging-ca-bundle
@@ -359,25 +292,29 @@ singleuser:
 {% endif %}
   networkPolicy:
     egress:
-      # Trino is the single data path for notebooks (per ADR 0020).
-      # Notebooks read the lake exclusively through Trino's HTTPS listener,
-      # which enforces per-user row filters and column masks via OPA. The
-      # earlier direct egress rules to MinIO (S3 reads) and Hive Metastore
-      # (metadata) bypassed AuthZ and have been removed alongside the
-      # Spark-from-notebook removal.
+{% if not aws_deployment %}
+      # Allow access to MinIO for data lake storage
       - to:
           - namespaceSelector:
               matchLabels:
-                kubernetes.io/metadata.name: '{{ trino_namespace }}'
+                kubernetes.io/metadata.name: '{{ minio_tenant_namespace }}'
         ports:
-          - port: {{ trino_https_port }}
-      # Ollama (AI model inference) — kept; not a data-lake path.
+          - port: 9000
+{% endif %}
+      # Allow access to Ollama for AI model inference
       - to:
           - namespaceSelector:
               matchLabels:
                 kubernetes.io/metadata.name: '{{ chatbot_namespace }}'
         ports:
           - port: 11434
+      # Allow access to Trino for SQL queries
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ trino_namespace }}'
+        ports:
+          - port: 8080
 {% if jupyter_egress_allow_cidr | default('') | length > 0 %}
       # Allow access to additional private network CIDR (e.g. staging node / package proxy)
       - to:
