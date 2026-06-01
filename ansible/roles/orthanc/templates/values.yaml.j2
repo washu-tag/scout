@@ -78,6 +78,7 @@ postgres:
     annotations: {{ orthanc_postgres_cluster_annotations | to_json }}
     enabled: {{ orthanc_postgres_mode == 'cnpg' }} # Set to false to use your own DB
     instances: {{ orthanc_postgres_replicas }}
+    imageName: {{ orthanc_postgres_image_name }}
     version: {{ orthanc_postgres_version }}
     storage:
       size: "{{ orthanc_postgres_storage_size }}"
@@ -90,9 +91,7 @@ postgres:
     credentials:
       # Always use an external secret for production deployments.
       externalSecret: orthanc-cnpg-app-credentials
-      database: "{{ orthanc_postgres_database | to_json }}"
-      username: {{ orthanc_postgres_user | to_json }}
-      password: {{ orthanc_postgres_password | to_json }}
+      database: {{ orthanc_postgres_database | to_json }}
     # CNPG can include roles and services in cluster definitions.
     # See the official docs for more information
     # https://cloudnative-pg.io/docs/1.29/cloudnative-pg.v1#managedconfiguration

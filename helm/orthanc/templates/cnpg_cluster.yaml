@@ -27,7 +27,7 @@ spec:
   affinity:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  imageName: ghcr.io/cloudnative-pg/postgresql:{{ .Values.postgres.cluster.version }}
+  imageName: {{ .Values.postgres.cluster.imageName }}:{{ .Values.postgres.cluster.version }}
   storage:
     size: {{ .Values.postgres.cluster.storage.size }}
     storageClass: {{ .Values.postgres.cluster.storage.storageClass }}

@@ -28,6 +28,7 @@ orthanc_dicom_service_load_balancer_class: ''
 orthanc_postgres_mode: disabled
 orthanc_postgres_user: orthanc
 orthanc_postgres_version: 18
+orthanc_postgres_image_name: "ghcr.io/cloudnative-pg/postgresql"
 orthanc_postgres_port: 5432
 orthanc_postgres_replicas: 1
 orthanc_postgres_database: orthanc
