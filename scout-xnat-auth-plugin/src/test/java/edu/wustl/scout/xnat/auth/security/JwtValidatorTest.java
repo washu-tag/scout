@@ -200,6 +200,70 @@ public class JwtValidatorTest {
         assertTrue(JwtValidator.extractClientRoles(broken, "xnat").isEmpty());
     }
 
+    @Test
+    public void extractRealmRoles_returnsRoles() {
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .claim("realm_access", Collections.singletonMap("roles",
+                        Arrays.asList("offline_access", "xnat-access")))
+                .build();
+        assertEquals(Arrays.asList("offline_access", "xnat-access"),
+                JwtValidator.extractRealmRoles(claims));
+    }
+
+    @Test
+    public void extractRealmRoles_returnsEmptyOnMissingClaim() {
+        JWTClaimsSet claims = new JWTClaimsSet.Builder().subject("user-1").build();
+        assertTrue(JwtValidator.extractRealmRoles(claims).isEmpty());
+    }
+
+    @Test
+    public void extractRealmRoles_returnsEmptyOnMalformedClaim() {
+        JWTClaimsSet broken = new JWTClaimsSet.Builder()
+                .claim("realm_access", "not-a-map")
+                .build();
+        assertTrue(JwtValidator.extractRealmRoles(broken).isEmpty());
+    }
+
+    @Test
+    public void stringListClaim_returnsList() {
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .claim("groups", Arrays.asList("scout-user", "scout-admin"))
+                .build();
+        assertEquals(Arrays.asList("scout-user", "scout-admin"),
+                JwtValidator.stringListClaim(claims, "groups"));
+    }
+
+    @Test
+    public void stringListClaim_returnsEmptyOnMissingClaim() {
+        JWTClaimsSet claims = new JWTClaimsSet.Builder().subject("user-1").build();
+        assertTrue(JwtValidator.stringListClaim(claims, "groups").isEmpty());
+    }
+
+    @Test
+    public void stringListClaim_returnsEmptyOnNonListClaim() {
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .claim("groups", "not-a-list")
+                .build();
+        assertTrue(JwtValidator.stringListClaim(claims, "groups").isEmpty());
+    }
+
+    @Test
+    public void allRoles_combinesClientAndRealmRoles() {
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .claim("resource_access", clientRoles("xnat", "xnat-access"))
+                .claim("realm_access", Collections.singletonMap("roles",
+                        Collections.singletonList("offline_access")))
+                .build();
+        assertEquals(Arrays.asList("xnat-access", "offline_access"),
+                JwtValidator.allRoles(claims, "xnat"));
+    }
+
+    @Test
+    public void claimAsString_returnsNullForMissingClaim() {
+        JWTClaimsSet claims = new JWTClaimsSet.Builder().subject("user-1").build();
+        org.junit.Assert.assertNull(JwtValidator.claimAsString(claims, "preferred_username"));
+    }
+
     private JWTClaimsSet.Builder claims() {
         long now = System.currentTimeMillis();
         return new JWTClaimsSet.Builder()
