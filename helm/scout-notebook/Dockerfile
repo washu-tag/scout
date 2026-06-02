@@ -18,5 +18,10 @@ RUN mamba install -y -n base \
 # importable from every kernel without per-user setup. Lives at repo
 # root (sdk/python/) so build context must be the repo root, not this
 # directory — see docker-build-cache action's `context` input.
-COPY --chown=root:root sdk/python /tmp/scout-sdk
+#
+# --chown to NB_UID:NB_GID because setuptools' PEP 517 build_meta
+# writes an egg-info dir into the source tree during the
+# get_requires_for_build_wheel hook; the base image runs as jovyan, so
+# a root-owned source dir fails the install with "Permission denied".
+COPY --chown=${NB_UID}:${NB_GID} sdk/python /tmp/scout-sdk
 RUN pip install --no-cache-dir /tmp/scout-sdk[voila] && rm -rf /tmp/scout-sdk
