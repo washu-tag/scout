@@ -1,9 +1,9 @@
-"""Unit tests for voila_runtime - threads the forwarded username into kernels.
+"""Unit tests for voila_runtime — threads the forwarded username into kernels.
 
-The real handler + kernel-spawn flow runs in the same async task, so the
-contextvar set by the handler is visible to start_kernel. The tests run
-both in one coroutine to reproduce that, and use separate asyncio.run()
-calls to confirm requests don't leak identity into each other.
+The real flow runs the patched handler and the kernel-manager spawn in the same
+async task, so the contextvar set by the handler is visible to start_kernel.
+The tests run both in one coroutine to reproduce that, and use separate
+asyncio.run() calls to confirm requests don't leak identity into each other.
 """
 
 import asyncio
@@ -11,7 +11,6 @@ import logging
 from types import SimpleNamespace
 
 import voila_runtime
-
 from conftest import ORIGINAL_GET_RESULT
 
 HEADER = "X-Auth-Request-Preferred-Username"
@@ -25,8 +24,8 @@ def _handler(username):
 
 
 async def _request_flow(username, base_env=None):
-    """Patched handler (sets identity) then a kernel spawn (reads it) - one task."""
-    passthrough = await voila_runtime._scout_voila_get(_handler(username))
+    """Patched handler (sets identity) then a kernel spawn (reads it) — one task."""
+    passthrough = await voila_runtime._voila_runtime_get(_handler(username))
     manager = voila_runtime.ScoutMappingKernelManager()
     started = await manager.start_kernel(env=dict(base_env or {}))
     return passthrough, started["started_with"]["env"]
@@ -60,7 +59,7 @@ def test_identity_does_not_leak_between_requests():
 
 def test_warns_when_header_missing(caplog):
     with caplog.at_level(logging.WARNING, logger="voila_runtime"):
-        asyncio.run(voila_runtime._scout_voila_get(_handler(None)))
+        asyncio.run(voila_runtime._voila_runtime_get(_handler(None)))
     assert any(
         "X-Auth-Request-Preferred-Username" in r.message
         and r.levelno == logging.WARNING
@@ -70,5 +69,5 @@ def test_warns_when_header_missing(caplog):
 
 def test_no_warning_when_header_present(caplog):
     with caplog.at_level(logging.WARNING, logger="voila_runtime"):
-        asyncio.run(voila_runtime._scout_voila_get(_handler("alice")))
+        asyncio.run(voila_runtime._voila_runtime_get(_handler("alice")))
     assert not caplog.records

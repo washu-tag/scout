@@ -61,7 +61,7 @@ _preferred_username: contextvars.ContextVar[str] = contextvars.ContextVar(
 _original_voila_get = TornadoVoilaHandler.get
 
 
-async def _scout_voila_get(self, path=None):
+async def _voila_runtime_get(self, path=None):
     username = self.request.headers.get("X-Auth-Request-Preferred-Username", "")
     if not username:
         logger.warning(
@@ -74,7 +74,7 @@ async def _scout_voila_get(self, path=None):
     return await _original_voila_get(self, path)
 
 
-TornadoVoilaHandler.get = _scout_voila_get
+TornadoVoilaHandler.get = _voila_runtime_get
 
 
 class ScoutMappingKernelManager(AsyncMappingKernelManager):
