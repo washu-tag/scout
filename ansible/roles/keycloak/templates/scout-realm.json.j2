@@ -175,7 +175,7 @@
         "{{ keycloak_xnat_client_id }}": [
           {
             "name": "xnat-access",
-            "description": "Required for XNAT login. Mapped from the scout-user group; scout-xnat-auth-plugin enforces this on bearer-token API requests.",
+            "description": "Scout User Role for XNAT Client",
             "composite": false,
             "clientRole": true,
             "attributes": {}
@@ -500,7 +500,7 @@
       },
       {
         "name": "{{ keycloak_xnat_client_id }}",
-        "description": "XNAT resource server: audience target for xnat-scoped tokens and home of the xnat-access client role. Bearer-only — oauth2-proxy fronts the browser path with its own client, and scout-xnat-auth-plugin validates tokens locally, so nothing authenticates as this client (no secret, no login flows).",
+        "description": "XNAT resource server (bearer-only)",
         "enabled": true,
         "clientId": "{{ keycloak_xnat_client_id }}",
         "bearerOnly": true
