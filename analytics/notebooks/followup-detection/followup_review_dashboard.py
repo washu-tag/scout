@@ -193,17 +193,15 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
         diagnoses,
         principal_result_interpreter
     FROM categorized
-    WHERE row_num <= {samples_per_category}
+    WHERE row_num <= ?
     """
 
-    # Execute query and load into Pandas.
-    # Safe to suppress: the query interpolates only SQL identifiers
-    # (catalog/schema/table from the configured table_name, and the report-text
-    # column name) plus an integer sample size — all notebook-authored config,
-    # never end-user/request input, and none can be bound parameters. The WHERE
-    # conditions are static IS-NOT-NULL checks with no interpolation.
+    # Execute query. The remaining interpolations are config-derived identifiers
+    # (catalog/schema/table from table_name, plus the report-text column) — SQL
+    # can't bind identifiers as parameters, so they stay interpolated (hence the
+    # nosemgrep). The one user-supplied value, the sample size, is bound below.
     cursor = conn.cursor()
-    cursor.execute(query)  # nosemgrep
+    cursor.execute(query, (samples_per_category,))  # nosemgrep
 
     # Fetch column names and data
     columns = [desc[0] for desc in cursor.description]

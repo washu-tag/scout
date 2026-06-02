@@ -109,12 +109,12 @@ def _load_quality_data(table_name="default.reports", date_range_days=None, limit
     {limit_sql}
     """
 
-    # Use cursor to avoid SQLAlchemy warning.
-    # Safe to suppress: the query interpolates only SQL identifiers (schema/table
-    # from the configured table_name), an integer LIMIT, and a date cutoff
-    # computed from the integer date_range_days via strftime (not raw input).
-    # All notebook-authored config, never end-user/request input, and the
-    # identifiers / LIMIT can't be bound parameters.
+    # Use cursor to avoid SQLAlchemy warning. The only interpolations are config
+    # identifiers (schema/table from table_name — SQL can't bind identifiers) and
+    # the WHERE cutoff / LIMIT. The cutoff is timedelta(days=date_range_days)
+    # .strftime(): date_range_days is a user-set IntText, but timedelta rejects
+    # non-numerics and strftime always emits a plain date, so it can't carry SQL.
+    # LIMIT is None in every real call path (no caller passes limit=).
     cursor = conn.cursor()
     cursor.execute(query)  # nosemgrep
     columns = [desc[0] for desc in cursor.description]
