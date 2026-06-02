@@ -11,9 +11,9 @@ playbooks: {{ voila_playbooks | to_json }}
 
 env:
   # Trino connection params consumed by scout_trino.connect() (helper
-  # mounted at /opt/scout/scout_trino.py — see deploy.yaml ConfigMap).
+  # mounted at /opt/scout/scout_trino.py by the chart's scout-python ConfigMap).
   # No TRINO_USER: per-user identity is set as X-Trino-User from each
-  # request's X-Auth-Request-Access-Token header (ADR 0022).
+  # request's X-Auth-Request-Preferred-Username header (ADR 0022).
   TRINO_HOST: "trino.{{ trino_namespace }}"
   TRINO_PORT: "{{ trino_https_port }}"
   TRINO_SCHEME: "https"
@@ -40,10 +40,13 @@ env:
   OLLAMA_URL: "http://ollama.{{ chatbot_namespace }}:11434"
   OLLAMA_MODEL: "{{ ollama_default_model }}"
 
-envFrom:
-  # KEYCLOAK_VOILA_SVC_CLIENT_SECRET is injected from this Secret.
-  - secretRef:
-      name: voila-svc-keycloak
+# voila_svc client secret → chart-managed voila-svc-keycloak Secret
+# (templates/secret.yaml), referenced via the chart's default envFrom.
+voilaSvcClientSecret: "{{ keycloak_voila_svc_client_secret }}"
+
+networkPolicy:
+  enabled: true
+  traefikNamespace: "{{ traefik_namespace }}"
 
 ingress:
   enabled: true

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: voila-scout-python
+  labels:
+    {{- include "voila.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scout-python
+data:
+{{ (.Files.Glob "files/*.py").AsConfig | indent 2 }}

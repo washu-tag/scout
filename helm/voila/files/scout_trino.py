@@ -7,17 +7,16 @@ impersonate any user; row filters and column masks evaluate against the
 impersonated user's Keycloak attributes (ADR 0022).
 
 Mirrors the pattern in ansible/roles/superset/files/superset_trino_auth.py
-— same JWTAuthentication + X-Trino-User shape, different sources for
-the username (here: HTTP header forwarded by oauth2-proxy into the
-kernel env, populated by scout_voila.ScoutMappingKernelManager).
+— same JWTAuthentication + X-Trino-User shape, different source for the
+username: oauth2-proxy forwards it as the X-Auth-Request-Preferred-Username
+header, and scout_voila.ScoutMappingKernelManager threads it into this
+kernel's env as X_AUTH_REQUEST_PREFERRED_USERNAME.
 
 Token caching: a single voila_svc token is reused across all
 connections until ~80% of its lifetime has elapsed, then refreshed.
 Process-local cache; each Voila worker mints its own.
 """
 
-import base64
-import json
 import os
 import threading
 import time
@@ -61,21 +60,13 @@ def _get_svc_token() -> str:
         return _mint_svc_token()
 
 
-def _user_from_access_token() -> str:
-    # Decode preferred_username from the per-kernel access token env var.
-    # No signature verification — the token was validated by oauth2-proxy's
-    # Keycloak provider before the request reached Voila. The decoded value
-    # is used only for X-Trino-User; Trino + OPA enforce the actual AuthZ.
-    access_token = os.environ.get("X_AUTH_REQUEST_ACCESS_TOKEN", "")
-    if not access_token:
-        return ""
-    try:
-        _header, payload_b64, _sig = access_token.split(".")
-        payload_b64 += "=" * (-len(payload_b64) % 4)
-        claims = json.loads(base64.urlsafe_b64decode(payload_b64))
-        return claims.get("preferred_username", "")
-    except (ValueError, KeyError, json.JSONDecodeError):
-        return ""
+def _current_user() -> str:
+    # The end user's preferred_username, forwarded by oauth2-proxy as the
+    # X-Auth-Request-Preferred-Username header and threaded into this kernel's
+    # env by scout_voila.ScoutMappingKernelManager. Used only for X-Trino-User;
+    # Trino + OPA enforce the actual access against the impersonated user's
+    # Keycloak attributes (ADR 0022).
+    return os.environ.get("X_AUTH_REQUEST_PREFERRED_USERNAME", "")
 
 
 def connect():
@@ -84,10 +75,10 @@ def connect():
     Drop-in replacement for `trino.dbapi.connect(...)` calls in playbooks.
     Pulls connection params from env (TRINO_HOST, TRINO_PORT, etc.) and
     sets the auth + impersonation header automatically. Falls back to
-    user='anonymous' if no access token is present — OPA's row filters
+    user='anonymous' if no forwarded username is present — OPA's row filters
     then clamp to zero rows (fail-safe).
     """
-    user = _user_from_access_token() or "anonymous"
+    user = _current_user() or "anonymous"
     return trino.dbapi.connect(
         host=os.environ.get("TRINO_HOST", "trino.scout-analytics"),
         port=int(os.environ.get("TRINO_PORT", "8443")),
@@ -117,10 +108,10 @@ def connect_rw():
     trino-rw has no auth, so `user` is only an audit label, not a
     credential — failing closed here would block a reviewer's annotation
     save on a transient header-propagation hiccup, which is a worse
-    outcome than a less-precise audit entry. A missing forwarded token is
+    outcome than a less-precise audit entry. A missing forwarded username is
     already logged at request time by scout_voila._scout_voila_get.
     """
-    user = _user_from_access_token() or "anonymous"
+    user = _current_user() or "anonymous"
     return trino.dbapi.connect(
         host=os.environ.get("TRINO_RW_HOST", "trino-rw.scout-extractor"),
         port=int(os.environ.get("TRINO_RW_PORT", "8080")),
