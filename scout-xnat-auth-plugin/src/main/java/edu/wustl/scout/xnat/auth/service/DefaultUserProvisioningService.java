@@ -52,10 +52,18 @@ public class DefaultUserProvisioningService implements UserProvisioningService {
             throw new AccessDeniedException("user lacks " + properties.getRequiredRole() + " role");
         }
 
-        final String xnatUsername = buildUsername(identity.getSub());
+        // Two distinct identifiers on the XdatUserAuth row:
+        //   - auth_user      = the external IdP identity (the Keycloak sub). This
+        //                      is the lookup key (getUserByNameAndAuth ->
+        //                      findByAuthUsernameAndProvider keys on auth_user).
+        //   - xdat_username  = the local XNAT login we mint, "keycloak-<sub>".
+        // The lookup must use the sub so it matches what createUser() stores;
+        // keying it on xnatUsername would never find the row after first login.
+        final String authUser = identity.getSub();
+        final String xnatUsername = buildUsername(authUser);
         UserI user;
         try {
-            user = userAuthService.getUserDetailsByNameAndAuth(xnatUsername, authMethod, providerId);
+            user = userAuthService.getUserDetailsByNameAndAuth(authUser, authMethod, providerId);
         } catch (UsernameAuthMappingNotFoundException e) {
             user = createUser(xnatUsername, identity);
         }
@@ -82,6 +90,9 @@ public class DefaultUserProvisioningService implements UserProvisioningService {
 
         try {
             final UserI admin = Users.getAdminUser();
+            // auth_user = the Keycloak sub (the lookup key in provision());
+            // xdat_username = the local login "keycloak-<sub>". These are
+            // intentionally different — do not collapse them to the same value.
             final XdatUserAuth auth = new XdatUserAuth(
                     identity.getSub(), authMethod, providerId, xdatUser.getLogin(), true, 0);
             Users.save(xdatUser, admin, auth,
