@@ -24,11 +24,12 @@ config:
     banner = "{{ oauth2_proxy_banner }}"
     footer = "{{ server_hostname }}" # Hacky way to pass server hostname to sign_in template
     upstreams = ["static://200"]
-    # Emit X-Auth-Request-Access-Token on /oauth2/auth so Traefik's
-    # forwardAuth middleware can forward the signed Keycloak JWT to
-    # upstream services (Voila reads it to set X-Trino-User per ADR 0022).
-    # Both flags are required — oauth2-proxy only appends the access-token
-    # header when set_xauthrequest AND pass_access_token are both set.
+    # Emit the X-Auth-Request-* family on /oauth2/auth responses so Traefik's
+    # forwardAuth middleware (authResponseHeaders) can forward identity to
+    # upstream services. Voila reads X-Auth-Request-Preferred-Username to set
+    # X-Trino-User per ADR 0022 — that header needs only set_xauthrequest.
+    # pass_access_token additionally emits X-Auth-Request-Access-Token, kept
+    # for forwardAuth consumers that need the raw Keycloak JWT.
     set_xauthrequest = true
     pass_access_token = true
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}

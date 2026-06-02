@@ -11,10 +11,15 @@ spec:
       {{- include "voila.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        # Roll the pod when the mounted helpers or the svc-account secret
+        # change: subPath ConfigMap mounts don't hot-update, and envFrom
+        # secret values are only read at container start.
+        checksum/scout-python: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/voila-svc-keycloak: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "voila.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}

@@ -3,11 +3,11 @@
 Two modes, auto-detected from environment:
 
   Voila (service-principal impersonation, ADR 0022)
-    Set when KEYCLOAK_VOILA_SVC_CLIENT_ID is present. The notebook holds
-    no end-user token; the Voila web tier captures the OIDC-authed
-    user's preferred_username from each request's
-    X-Auth-Request-Access-Token header (via scout.voila) and threads it
-    into the kernel env as X_AUTH_REQUEST_ACCESS_TOKEN. We mint a
+    Set when KEYCLOAK_VOILA_SVC_CLIENT_ID is present. The kernel never
+    sees the end-user's bearer token; scout.voila threads only the
+    preferred_username into the kernel env as
+    X_AUTH_REQUEST_PREFERRED_USERNAME (sourced from oauth2-proxy's
+    X-Auth-Request-Preferred-Username response header). We mint a
     voila_svc client_credentials JWT and tell Trino to evaluate AuthZ
     against the impersonated user via X-Trino-User.
 
@@ -16,7 +16,7 @@ Two modes, auto-detected from environment:
     Keycloak access token in auth_state; the spawned kernel fetches it
     via the Hub API (GET /users/<user>) using its own JUPYTERHUB_API_TOKEN
     plus the admin:auth_state!user scope granted by the role override.
-    No X-Trino-User — Trino reads identity from the JWT's sub claim.
+    No X-Trino-User - Trino reads identity from the JWT's sub claim.
 
 Both providers refresh themselves transparently on near-expiry.
 """
@@ -39,23 +39,18 @@ _REFRESH_BEFORE_EXPIRY_SECONDS = 60
 _override_provider: Callable[[], tuple[str, str | None]] | None = None
 
 
-def _decode_jwt_claims(token: str) -> dict:
-    """Decode JWT claims without signature verification.
+def _is_near_expiry(token: str) -> bool:
+    """Decode the JWT's exp claim (unverified) and check if it's near expiry.
 
-    The token was already validated by Keycloak (issuance) and by the
-    upstream gatekeeper (oauth2-proxy for Voila, JupyterHub for Jupyter).
-    We only need the claims to surface preferred_username + exp.
+    The token was already validated upstream (Keycloak at issuance,
+    JupyterHub at fetch); we only need the claim to time cache refresh.
     """
     try:
         _h, payload_b64, _s = token.split(".")
         payload_b64 += "=" * (-len(payload_b64) % 4)
-        return json.loads(base64.urlsafe_b64decode(payload_b64))
+        claims = json.loads(base64.urlsafe_b64decode(payload_b64))
     except (ValueError, json.JSONDecodeError):
-        return {}
-
-
-def _is_near_expiry(token: str) -> bool:
-    claims = _decode_jwt_claims(token)
+        return True
     exp = claims.get("exp")
     if not isinstance(exp, (int, float)):
         return True
@@ -63,14 +58,16 @@ def _is_near_expiry(token: str) -> bool:
 
 
 class _VoilaSvcProvider:
-    """voila_svc client_credentials token, cached in-process."""
+    """voila_svc client_credentials token, cached in-process. The
+    impersonation user comes from X_AUTH_REQUEST_PREFERRED_USERNAME,
+    which scout.voila injected per-request."""
 
     def __init__(self) -> None:
         self._token: str | None = None
         self._lock = threading.Lock()
 
     def _mint(self) -> str:
-        # No verify= — Keycloak runs behind a publicly-trusted cert via
+        # No verify= - Keycloak runs behind a publicly-trusted cert via
         # the ingress; the cert-manager CA bundle (TRINO_CA_CERT) is for
         # Trino, not Keycloak.
         response = requests.post(
@@ -89,15 +86,8 @@ class _VoilaSvcProvider:
         with self._lock:
             if not self._token or _is_near_expiry(self._token):
                 self._token = self._mint()
-        user = _user_from_forwarded_header() or "anonymous"
+        user = os.environ.get("X_AUTH_REQUEST_PREFERRED_USERNAME", "") or "anonymous"
         return self._token, user
-
-
-def _user_from_forwarded_header() -> str:
-    token = os.environ.get("X_AUTH_REQUEST_ACCESS_TOKEN", "")
-    if not token:
-        return ""
-    return _decode_jwt_claims(token).get("preferred_username", "")
 
 
 class _JupyterHubUserProvider:
@@ -169,11 +159,11 @@ def resolve_identity() -> tuple[str, str | None]:
 
 def resolve_audit_user() -> str:
     """Best-effort username for trino-rw audit logging. Never raises;
-    falls back to 'anonymous' (trino-rw has no auth — see
+    falls back to 'anonymous' (trino-rw has no auth - see
     feedback_trino_rw_failopen)."""
-    forwarded = _user_from_forwarded_header()
-    if forwarded:
-        return forwarded
+    voila_user = os.environ.get("X_AUTH_REQUEST_PREFERRED_USERNAME", "")
+    if voila_user:
+        return voila_user
     hub_user = os.environ.get("JUPYTERHUB_USER")
     if hub_user:
         return hub_user
