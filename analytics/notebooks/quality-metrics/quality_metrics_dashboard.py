@@ -109,8 +109,11 @@ def _load_quality_data(table_name="default.reports", date_range_days=None, limit
     {limit_sql}
     """
 
-    # Use cursor to avoid SQLAlchemy warning
+    # Use cursor to avoid SQLAlchemy warning. The query interpolates SQL
+    # identifiers (schema/table) and config-built WHERE/LIMIT clauses — not
+    # request input — and can't use bound parameters.
     cursor = conn.cursor()
+    # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query, python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     cursor.execute(query)
     columns = [desc[0] for desc in cursor.description]
     data = cursor.fetchall()

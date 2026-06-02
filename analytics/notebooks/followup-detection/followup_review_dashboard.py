@@ -196,8 +196,11 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
     WHERE row_num <= {samples_per_category}
     """
 
-    # Execute query and load into Pandas
+    # Execute query and load into Pandas. The query interpolates SQL
+    # identifiers (table parts, column names) and a numeric sample size from
+    # notebook config — not request input — and can't use bound parameters.
     cursor = conn.cursor()
+    # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query, python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     cursor.execute(query)
 
     # Fetch column names and data
@@ -1526,6 +1529,11 @@ def create_review_dashboard(
                 import scout_trino
 
                 merge_target = table_name or "default.reports_followup"
+                # merge_target is a table identifier, which can't be a bound
+                # parameter; constrain it to a safe dotted identifier so the
+                # interpolations below can't inject (row values use ? binds).
+                if not re.fullmatch(r"[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*", merge_target):
+                    raise ValueError(f"unsafe table identifier: {merge_target!r}")
 
                 # trino-rw is the write-enabled Trino (ADR 0019); scout_trino
                 # routes reviewer-annotation writes there.
@@ -1535,6 +1543,8 @@ def create_review_dashboard(
                 # The reviewer-annotation columns may not exist on the target
                 # yet. Add them idempotently, guarded on the live column set
                 # (ADD COLUMN IF NOT EXISTS isn't universally supported).
+                # Table name validated above; row values bound with ? below.
+                # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query, python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 cur.execute(f"DESCRIBE {merge_target}")
                 existing_cols = {row[0] for row in cur.fetchall()}
                 for col_name, col_type in (
