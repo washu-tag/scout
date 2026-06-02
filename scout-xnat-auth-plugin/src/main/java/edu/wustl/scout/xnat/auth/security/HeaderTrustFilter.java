@@ -6,8 +6,6 @@ import edu.wustl.scout.xnat.auth.model.ScoutIdentity;
 import edu.wustl.scout.xnat.auth.service.UserProvisioningService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.xdat.security.helpers.UserHelper;
-import org.nrg.xft.security.UserI;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -18,10 +16,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Authenticates browser-path traffic carrying the access token oauth2-proxy
@@ -102,7 +96,7 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
         // makes this safe to trust as a browser-path token — any other client's
         // token (eg. a Bearer-flow caller smuggling it into the header) is
         // rejected here.
-        final String azp = claimAsString(claims, "azp");
+        final String azp = JwtValidator.claimAsString(claims, "azp");
         if (!properties.getOauth2ProxyClientId().equals(azp)) {
             log.warn("HeaderTrustFilter rejecting request: access token azp '{}' is not '{}'",
                     azp, properties.getOauth2ProxyClientId());
@@ -111,85 +105,26 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
             return;
         }
 
-        final String sub = claims.getSubject();
-        final String preferredUsername = claimAsString(claims, "preferred_username");
-        final String email = claimAsString(claims, "email");
-        final String firstName = claimAsString(claims, "given_name");
-        final String lastName = claimAsString(claims, "family_name");
+        final ScoutIdentity identity = ScoutAuthSupport.identityFrom(claims, properties.getClientId());
 
         // The xnat-access gate is enforced solely from the token's role claims:
         // client roles in resource_access.<client>.roles, plus realm roles in
         // realm_access.roles. No group-name inference fallback.
-        final List<String> roles = new ArrayList<>();
-        roles.addAll(extractClientRoles(claims, properties.getClientId()));
-        roles.addAll(extractRealmRoles(claims));
-        log.info("HeaderTrustFilter saw roles {} in access token for sub '{}'", roles, sub);
-
-        if (!roles.contains(properties.getRequiredRole())) {
+        log.info("HeaderTrustFilter saw roles {} in access token for sub '{}'",
+                identity.getRoles(), identity.getSub());
+        if (!identity.hasRole(properties.getRequiredRole())) {
             log.warn("HeaderTrustFilter rejecting request: access token for sub '{}' lacks required role '{}' (saw {})",
-                    sub, properties.getRequiredRole(), roles);
+                    identity.getSub(), properties.getRequiredRole(), identity.getRoles());
             SecurityContextHolder.clearContext();
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: missing required role");
             return;
         }
 
-        final ScoutIdentity identity = new ScoutIdentity(
-                sub, preferredUsername, email, firstName, lastName, Collections.emptyList(), roles);
         log.debug("HeaderTrustFilter authenticating {}", identity);
-
-        try {
-            final UserI user = provisioningService.provision(identity);
-            final ScoutAuthenticationToken token = new ScoutAuthenticationToken(user, "keycloak");
-            SecurityContextHolder.getContext().setAuthentication(token);
-            // Mirror XDAT.loginUser: populate the session-scoped UserHelper so
-            // Velocity-rendered pages (eg. project pages) see a usable
-            // permission model. Without this, freshly-authenticated browser
-            // sessions render the "Security Warning: not granted access"
-            // fallback even when DB-side permissions are correct.
-            UserHelper.setUserHelper(request, user);
-        } catch (Exception e) {
-            log.warn("HeaderTrustFilter rejected request from {}: {}", preferredUsername, e.getMessage());
-            SecurityContextHolder.clearContext();
-            // Don't echo the provisioning exception detail to the client — it can
-            // leak internal state. The reason is logged above for operators.
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: user provisioning failed");
+        if (!ScoutAuthSupport.establishSession(request, response, provisioningService, identity, log)) {
             return;
         }
 
         chain.doFilter(request, response);
-    }
-
-    private static String claimAsString(final JWTClaimsSet claims, final String name) {
-        try {
-            return claims.getStringClaim(name);
-        } catch (java.text.ParseException e) {
-            return null;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    static List<String> extractClientRoles(JWTClaimsSet claims, String clientId) {
-        try {
-            Map<String, Object> resourceAccess = (Map<String, Object>) claims.getClaim("resource_access");
-            if (resourceAccess == null) return Collections.emptyList();
-            Map<String, Object> client = (Map<String, Object>) resourceAccess.get(clientId);
-            if (client == null) return Collections.emptyList();
-            List<String> roles = (List<String>) client.get("roles");
-            return roles != null ? roles : Collections.<String>emptyList();
-        } catch (ClassCastException e) {
-            return Collections.emptyList();
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    static List<String> extractRealmRoles(JWTClaimsSet claims) {
-        try {
-            Map<String, Object> realmAccess = (Map<String, Object>) claims.getClaim("realm_access");
-            if (realmAccess == null) return Collections.emptyList();
-            List<String> roles = (List<String>) realmAccess.get("roles");
-            return roles != null ? roles : Collections.<String>emptyList();
-        } catch (ClassCastException e) {
-            return Collections.emptyList();
-        }
     }
 }

@@ -6,10 +6,7 @@ import edu.wustl.scout.xnat.auth.model.ScoutIdentity;
 import edu.wustl.scout.xnat.auth.service.UserProvisioningService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.xdat.security.helpers.UserHelper;
-import org.nrg.xft.security.UserI;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -19,10 +16,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Authenticates in-cluster API callers by:
@@ -109,67 +102,12 @@ public class BearerTokenFilter extends OncePerRequestFilter {
         }
 
         // Step 4: provision and attach.
-        final ScoutIdentity identity = identityFrom(claims);
+        final ScoutIdentity identity = ScoutAuthSupport.identityFrom(claims, properties.getClientId());
         log.debug("BearerTokenFilter authenticating {}", identity);
-        try {
-            final UserI user = provisioningService.provision(identity);
-            final ScoutAuthenticationToken token = new ScoutAuthenticationToken(user, "keycloak");
-            SecurityContextHolder.getContext().setAuthentication(token);
-            // Mirror XDAT.loginUser: populate the session-scoped UserHelper so the
-            // Velocity browser path (eg. project pages) sees a usable permission
-            // model instead of the "no access" fallback. Required for browser
-            // round-trips that follow a bearer-authenticated REST call.
-            UserHelper.setUserHelper(request, user);
-        } catch (AuthenticationException e) {
-            log.warn("BearerTokenFilter provisioning failed for {}: {}", identity.getPreferredUsername(), e.getMessage());
-            SecurityContextHolder.clearContext();
-            // Don't echo the provisioning exception detail to the client — it can
-            // leak internal state. The reason is logged above for operators.
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: user provisioning failed");
+        if (!ScoutAuthSupport.establishSession(request, response, provisioningService, identity, log)) {
             return;
         }
 
         chain.doFilter(request, response);
-    }
-
-    private ScoutIdentity identityFrom(final JWTClaimsSet claims) {
-        final String sub = claims.getSubject();
-        final String preferredUsername = claimAsString(claims, "preferred_username");
-        final String email = claimAsString(claims, "email");
-        final String firstName = claimAsString(claims, "given_name");
-        final String lastName = claimAsString(claims, "family_name");
-        final List<String> groups = stringListClaim(claims, "groups");
-        final List<String> roles = new ArrayList<>(JwtValidator.extractClientRoles(claims, properties.getClientId()));
-        roles.addAll(realmRoles(claims));
-        return new ScoutIdentity(sub, preferredUsername, email, firstName, lastName, groups, roles);
-    }
-
-    private static String claimAsString(final JWTClaimsSet claims, final String name) {
-        try {
-            return claims.getStringClaim(name);
-        } catch (java.text.ParseException e) {
-            return null;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<String> stringListClaim(final JWTClaimsSet claims, final String name) {
-        Object value = claims.getClaim(name);
-        if (value instanceof List) {
-            return (List<String>) value;
-        }
-        return Collections.emptyList();
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<String> realmRoles(final JWTClaimsSet claims) {
-        try {
-            Map<String, Object> realmAccess = (Map<String, Object>) claims.getClaim("realm_access");
-            if (realmAccess == null) return Collections.emptyList();
-            List<String> roles = (List<String>) realmAccess.get("roles");
-            return roles != null ? roles : Collections.<String>emptyList();
-        } catch (ClassCastException e) {
-            return Collections.emptyList();
-        }
     }
 }
