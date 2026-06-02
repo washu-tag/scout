@@ -58,11 +58,11 @@ _preferred_username: contextvars.ContextVar[str] = contextvars.ContextVar(
 _original_voila_get = TornadoVoilaHandler.get
 
 
-async def _scout_voila_get(self, path=None):
+async def _voila_runtime_get(self, path=None):
     username = self.request.headers.get("X-Auth-Request-Preferred-Username", "")
     if not username:
         logger.warning(
-            "scout_voila: no X-Auth-Request-Preferred-Username on request; "
+            "voila_runtime: no X-Auth-Request-Preferred-Username on request; "
             "Trino queries will run as anonymous and clamp to zero rows. "
             "Verify oauth2-proxy set_xauthrequest=true and the forwardAuth "
             "middleware forwards X-Auth-Request-Preferred-Username."
@@ -71,7 +71,7 @@ async def _scout_voila_get(self, path=None):
     return await _original_voila_get(self, path)
 
 
-TornadoVoilaHandler.get = _scout_voila_get
+TornadoVoilaHandler.get = _voila_runtime_get
 
 
 class ScoutMappingKernelManager(AsyncMappingKernelManager):

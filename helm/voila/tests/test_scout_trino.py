@@ -76,7 +76,7 @@ def test_token_refreshes_after_expiry(monkeypatch):
     assert requests_stub.post.call_count == 2
 
 
-def test_connect_rw_targets_unauthenticated_rw_instance(monkeypatch):
+def test_connect_writeback_targets_unauthenticated_rw_instance(monkeypatch):
     monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "carol")
 
     scout_trino.connect_rw()
@@ -91,7 +91,7 @@ def test_connect_rw_targets_unauthenticated_rw_instance(monkeypatch):
     assert requests_stub.post.call_count == 0
 
 
-def test_connect_rw_audit_user_falls_back_to_anonymous(monkeypatch):
+def test_connect_writeback_audit_user_falls_back_to_anonymous(monkeypatch):
     # Fail-OPEN: a missing identity must not block a reviewer's annotation save.
     scout_trino.connect_rw()
 

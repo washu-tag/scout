@@ -9,7 +9,7 @@ impersonated user's Keycloak attributes (ADR 0022).
 Mirrors the pattern in ansible/roles/superset/files/superset_trino_auth.py
 — same JWTAuthentication + X-Trino-User shape, different source for the
 username: oauth2-proxy forwards it as the X-Auth-Request-Preferred-Username
-header, and scout_voila.ScoutMappingKernelManager threads it into this
+header, and voila_runtime.ScoutMappingKernelManager threads it into this
 kernel's env as X_AUTH_REQUEST_PREFERRED_USERNAME.
 
 Token caching: a single voila_svc token is reused across all
@@ -63,7 +63,7 @@ def _get_svc_token() -> str:
 def _current_user() -> str:
     # The end user's preferred_username, forwarded by oauth2-proxy as the
     # X-Auth-Request-Preferred-Username header and threaded into this kernel's
-    # env by scout_voila.ScoutMappingKernelManager. Used only for X-Trino-User;
+    # env by voila_runtime.ScoutMappingKernelManager. Used only for X-Trino-User;
     # Trino + OPA enforce the actual access against the impersonated user's
     # Keycloak attributes (ADR 0022).
     return os.environ.get("X_AUTH_REQUEST_PREFERRED_USERNAME", "")
@@ -109,7 +109,7 @@ def connect_rw():
     credential — failing closed here would block a reviewer's annotation
     save on a transient header-propagation hiccup, which is a worse
     outcome than a less-precise audit entry. A missing forwarded username is
-    already logged at request time by scout_voila._scout_voila_get.
+    already logged at request time by voila_runtime._voila_runtime_get.
     """
     user = _current_user() or "anonymous"
     return trino.dbapi.connect(

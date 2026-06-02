@@ -1,6 +1,6 @@
 """Test harness for the Voila Trino helpers (helm/voila/files/).
 
-scout_trino and scout_voila import third-party modules (requests, trino, voila,
+scout_trino and voila_runtime import third-party modules (requests, trino, voila,
 jupyter_server) that aren't installed in the unit-test environment — voila in
 particular pulls a large dependency tree. Stub them in sys.modules before the
 helpers are imported so the tests need nothing but pytest.
@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# Make scout_trino / scout_voila importable even without PYTHONPATH=files.
+# Make scout_trino / voila_runtime importable even without PYTHONPATH=files.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "files"))
 
 
@@ -54,7 +54,7 @@ trino_stub.dbapi = trino_dbapi_stub
 trino_stub.auth = trino_auth_stub
 
 
-# --- voila.tornado.handler.TornadoVoilaHandler (scout_voila patches .get) ---
+# --- voila.tornado.handler.TornadoVoilaHandler (voila_runtime patches .get) ---
 ORIGINAL_GET_RESULT = "voila-original-get-result"
 
 
@@ -73,7 +73,7 @@ voila_tornado_stub.handler = voila_handler_stub
 voila_stub.tornado = voila_tornado_stub
 
 
-# --- jupyter_server...AsyncMappingKernelManager (scout_voila subclasses it) ---
+# --- jupyter_server...AsyncMappingKernelManager (voila_runtime subclasses it) ---
 class FakeAsyncMappingKernelManager:
     async def start_kernel(self, **kwargs):
         # Echo the kwargs the subclass forwarded so tests can assert on env.

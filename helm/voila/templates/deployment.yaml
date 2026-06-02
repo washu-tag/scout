@@ -88,8 +88,8 @@ spec:
               subPath: scout_trino.py
               readOnly: true
             - name: scout-python
-              mountPath: /opt/scout/scout_voila.py
-              subPath: scout_voila.py
+              mountPath: /opt/scout/voila_runtime.py
+              subPath: voila_runtime.py
               readOnly: true
             - name: scout-python
               mountPath: /etc/jupyter/voila.py
