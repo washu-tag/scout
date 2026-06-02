@@ -20,9 +20,12 @@ XNAT plugin that integrates XNAT into Scout's auth posture:
   the required role). Provisions the matching XNAT user on first sight
   via `UserProvisioningService`.
 - **`BearerTokenFilter`** — validates Keycloak JWTs from
-  `Authorization: Bearer …`, exchanges them via Keycloak's Standard
-  Token Exchange V2 for an `xnat`-audience token, validates that, and
-  provisions the user.
+  `Authorization: Bearer …` directly by audience: signature/issuer/expiry,
+  then `aud` must contain the `xnat` client and the token must carry the
+  required role. The audience is the confinement boundary on the API path
+  (there's no network trust boundary, so the token itself must be scoped to
+  xnat — Keycloak emits `aud=xnat` only for clients with the `xnat-audience`
+  mapper, eg. jupyterhub). Provisions the user. No server-side token exchange.
 
 ## Build
 
@@ -48,9 +51,8 @@ src/main/java/edu/wustl/scout/xnat/auth/
 ├── security/
 │   ├── ScoutSecurityExtension.java      # extends BaseXnatSecurityExtension
 │   ├── HeaderTrustFilter.java           # OncePerRequestFilter, oauth2-proxy headers
-│   ├── BearerTokenFilter.java           # OncePerRequestFilter, JWT + STX V2 + provision
+│   ├── BearerTokenFilter.java           # OncePerRequestFilter, JWT + audience check + provision
 │   ├── JwtValidator.java                # Nimbus-backed JWT/JWKS validator
-│   ├── TokenExchangeService.java        # STX V2 client + Guava cache
 │   └── ScoutAuthenticationToken.java
 └── service/
     └── UserProvisioningService.java     # XNAT user lookup/create + role gate
@@ -65,9 +67,7 @@ Properties consumed via Spring `@Value` and read from
 | --- | --- | --- |
 | `scout.keycloak.issuer` | (empty) | JWT issuer to validate against |
 | `scout.keycloak.jwks_uri` | (empty) | JWKS endpoint |
-| `scout.keycloak.token_uri` | (empty) | Token-exchange endpoint (public hostname) |
-| `scout.keycloak.client_id` | `xnat` | STX target client |
-| `scout.keycloak.client_secret` | (empty) | STX client auth |
+| `scout.keycloak.client_id` | `xnat` | Expected `aud` on bearer tokens; client whose roles are read |
 | `scout.keycloak.required_role` | `xnat-access` | Required role on validated identity |
 | `scout.headers.access_token_header` | `X-Auth-Request-Access-Token` | oauth2-proxy upstream JWT (sole browser-path identity source) |
 | `scout.username_prefix` | `keycloak` | XNAT username = `<prefix>-<sub>` |

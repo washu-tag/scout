@@ -16,11 +16,7 @@ import org.junit.Test;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -123,76 +119,6 @@ public class JwtValidatorTest {
     }
 
     @Test
-    public void validateExchanged_acceptsHappyPath() throws Exception {
-        String jwt = signToken(claims()
-                .subject("user-1")
-                .audience("account")
-                .claim("azp", "xnat")
-                .claim("resource_access", clientRoles("xnat", "xnat-access"))
-                .build());
-        JWTClaimsSet result = validator.validateExchanged(jwt, "xnat", "xnat", "xnat-access");
-        assertEquals("user-1", result.getSubject());
-    }
-
-    @Test
-    public void validateExchanged_rejectsWrongAuthorizedParty() throws Exception {
-        String jwt = signToken(claims()
-                .subject("user-1")
-                .claim("azp", "not-xnat")
-                .claim("resource_access", clientRoles("xnat", "xnat-access"))
-                .build());
-        try {
-            validator.validateExchanged(jwt, "xnat", "xnat", "xnat-access");
-            fail("expected InvalidJwtException for wrong azp");
-        } catch (JwtValidator.InvalidJwtException e) {
-            assertTrue(e.getMessage().contains("azp"));
-        }
-    }
-
-    @Test
-    public void validateExchanged_rejectsMissingAuthorizedParty() throws Exception {
-        String jwt = signToken(claims()
-                .subject("user-1")
-                .claim("resource_access", clientRoles("xnat", "xnat-access"))
-                .build());
-        try {
-            validator.validateExchanged(jwt, "xnat", "xnat", "xnat-access");
-            fail("expected InvalidJwtException for missing azp");
-        } catch (JwtValidator.InvalidJwtException e) {
-            assertTrue(e.getMessage().contains("azp"));
-        }
-    }
-
-    @Test
-    public void validateExchanged_rejectsMissingRole() throws Exception {
-        String jwt = signToken(claims()
-                .subject("user-1")
-                .claim("azp", "xnat")
-                .claim("resource_access", clientRoles("xnat", "xnat-user"))  // wrong role
-                .build());
-        try {
-            validator.validateExchanged(jwt, "xnat", "xnat", "xnat-access");
-            fail("expected InvalidJwtException for missing role");
-        } catch (JwtValidator.InvalidJwtException e) {
-            assertTrue(e.getMessage().contains("xnat-access"));
-        }
-    }
-
-    @Test
-    public void validateExchanged_rejectsMissingResourceAccess() throws Exception {
-        String jwt = signToken(claims()
-                .subject("user-1")
-                .claim("azp", "xnat")
-                .build());
-        try {
-            validator.validateExchanged(jwt, "xnat", "xnat", "xnat-access");
-            fail("expected InvalidJwtException for missing resource_access");
-        } catch (JwtValidator.InvalidJwtException e) {
-            assertTrue(e.getMessage().contains("xnat-access"));
-        }
-    }
-
-    @Test
     public void extractClientRoles_returnsEmptyOnMalformedClaim() {
         JWTClaimsSet broken = new JWTClaimsSet.Builder()
                 .claim("resource_access", "not-a-map")
@@ -221,14 +147,6 @@ public class JwtValidatorTest {
                 payload);
         signed.sign(new RSASSASigner(privateKey));
         return signed.serialize();
-    }
-
-    private static Map<String, Object> clientRoles(String clientId, String... roles) {
-        Map<String, Object> resourceAccess = new HashMap<>();
-        Map<String, Object> client = new HashMap<>();
-        client.put("roles", Arrays.asList(roles));
-        resourceAccess.put(clientId, client);
-        return resourceAccess;
     }
 
     private static RSAPublicKey rsaPublicKey() throws Exception {

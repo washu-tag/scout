@@ -16,18 +16,35 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 /**
- * Authenticates in-cluster API callers by:
- *   1. Validating the incoming JWT against Keycloak's JWKS (sig + iss + exp).
- *   2. Exchanging it for an xnat-audience token via Standard Token Exchange V2.
- *   3. Validating the exchanged token (aud = xnat, role = xnat-access).
- *   4. Provisioning/looking up the XNAT user via {@link UserProvisioningService}
- *      and attaching the principal.
+ * Authenticates in-cluster API callers carrying {@code Authorization: Bearer}.
+ * The token is validated directly by audience — there is no server-side token
+ * exchange:
+ *   1. Validate the token against Keycloak's JWKS (sig + iss + exp).
+ *   2. Require {@code aud} to contain the xnat client. Unlike the browser path,
+ *      there is no network trust boundary here (any in-cluster caller can send
+ *      a Bearer header), so the audience is what confines the token to xnat:
+ *      Keycloak only emits {@code aud=xnat} for clients carrying the
+ *      {@code xnat-audience} mapper (eg. jupyterhub). We do NOT check
+ *      {@code azp} — the caller's authorized party is its own client (eg.
+ *      jupyterhub), not xnat.
+ *   3. Require the {@code xnat-access} client role
+ *      ({@code resource_access.<clientId>.roles}).
+ *   4. Provision/look up the XNAT user via {@link UserProvisioningService} and
+ *      attach the principal.
  *
- * Short-circuits on populated SecurityContext (so a session cookie skips us)
- * or absent {@code Authorization: Bearer} (so the chain falls through to
+ * <p>Short-circuits on a populated SecurityContext (so a session cookie skips
+ * us) or absent {@code Authorization: Bearer} (so the chain falls through to
  * Spring's default unauthenticated path on browser/empty calls).
+ *
+ * <p>Status codes:
+ * <ul>
+ *   <li>401 — token present but fails sig/iss/exp.</li>
+ *   <li>403 — token validates but {@code aud} doesn't contain xnat, lacks the
+ *       required role, or downstream provisioning rejects the user.</li>
+ * </ul>
  */
 @Slf4j
 @Component
@@ -37,16 +54,13 @@ public class BearerTokenFilter extends OncePerRequestFilter {
 
     private final ScoutAuthProperties properties;
     private final JwtValidator jwtValidator;
-    private final TokenExchangeService tokenExchangeService;
     private final UserProvisioningService provisioningService;
 
     public BearerTokenFilter(final ScoutAuthProperties properties,
                              final JwtValidator jwtValidator,
-                             final TokenExchangeService tokenExchangeService,
                              final UserProvisioningService provisioningService) {
         this.properties = properties;
         this.jwtValidator = jwtValidator;
-        this.tokenExchangeService = tokenExchangeService;
         this.provisioningService = provisioningService;
     }
 
@@ -67,42 +81,43 @@ public class BearerTokenFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
             return;
         }
-        final String subjectJwt = authHeader.substring(BEARER_PREFIX.length()).trim();
+        final String bearerJwt = authHeader.substring(BEARER_PREFIX.length()).trim();
 
+        // Step 1: validate signature/iss/exp.
+        final JWTClaimsSet claims;
         try {
-            // Step 1: validate signature/iss/exp on the incoming token. The plan
-            // explicitly does NOT validate aud here — the incoming token's aud
-            // is some other Scout client (eg. jupyterhub).
-            jwtValidator.validate(subjectJwt);
+            claims = jwtValidator.validate(bearerJwt);
         } catch (JwtValidator.InvalidJwtException e) {
-            log.info("BearerTokenFilter rejecting request: incoming JWT invalid ({})", e.getMessage());
+            log.info("BearerTokenFilter rejecting request: bearer token invalid ({})", e.getMessage());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "invalid bearer token");
             return;
         }
 
-        // Step 2: exchange.
-        final String exchangedJwt;
-        try {
-            exchangedJwt = tokenExchangeService.exchange(subjectJwt);
-        } catch (TokenExchangeService.TokenExchangeException e) {
-            log.info("BearerTokenFilter rejecting request: token exchange failed ({})", e.getMessage());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "token exchange failed");
+        // Step 2: the token must be addressed to the xnat client. The audience
+        // is the confinement boundary on the API path (no network trust here).
+        final List<String> audiences = claims.getAudience();
+        if (audiences == null || !audiences.contains(properties.getClientId())) {
+            log.warn("BearerTokenFilter rejecting request: token aud {} does not contain '{}'",
+                    audiences, properties.getClientId());
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: token not scoped for xnat");
             return;
         }
 
-        // Step 3: validate the exchanged token (aud=xnat, role=xnat-access).
-        final JWTClaimsSet claims;
-        try {
-            claims = jwtValidator.validateExchanged(exchangedJwt,
-                    properties.getClientId(), properties.getClientId(), properties.getRequiredRole());
-        } catch (JwtValidator.InvalidJwtException e) {
-            log.warn("BearerTokenFilter rejecting request: exchanged JWT invalid ({})", e.getMessage());
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "exchanged token rejected");
+        final ScoutIdentity identity = ScoutAuthSupport.identityFrom(claims, properties.getClientId());
+
+        // Step 3: the xnat-access gate, from the token's client-role claim only
+        // (resource_access.<client>.roles). xnat-access is a Keycloak client
+        // role on the xnat client, so realm roles are intentionally not consulted.
+        log.info("BearerTokenFilter saw roles {} in bearer token for sub '{}'",
+                identity.getRoles(), identity.getSub());
+        if (!identity.hasRole(properties.getRequiredRole())) {
+            log.warn("BearerTokenFilter rejecting request: bearer token for sub '{}' lacks required role '{}' (saw {})",
+                    identity.getSub(), properties.getRequiredRole(), identity.getRoles());
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: missing required role");
             return;
         }
 
         // Step 4: provision and attach.
-        final ScoutIdentity identity = ScoutAuthSupport.identityFrom(claims, properties.getClientId());
         log.debug("BearerTokenFilter authenticating {}", identity);
         if (!ScoutAuthSupport.establishSession(request, response, provisioningService, identity, log)) {
             return;

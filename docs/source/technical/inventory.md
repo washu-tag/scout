@@ -895,16 +895,9 @@ Even with the Extension Manager disabled, users with terminal access can still r
 
 #### XNAT (Keycloak client only)
 
-Scout does not yet deploy XNAT itself, but the Keycloak realm provisions an XNAT client (with token-exchange wiring for the `scout-xnat-auth-plugin`) so that XNAT can be brought up later without re-importing the realm. As a result, one XNAT-related secret is required by the standard Scout install:
+Scout does not yet deploy XNAT itself, but the Keycloak realm provisions a bearer-only XNAT client (an audience target that holds the `xnat-access` role for the `scout-xnat-auth-plugin`) so that XNAT can be brought up later without re-importing the realm. The client takes no secret — nothing authenticates as it — so no XNAT-related secret is required.
 
-```yaml
-# Required — Keycloak install will fail without it
-keycloak_xnat_client_secret: !vault |
-      $ANSIBLE_VAULT;1.1;AES256
-      ...encrypted...
-```
-
-The remaining XNAT variables have sane defaults and only need to be set if you want to override them:
+The XNAT variables have sane defaults and only need to be set if you want to override them:
 
 ```yaml
 # Keycloak clientId for the XNAT client (default: xnat)

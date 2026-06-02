@@ -16,14 +16,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.servlet.FilterChain;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -51,7 +53,6 @@ public class BearerTokenFilterTest {
 
     private ScoutAuthProperties properties;
     private JwtValidator jwtValidator;
-    private TokenExchangeService tokenExchangeService;
     private edu.wustl.scout.xnat.auth.service.UserProvisioningService provisioningService;
     private BearerTokenFilter filter;
 
@@ -62,10 +63,9 @@ public class BearerTokenFilterTest {
         ReflectionTestUtils.setField(properties, "requiredRole", REQUIRED_ROLE);
 
         jwtValidator = mock(JwtValidator.class);
-        tokenExchangeService = mock(TokenExchangeService.class);
         provisioningService = mock(edu.wustl.scout.xnat.auth.service.UserProvisioningService.class);
 
-        filter = new BearerTokenFilter(properties, jwtValidator, tokenExchangeService, provisioningService);
+        filter = new BearerTokenFilter(properties, jwtValidator, provisioningService);
 
         SecurityContextHolder.clearContext();
     }
@@ -81,14 +81,14 @@ public class BearerTokenFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
-        when(tokenExchangeService.exchange("subject-jwt")).thenReturn("exchanged-jwt");
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+        JWTClaimsSet claims = claims()
                 .subject("f077e17f")
+                .audience(CLIENT_ID)
                 .claim("preferred_username", "alice")
                 .claim("email", "alice@example.org")
+                .claim("resource_access", clientRoles(CLIENT_ID, REQUIRED_ROLE))
                 .build();
-        when(jwtValidator.validateExchanged(eq("exchanged-jwt"), eq(CLIENT_ID), eq(CLIENT_ID), eq(REQUIRED_ROLE)))
-                .thenReturn(claims);
+        when(jwtValidator.validate("subject-jwt")).thenReturn(claims);
 
         UserI user = mock(UserI.class);
         when(provisioningService.provision(any())).thenReturn(user);
@@ -127,7 +127,7 @@ public class BearerTokenFilterTest {
     }
 
     @Test
-    public void invalidIncomingJwt_returns401AndDoesNotPopulateUserHelper() throws Exception {
+    public void invalidBearerJwt_returns401AndDoesNotPopulateUserHelper() throws Exception {
         MockHttpServletRequest request = bearerRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
@@ -144,15 +144,68 @@ public class BearerTokenFilterTest {
         }
     }
 
+    /**
+     * A signature-valid token whose {@code aud} does not contain the xnat
+     * client is rejected with 403 — the audience is the API path's confinement
+     * boundary, and provisioning must not run.
+     */
+    @Test
+    public void tokenWithoutXnatAudience_returns403() throws Exception {
+        MockHttpServletRequest request = bearerRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = mock(FilterChain.class);
+
+        JWTClaimsSet claims = claims()
+                .subject("f077e17f")
+                .audience("some-other-client")
+                .claim("resource_access", clientRoles(CLIENT_ID, REQUIRED_ROLE))
+                .build();
+        when(jwtValidator.validate("subject-jwt")).thenReturn(claims);
+
+        try (MockedStatic<UserHelper> userHelperStatic = org.mockito.Mockito.mockStatic(UserHelper.class)) {
+            filter.doFilter(request, response, chain);
+
+            assertEquals(403, response.getStatus());
+            verify(chain, never()).doFilter(any(), any());
+            verify(provisioningService, never()).provision(any());
+            userHelperStatic.verify(() -> UserHelper.setUserHelper(any(), any()), never());
+        }
+    }
+
+    /**
+     * A token correctly scoped to xnat but lacking the {@code xnat-access}
+     * client role is rejected with 403 before provisioning.
+     */
+    @Test
+    public void tokenWithoutRequiredRole_returns403() throws Exception {
+        MockHttpServletRequest request = bearerRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = mock(FilterChain.class);
+
+        JWTClaimsSet claims = claims()
+                .subject("f077e17f")
+                .audience(CLIENT_ID)
+                .claim("resource_access", clientRoles(CLIENT_ID, "xnat-user"))  // wrong role
+                .build();
+        when(jwtValidator.validate("subject-jwt")).thenReturn(claims);
+
+        try (MockedStatic<UserHelper> userHelperStatic = org.mockito.Mockito.mockStatic(UserHelper.class)) {
+            filter.doFilter(request, response, chain);
+
+            assertEquals(403, response.getStatus());
+            verify(chain, never()).doFilter(any(), any());
+            verify(provisioningService, never()).provision(any());
+            userHelperStatic.verify(() -> UserHelper.setUserHelper(any(), any()), never());
+        }
+    }
+
     @Test
     public void provisionFails_returns403AndDoesNotPopulateUserHelper() throws Exception {
         MockHttpServletRequest request = bearerRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
-        when(tokenExchangeService.exchange("subject-jwt")).thenReturn("exchanged-jwt");
-        when(jwtValidator.validateExchanged(any(), any(), any(), any()))
-                .thenReturn(new JWTClaimsSet.Builder().subject("f077e17f").build());
+        when(jwtValidator.validate("subject-jwt")).thenReturn(validClaims("f077e17f"));
         when(provisioningService.provision(any()))
                 .thenThrow(new AuthenticationServiceException("scout-user role required"));
 
@@ -172,8 +225,8 @@ public class BearerTokenFilterTest {
      * The role gate inside DefaultUserProvisioningService throws
      * {@link AccessDeniedException} — a {@code RuntimeException}, not an
      * {@code AuthenticationException}. The filter (via the shared
-     * establishSession helper, which catches {@code Exception}) must still turn
-     * it into a 403 rather than letting it escape as a 500.
+     * establishSession helper, which catches both) must still turn it into a
+     * 403 rather than letting it escape as a 500.
      */
     @Test
     public void provisionFailsWithAccessDenied_returns403() throws Exception {
@@ -181,9 +234,7 @@ public class BearerTokenFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
-        when(tokenExchangeService.exchange("subject-jwt")).thenReturn("exchanged-jwt");
-        when(jwtValidator.validateExchanged(any(), any(), any(), any()))
-                .thenReturn(new JWTClaimsSet.Builder().subject("f077e17f").build());
+        when(jwtValidator.validate("subject-jwt")).thenReturn(validClaims("f077e17f"));
         when(provisioningService.provision(any()))
                 .thenThrow(new AccessDeniedException("user lacks xnat-access role"));
 
@@ -224,5 +275,26 @@ public class BearerTokenFilterTest {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/data/projects");
         request.addHeader("Authorization", "Bearer subject-jwt");
         return request;
+    }
+
+    /** Claims correctly scoped for xnat (aud + xnat-access role). */
+    private static JWTClaimsSet validClaims(String sub) {
+        return claims()
+                .subject(sub)
+                .audience(CLIENT_ID)
+                .claim("resource_access", clientRoles(CLIENT_ID, REQUIRED_ROLE))
+                .build();
+    }
+
+    private static JWTClaimsSet.Builder claims() {
+        return new JWTClaimsSet.Builder();
+    }
+
+    private static Map<String, Object> clientRoles(String clientId, String... roles) {
+        Map<String, Object> resourceAccess = new HashMap<>();
+        Map<String, Object> client = new HashMap<>();
+        client.put("roles", roles.length == 0 ? Collections.emptyList() : Arrays.asList(roles));
+        resourceAccess.put(clientId, client);
+        return resourceAccess;
     }
 }

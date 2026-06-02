@@ -290,11 +290,6 @@ k3s_cluster:
     keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_open_webui_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # XNAT Keycloak client secret. The Keycloak realm always provisions an XNAT
-    # client (so an operator can stand XNAT up later without re-running the
-    # realm import), so this secret is REQUIRED even if XNAT itself is not yet
-    # deployed — the Keycloak install will fail without it.
-    keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
@@ -332,10 +327,10 @@ k3s_cluster:
     # XNAT
     #---------------------------------------------------------------------------
     # XNAT is not deployed by the standard Scout playbooks yet, but the
-    # Keycloak realm provisions an XNAT client (with token-exchange wiring for
-    # the scout-xnat-auth-plugin) so an operator can bring XNAT up later
-    # without re-importing the realm. The required client secret is set above
-    # in the Keycloak block (keycloak_xnat_client_secret).
+    # Keycloak realm provisions a bearer-only XNAT client (an audience target
+    # holding the xnat-access role for scout-xnat-auth-plugin) so an operator
+    # can bring XNAT up later without re-importing the realm. The client takes
+    # no secret — nothing authenticates as it — so there is nothing to set here.
     #
     # The Jupyter NetworkPolicy also allows egress to xnat_namespace so that
     # notebooks using scout-xnatpy can reach XNAT once it is deployed.

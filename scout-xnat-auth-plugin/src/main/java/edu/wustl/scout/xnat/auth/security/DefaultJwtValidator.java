@@ -18,7 +18,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -70,31 +69,6 @@ public class DefaultJwtValidator implements JwtValidator {
         }
     }
 
-    @Override
-    public JWTClaimsSet validateExchanged(final String jwt,
-                                          final String expectedAuthorizedParty,
-                                          final String clientId,
-                                          final String requiredRole)
-            throws InvalidJwtException {
-        JWTClaimsSet claims = validate(jwt);
-        String azp = null;
-        try {
-            azp = claims.getStringClaim("azp");
-        } catch (java.text.ParseException e) {
-            // fall through; azp will be null and the check below fails
-        }
-        if (!expectedAuthorizedParty.equals(azp)) {
-            throw new InvalidJwtException(
-                    "exchanged token azp '" + azp + "' is not '" + expectedAuthorizedParty + "'");
-        }
-        List<String> clientRoles = JwtValidator.extractClientRoles(claims, clientId);
-        if (!clientRoles.contains(requiredRole)) {
-            throw new InvalidJwtException(
-                    "exchanged token lacks required client role '" + requiredRole + "'");
-        }
-        return claims;
-    }
-
     private ConfigurableJWTProcessor<SecurityContext> buildProcessor(final String jwksUri) {
         try {
             JWKSource<SecurityContext> source = new RemoteJWKSet<>(new URL(jwksUri));
@@ -117,9 +91,9 @@ public class DefaultJwtValidator implements JwtValidator {
         processor.setJWSKeySelector(keySelector);
 
         // Nimbus's DefaultJWTClaimsVerifier checks exp/nbf with a default 60s
-        // clock skew. Pin issuer; aud and role get checked imperatively above
-        // so we can give better error messages and skip aud on the incoming
-        // pass.
+        // clock skew. Pin issuer here; aud/azp and role are checked by the
+        // filters on the verified claims (they bind differently per path), so
+        // we don't enforce them in the processor.
         Set<String> requiredClaims = new HashSet<>();
         requiredClaims.add("iss");
         requiredClaims.add("exp");

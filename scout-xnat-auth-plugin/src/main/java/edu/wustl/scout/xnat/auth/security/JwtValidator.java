@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Validates Keycloak-issued JWTs against the realm's JWKS. Two validation
- * passes share this contract: the incoming subject token (signature + issuer
- * + expiry only — no aud check, since the incoming audience is some other
- * Scout client) and the exchanged xnat-audience token (signature + issuer +
- * expiry + aud + required client role).
+ * Validates Keycloak-issued JWTs against the realm's JWKS (signature + issuer
+ * + expiry). Audience and role checks are applied by the filters on top of the
+ * verified claims, since the two auth paths bind differently: the browser path
+ * pins {@code azp} to the oauth2-proxy client, while the bearer path requires
+ * {@code aud} to contain the xnat client.
  *
  * <p>The production implementation is {@link DefaultJwtValidator}; this
  * interface exists so consumers depend on the abstraction (matching the
@@ -25,26 +25,6 @@ public interface JwtValidator {
      * verified claims set on success.
      */
     JWTClaimsSet validate(String jwt) throws InvalidJwtException;
-
-    /**
-     * Validate signature/issuer/expiry plus the {@code azp} claim and a client
-     * role. Used for the exchanged-token pass.
-     *
-     * On {@code aud} vs {@code azp}: Keycloak STX V2 puts the *requester*
-     * client in {@code azp} (authorized party) and uses {@code aud} for any
-     * *other* audiences — sibling clients that the user can also reach. So
-     * the right "this token was issued for xnat" check is {@code azp == xnat},
-     * not {@code aud contains xnat} (which is empty, since xnat is the
-     * requester).
-     *
-     * Required role check looks at {@code resource_access.<clientId>.roles},
-     * which gates on {@code xnat-access} per the realm template's mapping
-     * from {@code scout-user} group to xnat client roles.
-     */
-    JWTClaimsSet validateExchanged(String jwt,
-                                   String expectedAuthorizedParty,
-                                   String clientId,
-                                   String requiredRole) throws InvalidJwtException;
 
     /**
      * Pull the role list out of {@code resource_access.<clientId>.roles}, or
@@ -74,7 +54,7 @@ public interface JwtValidator {
         }
     }
 
-    /** Thrown by {@link #validate} and {@link #validateExchanged}. */
+    /** Thrown by {@link #validate}. */
     final class InvalidJwtException extends Exception {
         public InvalidJwtException(final String message) {
             super(message);

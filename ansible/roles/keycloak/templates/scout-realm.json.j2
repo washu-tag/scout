@@ -261,21 +261,6 @@
         "attributes": {
           "post.logout.redirect.uris": "https://{{ server_hostname }}"
         },
-        "protocolMappers": [
-          {
-            "name": "groups",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-group-membership-mapper",
-            "consentRequired": false,
-            "config": {
-              "claim.name": "groups",
-              "full.path": "false",
-              "id.token.claim": "true",
-              "access.token.claim": "true",
-              "userinfo.token.claim": "true"
-            }
-          }
-        ],
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -515,51 +500,10 @@
       },
       {
         "name": "{{ keycloak_xnat_client_id }}",
-        "description": "XNAT Client (token-exchange target; oauth2-proxy fronts the browser path with its own client)",
+        "description": "XNAT resource server: audience target for xnat-scoped tokens and home of the xnat-access client role. Bearer-only — oauth2-proxy fronts the browser path with its own client, and scout-xnat-auth-plugin validates tokens locally, so nothing authenticates as this client (no secret, no login flows).",
         "enabled": true,
         "clientId": "{{ keycloak_xnat_client_id }}",
-        "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_xnat_client_secret }}",
-        "redirectUris": [
-          "https://xnat.{{ server_hostname }}/oauth2/callback"
-        ],
-        "webOrigins": [
-          "https://xnat.{{ server_hostname }}"
-        ],
-        "attributes": {
-          "pkce.code.challenge.method": "S256",
-          "standard.token.exchange.enabled": "true"
-        },
-        "protocolMappers": [
-          {
-            "name": "groups",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-group-membership-mapper",
-            "consentRequired": false,
-            "config": {
-              "claim.name": "groups",
-              "full.path": "false",
-              "id.token.claim": "true",
-              "access.token.claim": "true",
-              "userinfo.token.claim": "true"
-            }
-          }
-        ],
-        "defaultClientScopes": [
-          "web-origins",
-          "acr",
-          "profile",
-          "roles",
-          "basic",
-          "email",
-          "microprofile-jwt"
-        ],
-        "optionalClientScopes": [
-          "address",
-          "phone",
-          "organization",
-          "offline_access",
-        ]
+        "bearerOnly": true
       }
     ],
     "identityProviders": [

@@ -17,14 +17,8 @@ public class ScoutAuthProperties {
     @Value("${scout.keycloak.jwks_uri:}")
     private String jwksUri;
 
-    @Value("${scout.keycloak.token_uri:}")
-    private String tokenUri;
-
     @Value("${scout.keycloak.client_id:xnat}")
     private String clientId;
-
-    @Value("${scout.keycloak.client_secret:}")
-    private String clientSecret;
 
     @Value("${scout.keycloak.required_role:xnat-access}")
     private String requiredRole;
@@ -43,9 +37,7 @@ public class ScoutAuthProperties {
 
     public String getIssuer() { return issuer; }
     public String getJwksUri() { return jwksUri; }
-    public String getTokenUri() { return tokenUri; }
     public String getClientId() { return clientId; }
-    public String getClientSecret() { return clientSecret; }
     public String getRequiredRole() { return requiredRole; }
     public String getOauth2ProxyClientId() { return oauth2ProxyClientId; }
     public String getAccessTokenHeader() { return accessTokenHeader; }
