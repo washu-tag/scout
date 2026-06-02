@@ -33,6 +33,50 @@ RESET='\033[0m'
 # ── Config ────────────────────────────────────────────────────────────────────
 KUBECTL=${KUBECTL:-kubectl}
 
+# Test groups can be filtered via --include for split CI runs where not
+# every target service is deployed. Empty = run all groups.
+#   trino-rw        — works wherever the trino role has been run (deploys
+#                     trino-rw + its NetworkPolicy). Both smoke-test sides.
+#   voila-ingress   — needs the voila Service to exist for the target URL
+#                     to resolve. Notebook side only.
+INCLUDE_GROUPS=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --include)
+      INCLUDE_GROUPS="$2"
+      shift 2
+      ;;
+    --help)
+      cat <<EOF
+Usage: $(basename "$0") [--include <groups>]
+
+  --include <groups>   Comma-separated test groups to run (default: all).
+                       Available: trino-rw, voila-ingress.
+
+Examples:
+  $(basename "$0")
+  $(basename "$0") --include trino-rw
+  $(basename "$0") --include trino-rw,voila-ingress
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+include_group() {
+  local group="$1"
+  [[ -z "$INCLUDE_GROUPS" ]] && return 0
+  for inc in $(echo "$INCLUDE_GROUPS" | tr ',' ' '); do
+    [[ "$group" == "$inc" ]] && return 0
+  done
+  return 1
+}
+
 # Per-target URLs. /v1/info is unauthenticated on Trino's read + write paths;
 # Voila's root (`/`) returns its lab page without auth at the in-cluster
 # Service level — oauth2-proxy is only in the path on ingress-routed traffic,
@@ -78,23 +122,34 @@ queue_test() {
 }
 
 # trino-rw matrix (port 8080).
-queue_test nb-test               scout-analytics 000
-queue_test chat-test              scout-analytics 000 'app.kubernetes.io/name=open-webui'
-queue_test extractor-rando        scout-extractor 000
-queue_test transformer-impostor   scout-extractor 200 'app.kubernetes.io/name=hl7-transformer'
-# Positive Voila → trino-rw check: trino-rw's NetworkPolicy explicitly
-# allow-lists voila-labeled pods in scout-analytics for the reviewer-
-# annotation write path. Catches regressions where the allow rule gets
-# dropped without updating Voila's connect_rw() callers.
-queue_test voila-rw-impostor      scout-analytics 200 'app.kubernetes.io/name=voila'
+if include_group "trino-rw"; then
+  queue_test nb-test               scout-analytics 000
+  queue_test chat-test              scout-analytics 000 'app.kubernetes.io/name=open-webui'
+  queue_test extractor-rando        scout-extractor 000
+  queue_test transformer-impostor   scout-extractor 200 'app.kubernetes.io/name=hl7-transformer'
+  # Positive Voila → trino-rw check: trino-rw's NetworkPolicy explicitly
+  # allow-lists voila-labeled pods in scout-analytics for the reviewer-
+  # annotation write path. Catches regressions where the allow rule gets
+  # dropped without updating Voila's connect_rw() callers. Test is
+  # synthetic (curl pod with voila label) so it doesn't require the
+  # voila Deployment to be present.
+  queue_test voila-rw-impostor      scout-analytics 200 'app.kubernetes.io/name=voila'
+fi
 
 # voila ingress matrix (port 8866).
 # Voila's X-Trino-User impersonation trust model depends on the ingress
 # NetworkPolicy: only Traefik should reach Voila directly. A random
 # in-cluster pod hitting :8866 could forge X-Auth-Request-Access-Token
 # headers and bypass per-user AuthZ.
-queue_test voila-bypass-attack    scout-analytics 000 ''                                        "$VOILA_URL"
-queue_test voila-traefik-allowed  kube-system     200 'app.kubernetes.io/name=traefik'          "$VOILA_URL"
+if include_group "voila-ingress"; then
+  queue_test voila-bypass-attack    scout-analytics 000 ''                                        "$VOILA_URL"
+  queue_test voila-traefik-allowed  kube-system     200 'app.kubernetes.io/name=traefik'          "$VOILA_URL"
+fi
+
+if [ "${#NAMES[@]}" -eq 0 ]; then
+  echo "No tests selected (--include=$INCLUDE_GROUPS); nothing to run." >&2
+  exit 2
+fi
 
 # ── Workspace + cleanup ───────────────────────────────────────────────────────
 RESULTS_DIR=$(mktemp -d)

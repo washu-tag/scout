@@ -308,7 +308,33 @@ jobs:
         if: always()
         run: |
           sudo -E kubectl -n scout-extractor logs deployment/hl7-transformer
-  smoke-test:
+  # Smoke tests are split across two runners because the full Scout stack
+  # (chat + notebooks + monitoring + analytics) plus image pinning has run
+  # the GitHub-hosted ubuntu-24.04 runner (72 GB disk) into DiskPressure
+  # eviction during chatbot's ollama+open-webui pulls. Each half deploys
+  # only the services it tests, on its own 72 GB runner.
+  #
+  # Both halves install the common infra (k3s, traefik, postgres, valkey,
+  # auth, lake, trino, launchpad). Trino runs on both so jupyter/voila and
+  # chat/superset can each query against a real coordinator.
+  #
+  # Side-specific:
+  #   analytics  → superset, chatbot       (+ data-authz, auth-curl, netpol)
+  #   notebooks  → voila, jupyter, monitor (rollout checks only)
+  #
+  # Per-side test coverage:
+  #   - data-authz seed+run: analytics side only (needs superset + chatbot
+  #     for the full OPA → Trino-JWT → row-filter pipeline).
+  #   - auth-curl: both sides via tests/auth/auth-curl-tests.sh --include,
+  #     each filtered to the subdomains it actually deploys.
+  #   - NetworkPolicy: both sides via --include groups. Analytics runs
+  #     trino-rw only; notebooks add the voila-ingress group (it needs
+  #     the voila Service to resolve the target URL).
+  #
+  # Playbook names below assume PR #409 splits ansible/playbooks/analytics.yaml
+  # into trino.yaml (opa + trino) and superset.yaml. If naming lands
+  # differently, update the loops below.
+  smoke-test-analytics:
     runs-on: ubuntu-latest
     needs:
       - lint
@@ -342,14 +368,14 @@ jobs:
           openssl req -x509 -newkey rsa:2048 -keyout /tmp/scout-ci-tls/key.pem \
             -out /tmp/scout-ci-tls/cert.pem -days 1 -nodes \
             -subj "/CN=scout.test" \
-            -addext "subjectAltName=DNS:scout.test,DNS:*.scout.test,DNS:*.jupyter.scout.test"
+            -addext "subjectAltName=DNS:scout.test,DNS:*.scout.test"
           # Trust the self-signed cert so curl validates it in auth tests
           sudo cp /tmp/scout-ci-tls/cert.pem /usr/local/share/ca-certificates/scout-ci.crt
           sudo update-ca-certificates
-          # Add /etc/hosts entries for subdomain routing (BEFORE deployment)
+          # Subdomains this side deploys (root scout.test = launchpad)
           {
             echo "127.0.0.1 scout.test"
-            for sub in superset jupyter grafana keycloak auth temporal minio chat playbooks testuser.jupyter; do
+            for sub in superset chat keycloak auth minio; do
               echo "127.0.0.1 ${sub}.scout.test"
             done
           } | sudo tee -a /etc/hosts
@@ -375,7 +401,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Import ALL custom images into k3s
+      # Pre-import only the images this side deploys
       - name: 'Push image to k3s - superset'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
@@ -391,11 +417,6 @@ jobs:
         with:
           subproject: launchpad
           image-name: launchpad
-      - name: 'Push image to k3s - scout-notebook'
-        uses: ./.github/actions/k3s-image-import-or-pull
-        with:
-          subproject: helm/scout-notebook
-          image-name: scout-notebook
       # hl7-transformer image is needed by the data-authorization seed
       # Job (writes the synthetic test_reports Delta table via PySpark
       # + Hive-Metastore-registered saveAsTable). The transformer
@@ -410,18 +431,14 @@ jobs:
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
-      # Deploy services not covered by deploy-and-test job
-      # Skipped: orchestrator (Cassandra+ES+Temporal) and extractor — tested in deploy-and-test
-      # Auto-skipped by missing config: staging, gpu, scout clone
       - name: 'Deploy Scout services'
         shell: bash
         run: |
           cd ansible
-          for playbook in k3s traefik postgres valkey auth lake chatbot voila analytics jupyter monitor launchpad; do
+          for playbook in k3s traefik postgres valkey auth lake trino superset chatbot launchpad; do
             echo "=== Deploying $playbook ==="
             sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
           done
-      # Health checks — verify all services rolled out
       - name: 'Service health checks'
         shell: bash
         run: |
@@ -430,12 +447,6 @@ jobs:
           echo "=== Checking Trino ==="
           sudo -E kubectl rollout status deployment/trino-coordinator -n scout-analytics --timeout=180s
           sudo -E kubectl rollout status deployment/trino-worker -n scout-analytics --timeout=180s
-          echo "=== Checking Prometheus ==="
-          sudo -E kubectl rollout status deployment/prometheus-server -n scout-monitoring --timeout=180s
-          echo "=== Checking Grafana ==="
-          sudo -E kubectl rollout status deployment/grafana -n scout-monitoring --timeout=180s
-          echo "=== Checking Loki ==="
-          sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
           echo "=== All pods ==="
           sudo -E kubectl get pods -A
       # Trino connectivity check. Auth (PASSWORD,JWT) is now required so
@@ -527,14 +538,158 @@ jobs:
         run: |
           sudo -E kubectl -n scout-analytics logs job/data-authz-tests --tail=500 || true
       # Auth tests — verify OAuth2 Proxy blocks unauthenticated access
+      # for the subdomains this side deploys. Launchpad root is always
+      # included by the script.
       - name: 'Auth curl tests'
         shell: bash
-        run: bash tests/auth/auth-curl-tests.sh scout.test
-      # NetworkPolicy tests — verify trino-rw ingress restrictions
+        run: bash tests/auth/auth-curl-tests.sh scout.test --include superset,chat,keycloak,auth,minio
+      # NetworkPolicy tests — verify trino-rw ingress restrictions.
+      # Skip voila-ingress group: voila isn't deployed on this side, so
+      # the Traefik→voila allow-path test would 000 on a missing service.
+      - name: 'NetworkPolicy tests'
+        shell: bash
+        run: KUBECTL='sudo -E kubectl' bash tests/network/network-policy-tests.sh --include trino-rw
+      - name: 'Debug - pod status'
+        if: failure()
+        shell: bash
+        run: |
+          sudo -E kubectl get pods -A
+          sudo -E kubectl get events -A --sort-by='.lastTimestamp' | tail -50
+      - name: 'Debug - all pod logs'
+        if: failure()
+        shell: bash
+        run: |
+          for ns in $(sudo -E kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
+            for pod in $(sudo -E kubectl get pods -n "$ns" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+              echo "=== $ns/$pod ==="
+              sudo -E kubectl logs -n "$ns" "$pod" --all-containers --tail=30 --previous 2>/dev/null || \
+              sudo -E kubectl logs -n "$ns" "$pod" --all-containers --tail=30 2>/dev/null || true
+            done
+          done
+  smoke-test-notebooks:
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - build-and-upload
+    permissions:
+      contents: read
+      packages: read
+    env:
+      KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    steps:
+      - uses: actions/checkout@v6
+      - name: 'Free up disk space'
+        shell: bash
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          echo "Removing unnecessary tools to free up disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
+          docker system prune -af --volumes
+          echo "Disk space after cleanup:"
+          df -h
+      - name: 'Generate TLS certificates and configure /etc/hosts'
+        shell: bash
+        run: |
+          mkdir -p /tmp/scout-ci-tls
+          openssl req -x509 -newkey rsa:2048 -keyout /tmp/scout-ci-tls/key.pem \
+            -out /tmp/scout-ci-tls/cert.pem -days 1 -nodes \
+            -subj "/CN=scout.test" \
+            -addext "subjectAltName=DNS:scout.test,DNS:*.scout.test,DNS:*.jupyter.scout.test"
+          sudo cp /tmp/scout-ci-tls/cert.pem /usr/local/share/ca-certificates/scout-ci.crt
+          sudo update-ca-certificates
+          # Subdomains this side deploys (root scout.test = launchpad).
+          # testuser.jupyter is the per-user singleuser pod ingress.
+          {
+            echo "127.0.0.1 scout.test"
+            for sub in jupyter grafana keycloak auth playbooks testuser.jupyter; do
+              echo "127.0.0.1 ${sub}.scout.test"
+            done
+          } | sudo tee -a /etc/hosts
+      - name: 'Prepare inventory.yaml'
+        shell: bash
+        run: |
+          NODE_IP=$(hostname -I | awk '{print $1}')
+          echo "Node IP for CoreDNS: $NODE_IP"
+          sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" \
+            -e "s:WORK_DIR:$(pwd):" -e "s/NODE_IP/$NODE_IP/g" \
+            .github/ci_resources/inventory.yaml > ansible/inventory.yaml
+      - name: 'ansible-galaxy dependencies'
+        shell: bash
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
+      - name: Install Python dependencies for Ansible Kubernetes modules
+        run: /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
+      - name: 'Install k3s'
+        shell: bash
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: 'Push image to k3s - keycloak'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: keycloak
+          image-name: keycloak
+      - name: 'Push image to k3s - launchpad'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: launchpad
+          image-name: launchpad
+      - name: 'Push image to k3s - scout-notebook'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: helm/scout-notebook
+          image-name: scout-notebook
+      - name: 'Install helm and helm diff'
+        shell: bash
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
+      - name: 'Deploy Scout services'
+        shell: bash
+        run: |
+          cd ansible
+          for playbook in k3s traefik postgres valkey auth lake trino voila jupyter monitor launchpad; do
+            echo "=== Deploying $playbook ==="
+            sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
+          done
+      - name: 'Service health checks'
+        shell: bash
+        run: |
+          echo "=== Checking Hive Metastore ==="
+          sudo -E kubectl rollout status deployment/hive-metastore -n scout-data --timeout=180s
+          echo "=== Checking Trino ==="
+          sudo -E kubectl rollout status deployment/trino-coordinator -n scout-analytics --timeout=180s
+          sudo -E kubectl rollout status deployment/trino-worker -n scout-analytics --timeout=180s
+          echo "=== Checking Voila ==="
+          sudo -E kubectl rollout status deployment/voila -n scout-analytics --timeout=180s
+          echo "=== Checking Prometheus ==="
+          sudo -E kubectl rollout status deployment/prometheus-server -n scout-monitoring --timeout=180s
+          echo "=== Checking Grafana ==="
+          sudo -E kubectl rollout status deployment/grafana -n scout-monitoring --timeout=180s
+          echo "=== Checking Loki ==="
+          sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
+          echo "=== All pods ==="
+          sudo -E kubectl get pods -A
+      # Auth tests — verify OAuth2 Proxy blocks unauthenticated access
+      # for the subdomains this side deploys. Launchpad root is always
+      # included by the script.
+      - name: 'Auth curl tests'
+        shell: bash
+        run: bash tests/auth/auth-curl-tests.sh scout.test --include jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
+      # NetworkPolicy tests — full suite: trino-rw ingress matrix +
+      # voila ingress matrix (only this side has the voila Service
+      # for the Traefik→voila allow-path assertion). TODO: extend with
+      # jupyter-singleuser egress tests once we settle on the
+      # singleuser pod-selector labels JupyterHub generates.
       - name: 'NetworkPolicy tests'
         shell: bash
         run: KUBECTL='sudo -E kubectl' bash tests/network/network-policy-tests.sh
-      # Diagnostic logging on failure
       - name: 'Debug - pod status'
         if: failure()
         shell: bash
@@ -553,14 +708,14 @@ jobs:
             done
           done
   publish:
-    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test-analytics.result == 'success' && needs.smoke-test-notebooks.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-    needs: [changes, deploy-and-test, scan-images, smoke-test]
+    needs: [changes, deploy-and-test, scan-images, smoke-test-analytics, smoke-test-notebooks]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v6
@@ -618,14 +773,14 @@ jobs:
         with:
           image-name: keycloak
   publish-demo:
-    if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test-analytics.result == 'success' && needs.smoke-test-notebooks.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-    needs: [changes, deploy-and-test, scan-images, smoke-test]
+    needs: [changes, deploy-and-test, scan-images, smoke-test-analytics, smoke-test-notebooks]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v6
