@@ -2,7 +2,6 @@ package edu.wustl.scout.xnat.auth.security;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -64,29 +63,6 @@ public interface JwtValidator {
         } catch (ClassCastException e) {
             return Collections.emptyList();
         }
-    }
-
-    /**
-     * Pull the realm role list out of {@code realm_access.roles}, or empty if
-     * the claim is missing/malformed.
-     */
-    @SuppressWarnings("unchecked")
-    static List<String> extractRealmRoles(final JWTClaimsSet claims) {
-        try {
-            Map<String, Object> realmAccess = (Map<String, Object>) claims.getClaim("realm_access");
-            if (realmAccess == null) return Collections.emptyList();
-            List<String> roles = (List<String>) realmAccess.get("roles");
-            return roles != null ? roles : Collections.<String>emptyList();
-        } catch (ClassCastException e) {
-            return Collections.emptyList();
-        }
-    }
-
-    /** All roles a validated token carries: client roles for {@code clientId} + realm roles. */
-    static List<String> allRoles(final JWTClaimsSet claims, final String clientId) {
-        List<String> roles = new ArrayList<>(extractClientRoles(claims, clientId));
-        roles.addAll(extractRealmRoles(claims));
-        return roles;
     }
 
     /** Read a string claim, returning null if absent or not a string. */

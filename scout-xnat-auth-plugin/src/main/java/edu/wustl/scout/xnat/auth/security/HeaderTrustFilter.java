@@ -21,8 +21,8 @@ import java.io.IOException;
  * Authenticates browser-path traffic carrying the access token oauth2-proxy
  * forwarded from its OIDC session ({@code X-Auth-Request-Access-Token}). The
  * token is the single source of truth for identity ({@code sub},
- * {@code preferred_username}, {@code email}, names) and roles
- * ({@code resource_access.<clientId>.roles} + {@code realm_access.roles}).
+ * {@code preferred_username}, {@code email}, names) and the {@code xnat-access}
+ * client role ({@code resource_access.<clientId>.roles}).
  *
  * <p>Cryptographic gate: the token is validated against Keycloak's JWKS
  * (signature + issuer + expiry) and its {@code azp} must match the
@@ -107,9 +107,10 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
 
         final ScoutIdentity identity = ScoutAuthSupport.identityFrom(claims, properties.getClientId());
 
-        // The xnat-access gate is enforced solely from the token's role claims:
-        // client roles in resource_access.<client>.roles, plus realm roles in
-        // realm_access.roles. No group-name inference fallback.
+        // The xnat-access gate is enforced solely from the token's client-role
+        // claim (resource_access.<client>.roles). xnat-access is a Keycloak
+        // client role on the xnat client, so realm roles are intentionally not
+        // consulted. No group-name inference fallback.
         log.info("HeaderTrustFilter saw roles {} in access token for sub '{}'",
                 identity.getRoles(), identity.getSub());
         if (!identity.hasRole(properties.getRequiredRole())) {

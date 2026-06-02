@@ -34,6 +34,12 @@ final class ScoutAuthSupport {
      * Build a {@link ScoutIdentity} from an already-validated token's claims.
      * Groups are read uniformly from the {@code groups} claim; the header-path
      * token simply won't carry it, yielding an empty list.
+     *
+     * <p>Roles are read from the client-role claim only
+     * ({@code resource_access.<clientId>.roles}). The {@code xnat-access} gate
+     * is a Keycloak <em>client</em> role on the xnat client (see
+     * {@code scout-realm.json.j2}), so realm roles are intentionally not
+     * consulted — they can never carry it.
      */
     static ScoutIdentity identityFrom(final JWTClaimsSet claims, final String clientId) {
         return new ScoutIdentity(
@@ -43,7 +49,7 @@ final class ScoutAuthSupport {
                 JwtValidator.claimAsString(claims, "given_name"),
                 JwtValidator.claimAsString(claims, "family_name"),
                 JwtValidator.stringListClaim(claims, "groups"),
-                JwtValidator.allRoles(claims, clientId));
+                JwtValidator.extractClientRoles(claims, clientId));
     }
 
     /**

@@ -215,9 +215,14 @@ public class HeaderTrustFilterTest {
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
-    /** Realm role alone (no xnat client role) satisfies the gate. */
+    /**
+     * xnat-access is a Keycloak client role. A token carrying it only as a
+     * realm role (realm_access.roles) must NOT satisfy the gate — we consult
+     * client roles (resource_access.<client>.roles) only — so it is rejected
+     * with 403 and provisioning is never attempted.
+     */
     @Test
-    public void tokenWithRealmRoleOnly_authsSuccessfully() throws Exception {
+    public void realmRoleOnly_isRejected_returns403() throws Exception {
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .subject("subject-123")
                 .claim("azp", OAUTH2_PROXY_CLIENT_ID)
@@ -231,15 +236,15 @@ public class HeaderTrustFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
-        UserI user = mock(UserI.class);
-        when(provisioningService.provision(any())).thenReturn(user);
-
         try (MockedStatic<UserHelper> userHelperStatic = org.mockito.Mockito.mockStatic(UserHelper.class)) {
             filter.doFilter(request, response, chain);
 
-            verify(chain, times(1)).doFilter(any(), any());
-            assertSame(user, SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+            assertEquals(403, response.getStatus());
+            verify(chain, never()).doFilter(any(), any());
+            verify(provisioningService, never()).provision(any());
+            userHelperStatic.verify(() -> UserHelper.setUserHelper(any(), any()), never());
         }
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
     /** Missing email claim → auth still succeeds with null email. */
