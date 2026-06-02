@@ -28,6 +28,14 @@ config:
     # middleware can forward it. The access token (a signed Keycloak JWT) is the
     # single source of truth for services that trust oauth2-proxy as the
     # identity source (eg. scout-xnat-auth-plugin's HeaderTrustFilter).
+    #
+    # BOTH flags are required to emit X-Auth-Request-Access-Token on the
+    # /oauth2/auth response (oauth2-proxy only appends the access-token header
+    # when set_xauthrequest AND pass_access_token are set). HeaderTrustFilter
+    # reads that header as its sole identity source — do not drop either. The
+    # chart does not default set_xauthrequest (extraArgs: {}), so it must be set
+    # here explicitly.
+    set_xauthrequest = true
     pass_access_token = true
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true
