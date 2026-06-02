@@ -32,8 +32,6 @@ final class ScoutAuthSupport {
 
     /**
      * Build a {@link ScoutIdentity} from an already-validated token's claims.
-     * Groups are read uniformly from the {@code groups} claim; the header-path
-     * token simply won't carry it, yielding an empty list.
      *
      * <p>Roles are read from the client-role claim only
      * ({@code resource_access.<clientId>.roles}). The {@code xnat-access} gate
@@ -48,7 +46,6 @@ final class ScoutAuthSupport {
                 JwtValidator.claimAsString(claims, "email"),
                 JwtValidator.claimAsString(claims, "given_name"),
                 JwtValidator.claimAsString(claims, "family_name"),
-                JwtValidator.stringListClaim(claims, "groups"),
                 JwtValidator.extractClientRoles(claims, clientId));
     }
 

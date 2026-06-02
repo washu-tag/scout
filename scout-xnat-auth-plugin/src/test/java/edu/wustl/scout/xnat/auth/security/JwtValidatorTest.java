@@ -201,29 +201,6 @@ public class JwtValidatorTest {
     }
 
     @Test
-    public void stringListClaim_returnsList() {
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .claim("groups", Arrays.asList("scout-user", "scout-admin"))
-                .build();
-        assertEquals(Arrays.asList("scout-user", "scout-admin"),
-                JwtValidator.stringListClaim(claims, "groups"));
-    }
-
-    @Test
-    public void stringListClaim_returnsEmptyOnMissingClaim() {
-        JWTClaimsSet claims = new JWTClaimsSet.Builder().subject("user-1").build();
-        assertTrue(JwtValidator.stringListClaim(claims, "groups").isEmpty());
-    }
-
-    @Test
-    public void stringListClaim_returnsEmptyOnNonListClaim() {
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .claim("groups", "not-a-list")
-                .build();
-        assertTrue(JwtValidator.stringListClaim(claims, "groups").isEmpty());
-    }
-
-    @Test
     public void claimAsString_returnsNullForMissingClaim() {
         JWTClaimsSet claims = new JWTClaimsSet.Builder().subject("user-1").build();
         org.junit.Assert.assertNull(JwtValidator.claimAsString(claims, "preferred_username"));

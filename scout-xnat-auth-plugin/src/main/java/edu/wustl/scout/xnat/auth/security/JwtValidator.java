@@ -74,13 +74,6 @@ public interface JwtValidator {
         }
     }
 
-    /** Read a claim expected to be a list of strings, or empty if missing/wrong type. */
-    @SuppressWarnings("unchecked")
-    static List<String> stringListClaim(final JWTClaimsSet claims, final String name) {
-        Object value = claims.getClaim(name);
-        return (value instanceof List) ? (List<String>) value : Collections.emptyList();
-    }
-
     /** Thrown by {@link #validate} and {@link #validateExchanged}. */
     final class InvalidJwtException extends Exception {
         public InvalidJwtException(final String message) {
