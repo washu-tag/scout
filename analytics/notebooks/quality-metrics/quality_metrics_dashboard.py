@@ -151,25 +151,19 @@ def create_dashboard(table_name="default.reports", date_range_days=360):
     """
 
     # Display header
-    display(
-        HTML(
-            """
+    display(HTML("""
         <div style='background: white; padding: 20px 28px; border-bottom: 3px solid #667eea; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);'>
             <h1 style='margin: 0; color: #667eea; font-size: 28px; font-weight: 700;'>Quality & Turnaround Time Dashboard</h1>
             <p style='margin: 8px 0 0 0; color: #666;'>Monitor report quality indicators and TAT metrics</p>
         </div>
-    """
-        )
-    )
+    """))
 
     # Create status output for loading messages
     status_output = widgets.Output()
     display(status_output)
 
     with status_output:
-        display(
-            HTML(
-                """
+        display(HTML("""
             <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px 24px; border-radius: 8px; color: white; margin-bottom: 16px;'>
                 <div style='display: flex; align-items: center; gap: 12px;'>
                     <div style='font-size: 24px;'>⏳</div>
@@ -181,11 +175,7 @@ def create_dashboard(table_name="default.reports", date_range_days=360):
                     </div>
                 </div>
             </div>
-        """.replace(
-                    "{table}", table_name
-                )
-            )
-        )
+        """.replace("{table}", table_name)))
 
     # Load data
     df = _load_quality_data(table_name, date_range_days)
@@ -194,9 +184,7 @@ def create_dashboard(table_name="default.reports", date_range_days=360):
         status_output.clear_output(wait=True)
         tat_count = df["exam_to_report_hours"].notna().sum()
         tat_pct = 100.0 * tat_count / len(df) if len(df) > 0 else 0
-        display(
-            HTML(
-                f"""
+        display(HTML(f"""
             <div style='background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px 24px; border-radius: 8px; color: white; margin-bottom: 16px;'>
                 <div style='display: flex; align-items: center; gap: 12px;'>
                     <div style='font-size: 24px;'>✓</div>
@@ -208,9 +196,7 @@ def create_dashboard(table_name="default.reports", date_range_days=360):
                     </div>
                 </div>
             </div>
-        """
-            )
-        )
+        """))
 
     # Clear loading status and show sections progressively
     import time
@@ -271,9 +257,7 @@ def create_dashboard(table_name="default.reports", date_range_days=360):
 
 def _render_section_loading(section_name):
     """Render loading indicator for a section."""
-    display(
-        HTML(
-            f"""
+    display(HTML(f"""
         <div style='background: #f3f4f6; padding: 16px 20px; border-radius: 8px; border-left: 4px solid #667eea; margin-bottom: 16px;'>
             <div style='display: flex; align-items: center; gap: 12px;'>
                 <div style='font-size: 20px;'>⏳</div>
@@ -282,9 +266,7 @@ def _render_section_loading(section_name):
                 </div>
             </div>
         </div>
-    """
-        )
-    )
+    """))
 
 
 def _render_summary(df):
@@ -315,9 +297,7 @@ def _render_summary(df):
     date_range_days = df.attrs.get("date_range_days", None)
     date_range_str = f" (Last {date_range_days} days)" if date_range_days else ""
 
-    display(
-        HTML(
-            f"""
+    display(HTML(f"""
     <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px; border-radius: 12px; color: white; margin-bottom: 20px;'>
         <h2 style='margin: 0 0 20px 0; font-size: 24px;'>Dashboard Summary{date_range_str}</h2>
         <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;'>
@@ -350,9 +330,7 @@ def _render_summary(df):
             </div>
         </div>
     </div>
-    """
-        )
-    )
+    """))
 
 
 def _render_tat_by_modality(df):
@@ -590,9 +568,7 @@ def _render_quality_indicators(df):
     addendum_pct = 100.0 * df["has_addendum"].sum() / total if total > 0 else 0
     avg_length = df["report_length"].mean()
 
-    display(
-        HTML(
-            f"""
+    display(HTML(f"""
     <div style='background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 24px; border-radius: 12px; color: white; margin-bottom: 20px;'>
         <h3 style='margin: 0 0 16px 0;'>Report Completeness Indicators</h3>
         <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;'>
@@ -614,9 +590,7 @@ def _render_quality_indicators(df):
             </div>
         </div>
     </div>
-    """
-        )
-    )
+    """))
 
 
 def create_landing_page(table_name="default.reports", date_range_days=360):
@@ -638,20 +612,17 @@ def create_landing_page(table_name="default.reports", date_range_days=360):
     )
 
     # Global styles
-    global_styles = widgets.HTML(
-        """
+    global_styles = widgets.HTML("""
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
             body, .widget-html, .widget-label {
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
             }
         </style>
-    """
-    )
+    """)
 
     # Header section
-    header = widgets.HTML(
-        """
+    header = widgets.HTML("""
         <div style='background: #667eea; padding: 40px; text-align: center; color: white;'>
             <h1 style='margin: 0 0 12px 0; font-size: 36px; font-weight: 700;'>
                 Quality & Turnaround Time Dashboard
@@ -660,19 +631,16 @@ def create_landing_page(table_name="default.reports", date_range_days=360):
                 Monitor report quality indicators and TAT metrics
             </p>
         </div>
-    """
-    )
+    """)
 
     # Title section
-    title = widgets.HTML(
-        """
+    title = widgets.HTML("""
         <div style='text-align: center;'>
             <h2 style='color: #1f2937; font-size: 24px; font-weight: 700; margin-bottom: 20px;'>
                 Ready to Analyze Your Reports?
             </h2>
         </div>
-    """
-    )
+    """)
 
     # Date range input
     date_range_input = widgets.IntText(
@@ -685,16 +653,14 @@ def create_landing_page(table_name="default.reports", date_range_days=360):
         style={"description_width": "140px"},
     )
 
-    date_help = widgets.HTML(
-        """
+    date_help = widgets.HTML("""
         <div style='text-align: center; margin-bottom: 20px;'>
             <span style='font-size: 12px; color: #6b7280; line-height: 1;'>
                 Number of days of reports to analyze from the most recent data.<br/>
                 <span style='font-weight: 500;'>Lower values</span> = faster load time.
             </span>
         </div>
-    """
-    )
+    """)
 
     date_container = widgets.VBox(
         [
@@ -721,9 +687,7 @@ def create_landing_page(table_name="default.reports", date_range_days=360):
         )
     )
 
-    features_container.children = [
-        widgets.HTML(
-            """
+    features_container.children = [widgets.HTML("""
             <div style='margin-bottom: 20px;'>
                 <h3 style='font-size: 14px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;'>
                     Dashboard Features
@@ -761,20 +725,16 @@ def create_landing_page(table_name="default.reports", date_range_days=360):
                     </span>
                 </div>
             </div>
-        """
-        )
-    ]
+        """)]
 
     # Footer note
-    footer_note = widgets.HTML(
-        """
+    footer_note = widgets.HTML("""
         <div style='text-align: center;'>
             <span style='color: #6b7280; font-size: 14px; line-height: 1.6;'>
                 <strong style='color: #4b5563;'>Note:</strong> Load time depends on date range. Reduce days for faster load.
             </span>
         </div>
-    """
-    )
+    """)
 
     def on_launch(b):
         launch_btn.disabled = True

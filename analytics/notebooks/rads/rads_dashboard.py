@@ -39,22 +39,17 @@ def launch_rads_dashboard():
     Creates and displays the landing page with configuration inputs.
     """
     # Global styles
-    display(
-        HTML(
-            """
+    display(HTML("""
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
             body, .widget-html, .widget-label, .widget-text input, .widget-textarea textarea {
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
             }
         </style>
-    """
-        )
-    )
+    """))
 
     # Header with features - Enhanced design
-    header_html = widgets.HTML(
-        """
+    header_html = widgets.HTML("""
         <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     padding: 40px 24px 32px 24px; text-align: center; color: white; border-radius: 12px 12px 0 0;
                     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
@@ -109,8 +104,7 @@ def launch_rads_dashboard():
                 </div>
             </div>
         </div>
-    """
-    )
+    """)
 
     # Input widgets
     rads_type_select = widgets.Dropdown(
@@ -210,89 +204,74 @@ def launch_rads_dashboard():
     # Form container with enhanced visual hierarchy
     left_column = widgets.VBox(
         [
-            widgets.HTML(
-                """
+            widgets.HTML("""
             <div style='font-weight: 600; font-size: 16px; margin-bottom: 12px; color: #1f2937;
                         padding-bottom: 8px; border-bottom: 3px solid #667eea;
                         display: flex; align-items: center; gap: 8px;'>
                 <span>🔬</span> RADS Configuration
             </div>
-        """
-            ),
+        """),
             rads_type_select,
             widgets.HTML("<div style='height: 16px;'></div>"),
-            widgets.HTML(
-                """
+            widgets.HTML("""
             <div style='font-weight: 600; font-size: 16px; margin-bottom: 12px; color: #1f2937;
                         padding-bottom: 8px; border-bottom: 3px solid #667eea;
                         display: flex; align-items: center; gap: 8px;'>
                 <span>🏥</span> Exam Filters
             </div>
-        """
-            ),
+        """),
             modality_select,
-            widgets.HTML(
-                """
+            widgets.HTML("""
             <div style='font-size: 12px; color: #6b7280; margin-top: 4px; font-style: italic;'>
                 💡 Tip: Hold Ctrl/Cmd to select multiple modalities
             </div>
-        """
-            ),
+        """),
             service_name_input,
             facility_select,
-            widgets.HTML(
-                """
+            widgets.HTML("""
             <div style='font-size: 12px; color: #6b7280; margin-top: 4px; font-style: italic;'>
                 💡 No selection = all facilities. Hold Ctrl/Cmd to select multiple.
             </div>
-        """
-            ),
+        """),
         ],
         layout=widgets.Layout(width="48%"),
     )
 
     right_column = widgets.VBox(
         [
-            widgets.HTML(
-                """
+            widgets.HTML("""
             <div style='font-weight: 600; font-size: 16px; margin-bottom: 12px; color: #1f2937;
                         padding-bottom: 8px; border-bottom: 3px solid #667eea;
                         display: flex; align-items: center; gap: 8px;'>
                 <span>📅</span> Date Range
             </div>
-        """
-            ),
+        """),
             widgets.HBox(
                 [start_date_input, end_date_input],
                 layout=widgets.Layout(width="100%", justify_content="space-between"),
             ),
             widgets.HTML("<div style='height: 24px;'></div>"),
-            widgets.HTML(
-                """
+            widgets.HTML("""
             <div style='font-weight: 600; font-size: 16px; margin-bottom: 12px; color: #1f2937;
                         padding-bottom: 8px; border-bottom: 3px solid #667eea;
                         display: flex; align-items: center; gap: 8px;'>
                 <span>👥</span> Patient Filters
             </div>
-        """
-            ),
+        """),
             widgets.HBox(
                 [min_age_input, max_age_input],
                 layout=widgets.Layout(width="100%", justify_content="space-between"),
             ),
             widgets.HTML("<div style='height: 24px;'></div>"),
-            widgets.HTML(
-                """
+            widgets.HTML("""
             <div style='font-weight: 600; font-size: 16px; margin-bottom: 12px; color: #1f2937;
                         padding-bottom: 8px; border-bottom: 3px solid #667eea;
                         display: flex; align-items: center; gap: 8px;'>
                 <span>⚙️</span> Performance Options
             </div>
-        """
-            ),
+        """),
             sample_limit_input,
-            widgets.HTML(
-                """
+            widgets.HTML("""
             <div style='background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
                         padding: 14px; border-radius: 6px; margin-top: 16px;
                         border-left: 4px solid #f59e0b; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);'>
@@ -301,8 +280,7 @@ def launch_rads_dashboard():
                     Once satisfied with filters, set to 0 or clear for full dataset analysis.
                 </div>
             </div>
-        """
-            ),
+        """),
         ],
         layout=widgets.Layout(width="48%"),
     )
@@ -321,13 +299,11 @@ def launch_rads_dashboard():
     )
 
     # Add instructional text above button
-    search_instruction = widgets.HTML(
-        """
+    search_instruction = widgets.HTML("""
         <div style='text-align: center; margin-bottom: 12px; color: #6b7280; font-size: 14px;'>
             Configure your search criteria above, then click the button below to begin analysis
         </div>
-    """
-    )
+    """)
 
     # Container that will hold either landing page or dashboard
     main_container = widgets.VBox(
@@ -393,9 +369,7 @@ def _create_rads_dashboard(config, container):
 
     # Display improved loading UI
     with status_output:
-        display(
-            HTML(
-                f"""
+        display(HTML(f"""
             <div style='max-width: 600px; margin: 100px auto; text-align: center;'>
                 <div style='background: {PRIMARY_GRADIENT}; padding: 40px; border-radius: 12px;
                             color: white; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);'>
@@ -426,9 +400,7 @@ def _create_rads_dashboard(config, container):
                     100% {{ transform: translateX(100%); }}
                 }}
             </style>
-        """
-            )
-        )
+        """))
 
     container.children = [status_output]
 
@@ -450,9 +422,7 @@ def _create_rads_dashboard(config, container):
 
             with status_output:
                 status_output.clear_output(wait=True)
-                display(
-                    HTML(
-                        f"""
+                display(HTML(f"""
                     <div style='background: {ORANGE_WARNING}; padding: 24px; border-radius: 12px;
                                 color: white; margin: 20px auto; text-align: center; max-width: 1000px;'>
                         <div style='font-size: 28px; margin-bottom: 8px;'>⚠️</div>
@@ -469,9 +439,7 @@ def _create_rads_dashboard(config, container):
                             <pre style='margin: 2px; white-space: pre-wrap;'>{sql_display}</pre>
                         </div>
                     </div>
-                """
-                    )
-                )
+                """))
             return
 
         # Continue with dashboard creation
@@ -481,9 +449,7 @@ def _create_rads_dashboard(config, container):
         # Show error message
         with status_output:
             status_output.clear_output(wait=True)
-            display(
-                HTML(
-                    f"""
+            display(HTML(f"""
                 <div style='background: {RED_ERROR}; padding: 24px; border-radius: 12px;
                             color: white; margin: 20px auto; text-align: center; max-width: 1000px;'>
                     <div style='font-size: 28px; margin-bottom: 8px;'>❌</div>
@@ -497,9 +463,7 @@ def _create_rads_dashboard(config, container):
                         {traceback.format_exc()}
                     </pre>
                 </div>
-            """
-                )
-            )
+            """))
 
 
 def _build_dashboard_ui(df, criteria_summary, config, container, status_output):
@@ -536,8 +500,7 @@ def _build_dashboard_ui(df, criteria_summary, config, container, status_output):
         ).nunique()
 
         # Header
-        header_widget = widgets.HTML(
-            f"""
+        header_widget = widgets.HTML(f"""
             <div style='background: {PRIMARY_GRADIENT}; padding: 24px 20px; border-radius: 8px;
                         color: white; margin-bottom: 0; text-align: center;'>
                 <div style='font-size: 28px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px;'>
@@ -547,8 +510,7 @@ def _build_dashboard_ui(df, criteria_summary, config, container, status_output):
                     Analyzing {len(df):,} reports from {unique_patients:,} patients with ML predictions and advanced visualizations
                 </div>
             </div>
-        """
-        )
+        """)
 
         # Create UI components
         statistics_panel = create_statistics_panel(state)
@@ -589,9 +551,7 @@ def _build_dashboard_ui(df, criteria_summary, config, container, status_output):
         # Show error message
         with status_output:
             status_output.clear_output(wait=True)
-            display(
-                HTML(
-                    f"""
+            display(HTML(f"""
                 <div style='background: {RED_ERROR}; padding: 24px; border-radius: 12px;
                             color: white; margin: 20px; text-align: center;'>
                     <div style='font-size: 28px; margin-bottom: 8px;'>⚠️</div>
@@ -603,6 +563,4 @@ def _build_dashboard_ui(df, criteria_summary, config, container, status_output):
                         {traceback.format_exc()}
                     </pre>
                 </div>
-            """
-                )
-            )
+            """))

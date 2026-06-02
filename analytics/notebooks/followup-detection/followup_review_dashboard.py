@@ -37,7 +37,6 @@ from IPython.display import display, HTML
 import html as html_lib
 import os
 
-
 # Global state
 annotations = {}
 _normalized_cache = {}
@@ -341,20 +340,17 @@ def create_landing_page(
 
     # Create a properly styled card using only widgets (no mixing HTML and widgets)
     # Global styles
-    global_styles = widgets.HTML(
-        """
+    global_styles = widgets.HTML("""
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
             body, .widget-html, .widget-label {
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
             }
         </style>
-    """
-    )
+    """)
 
     # Header section - simple test
-    header = widgets.HTML(
-        """
+    header = widgets.HTML("""
         <div style='background: #667eea; padding: 40px; text-align: center; color: white;'>
             <h1 style='margin: 0 0 12px 0; font-size: 36px; font-weight: 700;'>
                 Follow-up Detection Review
@@ -363,30 +359,25 @@ def create_landing_page(
                 Validate AI predictions and annotate radiology reports
             </p>
         </div>
-    """
-    )
+    """)
 
     # Title section
-    title = widgets.HTML(
-        """
+    title = widgets.HTML("""
         <div style='text-align: center;'>
             <h2 style='color: #1f2937; font-size: 24px; font-weight: 700; margin-bottom: 20px;'>
                 Ready to Start Reviewing?
             </h2>
         </div>
-    """
-    )
+    """)
 
-    sample_help = widgets.HTML(
-        """
+    sample_help = widgets.HTML("""
         <div style='text-align: center; margin-bottom: 20px;'>
             <span style='font-size: 12px; color: #6b7280; line-height: 1;'>
                 Number of reports to sample from each modality/detection/confidence combination.<br/>
                 <span style='font-weight: 500;'>Higher values</span> = more comprehensive, longer load time.
             </span>
         </div>
-    """
-    )
+    """)
 
     sample_container = widgets.VBox(
         [
@@ -405,9 +396,7 @@ def create_landing_page(
         )
     )
 
-    features_container.children = [
-        widgets.HTML(
-            """
+    features_container.children = [widgets.HTML("""
             <div style='margin-bottom: 20px;'>
                 <h3 style='font-size: 14px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;'>
                     Dashboard Features
@@ -445,20 +434,16 @@ def create_landing_page(
                     </span>
                 </div>
             </div>
-        """
-        )
-    ]
+        """)]
 
     # Footer note
-    footer_note = widgets.HTML(
-        """
+    footer_note = widgets.HTML("""
         <div style='text-align: center;'>
             <span style='color: #6b7280; font-size: 14px; line-height: 1.6;'>
                 <strong style='color: #4b5563;'>Note:</strong> Initial load may take 10-30 seconds, depending on sample size.
             </span>
         </div>
-    """
-    )
+    """)
 
     # Build the card body with proper spacing
     card_body = widgets.VBox(
@@ -552,9 +537,7 @@ def create_review_dashboard(
             )
             if not is_missing_table:
                 raise
-            display(
-                widgets.HTML(
-                    f"""
+            display(widgets.HTML(f"""
                 <div style="padding:24px;border:1px solid #f59e0b;border-radius:8px;
                             background:#fffbeb;color:#92400e;max-width:720px;
                             margin:24px auto;font-family:'Inter',-apple-system,sans-serif;
@@ -574,9 +557,7 @@ def create_review_dashboard(
                         <li>Refresh this page when the pipeline finishes.</li>
                     </ol>
                 </div>
-                """
-                )
-            )
+                """))
             return
 
     elif df is None:
@@ -1217,15 +1198,12 @@ def create_review_dashboard(
                         </div>
                 """
 
-        html += (
-            review_agreement_html
-            + """
+        html += review_agreement_html + """
                     </div>  <!-- Close Patient/Exam info container -->
                 </div>  <!-- Close sticky wrapper -->
             </div>  <!-- Close right column -->
         </div>  <!-- Close flex container -->
         """
-        )
 
         # Add JavaScript to auto-scroll to highlighted snippet
         scroll_script = """
@@ -1788,13 +1766,11 @@ def create_review_dashboard(
     # Build and display final dashboard UI
     ui = widgets.VBox(
         [
-            widgets.HTML(
-                """
+            widgets.HTML("""
             <div style='background: white; padding: 20px 28px; border-bottom: 3px solid #667eea; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);'>
                 <h1 style='margin: 0; color: #667eea; font-size: 28px; font-weight: 700;'>Follow-up Detection Review Dashboard</h1>
             </div>
-        """
-            ),
+        """),
             metrics_output,
             content_area,
         ],
