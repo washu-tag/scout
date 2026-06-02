@@ -79,14 +79,6 @@ spec:
               readOnly: true
             {{- end }}
             - name: scout-python
-              mountPath: /opt/scout/scout_trino.py
-              subPath: scout_trino.py
-              readOnly: true
-            - name: scout-python
-              mountPath: /opt/scout/scout_voila.py
-              subPath: scout_voila.py
-              readOnly: true
-            - name: scout-python
               mountPath: /etc/jupyter/voila.py
               subPath: voila.py
               readOnly: true
@@ -115,7 +107,7 @@ spec:
             # cold deploy or a cert renewal there's a window where the
             # Secret doesn't exist yet. With `optional: true`, the Pod
             # starts (mount is empty) instead of hanging until the
-            # 15m helm-install timeout. scout_trino passes
+            # 15m helm-install timeout. scout.trino passes
             # `verify=$TRINO_CA_CERT` to requests; with no file at
             # that path, TLS handshake fails with FileNotFoundError
             # rather than silently bypassing verification -- queries

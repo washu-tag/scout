@@ -6,7 +6,7 @@
   vars:
     ns: '{{ voila_namespace }}'
 
-- name: Create ConfigMap with Scout Python helpers (scout_trino, scout_voila, jupyter_server_config)
+- name: Create ConfigMap with Voila server config (loads scout.voila)
   kubernetes.core.k8s:
     state: present
     definition:
@@ -19,8 +19,6 @@
           app.kubernetes.io/name: voila
           app.kubernetes.io/component: scout-python
       data:
-        scout_trino.py: "{{ lookup('file', role_path + '/files/scout_trino.py') }}"
-        scout_voila.py: "{{ lookup('file', role_path + '/files/scout_voila.py') }}"
         voila.py: "{{ lookup('file', role_path + '/files/voila.py') }}"
 
 - name: Create Secret with voila_svc Keycloak client credentials
