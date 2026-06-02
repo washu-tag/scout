@@ -29,11 +29,11 @@ sns.set_palette("husl")
 def _connect_trino():
     """Connect to Trino as the logged-in Voila user.
 
-    scout_trino mints the voila_svc JWT and sets X-Trino-User, so Trino's OPA
+    scout.connect() mints the voila_svc JWT and sets X-Trino-User, so Trino's OPA
     policy filters/masks rows for the impersonated user (ADR 0022)."""
-    from scout import trino as scout_trino
+    import scout
 
-    return scout_trino.connect()
+    return scout.connect()
 
 
 def _load_quality_data(table_name="default.reports", date_range_days=None, limit=None):

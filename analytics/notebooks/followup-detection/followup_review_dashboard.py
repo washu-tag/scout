@@ -105,7 +105,7 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
     pd.DataFrame
         Stratified sample as Pandas DataFrame
     """
-    from scout import trino as scout_trino
+    import scout
     import pandas as pd
 
     def print_status(msg):
@@ -116,12 +116,12 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
             print(msg, flush=True)
 
     # Catalog/schema qualify the table name below. Connection params and auth
-    # are owned by scout_trino.connect() (voila_svc JWT + X-Trino-User).
+    # are owned by scout.connect() (voila_svc JWT + X-Trino-User).
     TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
     TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
 
     # Connect to Trino as the logged-in Voila user
-    conn = scout_trino.connect()
+    conn = scout.connect()
 
     # Parse table name (handle "catalog.schema.table" or "schema.table" or "table")
     table_parts = table_name.split(".")

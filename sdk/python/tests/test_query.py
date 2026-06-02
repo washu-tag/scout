@@ -1,12 +1,11 @@
-"""Unit tests for scout.trino - the SDK's Trino client + impersonation helper.
+"""Unit tests for the SDK's top-level query/connect/current_user surface.
 
 Covers identity resolution (X-Trino-User from the forwarded username), the
-voila_svc JWT mint + caching, and the anonymous fail-safe. connect_rw lives
-in scout.voila now (Voila-only); see test_voila.py for that side.
+voila_svc JWT mint + caching, and the anonymous fail-safe.
 """
 
-from scout import _identity
-from scout import trino as scout_trino
+import scout
+from scout import _identity, _query
 
 from conftest import requests_stub, set_token_response, trino_dbapi_stub
 
@@ -20,13 +19,13 @@ def test_connect_impersonates_forwarded_user(monkeypatch):
     monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
     set_token_response()
 
-    scout_trino.connect()
+    scout.connect()
 
     kwargs = _connect_kwargs()
     assert kwargs["user"] == "alice"
     # SDK uses a dynamic JWT auth that re-fetches per request; assert on type
     # rather than equality with a static-token JWTAuthentication.
-    assert isinstance(kwargs["auth"], scout_trino._DynamicJWTAuthentication)
+    assert isinstance(kwargs["auth"], _query._DynamicJWTAuthentication)
     assert kwargs["http_scheme"] == "https"
     assert kwargs["host"] == "trino.scout-analytics"
     assert kwargs["port"] == 8443
@@ -37,7 +36,7 @@ def test_connect_falls_back_to_anonymous_when_no_user(monkeypatch):
     # No X_AUTH_REQUEST_PREFERRED_USERNAME in env -> anonymous (OPA clamps rows).
     set_token_response()
 
-    scout_trino.connect()
+    scout.connect()
 
     assert _connect_kwargs()["user"] == "anonymous"
 
@@ -48,7 +47,7 @@ def test_token_is_minted_with_client_credentials(monkeypatch):
 
     # connect() resolves the provider but doesn't mint until the auth's
     # callable is invoked. Call it directly to drive the mint.
-    scout_trino.connect()
+    scout.connect()
     provider = _identity._resolve_provider()
     provider()
 
@@ -86,16 +85,18 @@ def test_token_refreshes_after_expiry(monkeypatch):
     assert requests_stub.post.call_count == 2
 
 
-def test_resolve_audit_user_prefers_voila_username(monkeypatch):
+def test_current_user_returns_voila_username(monkeypatch):
     monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "dave")
     monkeypatch.setenv("JUPYTERHUB_USER", "hub-user")
-    assert _identity.resolve_audit_user() == "dave"
+    assert scout.current_user() == "dave"
 
 
-def test_resolve_audit_user_falls_back_to_hub_user(monkeypatch):
+def test_current_user_falls_back_to_hub_user(monkeypatch):
     monkeypatch.setenv("JUPYTERHUB_USER", "hub-user")
-    assert _identity.resolve_audit_user() == "hub-user"
+    assert scout.current_user() == "hub-user"
 
 
-def test_resolve_audit_user_anonymous_when_neither_present(monkeypatch):
-    assert _identity.resolve_audit_user() == "anonymous"
+def test_current_user_none_when_no_identity(monkeypatch):
+    # The public current_user() returns None for "anonymous" so callers can
+    # distinguish "no identity" from a real user named anonymous.
+    assert scout.current_user() is None

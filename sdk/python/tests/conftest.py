@@ -103,12 +103,11 @@ js_stub.services = js_services_stub
 def reset_state(monkeypatch):
     """Each test starts with a fresh provider singleton, fresh mocks, and
     the Keycloak/Trino env the SDK expects."""
-    from scout import _identity
-    from scout import trino as scout_trino
+    from scout import _identity, _query
 
     _identity._singleton = None
     _identity._override_provider = None
-    scout_trino._engine = None
+    _query._engine = None
     requests_stub.post.reset_mock(return_value=True, side_effect=True)
     requests_stub.get.reset_mock(return_value=True, side_effect=True)
     trino_dbapi_stub.connect.reset_mock(return_value=True, side_effect=True)
