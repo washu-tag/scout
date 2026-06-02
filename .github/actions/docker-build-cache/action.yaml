@@ -7,6 +7,13 @@ inputs:
   image-name:
     description: 'Name for docker image'
     required: true
+  context:
+    description: >-
+      Build context path. Defaults to `subproject`. Override when the
+      Dockerfile needs to COPY paths outside its own directory (e.g.
+      scout-notebook pulls in sdk/python from repo root).
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -28,7 +35,8 @@ runs:
     - name: 'Build/Cache Image'
       uses: docker/build-push-action@v7
       with:
-        context: ${{ inputs.subproject }}
+        context: ${{ inputs.context != '' && inputs.context || inputs.subproject }}
+        file: ${{ inputs.subproject }}/Dockerfile
         tags: ${{ ENV.REGISTRY }}/washu-tag/${{ inputs.image-name }}:${{ steps.derive-version.outputs.version }}
         outputs: type=docker,dest=${{ runner.temp }}/${{ inputs.image-name }}.tar
         cache-from: type=gha

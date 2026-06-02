@@ -44,6 +44,7 @@ jobs:
               - 'extractor/hl7-transformer/**'
             scout-notebook:
               - 'helm/scout-notebook/**'
+              - 'sdk/python/**'
             launchpad:
               - 'launchpad/**'
             superset:
@@ -84,6 +85,10 @@ jobs:
             allow-failure: true
           - image-name: scout-notebook
             subproject: helm/scout-notebook
+            # Build from repo root so the Dockerfile can COPY sdk/python/
+            # into the image. The Dockerfile path is derived from
+            # `subproject` (see docker-build-cache action).
+            context: '.'
             allow-failure: true
           - image-name: launchpad
             subproject: launchpad
@@ -107,6 +112,7 @@ jobs:
         with:
           subproject: ${{ matrix.subproject }}
           image-name: ${{ matrix.image-name }}
+          context: ${{ matrix.context || '' }}
   unit-test:
     runs-on: ubuntu-latest
     permissions:

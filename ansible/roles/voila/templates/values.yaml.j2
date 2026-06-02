@@ -10,9 +10,9 @@ resources: {{ voila_resources_default | combine(voila_resources | default({}), r
 playbooks: {{ voila_playbooks | to_json }}
 
 env:
-  # Trino connection params consumed by scout.trino (installed in the
-  # scout-notebook image as the scout-sdk package). No TRINO_USER: per-user
-  # identity is set as X-Trino-User from each request's
+  # Trino connection params consumed by scout.trino (the `scout` package,
+  # installed in the scout-notebook image from sdk/python/). No TRINO_USER:
+  # per-user identity is set as X-Trino-User from each request's
   # X-Auth-Request-Access-Token header (ADR 0022).
   TRINO_HOST: "trino.{{ trino_namespace }}"
   TRINO_PORT: "{{ trino_https_port }}"
