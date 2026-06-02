@@ -196,12 +196,14 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
     WHERE row_num <= {samples_per_category}
     """
 
-    # Execute query and load into Pandas. The query interpolates SQL
-    # identifiers (table parts, column names) and a numeric sample size from
-    # notebook config — not request input — and can't use bound parameters.
+    # Execute query and load into Pandas.
+    # Safe to suppress: the query interpolates only SQL identifiers
+    # (catalog/schema/table from the configured table_name, and the report-text
+    # column name) plus an integer sample size — all notebook-authored config,
+    # never end-user/request input, and none can be bound parameters. The WHERE
+    # conditions are static IS-NOT-NULL checks with no interpolation.
     cursor = conn.cursor()
-    # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query, python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-    cursor.execute(query)
+    cursor.execute(query)  # nosemgrep
 
     # Fetch column names and data
     columns = [desc[0] for desc in cursor.description]
@@ -1564,9 +1566,14 @@ def create_review_dashboard(
                 # The reviewer-annotation columns may not exist on the target
                 # yet. Add them idempotently, guarded on the live column set
                 # (ADD COLUMN IF NOT EXISTS isn't universally supported).
-                # Table name validated above; row values bound with ? below.
-                # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query, python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-                cur.execute(f"DESCRIBE {merge_target}")
+                # Safe to suppress: merge_target is the only interpolated value
+                # and is validated against a strict dotted-identifier regex above;
+                # a table name can't be a bound parameter, and no user-supplied
+                # value appears in this statement.
+                # (Bare/same-line nosemgrep because the Semgrep OSS check honors
+                # only same-line suppressions, and a full rule-id comment is long
+                # enough that black would split it onto the next line.)
+                cur.execute(f"DESCRIBE {merge_target}")  # nosemgrep
                 existing_cols = {row[0] for row in cur.fetchall()}
                 for col_name, col_type in (
                     ("human_ground_truth", "boolean"),
