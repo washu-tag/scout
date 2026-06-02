@@ -39,7 +39,7 @@ def _mint_jsessionid(server: str, token: str, verify: Any = True) -> str:
     if not jsessionid:
         raise ScoutXnatAuthError(
             f"XNAT returned {resp.status_code} but did not set a JSESSIONID. "
-            "Check that scout-auth-plugin's BearerTokenFilter is loaded."
+            "Check that scout-xnat-auth-plugin's BearerTokenFilter is loaded."
         )
     return jsessionid
 
