@@ -63,7 +63,7 @@ subdirectory and adding its name to `bundles.enabled` — no template edits.
    the per-dashboard YAML export from the UI).
 2. Drop the YAML into the appropriate `files/analytics/<kind>/<bundle>/`
    subdirectory.
-3. `helm upgrade` (via `make install-analytics`). The Job re-runs and the new
+3. `helm upgrade` (via `make install-superset`). The Job re-runs and the new
    asset lands.
 
 Don't generate UUIDs manually — keep the ones Superset assigned. The

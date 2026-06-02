@@ -66,6 +66,10 @@ trino_jmx_exporter_version: 1.0.1
 # renovate: datasource=github-releases depName=tuannvm/mcp-trino
 mcp_trino_version: 4.3.1
 
+# Analytics & Query Engines - OPA (Trino access control)
+# renovate: datasource=docker depName=openpolicyagent/opa
+opa_image_tag: 1.16.2
+
 # Identity Provider - Keycloak
 # Tracked here so Renovate's customManager picks up upstream releases.
 # A matching customManager entry in renovate.json5 also bumps

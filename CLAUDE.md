@@ -54,7 +54,8 @@ scout/
 │   │   ├── main.yaml          # Full deployment workflow
 │   │   ├── k3s.yaml           # Kubernetes setup
 │   │   ├── lake.yaml          # MinIO + Hive + Delta Lake
-│   │   ├── analytics.yaml     # Trino + Superset
+│   │   ├── trino.yaml         # OPA + Trino
+│   │   ├── superset.yaml      # Superset
 │   │   ├── orchestrator.yaml  # Temporal + Cassandra + Elasticsearch
 │   │   ├── extractor.yaml     # HL7 processors
 │   │   ├── jupyter.yaml       # JupyterHub
@@ -162,7 +163,8 @@ make install-postgres         # PostgreSQL (CloudNativePG)
 make install-lake             # MinIO + Hive Metastore
 
 # Analytics
-make install-analytics        # Trino + Superset
+make install-trino            # OPA + Trino
+make install-superset         # Superset
 
 # Processing
 make install-orchestrator     # Temporal + Cassandra + Elasticsearch
@@ -377,7 +379,7 @@ ansible-inventory -i inventory.yaml --host <hostname>
 ANSIBLE_CMD="--check --diff" make install-<component>
 
 # Re-deploy specific component
-make install-analytics
+make install-trino
 ```
 
 ## Testing

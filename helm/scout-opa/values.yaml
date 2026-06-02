@@ -1,0 +1,46 @@
+# Default values for scout-opa.
+# Production values are rendered by ansible/roles/opa from scout inventory.
+
+replicaCount: 2
+
+image:
+  repository: openpolicyagent/opa
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Multi-line content rendered into the OPA policy ConfigMap. The
+# policy-hash annotation on the Deployment forces a rollout when any
+# of these change.
+policy:
+  rego: ''
+data:
+  json: '{}'
+config:
+  yaml: ''
+
+# Bundle-reader Secret is managed outside this chart (provisioned by
+# the opa Ansible role from MinIO credentials in scout_common). The
+# Deployment mounts the Secret via envFrom; credsHash is included in
+# the rolling-hash annotation so credential rotation triggers a pod
+# restart without re-reading the Secret values into the chart.
+bundleReader:
+  secretName: opa-bundle-reader
+  credsHash: ''
+
+service:
+  port: 8181
+
+# Ingress NetworkPolicy admitting only the Trino coordinator (see
+# templates/networkpolicy.yaml). Default off so a bare `helm install` (e.g.
+# chart tests, where no Trino coordinator exists) stays reachable; the opa
+# Ansible role renders this enabled for Scout deployments.
+networkPolicy:
+  enabled: false

@@ -39,6 +39,52 @@
     sa_namespace: '{{ trino_namespace }}'
     sa_role_arn: '{{ lake_reader_role_arn }}'
 
+- name: Deploy cert-manager (required by the Trino TLS Certificate below)
+  ansible.builtin.include_role:
+    name: cert_manager
+  when: not aws_deployment
+
+- name: Set up Scout internal CA ClusterIssuer (idempotent)
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: cluster_issuer_setup
+  when: not aws_deployment
+
+- name: Create Trino AuthZ env Secret (keystore password + internal shared secret)
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: trino-authz-env
+        namespace: '{{ trino_namespace }}'
+      type: Opaque
+      stringData:
+        # KEYSTORE_PASSWORD: used by cert-manager (Certificate passwordSecretRef)
+        #   AND by Trino via envFrom (read in property as ${ENV:KEYSTORE_PASSWORD}).
+        # INTERNAL_SHARED_SECRET: read in property as ${ENV:INTERNAL_SHARED_SECRET};
+        #   protects worker↔coordinator traffic on the internal-communication channel.
+        KEYSTORE_PASSWORD: '{{ trino_keystore_password }}'
+        INTERNAL_SHARED_SECRET: '{{ trino_internal_shared_secret }}'
+
+- name: Issue Trino TLS Certificate
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'certificate.yaml.j2') }}"
+
+- name: Wait for Trino TLS keystore Secret to be ready
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: trino-tls
+    namespace: '{{ trino_namespace }}'
+  register: trino_tls_secret
+  until: trino_tls_secret.resources | length > 0 and trino_tls_secret.resources[0].data is defined and 'keystore.p12' in trino_tls_secret.resources[0].data
+  retries: 30
+  delay: 5
+
 - name: Deploy Trino
   ansible.builtin.include_role:
     name: scout_common
