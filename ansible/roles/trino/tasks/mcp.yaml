@@ -2,12 +2,23 @@
 # Deploy Trino MCP server in the Trino namespace
 # Provides MCP interface to Trino for AI assistants
 
-- name: Clone or update mcp-trino repository
+# Always start from a clean checkout. A reused /tmp directory across runs
+# (partial fetch, .git without HEAD, root-owned files from an earlier
+# elevated run, anything) trips up ansible.builtin.git's clone-or-update
+# heuristic. The repo is small; re-cloning every install is cheaper than
+# the failure modes of trying to reuse the tree.
+- name: Remove any prior mcp-trino chart checkout
+  ansible.builtin.file:
+    path: '{{ mcp_trino_chart_path }}'
+    state: absent
+  delegate_to: localhost
+  run_once: true
+
+- name: Clone mcp-trino repository
   ansible.builtin.git:
     repo: '{{ mcp_trino_repo_url }}'
     dest: '{{ mcp_trino_chart_path }}'
     version: '{{ mcp_trino_repo_version }}'
-    update: true
   delegate_to: localhost
   run_once: true
 
@@ -24,3 +35,39 @@
     helm_chart_ref: '{{ mcp_trino_chart_path }}/charts/mcp-trino'
     helm_chart_namespace: '{{ trino_namespace }}'
     helm_chart_values: '{{ mcp_trino_helm_chart_values }}'
+
+- name: Restrict mcp-trino ingress to Open WebUI
+  # The X-Trino-User impersonation pattern trusts that the inbound OIDC token
+  # came from the chat user via Open WebUI's system_oauth tool forwarding.
+  # Without this NetworkPolicy, any in-cluster pod could forge a forwarded
+  # token (or call mcp-trino with the right ServiceAccount JWT) and have the
+  # MCP impersonate arbitrary users on the outbound Trino call. Egress is
+  # unrestricted (mcp-trino needs Keycloak JWKS + Trino HTTPS + DNS).
+  # Mirrors the chart-shipped Voila ingress NetworkPolicy.
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: mcp-trino-ingress
+        namespace: '{{ trino_namespace }}'
+        labels:
+          app.kubernetes.io/name: mcp-trino
+      spec:
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: mcp-trino
+        policyTypes:
+          - Ingress
+        ingress:
+          - from:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: '{{ chatbot_namespace }}'
+                podSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: open-webui
+            ports:
+              - protocol: TCP
+                port: 8080

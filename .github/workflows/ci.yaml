@@ -248,6 +248,11 @@ jobs:
       - name: Install Python dependencies for Ansible Kubernetes modules
         run: |
           /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
+      - name: Install apache2-utils for htpasswd
+        # roles/trino/templates/password.db.j2 shells out to `htpasswd -bnBC 10`
+        # to bcrypt-hash the file-PASSWORD-authenticator entries. ubuntu-latest
+        # doesn't include it by default.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends apache2-utils
       - name: 'Install k3s'
         shell: bash
         run: |
@@ -369,7 +374,7 @@ jobs:
             subdomains: superset,chat,keycloak,auth,minio
             san_extra: ''
             playbooks: k3s traefik postgres valkey auth lake trino superset chatbot launchpad
-            netpol_include: '--include trino-rw,opa-trino'
+            netpol_include: '--include trino-rw,opa-trino,mcp-trino-ingress'
           - side: notebooks
             # testuser.jupyter is the per-user singleuser pod ingress
             subdomains: jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
@@ -427,6 +432,11 @@ jobs:
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
       - name: Install Python dependencies for Ansible Kubernetes modules
         run: /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
+      - name: Install apache2-utils for htpasswd
+        # roles/trino/templates/password.db.j2 shells out to `htpasswd -bnBC 10`
+        # to bcrypt-hash the file-PASSWORD-authenticator entries. ubuntu-latest
+        # doesn't include it by default.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends apache2-utils
       - name: 'Install k3s'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
@@ -495,6 +505,10 @@ jobs:
           echo "=== Checking Trino ==="
           sudo -E kubectl rollout status deployment/trino-coordinator -n scout-analytics --timeout=180s
           sudo -E kubectl rollout status deployment/trino-worker -n scout-analytics --timeout=180s
+          if [ "$SIDE" = "analytics" ]; then
+            echo "=== Checking MCP Trino ==="
+            sudo -E kubectl rollout status deployment/mcp-trino -n scout-analytics --timeout=180s
+          fi
           if [ "$SIDE" = "notebooks" ]; then
             echo "=== Checking Voila ==="
             sudo -E kubectl rollout status deployment/voila -n scout-analytics --timeout=180s
@@ -521,6 +535,31 @@ jobs:
         run: |
           sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- \
             curl -sk -f https://localhost:8443/v1/info
+      # MCP→Trino auth smoke. Exercises the PASSWORD authenticator + the
+      # service-principal X-Trino-User impersonation pattern mcp-trino
+      # uses (ADR 0022). A successful query confirms: the password.db
+      # file authenticator loaded openwebui_mcp_svc, the bcrypt hash
+      # matches the configured password, and OPA permits the principal
+      # to impersonate end users. Doesn't invoke mcp-trino itself - that
+      # adds OIDC-inbound + Go HTTP plumbing on top of the same path; if
+      # this passes and mcp-trino is Ready, the chain is sound. (A full
+      # mcp-trino → Trino smoke that mints + forwards a real chat-user
+      # JWT is deferred; the existing data-auth tests cover the broader
+      # JWT identity flow on the JWT authenticator.)
+      - name: 'MCP→Trino PASSWORD auth smoke'
+        if: matrix.side == 'analytics'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PW=$(yq '.k3s_cluster.vars.trino_openwebui_mcp_svc_password' ansible/inventory.yaml)
+          sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- \
+            curl -sk -f \
+              -u "openwebui_mcp_svc:${PW}" \
+              -H "X-Trino-User: testuser.jupyter" \
+              -H "Content-Type: text/plain" \
+              -X POST --data 'SELECT 1' \
+              https://localhost:8443/v1/statement \
+            | grep -q '"infoUri"'
       # Data authorization tests. Seeds a synthetic
       # delta.default.test_reports table, then exercises the end-to-end
       # AuthZ pipeline (Keycloak admin -> SPI listener -> MinIO bundle ->
