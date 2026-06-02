@@ -47,7 +47,7 @@ src/main/java/edu/wustl/scout/xnat/auth/
 ├── ScoutAuthPlugin.java                 # @XnatPlugin discovery seam
 ├── ScoutAuthConfig.java                 # @Configuration; @Beans for filters + services
 ├── ScoutAuthProperties.java             # Spring @Value config
-├── model/ScoutIdentity.java             # normalized {sub, email, roles, groups}
+├── model/ScoutIdentity.java             # normalized {sub, preferred_username, email, names, roles}
 ├── security/
 │   ├── ScoutSecurityExtension.java      # extends BaseXnatSecurityExtension
 │   ├── HeaderTrustFilter.java           # OncePerRequestFilter, oauth2-proxy headers
