@@ -163,7 +163,8 @@ def _create_search_form(container, config=None):
         config = {}
 
     # Header - more compact
-    header_html = widgets.HTML("""
+    header_html = widgets.HTML(
+        """
         <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     padding: 20px; text-align: center; color: white; border-radius: 12px 12px 0 0;'>
             <h1 style='margin: 0 0 6px 0; font-size: 28px; font-weight: 700;'>
@@ -173,10 +174,12 @@ def _create_search_form(container, config=None):
                 Build custom patient cohorts with flexible filtering and manual review
             </p>
         </div>
-    """)
+    """
+    )
 
     # Features list - redesigned
-    features_html = widgets.HTML("""
+    features_html = widgets.HTML(
+        """
         <div style='display: flex; justify-content: center; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;'>
             <div style='display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
                         border-radius: 20px; border: 1px solid #bae6fd;'>
@@ -199,7 +202,8 @@ def _create_search_form(container, config=None):
                 <span style='font-size: 13px; font-weight: 500; color: #78350f;'>CSV Export</span>
             </div>
         </div>
-    """)
+    """
+    )
 
     # Input widgets - populate from config if provided
     diagnosis_codes_input = widgets.Textarea(
@@ -281,25 +285,33 @@ def _create_search_form(container, config=None):
 
         with debug_output:
             debug_output.clear_output()
-            display(HTML(f"""
+            display(
+                HTML(
+                    f"""
                 <div style='background: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace;'>
                     <div style='font-weight: 600; margin-bottom: 4px;'>Request Details:</div>
                     <div><b>URL:</b> {os.environ["OLLAMA_URL"]}/api/generate</div>
                     <div><b>Model:</b> {os.environ["OLLAMA_MODEL"]}</div>
                     <div><b>Query:</b> {html_module.escape(query)}</div>
                 </div>
-            """))
+            """
+                )
+            )
 
         try:
             result = generate_regex_with_ollama(query)
 
             with debug_output:
-                display(HTML(f"""
+                display(
+                    HTML(
+                        f"""
                     <div style='background: #fef3c7; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace; margin-top: 8px;'>
                         <div style='font-weight: 600; margin-bottom: 4px;'>Response:</div>
                         <pre style='margin: 0; white-space: pre-wrap; word-wrap: break-word;'>{result[:500]}</pre>
                     </div>
-                """))
+                """
+                    )
+                )
 
             with ai_status_output:
                 ai_status_output.clear_output()
@@ -755,14 +767,18 @@ def launch_cohort_builder():
     Creates and displays the landing page with configuration inputs.
     """
     # Global styles
-    display(HTML("""
+    display(
+        HTML(
+            """
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
             body, .widget-html, .widget-label, .widget-text input, .widget-textarea textarea {
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
             }
         </style>
-    """))
+    """
+        )
+    )
 
     # Create main container that will hold either landing page or dashboard
     main_container = widgets.VBox([])
@@ -816,7 +832,9 @@ def _create_review_dashboard(config, container):
 
             no_results_output = widgets.Output()
             with no_results_output:
-                display(HTML(f"""
+                display(
+                    HTML(
+                        f"""
                     <div style='background: {ORANGE_WARNING}; padding: 24px; border-radius: 12px;
                                 color: white; margin: 20px auto; text-align: center; max-width: 1000px;'>
                         <div style='font-size: 28px; margin-bottom: 8px;'>⚠️</div>
@@ -831,7 +849,9 @@ def _create_review_dashboard(config, container):
                             <pre style='margin: 2px; white-space: pre-wrap;'>{sql_display}</pre>
                         </div>
                     </div>
-                """))
+                """
+                    )
+                )
 
             container.children = [no_results_output, back_button]
             return
@@ -859,7 +879,9 @@ def _create_review_dashboard(config, container):
 
         error_output = widgets.Output()
         with error_output:
-            display(HTML(f"""
+            display(
+                HTML(
+                    f"""
                 <div style='background: {RED_ERROR}; padding: 24px; border-radius: 12px;
                             color: white; margin: 20px auto; text-align: center; max-width: 1000px;'>
                     <div style='font-size: 28px; margin-bottom: 8px;'>❌</div>
@@ -874,7 +896,9 @@ def _create_review_dashboard(config, container):
                         <pre style='margin: 0; white-space: pre-wrap;'>{sql_display}</pre>
                     </div>
                 </div>
-            """))
+            """
+                )
+            )
 
         container.children = [error_output, back_button]
 
@@ -957,7 +981,8 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
 
                 confirmation = widgets.VBox(
                     [
-                        widgets.HTML(f"""
+                        widgets.HTML(
+                            f"""
                             <div style='background: {ORANGE_WARNING}; padding: 24px; border-radius: 12px;
                                         color: white; margin: 20px auto; text-align: center; max-width: 600px;'>
                                 <div style='font-size: 28px; margin-bottom: 8px;'>⚠️</div>
@@ -967,7 +992,8 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
                                     Are you sure you want to continue?
                                 </div>
                             </div>
-                        """),
+                        """
+                        ),
                         widgets.HBox(
                             [confirm_yes, confirm_no],
                             layout=widgets.Layout(justify_content="center", gap="12px"),
@@ -987,7 +1013,8 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
         back_button.on_click(on_back_click)
 
         # Summary section with back button
-        summary_html = widgets.HTML(f"""
+        summary_html = widgets.HTML(
+            f"""
             <div style='background: {PRIMARY_GRADIENT}; padding: 12px 20px; border-radius: 8px;
                         color: white; margin-bottom: 12px;'>
                 <span style='font-size: 18px; font-weight: 700;'>Scout Cohort Builder</span>
@@ -995,7 +1022,8 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
                     {cohort_included_count:,} included reports • {unique_patients:,} patients
                 </span>
             </div>
-        """)
+        """
+        )
 
         summary_widget = widgets.HBox(
             [back_button, summary_html],
@@ -1033,7 +1061,9 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
                     if len(sql_display) > 2000:
                         sql_display = sql_display[:2000] + "\n...(truncated)"
 
-                    display(HTML(f"""
+                    display(
+                        HTML(
+                            f"""
                         <div style='background: linear-gradient(to bottom, #f8f9fa, #ffffff);
                                     padding: 20px; border-radius: 8px;
                                     border: 2px solid {PURPLE_PRIMARY};
@@ -1055,7 +1085,9 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
                                 <pre style='margin: 0; white-space: pre-wrap; word-wrap: break-word;'>{sql_display}</pre>
                             </div>
                         </div>
-                    """))
+                    """
+                        )
+                    )
                     show_sql_btn.description = "📋 Hide SQL Query"
 
         show_sql_btn.on_click(on_show_sql)
@@ -1102,7 +1134,9 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
         # Show error message
         with status_output:
             status_output.clear_output(wait=True)
-            display(HTML(f"""
+            display(
+                HTML(
+                    f"""
                 <div style='background: {RED_ERROR}; padding: 24px; border-radius: 12px;
                             color: white; margin: 20px; text-align: center;'>
                     <div style='font-size: 28px; margin-bottom: 8px;'>⚠️</div>
@@ -1114,4 +1148,6 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
                         {traceback.format_exc()}
                     </pre>
                 </div>
-            """))
+            """
+                )
+            )

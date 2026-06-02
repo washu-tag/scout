@@ -81,7 +81,9 @@ def connect_trino():
 
 def render_section_loading(section_name):
     """Render loading indicator for a section."""
-    display(HTML(f"""
+    display(
+        HTML(
+            f"""
         <div style='background: #f3f4f6; padding: 16px 20px; border-radius: 8px;
                     border-left: 4px solid {PURPLE_PRIMARY}; margin-bottom: 16px;'>
             <div style='display: flex; align-items: center; gap: 12px;'>
@@ -89,7 +91,9 @@ def render_section_loading(section_name):
                 <div>{section_name}...</div>
             </div>
         </div>
-    """))
+    """
+        )
+    )
 
 
 def render_status_card(message, icon="⏳", gradient=PRIMARY_GRADIENT, subtitle=""):
@@ -99,14 +103,18 @@ def render_status_card(message, icon="⏳", gradient=PRIMARY_GRADIENT, subtitle=
         if subtitle
         else ""
     )
-    display(HTML(f"""
+    display(
+        HTML(
+            f"""
         <div style='background: {gradient}; padding: 24px; border-radius: 12px;
                     color: white; margin: 20px 0; text-align: center;'>
             <div style='font-size: 28px; margin-bottom: 8px;'>{icon}</div>
             <div style='font-size: 18px; font-weight: 600;'>{message}</div>
             {subtitle_html}
         </div>
-    """))
+    """
+        )
+    )
 
 
 # ============================================================================
