@@ -15,6 +15,23 @@ hub:
       description: 'Read JupyterHub metrics'
       scopes: [read:metrics]
       services: [prometheus]
+    # Override built-in `user` and `server` roles so a spawned kernel's
+    # JUPYTERHUB_API_TOKEN can read its own user's auth_state via
+    # GET {JUPYTERHUB_API_URL}/users/{JUPYTERHUB_USER}. scout.trino reads
+    # the Keycloak access_token from that response and sends it as the
+    # Bearer to Trino (per-user identity from the JWT's sub claim).
+    # Both roles must carry admin:auth_state!user — server-token scopes
+    # are the intersection of the server role and the owning user's role.
+    user:
+      scopes:
+        - self
+        - admin:auth_state!user
+    server:
+      scopes:
+        - access:servers!user
+        - read:users:activity!user
+        - users:activity!user
+        - admin:auth_state!user
   db:
     pvc:
 {% if jupyterhub_storage_class is defined and jupyterhub_storage_class %}
@@ -65,6 +82,10 @@ hub:
         - openid
         - microprofile-jwt
       enable_auth_state: true
+      # Refresh the user's Keycloak token before spawning so kernels start
+      # with a fresh access_token; scout.trino re-fetches from the Hub API
+      # on near-expiry for long-running sessions.
+      refresh_pre_spawn: true
       auth_state_groups_key: 'oauth_user.groups'
       manage_groups: true
       allowed_groups:
@@ -182,14 +203,16 @@ singleuser:
     # HuggingFace model cache directory - models downloaded from HF Hub are stored here
     # This directory is created in postStart hook and persists with user's home directory
     HF_HOME: '/home/jovyan/models'
-    # Trino connection information for read-only access from notebooks
-    # Users can connect with: trino.dbapi.connect(host=os.getenv('TRINO_HOST'), ...)
+    # Trino connection params consumed by scout.trino (installed in the
+    # scout-notebook image). No TRINO_USER: per-user identity comes from
+    # the user's Keycloak access_token (fetched via the Hub API and sent
+    # as the Bearer; Trino reads the `sub` claim).
     TRINO_HOST: 'trino.{{ trino_namespace }}'
-    TRINO_PORT: '8080'
-    TRINO_SCHEME: 'http'
-    TRINO_USER: '{{ trino_user }}'
+    TRINO_PORT: '{{ trino_https_port }}'
+    TRINO_SCHEME: 'https'
     TRINO_CATALOG: 'delta'
     TRINO_SCHEMA: 'default'
+    TRINO_CA_CERT: '/etc/trino-ca/ca.crt'
     # Ollama service for LLM calls from notebooks
     OLLAMA_URL: 'http://ollama.{{ chatbot_namespace }}:11434'
     OLLAMA_MODEL: '{{ ollama_default_model }}'
@@ -262,6 +285,18 @@ singleuser:
         configMap:
           name: scout-quickstart-samples
           defaultMode: 0644
+      trino-ca:
+        name: trino-ca
+        secret:
+          secretName: trino-tls
+          # cert-manager issues this Secret as part of the analytics
+          # playbook; tolerate its absence so a cold deploy doesn't block
+          # spawn (scout.trino's TLS handshake fails loudly until kubelet
+          # picks up the issued Secret on its next sync).
+          optional: true
+          items:
+            - key: ca.crt
+              path: ca.crt
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
       staging-ca-cert:
         name: staging-ca-cert
@@ -283,6 +318,10 @@ singleuser:
       scout-samples:
         name: scout-samples
         mountPath: /opt/scout/samples
+        readOnly: true
+      trino-ca:
+        name: trino-ca
+        mountPath: /etc/trino-ca
         readOnly: true
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
       staging-ca-bundle:
@@ -308,13 +347,13 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ chatbot_namespace }}'
         ports:
           - port: 11434
-      # Allow access to Trino for SQL queries
+      # Allow access to Trino for SQL queries (HTTPS with JWT auth)
       - to:
           - namespaceSelector:
               matchLabels:
                 kubernetes.io/metadata.name: '{{ trino_namespace }}'
         ports:
-          - port: 8080
+          - port: {{ trino_https_port }}
 {% if jupyter_egress_allow_cidr | default('') | length > 0 %}
       # Allow access to additional private network CIDR (e.g. staging node / package proxy)
       - to:
