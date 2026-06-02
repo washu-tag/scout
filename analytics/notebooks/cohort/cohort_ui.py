@@ -714,12 +714,16 @@ def create_annotation_controls(
     def on_xnat_request(b):
         with xnat_output:
             xnat_output.clear_output()
-            display(HTML("""
+            display(
+                HTML(
+                    """
                 <div style='background: #fef3c7; color: #92400e; padding: 8px; border-radius: 4px;
                             font-size: 12px; text-align: center; border: 1px solid #f59e0b;'>
                     🚧 XNAT integration is a planned feature. For now, use <strong>Export Cohort CSV</strong> to download your cohort.
                 </div>
-            """))
+            """
+                )
+            )
 
     xnat_button.on_click(on_xnat_request)
 
@@ -855,23 +859,27 @@ def create_annotation_controls(
     # Create annotation controls as a vertical sidebar with improved styling
     annotation_sidebar = widgets.VBox(
         [
-            widgets.HTML("""
+            widgets.HTML(
+                """
             <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                         color: white; padding: 12px 16px; margin: -16px -16px 16px -16px;
                         border-radius: 6px 6px 0 0; font-weight: 600; font-size: 16px;'>
                 📋 Review Decision
             </div>
-        """),
+        """
+            ),
             include_check,
             exclude_check,
             uncertain_check,
             widgets.HTML("<div style='height: 20px;'></div>"),
-            widgets.HTML("""
+            widgets.HTML(
+                """
             <div style='font-weight: 600; font-size: 14px; margin-bottom: 8px;
                         color: #374151; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;'>
                 📝 Notes
             </div>
-        """),
+        """
+            ),
             notes_text,
             widgets.HTML("<div style='height: 16px;'></div>"),
             widgets.HTML(
@@ -879,12 +887,14 @@ def create_annotation_controls(
             ),
             auto_advance_check,
             widgets.HTML("<div style='height: 16px;'></div>"),
-            widgets.HTML("""
+            widgets.HTML(
+                """
             <div style='font-weight: 600; font-size: 14px; margin-bottom: 8px;
                         color: #374151; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;'>
                 📤 Export
             </div>
-        """),
+        """
+            ),
             export_widgets["include_text_check"],
             export_widgets["export_button"],
             export_widgets["export_output"],
@@ -952,7 +962,9 @@ def create_export_controls(state):
                 filename = os.path.basename(filepath)
                 download_url = f"/voila/files/exports/{filename}"
 
-                display(HTML(f"""
+                display(
+                    HTML(
+                        f"""
                     <style>
                         .download-link:hover {{
                             background: rgba(255,255,255,0.3) !important;
@@ -975,15 +987,21 @@ def create_export_controls(state):
                             📥 Download {filename}
                         </a>
                     </div>
-                """))
+                """
+                    )
+                )
             except Exception as e:
-                display(HTML(f"""
+                display(
+                    HTML(
+                        f"""
                     <div style='background: {RED_ERROR}; padding: 16px; border-radius: 8px;
                                 color: white; margin-top: 12px;'>
                         <div style='font-weight: 600; margin-bottom: 8px;'>✗ Export Failed</div>
                         <div style='font-size: 14px; opacity: 0.95;'>Error: {str(e)}</div>
                     </div>
-                """))
+                """
+                    )
+                )
 
     export_button.on_click(on_export)
 

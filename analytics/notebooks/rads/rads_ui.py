@@ -507,7 +507,8 @@ def create_score_distribution_panel(state):
         # Create table with both counts
         table_rows = []
         for _, row in dist_merged.iterrows():
-            table_rows.append(f"""
+            table_rows.append(
+                f"""
                 <tr>
                     <td style='padding: 6px; border-bottom: 1px solid #e5e7eb;'><strong>{row['score']}</strong></td>
                     <td style='padding: 6px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{int(row['count_reports'])}</td>
@@ -515,7 +516,8 @@ def create_score_distribution_panel(state):
                     <td style='padding: 6px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{int(row['count_patients'])}</td>
                     <td style='padding: 6px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{row['percentage_patients']:.1f}%</td>
                 </tr>
-            """)
+            """
+            )
 
         dist_html = f"""
         <div style='background: white; padding: 28px; border-radius: 12px; border: 1px solid #e5e7eb;
@@ -842,14 +844,18 @@ def create_time_comparison_panel(state):
             comparison_output.clear_output(wait=True)
 
             # Show progress indicator
-            display(HTML(f"""
+            display(
+                HTML(
+                    f"""
                 <div style='background: {PRIMARY_GRADIENT}; padding: 24px; border-radius: 12px;
                             color: white; margin: 20px 0; text-align: center;'>
                     <div style='font-size: 28px; margin-bottom: 8px;'>⏳</div>
                     <div style='font-size: 18px; font-weight: 600;'>Generating Visualization...</div>
                     <div style='font-size: 14px; margin-top: 8px; opacity: 0.9;'>This may take a few moments</div>
                 </div>
-            """))
+            """
+                )
+            )
 
         # Process in background
         import time
@@ -942,13 +948,15 @@ def create_time_comparison_panel(state):
 
             rows = []
             for _, row in dist.iterrows():
-                rows.append(f"""
+                rows.append(
+                    f"""
                     <tr>
                         <td style='padding: 6px; border-bottom: 1px solid #e5e7eb;'><strong>{row['score']}</strong></td>
                         <td style='padding: 6px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{int(row['count'])}</td>
                         <td style='padding: 6px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{row['percentage']}%</td>
                     </tr>
-                """)
+                """
+                )
 
             return f"""
             <div style='flex: 1; min-width: 300px;'>
@@ -998,7 +1006,8 @@ def create_time_comparison_panel(state):
 
     # Build container
     comparison_container.children = [
-        widgets.HTML(f"""
+        widgets.HTML(
+            f"""
             <div style='background: white; padding: 28px; border-radius: 12px; border: 1px solid #e5e7eb;
                         margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);'>
                 <!-- Section header -->
@@ -1010,7 +1019,8 @@ def create_time_comparison_panel(state):
                     📊 Visualize RADS score trends over time or compare distributions between specific periods
                 </p>
             </div>
-        """),
+        """
+        ),
         analysis_type,
         controls_container,
         comparison_output,
@@ -1302,13 +1312,17 @@ def create_demographics_panel(state):
             return
 
         # Show progress
-        demo_container.children = [widgets.HTML(f"""
+        demo_container.children = [
+            widgets.HTML(
+                f"""
             <div style='background: {PRIMARY_GRADIENT}; padding: 24px; border-radius: 12px;
                         color: white; margin: 20px 0; text-align: center;'>
                 <div style='font-size: 28px; margin-bottom: 8px;'>⏳</div>
                 <div style='font-size: 18px; font-weight: 600;'>Generating Demographics Visualizations...</div>
             </div>
-        """)]
+        """
+            )
+        ]
 
         # Generate charts
         age_chart_html, sex_chart_html, race_chart_html = create_demographics_charts(df)
@@ -1430,14 +1444,18 @@ def create_patient_progression_panel(state):
         progression_df = calculate_patient_progression(df)
 
         if len(progression_df) == 0:
-            prog_container.children = [widgets.HTML("""
+            prog_container.children = [
+                widgets.HTML(
+                    """
                 <div style='background: white; padding: 16px; border-radius: 6px; border: 1px solid #e5e7eb;'>
                     <h3 style='margin: 0 0 12px 0; font-size: 16px; color: #667eea;'>Patient Progression</h3>
                     <div style='padding: 20px; text-align: center; color: #999;'>
                         No patients with multiple reports in the current dataset
                     </div>
                 </div>
-            """)]
+            """
+                )
+            ]
             return
 
         # Calculate overall progression statistics
@@ -1692,7 +1710,8 @@ def create_patient_progression_panel(state):
                         "BI-RADS-6": "Known biopsy-proven malignancy",
                     }
 
-                    timeline_rows.append(f"""
+                    timeline_rows.append(
+                        f"""
                     <div style='display: flex; gap: 20px; padding: 16px 0; border-left: 3px solid #e5e7eb; position: relative; margin-left: 12px;'>
                         <!-- Timeline dot -->
                         <div style='position: absolute; left: -13px; top: 20px; width: 24px; height: 24px;
@@ -1733,7 +1752,8 @@ def create_patient_progression_panel(state):
                             </details>
                         </div>
                     </div>
-                    """)
+                    """
+                    )
 
                 # Format all unique scores
                 if all_patient_scores:
@@ -2094,7 +2114,9 @@ def create_export_controls(state):
                     state["df"], include_report_text_check.value
                 )
 
-                display(HTML(f"""
+                display(
+                    HTML(
+                        f"""
                     <div style='background: {SUCCESS_GRADIENT}; padding: 16px; border-radius: 8px;
                                 color: white; margin-top: 12px;'>
                         <div style='font-weight: 600; margin-bottom: 8px;'>✓ Export Successful</div>
@@ -2104,15 +2126,21 @@ def create_export_controls(state):
                                                border-radius: 4px;'>{filepath}</code>
                         </div>
                     </div>
-                """))
+                """
+                    )
+                )
             except Exception as e:
-                display(HTML(f"""
+                display(
+                    HTML(
+                        f"""
                     <div style='background: {RED_ERROR}; padding: 16px; border-radius: 8px;
                                 color: white; margin-top: 12px;'>
                         <div style='font-weight: 600; margin-bottom: 8px;'>✗ Export Failed</div>
                         <div style='font-size: 14px; opacity: 0.95;'>Error: {str(e)}</div>
                     </div>
-                """))
+                """
+                    )
+                )
 
     export_button.on_click(on_export)
 

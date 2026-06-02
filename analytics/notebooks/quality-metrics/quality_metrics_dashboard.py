@@ -109,12 +109,14 @@ def _load_quality_data(table_name="default.reports", date_range_days=None, limit
     {limit_sql}
     """
 
-    # Use cursor to avoid SQLAlchemy warning. The query interpolates SQL
-    # identifiers (schema/table) and config-built WHERE/LIMIT clauses — not
-    # request input — and can't use bound parameters.
+    # Use cursor to avoid SQLAlchemy warning. The only interpolations are config
+    # identifiers (schema/table from table_name — SQL can't bind identifiers) and
+    # the WHERE cutoff / LIMIT. The cutoff is timedelta(days=date_range_days)
+    # .strftime(): date_range_days is a user-set IntText, but timedelta rejects
+    # non-numerics and strftime always emits a plain date, so it can't carry SQL.
+    # LIMIT is None in every real call path (no caller passes limit=).
     cursor = conn.cursor()
-    # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query, python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-    cursor.execute(query)
+    cursor.execute(query)  # nosemgrep
     columns = [desc[0] for desc in cursor.description]
     data = cursor.fetchall()
     df = pd.DataFrame(data, columns=columns)
