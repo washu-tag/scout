@@ -87,6 +87,34 @@ def test_401_remints_and_retries_once():
     assert getattr(retry._retry_state, "active", False) is False
 
 
+def test_retry_replaces_stale_jsessionid_in_place():
+    """The refreshed cookie must replace xnatpy's domain-scoped JSESSIONID,
+    not add a second one. xnatpy stores JSESSIONID with an explicit domain
+    (xnat.connect), so a domain-less set() lands under a different
+    (domain, path, name) key; the jar would then emit
+    'JSESSIONID=stale; JSESSIONID=fresh' and XNAT honors the first (stale)
+    value, so the retry never recovers the session."""
+    interface = FakeInterface(send_result=object())
+    # Seed the jar exactly as xnatpy does: explicit domain, default path.
+    interface.cookies.set_cookie(
+        requests.cookies.create_cookie(
+            domain="xnat.local", name="JSESSIONID", value="stale"
+        )
+    )
+
+    hook = _install(interface, lambda: "tok", lambda *a: "fresh-jsession")
+    hook(_make_response(401))
+
+    # Exactly one JSESSIONID remains, holding the fresh value.
+    values = [c.value for c in interface.cookies if c.name == "JSESSIONID"]
+    assert values == ["fresh-jsession"]
+
+    # The wire header carries only the fresh cookie — no stale duplicate.
+    req = requests.Request("GET", "http://xnat.local/data/JSESSION").prepare()
+    req.prepare_cookies(interface.cookies)
+    assert req.headers.get("Cookie") == "JSESSIONID=fresh-jsession"
+
+
 def test_reentrancy_guard_blocks_nested_retry():
     interface = FakeInterface()
 
