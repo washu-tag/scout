@@ -27,6 +27,15 @@ spec:
     metadata:
       labels:
         app: data-authz-tests
+        # run.sh polls OPA's /v1/data/users directly for bundle-propagation
+        # gating, and the scout-opa NetworkPolicy admits only the Trino
+        # coordinator. Carry the coordinator's labels so this pod is allowed
+        # through — the same label-impostor approach the opa-coordinator-ok
+        # case in tests/network/network-policy-tests.sh uses. The coordinator's
+        # Service/ReplicaSet selectors also require app.kubernetes.io/instance
+        # (omitted here), so there's no accidental endpoint routing or adoption.
+        app.kubernetes.io/name: trino
+        app.kubernetes.io/component: coordinator
     spec:
       restartPolicy: Never
       containers:
