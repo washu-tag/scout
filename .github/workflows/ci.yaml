@@ -357,7 +357,7 @@ jobs:
             subdomains: superset,chat,keycloak,auth,minio
             san_extra: ''
             playbooks: k3s traefik postgres valkey auth lake trino superset chatbot launchpad
-            netpol_include: '--include trino-rw'
+            netpol_include: '--include trino-rw,opa-trino'
           - side: notebooks
             # testuser.jupyter is the per-user singleuser pod ingress
             subdomains: jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
