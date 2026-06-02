@@ -99,24 +99,6 @@ def connect() -> trino.dbapi.Connection:
     return trino.dbapi.connect(**kwargs)
 
 
-def connect_rw() -> trino.dbapi.Connection:
-    """Return a Trino DB-API connection to trino-rw (write path).
-
-    trino-rw is unauthenticated inside its NetworkPolicy boundary; the
-    `user` here is an audit label, not a credential. Fails OPEN to
-    user='anonymous' — see feedback_trino_rw_failopen.
-    """
-    user = _identity.resolve_audit_user()
-    return trino.dbapi.connect(
-        host=os.environ.get("TRINO_RW_HOST", "trino-rw.scout-extractor"),
-        port=int(os.environ.get("TRINO_RW_PORT", "8080")),
-        http_scheme="http",
-        catalog=_catalog(),
-        schema=_schema(),
-        user=user,
-    )
-
-
 _engine: Engine | None = None
 
 

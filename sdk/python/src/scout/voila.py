@@ -43,9 +43,13 @@ the default lazy, per-render kernel spawn.
 
 import contextvars
 import logging
+import os
 
+import trino.dbapi
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from voila.tornado.handler import TornadoVoilaHandler
+
+from . import _identity
 
 logger = logging.getLogger(__name__)
 
@@ -86,3 +90,27 @@ class ScoutMappingKernelManager(AsyncMappingKernelManager):
             env["X_AUTH_REQUEST_PREFERRED_USERNAME"] = username
         kwargs["env"] = env
         return await super().start_kernel(**kwargs)
+
+
+def connect_rw() -> trino.dbapi.Connection:
+    """Return a Trino DB-API connection to trino-rw (write path).
+
+    Voila-only. Jupyter kernels can't reach trino-rw - NetworkPolicy
+    allow-lists Voila pods on label, and writes from per-user kernels
+    aren't part of Scout's data model. Lives in scout.voila (not
+    scout.trino) so a Jupyter user importing from scout.trino doesn't
+    find it; the module path is the doc.
+
+    trino-rw is unauthenticated inside its NetworkPolicy boundary; the
+    `user` here is an audit label, not a credential. Fails OPEN to
+    user='anonymous' - see feedback_trino_rw_failopen.
+    """
+    user = _identity.resolve_audit_user()
+    return trino.dbapi.connect(
+        host=os.environ.get("TRINO_RW_HOST", "trino-rw.scout-extractor"),
+        port=int(os.environ.get("TRINO_RW_PORT", "8080")),
+        http_scheme="http",
+        catalog=os.environ.get("TRINO_CATALOG", "delta"),
+        schema=os.environ.get("TRINO_SCHEMA", "default"),
+        user=user,
+    )

@@ -1547,7 +1547,7 @@ def create_review_dashboard(
                 IPython.get_ipython().kernel.do_one_iteration()
 
             try:
-                from scout import trino as scout_trino
+                from scout.voila import connect_rw
 
                 merge_target = table_name or "default.reports_followup"
                 # merge_target is a table identifier, which can't be a bound
@@ -1556,9 +1556,9 @@ def create_review_dashboard(
                 if not re.fullmatch(r"[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*", merge_target):
                     raise ValueError(f"unsafe table identifier: {merge_target!r}")
 
-                # trino-rw is the write-enabled Trino (ADR 0019); scout_trino
-                # routes reviewer-annotation writes there.
-                conn = scout_trino.connect_rw()
+                # trino-rw is the write-enabled Trino (ADR 0019); connect_rw
+                # lives in scout.voila because writes are Voila-only.
+                conn = connect_rw()
                 cur = conn.cursor()
 
                 # The reviewer-annotation columns may not exist on the target
