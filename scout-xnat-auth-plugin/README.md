@@ -33,7 +33,9 @@ JAVA_HOME=$(/usr/libexec/java_home -v 1.8) PATH=$JAVA_HOME/bin:$PATH \
 
 Output: `build/libs/scout-xnat-auth-plugin-0.1.0-SNAPSHOT-xpl.jar`.
 
-Gradle 8.10.2 (vendored as the wrapper) needs Java 8–22.
+Gradle 8.14.4 (pinned in `gradle/wrapper/gradle-wrapper.properties`) runs on
+Java 8–24. We stay on Gradle 8.x on purpose — see the note at the top of
+`build.gradle`.
 
 ## Layout
 

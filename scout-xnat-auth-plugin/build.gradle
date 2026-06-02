@@ -2,6 +2,11 @@
 //
 // Structure cribbed from xnat-openid-auth-plugin (1.4.x). XNAT plugin SDK
 // version is pinned to match the XNAT release we're deploying against.
+//
+// Pinned to Gradle 8.x on purpose: XNAT 1.9.x plugins compile to Java 8
+// bytecode, and this build runs Gradle *with* JDK 8 (single-JDK, no
+// toolchain). Gradle 9 needs JDK 17+ to run the daemon, so adopting it would
+// require a toolchain split and Gradle-9-compatible XNAT/lombok plugins.
 
 buildscript {
     ext {
