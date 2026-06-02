@@ -35,6 +35,9 @@ public class ScoutAuthProperties {
     @Value("${scout.headers.access_token_header:X-Auth-Request-Access-Token}")
     private String accessTokenHeader;
 
+    // Username = "<prefix>-<sub>". The default coincidentally matches
+    // ScoutAuthConstants.PROVIDER_ID ("keycloak") but is conceptually
+    // independent — they are not linked, so don't collapse them into one value.
     @Value("${scout.username_prefix:keycloak}")
     private String usernamePrefix;
 

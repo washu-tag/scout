@@ -1,6 +1,6 @@
 package edu.wustl.scout.xnat.auth.security;
 
-import edu.wustl.scout.xnat.auth.ScoutAuthMethod;
+import edu.wustl.scout.xnat.auth.ScoutAuthConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xnat.security.BaseXnatSecurityExtension;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -42,6 +42,6 @@ public class ScoutSecurityExtension extends BaseXnatSecurityExtension {
 
     @Override
     public String getAuthMethod() {
-        return ScoutAuthMethod.VALUE;
+        return ScoutAuthConstants.AUTH_METHOD;
     }
 }

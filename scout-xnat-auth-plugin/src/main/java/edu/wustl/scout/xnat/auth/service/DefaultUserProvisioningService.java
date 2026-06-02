@@ -1,6 +1,6 @@
 package edu.wustl.scout.xnat.auth.service;
 
-import edu.wustl.scout.xnat.auth.ScoutAuthMethod;
+import edu.wustl.scout.xnat.auth.ScoutAuthConstants;
 import edu.wustl.scout.xnat.auth.ScoutAuthProperties;
 import edu.wustl.scout.xnat.auth.model.ScoutIdentity;
 import lombok.extern.slf4j.Slf4j;
@@ -32,8 +32,8 @@ public class DefaultUserProvisioningService implements UserProvisioningService {
 
     private final XdatUserAuthService userAuthService;
     private final ScoutAuthProperties properties;
-    private final String authMethod = ScoutAuthMethod.VALUE;
-    private final String providerId = "keycloak";
+    private final String authMethod = ScoutAuthConstants.AUTH_METHOD;
+    private final String providerId = ScoutAuthConstants.PROVIDER_ID;
 
     public DefaultUserProvisioningService(final XdatUserAuthService userAuthService,
                                           final ScoutAuthProperties properties) {
