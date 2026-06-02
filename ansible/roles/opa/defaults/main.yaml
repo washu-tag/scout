@@ -3,8 +3,8 @@
 #
 # OPA enforces Trino's access-control policy (see policy/trino/main.rego).
 # Deployed as a Deployment + Service in the same namespace as Trino so the
-# query path stays in-cluster (and so a single NetworkPolicy on OPA can
-# allow only the Trino coordinator).
+# query path stays in-cluster and the scout-opa chart's NetworkPolicy
+# (templates/networkpolicy.yaml) admits only the Trino coordinator.
 
 # opa_namespace is defined in scout_common/defaults/main.yaml so consumer
 # roles (grafana decision-log dashboard, etc.) can reference it without

@@ -10,9 +10,7 @@
 
 - name: Resolve OPA policy path on disk
   ansible.builtin.set_fact:
-    # policy/trino/ at repo root. Relative from this role:
-    #   ansible/roles/opa/tasks → ../../../../policy/trino
-    opa_policy_path: '{{ role_path }}/../../../policy/trino/main.rego'
+    opa_policy_path: '{{ scout_repo_dir }}/policy/trino/main.rego'
 
 - name: Render OPA static data document
   ansible.builtin.set_fact:
@@ -67,10 +65,8 @@
       } | to_nice_yaml(indent=2, width=200) }}
 
 - name: Create OPA bundle reader Secret
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
     definition:
       apiVersion: v1
       kind: Secret
@@ -104,6 +100,10 @@
     helm_chart_namespace: '{{ opa_namespace }}'
     helm_chart_values:
       replicaCount: '{{ opa_replicas }}'
+      # Lock OPA's API down to the Trino coordinator (the chart renders a
+      # NetworkPolicy; see helm/scout-opa/templates/networkpolicy.yaml).
+      networkPolicy:
+        enabled: true
       image:
         repository: '{{ opa_image }}'
         tag: '{{ opa_image_tag }}'
