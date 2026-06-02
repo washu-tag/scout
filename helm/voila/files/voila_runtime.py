@@ -1,5 +1,10 @@
-"""Voila integration: thread the OIDC user's identity from the
+"""Voila server-side runtime: thread the OIDC user's identity from the
 oauth2-proxy-forwarded request header into each spawned kernel.
+
+Chart-shipped (not part of the scout SDK) because it's pure Voila plumbing
+with no user-facing API; loaded only by Voila's jupyter_server config
+(voila.py). The scout-notebook image already has Voila + jupyter-server,
+which this module depends on.
 
 Wiring:
   oauth2-proxy (set_xauthrequest=true) sets X-Auth-Request-Preferred-Username
@@ -10,16 +15,16 @@ Wiring:
     contextvar for the duration of the request's async context
   ScoutMappingKernelManager.start_kernel reads the contextvar and adds the
     username to the spawned kernel's env as X_AUTH_REQUEST_PREFERRED_USERNAME
-  scout.trino (in the kernel) reads that env var and sets X-Trino-User on
-    every Trino call
+  scout.connect() / scout.query() (in the kernel) read that env var and
+    set X-Trino-User on every Trino call
 
 Only the username crosses into the kernel - not the raw access token. The
 kernel runs user-authored notebook code, so threading a live bearer token
 into its environment would hand that code an exfiltratable credential; the
-username is all scout.trino needs for X-Trino-User impersonation (Trino +
+username is all the scout SDK needs for X-Trino-User impersonation (Trino +
 OPA enforce the actual access against the impersonated user's attributes).
 
-Side-effect import: `import scout.voila` applies the monkey-patch. The
+Side-effect import: `import voila_runtime` applies the monkey-patch. The
 handler is wrapped because Voila doesn't expose a voila_handler_class
 Traitlet; the kernel manager IS configurable, via Voila's
 `VoilaConfiguration.multi_kernel_manager_class` (set in voila.py) - NOT
@@ -37,24 +42,20 @@ to the subclass's `get`, so patching the base class is a no-op.
 
 Caveat: Voila's `preheat_kernel` (off by default) starts kernels at server
 boot, outside any request context - a preheated kernel carries no username
-and scout.trino falls back to anonymous. This per-request capture assumes
-the default lazy, per-render kernel spawn.
+and the SDK falls back to anonymous. This per-request capture assumes the
+default lazy, per-render kernel spawn.
 """
 
 import contextvars
 import logging
-import os
 
-import trino.dbapi
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from voila.tornado.handler import TornadoVoilaHandler
-
-from . import _identity
 
 logger = logging.getLogger(__name__)
 
 _preferred_username: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "scout_voila_x_auth_request_preferred_username", default=""
+    "voila_runtime_x_auth_request_preferred_username", default=""
 )
 
 _original_voila_get = TornadoVoilaHandler.get
@@ -64,7 +65,7 @@ async def _scout_voila_get(self, path=None):
     username = self.request.headers.get("X-Auth-Request-Preferred-Username", "")
     if not username:
         logger.warning(
-            "scout.voila: no X-Auth-Request-Preferred-Username on request; "
+            "voila_runtime: no X-Auth-Request-Preferred-Username on request; "
             "Trino queries will run as anonymous and clamp to zero rows. "
             "Verify oauth2-proxy set_xauthrequest=true and the forwardAuth "
             "middleware forwards X-Auth-Request-Preferred-Username."
@@ -90,27 +91,3 @@ class ScoutMappingKernelManager(AsyncMappingKernelManager):
             env["X_AUTH_REQUEST_PREFERRED_USERNAME"] = username
         kwargs["env"] = env
         return await super().start_kernel(**kwargs)
-
-
-def connect_rw() -> trino.dbapi.Connection:
-    """Return a Trino DB-API connection to trino-rw (write path).
-
-    Voila-only. Jupyter kernels can't reach trino-rw - NetworkPolicy
-    allow-lists Voila pods on label, and writes from per-user kernels
-    aren't part of Scout's data model. Lives in scout.voila (not
-    scout.trino) so a Jupyter user importing from scout.trino doesn't
-    find it; the module path is the doc.
-
-    trino-rw is unauthenticated inside its NetworkPolicy boundary; the
-    `user` here is an audit label, not a credential. Fails OPEN to
-    user='anonymous' - see feedback_trino_rw_failopen.
-    """
-    user = _identity.resolve_audit_user()
-    return trino.dbapi.connect(
-        host=os.environ.get("TRINO_RW_HOST", "trino-rw.scout-extractor"),
-        port=int(os.environ.get("TRINO_RW_PORT", "8080")),
-        http_scheme="http",
-        catalog=os.environ.get("TRINO_CATALOG", "delta"),
-        schema=os.environ.get("TRINO_SCHEMA", "default"),
-        user=user,
-    )

@@ -1,5 +1,4 @@
-"""Unit tests for scout.voila - threads the forwarded username into kernels,
-and hosts connect_rw for the Voila-only write path.
+"""Unit tests for voila_runtime - threads the forwarded username into kernels.
 
 The real handler + kernel-spawn flow runs in the same async task, so the
 contextvar set by the handler is visible to start_kernel. The tests run
@@ -11,9 +10,9 @@ import asyncio
 import logging
 from types import SimpleNamespace
 
-from scout import voila as scout_voila
+import voila_runtime
 
-from conftest import ORIGINAL_GET_RESULT, requests_stub, trino_dbapi_stub
+from conftest import ORIGINAL_GET_RESULT
 
 HEADER = "X-Auth-Request-Preferred-Username"
 KERNEL_ENV_VAR = "X_AUTH_REQUEST_PREFERRED_USERNAME"
@@ -27,8 +26,8 @@ def _handler(username):
 
 async def _request_flow(username, base_env=None):
     """Patched handler (sets identity) then a kernel spawn (reads it) - one task."""
-    passthrough = await scout_voila._scout_voila_get(_handler(username))
-    manager = scout_voila.ScoutMappingKernelManager()
+    passthrough = await voila_runtime._scout_voila_get(_handler(username))
+    manager = voila_runtime.ScoutMappingKernelManager()
     started = await manager.start_kernel(env=dict(base_env or {}))
     return passthrough, started["started_with"]["env"]
 
@@ -60,8 +59,8 @@ def test_identity_does_not_leak_between_requests():
 
 
 def test_warns_when_header_missing(caplog):
-    with caplog.at_level(logging.WARNING, logger="scout.voila"):
-        asyncio.run(scout_voila._scout_voila_get(_handler(None)))
+    with caplog.at_level(logging.WARNING, logger="voila_runtime"):
+        asyncio.run(voila_runtime._scout_voila_get(_handler(None)))
     assert any(
         "X-Auth-Request-Preferred-Username" in r.message
         and r.levelno == logging.WARNING
@@ -70,35 +69,6 @@ def test_warns_when_header_missing(caplog):
 
 
 def test_no_warning_when_header_present(caplog):
-    with caplog.at_level(logging.WARNING, logger="scout.voila"):
-        asyncio.run(scout_voila._scout_voila_get(_handler("alice")))
+    with caplog.at_level(logging.WARNING, logger="voila_runtime"):
+        asyncio.run(voila_runtime._scout_voila_get(_handler("alice")))
     assert not caplog.records
-
-
-# --- connect_rw ----------------------------------------------------------
-
-
-def _connect_kwargs():
-    return trino_dbapi_stub.connect.call_args.kwargs
-
-
-def test_connect_rw_targets_unauthenticated_rw_instance(monkeypatch):
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "carol")
-
-    scout_voila.connect_rw()
-
-    kwargs = _connect_kwargs()
-    assert kwargs["host"] == "trino-rw.scout-extractor"
-    assert kwargs["port"] == 8080
-    assert kwargs["http_scheme"] == "http"
-    assert kwargs["user"] == "carol"
-    # trino-rw is unauthenticated inside its NetworkPolicy boundary: no JWT mint.
-    assert "auth" not in kwargs
-    assert requests_stub.post.call_count == 0
-
-
-def test_connect_rw_audit_user_falls_back_to_anonymous(monkeypatch):
-    # Fail-OPEN: a missing identity must not block a reviewer's annotation save.
-    scout_voila.connect_rw()
-
-    assert _connect_kwargs()["user"] == "anonymous"

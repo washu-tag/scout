@@ -157,9 +157,12 @@ jobs:
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v
-      - name: 'Unit tests: scout SDK (scout.trino + scout.voila)'
+      - name: 'Unit tests: scout SDK'
         shell: bash
         run: cd sdk/python && PYTHONPATH=src pytest tests/ -v
+      - name: 'Unit tests: Voila chart helpers'
+        shell: bash
+        run: cd helm/voila && PYTHONPATH=files pytest tests/ -v
       - name: 'Install OPA'
         shell: bash
         # Pinned to match the OPA image we deploy (opa_image_tag in

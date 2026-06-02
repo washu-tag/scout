@@ -83,9 +83,17 @@ spec:
               mountPath: /home/jovyan/notebooks/{{ . }}
               readOnly: true
             {{- end }}
+            # Voila reads its config from /etc/jupyter/voila.py (subPath mount).
             - name: scout-python
               mountPath: /etc/jupyter/voila.py
               subPath: voila.py
+              readOnly: true
+            # Same ConfigMap also mounted as a directory at /opt/scout so the
+            # sibling helpers (voila_runtime, playbook_helpers) are on
+            # PYTHONPATH for the Voila server + spawned kernels. voila.py is
+            # duplicated here too - harmless; nothing imports it as a module.
+            - name: scout-python
+              mountPath: /opt/scout
               readOnly: true
             - name: trino-ca
               mountPath: /etc/trino-ca

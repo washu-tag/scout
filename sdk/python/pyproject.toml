@@ -13,11 +13,5 @@ dependencies = [
     "trino>=0.330",
 ]
 
-[project.optional-dependencies]
-voila = [
-    "jupyter-server>=2",
-    "voila>=0.5",
-]
-
 [tool.setuptools.packages.find]
 where = ["src"]

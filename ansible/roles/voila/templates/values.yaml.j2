@@ -20,7 +20,8 @@ env:
   TRINO_CATALOG: "delta"
   TRINO_SCHEMA: "default"
   TRINO_CA_CERT: "/etc/trino-ca/ca.crt"
-  # Write path (reviewer annotations) consumed by scout.trino.connect_rw().
+  # Write path (reviewer annotations) consumed by
+  # playbook_helpers.connect_writeback() (chart-shipped helper, not the SDK).
   # Points at the unauthenticated trino-rw instance in the extractor
   # namespace; explicit here so an inventory override of trino_rw_namespace /
   # trino_rw_release_name reaches the kernel instead of the helper's
@@ -33,6 +34,10 @@ env:
   # failures in CI smoke-test).
   KEYCLOAK_TOKEN_URL: "{{ keycloak_internal_token_url }}"
   KEYCLOAK_VOILA_SVC_CLIENT_ID: "voila_svc"
+  # Make voila_runtime + playbook_helpers importable from the Voila server
+  # and from spawned kernels. The chart's scout-python ConfigMap is mounted
+  # at /opt/scout with these files plus a duplicate of voila.py (harmless).
+  PYTHONPATH: "/opt/scout"
   OLLAMA_URL: "http://ollama.{{ chatbot_namespace }}:11434"
   OLLAMA_MODEL: "{{ ollama_default_model }}"
 
