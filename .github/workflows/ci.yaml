@@ -535,31 +535,6 @@ jobs:
         run: |
           sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- \
             curl -sk -f https://localhost:8443/v1/info
-      # MCP→Trino auth smoke. Exercises the PASSWORD authenticator + the
-      # service-principal X-Trino-User impersonation pattern mcp-trino
-      # uses (ADR 0022). A successful query confirms: the password.db
-      # file authenticator loaded openwebui_mcp_svc, the bcrypt hash
-      # matches the configured password, and OPA permits the principal
-      # to impersonate end users. Doesn't invoke mcp-trino itself - that
-      # adds OIDC-inbound + Go HTTP plumbing on top of the same path; if
-      # this passes and mcp-trino is Ready, the chain is sound. (A full
-      # mcp-trino → Trino smoke that mints + forwards a real chat-user
-      # JWT is deferred; the existing data-auth tests cover the broader
-      # JWT identity flow on the JWT authenticator.)
-      - name: 'MCP→Trino PASSWORD auth smoke'
-        if: matrix.side == 'analytics'
-        shell: bash
-        run: |
-          set -euo pipefail
-          PW=$(yq '.k3s_cluster.vars.trino_openwebui_mcp_svc_password' ansible/inventory.yaml)
-          sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- \
-            curl -sk -f \
-              -u "openwebui_mcp_svc:${PW}" \
-              -H "X-Trino-User: testuser.jupyter" \
-              -H "Content-Type: text/plain" \
-              -X POST --data 'SELECT 1' \
-              https://localhost:8443/v1/statement \
-            | grep -q '"infoUri"'
       # Data authorization tests. Seeds a synthetic
       # delta.default.test_reports table, then exercises the end-to-end
       # AuthZ pipeline (Keycloak admin -> SPI listener -> MinIO bundle ->
@@ -614,6 +589,7 @@ jobs:
           set -euo pipefail
           KC_ADMIN_PW=$(yq '.k3s_cluster.vars.keycloak_bootstrap_admin_password' ansible/inventory.yaml)
           SUPERSET_SVC_SECRET=$(yq '.k3s_cluster.vars.keycloak_superset_svc_client_secret' ansible/inventory.yaml)
+          MCP_SVC_PW=$(yq '.k3s_cluster.vars.trino_openwebui_mcp_svc_password' ansible/inventory.yaml)
 
           # Script in a ConfigMap (kubectl handles file content
           # correctly), secrets in a Secret. The Job manifest
@@ -627,6 +603,7 @@ jobs:
             -n scout-analytics \
             --from-literal=KC_ADMIN_PASSWORD="$KC_ADMIN_PW" \
             --from-literal=SUPERSET_SVC_CLIENT_SECRET="$SUPERSET_SVC_SECRET" \
+            --from-literal=MCP_SVC_PASSWORD="$MCP_SVC_PW" \
             --dry-run=client -o yaml | sudo -E kubectl apply -f -
 
           sudo -E kubectl apply -f tests/data-authorization/authz-tests/job.yaml
