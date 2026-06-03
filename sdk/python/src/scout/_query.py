@@ -46,6 +46,14 @@ class _DynamicJWTAuthentication(Authentication):
         self._provider = provider
 
     def set_http_session(self, http_session):
+        # Pin TLS verification to this session's CA (TRINO_CA_CERT). With
+        # trust_env on, requests substitutes REQUESTS_CA_BUNDLE/CURL_CA_BUNDLE
+        # for the request-level verify, and that substitution OVERRIDES
+        # session.verify — on package-proxy deployments (ADR 0017) those vars
+        # point at the staging CA bundle, which doesn't carry Trino's
+        # cert-manager CA, so every query died with CERTIFICATE_VERIFY_FAILED.
+        # Trino is in-cluster; env proxies/netrc never apply on this hop.
+        http_session.trust_env = False
         http_session.auth = _DynamicBearerAuth(self._provider)
         return http_session
 
