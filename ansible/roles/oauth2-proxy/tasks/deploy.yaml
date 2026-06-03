@@ -92,10 +92,8 @@
           # Copied from oauth2-proxy's /oauth2/auth response onto the upstream
           # request (and overwriting any client-supplied value of the same name).
           # Voila reads X-Auth-Request-Preferred-Username for X-Trino-User
-          # impersonation (ADR 0022); the access-token header serves other
-          # forwardAuth consumers.
+          # impersonation (ADR 0022); voila_runtime captures it per-request.
           authResponseHeaders:
-            - X-Auth-Request-Access-Token
             - X-Auth-Request-Preferred-Username
 
 - name: Install OAuth2 Proxy Error Middleware
