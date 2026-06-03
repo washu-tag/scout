@@ -10,10 +10,10 @@ server:
     # Dual-mode auth. JWT is the primary path (user JWTs from Jupyter,
     # service-account JWTs from Superset/Voila); PASSWORD is the interim
     # accommodation for upstream `tuannvm/mcp-trino`, which only supports
-    # HTTP Basic outbound (see `trino_password_authenticator_users`
-    # below and ADR 0022). When the custom MCP tool ships and starts
-    # speaking JWT, the password authenticator and the PASSWORD entry
-    # on this line are removed.
+    # HTTP Basic outbound (sole entry: openwebui_mcp_svc rendered from
+    # trino_openwebui_mcp_svc_password; ADR 0022). When the custom MCP
+    # tool ships and starts speaking JWT, the password authenticator and
+    # the PASSWORD entry on this line are removed.
     authenticationType: PASSWORD,JWT
     https:
       enabled: true

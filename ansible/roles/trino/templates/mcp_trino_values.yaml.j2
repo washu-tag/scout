@@ -1,8 +1,8 @@
 # MCP Trino Helm values
 #
 # Connection to Trino uses HTTP Basic auth as the service principal
-# `openwebui_mcp_svc` (rendered into Trino's password file at deploy time
-# via trino_password_authenticator_users — see roles/trino/tasks/deploy.yaml).
+# `openwebui_mcp_svc` (rendered into Trino's password.db at deploy time
+# from trino_openwebui_mcp_svc_password — see roles/trino/tasks/deploy.yaml).
 # Per-chat-user AuthZ is enforced via X-Trino-User impersonation: mcp-trino
 # reads the inbound OIDC user's preferred_username and sets the header on
 # the outbound Trino call. OPA's impersonation allow rule permits
