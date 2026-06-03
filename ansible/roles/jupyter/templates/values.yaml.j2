@@ -134,7 +134,7 @@ singleuser:
   image:
     name: '{{ scout_notebook_image_name }}'
     tag: '{{ scout_notebook_image_tag }}'
-    pullPolicy: IfNotPresent
+    pullPolicy: '{{ scout_notebook_pull_policy | default("IfNotPresent") }}'
   extraResource:
     guarantees:
       ephemeral-storage: 10Mi
