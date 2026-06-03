@@ -102,6 +102,23 @@ def test_token_refreshes_after_expiry(monkeypatch):
     assert requests_stub.post.call_count == 2
 
 
+def test_auth_session_pins_ca_against_env_bundle_override():
+    # set_http_session must disable trust_env: requests substitutes
+    # REQUESTS_CA_BUNDLE/CURL_CA_BUNDLE for the request-level verify and that
+    # overrides session.verify (where the trino client puts TRINO_CA_CERT) —
+    # package-proxy deployments set those vars to the staging bundle, which
+    # lacks Trino's CA.
+    import types
+
+    auth = _query._DynamicJWTAuthentication(lambda: ("tok", None))
+    session = types.SimpleNamespace(trust_env=True, auth=None)
+
+    auth.set_http_session(session)
+
+    assert session.trust_env is False
+    assert isinstance(session.auth, _query._DynamicBearerAuth)
+
+
 def test_jupyter_passthrough_omits_impersonation_user(monkeypatch):
     _use_jupyter_env(monkeypatch)
     set_hub_auth_state()
