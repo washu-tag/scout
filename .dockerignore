@@ -1,0 +1,60 @@
+# Build-context ignore for repo-root builds.
+#
+# Currently only scout-notebook (helm/scout-notebook/Dockerfile) uses repo
+# root as build context, so it can COPY sdk/python from above its own
+# directory. Everything else builds from its own subproject context and is
+# unaffected by this file.
+#
+# scout-notebook's Dockerfile only COPYs sdk/python; aggressive exclusion
+# is safe.
+
+# Local dev artifacts (node_modules can be hundreds of MB; build/ + caches
+# slow context tar without contributing to the image)
+**/node_modules
+**/build
+**/__pycache__
+**/.pytest_cache
+**/*.egg-info
+**/dist
+**/venv
+**/.venv
+
+# VCS + IDE
+.git
+.github
+.idea
+.vscode
+.claude
+
+# OS junk
+**/.DS_Store
+
+# Everything not relevant to scout-notebook's COPY of sdk/python
+ansible
+docs
+tests
+extractor
+launchpad
+analytics
+helm/voila
+helm/superset
+helm/open-webui-bootstrap
+helm/scout-dashboards
+helm/hl7-transformer
+helm/hl7log-extractor
+helm/hive-metastore
+keycloak
+orchestrator
+terraform
+verify-node
+zap
+policy
+
+# Markdown / configs at repo root that aren't needed in the image
+*.md
+LICENSE
+renovate.json5
+eslint.config.cjs
+*.json
+*.xml
+readthedocs.yaml
