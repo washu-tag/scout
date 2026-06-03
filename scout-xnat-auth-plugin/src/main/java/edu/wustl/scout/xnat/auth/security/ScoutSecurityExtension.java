@@ -36,7 +36,11 @@ public class ScoutSecurityExtension extends BaseXnatSecurityExtension {
             http.addFilterBefore(headerTrustFilter, UsernamePasswordAuthenticationFilter.class)
                     .addFilterAfter(bearerTokenFilter, HeaderTrustFilter.class);
         } catch (Throwable e) {
-            log.error("Failed to configure Scout auth filters", e);
+            // A failed auth plugin must not boot silently into stock form-login
+            // with Scout auth quietly disabled. Log loudly and abort XNAT
+            // startup so the misconfiguration is caught at deploy time.
+            log.error("Failed to configure Scout auth filters; aborting XNAT startup", e);
+            throw new IllegalStateException("Failed to configure Scout auth filters", e);
         }
     }
 
