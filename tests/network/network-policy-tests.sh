@@ -45,7 +45,10 @@ VOILA_PORT=8866
 VOILA_PATH=/
 MCP_HOST=mcp-trino.scout-analytics
 MCP_PORT=8080
-MCP_PATH=/health
+# /status is the chart's own startup/liveness/readiness probe path
+# (mcp-trino chart values.yaml -> healthCheck.*Probe.httpGet.path).
+# The OWUI README's `/health` reference is stale.
+MCP_PATH=/status
 
 # Test groups can be filtered via --include for split CI runs where not
 # every target service is deployed. Empty = run all groups.
