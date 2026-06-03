@@ -1587,23 +1587,37 @@ def create_review_dashboard(
 
                 # UPDATE-only semantics (no INSERT): write reviewer fields onto
                 # the rows the dashboard loaded, keyed by accession_number.
-                # Parameterized so free-text notes stay injection-safe.
-                update_sql = (
-                    f"UPDATE {merge_target} SET "
-                    "human_ground_truth = ?, human_notes = ?, "
-                    "human_reviewed_at = current_timestamp "
-                    "WHERE accession_number = ?"
+                # One MERGE for the whole batch = one atomic Delta commit, so
+                # either every annotation lands or none does, and the delta log
+                # gets a single commit per export instead of one per row.
+                # Parameterized so free-text notes stay injection-safe; CASTs
+                # pin the VALUES column types when a bound value is NULL
+                # (uncertain ground truth / empty note).
+                placeholders = ", ".join(
+                    ["(CAST(? AS varchar), CAST(? AS boolean), CAST(? AS varchar))"]
+                    * len(ann_data)
                 )
-                for row in ann_data:
-                    cur.execute(
-                        update_sql,
-                        (
-                            row["human_ground_truth"],
-                            row["human_notes"],
-                            row["accession_number"],
-                        ),
+                merge_sql = (
+                    f"MERGE INTO {merge_target} t "  # identifier validated above
+                    f"USING (VALUES {placeholders}) "
+                    "AS s(accession_number, human_ground_truth, human_notes) "
+                    "ON t.accession_number = s.accession_number "
+                    "WHEN MATCHED THEN UPDATE SET "
+                    "human_ground_truth = s.human_ground_truth, "
+                    "human_notes = s.human_notes, "
+                    "human_reviewed_at = current_timestamp"
+                )
+                params = [
+                    v
+                    for row in ann_data
+                    for v in (
+                        row["accession_number"],
+                        row["human_ground_truth"],
+                        row["human_notes"],
                     )
-                    cur.fetchall()  # Trino DB-API requires a fetch to run DML
+                ]
+                cur.execute(merge_sql, params)  # nosemgrep
+                cur.fetchall()  # Trino DB-API requires a fetch to run DML
                 delta_success = True
 
             except Exception as e:
