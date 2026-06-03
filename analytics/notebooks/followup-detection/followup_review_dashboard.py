@@ -105,7 +105,7 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
     pd.DataFrame
         Stratified sample as Pandas DataFrame
     """
-    import scout_trino
+    import scout
     import pandas as pd
 
     def print_status(msg):
@@ -116,12 +116,12 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
             print(msg, flush=True)
 
     # Catalog/schema qualify the table name below. Connection params and auth
-    # are owned by scout_trino.connect() (voila_svc JWT + X-Trino-User).
+    # are owned by scout.connect() (voila_svc JWT + X-Trino-User).
     TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
     TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
 
     # Connect to Trino as the logged-in Voila user
-    conn = scout_trino.connect()
+    conn = scout.connect()
 
     # Parse table name (handle "catalog.schema.table" or "schema.table" or "table")
     table_parts = table_name.split(".")
@@ -1429,20 +1429,21 @@ def create_review_dashboard(
             render_metrics()
 
     def on_export(b):
-        """Export annotations to CSV and optionally to Delta table."""
-        import time
-        from IPython.display import display, clear_output
+        """Export annotations to CSV and optionally to Delta table.
 
+        Runs synchronously on the kernel's IOLoop; intermediate
+        `annotation_status` updates are flushed to the frontend only
+        after this function returns. The previous version called
+        `IPython.get_ipython().kernel.do_one_iteration()` to force
+        intra-callback flushes, but that method was removed in
+        ipykernel 7+ — the AttributeError escaped before the try
+        block, so the finally that re-enabled the button never ran
+        and the UI stuck on "⏳ Exporting...".
+        """
         # Disable button and show loading state
         export_btn.disabled = True
         export_btn.description = "⏳ Exporting..."
         export_btn.button_style = "warning"
-
-        # Force immediate widget update
-        import IPython
-
-        if IPython.get_ipython() is not None:
-            IPython.get_ipython().kernel.do_one_iteration()
 
         try:
             if not annotations:
@@ -1454,10 +1455,6 @@ def create_review_dashboard(
             with annotation_status:
                 annotation_status.clear_output(wait=True)
                 print("📦 Preparing annotations for export...")
-
-            # Force display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
 
             # Build annotations DataFrame
             ann_data = []
@@ -1518,10 +1515,6 @@ def create_review_dashboard(
                 print(f"📦 Preparing annotations for export...")
                 print(f"💾 Saving to CSV: {output_path}...")
 
-            # Force display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
-
             try:
                 ann_df.to_csv(output_path, index=False)
             except OSError as e:
@@ -1542,12 +1535,8 @@ def create_review_dashboard(
                 print(f"💾 Saved to CSV: {output_path}")
                 print(f"🔄 Updating Delta Lake table...")
 
-            # Force display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
-
             try:
-                import scout_trino
+                from playbook_helpers import connect_writeback
 
                 merge_target = table_name or "default.reports_followup"
                 # merge_target is a table identifier, which can't be a bound
@@ -1556,9 +1545,10 @@ def create_review_dashboard(
                 if not re.fullmatch(r"[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*", merge_target):
                     raise ValueError(f"unsafe table identifier: {merge_target!r}")
 
-                # trino-rw is the write-enabled Trino (ADR 0019); scout_trino
-                # routes reviewer-annotation writes there.
-                conn = scout_trino.connect_rw()
+                # trino-rw is the write-enabled Trino (ADR 0019);
+                # playbook_helpers is chart-shipped (not in the SDK)
+                # because writes are Voila-only.
+                conn = connect_writeback()
                 cur = conn.cursor()
 
                 # The reviewer-annotation columns may not exist on the target
@@ -1641,10 +1631,6 @@ def create_review_dashboard(
                 print(f"   ✓ {yes_count} Follow-up Needed")
                 print(f"   ✗ {no_count} No Follow-up")
                 print(f"   ? {uncertain_count} Uncertain")
-
-            # Force final display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
 
         finally:
             # Always re-enable button
