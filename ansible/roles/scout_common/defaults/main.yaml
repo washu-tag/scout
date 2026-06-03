@@ -334,6 +334,13 @@ keycloak_oidc_certs_url: '{{ keycloak_realm_url }}/protocol/openid-connect/certs
 keycloak_oidc_logout_url: '{{ keycloak_realm_url }}/protocol/openid-connect/logout'
 keycloak_wellknown_url: '{{ keycloak_realm_url }}/.well-known/openid-configuration'
 
+# Realm-level lifespan of end-user access tokens (seconds). 300 matches the
+# Keycloak built-in default; the realm template sets it explicitly from this
+# var so consumers that must stay in sync with it (e.g. JupyterHub's
+# auth_refresh_age) can compute from the same value. Service principals get
+# their own longer client-level lifespans (ADR 0022) and are unaffected.
+keycloak_access_token_lifespan: 300
+
 # Internal Keycloak URL for in-cluster service-to-service token minting
 # (e.g. Superset/Voila minting a *_svc client_credentials JWT for Trino).
 # Bypasses Traefik + TLS entirely — avoids self-signed-cert trust issues

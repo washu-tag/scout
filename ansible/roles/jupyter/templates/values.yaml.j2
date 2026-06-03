@@ -63,14 +63,13 @@ hub:
   config:
     Authenticator:
       auto_login: true
-      # Must be shorter than the Keycloak user access-token lifespan (realm
-      # default 300s) minus the SDK's 60s pre-expiry re-fetch buffer.
-      # The default (300s) ties with token expiry, so when a kernel re-fetches
-      # auth_state in the token's final 60s the Hub refuses to refresh and
-      # hands back the dying token -- queries then 401 against Trino until the
-      # refresh-age gate finally opens. 120s keeps the Hub willing to refresh
-      # well before any token the SDK still holds can expire.
-      auth_refresh_age: 120
+      # Must open the Hub's refresh gate before the scout SDK starts
+      # re-fetching auth_state (60s before token expiry): otherwise the Hub
+      # hands back the dying token during exactly that window and queries 401
+      # against Trino until the gate opens. Computed from the same variable
+      # that sets the realm's accessTokenLifespan, minus the SDK's 60s buffer
+      # and a 60s safety margin (floored at 60s for very short lifespans).
+      auth_refresh_age: {{ [keycloak_access_token_lifespan | int - 120, 60] | max }}
     JupyterHub:
       subdomain_host: 'jupyter.{{ server_hostname }}'
       authenticator_class: 'oauthenticator.generic.GenericOAuthenticator'
