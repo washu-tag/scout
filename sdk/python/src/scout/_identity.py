@@ -1,11 +1,12 @@
-"""Resolve the identity used by scout.trino against Trino.
+"""Resolve the identity the scout SDK uses against Trino.
 
 Two modes, auto-detected from environment:
 
   Voila (service-principal impersonation, ADR 0022)
     Set when KEYCLOAK_VOILA_SVC_CLIENT_ID is present. The kernel never
-    sees the end-user's bearer token; scout.voila threads only the
-    preferred_username into the kernel env as
+    sees the end-user's bearer token; the Voila runtime (voila_runtime,
+    shipped with the Voila chart) threads only the preferred_username
+    into the kernel env as
     X_AUTH_REQUEST_PREFERRED_USERNAME (sourced from oauth2-proxy's
     X-Auth-Request-Preferred-Username response header). We mint a
     voila_svc client_credentials JWT and tell Trino to evaluate AuthZ
@@ -60,16 +61,18 @@ def _is_near_expiry(token: str) -> bool:
 class _VoilaSvcProvider:
     """voila_svc client_credentials token, cached in-process. The
     impersonation user comes from X_AUTH_REQUEST_PREFERRED_USERNAME,
-    which scout.voila injected per-request."""
+    which the Voila runtime (voila_runtime) injected per-request."""
 
     def __init__(self) -> None:
         self._token: str | None = None
         self._lock = threading.Lock()
 
     def _mint(self) -> str:
-        # No verify= - Keycloak runs behind a publicly-trusted cert via
-        # the ingress; the cert-manager CA bundle (TRINO_CA_CERT) is for
-        # Trino, not Keycloak.
+        # No verify=: Scout points KEYCLOAK_TOKEN_URL at the internal
+        # in-cluster Keycloak (keycloak_internal_token_url, plain HTTP), so
+        # there's no TLS on this hop. If a deployment overrides it with an
+        # HTTPS endpoint, requests falls back to the system CA bundle
+        # (TRINO_CA_CERT is Trino-specific and deliberately not reused here).
         response = requests.post(
             os.environ["KEYCLOAK_TOKEN_URL"],
             data={
@@ -145,7 +148,7 @@ def _resolve_provider() -> Callable[[], tuple[str, str | None]]:
         _singleton = _JupyterHubUserProvider()
     else:
         raise RuntimeError(
-            "scout.trino: no identity source detected. Expected either "
+            "scout: no identity source detected. Expected either "
             "KEYCLOAK_VOILA_SVC_CLIENT_ID (Voila) or JUPYTERHUB_API_TOKEN "
             "(Jupyter) in the environment."
         )
