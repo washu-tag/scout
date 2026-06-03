@@ -66,6 +66,20 @@ def test_non_200_raises(monkeypatch, hub_env):
     assert "403" in str(exc.value)
 
 
+def test_401_raises_session_expired_message(monkeypatch, hub_env):
+    # A 401 means the Hub couldn't refresh us (expired SSO session); the error
+    # should tell the user to re-login, not dump a raw status line.
+    monkeypatch.setattr(
+        token_providers.requests,
+        "get",
+        lambda *a, **k: FakeResponse(401, text="Unauthorized"),
+    )
+    provider = JupyterHubTokenProvider()
+    with pytest.raises(ScoutXnatAuthError) as exc:
+        provider()
+    assert "re-login" in str(exc.value).lower()
+
+
 def test_missing_auth_state_raises(monkeypatch, hub_env):
     monkeypatch.setattr(
         token_providers.requests, "get", lambda *a, **k: FakeResponse(200, {})
