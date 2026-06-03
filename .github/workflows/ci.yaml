@@ -141,7 +141,7 @@ jobs:
           python-version: '3.12'
       - name: Install Molecule and dependencies
         run: |
-          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio
+          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
@@ -160,6 +160,11 @@ jobs:
       - name: 'Unit tests: scout SDK'
         shell: bash
         run: cd sdk/python && PYTHONPATH=src pytest tests/ -v
+      # Separate invocation: tests/conftest.py stubs trino/requests in
+      # sys.modules at collection time; the contract tests need the real ones.
+      - name: 'Contract tests: scout SDK vs trino-python-client'
+        shell: bash
+        run: cd sdk/python && pytest tests_contract/ -v
       - name: 'Unit tests: Voila chart helpers'
         shell: bash
         run: cd helm/voila && PYTHONPATH=files pytest tests/ -v

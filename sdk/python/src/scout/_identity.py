@@ -99,12 +99,21 @@ class _JupyterHubUserProvider:
     Cached in-process; re-fetched when near expiry. The Hub itself
     refreshes the token against Keycloak when refresh_pre_spawn is on
     plus the OAuthenticator's refresh path, so calling GET /users/<user>
-    returns a fresh access_token.
+    normally returns a fresh access_token.
+
+    Caveat: the Hub controls *when* it refreshes against Keycloak — we
+    can't force it from the kernel. If the Hub hands back a token that is
+    already at/near expiry (e.g. the refresh token itself expired or the
+    Hub's auth-refresh age hasn't elapsed), queries can still fail with
+    401 until the user re-authenticates to JupyterHub. We warn (once) when
+    we detect that state rather than retrying — the fix is a fresh Hub
+    login, not another fetch.
     """
 
     def __init__(self) -> None:
         self._token: str | None = None
         self._lock = threading.Lock()
+        self._warned_stale = False
 
     def _fetch(self) -> str:
         api_url = os.environ["JUPYTERHUB_API_URL"].rstrip("/")
@@ -123,6 +132,13 @@ class _JupyterHubUserProvider:
                 "JupyterHub auth_state has no access_token; check that "
                 "enable_auth_state=true is set and the kernel's API token "
                 "has admin:auth_state!user."
+            )
+        if _is_near_expiry(access_token) and not self._warned_stale:
+            self._warned_stale = True
+            logger.warning(
+                "JupyterHub returned an access token that is already at/near "
+                "expiry; Trino queries may fail with 401. If they do, log out "
+                "and back in to JupyterHub to refresh your session."
             )
         return access_token
 

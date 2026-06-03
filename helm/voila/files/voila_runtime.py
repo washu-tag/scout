@@ -18,7 +18,7 @@ Wiring:
   scout.connect() / scout.query() (in the kernel) read that env var and
     set X-Trino-User on every Trino call
 
-Only the username crosses into the kernel - not the raw access token. The
+Only the username crosses into the kernel — not the raw access token. The
 kernel runs user-authored notebook code, so threading a live bearer token
 into its environment would hand that code an exfiltratable credential; the
 username is all the scout SDK needs for X-Trino-User impersonation (Trino +
@@ -27,7 +27,7 @@ OPA enforce the actual access against the impersonated user's attributes).
 Side-effect import: `import voila_runtime` applies the monkey-patch. The
 handler is wrapped because Voila doesn't expose a voila_handler_class
 Traitlet; the kernel manager IS configurable, via Voila's
-`VoilaConfiguration.multi_kernel_manager_class` (set in voila.py) - NOT
+`VoilaConfiguration.multi_kernel_manager_class` (set in voila.py) — NOT
 `c.ServerApp.kernel_manager_class`, which Voila does not consult.
 
 contextvars propagate across `await` within the same async task, so the
@@ -36,12 +36,12 @@ same request flow. This also keeps concurrent users isolated: each request
 runs in its own task, so one user's username can't leak into another's kernel.
 
 The monkey-patch targets TornadoVoilaHandler (the subclass that actually
-defines `get` for Voila's Tornado-mode routes), not the base VoilaHandler -
+defines `get` for Voila's Tornado-mode routes), not the base VoilaHandler —
 VoilaHandler defines only `get_generator`, and Tornado dispatches HTTP GETs
 to the subclass's `get`, so patching the base class is a no-op.
 
 Caveat: Voila's `preheat_kernel` (off by default) starts kernels at server
-boot, outside any request context - a preheated kernel carries no username
+boot, outside any request context — a preheated kernel carries no username
 and the SDK falls back to anonymous. This per-request capture assumes the
 default lazy, per-render kernel spawn.
 """
