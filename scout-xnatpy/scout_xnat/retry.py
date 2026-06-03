@@ -65,6 +65,16 @@ def install_refresh_hook(
         except ScoutXnatAuthError as exc:
             _log.warning("scout_xnat re-auth failed: %s", exc)
             return None
+        except Exception as exc:  # noqa: BLE001
+            # A token provider or mint can raise something other than
+            # ScoutXnatAuthError — e.g. a JSONDecodeError from a 200-but-non-JSON
+            # Hub response, or anything a caller-supplied token_provider throws.
+            # Swallow it and return None so the original 401 flows back to the
+            # caller as a normal auth failure (xnatpy raises its usual error),
+            # instead of this exception escaping requests' dispatch_hook and
+            # crashing the in-flight call with an opaque traceback.
+            _log.warning("scout_xnat re-auth raised %s: %s", type(exc).__name__, exc)
+            return None
         # Set under xnatpy's exact (domain, path, name) key so this replaces
         # the stale cookie in place rather than adding a second JSESSIONID.
         interface.cookies.set(

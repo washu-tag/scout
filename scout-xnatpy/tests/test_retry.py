@@ -149,3 +149,22 @@ def test_auth_error_during_reauth_is_swallowed():
     assert result is None
     assert interface.sent == []
     assert getattr(retry._retry_state, "active", False) is False
+
+
+def test_unexpected_error_during_reauth_is_swallowed():
+    interface = FakeInterface()
+
+    def token_provider():
+        # e.g. a JSONDecodeError from a 200-but-non-JSON Hub response, or any
+        # error a caller-supplied provider raises — NOT a ScoutXnatAuthError.
+        raise ValueError("token provider blew up")
+
+    hook = _install(interface, token_provider, lambda *a: "j")
+
+    result = hook(_make_response(401))
+
+    # Must not escape the hook into requests' dispatch_hook; the original 401
+    # flows through and no retry is attempted.
+    assert result is None
+    assert interface.sent == []
+    assert getattr(retry._retry_state, "active", False) is False
