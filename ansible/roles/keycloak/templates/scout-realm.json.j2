@@ -14,6 +14,11 @@
     "adminEventsDetailsEnabled": true,
     "ssoSessionIdleTimeout": {{ keycloak_token_lifespan }},
     "ssoSessionMaxLifespan": {{ keycloak_token_lifespan }},
+    {#- End-user access-token lifespan, set explicitly (rather than relying on
+        Keycloak's matching built-in default) so consumers that must stay in
+        sync with it — JupyterHub's auth_refresh_age — compute from the same
+        keycloak_access_token_lifespan variable. -#}
+    "accessTokenLifespan": {{ keycloak_access_token_lifespan }},
     {#- Realm-level session timeouts align with the oauth2-proxy cookie (8h)
         so users get one consistent session across the stack.
         Required by Keycloak 26.6+: `client.session.idle.timeout` on the
