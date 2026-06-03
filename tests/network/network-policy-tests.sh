@@ -162,7 +162,7 @@ fi
 # voila ingress (port 8866).
 # Voila's X-Trino-User impersonation trust model depends on the ingress
 # NetworkPolicy: only Traefik should reach Voila directly. A random
-# in-cluster pod hitting :8866 could forge X-Auth-Request-Access-Token
+# in-cluster pod hitting :8866 could forge X-Auth-Request-Preferred-Username
 # headers and bypass per-user AuthZ.
 if include_group "voila-ingress"; then
   queue_test voila-bypass-attack    scout-analytics 000 ''                                "$VOILA_HOST" "$VOILA_PORT" "$VOILA_PATH"
