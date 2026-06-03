@@ -15,22 +15,16 @@ import org.springframework.security.core.AuthenticationException;
 public interface UserProvisioningService {
 
     /**
-     * Resolve an existing XNAT user for the given identity or create one. The
-     * required-role gate is enforced inside.
+     * Resolve an existing XNAT user for the given identity or create one.
      *
-     * <p>Failure contract: this method fails with one of two types, and callers
-     * must treat <em>both</em> as a 403 outcome:
-     * <ul>
-     *   <li>{@link AuthenticationException} — bad/blank identity, disabled user,
-     *       or a user-creation failure.</li>
-     *   <li>{@code org.springframework.security.access.AccessDeniedException} —
-     *       the required-role gate. This is a {@code RuntimeException} and
-     *       <em>not</em> an {@code AuthenticationException}, so a catch clause
-     *       narrowed to {@code AuthenticationException} alone would let it escape
-     *       as a 500.</li>
-     * </ul>
-     * The shared {@code ScoutAuthSupport.establishSession} helper multi-catches
-     * both for exactly this reason.
+     * <p>Authorization (the {@code xnat-access} role gate) is enforced upstream
+     * by the auth filters before they call this method, so {@code provision}
+     * assumes an already-authorized identity and does not re-check the role.
+     *
+     * <p>Failure contract: signals failure with {@link AuthenticationException}
+     * (bad/blank identity, disabled user, an unexpected lookup result, or a
+     * user-creation failure); the shared {@code ScoutAuthSupport.establishSession}
+     * helper turns that into a 403.
      */
     UserI provision(ScoutIdentity identity) throws AuthenticationException;
 }

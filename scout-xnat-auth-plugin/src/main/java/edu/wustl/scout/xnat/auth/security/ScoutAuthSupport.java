@@ -7,7 +7,6 @@ import edu.wustl.scout.xnat.auth.service.UserProvisioningService;
 import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xft.security.UserI;
 import org.slf4j.Logger;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -58,12 +57,10 @@ final class ScoutAuthSupport {
      * Velocity browser path (eg. project pages) sees a usable permission model
      * instead of the "no access" fallback.
      *
-     * <p>Catches both exception types {@link UserProvisioningService#provision}
-     * can fail with: {@code AuthenticationException} (bad/disabled user, create
-     * failure) and {@code AccessDeniedException} (the role gate — a
-     * {@code RuntimeException}, not an {@code AuthenticationException}). Both
-     * auth paths must turn either into a 403, not leak the {@code AccessDeniedException}
-     * as a 500.
+     * <p>Catches {@code AuthenticationException} — how
+     * {@link UserProvisioningService#provision} signals a bad/disabled user or a
+     * create failure — and turns it into a 403. The required-role gate lives in
+     * the filters, upstream of here.
      */
     static boolean establishSession(final HttpServletRequest request,
                                     final HttpServletResponse response,
@@ -76,7 +73,7 @@ final class ScoutAuthSupport {
                     .setAuthentication(new ScoutAuthenticationToken(user, ScoutAuthConstants.PROVIDER_ID));
             UserHelper.setUserHelper(request, user);
             return true;
-        } catch (AuthenticationException | AccessDeniedException e) {
+        } catch (AuthenticationException e) {
             log.warn("Scout auth provisioning failed for {}: {}", identity.getPreferredUsername(), e.getMessage());
             SecurityContextHolder.clearContext();
             // Don't echo provisioning detail to the client — logged above for operators.

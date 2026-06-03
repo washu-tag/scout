@@ -13,7 +13,7 @@ import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xft.security.UserI;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -313,7 +313,7 @@ public class HeaderTrustFilterTest {
         FilterChain chain = mock(FilterChain.class);
 
         when(provisioningService.provision(any()))
-                .thenThrow(new AccessDeniedException("scout-user role required"));
+                .thenThrow(new AuthenticationServiceException("provisioning failed"));
 
         try (MockedStatic<UserHelper> userHelperStatic = org.mockito.Mockito.mockStatic(UserHelper.class)) {
             filter.doFilter(request, response, chain);

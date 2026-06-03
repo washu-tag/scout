@@ -12,7 +12,6 @@ import org.nrg.xdat.exceptions.UsernameAuthMappingNotFoundException;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.services.XdatUserAuthService;
 import org.nrg.xft.security.UserI;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -114,11 +113,16 @@ public class DefaultUserProvisioningServiceTest {
     }
 
     @Test
-    public void provision_rejectsMissingRequiredRoleWithAccessDenied() {
+    public void provision_rejectsNullLookupResult() throws Exception {
+        // getUserDetailsByNameAndAuth normally throws
+        // UsernameAuthMappingNotFoundException when there is no mapping; if an
+        // implementation returns null instead, provision must fail closed with a
+        // handled AuthenticationServiceException rather than NPE on isEnabled().
+        when(userAuthService.getUserDetailsByNameAndAuth(any(), any(), any())).thenReturn(null);
         try {
-            service.provision(identityWithRole("some-other-role"));
-            fail("expected AccessDeniedException");
-        } catch (AccessDeniedException e) {
+            service.provision(identityWithRole(REQUIRED_ROLE));
+            fail("expected AuthenticationServiceException for null lookup result");
+        } catch (AuthenticationServiceException e) {
             // expected
         }
     }

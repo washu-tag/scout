@@ -10,7 +10,6 @@ import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xft.security.UserI;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -217,34 +216,6 @@ public class BearerTokenFilterTest {
             userHelperStatic.verify(() -> UserHelper.setUserHelper(any(), any()), never());
         }
         // SecurityContext is cleared on provisioning failure.
-        assertFalse(SecurityContextHolder.getContext().getAuthentication() != null
-                && SecurityContextHolder.getContext().getAuthentication().isAuthenticated());
-    }
-
-    /**
-     * The role gate inside DefaultUserProvisioningService throws
-     * {@link AccessDeniedException} — a {@code RuntimeException}, not an
-     * {@code AuthenticationException}. The filter (via the shared
-     * establishSession helper, which catches both) must still turn it into a
-     * 403 rather than letting it escape as a 500.
-     */
-    @Test
-    public void provisionFailsWithAccessDenied_returns403() throws Exception {
-        MockHttpServletRequest request = bearerRequest();
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        FilterChain chain = mock(FilterChain.class);
-
-        when(jwtValidator.validate("subject-jwt")).thenReturn(validClaims("f077e17f"));
-        when(provisioningService.provision(any()))
-                .thenThrow(new AccessDeniedException("user lacks xnat-access role"));
-
-        try (MockedStatic<UserHelper> userHelperStatic = org.mockito.Mockito.mockStatic(UserHelper.class)) {
-            filter.doFilter(request, response, chain);
-
-            assertEquals(403, response.getStatus());
-            verify(chain, never()).doFilter(any(), any());
-            userHelperStatic.verify(() -> UserHelper.setUserHelper(any(), any()), never());
-        }
         assertFalse(SecurityContextHolder.getContext().getAuthentication() != null
                 && SecurityContextHolder.getContext().getAuthentication().isAuthenticated());
     }

@@ -12,7 +12,6 @@ import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xdat.exceptions.UsernameAuthMappingNotFoundException;
 import org.nrg.xft.security.UserI;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.stereotype.Service;
@@ -23,8 +22,11 @@ import org.springframework.stereotype.Service;
  * pattern carried over from the previous POC so existing dev03 users stay
  * re-usable if we choose to keep them.
  *
- * <p>Role gate: rejects with 403 unless the identity carries the configured
- * required role (default {@code xnat-access}).
+ * <p>Assumes an already-authorized identity: the {@code xnat-access} role gate
+ * is enforced by the auth filters (the security boundary) before they call
+ * {@code provision}, so it is not re-checked here. This service only validates
+ * that the identity is usable (non-blank sub, enabled user) and looks up or
+ * creates the XNAT user.
  */
 @Slf4j
 @Service
@@ -46,11 +48,6 @@ public class DefaultUserProvisioningService implements UserProvisioningService {
         if (identity == null || StringUtils.isBlank(identity.getSub())) {
             throw new AuthenticationServiceException("ScoutIdentity has no sub");
         }
-        if (!identity.hasRole(properties.getRequiredRole())) {
-            log.warn("user {} (sub={}) lacks required role {}; rejecting",
-                    identity.getPreferredUsername(), identity.getSub(), properties.getRequiredRole());
-            throw new AccessDeniedException("user lacks " + properties.getRequiredRole() + " role");
-        }
 
         // Two distinct identifiers on the XdatUserAuth row:
         //   - auth_user      = the external IdP identity (the Keycloak sub). This
@@ -66,6 +63,15 @@ public class DefaultUserProvisioningService implements UserProvisioningService {
             user = userAuthService.getUserDetailsByNameAndAuth(authUser, authMethod, providerId);
         } catch (UsernameAuthMappingNotFoundException e) {
             user = createUser(xnatUsername, identity);
+        }
+        if (user == null) {
+            // The "no existing mapping" case is signalled by
+            // UsernameAuthMappingNotFoundException (handled above). A null return
+            // is an unexpected lookup state — fail closed with a handled auth
+            // error rather than NPE-ing on isEnabled() below (which would escape
+            // establishSession's catch and surface as a 500).
+            throw new AuthenticationServiceException(
+                    "XNAT user lookup returned null for sub " + authUser);
         }
         if (!user.isEnabled()) {
             throw new AuthenticationServiceException("XNAT user " + xnatUsername + " is disabled");
