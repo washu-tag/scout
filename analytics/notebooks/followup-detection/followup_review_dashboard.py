@@ -1429,20 +1429,21 @@ def create_review_dashboard(
             render_metrics()
 
     def on_export(b):
-        """Export annotations to CSV and optionally to Delta table."""
-        import time
-        from IPython.display import display, clear_output
+        """Export annotations to CSV and optionally to Delta table.
 
+        Runs synchronously on the kernel's IOLoop; intermediate
+        `annotation_status` updates are flushed to the frontend only
+        after this function returns. The previous version called
+        `IPython.get_ipython().kernel.do_one_iteration()` to force
+        intra-callback flushes, but that method was removed in
+        ipykernel 7+ — the AttributeError escaped before the try
+        block, so the finally that re-enabled the button never ran
+        and the UI stuck on "⏳ Exporting...".
+        """
         # Disable button and show loading state
         export_btn.disabled = True
         export_btn.description = "⏳ Exporting..."
         export_btn.button_style = "warning"
-
-        # Force immediate widget update
-        import IPython
-
-        if IPython.get_ipython() is not None:
-            IPython.get_ipython().kernel.do_one_iteration()
 
         try:
             if not annotations:
@@ -1454,10 +1455,6 @@ def create_review_dashboard(
             with annotation_status:
                 annotation_status.clear_output(wait=True)
                 print("📦 Preparing annotations for export...")
-
-            # Force display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
 
             # Build annotations DataFrame
             ann_data = []
@@ -1518,10 +1515,6 @@ def create_review_dashboard(
                 print(f"📦 Preparing annotations for export...")
                 print(f"💾 Saving to CSV: {output_path}...")
 
-            # Force display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
-
             try:
                 ann_df.to_csv(output_path, index=False)
             except OSError as e:
@@ -1541,10 +1534,6 @@ def create_review_dashboard(
                 annotation_status.clear_output(wait=True)
                 print(f"💾 Saved to CSV: {output_path}")
                 print(f"🔄 Updating Delta Lake table...")
-
-            # Force display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
 
             try:
                 from playbook_helpers import connect_writeback
@@ -1642,10 +1631,6 @@ def create_review_dashboard(
                 print(f"   ✓ {yes_count} Follow-up Needed")
                 print(f"   ✗ {no_count} No Follow-up")
                 print(f"   ? {uncertain_count} Uncertain")
-
-            # Force final display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
 
         finally:
             # Always re-enable button

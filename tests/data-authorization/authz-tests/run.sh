@@ -396,6 +396,36 @@ log "added $TEST_USER to scout-user (group id=$SCOUT_USER_GROUP_ID)"
 # attribute predicate has passed.
 wait_for_bundle '(.result.groups // []) | index("scout-user") != null' "$PROPAGATION_TIMEOUT"
 
+# Close the race between Spark's CREATE TABLE in the seed Job and
+# Trino's Delta connector loading the new snapshot. The very first
+# SELECT against a freshly-created Delta table can return
+# DELTA_LAKE_INVALID_SCHEMA ("Error getting snapshot for ...") for a
+# few seconds while the _delta_log directory listing and Hive
+# get_table calls overlap. Issue one warmup probe here and retry
+# until Trino returns rows -- rowFilter clamps the result with the
+# user's current (no-facilities) attrs, but that's fine; we only
+# care that the snapshot load itself succeeds. Bounded; if Trino is
+# genuinely broken the scenarios surface the real error.
+warmup_trino_snapshot() {
+    local i=0 last_err=""
+    while [[ $i -lt 12 ]]; do
+        if trino_query "SELECT 1 FROM test_reports LIMIT 1" "$TEST_USER" >/dev/null 2>/tmp/warmup_err; then
+            [[ $i -gt 0 ]] && log "Trino snapshot ready after $((i + 1)) attempts"
+            return 0
+        fi
+        last_err=$(cat /tmp/warmup_err)
+        if [[ "$last_err" != *"Error getting snapshot"* ]]; then
+            # Not the race we're targeting -- let scenario 1 surface it.
+            log "warmup: non-snapshot error, continuing to scenarios: $last_err"
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 5
+    done
+    log "WARN: Trino snapshot still failing after $i attempts: $last_err"
+}
+warmup_trino_snapshot
+
 # --- Scenario 1: single facility filter -------------------------------------
 log "scenario 1: allowed_facilities=[ABCHOSP1] -> 3 rows"
 set_user_state "$USER_ID" true '{"allowed_facilities":["ABCHOSP1"],"allowed_modalities":["*"]}'
