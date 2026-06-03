@@ -27,7 +27,7 @@ def connect_writeback() -> trino.dbapi.Connection:
     user='anonymous' - failing closed would block a reviewer's annotation
     save on a transient header-propagation hiccup, which is a worse
     outcome than a less-precise audit entry. A missing forwarded username
-    is already logged at request time by voila_runtime._scout_voila_get.
+    is already logged at request time by voila_runtime._voila_runtime_get.
     """
     user = resolve_audit_user()
     return trino.dbapi.connect(

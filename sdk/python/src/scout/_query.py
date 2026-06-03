@@ -1,9 +1,9 @@
-"""Trino connection helpers for Scout notebooks and playbooks.
+"""Trino connection internals for the scout SDK.
 
-Single API for both Voila and Jupyter kernels:
+Backs the public surface (scout.query / scout.connect):
 
-    from scout.trino import query
-    df = query("SELECT count(*) FROM reports")
+    import scout
+    df = scout.query("SELECT count(*) FROM reports")
 
 Identity source is detected from the environment by scout._identity:
   * Voila kernels -> voila_svc JWT + X-Trino-User impersonation
@@ -77,6 +77,33 @@ def _schema() -> str:
     return os.environ.get("TRINO_SCHEMA", "default")
 
 
+def _auth_args(provider) -> dict[str, Any]:
+    """Auth + TLS + optional impersonation user, shared by connect() and the
+    cached engine.
+
+    Whether `user` is set is the entire identity distinction:
+      * Voila    -> provider returns the impersonated username; we set it and
+                    the trino client sends it as X-Trino-User.
+      * Jupyter  -> provider returns None; we omit `user`. The trino client
+                    then emits no X-Trino-User (requests drops the None-valued
+                    header on its Session merge), so Trino derives the session
+                    user from the JWT principal (jwt.principal-field=
+                    preferred_username) instead.
+
+    Do NOT backfill a default user here: a stray X-Trino-User would turn the
+    Jupyter pass-through into an impersonation attempt by the JWT principal.
+    """
+    _, user = provider()
+    args: dict[str, Any] = {
+        "auth": _DynamicJWTAuthentication(provider),
+        "http_scheme": _trino_scheme(),
+        "verify": _trino_verify(),
+    }
+    if user:
+        args["user"] = user
+    return args
+
+
 def connect() -> trino.dbapi.Connection:
     """Return a Trino DB-API connection scoped to the current user.
 
@@ -84,19 +111,13 @@ def connect() -> trino.dbapi.Connection:
     env and attaches the right auth + impersonation header.
     """
     provider = _identity._resolve_provider()
-    _, user = provider()
-    kwargs: dict[str, Any] = dict(
+    return trino.dbapi.connect(
         host=_trino_host(),
         port=_trino_port(),
-        http_scheme=_trino_scheme(),
         catalog=_catalog(),
         schema=_schema(),
-        auth=_DynamicJWTAuthentication(provider),
-        verify=_trino_verify(),
+        **_auth_args(provider),
     )
-    if user:
-        kwargs["user"] = user
-    return trino.dbapi.connect(**kwargs)
 
 
 _engine: Engine | None = None
@@ -110,17 +131,9 @@ def _get_engine() -> Engine:
     if _engine is not None:
         return _engine
     provider = _identity._resolve_provider()
-    _, user = provider()
-    connect_args: dict[str, Any] = {
-        "auth": _DynamicJWTAuthentication(provider),
-        "http_scheme": _trino_scheme(),
-        "verify": _trino_verify(),
-    }
-    if user:
-        connect_args["user"] = user
     _engine = create_engine(
         f"trino://{_trino_host()}:{_trino_port()}/{_catalog()}/{_schema()}",
-        connect_args=connect_args,
+        connect_args=_auth_args(provider),
     )
     return _engine
 

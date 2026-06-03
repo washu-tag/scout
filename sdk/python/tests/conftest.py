@@ -1,11 +1,11 @@
 """Test harness for the scout SDK (sdk/python/src/scout/).
 
-scout.trino and scout.voila import third-party modules (requests, trino,
-voila, jupyter_server) that aren't installed in the unit-test environment -
-voila in particular pulls a large dependency tree. Stub them in sys.modules
-before the modules are imported so the tests need nothing but pytest.
+The SDK's _query/_identity modules import third-party packages (requests,
+trino, sqlalchemy) that aren't installed in the unit-test environment. Stub
+them in sys.modules before the modules are imported so the tests need nothing
+but pytest.
 
-Run with: cd sdk/python && pytest tests/ -v
+Run with: cd sdk/python && PYTHONPATH=src pytest tests/ -v
 """
 
 import sys
@@ -26,7 +26,7 @@ requests_stub = _stub("requests")
 requests_stub.post = MagicMock(name="requests.post")
 requests_stub.get = MagicMock(name="requests.get")
 
-# requests.auth.AuthBase is the base class scout.trino._DynamicBearerAuth
+# requests.auth.AuthBase is the base class scout._query._DynamicBearerAuth
 # extends. Stub it as a plain object so subclasses still work.
 requests_auth_stub = _stub("requests.auth")
 
@@ -54,49 +54,13 @@ trino_stub.dbapi = trino_dbapi_stub
 trino_stub.auth = trino_auth_stub
 
 
-# --- sqlalchemy: scout.trino.query uses create_engine + text ---
+# --- sqlalchemy: scout._query uses create_engine + text ---
 sqlalchemy_stub = _stub("sqlalchemy")
 sqlalchemy_stub.create_engine = MagicMock(name="sqlalchemy.create_engine")
 sqlalchemy_stub.text = MagicMock(name="sqlalchemy.text", side_effect=lambda s: s)
 sqlalchemy_engine_stub = _stub("sqlalchemy.engine")
 sqlalchemy_engine_stub.Engine = type("Engine", (), {})
 sqlalchemy_stub.engine = sqlalchemy_engine_stub
-
-
-# --- voila.tornado.handler.TornadoVoilaHandler (scout.voila patches .get) ---
-ORIGINAL_GET_RESULT = "voila-original-get-result"
-
-
-class FakeTornadoVoilaHandler:
-    async def get(self, path=None):
-        # Module-level constant (not self.<attr>) so the stub still works when
-        # called with the duck-typed fake handler the tests pass as `self`.
-        return ORIGINAL_GET_RESULT
-
-
-voila_stub = _stub("voila")
-voila_tornado_stub = _stub("voila.tornado")
-voila_handler_stub = _stub("voila.tornado.handler")
-voila_handler_stub.TornadoVoilaHandler = FakeTornadoVoilaHandler
-voila_tornado_stub.handler = voila_handler_stub
-voila_stub.tornado = voila_tornado_stub
-
-
-# --- jupyter_server...AsyncMappingKernelManager (scout.voila subclasses it) ---
-class FakeAsyncMappingKernelManager:
-    async def start_kernel(self, **kwargs):
-        # Echo the kwargs the subclass forwarded so tests can assert on env.
-        return {"started_with": kwargs}
-
-
-js_stub = _stub("jupyter_server")
-js_services_stub = _stub("jupyter_server.services")
-js_kernels_stub = _stub("jupyter_server.services.kernels")
-js_km_stub = _stub("jupyter_server.services.kernels.kernelmanager")
-js_km_stub.AsyncMappingKernelManager = FakeAsyncMappingKernelManager
-js_kernels_stub.kernelmanager = js_km_stub
-js_services_stub.kernels = js_kernels_stub
-js_stub.services = js_services_stub
 
 
 @pytest.fixture(autouse=True)
@@ -166,4 +130,22 @@ def set_token_response(access_token=None, expires_in=3600):
     }
     response.raise_for_status.return_value = None
     requests_stub.post.return_value = response
+    return access_token
+
+
+def set_hub_auth_state(access_token=None, expires_in=3600, include_token=True):
+    """Configure the stubbed JupyterHub `GET /users/<user>` response that the
+    Jupyter provider reads the user's Keycloak access_token from.
+
+    Like set_token_response, wraps a label as a JWT-shaped string so the SDK's
+    expiry check can decode the `exp`. include_token=False omits access_token
+    to drive the missing-token error path."""
+    if access_token is None or access_token.count(".") != 2:
+        access_token = _jwt_with_exp(expires_in)
+    auth_state = {"access_token": access_token} if include_token else {}
+
+    response = MagicMock()
+    response.json.return_value = {"name": "alice", "auth_state": auth_state}
+    response.raise_for_status.return_value = None
+    requests_stub.get.return_value = response
     return access_token

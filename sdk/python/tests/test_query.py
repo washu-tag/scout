@@ -1,18 +1,35 @@
 """Unit tests for the SDK's top-level query/connect/current_user surface.
 
-Covers identity resolution (X-Trino-User from the forwarded username), the
-voila_svc JWT mint + caching, and the anonymous fail-safe.
+Covers both identity modes: Voila (voila_svc JWT mint + caching, X-Trino-User
+impersonation) and Jupyter (Hub-API access-token pass-through with no
+impersonation), plus the anonymous fail-safe.
 """
+
+import pytest
 
 import scout
 from scout import _identity, _query
 
-from conftest import requests_stub, set_token_response, trino_dbapi_stub
+from conftest import (
+    requests_stub,
+    set_hub_auth_state,
+    set_token_response,
+    trino_dbapi_stub,
+)
 
 
 def _connect_kwargs():
     """kwargs passed to the (stubbed) trino.dbapi.connect on the last call."""
     return trino_dbapi_stub.connect.call_args.kwargs
+
+
+def _use_jupyter_env(monkeypatch):
+    """Flip the autouse Voila env over to the Jupyter provider: drop the
+    voila_svc client id and supply the Hub API vars the kernel would have."""
+    monkeypatch.delenv("KEYCLOAK_VOILA_SVC_CLIENT_ID", raising=False)
+    monkeypatch.setenv("JUPYTERHUB_API_TOKEN", "hub-tok")
+    monkeypatch.setenv("JUPYTERHUB_API_URL", "http://hub:8081/hub/api")
+    monkeypatch.setenv("JUPYTERHUB_USER", "alice")
 
 
 def test_connect_impersonates_forwarded_user(monkeypatch):
@@ -83,6 +100,42 @@ def test_token_refreshes_after_expiry(monkeypatch):
     provider()
 
     assert requests_stub.post.call_count == 2
+
+
+def test_jupyter_passthrough_omits_impersonation_user(monkeypatch):
+    _use_jupyter_env(monkeypatch)
+    set_hub_auth_state()
+
+    scout.connect()
+
+    kwargs = _connect_kwargs()
+    # No X-Trino-User on the Jupyter path: connect() omits `user` so the trino
+    # client sends no impersonation header and Trino reads identity from the
+    # JWT principal. A stray user here would become an impersonation attempt.
+    assert "user" not in kwargs
+    assert isinstance(kwargs["auth"], _query._DynamicJWTAuthentication)
+
+
+def test_jupyter_bearer_is_user_token_fetched_from_hub(monkeypatch):
+    _use_jupyter_env(monkeypatch)
+    token = set_hub_auth_state()
+
+    bearer, user = _identity._resolve_provider()()
+
+    assert bearer == token
+    assert user is None  # pass-through, not impersonation
+    # Fetches the owning user's record with the kernel's own Hub API token.
+    call = requests_stub.get.call_args
+    assert call.args[0] == "http://hub:8081/hub/api/users/alice"
+    assert call.kwargs["headers"]["Authorization"] == "token hub-tok"
+
+
+def test_jupyter_raises_when_auth_state_has_no_token(monkeypatch):
+    _use_jupyter_env(monkeypatch)
+    set_hub_auth_state(include_token=False)
+
+    with pytest.raises(RuntimeError, match="auth_state has no access_token"):
+        _identity._resolve_provider()()
 
 
 def test_current_user_returns_voila_username(monkeypatch):

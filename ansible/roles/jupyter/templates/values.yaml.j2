@@ -17,7 +17,7 @@ hub:
       services: [prometheus]
     # Override built-in `user` and `server` roles so a spawned kernel's
     # JUPYTERHUB_API_TOKEN can read its own user's auth_state via
-    # GET {JUPYTERHUB_API_URL}/users/{JUPYTERHUB_USER}. scout.trino reads
+    # GET {JUPYTERHUB_API_URL}/users/{JUPYTERHUB_USER}. The scout SDK reads
     # the Keycloak access_token from that response and sends it as the
     # Bearer to Trino (per-user identity from the JWT's sub claim).
     # Both roles must carry admin:auth_state!user — server-token scopes
@@ -83,7 +83,7 @@ hub:
         - microprofile-jwt
       enable_auth_state: true
       # Refresh the user's Keycloak token before spawning so kernels start
-      # with a fresh access_token; scout.trino re-fetches from the Hub API
+      # with a fresh access_token; the scout SDK re-fetches from the Hub API
       # on near-expiry for long-running sessions.
       refresh_pre_spawn: true
       auth_state_groups_key: 'oauth_user.groups'
@@ -203,7 +203,7 @@ singleuser:
     # HuggingFace model cache directory - models downloaded from HF Hub are stored here
     # This directory is created in postStart hook and persists with user's home directory
     HF_HOME: '/home/jovyan/models'
-    # Trino connection params consumed by scout.trino (installed in the
+    # Trino connection params consumed by the scout SDK (installed in the
     # scout-notebook image). No TRINO_USER: per-user identity comes from
     # the user's Keycloak access_token (fetched via the Hub API and sent
     # as the Bearer; Trino reads the `sub` claim).
@@ -291,7 +291,7 @@ singleuser:
           secretName: trino-tls
           # cert-manager issues this Secret as part of the analytics
           # playbook; tolerate its absence so a cold deploy doesn't block
-          # spawn (scout.trino's TLS handshake fails loudly until kubelet
+          # spawn (the scout SDK's TLS handshake fails loudly until kubelet
           # picks up the issued Secret on its next sync).
           optional: true
           items:
