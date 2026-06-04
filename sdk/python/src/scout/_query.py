@@ -153,31 +153,34 @@ def _get_engine() -> Engine:
 
 
 # Trino raises HttpError("error <status>: <body>") for non-2xx (see
-# trino.client.TrinoRequest.raise_response_error); 401/403 mean the bearer
-# was rejected (expired/invalid JWT).
-_AUTH_ERROR_MARKERS = ("error 401", "error 403")
+# trino.client.TrinoRequest.raise_response_error). Only 401 (Unauthorized)
+# means the bearer itself was rejected -- expired/invalid JWT -- which a fresh
+# token can fix. 403 (Forbidden) is an authorization denial: the identity is
+# authenticated but not permitted, so re-minting the same identity's token
+# changes nothing; let it surface rather than retrying.
+_UNAUTHORIZED_MARKER = "error 401"
 
 
-def _is_auth_error(exc: BaseException) -> bool:
+def _is_unauthorized(exc: BaseException) -> bool:
     """True if exc, or any error in its cause/context chain, is a Trino
-    HTTP 401/403 -- i.e. Trino rejected the bearer. SQLAlchemy/pandas wrap
-    the original trino exception, so we walk the chain rather than matching
-    the top-level type."""
+    HTTP 401 -- the bearer was rejected. SQLAlchemy/pandas wrap the original
+    trino exception, so we walk the chain rather than matching the top-level
+    type. 403 (authorization denial) is deliberately excluded: a fresh token
+    for the same identity wouldn't change the decision."""
     seen: set[int] = set()
     cur: BaseException | None = exc
     while cur is not None and id(cur) not in seen:
         seen.add(id(cur))
-        if isinstance(cur, trino.exceptions.HttpError) and any(
-            marker in str(cur) for marker in _AUTH_ERROR_MARKERS
-        ):
+        is_http = isinstance(cur, trino.exceptions.HttpError)
+        if is_http and _UNAUTHORIZED_MARKER in str(cur):
             return True
         cur = cur.__cause__ or cur.__context__
     return False
 
 
 def _with_auth_retry(run):
-    """Run `run()`; if Trino rejects the bearer, drop the cached token and
-    retry exactly once.
+    """Run `run()`; if Trino rejects the bearer with 401, drop the cached
+    token and retry exactly once.
 
     The reactive half of the proactive+reactive token-refresh strategy
     (ADR 0024). Proactive refresh (the provider's near-expiry re-fetch plus
@@ -185,11 +188,12 @@ def _with_auth_retry(run):
     the residual -- clock skew against Trino's zero-skew JWT check, or a token
     that expired in-flight. The retry re-fetches a fresh bearer (Voila
     re-mints; Jupyter re-pulls from the Hub, which rotates), so a transient
-    401 self-heals instead of surfacing to the notebook."""
+    401 self-heals instead of surfacing to the notebook. A 403 is an
+    authorization denial, not a stale credential, so it is not retried."""
     try:
         return run()
     except Exception as exc:
-        if not _is_auth_error(exc):
+        if not _is_unauthorized(exc):
             raise
         _identity.invalidate()
         return run()
