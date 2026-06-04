@@ -1,0 +1,31 @@
+---
+# Route cert-manager through the staging Squid proxy on air-gapped clusters.
+cert_manager_http_proxy: >-
+  {{ ('http://' ~ groups['staging'][0] ~ ':' ~ squid_port)
+     if (air_gapped | default(false) | bool
+         and (groups['staging'] | default([]) | length > 0))
+     else '' }}
+cert_manager_https_proxy: '{{ cert_manager_http_proxy }}'
+cert_manager_no_proxy: '10.42.0.0/16,10.43.0.0/16,.svc,.svc.cluster.local,127.0.0.1,localhost,kubernetes.default'
+
+cert_manager_dns01_recursive_nameservers: []
+
+cert_manager_dns01_recursive_nameservers_arg: >-
+  {{ ('--dns01-recursive-nameservers=' ~ (cert_manager_dns01_recursive_nameservers | join(',')))
+     if cert_manager_dns01_recursive_nameservers | length > 0
+     else '' }}
+
+cert_manager_extra_helm_values: >-
+  {{
+    ({'http_proxy': cert_manager_http_proxy,
+      'https_proxy': cert_manager_https_proxy,
+      'no_proxy': cert_manager_no_proxy}
+     if cert_manager_http_proxy | length > 0
+     else {})
+    | combine(
+      {'extraArgs': [cert_manager_dns01_recursive_nameservers_arg,
+                     '--dns01-recursive-nameservers-only=true']}
+      if cert_manager_dns01_recursive_nameservers | length > 0
+      else {}
+    )
+  }}

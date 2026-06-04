@@ -7,11 +7,13 @@ traefik_tls_secret_name: tls-secret
 
 # Timeout for waiting on Traefik Helm jobs (in seconds)
 traefik_helm_job_timeout: 300
-# Required variables (must be defined in inventory):
-# - tls_cert_path: Path to TLS certificate file on remote server (e.g., /path/to/fullchain.pem)
-# - tls_key_path: Path to TLS private key file on remote server (e.g., /path/to/privkey.pem)
+# Inventory requirements depend on tls_mode:
 #
-# These certificates should be:
-# - In PEM format
-# - Wildcard certificates for your domain (e.g., *.example.com)
-# - Already present on the target k3s server filesystem
+# tls_mode: file
+#   - tls_cert_path: PEM cert on the k3s server (wildcard cert for the domain)
+#   - tls_key_path:  PEM key on the k3s server
+#
+# tls_mode: cert_manager
+#   - cert_manager_acme_account_email
+#   - acmedns_host
+#   - acmedns_credentials (vault-encrypted)

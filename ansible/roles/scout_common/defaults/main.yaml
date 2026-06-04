@@ -69,6 +69,24 @@ scout_monitoring_namespace: scout-monitoring
 traefik_namespace: kube-system
 harbor_namespace: harbor
 
+# TLS provisioning mode: file | cert_manager
+tls_mode: file
+
+traefik_tls_secret_name: tls-secret
+
+cert_manager_acme_server: https://acme-staging-v02.api.letsencrypt.org/directory
+cert_manager_acme_issuer_name: acme-issuer
+cert_manager_acme_certificate_name: scout-tls
+cert_manager_acme_dns_secret_name: acmedns-credentials
+cert_manager_acme_dns_names:
+  - '{{ server_hostname }}'
+  - '*.{{ server_hostname }}'
+  - '*.jupyter.{{ server_hostname }}'
+
+squid_letsencrypt_domains:
+  - acme-v02.api.letsencrypt.org
+  - acme-staging-v02.api.letsencrypt.org
+
 # Squid forward proxy port (on staging node for air-gapped IdP access)
 squid_port: 3128
 
