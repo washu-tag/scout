@@ -26,6 +26,7 @@ cert_manager_extra_helm_values: >-
       {'extraArgs': [cert_manager_dns01_recursive_nameservers_arg,
                      '--dns01-recursive-nameservers-only=true']}
       if cert_manager_dns01_recursive_nameservers | length > 0
-      else {}
+      else {},
+      recursive=true
     )
   }}
