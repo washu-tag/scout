@@ -70,13 +70,16 @@ just re-validate them.
 
 ### 3. SDK-side reactive retry
 
-`query()` wraps execution in `_with_auth_retry`: on a Trino HTTP 401/403
-(detected by walking the exception chain for `trino.exceptions.HttpError`
-with `error 401`/`error 403`, since SQLAlchemy/pandas wrap the original),
-it drops the cached bearer (`_identity.invalidate()`) and retries **once**.
-The re-fetch yields a fresh token (Voila re-mints; Jupyter re-pulls from the
-Hub, which rotates via the layer-1 hook), so a transient 401 from clock skew or
-an in-flight expiry never reaches the notebook. `connect()` returns a raw
+`query()` wraps execution in `_with_auth_retry`: on a Trino HTTP **401**
+(detected by walking the exception chain for `trino.exceptions.HttpError` with
+`error 401`, since SQLAlchemy/pandas wrap the original), it drops the cached
+bearer (`_identity.invalidate()`) and retries **once**. The re-fetch yields a
+fresh token (Voila re-mints; Jupyter re-pulls from the Hub, which rotates via
+the layer-1 hook), so a transient 401 from clock skew or an in-flight expiry
+never reaches the notebook. **403 is deliberately not retried**: it is an
+authorization denial (an OPA decision against an authenticated identity), so a
+fresh token for the same identity wouldn't change the outcome — retrying would
+only mask the denial behind a duplicate request. `connect()` returns a raw
 DB-API connection whose execution the caller drives, so it carries proactive
 refresh but not this reactive wrapper.
 
@@ -154,8 +157,9 @@ shares a token cache across concurrent users.
 - Lifespan variable: `ansible/roles/scout_common/defaults/main.yaml`
   (`keycloak_access_token_lifespan`), consumed by
   `ansible/roles/keycloak/templates/scout-realm.json.j2`.
-- Tests: `sdk/python/tests/test_query.py` (auth-error detection, retry-once,
-  no-retry-on-non-auth, provider invalidation) and
+- Tests: `sdk/python/tests/test_query.py` (401 detection direct/chained,
+  403-and-non-auth excluded, retry-once, no-retry-on-403, provider
+  invalidation) and
   `sdk/python/tests_contract/` (real trino-python-client X-Trino-User behavior).
 
 ## References

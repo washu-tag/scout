@@ -120,8 +120,8 @@ def test_auth_session_pins_ca_against_env_bundle_override():
     assert isinstance(session.auth, _query._DynamicBearerAuth)
 
 
-def test_is_auth_error_detects_401_direct_and_chained():
-    assert _query._is_auth_error(FakeHttpError("error 401: b'JWT expired'"))
+def test_is_unauthorized_detects_401_direct_and_chained():
+    assert _query._is_unauthorized(FakeHttpError("error 401: b'JWT expired'"))
     # SQLAlchemy/pandas wrap the trino error; we walk the chain.
     try:
         try:
@@ -129,12 +129,14 @@ def test_is_auth_error_detects_401_direct_and_chained():
         except FakeHttpError as inner:
             raise ValueError("Execution failed on sql ...") from inner
     except ValueError as wrapped:
-        assert _query._is_auth_error(wrapped)
+        assert _query._is_unauthorized(wrapped)
 
 
-def test_is_auth_error_ignores_non_auth_errors():
-    assert not _query._is_auth_error(FakeHttpError("error 500: internal"))
-    assert not _query._is_auth_error(ValueError("table not found"))
+def test_is_unauthorized_excludes_403_and_non_auth_errors():
+    # 403 is an authorization denial, not a stale bearer -- must NOT retry.
+    assert not _query._is_unauthorized(FakeHttpError("error 403: Access Denied"))
+    assert not _query._is_unauthorized(FakeHttpError("error 500: internal"))
+    assert not _query._is_unauthorized(ValueError("table not found"))
 
 
 def test_with_auth_retry_invalidates_and_retries_once_on_401(monkeypatch):
@@ -154,6 +156,24 @@ def test_with_auth_retry_invalidates_and_retries_once_on_401(monkeypatch):
     assert _query._with_auth_retry(run) == "rows"
     assert len(calls) == 2  # failed once, retried once
     assert provider._token is None  # cache was invalidated between attempts
+
+
+def test_with_auth_retry_does_not_retry_on_403(monkeypatch):
+    set_token_response()
+    provider = _identity._resolve_provider()
+    provider()
+    assert provider._token is not None
+
+    calls = []
+
+    def run():
+        calls.append(1)
+        raise FakeHttpError("error 403: Access Denied")
+
+    with pytest.raises(FakeHttpError):
+        _query._with_auth_retry(run)
+    assert len(calls) == 1  # denial is not retried
+    assert provider._token is not None  # and the bearer is NOT invalidated
 
 
 def test_with_auth_retry_passes_non_auth_errors_through_without_retry():
