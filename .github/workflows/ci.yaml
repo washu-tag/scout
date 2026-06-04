@@ -253,6 +253,11 @@ jobs:
       - name: Install Python dependencies for Ansible Kubernetes modules
         run: |
           /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
+      - name: Install apache2-utils for htpasswd
+        # roles/trino/templates/password.db.j2 shells out to `htpasswd -bnBC 10`
+        # to bcrypt-hash the file-PASSWORD-authenticator entries. ubuntu-latest
+        # doesn't include it by default.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends apache2-utils
       - name: 'Install k3s'
         shell: bash
         run: |
@@ -374,7 +379,7 @@ jobs:
             subdomains: superset,chat,keycloak,auth,minio
             san_extra: ''
             playbooks: k3s traefik postgres valkey auth lake trino superset chatbot launchpad
-            netpol_include: '--include trino-rw,opa-trino'
+            netpol_include: '--include trino-rw,opa-trino,mcp-trino-ingress'
           - side: notebooks
             # testuser.jupyter is the per-user singleuser pod ingress
             subdomains: jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
@@ -432,6 +437,11 @@ jobs:
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
       - name: Install Python dependencies for Ansible Kubernetes modules
         run: /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
+      - name: Install apache2-utils for htpasswd
+        # roles/trino/templates/password.db.j2 shells out to `htpasswd -bnBC 10`
+        # to bcrypt-hash the file-PASSWORD-authenticator entries. ubuntu-latest
+        # doesn't include it by default.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends apache2-utils
       - name: 'Install k3s'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
@@ -500,6 +510,10 @@ jobs:
           echo "=== Checking Trino ==="
           sudo -E kubectl rollout status deployment/trino-coordinator -n scout-analytics --timeout=180s
           sudo -E kubectl rollout status deployment/trino-worker -n scout-analytics --timeout=180s
+          if [ "$SIDE" = "analytics" ]; then
+            echo "=== Checking MCP Trino ==="
+            sudo -E kubectl rollout status deployment/mcp-trino -n scout-analytics --timeout=180s
+          fi
           if [ "$SIDE" = "notebooks" ]; then
             echo "=== Checking Voila ==="
             sudo -E kubectl rollout status deployment/voila -n scout-analytics --timeout=180s
@@ -580,6 +594,7 @@ jobs:
           set -euo pipefail
           KC_ADMIN_PW=$(yq '.k3s_cluster.vars.keycloak_bootstrap_admin_password' ansible/inventory.yaml)
           SUPERSET_SVC_SECRET=$(yq '.k3s_cluster.vars.keycloak_superset_svc_client_secret' ansible/inventory.yaml)
+          MCP_SVC_PW=$(yq '.k3s_cluster.vars.trino_openwebui_mcp_svc_password' ansible/inventory.yaml)
 
           # Script in a ConfigMap (kubectl handles file content
           # correctly), secrets in a Secret. The Job manifest
@@ -593,6 +608,7 @@ jobs:
             -n scout-analytics \
             --from-literal=KC_ADMIN_PASSWORD="$KC_ADMIN_PW" \
             --from-literal=SUPERSET_SVC_CLIENT_SECRET="$SUPERSET_SVC_SECRET" \
+            --from-literal=MCP_SVC_PASSWORD="$MCP_SVC_PW" \
             --dry-run=client -o yaml | sudo -E kubectl apply -f -
 
           sudo -E kubectl apply -f tests/data-authorization/authz-tests/job.yaml

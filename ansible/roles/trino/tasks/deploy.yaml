@@ -69,6 +69,39 @@
         KEYSTORE_PASSWORD: '{{ trino_keystore_password }}'
         INTERNAL_SHARED_SECRET: '{{ trino_internal_shared_secret }}'
 
+# === Password authenticator (interim, ADR 0022) =============================
+# File-based PASSWORD authenticator. The sole entry is openwebui_mcp_svc,
+# bcrypted from trino_openwebui_mcp_svc_password at template render time
+# (see password.db.j2). Clients authenticate with HTTP Basic. JWT remains
+# the primary auth mode — see values.yaml.j2 `authenticationType:
+# PASSWORD,JWT`. Trino tries each authenticator in declared order.
+#
+# Removal trigger: when the custom MCP tool replaces upstream mcp-trino
+# (target: next quarter), drop password.db.j2 + this Secret task + the
+# secretMount in values.yaml.j2 + revert authenticationType to JWT-only.
+- name: Create Trino password-authenticator Secret
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: trino-password-auth
+        namespace: '{{ trino_namespace }}'
+      type: Opaque
+      stringData:
+        # Authenticator config: points at password.db, refreshes every 30s
+        # so adding/rotating an entry takes effect without a pod restart.
+        password-authenticator.properties: |
+          password-authenticator.name=file
+          file.password-file=/etc/trino/password-auth/password.db
+          file.refresh-period=30s
+        # password.db: `username:bcrypt-hash` per line. Rendered from a
+        # separate template (Jinja control flow at column 0 confuses the
+        # YAML parser when inlined here).
+        password.db: "{{ lookup('template', 'password.db.j2') }}"
+
 - name: Issue Trino TLS Certificate
   kubernetes.core.k8s:
     state: present

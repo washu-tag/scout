@@ -163,7 +163,7 @@ Use `http-server.authentication.type=PASSWORD` only; every client gets a Trino p
 
 Add a NetworkPolicy in front of `mcp-trino` allowing ingress only from the Open WebUI pod, on the theory that a network-layer gate makes forge-`X-Trino-User`-from-another-pod attacks go away.
 
-**Rejected**: the MCP already validates the inbound Keycloak OIDC token before honoring `X-Trino-User`, so requests without a valid Keycloak-signed token are rejected at the MCP. Token-forgery resistance comes from Keycloak's signing key, not from network position.
+**Accepted as defense-in-depth** (revised post-review). The MCP's inbound OIDC validation is still the primary gate — token-forgery resistance comes from Keycloak's signing key, not from network position. But the NetworkPolicy is cheap and consistent with the Voila ingress policy (which has the same shape for a structurally-similar concern), and it gives an independent regression-testable second layer if an upstream `tuannvm/mcp-trino` change ever weakens the OIDC validation. The network-policy test suite asserts both directions: open-webui-labeled pods reach `mcp-trino:8080`; other in-cluster pods don't.
 
 ### Sharing one service principal across all impersonation-pattern clients
 

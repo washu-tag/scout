@@ -65,6 +65,16 @@ spec:
                 secretKeyRef:
                   name: data-authz-test-creds
                   key: SUPERSET_SVC_CLIENT_SECRET
+            # PASSWORD-auth scenario (PR6): mcp-trino's HTTP-Basic outbound
+            # principal. Optional — run.sh skips scenario 10 if unset, so
+            # this Job runs unchanged against deployments without PR6's
+            # password-authenticator Secret.
+            - name: MCP_SVC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: data-authz-test-creds
+                  key: MCP_SVC_PASSWORD
+                  optional: true
             - name: OPA_URL
               value: http://opa-trino.scout-analytics:8181
             - name: TRINO_URL

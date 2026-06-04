@@ -28,7 +28,7 @@
 #   stdout: a streaming log of each scenario + assertion
 #   exit:   0 if all pass, non-zero on first failure
 #
-# Test scenarios (9):
+# Test scenarios (10):
 #   1. enabled=true, allowed_facilities=["ABCHOSP1"], allowed_modalities=["*"]
 #      -> COUNT(*) FROM test_reports = 3   (only ABCHOSP1 rows)
 #   2. allowed_facilities=["*"]
@@ -46,6 +46,12 @@
 #         table-not-found but NOT on permission-denied)
 #   8. enabled=false
 #      -> any SELECT denied at /allow
+#   9. not in scout-user group
+#      -> any SELECT denied at /allow
+#   10. PASSWORD auth + X-Trino-User impersonation (PR6, optional —
+#       requires MCP_SVC_PASSWORD env)
+#      -> COUNT(*) FROM test_reports = 3   (same as scenario 1 but
+#         exercising HTTP Basic instead of Bearer JWT)
 
 set -euo pipefail
 
@@ -273,6 +279,48 @@ trino_query() {
     done
 }
 
+# Same as trino_query but authenticates via HTTP Basic against Trino's
+# PASSWORD authenticator (ADR 0022) instead of a Bearer JWT. This is
+# the path mcp-trino uses against the dual-auth listener — its outbound
+# is HTTP-Basic-only. Used by the PR6 scenario below to exercise the
+# PASSWORD path end-to-end: bcrypt match in password.db, OPA
+# impersonation allow, row filter, Delta connector — the whole chain
+# with everything else identical to the JWT scenarios above.
+trino_query_via_password() {
+    local sql=$1 user=$2
+    local next response data
+
+    response=$(curl -fsS "${CURL_CA_OPTS[@]}" -X POST "$TRINO_URL/v1/statement" \
+        -u "openwebui_mcp_svc:$MCP_SVC_PASSWORD" \
+        -H "X-Trino-User: $user" \
+        -H "X-Trino-Catalog: delta" \
+        -H "X-Trino-Schema: default" \
+        --data-binary "$sql")
+
+    data='[]'
+    while true; do
+        local page_data
+        page_data=$(echo "$response" | jq -c '.data // []')
+        if [[ "$page_data" != "[]" && "$page_data" != "null" ]]; then
+            data=$(jq -cn --argjson a "$data" --argjson b "$page_data" '$a + $b')
+        fi
+        local err
+        err=$(echo "$response" | jq -r '.error.message // empty')
+        if [[ -n "$err" ]]; then
+            echo "ERROR: $err" >&2
+            return 1
+        fi
+        next=$(echo "$response" | jq -r '.nextUri // empty')
+        if [[ -z "$next" ]]; then
+            echo "$data"
+            return 0
+        fi
+        response=$(curl -fsS "${CURL_CA_OPTS[@]}" "$next" \
+            -u "openwebui_mcp_svc:$MCP_SVC_PASSWORD" \
+            -H "X-Trino-User: $user")
+    done
+}
+
 # Variant that expects the query to fail (deny). Returns 0 if Trino
 # refused (HTTP error or error in response body), 1 if the query
 # succeeded unexpectedly.
@@ -471,6 +519,26 @@ fi
 # Restore membership so subsequent test runs against the same Keycloak
 # instance start from a clean state.
 add_user_to_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
+
+# --- Scenario 10: PASSWORD auth + impersonation (PR6) -----------------------
+# Exercises the dual-auth listener's PASSWORD path that mcp-trino uses
+# (HTTP Basic + X-Trino-User), end to end: bcrypt match in password.db,
+# OPA permits openwebui_mcp_svc to impersonate, row filter applies.
+# Skipped if MCP_SVC_PASSWORD isn't injected (deploys without the
+# password-authenticator Secret task running, e.g. trino role pre-PR6).
+if [[ -n "${MCP_SVC_PASSWORD:-}" ]]; then
+    log "scenario 10: PASSWORD-auth + X-Trino-User -> 3 ABCHOSP1 rows"
+    set_user_state "$USER_ID" true '{"allowed_facilities":["ABCHOSP1"],"allowed_modalities":["*"]}'
+    wait_for_bundle '.result.allowed_facilities[0] == "ABCHOSP1"' "$PROPAGATION_TIMEOUT"
+    count=$(trino_query_via_password "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
+    if [[ "$count" == "3" ]]; then
+        ok "PASSWORD+impersonation: row filter sees 3 ABCHOSP1 rows"
+    else
+        fail "PASSWORD+impersonation expected 3 rows, got $count"
+    fi
+else
+    log "scenario 10 skipped: MCP_SVC_PASSWORD not set"
+fi
 
 # ---------------------------------------------------------------------------
 # Cleanup
