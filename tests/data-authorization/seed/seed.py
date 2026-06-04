@@ -27,7 +27,9 @@ smoke-test and we don't want to fork that pattern for one table.
 
 import os
 import sys
+import time
 
+from py4j.protocol import Py4JJavaError
 from pyspark.sql import SparkSession
 from pyspark.sql.types import (
     StringType,
@@ -42,6 +44,37 @@ def _env(name: str) -> str:
         sys.stderr.write(f"missing required env var: {name}\n")
         sys.exit(1)
     return val
+
+
+def wait_for_object_store(spark, probe_path, attempts=36, delay_seconds=5):
+    """Block until MinIO accepts an authenticated request against the lake
+    bucket. Right after the analytics stack deploys, MinIO can briefly return
+    403 for the lake-writer credentials before its IAM subsystem is live,
+    which fails the saveAsTable below (observed flaking the data-authorization
+    smoke test). Probe with the same Hadoop s3a FileSystem Spark uses for the
+    write: a missing path returns False (fine); only an auth/connection failure
+    raises -- so success here means the write will authenticate too. Bounded
+    well under the Job's wait budget so a genuine outage fails with this clear
+    message instead of an opaque mid-write 403."""
+    hadoop_conf = spark._jsc.hadoopConfiguration()
+    path = spark._jvm.org.apache.hadoop.fs.Path(probe_path)
+    fs = path.getFileSystem(hadoop_conf)
+    last_err = None
+    for attempt in range(1, attempts + 1):
+        try:
+            fs.exists(path)
+            if attempt > 1:
+                print(f"MinIO object store ready after {attempt} attempts")
+            return
+        except Py4JJavaError as err:
+            last_err = err
+            sys.stderr.write(
+                f"waiting for MinIO object store ({attempt}/{attempts})...\n"
+            )
+            time.sleep(delay_seconds)
+    raise RuntimeError(
+        f"MinIO object store not ready after {attempts * delay_seconds}s: {last_err}"
+    )
 
 
 def main() -> None:
@@ -85,6 +118,11 @@ def main() -> None:
         .enableHiveSupport()
         .getOrCreate()
     )
+
+    # Gate the writes on MinIO being ready to authenticate the lake-writer
+    # credentials (see wait_for_object_store). Without it the first saveAsTable
+    # can hit a transient 403 in the post-deploy IAM-load window.
+    wait_for_object_store(spark, warehouse)
 
     schema = StructType(
         [
