@@ -32,6 +32,7 @@ A new user needs to query reports from the HOSP1 facility, with PHI columns visi
 
 Within 5-15 seconds, the user's next Analytics query will reflect the new permissions. No restart, no logout, no cache clear required.
 
+(how-propagation-works)=
 ## How propagation works
 
 Scout's policy engine ([OPA](https://www.openpolicyagent.org/)) doesn't query Keycloak at decision time — it consumes a periodically refreshed snapshot of all users' attributes. When you save an attribute change in Keycloak, the in-cluster listener picks up the admin event, republishes the user-attribute bundle within ~1 second, and OPA's bundle plugin re-pulls within its 5-10s polling interval. Total propagation: **5-15 seconds**.
