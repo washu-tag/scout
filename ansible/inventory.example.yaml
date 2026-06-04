@@ -81,9 +81,18 @@ server:
       k3s_control_node: true
       external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
   vars:
-    # Traefik
+    # Traefik TLS. Default tls_mode is file. For cert-manager uncomment below.
     tls_cert_path: ''
     tls_key_path: ''
+    # tls_mode: cert_manager
+    # cert_manager_acme_account_email: you@your-org.edu
+    # acmedns_host: https://acme.your-org.edu
+    # acmedns_credentials: $(cat acmedns.json | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # # On air-gapped clusters, point the DNS-01 propagation check at a
+    # # resolver that can see the public acme-dns zone:
+    # # cert_manager_dns01_recursive_nameservers: ['<internal-resolver-ip>:53']
+    # # Let's Encrypt production ACME server (uncomment to use; default is staging):
+    # # cert_manager_acme_server: https://acme-v02.api.letsencrypt.org/directory
 
 # The workers group contains the worker nodes for the k3s cluster.
 workers:

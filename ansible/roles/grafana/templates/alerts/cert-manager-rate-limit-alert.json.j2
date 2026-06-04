@@ -74,7 +74,7 @@
           "for": "5m",
           "annotations": {
             "summary": "cert-manager is hitting Let's Encrypt rate limits.",
-            "description": "The ACME client is receiving HTTP 429 (Too Many Requests) responses. Depending on which limit is hit, new cert issuance may be blocked for up to a week. Check cert-manager controller logs for the specific limit and back off any retry loops.",
+            "description": "The ACME client is receiving HTTP 429 (Too Many Requests) responses. Depending on which limit is hit, new cert issuance may be temporarily blocked. Check cert-manager controller logs for the specific limit and back off any retry loops.",
             "URL": "[% server_hostname %]"
           },
           "labels": {},
