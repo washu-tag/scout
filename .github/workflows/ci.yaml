@@ -44,6 +44,7 @@ jobs:
               - 'extractor/hl7-transformer/**'
             scout-notebook:
               - 'helm/scout-notebook/**'
+              - 'sdk/python/**'
             launchpad:
               - 'launchpad/**'
             superset:
@@ -84,6 +85,10 @@ jobs:
             allow-failure: true
           - image-name: scout-notebook
             subproject: helm/scout-notebook
+            # Build from repo root so the Dockerfile can COPY sdk/python/
+            # into the image. The Dockerfile path is derived from
+            # `subproject` (see docker-build-cache action).
+            context: '.'
             allow-failure: true
           - image-name: launchpad
             subproject: launchpad
@@ -107,6 +112,7 @@ jobs:
         with:
           subproject: ${{ matrix.subproject }}
           image-name: ${{ matrix.image-name }}
+          context: ${{ matrix.context || '' }}
   unit-test:
     runs-on: ubuntu-latest
     permissions:
@@ -135,7 +141,7 @@ jobs:
           python-version: '3.12'
       - name: Install Molecule and dependencies
         run: |
-          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio
+          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
@@ -151,7 +157,15 @@ jobs:
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v
-      - name: 'Unit tests: Voila Trino helpers'
+      - name: 'Unit tests: scout SDK'
+        shell: bash
+        run: cd sdk/python && PYTHONPATH=src pytest tests/ -v
+      # Separate invocation: tests/conftest.py stubs trino/requests in
+      # sys.modules at collection time; the contract tests need the real ones.
+      - name: 'Contract tests: scout SDK vs trino-python-client'
+        shell: bash
+        run: cd sdk/python && pytest tests_contract/ -v
+      - name: 'Unit tests: Voila chart helpers'
         shell: bash
         run: cd helm/voila && PYTHONPATH=files pytest tests/ -v
       - name: 'Install OPA'

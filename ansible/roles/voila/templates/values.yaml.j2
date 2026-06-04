@@ -10,32 +10,33 @@ resources: {{ voila_resources_default | combine(voila_resources | default({}), r
 playbooks: {{ voila_playbooks | to_json }}
 
 env:
-  # Trino connection params consumed by scout_trino.connect() (helper
-  # mounted at /opt/scout/scout_trino.py by the chart's scout-python ConfigMap).
-  # No TRINO_USER: per-user identity is set as X-Trino-User from each
-  # request's X-Auth-Request-Preferred-Username header (ADR 0022).
+  # Trino connection params consumed by the `scout` package (installed in
+  # the scout-notebook image from sdk/python/). No TRINO_USER: per-user
+  # identity is set as X-Trino-User from each request's
+  # X-Auth-Request-Preferred-Username header (ADR 0022).
   TRINO_HOST: "trino.{{ trino_namespace }}"
   TRINO_PORT: "{{ trino_https_port }}"
   TRINO_SCHEME: "https"
   TRINO_CATALOG: "delta"
   TRINO_SCHEMA: "default"
   TRINO_CA_CERT: "/etc/trino-ca/ca.crt"
-  # Write path (reviewer annotations) consumed by scout_trino.connect_rw().
+  # Write path (reviewer annotations) consumed by
+  # playbook_helpers.connect_writeback() (chart-shipped helper, not the SDK).
   # Points at the unauthenticated trino-rw instance in the extractor
   # namespace; explicit here so an inventory override of trino_rw_namespace /
   # trino_rw_release_name reaches the kernel instead of the helper's
   # hardcoded fallback.
   TRINO_RW_HOST: "{{ trino_rw_endpoint_host }}"
   TRINO_RW_PORT: "{{ trino_rw_endpoint_port }}"
-  # Keycloak client_credentials grant for the voila_svc service principal —
-  # mint the JWT once per ~4h lifetime, attach via JWTAuthentication.
+  # Keycloak client_credentials grant for the voila_svc service principal.
   # Internal in-cluster URL so service-to-service token minting bypasses
   # Traefik + the external cert (avoids self-signed-cert verification
   # failures in CI smoke-test).
   KEYCLOAK_TOKEN_URL: "{{ keycloak_internal_token_url }}"
   KEYCLOAK_VOILA_SVC_CLIENT_ID: "voila_svc"
-  # Make scout_trino + scout_voila importable from kernels (notebooks)
-  # and from Jupyter Server's config loader (Voila process).
+  # Make voila_runtime + playbook_helpers importable from the Voila server
+  # and from spawned kernels. The chart's scout-python ConfigMap is mounted
+  # at /opt/scout with these files plus a duplicate of voila.py (harmless).
   PYTHONPATH: "/opt/scout"
   OLLAMA_URL: "http://ollama.{{ chatbot_namespace }}:11434"
   OLLAMA_MODEL: "{{ ollama_default_model }}"

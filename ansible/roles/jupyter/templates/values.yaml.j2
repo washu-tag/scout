@@ -15,6 +15,23 @@ hub:
       description: 'Read JupyterHub metrics'
       scopes: [read:metrics]
       services: [prometheus]
+    # Override built-in `user` and `server` roles so a spawned kernel's
+    # JUPYTERHUB_API_TOKEN can read its own user's auth_state via
+    # GET {JUPYTERHUB_API_URL}/users/{JUPYTERHUB_USER}. The scout SDK reads
+    # the Keycloak access_token from that response and sends it as the
+    # Bearer to Trino (per-user identity from the JWT's sub claim).
+    # Both roles must carry admin:auth_state!user — server-token scopes
+    # are the intersection of the server role and the owning user's role.
+    user:
+      scopes:
+        - self
+        - admin:auth_state!user
+    server:
+      scopes:
+        - access:servers!user
+        - read:users:activity!user
+        - users:activity!user
+        - admin:auth_state!user
   db:
     pvc:
 {% if jupyterhub_storage_class is defined and jupyterhub_storage_class %}
@@ -43,9 +60,73 @@ hub:
       c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
     templates: |
       c.JupyterHub.template_paths = ['/usr/local/share/jupyterhub/custom-templates']
+    eagerTokenRefresh: |
+      # Rotate (rather than just re-validate) the user's Keycloak access
+      # token whenever refresh_user runs past the token's half-life.
+      #
+      # Stock oauthenticator only exchanges the refresh token AFTER the
+      # access token has expired; if the auth_refresh_age gate happens to
+      # open in the token's final seconds it re-validates the dying token,
+      # resets the refresh clock, and then blocks rotation past expiry --
+      # up to auth_refresh_age seconds of Trino 401s for kernels on JWT
+      # pass-through (ADR 0022). Rotating at half-life guarantees every
+      # gate pass leaves more lifetime than gate + the scout SDK's 60s
+      # pre-expiry re-fetch buffer, so a kernel can always obtain a live
+      # token. Hook contract (oauthenticator >= 17.3, z2jh 4.3.5 ships
+      # 17.4): return None to fall through to stock behavior, or an
+      # auth_model dict to apply.
+      import base64
+      import json
+      import time
+
+      TOKEN_HALF_LIFE = {{ keycloak_access_token_lifespan | int // 2 }}
+
+      def _seconds_to_expiry(access_token):
+          try:
+              payload = access_token.split(".")[1]
+              payload += "=" * (-len(payload) % 4)
+              return json.loads(base64.urlsafe_b64decode(payload))["exp"] - time.time()
+          except Exception:
+              return None
+
+      async def eager_token_refresh(authenticator, user, auth_state):
+          if not auth_state or not auth_state.get("refresh_token"):
+              return None  # stock behavior (login required if unusable)
+          remaining = _seconds_to_expiry(auth_state.get("access_token", ""))
+          if remaining is None or remaining > TOKEN_HALF_LIFE:
+              return None  # plenty of life left; stock validate-only is fine
+          try:
+              token_info = await authenticator.get_token_info(
+                  None,
+                  authenticator.build_refresh_token_request_params(
+                      auth_state["refresh_token"]
+                  ),
+              )
+          except Exception as e:
+              authenticator.log.info(
+                  f"eager_token_refresh: exchange failed for {user.name}: {e}; "
+                  "falling through to stock refresh_user"
+              )
+              return None  # stock path surfaces the failure properly
+          # Keycloak may omit the refresh_token on refresh; keep the old one.
+          if not token_info.get("refresh_token"):
+              token_info["refresh_token"] = auth_state["refresh_token"]
+          return await authenticator._token_to_auth_model(token_info)
+
+      c.GenericOAuthenticator.refresh_user_hook = eager_token_refresh
   config:
     Authenticator:
       auto_login: true
+      # Reopen the Hub's refresh gate at 1/5 of the token lifespan. The hook
+      # rotates at the half-life and the scout SDK force-refreshes in the last
+      # 1/5 of the token's life, so the gate must satisfy
+      # gate <= 1/2 - 1/5 = 3/10 of the lifespan; 1/5 sits inside that with a
+      # 1/10 margin for ANY lifespan (ADR 0024) -- purely fractional, no floor.
+      # Stock oauthenticator only rotates an already-expired token, so without
+      # a gate this small a live-token re-validation would reset the refresh
+      # clock and block rotation past expiry (observed as recurring Trino 401
+      # windows when gate == lifespan).
+      auth_refresh_age: {{ keycloak_access_token_lifespan | int // 5 }}
     JupyterHub:
       subdomain_host: 'jupyter.{{ server_hostname }}'
       authenticator_class: 'oauthenticator.generic.GenericOAuthenticator'
@@ -65,6 +146,10 @@ hub:
         - openid
         - microprofile-jwt
       enable_auth_state: true
+      # Refresh the user's Keycloak token before spawning so kernels start
+      # with a fresh access_token; the scout SDK re-fetches from the Hub API
+      # on near-expiry for long-running sessions.
+      refresh_pre_spawn: true
       auth_state_groups_key: 'oauth_user.groups'
       manage_groups: true
       allowed_groups:
@@ -113,7 +198,7 @@ singleuser:
   image:
     name: '{{ scout_notebook_image_name }}'
     tag: '{{ scout_notebook_image_tag }}'
-    pullPolicy: IfNotPresent
+    pullPolicy: '{{ scout_notebook_pull_policy | default("IfNotPresent") }}'
   extraResource:
     guarantees:
       ephemeral-storage: 10Mi
@@ -182,14 +267,16 @@ singleuser:
     # HuggingFace model cache directory - models downloaded from HF Hub are stored here
     # This directory is created in postStart hook and persists with user's home directory
     HF_HOME: '/home/jovyan/models'
-    # Trino connection information for read-only access from notebooks
-    # Users can connect with: trino.dbapi.connect(host=os.getenv('TRINO_HOST'), ...)
+    # Trino connection params consumed by the scout SDK (installed in the
+    # scout-notebook image). No TRINO_USER: per-user identity comes from
+    # the user's Keycloak access_token (fetched via the Hub API and sent
+    # as the Bearer; Trino reads the `sub` claim).
     TRINO_HOST: 'trino.{{ trino_namespace }}'
-    TRINO_PORT: '8080'
-    TRINO_SCHEME: 'http'
-    TRINO_USER: '{{ trino_user }}'
+    TRINO_PORT: '{{ trino_https_port }}'
+    TRINO_SCHEME: 'https'
     TRINO_CATALOG: 'delta'
     TRINO_SCHEMA: 'default'
+    TRINO_CA_CERT: '/etc/trino-ca/ca.crt'
     # Ollama service for LLM calls from notebooks
     OLLAMA_URL: 'http://ollama.{{ chatbot_namespace }}:11434'
     OLLAMA_MODEL: '{{ ollama_default_model }}'
@@ -262,6 +349,18 @@ singleuser:
         configMap:
           name: scout-quickstart-samples
           defaultMode: 0644
+      trino-ca:
+        name: trino-ca
+        secret:
+          secretName: trino-tls
+          # cert-manager issues this Secret as part of the analytics
+          # playbook; tolerate its absence so a cold deploy doesn't block
+          # spawn (the scout SDK's TLS handshake fails loudly until kubelet
+          # picks up the issued Secret on its next sync).
+          optional: true
+          items:
+            - key: ca.crt
+              path: ca.crt
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
       staging-ca-cert:
         name: staging-ca-cert
@@ -283,6 +382,10 @@ singleuser:
       scout-samples:
         name: scout-samples
         mountPath: /opt/scout/samples
+        readOnly: true
+      trino-ca:
+        name: trino-ca
+        mountPath: /etc/trino-ca
         readOnly: true
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
       staging-ca-bundle:
@@ -308,13 +411,13 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ chatbot_namespace }}'
         ports:
           - port: 11434
-      # Allow access to Trino for SQL queries
+      # Allow access to Trino for SQL queries (HTTPS with JWT auth)
       - to:
           - namespaceSelector:
               matchLabels:
                 kubernetes.io/metadata.name: '{{ trino_namespace }}'
         ports:
-          - port: 8080
+          - port: {{ trino_https_port }}
 {% if jupyter_egress_allow_cidr | default('') | length > 0 %}
       # Allow access to additional private network CIDR (e.g. staging node / package proxy)
       - to:

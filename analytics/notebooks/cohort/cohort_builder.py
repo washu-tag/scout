@@ -14,7 +14,7 @@ import ipywidgets as widgets
 from IPython.display import display, HTML
 from datetime import datetime, timedelta
 from tqdm import tqdm
-import scout_trino
+import scout
 
 # ============================================================================
 # CONFIGURATION & CONSTANTS
@@ -31,7 +31,7 @@ RED_ERROR = "#F44336"
 
 # Trino connection settings
 # Catalog/schema qualify table names in the queries below. Host/port/scheme
-# and auth are owned by scout_trino.connect() (voila_svc JWT + X-Trino-User).
+# and auth are owned by scout.connect() (voila_svc JWT + X-Trino-User).
 TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
 TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
 
@@ -76,9 +76,9 @@ os.makedirs(EXPORT_DIR, exist_ok=True)
 def connect_trino():
     """Connect to Trino as the logged-in Voila user.
 
-    scout_trino mints the voila_svc JWT and sets X-Trino-User, so Trino's OPA
+    scout.connect() mints the voila_svc JWT and sets X-Trino-User, so Trino's OPA
     policy filters/masks rows for the impersonated user (ADR 0022)."""
-    return scout_trino.connect()
+    return scout.connect()
 
 
 def render_section_loading(section_name):

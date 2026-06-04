@@ -83,17 +83,20 @@ spec:
               mountPath: /home/jovyan/notebooks/{{ . }}
               readOnly: true
             {{- end }}
-            - name: scout-python
-              mountPath: /opt/scout/scout_trino.py
-              subPath: scout_trino.py
-              readOnly: true
-            - name: scout-python
-              mountPath: /opt/scout/voila_runtime.py
-              subPath: voila_runtime.py
-              readOnly: true
+            # Voila reads its config from /etc/jupyter/voila.py (subPath mount).
             - name: scout-python
               mountPath: /etc/jupyter/voila.py
               subPath: voila.py
+              readOnly: true
+            # Helper modules (voila_runtime, playbook_helpers) importable on
+            # PYTHONPATH (/opt/scout) by the Voila server + spawned kernels.
+            # voila.py is deliberately NOT projected here: PYTHONPATH sits ahead
+            # of site-packages, so a voila.py under /opt/scout would shadow the
+            # `voila` package and crash the server at startup (`import voila`
+            # would resolve to the config file, which references the config-only
+            # global `c`). scout-python-lib projects the importable helpers only.
+            - name: scout-python-lib
+              mountPath: /opt/scout
               readOnly: true
             - name: trino-ca
               mountPath: /etc/trino-ca
@@ -112,6 +115,17 @@ spec:
         - name: scout-python
           configMap:
             name: voila-scout-python
+        # Importable helpers only (no voila.py) for the /opt/scout PYTHONPATH
+        # mount — see the volumeMount comment. New chart-shipped helper modules
+        # must be listed here too, or they won't be importable.
+        - name: scout-python-lib
+          configMap:
+            name: voila-scout-python
+            items:
+              - key: voila_runtime.py
+                path: voila_runtime.py
+              - key: playbook_helpers.py
+                path: playbook_helpers.py
         - name: trino-ca
           secret:
             secretName: trino-tls
@@ -120,11 +134,11 @@ spec:
             # cold deploy or a cert renewal there's a window where the
             # Secret doesn't exist yet. With `optional: true`, the Pod
             # starts (mount is empty) instead of hanging until the
-            # 15m helm-install timeout. scout_trino passes
+            # 15m helm-install timeout. The scout SDK passes
             # `verify=$TRINO_CA_CERT` to requests; with no file at
-            # that path, TLS handshake fails with FileNotFoundError
-            # rather than silently bypassing verification -- queries
-            # error out loudly until kubelet's next Secret-volume sync
+            # that path, the scout SDK's TLS handshake fails with
+            # FileNotFoundError rather than silently bypassing verification
+            # -- queries error out loudly until kubelet's next Secret-volume sync
             # picks up the issued Secret (~60s default).
             optional: true
             items:

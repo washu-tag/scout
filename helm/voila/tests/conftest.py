@@ -1,9 +1,10 @@
-"""Test harness for the Voila Trino helpers (helm/voila/files/).
+"""Test harness for the chart-shipped Voila helpers (helm/voila/files/).
 
-scout_trino and voila_runtime import third-party modules (requests, trino, voila,
-jupyter_server) that aren't installed in the unit-test environment — voila in
-particular pulls a large dependency tree. Stub them in sys.modules before the
-helpers are imported so the tests need nothing but pytest.
+voila_runtime and playbook_helpers import third-party modules
+(voila, jupyter_server, trino) that aren't installed in the unit-test
+environment - voila in particular pulls a large dependency tree. Stub
+them in sys.modules before the helpers are imported so the tests need
+nothing but pytest.
 
 Run with: cd helm/voila && PYTHONPATH=files pytest tests/ -v
 """
@@ -15,7 +16,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# Make scout_trino / voila_runtime importable even without PYTHONPATH=files.
+# Make voila_runtime / playbook_helpers importable even without
+# PYTHONPATH=files (so the tests work from inside an IDE that runs them
+# from the tests dir directly).
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "files"))
 
 
@@ -25,33 +28,12 @@ def _stub(name):
     return module
 
 
-# --- requests: scout_trino.requests.post mints the voila_svc token ---
-requests_stub = _stub("requests")
-requests_stub.post = MagicMock(name="requests.post")
-
-
-# --- trino.dbapi.connect + trino.auth.JWTAuthentication ---
-class FakeJWTAuthentication:
-    """Stand-in for trino.auth.JWTAuthentication; compares by token so tests
-    can assert the right token was attached."""
-
-    def __init__(self, token):
-        self.token = token
-
-    def __eq__(self, other):
-        return isinstance(other, FakeJWTAuthentication) and other.token == self.token
-
-    def __repr__(self):
-        return f"FakeJWTAuthentication({self.token!r})"
-
-
+# --- trino.dbapi.connect ---
 trino_stub = _stub("trino")
 trino_dbapi_stub = _stub("trino.dbapi")
 trino_dbapi_stub.connect = MagicMock(name="trino.dbapi.connect")
-trino_auth_stub = _stub("trino.auth")
-trino_auth_stub.JWTAuthentication = FakeJWTAuthentication
+trino_dbapi_stub.Connection = type("Connection", (), {})
 trino_stub.dbapi = trino_dbapi_stub
-trino_stub.auth = trino_auth_stub
 
 
 # --- voila.tornado.handler.TornadoVoilaHandler (voila_runtime patches .get) ---
@@ -90,38 +72,40 @@ js_services_stub.kernels = js_kernels_stub
 js_stub.services = js_services_stub
 
 
+# --- scout._identity.resolve_audit_user (playbook_helpers depends on it) ---
+# Stubbed as a real function reading the env, mirroring what the SDK does.
+scout_stub = _stub("scout")
+scout_identity_stub = _stub("scout._identity")
+
+
+def _stub_resolve_audit_user():
+    voila_user = os.environ.get("X_AUTH_REQUEST_PREFERRED_USERNAME", "")
+    if voila_user:
+        return voila_user
+    hub_user = os.environ.get("JUPYTERHUB_USER")
+    if hub_user:
+        return hub_user
+    return "anonymous"
+
+
+scout_identity_stub.resolve_audit_user = _stub_resolve_audit_user
+scout_stub._identity = scout_identity_stub
+
+
 @pytest.fixture(autouse=True)
 def reset_state(monkeypatch):
-    """Each test starts with a clean token cache, fresh mocks, and the
-    Keycloak/Trino env the helpers expect."""
-    import scout_trino
+    """Each test starts with fresh mocks and the Trino env the helpers expect.
 
-    scout_trino._TOKEN_CACHE["access_token"] = None
-    scout_trino._TOKEN_CACHE["expires_at"] = 0.0
-    requests_stub.post.reset_mock(return_value=True, side_effect=True)
+    The TRINO_* values here are deliberately NOT the production defaults that
+    connect_writeback() falls back to: that's what lets the targeting test prove
+    the function actually reads the env rather than hardcoding the same strings.
+    The default-fallback path is covered by its own test, which unsets these.
+    """
     trino_dbapi_stub.connect.reset_mock(return_value=True, side_effect=True)
-
     monkeypatch.delenv("X_AUTH_REQUEST_PREFERRED_USERNAME", raising=False)
-    monkeypatch.setenv("KEYCLOAK_TOKEN_URL", "https://keycloak.test/token")
-    monkeypatch.setenv("KEYCLOAK_VOILA_SVC_CLIENT_ID", "voila_svc")
-    monkeypatch.setenv("KEYCLOAK_VOILA_SVC_CLIENT_SECRET", "svc-secret")
-    monkeypatch.setenv("TRINO_HOST", "trino.scout-analytics")
-    monkeypatch.setenv("TRINO_PORT", "8443")
-    monkeypatch.setenv("TRINO_SCHEME", "https")
-    monkeypatch.setenv("TRINO_CATALOG", "delta")
-    monkeypatch.setenv("TRINO_SCHEMA", "default")
-    monkeypatch.setenv("TRINO_CA_CERT", "/etc/trino-ca/ca.crt")
-    monkeypatch.setenv("TRINO_RW_HOST", "trino-rw.scout-extractor")
-    monkeypatch.setenv("TRINO_RW_PORT", "8080")
+    monkeypatch.delenv("JUPYTERHUB_USER", raising=False)
+    monkeypatch.setenv("TRINO_RW_HOST", "rw-host.test.invalid")
+    monkeypatch.setenv("TRINO_RW_PORT", "9090")
+    monkeypatch.setenv("TRINO_CATALOG", "delta_test")
+    monkeypatch.setenv("TRINO_SCHEMA", "schema_test")
     yield
-
-
-def set_token_response(access_token="tok-abc", expires_in=3600):
-    """Configure the stubbed Keycloak token endpoint to return a token."""
-    response = MagicMock()
-    response.json.return_value = {
-        "access_token": access_token,
-        "expires_in": expires_in,
-    }
-    response.raise_for_status.return_value = None
-    requests_stub.post.return_value = response

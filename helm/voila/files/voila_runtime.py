@@ -1,36 +1,39 @@
-"""Voila customization: thread the OIDC user's identity from the
-oauth2-proxy-forwarded request header into the spawned notebook kernel's
-environment.
+"""Voila server-side runtime: thread the OIDC user's identity from the
+oauth2-proxy-forwarded request header into each spawned kernel.
+
+Chart-shipped (not part of the scout SDK) because it's pure Voila plumbing
+with no user-facing API; loaded only by Voila's jupyter_server config
+(voila.py). The scout-notebook image already has Voila + jupyter-server,
+which this module depends on.
 
 Wiring:
   oauth2-proxy (set_xauthrequest=true) sets X-Auth-Request-Preferred-Username
     on its /oauth2/auth response
   Traefik's oauth2-proxy-auth middleware (authResponseHeaders) forwards
-    the header onto Voila's incoming request
-  VoilaHandler.get (patched here) reads the header and stashes the username
-    in a contextvar for the duration of the request's async context
+    the header onto Voila's upstream request
+  TornadoVoilaHandler.get (monkey-patched here) stashes the username in a
+    contextvar for the duration of the request's async context
   ScoutMappingKernelManager.start_kernel reads the contextvar and adds the
     username to the spawned kernel's env as X_AUTH_REQUEST_PREFERRED_USERNAME
-  scout_trino.py inside the kernel reads that env var and sets X-Trino-User
-    on every Trino call
+  scout.connect() / scout.query() (in the kernel) read that env var and
+    set X-Trino-User on every Trino call
 
 Only the username crosses into the kernel — not the raw access token. The
 kernel runs user-authored notebook code, so threading a live bearer token
 into its environment would hand that code an exfiltratable credential; the
-username is all scout_trino needs for X-Trino-User impersonation (Trino + OPA
-enforce the actual access against the impersonated user's attributes).
+username is all the scout SDK needs for X-Trino-User impersonation (Trino +
+OPA enforce the actual access against the impersonated user's attributes).
 
-The handler is wrapped via monkey-patch rather than subclass + class config
-because Voila doesn't expose a `voila_handler_class` Traitlet — upstream
-registers VoilaHandler directly in Voila.init_handlers(). The kernel manager
-IS configurable, via Voila's `VoilaConfiguration.multi_kernel_manager_class`
-(set in voila.py) — NOT `c.ServerApp.kernel_manager_class`, which Voila does
-not consult.
+Side-effect import: `import voila_runtime` applies the monkey-patch. The
+handler is wrapped because Voila doesn't expose a voila_handler_class
+Traitlet; the kernel manager IS configurable, via Voila's
+`VoilaConfiguration.multi_kernel_manager_class` (set in voila.py) — NOT
+`c.ServerApp.kernel_manager_class`, which Voila does not consult.
 
 contextvars propagate across `await` within the same async task, so the
-value set in the handler is visible to the kernel manager called in the same
-request flow. This also keeps concurrent users isolated: each request runs in
-its own task, so one user's username can't leak into another's kernel.
+value set in the handler is visible to the kernel manager called in the
+same request flow. This also keeps concurrent users isolated: each request
+runs in its own task, so one user's username can't leak into another's kernel.
 
 The monkey-patch targets TornadoVoilaHandler (the subclass that actually
 defines `get` for Voila's Tornado-mode routes), not the base VoilaHandler —
@@ -39,7 +42,7 @@ to the subclass's `get`, so patching the base class is a no-op.
 
 Caveat: Voila's `preheat_kernel` (off by default) starts kernels at server
 boot, outside any request context — a preheated kernel carries no username
-and scout_trino falls back to anonymous. This per-request capture assumes the
+and the SDK falls back to anonymous. This per-request capture assumes the
 default lazy, per-render kernel spawn.
 """
 
@@ -52,7 +55,7 @@ from voila.tornado.handler import TornadoVoilaHandler
 logger = logging.getLogger(__name__)
 
 _preferred_username: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "scout_x_auth_request_preferred_username", default=""
+    "voila_runtime_x_auth_request_preferred_username", default=""
 )
 
 _original_voila_get = TornadoVoilaHandler.get
