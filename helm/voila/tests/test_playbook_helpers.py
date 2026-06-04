@@ -19,12 +19,31 @@ def test_connect_writeback_targets_unauthenticated_rw_instance(monkeypatch):
     playbook_helpers.connect_writeback()
 
     kwargs = _connect_kwargs()
-    assert kwargs["host"] == "trino-rw.scout-extractor"
-    assert kwargs["port"] == 8080
+    # The conftest sets these to non-default sentinels, so matching them proves
+    # connect_writeback() reads the env rather than hardcoding the defaults.
+    assert kwargs["host"] == "rw-host.test.invalid"
+    assert kwargs["port"] == 9090  # str env -> int()
+    assert kwargs["catalog"] == "delta_test"
+    assert kwargs["schema"] == "schema_test"
     assert kwargs["http_scheme"] == "http"
     assert kwargs["user"] == "carol"
     # trino-rw is unauthenticated inside its NetworkPolicy boundary: no JWT mint.
     assert "auth" not in kwargs
+
+
+def test_connect_writeback_falls_back_to_defaults_when_env_unset(monkeypatch):
+    # With the TRINO_* env unset, connect_writeback() must use the in-cluster
+    # defaults (and still int()-cast the default port string).
+    for var in ("TRINO_RW_HOST", "TRINO_RW_PORT", "TRINO_CATALOG", "TRINO_SCHEMA"):
+        monkeypatch.delenv(var, raising=False)
+
+    playbook_helpers.connect_writeback()
+
+    kwargs = _connect_kwargs()
+    assert kwargs["host"] == "trino-rw.scout-extractor"
+    assert kwargs["port"] == 8080
+    assert kwargs["catalog"] == "delta"
+    assert kwargs["schema"] == "default"
 
 
 def test_connect_writeback_audit_user_falls_back_to_anonymous(monkeypatch):
