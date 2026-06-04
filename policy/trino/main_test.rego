@@ -103,6 +103,25 @@ test_missing_identity_denied if {
 	not trino.allow with input as inp
 }
 
+# The two tests above deny because the default user_attrs ({"enabled": false})
+# fails user_enabled — NOT because of the identity_present gate. To actually
+# exercise identity_present, force user_attrs to enabled+approved so
+# user_enabled passes; an empty identity.user must then still be denied. Without
+# these, dropping `identity_present` from the allow rules goes uncaught.
+
+test_empty_identity_denied_even_when_attrs_enabled if {
+	inp := select_input("", ["scout-user"], "delta", "default", "reports")
+	not trino.allow with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+}
+
+test_empty_identity_denied_on_catalogless_op if {
+	# Same isolation for the catalog-less allow rule (ExecuteQuery).
+	inp := execute_query_input("", ["scout-user"])
+	not trino.allow with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+}
+
 test_user_select_on_delta_allowed if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
@@ -160,6 +179,25 @@ test_filter_catalogs_unknown_denied if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "FilterCatalogs", "resource": {"catalog": {"name": "iceberg"}}},
 	}
+	not trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+}
+
+# Catalog-allowlist deny coverage for the schema- and table-level rules.
+# FilterCatalogs (catalog-level rule) already had a negative case, but the
+# separate `in allowed_catalogs` checks on the schema-level (ShowTables/
+# FilterSchemas) and table-level (SelectFromColumns/...) rules had no
+# unknown-catalog deny test. An unguarded catalog (iceberg) must be denied.
+
+test_show_tables_unknown_catalog_denied if {
+	inp := {
+		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
+		"action": {"operation": "ShowTables", "resource": {"schema": {"catalogName": "iceberg", "schemaName": "default"}}},
+	}
+	not trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+}
+
+test_select_unknown_catalog_denied if {
+	inp := select_input("alice", ["scout-user"], "iceberg", "default", "reports")
 	not trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
@@ -294,6 +332,17 @@ test_bypass_unset_does_not_unlock if {
 		with data.hidden_tables as fixture_hidden_tables
 }
 
+test_bypass_non_true_value_does_not_unlock if {
+	# Only the literal "true" unlocks. test_bypass_false_does_not_unlock's
+	# comment claims a typo'd ["yes"] is defended against, but only ["false"]
+	# was actually exercised — so loosening val[0] == "true" to != "false"
+	# went uncaught. Pin it: ["yes"] must NOT bypass the hidden-table block.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
+	not trino.allow with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "bypass_hidden_tables": ["yes"]}
+		with data.hidden_tables as fixture_hidden_tables
+}
+
 test_bypass_only_unlocks_hidden_tables if {
 	# Bypass doesn't affect anything else — row filters, masks, and the
 	# enabled gate still apply. Disabled user with bypass is still denied.
@@ -402,6 +451,22 @@ test_select_from_hidden_table_still_denied_for_invoker if {
 	not trino.allow with input as inp
 		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as fixture_hidden_tables
+}
+
+# The CreateViewWithSelectFromColumns rule gates on user_enabled, but the
+# bypass test above uses owner `trino` (enabled via injected attrs, and it
+# serves as the positive case), so it can't catch a *dropped* enabled gate.
+# This negative pins it: a non-system, disabled invoker must be denied.
+test_create_view_denied_for_disabled_invoker if {
+	inp := {
+		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
+		"action": {
+			"operation": "CreateViewWithSelectFromColumns",
+			"resource": {"table": {"catalogName": "delta", "schemaName": "default", "tableName": "reports"}},
+		},
+	}
+	not trino.allow with input as inp
+		with trino.user_attrs as{"enabled": false, "groups": ["scout-user"]}
 }
 
 # === Row filters: facility-driven ============================================

@@ -218,6 +218,14 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
         this.debounceMs = DEFAULT_DEBOUNCE_MS;
     }
 
+    // Overload that also injects a (mock) uploader, so the publish/retry path
+    // (publishNow -> upload -> reschedule-on-failure) can be driven without a
+    // live MinIO. Capture the Runnable handed to the scheduler and run it.
+    void enableForTest(ScheduledExecutorService testScheduler, MinioBundleUploader testUploader) {
+        enableForTest(testScheduler);
+        this.uploader = testUploader;
+    }
+
     Map<String, Map<String, Object>> usersForTest() {
         return users;
     }

@@ -4,13 +4,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /**
  * Unit tests for the factory's in-memory snapshot bookkeeping —
@@ -125,5 +136,65 @@ class OpaUserBundlePublisherProviderFactoryTest {
         assertTrue(factory.usersForTest().containsKey("alice"),
                 "an unresolvable delete must not touch other entries");
         assertEquals(1, factory.usersForTest().size());
+    }
+
+    @Test
+    void debounce_coalesces_pending_publishes() {
+        // Each mutation schedules a publish and cancels the prior pending one,
+        // so a burst of admin events collapses to a single S3 PUT. Drop the
+        // cancel-prior and a sustained event stream fires a publish per event
+        // (ADR 0021 calls this out as the subtle failure mode). Uses a mock
+        // scheduler returning distinct futures and asserts the prior is
+        // cancelled when the next is scheduled.
+        ScheduledExecutorService sched = mock(ScheduledExecutorService.class);
+        ScheduledFuture<?> first = mock(ScheduledFuture.class);
+        ScheduledFuture<?> second = mock(ScheduledFuture.class);
+        doReturn(first, second).when(sched)
+                .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+        factory.enableForTest(sched);
+
+        upsert("id-1", "alice", "WUSM");
+        upsert("id-2", "bob", "BJH");
+
+        verify(sched, times(2)).schedule(any(Runnable.class), anyLong(), eq(TimeUnit.MILLISECONDS));
+        verify(first).cancel(false); // the prior pending publish is coalesced
+        verify(second, never()).cancel(anyBoolean());
+    }
+
+    @Test
+    void failed_upload_reschedules_retry() {
+        // publishNow runs, the upload fails, and a retry must be scheduled at
+        // RETRY_DELAY_MS (30s) — otherwise a transient MinIO outage drops the
+        // bundle update permanently. Capture the debounced Runnable and run it.
+        ScheduledExecutorService sched = mock(ScheduledExecutorService.class);
+        MinioBundleUploader uploader = mock(MinioBundleUploader.class);
+        doReturn(false).when(uploader).upload(any());
+        ArgumentCaptor<Runnable> task = ArgumentCaptor.forClass(Runnable.class);
+        doReturn(mock(ScheduledFuture.class)).when(sched)
+                .schedule(task.capture(), anyLong(), any(TimeUnit.class));
+        factory.enableForTest(sched, uploader);
+
+        upsert("id-1", "alice", "WUSM"); // schedules the debounced publish
+        task.getValue().run(); // run it: upload fails -> reschedule retry
+
+        verify(sched).schedule(any(Runnable.class), eq(30_000L), eq(TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    void successful_upload_does_not_reschedule() {
+        // The mirror of the retry test: a successful publish must NOT schedule a
+        // retry, or every publish would double-fire.
+        ScheduledExecutorService sched = mock(ScheduledExecutorService.class);
+        MinioBundleUploader uploader = mock(MinioBundleUploader.class);
+        doReturn(true).when(uploader).upload(any());
+        ArgumentCaptor<Runnable> task = ArgumentCaptor.forClass(Runnable.class);
+        doReturn(mock(ScheduledFuture.class)).when(sched)
+                .schedule(task.capture(), anyLong(), any(TimeUnit.class));
+        factory.enableForTest(sched, uploader);
+
+        upsert("id-1", "alice", "WUSM");
+        task.getValue().run(); // upload succeeds -> no retry
+
+        verify(sched, never()).schedule(any(Runnable.class), eq(30_000L), eq(TimeUnit.MILLISECONDS));
     }
 }
