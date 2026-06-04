@@ -5,9 +5,11 @@ import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.workflow.Workflow;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -15,9 +17,13 @@ import org.slf4j.Logger;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
@@ -29,7 +35,6 @@ public class FileHandlerImpl implements FileHandler {
 
     private static final Logger logger = Workflow.getLogger(FileHandlerImpl.class);
 
-    private static final String S3 = "s3";
     private final S3Client s3Client;
 
     /**
@@ -57,15 +62,26 @@ public class FileHandlerImpl implements FileHandler {
     public String putWithRetry(byte[] data, URI destination) {
         retryLogging();
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
-        if (!S3.equals(destination.getScheme())) {
+        if (!S3_SCHEME.equals(destination.getScheme())) {
             throw new UnsupportedOperationException("Unsupported destination scheme " + destination.getScheme());
         }
         String bucket = destination.getHost();
-        String key = destination.getPath();
+        String key = normalizeS3Key(destination.getPath());
         logger.debug("WorkflowId {} ActivityId {} - Uploading bytes to S3 bucket {} key {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
             bucket, key);
         s3Client.putObject(builder -> builder.bucket(bucket).key(key), RequestBody.fromBytes(data));
         return destination.toString();
+    }
+
+    /**
+     * Strip a leading '/' from an S3 key. URI#getPath returns "/foo/bar" for
+     * s3://bucket/foo/bar; S3 keys themselves do not include the leading slash.
+     */
+    private static String normalizeS3Key(String key) {
+        if (key == null) {
+            return "";
+        }
+        return key.startsWith("/") ? key.substring(1) : key;
     }
 
     private void retryLogging() {
@@ -93,10 +109,10 @@ public class FileHandlerImpl implements FileHandler {
         }
 
         String outputPath;
-        if (S3.equals(destination.getScheme())) {
+        if (S3_SCHEME.equals(destination.getScheme())) {
             // Upload to S3
             String bucket = destination.getHost();
-            String key = destination.getPath() + "/" + relativeFilePath;
+            String key = normalizeS3Key(destination.getPath() + "/" + relativeFilePath);
             logger.debug("Uploading file {} to S3 bucket {} key {}", absoluteFilePath, bucket, key);
             s3Client.putObject(builder -> builder.bucket(bucket).key(key), absoluteFilePath);
             outputPath = destination + "/" + relativeFilePath; // URI#resolve strips trailing path from destination;
@@ -133,16 +149,24 @@ public class FileHandlerImpl implements FileHandler {
     @Override
     public Path get(URI source, Path destination) throws IOException {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
-        if (S3.equals(source.getScheme())) {
+        if (S3_SCHEME.equals(source.getScheme())) {
             // Download from S3
             String bucket = source.getHost();
-            String key = source.getPath();
+            String key = normalizeS3Key(source.getPath());
             if (destination.toFile().isDirectory()) {
                 destination = destination.resolve(Path.of(key).getFileName());
             }
             logger.debug("WorkflowId {} ActivityId {} - Downloading file from S3 bucket {} key {} to {}", activityInfo.getWorkflowId(),
                 activityInfo.getActivityId(), bucket, key, destination);
-            s3Client.getObject(builder -> builder.bucket(bucket).key(key), destination);
+            // Stream the response and write via Files.copy with REPLACE_EXISTING. The path-overload
+            // s3Client.getObject(consumer, Path) uses ResponseTransformer.toFile() which fails if
+            // the destination already exists — and callers may have allocated the path via
+            // Files.createTempFile (which leaves an empty 0-byte file behind). Streaming gives us
+            // the standard JDK overwrite semantic without the SDK's file-write quirk.
+            try (ResponseInputStream<GetObjectResponse> in =
+                     s3Client.getObject(builder -> builder.bucket(bucket).key(key))) {
+                Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
         } else {
             // Copy local files
             Path sourcePath = Path.of(source);
@@ -160,9 +184,9 @@ public class FileHandlerImpl implements FileHandler {
     public byte[] read(URI source) throws IOException {
         retryLogging();
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
-        if (S3.equals(source.getScheme())) {
+        if (S3_SCHEME.equals(source.getScheme())) {
             String bucket = source.getHost();
-            String key = source.getPath();
+            String key = normalizeS3Key(source.getPath());
             logger.debug("WorkflowId {} ActivityId {} - Reading file from S3 bucket {} key {}", activityInfo.getWorkflowId(),
                 activityInfo.getActivityId(), bucket, key);
 
@@ -173,14 +197,30 @@ public class FileHandlerImpl implements FileHandler {
     }
 
     @Override
+    public InputStream open(URI source) throws IOException {
+        if (S3_SCHEME.equals(source.getScheme())) {
+            String bucket = source.getHost();
+            String key = normalizeS3Key(source.getPath());
+            ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+            logger.debug("WorkflowId {} ActivityId {} - Opening S3 stream for bucket {} key {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), bucket, key);
+            // Returns a ResponseInputStream<GetObjectResponse>; caller must close to release the
+            // SDK's HTTP connection back to the pool.
+            return s3Client.getObject(builder -> builder.bucket(bucket).key(key));
+        }
+        return Files.newInputStream(Path.of(source));
+    }
+
+    @Override
     public void deleteMultiple(List<URI> uris) {
         String scheme = uris.getFirst().getScheme();
-        if (!S3.equals(scheme)) {
+        if (!S3_SCHEME.equals(scheme)) {
             throw new UnsupportedOperationException("Unsupported destination scheme " + scheme);
         }
         String bucket = uris.getFirst().getHost();
         List<ObjectIdentifier> keys = uris.stream()
             .map(URI::getPath)
+            .map(FileHandlerImpl::normalizeS3Key)
             .map(key -> ObjectIdentifier.builder().key(key).build())
             .toList();
         logger.debug("Deleting {} keys from S3 bucket {}", keys.size(), bucket);
@@ -190,11 +230,11 @@ public class FileHandlerImpl implements FileHandler {
     @Override
     public List<String> ls(URI source) {
         String scheme = source.getScheme();
-        if (!S3.equals(scheme)) {
+        if (!S3_SCHEME.equals(scheme)) {
             throw new UnsupportedOperationException("Unsupported destination scheme " + scheme);
         }
         String bucket = source.getHost();
-        String prefix = source.getPath().replaceFirst("^/", "");
+        String prefix = normalizeS3Key(source.getPath());
         logger.info("Listing files in S3 bucket {} with prefix {}", bucket, prefix);
         try (Stream<S3Object> paths = s3Client.listObjectsV2Paginator(builder -> builder.bucket(bucket).prefix(prefix))
             .contents()
@@ -206,5 +246,26 @@ public class FileHandlerImpl implements FileHandler {
         } catch (Exception e) {
             throw ApplicationFailure.newFailureWithCause("Error listing files in S3", "type", e);
         }
+    }
+
+    @Override
+    public boolean isFile(URI source) {
+        if (S3_SCHEME.equals(source.getScheme())) {
+            String bucket = source.getHost();
+            String key = normalizeS3Key(source.getPath());
+            try {
+                s3Client.headObject(builder -> builder.bucket(bucket).key(key));
+                return true;
+            } catch (NoSuchKeyException e) {
+                return false;
+            } catch (S3Exception e) {
+                // Some S3-compatible services return 404 without mapping to NoSuchKeyException.
+                if (e.statusCode() == 404) {
+                    return false;
+                }
+                throw e;
+            }
+        }
+        return Files.isRegularFile(Path.of(source));
     }
 }
