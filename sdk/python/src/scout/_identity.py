@@ -92,6 +92,12 @@ class _VoilaSvcProvider:
         user = os.environ.get("X_AUTH_REQUEST_PREFERRED_USERNAME", "") or "anonymous"
         return self._token, user
 
+    def invalidate(self) -> None:
+        """Drop the cached token so the next call re-mints. Called by the
+        query layer's reactive retry after Trino rejects the bearer."""
+        with self._lock:
+            self._token = None
+
 
 class _JupyterHubUserProvider:
     """Fetches the user's Keycloak access token via the Hub API.
@@ -148,8 +154,24 @@ class _JupyterHubUserProvider:
                 self._token = self._fetch()
         return self._token, None
 
+    def invalidate(self) -> None:
+        """Drop the cached token so the next call re-fetches from the Hub.
+        Called by the query layer's reactive retry after Trino rejects the
+        bearer; with the Hub's eager-rotation hook the re-fetch yields a
+        freshly rotated token."""
+        with self._lock:
+            self._token = None
+
 
 _singleton: Callable[[], tuple[str, str | None]] | None = None
+
+
+def invalidate() -> None:
+    """Drop the active provider's cached bearer so the next resolve_identity()
+    re-fetches. No-op if no provider has been resolved yet."""
+    provider = _override_provider or _singleton
+    if provider is not None and hasattr(provider, "invalidate"):
+        provider.invalidate()
 
 
 def _resolve_provider() -> Callable[[], tuple[str, str | None]]:

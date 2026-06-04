@@ -19,6 +19,7 @@ from typing import Any
 
 import requests.auth
 import trino.dbapi
+import trino.exceptions
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from trino.auth import Authentication
@@ -117,6 +118,11 @@ def connect() -> trino.dbapi.Connection:
 
     Drop-in for `trino.dbapi.connect(...)`. Pulls TRINO_* params from
     env and attaches the right auth + impersonation header.
+
+    Auth is still refreshed proactively per request (the connection's
+    bearer is re-fetched each call), but the reactive 401 retry that
+    `query()` provides can't wrap caller-driven `cursor.execute()`; for the
+    rare in-flight-expiry case on this path, re-run the failing statement.
     """
     provider = _identity._resolve_provider()
     return trino.dbapi.connect(
@@ -146,6 +152,49 @@ def _get_engine() -> Engine:
     return _engine
 
 
+# Trino raises HttpError("error <status>: <body>") for non-2xx (see
+# trino.client.TrinoRequest.raise_response_error); 401/403 mean the bearer
+# was rejected (expired/invalid JWT).
+_AUTH_ERROR_MARKERS = ("error 401", "error 403")
+
+
+def _is_auth_error(exc: BaseException) -> bool:
+    """True if exc, or any error in its cause/context chain, is a Trino
+    HTTP 401/403 -- i.e. Trino rejected the bearer. SQLAlchemy/pandas wrap
+    the original trino exception, so we walk the chain rather than matching
+    the top-level type."""
+    seen: set[int] = set()
+    cur: BaseException | None = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        if isinstance(cur, trino.exceptions.HttpError) and any(
+            marker in str(cur) for marker in _AUTH_ERROR_MARKERS
+        ):
+            return True
+        cur = cur.__cause__ or cur.__context__
+    return False
+
+
+def _with_auth_retry(run):
+    """Run `run()`; if Trino rejects the bearer, drop the cached token and
+    retry exactly once.
+
+    The reactive half of the proactive+reactive token-refresh strategy
+    (ADR 0024). Proactive refresh (the provider's near-expiry re-fetch plus
+    the Hub's eager-rotation hook) prevents almost all expiries; this catches
+    the residual -- clock skew against Trino's zero-skew JWT check, or a token
+    that expired in-flight. The retry re-fetches a fresh bearer (Voila
+    re-mints; Jupyter re-pulls from the Hub, which rotates), so a transient
+    401 self-heals instead of surfacing to the notebook."""
+    try:
+        return run()
+    except Exception as exc:
+        if not _is_auth_error(exc):
+            raise
+        _identity.invalidate()
+        return run()
+
+
 def query(sql_str: str, params: dict | None = None):
     """Run SQL against Scout's Trino. Returns a pandas DataFrame.
 
@@ -157,4 +206,7 @@ def query(sql_str: str, params: dict | None = None):
     """
     import pandas as pd
 
-    return pd.read_sql(text(sql_str), _get_engine(), params=params or {})
+    engine = _get_engine()
+    return _with_auth_retry(
+        lambda: pd.read_sql(text(sql_str), engine, params=params or {})
+    )
