@@ -905,6 +905,28 @@ In air-gapped environments, users cannot install extensions anyway due to lack o
 Even with the Extension Manager disabled, users with terminal access can still run `jupyter labextension` commands. However, in air-gapped environments, these commands will fail due to lack of internet connectivity. The Extension Manager setting primarily controls the UI, not a comprehensive security lockdown.
 :::
 
+#### XNAT (Keycloak client)
+
+Scout does not yet deploy XNAT itself, but the Keycloak realm provisions a confidential `xnat` OIDC client so that XNAT can be brought up later — with the off-the-shelf `xnat-openid-auth-plugin`, which makes XNAT its own OIDC client and runs an authorization-code flow against Keycloak — without re-importing the realm. The client holds an `xnat-access` role mapped onto the `scout-user` group, and its redirect URI is XNAT's `/openid-login` callback. XNAT still sits behind oauth2-proxy as the edge approval gate, the same posture as every other Scout service. See `docs/internal/xnat-and-plugin-deployment.md` for the full deployment reference.
+
+Because the client is confidential, a secret is required — even before XNAT is deployed, since the realm always provisions the client and the Keycloak import fails without it:
+
+```yaml
+keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+The XNAT naming variables have sane defaults and only need to be set to override them:
+
+```yaml
+# Keycloak clientId for the XNAT client (default: xnat)
+keycloak_xnat_client_id: xnat
+
+# Namespace where XNAT will be deployed (default: xnat)
+xnat_namespace: xnat
+```
+
+`xnat_namespace` is independent of the six consolidated `scout_*_namespace` variables — XNAT runs in its own namespace.
+
 ### Namespace Customization
 
 Scout uses 6 consolidated namespaces to organize services by function. Default namespaces are defined in `roles/scout_common/defaults/main.yaml`. Override them if needed:
