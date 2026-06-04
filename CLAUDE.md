@@ -448,7 +448,7 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 
 ### Querying from Notebooks (scout SDK)
 - Use `scout.query(sql, params=...)` with `:name` bind params; it returns a pandas DataFrame. `scout.connect()` returns a Trino DB-API connection for streaming.
-- Filter array columns with Trino's `contains(array, element)`: `WHERE contains(diagnoses.diagnosis_code, 'J18.9')`. For list params, prefer `contains(:vals, col)` over `IN` — the SQLAlchemy dialect doesn't expand list params into `IN` clauses.
+- Filter array-of-struct columns with `any_match()`: `WHERE any_match(diagnoses, x -> x.diagnosis_code = 'J18.9')`. For matching a scalar column against a list param, prefer `contains(:vals, col)` over `IN` — the SQLAlchemy dialect doesn't expand list params into `IN` clauses.
 - Use the `patient_ids` array or convenience columns like `epic_mrn`.
 
 ### Monitoring
