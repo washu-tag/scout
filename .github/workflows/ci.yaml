@@ -24,7 +24,6 @@ jobs:
       ci: ${{ steps.filter.outputs.ci }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
-      pyspark-notebook: ${{ steps.filter.outputs.pyspark-notebook }}
       scout-notebook: ${{ steps.filter.outputs.scout-notebook }}
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
@@ -43,10 +42,8 @@ jobs:
               - 'linting_java_checkstyle.xml'
             hl7-transformer:
               - 'extractor/hl7-transformer/**'
-            pyspark-notebook:
-              - 'helm/jupyter/notebook/**'
             scout-notebook:
-              - 'helm/jupyter/scout-notebook/**'
+              - 'helm/scout-notebook/**'
             launchpad:
               - 'launchpad/**'
             superset:
@@ -85,11 +82,8 @@ jobs:
           - image-name: hl7-transformer
             subproject: extractor/hl7-transformer
             allow-failure: true
-          - image-name: pyspark-notebook
-            subproject: helm/jupyter/notebook
-            allow-failure: true
           - image-name: scout-notebook
-            subproject: helm/jupyter/scout-notebook
+            subproject: helm/scout-notebook
             allow-failure: true
           - image-name: launchpad
             subproject: launchpad
@@ -157,6 +151,9 @@ jobs:
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v
+      - name: 'Unit tests: Voila Trino helpers'
+        shell: bash
+        run: cd helm/voila && PYTHONPATH=files pytest tests/ -v
       - name: 'Install OPA'
         shell: bash
         # Pinned to match the OPA image we deploy (opa_image_tag in
@@ -314,7 +311,38 @@ jobs:
         if: always()
         run: |
           sudo -E kubectl -n scout-extractor logs deployment/hl7-transformer
+  # Smoke tests are split across two runners because the full Scout stack
+  # (chat + notebooks + monitoring + analytics) plus image pinning has run
+  # the GitHub-hosted ubuntu-24.04 runner (72 GB disk) into DiskPressure
+  # eviction during chatbot's ollama+open-webui pulls. Each side deploys
+  # only the services it tests, on its own 72 GB runner.
+  #
+  # Both sides install the common infra (k3s, traefik, postgres, valkey,
+  # auth, lake, trino, launchpad). Trino runs on both so jupyter/voila and
+  # chat/superset can each query against a real coordinator.
+  #
+  # Side-specific:
+  #   analytics  → superset, chatbot       (+ data-authz, trino-rw netpol)
+  #   notebooks  → voila, jupyter, monitor (+ full netpol incl. voila-ingress)
+  #
+  # Per-side test coverage:
+  #   - data-authz seed+run: analytics side only (needs superset + chatbot
+  #     for the full OPA → Trino-JWT → row-filter pipeline).
+  #   - auth-curl: both sides via tests/auth/auth-curl-tests.sh --include,
+  #     each filtered to the subdomains it actually deploys.
+  #   - NetworkPolicy: both sides via --include groups. Analytics runs
+  #     trino-rw only; notebooks add the voila-ingress group (it needs
+  #     the voila Service to resolve the target URL).
+  #
+  # Playbook names below assume PR #409 splits ansible/playbooks/analytics.yaml
+  # into trino.yaml (opa + trino) and superset.yaml. If naming lands
+  # differently, update matrix.playbooks below.
+  #
+  # `name:` is set explicitly to preserve smoke-test-analytics /
+  # smoke-test-notebooks as the GitHub check names — branch protection
+  # rules can stay configured against them.
   smoke-test:
+    name: smoke-test-${{ matrix.side }}
     runs-on: ubuntu-latest
     needs:
       - lint
@@ -324,6 +352,21 @@ jobs:
       packages: read
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - side: analytics
+            subdomains: superset,chat,keycloak,auth,minio
+            san_extra: ''
+            playbooks: k3s traefik postgres valkey auth lake trino superset chatbot launchpad
+            netpol_include: '--include trino-rw,opa-trino'
+          - side: notebooks
+            # testuser.jupyter is the per-user singleuser pod ingress
+            subdomains: jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
+            san_extra: ',DNS:*.jupyter.scout.test'
+            playbooks: k3s traefik postgres valkey auth lake trino voila jupyter monitor launchpad
+            netpol_include: ''
     steps:
       - uses: actions/checkout@v6
       - name: 'Free up disk space'
@@ -342,20 +385,23 @@ jobs:
           df -h
       - name: 'Generate TLS certificates and configure /etc/hosts'
         shell: bash
+        env:
+          SUBDOMAINS: ${{ matrix.subdomains }}
+          SAN_EXTRA: ${{ matrix.san_extra }}
         run: |
-          # Generate self-signed wildcard cert for *.scout.test
+          # Self-signed wildcard cert for *.scout.test (+ *.jupyter.scout.test
+          # on the notebook side for the per-user singleuser ingress).
           mkdir -p /tmp/scout-ci-tls
           openssl req -x509 -newkey rsa:2048 -keyout /tmp/scout-ci-tls/key.pem \
             -out /tmp/scout-ci-tls/cert.pem -days 1 -nodes \
             -subj "/CN=scout.test" \
-            -addext "subjectAltName=DNS:scout.test,DNS:*.scout.test,DNS:*.jupyter.scout.test"
-          # Trust the self-signed cert so curl validates it in auth tests
+            -addext "subjectAltName=DNS:scout.test,DNS:*.scout.test${SAN_EXTRA}"
           sudo cp /tmp/scout-ci-tls/cert.pem /usr/local/share/ca-certificates/scout-ci.crt
           sudo update-ca-certificates
-          # Add /etc/hosts entries for subdomain routing (BEFORE deployment)
+          # Subdomains this side deploys (root scout.test = launchpad)
           {
             echo "127.0.0.1 scout.test"
-            for sub in superset jupyter grafana keycloak auth temporal minio chat playbooks testuser.jupyter; do
+            for sub in $(echo "$SUBDOMAINS" | tr ',' ' '); do
               echo "127.0.0.1 ${sub}.scout.test"
             done
           } | sudo tee -a /etc/hosts
@@ -381,12 +427,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Import ALL custom images into k3s
-      - name: 'Push image to k3s - superset'
-        uses: ./.github/actions/k3s-image-import-or-pull
-        with:
-          subproject: helm/superset
-          image-name: superset
+      # Pre-import only the images each side deploys. Common: keycloak,
+      # launchpad. Per-side image pushes use matrix.side to gate.
       - name: 'Push image to k3s - keycloak'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
@@ -397,16 +439,12 @@ jobs:
         with:
           subproject: launchpad
           image-name: launchpad
-      - name: 'Push image to k3s - pyspark-notebook'
+      - name: 'Push image to k3s - superset'
+        if: matrix.side == 'analytics'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
-          subproject: helm/jupyter/notebook
-          image-name: pyspark-notebook
-      - name: 'Push image to k3s - scout-notebook'
-        uses: ./.github/actions/k3s-image-import-or-pull
-        with:
-          subproject: helm/jupyter/scout-notebook
-          image-name: scout-notebook
+          subproject: helm/superset
+          image-name: superset
       # hl7-transformer image is needed by the data-authorization seed
       # Job (writes the synthetic test_reports Delta table via PySpark
       # + Hive-Metastore-registered saveAsTable). The transformer
@@ -414,39 +452,50 @@ jobs:
       # we just reuse the image as a vehicle for its Spark + Delta +
       # s3a + Hive client.
       - name: 'Push image to k3s - hl7-transformer'
+        if: matrix.side == 'analytics'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: extractor/hl7-transformer
           image-name: hl7-transformer
+      - name: 'Push image to k3s - scout-notebook'
+        if: matrix.side == 'notebooks'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: helm/scout-notebook
+          image-name: scout-notebook
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
-      # Deploy services not covered by deploy-and-test job
-      # Skipped: orchestrator (Cassandra+ES+Temporal) and extractor — tested in deploy-and-test
-      # Auto-skipped by missing config: staging, gpu, scout clone
       - name: 'Deploy Scout services'
         shell: bash
+        env:
+          PLAYBOOKS: ${{ matrix.playbooks }}
         run: |
           cd ansible
-          for playbook in k3s traefik postgres valkey auth lake chatbot voila trino superset jupyter monitor launchpad; do
+          for playbook in $PLAYBOOKS; do
             echo "=== Deploying $playbook ==="
             sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
           done
-      # Health checks — verify all services rolled out
       - name: 'Service health checks'
         shell: bash
+        env:
+          SIDE: ${{ matrix.side }}
         run: |
           echo "=== Checking Hive Metastore ==="
           sudo -E kubectl rollout status deployment/hive-metastore -n scout-data --timeout=180s
           echo "=== Checking Trino ==="
           sudo -E kubectl rollout status deployment/trino-coordinator -n scout-analytics --timeout=180s
           sudo -E kubectl rollout status deployment/trino-worker -n scout-analytics --timeout=180s
-          echo "=== Checking Prometheus ==="
-          sudo -E kubectl rollout status deployment/prometheus-server -n scout-monitoring --timeout=180s
-          echo "=== Checking Grafana ==="
-          sudo -E kubectl rollout status deployment/grafana -n scout-monitoring --timeout=180s
-          echo "=== Checking Loki ==="
-          sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
+          if [ "$SIDE" = "notebooks" ]; then
+            echo "=== Checking Voila ==="
+            sudo -E kubectl rollout status deployment/voila -n scout-analytics --timeout=180s
+            echo "=== Checking Prometheus ==="
+            sudo -E kubectl rollout status deployment/prometheus-server -n scout-monitoring --timeout=180s
+            echo "=== Checking Grafana ==="
+            sudo -E kubectl rollout status deployment/grafana -n scout-monitoring --timeout=180s
+            echo "=== Checking Loki ==="
+            sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
+          fi
           echo "=== All pods ==="
           sudo -E kubectl get pods -A
       # Trino connectivity check. Auth (PASSWORD,JWT) is now required so
@@ -458,6 +507,7 @@ jobs:
       # regressions. The data-authorization-tests Job below exercises
       # the full authenticated query path with a real JWT.
       - name: 'Trino connectivity check'
+        if: matrix.side == 'analytics'
         shell: bash
         run: |
           sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- \
@@ -468,11 +518,13 @@ jobs:
       # OPA pull -> Trino JWT auth + impersonation -> row filter +
       # column mask). See tests/data-authorization/.
       - name: 'Derive hl7-transformer image version'
+        if: matrix.side == 'analytics'
         id: hl7-transformer-version
         uses: ./.github/actions/derive-version
         with:
           subproject: extractor/hl7-transformer
       - name: 'Data authorization tests - seed'
+        if: matrix.side == 'analytics'
         shell: bash
         env:
           # docker.io/local/... is the tag k3s-image-import-or-pull
@@ -503,11 +555,12 @@ jobs:
           KUBECTL='sudo -E kubectl' bash tests/data-authorization/wait-for-job.sh \
             scout-data data-authz-seed 300
       - name: 'Data authorization tests - logs (seed)'
-        if: always()
+        if: ${{ always() && matrix.side == 'analytics' }}
         shell: bash
         run: |
           sudo -E kubectl -n scout-data logs job/data-authz-seed --tail=200 || true
       - name: 'Data authorization tests - run'
+        if: matrix.side == 'analytics'
         shell: bash
         run: |
           set -euo pipefail
@@ -533,19 +586,28 @@ jobs:
           KUBECTL='sudo -E kubectl' bash tests/data-authorization/wait-for-job.sh \
             scout-analytics data-authz-tests 300
       - name: 'Data authorization tests - logs (run)'
-        if: always()
+        if: ${{ always() && matrix.side == 'analytics' }}
         shell: bash
         run: |
           sudo -E kubectl -n scout-analytics logs job/data-authz-tests --tail=500 || true
       # Auth tests — verify OAuth2 Proxy blocks unauthenticated access
+      # for the subdomains this side deploys. Launchpad root is always
+      # included by the script.
       - name: 'Auth curl tests'
         shell: bash
-        run: bash tests/auth/auth-curl-tests.sh scout.test
-      # NetworkPolicy tests — verify trino-rw ingress restrictions
+        env:
+          SUBDOMAINS: ${{ matrix.subdomains }}
+        run: bash tests/auth/auth-curl-tests.sh scout.test --include "$SUBDOMAINS"
+      # NetworkPolicy tests. Analytics filters to trino-rw (voila isn't
+      # deployed there, so the Traefik→voila allow-path test would 000
+      # on a missing Service). Notebooks runs the full suite.
+      # TODO: extend with jupyter-singleuser egress tests once we settle
+      # on the singleuser pod-selector labels JupyterHub generates.
       - name: 'NetworkPolicy tests'
         shell: bash
-        run: KUBECTL='sudo -E kubectl' bash tests/network/network-policy-tests.sh
-      # Diagnostic logging on failure
+        env:
+          NETPOL_INCLUDE: ${{ matrix.netpol_include }}
+        run: KUBECTL='sudo -E kubectl' bash tests/network/network-policy-tests.sh $NETPOL_INCLUDE
       - name: 'Debug - pod status'
         if: failure()
         shell: bash
@@ -608,11 +670,6 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
-      - name: 'Push Image - pyspark-notebook'
-        if: needs.changes.outputs.pyspark-notebook == 'true'
-        uses: ./.github/actions/docker-push
-        with:
-          image-name: pyspark-notebook
       - name: 'Push Image - scout-notebook'
         if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push
@@ -668,11 +725,6 @@ jobs:
 
           echo "Disk space after cleanup:"
           df -h
-      - name: 'Push Image - pyspark-notebook'
-        if: needs.changes.outputs.pyspark-notebook == 'true'
-        uses: ./.github/actions/docker-push
-        with:
-          image-name: pyspark-notebook
       - name: 'Push Image - scout-notebook'
         if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push

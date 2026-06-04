@@ -21,7 +21,7 @@ k3s_cluster:
     superset_image_repository: docker.io/local/washu-tag/superset
     keycloak_image_repository: docker.io/local/washu-tag/keycloak
     keycloak_image_pull_policy: IfNotPresent
-    jupyter_singleuser_image_name: docker.io/local/washu-tag/pyspark-notebook
+    scout_notebook_image_name: docker.io/local/washu-tag/scout-notebook
 
     # TLS (self-signed certs generated in CI step)
     tls_cert_path: /tmp/scout-ci-tls/cert.pem
@@ -169,9 +169,19 @@ k3s_cluster:
     # extractor at all, so this flag has no effect there.
     trino_view_enabled: false
 
-    # Trino internal-comm shared secret (ADR 0022). CI uses a fixed
-    # value so the smoke-test deploy doesn't fail at template render.
+    # Trino AuthZ secrets (ADR 0022). Required by the trino role's
+    # AuthZ env Secret + bcrypt password.db. Production deployments set
+    # these in scout-inventory; CI sets fixed test values so the
+    # smoke-test deploy doesn't fail at template render.
     trino_internal_shared_secret: ci-trino-internal-shared-secret
+    trino_openwebui_mcp_svc_password: ci-trino-mcp-svc-pw
+    # Bcrypt-hashed at deploy time via htpasswd (see roles/trino/
+    # templates/password.db.j2). The data-authorization tests don't
+    # exercise the PASSWORD auth path -- they use service-principal
+    # JWT with X-Trino-User -- but mcp-trino's HTTP Basic outbound
+    # requires the entry to exist.
+    trino_password_authenticator_users:
+      openwebui_mcp_svc: '{{ trino_openwebui_mcp_svc_password }}'
 
     # Valkey (single shared password for all services)
     valkey_password: valkey123

@@ -111,8 +111,8 @@ singleuser:
   serviceAccountName: '{{ lake_reader_service_account_name }}'
 {% endif %}
   image:
-    name: '{{ jupyter_singleuser_image_name }}'
-    tag: '{{ jupyter_singleuser_image_tag }}'
+    name: '{{ scout_notebook_image_name }}'
+    tag: '{{ scout_notebook_image_tag }}'
     pullPolicy: IfNotPresent
   extraResource:
     guarantees:
@@ -134,7 +134,7 @@ singleuser:
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
   initContainers:
     - name: staging-ca-setup
-      image: '{{ jupyter_singleuser_image_name }}:{{ jupyter_singleuser_image_tag }}'
+      image: '{{ scout_notebook_image_name }}:{{ scout_notebook_image_tag }}'
       command: ["/bin/sh", "-c"]
       args:
         - |

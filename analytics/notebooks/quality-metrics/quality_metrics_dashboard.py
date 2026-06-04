@@ -27,26 +27,13 @@ sns.set_palette("husl")
 
 
 def _connect_trino():
-    """Connect to Trino using environment variables."""
-    import trino
+    """Connect to Trino as the logged-in Voila user.
 
-    TRINO_HOST = os.environ.get("TRINO_HOST", "trino.trino")
-    TRINO_PORT = int(os.environ.get("TRINO_PORT", "8080"))
-    TRINO_SCHEME = os.environ.get("TRINO_SCHEME", "http")
-    TRINO_USER = os.environ.get("TRINO_USER", "trino")
-    TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
-    TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
+    scout_trino mints the voila_svc JWT and sets X-Trino-User, so Trino's OPA
+    policy filters/masks rows for the impersonated user (ADR 0022)."""
+    import scout_trino
 
-    conn = trino.dbapi.connect(
-        host=TRINO_HOST,
-        port=TRINO_PORT,
-        http_scheme=TRINO_SCHEME,
-        user=TRINO_USER,
-        catalog=TRINO_CATALOG,
-        schema=TRINO_SCHEMA,
-    )
-
-    return conn
+    return scout_trino.connect()
 
 
 def _load_quality_data(table_name="default.reports", date_range_days=None, limit=None):
@@ -122,9 +109,14 @@ def _load_quality_data(table_name="default.reports", date_range_days=None, limit
     {limit_sql}
     """
 
-    # Use cursor to avoid SQLAlchemy warning
+    # Use cursor to avoid SQLAlchemy warning. The only interpolations are config
+    # identifiers (schema/table from table_name — SQL can't bind identifiers) and
+    # the WHERE cutoff / LIMIT. The cutoff is timedelta(days=date_range_days)
+    # .strftime(): date_range_days is a user-set IntText, but timedelta rejects
+    # non-numerics and strftime always emits a plain date, so it can't carry SQL.
+    # LIMIT is None in every real call path (no caller passes limit=).
     cursor = conn.cursor()
-    cursor.execute(query)
+    cursor.execute(query)  # nosemgrep
     columns = [desc[0] for desc in cursor.description]
     data = cursor.fetchall()
     df = pd.DataFrame(data, columns=columns)

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # network-policy-tests.sh — Verify Scout NetworkPolicies are enforced
 #
-# Covers two policies:
-#   - trino-rw   (scout-extractor): write-path Trino, restricted to the
-#                hl7-transformer + Voila pods on port 8080.
-#   - opa-trino  (scout-analytics): the AuthZ decision engine, restricted to
-#                the trino-analytics coordinator on port 8181.
+# Covers three policies:
+#   - trino-rw      (scout-extractor): write-path Trino, restricted to the
+#                   hl7-transformer + Voila pods on port 8080.
+#   - opa-trino     (scout-analytics): the AuthZ decision engine, restricted
+#                   to the trino-analytics coordinator on port 8181.
+#   - voila ingress (scout-analytics): only Traefik may reach voila:8866
+#                   directly; X-Trino-User impersonation trust depends on it.
 #
 # Spins up short-lived pods in different namespaces / with different labels
 # and confirms each can or can't reach its target. Runs all test pods in
@@ -16,16 +18,6 @@
 # to incorporate new pod IPs into its allow-ipset, so we want the test to
 # express "succeeds when it eventually succeeds" rather than rely on a
 # fixed sleep.
-#
-# Expected matrix:
-#   trino-rw (port 8080):
-#     - pod in scout-analytics (any labels)                  → denied (000)
-#     - pod in scout-extractor without transformer labels    → denied (000)
-#     - pod in scout-extractor with hl7-transformer label     → allowed (200)
-#   opa-trino (port 8181):
-#     - pod in scout-analytics with coordinator labels        → allowed (200)
-#     - pod in scout-analytics without coordinator labels     → denied (000)
-#     - pod in scout-extractor (any labels)                  → denied (000)
 #
 # Exit 0 if all tests pass, non-zero on any failure.
 
@@ -40,7 +32,7 @@ RESET='\033[0m'
 # ── Config ────────────────────────────────────────────────────────────────────
 KUBECTL=${KUBECTL:-kubectl}
 
-# Targets. The trino-rw target is the default for queue_test; OPA tests
+# Targets. The trino-rw target is the default for queue_test; other tests
 # override host/port/path per-test (queue_test args 5-7).
 TRINO_RW_HOST=trino-rw.scout-extractor
 TRINO_RW_PORT=8080
@@ -48,6 +40,55 @@ TRINO_RW_PATH=/v1/info
 OPA_HOST=opa-trino.scout-analytics
 OPA_PORT=8181
 OPA_PATH=/health
+VOILA_HOST=voila.scout-analytics
+VOILA_PORT=8866
+VOILA_PATH=/
+
+# Test groups can be filtered via --include for split CI runs where not
+# every target service is deployed. Empty = run all groups.
+#   trino-rw       — works wherever the trino role has been run (deploys
+#                    trino-rw + its NetworkPolicy). Both smoke-test sides.
+#   opa-trino      — needs OPA + trino-analytics. Both smoke-test sides
+#                    (trino role deploys both).
+#   voila-ingress  — needs the voila Service to exist for the target URL
+#                    to resolve. Notebook side only.
+INCLUDE_GROUPS=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --include)
+      INCLUDE_GROUPS="$2"
+      shift 2
+      ;;
+    --help)
+      cat <<EOF
+Usage: $(basename "$0") [--include <groups>]
+
+  --include <groups>   Comma-separated test groups to run (default: all).
+                       Available: trino-rw, opa-trino, voila-ingress.
+
+Examples:
+  $(basename "$0")
+  $(basename "$0") --include trino-rw
+  $(basename "$0") --include trino-rw,opa-trino,voila-ingress
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+include_group() {
+  local group="$1"
+  [[ -z "$INCLUDE_GROUPS" ]] && return 0
+  for inc in $(echo "$INCLUDE_GROUPS" | tr ',' ' '); do
+    [[ "$group" == "$inc" ]] && return 0
+  done
+  return 1
+}
 
 # Retry curl up to 20 times so kube-router has time to update its ipset
 # for new pods. Allowed pods exit fast; denied pods exhaust retries.
@@ -87,16 +128,42 @@ queue_test() {
   PATHS+=("${7:-$TRINO_RW_PATH}")
 }
 
-# trino-rw: only hl7-transformer (and Voila, not exercised here) may reach it
-queue_test nb-test               scout-analytics 000
-queue_test chat-test              scout-analytics 000 'app.kubernetes.io/name=open-webui'
-queue_test extractor-rando        scout-extractor 000
-queue_test transformer-impostor   scout-extractor 200 'app.kubernetes.io/name=hl7-transformer'
+# trino-rw: only hl7-transformer and Voila may reach it on port 8080
+if include_group "trino-rw"; then
+  queue_test nb-test               scout-analytics 000
+  queue_test chat-test              scout-analytics 000 'app.kubernetes.io/name=open-webui'
+  queue_test extractor-rando        scout-extractor 000
+  queue_test transformer-impostor   scout-extractor 200 'app.kubernetes.io/name=hl7-transformer'
+  # Positive Voila → trino-rw check: trino-rw's NetworkPolicy explicitly
+  # allow-lists voila-labeled pods in scout-analytics for the reviewer-
+  # annotation write path. Catches regressions where the allow rule gets
+  # dropped without updating Voila's connect_rw() callers. Test is
+  # synthetic (curl pod with voila label) so it doesn't require the
+  # voila Deployment to be present.
+  queue_test voila-rw-impostor      scout-analytics 200 'app.kubernetes.io/name=voila'
+fi
 
 # opa-trino: only the trino-analytics coordinator may reach the decision API
-queue_test opa-coordinator-ok    scout-analytics 200 'app.kubernetes.io/name=trino,app.kubernetes.io/component=coordinator' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
-queue_test opa-analytics-rando   scout-analytics 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
-queue_test opa-extractor-rando   scout-extractor 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
+if include_group "opa-trino"; then
+  queue_test opa-coordinator-ok    scout-analytics 200 'app.kubernetes.io/name=trino,app.kubernetes.io/component=coordinator' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
+  queue_test opa-analytics-rando   scout-analytics 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
+  queue_test opa-extractor-rando   scout-extractor 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
+fi
+
+# voila ingress (port 8866).
+# Voila's X-Trino-User impersonation trust model depends on the ingress
+# NetworkPolicy: only Traefik should reach Voila directly. A random
+# in-cluster pod hitting :8866 could forge X-Auth-Request-Preferred-Username
+# headers and bypass per-user AuthZ.
+if include_group "voila-ingress"; then
+  queue_test voila-bypass-attack    scout-analytics 000 ''                                "$VOILA_HOST" "$VOILA_PORT" "$VOILA_PATH"
+  queue_test voila-traefik-allowed  kube-system     200 'app.kubernetes.io/name=traefik'  "$VOILA_HOST" "$VOILA_PORT" "$VOILA_PATH"
+fi
+
+if [ "${#NAMES[@]}" -eq 0 ]; then
+  echo "No tests selected (--include=$INCLUDE_GROUPS); nothing to run." >&2
+  exit 2
+fi
 
 # ── Workspace + cleanup ───────────────────────────────────────────────────────
 RESULTS_DIR=$(mktemp -d)
