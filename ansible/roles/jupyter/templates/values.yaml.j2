@@ -117,18 +117,16 @@ hub:
   config:
     Authenticator:
       auto_login: true
-      # oauthenticator only ROTATES the token when the refresh gate opens
-      # after the access token has already expired; if the gate opens while
-      # the token is still alive it merely re-validates it and resets the
-      # refresh clock without extending the token. The gate must therefore
-      # (a) be much shorter than the token lifespan and (b) divide it evenly,
-      # so the post-confirm reopen lands exactly at expiry and the SDK's
-      # pre-query auth_state fetch rotates the token on the first query after
-      # it dies (observed: gate == lifespan produced recurring ~2min windows
-      # of Trino 401s every token cycle). lifespan/5 keeps the divide-evenly
-      # property for any lifespan; floor of 30s bounds Hub->Keycloak
-      # validation traffic for very short lifespans.
-      auth_refresh_age: {{ [keycloak_access_token_lifespan | int // 5, 30] | max }}
+      # Reopen the Hub's refresh gate at 1/5 of the token lifespan. The hook
+      # rotates at the half-life and the scout SDK force-refreshes in the last
+      # 1/5 of the token's life, so the gate must satisfy
+      # gate <= 1/2 - 1/5 = 3/10 of the lifespan; 1/5 sits inside that with a
+      # 1/10 margin for ANY lifespan (ADR 0024) -- purely fractional, no floor.
+      # Stock oauthenticator only rotates an already-expired token, so without
+      # a gate this small a live-token re-validation would reset the refresh
+      # clock and block rotation past expiry (observed as recurring Trino 401
+      # windows when gate == lifespan).
+      auth_refresh_age: {{ keycloak_access_token_lifespan | int // 5 }}
     JupyterHub:
       subdomain_host: 'jupyter.{{ server_hostname }}'
       authenticator_class: 'oauthenticator.generic.GenericOAuthenticator'

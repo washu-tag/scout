@@ -276,6 +276,24 @@ def test_is_near_expiry_boundary_at_refresh_window(monkeypatch):
     assert _identity._is_near_expiry(jwt_with_claims({"exp": now + window - 1})) is True
 
 
+def test_is_near_expiry_buffer_scales_with_lifetime_when_iat_present(monkeypatch):
+    # With iat present the buffer is 20% of the lifetime (exp - iat), so the
+    # refresh point scales with the lifespan instead of the fixed 60s fallback.
+    now = 1_000_000.0
+    monkeypatch.setattr(_identity.time, "time", lambda: now)
+    # 1000s token, 100s (10%) remaining -> refresh, even though 100s is well
+    # outside the 60s fixed fallback; proves the buffer tracks the lifetime.
+    assert (
+        _identity._is_near_expiry(jwt_with_claims({"iat": now - 900, "exp": now + 100}))
+        is True
+    )
+    # Same 1000s token with 300s (30%) remaining -> not yet (300 > 20%).
+    assert (
+        _identity._is_near_expiry(jwt_with_claims({"iat": now - 700, "exp": now + 300}))
+        is False
+    )
+
+
 @pytest.mark.parametrize(
     "undecodable",
     [

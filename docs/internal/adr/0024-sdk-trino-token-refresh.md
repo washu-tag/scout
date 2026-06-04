@@ -60,8 +60,11 @@ just re-validate them.
 
 ### 2. SDK-side proactive refresh
 
-- A single cached bearer per provider, re-fetched when within **60s** of expiry
-  (`_REFRESH_BEFORE_EXPIRY_SECONDS`). Expiry is read from the JWT `exp` claim.
+- A single cached bearer per provider, re-fetched once less than **⅕ of the
+  token's lifetime** remains (`_REFRESH_BEFORE_EXPIRY_FRACTION`; lifetime =
+  `exp − iat`, both read from the JWT), so the buffer scales with the lifespan
+  rather than being a fixed offset. Tokens with no `iat` fall back to a fixed
+  60s (`_REFRESH_BEFORE_EXPIRY_SECONDS`).
 - The bearer is attached via a **dynamic** auth callable
   (`_DynamicJWTAuthentication` → `_DynamicBearerAuth`) that re-reads the cached
   token on every HTTP request. This lets one long-lived SQLAlchemy engine
@@ -92,13 +95,17 @@ force a shared lock to avoid reuse-detection lockouts).
 
 ### Refresh-gate / lifespan coupling
 
-`auth_refresh_age` must reopen the Hub's refresh gate *before* the SDK's 60s
+`auth_refresh_age` must reopen the Hub's refresh gate *before* the SDK's
 re-fetch window, or the gate stays shut during exactly the window that matters.
-The constraint is `gate ≤ half_life − 60`; we set `auth_refresh_age =
-keycloak_access_token_lifespan // 5` (60s for the 300s default), inside that
-bound with margin and scaling with the lifespan. `keycloak_access_token_lifespan`
-is a single `scout_common` variable that drives **both** the realm's
-`accessTokenLifespan` and the Hub's `auth_refresh_age`, so the two can't drift.
+Stated as fractions of the lifespan: the hook rotates at the half-life (½) and
+the SDK re-fetches in the last fifth (⅕), so the gate must satisfy
+`gate ≤ ½ − ⅕ = 3⁄10` of the lifespan. We set `auth_refresh_age =
+keycloak_access_token_lifespan // 5` (⅕), inside that bound with a 1⁄10 margin —
+and because every term is a fraction of the lifespan, it holds for **any**
+lifespan with no floor or per-value tuning. (At the 300s default that's 60s.)
+`keycloak_access_token_lifespan` is a single `scout_common` variable that drives
+**both** the realm's `accessTokenLifespan` and the Hub's `auth_refresh_age`, so
+the two can't drift.
 
 ## Alternatives Considered
 
@@ -148,7 +155,7 @@ shares a token cache across concurrent users.
 
 ## Implementation Notes
 
-- SDK: `sdk/python/src/scout/_query.py` (`_is_auth_error`, `_with_auth_retry`,
+- SDK: `sdk/python/src/scout/_query.py` (`_is_unauthorized`, `_with_auth_retry`,
   dynamic auth, `trust_env=False` CA pinning per the package-proxy footgun) and
   `_identity.py` (providers, `_is_near_expiry`, per-provider + module-level
   `invalidate()`).
