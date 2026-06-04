@@ -308,6 +308,11 @@ k3s_cluster:
     # Trino file-based PASSWORD authenticator entry for the Open WebUI MCP
     # (tuannvm/mcp-trino speaks HTTP Basic outbound only — ADR 0022).
     trino_openwebui_mcp_svc_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # XNAT is a confidential OIDC client (xnat-openid-auth-plugin runs its own
+    # authorization-code flow against Keycloak). This secret is REQUIRED even
+    # before XNAT is deployed: the realm always provisions the xnat client, and
+    # Keycloak import fails without it. See docs/internal/xnat-and-plugin-deployment.md.
+    keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
@@ -340,6 +345,21 @@ k3s_cluster:
     # Launchpad
     #---------------------------------------------------------------------------
     launchpad_nextauth_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    #---------------------------------------------------------------------------
+    # XNAT
+    #---------------------------------------------------------------------------
+    # XNAT is not deployed by the standard Scout playbooks yet, but the Keycloak
+    # realm provisions a confidential `xnat` OIDC client (holding the xnat-access
+    # role mapped onto the scout-user group) so an operator can bring XNAT up
+    # later — with the xnat-openid-auth-plugin — without re-importing the realm.
+    # The client secret is set above with the other client secrets. XNAT sits
+    # behind oauth2-proxy like every other Scout service; its /openid-login
+    # callback is the redirect URI. See docs/internal/xnat-and-plugin-deployment.md.
+    #
+    # Override these naming defaults only if your environment differs:
+    # keycloak_xnat_client_id: xnat   # Keycloak clientId for XNAT
+    # xnat_namespace: xnat            # Namespace where XNAT will be deployed
 
     #---------------------------------------------------------------------------
     # PostgreSQL
