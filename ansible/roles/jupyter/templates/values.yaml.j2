@@ -60,6 +60,60 @@ hub:
       c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
     templates: |
       c.JupyterHub.template_paths = ['/usr/local/share/jupyterhub/custom-templates']
+    eagerTokenRefresh: |
+      # Rotate (rather than just re-validate) the user's Keycloak access
+      # token whenever refresh_user runs past the token's half-life.
+      #
+      # Stock oauthenticator only exchanges the refresh token AFTER the
+      # access token has expired; if the auth_refresh_age gate happens to
+      # open in the token's final seconds it re-validates the dying token,
+      # resets the refresh clock, and then blocks rotation past expiry --
+      # up to auth_refresh_age seconds of Trino 401s for kernels on JWT
+      # pass-through (ADR 0022). Rotating at half-life guarantees every
+      # gate pass leaves more lifetime than gate + the scout SDK's 60s
+      # pre-expiry re-fetch buffer, so a kernel can always obtain a live
+      # token. Hook contract (oauthenticator >= 17.3, z2jh 4.3.5 ships
+      # 17.4): return None to fall through to stock behavior, or an
+      # auth_model dict to apply.
+      import base64
+      import json
+      import time
+
+      TOKEN_HALF_LIFE = {{ keycloak_access_token_lifespan | int // 2 }}
+
+      def _seconds_to_expiry(access_token):
+          try:
+              payload = access_token.split(".")[1]
+              payload += "=" * (-len(payload) % 4)
+              return json.loads(base64.urlsafe_b64decode(payload))["exp"] - time.time()
+          except Exception:
+              return None
+
+      async def eager_token_refresh(authenticator, user, auth_state):
+          if not auth_state or not auth_state.get("refresh_token"):
+              return None  # stock behavior (login required if unusable)
+          remaining = _seconds_to_expiry(auth_state.get("access_token", ""))
+          if remaining is None or remaining > TOKEN_HALF_LIFE:
+              return None  # plenty of life left; stock validate-only is fine
+          try:
+              token_info = await authenticator.get_token_info(
+                  None,
+                  authenticator.build_refresh_token_request_params(
+                      auth_state["refresh_token"]
+                  ),
+              )
+          except Exception as e:
+              authenticator.log.info(
+                  f"eager_token_refresh: exchange failed for {user.name}: {e}; "
+                  "falling through to stock refresh_user"
+              )
+              return None  # stock path surfaces the failure properly
+          # Keycloak may omit the refresh_token on refresh; keep the old one.
+          if not token_info.get("refresh_token"):
+              token_info["refresh_token"] = auth_state["refresh_token"]
+          return await authenticator._token_to_auth_model(token_info)
+
+      c.GenericOAuthenticator.refresh_user_hook = eager_token_refresh
   config:
     Authenticator:
       auto_login: true
