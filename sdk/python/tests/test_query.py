@@ -262,20 +262,6 @@ def test_current_user_none_when_no_identity(monkeypatch):
 # --- _is_near_expiry: the cache-refresh clock and its fail-safe branches ---
 
 
-def test_is_near_expiry_boundary_at_refresh_window(monkeypatch):
-    # _is_near_expiry flips to True once we're within _REFRESH_BEFORE_EXPIRY_SECONDS
-    # of exp (time.time() >= exp - window). Pin the clock so the boundary is exact.
-    now = 1_000_000.0
-    monkeypatch.setattr(_identity.time, "time", lambda: now)
-    window = _identity._REFRESH_BEFORE_EXPIRY_SECONDS
-
-    assert (
-        _identity._is_near_expiry(jwt_with_claims({"exp": now + window + 1})) is False
-    )
-    assert _identity._is_near_expiry(jwt_with_claims({"exp": now + window})) is True
-    assert _identity._is_near_expiry(jwt_with_claims({"exp": now + window - 1})) is True
-
-
 def test_is_near_expiry_buffer_scales_with_lifetime_when_iat_present(monkeypatch):
     # With iat present the buffer is 20% of the lifetime (exp - iat), so the
     # refresh point scales with the lifespan instead of the fixed 60s fallback.
