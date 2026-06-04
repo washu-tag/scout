@@ -44,14 +44,22 @@ class FakeAuthentication:
     pass
 
 
+class FakeHttpError(Exception):
+    """Stand-in for trino.exceptions.HttpError; real one is a bare Exception
+    subclass whose str() is 'error <status>: <body>'."""
+
+
 trino_stub = _stub("trino")
 trino_dbapi_stub = _stub("trino.dbapi")
 trino_dbapi_stub.connect = MagicMock(name="trino.dbapi.connect")
 trino_dbapi_stub.Connection = type("Connection", (), {})
 trino_auth_stub = _stub("trino.auth")
 trino_auth_stub.Authentication = FakeAuthentication
+trino_exceptions_stub = _stub("trino.exceptions")
+trino_exceptions_stub.HttpError = FakeHttpError
 trino_stub.dbapi = trino_dbapi_stub
 trino_stub.auth = trino_auth_stub
+trino_stub.exceptions = trino_exceptions_stub
 
 
 # --- sqlalchemy: scout._query uses create_engine + text ---

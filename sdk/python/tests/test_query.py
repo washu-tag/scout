@@ -11,6 +11,7 @@ import scout
 from scout import _identity, _query
 
 from conftest import (
+    FakeHttpError,
     requests_stub,
     set_hub_auth_state,
     set_token_response,
@@ -117,6 +118,67 @@ def test_auth_session_pins_ca_against_env_bundle_override():
 
     assert session.trust_env is False
     assert isinstance(session.auth, _query._DynamicBearerAuth)
+
+
+def test_is_auth_error_detects_401_direct_and_chained():
+    assert _query._is_auth_error(FakeHttpError("error 401: b'JWT expired'"))
+    # SQLAlchemy/pandas wrap the trino error; we walk the chain.
+    try:
+        try:
+            raise FakeHttpError("error 401: unauthorized")
+        except FakeHttpError as inner:
+            raise ValueError("Execution failed on sql ...") from inner
+    except ValueError as wrapped:
+        assert _query._is_auth_error(wrapped)
+
+
+def test_is_auth_error_ignores_non_auth_errors():
+    assert not _query._is_auth_error(FakeHttpError("error 500: internal"))
+    assert not _query._is_auth_error(ValueError("table not found"))
+
+
+def test_with_auth_retry_invalidates_and_retries_once_on_401(monkeypatch):
+    set_token_response()
+    provider = _identity._resolve_provider()
+    provider()  # prime the cached bearer
+    assert provider._token is not None
+
+    calls = []
+
+    def run():
+        calls.append(1)
+        if len(calls) == 1:
+            raise FakeHttpError("error 401: b'JWT expired'")
+        return "rows"
+
+    assert _query._with_auth_retry(run) == "rows"
+    assert len(calls) == 2  # failed once, retried once
+    assert provider._token is None  # cache was invalidated between attempts
+
+
+def test_with_auth_retry_passes_non_auth_errors_through_without_retry():
+    calls = []
+
+    def run():
+        calls.append(1)
+        raise ValueError("not an auth problem")
+
+    with pytest.raises(ValueError):
+        _query._with_auth_retry(run)
+    assert len(calls) == 1  # no retry
+
+
+def test_provider_invalidate_forces_remint(monkeypatch):
+    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
+    set_token_response(expires_in=3600)
+    provider = _identity._resolve_provider()
+    provider()
+    provider()
+    assert requests_stub.post.call_count == 1  # cached
+
+    _identity.invalidate()
+    provider()
+    assert requests_stub.post.call_count == 2  # re-minted after invalidate
 
 
 def test_jupyter_passthrough_omits_impersonation_user(monkeypatch):
