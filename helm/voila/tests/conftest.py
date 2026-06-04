@@ -94,12 +94,18 @@ scout_stub._identity = scout_identity_stub
 
 @pytest.fixture(autouse=True)
 def reset_state(monkeypatch):
-    """Each test starts with fresh mocks and the Trino env the helpers expect."""
+    """Each test starts with fresh mocks and the Trino env the helpers expect.
+
+    The TRINO_* values here are deliberately NOT the production defaults that
+    connect_writeback() falls back to: that's what lets the targeting test prove
+    the function actually reads the env rather than hardcoding the same strings.
+    The default-fallback path is covered by its own test, which unsets these.
+    """
     trino_dbapi_stub.connect.reset_mock(return_value=True, side_effect=True)
     monkeypatch.delenv("X_AUTH_REQUEST_PREFERRED_USERNAME", raising=False)
     monkeypatch.delenv("JUPYTERHUB_USER", raising=False)
-    monkeypatch.setenv("TRINO_RW_HOST", "trino-rw.scout-extractor")
-    monkeypatch.setenv("TRINO_RW_PORT", "8080")
-    monkeypatch.setenv("TRINO_CATALOG", "delta")
-    monkeypatch.setenv("TRINO_SCHEMA", "default")
+    monkeypatch.setenv("TRINO_RW_HOST", "rw-host.test.invalid")
+    monkeypatch.setenv("TRINO_RW_PORT", "9090")
+    monkeypatch.setenv("TRINO_CATALOG", "delta_test")
+    monkeypatch.setenv("TRINO_SCHEMA", "schema_test")
     yield

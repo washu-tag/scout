@@ -71,3 +71,13 @@ def test_no_warning_when_header_present(caplog):
     with caplog.at_level(logging.WARNING, logger="voila_runtime"):
         asyncio.run(voila_runtime._voila_runtime_get(_handler("alice")))
     assert not caplog.records
+
+
+def test_import_patches_tornado_handler_get():
+    # Importing voila_runtime must rebind TornadoVoilaHandler.get (the subclass
+    # Tornado actually dispatches GET to). If the patch silently no-ops -- e.g.
+    # it targeted the wrong class -- no identity is captured and every Trino
+    # query runs as anonymous. The module docstring flags this as the trap.
+    from voila.tornado.handler import TornadoVoilaHandler
+
+    assert TornadoVoilaHandler.get is voila_runtime._voila_runtime_get

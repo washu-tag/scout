@@ -71,6 +71,11 @@ sqlalchemy_engine_stub.Engine = type("Engine", (), {})
 sqlalchemy_stub.engine = sqlalchemy_engine_stub
 
 
+# --- pandas: scout._query.query() imports pandas lazily and calls read_sql ---
+pandas_stub = _stub("pandas")
+pandas_stub.read_sql = MagicMock(name="pandas.read_sql")
+
+
 @pytest.fixture(autouse=True)
 def reset_state(monkeypatch):
     """Each test starts with a fresh provider singleton, fresh mocks, and
@@ -84,6 +89,7 @@ def reset_state(monkeypatch):
     requests_stub.get.reset_mock(return_value=True, side_effect=True)
     trino_dbapi_stub.connect.reset_mock(return_value=True, side_effect=True)
     sqlalchemy_stub.create_engine.reset_mock(return_value=True, side_effect=True)
+    pandas_stub.read_sql.reset_mock(return_value=True, side_effect=True)
 
     monkeypatch.delenv("X_AUTH_REQUEST_PREFERRED_USERNAME", raising=False)
     monkeypatch.delenv("JUPYTERHUB_API_TOKEN", raising=False)
@@ -98,8 +104,6 @@ def reset_state(monkeypatch):
     monkeypatch.setenv("TRINO_CATALOG", "delta")
     monkeypatch.setenv("TRINO_SCHEMA", "default")
     monkeypatch.setenv("TRINO_CA_CERT", "/etc/trino-ca/ca.crt")
-    monkeypatch.setenv("TRINO_RW_HOST", "trino-rw.scout-extractor")
-    monkeypatch.setenv("TRINO_RW_PORT", "8080")
     yield
 
 
@@ -114,6 +118,20 @@ def _jwt_with_exp(expires_in):
     payload = {"exp": int(time.time()) + expires_in}
     payload_b64 = (
         base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+    )
+    return f"header.{payload_b64}.signature"
+
+
+def jwt_with_claims(claims):
+    """A syntactically-valid JWT (header.payload.signature) whose payload is
+    exactly `claims`. Unlike _jwt_with_exp, the caller controls the claim set,
+    so tests can build tokens with an absolute `exp`, a missing `exp`, or a
+    non-numeric `exp` to exercise _is_near_expiry's fail-safe branches."""
+    import base64
+    import json
+
+    payload_b64 = (
+        base64.urlsafe_b64encode(json.dumps(claims).encode()).decode().rstrip("=")
     )
     return f"header.{payload_b64}.signature"
 

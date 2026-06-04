@@ -34,17 +34,24 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-_REFRESH_BEFORE_EXPIRY_SECONDS = 60
+_REFRESH_BEFORE_EXPIRY_FRACTION = 0.2  # refresh once <20% of the token's life remains
+_REFRESH_BEFORE_EXPIRY_SECONDS = 60  # fixed fallback when the token carries no iat
 
 # Optional override; tests set this to inject a fake provider.
 _override_provider: Callable[[], tuple[str, str | None]] | None = None
 
 
 def _is_near_expiry(token: str) -> bool:
-    """Decode the JWT's exp claim (unverified) and check if it's near expiry.
+    """Decode the JWT (unverified) and check whether it's time to refresh.
 
-    The token was already validated upstream (Keycloak at issuance,
-    JupyterHub at fetch); we only need the claim to time cache refresh.
+    Refresh once less than _REFRESH_BEFORE_EXPIRY_FRACTION of the token's
+    lifetime (exp - iat) remains, so the buffer scales with the token lifespan
+    instead of being a fixed offset (ADR 0024). Tokens with no iat fall back to
+    the fixed _REFRESH_BEFORE_EXPIRY_SECONDS.
+
+    The token was already validated upstream (Keycloak at issuance, JupyterHub
+    at fetch); we only read the claims to time the cache refresh, and fail
+    toward "stale" so an unreadable token is re-fetched rather than pinned.
     """
     try:
         _h, payload_b64, _s = token.split(".")
@@ -55,7 +62,12 @@ def _is_near_expiry(token: str) -> bool:
     exp = claims.get("exp")
     if not isinstance(exp, (int, float)):
         return True
-    return time.time() >= (exp - _REFRESH_BEFORE_EXPIRY_SECONDS)
+    iat = claims.get("iat")
+    if isinstance(iat, (int, float)) and exp > iat:
+        buffer = _REFRESH_BEFORE_EXPIRY_FRACTION * (exp - iat)
+    else:
+        buffer = _REFRESH_BEFORE_EXPIRY_SECONDS
+    return time.time() >= exp - buffer
 
 
 class _VoilaSvcProvider:
