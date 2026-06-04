@@ -12,7 +12,7 @@ Scout is a microservices platform deployed on Kubernetes (K3s) with the followin
 
 ### User Services
 - **Analytics**: Apache Superset for no-code visualizations and SQL queries (powered by Trino)
-- **Notebooks**: JupyterHub with PySpark for programmatic data analysis
+- **Notebooks**: JupyterHub; notebooks query Trino via the bundled `scout` SDK (no Spark in the image) for programmatic data analysis
 - **Launchpad**: Web-based landing page to access all Scout services
 - **Chat** (optional): Open WebUI with Ollama for AI-powered natural language querying
 
@@ -112,7 +112,7 @@ scout/
 - **Metadata Catalog**: Apache Hive Metastore
 - **Query Engine**: Trino (distributed SQL)
 - **Analytics UI**: Apache Superset
-- **Notebooks**: JupyterHub with PySpark
+- **Notebooks**: JupyterHub (notebooks query Trino via the `scout` SDK)
 - **Workflow Orchestration**: Temporal
 - **Databases**: PostgreSQL (CloudNativePG operator), Cassandra (K8ssandra), Elasticsearch (ECK)
 - **Monitoring**: Prometheus, Loki, Grafana
@@ -171,7 +171,7 @@ make install-orchestrator     # Temporal + Cassandra + Elasticsearch
 make install-extractor        # HL7 extractors and transformers
 
 # User services
-make install-jupyter          # JupyterHub with PySpark
+make install-jupyter          # JupyterHub (notebooks query Trino via the scout SDK)
 make install-launchpad        # Landing page web UI
 make install-chat             # Open WebUI + Ollama (optional)
 
@@ -342,14 +342,16 @@ Services communicate via Kubernetes service names:
 ### Analyze Data in JupyterHub
 1. Access Scout Notebooks (JupyterHub)
 2. Open provided quickstart: `Scout/Quickstart.ipynb`
-3. Use PySpark to query Delta Lake:
+3. Query the lake through Trino with the bundled `scout` SDK (the notebook image
+   has no Spark — every read goes through Trino as the logged-in user, so
+   per-user row filters and column masks apply; see ADR 0022):
    ```python
-   from pyspark.sql import SparkSession
-   spark = SparkSession.builder.getOrCreate()
-   df = spark.read.table("delta.default.reports")
-   df.filter(df.modality == "MRI").show()
+   import scout
+   df = scout.query("SELECT * FROM reports WHERE modality = :m", params={"m": "MRI"})
    ```
-4. Export results: `df.toPandas().to_csv("results.csv")`
+   `scout.query()` returns a pandas DataFrame; `scout.connect()` gives a DB-API
+   connection for streaming/large results.
+4. Export results: `df.to_csv("results.csv")`
 
 ### Monitor Ingestion
 1. Access Grafana
@@ -444,9 +446,10 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 - Filter on partitioned columns (`year`) for better performance
 - Use parsed report sections for targeted text analysis
 
-### PySpark in JupyterHub
-- Filter array columns with `F.exists()`: `df.filter(F.exists("diagnoses", lambda x: x.diagnosis_code == "J18.9"))`
-- Use `patient_ids` array or convenience columns like `epic_mrn`
+### Querying from Notebooks (scout SDK)
+- Use `scout.query(sql, params=...)` with `:name` bind params; it returns a pandas DataFrame. `scout.connect()` returns a Trino DB-API connection for streaming.
+- Filter array-of-struct columns with `any_match()`: `WHERE any_match(diagnoses, x -> x.diagnosis_code = 'J18.9')`. For matching a scalar column against a list param, prefer `contains(:vals, col)` over `IN` — the SQLAlchemy dialect doesn't expand list params into `IN` clauses.
+- Use the `patient_ids` array or convenience columns like `epic_mrn`.
 
 ### Monitoring
 - Adjust time ranges to match data availability

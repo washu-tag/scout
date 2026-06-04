@@ -20,4 +20,4 @@ When you log in for the first time:
 
 You will see a "Registration Pending" message if you attempt to access Scout services before being approved.
 
-Once approved, you can access all [Scout services](services.md) with a single login.
+Once approved, you can access all [Scout services](services.md) with a single login. Authentication is separate from **what data you can see** once logged in — that's controlled by per-user row filters and column masking, configured by your Scout administrator. See [Data Authorization](data_authorization.md).

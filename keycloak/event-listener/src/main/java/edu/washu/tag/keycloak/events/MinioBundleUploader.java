@@ -68,6 +68,15 @@ final class MinioBundleUploader implements AutoCloseable {
         this.s3 = builder.build();
     }
 
+    // Package-private test seam: inject a (mock) S3Client so the
+    // upload() success/failure -> boolean contract can be exercised without a
+    // live S3 endpoint. Mirrors the factory's enableForTest seam.
+    MinioBundleUploader(S3Client s3, String bucket, String objectKey) {
+        this.s3 = s3;
+        this.bucket = bucket;
+        this.objectKey = objectKey;
+    }
+
     /**
      * Upload bundle bytes. Returns true on success, false on failure.
      * Failures are logged; the caller (factory's scheduled publisher)

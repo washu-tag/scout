@@ -316,14 +316,7 @@ as the particular table in addition to some columns to help identify the patient
 - resolved_epic_mrn: the EPIC MRN for the patient, either included directly in the report, or derived from a report associated to the same patient. May be `NULL` if no reports for a patient have an EPIC MRN.
 - resolved_mpi: the legacy MPI for the patient, either included directly in the report, or derived from a report associated to the same patient. May be `NULL` if no reports for a patient have a legacy MPI.
 
-Reports with a `consistent` value of `FALSE` will be excluded from these views. Because these views are stored differently
-in the underlying technologies in Scout, they have slightly different names depending on how they are accessed. When reading
-from these views in Pyspark, they have the names:
-- reports_curated_spark_epic_view
-- reports_latest_spark_epic_view
-- reports_dx_spark_epic_view
-
-All other usages of these views would access them as:
+Reports with a `consistent` value of `FALSE` will be excluded from these views. The views are:
 - reports_curated_epic_view
 - reports_latest_epic_view
 - reports_dx_epic_view

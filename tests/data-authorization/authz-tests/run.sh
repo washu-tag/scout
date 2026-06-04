@@ -28,7 +28,7 @@
 #   stdout: a streaming log of each scenario + assertion
 #   exit:   0 if all pass, non-zero on first failure
 #
-# Test scenarios (10):
+# Test scenarios (11):
 #   1. enabled=true, allowed_facilities=["ABCHOSP1"], allowed_modalities=["*"]
 #      -> COUNT(*) FROM test_reports = 3   (only ABCHOSP1 rows)
 #   2. allowed_facilities=["*"]
@@ -38,7 +38,10 @@
 #   4. allowed_facilities=[]  (unset)
 #      -> rowFilters emits 1=0 -> COUNT(*) = 0
 #   5. mask_phi_fields=["true"], allowed_facilities=["*"]
-#      -> SELECT patient_name LIMIT 1 = '[REDACTED]'
+#      -> patient_name & zip = '[REDACTED]' (varchar); full_patient_name
+#         = NULL (non-varchar) -- type-aware mask
+#   5b. mask_phi_fields=["false"]
+#      -> real values returned (masking is conditional, not unconditional)
 #   6. SELECT * FROM reports_report_patient_mapping (no bypass)
 #      -> 403 / permission denied
 #   7. bypass_hidden_tables=["true"]
@@ -239,15 +242,21 @@ wait_for_bundle() {
 # ---------------------------------------------------------------------------
 
 # Submit a SQL statement and follow nextUri until done. Returns the
-# combined data array on stdout, or empty + non-zero exit on error.
-# Caller passes the SQL as $1 and Trino-User as $2.
-trino_query() {
+# combined data array on stdout, or "ERROR: ..." on stderr + non-zero
+# exit if Trino reports an error. The auth curl args (a Bearer header or
+# -u for HTTP Basic) are passed as trailing arguments and reused for the
+# POST and every nextUri follow, so the JWT and PASSWORD paths differ only
+# in how they authenticate. (trino_query_expect_deny keeps its own loop —
+# it inverts this, treating a Trino error as the expected outcome, and
+# needs the raw HTTP status, so sharing would obscure both.)
+_trino_run() {
     local sql=$1 user=$2
-    local token next response data
-    token=$(get_svc_token)
+    shift 2
+    local auth=("$@")
+    local next response data page_data err
 
     response=$(curl -fsS "${CURL_CA_OPTS[@]}" -X POST "$TRINO_URL/v1/statement" \
-        -H "Authorization: Bearer $token" \
+        "${auth[@]}" \
         -H "X-Trino-User: $user" \
         -H "X-Trino-Catalog: delta" \
         -H "X-Trino-Schema: default" \
@@ -255,14 +264,10 @@ trino_query() {
 
     data='[]'
     while true; do
-        # Pull rows from this page (if any)
-        local page_data
         page_data=$(echo "$response" | jq -c '.data // []')
         if [[ "$page_data" != "[]" && "$page_data" != "null" ]]; then
             data=$(jq -cn --argjson a "$data" --argjson b "$page_data" '$a + $b')
         fi
-        # Check for error before following nextUri
-        local err
         err=$(echo "$response" | jq -r '.error.message // empty')
         if [[ -n "$err" ]]; then
             echo "ERROR: $err" >&2
@@ -274,51 +279,27 @@ trino_query() {
             return 0
         fi
         response=$(curl -fsS "${CURL_CA_OPTS[@]}" "$next" \
-            -H "Authorization: Bearer $token" \
+            "${auth[@]}" \
             -H "X-Trino-User: $user")
     done
 }
 
-# Same as trino_query but authenticates via HTTP Basic against Trino's
-# PASSWORD authenticator (ADR 0022) instead of a Bearer JWT. This is
-# the path mcp-trino uses against the dual-auth listener — its outbound
-# is HTTP-Basic-only. Used by the PR6 scenario below to exercise the
-# PASSWORD path end-to-end: bcrypt match in password.db, OPA
-# impersonation allow, row filter, Delta connector — the whole chain
-# with everything else identical to the JWT scenarios above.
+# Submit via Bearer JWT (superset_svc) — the default path; X-Trino-User
+# names the impersonated end-user for OPA. SQL as $1, Trino-User as $2.
+trino_query() {
+    local sql=$1 user=$2
+    local token
+    token=$(get_svc_token)
+    _trino_run "$sql" "$user" -H "Authorization: Bearer $token"
+}
+
+# Submit via HTTP Basic against Trino's PASSWORD authenticator (ADR 0022) —
+# the path mcp-trino uses against the dual-auth listener (its outbound is
+# HTTP-Basic-only). Exercises the PASSWORD path end to end: bcrypt match in
+# password.db, OPA impersonation allow, row filter, Delta connector.
 trino_query_via_password() {
     local sql=$1 user=$2
-    local next response data
-
-    response=$(curl -fsS "${CURL_CA_OPTS[@]}" -X POST "$TRINO_URL/v1/statement" \
-        -u "openwebui_mcp_svc:$MCP_SVC_PASSWORD" \
-        -H "X-Trino-User: $user" \
-        -H "X-Trino-Catalog: delta" \
-        -H "X-Trino-Schema: default" \
-        --data-binary "$sql")
-
-    data='[]'
-    while true; do
-        local page_data
-        page_data=$(echo "$response" | jq -c '.data // []')
-        if [[ "$page_data" != "[]" && "$page_data" != "null" ]]; then
-            data=$(jq -cn --argjson a "$data" --argjson b "$page_data" '$a + $b')
-        fi
-        local err
-        err=$(echo "$response" | jq -r '.error.message // empty')
-        if [[ -n "$err" ]]; then
-            echo "ERROR: $err" >&2
-            return 1
-        fi
-        next=$(echo "$response" | jq -r '.nextUri // empty')
-        if [[ -z "$next" ]]; then
-            echo "$data"
-            return 0
-        fi
-        response=$(curl -fsS "${CURL_CA_OPTS[@]}" "$next" \
-            -u "openwebui_mcp_svc:$MCP_SVC_PASSWORD" \
-            -H "X-Trino-User: $user")
-    done
+    _trino_run "$sql" "$user" -u "openwebui_mcp_svc:$MCP_SVC_PASSWORD"
 }
 
 # Variant that expects the query to fail (deny). Returns 0 if Trino
@@ -454,12 +435,34 @@ wait_for_bundle '.result != null and (.result.allowed_facilities // [] | length)
 count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
 if [[ "$count" == "0" ]]; then ok "row count=0 (1=0 clamp)"; else fail "expected 0, got $count"; fi
 
-# --- Scenario 5: PHI masking ------------------------------------------------
-log "scenario 5: mask_phi_fields=true -> patient_name replaced"
+# --- Scenario 5: PHI masking ON ---------------------------------------------
+# Type-aware mask (ADR 0020): varchar PHI -> literal '[REDACTED]'; non-varchar
+# PHI (full_patient_name struct) -> NULL. All three columns are in
+# trino_masked_columns, so all three must mask under mask_phi_fields=true.
+log "scenario 5: mask_phi_fields=true -> PHI columns masked"
 set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"mask_phi_fields":["true"]}'
 wait_for_bundle '.result.mask_phi_fields[0] == "true"' "$PROPAGATION_TIMEOUT"
-masked=$(trino_query "SELECT patient_name FROM test_reports LIMIT 1" "$TEST_USER" | jq -r '.[0][0]')
-if [[ "$masked" == "[REDACTED]" ]]; then ok "patient_name=[REDACTED]"; else fail "expected [REDACTED], got: $masked"; fi
+row=$(trino_query "SELECT patient_name, zip_or_postal_code, full_patient_name FROM test_reports ORDER BY patient_name LIMIT 1" "$TEST_USER")
+m_name=$(echo "$row" | jq -r '.[0][0]')
+m_zip=$(echo "$row" | jq -r '.[0][1]')
+m_struct=$(echo "$row" | jq -r '.[0][2]')
+if [[ "$m_name" == "[REDACTED]" ]]; then ok "patient_name=[REDACTED] (varchar mask)"; else fail "expected [REDACTED], got: $m_name"; fi
+if [[ "$m_zip" == "[REDACTED]" ]]; then ok "zip_or_postal_code=[REDACTED] (varchar mask)"; else fail "expected [REDACTED] zip, got: $m_zip"; fi
+if [[ "$m_struct" == "null" ]]; then ok "full_patient_name=NULL (non-varchar mask)"; else fail "expected NULL struct, got: $m_struct"; fi
+
+# --- Scenario 5b: PHI masking OFF (counter-assertion) -----------------------
+# Proves masking is *conditional*, not unconditional: with mask_phi_fields
+# explicitly "false" the real values come back. Without this, a policy that
+# redacted these columns for everyone would pass scenario 5 just as well.
+# ORDER BY pins a deterministic row (Alice Anderson) under the wildcard filter.
+log "scenario 5b: mask_phi_fields=false -> real PHI values returned"
+set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"mask_phi_fields":["false"]}'
+wait_for_bundle '.result.mask_phi_fields[0] == "false"' "$PROPAGATION_TIMEOUT"
+row=$(trino_query "SELECT patient_name, zip_or_postal_code FROM test_reports ORDER BY patient_name LIMIT 1" "$TEST_USER")
+real_name=$(echo "$row" | jq -r '.[0][0]')
+real_zip=$(echo "$row" | jq -r '.[0][1]')
+if [[ "$real_name" == "Alice Anderson" ]]; then ok "patient_name=Alice Anderson (unmasked)"; else fail "expected Alice Anderson, got: $real_name"; fi
+if [[ "$real_zip" == "63110" ]]; then ok "zip_or_postal_code=63110 (unmasked)"; else fail "expected 63110, got: $real_zip"; fi
 
 # --- Scenario 6: direct SELECT on hidden mapping table denied ---------------
 log "scenario 6: hidden table permission-denied without bypass"
@@ -467,7 +470,7 @@ log "scenario 6: hidden table permission-denied without bypass"
 # baseline hidden table in the rego. Because the table exists, a refusal here
 # is a genuine OPA permission denial, not an incidental TABLE_NOT_FOUND —
 # assert PERMISSION_DENIED specifically so the test can't pass for the wrong
-# reason. (Prior scenario-5 state leaves the user wildcard-but-no-bypass.)
+# reason. (The prior scenario leaves the user wildcard-but-no-bypass.)
 err=$(trino_query "SELECT * FROM reports_report_patient_mapping LIMIT 1" "$TEST_USER" 2>&1 || true)
 if echo "$err" | grep -qE "PERMISSION_DENIED|Access Denied"; then
     ok "hidden table permission-denied without bypass"

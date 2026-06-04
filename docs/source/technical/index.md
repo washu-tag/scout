@@ -8,6 +8,7 @@ end-users. For end-user documentation, please refer to the [Scout User Documenta
 
 * [Creating the Ansible Inventory File](inventory.md) - Guide to configuring your Scout deployment using Ansible
 * [Air-Gapped Deployment](air-gapped.md) - Deploy Scout in environments without internet access
+* [Configuring Data Authorization](data_authorization.md) - Set up per-user row filtering and column masking via Keycloak attributes
 
 ## Database Schemas
 
@@ -15,5 +16,6 @@ end-users. For end-user documentation, please refer to the [Scout User Documenta
 :hidden:
 inventory
 air-gapped
+data_authorization
 ingest_status_db
 ```
