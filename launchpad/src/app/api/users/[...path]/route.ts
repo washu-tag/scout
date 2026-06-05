@@ -6,10 +6,15 @@ import { NextRequest, NextResponse } from 'next/server';
 // next-auth session (server-side) and forward it as a Bearer to Keycloak in the
 // same realm, so the page makes no cross-origin call. Keycloak still enforces
 // scout-admin on every endpoint (defense in depth) — this proxy only forwards.
+//
+// Catch-all so the sub-resourced paths (users/{id}/attributes, users/{id}/admin,
+// users/{id}/membership) match alongside the flat ones (schema, pending, users,
+// approve). Each method's allowlist of path shapes is checked before forwarding.
 
-const ALLOWED: Record<string, readonly string[]> = {
-  GET: ['schema', 'pending'],
-  POST: ['approve'],
+const ALLOWED: Record<string, readonly RegExp[]> = {
+  GET: [/^schema$/, /^pending$/, /^users$/],
+  POST: [/^approve$/, /^users\/[^/]+\/attributes$/, /^users\/[^/]+\/admin$/],
+  DELETE: [/^users\/[^/]+\/(admin|membership)$/],
 };
 
 // Keycloak access tokens are short-lived (realm accessTokenLifespan, 300s), so
@@ -44,7 +49,7 @@ async function freshAccessToken(jwt: JWT, force: boolean): Promise<string | null
 
 function callKeycloak(
   issuer: string,
-  action: string,
+  path: string,
   method: string,
   accessToken: string,
   body?: string,
@@ -56,11 +61,12 @@ function callKeycloak(
   if (body !== undefined) {
     init.body = body;
   }
-  return fetch(`${issuer}/scout-users/${action}`, init);
+  return fetch(`${issuer}/scout-users/${path}`, init);
 }
 
-async function forward(req: NextRequest, action: string, method: 'GET' | 'POST') {
-  if (!ALLOWED[method].includes(action)) {
+async function forward(req: NextRequest, segments: string[], method: 'GET' | 'POST' | 'DELETE') {
+  const path = (segments ?? []).join('/');
+  if (!path || !ALLOWED[method].some((re) => re.test(path))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
   const issuer = process.env.KEYCLOAK_ISSUER;
@@ -78,13 +84,13 @@ async function forward(req: NextRequest, action: string, method: 'GET' | 'POST')
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  let upstream = await callKeycloak(issuer, action, method, accessToken, body);
+  let upstream = await callKeycloak(issuer, path, method, accessToken, body);
   if (upstream.status === 401) {
     // Cached token rejected (clock skew / mid-flight expiry): force one refresh
     // and retry before giving up.
     accessToken = await freshAccessToken(jwt, true);
     if (accessToken) {
-      upstream = await callKeycloak(issuer, action, method, accessToken, body);
+      upstream = await callKeycloak(issuer, path, method, accessToken, body);
     }
   }
 
@@ -95,12 +101,17 @@ async function forward(req: NextRequest, action: string, method: 'GET' | 'POST')
   });
 }
 
-export async function GET(req: NextRequest, ctx: { params: Promise<{ action: string }> }) {
-  const { action } = await ctx.params;
-  return forward(req, action, 'GET');
+export async function GET(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+  const { path } = await ctx.params;
+  return forward(req, path, 'GET');
 }
 
-export async function POST(req: NextRequest, ctx: { params: Promise<{ action: string }> }) {
-  const { action } = await ctx.params;
-  return forward(req, action, 'POST');
+export async function POST(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+  const { path } = await ctx.params;
+  return forward(req, path, 'POST');
+}
+
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+  const { path } = await ctx.params;
+  return forward(req, path, 'DELETE');
 }
