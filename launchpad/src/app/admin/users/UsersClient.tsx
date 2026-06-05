@@ -3,7 +3,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import TopBar from '@/components/TopBar';
-import { HiArrowLeft, HiCheckCircle, HiExternalLink, HiUserGroup, HiX } from 'react-icons/hi';
+import {
+  HiArrowLeft,
+  HiCheckCircle,
+  HiExternalLink,
+  HiShieldCheck,
+  HiTrash,
+  HiUserGroup,
+  HiX,
+} from 'react-icons/hi';
 
 interface AttrSchema {
   name: string;
@@ -14,12 +22,55 @@ interface AttrSchema {
   defaultValue: string | null;
 }
 
+// Wire shapes from the SPI: /pending returns PendingUser (carries requestedAt);
+// /users returns ScoutUser (carries status + isAdmin + current attributes). Both
+// normalize into Row so one table + one drawer serve every tab.
 interface PendingUser {
   id: string;
   username: string;
   email: string | null;
   name: string | null;
   requestedAt: string | null;
+}
+
+interface ScoutUser {
+  id: string;
+  username: string;
+  email: string | null;
+  name: string | null;
+  status: string;
+  isAdmin: boolean;
+  attributes: Record<string, string[]> | null;
+}
+
+interface Row {
+  id: string;
+  username: string;
+  email: string | null;
+  name: string | null;
+  requestedAt: string | null;
+  status: string;
+  isAdmin: boolean;
+  attributes: Record<string, string[]>;
+}
+
+type Tab = 'pending' | 'active' | 'admin';
+
+function pendingToRow(p: PendingUser): Row {
+  return { ...p, status: 'pending', isAdmin: false, attributes: {} };
+}
+
+function scoutToRow(u: ScoutUser): Row {
+  return {
+    id: u.id,
+    username: u.username,
+    email: u.email,
+    name: u.name,
+    requestedAt: null,
+    status: u.status,
+    isAdmin: u.isAdmin,
+    attributes: u.attributes ?? {},
+  };
 }
 
 function isBoolean(attr: AttrSchema): boolean {
@@ -40,12 +91,48 @@ function requestedLabel(ms: string | null): string {
   return new Date(n).toLocaleDateString();
 }
 
+// A compact, glanceable summary of a user's data-access attributes for the
+// table (e.g. "PHI masked · 3 facilities"). Driven by the same schema as the
+// editor, so it adapts to whatever dimensions are configured.
+function attrSummary(attributes: Record<string, string[]>, schema: AttrSchema[]): string {
+  const parts: string[] = [];
+  for (const a of schema) {
+    const v = attributes[a.name];
+    if (!v || v.length === 0) continue;
+    const label = a.displayName || a.name;
+    if (isBoolean(a)) {
+      if (v[0] === 'true') parts.push(label);
+    } else if (a.multivalued) {
+      parts.push(`${v.length} ${label.toLowerCase()}`);
+    } else {
+      parts.push(`${label}: ${v[0]}`);
+    }
+  }
+  return parts.join(' · ');
+}
+
+function StatusBadge({ status, isAdmin }: { status: string; isAdmin: boolean }) {
+  const [label, cls] =
+    isAdmin || status === 'admin'
+      ? ['Admin', 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300']
+      : status === 'active'
+        ? ['Active', 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300']
+        : status === 'pending'
+          ? ['Pending', 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300']
+          : ['—', 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'];
+  return (
+    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 type SortCol = 'name' | 'requested';
 type SortDir = 'asc' | 'desc';
 
-// Sort the pending list by column/direction. Undated users (no request
-// timestamp) always sort last, regardless of direction.
-function sortPending(list: PendingUser[], col: SortCol, dir: SortDir): PendingUser[] {
+// Sort by column/direction. Undated rows (no request timestamp) always sort
+// last regardless of direction.
+function sortRows(list: Row[], col: SortCol, dir: SortDir): Row[] {
   const sign = dir === 'asc' ? 1 : -1;
   return list.slice().sort((a, b) => {
     if (col === 'name') {
@@ -60,26 +147,34 @@ function sortPending(list: PendingUser[], col: SortCol, dir: SortDir): PendingUs
   });
 }
 
-// --- Approval drawer ------------------------------------------------------
+// --- Editor drawer (approve a pending user, or manage an existing one) -----
+
+type Confirm = null | 'promote' | 'demote' | 'offboard';
 
 interface DrawerProps {
-  user: PendingUser;
+  user: Row;
   schema: AttrSchema[];
   onClose: () => void;
-  onApproved: (id: string) => void;
+  onDone: () => void;
 }
 
-function ApprovalDrawer({ user, schema, onClose, onApproved }: DrawerProps) {
+function UserDrawer({ user, schema, onClose, onDone }: DrawerProps) {
+  const mode: 'approve' | 'edit' = user.status === 'pending' ? 'approve' : 'edit';
   const [shown, setShown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<Confirm>(null);
 
-  // Initialize each control from the schema's server default (e.g. mask=true,
-  // bypass=false). Re-mounts per user via the `key` prop, so state is fresh.
+  // Seed each control from the user's current value if set, else the schema's
+  // server default. So approve mode starts at defaults (mask=true, bypass=false)
+  // and edit mode starts pre-filled with what the user already has.
   const [values, setValues] = useState<Record<string, string[]>>(() => {
     const init: Record<string, string[]> = {};
     for (const a of schema) {
-      if (isBoolean(a)) {
+      const current = user.attributes[a.name];
+      if (current && current.length > 0) {
+        init[a.name] = current;
+      } else if (isBoolean(a)) {
         init[a.name] = [a.defaultValue === 'true' ? 'true' : 'false'];
       } else if (a.multivalued) {
         init[a.name] = [];
@@ -109,28 +204,52 @@ function ApprovalDrawer({ user, schema, onClose, onApproved }: DrawerProps) {
     });
   };
 
-  const approve = async () => {
+  // Run an action against the proxy; surface the server's message (e.g. the
+  // last-admin 409) in the error slot rather than assuming success.
+  const run = async (method: string, path: string, body?: object) => {
     setSubmitting(true);
     setError(null);
-    // Only send attributes that carry a value; booleans/selects always do.
-    const attributes: Record<string, string[]> = {};
-    for (const [name, val] of Object.entries(values)) {
-      if (val.length > 0) attributes[name] = val;
-    }
     try {
-      const r = await fetch('/api/users/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, attributes }),
+      const r = await fetch(path, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined,
       });
       if (!r.ok) {
         throw new Error((await r.text()) || `${r.status} ${r.statusText}`);
       }
-      onApproved(user.id);
+      onDone();
     } catch (e) {
       setSubmitting(false);
+      setConfirm(null);
       setError((e as Error).message);
     }
+  };
+
+  const collectAttributes = () => {
+    const attributes: Record<string, string[]> = {};
+    for (const a of schema) {
+      const val = values[a.name] ?? [];
+      // Approve sends only the dimensions the admin set; edit sends every key
+      // (including emptied ones) so clearing a chip actually clears it server-side.
+      if (mode === 'approve') {
+        if (val.length > 0) attributes[a.name] = val;
+      } else {
+        attributes[a.name] = val;
+      }
+    }
+    return attributes;
+  };
+
+  const saveAttributes = () =>
+    mode === 'approve'
+      ? run('POST', '/api/users/approve', { userId: user.id, attributes: collectAttributes() })
+      : run('POST', `/api/users/users/${user.id}/attributes`, { attributes: collectAttributes() });
+
+  const confirmAction = () => {
+    if (confirm === 'promote') run('POST', `/api/users/users/${user.id}/admin`);
+    else if (confirm === 'demote') run('DELETE', `/api/users/users/${user.id}/admin`);
+    else if (confirm === 'offboard') run('DELETE', `/api/users/users/${user.id}/membership`);
   };
 
   const display = user.name || user.username;
@@ -150,15 +269,18 @@ function ApprovalDrawer({ user, schema, onClose, onApproved }: DrawerProps) {
             {initials(display)}
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white truncate">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white truncate flex items-center gap-2">
               {display}
+              <StatusBadge status={user.status} isAdmin={user.isAdmin} />
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
               {[user.username, user.email].filter(Boolean).join(' · ')}
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-              Requested {requestedLabel(user.requestedAt)}
-            </p>
+            {mode === 'approve' && (
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                Requested {requestedLabel(user.requestedAt)}
+              </p>
+            )}
           </div>
           <button
             onClick={close}
@@ -169,41 +291,154 @@ function ApprovalDrawer({ user, schema, onClose, onApproved }: DrawerProps) {
           </button>
         </div>
 
-        {/* Dynamic form */}
+        {/* Body: attribute form + (edit mode) role & access actions */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {schema.map((attr) => (
-            <Control
-              key={attr.name}
-              attr={attr}
-              value={values[attr.name] ?? []}
-              onChipToggle={(opt) => toggleChip(attr.name, opt)}
-              onValue={(val) => setValues((v) => ({ ...v, [attr.name]: val }))}
-            />
-          ))}
+          <div className="space-y-6">
+            {schema.map((attr) => (
+              <Control
+                key={attr.name}
+                attr={attr}
+                value={values[attr.name] ?? []}
+                onChipToggle={(opt) => toggleChip(attr.name, opt)}
+                onValue={(val) => setValues((v) => ({ ...v, [attr.name]: val }))}
+              />
+            ))}
+          </div>
+
+          {mode === 'edit' && (
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
+              <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Role &amp; access
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {user.isAdmin ? (
+                  <button
+                    onClick={() => setConfirm('demote')}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+                  >
+                    <HiShieldCheck className="text-base" /> Demote from admin
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setConfirm('promote')}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+                  >
+                    <HiShieldCheck className="text-base" /> Promote to admin
+                  </button>
+                )}
+                <button
+                  onClick={() => setConfirm('offboard')}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 px-3 py-1.5 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                >
+                  <HiTrash className="text-base" /> Remove access
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center gap-3 p-6 border-t border-slate-200 dark:border-slate-800">
-          {error && (
-            <span className="text-sm text-rose-600 dark:text-rose-400 flex-1">{error}</span>
-          )}
-          {!error && <span className="flex-1" />}
-          <button
-            onClick={close}
-            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={approve}
-            disabled={submitting}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
-          >
-            <HiCheckCircle className="text-base" />
-            {submitting ? 'Approving…' : 'Approve'}
-          </button>
-        </div>
+        {/* Footer: confirm prompt, or the primary save/approve action */}
+        {confirm ? (
+          <ConfirmFooter
+            confirm={confirm}
+            display={display}
+            error={error}
+            submitting={submitting}
+            onCancel={() => {
+              setConfirm(null);
+              setError(null);
+            }}
+            onConfirm={confirmAction}
+          />
+        ) : (
+          <div className="flex items-center gap-3 p-6 border-t border-slate-200 dark:border-slate-800">
+            {error ? (
+              <span className="text-sm text-rose-600 dark:text-rose-400 flex-1">{error}</span>
+            ) : (
+              <span className="flex-1" />
+            )}
+            <button
+              onClick={close}
+              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveAttributes}
+              disabled={submitting}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+            >
+              <HiCheckCircle className="text-base" />
+              {submitting
+                ? mode === 'approve'
+                  ? 'Approving…'
+                  : 'Saving…'
+                : mode === 'approve'
+                  ? 'Approve'
+                  : 'Save attributes'}
+            </button>
+          </div>
+        )}
       </aside>
+    </div>
+  );
+}
+
+// Confirm prompt shown in the drawer footer for the privileged actions.
+function ConfirmFooter({
+  confirm,
+  display,
+  error,
+  submitting,
+  onCancel,
+  onConfirm,
+}: {
+  confirm: Exclude<Confirm, null>;
+  display: string;
+  error: string | null;
+  submitting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const copy = {
+    promote: {
+      text: `Promote ${display} to admin? This grants full Keycloak realm-admin, not just Scout app admin.`,
+      label: 'Promote',
+      danger: false,
+    },
+    demote: {
+      text: `Remove ${display}'s admin role? They keep their Scout access.`,
+      label: 'Demote',
+      danger: false,
+    },
+    offboard: {
+      text: `Remove all of ${display}'s Scout access? They return to the Pending list.`,
+      label: 'Remove access',
+      danger: true,
+    },
+  }[confirm];
+
+  return (
+    <div className="p-6 border-t border-slate-200 dark:border-slate-800 space-y-3">
+      <p className="text-sm text-slate-600 dark:text-slate-300">{copy.text}</p>
+      {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
+      <div className="flex items-center justify-end gap-3">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={submitting}
+          className={`px-5 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-50 transition-colors ${
+            copy.danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'
+          }`}
+        >
+          {submitting ? 'Working…' : copy.label}
+        </button>
+      </div>
     </div>
   );
 }
@@ -310,11 +545,18 @@ function Control({ attr, value, onChipToggle, onValue }: ControlProps) {
 
 // --- Page -----------------------------------------------------------------
 
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'pending', label: 'Pending' },
+  { key: 'active', label: 'Active' },
+  { key: 'admin', label: 'Admins' },
+];
+
 export default function UsersClient() {
   const { data: session, status } = useSession();
   const [schema, setSchema] = useState<AttrSchema[]>([]);
-  const [pending, setPending] = useState<PendingUser[] | null>(null);
-  const [selected, setSelected] = useState<PendingUser | null>(null);
+  const [tab, setTab] = useState<Tab>('pending');
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [selected, setSelected] = useState<Row | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [kcConsole, setKcConsole] = useState('');
   const [deepLink, setDeepLink] = useState<string | null>(null);
@@ -332,8 +574,6 @@ export default function UsersClient() {
 
   const isAdmin = !!session?.user?.isAdmin;
 
-  // Auto sign-in (matches the launchpad home), and derive the Keycloak scout
-  // realm console URL + the ?user deep-link from the browser location.
   useEffect(() => {
     if (status !== 'loading' && !session) signIn('keycloak');
   }, [status, session]);
@@ -345,41 +585,57 @@ export default function UsersClient() {
     setDeepLink(new URLSearchParams(window.location.search).get('user'));
   }, []);
 
-  const load = useCallback(async () => {
+  // Schema once (drives the editor form regardless of tab).
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetch('/api/users/schema')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((s) => setSchema(s as AttrSchema[]))
+      .catch(() =>
+        setError('Could not load the attribute schema. You may not have the scout-admin role.'),
+      );
+  }, [isAdmin]);
+
+  // Pending uses /pending (carries requestedAt for the queue sort); active and
+  // admin use /users?status= (carries current attributes for the editor).
+  const loadRows = useCallback(async (t: Tab) => {
+    setRows(null);
+    setError(null);
     try {
-      const [s, p] = await Promise.all([
-        fetch('/api/users/schema').then((r) => {
-          if (!r.ok) throw new Error('schema');
-          return r.json();
-        }),
-        fetch('/api/users/pending').then((r) => {
-          if (!r.ok) throw new Error('pending');
-          return r.json();
-        }),
-      ]);
-      setSchema(s as AttrSchema[]);
-      setPending(p as PendingUser[]);
+      if (t === 'pending') {
+        const r = await fetch('/api/users/pending');
+        if (!r.ok) throw new Error();
+        setRows(((await r.json()) as PendingUser[]).map(pendingToRow));
+      } else {
+        const r = await fetch(`/api/users/users?status=${t}`);
+        if (!r.ok) throw new Error();
+        setRows(((await r.json()) as ScoutUser[]).map(scoutToRow));
+      }
     } catch {
-      setError('Could not load approvals. You may not have the scout-admin role.');
+      setError('Could not load users. You may not have the scout-admin role.');
     }
   }, []);
 
   useEffect(() => {
-    if (isAdmin) load();
-  }, [isAdmin, load]);
+    if (isAdmin) loadRows(tab);
+  }, [isAdmin, tab, loadRows]);
 
-  // When arriving from the email link (?user=<id>), open that row's drawer.
+  // Email deep-link (?user=<id>) opens that pending user's drawer.
   useEffect(() => {
-    if (deepLink && pending) {
-      const u = pending.find((x) => x.id === deepLink);
+    if (deepLink && tab === 'pending' && rows) {
+      const u = rows.find((x) => x.id === deepLink);
       if (u) setSelected(u);
     }
-  }, [deepLink, pending]);
+  }, [deepLink, tab, rows]);
 
-  const onApproved = (id: string) => {
-    setPending((cur) => (cur ? cur.filter((u) => u.id !== id) : cur));
+  const onDone = () => {
+    loadRows(tab);
     setSelected(null);
   };
+
+  const sorted = rows ? sortRows(rows, sort.col, sort.dir) : [];
+  const showRequested = tab === 'pending';
+  const actionLabel = tab === 'pending' ? 'Review' : 'Manage';
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30">
@@ -399,7 +655,7 @@ export default function UsersClient() {
             </div>
             <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Scout</span>
             <span className="text-slate-300 dark:text-slate-700 text-sm">/</span>
-            <span className="text-sm text-slate-500 dark:text-slate-400">User Approval</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">Users</span>
           </div>
           <div className="flex items-center gap-4">
             {kcConsole && (
@@ -421,10 +677,10 @@ export default function UsersClient() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">
-            User Approval
+            User administration
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Review access requests and grant data-access attributes.
+            Approve access requests, edit data-access attributes, manage admins, and offboard users.
           </p>
         </div>
 
@@ -434,101 +690,132 @@ export default function UsersClient() {
           <Notice>
             You need the{' '}
             <code className="font-mono text-rose-600 dark:text-rose-400">scout-admin</code> role to
-            review approvals.
+            administer users.
           </Notice>
-        ) : error ? (
-          <Notice>{error}</Notice>
-        ) : pending === null ? (
-          <Notice>Loading…</Notice>
-        ) : pending.length === 0 ? (
-          <EmptyState />
         ) : (
           <>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-              {pending.length} {pending.length === 1 ? 'user' : 'users'} awaiting approval
-            </p>
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    <th className="px-5 py-3 font-semibold">
-                      <button
-                        onClick={() => toggleSort('name')}
-                        className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-slate-700 dark:hover:text-slate-200"
-                      >
-                        User
-                        {sort.col === 'name' && (
-                          <span className="text-[10px]">{sort.dir === 'asc' ? '▲' : '▼'}</span>
-                        )}
-                      </button>
-                    </th>
-                    <th className="px-5 py-3 font-semibold hidden sm:table-cell">Email</th>
-                    <th className="px-5 py-3 font-semibold hidden md:table-cell">
-                      <button
-                        onClick={() => toggleSort('requested')}
-                        className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-slate-700 dark:hover:text-slate-200"
-                      >
-                        Requested
-                        {sort.col === 'requested' && (
-                          <span className="text-[10px]">{sort.dir === 'asc' ? '▲' : '▼'}</span>
-                        )}
-                      </button>
-                    </th>
-                    <th className="px-5 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortPending(pending, sort.col, sort.dir).map((u) => {
-                    const display = u.name || u.username;
-                    return (
-                      <tr
-                        key={u.id}
-                        onClick={() => setSelected(u)}
-                        className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors"
-                      >
-                        <td className="px-5 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-semibold flex items-center justify-center flex-shrink-0">
-                              {initials(display)}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-medium text-slate-900 dark:text-white truncate">
-                                {display}
-                              </div>
-                              <div className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                                {u.username}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3 text-slate-500 dark:text-slate-400 hidden sm:table-cell truncate">
-                          {u.email || '—'}
-                        </td>
-                        <td className="px-5 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell whitespace-nowrap">
-                          {requestedLabel(u.requestedAt)}
-                        </td>
-                        <td className="px-5 py-3 text-right">
-                          <span className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
-                            Review
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            {/* Segmented tab filter */}
+            <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 mb-5">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    tab === t.key
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
+
+            {error ? (
+              <Notice>{error}</Notice>
+            ) : rows === null ? (
+              <Notice>Loading…</Notice>
+            ) : sorted.length === 0 ? (
+              <EmptyState tab={tab} />
+            ) : (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      <th className="px-5 py-3 font-semibold">
+                        <button
+                          onClick={() => toggleSort('name')}
+                          className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-slate-700 dark:hover:text-slate-200"
+                        >
+                          User
+                          {sort.col === 'name' && (
+                            <span className="text-[10px]">{sort.dir === 'asc' ? '▲' : '▼'}</span>
+                          )}
+                        </button>
+                      </th>
+                      <th className="px-5 py-3 font-semibold hidden sm:table-cell">Email</th>
+                      <th className="px-5 py-3 font-semibold">Status</th>
+                      {showRequested ? (
+                        <th className="px-5 py-3 font-semibold hidden md:table-cell">
+                          <button
+                            onClick={() => toggleSort('requested')}
+                            className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-slate-700 dark:hover:text-slate-200"
+                          >
+                            Requested
+                            {sort.col === 'requested' && (
+                              <span className="text-[10px]">{sort.dir === 'asc' ? '▲' : '▼'}</span>
+                            )}
+                          </button>
+                        </th>
+                      ) : (
+                        <th className="px-5 py-3 font-semibold hidden md:table-cell">Access</th>
+                      )}
+                      <th className="px-5 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((u) => {
+                      const display = u.name || u.username;
+                      const summary = attrSummary(u.attributes, schema);
+                      return (
+                        <tr
+                          key={u.id}
+                          onClick={() => setSelected(u)}
+                          className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors"
+                        >
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                                {initials(display)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-medium text-slate-900 dark:text-white truncate">
+                                  {display}
+                                </div>
+                                <div className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                                  {u.username}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 text-slate-500 dark:text-slate-400 hidden sm:table-cell truncate">
+                            {u.email || '—'}
+                          </td>
+                          <td className="px-5 py-3">
+                            <StatusBadge status={u.status} isAdmin={u.isAdmin} />
+                          </td>
+                          {showRequested ? (
+                            <td className="px-5 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell whitespace-nowrap">
+                              {requestedLabel(u.requestedAt)}
+                            </td>
+                          ) : (
+                            <td className="px-5 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell truncate max-w-xs">
+                              {summary || '—'}
+                            </td>
+                          )}
+                          <td className="px-5 py-3 text-right">
+                            <span className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                              {actionLabel}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </>
         )}
       </main>
 
       {selected && (
-        <ApprovalDrawer
+        <UserDrawer
           key={selected.id}
           user={selected}
           schema={schema}
           onClose={() => setSelected(null)}
-          onApproved={onApproved}
+          onDone={onDone}
         />
       )}
     </div>
@@ -543,13 +830,19 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ tab }: { tab: Tab }) {
+  const text =
+    tab === 'pending'
+      ? 'No users awaiting approval.'
+      : tab === 'admin'
+        ? 'No admins.'
+        : 'No active users.';
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-12 text-center">
       <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
         <HiUserGroup className="text-xl text-slate-400 dark:text-slate-500" />
       </div>
-      <p className="text-slate-500 dark:text-slate-400">No users awaiting approval.</p>
+      <p className="text-slate-500 dark:text-slate-400">{text}</p>
     </div>
   );
 }

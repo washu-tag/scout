@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
-import { SiGrafana, SiKeycloak, SiMinio, SiTemporal, SiPython } from 'react-icons/si';
+import { SiGrafana, SiMinio, SiTemporal, SiPython } from 'react-icons/si';
 import {
   HiArrowRight,
   HiCube,
@@ -374,8 +374,8 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 {
                   href: '/admin/users',
                   external: false,
-                  label: 'Approvals',
-                  description: 'Review and approve access requests',
+                  label: 'Users',
+                  description: 'Approve requests and manage user access',
                   Icon: HiClipboardCheck,
                   iconBg:
                     'bg-indigo-50 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50',
@@ -416,17 +416,6 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                   iconColor: 'text-orange-500 dark:text-orange-400',
                   hoverBorder: 'hover:border-orange-200 dark:hover:border-orange-900/60',
                   hoverShadow: 'hover:shadow-orange-200/50 dark:hover:shadow-orange-500/15',
-                },
-                {
-                  href: subdomainUrls.keycloak,
-                  external: true,
-                  label: 'Users',
-                  description: 'Authentication and identity',
-                  Icon: SiKeycloak,
-                  iconBg: 'bg-blue-50 border-blue-100 dark:bg-blue-950/40 dark:border-blue-900/50',
-                  iconColor: 'text-blue-600 dark:text-blue-400',
-                  hoverBorder: 'hover:border-blue-200 dark:hover:border-blue-900/60',
-                  hoverShadow: 'hover:shadow-blue-200/50 dark:hover:shadow-blue-500/15',
                 },
               ].map((tool) => (
                 <a
@@ -495,7 +484,6 @@ export default function HomeClient({
       minio: getUrl('minio'),
       temporal: getUrl('temporal', '/auth/sso'),
       grafana: getUrl('grafana'),
-      keycloak: getUrl('keycloak', '/admin/scout/console'),
     });
   }, []);
 
