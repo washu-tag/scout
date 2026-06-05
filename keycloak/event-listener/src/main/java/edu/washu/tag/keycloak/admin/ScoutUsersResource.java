@@ -149,7 +149,7 @@ public class ScoutUsersResource {
         } catch (NoSuchElementException e) {
             throw new NotFoundException(e.getMessage());
         }
-        fireGroupMembershipEvent(auth, req.userId(), SCOUT_USER_GROUP, OperationType.CREATE);
+        fireGroupMembershipEvent(auth, req.userId(), username, SCOUT_USER_GROUP, OperationType.CREATE);
         return ok("approved", username);
     }
 
@@ -168,7 +168,7 @@ public class ScoutUsersResource {
         } catch (NoSuchElementException e) {
             throw new NotFoundException(e.getMessage());
         }
-        fireUserUpdatedEvent(auth, id);
+        fireUserUpdatedEvent(auth, id, username);
         return ok("updated", username);
     }
 
@@ -184,7 +184,7 @@ public class ScoutUsersResource {
         } catch (NoSuchElementException e) {
             throw new NotFoundException(e.getMessage());
         }
-        fireGroupMembershipEvent(auth, id, SCOUT_ADMIN_GROUP, OperationType.CREATE);
+        fireGroupMembershipEvent(auth, id, username, SCOUT_ADMIN_GROUP, OperationType.CREATE);
         return ok("promoted", username);
     }
 
@@ -202,7 +202,7 @@ public class ScoutUsersResource {
         } catch (IllegalStateException e) {
             throw new ClientErrorException(e.getMessage(), Response.Status.CONFLICT);
         }
-        fireGroupMembershipEvent(auth, id, SCOUT_ADMIN_GROUP, OperationType.DELETE);
+        fireGroupMembershipEvent(auth, id, username, SCOUT_ADMIN_GROUP, OperationType.DELETE);
         return ok("demoted", username);
     }
 
@@ -220,9 +220,9 @@ public class ScoutUsersResource {
         } catch (IllegalStateException e) {
             throw new ClientErrorException(e.getMessage(), Response.Status.CONFLICT);
         }
-        fireGroupMembershipEvent(auth, id, SCOUT_USER_GROUP, OperationType.DELETE);
+        fireGroupMembershipEvent(auth, id, result.username(), SCOUT_USER_GROUP, OperationType.DELETE);
         if (result.wasAdmin()) {
-            fireGroupMembershipEvent(auth, id, SCOUT_ADMIN_GROUP, OperationType.DELETE);
+            fireGroupMembershipEvent(auth, id, result.username(), SCOUT_ADMIN_GROUP, OperationType.DELETE);
         }
         return ok("offboarded", result.username());
     }
@@ -244,11 +244,14 @@ public class ScoutUsersResource {
      * this the change is invisible to the realm's admin-event listeners: the OPA
      * bundle publisher re-snapshots the user on this event (so the grant actually
      * reaches Trino), the approval/offboard email listener keys off
-     * {@code scout-user} in the representation, and the action lands in the
-     * admin-events audit log. The {@code users/{id}/...} resourcePath is what the
-     * publisher's user-id extractor reads.
+     * {@code scout-user} in the representation and reads the {@code username}
+     * from the event detail, and the action lands in the admin-events audit log.
+     * The {@code users/{id}/...} resourcePath is what the publisher's user-id
+     * extractor reads. The {@code username} detail mirrors what Keycloak's own
+     * group-membership events carry; the email listener requires it.
      */
-    private void fireGroupMembershipEvent(AuthResult auth, String userId, String groupName, OperationType op) {
+    private void fireGroupMembershipEvent(AuthResult auth, String userId, String username,
+                                          String groupName, OperationType op) {
         RealmModel realm = session.getContext().getRealm();
         GroupModel group = topLevelGroup(realm, groupName);
         String groupId = group != null ? group.getId() : groupName;
@@ -260,16 +263,18 @@ public class ScoutUsersResource {
                 .resource(ResourceType.GROUP_MEMBERSHIP)
                 .resourcePath("users", userId, "groups", groupId)
                 .representation(rep)
+                .detail("username", username)
                 .success();
     }
 
     /** Emit a {@code USER}/{@code UPDATE} admin event so an attribute-only change re-snapshots to OPA + audits. */
-    private void fireUserUpdatedEvent(AuthResult auth, String userId) {
+    private void fireUserUpdatedEvent(AuthResult auth, String userId, String username) {
         RealmModel realm = session.getContext().getRealm();
         adminEvent(auth, realm)
                 .operation(OperationType.UPDATE)
                 .resource(ResourceType.USER)
                 .resourcePath("users", userId)
+                .detail("username", username)
                 .success();
     }
 

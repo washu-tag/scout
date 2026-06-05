@@ -620,13 +620,18 @@ export default function UsersClient() {
     if (isAdmin) loadRows(tab);
   }, [isAdmin, tab, loadRows]);
 
-  // Email deep-link (?user=<id>) opens that pending user's drawer.
+  // Email deep-link (?user=<id>) opens that pending user's drawer — once the
+  // schema has loaded (so the editor isn't seeded empty), and only once (clear
+  // it after, or it would re-open the drawer after the admin closes it).
   useEffect(() => {
-    if (deepLink && tab === 'pending' && rows) {
+    if (deepLink && tab === 'pending' && rows && schema.length > 0) {
       const u = rows.find((x) => x.id === deepLink);
-      if (u) setSelected(u);
+      if (u) {
+        setSelected(u);
+        setDeepLink(null);
+      }
     }
-  }, [deepLink, tab, rows]);
+  }, [deepLink, tab, rows, schema]);
 
   const onDone = () => {
     loadRows(tab);

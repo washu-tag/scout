@@ -192,7 +192,7 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
             context.setHttpRequest(request);
             // Not a user event so we need to get the username from the event details
             Map<String, String> details = event.getDetails();
-            String username = details.get("username");
+            String username = details != null ? details.get("username") : null;
             if (username == null) {
                 log.warnf("Username not found in event details: %s. Unable to check scout-user group membership.", event.getDetails());
                 return;

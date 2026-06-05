@@ -69,6 +69,9 @@ async function forward(req: NextRequest, segments: string[], method: 'GET' | 'PO
   if (!path || !ALLOWED[method].some((re) => re.test(path))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
+  // Allowlist matches the path only; forward the query string (?status=&search=) too,
+  // or the SPI's status/search filters would silently receive nothing.
+  const target = path + req.nextUrl.search;
   const issuer = process.env.KEYCLOAK_ISSUER;
   if (!issuer) {
     return NextResponse.json({ error: 'KEYCLOAK_ISSUER is not configured' }, { status: 500 });
@@ -84,13 +87,13 @@ async function forward(req: NextRequest, segments: string[], method: 'GET' | 'PO
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  let upstream = await callKeycloak(issuer, path, method, accessToken, body);
+  let upstream = await callKeycloak(issuer, target, method, accessToken, body);
   if (upstream.status === 401) {
     // Cached token rejected (clock skew / mid-flight expiry): force one refresh
     // and retry before giving up.
     accessToken = await freshAccessToken(jwt, true);
     if (accessToken) {
-      upstream = await callKeycloak(issuer, path, method, accessToken, body);
+      upstream = await callKeycloak(issuer, target, method, accessToken, body);
     }
   }
 
