@@ -64,3 +64,14 @@
           name: '{{ cert_manager_acme_issuer_name }}'
           kind: ClusterIssuer
         dnsNames: '{{ cert_manager_acme_dns_names }}'
+
+# Wait for the certificate to be issued before proceeding with Traefik deployment.
+# This ensures Traefik has a valid cert to use before downstream services start.
+# Importantly OIDC discovery with Keycloak will fail without a valid cert.
+- name: Wait for Certificate to be Ready
+  ansible.builtin.command: >-
+    kubectl -n {{ traefik_namespace }} wait
+    --for=condition=Ready
+    --timeout=300s
+    certificate/{{ cert_manager_acme_certificate_name }}
+  changed_when: false

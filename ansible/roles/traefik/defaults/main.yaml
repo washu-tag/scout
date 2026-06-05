@@ -2,9 +2,6 @@
 # Default configuration for traefik role
 # Configures Traefik ingress controller with TLS termination
 
-# TLS secret configuration
-traefik_tls_secret_name: tls-secret
-
 # Timeout for waiting on Traefik Helm jobs (in seconds)
 traefik_helm_job_timeout: 300
 # Inventory requirements depend on tls_mode:

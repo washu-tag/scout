@@ -2,6 +2,12 @@
 # Main tasks for traefik role
 # Configures Traefik ingress controller with TLS termination
 
+- name: Validate tls_mode
+  ansible.builtin.assert:
+    that:
+      - tls_mode in ['file', 'cert_manager']
+    fail_msg: "tls_mode must be 'file' or 'cert_manager' (got: {{ tls_mode | default('<unset>') }})"
+
 - name: Ensure cert-manager is installed
   ansible.builtin.include_role:
     name: cert_manager
