@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "scout-opa.fullname" . }}
+  labels:
+    {{- include "scout-opa.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "scout-opa.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "scout-opa.labels" . | nindent 8 }}
+      annotations:
+        # Force a rollout when policy OR static data OR bundle config OR
+        # the bundle-reader credentials change. The bundle itself is
+        # pulled at runtime and doesn't need a rollout — that's the
+        # whole point of ADR 0021 — but envFrom secretRef values are
+        # evaluated at pod-creation time, so a Secret rotation without
+        # a pod restart leaves the running pod stuck with stale
+        # credentials. Hashing the secret values into this annotation
+        # (via bundleReader.credsHash supplied by the Ansible role)
+        # makes credential rotation observable to the Deployment
+        # controller. sha256-truncated to 8 chars so the values don't
+        # appear in clear text anywhere in the rendered manifest.
+        policy-hash: {{ include "scout-opa.policyHash" . | quote }}
+    spec:
+      containers:
+        - name: opa
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - run
+            - --server
+            - --addr=0.0.0.0:{{ .Values.service.port }}
+            - --log-level=info
+            - --log-format=json
+            - --config-file=/policies/config.yaml
+            - /policies/policy.rego
+            - /policies/data.json
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.bundleReader.secretName }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              # ?bundles makes the probe block on a successful first
+              # bundle activation — new pods stay out of the Service
+              # endpoint list until they hold valid data.users. Cold
+              # start under the previous pull-on-decision model didn't
+              # need this; under ADR 0021 it's essential.
+              path: /health?bundles
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          volumeMounts:
+            - name: policies
+              mountPath: /policies
+              readOnly: true
+            - name: bundle-cache
+              mountPath: /.opa
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+      volumes:
+        - name: policies
+          configMap:
+            name: {{ include "scout-opa.fullname" . }}-policy
+        - name: bundle-cache
+          # OPA's bundle plugin writes the last-known-good tarball
+          # here when persist:true is set. EmptyDir is fine — on pod
+          # restart the bundle plugin re-pulls from MinIO before the
+          # readiness probe lets the pod serve traffic.
+          emptyDir: {}

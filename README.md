@@ -43,7 +43,8 @@ make all
 # Or deploy individual components
 make install-k3s          # Kubernetes cluster
 make install-lake         # MinIO + Hive
-make install-analytics    # Trino + Superset
+make install-trino        # OPA + Trino
+make install-superset     # Superset
 make install-orchestrator # Temporal workflow engine
 make install-jupyter      # JupyterHub notebooks
 make install-monitor      # Grafana monitoring

@@ -37,7 +37,6 @@ from IPython.display import display, HTML
 import html as html_lib
 import os
 
-
 # Global state
 annotations = {}
 _normalized_cache = {}
@@ -106,7 +105,7 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
     pd.DataFrame
         Stratified sample as Pandas DataFrame
     """
-    import trino
+    import scout
     import pandas as pd
 
     def print_status(msg):
@@ -116,23 +115,13 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
         else:
             print(msg, flush=True)
 
-    # Get Trino connection details from environment
-    TRINO_HOST = os.environ.get("TRINO_HOST", "trino.trino")
-    TRINO_PORT = int(os.environ.get("TRINO_PORT", "8080"))
-    TRINO_SCHEME = os.environ.get("TRINO_SCHEME", "http")
-    TRINO_USER = os.environ.get("TRINO_USER", "trino")
+    # Catalog/schema qualify the table name below. Connection params and auth
+    # are owned by scout.connect() (voila_svc JWT + X-Trino-User).
     TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
     TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
 
-    # Connect to Trino
-    conn = trino.dbapi.connect(
-        host=TRINO_HOST,
-        port=TRINO_PORT,
-        http_scheme=TRINO_SCHEME,
-        user=TRINO_USER,
-        catalog=TRINO_CATALOG,
-        schema=TRINO_SCHEMA,
-    )
+    # Connect to Trino as the logged-in Voila user
+    conn = scout.connect()
 
     # Parse table name (handle "catalog.schema.table" or "schema.table" or "table")
     table_parts = table_name.split(".")
@@ -204,12 +193,15 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
         diagnoses,
         principal_result_interpreter
     FROM categorized
-    WHERE row_num <= {samples_per_category}
+    WHERE row_num <= ?
     """
 
-    # Execute query and load into Pandas
+    # Execute query. The remaining interpolations are config-derived identifiers
+    # (catalog/schema/table from table_name, plus the report-text column) — SQL
+    # can't bind identifiers as parameters, so they stay interpolated (hence the
+    # nosemgrep). The one user-supplied value, the sample size, is bound below.
     cursor = conn.cursor()
-    cursor.execute(query)
+    cursor.execute(query, (samples_per_category,))  # nosemgrep
 
     # Fetch column names and data
     columns = [desc[0] for desc in cursor.description]
@@ -1437,20 +1429,21 @@ def create_review_dashboard(
             render_metrics()
 
     def on_export(b):
-        """Export annotations to CSV and optionally to Delta table."""
-        import time
-        from IPython.display import display, clear_output
+        """Export annotations to CSV and optionally to Delta table.
 
+        Runs synchronously on the kernel's IOLoop; intermediate
+        `annotation_status` updates are flushed to the frontend only
+        after this function returns. The previous version called
+        `IPython.get_ipython().kernel.do_one_iteration()` to force
+        intra-callback flushes, but that method was removed in
+        ipykernel 7+ — the AttributeError escaped before the try
+        block, so the finally that re-enabled the button never ran
+        and the UI stuck on "⏳ Exporting...".
+        """
         # Disable button and show loading state
         export_btn.disabled = True
         export_btn.description = "⏳ Exporting..."
         export_btn.button_style = "warning"
-
-        # Force immediate widget update
-        import IPython
-
-        if IPython.get_ipython() is not None:
-            IPython.get_ipython().kernel.do_one_iteration()
 
         try:
             if not annotations:
@@ -1462,10 +1455,6 @@ def create_review_dashboard(
             with annotation_status:
                 annotation_status.clear_output(wait=True)
                 print("📦 Preparing annotations for export...")
-
-            # Force display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
 
             # Build annotations DataFrame
             ann_data = []
@@ -1526,10 +1515,6 @@ def create_review_dashboard(
                 print(f"📦 Preparing annotations for export...")
                 print(f"💾 Saving to CSV: {output_path}...")
 
-            # Force display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
-
             try:
                 ann_df.to_csv(output_path, index=False)
             except OSError as e:
@@ -1539,8 +1524,9 @@ def create_review_dashboard(
                     print(f"   (target: {output_path})")
                 return
 
-            # Try to write to Delta table using Spark (required for MERGE operations)
-            # Note: Trino doesn't support UPDATE/MERGE on Delta tables, only Spark does
+            # Write reviewer annotations back to the Delta table via trino-rw
+            # (ADR 0019). Trino's Delta connector supports row-level UPDATE; the
+            # notebook image no longer ships Spark, so the write goes through it.
             delta_success = False
             delta_error = None
 
@@ -1549,81 +1535,79 @@ def create_review_dashboard(
                 print(f"💾 Saved to CSV: {output_path}")
                 print(f"🔄 Updating Delta Lake table...")
 
-            # Force display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
-
             try:
-                from pyspark.sql import SparkSession
-                from pyspark.sql import functions as F
+                from playbook_helpers import connect_writeback
 
-                # Get or create Spark session
-                # S3 and Hive Metastore settings come from spark-defaults.conf
-                spark = (
-                    SparkSession.builder.appName("followup-detection-export")
-                    .enableHiveSupport()
-                    .getOrCreate()
-                )
-
-                # Convert to Spark DataFrame with explicit schema to avoid type issues
-                from pyspark.sql.types import (
-                    StructType,
-                    StructField,
-                    StringType,
-                    BooleanType,
-                )
-
-                schema = StructType(
-                    [
-                        StructField("accession_number", StringType(), True),
-                        StructField("model_followup_detected", BooleanType(), True),
-                        StructField("model_confidence", StringType(), True),
-                        StructField("model_snippet", StringType(), True),
-                        StructField("human_ground_truth", BooleanType(), True),
-                        StructField("human_notes", StringType(), True),
-                    ]
-                )
-
-                spark_df = spark.createDataFrame(ann_df, schema=schema)
-
-                # Create temp view for MERGE
-                spark_df.createOrReplaceTempView("human_annotations")
-
-                # MERGE annotations back into the same table the dashboard loaded.
                 merge_target = table_name or "default.reports_followup"
+                # merge_target is a table identifier, which can't be a bound
+                # parameter; constrain it to a safe dotted identifier so the
+                # interpolations below can't inject (row values use ? binds).
+                if not re.fullmatch(r"[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*", merge_target):
+                    raise ValueError(f"unsafe table identifier: {merge_target!r}")
 
-                # Ensure the reviewer-annotation columns exist on the target.
-                # Delta's spark.databricks.delta.schema.autoMerge.enabled only
-                # adds columns when MERGE has an INSERT clause — our UPDATE-only
-                # MERGE rejects unknown target columns at parse time. So add
-                # them up front, idempotently.
-                existing_cols = set(spark.table(merge_target).columns)
-                needed_cols = [
-                    ("human_ground_truth", "BOOLEAN"),
-                    ("human_notes", "STRING"),
-                    ("human_reviewed_at", "TIMESTAMP"),
-                ]
-                missing_cols = [
-                    (n, t) for n, t in needed_cols if n not in existing_cols
-                ]
-                if missing_cols:
-                    cols_clause = ", ".join(f"{n} {t}" for n, t in missing_cols)
-                    spark.sql(f"ALTER TABLE {merge_target} ADD COLUMNS ({cols_clause})")
+                # trino-rw is the write-enabled Trino (ADR 0019);
+                # playbook_helpers is chart-shipped (not in the SDK)
+                # because writes are Voila-only.
+                conn = connect_writeback()
+                cur = conn.cursor()
 
-                spark.sql(
-                    f"""
-                    MERGE INTO {merge_target} AS target
-                    USING human_annotations AS source
-                    ON target.accession_number = source.accession_number
-                    WHEN MATCHED THEN UPDATE SET
-                        target.human_ground_truth = source.human_ground_truth,
-                        target.human_notes = source.human_notes,
-                        target.human_reviewed_at = current_timestamp()
-                """
+                # The reviewer-annotation columns may not exist on the target
+                # yet. Add them idempotently, guarded on the live column set
+                # (ADD COLUMN IF NOT EXISTS isn't universally supported).
+                # Safe to suppress: merge_target is the only interpolated value
+                # and is validated against a strict dotted-identifier regex above;
+                # a table name can't be a bound parameter, and no user-supplied
+                # value appears in this statement.
+                # (Bare/same-line nosemgrep because the Semgrep OSS check honors
+                # only same-line suppressions, and a full rule-id comment is long
+                # enough that black would split it onto the next line.)
+                cur.execute(f"DESCRIBE {merge_target}")  # nosemgrep
+                existing_cols = {row[0] for row in cur.fetchall()}
+                for col_name, col_type in (
+                    ("human_ground_truth", "boolean"),
+                    ("human_notes", "varchar"),
+                    ("human_reviewed_at", "timestamp(3) with time zone"),
+                ):
+                    if col_name not in existing_cols:
+                        cur.execute(
+                            f"ALTER TABLE {merge_target} "
+                            f"ADD COLUMN {col_name} {col_type}"
+                        )
+                        cur.fetchall()  # Trino DB-API requires a fetch to run DDL
+
+                # UPDATE-only semantics (no INSERT): write reviewer fields onto
+                # the rows the dashboard loaded, keyed by accession_number.
+                # One MERGE for the whole batch = one atomic Delta commit, so
+                # either every annotation lands or none does, and the delta log
+                # gets a single commit per export instead of one per row.
+                # Parameterized so free-text notes stay injection-safe; CASTs
+                # pin the VALUES column types when a bound value is NULL
+                # (uncertain ground truth / empty note).
+                placeholders = ", ".join(
+                    ["(CAST(? AS varchar), CAST(? AS boolean), CAST(? AS varchar))"]
+                    * len(ann_data)
                 )
-
-                # Clean up temp view
-                spark.catalog.dropTempView("human_annotations")
+                merge_sql = (
+                    f"MERGE INTO {merge_target} t "  # identifier validated above
+                    f"USING (VALUES {placeholders}) "
+                    "AS s(accession_number, human_ground_truth, human_notes) "
+                    "ON t.accession_number = s.accession_number "
+                    "WHEN MATCHED THEN UPDATE SET "
+                    "human_ground_truth = s.human_ground_truth, "
+                    "human_notes = s.human_notes, "
+                    "human_reviewed_at = current_timestamp"
+                )
+                params = [
+                    v
+                    for row in ann_data
+                    for v in (
+                        row["accession_number"],
+                        row["human_ground_truth"],
+                        row["human_notes"],
+                    )
+                ]
+                cur.execute(merge_sql, params)  # nosemgrep
+                cur.fetchall()  # Trino DB-API requires a fetch to run DML
                 delta_success = True
 
             except Exception as e:
@@ -1635,19 +1619,18 @@ def create_review_dashboard(
                 print(f"✅ Successfully exported {len(ann_data)} annotations")
                 print(f"   📄 CSV file: {output_path}")
                 if delta_success:
-                    print(f"   💾 Updated Delta Lake table: reports")
+                    print(
+                        f"   💾 Updated Delta Lake table: "
+                        f"{table_name or 'default.reports_followup'}"
+                    )
                 else:
-                    print(f"   ⚠️  Delta Lake update failed (Spark required for MERGE)")
+                    print("   ⚠️  Delta Lake update failed (CSV export still saved)")
                     if delta_error:
                         print(f"       Error: {delta_error}")
                 print(f"\n📊 Annotation Summary:")
                 print(f"   ✓ {yes_count} Follow-up Needed")
                 print(f"   ✗ {no_count} No Follow-up")
                 print(f"   ? {uncertain_count} Uncertain")
-
-            # Force final display update
-            if IPython.get_ipython() is not None:
-                IPython.get_ipython().kernel.do_one_iteration()
 
         finally:
             # Always re-enable button

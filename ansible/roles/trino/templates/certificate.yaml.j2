@@ -1,0 +1,36 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: trino-tls
+  namespace: {{ trino_namespace }}
+spec:
+  secretName: trino-tls
+  duration: 2160h  # 90 days
+  renewBefore: 360h  # 15 days
+  commonName: trino.{{ trino_namespace }}.svc.cluster.local
+  # Cover every name a client might use to reach the coordinator inside the cluster.
+  # Order matters slightly — the chart's Service is `trino` (short name); the others
+  # are the FQDN variants Kubernetes resolvers produce.
+  dnsNames:
+    - trino
+    - trino.{{ trino_namespace }}
+    - trino.{{ trino_namespace }}.svc
+    - trino.{{ trino_namespace }}.svc.cluster.local
+    - trino-coordinator
+    - trino-coordinator.{{ trino_namespace }}
+    - trino-coordinator.{{ trino_namespace }}.svc
+    - trino-coordinator.{{ trino_namespace }}.svc.cluster.local
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  keystores:
+    pkcs12:
+      create: true
+      passwordSecretRef:
+        name: trino-authz-env
+        key: KEYSTORE_PASSWORD
+  issuerRef:
+    name: scout-internal-ca
+    kind: ClusterIssuer
+    group: cert-manager.io

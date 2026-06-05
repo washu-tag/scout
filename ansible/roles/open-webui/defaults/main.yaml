@@ -190,7 +190,14 @@ tool_server_connections:
     # the MCP tool itself works regardless, but the admin UI doesn't.
     path: '' # openapi-spec path; meaningless for MCP but required by the model
     key: null # API key for openapi/oauth tool servers; null for MCP-anonymous
-    auth_type: none
+    # system_oauth forwards the logged-in user's Keycloak access token as
+    # `Authorization: Bearer <token>` on every MCP call. mcp-trino validates
+    # the token, extracts preferred_username, and sets X-Trino-User on the
+    # outbound Trino call (TRINO_ENABLE_IMPERSONATION=true). Requires users
+    # to authenticate via OAuth (OWUI's OIDC login flow); locally-authed
+    # users have no IdP token to forward and the Authorization header is
+    # silently omitted.
+    auth_type: system_oauth
     config:
       enable: true
     info:

@@ -21,6 +21,7 @@ RESET='\033[0m'
 # ── Defaults ──────────────────────────────────────────────────────────────────
 HOSTNAME=""
 TIMEOUT=10
+INCLUDE=""
 
 # ── Usage ─────────────────────────────────────────────────────────────────────
 usage() {
@@ -34,11 +35,15 @@ Arguments:
 
 Options:
   --timeout <secs>    curl timeout in seconds (default: 10)
+  --include <list>    Comma-separated subdomains to test (e.g., superset,chat,keycloak).
+                      Launchpad root (empty subdomain) is always included.
+                      When unset, all defined subdomains are tested.
   --help              Show this help message
 
 Examples:
   $(basename "$0") scout.example.com
   $(basename "$0") scout.example.com --timeout 15
+  $(basename "$0") scout.example.com --include superset,chat,keycloak,auth,minio
 EOF
   exit 1
 }
@@ -55,6 +60,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --timeout)
       TIMEOUT="$2"
+      shift 2
+      ;;
+    --include)
+      INCLUDE="$2"
       shift 2
       ;;
     --help)
@@ -147,6 +156,33 @@ if (( TEST_COUNT % 5 != 0 )); then
   echo "Error: TESTS array has ${TEST_COUNT} elements, which is not divisible by 5." >&2
   echo "Each test requires 5 fields: subdomain method path expected_status description" >&2
   exit 2
+fi
+
+# Filter TESTS by --include subdomains. Empty subdomain (launchpad root) is
+# always kept so the root host gets coverage regardless of which side a CI
+# job runs on.
+if [[ -n "$INCLUDE" ]]; then
+  IFS=',' read -ra INCLUDE_ARR <<< "$INCLUDE"
+  FILTERED=()
+  for (( i=0; i<TEST_COUNT; i+=5 )); do
+    subdomain="${TESTS[$i]}"
+    keep=false
+    if [[ -z "$subdomain" ]]; then
+      keep=true
+    else
+      for inc in "${INCLUDE_ARR[@]}"; do
+        if [[ "$subdomain" == "$inc" ]]; then
+          keep=true
+          break
+        fi
+      done
+    fi
+    if [[ "$keep" == "true" ]]; then
+      FILTERED+=("${TESTS[$i]}" "${TESTS[$((i+1))]}" "${TESTS[$((i+2))]}" "${TESTS[$((i+3))]}" "${TESTS[$((i+4))]}")
+    fi
+  done
+  TESTS=("${FILTERED[@]}")
+  TEST_COUNT=${#TESTS[@]}
 fi
 NUM_TESTS=$(( TEST_COUNT / 5 ))
 

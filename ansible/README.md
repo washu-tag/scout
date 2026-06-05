@@ -130,7 +130,8 @@ Deploy individual components:
 make install-k3s          # Install K3s cluster
 make install-postgres     # PostgreSQL databases
 make install-lake         # MinIO + Hive metastore
-make install-analytics    # Trino + Superset
+make install-trino        # OPA + Trino
+make install-superset     # Superset
 make install-orchestrator # Temporal + Cassandra + Elasticsearch
 make install-extractor    # HL7 processing services
 make install-jupyter      # JupyterHub
@@ -786,7 +787,7 @@ make install-monitor   # Re-run monitoring stack
 Enable debug mode:
 
 ```bash
-DEBUG=1 make install-analytics
+DEBUG=1 make install-trino
 ```
 
 Check diff without making changes:
@@ -820,7 +821,7 @@ Update component versions and redeploy:
 # Update versions in group_vars/all/versions.yaml
 
 # Redeploy component
-make install-analytics
+make install-trino
 ```
 
 ### Scaling
@@ -849,7 +850,8 @@ ansible/
 │   ├── main.yaml                # Main orchestration playbook
 │   ├── k3s.yaml                 # K3s installation
 │   ├── lake.yaml                # Data lake (MinIO + Hive)
-│   ├── analytics.yaml           # Analytics (Trino + Superset)
+│   ├── trino.yaml               # OPA + Trino
+│   ├── superset.yaml            # Superset
 │   ├── orchestrator.yaml        # Temporal workflow engine
 │   └── ...                      # Additional service playbooks
 ├── roles/

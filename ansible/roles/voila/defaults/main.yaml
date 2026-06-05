@@ -2,9 +2,6 @@
 # Voilà role defaults
 # User-configurable settings are in inventory.yaml
 
-# Spark ConfigMap name (unique per role to avoid collisions in shared namespaces)
-voila_spark_defaults_configmap_name: spark-defaults-voila
-
 # Namespace configuration
 voila_namespace: '{{ scout_analytics_namespace }}'
 
@@ -22,7 +19,3 @@ voila_resources_default:
   limits:
     cpu: 2
     memory: 8Gi
-
-# Spark memory settings for notebooks
-voila_spark_driver_memory: '4g'
-voila_spark_executor_memory: '4g'

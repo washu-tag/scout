@@ -1,0 +1,30 @@
+{{- if .Values.networkPolicy.enabled }}
+# The X-Trino-User impersonation pattern trusts that the
+# X-Auth-Request-Preferred-Username header on each request came from
+# oauth2-proxy via Traefik. Without this NetworkPolicy, an in-cluster pod
+# could connect directly to Voila and forge the header, bypassing the
+# per-user AuthZ. Egress is unrestricted (Voila needs Keycloak + Trino + DNS).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: voila-ingress
+  labels:
+    {{- include "voila.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "voila.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.traefikNamespace | quote }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+{{- end }}

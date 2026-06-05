@@ -14,8 +14,7 @@ import ipywidgets as widgets
 from IPython.display import display, HTML
 from datetime import datetime, timedelta
 from tqdm import tqdm
-import trino
-
+import scout
 
 # ============================================================================
 # CONFIGURATION & CONSTANTS
@@ -31,10 +30,8 @@ ORANGE_WARNING = "#FF9800"
 RED_ERROR = "#F44336"
 
 # Trino connection settings
-TRINO_HOST = os.environ.get("TRINO_HOST", "trino.trino")
-TRINO_PORT = int(os.environ.get("TRINO_PORT", "8080"))
-TRINO_SCHEME = os.environ.get("TRINO_SCHEME", "http")
-TRINO_USER = os.environ.get("TRINO_USER", "trino")
+# Catalog/schema qualify table names in the queries below. Host/port/scheme
+# and auth are owned by scout.connect() (voila_svc JWT + X-Trino-User).
 TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
 TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
 
@@ -77,16 +74,11 @@ os.makedirs(EXPORT_DIR, exist_ok=True)
 
 
 def connect_trino():
-    """Connect to Trino."""
-    conn = trino.dbapi.connect(
-        host=TRINO_HOST,
-        port=TRINO_PORT,
-        http_scheme=TRINO_SCHEME,
-        user=TRINO_USER,
-        catalog=TRINO_CATALOG,
-        schema=TRINO_SCHEMA,
-    )
-    return conn
+    """Connect to Trino as the logged-in Voila user.
+
+    scout.connect() mints the voila_svc JWT and sets X-Trino-User, so Trino's OPA
+    policy filters/masks rows for the impersonated user (ADR 0022)."""
+    return scout.connect()
 
 
 def render_section_loading(section_name):
