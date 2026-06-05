@@ -15,6 +15,7 @@ export const authOptions: NextAuthOptions = {
       if (account) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
+        token.expiresAt = account.expires_at;
       }
       if (profile) {
         token.username = profile.preferred_username as string;

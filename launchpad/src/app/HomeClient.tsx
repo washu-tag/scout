@@ -372,7 +372,20 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
             <div className="grid grid-cols-2 gap-3 flex-1">
               {[
                 {
+                  href: '/admin/approvals',
+                  external: false,
+                  label: 'Approvals',
+                  description: 'Review and approve access requests',
+                  Icon: HiClipboardCheck,
+                  iconBg:
+                    'bg-indigo-50 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50',
+                  iconColor: 'text-indigo-600 dark:text-indigo-400',
+                  hoverBorder: 'hover:border-indigo-200 dark:hover:border-indigo-900/60',
+                  hoverShadow: 'hover:shadow-indigo-200/50 dark:hover:shadow-indigo-500/15',
+                },
+                {
                   href: subdomainUrls.minio,
+                  external: true,
                   label: 'Lake',
                   description: 'Medical data lake storage',
                   Icon: SiMinio,
@@ -383,6 +396,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 },
                 {
                   href: subdomainUrls.temporal,
+                  external: true,
                   label: 'Orchestrator',
                   description: 'Ingestion and characterization workflows',
                   Icon: SiTemporal,
@@ -393,6 +407,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 },
                 {
                   href: subdomainUrls.grafana,
+                  external: true,
                   label: 'Monitor',
                   description: 'Metrics, logs, and dashboards',
                   Icon: SiGrafana,
@@ -404,6 +419,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 },
                 {
                   href: subdomainUrls.keycloak,
+                  external: true,
                   label: 'Users',
                   description: 'Authentication and identity',
                   Icon: SiKeycloak,
@@ -416,8 +432,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 <a
                   key={tool.label}
                   href={tool.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...(tool.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   className={`group flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 no-underline ${tool.hoverBorder} ${tool.hoverShadow}`}
                 >
                   <div
