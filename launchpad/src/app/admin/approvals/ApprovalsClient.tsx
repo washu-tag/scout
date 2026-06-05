@@ -40,6 +40,26 @@ function requestedLabel(ms: string | null): string {
   return new Date(n).toLocaleDateString();
 }
 
+type SortCol = 'name' | 'requested';
+type SortDir = 'asc' | 'desc';
+
+// Sort the pending list by column/direction. Undated users (no request
+// timestamp) always sort last, regardless of direction.
+function sortPending(list: PendingUser[], col: SortCol, dir: SortDir): PendingUser[] {
+  const sign = dir === 'asc' ? 1 : -1;
+  return list.slice().sort((a, b) => {
+    if (col === 'name') {
+      return sign * (a.name || a.username).localeCompare(b.name || b.username);
+    }
+    const at = Number(a.requestedAt) || null;
+    const bt = Number(b.requestedAt) || null;
+    if (at === null && bt === null) return 0;
+    if (at === null) return 1;
+    if (bt === null) return -1;
+    return sign * (at - bt);
+  });
+}
+
 // --- Approval drawer ------------------------------------------------------
 
 interface DrawerProps {
@@ -298,6 +318,17 @@ export default function ApprovalsClient() {
   const [error, setError] = useState<string | null>(null);
   const [kcConsole, setKcConsole] = useState('');
   const [deepLink, setDeepLink] = useState<string | null>(null);
+  const [sort, setSort] = useState<{ col: SortCol; dir: SortDir }>({
+    col: 'requested',
+    dir: 'desc',
+  });
+
+  const toggleSort = (col: SortCol) =>
+    setSort((s) =>
+      s.col === col
+        ? { col, dir: s.dir === 'asc' ? 'desc' : 'asc' }
+        : { col, dir: col === 'requested' ? 'desc' : 'asc' },
+    );
 
   const isAdmin = !!session?.user?.isAdmin;
 
@@ -420,14 +451,34 @@ export default function ApprovalsClient() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    <th className="px-5 py-3 font-semibold">User</th>
+                    <th className="px-5 py-3 font-semibold">
+                      <button
+                        onClick={() => toggleSort('name')}
+                        className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-slate-700 dark:hover:text-slate-200"
+                      >
+                        User
+                        {sort.col === 'name' && (
+                          <span className="text-[10px]">{sort.dir === 'asc' ? '▲' : '▼'}</span>
+                        )}
+                      </button>
+                    </th>
                     <th className="px-5 py-3 font-semibold hidden sm:table-cell">Email</th>
-                    <th className="px-5 py-3 font-semibold hidden md:table-cell">Requested</th>
+                    <th className="px-5 py-3 font-semibold hidden md:table-cell">
+                      <button
+                        onClick={() => toggleSort('requested')}
+                        className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-slate-700 dark:hover:text-slate-200"
+                      >
+                        Requested
+                        {sort.col === 'requested' && (
+                          <span className="text-[10px]">{sort.dir === 'asc' ? '▲' : '▼'}</span>
+                        )}
+                      </button>
+                    </th>
                     <th className="px-5 py-3" />
                   </tr>
                 </thead>
                 <tbody>
-                  {pending.map((u) => {
+                  {sortPending(pending, sort.col, sort.dir).map((u) => {
                     const display = u.name || u.username;
                     return (
                       <tr
