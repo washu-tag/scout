@@ -173,6 +173,10 @@ hardening and independent of this feature.
 - The launchpad becomes a (Trino-less) consumer of a Keycloak REST API using the
   user's own token — a new identity-propagation path, but consistent with the
   pass-through model in ADR 0022.
+- The UI admin gate (`session.user.isAdmin`) is login-time, so a user
+  demoted/offboarded via the console keeps the admin affordances until their
+  session token refreshes; the SPI's live `scout-admin` check still rejects every
+  call in the meantime, so this is a stale affordance, not an access path.
 - The audit trail is the Keycloak admin-events log (reached via "Open in
   Keycloak"); shipping actions to an external immutable store is future work.
 - The initial proof-of-concept (a Keycloak-SPI-served HTML page + a public PKCE
