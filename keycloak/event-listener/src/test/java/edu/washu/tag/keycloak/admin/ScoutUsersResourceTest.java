@@ -351,7 +351,7 @@ class ScoutUsersResourceTest {
     }
 
     @Test
-    void to_scout_user_is_pending_when_terms_accepted_but_not_in_a_group() {
+    void to_scout_user_is_pending_when_terms_accepted_not_active() {
         UserModel u = mock(UserModel.class);
         when(u.getGroupsStream()).thenAnswer(i -> Stream.<GroupModel>of());
         when(u.getFirstAttribute("scout_terms_accepted_at")).thenReturn("ts");
@@ -366,12 +366,11 @@ class ScoutUsersResourceTest {
     @Test
     void status_filter_active_includes_admins() {
         ScoutUsersResource.ScoutUser pending = scoutUser("pending", false);
-        ScoutUsersResource.ScoutUser active = scoutUser("active", false);
-        ScoutUsersResource.ScoutUser admin = scoutUser("admin", true);
-
         assertTrue(resource.statusMatches(pending, "pending"));
+        ScoutUsersResource.ScoutUser active = scoutUser("active", false);
         assertFalse(resource.statusMatches(active, "pending"));
         assertTrue(resource.statusMatches(active, "active"));
+        ScoutUsersResource.ScoutUser admin = scoutUser("admin", true);
         assertTrue(resource.statusMatches(admin, "active"), "active includes admins");
         assertTrue(resource.statusMatches(admin, "admins"));
         assertFalse(resource.statusMatches(active, "admins"));
