@@ -17,14 +17,19 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
+import org.keycloak.events.admin.OperationType;
+import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.userprofile.config.UPAttribute;
 import org.keycloak.representations.userprofile.config.UPConfig;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager.AuthResult;
+import org.keycloak.services.resources.admin.AdminAuth;
+import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.userprofile.UserProfileProvider;
 
 /**
@@ -102,7 +107,7 @@ public class ScoutApprovalResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response approve(ApproveRequest req) {
-        requireScoutAdmin();
+        AuthResult auth = requireScoutAdmin();
         String username;
         try {
             username = applyApproval(req);
@@ -111,13 +116,14 @@ public class ScoutApprovalResource {
         } catch (NoSuchElementException e) {
             throw new NotFoundException(e.getMessage());
         }
+        fireGroupMembershipEvent(auth, req.userId(), SCOUT_USER_GROUP, OperationType.CREATE);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", "approved");
         body.put("username", username);
         return Response.ok(body).build();
     }
 
-    void requireScoutAdmin() {
+    AuthResult requireScoutAdmin() {
         AuthResult auth = new AppAuthManager.BearerTokenAuthenticator(session).authenticate();
         if (auth == null || auth.user() == null) {
             throw new NotAuthorizedException("Bearer");
@@ -125,6 +131,37 @@ public class ScoutApprovalResource {
         if (!isScoutAdmin(auth.user())) {
             throw new ForbiddenException("requires membership in " + SCOUT_ADMIN_GROUP);
         }
+        return auth;
+    }
+
+    /**
+     * Emit a {@code GROUP_MEMBERSHIP} admin event for a user's group change.
+     * The SPI mutates the user model directly (no admin REST call), so without
+     * this the change is invisible to the realm's admin-event listeners: the OPA
+     * bundle publisher re-snapshots the user on this event (so the grant actually
+     * reaches Trino), the approval/offboard email listener keys off
+     * {@code scout-user} in the representation, and the action lands in the
+     * admin-events audit log. The {@code users/{id}/...} resourcePath is what the
+     * publisher's user-id extractor reads.
+     */
+    private void fireGroupMembershipEvent(AuthResult auth, String userId, String groupName, OperationType op) {
+        RealmModel realm = session.getContext().getRealm();
+        GroupModel group = topLevelGroup(realm, groupName);
+        String groupId = group != null ? group.getId() : groupName;
+        GroupRepresentation rep = new GroupRepresentation();
+        rep.setName(groupName);
+        rep.setId(group != null ? group.getId() : null);
+        adminEvent(auth, realm)
+                .operation(op)
+                .resource(ResourceType.GROUP_MEMBERSHIP)
+                .resourcePath("users", userId, "groups", groupId)
+                .representation(rep)
+                .success();
+    }
+
+    private AdminEventBuilder adminEvent(AuthResult auth, RealmModel realm) {
+        AdminAuth adminAuth = new AdminAuth(realm, auth.getToken(), auth.getUser(), auth.getClient());
+        return new AdminEventBuilder(realm, adminAuth, session, session.getContext().getConnection());
     }
 
     // --- Core logic (package-private, unit-tested) -------------------------
