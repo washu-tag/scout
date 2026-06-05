@@ -148,13 +148,17 @@ stays reusable for the SSO session. The route is a catch-all (`[...path]`) over
 `GET`/`POST`/`DELETE` with a per-method allowlist of path shapes, so it forwards
 the sub-resourced verbs without becoming an open proxy.
 
-**Token storage note.** next-auth's default JWT-session strategy keeps the
-access + refresh tokens in the session cookie, JWE-encrypted with
-`NEXTAUTH_SECRET`, `httpOnly`, `secure` — not readable by browser JS. This is
-pre-existing launchpad behavior, not introduced here. For a PHI system the more
-conservative pattern is a **server-side session store** (no token material in
-the browser at all); that is a launchpad-wide auth change, tracked as a future
-hardening and independent of this feature.
+**Token storage note.** The session cookie holds **only the refresh token** (plus
+an `isAdmin` flag), JWE-encrypted with `NEXTAUTH_SECRET`, `httpOnly`, `secure`; the
+`/api/users` proxy mints a fresh access token from it per request. We deliberately
+do **not** cache the access token in the cookie: an admin's token carries dozens of
+roles (the launchpad client is `fullScopeAllowed`), and storing it pushed the
+(chunked) cookie past the browser/proxy size limit, intermittently dropping the
+session — a real bug this feature hit in testing. Keeping only the refresh token
+bounds the cookie to a single small chunk. Two complementary hardenings remain:
+trimming the launchpad client's role scope (`fullScopeAllowed=false`, so its token
+stops carrying realm-admin), and the more conservative **server-side session
+store** (no token material in the browser at all).
 
 ## Consequences
 
