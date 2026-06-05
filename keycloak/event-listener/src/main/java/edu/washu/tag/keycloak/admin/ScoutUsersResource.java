@@ -1,14 +1,18 @@
 package edu.washu.tag.keycloak.admin;
 
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.LinkedHashMap;
@@ -33,21 +37,28 @@ import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.userprofile.UserProfileProvider;
 
 /**
- * JAX-RS resource backing the Scout approval UI. All endpoints require a bearer
- * token whose user is in {@code scout-admin}; the resource then acts as that
- * admin (no standing admin-API credential).
+ * JAX-RS resource backing the Scout user-administration console. All endpoints
+ * require a bearer token whose user is in {@code scout-admin}; the resource then
+ * acts as that admin (no standing admin-API credential).
  *
- * <p>The data-access attributes an admin sets at approval are <b>not hardcoded</b>
- * — they're discovered from the realm User Profile (attributes annotated
- * {@code scoutAuthz=true}), which is itself rendered from {@code trino_attribute_filters}.
- * So {@link #buildSchema()} drives the UI form and {@link #applyApproval} validates
+ * <p>The data-access attributes are <b>not hardcoded</b> — they're discovered
+ * from the realm User Profile (attributes annotated {@code scoutAuthz=true}),
+ * itself rendered from {@code trino_attribute_filters}. So {@link #buildSchema()}
+ * drives the UI form and {@link #applyApproval}/{@link #setAttributes} validate
  * against whatever dimensions are configured: add a dimension in inventory and it
  * flows through with no change here.
  *
- * <p>Structure: the {@code @GET}/{@code @POST} methods are thin adapters that
- * authenticate and translate domain exceptions to HTTP status; the core logic
- * ({@link #buildSchema}, {@link #findPending}, {@link #applyApproval},
- * {@link #isScoutAdmin}, {@link #validate}) is plain and unit-tested directly.
+ * <p>Beyond approval the console edits a user's attributes, promotes/demotes
+ * {@code scout-admin}, and offboards (removes all Scout group membership) — each
+ * guarded server-side ({@link #demote}/{@link #offboard} reject removing the last
+ * admin, {@link #offboard} blocks self-offboard) regardless of the UI. Every
+ * mutation fires a {@code GROUP_MEMBERSHIP}/{@code USER} admin event (see
+ * {@link #fireGroupMembershipEvent}) so it propagates to OPA, drives the
+ * approval/offboard email, and lands in the admin-events audit log.
+ *
+ * <p>Structure: the {@code @GET}/{@code @POST}/{@code @DELETE} methods are thin
+ * adapters that authenticate, mutate, emit the event, and translate domain
+ * exceptions to HTTP status; the core logic is plain and unit-tested directly.
  */
 public class ScoutUsersResource {
 
@@ -77,8 +88,21 @@ public class ScoutUsersResource {
                               String requestedAt) {
     }
 
+    /** A user row for the admin console; {@code attributes} are filtered to scoutAuthz keys only. */
+    public record ScoutUser(String id, String username, String email, String name,
+                            String status, boolean isAdmin, Map<String, List<String>> attributes) {
+    }
+
     /** Approval request body: the user and the data-access attribute values to grant. */
     public record ApproveRequest(String userId, Map<String, List<String>> attributes) {
+    }
+
+    /** Body for editing an existing user's data-access attributes. */
+    public record AttributesRequest(Map<String, List<String>> attributes) {
+    }
+
+    /** What an offboard removed, so the adapter can emit the matching events. */
+    record OffboardResult(String username, boolean wasAdmin) {
     }
 
     // --- Endpoints (thin JAX-RS adapters) ----------------------------------
@@ -101,6 +125,15 @@ public class ScoutUsersResource {
         return findPending();
     }
 
+    /** {@return Scout users filtered by status (pending/active/admin) and optional search} scout-admin only. */
+    @GET
+    @Path("users")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<ScoutUser> users(@QueryParam("status") String status, @QueryParam("search") String search) {
+        requireScoutAdmin();
+        return listUsers(status, search);
+    }
+
     /** Approve a user: set the submitted data-access attributes and join scout-user (scout-admin only). */
     @POST
     @Path("approve")
@@ -117,10 +150,81 @@ public class ScoutUsersResource {
             throw new NotFoundException(e.getMessage());
         }
         fireGroupMembershipEvent(auth, req.userId(), SCOUT_USER_GROUP, OperationType.CREATE);
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("status", "approved");
-        body.put("username", username);
-        return Response.ok(body).build();
+        return ok("approved", username);
+    }
+
+    /** Edit an approved user's data-access attributes (scout-admin only). */
+    @POST
+    @Path("users/{id}/attributes")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response setUserAttributes(@PathParam("id") String id, AttributesRequest req) {
+        AuthResult auth = requireScoutAdmin();
+        String username;
+        try {
+            username = setAttributes(id, req == null ? null : req.attributes());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        } catch (NoSuchElementException e) {
+            throw new NotFoundException(e.getMessage());
+        }
+        fireUserUpdatedEvent(auth, id);
+        return ok("updated", username);
+    }
+
+    /** Promote a user to scout-admin (scout-admin only). */
+    @POST
+    @Path("users/{id}/admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response promoteAdmin(@PathParam("id") String id) {
+        AuthResult auth = requireScoutAdmin();
+        String username;
+        try {
+            username = promote(id);
+        } catch (NoSuchElementException e) {
+            throw new NotFoundException(e.getMessage());
+        }
+        fireGroupMembershipEvent(auth, id, SCOUT_ADMIN_GROUP, OperationType.CREATE);
+        return ok("promoted", username);
+    }
+
+    /** Demote a user from scout-admin; rejected with 409 if they are the last admin (scout-admin only). */
+    @DELETE
+    @Path("users/{id}/admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response demoteAdmin(@PathParam("id") String id) {
+        AuthResult auth = requireScoutAdmin();
+        String username;
+        try {
+            username = demote(id);
+        } catch (NoSuchElementException e) {
+            throw new NotFoundException(e.getMessage());
+        } catch (IllegalStateException e) {
+            throw new ClientErrorException(e.getMessage(), Response.Status.CONFLICT);
+        }
+        fireGroupMembershipEvent(auth, id, SCOUT_ADMIN_GROUP, OperationType.DELETE);
+        return ok("demoted", username);
+    }
+
+    /** Offboard a user: remove all Scout group membership. Blocks self-offboard and last-admin (409). scout-admin only. */
+    @DELETE
+    @Path("users/{id}/membership")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response offboardUser(@PathParam("id") String id) {
+        AuthResult auth = requireScoutAdmin();
+        OffboardResult result;
+        try {
+            result = offboard(auth.user().getId(), id);
+        } catch (NoSuchElementException e) {
+            throw new NotFoundException(e.getMessage());
+        } catch (IllegalStateException e) {
+            throw new ClientErrorException(e.getMessage(), Response.Status.CONFLICT);
+        }
+        fireGroupMembershipEvent(auth, id, SCOUT_USER_GROUP, OperationType.DELETE);
+        if (result.wasAdmin()) {
+            fireGroupMembershipEvent(auth, id, SCOUT_ADMIN_GROUP, OperationType.DELETE);
+        }
+        return ok("offboarded", result.username());
     }
 
     AuthResult requireScoutAdmin() {
@@ -159,9 +263,26 @@ public class ScoutUsersResource {
                 .success();
     }
 
+    /** Emit a {@code USER}/{@code UPDATE} admin event so an attribute-only change re-snapshots to OPA + audits. */
+    private void fireUserUpdatedEvent(AuthResult auth, String userId) {
+        RealmModel realm = session.getContext().getRealm();
+        adminEvent(auth, realm)
+                .operation(OperationType.UPDATE)
+                .resource(ResourceType.USER)
+                .resourcePath("users", userId)
+                .success();
+    }
+
     private AdminEventBuilder adminEvent(AuthResult auth, RealmModel realm) {
-        AdminAuth adminAuth = new AdminAuth(realm, auth.getToken(), auth.getUser(), auth.getClient());
+        AdminAuth adminAuth = new AdminAuth(realm, auth.token(), auth.user(), auth.client());
         return new AdminEventBuilder(realm, adminAuth, session, session.getContext().getConnection());
+    }
+
+    private Response ok(String status, String username) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", status);
+        body.put("username", username);
+        return Response.ok(body).build();
     }
 
     // --- Core logic (package-private, unit-tested) -------------------------
@@ -201,30 +322,10 @@ public class ScoutUsersResource {
      * a bad request never leaves a half-applied grant.
      */
     String applyApproval(ApproveRequest req) {
-        if (req == null || req.userId() == null || req.userId().isBlank()) {
-            throw new IllegalArgumentException("userId is required");
-        }
         RealmModel realm = session.getContext().getRealm();
-        UserModel user = session.users().getUserById(realm, req.userId());
-        if (user == null) {
-            throw new NoSuchElementException("user not found: " + req.userId());
-        }
-
-        Map<String, UPAttribute> allowed = authzAttributes();
-        Map<String, List<String>> attributes = req.attributes() == null ? Map.of() : req.attributes();
-        for (Map.Entry<String, List<String>> e : attributes.entrySet()) {
-            UPAttribute attr = allowed.get(e.getKey());
-            if (attr == null) {
-                throw new IllegalArgumentException("not a Scout data-access attribute: " + e.getKey());
-            }
-            validate(attr, e.getValue() == null ? List.of() : e.getValue());
-        }
-
-        GroupModel scoutUser = topLevelGroup(realm, SCOUT_USER_GROUP);
-        if (scoutUser == null) {
-            throw new NoSuchElementException("group not found: " + SCOUT_USER_GROUP);
-        }
-
+        UserModel user = requireUser(realm, req == null ? null : req.userId());
+        Map<String, List<String>> attributes = validateAttributes(req.attributes());
+        GroupModel scoutUser = requireGroup(realm, SCOUT_USER_GROUP);
         attributes.forEach(user::setAttribute);
         user.joinGroup(scoutUser);
         log.infof("scout-users: approved %s (attributes set: %s)",
@@ -255,6 +356,157 @@ public class ScoutUsersResource {
                 }
             }
         }
+    }
+
+    /**
+     * Validate submitted attribute values against the dynamic schema and reject
+     * any key that isn't a {@code scoutAuthz} attribute. Validates everything
+     * before the caller writes anything. {@return the map to write}.
+     */
+    Map<String, List<String>> validateAttributes(Map<String, List<String>> attributes) {
+        Map<String, UPAttribute> allowed = authzAttributes();
+        Map<String, List<String>> attrs = attributes == null ? Map.of() : attributes;
+        for (Map.Entry<String, List<String>> e : attrs.entrySet()) {
+            UPAttribute attr = allowed.get(e.getKey());
+            if (attr == null) {
+                throw new IllegalArgumentException("not a Scout data-access attribute: " + e.getKey());
+            }
+            validate(attr, e.getValue() == null ? List.of() : e.getValue());
+        }
+        return attrs;
+    }
+
+    /** {@return Scout users matching the status filter (pending/active/admin) and optional search}. */
+    List<ScoutUser> listUsers(String status, String search) {
+        RealmModel realm = session.getContext().getRealm();
+        Map<String, String> params = (search == null || search.isBlank())
+                ? Map.of() : Map.of(UserModel.SEARCH, search);
+        return session.users().searchForUserStream(realm, params)
+                .map(this::toScoutUser)
+                .filter(u -> statusMatches(u, status))
+                .toList();
+    }
+
+    /** Project a user to the console view: derived status, admin flag, and the scoutAuthz attributes only. */
+    ScoutUser toScoutUser(UserModel u) {
+        List<String> groups = u.getGroupsStream().map(GroupModel::getName).toList();
+        boolean admin = groups.contains(SCOUT_ADMIN_GROUP);
+        boolean active = admin || groups.contains(SCOUT_USER_GROUP);
+        boolean termsAccepted = u.getFirstAttribute(TERMS_ACCEPTED_ATTR) != null;
+        String status = admin ? "admin" : active ? "active" : termsAccepted ? "pending" : "none";
+
+        Map<String, List<String>> all = u.getAttributes();
+        Map<String, List<String>> attrs = new LinkedHashMap<>();
+        for (String key : authzAttributes().keySet()) {
+            List<String> values = all == null ? null : all.get(key);
+            if (values != null && !values.isEmpty()) {
+                attrs.put(key, values);
+            }
+        }
+        return new ScoutUser(u.getId(), u.getUsername(), u.getEmail(), fullName(u), status, admin, attrs);
+    }
+
+    /** Whether a user matches the table's status filter. "active" includes admins; blank/"all" matches everything. */
+    boolean statusMatches(ScoutUser u, String filter) {
+        if (filter == null || filter.isBlank() || "all".equalsIgnoreCase(filter)) {
+            return true;
+        }
+        return switch (filter.toLowerCase()) {
+            case "pending" -> "pending".equals(u.status());
+            case "active" -> "active".equals(u.status()) || "admin".equals(u.status());
+            case "admin", "admins" -> u.isAdmin();
+            default -> false;
+        };
+    }
+
+    /** Set an approved user's data-access attributes (validated). No group change. */
+    String setAttributes(String userId, Map<String, List<String>> attributes) {
+        RealmModel realm = session.getContext().getRealm();
+        UserModel user = requireUser(realm, userId);
+        Map<String, List<String>> attrs = validateAttributes(attributes);
+        attrs.forEach(user::setAttribute);
+        log.infof("scout-users: set attributes %s on %s", attrs.keySet(), user.getUsername());
+        return user.getUsername();
+    }
+
+    /** Promote a user to scout-admin (idempotent). */
+    String promote(String userId) {
+        RealmModel realm = session.getContext().getRealm();
+        UserModel user = requireUser(realm, userId);
+        user.joinGroup(requireGroup(realm, SCOUT_ADMIN_GROUP));
+        log.infof("scout-users: promoted %s to %s", user.getUsername(), SCOUT_ADMIN_GROUP);
+        return user.getUsername();
+    }
+
+    /** Demote a user from scout-admin. Self-demote is allowed; removing the last admin throws IllegalStateException. */
+    String demote(String userId) {
+        RealmModel realm = session.getContext().getRealm();
+        UserModel user = requireUser(realm, userId);
+        GroupModel admin = requireGroup(realm, SCOUT_ADMIN_GROUP);
+        if (isScoutAdmin(user) && countScoutAdmins(realm) <= 1) {
+            throw new IllegalStateException("cannot remove the last " + SCOUT_ADMIN_GROUP);
+        }
+        user.leaveGroup(admin);
+        log.infof("scout-users: demoted %s from %s", user.getUsername(), SCOUT_ADMIN_GROUP);
+        return user.getUsername();
+    }
+
+    /**
+     * Offboard a user: remove scout-user and (if present) scout-admin. Blocks
+     * offboarding yourself and removing the last admin (both IllegalStateException).
+     * {@return what was removed, so the adapter can emit the matching events}.
+     */
+    OffboardResult offboard(String actorId, String userId) {
+        if (actorId != null && actorId.equals(userId)) {
+            throw new IllegalStateException("cannot offboard yourself");
+        }
+        RealmModel realm = session.getContext().getRealm();
+        UserModel user = requireUser(realm, userId);
+        boolean wasAdmin = isScoutAdmin(user);
+        if (wasAdmin && countScoutAdmins(realm) <= 1) {
+            throw new IllegalStateException(
+                    "cannot remove the last " + SCOUT_ADMIN_GROUP + "; promote another admin first");
+        }
+        GroupModel scoutUser = topLevelGroup(realm, SCOUT_USER_GROUP);
+        if (scoutUser != null) {
+            user.leaveGroup(scoutUser);
+        }
+        if (wasAdmin) {
+            GroupModel scoutAdmin = topLevelGroup(realm, SCOUT_ADMIN_GROUP);
+            if (scoutAdmin != null) {
+                user.leaveGroup(scoutAdmin);
+            }
+        }
+        log.infof("scout-users: offboarded %s (wasAdmin=%s)", user.getUsername(), wasAdmin);
+        return new OffboardResult(user.getUsername(), wasAdmin);
+    }
+
+    /** {@return the number of scout-admins, capped at 2 — enough to detect the last-admin case}. */
+    long countScoutAdmins(RealmModel realm) {
+        GroupModel admin = topLevelGroup(realm, SCOUT_ADMIN_GROUP);
+        if (admin == null) {
+            return 0;
+        }
+        return session.users().getGroupMembersStream(realm, admin, 0, 2).count();
+    }
+
+    private UserModel requireUser(RealmModel realm, String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        UserModel user = session.users().getUserById(realm, userId);
+        if (user == null) {
+            throw new NoSuchElementException("user not found: " + userId);
+        }
+        return user;
+    }
+
+    private GroupModel requireGroup(RealmModel realm, String name) {
+        GroupModel group = topLevelGroup(realm, name);
+        if (group == null) {
+            throw new NoSuchElementException("group not found: " + name);
+        }
+        return group;
     }
 
     // --- helpers ------------------------------------------------------------

@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -219,5 +220,178 @@ class ScoutUsersResourceTest {
 
         assertTrue(resource.isScoutAdmin(admin));
         assertFalse(resource.isScoutAdmin(plain));
+    }
+
+    // --- edit attributes ----------------------------------------------------
+
+    @Test
+    void set_attributes_updates_without_changing_groups() {
+        UserModel target = mock(UserModel.class);
+        when(target.getUsername()).thenReturn("alice");
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        resource.setAttributes("u1", Map.of("allowed_facilities", List.of("BJH")));
+
+        verify(target).setAttribute("allowed_facilities", List.of("BJH"));
+        verify(target, never()).joinGroup(any());
+        verify(target, never()).leaveGroup(any());
+    }
+
+    @Test
+    void set_attributes_rejects_unknown_key_without_applying() {
+        UserModel target = mock(UserModel.class);
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                resource.setAttributes("u1", Map.of("not_an_authz_attr", List.of("x"))));
+        verify(target, never()).setAttribute(any(), any());
+    }
+
+    // --- promote / demote ---------------------------------------------------
+
+    @Test
+    void promote_joins_scout_admin() {
+        UserModel target = mock(UserModel.class);
+        when(target.getUsername()).thenReturn("alice");
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        resource.promote("u1");
+
+        verify(target).joinGroup(scoutAdminGroup);
+    }
+
+    @Test
+    void demote_leaves_scout_admin_when_another_admin_remains() {
+        UserModel target = adminUser();
+        when(target.getUsername()).thenReturn("alice");
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+        whenAdminCountIs(2);
+
+        resource.demote("u1");
+
+        verify(target).leaveGroup(scoutAdminGroup);
+    }
+
+    @Test
+    void demote_last_admin_is_rejected() {
+        UserModel target = adminUser();
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+        whenAdminCountIs(1);
+
+        assertThrows(IllegalStateException.class, () -> resource.demote("u1"));
+        verify(target, never()).leaveGroup(any());
+    }
+
+    // --- offboard -----------------------------------------------------------
+
+    @Test
+    void offboard_admin_removes_both_groups() {
+        UserModel target = adminUser();
+        when(target.getUsername()).thenReturn("alice");
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+        whenAdminCountIs(2);
+
+        ScoutUsersResource.OffboardResult result = resource.offboard("actor", "u1");
+
+        verify(target).leaveGroup(scoutUserGroup);
+        verify(target).leaveGroup(scoutAdminGroup);
+        assertTrue(result.wasAdmin());
+    }
+
+    @Test
+    void offboard_plain_user_removes_only_scout_user() {
+        UserModel target = mock(UserModel.class);
+        when(target.getUsername()).thenReturn("bob");
+        when(target.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup));
+        when(users.getUserById(realm, "u2")).thenReturn(target);
+
+        ScoutUsersResource.OffboardResult result = resource.offboard("actor", "u2");
+
+        verify(target).leaveGroup(scoutUserGroup);
+        verify(target, never()).leaveGroup(scoutAdminGroup);
+        assertFalse(result.wasAdmin());
+    }
+
+    @Test
+    void offboard_self_is_rejected_before_any_lookup() {
+        assertThrows(IllegalStateException.class, () -> resource.offboard("u1", "u1"));
+        verify(users, never()).getUserById(any(), any());
+    }
+
+    @Test
+    void offboard_last_admin_is_rejected() {
+        UserModel target = adminUser();
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+        whenAdminCountIs(1);
+
+        assertThrows(IllegalStateException.class, () -> resource.offboard("actor", "u1"));
+        verify(target, never()).leaveGroup(any());
+    }
+
+    // --- console projection -------------------------------------------------
+
+    @Test
+    void to_scout_user_derives_admin_status_and_hides_non_authz_attributes() {
+        UserModel admin = mock(UserModel.class);
+        when(admin.getId()).thenReturn("a1");
+        when(admin.getUsername()).thenReturn("adminuser");
+        when(admin.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup, scoutAdminGroup));
+        Map<String, List<String>> raw = new HashMap<>();
+        raw.put("allowed_facilities", List.of("WUSM"));
+        raw.put("scout_terms_accepted_at", List.of("123"));
+        raw.put("scout_admin_approval_email_sent_at", List.of("456"));
+        when(admin.getAttributes()).thenReturn(raw);
+
+        ScoutUsersResource.ScoutUser su = resource.toScoutUser(admin);
+
+        assertEquals("admin", su.status());
+        assertTrue(su.isAdmin());
+        assertEquals(Set.of("allowed_facilities"), su.attributes().keySet(),
+                "only scoutAuthz attributes are exposed -- terms/email-sent must not leak");
+    }
+
+    @Test
+    void to_scout_user_is_pending_when_terms_accepted_but_not_in_a_group() {
+        UserModel u = mock(UserModel.class);
+        when(u.getGroupsStream()).thenAnswer(i -> Stream.<GroupModel>of());
+        when(u.getFirstAttribute("scout_terms_accepted_at")).thenReturn("ts");
+        when(u.getAttributes()).thenReturn(Map.of());
+
+        ScoutUsersResource.ScoutUser su = resource.toScoutUser(u);
+
+        assertEquals("pending", su.status());
+        assertFalse(su.isAdmin());
+    }
+
+    @Test
+    void status_filter_active_includes_admins() {
+        ScoutUsersResource.ScoutUser pending = scoutUser("pending", false);
+        ScoutUsersResource.ScoutUser active = scoutUser("active", false);
+        ScoutUsersResource.ScoutUser admin = scoutUser("admin", true);
+
+        assertTrue(resource.statusMatches(pending, "pending"));
+        assertFalse(resource.statusMatches(active, "pending"));
+        assertTrue(resource.statusMatches(active, "active"));
+        assertTrue(resource.statusMatches(admin, "active"), "active includes admins");
+        assertTrue(resource.statusMatches(admin, "admins"));
+        assertFalse(resource.statusMatches(active, "admins"));
+        assertTrue(resource.statusMatches(pending, null), "no filter matches everything");
+    }
+
+    // --- helpers for the above ----------------------------------------------
+
+    private UserModel adminUser() {
+        UserModel u = mock(UserModel.class);
+        when(u.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup, scoutAdminGroup));
+        return u;
+    }
+
+    private void whenAdminCountIs(int n) {
+        when(users.getGroupMembersStream(realm, scoutAdminGroup, 0, 2))
+                .thenAnswer(i -> Stream.generate(() -> mock(UserModel.class)).limit(n));
+    }
+
+    private ScoutUsersResource.ScoutUser scoutUser(String status, boolean isAdmin) {
+        return new ScoutUsersResource.ScoutUser("id", "u", null, null, status, isAdmin, Map.of());
     }
 }
