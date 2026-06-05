@@ -6,6 +6,8 @@ import TopBar from '@/components/TopBar';
 import {
   HiArrowLeft,
   HiCheckCircle,
+  HiChevronLeft,
+  HiChevronRight,
   HiExternalLink,
   HiShieldCheck,
   HiTrash,
@@ -154,43 +156,57 @@ type Confirm = null | 'promote' | 'demote' | 'offboard';
 interface DrawerProps {
   user: Row;
   schema: AttrSchema[];
+  position?: { index: number; total: number };
+  onNavigate?: (delta: number) => void;
   onClose: () => void;
   onDone: () => void;
 }
 
-function UserDrawer({ user, schema, onClose, onDone }: DrawerProps) {
+// Seed each control from the user's current value if set, else the schema's
+// server default. So approve mode starts at defaults (mask=true, bypass=false)
+// and edit mode starts pre-filled with what the user already has.
+function seedValues(user: Row, schema: AttrSchema[]): Record<string, string[]> {
+  const init: Record<string, string[]> = {};
+  for (const a of schema) {
+    const current = user.attributes[a.name];
+    if (current && current.length > 0) {
+      init[a.name] = current;
+    } else if (isBoolean(a)) {
+      init[a.name] = [a.defaultValue === 'true' ? 'true' : 'false'];
+    } else if (a.multivalued) {
+      init[a.name] = [];
+    } else if (a.options && a.options.length > 0) {
+      init[a.name] = [a.defaultValue ?? a.options[0]];
+    } else {
+      init[a.name] = a.defaultValue ? [a.defaultValue] : [];
+    }
+  }
+  return init;
+}
+
+function UserDrawer({ user, schema, position, onNavigate, onClose, onDone }: DrawerProps) {
   const mode: 'approve' | 'edit' = user.status === 'pending' ? 'approve' : 'edit';
   const [shown, setShown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
 
-  // Seed each control from the user's current value if set, else the schema's
-  // server default. So approve mode starts at defaults (mask=true, bypass=false)
-  // and edit mode starts pre-filled with what the user already has.
-  const [values, setValues] = useState<Record<string, string[]>>(() => {
-    const init: Record<string, string[]> = {};
-    for (const a of schema) {
-      const current = user.attributes[a.name];
-      if (current && current.length > 0) {
-        init[a.name] = current;
-      } else if (isBoolean(a)) {
-        init[a.name] = [a.defaultValue === 'true' ? 'true' : 'false'];
-      } else if (a.multivalued) {
-        init[a.name] = [];
-      } else if (a.options && a.options.length > 0) {
-        init[a.name] = [a.defaultValue ?? a.options[0]];
-      } else {
-        init[a.name] = a.defaultValue ? [a.defaultValue] : [];
-      }
-    }
-    return init;
-  });
+  const [values, setValues] = useState<Record<string, string[]>>(() => seedValues(user, schema));
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  // Re-seed and reset transient state when navigating to a different user
+  // (Prev/Next) or when the schema finishes loading — the drawer stays mounted
+  // and swaps content in place rather than re-animating.
+  useEffect(() => {
+    setValues(seedValues(user, schema));
+    setConfirm(null);
+    setError(null);
+    setSubmitting(false);
+  }, [user, schema]);
 
   const close = useCallback(() => {
     setShown(false);
@@ -282,13 +298,38 @@ function UserDrawer({ user, schema, onClose, onDone }: DrawerProps) {
               </p>
             )}
           </div>
-          <button
-            onClick={close}
-            aria-label="Close"
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-          >
-            <HiX className="text-xl" />
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {position && onNavigate && (
+              <div className="flex items-center gap-0.5 mr-1 text-slate-400 dark:text-slate-500">
+                <button
+                  onClick={() => onNavigate(-1)}
+                  disabled={position.index <= 0}
+                  aria-label="Previous user"
+                  className="p-1 rounded hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 disabled:cursor-default transition-colors"
+                >
+                  <HiChevronLeft className="text-lg" />
+                </button>
+                <span className="text-xs tabular-nums select-none">
+                  {position.index + 1} / {position.total}
+                </span>
+                <button
+                  onClick={() => onNavigate(1)}
+                  disabled={position.index >= position.total - 1}
+                  aria-label="Next user"
+                  className="p-1 rounded hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 disabled:cursor-default transition-colors"
+                >
+                  <HiChevronRight className="text-lg" />
+                </button>
+              </div>
+            )}
+            <button
+              onClick={close}
+              aria-label="Close"
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            >
+              <HiX className="text-xl" />
+            </button>
+          </div>
         </div>
 
         {/* Body: attribute form + (edit mode) role & access actions */}
@@ -639,6 +680,7 @@ export default function UsersClient() {
   };
 
   const sorted = rows ? sortRows(rows, sort.col, sort.dir) : [];
+  const selectedIndex = selected ? sorted.findIndex((r) => r.id === selected.id) : -1;
   const showRequested = tab === 'pending';
   const actionLabel = tab === 'pending' ? 'Review' : 'Manage';
 
@@ -816,9 +858,13 @@ export default function UsersClient() {
 
       {selected && (
         <UserDrawer
-          key={selected.id}
           user={selected}
           schema={schema}
+          position={selectedIndex >= 0 ? { index: selectedIndex, total: sorted.length } : undefined}
+          onNavigate={(delta) => {
+            const next = sorted[selectedIndex + delta];
+            if (next) setSelected(next);
+          }}
           onClose={() => setSelected(null)}
           onDone={onDone}
         />
