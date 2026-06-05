@@ -2,18 +2,15 @@ import { DefaultSession } from 'next-auth';
 
 declare module 'next-auth' {
   interface Session {
-    accessToken?: string;
     user: {
       username?: string;
       isAdmin?: boolean;
-      groups?: string[];
     } & DefaultSession['user'];
   }
 
   interface User {
     username?: string;
     isAdmin?: boolean;
-    groups?: string[];
   }
 
   interface Profile {
@@ -24,10 +21,8 @@ declare module 'next-auth' {
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    accessToken?: string;
     refreshToken?: string;
-    expiresAt?: number;
     username?: string;
-    groups?: string[];
+    isAdmin?: boolean;
   }
 }

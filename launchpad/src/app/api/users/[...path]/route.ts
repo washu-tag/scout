@@ -17,18 +17,14 @@ const ALLOWED: Record<string, readonly RegExp[]> = {
   DELETE: [/^users\/[^/]+\/(admin|membership)$/],
 };
 
-// Keycloak access tokens are short-lived (realm accessTokenLifespan, 300s), so
-// refresh against the stored refresh token when the cached one is expired (or
-// about to be). Refresh-token rotation is off in the realm, so the stored
-// refresh token stays reusable for the SSO session — we don't need to persist a
-// rotated value back into the session cookie.
-async function freshAccessToken(jwt: JWT, force: boolean): Promise<string | null> {
-  const now = Math.floor(Date.now() / 1000);
-  if (!force && jwt.accessToken && jwt.expiresAt && jwt.expiresAt - 15 > now) {
-    return jwt.accessToken;
-  }
+// Mint a fresh access token from the refresh token on every request. The session
+// cookie holds only the refresh token (not the access token) to keep it small
+// enough that the browser/proxy doesn't drop it (see auth.ts), so there's nothing
+// to cache. Refresh-token rotation is off in the realm, so the refresh token
+// stays reusable for the SSO session.
+async function freshAccessToken(jwt: JWT): Promise<string | null> {
   if (!jwt.refreshToken) {
-    return jwt.accessToken ?? null;
+    return null;
   }
   const res = await fetch(`${process.env.KEYCLOAK_ISSUER}/protocol/openid-connect/token`, {
     method: 'POST',
@@ -82,20 +78,12 @@ async function forward(req: NextRequest, segments: string[], method: 'GET' | 'PO
   }
 
   const body = method === 'POST' ? await req.text() : undefined;
-  let accessToken = await freshAccessToken(jwt, false);
+  const accessToken = await freshAccessToken(jwt);
   if (!accessToken) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  let upstream = await callKeycloak(issuer, target, method, accessToken, body);
-  if (upstream.status === 401) {
-    // Cached token rejected (clock skew / mid-flight expiry): force one refresh
-    // and retry before giving up.
-    accessToken = await freshAccessToken(jwt, true);
-    if (accessToken) {
-      upstream = await callKeycloak(issuer, target, method, accessToken, body);
-    }
-  }
+  const upstream = await callKeycloak(issuer, target, method, accessToken, body);
 
   const text = await upstream.text();
   return new NextResponse(text, {
