@@ -55,6 +55,8 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     private static final String SCOUT_USER_GROUP = "scout-user";
     private static final String EMAIL_TEMPLATE_PARAMETER_USERNAME = "username";
     private static final String EMAIL_TEMPLATE_PARAMETER_SCOUT_URL = "scoutUrl";
+    private static final String EMAIL_TEMPLATE_PARAMETER_SCOUT_SITE = "scoutSite";
+    private static final String EMAIL_TEMPLATE_PARAMETER_APPROVAL_URL = "approvalUrl";
     private static final String ENV_SCOUT_URL = "KC_SCOUT_URL";
     // Named pool for approval-email sends; ExecutorsProvider returns a shared
     // managed pool keyed by name and handles shutdown on server reload.
@@ -242,7 +244,13 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
             FreeMarkerProvider freeMarker = session.getProvider(FreeMarkerProvider.class);
             ThemeManager themeManager = session.getProvider(ThemeManager.class);
             Theme theme = themeManager.getTheme(realm.getEmailTheme(), Theme.Type.EMAIL);
-            String subject = "New Scout User Approval Required";
+            // Prefix the site so admins managing multiple Scout environments can
+            // tell from the inbox which one a request is for.
+            String subject = getScoutSite()
+                    .map(site -> "[" + site + "] New Scout User Approval Required")
+                    .orElse("New Scout User Approval Required");
+            // Deep-link the admin straight to the launchpad approval page for this user.
+            getApprovalUrl(user).ifPresent(url -> bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_APPROVAL_URL, url));
             String plaintextBody = freeMarker.processTemplate(bodyAttributes, "text/email-admin-approval.ftl", theme);
             String htmlBody = freeMarker.processTemplate(bodyAttributes, "html/email-admin-approval.ftl", theme);
             emailSender.send(
@@ -301,10 +309,48 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
         return Optional.of(scoutUrl);
     }
 
+    private Optional<String> getScoutSite() {
+        return siteLabel(System.getenv(ENV_SCOUT_URL));
+    }
+
+    /**
+     * Reduce a Scout URL to a bare-host site label for emails. {@link #ENV_SCOUT_URL}
+     * is set to {@code server_hostname}, but tolerate a scheme/path in case a site
+     * configures it from {@code external_url}.
+     *
+     * @param scoutUrl the configured Scout URL (host, or full URL)
+     * @return the bare host, or empty if nothing usable is configured
+     */
+    static Optional<String> siteLabel(String scoutUrl) {
+        if (scoutUrl == null || scoutUrl.isEmpty()) {
+            return Optional.empty();
+        }
+        String host = scoutUrl.replaceFirst("^https?://", "").replaceFirst("/.*$", "");
+        return host.isEmpty() ? Optional.empty() : Optional.of(host);
+    }
+
+    private Optional<String> getApprovalUrl(UserModel user) {
+        return getScoutUrl().map(base -> approvalUrl(base, user.getId()));
+    }
+
+    /**
+     * Build the deep-link to the launchpad approval page for a specific user.
+     * The launchpad is served at the Scout base URL ({@link #ENV_SCOUT_URL}); the
+     * {@code ?user=} parameter opens that user's row in the approval queue.
+     *
+     * @param scoutBaseUrl the external Scout base URL (scheme + host)
+     * @param userId the Keycloak user id to focus
+     * @return the launchpad approval-page deep-link
+     */
+    static String approvalUrl(String scoutBaseUrl, String userId) {
+        return scoutBaseUrl.replaceFirst("/+$", "") + "/admin/approvals?user=" + userId;
+    }
+
     private Map<String, Object> createBodyAttributes(UserModel user) {
         Map<String, Object> bodyAttributes = new java.util.HashMap<>();
         bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_USERNAME, user.getUsername());
         getScoutUrl().ifPresent(url -> bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_SCOUT_URL, url));
+        getScoutSite().ifPresent(site -> bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_SCOUT_SITE, site));
         return bodyAttributes;
     }
 
