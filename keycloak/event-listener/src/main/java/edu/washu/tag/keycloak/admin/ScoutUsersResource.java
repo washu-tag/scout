@@ -49,9 +49,9 @@ import org.keycloak.userprofile.UserProfileProvider;
  * ({@link #buildSchema}, {@link #findPending}, {@link #applyApproval},
  * {@link #isScoutAdmin}, {@link #validate}) is plain and unit-tested directly.
  */
-public class ScoutApprovalResource {
+public class ScoutUsersResource {
 
-    private static final Logger log = Logger.getLogger(ScoutApprovalResource.class);
+    private static final Logger log = Logger.getLogger(ScoutUsersResource.class);
 
     static final String SCOUT_USER_GROUP = "scout-user";
     static final String SCOUT_ADMIN_GROUP = "scout-admin";
@@ -61,7 +61,7 @@ public class ScoutApprovalResource {
 
     private final KeycloakSession session;
 
-    ScoutApprovalResource(KeycloakSession session) {
+    ScoutUsersResource(KeycloakSession session) {
         this.session = session;
     }
 
@@ -227,7 +227,7 @@ public class ScoutApprovalResource {
 
         attributes.forEach(user::setAttribute);
         user.joinGroup(scoutUser);
-        log.infof("scout-approval: approved %s (attributes set: %s)",
+        log.infof("scout-users: approved %s (attributes set: %s)",
                 user.getUsername(), attributes.keySet());
         return user.getUsername();
     }

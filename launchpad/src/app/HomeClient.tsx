@@ -372,7 +372,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
             <div className="grid grid-cols-2 gap-3 flex-1">
               {[
                 {
-                  href: '/admin/approvals',
+                  href: '/admin/users',
                   external: false,
                   label: 'Approvals',
                   description: 'Review and approve access requests',

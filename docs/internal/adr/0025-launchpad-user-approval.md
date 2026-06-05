@@ -22,10 +22,10 @@ weakening the authorization model.
 A purpose-built **approval UI in the launchpad**, backed by a small **Keycloak
 REST resource**, with **dynamic, config-driven attributes**.
 
-### 1. scout-approval REST resource (Keycloak SPI)
+### 1. scout-users REST resource (Keycloak SPI)
 
 A `RealmResourceProvider` in the existing event-listener SPI exposes, under
-`/realms/<realm>/scout-approval/`:
+`/realms/<realm>/scout-users/`:
 
 - `GET /schema` — the data-access attributes to collect, **discovered at request
   time** from the realm User Profile (attributes annotated `scoutAuthz=true`,
@@ -53,7 +53,7 @@ The approval page lives in the launchpad (Next.js + Tailwind + next-auth), not
 as Keycloak-served HTML, reusing the launchpad's existing auth, styling, and
 admin gating. A table of pending users opens a slide-over drawer with the
 dynamic form; the admin approval email deep-links to
-`…/admin/approvals?user=<id>`. The page and its Admin Tools tile gate on
+`…/admin/users?user=<id>`. The page and its Admin Tools tile gate on
 `session.user.isAdmin` — the `launchpad-admin` client role that the `scout-admin`
 group grants — so the UI gate matches the role Keycloak already issues. The KC
 API remains the real gate (defense in depth).
@@ -61,8 +61,8 @@ API remains the real gate (defense in depth).
 ### 3. Token pass-through (not impersonation, not exchange)
 
 The browser never holds the Keycloak token. A launchpad **server-side route**
-(`/api/approvals/*`) reads the admin's access token from their next-auth session
-and forwards it as the Bearer to the scout-approval API — **same-realm JWT
+(`/api/users/*`) reads the admin's access token from their next-auth session
+and forwards it as the Bearer to the scout-users API — **same-realm JWT
 pass-through**, the model [ADR 0022](0022-trino-auth-and-impersonation.md) uses
 for JupyterHub. This fits the launchpad because, like Jupyter's Hub, it has a
 **fresh-user-token source**: next-auth is the custodian, holding the refresh

@@ -118,7 +118,7 @@ function ApprovalDrawer({ user, schema, onClose, onApproved }: DrawerProps) {
       if (val.length > 0) attributes[name] = val;
     }
     try {
-      const r = await fetch('/api/approvals/approve', {
+      const r = await fetch('/api/users/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, attributes }),
@@ -310,7 +310,7 @@ function Control({ attr, value, onChipToggle, onValue }: ControlProps) {
 
 // --- Page -----------------------------------------------------------------
 
-export default function ApprovalsClient() {
+export default function UsersClient() {
   const { data: session, status } = useSession();
   const [schema, setSchema] = useState<AttrSchema[]>([]);
   const [pending, setPending] = useState<PendingUser[] | null>(null);
@@ -348,11 +348,11 @@ export default function ApprovalsClient() {
   const load = useCallback(async () => {
     try {
       const [s, p] = await Promise.all([
-        fetch('/api/approvals/schema').then((r) => {
+        fetch('/api/users/schema').then((r) => {
           if (!r.ok) throw new Error('schema');
           return r.json();
         }),
-        fetch('/api/approvals/pending').then((r) => {
+        fetch('/api/users/pending').then((r) => {
           if (!r.ok) throw new Error('pending');
           return r.json();
         }),

@@ -37,13 +37,13 @@ class UserApprovalEmailEventListenerProviderTest {
 
     @Test
     void approvalUrl_builds_launchpad_deep_link() {
-        assertEquals("https://scout.example.edu/admin/approvals?user=u-123",
+        assertEquals("https://scout.example.edu/admin/users?user=u-123",
                 UserApprovalEmailEventListenerProvider.approvalUrl("https://scout.example.edu", "u-123"));
     }
 
     @Test
     void approvalUrl_trims_trailing_slash_on_base() {
-        assertEquals("https://scout.example.edu/admin/approvals?user=u-123",
+        assertEquals("https://scout.example.edu/admin/users?user=u-123",
                 UserApprovalEmailEventListenerProvider.approvalUrl("https://scout.example.edu/", "u-123"));
     }
 }

@@ -1,4 +1,4 @@
-import ApprovalsClient from './ApprovalsClient';
+import UsersClient from './UsersClient';
 
 // Read auth/session per request; never statically prerender this admin view.
 export const dynamic = 'force-dynamic';
@@ -8,5 +8,5 @@ export const metadata = {
 };
 
 export default function ApprovalsPage() {
-  return <ApprovalsClient />;
+  return <UsersClient />;
 }

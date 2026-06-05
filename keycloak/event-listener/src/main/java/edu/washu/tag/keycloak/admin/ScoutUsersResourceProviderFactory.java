@@ -8,22 +8,22 @@ import org.keycloak.services.resource.RealmResourceProviderFactory;
 
 /**
  * Registers Scout's user-approval REST resource under
- * {@code /realms/{realm}/scout-approval}. The resource lets a scout-admin list
+ * {@code /realms/{realm}/scout-users}. The resource lets a scout-admin list
  * pending users and approve them (join scout-user + set data-access attributes)
  * in one call, acting as the calling admin — no standing admin credential.
  *
  * <p>The set of data-access attributes is discovered dynamically from the realm
  * User Profile (attributes annotated {@code scoutAuthz=true}), so adding a new
  * dimension to {@code trino_attribute_filters} surfaces in the approval flow
- * with no change here. See {@link ScoutApprovalResource}.
+ * with no change here. See {@link ScoutUsersResource}.
  */
-public class ScoutApprovalResourceProviderFactory implements RealmResourceProviderFactory {
+public class ScoutUsersResourceProviderFactory implements RealmResourceProviderFactory {
 
-    public static final String ID = "scout-approval";
+    public static final String ID = "scout-users";
 
     @Override
     public RealmResourceProvider create(KeycloakSession session) {
-        return new ScoutApprovalResourceProvider(session);
+        return new ScoutUsersResourceProvider(session);
     }
 
     @Override

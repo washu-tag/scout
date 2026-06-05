@@ -38,14 +38,14 @@ import org.keycloak.userprofile.UserProfileProvider;
  * (auth + exception translation) are exercised by Keycloak at runtime; the core
  * methods tested here throw plain exceptions and need no JAX-RS runtime.
  */
-class ScoutApprovalResourceTest {
+class ScoutUsersResourceTest {
 
     private KeycloakSession session;
     private RealmModel realm;
     private UserProvider users;
     private GroupModel scoutUserGroup;
     private GroupModel scoutAdminGroup;
-    private ScoutApprovalResource resource;
+    private ScoutUsersResource resource;
 
     @BeforeEach
     void setUp() {
@@ -66,7 +66,7 @@ class ScoutApprovalResourceTest {
         when(session.getProvider(UserProfileProvider.class)).thenReturn(upp);
         when(upp.getConfiguration()).thenReturn(profileConfig());
 
-        resource = new ScoutApprovalResource(session);
+        resource = new ScoutUsersResource(session);
     }
 
     private GroupModel group(String name) {
@@ -112,10 +112,10 @@ class ScoutApprovalResourceTest {
 
     @Test
     void schema_returns_only_scoutauthz_attributes_with_metadata() {
-        List<ScoutApprovalResource.AttrSchema> schema = resource.buildSchema();
+        List<ScoutUsersResource.AttrSchema> schema = resource.buildSchema();
 
         assertEquals(List.of("allowed_facilities", "mask_phi_fields"),
-                schema.stream().map(ScoutApprovalResource.AttrSchema::name).toList(),
+                schema.stream().map(ScoutUsersResource.AttrSchema::name).toList(),
                 "email is not annotated scoutAuthz and must be excluded");
         var facilities = schema.get(0);
         assertTrue(facilities.multivalued());
@@ -135,7 +135,7 @@ class ScoutApprovalResourceTest {
         when(target.getUsername()).thenReturn("alice");
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
-        resource.applyApproval(new ScoutApprovalResource.ApproveRequest("u1",
+        resource.applyApproval(new ScoutUsersResource.ApproveRequest("u1",
                 Map.of("allowed_facilities", List.of("WUSM"),
                         "mask_phi_fields", List.of("false"))));
 
@@ -150,7 +150,7 @@ class ScoutApprovalResourceTest {
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
         assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
-                new ScoutApprovalResource.ApproveRequest("u1",
+                new ScoutUsersResource.ApproveRequest("u1",
                         Map.of("not_an_authz_attr", List.of("x")))));
         verify(target, never()).setAttribute(any(), any());
         verify(target, never()).joinGroup(any());
@@ -162,7 +162,7 @@ class ScoutApprovalResourceTest {
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
         assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
-                new ScoutApprovalResource.ApproveRequest("u1",
+                new ScoutUsersResource.ApproveRequest("u1",
                         Map.of("allowed_facilities", List.of("NOPE")))));
         verify(target, never()).joinGroup(any());
     }
@@ -173,7 +173,7 @@ class ScoutApprovalResourceTest {
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
         assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
-                new ScoutApprovalResource.ApproveRequest("u1",
+                new ScoutUsersResource.ApproveRequest("u1",
                         Map.of("mask_phi_fields", List.of("true", "false")))));
         verify(target, never()).joinGroup(any());
     }
@@ -182,7 +182,7 @@ class ScoutApprovalResourceTest {
     void approve_unknown_user_is_not_found() {
         when(users.getUserById(realm, "ghost")).thenReturn(null);
         assertThrows(NoSuchElementException.class, () -> resource.applyApproval(
-                new ScoutApprovalResource.ApproveRequest("ghost", Map.of())));
+                new ScoutUsersResource.ApproveRequest("ghost", Map.of())));
     }
 
     // --- pending ------------------------------------------------------------
@@ -194,9 +194,9 @@ class ScoutApprovalResourceTest {
         UserModel carol = candidate("carol", null, false); // never accepted terms
         when(users.searchForUserStream(eq(realm), anyMap())).thenAnswer(i -> Stream.of(alice, bob, carol));
 
-        List<ScoutApprovalResource.PendingUser> pending = resource.findPending();
+        List<ScoutUsersResource.PendingUser> pending = resource.findPending();
         assertEquals(List.of("alice"),
-                pending.stream().map(ScoutApprovalResource.PendingUser::username).toList());
+                pending.stream().map(ScoutUsersResource.PendingUser::username).toList());
     }
 
     private UserModel candidate(String name, String termsAcceptedAt, boolean inScoutUser) {

@@ -1,7 +1,7 @@
 import { getToken, type JWT } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Server-side proxy to the Keycloak scout-approval REST API. The browser never
+// Server-side proxy to the Keycloak scout-users REST API. The browser never
 // holds the Keycloak token: we read the caller's access token from their
 // next-auth session (server-side) and forward it as a Bearer to Keycloak in the
 // same realm, so the page makes no cross-origin call. Keycloak still enforces
@@ -56,7 +56,7 @@ function callKeycloak(
   if (body !== undefined) {
     init.body = body;
   }
-  return fetch(`${issuer}/scout-approval/${action}`, init);
+  return fetch(`${issuer}/scout-users/${action}`, init);
 }
 
 async function forward(req: NextRequest, action: string, method: 'GET' | 'POST') {
