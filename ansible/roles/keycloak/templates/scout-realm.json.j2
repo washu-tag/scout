@@ -801,12 +801,25 @@
           },
           "group": "scout",
           "multivalued": true,
+          {#- scoutAuthz marks this as an admin-grant data-access attribute so the
+              scout-approval REST resource discovers it dynamically (no hardcoded
+              dimension list); inputType hints the approval UI + Keycloak console
+              at the right widget. When `options` is configured the attribute
+              becomes a validated pick-list, otherwise it stays free-text. -#}
+          "annotations": {
+            "scoutAuthz": "true",
+            "inputType": "{{ 'multiselect' if attr_config.options is defined else 'text' }}"
+          },
           "validations": {
             "length": {"max": {{ attr_config.max_length | default(64) }}},
+{% if attr_config.options is defined %}
+            "options": {"options": {{ attr_config.options | to_json }}}
+{% else %}
             "pattern": {
               "pattern": "{{ attr_config.value_pattern | default('^([A-Za-z0-9_-]+|\\\\*)$') }}",
               "error-message": "{{ attr_config.value_pattern_error | default('Use an alphanumeric code (letters, digits, hyphen, underscore) or the * wildcard for all values.') }}"
             }
+{% endif %}
           }
         },
 {% endfor %}
@@ -819,6 +832,11 @@
           },
           "group": "scout",
           "multivalued": false,
+          "annotations": {
+            "scoutAuthz": "true",
+            "inputType": "select",
+            "scoutDefault": "true"
+          },
           "validations": {
             "options": {
               "options": ["true", "false"]
@@ -840,6 +858,11 @@
           },
           "group": "scout",
           "multivalued": false,
+          "annotations": {
+            "scoutAuthz": "true",
+            "inputType": "select",
+            "scoutDefault": "false"
+          },
           "validations": {
             "options": {
               "options": ["true", "false"]
