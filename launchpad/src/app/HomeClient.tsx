@@ -532,7 +532,7 @@ export default function HomeClient({
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30 transition-colors duration-500 flex items-center justify-center py-12">
       {/* Floating header — brand on left, TopBar on right */}
       <div className="absolute top-0 left-0 right-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div className="max-w-content mx-auto px-6 py-6 flex items-center justify-between">
           {/* Brand strip */}
           <div className="flex items-center gap-2.5">
             <div className="p-0.5 rounded-md bg-gradient-to-br from-indigo-500 to-indigo-700">
@@ -549,7 +549,7 @@ export default function HomeClient({
       </div>
 
       <div
-        className={`w-full max-w-7xl px-6 pt-12 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        className={`w-full max-w-content px-6 pt-12 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
         {/* Content Grid */}
         <ContentGrid

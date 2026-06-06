@@ -688,7 +688,7 @@ export default function UsersClient() {
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30">
       {/* Header */}
       <div className="border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-content mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a
               href="/"
@@ -721,7 +721,7 @@ export default function UsersClient() {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main className="max-w-content mx-auto px-6 py-10">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">
             User administration
