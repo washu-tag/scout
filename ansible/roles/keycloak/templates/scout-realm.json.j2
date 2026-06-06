@@ -456,6 +456,12 @@
         "name": "{{ keycloak_launchpad_client_id }}",
         "description": "Launchpad Client",
         "enabled": true,
+        {#- Least privilege: without this the launchpad token carries every role
+            the user has, so a leaked admin token would be realm-admin. With it
+            off the token only carries roles in the client's scope; the
+            clientScopeMappings below keep launchpad-admin/-user so the isAdmin
+            gate still resolves. -#}
+        "fullScopeAllowed": false,
         "clientId": "{{ keycloak_launchpad_client_id }}",
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_launchpad_client_secret }}",
@@ -879,6 +885,17 @@
         {
           "name": "scout",
           "displayHeader": "Scout"
+        }
+      ]
+    },
+    {#- Pairs with fullScopeAllowed=false on the launchpad client: put its own
+        roles in scope so the token (and the isAdmin gate's groups claim) keeps
+        launchpad-admin/-user while dropping every other client's roles. -#}
+    "clientScopeMappings": {
+      "{{ keycloak_launchpad_client_id }}": [
+        {
+          "client": "{{ keycloak_launchpad_client_id }}",
+          "roles": ["launchpad-admin", "launchpad-user"]
         }
       ]
     },
