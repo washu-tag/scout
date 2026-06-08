@@ -2,39 +2,59 @@
 # Main tasks for traefik role
 # Configures Traefik ingress controller with TLS termination
 
-- name: Verify required variables are defined
+- name: Validate tls_mode
   ansible.builtin.assert:
     that:
-      - tls_cert_path is defined
-      - tls_key_path is defined
-    fail_msg: 'Required variables tls_cert_path and tls_key_path must be defined in inventory'
+      - tls_mode in ['file', 'cert_manager']
+    fail_msg: "tls_mode must be 'file' or 'cert_manager' (got: {{ tls_mode | default('<unset>') }})"
 
-- name: Read TLS cert from remote
-  no_log: true
-  ansible.builtin.slurp:
-    src: '{{ tls_cert_path }}'
-  register: cert_file
+- name: Ensure cert-manager is installed
+  ansible.builtin.include_role:
+    name: cert_manager
+  when: tls_mode == 'cert_manager'
 
-- name: Read TLS key from remote
-  no_log: true
-  ansible.builtin.slurp:
-    src: '{{ tls_key_path }}'
-  register: key_file
+- name: Bootstrap ACME ClusterIssuer + wildcard Certificate
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: cert_manager_acme_issuer_setup
+  when: tls_mode == 'cert_manager'
 
-- name: Create TLS secret
-  no_log: true
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: '{{ traefik_tls_secret_name }}'
-        namespace: '{{ traefik_namespace }}'
-      type: kubernetes.io/tls
-      data:
-        tls.crt: '{{ cert_file.content }}'
-        tls.key: '{{ key_file.content }}'
+- name: Populate tls-secret from filesystem cert
+  when: tls_mode == 'file'
+  block:
+    - name: Verify required variables are defined
+      ansible.builtin.assert:
+        that:
+          - tls_cert_path is defined
+          - tls_key_path is defined
+        fail_msg: 'tls_cert_path and tls_key_path must be defined when tls_mode=file'
+
+    - name: Read TLS cert from remote
+      no_log: true
+      ansible.builtin.slurp:
+        src: '{{ tls_cert_path }}'
+      register: traefik_tls_cert_file
+
+    - name: Read TLS key from remote
+      no_log: true
+      ansible.builtin.slurp:
+        src: '{{ tls_key_path }}'
+      register: traefik_tls_key_file
+
+    - name: Create TLS secret
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: '{{ traefik_tls_secret_name }}'
+            namespace: '{{ traefik_namespace }}'
+          type: kubernetes.io/tls
+          data:
+            tls.crt: '{{ traefik_tls_cert_file.content }}'
+            tls.key: '{{ traefik_tls_key_file.content }}'
 
 - name: Wait for helm-install-traefik job to complete
   ansible.builtin.command: kubectl -n {{ traefik_namespace }} wait --for=condition=complete --timeout={{ traefik_helm_job_timeout }}s job/helm-install-traefik

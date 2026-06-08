@@ -1,0 +1,89 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "1m-evaluations",
+      "folder": "Scout",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "cert_manager_cert_expiry_soon_alert_01",
+          "title": "cert-manager Cert Expiry Soon",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus_datasource_01",
+              "model": {
+                "editorMode": "code",
+                "expr": "avg by (name, namespace) (\n  (certmanager_certificate_expiration_timestamp_seconds - time())\n  /\n  (certmanager_certificate_expiration_timestamp_seconds - certmanager_certificate_renewal_timestamp_seconds)\n)",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [0.3],
+                      "type": "lt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": []
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "Alerting",
+          "execErrState": "Alerting",
+          "for": "1h",
+          "annotations": {
+            "summary": "Certificate {{ $labels.namespace }}/{{ $labels.name }} past renewal point.",
+            "description": "More than 70% of {{ $labels.namespace }}/{{ $labels.name }}'s lifetime has elapsed without renewal. cert-manager normally renews at 60% lifetime; this means renewal attempts are failing. Run `kubectl describe certificate -n {{ $labels.namespace }} {{ $labels.name }}` and check cert-manager controller logs. Common causes: ACME challenge failing, acme-dns DNS misconfigured, ClusterIssuer Ready=False.",
+            "URL": "[% server_hostname %]"
+          },
+          "labels": {},
+          "isPaused": [% alert_is_disabled | default(false) | bool | tojson %],
+          "notification_settings": {
+            "receiver": "[% grafana_alert_contact_point %]"
+          }
+        }
+      ]
+    }
+  ]
+}
