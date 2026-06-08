@@ -551,7 +551,18 @@ test_only_invalid_values_emits_zero_row_clamp if {
 	inp := select_input("mallory", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "1=0"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["bad with spaces", "$%^"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["bad;value", "$%^"]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as fixture_filtered_tables
+}
+
+# A facility value with spaces (e.g. "HOME CARE SERVICES") is valid — the value
+# pattern allows spaces and it can't break out of the single-quoted IN list.
+test_facility_with_spaces_is_allowed if {
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	expected := {{"expression": "sending_facility IN ('HOME CARE SERVICES')"}}
+	trino.rowFilters == expected with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["HOME CARE SERVICES"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
