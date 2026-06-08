@@ -12,7 +12,7 @@ Scout is a microservices platform deployed on Kubernetes (K3s) with the followin
 
 ### User Services
 - **Analytics**: Apache Superset for no-code visualizations and SQL queries (powered by Trino)
-- **Notebooks**: JupyterHub with PySpark for programmatic data analysis
+- **Notebooks**: JupyterHub; notebooks query Trino via the bundled `scout` SDK (no Spark in the image) for programmatic data analysis
 - **Launchpad**: Web-based landing page to access all Scout services
 - **Chat** (optional): Open WebUI with Ollama for AI-powered natural language querying
 
@@ -54,7 +54,8 @@ scout/
 │   │   ├── main.yaml          # Full deployment workflow
 │   │   ├── k3s.yaml           # Kubernetes setup
 │   │   ├── lake.yaml          # MinIO + Hive + Delta Lake
-│   │   ├── analytics.yaml     # Trino + Superset
+│   │   ├── trino.yaml         # OPA + Trino
+│   │   ├── superset.yaml      # Superset
 │   │   ├── orchestrator.yaml  # Temporal + Cassandra + Elasticsearch
 │   │   ├── extractor.yaml     # HL7 processors
 │   │   ├── jupyter.yaml       # JupyterHub
@@ -111,7 +112,7 @@ scout/
 - **Metadata Catalog**: Apache Hive Metastore
 - **Query Engine**: Trino (distributed SQL)
 - **Analytics UI**: Apache Superset
-- **Notebooks**: JupyterHub with PySpark
+- **Notebooks**: JupyterHub (notebooks query Trino via the `scout` SDK)
 - **Workflow Orchestration**: Temporal
 - **Databases**: PostgreSQL (CloudNativePG operator), Cassandra (K8ssandra), Elasticsearch (ECK)
 - **Monitoring**: Prometheus, Loki, Grafana
@@ -162,14 +163,15 @@ make install-postgres         # PostgreSQL (CloudNativePG)
 make install-lake             # MinIO + Hive Metastore
 
 # Analytics
-make install-analytics        # Trino + Superset
+make install-trino            # OPA + Trino
+make install-superset         # Superset
 
 # Processing
 make install-orchestrator     # Temporal + Cassandra + Elasticsearch
 make install-extractor        # HL7 extractors and transformers
 
 # User services
-make install-jupyter          # JupyterHub with PySpark
+make install-jupyter          # JupyterHub (notebooks query Trino via the scout SDK)
 make install-launchpad        # Landing page web UI
 make install-chat             # Open WebUI + Ollama (optional)
 
@@ -340,14 +342,16 @@ Services communicate via Kubernetes service names:
 ### Analyze Data in JupyterHub
 1. Access Scout Notebooks (JupyterHub)
 2. Open provided quickstart: `Scout/Quickstart.ipynb`
-3. Use PySpark to query Delta Lake:
+3. Query the lake through Trino with the bundled `scout` SDK (the notebook image
+   has no Spark — every read goes through Trino as the logged-in user, so
+   per-user row filters and column masks apply; see ADR 0022):
    ```python
-   from pyspark.sql import SparkSession
-   spark = SparkSession.builder.getOrCreate()
-   df = spark.read.table("delta.default.reports")
-   df.filter(df.modality == "MRI").show()
+   import scout
+   df = scout.query("SELECT * FROM reports WHERE modality = :m", params={"m": "MRI"})
    ```
-4. Export results: `df.toPandas().to_csv("results.csv")`
+   `scout.query()` returns a pandas DataFrame; `scout.connect()` gives a DB-API
+   connection for streaming/large results.
+4. Export results: `df.to_csv("results.csv")`
 
 ### Monitor Ingestion
 1. Access Grafana
@@ -377,7 +381,7 @@ ansible-inventory -i inventory.yaml --host <hostname>
 ANSIBLE_CMD="--check --diff" make install-<component>
 
 # Re-deploy specific component
-make install-analytics
+make install-trino
 ```
 
 ## Testing
@@ -442,9 +446,10 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 - Filter on partitioned columns (`year`) for better performance
 - Use parsed report sections for targeted text analysis
 
-### PySpark in JupyterHub
-- Filter array columns with `F.exists()`: `df.filter(F.exists("diagnoses", lambda x: x.diagnosis_code == "J18.9"))`
-- Use `patient_ids` array or convenience columns like `epic_mrn`
+### Querying from Notebooks (scout SDK)
+- Use `scout.query(sql, params=...)` with `:name` bind params; it returns a pandas DataFrame. `scout.connect()` returns a Trino DB-API connection for streaming.
+- Filter array-of-struct columns with `any_match()`: `WHERE any_match(diagnoses, x -> x.diagnosis_code = 'J18.9')`. For matching a scalar column against a list param, prefer `contains(:vals, col)` over `IN` — the SQLAlchemy dialect doesn't expand list params into `IN` clauses.
+- Use the `patient_ids` array or convenience columns like `epic_mrn`.
 
 ### Monitoring
 - Adjust time ranges to match data availability
@@ -510,6 +515,18 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 - **ADR 0017: Air-Gapped Package Proxy** — Deploys Sonatype Nexus CE on the staging node alongside Harbor to serve as a pull-through proxy for conda, PyPI, Maven, and RPM packages. Enables Jupyter users to install packages on demand, simplifies RPM installation to standard `dnf` commands, and allows the Jupyter image to be slimmed by removing baked-in packages. Uses per-format proxy URL variables (`conda_proxy_url`, `pip_proxy_url`, etc.) following the service-mode pattern from ADR 0011, with staging cert trust per ADR 0016. Consult when modifying package proxy configuration, Jupyter notebook image contents, RPM installation tasks, or air-gapped package management.
 
 - **ADR 0018: Squid Forward Proxy for Air-Gapped Authentication** — Installs Squid forward proxy as a system package on the staging node with a strict domain allowlist, enabling Keycloak on air-gapped production clusters to reach external IdP OAuth endpoints (Microsoft, GitHub). Uses Keycloak's `spi-connections-http-client-default-proxy-mappings` SPI, configured conditionally when `air_gapped: true` and an external IdP is present. Consult when modifying air-gapped authentication, adding external IdP providers, or extending outbound access from air-gapped clusters.
+
+- **ADR 0019: Read-Write Trino Instance for Transformer-Issued View DDL** — Adds a second Trino deployment (`trino-rw` in `scout-extractor`) that can write metastore objects, used exclusively by the hl7-transformer for `CREATE OR REPLACE VIEW` DDL. Spark-created views aren't readable by Trino's Delta connector (different metastore-row format), so the transformer issues view DDL through Trino directly. NetworkPolicy restricts ingress to the transformer pod + Prometheus; the user-facing `trino-analytics` remains read-only. Consult when modifying view-creation flow, adding new Trino-readable views, or working with the transformer's metastore interactions.
+
+- **ADR 0020: Trino Authorization via OPA with Keycloak Attributes** — Picks OPA (via Trino's in-tree `opa` access-control plugin) as the policy engine and an attribute-driven model (Keycloak User Profile entries; ships `allowed_facilities` + `mask_phi_fields` by default, with more row-filter dimensions added as one-line inventory edits via `trino_attribute_filters`) over groups. Policy data shape is generic and inventory-driven: `data.attribute_filters` maps each Keycloak attribute to a `{column, optional tables_override}`, `data.filtered_tables` is the shared list every dimension applies to, `data.masked_columns` lists PHI columns. Adding a restriction dimension is one inventory edit (the keycloak role renders user-profile attributes from `trino_attribute_filters`; the opa role consumes the same map). One non-attribute gate: `user_enabled` requires both `enabled: true` AND membership in `scout-user` or `scout-admin` — the approved-group set is hardcoded in `policy/trino/main.rego` because the same group names are hardcoded in the Keycloak realm template. This catches federated users who landed in Keycloak via upstream OIDC before going through Scout's approval flow. `delta.security=READ_ONLY` is retained at the connector as defense in depth. Consult when modifying the OPA policy (`policy/trino/main.rego`), adding AuthZ dimensions, changing the approval-group set, or reasoning about why OPA was picked over Ranger / file-based / GroupProvider.
+
+- **ADR 0021: OPA User Attribute Distribution via MinIO Bundles** — Defines how per-user attributes reach OPA. A Keycloak SPI listener (`OpaUserBundlePublisherProvider` in `keycloak/event-listener/`) maintains an in-memory user-attribute snapshot, debounces admin events into S3 PUTs of a tar.gz bundle to a dedicated MinIO bucket (`opa-bundles`), and OPA's native bundle plugin pulls every 5–10s and atomically swaps the `data.users` subtree. The Rego policy reads `data.users[user]` directly — no `http.send`, no admin-token client. Per-user payload carries `enabled` + `groups` (synthesized from `UserModel.isEnabled()` / `getGroupsStream()`) plus the User Profile attribute map verbatim. The listener handles both `USER` and `GROUP_MEMBERSHIP` admin events so add/remove from `scout-user` propagates. Consult when modifying the bundle publisher, OPA's bundle plugin config, or the rego's user-attribute lookup path.
+
+- **ADR 0022: Trino Authentication and Identity Propagation** — Picks `http-server.authentication.type=JWT,PASSWORD` dual-auth on Trino's HTTPS listener and the per-client identity-propagation patterns: JupyterHub uses JWT pass-through via `auth_state` (kernel runs as the user, no impersonation); Superset, Voila, and the Open WebUI MCP each authenticate as a dedicated Keycloak service principal (`superset_svc`, `voila_svc`, `openwebui_mcp_svc`) and impersonate the end user via `X-Trino-User`. `PASSWORD` exists for `tuannvm/mcp-trino`'s HTTP-Basic-only outbound; everyone else uses JWT. Service-principal access tokens issued at 14400s (~4h). Notebook image excludes Spark — every read goes through Trino. Consult when modifying identity propagation in any client role (jupyter, superset, voila, open-webui-bootstrap, trino), touching the `trino-audience` Keycloak client scope, or rotating service-principal secrets.
+
+- **ADR 0023: Trino View Security Model** — The `_epic_view` family is created `SECURITY DEFINER` so the view owner's underlying-table reads bypass row filters and column masks (which would otherwise clamp to zero rows / NULL out window-function results). The OPA policy carves out three pieces: `data.view_owner_principals` (members bypass row-filter and column-mask evaluation), `data.hidden_tables` (denied for direct SELECT and hidden from `SHOW TABLES`, e.g. `reports_report_patient_mapping`), and a `CreateViewWithSelectFromColumns` allow rule that lets the view owner join through `hidden_tables` while invoker queries against the same tables fail. Column masks are type-aware (varchar→`'[REDACTED]'`, other→bare `NULL`). Consult when adding views over `reports_report_patient_mapping` (or similar facility-less join targets), touching `trino_view_owner_principals` / `trino_hidden_tables`, or reasoning about why the policy looks like it's exempting things from its own AuthZ.
+
+- **ADR 0024: Token Refresh for SDK Trino Access** — Keeps the short-lived bearer (ADR 0022) valid for notebook/playbook code without OAuth in user code, via four layers: (1) custodian-side proactive rotation — Voila re-mints `voila_svc`; Jupyter relies on an oauthenticator `refresh_user_hook` (`eagerTokenRefresh`) that rotates at token half-life because stock oauthenticator only re-validates a live token without rotating; (2) SDK proactive re-fetch in the last ⅕ of the token's lifetime (`_REFRESH_BEFORE_EXPIRY_FRACTION`; lifetime = `exp − iat`, fixed-60s fallback if no `iat`) via a per-request dynamic bearer (one long-lived SQLAlchemy engine survives rotation, no `engine.dispose()`); (3) SDK reactive — `query()` retries once on Trino 401 (bearer rejected), dropping the cached bearer first; 403 (authz denial) is not retried; `connect()` doesn't wrap caller-driven execution; (4) per-kernel `threading.Lock` single-flight. Everything is a fraction of the lifespan (hook rotates at ½, SDK refreshes at ⅕, gate `auth_refresh_age = keycloak_access_token_lifespan // 5` ≤ ½−⅕ = 3⁄10), so it's scale-invariant — no floor, no per-value tuning. `keycloak_access_token_lifespan` drives both the realm `accessTokenLifespan` and the Hub gate so they can't drift. Consult when touching the SDK's `_query.py`/`_identity.py` refresh logic, the Jupyter `eagerTokenRefresh` hook / `auth_refresh_age`, or debugging Trino `JWT expired`/401 from notebooks.
 
 ## Key Concepts for AI Assistants
 

@@ -21,13 +21,10 @@ helm_chart_values_files: []
 # Superset: superset_image_repository and superset_image_tag (see roles/superset/defaults/main.yaml)
 # Extractors: hl7log_extractor_image_repository/tag and hl7_transformer_image_repository/tag (see roles/extractor/defaults/main.yaml)
 
-# JupyterHub singleuser image
-jupyter_singleuser_image_name: ghcr.io/washu-tag/scout-notebook
-jupyter_singleuser_image_tag: latest
-
-# Voila dashboard image
-voila_image_name: ghcr.io/washu-tag/pyspark-notebook
-voila_image_tag: latest
+# Shared notebook image (scipy-notebook + trino-python-client + voila).
+# Used as JupyterHub's singleuser image and as Voila's image.
+scout_notebook_image_name: ghcr.io/washu-tag/scout-notebook
+scout_notebook_image_tag: latest
 
 # Kubernetes configuration
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
@@ -115,6 +112,12 @@ launchpad_namespace: '{{ scout_core_namespace }}'
 
 # Data layer
 minio_tenant_namespace: '{{ scout_data_namespace }}'
+# Tenant name used by the MinIO operator. Surfaced here (rather than
+# only in roles/minio/defaults) so cross-namespace consumers — Keycloak
+# event listener publishing the OPA bundle, OPA pulling it (ADR 0021) —
+# can reference the headless service name `{tenant}-hl.{namespace}:9000`
+# without depending on role-local defaults.
+minio_tenant_name: scout
 hive_namespace: '{{ scout_data_namespace }}'
 dcm4chee_namespace: '{{ scout_data_namespace }}'
 orthanc_namespace: '{{ scout_data_namespace }}'
@@ -124,10 +127,20 @@ extractor_namespace: '{{ scout_extractor_namespace }}'
 
 # Analytics & user services
 trino_namespace: '{{ scout_analytics_namespace }}'
+# HTTPS listener port for client traffic. Lives in scout_common (not the
+# trino role) so consumer roles (jupyter, superset, scout-dashboards)
+# can reference it without depending on the trino role being loaded.
+trino_https_port: 8443
 trino_rw_namespace: '{{ scout_extractor_namespace }}'
 trino_rw_release_name: trino-rw
 trino_rw_endpoint_host: '{{ trino_rw_release_name }}.{{ trino_rw_namespace }}'
 trino_rw_endpoint_port: 8080
+# OPA enforces Trino's access-control policy. Deployed alongside Trino so
+# the query path stays in-cluster. Surfaced in scout_common so consumer
+# roles (grafana for the decision-log dashboard, future
+# NetworkPolicy/alerts) can reference it without depending on the opa
+# role being loaded.
+opa_namespace: '{{ trino_namespace }}'
 superset_namespace: '{{ scout_analytics_namespace }}'
 jupyter_namespace: '{{ scout_analytics_namespace }}'
 chatbot_namespace: '{{ scout_analytics_namespace }}'
@@ -176,11 +189,23 @@ s3_username: minio
 s3_lake_reader: lake-reader
 s3_lake_writer: lake-writer
 s3_loki_writer: loki-writer
+# OPA bundle service accounts (ADR 0021). Writer is mounted into the
+# Keycloak pod (event listener publishes the bundle); reader is mounted
+# into each OPA pod (bundle plugin pulls).
+s3_opa_bundle_writer: opa-bundle-writer
+s3_opa_bundle_reader: opa-bundle-reader
 lake_bucket: lake
 scratch_bucket: scratch
 loki_chunks_bucket: loki-chunks
 loki_ruler_bucket: loki-ruler
 loki_admin_bucket: loki-admin
+# OPA bundle storage (ADR 0021). One object per Scout deployment:
+# {{ opa_bundles_bucket }}/{{ opa_bundle_object_key }}, replacing
+# per-request Keycloak admin API fetches with a periodic pull from MinIO.
+# Both the Keycloak SPI publisher and the OPA bundle plugin consume the
+# same two vars so the path stays in lockstep.
+opa_bundles_bucket: opa-bundles
+opa_bundle_object_key: scout/bundle.tar.gz
 
 # Service Account names
 lake_reader_service_account_name: lake-reader
@@ -250,6 +275,23 @@ enable_playbooks: false
 # genuinely useful for non-GPU pods.
 enable_gpu_node_taint: true
 
+# Scout AuthZ: maps Keycloak user attributes to the SQL columns the Trino
+# OPA policy filters on. Single source of truth consumed by two roles:
+#   - keycloak: renders one User Profile attribute per key here so each
+#     becomes editable in the Keycloak admin UI (admin-only view/edit).
+#   - opa: renders the same map into data.attribute_filters so the
+#     policy emits `column IN ('v1','v2')` filters for tables in
+#     trino_filtered_tables. Wildcard `*` disables that filter.
+#
+# Adding a new restriction dimension is one inventory edit — both
+# Keycloak and OPA pick it up on next deploy. Optional per-attribute
+# overrides for display name / validation pattern live alongside
+# `column`, see ansible/roles/keycloak/templates/scout-realm.json.j2
+# for the rendered shape.
+trino_attribute_filters:
+  allowed_facilities:
+    column: sending_facility
+
 # Superset dashboard bundles to install. Built-in bundles: core, quality,
 # followup. Override in inventory to add more (e.g. [core, quality]).
 scout_dashboard_bundles:
@@ -309,6 +351,23 @@ keycloak_oidc_userinfo_url: '{{ keycloak_realm_url }}/protocol/openid-connect/us
 keycloak_oidc_certs_url: '{{ keycloak_realm_url }}/protocol/openid-connect/certs'
 keycloak_oidc_logout_url: '{{ keycloak_realm_url }}/protocol/openid-connect/logout'
 keycloak_wellknown_url: '{{ keycloak_realm_url }}/.well-known/openid-configuration'
+
+# Realm-level lifespan of end-user access tokens (seconds). 300 matches the
+# Keycloak built-in default; the realm template sets it explicitly from this
+# var so consumers that must stay in sync with it (e.g. JupyterHub's
+# auth_refresh_age) can compute from the same value. Service principals get
+# their own longer client-level lifespans (ADR 0022) and are unaffected.
+keycloak_access_token_lifespan: 300
+
+# Internal Keycloak URL for in-cluster service-to-service token minting
+# (e.g. Superset/Voila minting a *_svc client_credentials JWT for Trino).
+# Bypasses Traefik + TLS entirely — avoids self-signed-cert trust issues
+# in CI smoke-test (which can't reach the external hostname over a
+# verified cert) and reduces a network hop on every token mint in
+# production. The same pattern the Trino role already uses for its
+# JWKS endpoint (trino_keycloak_jwks_url).
+keycloak_internal_url: 'http://keycloak-service.{{ keycloak_namespace }}:8080'
+keycloak_internal_token_url: '{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/token'
 oauth2_proxy_base_url: 'https://{{ oauth2_proxy_subdomain }}.{{ server_hostname }}'
 oauth2_proxy_callback_url: '{{ oauth2_proxy_base_url }}/oauth2/callback'
 oauth2_proxy_signout_url: '{{ oauth2_proxy_base_url }}/oauth2/sign_out'

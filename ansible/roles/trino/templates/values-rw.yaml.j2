@@ -28,9 +28,13 @@ server:
     query:
       maxMemory: "{{ trino_rw_worker_max_heap | multiply_memory(trino_rw_worker_count * trino_per_node_query_memory_fraction) }}B"
 
-# JMX exporter for Prometheus (parity with the user-facing Trino)
+# JMX exporter for Prometheus (parity with the user-facing Trino).
+# Disable-able in CI via trino_rw_jmx_enabled because the sidecar
+# (one per Trino pod) is a meaningful chunk of CPU on a 4-CPU runner
+# and nothing scrapes trino-rw metrics in smoke-test.
 jmx:
-  enabled: true
+  enabled: {{ trino_rw_jmx_enabled | default(true) | string | lower }}
+{% if trino_rw_jmx_enabled | default(true) | bool %}
   registryPort: 9080
   serverPort: 9081
   exporter:
@@ -43,6 +47,7 @@ jmx:
       startDelaySeconds: 30
       ssl: false
       lowercaseOutputName: false
+{% endif %}
 
 coordinator:
   jvm:
@@ -107,6 +112,22 @@ networkPolicy:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: hl7-transformer
+      ports:
+        - port: 8080
+          protocol: TCP
+    # Voila playbooks write reviewer annotations back to
+    # default.reports_followup via trino-rw (trino-analytics is
+    # read-only per ADR 0020). Surface is bounded by the playbook code
+    # mounted from ConfigMaps — Voila users cannot execute arbitrary
+    # Python or arbitrary SQL, so the write paths are limited to the
+    # specific UPDATE/INSERT statements the dashboard issues.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: '{{ scout_analytics_namespace }}'
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: voila
       ports:
         - port: 8080
           protocol: TCP

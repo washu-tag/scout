@@ -1,0 +1,37 @@
+{{- if .Values.networkPolicy.enabled }}
+# Restrict ingress to OPA's HTTP API (decision, data, and bundle-status
+# endpoints on .Values.service.port) to the Trino coordinator — the only
+# legitimate OPA client. OPA holds the per-user attribute bundle (ADR 0021)
+# and serves an unauthenticated API, so an unrestricted ClusterIP would let
+# any in-cluster pod read user attributes or forge authorization decisions.
+#
+# OPA runs in the same namespace as trino-analytics (opa_namespace ==
+# trino_namespace, ADR 0020), so a same-namespace podSelector targets the
+# coordinator without a namespaceSelector. The selector uses the trinodb/trino
+# chart's stable pod labels (app.kubernetes.io/name = chart name "trino",
+# component = coordinator); the data-authorization tests exercise the real
+# coordinator->OPA path and would fail first if these drift. trino-rw doesn't
+# use OPA and OPA isn't scraped by Prometheus, so the coordinator is the only
+# allowance needed — add a rule here if either changes.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "scout-opa.fullname" . }}
+  labels:
+    {{- include "scout-opa.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "scout-opa.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: trino
+              app.kubernetes.io/component: coordinator
+      ports:
+        - port: {{ .Values.service.port }}
+          protocol: TCP
+{{- end }}

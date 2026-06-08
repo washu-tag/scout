@@ -1,0 +1,87 @@
+# One-shot Job that seeds delta.default.test_reports with ~6 synthetic
+# rows for the data-authorization test runner to assert against (ADRs
+# 0020 + 0021). Used in CI's smoke-test job; not part of any production
+# deploy.
+#
+# Runs in scout-data so the lake-writer-creds Secret + hive-metastore
+# Service are in-namespace. Reuses the hl7-transformer image as the
+# Spark/Delta/Hive vehicle — same JARs the transformer's normal
+# ingest path uses, no per-test image to maintain.
+#
+# The data-authz-seed-script ConfigMap is created separately by the
+# workflow via `kubectl create configmap --from-file=seed.py=...` --
+# kubectl handles arbitrary file content (including backslash escapes)
+# correctly, which a `seed.py: |` literal in this template would not.
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: data-authz-seed
+  namespace: scout-data
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: data-authz-seed
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: seed
+          image: PLACEHOLDER_HL7_TRANSFORMER_IMAGE
+          imagePullPolicy: IfNotPresent
+          command:
+            - /app/venv/bin/python3
+            - /seed/seed.py
+          env:
+            # Hive metastore is the analytics-writable instance (vs.
+            # hive-metastore-readonly that trino-analytics uses for
+            # reads). saveAsTable needs to register the new table.
+            - name: HIVE_METASTORE_URIS
+              value: thrift://hive-metastore.scout-data:9083
+            # MinIO S3 endpoint inside scout-data namespace — the
+            # tenant Service exposes port 80, mapped to the pod's
+            # port 9000.
+            - name: S3_ENDPOINT
+              value: http://minio.scout-data
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: lake-writer-creds
+                  key: CONSOLE_ACCESS_KEY
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lake-writer-creds
+                  key: CONSOLE_SECRET_KEY
+            # MinIO doesn't enforce region but the s3a credentials
+            # resolver needs it set to mint requests; matches the
+            # scout-common s3_region default + the spark-defaults
+            # template the extractor role renders in production.
+            - name: AWS_REGION
+              value: us-east-1
+            # Delta warehouse path; resolved to s3a://<lake_bucket>/delta
+            # by the workflow before apply since lake_bucket differs
+            # between production ("lake") and CI ("ci-lake").
+            - name: SPARK_SQL_WAREHOUSE_DIR
+              value: PLACEHOLDER_WAREHOUSE_DIR
+          volumeMounts:
+            - name: seed-script
+              mountPath: /seed
+              readOnly: true
+          resources:
+            requests:
+              # 100m is enough scheduling-wise; the burst limit below
+              # lets PySpark consume more during the actual write.
+              # Sized for CI's 4-CPU runner; production has plenty
+              # of headroom either way.
+              cpu: 100m
+              memory: 768Mi
+            limits:
+              cpu: 1
+              memory: 1536Mi
+      volumes:
+        - name: seed-script
+          configMap:
+            name: data-authz-seed-script

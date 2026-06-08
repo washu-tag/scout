@@ -1,4 +1,28 @@
 ---
+# Deploy cert-manager (Jetstack Helm chart).
+#
+# cert-manager is shared infrastructure with multiple Scout consumers:
+#   * cass-operator requires it (orchestrator playbook).
+#   * Trino's HTTPS Certificate uses it for the JWT-auth TLS terminator
+#     (ADR 0022, trino playbook).
+#   * The traefik role (when tls_mode == cert_manager) uses it for the
+#     external wildcard TLS cert via ACME + acme-dns DNS-01.
+#   * Future internal-TLS services (per ADR 0022 implementation notes
+#     and the scout_common cluster_issuer_setup task) will reuse the
+#     same CA chain it underpins.
+#
+# Helm install is idempotent — repeated `include_role: cert_manager` from
+# different playbooks is a no-op after the first one creates the release.
+# Splitting this into its own role (instead of inlining in each consumer)
+# avoids version skew and lets CI's smoke-test deploy trino without
+# the orchestrator playbook also being present.
+#
+# Version + namespace come from group_vars/all/versions.yaml +
+# scout_common/defaults/main.yaml respectively — single source of truth.
+# Optional extra chart values (proxy env vars for air-gapped clusters,
+# DNS-01 recursive nameservers) layer on via cert_manager_extra_helm_values
+# (defined in this role's defaults).
+
 - name: Deploy cert-manager
   ansible.builtin.include_role:
     name: scout_common

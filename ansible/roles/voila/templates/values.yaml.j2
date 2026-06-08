@@ -2,24 +2,52 @@
 replicaCount: {{ voila_replicas }}
 
 image:
-  repository: "{{ voila_image_name }}"
-  tag: "{{ voila_image_tag }}"
+  repository: "{{ scout_notebook_image_name }}"
+  tag: "{{ scout_notebook_image_tag }}"
 
 resources: {{ voila_resources_default | combine(voila_resources | default({}), recursive=true) | to_json }}
-
-sparkConfigMapName: {{ voila_spark_defaults_configmap_name }}
 
 playbooks: {{ voila_playbooks | to_json }}
 
 env:
+  # Trino connection params consumed by the `scout` package (installed in
+  # the scout-notebook image from sdk/python/). No TRINO_USER: per-user
+  # identity is set as X-Trino-User from each request's
+  # X-Auth-Request-Preferred-Username header (ADR 0022).
   TRINO_HOST: "trino.{{ trino_namespace }}"
-  TRINO_PORT: "8080"
-  TRINO_SCHEME: "http"
-  TRINO_USER: "{{ trino_user }}"
+  TRINO_PORT: "{{ trino_https_port }}"
+  TRINO_SCHEME: "https"
   TRINO_CATALOG: "delta"
   TRINO_SCHEMA: "default"
+  TRINO_CA_CERT: "/etc/trino-ca/ca.crt"
+  # Write path (reviewer annotations) consumed by
+  # playbook_helpers.connect_writeback() (chart-shipped helper, not the SDK).
+  # Points at the unauthenticated trino-rw instance in the extractor
+  # namespace; explicit here so an inventory override of trino_rw_namespace /
+  # trino_rw_release_name reaches the kernel instead of the helper's
+  # hardcoded fallback.
+  TRINO_RW_HOST: "{{ trino_rw_endpoint_host }}"
+  TRINO_RW_PORT: "{{ trino_rw_endpoint_port }}"
+  # Keycloak client_credentials grant for the voila_svc service principal.
+  # Internal in-cluster URL so service-to-service token minting bypasses
+  # Traefik + the external cert (avoids self-signed-cert verification
+  # failures in CI smoke-test).
+  KEYCLOAK_TOKEN_URL: "{{ keycloak_internal_token_url }}"
+  KEYCLOAK_VOILA_SVC_CLIENT_ID: "voila_svc"
+  # Make voila_runtime + playbook_helpers importable from the Voila server
+  # and from spawned kernels. The chart's scout-python ConfigMap is mounted
+  # at /opt/scout with these files plus a duplicate of voila.py (harmless).
+  PYTHONPATH: "/opt/scout"
   OLLAMA_URL: "http://ollama.{{ chatbot_namespace }}:11434"
   OLLAMA_MODEL: "{{ ollama_default_model }}"
+
+# voila_svc client secret → chart-managed voila-svc-keycloak Secret
+# (templates/secret.yaml), referenced via the chart's default envFrom.
+voilaSvcClientSecret: "{{ keycloak_voila_svc_client_secret }}"
+
+networkPolicy:
+  enabled: true
+  traefikNamespace: "{{ traefik_namespace }}"
 
 ingress:
   enabled: true
