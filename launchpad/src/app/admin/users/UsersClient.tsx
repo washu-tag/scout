@@ -9,6 +9,7 @@ import {
   HiChevronLeft,
   HiChevronRight,
   HiExternalLink,
+  HiSearch,
   HiShieldCheck,
   HiTrash,
   HiUserGroup,
@@ -118,6 +119,13 @@ function attrSummary(attributes: Record<string, string[]>, schema: AttrSchema[])
   return parts.join(' · ');
 }
 
+// Case-insensitive client-side filter for the search box (name / username / email).
+function matchesQuery(r: Row, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [r.name, r.username, r.email].some((f) => f?.toLowerCase().includes(q));
+}
+
 function StatusBadge({ status, isAdmin }: { status: string; isAdmin: boolean }) {
   const [label, cls] =
     isAdmin || status === 'admin'
@@ -164,7 +172,7 @@ interface DrawerProps {
   position?: { index: number; total: number };
   onNavigate?: (delta: number) => void;
   onClose: () => void;
-  onDone: () => void;
+  onDone: (message: string) => void;
   onAuthExpired: () => void;
 }
 
@@ -257,7 +265,7 @@ function UserDrawer({
 
   // Run an action against the proxy; surface the server's message (e.g. the
   // last-admin 409) in the error slot rather than assuming success.
-  const run = async (method: string, path: string, body?: object) => {
+  const run = async (method: string, path: string, successMsg: string, body?: object) => {
     setSubmitting(true);
     setError(null);
     try {
@@ -269,7 +277,7 @@ function UserDrawer({
       if (!r.ok) {
         throw new Error((await r.text()) || `${r.status} ${r.statusText}`);
       }
-      onDone();
+      onDone(successMsg);
     } catch (e) {
       if ((e as Error).message === SESSION_EXPIRED) {
         onAuthExpired();
@@ -296,18 +304,27 @@ function UserDrawer({
     return attributes;
   };
 
+  const display = user.name || user.username;
+
   const saveAttributes = () =>
     mode === 'approve'
-      ? run('POST', '/api/users/approve', { userId: user.id, attributes: collectAttributes() })
-      : run('POST', `/api/users/users/${user.id}/attributes`, { attributes: collectAttributes() });
+      ? run('POST', '/api/users/approve', `Approved ${display}`, {
+          userId: user.id,
+          attributes: collectAttributes(),
+        })
+      : run('POST', `/api/users/users/${user.id}/attributes`, `Updated ${display}`, {
+          attributes: collectAttributes(),
+        });
 
   const confirmAction = () => {
-    if (confirm === 'promote') run('POST', `/api/users/users/${user.id}/admin`);
-    else if (confirm === 'demote') run('DELETE', `/api/users/users/${user.id}/admin`);
-    else if (confirm === 'offboard') run('DELETE', `/api/users/users/${user.id}/membership`);
+    if (confirm === 'promote') {
+      run('POST', `/api/users/users/${user.id}/admin`, `${display} is now an admin`);
+    } else if (confirm === 'demote') {
+      run('DELETE', `/api/users/users/${user.id}/admin`, `${display} removed from admins`);
+    } else if (confirm === 'offboard') {
+      run('DELETE', `/api/users/users/${user.id}/membership`, `Offboarded ${display}`);
+    }
   };
-
-  const display = user.name || user.username;
 
   return (
     <div className="fixed inset-0 z-40" role="dialog" aria-modal="true">
@@ -658,6 +675,8 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
   const [selected, setSelected] = useState<Row | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [authExpired, setAuthExpired] = useState(false);
+  const [query, setQuery] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
   const [kcConsole, setKcConsole] = useState('');
   const [deepLink, setDeepLink] = useState<string | null>(null);
   const [sort, setSort] = useState<{ col: SortCol; dir: SortDir }>({
@@ -736,13 +755,25 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
     }
   }, [deepLink, tab, rows, schema]);
 
-  const onDone = () => {
-    loadRows(tab);
-    setSelected(null);
-  };
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(id);
+  }, [toast]);
 
-  const sorted = rows ? sortRows(rows, sort.col, sort.dir) : [];
+  const sorted = rows
+    ? sortRows(rows, sort.col, sort.dir).filter((r) => matchesQuery(r, query))
+    : [];
   const selectedIndex = selected ? sorted.findIndex((r) => r.id === selected.id) : -1;
+
+  const onDone = (message: string) => {
+    setToast(message);
+    // Pending is a processing queue: after approving, advance to the next pending
+    // user (close when the queue is empty) so an admin can work straight through.
+    // Every other action (edit / promote / demote / offboard) just closes.
+    setSelected(tab === 'pending' ? (sorted[selectedIndex + 1] ?? null) : null);
+    loadRows(tab);
+  };
   const showRequested = tab === 'pending';
   const actionLabel = tab === 'pending' ? 'Review' : 'Manage';
 
@@ -801,21 +832,33 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
           </Notice>
         ) : (
           <>
-            {/* Segmented tab filter */}
-            <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 mb-5">
-              {TABS.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    tab === t.key
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+            {/* Segmented tab filter + search */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+              <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1">
+                {TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      tab === t.key
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="relative">
+                <HiSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search name, username, email…"
+                  className="w-64 max-w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-1.5 pl-9 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
             </div>
 
             {error ? (
@@ -823,7 +866,11 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
             ) : rows === null ? (
               <Notice>Loading…</Notice>
             ) : sorted.length === 0 ? (
-              <EmptyState tab={tab} />
+              query.trim() ? (
+                <Notice>No users match “{query.trim()}”.</Notice>
+              ) : (
+                <EmptyState tab={tab} />
+              )
             ) : (
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
@@ -932,6 +979,13 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
             setAuthExpired(true);
           }}
         />
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm text-white shadow-lg dark:bg-slate-700">
+          <HiCheckCircle className="text-base text-emerald-400" />
+          {toast}
+        </div>
       )}
     </div>
   );
