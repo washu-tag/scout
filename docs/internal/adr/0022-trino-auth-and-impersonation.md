@@ -17,7 +17,7 @@ The shape of the problem differs per client:
 
 - **JupyterHub** has the user's OIDC token available server-side (via `auth_state`) and the kernel runs arbitrary user code — natural fit for per-call user JWT.
 - **Superset** has a logged-in user but no clean way to expose the IdP token at query time (Flask sessions don't surface it to the connector hook).
-- **Voila** receives the user's OIDC token from upstream as an oauth2-proxy-injected header, but Voila itself has no native "pass session token to the kernel" mechanism.
+- **Voila** receives the user's username from upstream as an oauth2-proxy-injected header (`X-Auth-Request-Preferred-Username`), but Voila itself has no native "pass identity to the kernel" mechanism.
 - **Open WebUI MCP** runs a third-party server (`tuannvm/mcp-trino`) whose outbound capabilities are HTTP-Basic-only — no JWT outbound code path.
 
 ## Requirements
@@ -80,16 +80,15 @@ Superset (JWT + impersonation)
 
 Voila (JWT + impersonation, with a header chain)
 ────────────────────────────────────────────────
-  user → oauth2-proxy (pass_access_token=true, set_xauthrequest=true)
-       ↓ X-Auth-Request-Access-Token: <user OIDC token>
+  user → oauth2-proxy (set_xauthrequest=true)
+       ↓ X-Auth-Request-Preferred-Username: <username>   (username only — the raw token is never forwarded)
   Traefik forwardAuth → Voila pod
-       ↓ scout_voila overrides Voila's GET handler → stashes token in a contextvar
+       ↓ scout_voila overrides Voila's GET handler → stashes the username in a contextvar
   Voila spawns kernel → ScoutMappingKernelManager (class config) reads contextvar → kernel env
        ↓
   playbook code: scout_trino.connect()
-                   - extracts preferred_username from the captured user token
-                     (used as a username source only — not sent to Trino, not
-                     validated server-side; revocation enforced via OPA bundle)
+                   - reads the forwarded username (username source only;
+                     revocation enforced via the OPA bundle, not this header)
                    - mints voila_svc JWT (client_credentials; token: aud=trino; re-minted before exp)
                    - HTTP: Bearer <voila_svc JWT>, X-Trino-User: <user>
        ↓
@@ -202,7 +201,7 @@ Instead of `superset_svc` + `openwebui_mcp_svc` + `voila_svc`, use one `trino_im
 - **Trino TLS**: cert-manager-issued PKCS12 keystore mounted into the coordinator. Internal CA bundle distributed to client namespaces via a Secret/ConfigMap; clients pass it as `verify=<ca-path>` to their HTTP libraries.
 - **Impersonation allowlist**: `trino_service_principals` in `policy/trino/main.rego` — the same set drives the `ImpersonateUser` allow rule and the `is_system_identity` carve-out from `user_enabled` (service principals aren't in `data.users`).
 - **Keycloak realm template** (`ansible/roles/keycloak/templates/scout-realm.json.j2`) renders the three service-principal clients with `serviceAccountsEnabled: true`, the `trino-audience` scope attached, and `access.token.lifespan = 14400`. Secrets live in inventory under `keycloak_<name>_svc_client_secret`.
-- **Voila kernel env propagation**: the kernel manager is swapped via config (`VoilaConfiguration.multi_kernel_manager_class`), but Voila exposes no equivalent hook for its GET handler, so `scout_voila` overrides the handler directly to stash the forwarded token in a contextvar the manager reads at spawn. Contained to one method; the no-header path logs and falls back to anonymous (zero rows). The captured user token's only purpose inside the kernel is to extract the `preferred_username` claim — it is never sent to Trino, never validated server-side at query time, and never used as an auth credential. Revocation is enforced dynamically via the OPA bundle (5–15s propagation per ADR 0021), so a kernel holding a stale user token can't extend a revoked user's access.
+- **Voila kernel env propagation**: the kernel manager is swapped via config (`VoilaConfiguration.multi_kernel_manager_class`), but Voila exposes no equivalent hook for its GET handler, so `scout_voila` overrides the handler directly to stash the forwarded username in a contextvar the manager reads at spawn. Contained to one method; the no-header path logs and falls back to anonymous (zero rows). Only the `preferred_username` crosses into the kernel (via `X-Auth-Request-Preferred-Username`) — the raw user token is never forwarded, so it is never sent to Trino, never validated server-side, and never used as an auth credential. The username is an impersonation label only; revocation is enforced dynamically via the OPA bundle (5–15s propagation per ADR 0021), so a kernel holding a stale username can't extend a revoked user's access.
 - **MCP inbound validation**: the MCP's `oauth.enabled = true` + `oauth.mode = native` config validates the Keycloak OIDC token on every inbound request; `TRINO_IMPERSONATION_FIELD = username` picks `preferred_username` and sets it as `X-Trino-User`.
 - **`trino-rw` is not in scope.** The write-enabled instance has no OPA, no JWT auth, no impersonation — gated by NetworkPolicy per ADR 0019 and accessed by the specific pods on its allowlist (`hl7-transformer` for view DDL, Voila for reviewer-annotation writeback).
 
@@ -214,7 +213,7 @@ Instead of `superset_svc` + `openwebui_mcp_svc` + `voila_svc`, use one `trino_im
 
 ## References
 
-- ADR 0003: OAuth2 Proxy as Authentication Middleware — UI-layer auth that Voila's `X-Auth-Request-Access-Token` forwarding builds on.
+- ADR 0003: OAuth2 Proxy as Authentication Middleware — UI-layer auth that Voila's `X-Auth-Request-Preferred-Username` forwarding builds on.
 - ADR 0019: Read-Write Trino Instance for Transformer-Issued View DDL — explains why `trino-rw` is gated by NetworkPolicy rather than this ADR's auth model.
 - ADR 0020: Trino Authorization via OPA with Keycloak Attributes — the policy engine whose `input.context.identity.user` this ADR delivers.
 - ADR 0021: OPA User Attribute Distribution via MinIO Bundles — the data side of how OPA knows about users.
