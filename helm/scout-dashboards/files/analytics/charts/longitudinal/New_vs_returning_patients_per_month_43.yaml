@@ -1,0 +1,60 @@
+slice_name: New vs returning patients per month
+description: Monthly count of distinct patients, split between first-ever visits ('new')
+  and any subsequent ones ('returning'). A patient counts as 'new' once and 'returning'
+  on each later month they show up.
+certified_by: null
+certification_details: null
+viz_type: echarts_area
+params:
+  datasource: 7__table
+  viz_type: echarts_area
+  slice_id: 68
+  x_axis: event_dt
+  time_grain_sqla: P1M
+  metrics:
+  - distinct_patients
+  groupby:
+  - cohort
+  adhoc_filters:
+  - clause: WHERE
+    subject: event_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  row_limit: 10000
+  truncate_metric: true
+  show_empty_columns: true
+  annotation_layers: []
+  orientation: vertical
+  x_axis_title: Month
+  x_axis_title_margin: 30
+  y_axis_title: Distinct patients
+  y_axis_title_margin: 30
+  y_axis_title_position: Left
+  sort_series_type: sum
+  color_scheme: presetColors
+  stack: Stack
+  opacity: 0.6
+  show_value: false
+  only_total: true
+  markerEnabled: false
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  x_axis_time_format: smart_date
+  rich_tooltip: true
+  showTooltipTotal: true
+  tooltipTimeFormat: smart_date
+  y_axis_format: SMART_NUMBER
+  truncateXAxis: true
+  y_axis_bounds:
+  - 0
+  - null
+  extra_form_data: {}
+  dashboards:
+  - 4
+query_context: null
+cache_timeout: null
+uuid: 49ebb04c-8241-4e71-9aa6-8043f76218a8
+version: 1.0.0
+dataset_uuid: 73d00dd5-6736-4188-b406-7970f8d77db8

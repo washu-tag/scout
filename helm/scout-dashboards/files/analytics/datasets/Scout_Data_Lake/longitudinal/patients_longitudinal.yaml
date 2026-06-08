@@ -1,0 +1,353 @@
+table_name: patients_longitudinal
+main_dttm_col: last_exam_dt
+description: One row per reconciled patient (scout_patient_id), with aggregates over
+  reports_latest_epic_view and reports_dx_epic_view. Drives all patient-level charts
+  on the Patients (Longitudinal) dashboard — every COUNT is at the patient level, not
+  the exam level. First/last exam dates use the exam date when present, falling back
+  to order then HL7 message date (observation_dt alone is sparsely populated), so the
+  dashboard date filter scopes by a reliably-populated date.
+default_endpoint: null
+offset: 0
+cache_timeout: 7200
+catalog: delta
+schema: default
+sql: |-
+  WITH exams AS (
+    SELECT
+      scout_patient_id,
+      COALESCE(observation_dt, requested_dt, message_dt) AS event_dt,
+      modality,
+      sex,
+      race,
+      ethnic_group,
+      patient_age,
+      sending_facility,
+      resolved_epic_mrn,
+      resolved_mpi
+    FROM delta.default.reports_latest_epic_view
+  ),
+  patient_base AS (
+    SELECT
+      scout_patient_id,
+      COUNT(*) AS exam_count,
+      COUNT(DISTINCT modality) AS modality_count,
+      MIN(event_dt) AS first_exam_dt,
+      MAX(event_dt) AS last_exam_dt,
+      DATE_DIFF('day', MIN(event_dt), MAX(event_dt)) AS span_days,
+      MAX(sex) AS sex,
+      MAX(race) AS race,
+      MAX(ethnic_group) AS ethnic_group,
+      MAX(patient_age) AS latest_age,
+      MIN(patient_age) AS first_age,
+      MAX(sending_facility) AS sending_facility,
+      MAX(resolved_epic_mrn) AS resolved_epic_mrn,
+      MAX(resolved_mpi) AS resolved_mpi
+    FROM exams
+    GROUP BY scout_patient_id
+  ),
+  patient_dx AS (
+    SELECT
+      scout_patient_id,
+      COUNT(DISTINCT diagnosis_code) AS distinct_diagnoses
+    FROM delta.default.reports_dx_epic_view
+    WHERE diagnosis_code IS NOT NULL
+    GROUP BY scout_patient_id
+  )
+  SELECT
+    p.scout_patient_id,
+    p.exam_count,
+    p.modality_count,
+    p.first_exam_dt,
+    p.last_exam_dt,
+    p.span_days,
+    p.sex,
+    p.race,
+    p.ethnic_group,
+    p.latest_age,
+    p.first_age,
+    p.sending_facility,
+    p.resolved_epic_mrn,
+    p.resolved_mpi,
+    COALESCE(d.distinct_diagnoses, 0) AS distinct_diagnoses,
+    CASE WHEN p.exam_count = 1 THEN '1'
+         WHEN p.exam_count = 2 THEN '2'
+         WHEN p.exam_count BETWEEN 3 AND 5 THEN '3-5'
+         WHEN p.exam_count BETWEEN 6 AND 10 THEN '6-10'
+         ELSE '11+'
+    END AS exam_count_bucket,
+    CASE WHEN p.modality_count = 1 THEN '1'
+         WHEN p.modality_count = 2 THEN '2'
+         ELSE '3+'
+    END AS modality_count_bucket
+  FROM patient_base p
+  LEFT JOIN patient_dx d ON p.scout_patient_id = d.scout_patient_id
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: 5d6cdd41-c41d-439c-a4ba-e2ee12772c20
+metrics:
+- metric_name: pct_returning
+  verbose_name: '% patients with 2+ exams'
+  metric_type: null
+  expression: 100.0 * SUM(CASE WHEN exam_count >= 2 THEN 1 ELSE 0 END) / NULLIF(COUNT(*),
+    0)
+  description: Share of patients who appear in the lake with more than one exam.
+  d3format: ',.1f'
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+- metric_name: avg_distinct_diagnoses
+  verbose_name: Avg distinct diagnoses per patient
+  metric_type: null
+  expression: AVG(distinct_diagnoses)
+  description: Mean number of distinct diagnosis codes per patient (zero counted for
+    patients with no coded diagnoses).
+  d3format: ',.2f'
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+- metric_name: avg_modality_count
+  verbose_name: Avg distinct modalities per patient
+  metric_type: null
+  expression: AVG(modality_count)
+  description: Mean number of distinct imaging modalities per patient.
+  d3format: ',.2f'
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+- metric_name: avg_exams_per_patient
+  verbose_name: Avg exams per patient
+  metric_type: null
+  expression: AVG(exam_count)
+  description: Mean number of exams across reconciled patients.
+  d3format: ',.2f'
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+- metric_name: count
+  verbose_name: Patients
+  metric_type: count
+  expression: COUNT(*)
+  description: One row per reconciled patient.
+  d3format: ',d'
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+columns:
+- column_name: exam_count_bucket
+  verbose_name: Exams (bucket)
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: 1 / 2 / 3-5 / 6-10 / 11+ bucket of exam_count for histograms.
+  python_date_format: null
+  extra: {}
+- column_name: span_days
+  verbose_name: Span (days)
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: Days between first and last exam for this patient.
+  python_date_format: null
+  extra: {}
+- column_name: modality_count
+  verbose_name: Distinct modalities
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: Distinct imaging modalities this patient has across their exams.
+  python_date_format: null
+  extra: {}
+- column_name: distinct_diagnoses
+  verbose_name: Distinct diagnoses
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: Distinct diagnosis codes accumulated across this patient's exams.
+  python_date_format: null
+  extra: {}
+- column_name: modality_count_bucket
+  verbose_name: Modalities (bucket)
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: 1 / 2 / 3+ bucket of modality_count.
+  python_date_format: null
+  extra: {}
+- column_name: exam_count
+  verbose_name: Exams
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: Number of exams (latest-version reports) for this patient.
+  python_date_format: null
+  extra: {}
+- column_name: first_exam_dt
+  verbose_name: First exam
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP(3) WITH TIME ZONE
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: Earliest exam date for this patient (exam date, falling back to order
+    then HL7 message date).
+  python_date_format: null
+  extra: {}
+- column_name: last_exam_dt
+  verbose_name: Last exam
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP(3) WITH TIME ZONE
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: Most recent exam date for this patient (exam date, falling back to order
+    then HL7 message date). The dashboard date filter scopes patients by this.
+  python_date_format: null
+  extra: {}
+- column_name: scout_patient_id
+  verbose_name: Patient (resolved)
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: Reconciled patient UUID.
+  python_date_format: null
+  extra: {}
+- column_name: latest_age
+  verbose_name: Age at latest exam
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: first_age
+  verbose_name: Age at first exam
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: resolved_epic_mrn
+  verbose_name: Epic MRN (resolved)
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: resolved_mpi
+  verbose_name: MPI (resolved)
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: sending_facility
+  verbose_name: Sending facility
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: ethnic_group
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: race
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: sex
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+version: 1.0.0
+database_uuid: 9ed918e7-ef5a-4aa4-9574-f1946b58d520

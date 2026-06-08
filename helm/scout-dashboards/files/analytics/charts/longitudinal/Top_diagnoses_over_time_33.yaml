@@ -1,0 +1,68 @@
+slice_name: Top diagnoses over time
+description: Quarterly patient counts for the top 5 diagnoses (by total patient count).
+  Surfaces shifts in case mix that exam-level charts can mask when one patient generates
+  many visits in a short window.
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_line
+params:
+  datasource: 6__table
+  viz_type: echarts_timeseries_line
+  slice_id: 71
+  x_axis: message_dt
+  time_grain_sqla: P3M
+  metrics:
+  - distinct_patients
+  groupby:
+  - diagnosis_code_text
+  adhoc_filters:
+  - clause: WHERE
+    subject: message_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  - clause: WHERE
+    subject: diagnosis_code
+    operator: IS NOT NULL
+    operatorId: IS_NOT_NULL
+    expressionType: SIMPLE
+  series_limit: 5
+  series_limit_metric: distinct_patients
+  row_limit: 10000
+  truncate_metric: true
+  show_empty_columns: true
+  annotation_layers: []
+  orientation: vertical
+  x_axis_title: Month
+  x_axis_title_margin: 30
+  y_axis_title: Distinct patients
+  y_axis_title_margin: 30
+  y_axis_title_position: Left
+  sort_series_type: sum
+  sort_series_ascending: false
+  color_scheme: presetColors
+  seriesType: line
+  show_value: false
+  only_total: false
+  markerEnabled: false
+  markerSize: 4
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  x_axis_time_format: smart_date
+  rich_tooltip: true
+  showTooltipTotal: true
+  tooltipTimeFormat: smart_date
+  y_axis_format: SMART_NUMBER
+  truncateXAxis: true
+  y_axis_bounds:
+  - 0
+  - null
+  extra_form_data: {}
+  dashboards:
+  - 4
+query_context: null
+cache_timeout: null
+uuid: b747fcd4-80b5-42c0-b438-e42ab4a73fab
+version: 1.0.0
+dataset_uuid: c2b3af3d-7e2e-445b-86ff-bf0242dd552e

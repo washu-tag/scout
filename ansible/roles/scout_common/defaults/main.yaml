@@ -275,7 +275,7 @@ trino_attribute_filters:
     column: sending_facility
 
 # Superset dashboard bundles to install. Built-in bundles: core, quality,
-# followup. Override in inventory to add more (e.g. [core, quality]).
+# followup, longitudinal. Override in inventory to add more (e.g. [core, quality]).
 scout_dashboard_bundles:
   - core
 

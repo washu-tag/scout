@@ -1,0 +1,69 @@
+slice_name: Patient demographics
+description: "Race \xD7 sex breakdown at the patient level (one row per scout_patient_id),\
+  \ so the distribution reflects the patient mix in the data lake, not the visit mix."
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  datasource: 4__table
+  viz_type: echarts_timeseries_bar
+  slice_id: 64
+  x_axis: race
+  metrics:
+  - count
+  groupby:
+  - sex
+  adhoc_filters:
+  - clause: WHERE
+    subject: last_exam_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  - clause: WHERE
+    subject: race
+    operator: NOT IN
+    operatorId: NOT_IN
+    comparator:
+    - ''
+    - null
+    expressionType: SIMPLE
+  - clause: WHERE
+    subject: sex
+    operator: NOT IN
+    operatorId: NOT_IN
+    comparator:
+    - ''
+    - null
+    expressionType: SIMPLE
+  row_limit: 100
+  truncate_metric: true
+  show_empty_columns: true
+  annotation_layers: []
+  orientation: horizontal
+  x_axis_title: Race
+  x_axis_title_margin: 30
+  y_axis_title: Patients
+  y_axis_title_margin: 30
+  y_axis_title_position: Left
+  sort_series_type: sum
+  sort_series_ascending: false
+  color_scheme: presetColors
+  stack: Stack
+  only_total: true
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  x_axis_time_format: smart_date
+  y_axis_format: SMART_NUMBER
+  truncateXAxis: false
+  rich_tooltip: true
+  showTooltipTotal: true
+  tooltipTimeFormat: smart_date
+  extra_form_data: {}
+  dashboards:
+  - 4
+query_context: null
+cache_timeout: null
+uuid: 9c297468-03cd-461f-826c-bf4092bdf5ef
+version: 1.0.0
+dataset_uuid: 5d6cdd41-c41d-439c-a4ba-e2ee12772c20

@@ -1,0 +1,55 @@
+slice_name: Distinct diagnoses per patient
+description: How many distinct diagnosis codes a patient accumulates across their
+  exams. Zero counted for patients with no coded diagnoses.
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  datasource: 4__table
+  viz_type: echarts_timeseries_bar
+  slice_id: 67
+  x_axis: distinct_diagnoses
+  metrics:
+  - count
+  groupby: []
+  adhoc_filters:
+  - clause: WHERE
+    subject: last_exam_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  - clause: WHERE
+    subject: distinct_diagnoses
+    operator: <=
+    operatorId: LESS_THAN_OR_EQUAL
+    comparator: 30
+    expressionType: SIMPLE
+  row_limit: 1000
+  truncate_metric: true
+  show_empty_columns: true
+  annotation_layers: []
+  orientation: vertical
+  x_axis_title: Distinct diagnoses
+  x_axis_title_margin: 30
+  y_axis_title: Patients
+  y_axis_title_margin: 30
+  y_axis_title_position: Left
+  sort_series_type: sum
+  color_scheme: presetColors
+  only_total: true
+  show_legend: false
+  x_axis_time_format: smart_date
+  y_axis_format: SMART_NUMBER
+  logAxis: true
+  truncateXAxis: false
+  rich_tooltip: true
+  showTooltipTotal: true
+  tooltipTimeFormat: smart_date
+  extra_form_data: {}
+  dashboards:
+  - 4
+query_context: null
+cache_timeout: null
+uuid: 670fc2f1-716e-415b-8c22-c7bccd9ca88e
+version: 1.0.0
+dataset_uuid: 5d6cdd41-c41d-439c-a4ba-e2ee12772c20
