@@ -35,24 +35,24 @@ files/analytics/
 │   ├── core/         # 10 charts on the Scout main dashboard
 │   ├── quality/      #  8 charts on the Quality & TAT dashboard
 │   ├── followup/     # 13 charts on the Follow-up Detection dashboard
-│   └── longitudinal/ # 12 charts on the Patients dashboard
+│   └── patients/     # 12 charts on the Patients dashboard
 ├── dashboards/
 │   ├── core/
 │   ├── quality/
 │   ├── followup/
-│   └── longitudinal/
+│   └── patients/
 └── datasets/
     └── Scout_Data_Lake/
         ├── core/         # reports_latest, reports_dx, reports (raw scale)
         ├── followup/     # reports_followup, confusion_matrix_grid
-        └── longitudinal/ # patients_longitudinal, reports_dx_epic_view, patient_cohort_events
+        └── patients/     # patients_longitudinal, reports_dx_epic_view, patient_cohort_events
 ```
 
 `values.yaml` enables bundles by name:
 
 ```yaml
 bundles:
-  enabled: [core, longitudinal]   # add quality, followup to install more
+  enabled: [core, patients]   # add quality, followup to install more
 ```
 
 The chart's templates iterate the list and `.Files.Glob` only the matching
