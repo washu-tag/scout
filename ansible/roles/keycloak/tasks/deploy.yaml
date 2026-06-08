@@ -181,6 +181,11 @@
         # Hacky way to get an env variable into the Keycloak pod until the operator supports it natively
       - name: scout-url
         value: '{{ server_hostname }}'
+        # Defense in depth: only launchpad-minted tokens may call the scout-users
+        # SPI (it can grant scout-admin). ScoutUsersResource reads
+        # KC_LAUNCHPAD_CLIENT_ID; same operator name->KC_FOO_BAR mapping as scout-url.
+      - name: launchpad-client-id
+        value: '{{ keycloak_launchpad_client_id }}'
         # ADR 0021: the OpaUserBundlePublisher SPI inside the Keycloak
         # pod reads these env vars (via System.getenv) to know where
         # to publish the user-attribute bundle. Keycloak's operator

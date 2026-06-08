@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
+import org.keycloak.models.ClientModel;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -67,6 +68,12 @@ public class ScoutUsersResource {
     static final String SCOUT_USER_GROUP = "scout-user";
     static final String SCOUT_ADMIN_GROUP = "scout-admin";
     static final String AUTHZ_ANNOTATION = "scoutAuthz";
+    // Only bearer tokens minted for the launchpad console client may call this API
+    // (it can grant scout-admin -> realm-admin). The Keycloak operator maps the
+    // additionalOption `launchpad-client-id` -> env KC_LAUNCHPAD_CLIENT_ID; it
+    // mirrors `keycloak_launchpad_client_id`, default below.
+    static final String ENV_LAUNCHPAD_CLIENT_ID = "KC_LAUNCHPAD_CLIENT_ID";
+    static final String DEFAULT_LAUNCHPAD_CLIENT_ID = "launchpad";
     private static final String TERMS_ACCEPTED_ATTR = "scout_terms_accepted_at";
     private static final String APPROVAL_EMAIL_ATTR = "scout_admin_approval_email_sent_at";
 
@@ -232,6 +239,16 @@ public class ScoutUsersResource {
         if (auth == null || auth.user() == null) {
             throw new NotAuthorizedException("Bearer");
         }
+        // Defense in depth: only accept tokens minted for the launchpad console.
+        // This API can grant scout-admin (-> realm-admin), so a bearer issued to
+        // another client — e.g. a scout-admin's aud=trino notebook token — must
+        // not reach it even though that user is an admin. The launchpad proxy
+        // always presents a launchpad-client token; Keycloak's own admin console
+        // is the escape hatch for everything else.
+        ClientModel client = auth.client();
+        if (!isAllowedClient(client == null ? null : client.getClientId())) {
+            throw new ForbiddenException("token not issued for the Scout console client");
+        }
         if (!isScoutAdmin(auth.user())) {
             throw new ForbiddenException("requires membership in " + SCOUT_ADMIN_GROUP);
         }
@@ -294,6 +311,18 @@ public class ScoutUsersResource {
 
     boolean isScoutAdmin(UserModel user) {
         return user.getGroupsStream().anyMatch(g -> SCOUT_ADMIN_GROUP.equals(g.getName()));
+    }
+
+    // The client id whose bearer tokens may call this API; env-overridable
+    // (KC_LAUNCHPAD_CLIENT_ID), defaults to "launchpad".
+    String allowedClientId() {
+        String configured = System.getenv(ENV_LAUNCHPAD_CLIENT_ID);
+        return configured == null || configured.isBlank() ? DEFAULT_LAUNCHPAD_CLIENT_ID : configured;
+    }
+
+    // Whether a bearer minted for clientId may call this API.
+    boolean isAllowedClient(String clientId) {
+        return clientId != null && allowedClientId().equals(clientId);
     }
 
     List<AttrSchema> buildSchema() {

@@ -222,6 +222,16 @@ class ScoutUsersResourceTest {
         assertFalse(resource.isScoutAdmin(plain));
     }
 
+    @Test
+    void only_launchpad_client_tokens_are_allowed() {
+        // Defaults to "launchpad" (KC_LAUNCHPAD_CLIENT_ID unset in the test): a
+        // token minted for any other client, or with no client, is rejected even
+        // if the user is a scout-admin.
+        assertTrue(resource.isAllowedClient("launchpad"));
+        assertFalse(resource.isAllowedClient("jupyter"));
+        assertFalse(resource.isAllowedClient(null));
+    }
+
     // --- edit attributes ----------------------------------------------------
 
     @Test
