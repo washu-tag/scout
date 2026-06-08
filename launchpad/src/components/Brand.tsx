@@ -1,10 +1,12 @@
-import { ReactNode } from 'react';
+import { Fragment, ReactNode } from 'react';
 
-// Shared brand strip (logo + "Scout" / <tail>) so the launchpad home and the
-// admin console can't drift apart. `tail` is the breadcrumb segment after the
-// slash — the environment name on home, "Users" on the console. `leading` is an
-// optional slot before the logo (the console uses it for a back-to-launchpad arrow).
-export default function Brand({ tail, leading }: { tail: ReactNode; leading?: ReactNode }) {
+// Shared brand strip (logo + "Scout" / <crumb> / <crumb> …) so the launchpad
+// home and the admin console can't drift apart. `crumbs` are the breadcrumb
+// segments after the logo — [environment] on home, [environment, "Users"] on the
+// console, so the console trail is a consistent extension of home's rather than
+// swapping its second segment. `leading` is an optional slot before the logo
+// (the console uses it for a back-to-launchpad arrow).
+export default function Brand({ crumbs, leading }: { crumbs: ReactNode[]; leading?: ReactNode }) {
   return (
     <div className="flex items-center gap-2.5">
       {leading}
@@ -14,8 +16,12 @@ export default function Brand({ tail, leading }: { tail: ReactNode; leading?: Re
       <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 tracking-tight">
         Scout
       </span>
-      <span className="text-slate-300 dark:text-slate-700 text-sm">/</span>
-      <span className="text-sm text-slate-500 dark:text-slate-400">{tail}</span>
+      {crumbs.map((crumb, i) => (
+        <Fragment key={i}>
+          <span className="text-slate-300 dark:text-slate-700 text-sm">/</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400">{crumb}</span>
+        </Fragment>
+      ))}
     </div>
   );
 }

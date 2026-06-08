@@ -8,5 +8,7 @@ export const metadata = {
 };
 
 export default function ApprovalsPage() {
-  return <UsersClient />;
+  // Mirror the home page so the console breadcrumb shows the same environment.
+  const scoutEnv = process.env.SCOUT_ENV;
+  return <UsersClient scoutEnv={scoutEnv} />;
 }

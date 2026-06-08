@@ -617,8 +617,9 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'admin', label: 'Admins' },
 ];
 
-export default function UsersClient() {
+export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
   const { data: session, status } = useSession();
+  const environment = scoutEnv ?? 'local';
   const [schema, setSchema] = useState<AttrSchema[]>([]);
   const [tab, setTab] = useState<Tab>('pending');
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -719,7 +720,7 @@ export default function UsersClient() {
       <div className="border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur">
         <div className="max-w-content mx-auto px-6 py-4 flex items-center justify-between">
           <Brand
-            tail="Users"
+            crumbs={[environment, 'Users']}
             leading={
               <a
                 href="/"

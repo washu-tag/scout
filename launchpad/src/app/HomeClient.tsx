@@ -535,7 +535,7 @@ export default function HomeClient({
       <div className="absolute top-0 left-0 right-0 z-10">
         <div className="max-w-content mx-auto px-6 py-6 flex items-center justify-between">
           {/* Brand strip */}
-          <Brand tail={environment} />
+          <Brand crumbs={[environment]} />
           <TopBar />
         </div>
       </div>
