@@ -1,0 +1,77 @@
+---
+- name: Verify required variables are defined
+  ansible.builtin.assert:
+    that:
+      - cert_manager_acme_account_email is defined
+      - acmedns_host is defined
+      - acmedns_credentials is defined
+    fail_msg: 'cert_manager_acme_account_email, acmedns_host, and acmedns_credentials must be defined when tls_mode=cert_manager'
+
+- name: Create ACME-DNS credentials Secret
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    apply: true
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ cert_manager_acme_dns_secret_name }}'
+        namespace: '{{ cert_manager_namespace }}'
+      type: Opaque
+      stringData:
+        acmedns.json: >-
+          {{ acmedns_credentials
+             if (acmedns_credentials is string)
+             else (acmedns_credentials | to_json) }}
+
+- name: Create ACME ClusterIssuer
+  kubernetes.core.k8s:
+    state: present
+    apply: true
+    definition:
+      apiVersion: cert-manager.io/v1
+      kind: ClusterIssuer
+      metadata:
+        name: '{{ cert_manager_acme_issuer_name }}'
+      spec:
+        acme:
+          server: '{{ cert_manager_acme_server }}'
+          email: '{{ cert_manager_acme_account_email }}'
+          privateKeySecretRef:
+            name: '{{ cert_manager_acme_issuer_name }}-account-key'
+          solvers:
+            - dns01:
+                acmeDNS:
+                  host: '{{ acmedns_host }}'
+                  accountSecretRef:
+                    name: '{{ cert_manager_acme_dns_secret_name }}'
+                    key: acmedns.json
+
+- name: Create wildcard Certificate
+  kubernetes.core.k8s:
+    state: present
+    apply: true
+    definition:
+      apiVersion: cert-manager.io/v1
+      kind: Certificate
+      metadata:
+        name: '{{ cert_manager_acme_certificate_name }}'
+        namespace: '{{ traefik_namespace }}'
+      spec:
+        secretName: '{{ traefik_tls_secret_name }}'
+        issuerRef:
+          name: '{{ cert_manager_acme_issuer_name }}'
+          kind: ClusterIssuer
+        dnsNames: '{{ cert_manager_acme_dns_names }}'
+
+# Wait for the certificate to be issued before proceeding with Traefik deployment.
+# This ensures Traefik has a valid cert to use before downstream services start.
+# Importantly OIDC discovery with Keycloak will fail without a valid cert.
+- name: Wait for Certificate to be Ready
+  ansible.builtin.command: >-
+    kubectl -n {{ traefik_namespace }} wait
+    --for=condition=Ready
+    --timeout=300s
+    certificate/{{ cert_manager_acme_certificate_name }}
+  changed_when: false

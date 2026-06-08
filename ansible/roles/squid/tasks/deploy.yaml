@@ -10,11 +10,22 @@
     _has_microsoft_idp: "{{ hostvars[groups.get('server', [])[0] | default(inventory_hostname)].keycloak_microsoft_client_id | default('') | length > 0 if groups.get('server', []) | length > 0 else false }}"
     _has_github_idp: "{{ hostvars[groups.get('server', [])[0] | default(inventory_hostname)].keycloak_gh_client_id | default('') | length > 0 if groups.get('server', []) | length > 0 else false }}"
 
-- name: Compute allowed domains from configured IdPs
+- name: Read TLS / cert-manager configuration from production cluster
+  vars:
+    _server_host: "{{ groups.get('server', [])[0] | default(inventory_hostname) }}"
+    _server_tls_mode: "{{ hostvars[_server_host].tls_mode | default('file') }}"
+    _server_acmedns_host: "{{ hostvars[_server_host].acmedns_host | default('') }}"
+  ansible.builtin.set_fact:
+    _uses_cert_manager_acme: "{{ _server_tls_mode == 'cert_manager' }}"
+    _acmedns_domain: "{{ (_server_acmedns_host | urlsplit('hostname')) if _server_acmedns_host | length > 0 else '' }}"
+
+- name: Compute allowed domains from configured IdPs and cert-manager settings
   ansible.builtin.set_fact:
     _squid_allowed_domains: >-
       {{ (squid_microsoft_domains if _has_microsoft_idp | bool else [])
        + (squid_github_domains if _has_github_idp | bool else [])
+       + (squid_letsencrypt_domains if _uses_cert_manager_acme | bool else [])
+       + ([_acmedns_domain] if (_uses_cert_manager_acme | bool and _acmedns_domain | length > 0) else [])
        + squid_extra_allowed_domains }}
 
 - name: Skip Squid when no domains need proxying

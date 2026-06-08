@@ -89,6 +89,7 @@
   vars:
     k3s_token: '{{ staging_k3s_token }}'
     air_gapped: false # Staging node has internet access
+    tls_mode: file # Staging uses self-signed cert (generated above), cert-manager not applicable
   roles:
     - role: k3s
     - role: traefik

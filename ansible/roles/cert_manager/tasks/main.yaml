@@ -5,6 +5,8 @@
 #   * cass-operator requires it (orchestrator playbook).
 #   * Trino's HTTPS Certificate uses it for the JWT-auth TLS terminator
 #     (ADR 0022, trino playbook).
+#   * The traefik role (when tls_mode == cert_manager) uses it for the
+#     external wildcard TLS cert via ACME + acme-dns DNS-01.
 #   * Future internal-TLS services (per ADR 0022 implementation notes
 #     and the scout_common cluster_issuer_setup task) will reuse the
 #     same CA chain it underpins.
@@ -17,6 +19,9 @@
 #
 # Version + namespace come from group_vars/all/versions.yaml +
 # scout_common/defaults/main.yaml respectively — single source of truth.
+# Optional extra chart values (proxy env vars for air-gapped clusters,
+# DNS-01 recursive nameservers) layer on via cert_manager_extra_helm_values
+# (defined in this role's defaults).
 
 - name: Deploy cert-manager
   ansible.builtin.include_role:
@@ -29,5 +34,4 @@
     helm_chart_namespace: '{{ cert_manager_namespace }}'
     helm_repo_name: jetstack
     helm_repo_url: https://charts.jetstack.io
-    helm_chart_values:
-      installCRDs: true
+    helm_chart_values: "{{ {'installCRDs': true} | combine(cert_manager_extra_helm_values, recursive=true) }}"
