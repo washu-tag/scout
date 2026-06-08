@@ -5,7 +5,6 @@ import { useSession, signIn } from 'next-auth/react';
 import TopBar from '@/components/TopBar';
 import Brand from '@/components/Brand';
 import {
-  HiArrowLeft,
   HiCheckCircle,
   HiChevronLeft,
   HiChevronRight,
@@ -718,19 +717,8 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30">
       {/* Header */}
       <div className="border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur">
-        <div className="max-w-content mx-auto px-6 py-4 flex items-center justify-between">
-          <Brand
-            crumbs={[environment, 'Users']}
-            leading={
-              <a
-                href="/"
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                aria-label="Back to Launchpad"
-              >
-                <HiArrowLeft className="text-lg" />
-              </a>
-            }
-          />
+        <div className="max-w-content mx-auto px-6 py-6 flex items-center justify-between">
+          <Brand crumbs={[environment, 'Users']} />
           <div className="flex items-center gap-4">
             {kcConsole && (
               <a
