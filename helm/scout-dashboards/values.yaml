@@ -45,6 +45,7 @@ importUser: admin
 bundles:
   enabled:
     - core
+    - longitudinal
 
 # Resources for the import Job pod.
 resources:

@@ -35,7 +35,7 @@ files/analytics/
 │   ├── core/         # 10 charts on the Scout main dashboard
 │   ├── quality/      #  8 charts on the Quality & TAT dashboard
 │   ├── followup/     # 13 charts on the Follow-up Detection dashboard
-│   └── longitudinal/ # 13 charts on the Patients (Longitudinal) dashboard
+│   └── longitudinal/ # 12 charts on the Patients dashboard
 ├── dashboards/
 │   ├── core/
 │   ├── quality/
@@ -52,7 +52,7 @@ files/analytics/
 
 ```yaml
 bundles:
-  enabled: [core]    # add quality, followup to install more
+  enabled: [core, longitudinal]   # add quality, followup to install more
 ```
 
 The chart's templates iterate the list and `.Files.Glob` only the matching
@@ -100,12 +100,11 @@ checksum/config annotation changes, Helm replaces the Job under
 
 ### Why bundles instead of one big import?
 
-The Quality & TAT, Follow-up Detection, and Patients (Longitudinal) dashboards
-include experimental features and depend on data products (TAT calculations,
-the follow-up classifier, the patient-resolved Epic-MPI views) that not every
-Scout site runs. Bundling them lets sites opt in without modifying the chart.
-The Scout core dashboard ships by default and is the only bundle that's always
-on.
+The Quality & TAT and Follow-up Detection dashboards include experimental
+features and depend on data products (TAT calculations, the follow-up
+classifier) not every Scout site runs, so they're opt-in. The Scout core and
+Patients dashboards ship by default — Patients reads the patient-resolved
+Epic-MPI views, which the transformer creates in standard deploys.
 
 ### Why the force-overwrite Python pass on top of `import-dashboards`?
 

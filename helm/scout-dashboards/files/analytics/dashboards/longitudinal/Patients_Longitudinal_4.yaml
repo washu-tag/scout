@@ -1,4 +1,4 @@
-dashboard_title: Patients (Longitudinal)
+dashboard_title: Patients
 description: Patient-centric view of the data lake. Every count here is reconciled
   at the patient level (scout_patient_id from Scout's Epic-MPI mapping), so the same
   patient across multiple MRNs only counts once.
@@ -17,7 +17,7 @@ position:
   HEADER_ID:
     id: HEADER_ID
     meta:
-      text: Patients (Longitudinal)
+      text: Patients
     type: HEADER
   GRID_ID:
     children:
