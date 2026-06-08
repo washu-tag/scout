@@ -93,21 +93,26 @@ function requestedLabel(ms: string | null): string {
   return new Date(n).toLocaleDateString();
 }
 
-// A compact, glanceable summary of a user's data-access attributes for the
-// table (e.g. "PHI masked · 3 facilities"). Driven by the same schema as the
-// editor, so it adapts to whatever dimensions are configured.
+// A compact, glanceable summary of a user's data-access for the table, e.g.
+// "all facilities · MR, CT · phi masked". Driven by the same schema as the
+// editor. A short noun is derived from each attribute name because the configured
+// displayName is verbose ("Scout Authz — allowed_facilities"). Wildcard "*" reads
+// as "all" (not "1"), and an empty dimension reads as "no <noun>" — a zero-row
+// state worth surfacing, not hiding.
 function attrSummary(attributes: Record<string, string[]>, schema: AttrSchema[]): string {
   const parts: string[] = [];
   for (const a of schema) {
     const v = attributes[a.name];
-    if (!v || v.length === 0) continue;
-    const label = a.displayName || a.name;
+    const noun = a.name.replace(/^allowed_/, '').replace(/_/g, ' ');
     if (isBoolean(a)) {
-      if (v[0] === 'true') parts.push(label);
+      if (v && v[0] === 'true') parts.push(noun);
     } else if (a.multivalued) {
-      parts.push(`${v.length} ${label.toLowerCase()}`);
-    } else {
-      parts.push(`${label}: ${v[0]}`);
+      if (v && v.includes('*')) parts.push(`all ${noun}`);
+      else if (!v || v.length === 0) parts.push(`no ${noun}`);
+      else if (v.length <= 3) parts.push(v.join(', '));
+      else parts.push(`${v.length} ${noun}`);
+    } else if (v && v.length > 0) {
+      parts.push(v[0]);
     }
   }
   return parts.join(' · ');
@@ -238,7 +243,15 @@ function UserDrawer({
   const toggleChip = (name: string, opt: string) => {
     setValues((v) => {
       const cur = v[name] ?? [];
-      return { ...v, [name]: cur.includes(opt) ? cur.filter((x) => x !== opt) : [...cur, opt] };
+      // "*" means All and is mutually exclusive with specific picks: the wildcard
+      // dominates in OPA (a filter with "*" is disabled), so keeping both would be
+      // meaningless. Toggling All on clears specifics; picking a specific clears All.
+      if (opt === '*') {
+        return { ...v, [name]: cur.includes('*') ? [] : ['*'] };
+      }
+      const base = cur.filter((x) => x !== '*');
+      const next = base.includes(opt) ? base.filter((x) => x !== opt) : [...base, opt];
+      return { ...v, [name]: next };
     });
   };
 
@@ -521,13 +534,23 @@ function Control({ attr, value, onChipToggle, onValue }: ControlProps) {
   const label = attr.displayName || attr.name;
 
   if (attr.multivalued && attr.options && attr.options.length > 0) {
+    // "*" becomes an explicit "All" pill rather than a cryptic asterisk; the rest
+    // are specific values. All and specifics are mutually exclusive (toggleChip
+    // enforces it), and when All is on the specifics are dimmed since they're
+    // subsumed. An empty selection is a real state — zero rows — so it's called out.
+    const allOn = value.includes('*');
+    const none = value.length === 0;
+    const items = [
+      ...(attr.options.includes('*') ? [{ opt: '*', text: 'All', dim: false }] : []),
+      ...attr.options.filter((o) => o !== '*').map((o) => ({ opt: o, text: o, dim: allOn })),
+    ];
     return (
       <div>
         <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
           {label}
         </span>
         <div className="flex flex-wrap gap-2">
-          {attr.options.map((opt) => {
+          {items.map(({ opt, text, dim }) => {
             const on = value.includes(opt);
             return (
               <button
@@ -537,14 +560,24 @@ function Control({ attr, value, onChipToggle, onValue }: ControlProps) {
                 className={`rounded-full border px-3 py-1 text-sm transition-colors ${
                   on
                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-medium'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
+                    : `border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600${dim ? ' opacity-50' : ''}`
                 }`}
               >
-                {opt}
+                {text}
               </button>
             );
           })}
         </div>
+        {allOn && (
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Full access — no restriction on this dimension.
+          </p>
+        )}
+        {none && (
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            No access — this user will see 0 rows.
+          </p>
+        )}
       </div>
     );
   }
