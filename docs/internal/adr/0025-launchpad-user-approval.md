@@ -34,7 +34,11 @@ small **Keycloak REST resource**, with **dynamic, config-driven attributes**.
 A `RealmResourceProvider` in the existing event-listener SPI exposes, under
 `/realms/<realm>/scout-users/`, a `scout-admin`-gated API (`BearerTokenAuthenticator`
 + a live `scout-admin` group check on every call; no standing admin-API
-credential — the resource acts on the authenticated admin's own authority):
+credential — the resource acts on the authenticated admin's own authority). As
+defense in depth on an API that can grant `scout-admin` -> realm-admin, it also
+requires the bearer to carry `aud=scout-users-api` (added by the launchpad client's
+audience mapper), so a `scout-admin`'s token minted for another resource — e.g. an
+`aud=trino` notebook token — can't reach it. The endpoints:
 
 - `GET /schema` — the data-access attributes to collect, **discovered at request
   time** from the realm User Profile (attributes annotated `scoutAuthz=true`,

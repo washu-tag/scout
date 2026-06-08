@@ -223,13 +223,13 @@ class ScoutUsersResourceTest {
     }
 
     @Test
-    void only_launchpad_client_tokens_are_allowed() {
-        // Defaults to "launchpad" (KC_LAUNCHPAD_CLIENT_ID unset in the test): a
-        // token minted for any other client, or with no client, is rejected even
-        // if the user is a scout-admin.
-        assertTrue(resource.isAllowedClient("launchpad"));
-        assertFalse(resource.isAllowedClient("jupyter"));
-        assertFalse(resource.isAllowedClient(null));
+    void only_tokens_audienced_for_the_api_are_allowed() {
+        // The launchpad client adds aud=scout-users-api; a token for another resource
+        // (or with no audience) is rejected even if the user is a scout-admin.
+        assertTrue(resource.hasRequiredAudience(new String[] {"scout-users-api"}));
+        assertTrue(resource.hasRequiredAudience(new String[] {"account", "scout-users-api"}));
+        assertFalse(resource.hasRequiredAudience(new String[] {"trino"}));
+        assertFalse(resource.hasRequiredAudience(null));
     }
 
     // --- edit attributes ----------------------------------------------------

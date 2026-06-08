@@ -471,6 +471,26 @@
         ],
         "webOrigins": [
           "https://{{ server_hostname }}"
+        ],
+        {#- aud=scout-users-api so the scout-users SPI — which can grant scout-admin
+            -> realm-admin — accepts only tokens minted for the launchpad, as
+            defense in depth on top of its live scout-admin check. Audiences the SPI
+            itself; the -api suffix keeps it distinct from the scout-user group.
+            Same shape as trino-audience. -#}
+        "protocolMappers": [
+          {
+            "name": "scout-users-api-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "scout-users-api",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
         ]
       },
       {
