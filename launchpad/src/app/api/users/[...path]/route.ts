@@ -37,6 +37,13 @@ async function freshAccessToken(jwt: JWT): Promise<string | null> {
     }),
   });
   if (!res.ok) {
+    // The refresh-token grant failed — almost always because the SSO session it
+    // belonged to is gone (Keycloak redeploy, a logout elsewhere, or idle/max
+    // timeout). This used to fail silently; log it so the cause is visible, and
+    // let forward() turn it into a 401 the console renders as a re-login prompt.
+    console.warn(
+      `scout-users proxy: refresh-token grant failed (${res.status}) — SSO session likely expired`,
+    );
     return null;
   }
   const data = (await res.json()) as { access_token?: string };
@@ -80,7 +87,11 @@ async function forward(req: NextRequest, segments: string[], method: 'GET' | 'PO
   const body = method === 'POST' ? await req.text() : undefined;
   const accessToken = await freshAccessToken(jwt);
   if (!accessToken) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Couldn't mint a token from the stored refresh token: the SSO session is
+    // gone. 401 (not 403) so the console prompts re-login rather than showing a
+    // misleading "not scout-admin" — a genuine authz denial is the SPI's 403,
+    // forwarded as-is below.
+    return NextResponse.json({ error: 'session_expired' }, { status: 401 });
   }
 
   const upstream = await callKeycloak(issuer, target, method, accessToken, body);

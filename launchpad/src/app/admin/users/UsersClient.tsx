@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import TopBar from '@/components/TopBar';
+import Brand from '@/components/Brand';
 import {
   HiArrowLeft,
   HiCheckCircle,
@@ -160,6 +161,7 @@ interface DrawerProps {
   onNavigate?: (delta: number) => void;
   onClose: () => void;
   onDone: () => void;
+  onAuthExpired: () => void;
 }
 
 // Seed each control from the user's current value if set, else the schema's
@@ -184,7 +186,28 @@ function seedValues(user: Row, schema: AttrSchema[]): Record<string, string[]> {
   return init;
 }
 
-function UserDrawer({ user, schema, position, onNavigate, onClose, onDone }: DrawerProps) {
+// A 401 from the /api/users proxy means the SSO session backing our refresh
+// token is gone (Keycloak redeploy, a logout elsewhere, idle/max timeout), so
+// the proxy couldn't mint a token — distinct from a 403, which is a genuine
+// "not scout-admin". Throw a sentinel so callers prompt re-login instead of
+// surfacing the misleading authz message.
+const SESSION_EXPIRED = 'SESSION_EXPIRED';
+
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const r = await fetch(path, init);
+  if (r.status === 401) throw new Error(SESSION_EXPIRED);
+  return r;
+}
+
+function UserDrawer({
+  user,
+  schema,
+  position,
+  onNavigate,
+  onClose,
+  onDone,
+  onAuthExpired,
+}: DrawerProps) {
   const mode: 'approve' | 'edit' = user.status === 'pending' ? 'approve' : 'edit';
   const [shown, setShown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -226,7 +249,7 @@ function UserDrawer({ user, schema, position, onNavigate, onClose, onDone }: Dra
     setSubmitting(true);
     setError(null);
     try {
-      const r = await fetch(path, {
+      const r = await apiFetch(path, {
         method,
         headers: body ? { 'Content-Type': 'application/json' } : {},
         body: body ? JSON.stringify(body) : undefined,
@@ -236,6 +259,10 @@ function UserDrawer({ user, schema, position, onNavigate, onClose, onDone }: Dra
       }
       onDone();
     } catch (e) {
+      if ((e as Error).message === SESSION_EXPIRED) {
+        onAuthExpired();
+        return;
+      }
       setSubmitting(false);
       setConfirm(null);
       setError((e as Error).message);
@@ -298,38 +325,13 @@ function UserDrawer({ user, schema, position, onNavigate, onClose, onDone }: Dra
               </p>
             )}
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {position && onNavigate && (
-              <div className="flex items-center gap-0.5 mr-1 text-slate-400 dark:text-slate-500">
-                <button
-                  onClick={() => onNavigate(-1)}
-                  disabled={position.index <= 0}
-                  aria-label="Previous user"
-                  className="p-1 rounded hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 disabled:cursor-default transition-colors"
-                >
-                  <HiChevronLeft className="text-lg" />
-                </button>
-                <span className="text-xs tabular-nums select-none">
-                  {position.index + 1} / {position.total}
-                </span>
-                <button
-                  onClick={() => onNavigate(1)}
-                  disabled={position.index >= position.total - 1}
-                  aria-label="Next user"
-                  className="p-1 rounded hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 disabled:cursor-default transition-colors"
-                >
-                  <HiChevronRight className="text-lg" />
-                </button>
-              </div>
-            )}
-            <button
-              onClick={close}
-              aria-label="Close"
-              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-            >
-              <HiX className="text-xl" />
-            </button>
-          </div>
+          <button
+            onClick={close}
+            aria-label="Close"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+          >
+            <HiX className="text-xl" />
+          </button>
         </div>
 
         {/* Body: attribute form + (edit mode) role & access actions */}
@@ -393,6 +395,29 @@ function UserDrawer({ user, schema, position, onNavigate, onClose, onDone }: Dra
           />
         ) : (
           <div className="flex items-center gap-3 p-6 border-t border-slate-200 dark:border-slate-800">
+            {position && onNavigate && (
+              <div className="flex items-center gap-0.5 text-slate-400 dark:text-slate-500">
+                <button
+                  onClick={() => onNavigate(-1)}
+                  disabled={position.index <= 0}
+                  aria-label="Previous user"
+                  className="p-1 rounded hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 disabled:cursor-default transition-colors"
+                >
+                  <HiChevronLeft className="text-lg" />
+                </button>
+                <span className="text-xs tabular-nums select-none">
+                  {position.index + 1} / {position.total}
+                </span>
+                <button
+                  onClick={() => onNavigate(1)}
+                  disabled={position.index >= position.total - 1}
+                  aria-label="Next user"
+                  className="p-1 rounded hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 disabled:cursor-default transition-colors"
+                >
+                  <HiChevronRight className="text-lg" />
+                </button>
+              </div>
+            )}
             {error ? (
               <span className="text-sm text-rose-600 dark:text-rose-400 flex-1">{error}</span>
             ) : (
@@ -599,6 +624,7 @@ export default function UsersClient() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [selected, setSelected] = useState<Row | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [authExpired, setAuthExpired] = useState(false);
   const [kcConsole, setKcConsole] = useState('');
   const [deepLink, setDeepLink] = useState<string | null>(null);
   const [sort, setSort] = useState<{ col: SortCol; dir: SortDir }>({
@@ -629,11 +655,13 @@ export default function UsersClient() {
   // Schema once (drives the editor form regardless of tab).
   useEffect(() => {
     if (!isAdmin) return;
-    fetch('/api/users/schema')
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+    apiFetch('/api/users/schema')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
       .then((s) => setSchema(s as AttrSchema[]))
-      .catch(() =>
-        setError('Could not load the attribute schema. You may not have the scout-admin role.'),
+      .catch((e) =>
+        (e as Error).message === SESSION_EXPIRED
+          ? setAuthExpired(true)
+          : setError('Could not load the attribute schema. You may not have the scout-admin role.'),
       );
   }, [isAdmin]);
 
@@ -644,16 +672,17 @@ export default function UsersClient() {
     setError(null);
     try {
       if (t === 'pending') {
-        const r = await fetch('/api/users/pending');
+        const r = await apiFetch('/api/users/pending');
         if (!r.ok) throw new Error();
         setRows(((await r.json()) as PendingUser[]).map(pendingToRow));
       } else {
-        const r = await fetch(`/api/users/users?status=${t}`);
+        const r = await apiFetch(`/api/users/users?status=${t}`);
         if (!r.ok) throw new Error();
         setRows(((await r.json()) as ScoutUser[]).map(scoutToRow));
       }
-    } catch {
-      setError('Could not load users. You may not have the scout-admin role.');
+    } catch (e) {
+      if ((e as Error).message === SESSION_EXPIRED) setAuthExpired(true);
+      else setError('Could not load users. You may not have the scout-admin role.');
     }
   }, []);
 
@@ -689,21 +718,18 @@ export default function UsersClient() {
       {/* Header */}
       <div className="border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur">
         <div className="max-w-content mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <a
-              href="/"
-              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-              aria-label="Back to Launchpad"
-            >
-              <HiArrowLeft className="text-lg" />
-            </a>
-            <div className="p-0.5 rounded-md bg-gradient-to-br from-indigo-500 to-indigo-700">
-              <img src="/scout.png" alt="Scout" className="h-7 w-7 rounded bg-white p-0.5 block" />
-            </div>
-            <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Scout</span>
-            <span className="text-slate-300 dark:text-slate-700 text-sm">/</span>
-            <span className="text-sm text-slate-500 dark:text-slate-400">Users</span>
-          </div>
+          <Brand
+            tail="Users"
+            leading={
+              <a
+                href="/"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                aria-label="Back to Launchpad"
+              >
+                <HiArrowLeft className="text-lg" />
+              </a>
+            }
+          />
           <div className="flex items-center gap-4">
             {kcConsole && (
               <a
@@ -733,6 +759,18 @@ export default function UsersClient() {
 
         {status === 'loading' || !session ? (
           <Notice>Loading…</Notice>
+        ) : authExpired ? (
+          <Notice>
+            <div className="flex flex-col items-center gap-3">
+              <p>Your session expired. Sign in again to continue — your access is unchanged.</p>
+              <button
+                onClick={() => signIn('keycloak')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+              >
+                Sign in again
+              </button>
+            </div>
+          </Notice>
         ) : !isAdmin ? (
           <Notice>
             You need the{' '}
@@ -867,6 +905,10 @@ export default function UsersClient() {
           }}
           onClose={() => setSelected(null)}
           onDone={onDone}
+          onAuthExpired={() => {
+            setSelected(null);
+            setAuthExpired(true);
+          }}
         />
       )}
     </div>
