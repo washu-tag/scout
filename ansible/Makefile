@@ -97,7 +97,7 @@ install-voila:
 	$(ANSIBLE_CMD) playbooks/voila.yaml
 
 install-data-generator:
-	$(ANSIBLE_CMD) playbooks/data-generator.yaml
+	$(ANSIBLE_CMD) playbooks/data_generator.yaml
 
 # For tests
 install-orthanc:
