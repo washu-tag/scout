@@ -1,0 +1,26 @@
+---
+# Default values for custom data-generator
+
+# Helm configuration
+data_generator_helm_chart_ref: '{{ scout_repo_dir }}/helm/data-generator'
+
+# Storage configuration
+data_generator_workspace: /beegfs/shared/data-generator-input
+data_generator_output: /beegfs/shared/data-generator
+
+# Resource configuration
+data_generator_resources_default:
+  requests:
+    cpu: 1
+    memory: 4Gi
+  limits:
+    memory: 16Gi
+data_generator_java_tool_opts: '-XX:MaxRAMPercentage=75.0'
+
+# Deployment/container parameters
+data_generator_replicas: 1
+data_generator_image_repository: ghcr.io/washu-tag/data-generator
+data_generator_image_tag: latest
+
+# Secrets to auth to external LLMs
+data_generator_secrets: {}

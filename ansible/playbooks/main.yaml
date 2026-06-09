@@ -55,3 +55,6 @@
 
 - name: Install Launchpad
   import_playbook: launchpad.yaml
+
+- name: Install data-generator
+  import_playbook: data_generator.yaml

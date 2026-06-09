@@ -121,6 +121,7 @@ minio_tenant_name: scout
 hive_namespace: '{{ scout_data_namespace }}'
 dcm4chee_namespace: '{{ scout_data_namespace }}'
 orthanc_namespace: '{{ scout_data_namespace }}'
+data_generator_namespace: '{{ scout_data_namespace }}'
 
 # Extractor & workflow orchestration
 extractor_namespace: '{{ scout_extractor_namespace }}'
@@ -265,6 +266,7 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
+enable_data_generator: false
 
 # Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
 # Jupyter singleuser) or are cluster-wide storage layers that span every
