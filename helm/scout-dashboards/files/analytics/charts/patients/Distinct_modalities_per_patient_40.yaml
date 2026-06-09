@@ -1,0 +1,46 @@
+slice_name: Distinct modalities per patient
+description: "Share of reconciled patients by how many distinct imaging modalities\
+  \ they span: 1 (single-modality), 2, or 3+. Multi-modality patients are interesting\
+  \ cohorts — e.g. cancer workups, post-trauma follow-up."
+certified_by: null
+certification_details: null
+viz_type: pie
+params:
+  datasource: 4__table
+  viz_type: pie
+  slice_id: 66
+  groupby:
+  - modality_count_bucket
+  metric: count
+  adhoc_filters:
+  - clause: WHERE
+    subject: last_exam_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  row_limit: 100
+  sort_by_metric: true
+  color_scheme: presetColors
+  show_labels_threshold: 1
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  label_type: key_value_percent
+  number_format: SMART_NUMBER
+  date_format: smart_date
+  show_labels: true
+  labels_outside: true
+  label_line: true
+  show_total: true
+  outerRadius: 70
+  donut: true
+  innerRadius: 40
+  extra_form_data: {}
+  dashboards:
+  - 4
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 42e51eab-5b63-454f-935d-ed6cc8bab4a4
+version: 1.0.0
+dataset_uuid: 5d6cdd41-c41d-439c-a4ba-e2ee12772c20

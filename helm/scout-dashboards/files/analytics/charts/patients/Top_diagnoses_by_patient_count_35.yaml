@@ -1,0 +1,54 @@
+slice_name: Top diagnoses by patient count
+description: Diagnosis codes ranked by the number of distinct reconciled patients
+  carrying them. Unlike the exam-level Diagnoses chart on the Scout dashboard, the
+  same patient with five visits all coded J18.9 counts once.
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 6__table
+  viz_type: table
+  slice_id: 69
+  query_mode: aggregate
+  groupby:
+  - diagnosis_code
+  - diagnosis_code_text
+  time_grain_sqla: P1D
+  temporal_columns_lookup:
+    message_dt: true
+  metrics:
+  - distinct_patients
+  all_columns: []
+  percent_metrics: []
+  adhoc_filters:
+  - clause: WHERE
+    subject: message_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  - clause: WHERE
+    subject: diagnosis_code
+    operator: IS NOT NULL
+    operatorId: IS_NOT_NULL
+    expressionType: SIMPLE
+  order_by_cols: []
+  row_limit: 1500
+  server_pagination: false
+  server_page_length: 25
+  order_desc: true
+  include_search: true
+  show_totals: false
+  table_timestamp_format: smart_date
+  show_cell_bars: true
+  color_pn: true
+  comparison_color_scheme: Green
+  comparison_type: values
+  extra_form_data: {}
+  dashboards:
+  - 4
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: e2fb8f6b-27c9-4227-9b61-f5896412135f
+version: 1.0.0
+dataset_uuid: c2b3af3d-7e2e-445b-86ff-bf0242dd552e

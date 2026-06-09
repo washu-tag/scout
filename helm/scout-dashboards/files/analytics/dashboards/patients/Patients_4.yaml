@@ -1,0 +1,412 @@
+dashboard_title: Patients
+description: Patient-centric view of the data lake. Every count here is reconciled
+  at the patient level (scout_patient_id from Scout's Epic-MPI mapping), so the same
+  patient across multiple MRNs only counts once.
+css: ''
+slug: patients-longitudinal
+certified_by: ''
+certification_details: ''
+published: true
+uuid: 788d87cf-2d99-45ae-ba0d-40557dde4a53
+position:
+  ROOT_ID:
+    children:
+    - GRID_ID
+    id: ROOT_ID
+    type: ROOT
+  HEADER_ID:
+    id: HEADER_ID
+    meta:
+      text: Patients
+    type: HEADER
+  GRID_ID:
+    children:
+    - ROW-lp-headline
+    - ROW-lp-demographics
+    - ROW-lp-repeat
+    - ROW-lp-trend
+    - ROW-lp-dx-top
+    - ROW-lp-dx-pivot
+    id: GRID_ID
+    parents:
+    - ROOT_ID
+    type: GRID
+  ROW-lp-headline:
+    children:
+    - CHART-lp-60
+    - CHART-lp-61
+    - CHART-lp-62
+    id: ROW-lp-headline
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  CHART-lp-60:
+    children: []
+    id: CHART-lp-60
+    meta:
+      chartId: 42
+      height: 50
+      sliceName: Distinct patients
+      uuid: 3dda37e7-e56c-4376-8846-87d162b2b5c5
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-headline
+    type: CHART
+  CHART-lp-61:
+    children: []
+    id: CHART-lp-61
+    meta:
+      chartId: 38
+      height: 50
+      sliceName: Avg exams per patient
+      uuid: 9844af58-3b35-4c54-b68d-7e524c61dc77
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-headline
+    type: CHART
+  CHART-lp-62:
+    children: []
+    id: CHART-lp-62
+    meta:
+      chartId: 37
+      height: 50
+      sliceName: '% patients with 2+ exams'
+      uuid: e4d6828b-f512-41d9-b942-29fc30e9a05d
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-headline
+    type: CHART
+  ROW-lp-demographics:
+    children:
+    - CHART-lp-63
+    - CHART-lp-64
+    id: ROW-lp-demographics
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  CHART-lp-63:
+    children: []
+    id: CHART-lp-63
+    meta:
+      chartId: 34
+      height: 60
+      sliceName: Patient age (at latest exam)
+      uuid: 89154b90-53d7-4298-a3cb-20c8e70a3721
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-demographics
+    type: CHART
+  CHART-lp-64:
+    children: []
+    id: CHART-lp-64
+    meta:
+      chartId: 44
+      height: 60
+      sliceName: Patient demographics
+      uuid: 9c297468-03cd-461f-826c-bf4092bdf5ef
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-demographics
+    type: CHART
+  ROW-lp-repeat:
+    children:
+    - CHART-lp-65
+    - CHART-lp-66
+    - CHART-lp-67
+    id: ROW-lp-repeat
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  CHART-lp-65:
+    children: []
+    id: CHART-lp-65
+    meta:
+      chartId: 41
+      height: 60
+      sliceName: Exams per patient
+      uuid: 5e9d4349-dc24-467f-a277-7d7f26acac0f
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-repeat
+    type: CHART
+  CHART-lp-66:
+    children: []
+    id: CHART-lp-66
+    meta:
+      chartId: 40
+      height: 60
+      sliceName: Distinct modalities per patient
+      uuid: 42e51eab-5b63-454f-935d-ed6cc8bab4a4
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-repeat
+    type: CHART
+  CHART-lp-67:
+    children: []
+    id: CHART-lp-67
+    meta:
+      chartId: 39
+      height: 60
+      sliceName: Distinct diagnoses per patient
+      uuid: 670fc2f1-716e-415b-8c22-c7bccd9ca88e
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-repeat
+    type: CHART
+  ROW-lp-trend:
+    children:
+    - CHART-lp-68
+    id: ROW-lp-trend
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  CHART-lp-68:
+    children: []
+    id: CHART-lp-68
+    meta:
+      chartId: 43
+      height: 60
+      sliceName: New vs returning patients per month
+      uuid: 49ebb04c-8241-4e71-9aa6-8043f76218a8
+      width: 12
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-trend
+    type: CHART
+  ROW-lp-dx-top:
+    children:
+    - CHART-lp-69
+    id: ROW-lp-dx-top
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  CHART-lp-69:
+    children: []
+    id: CHART-lp-69
+    meta:
+      chartId: 35
+      height: 70
+      sliceName: Top diagnoses by patient count
+      uuid: e2fb8f6b-27c9-4227-9b61-f5896412135f
+      width: 12
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-dx-top
+    type: CHART
+  ROW-lp-dx-pivot:
+    children:
+    - CHART-lp-70
+    - CHART-lp-71
+    id: ROW-lp-dx-pivot
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  CHART-lp-70:
+    children: []
+    id: CHART-lp-70
+    meta:
+      chartId: 36
+      height: 70
+      sliceName: "Diagnoses \xD7 modality"
+      uuid: 4ead6ebc-9e4d-4051-b9f4-3f2d91c8c1ac
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-dx-pivot
+    type: CHART
+  CHART-lp-71:
+    children: []
+    id: CHART-lp-71
+    meta:
+      chartId: 33
+      height: 70
+      sliceName: Top diagnoses over time
+      uuid: b747fcd4-80b5-42c0-b438-e42ab4a73fab
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-lp-dx-pivot
+    type: CHART
+  DASHBOARD_VERSION_KEY: v2
+metadata:
+  show_native_filters: true
+  color_scheme: presetColors
+  refresh_frequency: 0
+  expanded_slices: {}
+  shared_label_colors:
+  - F
+  - M
+  - count
+  color_scheme_domain:
+  - '#6BD3B3'
+  - '#FCC550'
+  - '#408184'
+  - '#66CBE2'
+  - '#EE5960'
+  - '#484E5A'
+  - '#FF874E'
+  - '#03748E'
+  - '#C9BBAB'
+  - '#B17BAA'
+  - '#B5E9D9'
+  - '#FDE2A7'
+  - '#9FC0C1'
+  - '#B2E5F0'
+  - '#F6ACAF'
+  - '#A4A6AC'
+  - '#FFC3A6'
+  - '#81B9C6'
+  - '#E4DDD5'
+  - '#D9BDD5'
+  cross_filters_enabled: true
+  native_filter_configuration:
+  - id: NATIVE_FILTER-lp-time
+    controlValues:
+      enableEmptyFilter: false
+    name: Date range
+    filterType: filter_time
+    targets:
+    - {}
+    defaultDataMask:
+      extraFormData: {}
+      filterState: {}
+      ownState: {}
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Applies a time range to every chart via each dataset's main_dttm_col
+      (last_exam_dt for patient-level charts, event_dt for the trend, message_dt
+      for diagnosis charts).
+    chartsInScope:
+    - 42
+    - 38
+    - 37
+    - 34
+    - 44
+    - 41
+    - 40
+    - 39
+    - 43
+    - 35
+    - 36
+    - 33
+    tabsInScope: []
+  - id: NATIVE_FILTER-lp-modality
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    name: Modality
+    filterType: filter_select
+    targets:
+    - column:
+        name: modality
+      datasetUuid: c2b3af3d-7e2e-445b-86ff-bf0242dd552e
+    defaultDataMask:
+      extraFormData: {}
+      filterState: {}
+      ownState: {}
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: ''
+    chartsInScope:
+    - 43
+    - 35
+    - 33
+    tabsInScope: []
+  - id: NATIVE_FILTER-lp-facility
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    name: Facility
+    filterType: filter_select
+    targets:
+    - column:
+        name: sending_facility
+      datasetUuid: c2b3af3d-7e2e-445b-86ff-bf0242dd552e
+    defaultDataMask:
+      extraFormData: {}
+      filterState: {}
+      ownState: {}
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: "Sending facility (WUSM, BJH, BJWC, SLCH, \u2026). Applies to every\
+      \ chart via each dataset's sending_facility column."
+    chartsInScope:
+    - 42
+    - 38
+    - 37
+    - 34
+    - 44
+    - 41
+    - 40
+    - 39
+    - 43
+    - 35
+    - 36
+    - 33
+    tabsInScope: []
+  default_filters: '{}'
+  map_label_colors: {}
+  label_colors: {}
+version: 1.0.0

@@ -1,0 +1,141 @@
+table_name: patient_cohort_events
+main_dttm_col: event_dt
+description: One row per exam from reports_latest_epic_view, tagged 'new' in the patient's
+  first calendar month and 'returning' in any later month. event_dt is the exam date
+  (observation_dt) when present, falling back to the order date then the HL7 message
+  date — observation_dt alone is sparsely populated, so the fallback keeps every exam
+  on the timeline. Each patient is 'new' exactly once (their debut month) and 'returning'
+  in each later month they appear — never both in the same month.
+default_endpoint: null
+offset: 0
+cache_timeout: 7200
+catalog: delta
+schema: default
+sql: |-
+  SELECT
+    scout_patient_id,
+    event_dt,
+    modality,
+    sending_facility,
+    resolved_epic_mrn,
+    CASE WHEN date_trunc('month', event_dt)
+           = date_trunc('month', MIN(event_dt) OVER (PARTITION BY scout_patient_id))
+         THEN 'new'
+         ELSE 'returning'
+    END AS cohort
+  FROM (
+    SELECT
+      scout_patient_id,
+      COALESCE(observation_dt, requested_dt, message_dt) AS event_dt,
+      modality,
+      sending_facility,
+      resolved_epic_mrn
+    FROM delta.default.reports_latest_epic_view
+  )
+  WHERE event_dt IS NOT NULL
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: 73d00dd5-6736-4188-b406-7970f8d77db8
+metrics:
+- metric_name: distinct_patients
+  verbose_name: Distinct patients
+  metric_type: count_distinct
+  expression: COUNT(DISTINCT scout_patient_id)
+  description: null
+  d3format: ',d'
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+- metric_name: count
+  verbose_name: Exams
+  metric_type: count
+  expression: COUNT(*)
+  description: null
+  d3format: ',d'
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+columns:
+- column_name: cohort
+  verbose_name: Cohort
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: '''new'' in the patient''s first calendar month, ''returning'' in later
+    months.'
+  python_date_format: null
+  extra: {}
+- column_name: event_dt
+  verbose_name: Event date
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP(3) WITH TIME ZONE
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: Exam date (observation_dt), falling back to order date then HL7 message
+    date when the exam date is missing.
+  python_date_format: null
+  extra: {}
+- column_name: resolved_epic_mrn
+  verbose_name: Epic MRN (resolved)
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: scout_patient_id
+  verbose_name: Patient (resolved)
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: sending_facility
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+- column_name: modality
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: {}
+version: 1.0.0
+database_uuid: 9ed918e7-ef5a-4aa4-9574-f1946b58d520

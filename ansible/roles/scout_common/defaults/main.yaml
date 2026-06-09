@@ -297,9 +297,10 @@ trino_attribute_filters:
     # (validated by value_pattern). "*" grants all facilities.
 
 # Superset dashboard bundles to install. Built-in bundles: core, quality,
-# followup. Override in inventory to add more (e.g. [core, quality]).
+# followup, patients. Override in inventory to add more (e.g. [core, quality]).
 scout_dashboard_bundles:
   - core
+  - patients
 
 # Package proxy configuration (per ADR-0016, following ADR-0011 service-mode pattern)
 # Options: none, nexus, external

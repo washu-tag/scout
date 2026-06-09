@@ -1,0 +1,30 @@
+slice_name: Avg exams per patient
+description: Mean exam_count across reconciled patients.
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 4__table
+  viz_type: big_number_total
+  slice_id: 61
+  metric: avg_exams_per_patient
+  adhoc_filters:
+  - clause: WHERE
+    subject: last_exam_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  subheader: Across all patients
+  header_font_size: 0.4
+  subheader_font_size: 0.15
+  y_axis_format: ',.2f'
+  time_format: smart_date
+  extra_form_data: {}
+  dashboards:
+  - 4
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 9844af58-3b35-4c54-b68d-7e524c61dc77
+version: 1.0.0
+dataset_uuid: 5d6cdd41-c41d-439c-a4ba-e2ee12772c20
