@@ -198,7 +198,7 @@ public class ScoutUsersResource {
         return ok("promoted", username);
     }
 
-    /** Demote a user from scout-admin; rejected with 409 if they are the last admin (scout-admin only). */
+    /** Demote a user from scout-admin (scout-admin only). */
     @DELETE
     @Path("users/{id}/admin")
     @Produces(MediaType.APPLICATION_JSON)
@@ -209,14 +209,12 @@ public class ScoutUsersResource {
             username = demote(id);
         } catch (NoSuchElementException e) {
             throw new NotFoundException(e.getMessage());
-        } catch (IllegalStateException e) {
-            throw new ClientErrorException(e.getMessage(), Response.Status.CONFLICT);
         }
         fireGroupMembershipEvent(auth, id, username, SCOUT_ADMIN_GROUP, OperationType.DELETE);
         return ok("demoted", username);
     }
 
-    /** Offboard a user: remove all Scout group membership. Blocks self-offboard and last-admin (409). scout-admin only. */
+    /** Offboard a user: remove all Scout group membership. Blocks self-offboard (409). scout-admin only. */
     @DELETE
     @Path("users/{id}/membership")
     @Produces(MediaType.APPLICATION_JSON)
@@ -500,14 +498,11 @@ public class ScoutUsersResource {
         return user.getUsername();
     }
 
-    /** Demote a user from scout-admin. Self-demote is allowed; removing the last admin throws IllegalStateException. */
+    /** Demote a user from scout-admin (scout-admin only). Self-demote is allowed. */
     String demote(String userId) {
         RealmModel realm = session.getContext().getRealm();
         UserModel user = requireUser(realm, userId);
         GroupModel admin = requireGroup(realm, SCOUT_ADMIN_GROUP);
-        if (isScoutAdmin(user) && countScoutAdmins(realm) <= 1) {
-            throw new IllegalStateException("cannot remove the last " + SCOUT_ADMIN_GROUP);
-        }
         user.leaveGroup(admin);
         log.infof("scout-users: demoted %s from %s", user.getUsername(), SCOUT_ADMIN_GROUP);
         return user.getUsername();
@@ -515,7 +510,7 @@ public class ScoutUsersResource {
 
     /**
      * Offboard a user: remove scout-user and (if present) scout-admin. Blocks
-     * offboarding yourself and removing the last admin (both IllegalStateException).
+     * offboarding yourself (IllegalStateException).
      * {@return what was removed, so the adapter can emit the matching events}.
      */
     OffboardResult offboard(String actorId, String userId) {
@@ -525,10 +520,6 @@ public class ScoutUsersResource {
         RealmModel realm = session.getContext().getRealm();
         UserModel user = requireUser(realm, userId);
         boolean wasAdmin = isScoutAdmin(user);
-        if (wasAdmin && countScoutAdmins(realm) <= 1) {
-            throw new IllegalStateException(
-                    "cannot remove the last " + SCOUT_ADMIN_GROUP + "; promote another admin first");
-        }
         GroupModel scoutUser = topLevelGroup(realm, SCOUT_USER_GROUP);
         if (scoutUser != null) {
             user.leaveGroup(scoutUser);
@@ -541,15 +532,6 @@ public class ScoutUsersResource {
         }
         log.infof("scout-users: offboarded %s (wasAdmin=%s)", user.getUsername(), wasAdmin);
         return new OffboardResult(user.getUsername(), wasAdmin);
-    }
-
-    /** {@return the number of scout-admins, capped at 2 — enough to detect the last-admin case}. */
-    long countScoutAdmins(RealmModel realm) {
-        GroupModel admin = topLevelGroup(realm, SCOUT_ADMIN_GROUP);
-        if (admin == null) {
-            return 0;
-        }
-        return session.users().getGroupMembersStream(realm, admin, 0, 2).count();
     }
 
     private UserModel requireUser(RealmModel realm, String userId) {

@@ -31,11 +31,12 @@ small **Keycloak REST resource**, with **dynamic, config-driven attributes**.
 
 ### 1. scout-users REST resource (Keycloak SPI)
 
-A `RealmResourceProvider` in the existing event-listener SPI exposes, under
-`/realms/<realm>/scout-users/`, a `scout-admin`-gated API (`BearerTokenAuthenticator`
-+ a live `scout-admin` group check on every call; no standing admin-API
-credential — the resource acts on the authenticated admin's own authority). As
-defense in depth on an API that can grant `scout-admin` -> realm-admin, it also
+A `RealmResourceProvider` in the existing event-listener SPI exposes a
+`scout-admin`-gated API under `/realms/<realm>/scout-users/`. Every call is
+authenticated with `BearerTokenAuthenticator` and authorized by a live
+`scout-admin` group check; there is no standing admin-API credential, so the
+resource acts on the authenticated admin's own authority. As defense in depth on
+an API that can grant `scout-admin` -> realm-admin, it also
 requires the bearer to carry `aud=scout-users-api` (added by the launchpad client's
 audience mapper), so a `scout-admin`'s token minted for another resource — e.g. an
 `aud=trino` notebook token — can't reach it. The endpoints:
@@ -67,13 +68,11 @@ config-driven too (`scoutDefault`: `mask_phi_fields=true`,
 **Guardrails** (package-private predicates, mutation-tested, enforced server-side
 regardless of the UI):
 
-- *Last-admin lockout* — demoting or offboarding the last `scout-admin` is
-  rejected with 409 (members counted via an indexed `getGroupMembersStream`
-  capped at 2, not a full scan). A check-then-act (TOCTOU) race on two concurrent
-  removals is accepted for these small realms; recovery is the Keycloak bootstrap
-  below.
 - *No self-offboard* — an admin can't revoke their own access (almost always an
-  accident). Self-*demote* is allowed (a privilege drop), gated only by last-admin.
+  accident). Self-*demote* is allowed (a privilege drop). Demoting or offboarding
+  the last `scout-admin` is **not** specially guarded: recovery is the same
+  Keycloak master-console bootstrap that seeds the first admin, so a deliberate
+  lockout isn't worth the check.
 - *Attribute-key allowlist* — only `scoutAuthz` keys may be written, and the whole
   submission is validated before anything is set, so a bad request never
   half-applies.
@@ -107,8 +106,7 @@ account **enable/disable** (deliberately out of scope — `enabled` is not a
 `scoutAuthz` attribute, so it never appears in the form), **first-admin
 bootstrap**, and realm / client / IdP / SMTP configuration. A fresh realm is
 **console-locked** until the first `scout-admin` is granted in the Keycloak master
-console — every console endpoint is `scout-admin`-gated, and the last-admin guard
-makes this stricter, not looser. The in-console "Open in Keycloak" link and the
+console — every console endpoint is `scout-admin`-gated. The in-console "Open in Keycloak" link and the
 Keycloak admin-events log (the recommended audit trail) reach Keycloak for power
 users.
 
@@ -137,8 +135,9 @@ That removes the *direct* admin-API path — but it does not contain the credent
   grants *themselves* full unmasked data access, and a self-promote re-mints a
   `realm-admin` token from another full-scope client (e.g. the built-in
   `admin-cli`). The SPI cannot create users or set passwords and self-registration
-  is off, so a thief with **no** realm account is the only one confined to griefing
-  others' access.
+  is off, so a thief who controls **no** account of their own can disrupt other
+  users' access but — lacking any account to grant or promote — cannot gain access
+  themselves.
 
 So `fullScopeAllowed=false` is worth keeping — it stops a stolen token from being a
 turnkey realm-admin credential and forces any escalation through the audited

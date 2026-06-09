@@ -362,29 +362,14 @@ class ScoutUsersResourceTest {
     }
 
     @Test
-    void demote_leaves_scout_admin_when_another_admin_remains() {
+    void demote_leaves_scout_admin() {
         UserModel target = adminUser();
         when(target.getUsername()).thenReturn("alice");
         when(users.getUserById(realm, "u1")).thenReturn(target);
-        whenAdminCountIs(2);
 
         resource.demote("u1");
 
         verify(target).leaveGroup(scoutAdminGroup);
-    }
-
-    @Test
-    void demote_last_admin_is_rejected() {
-        UserModel target = adminUser();
-        when(users.getUserById(realm, "u1")).thenReturn(target);
-        whenAdminCountIs(1);
-
-        assertThrows(IllegalStateException.class, () -> resource.demote("u1"));
-        verify(target, never()).leaveGroup(any());
-        // Pin the rejection to the admin-count query (paginated to 2). Without
-        // this, Mockito's default empty stream also yields count 0 <= 1, so the
-        // test would pass even if the count path were never run or its args drifted.
-        verify(users).getGroupMembersStream(realm, scoutAdminGroup, 0, 2);
     }
 
     // --- offboard -----------------------------------------------------------
@@ -394,7 +379,6 @@ class ScoutUsersResourceTest {
         UserModel target = adminUser();
         when(target.getUsername()).thenReturn("alice");
         when(users.getUserById(realm, "u1")).thenReturn(target);
-        whenAdminCountIs(2);
 
         ScoutUsersResource.OffboardResult result = resource.offboard("actor", "u1");
 
@@ -421,17 +405,6 @@ class ScoutUsersResourceTest {
     void offboard_self_is_rejected_before_any_lookup() {
         assertThrows(IllegalStateException.class, () -> resource.offboard("u1", "u1"));
         verify(users, never()).getUserById(any(), any());
-    }
-
-    @Test
-    void offboard_last_admin_is_rejected() {
-        UserModel target = adminUser();
-        when(users.getUserById(realm, "u1")).thenReturn(target);
-        whenAdminCountIs(1);
-
-        assertThrows(IllegalStateException.class, () -> resource.offboard("actor", "u1"));
-        verify(target, never()).leaveGroup(any());
-        verify(users).getGroupMembersStream(realm, scoutAdminGroup, 0, 2);
     }
 
     // --- console projection -------------------------------------------------
@@ -489,11 +462,6 @@ class ScoutUsersResourceTest {
         UserModel u = mock(UserModel.class);
         when(u.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup, scoutAdminGroup));
         return u;
-    }
-
-    private void whenAdminCountIs(int n) {
-        when(users.getGroupMembersStream(realm, scoutAdminGroup, 0, 2))
-                .thenAnswer(i -> Stream.generate(() -> mock(UserModel.class)).limit(n));
     }
 
     private ScoutUsersResource.ScoutUser scoutUser(String status, boolean isAdmin) {

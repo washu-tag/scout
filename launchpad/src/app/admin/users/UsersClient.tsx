@@ -265,7 +265,7 @@ function UserDrawer({
   };
 
   // Run an action against the proxy; surface the server's message (e.g. the
-  // last-admin 409) in the error slot rather than assuming success.
+  // self-offboard 409) in the error slot rather than assuming success.
   const run = async (method: string, path: string, successMsg: string, body?: object) => {
     setSubmitting(true);
     setError(null);
