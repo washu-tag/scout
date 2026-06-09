@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import TopBar from '@/components/TopBar';
 import Brand from '@/components/Brand';
+import { subdomainUrl } from '@/lib/subdomainUrl';
 import {
   HiCheckCircle,
   HiChevronLeft,
@@ -698,9 +699,7 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
   }, [status, session]);
 
   useEffect(() => {
-    setKcConsole(
-      `${window.location.protocol}//keycloak.${window.location.host}/admin/scout/console`,
-    );
+    setKcConsole(subdomainUrl('keycloak', '/admin/scout/console'));
     setDeepLink(new URLSearchParams(window.location.search).get('user'));
   }, []);
 

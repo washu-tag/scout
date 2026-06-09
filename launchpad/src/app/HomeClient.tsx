@@ -19,6 +19,7 @@ import {
 import TopBar from '@/components/TopBar';
 import Brand from '@/components/Brand';
 import AdminSection from '@/components/AdminSection';
+import { subdomainUrl } from '@/lib/subdomainUrl';
 
 const TONE = {
   indigo: {
@@ -469,22 +470,16 @@ export default function HomeClient({
 
   // Generate all subdomain URLs once on client side where window is available.
   useEffect(() => {
-    const protocol = window.location.protocol;
-    const host = window.location.host;
-    const getUrl = (subdomain: string, path: string = '') => {
-      const normalizedPath = path ? (path.startsWith('/') ? path : `/${path}`) : '';
-      return `${protocol}//${subdomain}.${host}${normalizedPath}`;
-    };
     setSubdomainUrls({
-      jupyter: getUrl('jupyter'),
-      superset: getUrl('superset'),
+      jupyter: subdomainUrl('jupyter'),
+      superset: subdomainUrl('superset'),
       // Route Chat through OWUI's OIDC entrypoint so cold-session clicks
       // silent-SSO via Keycloak instead of bouncing to OWUI's /auth page.
-      chat: getUrl('chat', '/oauth/oidc/login'),
-      playbooks: getUrl('playbooks'),
-      minio: getUrl('minio'),
-      temporal: getUrl('temporal', '/auth/sso'),
-      grafana: getUrl('grafana'),
+      chat: subdomainUrl('chat', '/oauth/oidc/login'),
+      playbooks: subdomainUrl('playbooks'),
+      minio: subdomainUrl('minio'),
+      temporal: subdomainUrl('temporal', '/auth/sso'),
+      grafana: subdomainUrl('grafana'),
     });
   }, []);
 
