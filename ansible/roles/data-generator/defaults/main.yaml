@@ -21,6 +21,7 @@ data_generator_java_tool_opts: '-XX:MaxRAMPercentage=75.0'
 data_generator_replicas: 1
 data_generator_image_repository: ghcr.io/washu-tag/data-generator
 data_generator_image_tag: latest
+data_generator_pull_policy: IfNotPresent
 
 # Secrets to auth to external LLMs
 data_generator_secrets: {}

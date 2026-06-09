@@ -20,8 +20,8 @@
       replicaCount: '{{ data_generator_replicas }}'
       image:
         repository: '{{ data_generator_image_repository }}'
-        tag: latest
-        pullPolicy: '{{ data_generator_image_tag }}'
+        tag: '{{ data_generator_image_tag }}'
+        pullPolicy: '{{ data_generator_pull_policy }}'
       resources: '{{ data_generator_resources_default | combine(data_generator_resources | default({}), recursive=true) }}'
       volumes:
         - name: data
