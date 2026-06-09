@@ -264,3 +264,31 @@ extraEnvVars:
   # to mint its admin user; subsequent runs sign in instead.
   - name: ENABLE_INITIAL_ADMIN_SIGNUP
     value: 'true'
+
+  # OpenTelemetry metrics — push to Prometheus via OTLP HTTP receiver
+  # (--web.enable-otlp-receiver is already enabled on the Prometheus server).
+  # Final URL: POST http://prometheus-server.<ns>:9090/api/v1/otlp/v1/metrics
+  # Traces disabled: Prometheus only handles /v1/metrics; sending /v1/traces causes 404.
+  #
+  # OWUI uses its own env vars (not the OTEL spec defaults). See
+  # backend/open_webui/utils/telemetry/{setup,metrics}.py — `*_OTLP_SPAN_EXPORTER=http`
+  # is the switch to HTTP/protobuf; otherwise the gRPC exporter is used and fails
+  # against Prometheus (which only speaks HTTP/protobuf on its OTLP receiver).
+  # The OTEL Python SDK does NOT append /v1/metrics when endpoint is passed as a
+  # constructor arg (OWUI passes it directly), so the full path must be in the env var.
+  - name: ENABLE_OTEL
+    value: 'true'
+  - name: ENABLE_OTEL_METRICS
+    value: 'true'
+  - name: ENABLE_OTEL_TRACES
+    value: 'false'
+  - name: OTEL_METRICS_OTLP_SPAN_EXPORTER
+    value: 'http'
+  - name: OTEL_OTLP_SPAN_EXPORTER
+    value: 'http'
+  - name: OTEL_METRICS_EXPORTER_OTLP_ENDPOINT
+    value: 'http://prometheus-server.{{ prometheus_namespace }}.svc.cluster.local:9090/api/v1/otlp/v1/metrics'
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: 'http://prometheus-server.{{ prometheus_namespace }}.svc.cluster.local:9090/api/v1/otlp/v1/metrics'
+  - name: OTEL_SERVICE_NAME
+    value: 'open-webui'
