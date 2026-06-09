@@ -118,6 +118,35 @@ This is accepted for the current trust model — a single admin can promote anot
 no dual-control. Narrowing what `scout-admin` grants, or requiring a second
 approver on promote, is left as future work.
 
+**A leaked launchpad token.** The launchpad client is `fullScopeAllowed=false`, so
+its tokens carry only its own client roles (`launchpad-admin`/`launchpad-user`) —
+`clientScopeMappings` keep those two so the `isAdmin` gate still resolves — not the
+user's realm roles. A leaked launchpad token, even a `scout-admin`'s, is therefore
+**not** a `realm-admin` credential against the Keycloak admin REST API (it 403s
+there), and its `aud: scout-users-api` means it is not a Trino data token either.
+That removes the *direct* admin-API path — but it does not contain the credential:
+
+- *Console power is unchanged* — a stolen `scout-admin` token still passes the live
+  group check and still carries the right audience (the flag filters roles, not
+  audiences or group membership), so it drives every endpoint directly — offboard
+  users, rewrite anyone's data-access attributes, promote/demote — no escalation
+  needed.
+- *Self-service is gated only by account control* — if the thief controls an
+  account they can authenticate as (their own, or a pending identity brokered in
+  via the IdP), one `approve` with `allowed_facilities=*` / `mask_phi_fields=false`
+  grants *themselves* full unmasked data access, and a self-promote re-mints a
+  `realm-admin` token from another full-scope client (e.g. the built-in
+  `admin-cli`). The SPI cannot create users or set passwords and self-registration
+  is off, so a thief with **no** realm account is the only one confined to griefing
+  others' access.
+
+So `fullScopeAllowed=false` is worth keeping — it stops a stolen token from being a
+turnkey realm-admin credential and forces any escalation through the audited
+`approve`/promote path — but it is hardening on the **leaked-credential** axis, not
+a barrier to escalation or data access once an attacker controls an account (the
+accepted blast radius above). The standing exposure is removed by the server-side
+session store (see *Token storage note*).
+
 ### 2. UI in the launchpad
 
 The console lives in the launchpad (Next.js + Tailwind + next-auth) at
@@ -175,8 +204,9 @@ since it adopted Keycloak login. This feature is the first to *use* a stored tok
 entirely and the `groups` array, leaving the refresh token plus the small
 `username`/`isAdmin` fields. The exposure is
 gated by `httpOnly` + `secure` + JWE (extraction needs both cookie theft *and*
-`NEXTAUTH_SECRET`) and narrowed by `fullScopeAllowed=false` (the token no longer
-carries realm-admin roles). The hardening that actually removes it is a
+`NEXTAUTH_SECRET`); `fullScopeAllowed=false` keeps a stolen token from being a
+turnkey realm-admin credential but does not contain it (see *A leaked launchpad
+token*, above). The hardening that actually removes it is a
 **server-side session store**: the browser holds only an opaque session id — no
 token material at all — and sessions become server-side revocable. Tracked as a
 launchpad-wide follow-up, since it improves the pre-existing session model rather
