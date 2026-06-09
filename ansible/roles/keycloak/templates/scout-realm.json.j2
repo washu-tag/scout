@@ -188,7 +188,7 @@
             "clientRole": true,
             "attributes": {}
           }
-        ],
+        ]{% if enable_xnat | default(false) | bool %},
         "{{ keycloak_xnat_client_id }}": [
           {
             "name": "xnat-access",
@@ -197,7 +197,7 @@
             "clientRole": true,
             "attributes": {}
           }
-        ]
+        ]{% endif %}
       }
     },
     "groups": [
@@ -254,10 +254,10 @@
           ],
           "{{ keycloak_open_webui_client_id }}": [
             "open-webui-user"
-          ],
+          ]{% if enable_xnat | default(false) | bool %},
           "{{ keycloak_xnat_client_id }}": [
             "xnat-access"
-          ]
+          ]{% endif %}
         }
       }
     ],
@@ -634,7 +634,7 @@
           "microprofile-jwt",
           "trino-audience"
         ]
-      },
+      }{% if enable_xnat | default(false) | bool %},
       {
         "name": "{{ keycloak_xnat_client_id }}",
         "description": "XNAT Client",
@@ -681,7 +681,7 @@
           "organization",
           "offline_access"
         ]
-      }
+      }{% endif %}
     ],
     "identityProviders": [
         {% if keycloak_gh_client_id is defined and keycloak_gh_client_id %}

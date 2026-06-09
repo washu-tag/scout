@@ -79,6 +79,7 @@ scout/
 │   │   ├── loki/
 │   │   ├── grafana/
 │   │   ├── launchpad/
+│   │   ├── xnat/              # XNAT imaging platform + plugins (optional)
 │   │   └── gpu-operator/
 │   ├── filter_plugins/        # Custom Jinja2 filters (jvm_memory_to_k8s, etc.)
 │   ├── group_vars/all/        # Centralized version management
@@ -174,6 +175,7 @@ make install-extractor        # HL7 extractors and transformers
 make install-jupyter          # JupyterHub (notebooks query Trino via the scout SDK)
 make install-launchpad        # Landing page web UI
 make install-chat             # Open WebUI + Ollama (optional)
+make install-xnat             # XNAT imaging platform + plugins (optional)
 
 # Monitoring
 make install-monitor          # Prometheus + Loki + Grafana
@@ -208,6 +210,14 @@ Scout supports optional features that can be enabled via feature flags in `inven
   - Features: Keycloak OAuth authentication, Trino MCP tool for natural language SQL queries, Redis-based websocket coordination
   - Recommended: GPU node for optimal performance
   - Post-deployment configuration required (see `ansible/roles/open-webui/README.md`)
+
+- **`enable_xnat`**: Enable the XNAT imaging platform (`xnatworks/xnat-web`) with plugins
+  - Default: `false` (disabled)
+  - When false, NOTHING XNAT is created — no namespace/deploy, and the Keycloak realm omits the `xnat` client + `xnat-access` role
+  - Requires secrets: `keycloak_xnat_client_secret`, `xnat_postgres_password`
+  - Features: oauth2-proxy edge gate + the off-the-shelf `xnat-openid-auth-plugin` for Keycloak SSO; plugins installed from coordinates/url/image/file via the `xnat-plugin-installer` init container (with logback→stdout rewrite); plugins are additive over the role default via `xnat_plugins`
+  - Caveat: toggling back to `false` deletes the `xnat` Keycloak client, orphaning provisioned XNAT users
+  - See `ansible/roles/xnat/README.md` and `docs/internal/xnat-and-plugin-deployment.md`
 
 ### Variable Precedence
 

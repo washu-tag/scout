@@ -281,6 +281,12 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
+# When false, NOTHING XNAT is created — no namespace/deploy, and the Keycloak
+# realm omits the `xnat` client + `xnat-access` role (gated in scout-realm.json.j2).
+# keycloak_xnat_client_secret is therefore only required when this is true.
+# NOTE: toggling this off deletes the xnat client on the next auth deploy
+# (keycloak-config-cli reconciles), orphaning provisioned XNAT users.
+enable_xnat: false
 
 # Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
 # Jupyter singleuser) or are cluster-wide storage layers that span every
@@ -353,6 +359,18 @@ yum_proxy_base_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository')
      if package_proxy_mode == 'nexus'
      else '' }}
+# Maven repository URL(s) for resolving JVM artifacts by coordinates (used by the
+# xnat role's plugin installer for Maven/Gradle-published plugins — Gradle
+# resolves from Maven-format repos, so one URL covers both). Points at the Nexus
+# maven group (aggregating maven-central + the XNAT Artifactory) when proxying.
+# Otherwise a comma-separated list of Maven Central + the XNAT Artifactory, so a
+# non-air-gapped deploy resolves both general plugins and XNAT plugins (e.g. the
+# default openid plugin, which is published only to NrgXnat Artifactory) out of
+# the box. The installer passes this verbatim to mvn -DremoteRepositories.
+maven_proxy_url: >-
+  {{ ('https://' ~ nexus_host ~ '/repository/maven-public')
+     if package_proxy_mode == 'nexus'
+     else 'https://repo1.maven.org/maven2,https://nrgxnat.jfrog.io/nrgxnat/libs-release' }}
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
 s3_endpoint: "{{ aws_deployment | ternary('', 'http://minio.' ~ minio_tenant_namespace) }}"
 hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'

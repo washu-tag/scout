@@ -307,7 +307,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
         run: |
-          IMAGES="hl7log-extractor hl7-transformer scout-notebook launchpad superset keycloak"
+          IMAGES="hl7log-extractor hl7-transformer scout-notebook launchpad superset keycloak xnat-plugin-installer"
           for IMAGE in $IMAGES; do
             echo "=== Publishing $IMAGE ==="
             gh run download "$RUN_ID" --repo "${{ github.repository }}" -n "$IMAGE" -D "${{ runner.temp }}/$IMAGE"
