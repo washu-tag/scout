@@ -842,8 +842,8 @@
             "options": {"options": {{ attr_config.options | to_json }}}
 {% else %}
             "pattern": {
-              "pattern": "{{ attr_config.value_pattern | default('^([A-Za-z0-9_-]+|\\\\*)$') }}",
-              "error-message": "{{ attr_config.value_pattern_error | default('Use an alphanumeric code (letters, digits, hyphen, underscore) or the * wildcard for all values.') }}"
+              "pattern": "{{ attr_config.value_pattern | default('^([A-Za-z0-9 _-]+|\\\\*)$') }}",
+              "error-message": "{{ attr_config.value_pattern_error | default('Use a code (letters, digits, spaces, hyphen, underscore) or the * wildcard for all values.') }}"
             }
 {% endif %}
           }
