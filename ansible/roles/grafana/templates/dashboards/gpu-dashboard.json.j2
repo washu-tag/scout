@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "NVIDIA GPU utilization, memory, thermals, and power from the DCGM exporter (deployed by the NVIDIA GPU Operator). Adapted from Grafana community dashboard 12239. Per-workload breakdown uses the pod/namespace/container labels DCGM attaches when a process is bound to a GPU.",
+  "description": "NVIDIA GPU utilization, VRAM, and tensor core activity from the DCGM exporter (deployed by the NVIDIA GPU Operator). Per-workload breakdown uses the pod, namespace, and container labels DCGM attaches when a process is bound to a GPU.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -40,7 +40,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Average GPU utilization across all selected GPUs, current value.",
+      "description": "Average GPU utilization across selected GPUs, current value.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -116,7 +116,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Framebuffer (VRAM) used as a fraction of total framebuffer, averaged across selected GPUs. DCGM does not expose a TOTAL metric, so total is computed as USED + FREE + RESERVED.",
+      "description": "VRAM used as a percentage of total, averaged across selected GPUs. DCGM does not expose a total metric, so total is computed as used + free + reserved.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -188,7 +188,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Average tensor (HMMA) pipe activity across selected GPUs \u2014 answers \"is the model actually doing compute?\" An LLM warmed-up and inferencing should show non-zero here.",
+      "description": "Whether the model is actively performing compute. A warmed-up LLM that is inferencing should show non-zero.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -265,7 +265,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "GPU compute utilization over time, per GPU. From DCGM_FI_DEV_GPU_UTIL.",
+      "description": "GPU compute utilization over time, per GPU. The Overview stat above shows the current average.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -360,7 +360,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Tensor (HMMA) pipe activity \u2014 ratio of cycles the tensor core is active. Indicates whether workloads are actually exercising tensor cores (e.g. fp16/bf16 matmul) vs. only CUDA cores.",
+      "description": "Ratio of cycles the tensor core is active. Indicates whether workloads exercise tensor cores (fp16 or bf16 matmul) versus only CUDA cores.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -454,7 +454,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Framebuffer (VRAM) used per GPU, in mebibytes. Compare against the A100's 40960 MiB to gauge headroom.",
+      "description": "See the VRAM Usage stat at the top for percentage of total.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -533,7 +533,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "GPU memory copy engine utilization \u2014 ratio of time the device memory interface is sending or receiving data.",
+      "description": "Ratio of time the device memory interface is sending or receiving data.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -627,7 +627,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "GPU utilization attributed to specific pods. DCGM only attaches pod/namespace/container labels when a process is actively bound to a GPU, so idle GPUs do not appear here.",
+      "description": "DCGM only attaches pod and namespace labels when a process is bound to a GPU, so idle GPUs do not appear here.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -708,7 +708,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Framebuffer (VRAM) used attributed to specific pods, in mebibytes.",
+      "description": "VRAM (mebibytes) used by each pod that has a process bound to a GPU.",
       "fieldConfig": {
         "defaults": {
           "color": {

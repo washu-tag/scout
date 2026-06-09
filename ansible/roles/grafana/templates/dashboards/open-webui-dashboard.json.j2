@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Open WebUI metrics via OpenTelemetry → Prometheus OTLP receiver. OWUI emits five metrics: HTTP (http_server_requests_total, http_server_duration_milliseconds) plus three user gauges (webui_users_active, webui_users_active_today, webui_users_total — undocumented but emitted). For pod restarts/memory see the Kubernetes dashboard (filter namespace=open-webui); for logs see Loki Drilldown; for deeper chat usage stats see OWUI's built-in /admin/analytics page.",
+  "description": "Open WebUI metrics via OpenTelemetry, pushed to Prometheus's OTLP receiver. Covers HTTP request rate, error rate, latency, and active user gauges. For pod restarts and memory see the Kubernetes dashboard (filter namespace=open-webui). For logs see Loki Drilldown. For deeper chat usage analytics see OWUI's built-in /admin/analytics page.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -32,7 +32,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Total HTTP requests per second across all routes and status codes.",
+      "description": "Total OWUI request rate across all routes and status codes.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -72,7 +72,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "HTTP 4xx + 5xx responses per second — client and server errors combined.",
+      "description": "Rate of HTTP 4xx (client) and 5xx (server) responses combined.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -164,7 +164,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Users currently signed in / actively using OWUI (webui_users_active). Undocumented metric — discovered live on dev02.",
+      "description": "Active OWUI users right now.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -200,7 +200,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Distinct users active today (webui_users_active_today). Resets daily.",
+      "description": "Distinct OWUI users active today.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -236,7 +236,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Total registered users (webui_users_total). Cumulative.",
+      "description": "Total OWUI users registered.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -334,7 +334,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "HTTP response status code distribution over the selected time range.",
+      "description": "HTTP response status code mix over the selected time range.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -402,7 +402,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "P50, P95, and P99 response latency percentiles across all routes.",
+      "description": "P50, P95, and P99 response latency across all routes. See the panel beside for a per-route breakdown.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
