@@ -1,0 +1,179 @@
+{# Helm values for the upstream xnatworks/xnat-web chart, templated from inventory.
+   All Secrets are created by the role and referenced here by name. Dynamic
+   blocks (initContainers / plugins / authplugins / extraConfig / extraVolumes)
+   are generated from xnat_plugins_all. #}
+replicaCount: 1
+
+image:
+  repository: {{ xnat_image_repository }}
+  tag: '{{ xnat_image_tag }}'
+
+# Single-node dev posture; revisit before HA.
+redis:
+  enabled: false
+activemq:
+  broker:
+    enabled: false
+
+# CNPG-managed Postgres, matching the rest of Scout.
+cnpg:
+  cluster:
+    enabled: true
+    instances: 1
+    storage:
+      size: {{ xnat_postgres_storage_size }}
+{% if xnat_storage_class %}
+      storageClass: {{ xnat_storage_class }}
+{% endif %}
+    credentials:
+      database: {{ xnat_postgres_db }}
+      username: {{ xnat_postgres_user }}
+      password: {{ xnat_postgres_password }}
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    # oauth2-proxy ForwardAuth (edge approval gate) + error redirect + the
+    # Scout-wide security-headers middleware. The openid plugin's /openid-login
+    # is an app-level callback behind this middleware, not an open path.
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd,
+      kube-system-security-headers@kubernetescrd
+  hosts:
+    - host: xnat.{{ server_hostname }}
+      paths:
+        - path: /
+          pathType: Prefix
+
+volumes:
+{% for vol, size in xnat_volume_sizes.items() %}
+  {{ vol }}:
+    accessMode: ReadWriteOnce
+    size: {{ size }}
+{% if xnat_storage_class %}
+    storageClass: {{ xnat_storage_class }}
+{% endif %}
+{% endfor %}
+
+# Bump the startup probe so Hibernate's first-boot DDL (3-5 min) completes
+# before the pod is killed. Pairs with the helm --wait timeout.
+probes:
+  startup:
+    failureThreshold: {{ xnat_startup_failure_threshold }}
+
+{# --- Auth-provider plugins: the chart mounts Secret xnat-plugin-<entry>
+     (key <provider>-provider-properties) at config/auth/<provider>-provider.properties --#}
+{% set authplugin_entries = [] %}
+{% for p in xnat_plugins_all %}{% for c in p.config | default([]) if c.mechanism == 'authplugins' %}{% set _ = authplugin_entries.append(c) %}{% endfor %}{% endfor %}
+{% if authplugin_entries %}
+authplugins:
+{% for c in authplugin_entries %}
+  {{ c.entry }}:
+    provider: {{ c.provider }}
+    auth: true
+{% endfor %}
+{% else %}
+authplugins: {}
+{% endif %}
+
+{# --- Image-based plugins use the chart's native plugins: map (Pattern C) --#}
+{% set image_plugins = xnat_plugins_all | selectattr('source.type', 'equalto', 'image') | list %}
+{% if image_plugins %}
+plugins:
+{% for p in image_plugins %}
+  {{ p.name }}:
+    repository: {{ p.source.repository }}
+    tag: '{{ p.source.tag }}'
+{% endfor %}
+{% endif %}
+
+{# --- extraConfig: merged from all extraConfig blocks + base xnat_extra_config --#}
+{% set extra = {} %}
+{% for k, v in (xnat_extra_config | default({})).items() %}{% set _ = extra.update({k: v}) %}{% endfor %}
+{% for p in xnat_plugins_all %}
+{% for c in p.config | default([]) %}
+{% if c.mechanism == 'extraConfig' %}
+{% for k, v in c.properties.items() %}{% set _ = extra.update({k: v}) %}{% endfor %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% if extra %}
+extraConfig:
+{% for k, v in extra.items() %}
+  '{{ k }}': '{{ v }}'
+{% endfor %}
+{% endif %}
+
+{# --- extraVolumes: prefs-init + Pattern-A jar Secrets + file-config Secrets --#}
+extraVolumes:
+  - name: prefs-init
+    secret:
+      secretName: xnat-prefs-init
+{% for p in xnat_plugins_all if p.source.type == 'file' %}
+  - name: plugin-{{ p.name }}-jar
+    secret:
+      secretName: xnat-plugin-{{ p.name }}-jar
+{% endfor %}
+{% for p in xnat_plugins_all %}
+{% for c in p.config | default([]) if c.mechanism == 'file' %}
+  - name: cfg-{{ p.name }}-{{ loop.index }}
+    secret:
+      secretName: xnat-plugin-{{ p.name }}-cfg-{{ c.dest | basename | regex_replace('[^A-Za-z0-9]', '-') }}
+{% endfor %}
+{% endfor %}
+
+extraVolumeMounts:
+  - name: prefs-init
+    mountPath: /data/xnat/home/config/prefs-init.ini
+    subPath: prefs-init.ini
+{% for p in xnat_plugins_all %}
+{% for c in p.config | default([]) if c.mechanism == 'file' %}
+  - name: cfg-{{ p.name }}-{{ loop.index }}
+    mountPath: /data/xnat/home/{{ c.dest }}
+    subPath: {{ c.dest | basename }}
+    readOnly: true
+{% endfor %}
+{% endfor %}
+
+{# --- initContainers: one per non-image plugin, running the Scout installer.
+     Spliced by the chart after wait-for-postgres, before home-init. Each mounts
+     the shared home-plugins volume (NOT auto-mounted for user init containers). --#}
+initContainers:
+{% for p in xnat_plugins_all if p.source.type in ['file', 'url', 'coordinates'] %}
+  - name: install-{{ p.name }}
+    image: {{ xnat_plugin_installer_image }}
+    imagePullPolicy: {{ xnat_plugin_installer_image_pull_policy }}
+    env:
+      - name: PLUGIN_NAME
+        value: '{{ p.name }}'
+      - name: PLUGIN_TARGET
+        value: '{{ p.target }}'
+      - name: PLUGIN_SOURCE_TYPE
+        value: '{{ p.source.type }}'
+      - name: DEST_DIR
+        value: /data/xnat/home/plugins
+      - name: PLUGIN_SKIP_LOGBACK_REWRITE
+        value: '{{ p.skip_logback_rewrite | default(false) | string | lower }}'
+{% if p.source.type == 'coordinates' %}
+      - name: PLUGIN_COORDINATES
+        value: '{{ p.source.coordinates }}'
+      - name: PLUGIN_REPO_URL
+        value: '{{ p.source.repo_url | default(maven_proxy_url) }}'
+{% elif p.source.type == 'url' %}
+      - name: PLUGIN_URL
+        value: '{{ p.source.url }}'
+{% elif p.source.type == 'file' %}
+      - name: PLUGIN_FILE
+        value: "/mnt/{{ p.name }}/{{ p.source.secret.key | default('plugin.jar') }}"
+{% endif %}
+    volumeMounts:
+      - name: home-plugins
+        mountPath: /data/xnat/home/plugins
+{% if p.source.type == 'file' %}
+      - name: plugin-{{ p.name }}-jar
+        mountPath: /mnt/{{ p.name }}
+        readOnly: true
+{% endif %}
+{% endfor %}

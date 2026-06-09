@@ -1,0 +1,141 @@
+---
+# Defaults for the xnat role. XNAT is optional and gated by `enable_xnat`
+# (defined in scout_common defaults). When disabled, the playbook end_plays
+# before this role runs, so nothing here is created.
+
+# --- Upstream chart (NrgXnat/helm-charts) ---------------------------------
+# The chart is not yet published to a Helm repo, so the role clones it at a
+# pinned tag on the jump node and `helm dependency build`s it. When upstream
+# publishes a chart repo / OCI artifact, replace fetch_chart.yaml with a normal
+# helm_repo_url + version ref.
+xnat_chart_git_repo: https://github.com/NrgXnat/helm-charts
+xnat_chart_git_ref: xnat-1.0.2
+xnat_chart_subpath: helm/xnat # path to the chart within the cloned repo
+xnat_helm_release_name: xnat
+
+# --- XNAT image -----------------------------------------------------------
+# 1.10.0 selected via image.tag override; the chart's appVersion (1.9.2.1) is
+# unchanged. The re-cut 1.10.0 image has a JDK 21 JRE matching its bytecode.
+xnat_image_repository: xnatworks/xnat-web
+xnat_image_tag: '1.10.0'
+
+# --- Plugin installer image (built by Scout CI, pulled through Harbor) -----
+xnat_plugin_installer_image_repository: ghcr.io/washu-tag/xnat-plugin-installer
+xnat_plugin_installer_image_tag: latest
+xnat_plugin_installer_image: '{{ xnat_plugin_installer_image_repository }}:{{ xnat_plugin_installer_image_tag }}'
+# IfNotPresent so a locally-imported dev image (k3s ctr images import) is used
+# without trying to pull. Harbor caches the real image in prod regardless.
+xnat_plugin_installer_image_pull_policy: IfNotPresent
+
+# --- Storage --------------------------------------------------------------
+# Empty storage class = cluster default (dynamic provisioning per ADR 0004).
+xnat_storage_class: ''
+xnat_postgres_storage_size: 10Gi
+xnat_volume_sizes:
+  xnatdata: 10Gi
+  build: 5Gi
+  cache: 10Gi
+  archive: 10Gi
+  prearchive: 5Gi
+
+# --- First-boot site config (prefs-init.ini) ------------------------------
+xnat_site_id: scout-xnat
+xnat_admin_email: 'admin@{{ server_hostname }}'
+# Providers surfaced on the login page. Keeping only 'keycloak' (dropping
+# 'localdb') leaves just the "Sign in with Scout" button; the built-in admin
+# account still works via the REST API.
+xnat_enabled_providers:
+  - keycloak
+
+# --- Outbound mail --------------------------------------------------------
+# XNAT sends through Scout's shared relay (no per-XNAT postfix in the end
+# state). Defaults to in-cluster MailHog; point at your org relay for prod.
+# NOTE: the upstream chart still pulls postfix unconditionally, so a placeholder
+# postfix-password Secret is created until the upstream `mail.enabled` condition
+# lands; XNAT itself routes at the relay below.
+xnat_smtp_enabled: true
+xnat_smtp_host: mailhog-service.mailhog
+xnat_smtp_port: '1025'
+xnat_smtp_from: 'xnat@{{ server_hostname }}'
+
+# --- Postgres (CNPG-managed, like the rest of Scout) ----------------------
+# REQUIRED when enable_xnat is true — set in inventory (vault-encrypted).
+xnat_postgres_password: ''
+xnat_postgres_db: xnat
+xnat_postgres_user: xnat
+
+# --- Startup probe --------------------------------------------------------
+# 60 * 10s = 10 min budget for Hibernate's first-boot DDL (3-5 min). Pairs with
+# the 20m helm --wait timeout below.
+xnat_startup_failure_threshold: 60
+xnat_helm_timeout: 20m
+
+# --- Extra xnat-conf.properties entries (merged with plugin extraConfig) ---
+xnat_extra_config: {}
+
+# --- Air-gapped URL plugin restaging --------------------------------------
+# When true and air_gapped, plugins with source.type=url are fetched on the
+# jump node and re-hosted in the Nexus raw repo so init containers (which have
+# no egress) can pull them. Default off: prefer coordinates (Pattern D).
+xnat_url_restage_via_nexus: false
+xnat_nexus_raw_repo: xnat-plugins-raw
+
+# --- Plugins --------------------------------------------------------------
+# The required openid plugin. Operators ADD their own via `xnat_plugins`
+# (default [] in scout_common); the role combines the two into xnat_plugins_all
+# so the openid entry is never repeated or accidentally dropped.
+#
+# Per-plugin shape:
+#   name:    str  - init-container name + Secret name suffix
+#   target:  str  - filename written into the plugins dir
+#   source:
+#     type: file | url | coordinates | image
+#     # file:        secret: {name, key, from_file}   (from_file = jar path on control node)
+#     # url:         url: https://...
+#     # coordinates: coordinates: g:a:v:classifier:type   (repo_url defaults to maven_proxy_url)
+#     # image:       repository, tag                       (chart-native plugins: map)
+#   skip_logback_rewrite: bool (default false)
+#   config: list of property files, each:
+#     mechanism: authplugins | file | extraConfig
+#     # authplugins: provider, entry (-> Secret xnat-plugin-<entry>), properties{}
+#     # file:        dest (path under /data/xnat/home/), properties{}
+#     # extraConfig: properties{} merged into xnat-conf.properties
+xnat_plugins_default:
+  - name: openid
+    target: openid-auth-plugin.jar
+    source:
+      type: coordinates
+      coordinates: 'au.edu.qcif.xnat.openid:openid-auth-plugin:1.5.0:xpl'
+    skip_logback_rewrite: false
+    config:
+      - mechanism: authplugins
+        provider: openid
+        entry: keycloak
+        properties:
+          auth.method: openid
+          type: openid
+          provider.id: keycloak
+          name: Scout SSO
+          auto.enabled: 'true'
+          auto.verified: 'true'
+          siteUrl: 'https://xnat.{{ server_hostname }}'
+          preEstablishedRedirUri: /openid-login
+          openid.keycloak.clientId: '{{ keycloak_xnat_client_id }}'
+          openid.keycloak.clientSecret: '{{ keycloak_xnat_client_secret }}'
+          openid.keycloak.accessTokenUri: '{{ keycloak_realm_url }}/protocol/openid-connect/token'
+          openid.keycloak.userAuthUri: '{{ keycloak_realm_url }}/protocol/openid-connect/auth'
+          openid.keycloak.userInfoUri: '{{ keycloak_realm_url }}/protocol/openid-connect/userinfo'
+          openid.keycloak.scopes: openid,profile,email
+          openid.keycloak.shouldFilterEmailDomains: 'false'
+          openid.keycloak.forceUserCreate: 'true'
+          openid.keycloak.emailProperty: email
+          openid.keycloak.givenNameProperty: given_name
+          openid.keycloak.familyNameProperty: family_name
+          openid.keycloak.pkceEnabled: 'true'
+          # Use the real Keycloak username (no keycloak-<sub> synthetic names).
+          openid.keycloak.usernamePattern: '[preferred_username]'
+          openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
+
+# Combined list the templates/tasks iterate. xnat_plugins is operator-supplied
+# (default [] in scout_common defaults).
+xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'

@@ -792,6 +792,30 @@ Adjustments when re-enabling it:
 
 ## Toward Ansible automation (the eventual goal)
 
+> **Status: largely implemented.** The `xnat` Ansible role
+> (`ansible/roles/xnat/`, `make install-xnat`, gated by `enable_xnat`) now folds
+> the manual POC steps into declarative Ansible. Notable deltas from the design
+> sketch below, decided during implementation:
+> - **No wrapper chart.** The role consumes the upstream chart directly and keeps
+>   all customization in templated values + Ansible-created Secrets (the chart
+>   owns no Secrets). Plugin installation uses the chart's existing
+>   `initContainers` value seam — no chart change needed.
+> - **Chart sourcing:** the chart is unpublished, so the role clones
+>   `NrgXnat/helm-charts` at a pinned tag on the jump node and `helm dependency
+>   update`s it. Publishing it upstream is a parallel, non-blocking effort.
+> - **Plugin installer:** `docker/xnat-plugin-installer/` is a source-agnostic
+>   init container (file/url/coordinates) that also performs the logback→stdout
+>   rewrite (improvement #1 below, realized Scout-side rather than upstream).
+> - **postgresqlPort bug** is already fixed upstream (≥ chart 1.0.2) — no workaround.
+> - **Postfix:** disabled in intent (XNAT routes at Scout's shared relay); the
+>   placeholder Secret remains only until the upstream `condition: mail.enabled`
+>   change (improvement #2) lands.
+> - **openid coordinate:** `au.edu.qcif.xnat.openid:openid-auth-plugin:1.5.0:xpl`
+>   at NrgXnat Artifactory, proxied via a new Nexus maven group (`maven_proxy_url`).
+> - **Keycloak client** is now gated on `enable_xnat`.
+>
+> The original design discussion is preserved below for rationale.
+
 A future `xnat` role (mirroring the existing per-component roles) should fold the
 manual POC steps into declarative, idempotent Ansible. The gitops-friendly
 target — *anything that can be a chart, is a chart*:
@@ -842,6 +866,127 @@ realm template ended on the token-trust (bearer-only) shape. Returning to the
 openid plugin (the stated direction) means switching the `xnat` client to
 confidential and deciding whether to support both models via inventory flags or
 to standardize on the openid one.
+
+## Deploying to a dev environment (unpublished image / chart)
+
+In a real deploy the `xnat-plugin-installer` image comes from GHCR (pulled
+through Harbor) and the chart from a published repo. In dev — before CI has
+published the image, or while iterating on un-published chart edits — you have to
+get those artifacts onto the cluster yourself. The role has two override hooks
+for exactly this.
+
+### The plugin-installer image
+
+Build it from the repo:
+
+```bash
+docker build -t ghcr.io/washu-tag/xnat-plugin-installer:dev docker/xnat-plugin-installer/
+```
+
+Then get it onto the cluster by one of:
+
+**A. Single-node / non-air-gapped — import straight into k3s containerd.** This
+is what Scout's CI does for locally-built images. On the node that runs XNAT:
+
+```bash
+docker save ghcr.io/washu-tag/xnat-plugin-installer:dev -o /tmp/xpi.tar
+# copy /tmp/xpi.tar to the node if you built elsewhere, then:
+sudo k3s ctr -n k8s.io images import /tmp/xpi.tar
+# Pin so kubelet image-GC can't evict a tag that exists in no remote registry:
+sudo k3s ctr -n k8s.io images label \
+  ghcr.io/washu-tag/xnat-plugin-installer:dev io.cri-containerd.pinned=pinned
+```
+
+Point the role at that tag in inventory:
+
+```yaml
+xnat_plugin_installer_image_tag: dev
+```
+
+The role sets `imagePullPolicy: IfNotPresent` on the installer init container, so
+the imported image is used without attempting a pull. (Keep a non-`latest` tag
+like `dev` — with `latest`, kubelet's default `Always` policy would still be
+overridden by our `IfNotPresent`, but a distinct tag avoids confusion with a
+real `latest` in Harbor.)
+
+**B. Staging Harbor — push to your own project.** You don't need (and can't use)
+the `ghcr.io`→Harbor pull-through *proxy* projects for an unpublished image.
+Instead create your own regular **hosted** Harbor project, push the dev image
+into it, and point the inventory at that project directly — the role's
+`xnat_plugin_installer_image_repository` override means the deploy pulls from
+your project, bypassing the mirror entirely.
+
+1. In Harbor, create a hosted project, e.g. `xnat-dev` (make it public for dev,
+   or wire an imagePullSecret — see note).
+2. Build, tag, and push:
+   ```bash
+   docker tag ghcr.io/washu-tag/xnat-plugin-installer:dev \
+     <harbor-host>/xnat-dev/xnat-plugin-installer:dev
+   docker login <harbor-host> && docker push <harbor-host>/xnat-dev/xnat-plugin-installer:dev
+   ```
+
+   > **Cert-trust prerequisite (the fiddly part).** The cluster *nodes* already
+   > trust the staging Harbor cert (ADR 0016), but your **local Docker daemon
+   > does not** — `login`/`push` will fail with an x509 error until you add the
+   > staging server's self-signed CA to the daemon's trust. The catch: that trust
+   > lives wherever your daemon runs, which is tooling-specific and differs across
+   > a team:
+   > - **Native Linux dockerd:** drop the CA at
+   >   `/etc/docker/certs.d/<harbor-host>/ca.crt` (use `<harbor-host>:<port>` if
+   >   non-443), then `systemctl restart docker`.
+   > - **colima / Lima / Docker Desktop / Rancher Desktop:** the daemon runs in a
+   >   VM, so the cert must go *inside that VM*, not on your laptop. e.g. for
+   >   colima: `colima ssh`, then place the CA under
+   >   `/etc/docker/certs.d/<harbor-host>/ca.crt` in the VM and restart docker
+   >   there. Each runtime has its own path/procedure — set it up for whatever
+   >   you run.
+   >
+   > Get the CA from the staging node (its Harbor TLS cert) or with
+   > `openssl s_client -connect <harbor-host>:443 -showcerts`. Because this is
+   > per-developer setup that varies by tooling, pushing to your **own GHCR
+   > namespace** (below) is often the lower-friction path — it reuses the existing
+   > trusted ghcr→Harbor proxy and needs no local cert wrangling.
+3. Point the role at it:
+   ```yaml
+   xnat_plugin_installer_image_repository: <harbor-host>/xnat-dev/xnat-plugin-installer
+   xnat_plugin_installer_image_tag: dev
+   ```
+
+A public project is simplest for dev; a private one needs an imagePullSecret for
+`<harbor-host>` on the XNAT pod's ServiceAccount. (Pushing to your own GHCR
+namespace instead also works — the existing ghcr→Harbor proxy then serves it
+unchanged with no inventory override.)
+
+### The Helm chart (and un-published chart edits)
+
+By default the role clones `NrgXnat/helm-charts` at `xnat_chart_git_ref` and runs
+`helm dependency update` on the jump node — no publishing needed. To test changes
+that aren't on `main`:
+
+- **A branch/fork on a remote:** point the role at it —
+  ```yaml
+  xnat_chart_git_repo: https://github.com/<you>/helm-charts
+  xnat_chart_git_ref: my-mail-condition-branch
+  ```
+- **A purely local working copy:** set `xnat_chart_path` to your chart directory.
+  The role then skips the clone *and the `helm dependency update`*, so resolve
+  the subchart deps yourself once:
+  ```bash
+  helm dependency update ~/repos/helm-charts/helm/xnat
+  ```
+  ```yaml
+  xnat_chart_path: /home/you/repos/helm-charts/helm/xnat
+  ```
+
+### Resolving the openid plugin in dev
+
+The default openid plugin is published only to NrgXnat Artifactory. With
+`package_proxy_mode: none` (typical dev), `maven_proxy_url` defaults to a comma
+list of Maven Central **and** NrgXnat Artifactory, so the installer resolves it
+with no extra config (the node needs egress to `nrgxnat.jfrog.io`). With
+`package_proxy_mode: nexus`, it resolves through the Nexus maven group instead
+(no egress). If your dev cluster can reach neither, deliver the plugin via
+`source.type: file` (a locally-built jar Secret) instead.
 
 ## Possible upstream chart improvements (brainstorming)
 

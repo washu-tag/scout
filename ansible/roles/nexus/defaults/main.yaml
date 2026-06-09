@@ -58,6 +58,18 @@ nexus_blob_stores:
     softQuota:
       type: spaceRemainingQuota
       limit: 5368709120 # 5 GB
+  - name: maven-store
+    type: file
+    path: maven-store
+    softQuota:
+      type: spaceRemainingQuota
+      limit: 5368709120 # 5 GB
+  - name: raw-store
+    type: file
+    path: raw-store
+    softQuota:
+      type: spaceRemainingQuota
+      limit: 5368709120 # 5 GB
 
 # Cleanup policy — purge packages not downloaded in this many days
 nexus_cleanup_last_downloaded_days: 90
@@ -87,7 +99,32 @@ nexus_yum_repos:
     remoteUrl: https://nvidia.github.io/libnvidia-container/stable/rpm/x86_64/
     blobStoreName: yum-store
 
-# maven-central ships pre-configured in Nexus CE — no need to create it
+# Maven proxies. Maven and Gradle both resolve from Maven-format repositories,
+# so a single set of Maven proxies (aggregated by nexus_maven_group below)
+# serves both. Used by the xnat role to resolve plugins by coordinates.
+nexus_maven_repos:
+  - name: maven-central
+    remoteUrl: https://repo1.maven.org/maven2/
+    blobStoreName: maven-store
+  - name: xnat-maven
+    remoteUrl: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
+    blobStoreName: maven-store
+
+# Group that aggregates the Maven proxies into one resolvable URL. scout_common's
+# maven_proxy_url points at this group (.../repository/<name>).
+nexus_maven_group:
+  name: maven-public
+  blobStoreName: maven-store
+  memberNames:
+    - maven-central
+    - xnat-maven
+
+# Raw hosted repos — stage arbitrary files (e.g. plugin jars fetched from a URL
+# on the jump node and re-hosted for air-gapped init containers; see the xnat
+# role's restage_url_plugins task).
+nexus_raw_repos:
+  - name: xnat-plugins-raw
+    blobStoreName: raw-store
 
 # Computed — uses external_url/inventory_hostname of the staging host (where this role runs)
 # Same pattern as harbor_hostname in ansible/roles/harbor/defaults/main.yaml

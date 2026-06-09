@@ -28,6 +28,7 @@ jobs:
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
+      xnat-plugin-installer: ${{ steps.filter.outputs.xnat-plugin-installer }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
@@ -51,6 +52,8 @@ jobs:
               - 'helm/superset/**'
             keycloak:
               - 'keycloak/**'
+            xnat-plugin-installer:
+              - 'docker/xnat-plugin-installer/**'
   lint:
     runs-on: ubuntu-latest
     permissions:
@@ -97,6 +100,9 @@ jobs:
             allow-failure: true
           - image-name: keycloak
             subproject: keycloak
+            allow-failure: true
+          - image-name: xnat-plugin-installer
+            subproject: docker/xnat-plugin-installer
             allow-failure: true
     steps:
       - uses: actions/checkout@v6

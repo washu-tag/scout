@@ -1,0 +1,67 @@
+---
+# Air-gapped support for url-sourced plugins. Init containers have no egress, so
+# when air_gapped the jump node (which does have internet) fetches each
+# url-sourced jar and re-hosts it in the Nexus raw repo; we then rewrite that
+# plugin's url to the in-cluster Nexus raw URL. Default-off (xnat_url_restage_via_nexus);
+# coordinates (Pattern D) is the preferred air-gap path.
+#
+# Only acts when air_gapped — with egress, init containers fetch the url directly.
+
+- name: Identify url-sourced plugins
+  ansible.builtin.set_fact:
+    xnat_url_plugins: >-
+      {{ xnat_plugins_all | selectattr('source.type', 'equalto', 'url') | list }}
+
+- name: Restage url plugins through Nexus
+  when:
+    - air_gapped | default(false) | bool
+    - xnat_url_plugins | length > 0
+  block:
+    - name: Resolve Nexus connection
+      ansible.builtin.set_fact:
+        _xnat_nexus_password: "{{ hostvars[groups['staging'][0]].nexus_root_password | default(nexus_root_password | default('')) }}"
+        _xnat_nexus_base: 'https://{{ nexus_host }}/repository/{{ xnat_nexus_raw_repo }}'
+
+    - name: Fetch each url plugin on the jump node
+      ansible.builtin.get_url:
+        url: '{{ item.source.url }}'
+        dest: '/tmp/xnat-plugin-{{ item.name }}.jar'
+        mode: '0644'
+      delegate_to: localhost
+      loop: '{{ xnat_url_plugins }}'
+      loop_control:
+        label: '{{ item.name }}'
+
+    - name: Upload each plugin to the Nexus raw repo
+      ansible.builtin.uri:
+        url: '{{ _xnat_nexus_base }}/xnat-plugins/{{ item.name }}/{{ item.target }}'
+        method: PUT
+        url_username: admin
+        url_password: '{{ _xnat_nexus_password }}'
+        force_basic_auth: true
+        src: '/tmp/xnat-plugin-{{ item.name }}.jar'
+        status_code: [200, 201, 204]
+      delegate_to: localhost
+      no_log: true
+      loop: '{{ xnat_url_plugins }}'
+      loop_control:
+        label: '{{ item.name }}'
+
+    # Rewrite each url plugin's source.url to the in-cluster Nexus raw URL so the
+    # generated init container pulls from Nexus instead of the original host.
+    # Rewrite each url plugin's source.url to the in-cluster Nexus raw URL so the
+    # generated init container pulls from Nexus instead of the original host.
+    - name: Repoint url plugins at Nexus
+      ansible.builtin.set_fact:
+        xnat_plugins_all: '{{ _xnat_repointed }}'
+      vars:
+        _xnat_repointed: >-
+          {%- set out = [] -%}
+          {%- for p in xnat_plugins_all -%}
+          {%- if p.source.type == 'url' -%}
+          {%- set _ = out.append(p | combine({'source': p.source | combine({'url': _xnat_nexus_base ~ '/xnat-plugins/' ~ p.name ~ '/' ~ p.target})})) -%}
+          {%- else -%}
+          {%- set _ = out.append(p) -%}
+          {%- endif -%}
+          {%- endfor -%}
+          {{ out }}

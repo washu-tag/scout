@@ -309,9 +309,9 @@ k3s_cluster:
     # (tuannvm/mcp-trino speaks HTTP Basic outbound only — ADR 0022).
     trino_openwebui_mcp_svc_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # XNAT is a confidential OIDC client (xnat-openid-auth-plugin runs its own
-    # authorization-code flow against Keycloak). This secret is REQUIRED even
-    # before XNAT is deployed: the realm always provisions the xnat client, and
-    # Keycloak import fails without it. See docs/internal/xnat-and-plugin-deployment.md.
+    # authorization-code flow against Keycloak). Required only when enable_xnat
+    # is true — the realm gates the xnat client on that flag. See the XNAT
+    # section below and docs/internal/xnat-and-plugin-deployment.md.
     keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
@@ -347,19 +347,53 @@ k3s_cluster:
     launchpad_nextauth_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     #---------------------------------------------------------------------------
-    # XNAT
+    # XNAT (optional — disabled by default)
     #---------------------------------------------------------------------------
-    # XNAT is not deployed by the standard Scout playbooks yet, but the Keycloak
-    # realm provisions a confidential `xnat` OIDC client (holding the xnat-access
-    # role mapped onto the scout-user group) so an operator can bring XNAT up
-    # later — with the xnat-openid-auth-plugin — without re-importing the realm.
-    # The client secret is set above with the other client secrets. XNAT sits
-    # behind oauth2-proxy like every other Scout service; its /openid-login
-    # callback is the redirect URI. See docs/internal/xnat-and-plugin-deployment.md.
+    # XNAT is an optional service deployed with `make install-xnat` (or as part
+    # of `make all`). When enable_xnat is false (the default) NOTHING XNAT is
+    # created — no namespace, no deploy, and the Keycloak realm omits the `xnat`
+    # client + xnat-access role. Set enable_xnat: true to deploy it; the
+    # off-the-shelf xnat-openid-auth-plugin makes XNAT its own confidential OIDC
+    # client (callback /openid-login), and XNAT still sits behind oauth2-proxy
+    # like every other Scout service. See docs/internal/xnat-and-plugin-deployment.md.
+    #
+    # NOTE: toggling enable_xnat from true back to false deletes the xnat
+    # Keycloak client on the next auth deploy, orphaning provisioned XNAT users.
+    # enable_xnat: true
+    #
+    # Required when enable_xnat is true (the CNPG-managed XNAT Postgres password):
+    # xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    #
+    # Site config seeded on XNAT's first boot (skips the setup wizard):
+    # xnat_site_id: scout-xnat
+    # xnat_admin_email: admin@your-org.example
+    #
+    # XNAT routes outbound mail through Scout's shared relay (no per-XNAT
+    # postfix); defaults to MailHog in-cluster. Point at your org relay for prod:
+    # xnat_smtp_host: mailhog-service.mailhog
+    # xnat_smtp_port: '1025'
+    # xnat_smtp_from: xnat@your-org.example
+    #
+    # Plugins are ADDITIVE over the role's default (the required openid plugin):
+    # whatever you list here is installed *in addition to* openid — you never
+    # repeat or risk dropping it. Each entry names a source (file | url |
+    # coordinates | image) and optional config files. See the role README.
+    # xnat_plugins:
+    #   - name: my-plugin
+    #     target: my-plugin.jar
+    #     source:
+    #       type: coordinates       # resolved through the Nexus maven proxy when air-gapped
+    #       coordinates: org.example:my-xnat-plugin:1.2.3:xpl
+    #     config:
+    #       - mechanism: extraConfig
+    #         properties:
+    #           my.plugin.setting: "value"
     #
     # Override these naming defaults only if your environment differs:
-    # keycloak_xnat_client_id: xnat   # Keycloak clientId for XNAT
-    # xnat_namespace: xnat            # Namespace where XNAT will be deployed
+    # keycloak_xnat_client_id: xnat       # Keycloak clientId for XNAT
+    # xnat_namespace: xnat                # Namespace where XNAT is deployed
+    # xnat_chart_git_ref: xnat-1.0.2      # NrgXnat/helm-charts tag to deploy
+    # xnat_image_tag: '1.10.0'            # xnatworks/xnat-web image tag
 
     #---------------------------------------------------------------------------
     # PostgreSQL

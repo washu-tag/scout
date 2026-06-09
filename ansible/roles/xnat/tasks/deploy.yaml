@@ -1,0 +1,62 @@
+---
+# Deploy XNAT: validate, namespace, fetch chart, secrets, then helm install.
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - keycloak_xnat_client_secret is defined
+      - keycloak_xnat_client_secret | length > 0
+      - xnat_postgres_password is defined
+      - xnat_postgres_password | length > 0
+    fail_msg: >
+      keycloak_xnat_client_secret and xnat_postgres_password are required when
+      enable_xnat is true. Set them in your inventory.yaml (use vault encryption).
+      Example: openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ xnat_namespace }}'
+
+- name: Fetch the XNAT chart from git
+  ansible.builtin.include_tasks: fetch_chart.yaml
+
+- name: Restage URL-sourced plugins through Nexus (air-gapped)
+  ansible.builtin.include_tasks: restage_url_plugins.yaml
+  when: xnat_url_restage_via_nexus | default(false) | bool
+
+- name: Guard against url plugins on air-gapped clusters without restaging
+  ansible.builtin.assert:
+    that:
+      - not (air_gapped | default(false) | bool)
+        or (xnat_plugins_all | selectattr('source.type', 'equalto', 'url') | list | length == 0)
+        or (xnat_url_restage_via_nexus | default(false) | bool)
+    fail_msg: >
+      One or more xnat_plugins use source.type=url, but this is an air-gapped
+      cluster and xnat_url_restage_via_nexus is false. Init containers have no
+      egress on air-gapped clusters. Use source.type=coordinates (resolved via
+      the Nexus maven proxy), image, or file — or set xnat_url_restage_via_nexus: true
+      to have the jump node re-host the jar in Nexus.
+    quiet: true
+
+- name: Create Kubernetes Secrets
+  ansible.builtin.include_tasks: create_secrets.yaml
+
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    xnat_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+- name: Deploy XNAT using Helm
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ xnat_helm_release_name }}'
+    helm_chart_ref: '{{ xnat_chart_path }}'
+    helm_chart_namespace: '{{ xnat_namespace }}'
+    helm_chart_create_namespace: false
+    helm_chart_values: '{{ xnat_helm_chart_values }}'
+    helm_chart_timeout: '{{ xnat_helm_timeout }}'
