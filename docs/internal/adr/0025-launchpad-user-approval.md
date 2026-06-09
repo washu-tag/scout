@@ -155,8 +155,9 @@ minting removes any need for proactive caching). The route is a catch-all
 (`[...path]`) over `GET`/`POST`/`DELETE` with a per-method allowlist of path
 shapes, so it forwards the sub-resourced verbs without becoming an open proxy.
 
-**Token storage note.** The session cookie holds **only the refresh token** (plus
-an `isAdmin` flag) — JWE-encrypted with `NEXTAUTH_SECRET`, `httpOnly`, `secure` —
+**Token storage note.** The session cookie holds **no access token** — just the
+refresh token plus the small `username`/`isAdmin` fields — JWE-encrypted with
+`NEXTAUTH_SECRET`, `httpOnly`, `secure` —
 and the `/api/users` proxy mints a fresh access token from it per request. The
 access token can't also live in the cookie: an admin's carried dozens of roles
 (the launchpad client was `fullScopeAllowed` by default), which pushed the
@@ -171,7 +172,8 @@ than a short-lived access token would be. This is not introduced here: the
 launchpad's next-auth has stored access **and** refresh tokens in this cookie
 since it adopted Keycloak login. This feature is the first to *use* a stored token
 (for the proxy) and in doing so **shrank** the cookie — dropping the access token
-entirely and the `groups` array, leaving only the refresh token. The exposure is
+entirely and the `groups` array, leaving the refresh token plus the small
+`username`/`isAdmin` fields. The exposure is
 gated by `httpOnly` + `secure` + JWE (extraction needs both cookie theft *and*
 `NEXTAUTH_SECRET`) and narrowed by `fullScopeAllowed=false` (the token no longer
 carries realm-admin roles). The hardening that actually removes it is a
@@ -198,9 +200,10 @@ than anything this feature added.
   to Keycloak's `scout-users` API instead of to Trino — a new identity-propagation
   path on the same model.
 - The UI admin gate (`session.user.isAdmin`) is login-time, so a user
-  demoted/offboarded via the console keeps the admin affordances until their
-  session token refreshes; the SPI's live `scout-admin` check still rejects every
-  call in the meantime, so this is a stale affordance, not an access path.
+  demoted/offboarded via the console keeps the admin affordances until they sign
+  in again (it is resolved from the profile at login and never re-derived mid-
+  session); the SPI's live `scout-admin` check still rejects every call in the
+  meantime, so this is a stale affordance, not an access path.
 - The audit trail is the Keycloak admin-events log (reached via "Open in
   Keycloak"); shipping actions to an external immutable store is future work.
 - The initial proof-of-concept (a Keycloak-SPI-served HTML page + a public PKCE

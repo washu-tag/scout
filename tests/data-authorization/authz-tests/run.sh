@@ -26,7 +26,8 @@
 #
 # Output:
 #   stdout: a streaming log of each scenario + assertion
-#   exit:   0 if all pass, non-zero on first failure
+#   exit:   0 if all pass, non-zero if any scenario fails (all scenarios run;
+#           failures are aggregated, not fail-fast)
 #
 # Test scenarios (12):
 #   1. enabled=true, allowed_facilities=["ABCHOSP1"], allowed_modalities=["*"]
