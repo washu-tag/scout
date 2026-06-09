@@ -28,11 +28,13 @@
 #   stdout: a streaming log of each scenario + assertion
 #   exit:   0 if all pass, non-zero on first failure
 #
-# Test scenarios (11):
+# Test scenarios (12):
 #   1. enabled=true, allowed_facilities=["ABCHOSP1"], allowed_modalities=["*"]
 #      -> COUNT(*) FROM test_reports = 3   (only ABCHOSP1 rows)
 #   2. allowed_facilities=["*"]
-#      -> COUNT(*) FROM test_reports = 6   (all rows)
+#      -> COUNT(*) FROM test_reports = 7   (all rows)
+#   2b. allowed_facilities=["HOME CARE SERVICES"]  (facility name with spaces)
+#      -> COUNT(*) = 1   (proves the space-tolerant value pattern end-to-end)
 #   3. allowed_facilities=["ABCHOSP1"], allowed_modalities=["CT"]
 #      -> COUNT(*) = 2                     (intersection)
 #   4. allowed_facilities=[]  (unset)
@@ -415,11 +417,23 @@ count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -
 if [[ "$count" == "3" ]]; then ok "row count=3"; else fail "expected 3, got $count"; fi
 
 # --- Scenario 2: wildcard facility ------------------------------------------
-log "scenario 2: allowed_facilities=[*] -> 6 rows"
+log "scenario 2: allowed_facilities=[*] -> 7 rows"
 set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"]}'
 wait_for_bundle '.result.allowed_facilities[0] == "*"' "$PROPAGATION_TIMEOUT"
 count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
-if [[ "$count" == "6" ]]; then ok "row count=6"; else fail "expected 6, got $count"; fi
+if [[ "$count" == "7" ]]; then ok "row count=7"; else fail "expected 7, got $count"; fi
+
+# --- Scenario 2b: facility name with spaces ---------------------------------
+# A real prod facility ("HOME CARE SERVICES") has spaces. This proves the
+# space-tolerant filter value pattern (policy/trino/main.rego) survives the whole
+# pipeline: Keycloak attr -> OPA bundle -> rego validates -> Trino emits
+# sending_facility IN ('HOME CARE SERVICES'). Without the space in the pattern the
+# value is dropped to a 1=0 clamp and this returns 0 -- so it guards the change.
+log "scenario 2b: allowed_facilities=['HOME CARE SERVICES'] -> 1 row"
+set_user_state "$USER_ID" true '{"allowed_facilities":["HOME CARE SERVICES"],"allowed_modalities":["*"]}'
+wait_for_bundle '.result.allowed_facilities[0] == "HOME CARE SERVICES"' "$PROPAGATION_TIMEOUT"
+count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
+if [[ "$count" == "1" ]]; then ok "spaced facility name filtered (row count=1)"; else fail "expected 1, got $count"; fi
 
 # --- Scenario 3: intersection of two dimensions -----------------------------
 log "scenario 3: facility=ABCHOSP1 AND modality=CT -> 2 rows"

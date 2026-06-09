@@ -13,12 +13,15 @@ rego policy filters and masks against:
   - full_patient_name (struct)     -- PHI masked as NULL (non-varchar)
   - zip_or_postal_code (varchar)   -- PHI masked as '[REDACTED]'
 
-Three facilities x two modalities = six distinct (facility, modality)
-combinations. Row counts chosen so the assertions are unambiguous:
+Three ABCHOSP* facilities x two modalities = six combinations, plus one row under
+"HOME CARE SERVICES" — a facility whose name has spaces, which exercises the
+space-tolerant filter value pattern in policy/trino/main.rego. Row counts chosen
+so the assertions are unambiguous:
   ABCHOSP1: 3 rows  (2 CT, 1 MR)
   ABCHOSP2: 2 rows  (1 CT, 1 MR)
   ABCHOSP3: 1 row   (0 CT, 1 MR)
-  Total: 6 rows
+  HOME CARE SERVICES: 1 row (1 CT)
+  Total: 7 rows
 
 All config is read from env vars set by the Job spec — no spark-defaults
 ConfigMap dependency, since the extractor role isn't deployed in
@@ -150,6 +153,10 @@ def main() -> None:
         ("ABCHOSP2", "CT", "Dave Davis", ("Dave", "Davis"), "63113"),
         ("ABCHOSP2", "MR", "Eve Edwards", ("Eve", "Edwards"), "63114"),
         ("ABCHOSP3", "MR", "Frank Foster", ("Frank", "Foster"), "63115"),
+        # Facility name with spaces — exercises the space-tolerant filter value
+        # pattern (policy/trino/main.rego). "Zoe" sorts last so it never displaces
+        # Alice as the PHI-mask scenarios' ORDER BY patient_name LIMIT 1 row.
+        ("HOME CARE SERVICES", "CT", "Zoe Zimmerman", ("Zoe", "Zimmerman"), "63116"),
     ]
 
     df = spark.createDataFrame(rows, schema)
