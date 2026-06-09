@@ -10,6 +10,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Shared page content width so the home page and the admin console line up.
+     Used as max-w-content; 80rem matches Tailwind's 7xl. */
+  --container-content: 80rem;
 }
 
 @media (prefers-color-scheme: dark) {

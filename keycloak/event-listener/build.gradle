@@ -82,6 +82,23 @@ jar.finalizedBy(tasks.named('copyRuntimeDeps'))
 
 test {
     useJUnitPlatform()
+    // jboss-logging binds to jboss-logmanager (pulled in transitively by the
+    // Keycloak deps). Point it at a test-only config that silences the
+    // failure-injection tests' deliberate ERROR/WARN noise; see logging.properties.
+    systemProperty 'java.util.logging.manager', 'org.jboss.logmanager.LogManager'
+    systemProperty 'logging.configuration',
+            file('src/test/resources/logging.properties').toURI().toString()
+
+    // Print a one-line suite summary so CI shows the actual test count, not just
+    // gradle's "N actionable tasks" (which counts build tasks, not tests).
+    afterSuite { desc, result ->
+        if (desc.parent == null) {
+            println "Test result: ${result.resultType} — ${result.testCount} tests" +
+                    " (${result.successfulTestCount} passed," +
+                    " ${result.failedTestCount} failed," +
+                    " ${result.skippedTestCount} skipped)"
+        }
+    }
 }
 
 checkstyle {

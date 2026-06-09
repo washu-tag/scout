@@ -456,6 +456,12 @@
         "name": "{{ keycloak_launchpad_client_id }}",
         "description": "Launchpad Client",
         "enabled": true,
+        {#- Least privilege: without this the launchpad token carries every role
+            the user has, so a leaked admin token would be realm-admin. With it
+            off the token only carries roles in the client's scope; the
+            clientScopeMappings below keep launchpad-admin/-user so the isAdmin
+            gate still resolves. -#}
+        "fullScopeAllowed": false,
         "clientId": "{{ keycloak_launchpad_client_id }}",
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_launchpad_client_secret }}",
@@ -465,6 +471,26 @@
         ],
         "webOrigins": [
           "https://{{ server_hostname }}"
+        ],
+        {#- aud=scout-users-api so the scout-users SPI — which can grant scout-admin
+            -> realm-admin — accepts only tokens minted for the launchpad, as
+            defense in depth on top of its live scout-admin check. Audiences the SPI
+            itself; the -api suffix keeps it distinct from the scout-user group.
+            Same shape as trino-audience. -#}
+        "protocolMappers": [
+          {
+            "name": "scout-users-api-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "scout-users-api",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
         ]
       },
       {
@@ -801,12 +827,25 @@
           },
           "group": "scout",
           "multivalued": true,
+          {#- scoutAuthz marks this as an admin-grant data-access attribute so the
+              scout-users REST resource discovers it dynamically (no hardcoded
+              dimension list); inputType hints the approval UI + Keycloak console
+              at the right widget. When `options` is configured the attribute
+              becomes a validated pick-list, otherwise it stays free-text. -#}
+          "annotations": {
+            "scoutAuthz": "true",
+            "inputType": "{{ 'multiselect' if attr_config.options is defined else 'text' }}"
+          },
           "validations": {
             "length": {"max": {{ attr_config.max_length | default(64) }}},
+{% if attr_config.options is defined %}
+            "options": {"options": {{ attr_config.options | to_json }}}
+{% else %}
             "pattern": {
-              "pattern": "{{ attr_config.value_pattern | default('^([A-Za-z0-9_-]+|\\\\*)$') }}",
-              "error-message": "{{ attr_config.value_pattern_error | default('Use an alphanumeric code (letters, digits, hyphen, underscore) or the * wildcard for all values.') }}"
+              "pattern": "{{ attr_config.value_pattern | default('^([A-Za-z0-9 _-]+|\\\\*)$') }}",
+              "error-message": "{{ attr_config.value_pattern_error | default('Use a code (letters, digits, spaces, hyphen, underscore) or the * wildcard for all values.') }}"
             }
+{% endif %}
           }
         },
 {% endfor %}
@@ -819,6 +858,11 @@
           },
           "group": "scout",
           "multivalued": false,
+          "annotations": {
+            "scoutAuthz": "true",
+            "inputType": "select",
+            "scoutDefault": "true"
+          },
           "validations": {
             "options": {
               "options": ["true", "false"]
@@ -840,6 +884,11 @@
           },
           "group": "scout",
           "multivalued": false,
+          "annotations": {
+            "scoutAuthz": "true",
+            "inputType": "select",
+            "scoutDefault": "false"
+          },
           "validations": {
             "options": {
               "options": ["true", "false"]
@@ -856,6 +905,17 @@
         {
           "name": "scout",
           "displayHeader": "Scout"
+        }
+      ]
+    },
+    {#- Pairs with fullScopeAllowed=false on the launchpad client: put its own
+        roles in scope so the token (and the isAdmin gate's groups claim) keeps
+        launchpad-admin/-user while dropping every other client's roles. -#}
+    "clientScopeMappings": {
+      "{{ keycloak_launchpad_client_id }}": [
+        {
+          "client": "{{ keycloak_launchpad_client_id }}",
+          "roles": ["launchpad-admin", "launchpad-user"]
         }
       ]
     },
