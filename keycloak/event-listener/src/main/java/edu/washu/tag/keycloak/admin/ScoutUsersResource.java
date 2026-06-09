@@ -19,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 import org.keycloak.events.admin.OperationType;
@@ -155,6 +156,8 @@ public class ScoutUsersResource {
             throw new BadRequestException(e.getMessage());
         } catch (NoSuchElementException e) {
             throw new NotFoundException(e.getMessage());
+        } catch (IllegalStateException e) {
+            throw new ClientErrorException(e.getMessage(), Response.Status.CONFLICT);
         }
         fireGroupMembershipEvent(auth, req.userId(), username, SCOUT_USER_GROUP, OperationType.CREATE);
         return ok("approved", username);
@@ -351,14 +354,19 @@ public class ScoutUsersResource {
 
     /**
      * Validate the submitted attributes against the dynamic schema, then set them
-     * and join scout-user. Throws {@link IllegalArgumentException} (bad request)
-     * or {@link NoSuchElementException} (not found) — translated to HTTP by the
+     * and join scout-user. Throws {@link IllegalArgumentException} (bad request),
+     * {@link NoSuchElementException} (not found), or {@link IllegalStateException}
+     * (already approved — keeps approve idempotent so a re-approve doesn't clobber
+     * attributes or re-fire the grant event/email) — translated to HTTP by the
      * {@link #approve} adapter. Validates everything before writing anything, so
      * a bad request never leaves a half-applied grant.
      */
     String applyApproval(ApproveRequest req) {
         RealmModel realm = session.getContext().getRealm();
         UserModel user = requireUser(realm, req == null ? null : req.userId());
+        if (user.getGroupsStream().anyMatch(g -> SCOUT_USER_GROUP.equals(g.getName()))) {
+            throw new IllegalStateException(user.getUsername() + " is already approved");
+        }
         Map<String, List<String>> attributes = validateAttributes(req.attributes());
         GroupModel scoutUser = requireGroup(realm, SCOUT_USER_GROUP);
         attributes.forEach(user::setAttribute);
@@ -416,14 +424,21 @@ public class ScoutUsersResource {
         RealmModel realm = session.getContext().getRealm();
         Map<String, String> params = (search == null || search.isBlank())
                 ? Map.of() : Map.of(UserModel.SEARCH, search);
+        // Resolve the scoutAuthz key set once per request, not once per user.
+        Set<String> authzKeys = authzAttributes().keySet();
         return session.users().searchForUserStream(realm, params)
-                .map(this::toScoutUser)
+                .map(u -> toScoutUser(u, authzKeys))
                 .filter(u -> statusMatches(u, status))
                 .toList();
     }
 
     /** Project a user to the console view: derived status, admin flag, and the scoutAuthz attributes only. */
     ScoutUser toScoutUser(UserModel u) {
+        return toScoutUser(u, authzAttributes().keySet());
+    }
+
+    /** As {@link #toScoutUser(UserModel)}, with the scoutAuthz key set passed in so a list call resolves it once. */
+    ScoutUser toScoutUser(UserModel u, Set<String> authzKeys) {
         List<String> groups = u.getGroupsStream().map(GroupModel::getName).toList();
         boolean admin = groups.contains(SCOUT_ADMIN_GROUP);
         boolean active = admin || groups.contains(SCOUT_USER_GROUP);
@@ -432,7 +447,7 @@ public class ScoutUsersResource {
 
         Map<String, List<String>> all = u.getAttributes();
         Map<String, List<String>> attrs = new LinkedHashMap<>();
-        for (String key : authzAttributes().keySet()) {
+        for (String key : authzKeys) {
             List<String> values = all == null ? null : all.get(key);
             if (values != null && !values.isEmpty()) {
                 attrs.put(key, values);
