@@ -123,7 +123,7 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
                 .anyMatch(g -> SCOUT_USER_GROUP.equals(g.getName()));
     }
 
-    private boolean isScoutUserGroupMembershipEvent(AdminEvent event) {
+    static boolean isScoutUserGroupMembershipEvent(AdminEvent event) {
         return event.getResourceType() == ResourceType.GROUP_MEMBERSHIP
                 && (event.getOperationType() == OperationType.CREATE || event.getOperationType() == OperationType.DELETE)
                 && event.getRealmId() != null

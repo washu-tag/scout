@@ -109,6 +109,10 @@ class ScoutUsersResourceTest {
         return Map.of("options", Map.of("options", options));
     }
 
+    private Map<String, Map<String, Object>> patternValidation(String pattern) {
+        return Map.of("pattern", Map.of("pattern", pattern));
+    }
+
     // --- schema: dynamic discovery -----------------------------------------
 
     @Test
@@ -184,6 +188,68 @@ class ScoutUsersResourceTest {
         when(users.getUserById(realm, "ghost")).thenReturn(null);
         assertThrows(NoSuchElementException.class, () -> resource.applyApproval(
                 new ScoutUsersResource.ApproveRequest("ghost", Map.of())));
+    }
+
+    @Test
+    void approve_already_approved_user_is_rejected_without_reapplying() {
+        UserModel target = mock(UserModel.class);
+        when(target.getUsername()).thenReturn("alice");
+        when(target.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup));
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        // Re-approving someone already in scout-user must be a no-op, not a
+        // clobber: no setAttribute, no re-join (which would also re-fire the
+        // grant event + welcome email). The adapter maps this to 409.
+        assertThrows(IllegalStateException.class, () -> resource.applyApproval(
+                new ScoutUsersResource.ApproveRequest("u1",
+                        Map.of("allowed_facilities", List.of("WUSM")))));
+        verify(target, never()).setAttribute(any(), any());
+        verify(target, never()).joinGroup(any());
+    }
+
+    @Test
+    void approve_with_one_invalid_attribute_writes_nothing() {
+        UserModel target = mock(UserModel.class);
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        // One valid + one invalid value: validateAttributes runs over the whole
+        // batch before applyApproval writes anything, so a single bad value must
+        // leave nothing set and no group joined (the validate-before-write
+        // invariant), independent of map iteration order.
+        Map<String, List<String>> attrs = new HashMap<>();
+        attrs.put("allowed_facilities", List.of("WUSM"));
+        attrs.put("mask_phi_fields", List.of("bogus"));
+        assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
+                new ScoutUsersResource.ApproveRequest("u1", attrs)));
+        verify(target, never()).setAttribute(any(), any());
+        verify(target, never()).joinGroup(any());
+    }
+
+    // --- validate: free-text (pattern) dimensions ---------------------------
+    // The shared profileConfig() uses options-validated attributes, which return
+    // from validate() before its pattern branch. These hit the pattern path
+    // directly -- the mechanism behind space-tolerant facility names like
+    // "HOME CARE SERVICES" (policy/trino/main.rego widened its value pattern to
+    // match). A free-text dimension is a pattern validation with no options.
+
+    @Test
+    void validate_accepts_pattern_matches_including_spaces() {
+        UPAttribute facility = new UPAttribute("allowed_facilities");
+        facility.setMultivalued(true);
+        facility.setValidations(patternValidation("^[A-Za-z0-9 _-]+$"));
+
+        // Must not throw: the pattern allows spaces, hyphens, and underscores.
+        resource.validate(facility, List.of("HOME CARE SERVICES", "WUSM"));
+    }
+
+    @Test
+    void validate_rejects_pattern_mismatch() {
+        UPAttribute facility = new UPAttribute("allowed_facilities");
+        facility.setMultivalued(true);
+        facility.setValidations(patternValidation("^[A-Za-z0-9 _-]+$"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> resource.validate(facility, List.of("bad;value")));
     }
 
     // --- pending ------------------------------------------------------------
@@ -290,6 +356,10 @@ class ScoutUsersResourceTest {
 
         assertThrows(IllegalStateException.class, () -> resource.demote("u1"));
         verify(target, never()).leaveGroup(any());
+        // Pin the rejection to the admin-count query (paginated to 2). Without
+        // this, Mockito's default empty stream also yields count 0 <= 1, so the
+        // test would pass even if the count path were never run or its args drifted.
+        verify(users).getGroupMembersStream(realm, scoutAdminGroup, 0, 2);
     }
 
     // --- offboard -----------------------------------------------------------
@@ -336,6 +406,7 @@ class ScoutUsersResourceTest {
 
         assertThrows(IllegalStateException.class, () -> resource.offboard("actor", "u1"));
         verify(target, never()).leaveGroup(any());
+        verify(users).getGroupMembersStream(realm, scoutAdminGroup, 0, 2);
     }
 
     // --- console projection -------------------------------------------------
