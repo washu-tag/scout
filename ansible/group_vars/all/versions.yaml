@@ -127,7 +127,7 @@ prometheus_helm_chart_version: ~27.52.0
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=loki
 loki_helm_chart_version: ~6.49.0
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=alloy
-alloy_helm_chart_version: ~1.8.1
+alloy_helm_chart_version: ~1.8.2
 
 # Container Registry
 # renovate: datasource=helm registryUrl=https://helm.goharbor.io depName=harbor
