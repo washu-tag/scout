@@ -228,10 +228,12 @@ allow if {
 #   }
 # Adding a new restriction dimension is a data update — no rule edit.
 
-# Permissive regex for filter values: alphanumeric + `_` + `-`. Tight enough
-# to drop SQL-injection attempts, broad enough for facility codes (WUSM),
-# modality codes (CT, MR), and similar short categorical values.
-filter_value_pattern := `^[A-Za-z0-9_-]+$`
+# Permissive regex for filter values: alphanumeric, space, `_`, `-`. Tight enough
+# to drop SQL-injection attempts — quotes, semicolons, parens, anything that could
+# break out of the single-quoted IN list — broad enough for facility codes (WUSM),
+# modality codes (CT, MR), and multi-word facility names like "HOME CARE SERVICES".
+# A space is safe: the value is always single-quoted, so it can't break out.
+filter_value_pattern := `^[A-Za-z0-9 _-]+$`
 
 input_table := {
 	"catalog": input.action.resource.table.catalogName,
