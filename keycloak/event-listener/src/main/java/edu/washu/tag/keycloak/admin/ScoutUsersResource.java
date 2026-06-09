@@ -376,10 +376,22 @@ public class ScoutUsersResource {
         return user.getUsername();
     }
 
-    /** Enforce the attribute's own constraints (options / pattern / cardinality). */
+    /** Enforce the attribute's own constraints (length / options / pattern / cardinality). */
     void validate(UPAttribute attr, List<String> values) {
         if (!attr.isMultivalued() && values.size() > 1) {
             throw new IllegalArgumentException(attr.getName() + " is single-valued");
+        }
+        // Honor the realm's length:{max} so this SPI and Keycloak's own write path
+        // (LengthValidator via UserProfile) agree on what's valid. The realm template
+        // renders only `max`, applied to every value regardless of options/pattern.
+        Integer max = maxLength(attr);
+        if (max != null) {
+            for (String v : values) {
+                if (v.length() > max) {
+                    throw new IllegalArgumentException(
+                            attr.getName() + ": '" + v + "' exceeds the maximum length of " + max);
+                }
+            }
         }
         List<String> opts = options(attr);
         if (!opts.isEmpty()) {
@@ -584,6 +596,22 @@ public class ScoutUsersResource {
         Map<String, Object> p = validation(attr, "pattern");
         Object pattern = p == null ? null : p.get("pattern");
         return pattern == null ? null : pattern.toString();
+    }
+
+    private Integer maxLength(UPAttribute attr) {
+        Map<String, Object> length = validation(attr, "length");
+        Object max = length == null ? null : length.get("max");
+        if (max == null) {
+            return null;
+        }
+        if (max instanceof Number n) {
+            return n.intValue();
+        }
+        try {
+            return Integer.valueOf(max.toString().trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private Map<String, Object> validation(UPAttribute attr, String key) {

@@ -113,6 +113,10 @@ class ScoutUsersResourceTest {
         return Map.of("pattern", Map.of("pattern", pattern));
     }
 
+    private Map<String, Map<String, Object>> maxLengthValidation(int max) {
+        return Map.of("length", Map.of("max", max));
+    }
+
     // --- schema: dynamic discovery -----------------------------------------
 
     @Test
@@ -250,6 +254,27 @@ class ScoutUsersResourceTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> resource.validate(facility, List.of("bad;value")));
+    }
+
+    @Test
+    void validate_rejects_value_over_max_length() {
+        UPAttribute facility = new UPAttribute("allowed_facilities");
+        facility.setMultivalued(true);
+        facility.setValidations(maxLengthValidation(8));
+
+        // 18 chars > the configured max of 8 -- the realm's length:{max} that
+        // Keycloak's own write path enforces but the SPI used to skip.
+        assertThrows(IllegalArgumentException.class,
+                () -> resource.validate(facility, List.of("HOME CARE SERVICES")));
+    }
+
+    @Test
+    void validate_accepts_value_within_max_length() {
+        UPAttribute facility = new UPAttribute("allowed_facilities");
+        facility.setMultivalued(true);
+        facility.setValidations(maxLengthValidation(64));
+
+        resource.validate(facility, List.of("HOME CARE SERVICES"));
     }
 
     // --- pending ------------------------------------------------------------
