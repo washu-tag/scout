@@ -34,6 +34,11 @@ ollama:
                 values:
                   - '{{ ollama_min_gpu_memory_gb }}'
 {% endif %}
+  # Required so Ollama can schedule on the reserved GPU node.
+  tolerations:
+    - key: nvidia.com/gpu
+      value: present
+      effect: NoSchedule
   extraEnv:
     - name: OLLAMA_KEEP_ALIVE
       value: '-1'
@@ -158,6 +163,21 @@ extraEnvFrom:
 # Note: WEBUI_SECRET_KEY and OAUTH_CLIENT_SECRET are loaded from secret above
 # REDIS_URL and WEBSOCKET_REDIS_URL are loaded from secret via valueFrom below
 extraEnvVars:
+  # Route RAG embeddings through Ollama instead of OWUI's default
+  # sentence-transformers (which fetches the model from HuggingFace
+  # Hub on first startup). Air-gapped clusters degrade silently
+  # because pod DNS to huggingface.co fails fast, but internet-
+  # connected clusters (CI) succeed slowly: ~250MB of model weights
+  # over 2-3 minutes, racing the open-webui-bootstrap Job's signin
+  # retry budget and causing atomic Helm rollback. Scout doesn't
+  # actively use RAG (Scout Explorer's function_calling: native
+  # bypasses OWUI's RAG auto-injection per the role README), so
+  # the engine choice is functionally moot — but pointing at Ollama
+  # prevents the HF lookup entirely and makes startup deterministic
+  # everywhere.
+  - name: RAG_EMBEDDING_ENGINE
+    value: 'ollama'
+
   # Disable local authentication (email/password)
   - name: ENABLE_SIGNUP
     value: 'false'

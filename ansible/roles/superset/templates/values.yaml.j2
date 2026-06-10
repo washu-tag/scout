@@ -12,6 +12,21 @@ extraEnvRaw:
         key: REDIS_PASSWORD
 extraSecretEnv:
   SUPERSET_SECRET_KEY: "{{ superset_secret }}"
+  # superset_svc client_credentials — used by DB_CONNECTION_MUTATOR (below)
+  # to mint a JWT for every Trino connection; impersonation of the logged-in
+  # user happens via the X-Trino-User header on the same connection. All
+  # four entries are kept in the *secret* env block so they land in
+  # `superset-env` Secret — the scout-dashboards import Job loads that
+  # Secret via envFrom and needs the same values to mint a token during
+  # dashboard-import dataset validation.
+  KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET: "{{ keycloak_superset_svc_client_secret }}"
+  # Internal in-cluster URL for service-to-service token minting --
+  # bypasses Traefik + the external cert. The user-facing OAuth flow
+  # still uses keycloak_oidc_token_url (the external HTTPS URL) via
+  # the SUPERSET_OAUTH_USER_INFO_URL / etc. block below.
+  KEYCLOAK_TOKEN_URL: "{{ keycloak_internal_token_url }}"
+  KEYCLOAK_SUPERSET_SVC_CLIENT_ID: "superset_svc"
+  TRINO_CA_CERT: /etc/trino-ca/ca.crt
 ingress:
   enabled: true
   ingressClassName: traefik
@@ -154,6 +169,8 @@ configOverrides:
     ENABLE_PROXY_FIX = True
   prometheus_metrics: |
 {{ lookup('file', role_path + '/files/superset_metrics.py') | indent(4, first=True) }}
+  trino_auth: |
+{{ lookup('file', role_path + '/files/superset_trino_auth.py') | indent(4, first=True) }}
   statsd_logging: |
     from superset.stats_logger import StatsdStatsLogger
     STATS_LOGGER = StatsdStatsLogger(
@@ -169,6 +186,15 @@ extraVolumes:
   - name: statsd-mapping
     configMap:
       name: superset-statsd-mapping
+  # CA cert from the same Secret cert-manager populates for Trino's TLS
+  # listener. DB_CONNECTION_MUTATOR passes /etc/trino-ca/ca.crt as the
+  # http_session.verify so Trino's self-signed cert is trusted.
+  - name: trino-ca
+    secret:
+      secretName: trino-tls
+      items:
+        - key: ca.crt
+          path: ca.crt
 extraVolumeMounts:
   - name: scout-logo
     mountPath: /app/superset/static/assets/images/scout.png
@@ -177,6 +203,9 @@ extraVolumeMounts:
   - name: scout-logo
     mountPath: /app/superset/static/assets/images/favicon.ico
     subPath: favicon.ico
+    readOnly: true
+  - name: trino-ca
+    mountPath: /etc/trino-ca
     readOnly: true
 init:
   # Override the apache/superset chart's default firstname/lastname so the

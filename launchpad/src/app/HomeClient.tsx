@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
-import { SiGrafana, SiKeycloak, SiMinio, SiTemporal, SiPython } from 'react-icons/si';
+import { SiGrafana, SiMinio, SiTemporal, SiPython } from 'react-icons/si';
 import {
   HiArrowRight,
   HiCube,
@@ -17,7 +17,9 @@ import {
   HiOutlineChat,
 } from 'react-icons/hi';
 import TopBar from '@/components/TopBar';
+import Brand from '@/components/Brand';
 import AdminSection from '@/components/AdminSection';
+import { subdomainUrl } from '@/lib/subdomainUrl';
 
 const TONE = {
   indigo: {
@@ -372,7 +374,20 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
             <div className="grid grid-cols-2 gap-3 flex-1">
               {[
                 {
+                  href: '/admin/users',
+                  external: false,
+                  label: 'Users',
+                  description: 'Approve requests and manage user access',
+                  Icon: HiClipboardCheck,
+                  iconBg:
+                    'bg-indigo-50 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50',
+                  iconColor: 'text-indigo-600 dark:text-indigo-400',
+                  hoverBorder: 'hover:border-indigo-200 dark:hover:border-indigo-900/60',
+                  hoverShadow: 'hover:shadow-indigo-200/50 dark:hover:shadow-indigo-500/15',
+                },
+                {
                   href: subdomainUrls.minio,
+                  external: true,
                   label: 'Lake',
                   description: 'Medical data lake storage',
                   Icon: SiMinio,
@@ -383,6 +398,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 },
                 {
                   href: subdomainUrls.temporal,
+                  external: true,
                   label: 'Orchestrator',
                   description: 'Ingestion and characterization workflows',
                   Icon: SiTemporal,
@@ -393,6 +409,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 },
                 {
                   href: subdomainUrls.grafana,
+                  external: true,
                   label: 'Monitor',
                   description: 'Metrics, logs, and dashboards',
                   Icon: SiGrafana,
@@ -402,22 +419,11 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                   hoverBorder: 'hover:border-orange-200 dark:hover:border-orange-900/60',
                   hoverShadow: 'hover:shadow-orange-200/50 dark:hover:shadow-orange-500/15',
                 },
-                {
-                  href: subdomainUrls.keycloak,
-                  label: 'Users',
-                  description: 'Authentication and identity',
-                  Icon: SiKeycloak,
-                  iconBg: 'bg-blue-50 border-blue-100 dark:bg-blue-950/40 dark:border-blue-900/50',
-                  iconColor: 'text-blue-600 dark:text-blue-400',
-                  hoverBorder: 'hover:border-blue-200 dark:hover:border-blue-900/60',
-                  hoverShadow: 'hover:shadow-blue-200/50 dark:hover:shadow-blue-500/15',
-                },
               ].map((tool) => (
                 <a
                   key={tool.label}
                   href={tool.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...(tool.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   className={`group flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 no-underline ${tool.hoverBorder} ${tool.hoverShadow}`}
                 >
                   <div
@@ -464,23 +470,16 @@ export default function HomeClient({
 
   // Generate all subdomain URLs once on client side where window is available.
   useEffect(() => {
-    const protocol = window.location.protocol;
-    const host = window.location.host;
-    const getUrl = (subdomain: string, path: string = '') => {
-      const normalizedPath = path ? (path.startsWith('/') ? path : `/${path}`) : '';
-      return `${protocol}//${subdomain}.${host}${normalizedPath}`;
-    };
     setSubdomainUrls({
-      jupyter: getUrl('jupyter'),
-      superset: getUrl('superset'),
+      jupyter: subdomainUrl('jupyter'),
+      superset: subdomainUrl('superset'),
       // Route Chat through OWUI's OIDC entrypoint so cold-session clicks
       // silent-SSO via Keycloak instead of bouncing to OWUI's /auth page.
-      chat: getUrl('chat', '/oauth/oidc/login'),
-      playbooks: getUrl('playbooks'),
-      minio: getUrl('minio'),
-      temporal: getUrl('temporal', '/auth/sso'),
-      grafana: getUrl('grafana'),
-      keycloak: getUrl('keycloak', '/admin/scout/console'),
+      chat: subdomainUrl('chat', '/oauth/oidc/login'),
+      playbooks: subdomainUrl('playbooks'),
+      minio: subdomainUrl('minio'),
+      temporal: subdomainUrl('temporal', '/auth/sso'),
+      grafana: subdomainUrl('grafana'),
     });
   }, []);
 
@@ -529,24 +528,15 @@ export default function HomeClient({
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30 transition-colors duration-500 flex items-center justify-center py-12">
       {/* Floating header — brand on left, TopBar on right */}
       <div className="absolute top-0 left-0 right-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div className="max-w-content mx-auto px-6 py-6 flex items-center justify-between">
           {/* Brand strip */}
-          <div className="flex items-center gap-2.5">
-            <div className="p-0.5 rounded-md bg-gradient-to-br from-indigo-500 to-indigo-700">
-              <img src="/scout.png" alt="Scout" className="h-7 w-7 rounded bg-white p-0.5 block" />
-            </div>
-            <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 tracking-tight">
-              Scout
-            </span>
-            <span className="text-slate-300 dark:text-slate-700 text-sm">/</span>
-            <span className="text-sm text-slate-500 dark:text-slate-400">{environment}</span>
-          </div>
+          <Brand crumbs={[environment]} />
           <TopBar />
         </div>
       </div>
 
       <div
-        className={`w-full max-w-7xl px-6 pt-12 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        className={`w-full max-w-content px-6 pt-12 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
         {/* Content Grid */}
         <ContentGrid

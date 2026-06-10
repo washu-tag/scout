@@ -399,7 +399,7 @@ This section documents all files containing version strings. The Release Workflo
 
 | File | Variable |
 |------|----------|
-| `ansible/roles/scout_common/defaults/main.yaml` | `jupyter_singleuser_image_tag` |
+| `ansible/roles/scout_common/defaults/main.yaml` | `scout_notebook_image_tag` |
 | `ansible/roles/extractor/defaults/main.yaml` | `hl7log_extractor_image_tag` |
 | `ansible/roles/extractor/defaults/main.yaml` | `hl7_transformer_image_tag` |
 | `ansible/roles/launchpad/defaults/main.yaml` | `launchpad_image_tag` |
@@ -446,7 +446,7 @@ This section documents all files containing version strings. The Release Workflo
 | `helm/hive-metastore/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Hive version |
 | `helm/voila/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Voila version |
 | `helm/open-webui-bootstrap/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` is unused — chart orchestrates a Job against the runtime-discovered OWUI image |
-| `helm/voila/values.yaml` | `image.tag` | `latest` | Uses pyspark-notebook image |
+| `helm/voila/values.yaml` | `image.tag` | `latest` | Uses scout-notebook image (shared with JupyterHub singleuser) |
 | `helm/scout-dashboards/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` is unused — chart orchestrates Superset asset imports |
 
 ### VERSION Files
@@ -454,7 +454,7 @@ This section documents all files containing version strings. The Release Workflo
 | File | Dev Value |
 |------|-----------|
 | `extractor/hl7-transformer/VERSION` | `latest` |
-| `helm/jupyter/notebook/VERSION` | `latest` |
+| `helm/scout-notebook/VERSION` | `latest` |
 
 ## Files NOT to Update
 

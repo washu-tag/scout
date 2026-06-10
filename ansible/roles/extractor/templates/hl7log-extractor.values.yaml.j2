@@ -51,6 +51,7 @@ config:
     s3:
       endpoint: '{{ s3_endpoint }}'
       region: '{{ s3_region }}'
+      path-style-access: {{ (not aws_deployment) | string | lower }}
     spring:
       datasource:
         url: '{{ jdbc_url }}/{{ ingest_postgres_table_name }}'
@@ -69,5 +70,5 @@ config:
           splitAndUploadHeartbeatTimeout: {{ hl7log_extractor_heartbeat_timeout | default(30) }}
           splitAndUploadConcurrency: {{ hl7log_extractor_concurrency | default(150) }}
         ingestHl7ToDeltaLake:
-          deltaIngestTimeout: {{ hl7_transformer_timeout | default(60) }}
+          deltaIngestTimeout: {{ hl7_transformer_timeout | default(480) }}
           reportTableName: '{{ report_delta_table_name }}'

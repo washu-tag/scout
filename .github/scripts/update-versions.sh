@@ -69,9 +69,9 @@ update_file() {
 echo ""
 echo "Ansible role defaults (Docker image tags)..."
 update_file "ansible/roles/scout_common/defaults/main.yaml" \
-    "^(jupyter_singleuser_image_tag:) .+$" \
+    "^(scout_notebook_image_tag:) .+$" \
     "\\1 $DOCKER_TAG" \
-    "jupyter_singleuser_image_tag"
+    "scout_notebook_image_tag"
 
 update_file "ansible/roles/extractor/defaults/main.yaml" \
     "^(hl7log_extractor_image_tag:) .+$" \
@@ -183,8 +183,8 @@ update_file "helm/voila/values.yaml" \
 
 echo ""
 echo "VERSION files..."
-echo "$DOCKER_TAG" > "helm/jupyter/notebook/VERSION"
-echo "  - VERSION file: helm/jupyter/notebook/VERSION"
+echo "$DOCKER_TAG" > "helm/scout-notebook/VERSION"
+echo "  - VERSION file: helm/scout-notebook/VERSION"
 
 echo ""
 echo "Version update complete!"

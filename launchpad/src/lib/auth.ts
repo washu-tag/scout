@@ -12,21 +12,24 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, account, profile }) {
+      // Only the refresh token goes in the session cookie — NOT the access token.
+      // An admin's access token carries dozens of roles and pushes the (JWE)
+      // session cookie past the browser/proxy size limit, which intermittently
+      // drops the session (phantom sign-outs). The /api/users proxy mints a fresh
+      // access token from the refresh token per request instead.
       if (account) {
-        token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
       }
       if (profile) {
         token.username = profile.preferred_username as string;
-        token.groups = profile.groups as string[];
+        // Resolve admin once at login; store the flag, not the (large) groups array.
+        token.isAdmin = isAdminUser(profile.groups as string[]);
       }
       return token;
     },
     async session({ session, token }) {
       session.user.username = token.username as string;
-      session.user.groups = token.groups as string[];
-      // Add admin role to session based on Keycloak groups
-      session.user.isAdmin = isAdminUser(token.groups as string[]);
+      session.user.isAdmin = token.isAdmin as boolean;
       return session;
     },
   },

@@ -175,7 +175,6 @@
             "country": "USA",
             "orc_2_placer_order_number": null,
             "obr_2_placer_order_number": "1804679",
-            "patient_age": null,
             "orc_3_filler_order_number": null,
             "obr_3_filler_order_number": "620943125",
             "service_name": "US ABDOMEN LIMITED",
@@ -198,7 +197,6 @@
             "country": "",
             "orc_2_placer_order_number": "",
             "obr_2_placer_order_number": "96932",
-            "patient_age": null,
             "orc_3_filler_order_number": "",
             "obr_3_filler_order_number": "620943126",
             "service_name": "XR ABDOMEN AP 1 VIEW",
@@ -221,7 +219,6 @@
             "country": "USA",
             "orc_2_placer_order_number": "8989586",
             "obr_2_placer_order_number": "8989586",
-            "patient_age": "83",
             "orc_3_filler_order_number": "620943127",
             "obr_3_filler_order_number": "620943127",
             "service_name": "XR ABDOMEN AP 1 VIEW",
@@ -255,10 +252,6 @@
           {
             "type": ".IntegerType",
             "columnName": "year"
-          },
-          {
-            "type": ".IntegerType",
-            "columnName": "patient_age"
           }
         ]
       },

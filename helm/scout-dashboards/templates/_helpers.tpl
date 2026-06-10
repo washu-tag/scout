@@ -55,7 +55,7 @@ import Job's checksum/config annotation.
 */}}
 {{- define "scout-dashboards.databaseYaml" -}}
 database_name: Scout Data Lake
-sqlalchemy_uri: trino://{{ .Values.trino.user }}@trino.{{ .Values.trino.namespace }}:8080/delta
+sqlalchemy_uri: trino://{{ .Values.trino.user }}@trino.{{ .Values.trino.namespace }}:{{ .Values.trino.port | default 8080 }}/delta{{- if eq (.Values.trino.scheme | default "http") "https" }}?http_scheme=https{{- end }}
 cache_timeout: null
 expose_in_sqllab: true
 allow_run_async: false

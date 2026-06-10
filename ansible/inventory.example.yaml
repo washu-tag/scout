@@ -81,9 +81,18 @@ server:
       k3s_control_node: true
       external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
   vars:
-    # Traefik
+    # Traefik TLS. Default tls_mode is file. For cert-manager uncomment below.
     tls_cert_path: ''
     tls_key_path: ''
+    # tls_mode: cert_manager
+    # cert_manager_acme_account_email: you@your-org.edu
+    # acmedns_host: https://acme.your-org.edu
+    # acmedns_credentials: $(cat acmedns.json | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # # On air-gapped clusters, point the DNS-01 propagation check at a
+    # # resolver that can see the public acme-dns zone:
+    # # cert_manager_dns01_recursive_nameservers: ['<internal-resolver-ip>:53']
+    # # Let's Encrypt production ACME server (uncomment to use; default is staging):
+    # # cert_manager_acme_server: https://acme-v02.api.letsencrypt.org/directory
 
 # The workers group contains the worker nodes for the k3s cluster.
 workers:
@@ -227,6 +236,12 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
+    # GPU node taint - on by default. Taints every host in `gpu_workers`
+    # with `nvidia.com/gpu=present:NoSchedule`. Disable on small/dev
+    # clusters where the GPU node's spare capacity is needed for non-GPU
+    # pods.
+    # enable_gpu_node_taint: false
+
     # CoreDNS custom DNS configuration (see docs/source/technical/inventory.md)
     # When air_gapped: true, CoreDNS automatically gets deny-all + cluster.local blocks
     #
@@ -284,6 +299,15 @@ k3s_cluster:
     keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_open_webui_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # Trino AuthZ service principals (ADR 0022): Superset, Voila, and the Open
+    # WebUI MCP each authenticate to Trino as a dedicated Keycloak client and
+    # impersonate the end user via X-Trino-User.
+    keycloak_superset_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_voila_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_openwebui_mcp_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # Trino file-based PASSWORD authenticator entry for the Open WebUI MCP
+    # (tuannvm/mcp-trino speaks HTTP Basic outbound only — ADR 0022).
+    trino_openwebui_mcp_svc_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
@@ -385,6 +409,10 @@ k3s_cluster:
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_lake_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_lake_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # OPA bundle bucket credentials (ADR 0021): the Keycloak SPI writes the
+    # user-attribute bundle; each OPA pod reads it.
+    s3_opa_bundle_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    s3_opa_bundle_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     minio_resources:
       requests:
         cpu: 2

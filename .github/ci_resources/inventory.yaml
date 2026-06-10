@@ -21,7 +21,7 @@ k3s_cluster:
     superset_image_repository: docker.io/local/washu-tag/superset
     keycloak_image_repository: docker.io/local/washu-tag/keycloak
     keycloak_image_pull_policy: IfNotPresent
-    jupyter_singleuser_image_name: docker.io/local/washu-tag/pyspark-notebook
+    scout_notebook_image_name: docker.io/local/washu-tag/scout-notebook
 
     # TLS (self-signed certs generated in CI step)
     tls_cert_path: /tmp/scout-ci-tls/cert.pem
@@ -89,7 +89,6 @@ k3s_cluster:
     hive_readonly_postgres_password: hivero123
     superset_postgres_user: superset
     superset_postgres_password: superset123
-    postgres_resources: {} # No resource requests/limits
     postgres_parameters: {} # Use PG defaults
     postgres_storage_size: 5Gi
 
@@ -98,16 +97,12 @@ k3s_cluster:
     elasticsearch_storage_size: 1Gi
 
     # Local paths
+    # base_dir is consumed by k3s as --default-local-storage-path for the
+    # local-path provisioner; the per-service *_dir variables that used to
+    # live here are dead since storage moved to dynamic provisioning
+    # (ADR 0004).
     base_dir: /var/lib
     scout_repo_dir: WORK_DIR
-    minio_dir: '{{ base_dir }}/minio'
-    cassandra_dir: '{{ base_dir }}/cassandra'
-    elasticsearch_dir: '{{ base_dir }}/elasticsearch'
-    postgres_dir: '{{ base_dir }}/postgres'
-    prometheus_dir: '{{ base_dir }}/prometheus'
-    loki_dir: '{{ base_dir }}/loki'
-    grafana_dir: '{{ base_dir }}/grafana'
-    jupyter_dir: '{{ base_dir }}/jupyter'
     extractor_data_dir: '{{ scout_repo_dir }}/tests/ingest/staging_test_data'
 
     # Object storage paths
@@ -118,11 +113,74 @@ k3s_cluster:
     trino_worker_count: 1
     trino_worker_max_heap: 512M
     trino_coordinator_max_heap: 512M
+    # RW Trino kept on so the NetworkPolicy tests have a real
+    # service to probe, but slimmed hard: half the default CPU,
+    # half the heap, and no jmx-exporter sidecar (nothing scrapes
+    # trino-rw metrics in smoke-test). The combined save is enough
+    # for the seed/test Jobs to fit on the 4-CPU runner alongside
+    # the full Scout stack.
+    trino_rw_coordinator_max_heap: 256M
+    trino_rw_worker_max_heap: 256M
+    trino_rw_coordinator_resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    trino_rw_worker_resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    trino_rw_jmx_enabled: false
+
+    # Trino AuthZ (ADR 0020 + 0021 + 0022 + 0023): the smoke-test data-authorization
+    # Job seeds delta.default.test_reports with synthetic rows across
+    # facilities and modalities, then asserts row filtering + masking
+    # behavior. Production filters reports/_curated/_latest/_dx; CI
+    # filters test_reports instead so the assertions are deterministic
+    # without running the full HL7 ingest pipeline.
+    trino_filtered_tables:
+      - { catalog: delta, schema: default, table: test_reports }
+    # Two-dimension fixture so multi-filter compositions are exercised:
+    # allowed_facilities AND allowed_modalities both clamp rows.
+    # The hidden-tables / bypass scenarios (authz-tests/run.sh scenarios 6+7)
+    # probe reports_report_patient_mapping, which is denied via the
+    # hardcoded baseline in policy/trino/main.rego — no trino_hidden_tables
+    # entry needed here.
+    trino_attribute_filters:
+      allowed_facilities:
+        column: sending_facility
+      allowed_modalities:
+        column: modality
 
     # Spark default of 200 shuffle partitions is far too many for CI's
     # small test data — each shuffle spawns 200 tasks, most processing
     # zero rows, and scheduling overhead dominates.
     spark_sql_shuffle_partitions: 8
+
+    # The deploy_and_test CI job exercises the full ingest workflow but
+    # doesn't deploy the trino playbook, so trino-rw isn't available. Disable
+    # the Trino-side view creation in add_epic_views to keep the test focused
+    # on the ingest path itself. The smoke-test job doesn't deploy the
+    # extractor at all, so this flag has no effect there.
+    trino_view_enabled: false
+
+    # Trino AuthZ secrets (ADR 0022). Required by the trino role's
+    # AuthZ env Secret + bcrypt password.db. Production deployments set
+    # these in scout-inventory; CI sets fixed test values so the
+    # smoke-test deploy doesn't fail at template render.
+    trino_internal_shared_secret: ci-trino-internal-shared-secret
+    # Bcrypt-hashed at deploy time via htpasswd (see roles/trino/
+    # templates/password.db.j2) into the openwebui_mcp_svc entry the
+    # role's defaults wire up. The data-authorization tests don't
+    # exercise the PASSWORD auth path -- they use service-principal
+    # JWT with X-Trino-User -- but mcp-trino's HTTP Basic outbound
+    # requires the entry to exist.
+    trino_openwebui_mcp_svc_password: ci-trino-mcp-svc-pw
 
     # Valkey (single shared password for all services)
     valkey_password: valkey123
@@ -145,6 +203,32 @@ k3s_cluster:
     keycloak_minio_client_secret: ci-secret-00000006
     keycloak_launchpad_client_secret: ci-secret-00000007
     keycloak_open_webui_client_secret: ci-secret-00000008
+    # Trino AuthZ service principals (ADR 0022). Same client-credentials
+    # pattern as the regular client secrets above; one per Trino-backed
+    # surface that impersonates end users via X-Trino-User. The realm
+    # template references all three unconditionally; without them defined
+    # the realm import fails to render.
+    keycloak_superset_svc_client_secret: ci-secret-svc-superset
+    keycloak_openwebui_mcp_svc_client_secret: ci-secret-svc-mcp
+    keycloak_voila_svc_client_secret: ci-secret-svc-voila
+
+    # OPA bundle writer/reader (ADR 0021). Same shape as s3_lake_*
+    # secrets; one is mounted into the Keycloak pod for the bundle
+    # publisher SPI to PUT bundles, the other into each OPA pod for
+    # the bundle plugin to GET them.
+    s3_opa_bundle_writer_secret: ci-opa-bundle-writer
+    s3_opa_bundle_reader_secret: ci-opa-bundle-reader
+
+    # Single OPA replica in CI. Production runs two for availability,
+    # but in tests each replica polls MinIO independently on a 5–10s
+    # interval — so wait_for_bundle (Service-LB'd) can confirm pod A
+    # has the new bundle while Trino's next /rowFilters or /allow
+    # call lands on pod B with the older revision. That's the actual
+    # behavior in production too, just hidden by user-attribute
+    # changes happening on minute-to-hour scales rather than the
+    # sub-second cadence of these tests. Tests want determinism, prod
+    # wants HA — split the value.
+    opa_replicas: 1
 
     # Superset
     superset_secret: Y2ktc3VwZXJzZXQtc2VjcmV0LWtleS1mb3ItdGVzdGluZw==

@@ -34,7 +34,7 @@ Selecting **Chat** from the Launchpad provides an AI-powered interface for natur
 
 #### Scout Notebooks
 
-Selecting **Notebooks** from the Launchpad launches JupyterHub with notebooks preloaded with [PySpark](https://spark.apache.org/docs/latest/api/python/index.html) for completely customizable data analysis. An example Jupyter notebook with sample code to access and analyze data is provided in `Scout/Quickstart.ipynb`. This notebook provides example code using Spark SQL to search for reports, filter by various criteria, and export results to CSV files.
+Selecting **Notebooks** from the Launchpad launches JupyterHub with notebooks that query the data lake through [Trino](https://trino.io/) for fully customizable data analysis. An example Jupyter notebook with sample code to access and analyze data is provided in `Scout/Quickstart.ipynb`. This notebook provides example code using pandas with SQL to search for reports, filter by various criteria, and export results to CSV files.
 
 ![Scout Quickstart Notebook](images/ScoutQuickstartNotebook.png)
 
@@ -47,6 +47,8 @@ Selecting **Notebooks** from the Launchpad launches JupyterHub with notebooks pr
 * **[Chat Guide](chat.md)**: Explore the AI-powered chat interface for natural language queries (if enabled in your deployment)
 
 * **[Authentication](authentication.md)**: Learn about Scout's single sign-on authentication and user approval process
+
+* **[Data Authorization](data_authorization.md)**: Per-user row filtering and column masking — how Scout decides what data each user can see, and how administrators configure it
 
 * **[Report Ingestion](ingest.md)**: Understand how HL7 reports are ingested and processed into the data lake
 
@@ -64,5 +66,6 @@ chat
 ingest
 tips
 authentication
+data_authorization
 technical/index
 ```

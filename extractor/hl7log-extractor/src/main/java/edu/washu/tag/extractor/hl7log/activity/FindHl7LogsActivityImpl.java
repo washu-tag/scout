@@ -160,49 +160,75 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                     "WorkflowId {} ActivityId {} - Finding HL7 log files for path {}",
                     activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPathString
                 );
-                Path logPath = Paths.get(logPathString);
-                List<String> matchingLogs = new ArrayList<>();
-                if (Files.isDirectory(logPath)) {
-                    try {
-                        Files.walkFileTree(logPath, new SimpleFileVisitor<>() {
-                            @Override
-                            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
-                                String fileName = path.getFileName().toString();
-
-                                if (attrs.isRegularFile() && logFileFilter.test(fileName)) {
-                                    matchingLogs.add(path.toString());
-                                }
-                                return FileVisitResult.CONTINUE;
-                            }
-
-                            @Override
-                            public FileVisitResult visitFileFailed(Path file, IOException innerException) {
-                                logger.warn(
-                                    "WorkflowId {} ActivityId {} - Error accessing file {} during directory walk",
-                                    activityInfo.getWorkflowId(), activityInfo.getActivityId(),
-                                    file, innerException
-                                );
-                                return FileVisitResult.CONTINUE;
-                            }
-                        });
-                    } catch (IOException e) {
-                        logger.warn(
-                            "WorkflowId {} ActivityId {} - Error finding log files in directory {}",
-                            activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPathString, e
-                        );
-                        return Collections.<String>emptyList();
-                    }
-                } else {
-                    // If a user has passed a file, don't filter for anything but date (if they've passed a file plus a mismatched date,
-                    // they should get an error)
-                    String fileName = logPath.getFileName().toString();
-                    if (dateFilter.test(fileName)) {
-                        matchingLogs.add(logPath.toString());
-                    }
+                if (FileHandler.isS3Uri(logPathString)) {
+                    return findLogFilesS3(logPathString, dateFilter, logFileFilter);
                 }
-                return matchingLogs;
+                return findLogFilesFilesystem(logPathString, dateFilter, logFileFilter, activityInfo);
             })
             .flatMap(List::stream)
+            .toList();
+    }
+
+    private List<String> findLogFilesFilesystem(String logPathString, Predicate<String> dateFilter, Predicate<String> logFileFilter,
+                                                ActivityInfo activityInfo) {
+        Path logPath = Paths.get(logPathString);
+        List<String> matchingLogs = new ArrayList<>();
+        if (Files.isDirectory(logPath)) {
+            try {
+                Files.walkFileTree(logPath, new SimpleFileVisitor<>() {
+                    @Override
+                    public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                        String fileName = path.getFileName().toString();
+
+                        if (attrs.isRegularFile() && logFileFilter.test(fileName)) {
+                            matchingLogs.add(path.toString());
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFileFailed(Path file, IOException innerException) {
+                        logger.warn(
+                            "WorkflowId {} ActivityId {} - Error accessing file {} during directory walk",
+                            activityInfo.getWorkflowId(), activityInfo.getActivityId(),
+                            file, innerException
+                        );
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            } catch (IOException e) {
+                logger.warn(
+                    "WorkflowId {} ActivityId {} - Error finding log files in directory {}",
+                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPathString, e
+                );
+                return Collections.emptyList();
+            }
+        } else {
+            // If a user has passed a file, don't filter for anything but date (if they've passed a file plus a mismatched date,
+            // they should get an error)
+            String fileName = logPath.getFileName().toString();
+            if (dateFilter.test(fileName)) {
+                matchingLogs.add(logPath.toString());
+            }
+        }
+        return matchingLogs;
+    }
+
+    private List<String> findLogFilesS3(String logPathString, Predicate<String> dateFilter, Predicate<String> logFileFilter) {
+        // S3 has no native directory/file distinction. We ask via HeadObject: if the URI is a real
+        // object, treat as a single file; otherwise treat as a prefix and list.
+        //
+        // Note: the single-file branch applies only the date filter (skipping the .log/hidden-file
+        // checks), mirroring the filesystem branch's behavior — when a user explicitly names a file,
+        // we trust they meant it even if its extension isn't .log.
+        URI uri = URI.create(logPathString);
+        if (fileHandler.isFile(uri)) {
+            return dateFilter.test(FileHandler.extractFileName(logPathString))
+                ? List.of(logPathString)
+                : List.of();
+        }
+        return fileHandler.ls(uri).stream()
+            .filter(entry -> logFileFilter.test(FileHandler.extractFileName(entry)))
             .toList();
     }
 

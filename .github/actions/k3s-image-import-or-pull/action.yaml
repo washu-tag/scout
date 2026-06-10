@@ -69,3 +69,12 @@ runs:
             "${LOCAL_IMAGE}"
           echo "Tagged as ${LOCAL_IMAGE}"
         fi
+
+        # docker.io/local/* tags don't exist in any remote registry, so a
+        # kubelet image-GC eviction is unrecoverable mid-deploy. Pin via
+        # containerd's CRI label — kubelet skips pinned images regardless
+        # of disk-pressure thresholds. See PR #405 / run 26583982205 for
+        # the failure mode this prevents.
+        sudo k3s ctr -n k8s.io images label \
+          "${LOCAL_IMAGE}" \
+          io.cri-containerd.pinned=pinned

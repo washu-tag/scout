@@ -92,6 +92,11 @@
               - key: 'node-role.kubernetes.io/control-plane'
                 operator: Exists
                 effect: PreferNoSchedule
+              # Allows the MinIO pool to include the GPU node when
+              # `minio_hosts` lists it.
+              - key: nvidia.com/gpu
+                value: present
+                effect: NoSchedule
             affinity:
               podAntiAffinity:
                 requiredDuringSchedulingIgnoredDuringExecution:
@@ -167,6 +172,28 @@
       }}
   loop: '{{ minio_policies }}'
 
+- name: Build per-user-creds volume mounts for the bootstrap Job
+  # The bootstrap Job's `mc admin user add` step reads each user's
+  # secret key from a per-user mount at /usercreds/<access-key>/
+  # CONSOLE_SECRET_KEY. The Secrets themselves are created earlier in
+  # this play (via minio_users). Building the volumes + mounts lists
+  # in set_fact (loop + accumulator, matching the policy_sources task
+  # above) keeps the Job definition itself as valid YAML — Jinja
+  # control structures inline in structural YAML break prettier.
+  set_fact:
+    bootstrap_user_volume_mounts: >-
+      {{ bootstrap_user_volume_mounts | default([]) + [{
+        'name': 'usercreds-' ~ item.access_key,
+        'mountPath': '/usercreds/' ~ item.access_key,
+        'readOnly': true
+      }] }}
+    bootstrap_user_volumes: >-
+      {{ bootstrap_user_volumes | default([]) + [{
+        'name': 'usercreds-' ~ item.access_key,
+        'secret': {'secretName': item.access_key ~ '-creds'}
+      }] }}
+  loop: '{{ minio_users }}'
+
 - name: Bootstrap MinIO IAM (policies + bindings)
   kubernetes.core.k8s:
     state: present
@@ -205,33 +232,53 @@
                     mc alias set local http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000 \
                       "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure
 
-                    # Apply policies and attach to users
+                    # The MinIO operator's tenant.users reconcile only honors
+                    # the list on first install — adding entries later
+                    # doesn't create new IAM users. Ensure each user exists
+                    # before attaching policies. mc admin user add is
+                    # idempotent (re-runs on existing user succeed quietly).
+                    {% for u in minio_users %}
+                    echo "Ensuring user {{ u.access_key }} exists..."
+                    mc admin user add local {{ u.access_key | quote }} "$(cat /usercreds/{{ u.access_key }}/CONSOLE_SECRET_KEY)"
+                    {% endfor %}
+
+                    # Ensure buckets exist (same reason: tenant.buckets is
+                    # honored on first install only).
+                    {% for b in minio_buckets %}
+                    echo "Ensuring bucket {{ b.name }} exists..."
+                    mc mb --ignore-existing local/{{ b.name }}
+                    {% if b.versioned | default(false) %}
+                    echo "  Enabling versioning on {{ b.name }}..."
+                    mc version enable local/{{ b.name }}
+                    {% endif %}
+                    {% endfor %}
+
+                    # Apply policies and attach to users. consoleAdmin
+                    # detach is tolerant: users created via the operator's
+                    # tenant.users path inherit consoleAdmin and we want to
+                    # strip it; users created via mc admin user add never
+                    # had it, so the detach is a no-op and shouldn't fail
+                    # the script.
                     {% for p in minio_policies %}
                     echo "Creating policy {{ p.name }}..."
-                    mc admin policy create local {{ p.name }} /policies/{{ p.name }}.json
+                    mc admin policy create local {{ p.name }} /policies/{{ p.name }}.json || \
+                      mc admin policy update local {{ p.name }} /policies/{{ p.name }}.json
                     mc admin policy attach local {{ p.name }} --user {{ p.user }}
-                    mc admin policy detach local consoleAdmin --user {{ p.user }}
+                    mc admin policy detach local consoleAdmin --user {{ p.user }} 2>/dev/null || \
+                      echo "  consoleAdmin not attached to {{ p.user }}; skipping detach"
                     {% endfor %}
 
                     echo "MinIO IAM setup completed successfully"
-                volumeMounts:
-                  - name: policies
-                    mountPath: /policies
-                    readOnly: true
-                  - name: rootcreds
-                    mountPath: /rootcreds
-                    readOnly: true
-            volumes:
-              - name: policies
-                projected:
-                  defaultMode: 0644
-                  sources: '{{ policy_sources }}'
-              - name: rootcreds
-                secret:
-                  secretName: "{{ minio_env_secret_name | default('minio-env-configuration') }}"
-                  items:
-                    - key: config.env
-                      path: config.env
+                volumeMounts: >-
+                  {{ [
+                    {'name': 'policies', 'mountPath': '/policies', 'readOnly': true},
+                    {'name': 'rootcreds', 'mountPath': '/rootcreds', 'readOnly': true},
+                  ] + bootstrap_user_volume_mounts }}
+            volumes: >-
+              {{ [
+                {'name': 'policies', 'projected': {'defaultMode': 420, 'sources': policy_sources}},
+                {'name': 'rootcreds', 'secret': {'secretName': minio_env_secret_name | default('minio-env-configuration'), 'items': [{'key': 'config.env', 'path': 'config.env'}]}},
+              ] + bootstrap_user_volumes }}
 
 - name: Wait for bootstrap job to complete
   kubernetes.core.k8s_info:

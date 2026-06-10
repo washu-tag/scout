@@ -10,7 +10,7 @@ Scout uses Ansible to orchestrate deployment of a distributed data analysis plat
 - **Analytics**: Trino query engine and Apache Superset for data visualization
 - **Orchestrator**: Temporal workflow engine with Cassandra and Elasticsearch
 - **Extractor**: HL7 log processing and transformation services
-- **Notebooks**: JupyterHub with PySpark for interactive data analysis
+- **Notebooks**: JupyterHub for interactive data analysis
 - **Monitoring**: Prometheus, Loki, and Grafana for observability
 - **Launchpad**: Central landing page and service navigation hub
 - **AI/ML**: Open WebUI with Ollama for AI-powered chat
@@ -130,7 +130,8 @@ Deploy individual components:
 make install-k3s          # Install K3s cluster
 make install-postgres     # PostgreSQL databases
 make install-lake         # MinIO + Hive metastore
-make install-analytics    # Trino + Superset
+make install-trino        # OPA + Trino
+make install-superset     # Superset
 make install-orchestrator # Temporal + Cassandra + Elasticsearch
 make install-extractor    # HL7 processing services
 make install-jupyter      # JupyterHub
@@ -580,9 +581,6 @@ jupyter_profiles:
       cpu_limit: 8
       mem_guarantee: '8G'
       mem_limit: '32G'
-      environment:
-        SPARK_DRIVER_MEMORY: "24g"
-        SPARK_EXECUTOR_MEMORY: "24g"
       extra_resource_guarantees:
         nvidia.com/gpu: '1'
       extra_resource_limits:
@@ -608,9 +606,6 @@ jupyter_profiles:
       cpu_limit: 2
       mem_guarantee: '1G'
       mem_limit: '4G'
-      environment:
-        SPARK_DRIVER_MEMORY: "3g"
-        SPARK_EXECUTOR_MEMORY: "3g"
 
   - display_name: "Production"
     slug: "prod"
@@ -620,9 +615,6 @@ jupyter_profiles:
       cpu_limit: 8
       mem_guarantee: '8G'
       mem_limit: '32G'
-      environment:
-        SPARK_DRIVER_MEMORY: "24g"
-        SPARK_EXECUTOR_MEMORY: "24g"
 ```
 
 **Example 2: Profiles with size options using profile_option-level `kubespawner_override`**
@@ -647,9 +639,6 @@ jupyter_profiles:
               cpu_limit: 2
               mem_guarantee: '2G'
               mem_limit: '8G'
-              environment:
-                SPARK_DRIVER_MEMORY: "6g"
-                SPARK_EXECUTOR_MEMORY: "6g"
           large:
             display_name: "Large (8 CPU, 32Gi RAM)"
             kubespawner_override:  # Option-level override
@@ -657,9 +646,6 @@ jupyter_profiles:
               cpu_limit: 8
               mem_guarantee: '8G'
               mem_limit: '32G'
-              environment:
-                SPARK_DRIVER_MEMORY: "24g"
-                SPARK_EXECUTOR_MEMORY: "24g"
 
   - display_name: "GPU Accelerated"
     slug: "gpu"
@@ -676,9 +662,6 @@ jupyter_profiles:
               cpu_limit: 8
               mem_guarantee: '16G'
               mem_limit: '64G'
-              environment:
-                SPARK_DRIVER_MEMORY: "48g"
-                SPARK_EXECUTOR_MEMORY: "48g"
               extra_resource_guarantees:
                 nvidia.com/gpu: '1'
               extra_resource_limits:
@@ -690,9 +673,6 @@ jupyter_profiles:
               cpu_limit: 16
               mem_guarantee: '32G'
               mem_limit: '128G'
-              environment:
-                SPARK_DRIVER_MEMORY: "96g"
-                SPARK_EXECUTOR_MEMORY: "96g"
               extra_resource_guarantees:
                 nvidia.com/gpu: '2'
               extra_resource_limits:
@@ -807,7 +787,7 @@ make install-monitor   # Re-run monitoring stack
 Enable debug mode:
 
 ```bash
-DEBUG=1 make install-analytics
+DEBUG=1 make install-trino
 ```
 
 Check diff without making changes:
@@ -841,7 +821,7 @@ Update component versions and redeploy:
 # Update versions in group_vars/all/versions.yaml
 
 # Redeploy component
-make install-analytics
+make install-trino
 ```
 
 ### Scaling
@@ -870,7 +850,8 @@ ansible/
 │   ├── main.yaml                # Main orchestration playbook
 │   ├── k3s.yaml                 # K3s installation
 │   ├── lake.yaml                # Data lake (MinIO + Hive)
-│   ├── analytics.yaml           # Analytics (Trino + Superset)
+│   ├── trino.yaml               # OPA + Trino
+│   ├── superset.yaml            # Superset
 │   ├── orchestrator.yaml        # Temporal workflow engine
 │   └── ...                      # Additional service playbooks
 ├── roles/

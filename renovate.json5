@@ -7,14 +7,23 @@
 
   // Require manual approval on the Dependency Dashboard before opening PRs.
   // This lets the dashboard list all available updates (visibility) without
-  // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below.
+  // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below,
+  // and patch updates bypass this via the packageRules entry below.
   "dependencyDashboardApproval": true,
 
-  // CVE PRs are created automatically (no dashboard approval needed)
+  // Wait 14 days after a release before considering an update. Lets upstream
+  // ship a follow-up patch for any regressions before we adopt the version,
+  // and pairs with the patch-auto-open rule below to keep that flow safe.
+  // Overridden to 0 for CVE alerts so security fixes aren't delayed.
+  "minimumReleaseAge": "14 days",
+
+  // CVE PRs are created automatically (no dashboard approval needed,
+  // no release-age delay)
   "vulnerabilityAlerts": {
     "enabled": true,
     "labels": ["dependencies", "security"],
-    "dependencyDashboardApproval": false
+    "dependencyDashboardApproval": false,
+    "minimumReleaseAge": "0 days"
   },
 
   // Dependency dashboard (GitHub issue) for overview of all detected dependencies
@@ -34,6 +43,14 @@
 
   // Remind reviewers about coupled dependencies
   "packageRules": [
+    // Patch updates bypass dashboard approval and get a PR opened directly.
+    // CI exercises every deployed service end-to-end, so green CI is a
+    // sufficient gate for patch-level changes. Minor/major still require
+    // dashboard approval (the global default).
+    {
+      "matchUpdateTypes": ["patch"],
+      "dependencyDashboardApproval": false
+    },
     // k3s uses non-standard versioning (v1.34.1+k3s1); regex versioning
     // keeps the +k3s suffix locked and tracks the build number
     {
@@ -51,6 +68,35 @@
       "prBodyNotes": [
         "**Reminder:** Check that the pinned `cass_operator_version` supports this Cassandra version. See [K8ssandra release notes](https://github.com/k8ssandra/cass-operator/releases)."
       ]
+    },
+    // Keycloak SPI compatibility: Scout's custom event listeners
+    // (opa-user-bundle-publisher, user-approval-email) and required
+    // action (ScoutTermsRequiredAction) all implement `@SpiType
+    // internal` SPIs, which Keycloak's KC-SERVICES0047 warning flags
+    // as "may change without notice." Stability is high in practice
+    // but breaks have happened at major-version boundaries (notably
+    // 23.x → 24.x added KeycloakSessionFactory to init()). Validate
+    // the listener compiles + the integration tests pass before
+    // merging Keycloak upgrades. See ADR 0021 for the SPI surface.
+    //
+    // Group the Keycloak server with keycloak-config-cli (adorsys)
+    // because the cli's tag bundles a Keycloak-compat version
+    // (e.g. `6.5.0-26.5.4`) that needs to track the server. They
+    // drift today -- 26.6.1 server, 26.5.4 cli-compat -- because
+    // adorsys doesn't publish a tag per Keycloak point release.
+    // Grouping puts both bumps in one PR so the reviewer can check
+    // the compat suffix without bouncing between two PRs.
+    {
+      "matchDepNames": [
+        "quay.io/keycloak/keycloak",
+        "quay.io/keycloak/keycloak-operator",
+        "adorsys/keycloak-config-cli"
+      ],
+      "groupName": "Keycloak server + config-cli",
+      "prBodyNotes": [
+        "**SPI compatibility reminder:** Validate the custom SPIs in `keycloak/event-listener/` still compile and the integration tests pass against the new Keycloak version. The eventsListener and required-action SPIs are marked internal (KC-SERVICES0047) and have had compatibility breaks at major-version boundaries. Affected providers: `opa-user-bundle-publisher` (ADR 0021), `user-approval-email`, `ScoutTermsRequiredAction`.",
+        "**Version-coupling reminder:** When the Keycloak server bumps, `keycloak_config_cli_image_tag` should also bump to a tag whose Keycloak-compat suffix matches. E.g. server `26.7.0` → cli tag `*-26.7.0`. Adorsys publishes tags at https://hub.docker.com/r/adorsys/keycloak-config-cli/tags — pick the highest cli version with a matching Keycloak-compat tail. If no matching cli tag exists yet, hold the server bump until one is published; otherwise realm imports may fail on schema-mismatch."
+      ]
     }
   ],
 
@@ -67,6 +113,44 @@
         //   some_version: ~1.2.3
         "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+(?:registryUrl=(?<registryUrl>[^\\s]+)\\s+)?depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n[a-z0-9_]+(?:_version|_tag|_image_tag):\\s*[~']?(?<currentValue>[^\\s']+)"
       ]
+    },
+    // Keycloak version is also baked into two non-yaml files that need
+    // to bump in lockstep with versions.yaml: `keycloak/VERSION` (CI
+    // image-tag derivation -- ghcr.io/washu-tag/keycloak:<this>) and
+    // `keycloak/Dockerfile` FROM lines (the upstream base image used
+    // for the multi-stage build). Renovate groups updates by depName,
+    // so the three managers' matches surface as a single PR per
+    // Keycloak release.
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["keycloak/VERSION"],
+      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)\\s*$"],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "quay.io/keycloak/keycloak"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["keycloak/Dockerfile"],
+      "matchStrings": [
+        "FROM\\s+(?<depName>quay\\.io/keycloak/keycloak):(?<currentValue>[\\d\\.]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    // kcVersion in the SPI build.gradle pins the Keycloak API the SPI
+    // compiles against (keycloak-core/keycloak-services). If the server
+    // bumps but kcVersion doesn't, the SPI keeps building against the
+    // old API surface — easy way to miss an internal-API break (the
+    // eventsListener + RequiredAction SPIs are KC-SERVICES0047 internal
+    // and have had compat breaks at major boundaries). Same depName as
+    // the three managers above so the bump arrives as one PR.
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["keycloak/event-listener/build.gradle"],
+      "matchStrings": [
+        "def\\s+kcVersion\\s*=\\s*\"(?<currentValue>[\\d\\.]+)\""
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "quay.io/keycloak/keycloak"
     }
   ]
 }

@@ -24,3 +24,12 @@ It should be marked as an error: unparsable HL7.
 7. Multiple log files for the same date: [20000216.log](postgres/2000/20000216.log) and [20000216_PORU.log](postgres/2000/20000216_PORU.log)
 share the date 2000-02-16. Both should be ingested successfully, and the HL7 filenames should use the full log filename
 as a prefix (`20000216_0.hl7` and `20000216_PORU_0.hl7` respectively) to avoid collisions.
+
+The original design of these tests allowed for the capability for the [data-generator](https://github.com/washu-tag/data-generator)
+to generate test data with corresponding tests as JSON automatically. However, as we have added more tests, they have required more
+test data with odd edge cases that the data-generator should not create. We've moved away from easy regeneration as a requirement,
+at least in part because the test data has become more mature where it is less likely that it will be needed often.
+Situations we'll need to consider if we pick that design back up include:
+
+1. The test JSON was manually updated to have knowledge of the PORU files manually.
+2. Some patient DOBs in the test files were manually tweaked to cause some edge cases in the patient age tests.

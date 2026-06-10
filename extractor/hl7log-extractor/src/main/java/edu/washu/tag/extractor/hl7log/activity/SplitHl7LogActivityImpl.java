@@ -22,9 +22,9 @@ import io.temporal.workflow.Workflow;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -91,7 +91,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     private static String dateStringFromLogFilePath(String filePath) {
-        String fileName = Paths.get(filePath).getFileName().toString();
+        String fileName = FileHandler.extractFileName(filePath);
         Matcher m = DATE_PATTERN.matcher(fileName);
         if (m.find()) {
             return m.group();
@@ -261,11 +261,18 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String workflowId = activityInfo.getWorkflowId();
         String activityId = activityInfo.getActivityId();
 
-        Path logFilePath = Paths.get(logFile);
+        // Stream the log directly — same code path for filesystem and S3. BufferedReader chunks
+        // reads, so we never hold the full file in memory; the parser heartbeats after each HL7
+        // message, which keeps the activity alive even on slow networks. Closing the reader
+        // closes the underlying InputStream, which for S3 returns the connection to the SDK pool.
+        URI logUri = FileHandler.isS3Uri(logFile)
+            ? URI.create(logFile)
+            : Paths.get(logFile).toUri();
 
         List<Hl7LogEntry> splitHl7LogEntries = new ArrayList<>();
         int hl7Count = 0;
-        try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(fileHandler.open(logUri), StandardCharsets.ISO_8859_1))) {
             String line;
             List<String> hl7Content = new ArrayList<>();
 
@@ -317,8 +324,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String activityId = activityInfo.getActivityId();
 
         List<FileStatus> results = new ArrayList<>(Collections.nCopies(splitHl7LogEntries.size(), null));
-        Path logFilePath = Paths.get(logFile);
-        String logFileName = logFilePath.getFileName().toString();
+        String logFileName = FileHandler.extractFileName(logFile);
         String logFileNameNoExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
         String logFileDate = Objects.requireNonNull(
             dateStringFromLogFilePath(logFileNameNoExtension),

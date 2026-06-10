@@ -1,0 +1,463 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "OPA decision logs for Trino access control (ADR 0020 + 0021 + 0022 + 0023). Each /allow, /rowFilters, /batchColumnMasks, and /batchMaskInput query Trino sends to OPA is logged as a single JSON line; this dashboard surfaces the deny rate, top denied users/operations, the active bundle revision the deciding pod is on, and the raw log stream for incident investigation.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 100,
+      "panels": [],
+      "title": "Summary",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+      "description": "Total decisions OPA evaluated for Trino over the selected range (sum of allow + deny across all /allow, /rowFilters, /batchColumnMasks, and /batchMaskInput calls).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green"}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "editorMode": "code",
+          "expr": "sum(count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` [$__range]))",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Decisions",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+      "description": "OPA decisions that returned result:false over the selected range. Each one corresponds to a Trino query (or sub-operation) the policy refused.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green"},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 50}
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "editorMode": "code",
+          "expr": "sum(count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` [$__range]))",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Denies",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+      "description": "Distinct usernames seen in OPA decision logs over the selected range. Service principals (superset_svc, voila_svc, openwebui_mcp_svc) appear here too — they pass via the is_system_identity carve-out rather than the approval-group gate.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue"}]},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "editorMode": "code",
+          "expr": "count(sum by(user) (count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` | json user=\"input.context.identity.user\" | user != `` [$__range])))",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Unique Identities",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+      "description": "Active bundle revision each OPA replica is currently serving (one tile per pod). Sourced from OPA's Status Log -- emitted on every bundle poll cycle regardless of query traffic, so a quiet pod still reports its true state. Revision is the SPI's publishNow epoch_ms; identical values across tiles = replicas converged. Different values = one pod is lagging on its 5–10s poll cycle (real divergence; production tolerates up to ~10s by design).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue"}]},
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "editorMode": "code",
+          "expr": "max by(pod) (last_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Status Log\"` | pattern `<_>\"active_revision\":\"<rev>\"<_>` | unwrap rev [5m]))",
+          "legendFormat": "{{pod}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Bundle Revision (per pod)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "id": 101,
+      "panels": [],
+      "title": "Trends",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+      "description": "Allow vs Deny rate over time. Stacked bars per $__interval bucket. A sudden cliff in allows or spike in denies usually means either the bundle just propagated a change that broke an in-flight workflow, or someone's identity / group membership rolled over.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {"group": "A", "mode": "normal"},
+            "thresholdsStyle": {"mode": "off"}
+          },
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green"}]},
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Allow"},
+            "properties": [{"id": "color", "value": {"fixedColor": "green", "mode": "fixed"}}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Deny"},
+            "properties": [{"id": "color", "value": {"fixedColor": "red", "mode": "fixed"}}]
+          }
+        ]
+      },
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 6},
+      "id": 5,
+      "options": {
+        "legend": {"calcs": ["sum"], "displayMode": "table", "placement": "right", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "desc"}
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "editorMode": "code",
+          "expr": "sum(count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":true` [$__interval]))",
+          "legendFormat": "Allow",
+          "queryType": "range",
+          "refId": "A"
+        },
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "editorMode": "code",
+          "expr": "sum(count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` [$__interval]))",
+          "legendFormat": "Deny",
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "Decisions Over Time",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 15},
+      "id": 102,
+      "panels": [],
+      "title": "Breakdown",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+      "description": "Users with the most denied decisions over the selected range. A user appearing here who shouldn't be denied is usually missing a scout-user group membership, has enabled=false on their Keycloak record, or — for end users impersonated through a service principal — has been removed from the realm entirely.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {
+            "align": "auto",
+            "cellOptions": {"type": "auto"},
+            "inspect": false
+          },
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red"}]}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Value"},
+            "properties": [
+              {"id": "displayName", "value": "Denies"},
+              {"id": "custom.cellOptions", "value": {"mode": "gradient", "type": "gauge"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "user"},
+            "properties": [{"id": "displayName", "value": "User"}]
+          }
+        ]
+      },
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
+        "showHeader": true,
+        "sortBy": [{"desc": true, "displayName": "Denies"}]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "editorMode": "code",
+          "expr": "topk(20, sum by(user) (count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` | json user=\"input.context.identity.user\" | user != `` [$__range])))",
+          "format": "table",
+          "instant": true,
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Denied Users",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {"Time": true},
+            "indexByName": {"user": 0, "Value": 1}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+      "description": "Trino operations that were denied most often. ExecuteQuery / SelectFromColumns dominate normal traffic; spikes in CreateView, DropTable, or admin-style operations usually indicate a partner site experimenting with a permission they don't have. ImpersonateUser denies mean a non-service-principal client tried to set X-Trino-User — typically a misconfigured BI tool.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {
+            "align": "auto",
+            "cellOptions": {"type": "auto"},
+            "inspect": false
+          },
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red"}]}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Value"},
+            "properties": [
+              {"id": "displayName", "value": "Denies"},
+              {"id": "custom.cellOptions", "value": {"mode": "gradient", "type": "gauge"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "operation"},
+            "properties": [{"id": "displayName", "value": "Operation"}]
+          }
+        ]
+      },
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 16},
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
+        "showHeader": true,
+        "sortBy": [{"desc": true, "displayName": "Denies"}]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "editorMode": "code",
+          "expr": "topk(20, sum by(operation) (count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` | json operation=\"input.action.operation\" | operation != `` [$__range])))",
+          "format": "table",
+          "instant": true,
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Denied Operations",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {"Time": true},
+            "indexByName": {"operation": 0, "Value": 1}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 26},
+      "id": 103,
+      "panels": [],
+      "title": "Logs",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+      "description": "Recent OPA denies, reformatted to show the relevant fields inline (user, operation, decision_id). Click a row to expand the raw JSON, which includes input.action.resource for catalog/schema/table identification and the bundle revision the decision evaluated against.",
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 27},
+      "id": 8,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showControls": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` | json user=\"input.context.identity.user\", operation=\"input.action.operation\", decision=\"decision_id\", path=\"path\" | line_format `[{{.path}}] user={{.user}} op={{.operation}} decision_id={{.decision}}`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Denies",
+      "type": "logs"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+      "description": "Every decision OPA evaluated, reformatted to a one-line summary: rule path / allow|deny / user / operation. Click a row to expand the full JSON input (input.action.resource for catalog/schema/table, bundle revision the decision saw, timing metrics, etc.). Logs are batched by OPA's reporting plugin (5–30s) so live tail lags that much.",
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 18, "w": 24, "x": 0, "y": 39},
+      "id": 9,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showControls": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki_datasource_01"},
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` | json user=\"input.context.identity.user\", operation=\"input.action.operation\", result=\"result\", path=\"path\" | label_format verdict=`{{ if eq .path \"trino/allow\" }}{{ if eq .result \"true\" }}ALLOW{{ else }}DENY{{ end }}{{ else if eq .path \"trino/rowFilters\" }}FILTER{{ else if eq .path \"trino/batchColumnMasks\" }}MASK{{ else if eq .path \"trino/batchMaskInput\" }}MASK{{ else }}?{{ end }}` | line_format `{{.verdict}}  user={{.user}}  op={{.operation}}`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "All Decisions",
+      "type": "logs"
+    }
+  ],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": ["opa", "trino", "authz", "auth"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OPA Decisions (Trino)",
+  "uid": "opa-decisions",
+  "version": 1,
+  "weekStart": ""
+}
