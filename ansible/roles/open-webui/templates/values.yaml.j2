@@ -277,8 +277,8 @@ extraEnvVars:
   - name: OTEL_OTLP_SPAN_EXPORTER
     value: 'http'
   - name: OTEL_METRICS_EXPORTER_OTLP_ENDPOINT
-    value: 'http://prometheus-server.{{ prometheus_namespace }}.svc.cluster.local:9090/api/v1/otlp/v1/metrics'
+    value: 'http://prometheus-server.{{ prometheus_namespace }}:9090/api/v1/otlp/v1/metrics'
   - name: OTEL_EXPORTER_OTLP_ENDPOINT
-    value: 'http://prometheus-server.{{ prometheus_namespace }}.svc.cluster.local:9090/api/v1/otlp/v1/metrics'
+    value: 'http://prometheus-server.{{ prometheus_namespace }}:9090/api/v1/otlp/v1/metrics'
   - name: OTEL_SERVICE_NAME
     value: 'open-webui'
