@@ -33,7 +33,7 @@ importUser: admin
 
 # Built-in dashboard bundles to install. Each name corresponds to a
 # subdirectory under files/analytics/{charts,dashboards,datasets/Scout_Data_Lake}/.
-# Available built-ins: core, quality, followup.
+# Available built-ins: core, quality, followup, patients.
 #
 # Adding a new built-in bundle is a matter of dropping files into a new
 # subdirectory under each kind and adding its name here — no template
@@ -45,6 +45,7 @@ importUser: admin
 bundles:
   enabled:
     - core
+    - patients
 
 # Resources for the import Job pod.
 resources:

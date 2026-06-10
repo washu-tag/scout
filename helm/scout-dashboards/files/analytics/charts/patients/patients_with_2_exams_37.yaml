@@ -1,0 +1,31 @@
+slice_name: '% patients with 2+ exams'
+description: Share of reconciled patients who appear in the lake with more than one
+  exam. A rough proxy for return rate.
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 4__table
+  viz_type: big_number_total
+  slice_id: 62
+  metric: pct_returning
+  adhoc_filters:
+  - clause: WHERE
+    subject: last_exam_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  subheader: '% of patients'
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: ',.1f'
+  time_format: smart_date
+  extra_form_data: {}
+  dashboards:
+  - 4
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: e4d6828b-f512-41d9-b942-29fc30e9a05d
+version: 1.0.0
+dataset_uuid: 5d6cdd41-c41d-439c-a4ba-e2ee12772c20

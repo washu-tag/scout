@@ -34,22 +34,25 @@ files/analytics/
 ├── charts/
 │   ├── core/         # 10 charts on the Scout main dashboard
 │   ├── quality/      #  8 charts on the Quality & TAT dashboard
-│   └── followup/     # 13 charts on the Follow-up Detection dashboard
+│   ├── followup/     # 13 charts on the Follow-up Detection dashboard
+│   └── patients/     # 12 charts on the Patients dashboard
 ├── dashboards/
 │   ├── core/
 │   ├── quality/
-│   └── followup/
+│   ├── followup/
+│   └── patients/
 └── datasets/
     └── Scout_Data_Lake/
-        ├── core/     # reports_latest, reports_dx, reports (raw scale)
-        └── followup/ # reports_followup, confusion_matrix_grid
+        ├── core/         # reports_latest, reports_dx, reports (raw scale)
+        ├── followup/     # reports_followup, confusion_matrix_grid
+        └── patients/     # patients_longitudinal, reports_dx_epic_view, patient_cohort_events
 ```
 
 `values.yaml` enables bundles by name:
 
 ```yaml
 bundles:
-  enabled: [core]    # add quality, followup to install more
+  enabled: [core, patients]   # add quality, followup to install more
 ```
 
 The chart's templates iterate the list and `.Files.Glob` only the matching
@@ -99,9 +102,9 @@ checksum/config annotation changes, Helm replaces the Job under
 
 The Quality & TAT and Follow-up Detection dashboards include experimental
 features and depend on data products (TAT calculations, the follow-up
-classifier) that not every Scout site runs. Bundling them lets sites opt in
-without modifying the chart. The Scout core dashboard ships by default and is
-the only bundle that's always on.
+classifier) not every Scout site runs, so they're opt-in. The Scout core and
+Patients dashboards ship by default — Patients reads the patient-resolved
+Epic-MPI views, which the transformer creates in standard deploys.
 
 ### Why the force-overwrite Python pass on top of `import-dashboards`?
 

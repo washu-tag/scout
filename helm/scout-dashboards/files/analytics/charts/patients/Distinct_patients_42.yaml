@@ -1,0 +1,32 @@
+slice_name: Distinct patients
+description: Reconciled patient identities (scout_patient_id), Epic-MPI deduped. Lower
+  than COUNT(DISTINCT epic_mrn) on raw reports because inconsistent identities are
+  filtered out upstream.
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 4__table
+  viz_type: big_number_total
+  slice_id: 60
+  metric: count
+  adhoc_filters:
+  - clause: WHERE
+    subject: last_exam_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  subheader: Reconciled patients
+  header_font_size: 0.4
+  subheader_font_size: 0.15
+  y_axis_format: SMART_NUMBER
+  time_format: smart_date
+  extra_form_data: {}
+  dashboards:
+  - 4
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 3dda37e7-e56c-4376-8846-87d162b2b5c5
+version: 1.0.0
+dataset_uuid: 5d6cdd41-c41d-439c-a4ba-e2ee12772c20

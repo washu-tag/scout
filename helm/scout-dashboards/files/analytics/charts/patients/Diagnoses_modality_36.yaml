@@ -1,0 +1,66 @@
+slice_name: "Diagnoses \xD7 modality"
+description: Patient counts per imaging modality, stacked by the top 8 diagnoses (ranked
+  by total patient count). Shows which findings dominate each modality, patient-deduped.
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  datasource: 6__table
+  viz_type: echarts_timeseries_bar
+  slice_id: 70
+  x_axis: modality
+  metrics:
+  - distinct_patients
+  groupby:
+  - diagnosis_code_text
+  adhoc_filters:
+  - clause: WHERE
+    subject: message_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  - clause: WHERE
+    subject: diagnosis_code
+    operator: IS NOT NULL
+    operatorId: IS_NOT_NULL
+    expressionType: SIMPLE
+  - clause: WHERE
+    subject: modality
+    operator: IS NOT NULL
+    operatorId: IS_NOT_NULL
+    expressionType: SIMPLE
+  series_limit: 8
+  series_limit_metric: distinct_patients
+  row_limit: 10000
+  truncate_metric: true
+  show_empty_columns: true
+  annotation_layers: []
+  orientation: vertical
+  x_axis_title: Modality
+  x_axis_title_margin: 30
+  y_axis_title: Patients
+  y_axis_title_margin: 30
+  y_axis_title_position: Left
+  sort_series_type: sum
+  sort_series_ascending: false
+  color_scheme: presetColors
+  stack: Stack
+  show_value: false
+  only_total: true
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  x_axis_time_format: smart_date
+  y_axis_format: SMART_NUMBER
+  truncateXAxis: false
+  rich_tooltip: true
+  showTooltipTotal: true
+  tooltipTimeFormat: smart_date
+  extra_form_data: {}
+  dashboards:
+  - 4
+query_context: null
+cache_timeout: null
+uuid: 4ead6ebc-9e4d-4051-b9f4-3f2d91c8c1ac
+version: 1.0.0
+dataset_uuid: c2b3af3d-7e2e-445b-86ff-bf0242dd552e
