@@ -1,5 +1,5 @@
 sphinx
 sphinx-rtd-theme
-sphinxawesome-theme
+sphinxawesome-theme!=6.0.3  # 6.0.3 wheel is broken: ships no sphinxawesome_theme module
 myst_parser[sphinx]
 sphinxcontrib-openapi
