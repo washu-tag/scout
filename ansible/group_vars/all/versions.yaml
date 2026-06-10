@@ -104,18 +104,19 @@ jupyter_helm_chart_version: ~4.3.5
 # running Pod's image at deploy time (see configure_admin.yaml) so it stays
 # in lockstep with the chart's appVersion without a separate pin.
 #
-# Currently pinned to ~14.6.0 (appVersion 0.9.5): upstream refactor (OWUI
+# Currently pinned to ~14.8.0 (appVersion 0.9.6): upstream refactor (OWUI
 # commit 45e49d33e, Apr 2026) moved tool-call results from a `result="..."`
 # attribute on the <details> tag into the body, and the new body-content
 # rendering path doesn't display results in the chat UI even though they
 # reach the LLM. Worked around by the `tool_result_attr_filter` Function
-# (see ansible/roles/open-webui/defaults/main.yaml). When Renovate proposes
-# a bump that advances appVersion past 0.9.5, verify the tool-call Output
-# panel renders correctly without the filter — if upstream has fixed it,
-# delete the filter source + the role's inventory entry + the chart payload
-# + this note.
+# (see ansible/roles/open-webui/defaults/main.yaml). Confirmed still broken
+# in 0.9.6: ToolCallDisplay.svelte and MarkdownTokens.svelte are byte-
+# identical between v0.9.5 and v0.9.6. When Renovate proposes a bump that
+# advances appVersion past 0.9.6, verify the tool-call Output panel renders
+# correctly without the filter — if upstream has fixed it, delete the filter
+# source + the role's inventory entry + the chart payload + this note.
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
-open_webui_helm_chart_version: ~14.6.0
+open_webui_helm_chart_version: ~14.8.0
 # renovate: datasource=docker depName=ollama/ollama
 ollama_image_tag: 0.24.0
 
