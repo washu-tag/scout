@@ -123,6 +123,16 @@ extraVolumes:
       secretName: xnat-plugin-{{ p.name }}-cfg-{{ c.dest | basename | regex_replace('[^A-Za-z0-9]', '-') }}
 {% endfor %}
 {% endfor %}
+{% if _xnat_maven_settings_needed | default(false) | bool %}
+  - name: maven-settings
+    configMap:
+      name: xnat-maven-settings
+{% endif %}
+{% if _xnat_needs_staging_cert | default(false) | bool %}
+  - name: staging-ca
+    secret:
+      secretName: staging-ca-cert
+{% endif %}
 
 extraVolumeMounts:
   - name: prefs-init
@@ -159,8 +169,10 @@ initContainers:
 {% if p.source.type == 'coordinates' %}
       - name: PLUGIN_COORDINATES
         value: '{{ p.source.coordinates }}'
-      - name: PLUGIN_REPO_URL
-        value: '{{ p.source.repo_url | default(maven_proxy_url) }}'
+{% if _xnat_needs_staging_cert | default(false) | bool %}
+      - name: PLUGIN_CA_CERT
+        value: '{{ _xnat_staging_ca_path }}'
+{% endif %}
 {% elif p.source.type == 'url' %}
       - name: PLUGIN_URL
         value: '{{ p.source.url }}'
@@ -174,6 +186,16 @@ initContainers:
 {% if p.source.type == 'file' %}
       - name: plugin-{{ p.name }}-jar
         mountPath: /mnt/{{ p.name }}
+        readOnly: true
+{% endif %}
+{% if p.source.type == 'coordinates' and (_xnat_maven_settings_needed | default(false) | bool) %}
+      - name: maven-settings
+        mountPath: /mnt/maven
+        readOnly: true
+{% endif %}
+{% if p.source.type == 'coordinates' and (_xnat_needs_staging_cert | default(false) | bool) %}
+      - name: staging-ca
+        mountPath: /mnt/staging-ca
         readOnly: true
 {% endif %}
 {% endfor %}

@@ -63,9 +63,13 @@ operators can use whatever form an artifact is available in:
   present in a container image. Assumes that image already logs to stdout, so it
   bypasses the installer's rewrite (see §2).
 - **Maven/Gradle coordinates** — the init container resolves the artifact by
-  coordinates through the Nexus Maven proxy (per ADR 0017). Air-gap friendly and
-  the cleanest for GitOps, since the plugin identity is a declarative coordinate
-  rather than a binary or a URL.
+  Maven coordinate. Air-gap friendly and the cleanest for GitOps, since the
+  plugin identity is a declarative coordinate rather than a binary or a URL. The
+  coordinate is a Maven `-Dartifact` value,
+  `groupId:artifactId:version[:packaging[:classifier]]`; a classified artifact
+  like the openid `-xpl.jar` is packaging `jar` + classifier `xpl`
+  (`...:jar:xpl`). Where the artifact is resolved from is config, not part of the
+  coordinate — see §4.
 
 Patterns that flow through the installer (Secret, URL, coordinates) get the
 Logback rewrite; the image-baked pattern does not.
@@ -95,15 +99,43 @@ the plugins they are *adding*; the required SSO plugin cannot be accidentally
 dropped or duplicated. There is one source of truth for "the plugin XNAT needs
 to authenticate at all."
 
-### 4. One Maven proxy URL fronting Maven Central + the XNAT Artifactory
+### 4. Coordinate resolution: generic image, role-supplied repo config + CA
 
-For the coordinates pattern, a single Nexus `maven-public` group repository
-aggregates both Maven Central and the NrgXnat Artifactory
-(`libs-release`). The installer resolves every coordinate-based plugin through
-that one URL, regardless of whether the artifact is a general JVM library or an
-XNAT-only artifact (e.g. the openid plugin, which is published only to the
-NrgXnat Artifactory). This extends the package-proxy pattern from ADR 0017 to
-XNAT plugins.
+The installer image is a **generic Maven runner with no repository or
+air-gapped knowledge baked in.** It resolves `-Dartifact=<coordinate>` and uses
+a Maven `settings.xml` (mounted at `/mnt/maven/settings.xml`) and a CA
+certificate **only if the deployment mounts them**; with neither, Maven resolves
+from its built-in Central. All "which repo / air-gapped" policy therefore lives
+in the Ansible role and inventory, never in the published image — the image
+needs no rebuild to change repositories or to move between connected and
+air-gapped clusters.
+
+The role decides whether to mount a `settings.xml`, and what it contains, from
+**two independent triggers**:
+
+- **A plugin's `repo_url`** — optional, per plugin. Omit it for artifacts on
+  Maven Central; set it only when the artifact lives elsewhere. The openid plugin
+  sets it because it is published *only* to the NrgXnat Artifactory
+  (`libs-release`), never to Central.
+- **Air-gapped mode** — no egress to Central, so resolution must go through the
+  in-cluster proxy.
+
+The generated `settings.xml` differs accordingly:
+
+- **Air-gapped:** *mirror* all resolution (`<mirrorOf>*</mirrorOf>`, including
+  Maven's own download of the dependency plugin) through the Nexus `maven-public`
+  group, which proxies Maven Central **and** the NrgXnat Artifactory. Per-plugin
+  `repo_url`s are subsumed here — an external URL is unreachable air-gapped, so
+  its upstream must instead be a member of the Nexus group (as `xnat-maven` is for
+  the NrgXnat Artifactory). This extends the package-proxy pattern from ADR 0017.
+- **Not air-gapped:** keep Maven Central as the default and *add* each plugin's
+  `repo_url` as an extra repository. A Central-only plugin needs no `settings.xml`
+  at all.
+
+When the air-gapped Nexus serves HTTPS with the staging node's self-signed cert,
+the role also mounts that CA (per ADR 0016) and the installer imports it into the
+JVM truststore so Maven's TLS validates. Like the `settings.xml`, the CA is a
+mounted input the generic image consumes only when present.
 
 ### 5. Air-gapped URL plugins are restaged into Nexus
 

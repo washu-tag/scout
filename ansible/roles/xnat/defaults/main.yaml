@@ -92,7 +92,12 @@ xnat_nexus_raw_repo: xnat-plugins-raw
 #     type: file | url | coordinates | image
 #     # file:        secret: {name, key, from_file}   (from_file = jar path on control node)
 #     # url:         url: https://...
-#     # coordinates: coordinates: g:a:v:classifier:type   (repo_url defaults to maven_proxy_url)
+#     # coordinates: coordinates: <Maven -Dartifact coord>  groupId:artifactId:version[:packaging[:classifier]]
+#     #              repo_url: <repo the artifact lives in>  (OPTIONAL; omit for Maven Central)
+#     #              When set, the deploy mounts a settings.xml pointing Maven at it; when
+#     #              air-gapped, all resolution is mirrored through the Nexus group instead
+#     #              (maven_proxy_url), regardless of repo_url. So set repo_url only for
+#     #              artifacts not on Central (e.g. XNAT plugins published to jfrog).
 #     # image:       repository, tag                       (chart-native plugins: map)
 #   skip_logback_rewrite: bool (default false)
 #   config: list of property files, each:
@@ -105,7 +110,12 @@ xnat_plugins_default:
     target: openid-auth-plugin.jar
     source:
       type: coordinates
-      coordinates: 'au.edu.qcif.xnat.openid:openid-auth-plugin:1.5.0:xpl'
+      # Maven -Dartifact format: groupId:artifactId:version:packaging:classifier
+      # (the -xpl.jar is a 'jar' with classifier 'xpl', not packaging 'xpl').
+      coordinates: 'au.edu.qcif.xnat.openid:openid-auth-plugin:1.5.0:jar:xpl'
+      # Published only to the NrgXnat Artifactory (never on Maven Central), so the
+      # repo must be named. Air-gapped deploys resolve via the Nexus group instead.
+      repo_url: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
     skip_logback_rewrite: false
     config:
       - mechanism: authplugins

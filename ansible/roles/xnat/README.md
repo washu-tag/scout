@@ -51,9 +51,16 @@ Each plugin entry:
     type: coordinates        # file | url | coordinates | image
     # type: file        -> secret: {name, key, from_file}   (from_file = jar path on the control node)
     # type: url         -> url: https://...
-    # type: coordinates -> coordinates: g:a:v:classifier:type   (repo_url defaults to maven_proxy_url)
+    # type: coordinates -> coordinates: <Maven -Dartifact coord>, plus optional repo_url
     # type: image       -> repository, tag                       (chart-native plugins: map; no installer)
-    coordinates: org.example:my-xnat-plugin:1.2.3:xpl
+    # Maven -Dartifact format: groupId:artifactId:version[:packaging[:classifier]]
+    # (a `-xpl.jar` is packaging `jar` + classifier `xpl`, hence `...:jar:xpl`).
+    coordinates: org.example:my-xnat-plugin:1.2.3:jar:xpl
+    # repo_url is OPTIONAL -- omit it for artifacts on Maven Central. Set it only
+    # when the artifact lives elsewhere (e.g. the openid plugin in jfrog). When
+    # set, the deploy mounts a settings.xml pointing Maven at it; air-gapped
+    # deploys mirror ALL resolution through the Nexus group regardless.
+    repo_url: https://repo.example.org/releases/
   skip_logback_rewrite: false   # default false
   config:                       # optional; one or more property files
     - mechanism: authplugins    # authplugins | file | extraConfig
@@ -80,7 +87,11 @@ are assumed pre-built to log to stdout.
 ### Air-gapped notes
 
 - **coordinates** (Pattern D) is the air-gap-correct path: jars resolve through
-  the Nexus maven proxy (`maven_proxy_url`), no egress.
+  the Nexus maven proxy (`maven_proxy_url`), no egress. The role mounts a
+  generated `settings.xml` that mirrors all Maven resolution through the Nexus
+  group, plus the staging CA (per ADR-0016) so the installer trusts Nexus's
+  self-signed HTTPS. The installer image carries no repo/air-gapped knowledge —
+  it just uses the `settings.xml` and CA when mounted (see ADR 0027).
 - **url** needs egress, so on air-gapped clusters it fails fast unless
   `xnat_url_restage_via_nexus: true`, which has the jump node fetch the jar and
   re-host it in the Nexus raw repo for the init container to pull.

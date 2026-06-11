@@ -42,6 +42,9 @@
       to have the jump node re-host the jar in Nexus.
     quiet: true
 
+- name: Configure Maven proxy trust (settings.xml + staging CA)
+  ansible.builtin.include_tasks: proxy_trust.yaml
+
 - name: Create Kubernetes Secrets
   ansible.builtin.include_tasks: create_secrets.yaml
 
