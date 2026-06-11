@@ -33,6 +33,7 @@ from superset.connectors.sqla.models import (  # noqa: E402
     SqlMetric,
     TableColumn,
 )
+from superset.models.core import Database  # noqa: E402
 from superset.models.dashboard import Dashboard  # noqa: E402
 from superset.models.slice import Slice  # noqa: E402
 
@@ -59,6 +60,51 @@ _METRIC_FIELDS = (
     "currency",
     "warning_text",
 )
+
+
+# Fields on `Database` we want the chart's YAML to be authoritative for. The
+# YAML lives in the chart's `_helpers.tpl` (database_name, sqlalchemy_uri,
+# allow_*, expose_in_sqllab, impersonate_user, extra). `password` is NOT here —
+# Trino auth is JWT-based and the password column should stay NULL. `uuid` is
+# the lookup key and must not be overwritten.
+_DATABASE_FIELDS = (
+    "database_name",
+    "sqlalchemy_uri",
+    "cache_timeout",
+    "expose_in_sqllab",
+    "allow_run_async",
+    "allow_ctas",
+    "allow_cvas",
+    "allow_dml",
+    "allow_file_upload",
+    "impersonate_user",
+)
+
+
+def update_database(path: str) -> bool:
+    """Sync a Database row's connection fields from the YAML by UUID.
+
+    The chart renders `analytics/databases/Scout_Data_Lake.yaml` with
+    `sqlalchemy_uri` baked in from Helm values (`.Values.trino.port`,
+    `.Values.trino.scheme`, ...). Superset's import-dashboards skips
+    Database rows whose UUID already exists, so a port / scheme change
+    in inventory never reaches the DB and Superset keeps dialing the old
+    Trino endpoint. Databases that don't exist yet get left to
+    import-dashboards (which happily creates them).
+    """
+    with open(path) as f:
+        data = yaml.safe_load(f)
+    d = db.session.query(Database).filter_by(uuid=data["uuid"]).first()
+    if d is None:
+        return False
+    for field in _DATABASE_FIELDS:
+        if field in data:
+            setattr(d, field, data[field])
+    extra = data.get("extra")
+    if extra is not None:
+        # Stored as a JSON string column on Database.
+        d.extra = extra if isinstance(extra, str) else json.dumps(extra)
+    return True
 
 
 def update_dataset(path: str) -> bool:
@@ -229,7 +275,19 @@ def update_dashboard(path: str, chart_id_map: dict[int, int]) -> bool:
     return True
 
 
-# Pass 0: datasets. Sync columns/metrics on existing datasets by UUID.
+# Pass 0a: databases. Force-overwrite the SQLAlchemy URI + connection
+# flags on existing Database rows so a Helm values change (port, scheme,
+# user) propagates without a manual UI edit. The chart's
+# `Scout_Data_Lake.yaml` is the authoritative source.
+updated_databases = skipped_databases = 0
+for path in sorted(glob.glob(f"{ANALYTICS}/databases/*.yaml")):
+    if update_database(path):
+        updated_databases += 1
+    else:
+        skipped_databases += 1
+db.session.flush()
+
+# Pass 0b: datasets. Sync columns/metrics on existing datasets by UUID.
 updated_datasets = skipped_datasets = 0
 for path in sorted(glob.glob(f"{ANALYTICS}/datasets/**/*.yaml", recursive=True)):
     if update_dataset(path):
@@ -259,7 +317,8 @@ for path in sorted(glob.glob(f"{ANALYTICS}/dashboards/*.yaml")):
 db.session.commit()
 
 print(
-    f"force-update: datasets updated={updated_datasets} skipped={skipped_datasets}, "
+    f"force-update: databases updated={updated_databases} skipped={skipped_databases}, "
+    f"datasets updated={updated_datasets} skipped={skipped_datasets}, "
     f"charts updated={updated_charts} skipped={skipped_charts}, "
     f"dashboards updated={updated_dashboards} skipped={skipped_dashboards}, "
     f"chart_id_map_size={len(chart_id_map)}"
