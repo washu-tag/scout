@@ -24,22 +24,17 @@
 - name: Fetch the XNAT chart from git
   ansible.builtin.include_tasks: fetch_chart.yaml
 
-- name: Restage URL-sourced plugins through Nexus (air-gapped)
-  ansible.builtin.include_tasks: restage_url_plugins.yaml
-  when: xnat_url_restage_via_nexus | default(false) | bool
-
-- name: Guard against url plugins on air-gapped clusters without restaging
+- name: Guard against url plugins on air-gapped clusters
   ansible.builtin.assert:
     that:
       - not (air_gapped | default(false) | bool)
         or (xnat_plugins_all | selectattr('source.type', 'equalto', 'url') | list | length == 0)
-        or (xnat_url_restage_via_nexus | default(false) | bool)
     fail_msg: >
       One or more xnat_plugins use source.type=url, but this is an air-gapped
-      cluster and xnat_url_restage_via_nexus is false. Init containers have no
-      egress on air-gapped clusters. Use source.type=coordinates (resolved via
-      the Nexus maven proxy), image, or file — or set xnat_url_restage_via_nexus: true
-      to have the jump node re-host the jar in Nexus.
+      cluster. Init containers have no egress on air-gapped clusters. Use
+      source.type=coordinates (resolved via the Nexus maven proxy), image,
+      or file instead. (Re-hosting url jars via a Nexus raw repo is a possible
+      future enhancement — see ADR 0027.)
     quiet: true
 
 - name: Configure Maven proxy trust (settings.xml + staging CA)

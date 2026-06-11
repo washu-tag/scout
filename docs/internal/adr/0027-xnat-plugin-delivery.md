@@ -137,18 +137,23 @@ the role also mounts that CA (per ADR 0016) and the installer imports it into th
 JVM truststore so Maven's TLS validates. Like the `settings.xml`, the CA is a
 mounted input the generic image consumes only when present.
 
-### 5. Air-gapped URL plugins are restaged into Nexus
+### 5. Air-gapped URL plugins fail fast (restaging deferred)
 
-> ⚠️ **[UNSTABLE — confirm against shipped air-gapped path]**
-> On an air-gapped cluster, a URL-pattern plugin's host is unreachable from
-> inside the cluster. To support it, the internet-connected jump node fetches
-> each such JAR and uploads it to a Nexus raw repository (`xnat-plugins-raw`),
-> and the init container's URL is rewritten to the in-cluster Nexus address.
-> This is a Scout-specific mechanism that **will not be upstreamed** into the
-> chart, so it is the one part of this ADR expected to persist. The preferred
-> air-gapped path remains the **coordinates** pattern (§1/§4), which needs no
-> restaging at all; URL restaging exists for artifacts that are only available
-> as a download. Confirm the shipped behavior before merge.
+On an air-gapped cluster, a URL-pattern plugin's host is unreachable from
+inside the cluster, so the role asserts against `source.type=url` plugins when
+`air_gapped` is true and fails the deploy with guidance to use **coordinates**
+(§1/§4, which resolve through the Nexus maven proxy and need no egress),
+**image**, or **file** instead.
+
+> **Future enhancement (not implemented):** re-hosting URL-only artifacts via a
+> Nexus raw repository — the jump node fetches each JAR, uploads it to a raw
+> hosted repo, and the init container's URL is rewritten to the in-cluster
+> Nexus address. An earlier draft of this mechanism was removed before merge:
+> it had no consumer (every known plugin resolves by coordinates), and a
+> correct implementation needs CA trust for the init container's fetch,
+> exclusion from Nexus's purge-unused cleanup policy (a hosted raw repo is the
+> only in-air-gap copy, not a re-fillable cache), and checksummed, idempotent
+> uploads. Revisit if a plugin ever exists only as a URL download.
 
 ## Consequences
 
