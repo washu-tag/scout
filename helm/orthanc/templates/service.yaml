@@ -11,8 +11,8 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-    - port: {{ .Values.service.dicom }}
-      targetPort: {{ .Values.service.dicom }}
+    - port: {{ .Values.service.dicom.port }}
+      targetPort: {{ .Values.service.dicom.port }}
       protocol: TCP
       name: dicom
   selector:
