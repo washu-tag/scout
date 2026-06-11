@@ -41,7 +41,11 @@ xnat_volume_sizes:
 
 # --- First-boot site config (prefs-init.ini) ------------------------------
 xnat_site_id: scout-xnat
-xnat_admin_email: 'admin@{{ server_hostname }}'
+# XNAT's admin contact AND the From address on XNAT outbound mail (XNAT sends
+# administrative email from adminEmail). Reuses the cert-manager ACME account
+# email when the inventory defines one; the fallback is a nonexistent
+# placeholder, so set a real address for prod (relays may reject the sender).
+xnat_admin_email: "{{ cert_manager_acme_account_email | default('admin@' ~ server_hostname) }}"
 # Providers surfaced on the login page. Keeping only 'keycloak' (dropping
 # 'localdb') leaves just the "Sign in with Scout" button; the built-in admin
 # account still works via the REST API.
@@ -57,7 +61,6 @@ xnat_enabled_providers:
 xnat_smtp_enabled: true
 xnat_smtp_host: mailhog-service.mailhog
 xnat_smtp_port: '1025'
-xnat_smtp_from: 'xnat@{{ server_hostname }}'
 
 # --- Postgres (CNPG-managed, like the rest of Scout) ----------------------
 # REQUIRED when enable_xnat is true — set in inventory (vault-encrypted).
