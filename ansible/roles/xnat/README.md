@@ -13,6 +13,12 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
 > the `xnat` Keycloak client on the next `make install-auth` (keycloak-config-cli
 > reconciles the realm), orphaning provisioned XNAT users.
 
+> **Authorization note:** oauth2-proxy edge approval is the **only** enforced
+> authorization gate. The off-the-shelf openid plugin cannot evaluate the
+> `xnat-access` client role (it has no role-restriction property), and with
+> `forceUserCreate` any approved Scout user gets an XNAT account auto-created
+> on first login. `xnat-access` is provisioned but unenforced — see ADR 0026.
+
 ## How it deploys
 
 1. **Chart**: the upstream chart is not yet published, so `fetch_chart.yaml`
