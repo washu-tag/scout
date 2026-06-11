@@ -8,6 +8,21 @@ image:
   repository: {{ xnat_image_repository }}
   tag: '{{ xnat_image_tag }}'
 
+# WORKAROUND (NrgXnat/xnat#5): PR NrgXnat/helm-charts#19 hardened the container
+# securityContext with `capabilities: drop: [ALL]`, which removes CAP_DAC_OVERRIDE.
+# The xnatworks/xnat-web image needs it: it runs as a non-root UID (1000 = the
+# image's `tomcat` user) that does not own its entrypoint
+# (/usr/local/bin/entrypoint.sh, mode 0744 root:root), so DAC_OVERRIDE is what
+# lets it exec the entrypoint. With all caps dropped the container can't start
+# ("exec /usr/local/bin/entrypoint.sh: permission denied"). Restore the default
+# capability set; runAsUser 1000 itself is fine (tomcat owns the data dirs). Once
+# NrgXnat/xnat#5 is fixed (image works with caps dropped), drop this block.
+securityContext:
+  # drop:[] = drop nothing -> retain the runtime's default cap set (incl.
+  # CAP_DAC_OVERRIDE), overriding the chart's capabilities.drop:[ALL].
+  capabilities:
+    drop: []
+
 # Single-node dev posture; revisit before HA.
 redis:
   enabled: false
