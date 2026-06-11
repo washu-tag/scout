@@ -123,8 +123,9 @@ The role decides whether to mount a `settings.xml`, and what it contains, from
 The generated `settings.xml` differs accordingly:
 
 - **Air-gapped:** *mirror* all resolution (`<mirrorOf>*</mirrorOf>`, including
-  Maven's own download of the dependency plugin) through the Nexus `maven-public`
-  group, which proxies Maven Central **and** the NrgXnat Artifactory. Per-plugin
+  Maven's own download of the dependency plugin) through the Nexus `scout-maven`
+  group, which proxies Maven Central **and** (when `enable_xnat`) the NrgXnat
+  Artifactory. Per-plugin
   `repo_url`s are subsumed here — an external URL is unreachable air-gapped, so
   its upstream must instead be a member of the Nexus group (as `xnat-maven` is for
   the NrgXnat Artifactory). This extends the package-proxy pattern from ADR 0017.
