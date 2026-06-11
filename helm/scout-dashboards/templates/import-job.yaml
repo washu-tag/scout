@@ -45,12 +45,19 @@ spec:
               set -eu
               cd /app/dashboard-config
               zip -rq /tmp/dashboard.zip analytics
-              # Creates new assets; v1 importer skips any UUID that already
-              # exists, so this alone won't update edited charts/dashboards.
+              # Pre-CLI: heal Database.sqlalchemy_uri so the CLI hits the
+              # right Trino endpoint when creating a new dataset. Skipping
+              # this risks the CLI aborting on a stale URI before the
+              # post-CLI pass can heal it.
+              cd /app
+              python /app/dashboard-config/import.py /app/dashboard-config/analytics --databases-only
+              # Creates new assets only. The v1 importer skips any UUID
+              # that already exists, so edited charts/dashboards need the
+              # post-CLI pass below.
+              cd /app/dashboard-config
               superset import-dashboards -p /tmp/dashboard.zip -u {{ .Values.importUser }}
-              # Force-overwrite params/position/etc. on existing assets by
-              # UUID. Required because import-dashboards has no --overwrite
-              # flag in 5.0 (only the API does).
+              # Post-CLI: force-overwrite existing assets by UUID.
+              # import-dashboards in 5.0 has no --overwrite flag.
               cd /app
               python /app/dashboard-config/import.py /app/dashboard-config/analytics
           resources:

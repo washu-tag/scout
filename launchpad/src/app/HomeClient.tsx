@@ -476,9 +476,7 @@ export default function HomeClient({
     setSubdomainUrls({
       jupyter: subdomainUrl('jupyter'),
       superset: subdomainUrl('superset'),
-      // Route Chat through OWUI's OIDC entrypoint so cold-session clicks
-      // silent-SSO via Keycloak instead of bouncing to OWUI's /auth page.
-      chat: subdomainUrl('chat', '/oauth/oidc/login'),
+      chat: subdomainUrl('chat'),
       playbooks: subdomainUrl('playbooks'),
       minio: subdomainUrl('minio'),
       temporal: subdomainUrl('temporal', '/auth/sso'),
