@@ -27,18 +27,18 @@
 
 # Staging cert trust (per ADR-0016): when air-gapped through Nexus and the
 # staging node uses its self-signed cert, the installer must trust that CA to
-# fetch over HTTPS. Mirrors the jupyter role's detection.
-- name: Determine if the staging self-signed CA must be trusted
-  ansible.builtin.set_fact:
-    _xnat_needs_staging_cert: false
-  when: not (package_proxy_mode == 'nexus' and groups['staging'] is defined and groups['staging'] | length > 0)
+# fetch over HTTPS. Shared detection + Secret creation lives in scout_common
+# (also used by the jupyter role).
+- name: Create the staging CA Secret for the installer
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: staging_ca_secret
+  vars:
+    staging_ca_namespace: '{{ xnat_namespace }}'
 
-- name: Evaluate staging cert requirement (nexus proxy on a staging node)
+- name: Set staging CA facts for the installer templates
   ansible.builtin.set_fact:
-    _xnat_needs_staging_cert: >-
-      {{ (hostvars[groups['staging'][0]].tls_cert_path | default(staging_self_signed_tls_cert_path))
-         == staging_self_signed_tls_cert_path }}
-  when: package_proxy_mode == 'nexus' and groups['staging'] is defined and groups['staging'] | length > 0
+    _xnat_needs_staging_cert: '{{ _staging_ca_needed }}'
 
 - name: Set staging CA pod path
   ansible.builtin.set_fact:
@@ -57,24 +57,3 @@
       data:
         settings.xml: "{{ lookup('template', 'settings.xml.j2') }}"
   when: _xnat_maven_settings_needed | bool
-
-- name: Slurp the staging CA certificate
-  ansible.builtin.slurp:
-    src: "{{ hostvars[groups['staging'][0]].tls_cert_path | default(staging_self_signed_tls_cert_path) }}"
-  delegate_to: "{{ groups['staging'][0] }}"
-  register: _xnat_staging_ca
-  when: _xnat_needs_staging_cert | bool
-
-- name: Create the staging CA Secret for the installer
-  no_log: true
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: staging-ca-cert
-        namespace: '{{ xnat_namespace }}'
-      data:
-        ca.crt: '{{ _xnat_staging_ca.content }}'
-  when: _xnat_needs_staging_cert | bool
