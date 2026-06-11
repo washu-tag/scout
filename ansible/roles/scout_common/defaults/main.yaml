@@ -26,6 +26,13 @@ helm_chart_values_files: []
 scout_notebook_image_name: ghcr.io/washu-tag/scout-notebook
 scout_notebook_image_tag: latest
 
+# Base URL for Scout user documentation links surfaced in deployed services
+# (Launchpad, OAuth2 Proxy error page, JupyterHub spawn page, quickstart
+# notebooks). No trailing slash. Override in inventory to pin users to the
+# docs for a released version, e.g.
+#   scout_docs_url: https://washu-scout.readthedocs.io/en/v4.0.0
+scout_docs_url: https://washu-scout.readthedocs.io/en/latest
+
 # Kubernetes configuration
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 air_gapped: false

@@ -16,6 +16,10 @@ scoutEnv: ''
 # footer copyright line. Empty string hides the copyright line.
 deployerName: ''
 
+# Base URL for Scout documentation links (no trailing slash). Empty string
+# falls back to the latest published docs.
+docsUrl: ''
+
 image:
   repository: ghcr.io/washu-tag/launchpad
   tag: latest

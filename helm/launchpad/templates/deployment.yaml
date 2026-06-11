@@ -79,6 +79,10 @@ spec:
             - name: DEPLOYER_NAME
               value: {{ .Values.deployerName | quote }}
             {{- end }}
+            {{- if .Values.docsUrl }}
+            - name: SCOUT_DOCS_URL
+              value: {{ .Values.docsUrl | quote }}
+            {{- end }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

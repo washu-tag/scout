@@ -128,9 +128,11 @@
     file_type: file
   register: _jupyter_sample_files
 
+# Samples in the repo link to the latest docs; rewrite those links to
+# scout_docs_url so deployed copies can point at a pinned docs version.
 - name: Build quickstart samples data
   ansible.builtin.set_fact:
-    _jupyter_samples_data: "{{ _jupyter_samples_data | default({}) | combine({item | basename: lookup('file', item)}) }}"
+    _jupyter_samples_data: "{{ _jupyter_samples_data | default({}) | combine({item | basename: lookup('file', item) | replace('https://washu-scout.readthedocs.io/en/latest', scout_docs_url)}) }}"
   loop: "{{ _jupyter_sample_files.files | map(attribute='path') | list }}"
   no_log: true
 

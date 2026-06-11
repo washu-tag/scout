@@ -1,4 +1,5 @@
 import HomeClient from './HomeClient';
+import { getDocsUrl } from '@/lib/docsUrl';
 
 // Force dynamic rendering so env vars are read at request time, not build time
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,7 @@ export default function Home() {
       enablePlaybooks={enablePlaybooks}
       scoutEnv={scoutEnv}
       deployerName={deployerName}
+      docsUrl={getDocsUrl()}
     />
   );
 }
