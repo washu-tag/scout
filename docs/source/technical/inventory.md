@@ -757,6 +757,18 @@ grafana_smtp_skip_verify: false
 grafana_email_recipients: ['admin@example.com']
 ```
 
+#### Documentation Links
+
+Services that link to the Scout documentation (Launchpad, the sign-in error
+page, the JupyterHub spawn page, and the quickstart notebooks) default to the
+latest published docs. Pin them to the docs for your deployed release so users
+aren't shown features they don't have yet:
+
+```yaml
+# Base URL for documentation links (no trailing slash)
+scout_docs_url: https://washu-scout.readthedocs.io/en/v4.0.0
+```
+
 #### Superset Dashboards
 
 Scout ships its Superset dashboards via a separate Helm chart
