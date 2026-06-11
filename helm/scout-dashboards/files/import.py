@@ -89,8 +89,7 @@ def update_database(path: str) -> bool:
     `.Values.trino.scheme`, ...). Superset's import-dashboards skips
     Database rows whose UUID already exists, so a port / scheme change
     in inventory never reaches the DB and Superset keeps dialing the old
-    Trino endpoint. Databases that don't exist yet get left to
-    import-dashboards (which happily creates them).
+    Trino endpoint.
     """
     with open(path) as f:
         data = yaml.safe_load(f)
@@ -275,10 +274,9 @@ def update_dashboard(path: str, chart_id_map: dict[int, int]) -> bool:
     return True
 
 
-# Pass 0a: databases. Force-overwrite the SQLAlchemy URI + connection
+# Pass 0: databases. Force-overwrite the SQLAlchemy URI + connection
 # flags on existing Database rows so a Helm values change (port, scheme,
-# user) propagates without a manual UI edit. The chart's
-# `Scout_Data_Lake.yaml` is the authoritative source.
+# user) propagates.
 updated_databases = skipped_databases = 0
 for path in sorted(glob.glob(f"{ANALYTICS}/databases/*.yaml")):
     if update_database(path):
@@ -287,7 +285,7 @@ for path in sorted(glob.glob(f"{ANALYTICS}/databases/*.yaml")):
         skipped_databases += 1
 db.session.flush()
 
-# Pass 0b: datasets. Sync columns/metrics on existing datasets by UUID.
+# Pass 1: datasets. Sync columns/metrics on existing datasets by UUID.
 updated_datasets = skipped_datasets = 0
 for path in sorted(glob.glob(f"{ANALYTICS}/datasets/**/*.yaml", recursive=True)):
     if update_dataset(path):
@@ -296,7 +294,7 @@ for path in sorted(glob.glob(f"{ANALYTICS}/datasets/**/*.yaml", recursive=True))
         skipped_datasets += 1
 db.session.flush()
 
-# Pass 1: charts. Build chart_id_map for the dashboard pass.
+# Pass 2: charts. Build chart_id_map for the dashboard pass.
 chart_id_map: dict[int, int] = {}
 updated_charts = skipped_charts = 0
 for path in sorted(glob.glob(f"{ANALYTICS}/charts/*.yaml")):
@@ -306,7 +304,7 @@ for path in sorted(glob.glob(f"{ANALYTICS}/charts/*.yaml")):
         skipped_charts += 1
 db.session.flush()
 
-# Pass 2: dashboards (uses chart_id_map).
+# Pass 3: dashboards (uses chart_id_map).
 updated_dashboards = skipped_dashboards = 0
 for path in sorted(glob.glob(f"{ANALYTICS}/dashboards/*.yaml")):
     if update_dashboard(path, chart_id_map):
