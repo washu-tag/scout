@@ -26,12 +26,17 @@ helm_chart_values_files: []
 scout_notebook_image_name: ghcr.io/washu-tag/scout-notebook
 scout_notebook_image_tag: latest
 
+# Docs base URL as hardcoded in repo files (quickstart samples, OAuth2 Proxy
+# html); deploy tasks rewrite it to scout_docs_url. Not a knob — change only
+# if the links in those files change.
+scout_docs_latest_url: https://washu-scout.readthedocs.io/en/latest
+
 # Base URL for Scout user documentation links surfaced in deployed services
 # (Launchpad, OAuth2 Proxy error page, JupyterHub spawn page, quickstart
 # notebooks). No trailing slash. Override in inventory to pin users to the
 # docs for a released version, e.g.
 #   scout_docs_url: https://washu-scout.readthedocs.io/en/v4.0.0
-scout_docs_url: https://washu-scout.readthedocs.io/en/latest
+scout_docs_url: '{{ scout_docs_latest_url }}'
 
 # Kubernetes configuration
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
