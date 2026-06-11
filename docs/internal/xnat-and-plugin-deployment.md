@@ -400,10 +400,11 @@ initContainers:
 The coordinate (`group:artifact:version:classifier:type`) is declarative and
 version-pinned in git, and resolution goes through the **same controlled
 pull-through proxy as conda/PyPI/RPM** — so unlike Pattern B it needs **no
-arbitrary internet egress and works on air-gapped clusters**. (`maven_proxy_url`
-above is illustrative: Nexus can proxy Maven, but Scout doesn't define a Maven
-proxy var yet — it would be a new per-format proxy URL following the existing
-`pip_proxy_url` / `conda_proxy_url` convention from ADR 0017.) Use a released
+arbitrary internet egress and works on air-gapped clusters**. (`maven_proxy_url`,
+shown above, is a Scout-defined per-format proxy URL following the
+`pip_proxy_url` / `conda_proxy_url` convention from ADR 0017; it resolves through
+the Nexus `maven-public` group, which fronts both Maven Central and the NrgXnat
+Artifactory.) Use a released
 version, not a `-SNAPSHOT` (snapshots are mutable, which breaks reproducibility);
 pin a checksum if the resolver supports it. Since the chart has no native
 coordinate support yet, this is currently a hand-rolled `initContainers` entry —
