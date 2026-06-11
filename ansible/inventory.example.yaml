@@ -364,7 +364,10 @@ k3s_cluster:
     # Required when enable_xnat is true (the CNPG-managed XNAT Postgres password):
     # xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     #
-    # Site config seeded on XNAT's first boot (skips the setup wizard):
+    # Site config seeded on XNAT's first boot (skips the setup wizard).
+    # xnat_admin_email is also the From address on XNAT outbound mail; it
+    # defaults to cert_manager_acme_account_email when that is set, else a
+    # placeholder — set a real address for prod (relays may reject the sender):
     # xnat_site_id: scout-xnat
     # xnat_admin_email: admin@your-org.example
     #
@@ -372,7 +375,6 @@ k3s_cluster:
     # postfix); defaults to MailHog in-cluster. Point at your org relay for prod:
     # xnat_smtp_host: mailhog-service.mailhog
     # xnat_smtp_port: '1025'
-    # xnat_smtp_from: xnat@your-org.example
     #
     # Plugins are ADDITIVE over the role's default (the required openid plugin):
     # whatever you list here is installed *in addition to* openid — you never
