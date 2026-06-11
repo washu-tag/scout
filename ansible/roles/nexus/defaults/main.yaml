@@ -92,28 +92,39 @@ nexus_yum_repos:
 
 # Maven proxies. Maven and Gradle both resolve from Maven-format repositories,
 # so a single set of Maven proxies (aggregated by nexus_maven_group below)
-# serves both. Used by the xnat role to resolve plugins by coordinates.
-# Maven repos live on the shared `default` blob store, not a dedicated one:
-# Nexus auto-creates maven-central / maven-public there and refuses to move an
-# existing repo's blob store (the PUT 400s). Declaring maven-central here is a
-# harmless reaffirm when it already exists, and a create on a Nexus that lacks
-# it -- so the group's member always exists. xnat-maven is created fresh.
-nexus_maven_repos:
+# serves both (ADR 0017). Maven repos live on the shared `default` blob store,
+# not a dedicated one: Nexus auto-creates maven-central / maven-public there
+# and refuses to move an existing repo's blob store (the PUT 400s). Declaring
+# maven-central here is a harmless reaffirm when it already exists, and a
+# create on a Nexus that lacks it -- so the group's member always exists.
+nexus_maven_repos_base:
   - name: maven-central
     remoteUrl: https://repo1.maven.org/maven2/
     blobStoreName: default
+
+# Added only when enable_xnat: non-XNAT deployments should not proxy a
+# third-party Artifactory through the shared maven group (supply-chain surface).
+# Used by the xnat role to resolve plugins by coordinates.
+nexus_maven_repos_xnat:
   - name: xnat-maven
     remoteUrl: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
     blobStoreName: default
 
+nexus_maven_repos: >-
+  {{ nexus_maven_repos_base
+     + (nexus_maven_repos_xnat if (enable_xnat | default(false) | bool) else []) }}
+
 # Group that aggregates the Maven proxies into one resolvable URL. scout_common's
-# maven_proxy_url points at this group (.../repository/<name>).
+# maven_proxy_url points at this group (.../repository/<name>). Named scout-maven
+# (created fresh) rather than adopting Nexus CE's built-in maven-public group --
+# the chart's config job PUTs group definitions, which would silently replace the
+# built-in group's membership (maven-releases, maven-snapshots, maven-central).
 nexus_maven_group:
-  name: maven-public
+  name: scout-maven
   blobStoreName: default
-  memberNames:
-    - maven-central
-    - xnat-maven
+  memberNames: >-
+    {{ ['maven-central']
+       + (['xnat-maven'] if (enable_xnat | default(false) | bool) else []) }}
 
 # Computed — uses external_url/inventory_hostname of the staging host (where this role runs)
 # Same pattern as harbor_hostname in ansible/roles/harbor/defaults/main.yaml

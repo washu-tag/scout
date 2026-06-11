@@ -24,6 +24,20 @@
 - name: Fetch the XNAT chart from git
   ansible.builtin.include_tasks: fetch_chart.yaml
 
+- name: Guard against coordinates plugins on air-gapped clusters without a Maven proxy
+  ansible.builtin.assert:
+    that:
+      - not (air_gapped | default(false) | bool)
+        or (xnat_plugins_all | selectattr('source.type', 'equalto', 'coordinates') | list | length == 0)
+        or (maven_proxy_url | default('') | length > 0)
+    fail_msg: >
+      One or more xnat_plugins use source.type=coordinates, but this is an
+      air-gapped cluster and maven_proxy_url is empty: init containers have no
+      egress, so all Maven resolution must be mirrored through a package proxy.
+      Set package_proxy_mode: nexus (recommended; see ADR 0017), or set
+      package_proxy_mode: external and provide maven_proxy_url in inventory.
+    quiet: true
+
 - name: Guard against url plugins on air-gapped clusters
   ansible.builtin.assert:
     that:

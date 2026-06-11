@@ -359,18 +359,18 @@ yum_proxy_base_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository')
      if package_proxy_mode == 'nexus'
      else '' }}
-# Maven repository URL(s) for resolving JVM artifacts by coordinates (used by the
+# Maven repository URL for resolving JVM artifacts by coordinates (used by the
 # xnat role's plugin installer for Maven/Gradle-published plugins — Gradle
 # resolves from Maven-format repos, so one URL covers both). Points at the Nexus
-# maven group (aggregating maven-central + the XNAT Artifactory) when proxying.
-# Otherwise a comma-separated list of Maven Central + the XNAT Artifactory, so a
-# non-air-gapped deploy resolves both general plugins and XNAT plugins (e.g. the
-# default openid plugin, which is published only to NrgXnat Artifactory) out of
-# the box. The installer passes this verbatim to mvn -DremoteRepositories.
+# scout-maven group (maven-central, plus the XNAT Artifactory when enable_xnat)
+# when proxying; empty otherwise, like the other *_proxy_url values. When set,
+# it is rendered as a Maven mirror (single URL) in the xnat role's settings.xml.
+# Non-proxied deploys never read this value — they resolve from Maven Central
+# plus each plugin's declared source.repo_url.
 maven_proxy_url: >-
-  {{ ('https://' ~ nexus_host ~ '/repository/maven-public')
+  {{ ('https://' ~ nexus_host ~ '/repository/scout-maven')
      if package_proxy_mode == 'nexus'
-     else 'https://repo1.maven.org/maven2,https://nrgxnat.jfrog.io/nrgxnat/libs-release' }}
+     else '' }}
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
 s3_endpoint: "{{ aws_deployment | ternary('', 'http://minio.' ~ minio_tenant_namespace) }}"
 hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'
