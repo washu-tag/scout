@@ -312,7 +312,7 @@ k3s_cluster:
     # authorization-code flow against Keycloak). Required only when enable_xnat
     # is true — the realm gates the xnat client on that flag. See the XNAT
     # section below and docs/internal/xnat-and-plugin-deployment.md.
-    keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
