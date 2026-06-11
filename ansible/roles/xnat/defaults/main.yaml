@@ -73,16 +73,9 @@ xnat_helm_timeout: 20m
 # --- Extra xnat-conf.properties entries (merged with plugin extraConfig) ---
 xnat_extra_config: {}
 
-# --- Air-gapped URL plugin restaging --------------------------------------
-# When true and air_gapped, plugins with source.type=url are fetched on the
-# jump node and re-hosted in the Nexus raw repo so init containers (which have
-# no egress) can pull them. Default off: prefer coordinates (Pattern D).
-xnat_url_restage_via_nexus: false
-xnat_nexus_raw_repo: xnat-plugins-raw
-
 # --- Plugins --------------------------------------------------------------
 # The required openid plugin. Operators ADD their own via `xnat_plugins`
-# (default [] in scout_common); the role combines the two into xnat_plugins_all
+# (defaulted to [] inline below); the role combines the two into xnat_plugins_all
 # so the openid entry is never repeated or accidentally dropped.
 #
 # Per-plugin shape:
@@ -147,5 +140,5 @@ xnat_plugins_default:
           openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
 
 # Combined list the templates/tasks iterate. xnat_plugins is operator-supplied
-# (default [] in scout_common defaults).
+# (defaulted to [] inline here).
 xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'

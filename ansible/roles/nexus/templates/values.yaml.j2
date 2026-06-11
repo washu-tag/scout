@@ -145,18 +145,3 @@ config:
         layoutPolicy: PERMISSIVE
         contentDisposition: ATTACHMENT
 {% endif %}
-{% for repo in nexus_raw_repos | default([]) %}
-    - name: {{ repo.name }}
-      format: raw
-      type: hosted
-      online: true
-      storage:
-        blobStoreName: {{ repo.blobStoreName }}
-        strictContentTypeValidation: false
-        writePolicy: ALLOW
-      cleanup:
-        policyNames:
-          - purge-unused
-      raw:
-        contentDisposition: ATTACHMENT
-{% endfor %}

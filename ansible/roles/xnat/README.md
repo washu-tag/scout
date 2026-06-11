@@ -92,9 +92,9 @@ are assumed pre-built to log to stdout.
   group, plus the staging CA (per ADR-0016) so the installer trusts Nexus's
   self-signed HTTPS. The installer image carries no repo/air-gapped knowledge —
   it just uses the `settings.xml` and CA when mounted (see ADR 0027).
-- **url** needs egress, so on air-gapped clusters it fails fast unless
-  `xnat_url_restage_via_nexus: true`, which has the jump node fetch the jar and
-  re-host it in the Nexus raw repo for the init container to pull.
+- **url** needs egress, so on air-gapped clusters it fails fast — use
+  coordinates, image, or file instead (re-hosting url jars via Nexus is a
+  possible future enhancement; see ADR 0027).
 - **image** pulls through Harbor like every other Scout image.
 
 ## Mail
