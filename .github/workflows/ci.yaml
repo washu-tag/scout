@@ -726,6 +726,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
+      - name: 'Push Image - xnat-plugin-installer'
+        if: needs.changes.outputs.xnat-plugin-installer == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: xnat-plugin-installer
   publish-demo:
     if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
@@ -791,3 +796,8 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
+      - name: 'Push Image - xnat-plugin-installer'
+        if: needs.changes.outputs.xnat-plugin-installer == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: xnat-plugin-installer
