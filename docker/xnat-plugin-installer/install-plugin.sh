@@ -12,10 +12,18 @@
 #   PLUGIN_SOURCE_TYPE           file | url | coordinates (required)
 #   PLUGIN_FILE                  source jar path (required for type=file)
 #   PLUGIN_URL                   download URL (required for type=url)
-#   PLUGIN_COORDINATES           group:artifact:version:classifier:type (required for type=coordinates)
-#   PLUGIN_REPO_URL              Maven repo to resolve coordinates from (required for type=coordinates)
+#   PLUGIN_COORDINATES           Maven -Dartifact coordinate (required for type=coordinates),
+#                                groupId:artifactId:version[:packaging[:classifier]] -- e.g.
+#                                au.edu.qcif.xnat.openid:openid-auth-plugin:1.5.0:jar:xpl
+#   PLUGIN_CA_CERT               PEM CA to trust for HTTPS, imported into the JVM truststore
+#                                (optional; for a self-signed Maven proxy/registry)
 #   PLUGIN_SKIP_LOGBACK_REWRITE  "true" to skip the stdout rewrite (default "false")
 #   DEST_DIR                     plugins dir (default /data/xnat/home/plugins)
+#
+# Maven repositories are NOT configured via env: when coordinate resolution needs
+# a non-default repo (a private repo, or an air-gapped proxy) the deployment mounts
+# a settings.xml at /mnt/maven/settings.xml, which this script passes to `mvn -s`.
+# With none mounted, Maven resolves from its built-in Central.
 #
 # Image-baked plugins (the chart's native `plugins:` map) do NOT use this
 # installer — they are pre-built and already log to stdout.
@@ -87,10 +95,25 @@ case "$PLUGIN_SOURCE_TYPE" in
     ;;
   coordinates)
     : "${PLUGIN_COORDINATES:?PLUGIN_COORDINATES required for source type 'coordinates'}"
-    : "${PLUGIN_REPO_URL:?PLUGIN_REPO_URL required for source type 'coordinates'}"
-    mvn -q -B org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
+
+    # Trust a self-signed proxy/registry CA when one is mounted, so Maven's HTTPS
+    # fetches validate. No-op when PLUGIN_CA_CERT is unset/absent.
+    if [ -n "${PLUGIN_CA_CERT:-}" ] && [ -f "$PLUGIN_CA_CERT" ]; then
+      log "trusting CA $PLUGIN_CA_CERT"
+      keytool -importcert -noprompt -trustcacerts -alias scout-proxy-ca \
+        -file "$PLUGIN_CA_CERT" \
+        -keystore "$JAVA_HOME/lib/security/cacerts" -storepass changeit
+    fi
+
+    # Use a deployment-provided settings.xml when present (private repo or
+    # air-gapped proxy); otherwise Maven resolves from its built-in Central.
+    mvn_settings=()
+    if [ -f /mnt/maven/settings.xml ]; then
+      log "using mounted Maven settings.xml"
+      mvn_settings=(-s /mnt/maven/settings.xml)
+    fi
+    mvn -q -B "${mvn_settings[@]}" org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
       -Dartifact="$PLUGIN_COORDINATES" \
-      -DremoteRepositories="$PLUGIN_REPO_URL" \
       -Dmdep.useBaseVersion=true \
       -DoutputDirectory="$WORK/dl"
     resolved="$(find "$WORK/dl" -maxdepth 1 -type f -name '*.jar' | head -1)"
