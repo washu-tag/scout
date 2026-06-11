@@ -153,11 +153,18 @@ ADR 0012). Its Traefik ingress applies, in order:
 Behind that gate, the `xnat-openid-auth-plugin` runs its own OIDC
 authorization-code flow against a confidential `xnat` Keycloak client (client
 secret, `/openid-login` redirect URI, PKCE S256, a groups mapper, and the
-`xnat-access` client role mapped to the `scout-user` group). This is the same
-two-layer shape Scout already uses for Grafana, Superset, and JupyterHub: the
-edge gate enforces approval, and the app establishes its own identity via
-Keycloak. `/openid-login` is an application callback behind the gate, not a
-public path.
+`xnat-access` client role mapped to the `scout-user` group). Structurally this
+resembles the two-layer shape Scout uses for Grafana, Superset, and JupyterHub
+— but with one important difference: **the edge gate is the only enforced
+authorization layer for XNAT.** The off-the-shelf openid plugin (1.5.0) has no
+role/claim-restriction property (only email-domain filtering), so it cannot
+consume the `xnat-access` role, and with `forceUserCreate` any user who passes
+oauth2-proxy gets an XNAT account auto-created on first login. Grafana and
+Superset, by contrast, actually evaluate their client roles. `xnat-access`
+is therefore provisioned but **unenforced** — kept for a future plugin-side
+role check (a candidate upstream contribution); removing a user from it does
+NOT revoke XNAT access today. `/openid-login` is an application callback
+behind the gate, not a public path.
 
 ### 6. Single-node deployment posture
 

@@ -388,7 +388,7 @@ initContainers:
       - >
         set -e;
         mvn -q org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy
-        -Dartifact=org.nrg.xnatx.plugins:openid-auth-plugin:1.4.1:xpl:jar
+        -Dartifact=org.nrg.xnatx.plugins:openid-auth-plugin:1.4.1:jar:xpl
         -DremoteRepositories={{ maven_proxy_url }}
         -DoutputDirectory=/data/xnat/home/plugins;
         ls -l /data/xnat/home/plugins
@@ -784,7 +784,12 @@ Adjustments when re-enabling it:
   need it; drop it unless a token-exchange consumer returns.
 - **Keep the `xnat-access` client role and its `scout-user` default-role
   mapping** (separate blocks in the template, unchanged by the bearer-only
-  refactor) — that's the authorization gate both plugins rely on.
+  refactor). Note, however, that only the POC Scout token-trust plugin ever
+  *enforced* it (`scout.keycloak.required_role`); the off-the-shelf openid
+  plugin has no role-restriction property, so with the shipped setup
+  `xnat-access` is provisioned but unenforced — oauth2-proxy edge approval is
+  the only authorization gate, and any approved Scout user gets an XNAT
+  account auto-created on first login (`forceUserCreate`).
 - **The `jupyterhub` `xnat-audience` mapper is *not* needed initially.** Per the
   current direction we only want the `xnat` client itself re-enabled; the
   audience mapper on the Jupyter client (which stamps `aud=xnat` for the
@@ -811,7 +816,8 @@ Adjustments when re-enabling it:
 > - **Postfix:** disabled in intent (XNAT routes at Scout's shared relay); the
 >   placeholder Secret remains only until the upstream `condition: mail.enabled`
 >   change (improvement #2) lands.
-> - **openid coordinate:** `au.edu.qcif.xnat.openid:openid-auth-plugin:1.5.0:xpl`
+> - **openid coordinate:** `au.edu.qcif.xnat.openid:openid-auth-plugin:1.5.0:jar:xpl`
+>   (a `-xpl.jar` is packaging `jar` + classifier `xpl`, not packaging `xpl`)
 >   at NrgXnat Artifactory, proxied via a new Nexus maven group (`maven_proxy_url`).
 > - **Keycloak client** is now gated on `enable_xnat`.
 >
@@ -1019,7 +1025,7 @@ pluginInstall:
   - name: some-plugin
     source:
       # Maven/Gradle coordinates, resolved against a configurable repo
-      coordinates: org.nrg.xnat.plugins:some-plugin:1.2.3:xpl@jar
+      coordinates: org.nrg.xnat.plugins:some-plugin:1.2.3:jar:xpl
   - name: local-dev
     source:
       file: /mnt/plugins/local-built.jar   # hostPath / pre-mounted volume
