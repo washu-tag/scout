@@ -78,8 +78,10 @@ postgres:
     annotations: {{ orthanc_postgres_cluster_annotations | to_json }}
     enabled: {{ orthanc_postgres_mode == 'cnpg' }} # Set to false to use your own DB
     instances: {{ orthanc_postgres_replicas }}
+{% if orthanc_postgres_image_name %}
     imageName: {{ orthanc_postgres_image_name }}
     version: {{ orthanc_postgres_version }}
+{% endif %}
     storage:
       size: "{{ orthanc_postgres_storage_size }}"
       storageClass: "{{ orthanc_postgres_storage_class }}"

@@ -27,8 +27,10 @@ orthanc_dicom_service_load_balancer_class: ''
 # Options: disabled, cnpg
 orthanc_postgres_mode: disabled
 orthanc_postgres_user: orthanc
+# Leave image name empty to let the CNPG operator deploy its default
+# postgres image; set both to pin a specific image for audit purposes.
 orthanc_postgres_version: 18
-orthanc_postgres_image_name: 'ghcr.io/cloudnative-pg/postgresql'
+orthanc_postgres_image_name: ''
 orthanc_postgres_port: 5432
 orthanc_postgres_replicas: 1
 orthanc_postgres_database: orthanc
