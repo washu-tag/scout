@@ -193,6 +193,10 @@ extraEnvVars:
   - name: ENABLE_OAUTH_SIGNUP
     value: 'true'
 
+  # Auto-redirect to OAuth provider
+  - name: OAUTH_AUTO_REDIRECT
+    value: 'true'
+
   # OAuth provider configuration
   - name: OAUTH_PROVIDER_NAME
     value: '{{ oauth_provider_name }}'

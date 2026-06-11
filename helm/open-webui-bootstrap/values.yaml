@@ -9,7 +9,7 @@
 # without needing a separate pin. Standalone chart users should override
 # `image.ref` to match their OWUI deployment.
 image:
-  ref: 'ghcr.io/open-webui/open-webui:0.9.5'
+  ref: 'ghcr.io/open-webui/open-webui:0.9.6'
   pullPolicy: IfNotPresent
 
 # In-cluster URL for OWUI. Bypasses Traefik (no oauth2-proxy gate) so the
