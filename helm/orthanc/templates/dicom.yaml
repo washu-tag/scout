@@ -4,11 +4,18 @@ metadata:
   name: orthanc-expose-dicom
   labels:
     {{- include "orthanc.labels" . | nindent 4 }}
+  {{- with .Values.service.dicom.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: LoadBalancer
+  {{- if .Values.service.dicom.loadBalancerClass }}
+  loadBalancerClass: {{ .Values.service.dicom.loadBalancerClass }}
+  {{- end }}
   allocateLoadBalancerNodePorts: false
   ports:
-    - port: {{ .Values.service.dicom }}
-      targetPort: {{ .Values.service.dicom }}
+    - port: {{ .Values.service.dicom.port }}
+      targetPort: {{ .Values.service.dicom.port }}
   selector:
     {{- include "orthanc.selectorLabels" . | nindent 4 }}

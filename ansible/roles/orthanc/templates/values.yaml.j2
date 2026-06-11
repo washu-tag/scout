@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: {{ orthanc_replicas }}
 
 image:
   repository: "{{ orthanc_image }}"
@@ -25,7 +25,10 @@ securityContext: {}
 service:
   type: ClusterIP
   http: 8042
-  dicom: {{ orthanc_dicom_port }}
+  dicom:
+    port: {{ orthanc_dicom_port }}
+    annotations: {{ orthanc_dicom_service_annotations | to_json }}
+    loadBalancerClass: {{ orthanc_dicom_service_load_balancer_class | to_json }}
 
 ingress:
   enabled: true
@@ -68,6 +71,33 @@ volumeMounts:
     mountPath: /var/lib/orthanc/db
     readOnly: false
     mountPropagation: HostToContainer
+
+postgres:
+  cluster:
+    affinity: {{ orthanc_postgres_cluster_affinity | to_json }}
+    annotations: {{ orthanc_postgres_cluster_annotations | to_json }}
+    enabled: {{ orthanc_postgres_mode == 'cnpg' }} # Set to false to use your own DB
+    instances: {{ orthanc_postgres_replicas }}
+{% if orthanc_postgres_image_name %}
+    imageName: {{ orthanc_postgres_image_name }}
+    version: {{ orthanc_postgres_version }}
+{% endif %}
+    storage:
+      size: "{{ orthanc_postgres_storage_size }}"
+      storageClass: "{{ orthanc_postgres_storage_class }}"
+    resources: {{ orthanc_postgres_resources_default | combine(orthanc_postgres_resources | default({}), recursive=true) | to_json }}
+    parameters:
+      max_connections: {{ orthanc_postgres_max_connections }}
+      shared_buffers: {{ orthanc_postgres_shared_buffers }}
+    enableSuperuserAccess: true
+    credentials:
+      # Always use an external secret for production deployments.
+      externalSecret: orthanc-cnpg-app-credentials
+      database: {{ orthanc_postgres_database | to_json }}
+    # CNPG can include roles and services in cluster definitions.
+    # See the official docs for more information
+    # https://cloudnative-pg.io/docs/1.29/cloudnative-pg.v1#managedconfiguration
+    managed: {}
 
 nodeSelector: {}
 

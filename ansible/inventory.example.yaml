@@ -704,6 +704,44 @@ k3s_cluster:
     #     cpu: 2
     #     memory: 8Gi
 
+    #---------------------------------------------------------------------------
+    # Orthanc (optional PACS for development/testing — installed via `make install-orthanc`)
+    #---------------------------------------------------------------------------
+    # HTTP API credentials for the Orthanc REST/web UI. Defaults to orthanc/orthanc
+    # if unset; override for any non-throwaway deployment.
+    # orthanc_username: orthanc
+    # orthanc_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Persistent volume for the DICOM blob store (pixel data lives here).
+    # orthanc_storage_size: 100Gi
+    # orthanc_storage_class: ''  # see the storage-class block above for multi-disk overrides
+
+    # Cloud Provider load balancer for the DICOM port (4242).
+    # Leave unset on-prem — the chart will fall back to the cluster default.
+    # AWS example (NLB, internet-facing):
+    # orthanc_dicom_service_load_balancer_class: service.k8s.aws/nlb
+    # orthanc_dicom_service_annotations:
+    #   service.beta.kubernetes.io/aws-load-balancer-type: external
+    #   service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    #   service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+
+    # Postgres backing store for the Orthanc index (recommended for any deployment
+    # beyond a single-replica dev box — SQLite cannot survive pod restarts on RWO PVCs
+    # in many setups). Options: 'disabled' (built-in SQLite), 'cnpg' (Scout deploys a
+    # dedicated CloudNativePG cluster).
+    # orthanc_postgres_mode: cnpg
+    # orthanc_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # orthanc_postgres_storage_size: 100Gi
+    # orthanc_postgres_storage_class: ''
+    # # Production resource overrides (defaults in role are for dev)
+    # orthanc_postgres_resources:
+    #   requests:
+    #     cpu: 2
+    #     memory: 8Gi
+    #   limits:
+    #     cpu: 8
+    #     memory: 16Gi
+
 # This group contains all nodes that are remote relative to the node running Ansible
 remotes:
   children:

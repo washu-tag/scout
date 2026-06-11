@@ -32,6 +32,10 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
@@ -42,7 +46,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: dicom
-              containerPort: {{ .Values.service.dicom }}
+              containerPort: {{ .Values.service.dicom.port }}
               protocol: TCP
             - name: http
               containerPort: {{ .Values.service.http }}

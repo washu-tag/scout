@@ -1,0 +1,78 @@
+{{- if .Values.postgres.cluster.enabled }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: orthanc-cnpg
+  annotations:
+    checksum/cnpg-values: {{ .Values.postgres | toJson | sha256sum }}
+  {{- with .Values.postgres.cluster.annotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+  instances: {{ .Values.postgres.cluster.instances }}
+  {{- with .Values.postgres.cluster.affinity }}
+  affinity:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- /* Omitted by default so the CNPG operator deploys its default
+       postgres image; set imageName (and optionally version) to pin a
+       specific image for audit purposes. */}}
+  {{- with .Values.postgres.cluster.imageName }}
+  imageName: {{ . }}{{- with $.Values.postgres.cluster.version }}:{{ . }}{{- end }}
+  {{- end }}
+  {{- /* e.g. an eks.amazonaws.com/role-arn annotation (IRSA) so the
+       cluster pods can reach an S3 barman object store for backup or
+       recovery. */}}
+  {{- with .Values.postgres.cluster.serviceAccountTemplate }}
+  serviceAccountTemplate:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  storage:
+    size: {{ .Values.postgres.cluster.storage.size }}
+    storageClass: {{ .Values.postgres.cluster.storage.storageClass }}
+  resources: {{- .Values.postgres.cluster.resources | toYaml | nindent 4 }}
+  enableSuperuserAccess: {{ .Values.postgres.cluster.enableSuperuserAccess }}
+  {{- if (default dict .Values.postgres.cluster.recovery).enabled }}
+  {{- /* Restore from an existing barman object-store backup instead of
+       initializing a fresh database (e.g. stand up a copy of another
+       environment's Orthanc). The restored database keeps the
+       backed-up credentials, so credentials.externalSecret is unused
+       in this mode. */}}
+  bootstrap:
+    recovery:
+      source: {{ .Values.postgres.cluster.recovery.source | default "origin" }}
+  externalClusters:
+    - name: {{ .Values.postgres.cluster.recovery.source | default "origin" }}
+      barmanObjectStore:
+        destinationPath: {{ required "postgres.cluster.recovery.destinationPath is required when recovery is enabled" .Values.postgres.cluster.recovery.destinationPath }}
+        serverName: {{ required "postgres.cluster.recovery.serverName is required when recovery is enabled" .Values.postgres.cluster.recovery.serverName }}
+        {{- with .Values.postgres.cluster.recovery.endpointURL }}
+        endpointURL: {{ . }}
+        {{- end }}
+        s3Credentials:
+          {{- .Values.postgres.cluster.recovery.s3Credentials | default (dict "inheritFromIAMRole" true) | toYaml | nindent 10 }}
+  {{- else }}
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgres.cluster.credentials.database }}
+      {{- /* CNPG defaults the owner to the database name. */}}
+      {{- with .Values.postgres.cluster.credentials.username }}
+      owner: {{ . }}
+      {{- end }}
+      secret:
+        name: {{ required "postgres.cluster.credentials.externalSecret is required when the CNPG cluster is enabled -- create the kubernetes.io/basic-auth secret out-of-band (the ansible role does this) so the chart never owns credentials" .Values.postgres.cluster.credentials.externalSecret }}
+  {{- end }}
+  postgresql:
+    {{- if .Values.postgres.cluster.parameters }}
+    {{- with .Values.postgres.cluster.parameters }}
+    parameters:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- end }}
+  {{- with .Values.postgres.cluster.managed }}
+  managed:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
