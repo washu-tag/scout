@@ -1,19 +1,25 @@
-"""Force-overwrite Superset chart and dashboard params by UUID.
+"""Force-overwrite Superset Database / dataset / chart / dashboard params by UUID.
 
-Workaround for `superset import-dashboards` not reliably overwriting the
-`params`, `query_context`, and `position_json` of existing assets — it
-preserves the existing rows and silently ignores the new YAML for any UUID
-already in the DB.
+`superset import-dashboards` silently preserves existing rows on UUID
+match, so edits to the YAML never reach the DB without this script.
 
-Run AFTER `superset import-dashboards`. The CLI handles creating new assets
-(datasets, charts, dashboards); this script handles updating existing ones.
+Invoked twice by the import Job:
 
-For dashboards we also have to remap chartId references in position_json
-and json_metadata: YAML files capture chartId values from whatever DB the
-export came from, but on import Superset auto-assigns new local IDs by
-auto-increment. UUID is the only stable identifier across instances.
+  1. `python import.py <dir> --databases-only` runs BEFORE the CLI to
+     heal a stale `Database.sqlalchemy_uri`. Required because the CLI's
+     `import_dataset` opens a Trino connection when creating a new
+     dataset, and a stale URI aborts the Job before the post-CLI pass
+     can heal it.
+  2. `python import.py <dir>` (no flag) runs AFTER the CLI. Sweeps
+     databases / datasets / charts / dashboards and force-overwrites
+     params, position_json, json_metadata, etc. on existing rows.
 
-Usage: python import.py [analytics_dir]
+For dashboards we also remap chartId references in position_json and
+json_metadata. YAML files capture chartId values from whatever DB the
+export came from, but on import Superset auto-assigns new local IDs.
+UUID is the only stable identifier across instances.
+
+Usage: python import.py [analytics_dir] [--databases-only]
 """
 
 import glob
@@ -28,15 +34,24 @@ from superset.app import create_app  # noqa: E402
 app = create_app()
 app.app_context().push()
 
+from superset.commands.database.importers.v1.utils import (  # noqa: E402
+    import_database,
+)
 from superset.connectors.sqla.models import (  # noqa: E402
     SqlaTable,
     SqlMetric,
     TableColumn,
 )
+from superset.models.core import Database  # noqa: E402
 from superset.models.dashboard import Dashboard  # noqa: E402
 from superset.models.slice import Slice  # noqa: E402
 
-ANALYTICS = sys.argv[1] if len(sys.argv) > 1 else "/app/dashboard-config/analytics"
+# `--databases-only` runs Pass 0 and exits. Used pre-CLI to heal a stale
+# `sqlalchemy_uri` before `superset import-dashboards` opens a Trino
+# connection (e.g., when creating a new dataset).
+_args = [a for a in sys.argv[1:] if not a.startswith("--")]
+ANALYTICS = _args[0] if _args else "/app/dashboard-config/analytics"
+DATABASES_ONLY = "--databases-only" in sys.argv[1:]
 
 
 def _coerce_bool(val) -> bool:
@@ -59,6 +74,33 @@ _METRIC_FIELDS = (
     "currency",
     "warning_text",
 )
+
+
+def update_database(path: str) -> bool:
+    """Sync a Database row's connection fields from the YAML by UUID.
+
+    Delegates to Superset's `import_database` with `overwrite=True`,
+    which uses `set_sqlalchemy_uri` (password masking) and
+    `Database.import_from_dict` (extra-as-JSON, ssh_tunnel,
+    PREVENT_UNSAFE_DB_CONNECTIONS check). `ignore_permissions=True` is
+    needed because the import Job has no Flask request context.
+
+    Returns False when no row exists yet. On a clean install the
+    upstream CLI creates the row from the YAML.
+    """
+    with open(path) as f:
+        data = yaml.safe_load(f)
+    existing = db.session.query(Database).filter_by(uuid=data["uuid"]).first()
+    if existing is None:
+        return False
+    # The helper does `config.pop("allow_csv_upload")` unconditionally
+    # (back-compat for pre-PR-16756 export YAMLs). Our chart uses the
+    # modern key, so translate here. Delete once Superset drops the
+    # legacy rename.
+    if "allow_file_upload" in data and "allow_csv_upload" not in data:
+        data["allow_csv_upload"] = data.pop("allow_file_upload")
+    import_database(data, overwrite=True, ignore_permissions=True)
+    return True
 
 
 def update_dataset(path: str) -> bool:
@@ -229,7 +271,27 @@ def update_dashboard(path: str, chart_id_map: dict[int, int]) -> bool:
     return True
 
 
-# Pass 0: datasets. Sync columns/metrics on existing datasets by UUID.
+# Pass 0: databases. Force-overwrite the SQLAlchemy URI + connection
+# flags on existing Database rows so a Helm values change (port, scheme,
+# user) propagates.
+updated_databases = skipped_databases = 0
+for path in sorted(glob.glob(f"{ANALYTICS}/databases/*.yaml")):
+    if update_database(path):
+        updated_databases += 1
+    else:
+        skipped_databases += 1
+db.session.flush()
+
+if DATABASES_ONLY:
+    # Pre-CLI invocation. Commit the URI fix and exit; the post-CLI
+    # invocation handles dataset / chart / dashboard passes.
+    db.session.commit()
+    print(
+        f"force-update: databases updated={updated_databases} skipped={skipped_databases}"
+    )
+    sys.exit(0)
+
+# Pass 1: datasets. Sync columns/metrics on existing datasets by UUID.
 updated_datasets = skipped_datasets = 0
 for path in sorted(glob.glob(f"{ANALYTICS}/datasets/**/*.yaml", recursive=True)):
     if update_dataset(path):
@@ -238,7 +300,7 @@ for path in sorted(glob.glob(f"{ANALYTICS}/datasets/**/*.yaml", recursive=True))
         skipped_datasets += 1
 db.session.flush()
 
-# Pass 1: charts. Build chart_id_map for the dashboard pass.
+# Pass 2: charts. Build chart_id_map for the dashboard pass.
 chart_id_map: dict[int, int] = {}
 updated_charts = skipped_charts = 0
 for path in sorted(glob.glob(f"{ANALYTICS}/charts/*.yaml")):
@@ -248,7 +310,7 @@ for path in sorted(glob.glob(f"{ANALYTICS}/charts/*.yaml")):
         skipped_charts += 1
 db.session.flush()
 
-# Pass 2: dashboards (uses chart_id_map).
+# Pass 3: dashboards (uses chart_id_map).
 updated_dashboards = skipped_dashboards = 0
 for path in sorted(glob.glob(f"{ANALYTICS}/dashboards/*.yaml")):
     if update_dashboard(path, chart_id_map):
@@ -259,7 +321,8 @@ for path in sorted(glob.glob(f"{ANALYTICS}/dashboards/*.yaml")):
 db.session.commit()
 
 print(
-    f"force-update: datasets updated={updated_datasets} skipped={skipped_datasets}, "
+    f"force-update: databases updated={updated_databases} skipped={skipped_databases}, "
+    f"datasets updated={updated_datasets} skipped={skipped_datasets}, "
     f"charts updated={updated_charts} skipped={skipped_charts}, "
     f"dashboards updated={updated_dashboards} skipped={skipped_dashboards}, "
     f"chart_id_map_size={len(chart_id_map)}"

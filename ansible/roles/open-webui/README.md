@@ -133,7 +133,7 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 **Filter Functions** — installed, configured with valves, and toggled global on every deploy:
 - **Link Sanitizer** ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md))
 - **Context Summarization** ([ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md))
-- **Tool Result Body→Attribute Migrator** — diagnostic workaround for an OWUI 0.9.5 rendering regression (upstream commit 45e49d33e, Apr 2026, moved tool-call results from a `result="..."` attribute on the `<details>` tag into the body; the new path doesn't display). When bumping `open_webui_helm_chart_version` past `~14.5.0`, test without the filter (set `enable_active: false` in inventory) — if the regression is fixed, delete the inventory entry, the filter source, and its tests.
+- **Tool Result Body→Attribute Migrator** — diagnostic workaround for an OWUI 0.9.5 rendering regression (upstream commit 45e49d33e, Apr 2026, moved tool-call results from a `result="..."` attribute on the `<details>` tag into the body; the new path doesn't display). Confirmed still broken in 0.9.6 (`ToolCallDisplay.svelte` byte-identical between v0.9.5 and v0.9.6). When bumping `open_webui_helm_chart_version` past `~14.8.0`, test without the filter (set `enable_active: false` in inventory) — if the regression is fixed, delete the inventory entry, the filter source, and its tests.
 
 **PersistentConfig** — re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`).
 
