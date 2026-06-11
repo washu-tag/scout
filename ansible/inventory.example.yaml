@@ -393,7 +393,9 @@ k3s_cluster:
     # keycloak_xnat_client_id: xnat       # Keycloak clientId for XNAT
     # xnat_namespace: xnat                # Namespace where XNAT is deployed
     # xnat_chart_git_ref: xnat-1.0.2      # NrgXnat/helm-charts tag to deploy
-    # xnat_image_tag: '1.10.0'            # xnatworks/xnat-web image tag
+    # (xnat_image_tag and the openid plugin version are pinned in
+    # group_vars/all/versions.yaml, which outranks inventory — use -e to test
+    # a different version, like every other Scout component.)
 
     #---------------------------------------------------------------------------
     # PostgreSQL

@@ -14,10 +14,11 @@ xnat_chart_subpath: helm/xnat # path to the chart within the cloned repo
 xnat_helm_release_name: xnat
 
 # --- XNAT image -----------------------------------------------------------
-# 1.10.0 selected via image.tag override; the chart's appVersion (1.9.2.1) is
-# unchanged. The re-cut 1.10.0 image has a JDK 21 JRE matching its bytecode.
+# xnat_image_tag is pinned in group_vars/all/versions.yaml (Renovate-monitored,
+# per ADR 0015) and selects the image via image.tag override; the chart's
+# appVersion (1.9.2.1) is unchanged. The re-cut 1.10.0 image has a JDK 21 JRE
+# matching its bytecode.
 xnat_image_repository: xnatworks/xnat-web
-xnat_image_tag: '1.10.0'
 
 # --- Plugin installer image (built by Scout CI, pulled through Harbor) -----
 xnat_plugin_installer_image_repository: ghcr.io/washu-tag/xnat-plugin-installer
@@ -105,7 +106,8 @@ xnat_plugins_default:
       type: coordinates
       # Maven -Dartifact format: groupId:artifactId:version:packaging:classifier
       # (the -xpl.jar is a 'jar' with classifier 'xpl', not packaging 'xpl').
-      coordinates: 'au.edu.qcif.xnat.openid:openid-auth-plugin:1.5.0:jar:xpl'
+      # Version pinned in group_vars/all/versions.yaml (Renovate-monitored).
+      coordinates: 'au.edu.qcif.xnat.openid:openid-auth-plugin:{{ xnat_openid_plugin_version }}:jar:xpl'
       # Published only to the NrgXnat Artifactory (never on Maven Central), so the
       # repo must be named. Air-gapped deploys resolve via the Nexus group instead.
       repo_url: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
