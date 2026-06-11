@@ -81,8 +81,10 @@ opa_image_tag: 1.16.2
 keycloak_version: 26.6.3
 
 # Analytics & Query Engines - Hive
-# renovate: datasource=docker depName=starburstdata/hive versioning=loose
-hive_image_tag: 3.1.3-e.14
+# Regex versioning restricts updates to the plain multi-arch tags; loose
+# versioning ranked the arch-suffixed -x64/-arm64 variants above them.
+# renovate: datasource=docker depName=starburstdata/hive versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?<compatibility>-e\.)(?<build>\d+)$
+hive_image_tag: 3.1.3-e.15
 
 # Data Visualization & BI - Superset
 # renovate: datasource=helm registryUrl=https://apache.github.io/superset depName=superset
