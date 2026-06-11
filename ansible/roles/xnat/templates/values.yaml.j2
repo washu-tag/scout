@@ -21,7 +21,8 @@ securityContext:
   # drop:[] = drop nothing -> retain the runtime's default cap set (incl.
   # CAP_DAC_OVERRIDE), overriding the chart's capabilities.drop:[ALL].
   capabilities:
-    drop: []
+    drop: ['ALL']
+    add: ['DAC_OVERRIDE']
 
 # Single-node dev posture; revisit before HA.
 redis:
