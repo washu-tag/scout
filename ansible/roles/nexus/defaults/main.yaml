@@ -58,12 +58,9 @@ nexus_blob_stores:
     softQuota:
       type: spaceRemainingQuota
       limit: 5368709120 # 5 GB
-  - name: maven-store
-    type: file
-    path: maven-store
-    softQuota:
-      type: spaceRemainingQuota
-      limit: 5368709120 # 5 GB
+  # No dedicated maven blob store: Nexus pins its built-in maven-central /
+  # maven-public to the shared `default` store and won't let them be moved, so
+  # Scout's maven proxies + group live on `default` too (see nexus_maven_repos).
   - name: raw-store
     type: file
     path: raw-store
@@ -102,19 +99,24 @@ nexus_yum_repos:
 # Maven proxies. Maven and Gradle both resolve from Maven-format repositories,
 # so a single set of Maven proxies (aggregated by nexus_maven_group below)
 # serves both. Used by the xnat role to resolve plugins by coordinates.
+# Maven repos live on the shared `default` blob store, not a dedicated one:
+# Nexus auto-creates maven-central / maven-public there and refuses to move an
+# existing repo's blob store (the PUT 400s). Declaring maven-central here is a
+# harmless reaffirm when it already exists, and a create on a Nexus that lacks
+# it -- so the group's member always exists. xnat-maven is created fresh.
 nexus_maven_repos:
   - name: maven-central
     remoteUrl: https://repo1.maven.org/maven2/
-    blobStoreName: maven-store
+    blobStoreName: default
   - name: xnat-maven
     remoteUrl: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
-    blobStoreName: maven-store
+    blobStoreName: default
 
 # Group that aggregates the Maven proxies into one resolvable URL. scout_common's
 # maven_proxy_url points at this group (.../repository/<name>).
 nexus_maven_group:
   name: maven-public
-  blobStoreName: maven-store
+  blobStoreName: default
   memberNames:
     - maven-central
     - xnat-maven
