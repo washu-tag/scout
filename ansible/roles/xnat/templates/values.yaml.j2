@@ -14,12 +14,11 @@ image:
 # image's `tomcat` user) that does not own its entrypoint
 # (/usr/local/bin/entrypoint.sh, mode 0744 root:root), so DAC_OVERRIDE is what
 # lets it exec the entrypoint. With all caps dropped the container can't start
-# ("exec /usr/local/bin/entrypoint.sh: permission denied"). Restore the default
-# capability set; runAsUser 1000 itself is fine (tomcat owns the data dirs). Once
-# NrgXnat/xnat#5 is fixed (image works with caps dropped), drop this block.
+# ("exec /usr/local/bin/entrypoint.sh: permission denied"). Keep the chart's
+# drop-ALL hardening but add back only DAC_OVERRIDE; runAsUser 1000 itself is
+# fine (tomcat owns the data dirs). Once NrgXnat/xnat#5 is fixed (image works
+# with caps dropped), drop this block.
 securityContext:
-  # drop:[] = drop nothing -> retain the runtime's default cap set (incl.
-  # CAP_DAC_OVERRIDE), overriding the chart's capabilities.drop:[ALL].
   capabilities:
     drop: ['ALL']
     add: ['DAC_OVERRIDE']
@@ -44,7 +43,9 @@ cnpg:
     credentials:
       database: {{ xnat_postgres_db }}
       username: {{ xnat_postgres_user }}
-      password: {{ xnat_postgres_password }}
+      # to_json keeps an operator-chosen password a string (YAML 1.1 would
+      # coerce e.g. 'no'/'0x1A') and escapes any syntax characters.
+      password: {{ xnat_postgres_password | to_json }}
 
 ingress:
   enabled: true
@@ -78,6 +79,13 @@ volumes:
 probes:
   startup:
     failureThreshold: {{ xnat_startup_failure_threshold }}
+
+# Role-managed Secrets are referenced by name only, and every mount uses
+# subPath (never refreshed by kubelet), so hash their rendered content into the
+# pod template: a Secret change (e.g. rotating keycloak_xnat_client_secret)
+# then rolls the pod on the same helm upgrade. Computed in create_secrets.yaml.
+podAnnotations:
+  checksum/scout-secrets: '{{ _xnat_secrets_checksum }}'
 
 {# --- Auth-provider plugins: the chart mounts Secret xnat-plugin-<entry>
      (key <provider>-provider-properties) at config/auth/<provider>-provider.properties --#}
@@ -118,7 +126,7 @@ plugins:
 {% if extra %}
 extraConfig:
 {% for k, v in extra.items() %}
-  '{{ k }}': '{{ v }}'
+  {{ k | string | to_json }}: {{ v | string | to_json }}
 {% endfor %}
 {% endif %}
 
@@ -136,7 +144,9 @@ extraVolumes:
 {% for c in p.config | default([]) if c.mechanism == 'file' %}
   - name: cfg-{{ p.name }}-{{ loop.index }}
     secret:
-      secretName: xnat-plugin-{{ p.name }}-cfg-{{ c.dest | basename | regex_replace('[^A-Za-z0-9]', '-') }}
+      # `| lower` matches the Secret name built in tasks/create_secrets.yaml
+      # (k8s Secret names must be lowercase RFC 1123) — keep them in sync.
+      secretName: xnat-plugin-{{ p.name }}-cfg-{{ c.dest | basename | regex_replace('[^A-Za-z0-9]', '-') | lower }}
 {% endfor %}
 {% endfor %}
 {% if _xnat_maven_settings_needed | default(false) | bool %}

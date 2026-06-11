@@ -14,6 +14,27 @@
       Example: openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
+# Plugin names/entries become Kubernetes object names (Secrets, volumes, init
+# containers), which must be lowercase RFC 1123 — fail fast with a clear
+# message instead of a mid-deploy API-server rejection.
+- name: Validate plugin names are lowercase DNS-safe
+  vars:
+    _rfc1123: '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'
+    _bad_names: >-
+      {{ (xnat_plugins_all | map(attribute='name') | list
+          + (xnat_plugins_all | subelements('config', skip_missing=True)
+             | selectattr('1.mechanism', 'equalto', 'authplugins')
+             | map(attribute='1.entry') | list))
+         | reject('match', _rfc1123) | list }}
+  ansible.builtin.assert:
+    that:
+      - _bad_names | length == 0
+    fail_msg: >
+      xnat_plugins names and authplugins entries must be lowercase RFC 1123
+      (a-z, 0-9, '-'; start/end alphanumeric) — they become Kubernetes Secret,
+      volume, and init-container names. Offending values: {{ _bad_names }}
+    quiet: true
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -57,7 +78,10 @@
 - name: Create Kubernetes Secrets
   ansible.builtin.include_tasks: create_secrets.yaml
 
+# no_log: the rendered values contain xnat_postgres_password — a parse failure
+# (or -vvv) would otherwise print the whole document including the secret.
 - name: Parse Helm values
+  no_log: true
   ansible.builtin.set_fact:
     xnat_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
