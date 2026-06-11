@@ -264,3 +264,21 @@ extraEnvVars:
   # to mint its admin user; subsequent runs sign in instead.
   - name: ENABLE_INITIAL_ADMIN_SIGNUP
     value: 'true'
+
+  # OpenTelemetry metrics push to Prometheus.
+  - name: ENABLE_OTEL
+    value: 'true'
+  - name: ENABLE_OTEL_METRICS
+    value: 'true'
+  - name: ENABLE_OTEL_TRACES
+    value: 'false'
+  - name: OTEL_METRICS_OTLP_SPAN_EXPORTER
+    value: 'http'
+  - name: OTEL_OTLP_SPAN_EXPORTER
+    value: 'http'
+  - name: OTEL_METRICS_EXPORTER_OTLP_ENDPOINT
+    value: 'http://prometheus-server.{{ prometheus_namespace }}:9090/api/v1/otlp/v1/metrics'
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: 'http://prometheus-server.{{ prometheus_namespace }}:9090/api/v1/otlp/v1/metrics'
+  - name: OTEL_SERVICE_NAME
+    value: 'open-webui'
