@@ -126,5 +126,12 @@ See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
 `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`, `xnat_chart_git_ref`,
 `xnat_image_tag`.
 
+> **Set `enable_xnat` in `all.vars`, not a cluster group.** In air-gapped
+> deployments the staging Nexus role gates the `xnat-maven` plugin proxy's
+> membership in the `scout-maven` group on `enable_xnat`. The staging host does
+> not inherit `k3s_cluster` group vars, so scoping `enable_xnat` there leaves the
+> proxy out of the group and XNAT's openid init container can't resolve its
+> plugin (`CrashLoopBackOff`). The XNAT secrets/site config remain cluster-scoped.
+
 See `docs/internal/xnat-and-plugin-deployment.md` for the full deployment
 reference and upstream-contribution notes.

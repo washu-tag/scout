@@ -33,6 +33,16 @@ all:
     #             conda_channel_alias and pip_proxy_url in k3s_cluster vars).
     # package_proxy_mode: none  # Default is none; set to 'nexus' or 'external' here
 
+    # Whole-deployment feature flag for the optional XNAT service. Defined at the
+    # all level (like package_proxy_mode) because it affects both the staging node
+    # — the Nexus role gates the xnat-maven plugin proxy's membership in the
+    # scout-maven group on it — and the production cluster (the xnat role + the
+    # Keycloak realm's xnat client). Scoping it under k3s_cluster vars hides it
+    # from the staging host, so the plugin proxy drops out of the group and XNAT's
+    # openid init container can't resolve its plugin. See the XNAT section below
+    # and docs/internal/xnat-and-plugin-deployment.md.
+    # enable_xnat: true  # Default is false
+
 # The staging group contains the staging node that acts as a data diode
 # for air-gapped deployments.
 #
@@ -357,9 +367,11 @@ k3s_cluster:
     # client (callback /openid-login), and XNAT still sits behind oauth2-proxy
     # like every other Scout service. See docs/internal/xnat-and-plugin-deployment.md.
     #
+    # enable_xnat itself is set in all.vars (top of file), NOT here — the staging
+    # Nexus role needs to see it. The vars below are production-cluster-only.
+    #
     # NOTE: toggling enable_xnat from true back to false deletes the xnat
     # Keycloak client on the next auth deploy, orphaning provisioned XNAT users.
-    # enable_xnat: true
     #
     # Required when enable_xnat is true (the CNPG-managed XNAT Postgres password):
     # xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
