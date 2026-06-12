@@ -122,9 +122,15 @@ placeholder.
 ## Key variables
 
 See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
-`keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_site_id`,
-`xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`, `xnat_chart_git_ref`,
-`xnat_image_tag`.
+`keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_admin_password`,
+`xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`,
+`xnat_chart_git_ref`, `xnat_image_tag`.
+
+`keycloak_xnat_client_secret`, `xnat_postgres_password`, and
+`xnat_admin_password` are **required** when `enable_xnat` is true; the role
+fails the deploy if any is unset. `xnat_admin_password` seeds XNAT's `admin`
+account at first boot (`[system] defaultAdminPassword`), so the default
+`admin:admin` never survives a fresh deployment.
 
 > **Set `enable_xnat` in `all.vars`, not a cluster group.** In air-gapped
 > deployments the staging Nexus role gates the `xnat-maven` plugin proxy's

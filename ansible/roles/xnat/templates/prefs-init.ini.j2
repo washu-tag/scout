@@ -9,6 +9,12 @@ requireLogin=true
 # via the REST API. Single-quoted JSON matches XNAT's own default-value format.
 enabledProviders={{ xnat_enabled_providers | to_json | replace('"', "'") }}
 
+# Seed the built-in `admin` account's password on first boot, replacing XNAT's
+# default admin:admin. Only applied to a virgin instance; rotate via the admin UI
+# afterward.
+[system]
+defaultAdminPassword={{ xnat_admin_password }}
+
 # SMTP lives in the `notifications` tool (NotificationsPreferences), not
 # siteConfig, with flat keys. XNAT sends through Scout's shared relay (MailHog in
 # dev / org relay in prod); no per-XNAT postfix. prefs-init only seeds a virgin

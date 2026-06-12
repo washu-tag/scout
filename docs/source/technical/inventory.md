@@ -917,6 +917,12 @@ XNAT's CNPG-managed Postgres also needs a password when enabled:
 xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
 
+So does `xnat_admin_password`, which seeds XNAT's built-in `admin` account on first boot via the `[system] defaultAdminPassword` preference, replacing XNAT's insecure `admin:admin` default. **The deploy fails if it is unset**, so a deployed XNAT never ships with the default admin credentials. Set a strong, vault-encrypted value:
+
+```yaml
+xnat_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
 Outbound emails will be sent from the `xnat_admin_email` value. This must be overriden with a real address; the 
 default placeholder `admin@{{ sever_hostname }}` may not exist.
 
