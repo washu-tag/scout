@@ -16,16 +16,13 @@ xnat_helm_release_name: xnat
 # --- XNAT image -----------------------------------------------------------
 # xnat_image_tag is pinned in group_vars/all/versions.yaml (Renovate-monitored,
 # per ADR 0015) and selects the image via image.tag override; the chart's
-# appVersion (1.9.2.1) is unchanged. The re-cut 1.10.0 image has a JDK 21 JRE
-# matching its bytecode.
+# appVersion (1.9.2.1) is unchanged.
 xnat_image_repository: xnatworks/xnat-web
 
 # --- Plugin installer image (built by Scout CI, pulled through Harbor) -----
 xnat_plugin_installer_image_repository: ghcr.io/washu-tag/xnat-plugin-installer
 xnat_plugin_installer_image_tag: latest
 xnat_plugin_installer_image: '{{ xnat_plugin_installer_image_repository }}:{{ xnat_plugin_installer_image_tag }}'
-# IfNotPresent so a locally-imported dev image (k3s ctr images import) is used
-# without trying to pull. Harbor caches the real image in prod regardless.
 xnat_plugin_installer_image_pull_policy: IfNotPresent
 
 # --- Storage --------------------------------------------------------------
@@ -143,7 +140,6 @@ xnat_plugins_default:
           openid.keycloak.givenNameProperty: given_name
           openid.keycloak.familyNameProperty: family_name
           openid.keycloak.pkceEnabled: 'true'
-          # Use the real Keycloak username (no keycloak-<sub> synthetic names).
           openid.keycloak.usernamePattern: '[preferred_username]'
           openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
 
