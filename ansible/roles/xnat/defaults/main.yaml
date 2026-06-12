@@ -9,7 +9,7 @@
 # publishes a chart repo / OCI artifact, replace fetch_chart.yaml with a normal
 # helm_repo_url + version ref.
 xnat_chart_git_repo: https://github.com/NrgXnat/helm-charts
-xnat_chart_git_ref: xnat-1.0.2
+xnat_chart_git_ref: xnat-1.1.0
 xnat_chart_subpath: helm/xnat # path to the chart within the cloned repo
 xnat_helm_release_name: xnat
 
