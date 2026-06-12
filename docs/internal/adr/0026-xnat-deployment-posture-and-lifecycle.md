@@ -4,12 +4,11 @@
 **Status**: Proposed
 **Decision Owner**: TAG Team
 
-> 🚧 **DRAFT — NOT FOR MERGE AS-IS.** This ADR documents an in-development
-> optional feature (`enable_xnat`). Passages tagged **[UNSTABLE]** describe
-> behavior that is expected to change before the feature merges and **must be
-> reviewed and rewritten to match what actually ships**. An ADR becomes
-> immutable once merged with its feature, so do not merge this until the
-> [UNSTABLE] sections reflect shipped reality — not intentions.
+> **Note:** XNAT ships as an opt-in, single-node feature. Two items remain open
+> follow-ups, called out inline below: the default `admin:admin` account is not
+> yet disabled at deploy time (§4 — a known security gap to close before any
+> non-trial use), and `enable_xnat: false` skips the play rather than actively
+> tearing the workload down (§1).
 
 ## Context
 
@@ -66,15 +65,13 @@ template). This **orphans any XNAT users provisioned through that client**. We
 accept this consequence: XNAT is an optional feature, and turning it off is a
 deliberate teardown action, not a routine toggle.
 
-> ⚠️ **[UNSTABLE — teardown behavior not yet implemented]**
-> Today, `enable_xnat: false` merely *skips* the play — an already-deployed XNAT
-> keeps running until manually removed. The intended behavior is for
-> `enable_xnat: false` to **actively tear down the XNAT workload** (deployment /
-> service), while **deliberately preserving the namespace and its PVCs** so that
-> imaging data and its backing PVs are not destroyed. (Deleting the namespace
-> would take the PVCs — and the orphaned PVs — with it, which is exactly what we
-> want to avoid.) This ADR must be updated to describe whatever teardown scope
-> actually ships before merge.
+As shipped, `enable_xnat: false` *skips* the play — an already-deployed XNAT
+keeps running until manually removed. Active teardown is a deliberate
+follow-up: `enable_xnat: false` would tear down the XNAT workload (deployment /
+service) while **preserving the namespace and its PVCs** so imaging data and
+its backing PVs survive. (Deleting the namespace would take the PVCs — and the
+orphaned PVs — with it, which is what we want to avoid.) Until that lands,
+removing the workload is a manual step.
 
 ### 2. Non-interactive first boot via `prefs-init.ini`
 
@@ -104,41 +101,39 @@ Scout" button. Provider *discovery* (the openid-auth plugin standing up the
 `/openid-login` endpoint) and provider *visibility* (what the login page
 offers) are independent in XNAT; this setting controls the latter.
 
-> ⚠️ **[UNSTABLE — login UX expected to change]**
-> The near-term direction is to replace the single SSO button with an
-> **automatic redirect** to Keycloak, skipping the XNAT login page entirely.
-> Update this section once the redirect behavior is decided and implemented.
+> **Future direction:** replacing the single SSO button with an automatic
+> redirect to Keycloak (skipping the XNAT login page entirely) is a candidate
+> enhancement, not part of this deployment.
 
-### 4. No default-credentialed admin account
+### 4. Default-credentialed admin account (known gap — remediation pending)
 
-> 🛑 **[UNSTABLE — v1 BLOCKER, mechanism not yet implemented]**
-> **This is a hard requirement and the chosen mechanism is still being built.
-> Do not merge the feature — or this ADR — until both the requirement and the
-> implemented mechanism are reflected here.**
->
-> XNAT seeds a default `admin:admin` account, and setting `initialized=true`
-> does **not** remove or change it. We must not leave a default-credentialed
-> admin on any deployed XNAT.
->
-> The preferences files **cannot** fix this: XNAT credentials live in
-> `xdat_user.primary_password`, a different subsystem from the preference store,
-> with no preference key for the password. There is no documented file- or
-> env-only way to set the initial admin password at deploy time.
->
-> The intended approach is a **post-deploy step** (a Kubernetes Job or init
-> container) that, sourcing a strong password from a Kubernetes Secret:
-> 1. waits for XNAT to respond,
-> 2. authenticates as `admin:admin`,
-> 3. sets a strong password on `admin` via `PUT /xapi/users/admin` — or creates
->    a dedicated admin user and disables `admin`
->    (`PUT /xapi/users/admin/enabled/false`), and
-> 4. **verifies `admin:admin` no longer authenticates**, failing the rollout if
->    it does.
->
-> The exact `PUT /xapi/users/{username}` payload (the `password` field and
-> `authorization` block) is version-dependent and must be confirmed against the
-> deployed image's in-app Swagger. Direct seeding of the password hash in
-> PostgreSQL is possible but unsupported and version-brittle, and is rejected.
+> ⚠️ **Known security gap.** XNAT seeds a default `admin:admin` account, and
+> setting `initialized=true` does **not** remove or change it. The deployment
+> as shipped does **not** yet disable or re-credential this account, so it must
+> be treated as a hard follow-up before any non-trial use. Deployers who enable
+> XNAT today should manually rotate the `admin` password immediately after first
+> boot.
+
+The preferences files **cannot** fix this: XNAT credentials live in
+`xdat_user.primary_password`, a different subsystem from the preference store,
+with no preference key for the password. There is no documented file- or
+env-only way to set the initial admin password at deploy time.
+
+The planned remediation is a **post-deploy step** (a Kubernetes Job or init
+container) that, sourcing a strong password from a Kubernetes Secret:
+
+1. waits for XNAT to respond,
+2. authenticates as `admin:admin`,
+3. sets a strong password on `admin` via `PUT /xapi/users/admin` — or creates
+   a dedicated admin user and disables `admin`
+   (`PUT /xapi/users/admin/enabled/false`), and
+4. **verifies `admin:admin` no longer authenticates**, failing the rollout if
+   it does.
+
+The exact `PUT /xapi/users/{username}` payload (the `password` field and
+`authorization` block) is version-dependent and must be confirmed against the
+deployed image's in-app Swagger. Direct seeding of the password hash in
+PostgreSQL is possible but unsupported and version-brittle, and is rejected.
 
 ### 5. Authentication: standard Scout edge gate + app-level OIDC client
 
@@ -209,12 +204,11 @@ block in `prefs-init.ini`, rather than running a per-XNAT mail server. This
 reuses existing Scout mail infrastructure instead of standing up another SMTP
 path.
 
-> ⚠️ **[UNSTABLE — placeholder workaround pending upstream fix]**
-> The upstream chart currently pulls in a Postfix subchart unconditionally, so
-> a placeholder `postfix-password` Secret is created solely to let that pod
-> start; XNAT does not route mail through it. Once the upstream chart gains a
-> `mail.enabled` toggle, the subchart should be disabled and the placeholder
-> Secret removed. Update this section to match whatever ships.
+> **Known workaround:** the upstream chart pulls in a Postfix subchart
+> unconditionally, so a placeholder `postfix-password` Secret is created solely
+> to let that pod start; XNAT does not route mail through it. Once the upstream
+> chart gains a `mail.enabled` toggle, the subchart should be disabled and the
+> placeholder Secret removed.
 
 ## Consequences
 
@@ -239,8 +233,9 @@ path.
 
 ### Operational
 
-- **Admin credentials**: the post-deploy admin-password mechanism (§4) must run
-  on every fresh deployment and is a release gate — see the [UNSTABLE] marker.
+- **Admin credentials**: the default `admin:admin` account is not yet disabled
+  at deploy time (§4). Rotate it manually after first boot until the post-deploy
+  admin-password mechanism lands.
 - **First-boot timing**: XNAT's first boot runs Hibernate schema DDL and can
   take several minutes; the deployment waits accordingly (probe/timeout tuning
   is an implementation detail, not a decision recorded here).
