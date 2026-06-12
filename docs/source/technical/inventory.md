@@ -929,17 +929,16 @@ XNAT's CNPG-managed Postgres also needs a password when enabled:
 xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
 
+Outbound emails will be sent from the `xnat_admin_email` value. This must be overriden with a real address; the 
+default placeholder `admin@{{ sever_hostname }}` may not exist.
+
 Plugins beyond the bundled openid plugin are **additive**: entries in `xnat_plugins` are installed *in addition to* the role's `xnat_plugins_default` (which carries the required openid plugin), so you never repeat or risk dropping it. Each entry names a source (`file`, `url`, `coordinates`, or `image`) and optional config files — see the `xnat` role README.
 
 The remaining XNAT variables have sane defaults and only need to be set to override them:
 
 ```yaml
 # Site config seeded on XNAT's first boot (skips the setup wizard).
-# Set a real xnat_admin_email for prod: it is also the From address on XNAT
-# outbound mail (relays may reject the placeholder). Defaults to
-# cert_manager_acme_account_email when set, else a placeholder.
 xnat_site_id: scout-xnat
-xnat_admin_email: admin@your-org.example
 
 # Keycloak clientId for the XNAT client (default: xnat)
 keycloak_xnat_client_id: xnat

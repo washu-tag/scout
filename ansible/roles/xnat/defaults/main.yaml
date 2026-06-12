@@ -42,10 +42,9 @@ xnat_volume_sizes:
 # --- First-boot site config (prefs-init.ini) ------------------------------
 xnat_site_id: scout-xnat
 # XNAT's admin contact AND the From address on XNAT outbound mail (XNAT sends
-# administrative email from adminEmail). Reuses the cert-manager ACME account
-# email when the inventory defines one; the fallback is a nonexistent
-# placeholder, so set a real address for prod (relays may reject the sender).
-xnat_admin_email: "{{ cert_manager_acme_account_email | default('admin@' ~ server_hostname) }}"
+# administrative email from adminEmail). The default value is a
+# placeholder, so set a real address in the inventory (relays may reject the sender).
+xnat_admin_email: 'admin@{{ server_hostname }}'
 # Providers surfaced on the login page. Keeping only 'keycloak' (dropping
 # 'localdb') leaves just the "Sign in with Scout" button; the built-in admin
 # account still works via the REST API.
