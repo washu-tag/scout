@@ -4,15 +4,11 @@
 **Status**: Proposed
 **Decision Owner**: TAG Team
 
-> 🚧 **DRAFT — NOT FOR MERGE AS-IS.** This ADR documents the plugin-delivery
-> mechanism for the in-development XNAT feature (`enable_xnat`, see ADR 0026).
-> The mechanism is still evolving, and much of it is intended to be upstreamed
-> into the chart. Passages tagged **[UNSTABLE]** must be reviewed and rewritten
-> to match what actually ships before merge. Because an ADR becomes immutable
-> once merged with its feature, write this to describe the mechanism Scout
-> *actually ships at merge time* — not a promise that the ADR will later be
-> revised. If the mechanism is upstreamed afterward, that is a future ADR, not
-> an edit to this one.
+> **Note:** This describes the plugin-delivery mechanism Scout ships for the
+> optional XNAT feature (`enable_xnat`, see ADR 0026). Much of it — the
+> multi-source installer and the Logback rewrite — is intended to migrate
+> upstream into the chart over time; if and when that happens, it will be a
+> future ADR, not an edit to this one.
 
 ## Context
 
@@ -34,13 +30,6 @@ Delivering plugins into a Kubernetes deployment is not trivial:
 
 This ADR records how Scout gets plugin JARs into XNAT and how it makes their
 logs Kubernetes-friendly.
-
-> ⚠️ **[UNSTABLE — scope likely to shrink via upstreaming]**
-> Most of the installer mechanics below (the multi-source init container and the
-> Logback rewrite) *should eventually live in the upstream chart* rather than in
-> Scout. The set of supported delivery patterns may also consolidate as the
-> chart's native capabilities improve. Confirm the actual shipped scope before
-> merge and trim this ADR to match.
 
 ## Decision
 
@@ -72,12 +61,7 @@ operators can use whatever form an artifact is available in:
   coordinate — see §4.
 
 Patterns that flow through the installer (Secret, URL, coordinates) get the
-Logback rewrite; the image-baked pattern does not.
-
-> ⚠️ **[UNSTABLE — pattern set may consolidate]**
-> The exact set of patterns and their precedence is still settling. Re-verify
-> against the shipped role before merge and remove any pattern that does not
-> actually ship.
+Logback rewrite; the image-baked pattern does not. All four patterns ship.
 
 ### 2. Logback rewrite to stdout
 
