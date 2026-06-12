@@ -25,10 +25,7 @@
       {{ (air_gapped | default(false) | bool)
          or (_xnat_coordinate_repo_urls | length > 0) }}
 
-# Staging cert trust (per ADR-0016): when air-gapped through Nexus and the
-# staging node uses its self-signed cert, the installer must trust that CA to
-# fetch over HTTPS. Shared detection + Secret creation lives in scout_common
-# (also used by the jupyter role).
+# Staging cert trust (per ADR-0016)
 - name: Create the staging CA Secret for the installer
   ansible.builtin.include_role:
     name: scout_common

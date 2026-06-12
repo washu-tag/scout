@@ -96,11 +96,6 @@ config:
         enabled: true
         timeToLive: 1440
 {% endfor %}
-{# NOTE: `format` here is used by the chart's configure.sh VERBATIM as the REST
-   URL segment (POST /service/rest/v1/repositories/{format}/{type}). Nexus's
-   maven path segment is `maven`, NOT `maven2` -- `maven2` is only the internal
-   format name returned by GET. Using `maven2` here 404s the create call. Other
-   formats (pypi/yum/conda) match their segments, so only maven needs this. #}
 {% for repo in nexus_maven_repos | default([]) %}
     - name: {{ repo.name }}
       format: maven
