@@ -691,6 +691,16 @@ k3s_cluster:
     # open_webui_link_sanitizer_internal_domains: 'example.com,trusted.partner.com'
 
     #---------------------------------------------------------------------------
+    # data-generator
+    #---------------------------------------------------------------------------
+    # Uncomment the following line to enable the data generator for test reports
+    # enable_data_generator: true
+    # data_generator_replicas: 1
+    # data_generator_secrets:
+    #   AZURE_OPENAI_KEY: my_azure_key
+    # data_generator_pull_policy: Always
+
+    #---------------------------------------------------------------------------
     # Playbooks (Voilà)
     #---------------------------------------------------------------------------
     # Uncomment the following line to enable interactive notebook playbooks
