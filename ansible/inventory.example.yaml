@@ -35,8 +35,7 @@ all:
 
     # Optional XNAT service. Set at the `all` level (like package_proxy_mode), not
     # under k3s_cluster, so the staging Nexus role sees it too — it gates the
-    # xnat-maven plugin proxy's membership in the scout-maven group. See the XNAT
-    # section below and docs/internal/xnat-and-plugin-deployment.md.
+    # xnat-maven plugin proxy's membership in the scout-maven group.
     # enable_xnat: true  # Default is false
 
 # The staging group contains the staging node that acts as a data diode
@@ -356,8 +355,7 @@ k3s_cluster:
     # Optional service (`make install-xnat`, or part of `make all`). When
     # enable_xnat is false (the default) nothing XNAT is created. Set it true to
     # deploy XNAT behind oauth2-proxy with Keycloak SSO. enable_xnat is set in
-    # all.vars (top of file), not here; the vars below are production-only.
-    # See docs/internal/xnat-and-plugin-deployment.md.
+    # all.vars (top of file), not here.
     #
     # NOTE: toggling enable_xnat true -> false deletes the xnat Keycloak client
     # on the next auth deploy, orphaning provisioned XNAT users.
