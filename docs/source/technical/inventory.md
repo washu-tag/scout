@@ -922,6 +922,13 @@ Plugins beyond the bundled openid plugin are **additive**: entries in `xnat_plug
 The remaining XNAT variables have sane defaults and only need to be set to override them:
 
 ```yaml
+# Site config seeded on XNAT's first boot (skips the setup wizard).
+# Set a real xnat_admin_email for prod: it is also the From address on XNAT
+# outbound mail (relays may reject the placeholder). Defaults to
+# cert_manager_acme_account_email when set, else a placeholder.
+xnat_site_id: scout-xnat
+xnat_admin_email: admin@your-org.example
+
 # Keycloak clientId for the XNAT client (default: xnat)
 keycloak_xnat_client_id: xnat
 

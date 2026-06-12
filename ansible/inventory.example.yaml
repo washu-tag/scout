@@ -33,14 +33,10 @@ all:
     #             conda_channel_alias and pip_proxy_url in k3s_cluster vars).
     # package_proxy_mode: none  # Default is none; set to 'nexus' or 'external' here
 
-    # Whole-deployment feature flag for the optional XNAT service. Defined at the
-    # all level (like package_proxy_mode) because it affects both the staging node
-    # — the Nexus role gates the xnat-maven plugin proxy's membership in the
-    # scout-maven group on it — and the production cluster (the xnat role + the
-    # Keycloak realm's xnat client). Scoping it under k3s_cluster vars hides it
-    # from the staging host, so the plugin proxy drops out of the group and XNAT's
-    # openid init container can't resolve its plugin. See the XNAT section below
-    # and docs/internal/xnat-and-plugin-deployment.md.
+    # Optional XNAT service. Set at the `all` level (like package_proxy_mode), not
+    # under k3s_cluster, so the staging Nexus role sees it too — it gates the
+    # xnat-maven plugin proxy's membership in the scout-maven group. See the XNAT
+    # section below and docs/internal/xnat-and-plugin-deployment.md.
     # enable_xnat: true  # Default is false
 
 # The staging group contains the staging node that acts as a data diode
@@ -318,10 +314,8 @@ k3s_cluster:
     # Trino file-based PASSWORD authenticator entry for the Open WebUI MCP
     # (tuannvm/mcp-trino speaks HTTP Basic outbound only — ADR 0022).
     trino_openwebui_mcp_svc_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # XNAT is a confidential OIDC client (xnat-openid-auth-plugin runs its own
-    # authorization-code flow against Keycloak). Required only when enable_xnat
-    # is true — the realm gates the xnat client on that flag. See the XNAT
-    # section below and docs/internal/xnat-and-plugin-deployment.md.
+    # XNAT's confidential OIDC client secret. Required only when enable_xnat is
+    # true. See the XNAT section below.
     # keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
@@ -359,39 +353,32 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # XNAT (optional — disabled by default)
     #---------------------------------------------------------------------------
-    # XNAT is an optional service deployed with `make install-xnat` (or as part
-    # of `make all`). When enable_xnat is false (the default) NOTHING XNAT is
-    # created — no namespace, no deploy, and the Keycloak realm omits the `xnat`
-    # client + xnat-access role. Set enable_xnat: true to deploy it; the
-    # off-the-shelf xnat-openid-auth-plugin makes XNAT its own confidential OIDC
-    # client (callback /openid-login), and XNAT still sits behind oauth2-proxy
-    # like every other Scout service. See docs/internal/xnat-and-plugin-deployment.md.
+    # Optional service (`make install-xnat`, or part of `make all`). When
+    # enable_xnat is false (the default) nothing XNAT is created. Set it true to
+    # deploy XNAT behind oauth2-proxy with Keycloak SSO. enable_xnat is set in
+    # all.vars (top of file), not here; the vars below are production-only.
+    # See docs/internal/xnat-and-plugin-deployment.md.
     #
-    # enable_xnat itself is set in all.vars (top of file), NOT here — the staging
-    # Nexus role needs to see it. The vars below are production-cluster-only.
-    #
-    # NOTE: toggling enable_xnat from true back to false deletes the xnat
-    # Keycloak client on the next auth deploy, orphaning provisioned XNAT users.
+    # NOTE: toggling enable_xnat true -> false deletes the xnat Keycloak client
+    # on the next auth deploy, orphaning provisioned XNAT users.
     #
     # Required when enable_xnat is true (the CNPG-managed XNAT Postgres password):
     # xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     #
-    # Site config seeded on XNAT's first boot (skips the setup wizard).
-    # xnat_admin_email is also the From address on XNAT outbound mail; it
-    # defaults to cert_manager_acme_account_email when that is set, else a
-    # placeholder — set a real address for prod (relays may reject the sender):
+    # First-boot site config. Set a real xnat_admin_email for prod — it is also
+    # the From address on XNAT outbound mail (relays may reject the placeholder);
+    # defaults to cert_manager_acme_account_email when set, else a placeholder:
     # xnat_site_id: scout-xnat
     # xnat_admin_email: admin@your-org.example
     #
-    # XNAT routes outbound mail through Scout's shared relay (no per-XNAT
-    # postfix); defaults to MailHog in-cluster. Point at your org relay for prod:
+    # Outbound mail relay; defaults to in-cluster MailHog. Point at your org relay
+    # for prod:
     # xnat_smtp_host: mailhog-service.mailhog
     # xnat_smtp_port: '1025'
     #
-    # Plugins are ADDITIVE over the role's default (the required openid plugin):
-    # whatever you list here is installed *in addition to* openid — you never
-    # repeat or risk dropping it. Each entry names a source (file | url |
-    # coordinates | image) and optional config files. See the role README.
+    # Plugins are ADDITIVE over the role default (the required openid plugin):
+    # entries here are installed in addition to it. Each names a source (file |
+    # url | coordinates | image) and optional config files. See the role README.
     # xnat_plugins:
     #   - name: my-plugin
     #     target: my-plugin.jar
