@@ -281,11 +281,11 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
-# When false, NOTHING XNAT is created — no namespace/deploy, and the Keycloak
-# realm omits the `xnat` client + `xnat-access` role (gated in scout-realm.json.j2).
-# keycloak_xnat_client_secret is therefore only required when this is true.
-# NOTE: toggling this off deletes the xnat client on the next auth deploy
-# (keycloak-config-cli reconciles), orphaning provisioned XNAT users.
+# When false, nothing XNAT is created (no namespace/deploy; the Keycloak realm
+# omits the xnat client + xnat-access role). keycloak_xnat_client_secret is only
+# required when true.
+# NOTE: toggling this off deletes the xnat client on the next auth deploy,
+# orphaning provisioned XNAT users.
 enable_xnat: false
 
 # Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
@@ -359,14 +359,9 @@ yum_proxy_base_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository')
      if package_proxy_mode == 'nexus'
      else '' }}
-# Maven repository URL for resolving JVM artifacts by coordinates (used by the
-# xnat role's plugin installer for Maven/Gradle-published plugins — Gradle
-# resolves from Maven-format repos, so one URL covers both). Points at the Nexus
-# scout-maven group (maven-central, plus the XNAT Artifactory when enable_xnat)
-# when proxying; empty otherwise, like the other *_proxy_url values. When set,
-# it is rendered as a Maven mirror (single URL) in the xnat role's settings.xml.
-# Non-proxied deploys never read this value — they resolve from Maven Central
-# plus each plugin's declared source.repo_url.
+# Maven proxy URL for resolving plugin coordinates (xnat role). Points at the
+# Nexus scout-maven group when proxying, empty otherwise (like the other
+# *_proxy_url values); when set, rendered as a mirror in the xnat settings.xml.
 maven_proxy_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository/scout-maven')
      if package_proxy_mode == 'nexus'
