@@ -4,11 +4,9 @@
 **Status**: Proposed
 **Decision Owner**: TAG Team
 
-> **Note:** XNAT ships as an opt-in, single-node feature. Two items remain open
-> follow-ups, called out inline below: the default `admin:admin` account is not
-> yet disabled at deploy time (§4 — a known security gap to close before any
-> non-trial use), and `enable_xnat: false` skips the play rather than actively
-> tearing the workload down (§1).
+> **Note:** XNAT ships as an opt-in, single-node feature. One item remains an
+> open follow-up, called out inline below: `enable_xnat: false` skips the play
+> rather than actively tearing the workload down (§1).
 
 ## Context
 
@@ -78,8 +76,9 @@ removing the workload is a manual step.
 XNAT's interactive setup wizard is bypassed by mounting a templated
 `prefs-init.ini` (from the Ansible-created `xnat-prefs-init` Secret) at
 `/data/xnat/home/config/prefs-init.ini`. It carries `initialized=true` plus the
-site URL, admin email, enabled auth providers, and notification/SMTP settings,
-so a fresh deployment comes up fully configured with no human at the console.
+site URL, admin email, the admin account password (§4), enabled auth providers,
+and notification/SMTP settings, so a fresh deployment comes up fully configured
+with no human at the console.
 
 `prefs-init.ini` is a **first-boot seed**: once a preference exists in the
 database, the value in `prefs-init.ini` is ignored on subsequent boots.
@@ -105,35 +104,26 @@ offers) are independent in XNAT; this setting controls the latter.
 > redirect to Keycloak (skipping the XNAT login page entirely) is a candidate
 > enhancement, not part of this deployment.
 
-### 4. Default-credentialed admin account (known gap — remediation pending)
+### 4. No default-credentialed admin account
 
-> ⚠️ **Known security gap.** XNAT seeds a default `admin:admin` account, and
-> setting `initialized=true` does **not** remove or change it. The deployment
-> as shipped does **not** yet disable or re-credential this account, so it must
-> be treated as a hard follow-up before any non-trial use. Deployers who enable
-> XNAT today should manually rotate the `admin` password immediately after first
-> boot.
+XNAT seeds a default `admin:admin` account on first boot. Leaving that account
+in place on any deployed XNAT is unacceptable, so the first-boot `prefs-init.ini`
+also carries a `[system] defaultAdminPassword`, sourced from the required
+`xnat_admin_password` inventory variable, which sets the `admin` account's
+password during the same first-boot seed that skips the setup wizard. The
+default `admin:admin` credentials therefore never survive a fresh deployment.
 
-The preferences files **cannot** fix this: XNAT credentials live in
-`xdat_user.primary_password`, a different subsystem from the preference store,
-with no preference key for the password. There is no documented file- or
-env-only way to set the initial admin password at deploy time.
+`xnat_admin_password` is **required when `enable_xnat` is true** — the role
+asserts it is set (alongside `keycloak_xnat_client_secret` and
+`xnat_postgres_password`) and fails the deploy if it is empty, so an XNAT can
+never come up on the default password. It must be a strong, vault-encrypted
+secret, and like every other first-boot preference it seeds a virgin instance
+only: rotate it afterward through the admin UI, not by editing this file.
 
-The planned remediation is a **post-deploy step** (a Kubernetes Job or init
-container) that, sourcing a strong password from a Kubernetes Secret:
-
-1. waits for XNAT to respond,
-2. authenticates as `admin:admin`,
-3. sets a strong password on `admin` via `PUT /xapi/users/admin` — or creates
-   a dedicated admin user and disables `admin`
-   (`PUT /xapi/users/admin/enabled/false`), and
-4. **verifies `admin:admin` no longer authenticates**, failing the rollout if
-   it does.
-
-The exact `PUT /xapi/users/{username}` payload (the `password` field and
-`authorization` block) is version-dependent and must be confirmed against the
-deployed image's in-app Swagger. Direct seeding of the password hash in
-PostgreSQL is possible but unsupported and version-brittle, and is rejected.
+This replaces the earlier plan of a post-deploy job that logged in as
+`admin:admin` and re-credentialed the account over the REST API — the
+`defaultAdminPassword` seed does the same thing in-band at first boot, with no
+extra workload and no window during which the default password is live.
 
 ### 5. Authentication: standard Scout edge gate + app-level OIDC client
 
@@ -217,7 +207,8 @@ path.
 - One flag (`enable_xnat`) cleanly turns the entire feature — workload and auth
   wiring — on or off, and XNAT secrets are only needed when it is on.
 - First boot is non-interactive and reproducible from inventory; no manual
-  setup-wizard step.
+  setup-wizard step, and no deployment ever ships with the default `admin:admin`
+  credentials.
 - XNAT inherits Scout's existing approval gate, security headers, storage
   convention, and database operator, so it behaves like the rest of the
   platform and reuses existing infrastructure.
@@ -233,9 +224,10 @@ path.
 
 ### Operational
 
-- **Admin credentials**: the default `admin:admin` account is not yet disabled
-  at deploy time (§4). Rotate it manually after first boot until the post-deploy
-  admin-password mechanism lands.
+- **Admin credentials**: `xnat_admin_password` is required and seeds the `admin`
+  account at first boot (§4), so the default `admin:admin` never survives a fresh
+  deployment. Set it to a strong, vault-encrypted value and rotate it through the
+  admin UI thereafter.
 - **First-boot timing**: XNAT's first boot runs Hibernate schema DDL and can
   take several minutes; the deployment waits accordingly (probe/timeout tuning
   is an implementation detail, not a decision recorded here).

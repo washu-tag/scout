@@ -41,6 +41,10 @@ xnat_volume_sizes:
 
 # --- First-boot site config (prefs-init.ini) ------------------------------
 xnat_site_id: scout-xnat
+# Password set on the built-in `admin` account at first boot (via the [system]
+# defaultAdminPassword seed), replacing XNAT's default admin:admin. REQUIRED when
+# enable_xnat is true — set in inventory (vault-encrypted).
+xnat_admin_password: ''
 # XNAT's admin contact AND the From address on XNAT outbound mail (XNAT sends
 # administrative email from adminEmail). The default value is a
 # placeholder, so set a real address in the inventory (relays may reject the sender).

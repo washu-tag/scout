@@ -360,12 +360,15 @@ k3s_cluster:
     # NOTE: toggling enable_xnat true -> false deletes the xnat Keycloak client
     # on the next auth deploy, orphaning provisioned XNAT users.
     #
-    # Required when enable_xnat is true (the CNPG-managed XNAT Postgres password):
+    # Required when enable_xnat is true:
+    # - the CNPG-managed XNAT Postgres password, and
+    # - xnat_admin_password, which seeds the XNAT `admin` account on first boot
+    #   (replacing the default admin:admin). The deploy fails if it is unset.
     # xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # xnat_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     #
     # First-boot site config. Set a real xnat_admin_email for prod — it is also
-    # the From address on XNAT outbound mail (relays may reject the placeholder);
-    # defaults to cert_manager_acme_account_email when set, else a placeholder:
+    # the From address on XNAT outbound mail (relays may reject the placeholder):
     # xnat_site_id: scout-xnat
     # xnat_admin_email: admin@your-org.example
     #
