@@ -22,8 +22,8 @@ def kcVersion = "26.6.3"
 def jbossLoggingVersion = "3.6.1.Final"
 def checkstyleVersion = "13.4.2"
 // ADR 0021: OPA bundle publisher uses tar.gz as OPA's standard bundle
-// format. Commons Compress is ~700KB with no transitive deps; smaller
-// surface than adding an S3 client SDK on top. Not present on
+// format. Commons Compress (plus its commons-codec/io/lang3 deps) is a
+// smaller surface than adding an S3 client SDK on top. Not present on
 // Keycloak's classpath by default, so it ships into providers/ via
 // the copyRuntimeDeps task below.
 def commonsCompressVersion = "1.27.1"
@@ -37,6 +37,12 @@ def junitVersion = "5.11.4"
 def mockitoVersion = "5.14.2"
 
 dependencies {
+    constraints {
+        // commons-compress 1.27.1 pulls commons-lang3 3.16.0, which ships into
+        // providers/ — hold it at the CVE-2025-48924 fix.
+        implementation("org.apache.commons:commons-lang3:3.18.0")
+    }
+
     // Provided by Keycloak at runtime — compileOnly so they don't ship into
     // providers/ alongside our jar and risk classloader skew.
     compileOnly("org.keycloak:keycloak-core:${kcVersion}")
