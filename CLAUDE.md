@@ -217,7 +217,7 @@ Scout supports optional features that can be enabled via feature flags in `inven
   - Requires secrets: `keycloak_xnat_client_secret`, `xnat_postgres_password`
   - Features: oauth2-proxy edge gate + the off-the-shelf `xnat-openid-auth-plugin` for Keycloak SSO; plugins installed from coordinates/url/image/file via the `xnat-plugin-installer` init container (with logback→stdout rewrite); plugins are additive over the role default via `xnat_plugins`
   - Caveat: toggling back to `false` deletes the `xnat` Keycloak client, orphaning provisioned XNAT users
-  - See `ansible/roles/xnat/README.md` and `docs/internal/xnat-and-plugin-deployment.md`
+  - See `ansible/roles/xnat/README.md`
 
 ### Variable Precedence
 
