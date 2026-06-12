@@ -28,6 +28,11 @@ jobs:
       - uses: gradle/actions/dependency-submission@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
           build-root-directory: extractor/hl7log-extractor
+          # Submit only the deps that ship in the artifact. Compile/test
+          # classpaths (e.g. the Keycloak server APIs the event-listener
+          # builds against) otherwise generate Dependabot alerts for code
+          # we never distribute.
+          dependency-graph-include-configurations: 'runtimeClasspath'
 
   keycloak-event-listener:
     runs-on: ubuntu-latest
@@ -42,3 +47,4 @@ jobs:
       - uses: gradle/actions/dependency-submission@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
           build-root-directory: keycloak/event-listener
+          dependency-graph-include-configurations: 'runtimeClasspath'
