@@ -132,6 +132,3 @@ See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
 > not inherit `k3s_cluster` group vars, so scoping `enable_xnat` there leaves the
 > proxy out of the group and XNAT's openid init container can't resolve its
 > plugin (`CrashLoopBackOff`). The XNAT secrets/site config remain cluster-scoped.
-
-See `docs/internal/xnat-and-plugin-deployment.md` for the full deployment
-reference and upstream-contribution notes.
