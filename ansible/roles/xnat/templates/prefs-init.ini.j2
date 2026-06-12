@@ -1,0 +1,19 @@
+[siteConfig]
+siteUrl=https://xnat.{{ server_hostname }}
+siteId={{ xnat_site_id }}
+adminEmail={{ xnat_admin_email }}
+initialized=true
+requireLogin=true
+enabledProviders={{ xnat_enabled_providers | to_json | replace('"', "'") }}
+
+[system]
+defaultAdminPassword={{ xnat_admin_password }}
+
+[notifications]
+smtpEnabled={{ xnat_smtp_enabled | string | lower }}
+{% if xnat_smtp_enabled | bool %}
+smtpHostname={{ xnat_smtp_host }}
+smtpPort={{ xnat_smtp_port }}
+smtpProtocol=smtp
+smtpAuth=false
+{% endif %}

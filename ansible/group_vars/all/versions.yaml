@@ -158,3 +158,13 @@ dcm4chee_ldap_version: 2.6.10-35.0
 # orthanc_version is set to "latest" (not a pinned version); not monitored by Renovate
 orthanc_image: jodogne/orthanc-plugins
 orthanc_version: latest
+
+# Medical Imaging - XNAT (optional; enable_xnat)
+# renovate: datasource=docker depName=xnatworks/xnat-web
+xnat_image_tag: 1.10.0
+# The openid SSO plugin, published only to the NrgXnat Artifactory; consumed by
+# the coordinates entry in ansible/roles/xnat/defaults/main.yaml.
+# renovate: datasource=maven registryUrl=https://nrgxnat.jfrog.io/nrgxnat/libs-release depName=au.edu.qcif.xnat.openid:openid-auth-plugin
+xnat_openid_plugin_version: 1.5.0
+# xnat_chart_git_ref (NrgXnat/helm-charts tag) stays in the xnat role defaults:
+# the chart is unpublished (cloned from git), so Renovate has nothing to track.

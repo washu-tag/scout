@@ -1,0 +1,48 @@
+{# Maven settings.xml mounted into the plugin-installer init container at
+   /mnt/maven/settings.xml, telling Maven where to resolve plugin coordinates.
+   Generated only when needed (see proxy_trust.yaml): air-gapped, or when a
+   coordinates plugin declares a non-Central source.repo_url.
+
+   - Air-gapped: no egress to Central, so MIRROR all resolution (incl. the
+     maven-dependency-plugin itself and any plugin's repo) through the Nexus
+     group, which proxies Maven Central + the XNAT Artifactory.
+   - Otherwise: keep Maven's built-in Central as the default and ADD each
+     plugin's declared repo so its artifact resolves. #}
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+{% if air_gapped | default(false) | bool %}
+  <mirrors>
+    <mirror>
+      <id>scout-nexus</id>
+      <mirrorOf>*</mirrorOf>
+      <url>{{ maven_proxy_url }}</url>
+    </mirror>
+  </mirrors>
+{% else %}
+  <profiles>
+    <profile>
+      <id>scout-plugin-repos</id>
+      <repositories>
+{% for url in _xnat_coordinate_repo_urls %}
+        <repository>
+          <id>scout-repo-{{ loop.index }}</id>
+          <url>{{ url }}</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+{% endfor %}
+      </repositories>
+      <pluginRepositories>
+{% for url in _xnat_coordinate_repo_urls %}
+        <pluginRepository>
+          <id>scout-repo-{{ loop.index }}</id>
+          <url>{{ url }}</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </pluginRepository>
+{% endfor %}
+      </pluginRepositories>
+    </profile>
+  </profiles>
+  <activeProfiles><activeProfile>scout-plugin-repos</activeProfile></activeProfiles>
+{% endif %}
+</settings>

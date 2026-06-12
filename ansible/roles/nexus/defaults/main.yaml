@@ -87,7 +87,36 @@ nexus_yum_repos:
     remoteUrl: https://nvidia.github.io/libnvidia-container/stable/rpm/x86_64/
     blobStoreName: yum-store
 
-# maven-central ships pre-configured in Nexus CE — no need to create it
+# Maven proxies. Maven and Gradle both resolve from Maven-format repositories,
+# so a single set of Maven proxies (aggregated by nexus_maven_group below)
+# serves both (ADR 0017). maven-central is default created in Nexus; declaring
+# maven-central here is a harmless reaffirm when it already exists, and a
+# create on a Nexus that lacks it -- so the group's member always exists.
+nexus_maven_repos_base:
+  - name: maven-central
+    remoteUrl: https://repo1.maven.org/maven2/
+    blobStoreName: default
+
+# Added only when enable_xnat: non-XNAT deployments should not proxy a
+# third-party Artifactory through the shared maven group (supply-chain surface).
+# Used by the xnat role to resolve plugins by coordinates.
+nexus_maven_repos_xnat:
+  - name: xnat-maven
+    remoteUrl: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
+    blobStoreName: default
+
+nexus_maven_repos: >-
+  {{ nexus_maven_repos_base
+     + (nexus_maven_repos_xnat if (enable_xnat | default(false) | bool) else []) }}
+
+# Group that aggregates the Maven proxies into one resolvable URL. scout_common's
+# maven_proxy_url points at this group (.../repository/<name>).
+nexus_maven_group:
+  name: scout-maven
+  blobStoreName: default
+  memberNames: >-
+    {{ ['maven-central']
+       + (['xnat-maven'] if (enable_xnat | default(false) | bool) else []) }}
 
 # Computed — uses external_url/inventory_hostname of the staging host (where this role runs)
 # Same pattern as harbor_hostname in ansible/roles/harbor/defaults/main.yaml

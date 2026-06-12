@@ -33,6 +33,11 @@ all:
     #             conda_channel_alias and pip_proxy_url in k3s_cluster vars).
     # package_proxy_mode: none  # Default is none; set to 'nexus' or 'external' here
 
+    # Optional XNAT service. Set at the `all` level (like package_proxy_mode), not
+    # under k3s_cluster, so the staging Nexus role sees it too — it gates the
+    # xnat-maven plugin proxy's membership in the scout-maven group.
+    # enable_xnat: true  # Default is false
+
 # The staging group contains the staging node that acts as a data diode
 # for air-gapped deployments.
 #
@@ -308,6 +313,9 @@ k3s_cluster:
     # Trino file-based PASSWORD authenticator entry for the Open WebUI MCP
     # (tuannvm/mcp-trino speaks HTTP Basic outbound only — ADR 0022).
     trino_openwebui_mcp_svc_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # XNAT's confidential OIDC client secret. Required only when enable_xnat is
+    # true. See the XNAT section below.
+    # keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
@@ -340,6 +348,58 @@ k3s_cluster:
     # Launchpad
     #---------------------------------------------------------------------------
     launchpad_nextauth_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    #---------------------------------------------------------------------------
+    # XNAT (optional — disabled by default)
+    #---------------------------------------------------------------------------
+    # Optional service (`make install-xnat`, or part of `make all`). When
+    # enable_xnat is false (the default) nothing XNAT is created. Set it true to
+    # deploy XNAT behind oauth2-proxy with Keycloak SSO. enable_xnat is set in
+    # all.vars (top of file), not here.
+    #
+    # NOTE: toggling enable_xnat true -> false deletes the xnat Keycloak client
+    # on the next auth deploy, orphaning provisioned XNAT users.
+    #
+    # Required when enable_xnat is true:
+    # - the CNPG-managed XNAT Postgres password, and
+    # - xnat_admin_password, which seeds the XNAT `admin` account on first boot
+    #   (replacing the default admin:admin). The deploy fails if it is unset.
+    # xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # xnat_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    #
+    # First-boot site config. Set a real xnat_admin_email for prod — it is also
+    # the From address on XNAT outbound mail (relays may reject the placeholder):
+    # xnat_site_id: scout-xnat
+    # xnat_admin_email: admin@your-org.example
+    #
+    # Outbound mail relay; defaults to in-cluster MailHog. Point at your org relay
+    # for prod:
+    # xnat_smtp_host: mailhog-service.mailhog
+    # xnat_smtp_port: '1025'
+    #
+    # Plugins are ADDITIVE over the role default (the required openid plugin):
+    # entries here are installed in addition to it. Each names a source (file |
+    # url | coordinates | image) and optional config files. See the role README.
+    # xnat_plugins:
+    #   - name: my-plugin
+    #     target: my-plugin.jar
+    #     source:
+    #       type: coordinates       # resolved through the Nexus maven proxy when air-gapped
+    #       # Maven -Dartifact form groupId:artifactId:version[:packaging[:classifier]];
+    #       # an XNAT -xpl.jar is packaging `jar` + classifier `xpl`:
+    #       coordinates: org.example:my-xnat-plugin:1.2.3:jar:xpl
+    #     config:
+    #       - mechanism: extraConfig
+    #         properties:
+    #           my.plugin.setting: "value"
+    #
+    # Override these naming defaults only if your environment differs:
+    # keycloak_xnat_client_id: xnat       # Keycloak clientId for XNAT
+    # xnat_namespace: xnat                # Namespace where XNAT is deployed
+    # xnat_chart_git_ref: xnat-1.1.0      # NrgXnat/helm-charts tag to deploy
+    # (xnat_image_tag and the openid plugin version are pinned in
+    # group_vars/all/versions.yaml, which outranks inventory — use -e to test
+    # a different version, like every other Scout component.)
 
     #---------------------------------------------------------------------------
     # PostgreSQL

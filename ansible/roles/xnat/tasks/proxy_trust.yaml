@@ -1,0 +1,56 @@
+---
+# Maven proxy trust for coordinate-resolved plugins.
+#
+# The plugin-installer image is generic: it resolves coordinates with Maven and
+# only knows about a repo if the deploy hands it a settings.xml (and a CA if the
+# repo is HTTPS with a self-signed cert). All the "which repo / air-gapped"
+# decisions live here, so the image stays a dumb Maven runner.
+#
+# Two independent triggers:
+#   * a coordinates plugin declares source.repo_url (artifact not on Central), or
+#   * air-gapped (no egress -> mirror everything through the Nexus group).
+# The staging CA is needed only when air-gapped against the self-signed Nexus.
+
+- name: Collect non-Central repo URLs from coordinate plugins
+  ansible.builtin.set_fact:
+    _xnat_coordinate_repo_urls: >-
+      {{ xnat_plugins_all
+         | selectattr('source.type', 'equalto', 'coordinates')
+         | map(attribute='source.repo_url', default='')
+         | reject('equalto', '') | unique | list }}
+
+- name: Decide whether a Maven settings.xml is needed
+  ansible.builtin.set_fact:
+    _xnat_maven_settings_needed: >-
+      {{ (air_gapped | default(false) | bool)
+         or (_xnat_coordinate_repo_urls | length > 0) }}
+
+# Staging cert trust (per ADR-0016)
+- name: Create the staging CA Secret for the installer
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: staging_ca_secret
+  vars:
+    staging_ca_namespace: '{{ xnat_namespace }}'
+
+- name: Set staging CA facts for the installer templates
+  ansible.builtin.set_fact:
+    _xnat_needs_staging_cert: '{{ _staging_ca_needed }}'
+
+- name: Set staging CA pod path
+  ansible.builtin.set_fact:
+    _xnat_staging_ca_path: /mnt/staging-ca/ca.crt
+  when: _xnat_needs_staging_cert | bool
+
+- name: Render and create the Maven settings.xml ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: xnat-maven-settings
+        namespace: '{{ xnat_namespace }}'
+      data:
+        settings.xml: "{{ lookup('template', 'settings.xml.j2') }}"
+  when: _xnat_maven_settings_needed | bool

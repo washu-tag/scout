@@ -122,6 +122,9 @@ hive_namespace: '{{ scout_data_namespace }}'
 dcm4chee_namespace: '{{ scout_data_namespace }}'
 orthanc_namespace: '{{ scout_data_namespace }}'
 
+# XNAT runs in its own namespace (independent of the consolidated scout_* namespaces)
+xnat_namespace: xnat
+
 # Extractor & workflow orchestration
 extractor_namespace: '{{ scout_extractor_namespace }}'
 
@@ -173,6 +176,7 @@ keycloak_temporal_client_id: temporal
 keycloak_minio_client_id: minio
 keycloak_launchpad_client_id: launchpad
 keycloak_open_webui_client_id: open-webui
+keycloak_xnat_client_id: xnat
 
 # OAuth callback URLs for each client
 open_webui_callback_url: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'
@@ -265,6 +269,12 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
+# When false, nothing XNAT is created (no namespace/deploy; the Keycloak realm
+# omits the xnat client + xnat-access role). keycloak_xnat_client_secret is only
+# required when true.
+# NOTE: toggling this off deletes the xnat client on the next auth deploy,
+# orphaning provisioned XNAT users.
+enable_xnat: false
 
 # Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
 # Jupyter singleuser) or are cluster-wide storage layers that span every
@@ -335,6 +345,13 @@ pip_proxy_url: >-
      else '' }}
 yum_proxy_base_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository')
+     if package_proxy_mode == 'nexus'
+     else '' }}
+# Maven proxy URL for resolving plugin coordinates (xnat role). Points at the
+# Nexus scout-maven group when proxying, empty otherwise (like the other
+# *_proxy_url values); when set, rendered as a mirror in the xnat settings.xml.
+maven_proxy_url: >-
+  {{ ('https://' ~ nexus_host ~ '/repository/scout-maven')
      if package_proxy_mode == 'nexus'
      else '' }}
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"

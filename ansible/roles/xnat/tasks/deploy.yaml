@@ -1,0 +1,102 @@
+---
+# Deploy XNAT: validate, namespace, fetch chart, secrets, then helm install.
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - keycloak_xnat_client_secret is defined
+      - keycloak_xnat_client_secret | length > 0
+      - xnat_postgres_password is defined
+      - xnat_postgres_password | length > 0
+      - xnat_admin_password is defined
+      - xnat_admin_password | length > 0
+    fail_msg: >
+      keycloak_xnat_client_secret, xnat_postgres_password, and
+      xnat_admin_password are required when enable_xnat is true. Set them in your
+      inventory.yaml (use vault encryption). xnat_admin_password seeds the XNAT
+      admin account, replacing the default admin:admin — do not leave it unset.
+      Example: openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+
+# Plugin names/entries become Kubernetes object names (Secrets, volumes, init
+# containers), which must be lowercase RFC 1123 — fail fast with a clear
+# message instead of a mid-deploy API-server rejection.
+- name: Validate plugin names are lowercase DNS-safe
+  vars:
+    _rfc1123: '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'
+    _bad_names: >-
+      {{ (xnat_plugins_all | map(attribute='name') | list
+          + (xnat_plugins_all | subelements('config', skip_missing=True)
+             | selectattr('1.mechanism', 'equalto', 'authplugins')
+             | map(attribute='1.entry') | list))
+         | reject('match', _rfc1123) | list }}
+  ansible.builtin.assert:
+    that:
+      - _bad_names | length == 0
+    fail_msg: >
+      xnat_plugins names and authplugins entries must be lowercase RFC 1123
+      (a-z, 0-9, '-'; start/end alphanumeric) — they become Kubernetes Secret,
+      volume, and init-container names. Offending values: {{ _bad_names }}
+    quiet: true
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ xnat_namespace }}'
+
+- name: Fetch the XNAT chart from git
+  ansible.builtin.include_tasks: fetch_chart.yaml
+
+- name: Guard against coordinates plugins on air-gapped clusters without a Maven proxy
+  ansible.builtin.assert:
+    that:
+      - not (air_gapped | default(false) | bool)
+        or (xnat_plugins_all | selectattr('source.type', 'equalto', 'coordinates') | list | length == 0)
+        or (maven_proxy_url | default('') | length > 0)
+    fail_msg: >
+      One or more xnat_plugins use source.type=coordinates, but this is an
+      air-gapped cluster and maven_proxy_url is empty: init containers have no
+      egress, so all Maven resolution must be mirrored through a package proxy.
+      Set package_proxy_mode: nexus (recommended; see ADR 0017), or set
+      package_proxy_mode: external and provide maven_proxy_url in inventory.
+    quiet: true
+
+- name: Guard against url plugins on air-gapped clusters
+  ansible.builtin.assert:
+    that:
+      - not (air_gapped | default(false) | bool)
+        or (xnat_plugins_all | selectattr('source.type', 'equalto', 'url') | list | length == 0)
+    fail_msg: >
+      One or more xnat_plugins use source.type=url, but this is an air-gapped
+      cluster. Init containers have no egress on air-gapped clusters. Use
+      source.type=coordinates (resolved via the Nexus maven proxy), image,
+      or file instead. (Re-hosting url jars via a Nexus raw repo is a possible
+      future enhancement — see ADR 0027.)
+    quiet: true
+
+- name: Configure Maven proxy trust (settings.xml + staging CA)
+  ansible.builtin.include_tasks: proxy_trust.yaml
+
+- name: Create Kubernetes Secrets
+  ansible.builtin.include_tasks: create_secrets.yaml
+
+# no_log: the rendered values contain xnat_postgres_password — a parse failure
+# (or -vvv) would otherwise print the whole document including the secret.
+- name: Parse Helm values
+  no_log: true
+  ansible.builtin.set_fact:
+    xnat_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+- name: Deploy XNAT using Helm
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ xnat_helm_release_name }}'
+    helm_chart_ref: '{{ xnat_chart_path }}'
+    helm_chart_namespace: '{{ xnat_namespace }}'
+    helm_chart_create_namespace: false
+    helm_chart_values: '{{ xnat_helm_chart_values }}'
+    helm_chart_timeout: '{{ xnat_helm_timeout }}'

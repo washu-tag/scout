@@ -893,6 +893,66 @@ In air-gapped environments, users cannot install extensions anyway due to lack o
 Even with the Extension Manager disabled, users with terminal access can still run `jupyter labextension` commands. However, in air-gapped environments, these commands will fail due to lack of internet connectivity. The Extension Manager setting primarily controls the UI, not a comprehensive security lockdown.
 :::
 
+#### XNAT (optional)
+
+XNAT is an optional service, gated by `enable_xnat` (default `false`) and deployed with `make install-xnat` (or as part of `make all`). It is installed using the `xnat-openid-auth-plugin` for auth, which runs an authorization-code flow against Keycloak (callback `/openid-login`); XNAT still sits behind oauth2-proxy as the edge approval gate, the same posture as every other Scout service.
+
+When `enable_xnat` is `false`, **nothing** XNAT is created — no namespace, no deploy, and the Keycloak realm omits the `xnat` client and the `xnat-access` role (mapped onto the `scout-user` group). Set it to enable the feature:
+
+```yaml
+enable_xnat: true
+```
+
+> **Note:** toggling `enable_xnat` from `true` back to `false` deletes the `xnat` Keycloak client on the next auth deploy (keycloak-config-cli reconciles the realm), orphaning any provisioned XNAT users.
+
+The confidential client requires a secret — required only when `enable_xnat` is `true`:
+
+```yaml
+keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+XNAT's CNPG-managed Postgres also needs a password when enabled:
+
+```yaml
+xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+So does `xnat_admin_password`, which seeds XNAT's built-in `admin` account on first boot via the `[system] defaultAdminPassword` preference, replacing XNAT's insecure `admin:admin` default. **The deploy fails if it is unset**, so a deployed XNAT never ships with the default admin credentials. Set a strong, vault-encrypted value:
+
+```yaml
+xnat_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+Outbound emails will be sent from the `xnat_admin_email` value. This must be overriden with a real address; the 
+default placeholder `admin@{{ sever_hostname }}` may not exist.
+
+Plugins beyond the bundled openid plugin are **additive**: entries in `xnat_plugins` are installed *in addition to* the role's `xnat_plugins_default` (which carries the required openid plugin), so you never repeat or risk dropping it. Each entry names a source (`file`, `url`, `coordinates`, or `image`) and optional config files — see the `xnat` role README.
+
+The remaining XNAT variables have sane defaults and only need to be set to override them:
+
+```yaml
+# Site config seeded on XNAT's first boot (skips the setup wizard).
+xnat_site_id: scout-xnat
+
+# Keycloak clientId for the XNAT client (default: xnat)
+keycloak_xnat_client_id: xnat
+
+# Namespace where XNAT is deployed (default: xnat)
+xnat_namespace: xnat
+
+# NrgXnat/helm-charts tag to deploy (default: xnat-1.0.2)
+xnat_chart_git_ref: xnat-1.0.2
+
+# xnatworks/xnat-web image tag (default: 1.10.0)
+xnat_image_tag: '1.10.0'
+
+# Outbound mail relay (defaults to in-cluster MailHog; point at your org relay for prod)
+xnat_smtp_host: mailhog-service.mailhog
+xnat_smtp_port: '1025'
+```
+
+`xnat_namespace` is independent of the six consolidated `scout_*_namespace` variables — XNAT runs in its own namespace.
+
 ### Namespace Customization
 
 Scout uses 6 consolidated namespaces to organize services by function. Default namespaces are defined in `roles/scout_common/defaults/main.yaml`. Override them if needed:
