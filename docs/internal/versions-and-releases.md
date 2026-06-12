@@ -112,6 +112,13 @@ Developer                    GitHub                        CI
 - Tag `v2.1.0` points to the commit that was actually built and released
 - Branch is back to dev versions (unless `skip_dev_reset` was checked)
 
+### Post-Release Steps
+
+- When upgrading a site to the new release, bump its pinned docs URL to
+  match: `scout_docs_url: https://washu-scout.readthedocs.io/en/v2.1.0` in
+  that site's inventory (preprod/production in scout-inventory). Sites left
+  unpinned follow `/en/latest`, which can show docs for unreleased features.
+
 ## Dry Run Mode
 
 Before releasing, you can preview what the changelog will look like:

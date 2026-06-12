@@ -257,9 +257,10 @@ interface ContentGridProps {
   enableChat: boolean;
   enablePlaybooks: boolean;
   subdomainUrls: Record<string, string>;
+  docsUrl: string;
 }
 
-const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGridProps) => {
+const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: ContentGridProps) => {
   // Don't render until subdomain URLs are set on client side
   if (Object.keys(subdomainUrls).length === 0) {
     return (
@@ -297,7 +298,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
         {/* Documentation Link */}
         <div className="mt-6 text-center">
           <a
-            href="https://washu-scout.readthedocs.io/en/latest/"
+            href={docsUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors duration-200 no-underline"
@@ -454,6 +455,7 @@ interface HomeClientProps {
   enablePlaybooks: boolean;
   scoutEnv?: string;
   deployerName?: string;
+  docsUrl: string;
 }
 
 export default function HomeClient({
@@ -461,6 +463,7 @@ export default function HomeClient({
   enablePlaybooks,
   scoutEnv,
   deployerName,
+  docsUrl,
 }: HomeClientProps) {
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
@@ -529,7 +532,7 @@ export default function HomeClient({
         <div className="max-w-content mx-auto px-6 py-6 flex items-center justify-between">
           {/* Brand strip */}
           <Brand crumbs={[environment]} />
-          <TopBar />
+          <TopBar docsUrl={docsUrl} />
         </div>
       </div>
 
@@ -541,6 +544,7 @@ export default function HomeClient({
           enableChat={enableChat}
           enablePlaybooks={enablePlaybooks}
           subdomainUrls={subdomainUrls}
+          docsUrl={docsUrl}
         />
 
         {/* Footer */}

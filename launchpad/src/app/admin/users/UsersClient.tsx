@@ -667,7 +667,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'admin', label: 'Admins' },
 ];
 
-export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
+export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; docsUrl: string }) {
   const { data: session, status } = useSession();
   const environment = scoutEnv ?? 'local';
   const [schema, setSchema] = useState<AttrSchema[]>([]);
@@ -794,7 +794,7 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
                 Open in Keycloak
               </a>
             )}
-            <TopBar />
+            <TopBar docsUrl={docsUrl} />
           </div>
         </div>
       </div>
