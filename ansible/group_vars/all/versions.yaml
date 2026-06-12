@@ -56,7 +56,7 @@ minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
 
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
-temporal_version: ~0.67.0
+temporal_version: ~0.74.0
 
 # Analytics & Query Engines - Trino
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
