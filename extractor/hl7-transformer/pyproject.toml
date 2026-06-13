@@ -24,7 +24,7 @@ dependencies = [
     "psycopg[binary]",
     "pyspark==4.1.1",
     "s3fs",
-    "temporalio ~= 1.25.0",
+    "temporalio ~= 1.28.0",
     "trino",
     "uvicorn",
 ]
