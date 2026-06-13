@@ -89,8 +89,36 @@ class UserApprovalEmailEventListenerProviderTest {
     }
 
     @Test
+    void ignores_scout_user_manager_membership() {
+        // "scout-user-manager" contains "scout-user" as a substring; the name
+        // must be compared exactly or granting/revoking the user-manager role
+        // would fire spurious welcome/disabled emails.
+        assertFalse(UserApprovalEmailEventListenerProvider.isScoutUserGroupMembershipEvent(
+                groupEvent(OperationType.CREATE, ResourceType.GROUP_MEMBERSHIP,
+                        "{\"name\":\"scout-user-manager\"}")));
+        assertFalse(UserApprovalEmailEventListenerProvider.isScoutUserGroupMembershipEvent(
+                groupEvent(OperationType.DELETE, ResourceType.GROUP_MEMBERSHIP,
+                        "{\"name\":\"scout-user-manager\"}")));
+    }
+
+    @Test
+    void routes_scout_user_event_with_full_representation() {
+        // Keycloak's own group-membership events carry a fuller representation
+        // (id/path alongside name) than the SPI's minimal one; both must route.
+        assertTrue(UserApprovalEmailEventListenerProvider.isScoutUserGroupMembershipEvent(
+                groupEvent(OperationType.CREATE, ResourceType.GROUP_MEMBERSHIP,
+                        "{\"id\":\"g1\",\"name\":\"scout-user\",\"path\":\"/scout-user\"}")));
+    }
+
+    @Test
     void ignores_event_with_no_representation() {
         assertFalse(UserApprovalEmailEventListenerProvider.isScoutUserGroupMembershipEvent(
                 groupEvent(OperationType.CREATE, ResourceType.GROUP_MEMBERSHIP, null)));
+    }
+
+    @Test
+    void ignores_unparseable_representation() {
+        assertFalse(UserApprovalEmailEventListenerProvider.isScoutUserGroupMembershipEvent(
+                groupEvent(OperationType.CREATE, ResourceType.GROUP_MEMBERSHIP, "not json")));
     }
 }

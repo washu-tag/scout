@@ -5,16 +5,18 @@ import { NextRequest, NextResponse } from 'next/server';
 // holds the Keycloak token: we read the caller's access token from their
 // next-auth session (server-side) and forward it as a Bearer to Keycloak in the
 // same realm, so the page makes no cross-origin call. Keycloak still enforces
-// scout-admin on every endpoint (defense in depth) — this proxy only forwards.
+// authorization on every endpoint (the manage-users capability, or scout-admin
+// for the admin endpoints) — this proxy only forwards.
 //
 // Catch-all so the sub-resourced paths (users/{id}/attributes, users/{id}/admin,
-// users/{id}/membership) match alongside the flat ones (schema, pending, users,
-// approve). Each method's allowlist of path shapes is checked before forwarding.
+// users/{id}/manager, users/{id}/membership) match alongside the flat ones
+// (schema, pending, users, approve). Each method's allowlist of path shapes is
+// checked before forwarding.
 
 const ALLOWED: Record<string, readonly RegExp[]> = {
   GET: [/^schema$/, /^pending$/, /^users$/],
-  POST: [/^approve$/, /^users\/[^/]+\/attributes$/, /^users\/[^/]+\/admin$/],
-  DELETE: [/^users\/[^/]+\/(admin|membership)$/],
+  POST: [/^approve$/, /^users\/[^/]+\/attributes$/, /^users\/[^/]+\/(admin|manager)$/],
+  DELETE: [/^users\/[^/]+\/(admin|manager|membership)$/],
 };
 
 // Mint a fresh access token from the refresh token on every request. The session

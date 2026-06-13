@@ -5,12 +5,14 @@ declare module 'next-auth' {
     user: {
       username?: string;
       isAdmin?: boolean;
+      roles?: string[];
     } & DefaultSession['user'];
   }
 
   interface User {
     username?: string;
     isAdmin?: boolean;
+    roles?: string[];
   }
 
   interface Profile {
@@ -23,6 +25,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     refreshToken?: string;
     username?: string;
-    isAdmin?: boolean;
+    roles?: string[];
   }
 }

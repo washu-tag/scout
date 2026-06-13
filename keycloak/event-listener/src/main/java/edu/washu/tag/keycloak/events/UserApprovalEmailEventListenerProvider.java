@@ -3,6 +3,7 @@ package edu.washu.tag.keycloak.events;
 import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 
 import edu.washu.tag.keycloak.requiredactions.ScoutTermsRequiredAction;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -26,8 +27,10 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.ThemeManager;
 import org.keycloak.models.UserModel;
+import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.theme.Theme;
 import org.keycloak.theme.freemarker.FreeMarkerProvider;
+import org.keycloak.util.JsonSerialization;
 
 /**
  * Event listener provider that gates user-pending and admin-approval emails on
@@ -128,7 +131,22 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
                 && (event.getOperationType() == OperationType.CREATE || event.getOperationType() == OperationType.DELETE)
                 && event.getRealmId() != null
                 && event.getRepresentation() != null
-                && event.getRepresentation().contains(SCOUT_USER_GROUP);
+                && SCOUT_USER_GROUP.equals(groupNameOf(event.getRepresentation()));
+    }
+
+    /**
+     * The group name from a GROUP_MEMBERSHIP event's representation, or null if
+     * it can't be parsed. An exact-name comparison is required — a substring
+     * match on the raw JSON would also match "scout-user-manager" membership
+     * events and fire spurious welcome/disabled emails on manager grant/revoke.
+     */
+    private static String groupNameOf(String representation) {
+        try {
+            return JsonSerialization.readValue(representation, GroupRepresentation.class).getName();
+        } catch (IOException e) {
+            log.warnf("Could not parse group representation from admin event: %s", representation);
+            return null;
+        }
     }
 
     /**

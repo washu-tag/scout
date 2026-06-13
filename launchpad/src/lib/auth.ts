@@ -1,5 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import KeycloakProvider from 'next-auth/providers/keycloak';
+import { ADMIN_ROLE, uiRoles } from './roles';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -22,20 +23,18 @@ export const authOptions: NextAuthOptions = {
       }
       if (profile) {
         token.username = profile.preferred_username as string;
-        // Resolve admin once at login; store the flag, not the (large) groups array.
-        token.isAdmin = isAdminUser(profile.groups as string[]);
+        // Resolve roles once at login; store only the small filtered list the
+        // UI gates on, not the (large) groups array.
+        token.roles = uiRoles(profile.groups as string[]);
       }
       return token;
     },
     async session({ session, token }) {
       session.user.username = token.username as string;
-      session.user.isAdmin = token.isAdmin as boolean;
+      const roles = (token.roles as string[] | undefined) ?? [];
+      session.user.roles = roles;
+      session.user.isAdmin = roles.includes(ADMIN_ROLE);
       return session;
     },
   },
 };
-
-export function isAdminUser(groups?: string[]): boolean {
-  if (!groups || groups.length === 0) return false;
-  return groups.includes('launchpad-admin');
-}

@@ -22,6 +22,7 @@ async function globalTeardown(): Promise<void> {
   const testUsernames = [
     process.env.UNAUTHORIZED_USER_USERNAME,
     process.env.AUTHORIZED_USER_USERNAME,
+    process.env.MANAGER_USER_USERNAME,
   ].filter(Boolean) as string[];
 
   console.log('Cleaning up test users by removing credentials and group memberships');

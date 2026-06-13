@@ -25,6 +25,7 @@ import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserProvider;
 import org.keycloak.representations.userprofile.config.UPAttribute;
@@ -46,6 +47,8 @@ class ScoutUsersResourceTest {
     private UserProvider users;
     private GroupModel scoutUserGroup;
     private GroupModel scoutAdminGroup;
+    private GroupModel managerGroup;
+    private RoleModel manageUsersRole;
     private ScoutUsersResource resource;
 
     @BeforeEach
@@ -61,7 +64,16 @@ class ScoutUsersResourceTest {
 
         scoutUserGroup = group("scout-user");
         scoutAdminGroup = group("scout-admin");
-        when(realm.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup, scoutAdminGroup));
+        managerGroup = group("scout-user-manager");
+        when(realm.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup, scoutAdminGroup, managerGroup));
+
+        // The manage-users capability realm role, mapped onto scout-admin and
+        // scout-user-manager exactly as the realm template declares it.
+        manageUsersRole = mock(RoleModel.class);
+        when(manageUsersRole.getId()).thenReturn("role-manage-users");
+        when(realm.getRole("manage-users")).thenReturn(manageUsersRole);
+        when(scoutAdminGroup.getRoleMappingsStream()).thenAnswer(i -> Stream.of(manageUsersRole));
+        when(managerGroup.getRoleMappingsStream()).thenAnswer(i -> Stream.of(manageUsersRole));
 
         UserProfileProvider upp = mock(UserProfileProvider.class);
         when(session.getProvider(UserProfileProvider.class)).thenReturn(upp);
@@ -144,7 +156,7 @@ class ScoutUsersResourceTest {
         when(target.getUsername()).thenReturn("alice");
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
-        resource.applyApproval(new ScoutUsersResource.ApproveRequest("u1",
+        resource.applyApproval(managerActor(), new ScoutUsersResource.ApproveRequest("u1",
                 Map.of("allowed_facilities", List.of("WUSM"),
                         "mask_phi_fields", List.of("false"))));
 
@@ -158,7 +170,7 @@ class ScoutUsersResourceTest {
         UserModel target = mock(UserModel.class);
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
-        assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
+        assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(managerActor(),
                 new ScoutUsersResource.ApproveRequest("u1",
                         Map.of("not_an_authz_attr", List.of("x")))));
         verify(target, never()).setAttribute(any(), any());
@@ -170,7 +182,7 @@ class ScoutUsersResourceTest {
         UserModel target = mock(UserModel.class);
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
-        assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
+        assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(managerActor(),
                 new ScoutUsersResource.ApproveRequest("u1",
                         Map.of("allowed_facilities", List.of("NOPE")))));
         verify(target, never()).joinGroup(any());
@@ -181,7 +193,7 @@ class ScoutUsersResourceTest {
         UserModel target = mock(UserModel.class);
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
-        assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
+        assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(managerActor(),
                 new ScoutUsersResource.ApproveRequest("u1",
                         Map.of("mask_phi_fields", List.of("true", "false")))));
         verify(target, never()).joinGroup(any());
@@ -190,7 +202,7 @@ class ScoutUsersResourceTest {
     @Test
     void approve_unknown_user_is_not_found() {
         when(users.getUserById(realm, "ghost")).thenReturn(null);
-        assertThrows(NoSuchElementException.class, () -> resource.applyApproval(
+        assertThrows(NoSuchElementException.class, () -> resource.applyApproval(managerActor(),
                 new ScoutUsersResource.ApproveRequest("ghost", Map.of())));
     }
 
@@ -204,7 +216,7 @@ class ScoutUsersResourceTest {
         // Re-approving someone already in scout-user must be a no-op, not a
         // clobber: no setAttribute, no re-join (which would also re-fire the
         // grant event + welcome email). The adapter maps this to 409.
-        assertThrows(IllegalStateException.class, () -> resource.applyApproval(
+        assertThrows(IllegalStateException.class, () -> resource.applyApproval(managerActor(),
                 new ScoutUsersResource.ApproveRequest("u1",
                         Map.of("allowed_facilities", List.of("WUSM")))));
         verify(target, never()).setAttribute(any(), any());
@@ -223,8 +235,23 @@ class ScoutUsersResourceTest {
         Map<String, List<String>> attrs = new HashMap<>();
         attrs.put("allowed_facilities", List.of("WUSM"));
         attrs.put("mask_phi_fields", List.of("bogus"));
-        assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
+        assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(managerActor(),
                 new ScoutUsersResource.ApproveRequest("u1", attrs)));
+        verify(target, never()).setAttribute(any(), any());
+        verify(target, never()).joinGroup(any());
+    }
+
+    @Test
+    void approve_rejects_admin_target_for_non_admin_actor() {
+        // Reachable state: a bootstrap admin seeded into scout-admin without
+        // scout-user. A manager must not be able to "approve" (modify) them.
+        UserModel target = mock(UserModel.class);
+        when(target.getUsername()).thenReturn("bootstrap-admin");
+        when(target.getGroupsStream()).thenAnswer(i -> Stream.of(scoutAdminGroup));
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        assertThrows(SecurityException.class, () -> resource.applyApproval(managerActor(),
+                new ScoutUsersResource.ApproveRequest("u1", Map.of())));
         verify(target, never()).setAttribute(any(), any());
         verify(target, never()).joinGroup(any());
     }
@@ -323,6 +350,38 @@ class ScoutUsersResourceTest {
         assertFalse(resource.hasRequiredAudience(null));
     }
 
+    @Test
+    void has_capability_via_group_mapping_for_admin_and_manager() {
+        // No "or admin" logic anywhere: scout-admin holds manage-users because
+        // the realm template maps the role onto the group, exactly like
+        // scout-user-manager. A plain scout-user holds no capability.
+        assertTrue(resource.hasCapability(adminActor(), "manage-users"));
+        assertTrue(resource.hasCapability(managerActor(), "manage-users"));
+        assertFalse(resource.hasCapability(userInGroups("u9", scoutUserGroup), "manage-users"));
+    }
+
+    @Test
+    void has_capability_via_direct_role_mapping() {
+        UserModel u = mock(UserModel.class);
+        when(u.getRoleMappingsStream()).thenAnswer(i -> Stream.of(manageUsersRole));
+        assertTrue(resource.hasCapability(u, "manage-users"));
+    }
+
+    @Test
+    void has_capability_false_when_role_undefined_in_realm() {
+        assertFalse(resource.hasCapability(adminActor(), "manage-nothing"));
+    }
+
+    @Test
+    void managers_cannot_modify_admin_targets() {
+        UserModel adminTarget = adminUser();
+        assertThrows(SecurityException.class,
+                () -> resource.requireCanModifyTarget(managerActor(), adminTarget));
+        // Admin actors can modify admins; non-admin targets are fair game for managers.
+        resource.requireCanModifyTarget(adminActor(), adminTarget);
+        resource.requireCanModifyTarget(managerActor(), userInGroups("t1", scoutUserGroup));
+    }
+
     // --- edit attributes ----------------------------------------------------
 
     @Test
@@ -331,7 +390,7 @@ class ScoutUsersResourceTest {
         when(target.getUsername()).thenReturn("alice");
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
-        resource.setAttributes("u1", Map.of("allowed_facilities", List.of("BJH")));
+        resource.setAttributes(managerActor(), "u1", Map.of("allowed_facilities", List.of("BJH")));
 
         verify(target).setAttribute("allowed_facilities", List.of("BJH"));
         verify(target, never()).joinGroup(any());
@@ -344,8 +403,29 @@ class ScoutUsersResourceTest {
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
         assertThrows(IllegalArgumentException.class, () ->
-                resource.setAttributes("u1", Map.of("not_an_authz_attr", List.of("x"))));
+                resource.setAttributes(managerActor(), "u1", Map.of("not_an_authz_attr", List.of("x"))));
         verify(target, never()).setAttribute(any(), any());
+    }
+
+    @Test
+    void set_attributes_rejects_admin_target_for_non_admin_actor() {
+        UserModel target = adminUser();
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        assertThrows(SecurityException.class, () ->
+                resource.setAttributes(managerActor(), "u1", Map.of("allowed_facilities", List.of("WUSM"))));
+        verify(target, never()).setAttribute(any(), any());
+    }
+
+    @Test
+    void admin_actor_can_set_attributes_on_admin_target() {
+        UserModel target = adminUser();
+        when(target.getUsername()).thenReturn("alice");
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        resource.setAttributes(adminActor(), "u1", Map.of("allowed_facilities", List.of("WUSM")));
+
+        verify(target).setAttribute("allowed_facilities", List.of("WUSM"));
     }
 
     // --- promote / demote ---------------------------------------------------
@@ -372,6 +452,66 @@ class ScoutUsersResourceTest {
         verify(target).leaveGroup(scoutAdminGroup);
     }
 
+    // --- user-manager grant / revoke ------------------------------------------
+
+    @Test
+    void promote_manager_joins_group_for_approved_user() {
+        UserModel target = mock(UserModel.class);
+        when(target.getUsername()).thenReturn("alice");
+        when(target.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup));
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        resource.promoteManager(managerActor(), "u1");
+
+        verify(target).joinGroup(managerGroup);
+    }
+
+    @Test
+    void promote_manager_rejects_unapproved_target() {
+        // The manager group is additive over scout-user; granting it to a
+        // pending user would leave a role that does nothing. The adapter maps
+        // this to 409.
+        UserModel target = mock(UserModel.class);
+        when(target.getUsername()).thenReturn("pending-user");
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        assertThrows(IllegalStateException.class,
+                () -> resource.promoteManager(managerActor(), "u1"));
+        verify(target, never()).joinGroup(any());
+    }
+
+    @Test
+    void promote_manager_rejects_admin_target_for_non_admin_actor() {
+        UserModel target = adminUser();
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        assertThrows(SecurityException.class,
+                () -> resource.promoteManager(managerActor(), "u1"));
+        verify(target, never()).joinGroup(any());
+    }
+
+    @Test
+    void demote_manager_leaves_group() {
+        UserModel target = mock(UserModel.class);
+        when(target.getUsername()).thenReturn("alice");
+        when(target.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup, managerGroup));
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        resource.demoteManager(managerActor(), "u1");
+
+        verify(target).leaveGroup(managerGroup);
+    }
+
+    @Test
+    void demote_manager_rejects_admin_target_for_non_admin_actor() {
+        UserModel target = adminUser();
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        assertThrows(SecurityException.class,
+                () -> resource.demoteManager(managerActor(), "u1"));
+        verify(target, never()).leaveGroup(any());
+    }
+
     // --- offboard -----------------------------------------------------------
 
     @Test
@@ -380,11 +520,12 @@ class ScoutUsersResourceTest {
         when(target.getUsername()).thenReturn("alice");
         when(users.getUserById(realm, "u1")).thenReturn(target);
 
-        ScoutUsersResource.OffboardResult result = resource.offboard("actor", "u1");
+        ScoutUsersResource.OffboardResult result = resource.offboard(adminActor(), "u1");
 
         verify(target).leaveGroup(scoutUserGroup);
         verify(target).leaveGroup(scoutAdminGroup);
         assertTrue(result.wasAdmin());
+        assertFalse(result.wasManager());
     }
 
     @Test
@@ -394,16 +535,44 @@ class ScoutUsersResourceTest {
         when(target.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup));
         when(users.getUserById(realm, "u2")).thenReturn(target);
 
-        ScoutUsersResource.OffboardResult result = resource.offboard("actor", "u2");
+        final ScoutUsersResource.OffboardResult result = resource.offboard(managerActor(), "u2");
 
         verify(target).leaveGroup(scoutUserGroup);
         verify(target, never()).leaveGroup(scoutAdminGroup);
+        verify(target, never()).leaveGroup(managerGroup);
         assertFalse(result.wasAdmin());
+        assertFalse(result.wasManager());
+    }
+
+    @Test
+    void offboard_manager_removes_manager_group_too() {
+        UserModel target = mock(UserModel.class);
+        when(target.getUsername()).thenReturn("mona");
+        when(target.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup, managerGroup));
+        when(users.getUserById(realm, "u3")).thenReturn(target);
+
+        final ScoutUsersResource.OffboardResult result = resource.offboard(managerActor(), "u3");
+
+        verify(target).leaveGroup(scoutUserGroup);
+        verify(target).leaveGroup(managerGroup);
+        verify(target, never()).leaveGroup(scoutAdminGroup);
+        assertFalse(result.wasAdmin());
+        assertTrue(result.wasManager());
+    }
+
+    @Test
+    void offboard_admin_requires_admin_actor() {
+        UserModel target = adminUser();
+        when(users.getUserById(realm, "u1")).thenReturn(target);
+
+        assertThrows(SecurityException.class, () -> resource.offboard(managerActor(), "u1"));
+        verify(target, never()).leaveGroup(any());
     }
 
     @Test
     void offboard_self_is_rejected_before_any_lookup() {
-        assertThrows(IllegalStateException.class, () -> resource.offboard("u1", "u1"));
+        assertThrows(IllegalStateException.class,
+                () -> resource.offboard(userInGroups("u1", scoutUserGroup, managerGroup), "u1"));
         verify(users, never()).getUserById(any(), any());
     }
 
@@ -443,6 +612,20 @@ class ScoutUsersResourceTest {
     }
 
     @Test
+    void to_scout_user_flags_manager_with_active_status() {
+        UserModel manager = mock(UserModel.class);
+        when(manager.getUsername()).thenReturn("mona");
+        when(manager.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup, managerGroup));
+        when(manager.getAttributes()).thenReturn(Map.of());
+
+        ScoutUsersResource.ScoutUser su = resource.toScoutUser(manager);
+
+        assertEquals("active", su.status(), "manager is a badge, not a status");
+        assertTrue(su.isUserManager());
+        assertFalse(su.isAdmin());
+    }
+
+    @Test
     void status_filter_active_includes_admins() {
         ScoutUsersResource.ScoutUser pending = scoutUser("pending", false);
         assertTrue(resource.statusMatches(pending, "pending"));
@@ -459,12 +642,27 @@ class ScoutUsersResourceTest {
     // --- helpers for the above ----------------------------------------------
 
     private UserModel adminUser() {
+        return userInGroups("admin-id", scoutUserGroup, scoutAdminGroup);
+    }
+
+    /** An actor holding the delegated manager role (scout-user + scout-user-manager, not admin). */
+    private UserModel managerActor() {
+        return userInGroups("actor-id", scoutUserGroup, managerGroup);
+    }
+
+    /** An admin actor (scout-user + scout-admin). */
+    private UserModel adminActor() {
+        return userInGroups("actor-id", scoutUserGroup, scoutAdminGroup);
+    }
+
+    private UserModel userInGroups(String id, GroupModel... groups) {
         UserModel u = mock(UserModel.class);
-        when(u.getGroupsStream()).thenAnswer(i -> Stream.of(scoutUserGroup, scoutAdminGroup));
+        when(u.getId()).thenReturn(id);
+        when(u.getGroupsStream()).thenAnswer(i -> Stream.of(groups));
         return u;
     }
 
     private ScoutUsersResource.ScoutUser scoutUser(String status, boolean isAdmin) {
-        return new ScoutUsersResource.ScoutUser("id", "u", null, null, status, isAdmin, Map.of());
+        return new ScoutUsersResource.ScoutUser("id", "u", null, null, status, isAdmin, false, Map.of());
     }
 }

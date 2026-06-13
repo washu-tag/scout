@@ -2,17 +2,23 @@
 
 import React from 'react';
 import { useSession } from 'next-auth/react';
+import { canManageUsers } from '@/lib/roles';
 
 interface ProtectedSectionProps {
   children: React.ReactNode;
-  requireAdmin?: boolean;
+  /** Role required to see the children: full admin (default) or the delegated manage-users capability (which admins also hold). */
+  capability?: 'admin' | 'manage-users';
   fallback?: React.ReactNode;
 }
 
-export default function AdminSection({ children, fallback = null }: ProtectedSectionProps) {
+export default function AdminSection({
+  children,
+  capability = 'admin',
+  fallback = null,
+}: ProtectedSectionProps) {
   const { data: session, status } = useSession();
 
-  // Dev-only override: render admin content without a real admin session.
+  // Dev-only override: render gated content without a real session.
   const devAdmin =
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_ADMIN === 'true';
   if (devAdmin) {
@@ -29,8 +35,9 @@ export default function AdminSection({ children, fallback = null }: ProtectedSec
     return fallback;
   }
 
-  // If admin is required, check admin role from session
-  if (!session.user?.isAdmin) {
+  const allowed =
+    capability === 'admin' ? !!session.user?.isAdmin : canManageUsers(session.user?.roles);
+  if (!allowed) {
     return fallback;
   }
 

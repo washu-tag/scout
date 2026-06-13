@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import TopBar from '@/components/TopBar';
 import Brand from '@/components/Brand';
+import { canManageUsers } from '@/lib/roles';
 import { subdomainUrl } from '@/lib/subdomainUrl';
 import {
   HiCheckCircle,
@@ -44,6 +45,7 @@ interface ScoutUser {
   name: string | null;
   status: string;
   isAdmin: boolean;
+  isUserManager: boolean;
   attributes: Record<string, string[]> | null;
 }
 
@@ -55,13 +57,14 @@ interface Row {
   requestedAt: string | null;
   status: string;
   isAdmin: boolean;
+  isUserManager: boolean;
   attributes: Record<string, string[]>;
 }
 
 type Tab = 'pending' | 'active' | 'admin';
 
 function pendingToRow(p: PendingUser): Row {
-  return { ...p, status: 'pending', isAdmin: false, attributes: {} };
+  return { ...p, status: 'pending', isAdmin: false, isUserManager: false, attributes: {} };
 }
 
 function scoutToRow(u: ScoutUser): Row {
@@ -73,6 +76,7 @@ function scoutToRow(u: ScoutUser): Row {
     requestedAt: null,
     status: u.status,
     isAdmin: u.isAdmin,
+    isUserManager: u.isUserManager,
     attributes: u.attributes ?? {},
   };
 }
@@ -143,6 +147,16 @@ function StatusBadge({ status, isAdmin }: { status: string; isAdmin: boolean }) 
   );
 }
 
+// Orthogonal marker beside the status badge: user-manager is a delegated role,
+// not a status (a manager stays "Active").
+function ManagerBadge() {
+  return (
+    <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300">
+      Manager
+    </span>
+  );
+}
+
 type SortCol = 'name' | 'requested';
 type SortDir = 'asc' | 'desc';
 
@@ -165,11 +179,13 @@ function sortRows(list: Row[], col: SortCol, dir: SortDir): Row[] {
 
 // --- Editor drawer (approve a pending user, or manage an existing one) -----
 
-type Confirm = null | 'promote' | 'demote' | 'offboard';
+type Confirm = null | 'promote' | 'demote' | 'makeManager' | 'removeManager' | 'offboard';
 
 interface DrawerProps {
   user: Row;
   schema: AttrSchema[];
+  /** Whether the caller is a full admin; user managers see no admin actions and admins read-only. */
+  callerIsAdmin: boolean;
   position?: { index: number; total: number };
   onNavigate?: (delta: number) => void;
   onClose: () => void;
@@ -215,6 +231,7 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
 function UserDrawer({
   user,
   schema,
+  callerIsAdmin,
   position,
   onNavigate,
   onClose,
@@ -222,6 +239,9 @@ function UserDrawer({
   onAuthExpired,
 }: DrawerProps) {
   const mode: 'approve' | 'edit' = user.status === 'pending' ? 'approve' : 'edit';
+  // Mirrors the server guard: a user manager can't modify an admin, so show
+  // the admin's access read-only instead of surfacing a raw 403 on save.
+  const readOnly = !callerIsAdmin && user.isAdmin;
   const [shown, setShown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -322,6 +342,10 @@ function UserDrawer({
       run('POST', `/api/users/users/${user.id}/admin`, `${display} is now an admin`);
     } else if (confirm === 'demote') {
       run('DELETE', `/api/users/users/${user.id}/admin`, `${display} removed from admins`);
+    } else if (confirm === 'makeManager') {
+      run('POST', `/api/users/users/${user.id}/manager`, `${display} is now a user manager`);
+    } else if (confirm === 'removeManager') {
+      run('DELETE', `/api/users/users/${user.id}/manager`, `${display} removed from user managers`);
     } else if (confirm === 'offboard') {
       run('DELETE', `/api/users/users/${user.id}/membership`, `Offboarded ${display}`);
     }
@@ -345,6 +369,7 @@ function UserDrawer({
             <h2 className="text-base font-semibold text-slate-900 dark:text-white truncate flex items-center gap-2">
               {display}
               <StatusBadge status={user.status} isAdmin={user.isAdmin} />
+              {user.isUserManager && <ManagerBadge />}
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
               {[user.username, user.email].filter(Boolean).join(' · ')}
@@ -366,7 +391,7 @@ function UserDrawer({
 
         {/* Body: attribute form + (edit mode) role & access actions */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="space-y-6">
+          <div className={`space-y-6${readOnly ? ' opacity-60 pointer-events-none' : ''}`}>
             {schema.map((attr) => (
               <Control
                 key={attr.name}
@@ -378,27 +403,50 @@ function UserDrawer({
             ))}
           </div>
 
-          {mode === 'edit' && (
+          {readOnly && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Admins are managed by admins — ask a Scout admin to change this user.
+            </p>
+          )}
+
+          {mode === 'edit' && !readOnly && (
             <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
               <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Role &amp; access
               </span>
               <div className="flex flex-wrap gap-2">
-                {user.isAdmin ? (
-                  <button
-                    onClick={() => setConfirm('demote')}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
-                  >
-                    <HiShieldCheck className="text-base" /> Demote from admin
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setConfirm('promote')}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
-                  >
-                    <HiShieldCheck className="text-base" /> Promote to admin
-                  </button>
-                )}
+                {callerIsAdmin &&
+                  (user.isAdmin ? (
+                    <button
+                      onClick={() => setConfirm('demote')}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+                    >
+                      <HiShieldCheck className="text-base" /> Demote from admin
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setConfirm('promote')}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+                    >
+                      <HiShieldCheck className="text-base" /> Promote to admin
+                    </button>
+                  ))}
+                {!user.isAdmin &&
+                  (user.isUserManager ? (
+                    <button
+                      onClick={() => setConfirm('removeManager')}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+                    >
+                      <HiUserGroup className="text-base" /> Remove user manager
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setConfirm('makeManager')}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+                    >
+                      <HiUserGroup className="text-base" /> Make user manager
+                    </button>
+                  ))}
                 <button
                   onClick={() => setConfirm('offboard')}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 px-3 py-1.5 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
@@ -457,22 +505,24 @@ function UserDrawer({
               onClick={close}
               className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
-              Cancel
+              {readOnly ? 'Close' : 'Cancel'}
             </button>
-            <button
-              onClick={saveAttributes}
-              disabled={submitting}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
-            >
-              <HiCheckCircle className="text-base" />
-              {submitting
-                ? mode === 'approve'
-                  ? 'Approving…'
-                  : 'Saving…'
-                : mode === 'approve'
-                  ? 'Approve'
-                  : 'Save attributes'}
-            </button>
+            {!readOnly && (
+              <button
+                onClick={saveAttributes}
+                disabled={submitting}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+              >
+                <HiCheckCircle className="text-base" />
+                {submitting
+                  ? mode === 'approve'
+                    ? 'Approving…'
+                    : 'Saving…'
+                  : mode === 'approve'
+                    ? 'Approve'
+                    : 'Save attributes'}
+              </button>
+            )}
           </div>
         )}
       </aside>
@@ -505,6 +555,16 @@ function ConfirmFooter({
     demote: {
       text: `Remove ${display}'s admin role? They keep their Scout access.`,
       label: 'Demote',
+      danger: false,
+    },
+    makeManager: {
+      text: `Make ${display} a user manager? They can approve users, edit data access, and manage other user managers — but not admins.`,
+      label: 'Make manager',
+      danger: false,
+    },
+    removeManager: {
+      text: `Remove ${display}'s user manager role? They keep their Scout access.`,
+      label: 'Remove manager',
       danger: false,
     },
     offboard: {
@@ -693,6 +753,9 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
     );
 
   const isAdmin = !!session?.user?.isAdmin;
+  // Admins hold manage-users via the scout-admin group's role mapping, so one
+  // capability check gates the console for both roles.
+  const canManage = canManageUsers(session?.user?.roles);
 
   useEffect(() => {
     if (status !== 'loading' && !session) signIn('keycloak');
@@ -705,16 +768,18 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
 
   // Schema once (drives the editor form regardless of tab).
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!canManage) return;
     apiFetch('/api/users/schema')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
       .then((s) => setSchema(s as AttrSchema[]))
       .catch((e) =>
         (e as Error).message === SESSION_EXPIRED
           ? setAuthExpired(true)
-          : setError('Could not load the attribute schema. You may not have the scout-admin role.'),
+          : setError(
+              'Could not load the attribute schema. You may not have access to user administration.',
+            ),
       );
-  }, [isAdmin]);
+  }, [canManage]);
 
   // Pending uses /pending (carries requestedAt for the queue sort); active and
   // admin use /users?status= (carries current attributes for the editor).
@@ -733,13 +798,13 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
       }
     } catch (e) {
       if ((e as Error).message === SESSION_EXPIRED) setAuthExpired(true);
-      else setError('Could not load users. You may not have the scout-admin role.');
+      else setError('Could not load users. You may not have access to user administration.');
     }
   }, []);
 
   useEffect(() => {
-    if (isAdmin) loadRows(tab);
-  }, [isAdmin, tab, loadRows]);
+    if (canManage) loadRows(tab);
+  }, [canManage, tab, loadRows]);
 
   // Email deep-link (?user=<id>) opens that pending user's drawer — once the
   // schema has loaded (so the editor isn't seeded empty), and only once (clear
@@ -783,7 +848,8 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
         <div className="max-w-content mx-auto px-6 py-6 flex items-center justify-between">
           <Brand crumbs={[environment, 'Users']} />
           <div className="flex items-center gap-4">
-            {kcConsole && (
+            {/* Keycloak's own console requires realm-admin, which user managers don't have. */}
+            {kcConsole && isAdmin && (
               <a
                 href={kcConsole}
                 target="_blank"
@@ -805,7 +871,9 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
             User administration
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Approve access requests, edit data-access attributes, manage admins, and offboard users.
+            {isAdmin
+              ? 'Approve access requests, edit data-access attributes, manage admins, and offboard users.'
+              : 'Approve access requests, edit data-access attributes, and manage user managers.'}
           </p>
         </div>
 
@@ -823,12 +891,8 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
               </button>
             </div>
           </Notice>
-        ) : !isAdmin ? (
-          <Notice>
-            You need the{' '}
-            <code className="font-mono text-rose-600 dark:text-rose-400">scout-admin</code> role to
-            administer users.
-          </Notice>
+        ) : !canManage ? (
+          <Notice>You need to be a Scout admin or user manager to administer users.</Notice>
         ) : (
           <>
             {/* Segmented tab filter + search */}
@@ -935,7 +999,10 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
                             {u.email || '—'}
                           </td>
                           <td className="px-5 py-3">
-                            <StatusBadge status={u.status} isAdmin={u.isAdmin} />
+                            <div className="flex items-center gap-1.5">
+                              <StatusBadge status={u.status} isAdmin={u.isAdmin} />
+                              {u.isUserManager && <ManagerBadge />}
+                            </div>
                           </td>
                           {showRequested ? (
                             <td className="px-5 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell whitespace-nowrap">
@@ -966,6 +1033,7 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
         <UserDrawer
           user={selected}
           schema={schema}
+          callerIsAdmin={isAdmin}
           position={selectedIndex >= 0 ? { index: selectedIndex, total: sorted.length } : undefined}
           onNavigate={(delta) => {
             const next = sorted[selectedIndex + delta];

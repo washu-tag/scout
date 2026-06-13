@@ -62,6 +62,19 @@
       "ssl": "{{ keycloak_smtp_ssl }}"
     },
     "roles": {
+      {#- Capability roles (ADR 0026): each names one delegable capability and is
+          assigned to groups below — scout-admin plus any delegated-role group.
+          Every check (scout-users SPI, launchpad UI) tests the single role name,
+          so admins need no separate "or admin" logic anywhere. -#}
+      "realm": [
+        {
+          "name": "manage-users",
+          "description": "Scout capability: run the user console (approve, edit data access, offboard, grant/revoke user manager)",
+          "composite": false,
+          "clientRole": false,
+          "attributes": {}
+        }
+      ],
       "client": {
         "{{ keycloak_oauth2_proxy_client_id }}": [
           {
@@ -199,6 +212,9 @@
             "consoleAdmin"
           ]
         },
+        "realmRoles": [
+          "manage-users"
+        ],
         "clientRoles": {
           "{{ keycloak_oauth2_proxy_client_id }}": [
             "oauth2-proxy-user"
@@ -247,6 +263,16 @@
             "open-webui-user"
           ]
         }
+      },
+      {#- Delegated user-management role (ADR 0026). Additive: members must
+          separately be in scout-user (the SPI enforces it on grant). Maps only
+          the capability realm role — no service client roles, so a user manager
+          is not an admin of any other Scout service and not a realm admin. -#}
+      {
+        "name": "scout-user-manager",
+        "realmRoles": [
+          "manage-users"
+        ]
       }
     ],
     "clients": [
@@ -908,6 +934,17 @@
         }
       ]
     },
+    {#- Pairs with fullScopeAllowed=false on the launchpad client: put the
+        capability realm roles in scope so they reach the token's groups claim
+        (via the microprofile-jwt realm-role mapper) for the console gate. -#}
+    "scopeMappings": [
+      {
+        "client": "{{ keycloak_launchpad_client_id }}",
+        "roles": [
+          "manage-users"
+        ]
+      }
+    ],
     {#- Pairs with fullScopeAllowed=false on the launchpad client: put its own
         roles in scope so the token (and the isAdmin gate's groups claim) keeps
         launchpad-admin/-user while dropping every other client's roles. -#}

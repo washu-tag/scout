@@ -25,6 +25,7 @@ async function globalSetup(): Promise<void> {
   const testUsernames = [
     process.env.UNAUTHORIZED_USER_USERNAME,
     process.env.AUTHORIZED_USER_USERNAME,
+    process.env.MANAGER_USER_USERNAME,
   ].filter(Boolean) as string[];
 
   console.log('Cleaning up stale state for test users if they already exist');
@@ -61,6 +62,20 @@ async function globalSetup(): Promise<void> {
     firstName: process.env.AUTHORIZED_USER_FIRST_NAME ?? 'Authorized',
     lastName: process.env.AUTHORIZED_USER_LAST_NAME ?? 'TestUser',
     groups: ['scout-user'],
+  });
+
+  // --- User manager (scout-user + scout-user-manager groups) ---
+  const managerUsername = process.env.MANAGER_USER_USERNAME;
+  if (!managerUsername) throw new Error('MANAGER_USER_USERNAME is not set');
+
+  console.log('Creating user-manager test user');
+  await keycloak.createUser({
+    username: managerUsername,
+    password,
+    email: process.env.MANAGER_USER_EMAIL ?? `${managerUsername}@example.com`,
+    firstName: process.env.MANAGER_USER_FIRST_NAME ?? 'Manager',
+    lastName: process.env.MANAGER_USER_LAST_NAME ?? 'TestUser',
+    groups: ['scout-user', 'scout-user-manager'],
   });
 
   console.log('--- Setup Complete ---\n');

@@ -261,6 +261,12 @@ interface ContentGridProps {
 }
 
 const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: ContentGridProps) => {
+  const { data: session } = useSession();
+  // Mirror AdminSection's dev override so the local preview shows the full admin card.
+  const devAdmin =
+    process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_ADMIN === 'true';
+  const showInfraTools = !!session?.user?.isAdmin || devAdmin;
+
   // Don't render until subdomain URLs are set on client side
   if (Object.keys(subdomainUrls).length === 0) {
     return (
@@ -274,6 +280,59 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: Co
       </div>
     );
   }
+
+  // The management card's tiles: the user console for every manage-users
+  // holder, infrastructure consoles for admins only.
+  const visibleTools = [
+    {
+      href: '/admin/users',
+      external: false,
+      adminOnly: false,
+      label: 'Users',
+      description: 'Approve requests and manage user access',
+      Icon: HiClipboardCheck,
+      iconBg: 'bg-indigo-50 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50',
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      hoverBorder: 'hover:border-indigo-200 dark:hover:border-indigo-900/60',
+      hoverShadow: 'hover:shadow-indigo-200/50 dark:hover:shadow-indigo-500/15',
+    },
+    {
+      href: subdomainUrls.minio,
+      external: true,
+      adminOnly: true,
+      label: 'Lake',
+      description: 'Medical data lake storage',
+      Icon: SiMinio,
+      iconBg: 'bg-red-50 border-red-100 dark:bg-red-950/40 dark:border-red-900/50',
+      iconColor: 'text-red-600 dark:text-red-400',
+      hoverBorder: 'hover:border-red-200 dark:hover:border-red-900/60',
+      hoverShadow: 'hover:shadow-red-200/50 dark:hover:shadow-red-500/15',
+    },
+    {
+      href: subdomainUrls.temporal,
+      external: true,
+      adminOnly: true,
+      label: 'Orchestrator',
+      description: 'Ingestion and characterization workflows',
+      Icon: SiTemporal,
+      iconBg: 'bg-cyan-50 border-cyan-100 dark:bg-cyan-950/40 dark:border-cyan-900/50',
+      iconColor: 'text-cyan-600 dark:text-cyan-400',
+      hoverBorder: 'hover:border-cyan-200 dark:hover:border-cyan-900/60',
+      hoverShadow: 'hover:shadow-cyan-200/50 dark:hover:shadow-cyan-500/15',
+    },
+    {
+      href: subdomainUrls.grafana,
+      external: true,
+      adminOnly: true,
+      label: 'Monitor',
+      description: 'Metrics, logs, and dashboards',
+      Icon: SiGrafana,
+      iconBg: 'bg-orange-50 border-orange-100 dark:bg-orange-950/40 dark:border-orange-900/50',
+      iconColor: 'text-orange-500 dark:text-orange-400',
+      hoverBorder: 'hover:border-orange-200 dark:hover:border-orange-900/60',
+      hoverShadow: 'hover:shadow-orange-200/50 dark:hover:shadow-orange-500/15',
+    },
+  ].filter((tool) => showInfraTools || !tool.adminOnly);
 
   return (
     <div className="space-y-6">
@@ -310,11 +369,11 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: Co
         </div>
       </div>
 
-      {/* Playbooks & Admin Tools - Side by side when admin, stacked otherwise */}
+      {/* Playbooks & management tools - side by side for admins and user managers, stacked otherwise */}
       <AdminSection
-        requireAdmin={true}
+        capability="manage-users"
         fallback={
-          /* Playbooks only (non-admin view) */
+          /* Playbooks only (no management role) */
           enablePlaybooks && subdomainUrls.playbooks ? (
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm">
               <div className="text-center mb-6">
@@ -335,7 +394,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: Co
           ) : null
         }
       >
-        {/* Side-by-side layout for admins */}
+        {/* Side-by-side layout for admins and user managers */}
         <div className={`grid gap-6 ${enablePlaybooks ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
           {/* Playbooks */}
           {enablePlaybooks && subdomainUrls.playbooks && (
@@ -357,7 +416,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: Co
             </div>
           )}
 
-          {/* Admin Tools */}
+          {/* Admin / user-management tools (infra tiles are admin-only) */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm h-full flex flex-col">
             <div className="text-center mb-6">
               <div className="flex items-center justify-center gap-2 mb-3">
@@ -365,62 +424,19 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: Co
                   <HiCog className="text-sm text-slate-600 dark:text-slate-300" />
                 </div>
                 <h2 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-[0.18em]">
-                  Admin Tools
+                  {showInfraTools ? 'Admin Tools' : 'User Management'}
                 </h2>
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400 font-light">
-                Infrastructure and user management
+                {showInfraTools
+                  ? 'Infrastructure and user management'
+                  : 'Approve requests and manage user access'}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3 flex-1">
-              {[
-                {
-                  href: '/admin/users',
-                  external: false,
-                  label: 'Users',
-                  description: 'Approve requests and manage user access',
-                  Icon: HiClipboardCheck,
-                  iconBg:
-                    'bg-indigo-50 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50',
-                  iconColor: 'text-indigo-600 dark:text-indigo-400',
-                  hoverBorder: 'hover:border-indigo-200 dark:hover:border-indigo-900/60',
-                  hoverShadow: 'hover:shadow-indigo-200/50 dark:hover:shadow-indigo-500/15',
-                },
-                {
-                  href: subdomainUrls.minio,
-                  external: true,
-                  label: 'Lake',
-                  description: 'Medical data lake storage',
-                  Icon: SiMinio,
-                  iconBg: 'bg-red-50 border-red-100 dark:bg-red-950/40 dark:border-red-900/50',
-                  iconColor: 'text-red-600 dark:text-red-400',
-                  hoverBorder: 'hover:border-red-200 dark:hover:border-red-900/60',
-                  hoverShadow: 'hover:shadow-red-200/50 dark:hover:shadow-red-500/15',
-                },
-                {
-                  href: subdomainUrls.temporal,
-                  external: true,
-                  label: 'Orchestrator',
-                  description: 'Ingestion and characterization workflows',
-                  Icon: SiTemporal,
-                  iconBg: 'bg-cyan-50 border-cyan-100 dark:bg-cyan-950/40 dark:border-cyan-900/50',
-                  iconColor: 'text-cyan-600 dark:text-cyan-400',
-                  hoverBorder: 'hover:border-cyan-200 dark:hover:border-cyan-900/60',
-                  hoverShadow: 'hover:shadow-cyan-200/50 dark:hover:shadow-cyan-500/15',
-                },
-                {
-                  href: subdomainUrls.grafana,
-                  external: true,
-                  label: 'Monitor',
-                  description: 'Metrics, logs, and dashboards',
-                  Icon: SiGrafana,
-                  iconBg:
-                    'bg-orange-50 border-orange-100 dark:bg-orange-950/40 dark:border-orange-900/50',
-                  iconColor: 'text-orange-500 dark:text-orange-400',
-                  hoverBorder: 'hover:border-orange-200 dark:hover:border-orange-900/60',
-                  hoverShadow: 'hover:shadow-orange-200/50 dark:hover:shadow-orange-500/15',
-                },
-              ].map((tool) => (
+            <div
+              className={`grid ${visibleTools.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-3 flex-1`}
+            >
+              {visibleTools.map((tool) => (
                 <a
                   key={tool.label}
                   href={tool.href}

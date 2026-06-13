@@ -13,6 +13,11 @@ const unauthorizedUser: TestUser = {
   password: process.env.TEST_USER_PASSWORD!,
 };
 
+const managerUser: TestUser = {
+  username: process.env.MANAGER_USER_USERNAME!,
+  password: process.env.TEST_USER_PASSWORD!,
+};
+
 // Unauthorized user, no scout-user group membership, 403 Access Pending everywhere
 
 const protectedServices = [
@@ -134,5 +139,80 @@ test.describe('Authorized Non-Admin User', () => {
     await page.waitForURL(`https://${hostname}/`, { timeout: 30000 });
     const response = await page.reload({ waitUntil: 'domcontentloaded' });
     expect(response?.status()).toBe(200);
+  });
+});
+
+// User manager (scout-user + scout-user-manager): runs the user console via the
+// manage-users capability, but is not a realm admin and not an admin of any
+// other Scout service (ADR 0026).
+
+test.describe('User Manager', () => {
+  test('Launchpad shows user management without infra tiles', async ({ page }) => {
+    await signInToScout(page, `https://${hostname}/`, managerUser);
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
+
+    // Manager sees the management card with the Users tile only — no admin
+    // heading and none of the admin-only infrastructure tiles.
+    await expect(page.locator('text=User Management')).toBeVisible();
+    await expect(page.locator('text=Admin Tools')).toBeHidden();
+    // Exact match: "Monitor" would otherwise substring-match the
+    // "Clinical Follow-up Monitoring" playbook tile.
+    await expect(page.getByText('Orchestrator', { exact: true })).toBeHidden();
+    await expect(page.getByText('Monitor', { exact: true })).toBeHidden();
+  });
+
+  test('User console is accessible', async ({ page }) => {
+    await signInToScout(page, `https://${hostname}/admin/users`, managerUser);
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
+
+    // The capability gate passed: the console renders its tabs rather than
+    // the not-authorized notice, and the schema/users fetches succeeded.
+    await expect(page.locator('text=You need to be a Scout admin or user manager')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Pending' })).toBeVisible();
+  });
+
+  test('Keycloak Admin API returns 403 (manager is not realm-admin)', async ({ page }) => {
+    await signInToScout(page, `https://${hostname}/`, managerUser);
+
+    const denied = page.waitForResponse(
+      (resp) =>
+        resp.url().includes(`keycloak.${hostname}/admin/serverinfo`) && resp.status() === 403,
+      { timeout: 60000 },
+    );
+    await page.goto(`https://keycloak.${hostname}/admin/scout/console/`);
+    const response = await denied;
+    expect(response.status()).toBe(403);
+  });
+
+  test('Grafana datasources API returns 403', async ({ page }) => {
+    await signInToScout(page, `https://grafana.${hostname}/`, managerUser);
+
+    const response = await page.request.get(`https://grafana.${hostname}/api/datasources/`);
+    expect(response.status()).toBe(403);
+  });
+
+  test('Temporal denies access', async ({ page }) => {
+    const url = `https://temporal.${hostname}/`;
+    await signInToScout(page, url, managerUser);
+
+    const namespaceDenied = page.waitForResponse(
+      (resp) =>
+        resp.url().includes(`temporal.${hostname}/api/v1/namespaces`) && resp.status() === 403,
+      { timeout: 30000 },
+    );
+    await page.goto(`https://temporal.${hostname}/auth/sso`);
+    const namespaceResp = await namespaceDenied;
+    expect(namespaceResp.status()).toBe(403);
+  });
+
+  test('MinIO denies access', async ({ page }) => {
+    const url = `https://minio.${hostname}/`;
+    await signInToScout(page, url, managerUser);
+
+    await page.click('button:has-text("Login")', { timeout: 15000 });
+    await page.waitForLoadState('networkidle', { timeout: 60000 });
+
+    const response = await page.request.get(`https://minio.${hostname}/api/v1/buckets`);
+    expect(response.status()).toBe(403);
   });
 });

@@ -27,6 +27,7 @@ import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.userprofile.config.UPAttribute;
@@ -38,9 +39,12 @@ import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.userprofile.UserProfileProvider;
 
 /**
- * JAX-RS resource backing the Scout user-administration console. All endpoints
- * require a bearer token whose user is in {@code scout-admin}; the resource then
- * acts as that admin (no standing admin-API credential).
+ * JAX-RS resource backing the Scout user-administration console. Endpoints are
+ * capability-gated (ADR 0026): most require the {@code manage-users} realm role
+ * — held by {@code scout-user-manager} members and, via the realm template's
+ * group mapping, by {@code scout-admin} — while promoting/demoting
+ * {@code scout-admin} itself requires scout-admin membership. The resource acts
+ * as the authenticated caller (no standing admin-API credential).
  *
  * <p>The data-access attributes are <b>not hardcoded</b> — they're discovered
  * from the realm User Profile (attributes annotated {@code scoutAuthz=true}),
@@ -49,10 +53,12 @@ import org.keycloak.userprofile.UserProfileProvider;
  * against whatever dimensions are configured: add a dimension in inventory and it
  * flows through with no change here.
  *
- * <p>Beyond approval the console edits a user's attributes, promotes/demotes
- * {@code scout-admin}, and offboards (removes all Scout group membership) — each
- * guarded server-side ({@link #demote}/{@link #offboard} reject removing the last
- * admin, {@link #offboard} blocks self-offboard) regardless of the UI. Every
+ * <p>Beyond approval the console edits a user's attributes, grants/revokes the
+ * delegated {@code scout-user-manager} role, promotes/demotes {@code scout-admin},
+ * and offboards (removes all Scout group membership) — each guarded server-side
+ * regardless of the UI: a target in scout-admin can only be modified by a
+ * scout-admin ({@link #requireCanModifyTarget}), user-manager is only grantable
+ * to approved scout-users, and {@link #offboard} blocks self-offboard. Every
  * mutation fires a {@code GROUP_MEMBERSHIP}/{@code USER} admin event (see
  * {@link #fireGroupMembershipEvent}) so it propagates to OPA, drives the
  * approval/offboard email, and lands in the admin-events audit log.
@@ -67,6 +73,11 @@ public class ScoutUsersResource {
 
     static final String SCOUT_USER_GROUP = "scout-user";
     static final String SCOUT_ADMIN_GROUP = "scout-admin";
+    static final String SCOUT_USER_MANAGER_GROUP = "scout-user-manager";
+    // Capability realm role (ADR 0026): one name gates the console for both
+    // scout-admin and scout-user-manager — the realm template maps the role to
+    // both groups, so there is no "or admin" logic anywhere in this resource.
+    static final String MANAGE_USERS_ROLE = "manage-users";
     static final String AUTHZ_ANNOTATION = "scoutAuthz";
     // Defense in depth: only accept tokens audienced for this API. The launchpad
     // client adds aud=scout-users-api via an audience mapper (realm template), so a
@@ -98,7 +109,8 @@ public class ScoutUsersResource {
 
     /** A user row for the admin console; {@code attributes} are filtered to scoutAuthz keys only. */
     public record ScoutUser(String id, String username, String email, String name,
-                            String status, boolean isAdmin, Map<String, List<String>> attributes) {
+                            String status, boolean isAdmin, boolean isUserManager,
+                            Map<String, List<String>> attributes) {
     }
 
     /** Approval request body: the user and the data-access attribute values to grant. */
@@ -110,73 +122,77 @@ public class ScoutUsersResource {
     }
 
     /** What an offboard removed, so the adapter can emit the matching events. */
-    record OffboardResult(String username, boolean wasAdmin) {
+    record OffboardResult(String username, boolean wasAdmin, boolean wasManager) {
     }
 
     // --- Endpoints (thin JAX-RS adapters) ----------------------------------
 
-    /** {@return the dynamic data-access attribute schema the UI renders} scout-admin only. */
+    /** {@return the dynamic data-access attribute schema the UI renders} manage-users capability. */
     @GET
     @Path("schema")
     @Produces(MediaType.APPLICATION_JSON)
     public List<AttrSchema> schema() {
-        requireScoutAdmin();
+        requireCapability(MANAGE_USERS_ROLE);
         return buildSchema();
     }
 
-    /** {@return users awaiting approval} scout-admin only. */
+    /** {@return users awaiting approval} manage-users capability. */
     @GET
     @Path("pending")
     @Produces(MediaType.APPLICATION_JSON)
     public List<PendingUser> pending() {
-        requireScoutAdmin();
+        requireCapability(MANAGE_USERS_ROLE);
         return findPending();
     }
 
-    /** {@return Scout users filtered by status (pending/active/admin) and optional search} scout-admin only. */
+    /** {@return Scout users filtered by status (pending/active/admin) and optional search} manage-users capability. */
     @GET
     @Path("users")
     @Produces(MediaType.APPLICATION_JSON)
     public List<ScoutUser> users(@QueryParam("status") String status, @QueryParam("search") String search) {
-        requireScoutAdmin();
+        requireCapability(MANAGE_USERS_ROLE);
         return listUsers(status, search);
     }
 
-    /** Approve a user: set the submitted data-access attributes and join scout-user (scout-admin only). */
+    /** Approve a user: set the submitted data-access attributes and join scout-user (manage-users capability). */
     @POST
     @Path("approve")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response approve(ApproveRequest req) {
-        AuthResult auth = requireScoutAdmin();
+        AuthResult auth = requireCapability(MANAGE_USERS_ROLE);
         String username;
         try {
-            username = applyApproval(req);
+            username = applyApproval(auth.user(), req);
         } catch (IllegalArgumentException e) {
             throw new BadRequestException(e.getMessage());
         } catch (NoSuchElementException e) {
             throw new NotFoundException(e.getMessage());
         } catch (IllegalStateException e) {
             throw new ClientErrorException(e.getMessage(), Response.Status.CONFLICT);
+        } catch (SecurityException e) {
+            throw new ForbiddenException(e.getMessage());
         }
         fireGroupMembershipEvent(auth, req.userId(), username, SCOUT_USER_GROUP, OperationType.CREATE);
         return ok("approved", username);
     }
 
-    /** Edit an approved user's data-access attributes (scout-admin only). */
+    /** Edit an approved user's data-access attributes (manage-users capability). */
     @POST
     @Path("users/{id}/attributes")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response setUserAttributes(@PathParam("id") String id, AttributesRequest req) {
-        AuthResult auth = requireScoutAdmin();
+        AuthResult auth = requireCapability(MANAGE_USERS_ROLE);
         String username;
         try {
-            username = setAttributes(id, req == null ? null : req.attributes());
+            username = setAttributes(auth.user(), id, req == null ? null : req.attributes());
         } catch (IllegalArgumentException e) {
             throw new BadRequestException(e.getMessage());
         } catch (NoSuchElementException e) {
             throw new NotFoundException(e.getMessage());
+        } catch (SecurityException e) {
+            throw new ForbiddenException(e.getMessage());
         }
         fireUserUpdatedEvent(auth, id, username);
         return ok("updated", username);
@@ -214,28 +230,88 @@ public class ScoutUsersResource {
         return ok("demoted", username);
     }
 
-    /** Offboard a user: remove all Scout group membership. Blocks self-offboard (409). scout-admin only. */
-    @DELETE
-    @Path("users/{id}/membership")
+    /** Grant the delegated user-manager role (manage-users capability; an admin target requires an admin caller). */
+    @POST
+    @Path("users/{id}/manager")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response offboardUser(@PathParam("id") String id) {
-        AuthResult auth = requireScoutAdmin();
-        OffboardResult result;
+    public Response promoteUserManager(@PathParam("id") String id) {
+        AuthResult auth = requireCapability(MANAGE_USERS_ROLE);
+        String username;
         try {
-            result = offboard(auth.user().getId(), id);
+            username = promoteManager(auth.user(), id);
         } catch (NoSuchElementException e) {
             throw new NotFoundException(e.getMessage());
         } catch (IllegalStateException e) {
             throw new ClientErrorException(e.getMessage(), Response.Status.CONFLICT);
+        } catch (SecurityException e) {
+            throw new ForbiddenException(e.getMessage());
+        }
+        fireGroupMembershipEvent(auth, id, username, SCOUT_USER_MANAGER_GROUP, OperationType.CREATE);
+        return ok("granted", username);
+    }
+
+    /** Revoke the delegated user-manager role (manage-users capability; an admin target requires an admin caller). */
+    @DELETE
+    @Path("users/{id}/manager")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response demoteUserManager(@PathParam("id") String id) {
+        AuthResult auth = requireCapability(MANAGE_USERS_ROLE);
+        String username;
+        try {
+            username = demoteManager(auth.user(), id);
+        } catch (NoSuchElementException e) {
+            throw new NotFoundException(e.getMessage());
+        } catch (SecurityException e) {
+            throw new ForbiddenException(e.getMessage());
+        }
+        fireGroupMembershipEvent(auth, id, username, SCOUT_USER_MANAGER_GROUP, OperationType.DELETE);
+        return ok("revoked", username);
+    }
+
+    /** Offboard a user: remove all Scout group membership. Blocks self-offboard (409). manage-users capability. */
+    @DELETE
+    @Path("users/{id}/membership")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response offboardUser(@PathParam("id") String id) {
+        AuthResult auth = requireCapability(MANAGE_USERS_ROLE);
+        OffboardResult result;
+        try {
+            result = offboard(auth.user(), id);
+        } catch (NoSuchElementException e) {
+            throw new NotFoundException(e.getMessage());
+        } catch (IllegalStateException e) {
+            throw new ClientErrorException(e.getMessage(), Response.Status.CONFLICT);
+        } catch (SecurityException e) {
+            throw new ForbiddenException(e.getMessage());
         }
         fireGroupMembershipEvent(auth, id, result.username(), SCOUT_USER_GROUP, OperationType.DELETE);
         if (result.wasAdmin()) {
             fireGroupMembershipEvent(auth, id, result.username(), SCOUT_ADMIN_GROUP, OperationType.DELETE);
         }
+        if (result.wasManager()) {
+            fireGroupMembershipEvent(auth, id, result.username(), SCOUT_USER_MANAGER_GROUP, OperationType.DELETE);
+        }
         return ok("offboarded", result.username());
     }
 
     AuthResult requireScoutAdmin() {
+        AuthResult auth = authenticate();
+        if (!isScoutAdmin(auth.user())) {
+            throw new ForbiddenException("requires membership in " + SCOUT_ADMIN_GROUP);
+        }
+        return auth;
+    }
+
+    /** Authorize by capability (ADR 0026): the caller must hold the named realm role. */
+    AuthResult requireCapability(String roleName) {
+        AuthResult auth = authenticate();
+        if (!hasCapability(auth.user(), roleName)) {
+            throw new ForbiddenException("requires the " + roleName + " role");
+        }
+        return auth;
+    }
+
+    private AuthResult authenticate() {
         AuthResult auth = new AppAuthManager.BearerTokenAuthenticator(session).authenticate();
         if (auth == null || auth.user() == null) {
             throw new NotAuthorizedException("Bearer");
@@ -247,9 +323,6 @@ public class ScoutUsersResource {
         // Keycloak's own admin console is the escape hatch for everything else.
         if (!hasRequiredAudience(auth.token() == null ? null : auth.token().getAudience())) {
             throw new ForbiddenException("token not audienced for " + REQUIRED_AUDIENCE);
-        }
-        if (!isScoutAdmin(auth.user())) {
-            throw new ForbiddenException("requires membership in " + SCOUT_ADMIN_GROUP);
         }
         return auth;
     }
@@ -309,7 +382,47 @@ public class ScoutUsersResource {
     // --- Core logic (package-private, unit-tested) -------------------------
 
     boolean isScoutAdmin(UserModel user) {
-        return user.getGroupsStream().anyMatch(g -> SCOUT_ADMIN_GROUP.equals(g.getName()));
+        return inGroup(user, SCOUT_ADMIN_GROUP);
+    }
+
+    boolean isUserManager(UserModel user) {
+        return inGroup(user, SCOUT_USER_MANAGER_GROUP);
+    }
+
+    private boolean inGroup(UserModel user, String groupName) {
+        return user.getGroupsStream().anyMatch(g -> groupName.equals(g.getName()));
+    }
+
+    /**
+     * Whether the user holds the named realm role, directly or via any of their
+     * groups' role mappings. Resolved explicitly rather than through
+     * {@link UserModel#hasRole} so the logic is deterministic and unit-testable
+     * with plain mocks. Composites are intentionally not expanded — capability
+     * roles are mapped straight onto groups in the realm template.
+     */
+    boolean hasCapability(UserModel user, String roleName) {
+        RoleModel role = session.getContext().getRealm().getRole(roleName);
+        if (role == null) {
+            return false;
+        }
+        String roleId = role.getId();
+        return user.getRoleMappingsStream().anyMatch(r -> roleId.equals(r.getId()))
+                || user.getGroupsStream().anyMatch(
+                        g -> g.getRoleMappingsStream().anyMatch(r -> roleId.equals(r.getId())));
+    }
+
+    /**
+     * Managers may not modify admins: every manager-tier mutation rejects a
+     * target in scout-admin unless the caller is one too (SecurityException,
+     * translated to 403 by the adapters). One shared rule instead of
+     * per-endpoint special cases, so "can never touch scout-admin" stays a
+     * single invariant as more delegated roles arrive.
+     */
+    void requireCanModifyTarget(UserModel actor, UserModel target) {
+        if (isScoutAdmin(target) && (actor == null || !isScoutAdmin(actor))) {
+            throw new SecurityException(
+                    "only a " + SCOUT_ADMIN_GROUP + " can modify " + target.getUsername());
+        }
     }
 
     // Whether the bearer carries aud=scout-users (added by the launchpad client's
@@ -353,15 +466,17 @@ public class ScoutUsersResource {
     /**
      * Validate the submitted attributes against the dynamic schema, then set them
      * and join scout-user. Throws {@link IllegalArgumentException} (bad request),
-     * {@link NoSuchElementException} (not found), or {@link IllegalStateException}
+     * {@link NoSuchElementException} (not found), {@link IllegalStateException}
      * (already approved — keeps approve idempotent so a re-approve doesn't clobber
-     * attributes or re-fire the grant event/email) — translated to HTTP by the
+     * attributes or re-fire the grant event/email), or {@link SecurityException}
+     * (admin target, non-admin actor) — translated to HTTP by the
      * {@link #approve} adapter. Validates everything before writing anything, so
      * a bad request never leaves a half-applied grant.
      */
-    String applyApproval(ApproveRequest req) {
+    String applyApproval(UserModel actor, ApproveRequest req) {
         RealmModel realm = session.getContext().getRealm();
         UserModel user = requireUser(realm, req == null ? null : req.userId());
+        requireCanModifyTarget(actor, user);
         if (user.getGroupsStream().anyMatch(g -> SCOUT_USER_GROUP.equals(g.getName()))) {
             throw new IllegalStateException(user.getUsername() + " is already approved");
         }
@@ -451,6 +566,7 @@ public class ScoutUsersResource {
     ScoutUser toScoutUser(UserModel u, Set<String> authzKeys) {
         List<String> groups = u.getGroupsStream().map(GroupModel::getName).toList();
         boolean admin = groups.contains(SCOUT_ADMIN_GROUP);
+        boolean manager = groups.contains(SCOUT_USER_MANAGER_GROUP);
         boolean active = admin || groups.contains(SCOUT_USER_GROUP);
         boolean termsAccepted = u.getFirstAttribute(TERMS_ACCEPTED_ATTR) != null;
         String status = admin ? "admin" : active ? "active" : termsAccepted ? "pending" : "none";
@@ -463,7 +579,7 @@ public class ScoutUsersResource {
                 attrs.put(key, values);
             }
         }
-        return new ScoutUser(u.getId(), u.getUsername(), u.getEmail(), fullName(u), status, admin, attrs);
+        return new ScoutUser(u.getId(), u.getUsername(), u.getEmail(), fullName(u), status, admin, manager, attrs);
     }
 
     /** Whether a user matches the table's status filter. "active" includes admins; blank/"all" matches everything. */
@@ -480,9 +596,10 @@ public class ScoutUsersResource {
     }
 
     /** Set an approved user's data-access attributes (validated). No group change. */
-    String setAttributes(String userId, Map<String, List<String>> attributes) {
+    String setAttributes(UserModel actor, String userId, Map<String, List<String>> attributes) {
         RealmModel realm = session.getContext().getRealm();
         UserModel user = requireUser(realm, userId);
+        requireCanModifyTarget(actor, user);
         Map<String, List<String>> attrs = validateAttributes(attributes);
         attrs.forEach(user::setAttribute);
         log.infof("scout-users: set attributes %s on %s", attrs.keySet(), user.getUsername());
@@ -509,20 +626,59 @@ public class ScoutUsersResource {
     }
 
     /**
-     * Offboard a user: remove scout-user and (if present) scout-admin. Blocks
-     * offboarding yourself (IllegalStateException).
+     * Grant the delegated user-manager role (idempotent). The target must
+     * already be an approved scout-user (IllegalStateException -> 409): the
+     * manager group is additive, granting only the manage-users capability, so
+     * a manager who isn't a scout-user would be locked out at the ingress with
+     * a role that does nothing.
+     */
+    String promoteManager(UserModel actor, String userId) {
+        RealmModel realm = session.getContext().getRealm();
+        UserModel user = requireUser(realm, userId);
+        requireCanModifyTarget(actor, user);
+        if (!inGroup(user, SCOUT_USER_GROUP)) {
+            throw new IllegalStateException(user.getUsername() + " is not an approved " + SCOUT_USER_GROUP
+                    + "; approve them before granting " + SCOUT_USER_MANAGER_GROUP);
+        }
+        user.joinGroup(requireGroup(realm, SCOUT_USER_MANAGER_GROUP));
+        log.infof("scout-users: granted %s to %s", SCOUT_USER_MANAGER_GROUP, user.getUsername());
+        return user.getUsername();
+    }
+
+    /** Revoke the delegated user-manager role (idempotent). Self-revoke is allowed (a privilege drop). */
+    String demoteManager(UserModel actor, String userId) {
+        RealmModel realm = session.getContext().getRealm();
+        UserModel user = requireUser(realm, userId);
+        requireCanModifyTarget(actor, user);
+        user.leaveGroup(requireGroup(realm, SCOUT_USER_MANAGER_GROUP));
+        log.infof("scout-users: revoked %s from %s", SCOUT_USER_MANAGER_GROUP, user.getUsername());
+        return user.getUsername();
+    }
+
+    /**
+     * Offboard a user: remove scout-user and (if present) scout-user-manager and
+     * scout-admin. Blocks offboarding yourself (IllegalStateException); an admin
+     * target requires an admin actor (SecurityException).
      * {@return what was removed, so the adapter can emit the matching events}.
      */
-    OffboardResult offboard(String actorId, String userId) {
-        if (actorId != null && actorId.equals(userId)) {
+    OffboardResult offboard(UserModel actor, String userId) {
+        if (actor != null && actor.getId() != null && actor.getId().equals(userId)) {
             throw new IllegalStateException("cannot offboard yourself");
         }
         RealmModel realm = session.getContext().getRealm();
         UserModel user = requireUser(realm, userId);
+        requireCanModifyTarget(actor, user);
         boolean wasAdmin = isScoutAdmin(user);
+        boolean wasManager = isUserManager(user);
         GroupModel scoutUser = topLevelGroup(realm, SCOUT_USER_GROUP);
         if (scoutUser != null) {
             user.leaveGroup(scoutUser);
+        }
+        if (wasManager) {
+            GroupModel manager = topLevelGroup(realm, SCOUT_USER_MANAGER_GROUP);
+            if (manager != null) {
+                user.leaveGroup(manager);
+            }
         }
         if (wasAdmin) {
             GroupModel scoutAdmin = topLevelGroup(realm, SCOUT_ADMIN_GROUP);
@@ -530,8 +686,9 @@ public class ScoutUsersResource {
                 user.leaveGroup(scoutAdmin);
             }
         }
-        log.infof("scout-users: offboarded %s (wasAdmin=%s)", user.getUsername(), wasAdmin);
-        return new OffboardResult(user.getUsername(), wasAdmin);
+        log.infof("scout-users: offboarded %s (wasAdmin=%s, wasManager=%s)",
+                user.getUsername(), wasAdmin, wasManager);
+        return new OffboardResult(user.getUsername(), wasAdmin, wasManager);
     }
 
     private UserModel requireUser(RealmModel realm, String userId) {
