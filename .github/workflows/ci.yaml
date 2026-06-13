@@ -146,7 +146,7 @@ jobs:
           java-version: ${{ ENV.JAVA_VERSION }}
       - name: Install Molecule and dependencies
         run: |
-          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests pyspark==3.5.4
+          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests pyspark==4.1.1
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v

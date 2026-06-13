@@ -142,7 +142,7 @@ See `docs/source/dataschema.md` for complete schema documentation and HL7 field 
 
 ### Prerequisites
 - **Deployment**: Ansible 2.14+, SSH access to target nodes
-- **Python Services**: Python 3.8+, PySpark 3.5.4
+- **Python Services**: Python 3.10+, PySpark 4.1.1
 - **TypeScript Services**: Node.js/npm
 - **Cluster Access**: kubectl configured for K3s cluster
 - **Optional**: Docker (local containerization), Terraform (IaC)
