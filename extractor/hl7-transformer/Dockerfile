@@ -1,4 +1,4 @@
-FROM spark:3.5.4-scala2.12-java17-python3-ubuntu
+FROM spark:4.1.1-scala2.13-java21-python3-ubuntu
 
 USER root
 
@@ -12,15 +12,14 @@ USER spark
 # Set the working directory
 WORKDIR /app
 
-# Copy spark jars, be sure to download the same jars in the pyspark notebook image and the temporal python worker image
+# Delta Lake and S3A jars. hadoop-aws must match the hadoop-client version
+# bundled in the base image, and the awssdk bundle must match the
+# aws-java-sdk-v2 version that hadoop-aws declares in hadoop-project's pom.
 ADD --chown=spark \
-    https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.3.0/delta-spark_2.12-3.3.0.jar \
-    https://repo1.maven.org/maven2/io/delta/delta-storage/3.3.0/delta-storage-3.3.0.jar \
-    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.2.2/hadoop-aws-3.2.2.jar \
-    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/3.2.2/hadoop-common-3.2.2.jar \
-    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-hdfs/3.2.2/hadoop-hdfs-3.2.2.jar \
-    https://repo1.maven.org/maven2/org/antlr/antlr4-runtime/4.9.3/antlr4-runtime-4.9.3.jar \
-    https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.793/aws-java-sdk-bundle-1.12.793.jar \
+    https://repo1.maven.org/maven2/io/delta/delta-spark_4.1_2.13/4.2.0/delta-spark_4.1_2.13-4.2.0.jar \
+    https://repo1.maven.org/maven2/io/delta/delta-storage/4.2.0/delta-storage-4.2.0.jar \
+    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.4.2/hadoop-aws-3.4.2.jar \
+    https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.29.52/bundle-2.29.52.jar \
     ${SPARK_HOME}/jars/
 
 # Create venv

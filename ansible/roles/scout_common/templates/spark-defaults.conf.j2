@@ -4,9 +4,12 @@ spark.hadoop.fs.s3a.secret.key {{ spark_s3_password | default(s3_lake_reader_sec
 spark.hadoop.fs.s3a.endpoint {{ s3_endpoint }}
 spark.hadoop.fs.s3a.aws.credentials.provider org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
 {% else %}
-spark.hadoop.fs.s3a.aws.credentials.provider com.amazonaws.auth.WebIdentityTokenCredentialsProvider
+spark.hadoop.fs.s3a.aws.credentials.provider software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 {% endif %}
 spark.hadoop.fs.s3a.endpoint.region {{ s3_region | default('us-east-1') }}
+# Spark 4 enables ANSI mode by default; the HL7 extraction relies on
+# out-of-range array access and unparseable timestamps yielding NULL.
+spark.sql.ansi.enabled false
 spark.databricks.delta.schema.autoMerge.enabled true
 spark.databricks.delta.merge.repartitionBeforeWrite.enabled true
 spark.databricks.delta.constraints.allowUnenforcedNotNull.enabled true
