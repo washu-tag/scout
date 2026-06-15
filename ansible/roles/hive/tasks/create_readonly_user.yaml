@@ -16,7 +16,7 @@
     name: scout_common
     tasks_from: execute_sql
   vars:
-    db_connect_name: '{{ hive_database_name }}'
+    sql_dbname: '{{ hive_database_name }}'
     sql_script: |-
       DO $do$
       BEGIN
