@@ -75,4 +75,16 @@ spec:
   managed:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  {{- /* Optional CNPG probe tuning. For single-instance clusters the liveness
+         "primary isolation check" restarts the sole primary on a transient loss
+         of Kubernetes API connectivity (no standby to fail to); disable it there
+         via probes.liveness.isolationCheck.enabled=false and/or widen
+         livenessProbeTimeout. https://cloudnative-pg.io/docs/1.29/instance_manager/ */}}
+  {{- with .Values.postgres.cluster.livenessProbeTimeout }}
+  livenessProbeTimeout: {{ . }}
+  {{- end }}
+  {{- with .Values.postgres.cluster.probes }}
+  probes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}
