@@ -125,6 +125,13 @@ The generated `settings.xml` differs accordingly:
   `repo_url` as an extra repository. A Central-only plugin needs no `settings.xml`
   at all.
 
+Repos are **release-only by default**. A plugin can set `source.snapshots: true`
+to opt its `repo_url` into `-SNAPSHOT` resolution: `settings.xml` enables
+snapshots for that repo, and (air-gapped) its Nexus proxy is created with
+`versionPolicy: MIXED` and the `scout-maven` group flips to `MIXED` so it will
+serve them. The opt-in is per repo, not global — Maven Central stays release-only
+(it never hosts snapshots anyway).
+
 When the air-gapped Nexus serves HTTPS with the staging node's self-signed cert,
 the role also mounts that CA (per ADR 0016) and the installer imports it into the
 JVM truststore so Maven's TLS validates. Like the `settings.xml`, the CA is a

@@ -312,6 +312,11 @@ enable_xnat: false
 #     #              air-gapped, all resolution is mirrored through the Nexus group instead
 #     #              (maven_proxy_url), regardless of repo_url. So set repo_url only for
 #     #              artifacts not on Central (e.g. XNAT plugins published to jfrog).
+#     #              snapshots: bool (default false) - opt this repo_url into -SNAPSHOT
+#     #              resolution. Default is release-only; setting it true enables snapshots
+#     #              for that repo in settings.xml AND (air-gapped) makes its Nexus proxy
+#     #              versionPolicy MIXED. Maven Central never hosts snapshots, so this only
+#     #              applies to repos you name via repo_url.
 #     # image:       repository, tag                       (chart-native plugins: map)
 #   skip_logback_rewrite: bool (default false)
 #   config: list of property files, each:
@@ -372,6 +377,18 @@ xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'
 xnat_coordinate_repo_urls: >-
   {{ xnat_plugins_all
      | selectattr('source.type', 'equalto', 'coordinates')
+     | map(attribute='source.repo_url', default='')
+     | reject('equalto', '') | unique | list }}
+
+# Subset of the above whose plugins opted into snapshots (source.snapshots true).
+# The xnat role enables snapshots for these repos in settings.xml; the Nexus role
+# sets their proxy versionPolicy to MIXED. Same lazy-projection rationale as
+# above (touches only source.*, never config).
+xnat_snapshot_repo_urls: >-
+  {{ xnat_plugins_all
+     | selectattr('source.type', 'equalto', 'coordinates')
+     | selectattr('source.snapshots', 'defined')
+     | selectattr('source.snapshots')
      | map(attribute='source.repo_url', default='')
      | reject('equalto', '') | unique | list }}
 

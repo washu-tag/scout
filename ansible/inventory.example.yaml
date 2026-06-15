@@ -54,6 +54,7 @@ all:
     #       # an XNAT -xpl.jar is packaging `jar` + classifier `xpl`:
     #       coordinates: org.example:my-xnat-plugin:1.2.3:jar:xpl
     #       repo_url: https://repo.example.org/releases/   # omit if on Maven Central
+    #       # snapshots: true   # opt this repo into -SNAPSHOT resolution (default: release-only)
     #     config:
     #       - mechanism: extraConfig
     #         properties:

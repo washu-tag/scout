@@ -26,12 +26,17 @@ def _slug(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
-def xnat_maven_proxy(repo_url, blob_store_name="default", max_name_len=60):
+def xnat_maven_proxy(
+    repo_url, snapshot_repo_urls=None, blob_store_name="default", max_name_len=60
+):
     """Build a Nexus Maven proxy-repo definition from a plugin repo URL.
 
     The name is ``<host>-<path>`` slugified. If that exceeds max_name_len it is
     truncated and suffixed with a short hash of the full URL to keep names
     unique and stable.
+
+    versionPolicy is MIXED when repo_url is in snapshot_repo_urls (a plugin
+    opted that repo into snapshots), else RELEASE (the default — release-only).
     """
     if not repo_url:
         raise ValueError("xnat_maven_proxy: empty repo_url")
@@ -42,10 +47,12 @@ def xnat_maven_proxy(repo_url, blob_store_name="default", max_name_len=60):
         digest = hashlib.md5(repo_url.encode("utf-8")).hexdigest()[:8]
         base = base[: max_name_len - 9].rstrip("-") + "-" + digest
 
+    version_policy = "MIXED" if repo_url in (snapshot_repo_urls or []) else "RELEASE"
     return {
         "name": base,
         "remoteUrl": repo_url,
         "blobStoreName": blob_store_name,
+        "versionPolicy": version_policy,
     }
 
 
