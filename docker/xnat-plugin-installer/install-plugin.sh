@@ -15,8 +15,9 @@
 #   PLUGIN_COORDINATES           Maven -Dartifact coordinate (required for type=coordinates),
 #                                groupId:artifactId:version[:packaging[:classifier]] -- e.g.
 #                                au.edu.qcif.xnat.openid:openid-auth-plugin:1.5.0:jar:xpl
-#   PLUGIN_CA_CERT               PEM CA to trust for HTTPS, imported into the JVM truststore
-#                                (optional; for a self-signed Maven proxy/registry)
+#   PLUGIN_CA_CERT               PEM CA to trust for HTTPS, imported into a writable
+#                                copy of the JVM truststore (optional; for a
+#                                self-signed Maven proxy/registry)
 #   PLUGIN_SKIP_LOGBACK_REWRITE  "true" to skip the stdout rewrite (default "false")
 #   DEST_DIR                     plugins dir (default /data/xnat/home/plugins)
 #
@@ -97,12 +98,19 @@ case "$PLUGIN_SOURCE_TYPE" in
     : "${PLUGIN_COORDINATES:?PLUGIN_COORDINATES required for source type 'coordinates'}"
 
     # Trust a self-signed proxy/registry CA when one is mounted, so Maven's HTTPS
-    # fetches validate. No-op when PLUGIN_CA_CERT is unset/absent.
+    # fetches validate. No-op when PLUGIN_CA_CERT is unset/absent. We run as a
+    # non-root user that can't write the system truststore, so copy it to a
+    # writable workdir, import there, and point the Maven JVM at the copy.
     if [ -n "${PLUGIN_CA_CERT:-}" ] && [ -f "$PLUGIN_CA_CERT" ]; then
       log "trusting CA $PLUGIN_CA_CERT"
+      truststore="$WORK/cacerts"
+      cp "$JAVA_HOME/lib/security/cacerts" "$truststore"
       keytool -importcert -noprompt -trustcacerts -alias scout-proxy-ca \
         -file "$PLUGIN_CA_CERT" \
-        -keystore "$JAVA_HOME/lib/security/cacerts" -storepass changeit
+        -keystore "$truststore" -storepass changeit
+      # Via MAVEN_OPTS so it reaches the JVM at launch (a `mvn -D` would land as a
+      # Maven user property, set too late for the TLS stack).
+      export MAVEN_OPTS="${MAVEN_OPTS:-} -Djavax.net.ssl.trustStore=$truststore -Djavax.net.ssl.trustStorePassword=changeit"
     fi
 
     # Use a deployment-provided settings.xml when present (private repo or
@@ -112,8 +120,11 @@ case "$PLUGIN_SOURCE_TYPE" in
       log "using mounted Maven settings.xml"
       mvn_settings=(-s /mnt/maven/settings.xml)
     fi
+    # -Dmaven.repo.local keeps the local repo in the writable workdir (the
+    # default ~/.m2 isn't writable for the non-root runtime user).
     mvn -q -B "${mvn_settings[@]}" org.apache.maven.plugins:maven-dependency-plugin:3.6.1:copy \
       -Dartifact="$PLUGIN_COORDINATES" \
+      -Dmaven.repo.local="$WORK/.m2" \
       -Dmdep.useBaseVersion=true \
       -DoutputDirectory="$WORK/dl"
     resolved="$(find "$WORK/dl" -maxdepth 1 -type f -name '*.jar' | head -1)"

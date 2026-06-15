@@ -13,7 +13,12 @@ images; kept deliberately faithful so behavior matches those images.
 """
 import argparse
 import os
-import xml.etree.ElementTree as ET
+
+# defusedxml hardens parsing against XXE / entity-expansion attacks. We only ever
+# parse a plugin's own bundled logback.xml, but the JAR is fetched from a remote
+# Maven/URL source, so treat it as untrusted. The parsed tree is a stdlib
+# ElementTree, so serialization (tree.write) is unchanged.
+import defusedxml.ElementTree as ET
 
 
 def edit(logfile):

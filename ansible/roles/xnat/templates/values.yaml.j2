@@ -23,6 +23,17 @@ securityContext:
     drop: ['ALL']
     add: ['DAC_OVERRIDE']
 
+# The Scout plugin-installer init containers run as non-root UID 1000 (see their
+# per-container securityContext below). fsGroup makes the shared home-plugins
+# emptyDir group-owned by 1000 so a non-root installer can write the JARs into
+# it; without it, emptyDir writability for non-root is runtime-dependent. UID
+# 1000 matches the xnat-web tomcat user, so the main container reads them fine.
+# OnRootMismatch skips the recursive volume chown when ownership already matches
+# (avoids re-chowning the data PVCs on every pod restart).
+podSecurityContext:
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
+
 # Single-node dev posture; revisit before HA.
 redis:
   enabled: false
@@ -181,6 +192,17 @@ initContainers:
   - name: install-{{ p.name }}
     image: {{ xnat_plugin_installer_image }}
     imagePullPolicy: {{ xnat_plugin_installer_image_pull_policy }}
+    # Non-root (UID 1000, matching the xnat-web tomcat user). The installer needs
+    # no capabilities: its entrypoint is world-executable and all writes go to a
+    # /tmp workdir + the fsGroup-shared plugins volume (see podSecurityContext).
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ['ALL']
+      seccompProfile:
+        type: RuntimeDefault
     env:
       - name: PLUGIN_NAME
         value: '{{ p.name }}'
