@@ -27,7 +27,7 @@
           <id>scout-repo-{{ loop.index }}</id>
           <url>{{ url }}</url>
           <releases><enabled>true</enabled></releases>
-          <snapshots><enabled>false</enabled></snapshots>
+          <snapshots><enabled>true</enabled></snapshots>
         </repository>
 {% endfor %}
       </repositories>
@@ -37,7 +37,7 @@
           <id>scout-repo-{{ loop.index }}</id>
           <url>{{ url }}</url>
           <releases><enabled>true</enabled></releases>
-          <snapshots><enabled>false</enabled></snapshots>
+          <snapshots><enabled>true</enabled></snapshots>
         </pluginRepository>
 {% endfor %}
       </pluginRepositories>
