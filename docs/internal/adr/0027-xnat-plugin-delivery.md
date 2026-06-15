@@ -108,11 +108,19 @@ The generated `settings.xml` differs accordingly:
 
 - **Air-gapped:** *mirror* all resolution (`<mirrorOf>*</mirrorOf>`, including
   Maven's own download of the dependency plugin) through the Nexus `scout-maven`
-  group, which proxies Maven Central **and** (when `enable_xnat`) the NrgXnat
-  Artifactory. Per-plugin
-  `repo_url`s are subsumed here — an external URL is unreachable air-gapped, so
-  its upstream must instead be a member of the Nexus group (as `xnat-maven` is for
-  the NrgXnat Artifactory). This extends the package-proxy pattern from ADR 0017.
+  group, which proxies Maven Central **and** (when `enable_xnat`) one Maven proxy
+  per distinct coordinate-plugin `repo_url`. Those proxies are *derived from the
+  plugin list itself* (`scout_common`'s `xnat_coordinate_repo_urls` — the openid
+  default plus any operator `xnat_plugins`), so the openid Artifactory repo is no
+  longer special-cased; every plugin's repo flows through the same derivation.
+  Per-plugin `repo_url`s are subsumed here — an external URL is unreachable
+  air-gapped, so its upstream must be a member of the Nexus group, which it
+  automatically is once the plugin is declared and `make install-staging` is
+  (re-)run. Because membership is built on the staging host, `xnat_plugins` (like
+  `enable_xnat`) must live in `all.vars`; the XNAT deploy includes an air-gapped
+  preflight that HEADs each coordinate artifact through the group and fails with
+  guidance if one isn't proxied yet. This extends the package-proxy pattern from
+  ADR 0017.
 - **Not air-gapped:** keep Maven Central as the default and *add* each plugin's
   `repo_url` as an extra repository. A Central-only plugin needs no `settings.xml`
   at all.

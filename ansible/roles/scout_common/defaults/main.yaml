@@ -288,6 +288,93 @@ enable_playbooks: false
 # orphaning provisioned XNAT users.
 enable_xnat: false
 
+# --- XNAT plugins (shared) -------------------------------------------------
+# Defined here in scout_common, NOT the xnat role, because the staging Nexus
+# role derives its Maven proxy members from these (air-gapped resolution) and
+# the staging host doesn't load xnat-role defaults. enable_xnat (above) gates
+# whether any of it is used.
+#
+# The required openid plugin. Operators ADD their own via `xnat_plugins` — set
+# in all.vars so the staging host sees them too (same reason as enable_xnat).
+# xnat_plugins_all combines the two so the openid entry is never repeated or
+# accidentally dropped.
+#
+# Per-plugin shape:
+#   name:    str  - init-container name + Secret name suffix
+#   target:  str  - filename written into the plugins dir
+#   source:
+#     type: file | url | coordinates | image
+#     # file:        secret: {name, key, from_file}   (from_file = jar path on control node)
+#     # url:         url: https://...
+#     # coordinates: coordinates: <Maven -Dartifact coord>  groupId:artifactId:version[:packaging[:classifier]]
+#     #              repo_url: <repo the artifact lives in>  (OPTIONAL; omit for Maven Central)
+#     #              When set, the deploy mounts a settings.xml pointing Maven at it; when
+#     #              air-gapped, all resolution is mirrored through the Nexus group instead
+#     #              (maven_proxy_url), regardless of repo_url. So set repo_url only for
+#     #              artifacts not on Central (e.g. XNAT plugins published to jfrog).
+#     # image:       repository, tag                       (chart-native plugins: map)
+#   skip_logback_rewrite: bool (default false)
+#   config: list of property files, each:
+#     mechanism: authplugins | file | extraConfig
+#     # authplugins: provider, entry (-> Secret xnat-plugin-<entry>), properties{}
+#     # file:        dest (path under /data/xnat/home/), properties{}
+#     # extraConfig: properties{} merged into xnat-conf.properties
+xnat_plugins_default:
+  - name: openid
+    target: openid-auth-plugin.jar
+    source:
+      type: coordinates
+      # Maven -Dartifact format: groupId:artifactId:version:packaging:classifier
+      # (the -xpl.jar is a 'jar' with classifier 'xpl', not packaging 'xpl').
+      # Version pinned in group_vars/all/versions.yaml (Renovate-monitored).
+      coordinates: 'au.edu.qcif.xnat.openid:openid-auth-plugin:{{ xnat_openid_plugin_version }}:jar:xpl'
+      # Published only to the NrgXnat Artifactory (never on Maven Central), so the
+      # repo must be named. Air-gapped deploys resolve via the Nexus group instead.
+      repo_url: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
+    skip_logback_rewrite: false
+    config:
+      - mechanism: authplugins
+        provider: openid
+        entry: keycloak
+        properties:
+          auth.method: openid
+          type: openid
+          provider.id: keycloak
+          name: Scout SSO
+          auto.enabled: 'true'
+          auto.verified: 'true'
+          siteUrl: 'https://xnat.{{ server_hostname }}'
+          preEstablishedRedirUri: /openid-login
+          openid.keycloak.clientId: '{{ keycloak_xnat_client_id }}'
+          openid.keycloak.clientSecret: '{{ keycloak_xnat_client_secret }}'
+          openid.keycloak.accessTokenUri: '{{ keycloak_realm_url }}/protocol/openid-connect/token'
+          openid.keycloak.userAuthUri: '{{ keycloak_realm_url }}/protocol/openid-connect/auth'
+          openid.keycloak.userInfoUri: '{{ keycloak_realm_url }}/protocol/openid-connect/userinfo'
+          openid.keycloak.scopes: openid,profile,email
+          openid.keycloak.shouldFilterEmailDomains: 'false'
+          openid.keycloak.forceUserCreate: 'true'
+          openid.keycloak.emailProperty: email
+          openid.keycloak.givenNameProperty: given_name
+          openid.keycloak.familyNameProperty: family_name
+          openid.keycloak.pkceEnabled: 'true'
+          openid.keycloak.usernamePattern: '[preferred_username]'
+          openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
+
+# Combined list the xnat role's templates/tasks iterate. xnat_plugins is
+# operator-supplied (defaulted to [] inline here).
+xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'
+
+# Distinct repo URLs for coordinate-resolved plugins. Consumed by the xnat role
+# (settings.xml) and the Nexus role (proxy members, air-gapped). Projects ONLY
+# source.repo_url, so resolving it on the staging host never templates the
+# plugins' config blocks (which carry prod-only secret refs like the keycloak
+# client secret) — this relies on Ansible's lazy attribute templating.
+xnat_coordinate_repo_urls: >-
+  {{ xnat_plugins_all
+     | selectattr('source.type', 'equalto', 'coordinates')
+     | map(attribute='source.repo_url', default='')
+     | reject('equalto', '') | unique | list }}
+
 # Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
 # Jupyter singleuser) or are cluster-wide storage layers that span every
 # node by design (MinIO pool). With this on, the GPU node gets

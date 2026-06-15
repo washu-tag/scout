@@ -132,9 +132,13 @@ fails the deploy if any is unset. `xnat_admin_password` seeds XNAT's `admin`
 account at first boot (`[system] defaultAdminPassword`), so the default
 `admin:admin` never survives a fresh deployment.
 
-> **Set `enable_xnat` in `all.vars`, not a cluster group.** In air-gapped
-> deployments the staging Nexus role gates the `xnat-maven` plugin proxy's
-> membership in the `scout-maven` group on `enable_xnat`. The staging host does
-> not inherit `k3s_cluster` group vars, so scoping `enable_xnat` there leaves the
-> proxy out of the group and XNAT's openid init container can't resolve its
-> plugin (`CrashLoopBackOff`). The XNAT secrets/site config remain cluster-scoped.
+> **Set `enable_xnat` AND `xnat_plugins` in `all.vars`, not a cluster group.** In
+> air-gapped deployments the staging Nexus role derives one `scout-maven` Maven
+> proxy per distinct coordinate-plugin `repo_url` (from the shared plugin list,
+> including the openid default), gated on `enable_xnat`. The staging host does not
+> inherit `k3s_cluster` group vars, so scoping either there leaves the proxies out
+> of the group and the affected init container can't resolve its plugin
+> (`CrashLoopBackOff`). Because the proxies are built from `xnat_plugins`,
+> **re-run `make install-staging` after changing that list** before the XNAT
+> deploy; the deploy's air-gapped preflight fails with guidance otherwise. The
+> XNAT secrets/site config remain cluster-scoped.

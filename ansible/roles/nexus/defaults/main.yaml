@@ -99,15 +99,19 @@ nexus_maven_repos_base:
 
 # Added only when enable_xnat: non-XNAT deployments should not proxy a
 # third-party Artifactory through the shared maven group (supply-chain surface).
-# Used by the xnat role to resolve plugins by coordinates.
-nexus_maven_repos_xnat:
-  - name: xnat-maven
-    remoteUrl: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
-    blobStoreName: default
+# One proxy per distinct coordinate-plugin repo, derived from the shared plugin
+# list (scout_common's xnat_coordinate_repo_urls — the openid default plus any
+# operator `xnat_plugins`, which must be set in all.vars so this staging-run role
+# sees them). The xnat_maven_proxy filter turns each URL into a {name, remoteUrl,
+# blobStoreName}; names are deterministic so re-runs are idempotent. This
+# replaces the formerly hard-coded nrgxnat entry — the openid repo now flows
+# through the same derivation as operator plugins.
+nexus_maven_repos_xnat_plugins: >-
+  {{ (xnat_coordinate_repo_urls | default([])) | map('xnat_maven_proxy') | list }}
 
 nexus_maven_repos: >-
   {{ nexus_maven_repos_base
-     + (nexus_maven_repos_xnat if (enable_xnat | default(false) | bool) else []) }}
+     + (nexus_maven_repos_xnat_plugins if (enable_xnat | default(false) | bool) else []) }}
 
 # Group that aggregates the Maven proxies into one resolvable URL. scout_common's
 # maven_proxy_url points at this group (.../repository/<name>).
@@ -116,7 +120,8 @@ nexus_maven_group:
   blobStoreName: default
   memberNames: >-
     {{ ['maven-central']
-       + (['xnat-maven'] if (enable_xnat | default(false) | bool) else []) }}
+       + (nexus_maven_repos_xnat_plugins | map(attribute='name') | list
+          if (enable_xnat | default(false) | bool) else []) }}
 
 # Computed — uses external_url/inventory_hostname of the staging host (where this role runs)
 # Same pattern as harbor_hostname in ansible/roles/harbor/defaults/main.yaml

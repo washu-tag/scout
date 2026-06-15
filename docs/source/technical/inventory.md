@@ -127,6 +127,11 @@ all:
 - `ansible_become_method`: How to escalate privileges (typically `sudo`)
 - `ansible_become_password`: Encrypted sudo password
 
+A few feature variables must also live at the `all` level (not under a cluster group) because the **staging** node evaluates them and does not inherit `k3s_cluster` vars:
+
+- `enable_xnat`: toggles the optional XNAT service. The staging Nexus role gates the XNAT plugin Maven proxies on it.
+- `xnat_plugins`: extra XNAT plugins, additive over the required openid plugin. The staging Nexus role derives one Maven proxy per distinct coordinate `repo_url` from this list, so air-gapped deploys can resolve the plugin artifacts. Because of this, **after changing `xnat_plugins` you must re-run `make install-staging`** (to rebuild the Nexus proxies) before re-running the XNAT deploy. The XNAT deploy includes an air-gapped preflight that fails with guidance if a plugin's repo isn't reachable through the Nexus group. Plugin repos are release-only (snapshots are not proxied).
+
 See [Ansible connection parameters](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters) for additional options.
 
 ### Server Group
