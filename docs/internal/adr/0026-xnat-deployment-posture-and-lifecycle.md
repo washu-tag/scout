@@ -11,8 +11,9 @@
 ## Context
 
 XNAT (the imaging informatics platform — repo
-<https://github.com/nrgxnat/xnat>; the current published image is
-`xnatworks/xnat-web`) is being added to Scout as an **optional** service for
+<https://github.com/nrgxnat/xnat>; historically published as `xnatworks/xnat-web`
+on Docker Hub, migrating to a GHCR-hosted image `ghcr.io/nrgxnat/xnat`) is being
+added to Scout as an **optional** service for
 storing and working with DICOM imaging studies. It is deployed via Ansible on
 top of an upstream Helm chart, the same way Scout deploys its other services.
 
