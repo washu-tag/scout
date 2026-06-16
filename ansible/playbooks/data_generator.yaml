@@ -5,7 +5,7 @@
   pre_tasks:
     - name: Skip if data-generator not enabled
       ansible.builtin.meta: end_play
-      when: not (enable_data_generator | default(true) | bool)
+      when: not (enable_data_generator | default(false) | bool)
   environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: data-generator
