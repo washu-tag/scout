@@ -5,11 +5,9 @@
 # later execute_sql call. (That leak previously let open-webui's ALTER SCHEMA
 # run against the hive database.) Instead we derive everything below into
 # distinct psql_* facts, applying defaults inline so each call starts clean.
-# `sql_dbname` is the canonical parameter; `db_connect_name` is still honored
-# for backward compatibility.
 - name: Configure DB derived variables
   ansible.builtin.set_fact:
-    psql_dbname: "{{ sql_dbname | default(db_connect_name | default('postgres', true), true) }}"
+    psql_dbname: "{{ sql_dbname | default('postgres', true) }}"
     psql_user: "{{ db_connect_user | default('postgres', true) }}"
     psql_pass: '{{ db_connect_pass | default(postgres_superuser_password, true) }}'
     psql_sslmode: "{{ db_connect_sslmode | default('require', true) }}"
