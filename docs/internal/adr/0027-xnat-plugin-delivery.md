@@ -25,7 +25,7 @@ Delivering plugins into a Kubernetes deployment is not trivial:
   coordinates — and an air-gapped deployment cannot reach the public internet.
 - XNAT plugins ship with their own Logback configuration that writes to rolling
   **files**, which is wrong for Kubernetes, where logs are expected on stdout.
-  XnatWorks' own approach has been to build a bespoke container image per
+  The XNAT team's own approach has been to build a bespoke container image per
   plugin to handle this; Scout wants to avoid maintaining per-plugin images.
 
 This ADR records how Scout gets plugin JARs into XNAT and how it makes their
@@ -69,7 +69,7 @@ The installer rewrites each plugin's bundled Logback configuration from a
 rolling **file** appender to a **console** appender so plugin logs land on
 stdout and are captured by the normal Kubernetes/Loki logging path. The rewrite
 preserves the original encoder pattern (and disambiguates appender names so logs
-from multiple appenders remain distinguishable). This replaces XnatWorks'
+from multiple appenders remain distinguishable). This replaces the XNAT team's
 practice of building a separate container image per plugin purely to fix
 logging, so Scout can consume stock plugin artifacts without per-plugin image
 maintenance.
