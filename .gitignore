@@ -18,3 +18,4 @@ build/
 **/*.iml
 zap/*.json
 .playwright-mcp/
+.claude
