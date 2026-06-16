@@ -39,7 +39,7 @@
       ansible.builtin.uri:
         url: '{{ maven_proxy_url }}/{{ item.source.coordinates | maven_artifact_path }}'
         method: HEAD
-        validate_certs: false
+        ca_path: /etc/pki/ca-trust/source/anchors/staging-ca.crt
         status_code: [200]
       loop: "{{ xnat_plugins_all | selectattr('source.type', 'equalto', 'coordinates') | list }}"
       loop_control:
