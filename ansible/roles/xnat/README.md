@@ -21,15 +21,16 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
 
 ## How it deploys
 
-1. **Chart**: the upstream chart is not yet published, so `fetch_chart.yaml`
-   clones `NrgXnat/helm-charts` at a pinned tag (`xnat_chart_git_ref`) on the
-   jump node and runs `helm dependency update`. (When upstream publishes a chart
-   repo/OCI artifact, replace `fetch_chart.yaml` with a `helm_repo_url` + version
-   ref.)
+1. **Chart**: the upstream chart is published as an OCI artifact
+   (`oci://ghcr.io/nrgxnat/charts/xnat`, `xnat_chart_oci_ref`),
+   pinned to `xnat_chart_version` (`group_vars/all/versions.yaml`). Helm pulls it
+   directly from GHCR on the jump node — the `deploy_helm_chart` wrapper delegates
+   to localhost for `oci://` refs. (Dev override: set `xnat_chart_path` to a local
+   chart dir to deploy unpublished edits.)
 2. **Secrets** (`create_secrets.yaml`): all Secrets are created by Ansible and
    referenced by name in the templated values — the chart owns no Secrets. This
-   includes the first-boot `xnat-prefs-init`, per-plugin config Secrets, any
-   Pattern-A jar Secrets, and a placeholder `postfix-password` (see Mail below).
+   includes the first-boot `xnat-prefs-init`, per-plugin config Secrets, and any
+   Pattern-A jar Secrets.
 3. **Values** (`templates/values.yaml.j2`): templated from inventory, including
    the generated `initContainers` / `plugins` / `authplugins` / `extraConfig` /
    `extraVolumes` blocks derived from `xnat_plugins_all`.
@@ -107,11 +108,8 @@ are assumed pre-built to log to stdout.
 
 XNAT routes outbound mail through Scout's shared relay (MailHog in dev,
 `xnat_smtp_host`/`_port` for an org relay) — the same pattern as Keycloak and
-Grafana. The upstream chart still pulls the bokysan/postfix subchart
-unconditionally, so a placeholder `postfix-password` Secret is created to let
-that pod start; XNAT does not route through it. Once the upstream
-`condition: mail.enabled` change lands, set `mail.enabled: false` and drop the
-placeholder.
+Grafana. The chart's bundled bokysan/postfix subchart is disabled
+(`mail.enabled: false` in `values.yaml.j2`), so no per-XNAT mail server runs.
 
 > SMTP is configured in the `[notifications]` section of `prefs-init.ini` with
 > flat keys (`smtpHostname`, `smtpPort`, `smtpProtocol`, `smtpEnabled`, …), per
@@ -124,7 +122,7 @@ placeholder.
 See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_admin_password`,
 `xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`,
-`xnat_chart_git_ref`, `xnat_image_tag`.
+`xnat_chart_version`, `xnat_image_tag`.
 
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, and
 `xnat_admin_password` are **required** when `enable_xnat` is true; the role

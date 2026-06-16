@@ -15,7 +15,9 @@ XNAT (the imaging informatics platform — repo
 on Docker Hub, migrating to a GHCR-hosted image `ghcr.io/nrgxnat/xnat`) is being
 added to Scout as an **optional** service for
 storing and working with DICOM imaging studies. It is deployed via Ansible on
-top of an upstream Helm chart, the same way Scout deploys its other services.
+top of the upstream Helm chart — published as an OCI artifact
+(`oci://ghcr.io/nrgxnat/charts/xnat`) and pinned by chart version —
+the same way Scout deploys its other services.
 
 Adding XNAT raises a set of deployment decisions that are not obvious from the
 chart alone: how the feature is gated, how a first boot is made non-interactive
@@ -193,13 +195,8 @@ XNAT's notification mail is pointed at Scout's shared relay (MailHog in
 development, the organization relay in production) via the `[notifications]`
 block in `prefs-init.ini`, rather than running a per-XNAT mail server. This
 reuses existing Scout mail infrastructure instead of standing up another SMTP
-path.
-
-> **Known workaround:** the upstream chart pulls in a Postfix subchart
-> unconditionally, so a placeholder `postfix-password` Secret is created solely
-> to let that pod start; XNAT does not route mail through it. Once the upstream
-> chart gains a `mail.enabled` toggle, the subchart should be disabled and the
-> placeholder Secret removed.
+path. The chart's bundled Postfix subchart is left disabled
+(`mail.enabled: false`), so no per-XNAT mail server runs.
 
 ## Consequences
 
@@ -232,8 +229,9 @@ path.
 - **First-boot timing**: XNAT's first boot runs Hibernate schema DDL and can
   take several minutes; the deployment waits accordingly (probe/timeout tuning
   is an implementation detail, not a decision recorded here).
-- **Mail**: remove the placeholder Postfix Secret once the upstream
-  `mail.enabled` toggle exists.
+- **Mail**: the chart's bundled Postfix subchart is disabled
+  (`mail.enabled: false`); XNAT routes notification mail through Scout's shared
+  relay.
 
 ## Related
 

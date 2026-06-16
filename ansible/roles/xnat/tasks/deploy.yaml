@@ -46,9 +46,6 @@
   vars:
     ns: '{{ xnat_namespace }}'
 
-- name: Fetch the XNAT chart from git
-  ansible.builtin.include_tasks: fetch_chart.yaml
-
 - name: Guard against coordinates plugins on air-gapped clusters without a Maven proxy
   ansible.builtin.assert:
     that:
@@ -95,7 +92,12 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: '{{ xnat_helm_release_name }}'
-    helm_chart_ref: '{{ xnat_chart_path }}'
+    # Pull the published OCI chart from GHCR (helm runs on the jump node via the
+    # wrapper's localhost delegation). Dev override: xnat_chart_path points helm
+    # at a local chart dir, in which case no --version is passed (helm rejects
+    # --version with a local path).
+    helm_chart_ref: '{{ xnat_chart_path | default(xnat_chart_oci_ref) }}'
+    helm_chart_version: '{{ xnat_chart_version if xnat_chart_path is not defined else omit }}'
     helm_chart_namespace: '{{ xnat_namespace }}'
     helm_chart_create_namespace: false
     helm_chart_values: '{{ xnat_helm_chart_values }}'

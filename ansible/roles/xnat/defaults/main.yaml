@@ -3,14 +3,11 @@
 # (defined in scout_common defaults). When disabled, the playbook end_plays
 # before this role runs, so nothing here is created.
 
-# --- Upstream chart (NrgXnat/helm-charts) ---------------------------------
-# The chart is not yet published to a Helm repo, so the role clones it at a
-# pinned tag on the jump node and `helm dependency build`s it. When upstream
-# publishes a chart repo / OCI artifact, replace fetch_chart.yaml with a normal
-# helm_repo_url + version ref.
-xnat_chart_git_repo: https://github.com/NrgXnat/helm-charts
-xnat_chart_git_ref: xnat-1.1.0
-xnat_chart_subpath: helm/xnat # path to the chart within the cloned repo
+# --- Upstream chart (NrgXnat/helm-charts, published as an OCI artifact) ----
+# Pulled directly from GHCR by helm on the jump node. xnat_chart_version is
+# pinned in group_vars/all/versions.yaml (Renovate-monitored, per ADR 0015).
+# Dev override: set xnat_chart_path to a local chart dir for unpublished edits.
+xnat_chart_oci_ref: oci://ghcr.io/nrgxnat/charts/xnat
 xnat_helm_release_name: xnat
 
 # --- XNAT image -----------------------------------------------------------
@@ -53,11 +50,9 @@ xnat_enabled_providers:
   - keycloak
 
 # --- Outbound mail --------------------------------------------------------
-# XNAT sends through Scout's shared relay (no per-XNAT postfix in the end
-# state). Defaults to in-cluster MailHog; point at your org relay for prod.
-# NOTE: the upstream chart still pulls postfix unconditionally, so a placeholder
-# postfix-password Secret is created until the upstream `mail.enabled` condition
-# lands; XNAT itself routes at the relay below.
+# XNAT sends through Scout's shared relay (no per-XNAT postfix). The chart's
+# bundled Postfix subchart is disabled via mail.enabled: false in values.yaml.j2.
+# Defaults to in-cluster MailHog; point at your org relay for prod.
 xnat_smtp_enabled: true
 xnat_smtp_host: mailhog-service.mailhog
 xnat_smtp_port: '1025'

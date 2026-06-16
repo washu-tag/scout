@@ -166,5 +166,6 @@ xnat_image_tag: 1.10.0
 # the coordinates entry in ansible/roles/xnat/defaults/main.yaml.
 # renovate: datasource=maven registryUrl=https://nrgxnat.jfrog.io/nrgxnat/libs-release depName=au.edu.qcif.xnat.openid:openid-auth-plugin
 xnat_openid_plugin_version: 1.5.0
-# xnat_chart_git_ref (NrgXnat/helm-charts tag) stays in the xnat role defaults:
-# the chart is unpublished (cloned from git), so Renovate has nothing to track.
+# XNAT Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
+# renovate: datasource=docker depName=ghcr.io/nrgxnat/charts/xnat
+xnat_chart_version: 2.0.0

@@ -40,6 +40,10 @@ redis:
 activemq:
   broker:
     enabled: false
+# XNAT routes outbound mail through Scout's shared relay (see [notifications] in
+# prefs-init.ini), so the chart's bundled Postfix subchart stays off.
+mail:
+  enabled: false
 
 # CNPG-managed Postgres, matching the rest of Scout.
 cnpg:

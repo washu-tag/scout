@@ -957,8 +957,8 @@ keycloak_xnat_client_id: xnat
 # Namespace where XNAT is deployed (default: xnat)
 xnat_namespace: xnat
 
-# NrgXnat/helm-charts tag to deploy (default: xnat-1.0.2)
-xnat_chart_git_ref: xnat-1.0.2
+# XNAT Helm chart version to deploy from GHCR (default: 2.0.0)
+xnat_chart_version: 2.0.0
 
 # xnatworks/xnat-web image tag (default: 1.10.0)
 xnat_image_tag: '1.10.0'
