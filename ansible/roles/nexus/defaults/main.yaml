@@ -87,7 +87,49 @@ nexus_yum_repos:
     remoteUrl: https://nvidia.github.io/libnvidia-container/stable/rpm/x86_64/
     blobStoreName: yum-store
 
-# maven-central ships pre-configured in Nexus CE — no need to create it
+# Maven proxies. Maven and Gradle both resolve from Maven-format repositories,
+# so a single set of Maven proxies (aggregated by nexus_maven_group below)
+# serves both (ADR 0017). maven-central is default created in Nexus; declaring
+# maven-central here is a harmless reaffirm when it already exists, and a
+# create on a Nexus that lacks it -- so the group's member always exists.
+nexus_maven_repos_base:
+  - name: maven-central
+    remoteUrl: https://repo1.maven.org/maven2/
+    blobStoreName: default
+
+# Added only when enable_xnat: non-XNAT deployments should not proxy a
+# third-party Artifactory through the shared maven group (supply-chain surface).
+# One proxy per distinct coordinate-plugin repo, derived from the shared plugin
+# list (scout_common's xnat_coordinate_repo_urls — the openid default plus any
+# operator `xnat_plugins`, which must be set in all.vars so this staging-run role
+# sees them). The xnat_maven_proxy filter turns each URL into a {name, remoteUrl,
+# blobStoreName}; names are deterministic so re-runs are idempotent. This
+# replaces the formerly hard-coded nrgxnat entry — the openid repo now flows
+# through the same derivation as operator plugins.
+nexus_maven_repos_xnat_plugins: >-
+  {{ (xnat_coordinate_repo_urls | default([]))
+     | map('xnat_maven_proxy', xnat_snapshot_repo_urls | default([])) | list }}
+
+nexus_maven_repos: >-
+  {{ nexus_maven_repos_base
+     + (nexus_maven_repos_xnat_plugins if (enable_xnat | default(false) | bool) else []) }}
+
+# Group that aggregates the Maven proxies into one resolvable URL. scout_common's
+# maven_proxy_url points at this group (.../repository/<name>). The group is MIXED
+# only when a plugin opted some repo into snapshots (so the group will serve them);
+# otherwise release-only, like Maven Central.
+nexus_maven_group:
+  name: scout-maven
+  blobStoreName: default
+  versionPolicy: >-
+    {{ 'MIXED'
+       if ((enable_xnat | default(false) | bool)
+            and (xnat_snapshot_repo_urls | default([]) | length > 0))
+       else 'RELEASE' }}
+  memberNames: >-
+    {{ ['maven-central']
+       + (nexus_maven_repos_xnat_plugins | map(attribute='name') | list
+          if (enable_xnat | default(false) | bool) else []) }}
 
 # Computed — uses external_url/inventory_hostname of the staging host (where this role runs)
 # Same pattern as harbor_hostname in ansible/roles/harbor/defaults/main.yaml

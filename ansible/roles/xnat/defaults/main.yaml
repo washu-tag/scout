@@ -1,0 +1,78 @@
+---
+# Defaults for the xnat role. XNAT is optional and gated by `enable_xnat`
+# (defined in scout_common defaults). When disabled, the playbook end_plays
+# before this role runs, so nothing here is created.
+
+# --- Upstream chart (NrgXnat/helm-charts, published as an OCI artifact) ----
+# Pulled directly from GHCR by helm on the jump node. xnat_chart_version is
+# pinned in group_vars/all/versions.yaml (Renovate-monitored, per ADR 0015).
+# Dev override: set xnat_chart_path to a local chart dir for unpublished edits.
+xnat_chart_oci_ref: oci://ghcr.io/nrgxnat/charts/xnat
+xnat_helm_release_name: xnat
+
+# --- XNAT image -----------------------------------------------------------
+# xnat_image_tag is pinned in group_vars/all/versions.yaml (Renovate-monitored,
+# per ADR 0015) and selects the image via image.tag override; the chart's
+# appVersion (1.9.2.1) is unchanged.
+xnat_image_repository: xnatworks/xnat-web
+
+# --- Plugin installer image (built by Scout CI, pulled through Harbor) -----
+xnat_plugin_installer_image_repository: ghcr.io/washu-tag/xnat-plugin-installer
+xnat_plugin_installer_image_tag: latest
+xnat_plugin_installer_image: '{{ xnat_plugin_installer_image_repository }}:{{ xnat_plugin_installer_image_tag }}'
+xnat_plugin_installer_image_pull_policy: IfNotPresent
+
+# --- Storage --------------------------------------------------------------
+# Empty storage class = cluster default (dynamic provisioning per ADR 0004).
+xnat_storage_class: ''
+xnat_postgres_storage_size: 10Gi
+xnat_volume_sizes:
+  xnatdata: 10Gi
+  build: 5Gi
+  cache: 10Gi
+  archive: 10Gi
+  prearchive: 5Gi
+
+# --- First-boot site config (prefs-init.ini) ------------------------------
+xnat_site_id: scout-xnat
+# Password set on the built-in `admin` account at first boot (via the [system]
+# defaultAdminPassword seed), replacing XNAT's default admin:admin. REQUIRED when
+# enable_xnat is true — set in inventory (vault-encrypted).
+xnat_admin_password: ''
+# XNAT's admin contact AND the From address on XNAT outbound mail (XNAT sends
+# administrative email from adminEmail). The default value is a
+# placeholder, so set a real address in the inventory (relays may reject the sender).
+xnat_admin_email: 'admin@{{ server_hostname }}'
+# Providers surfaced on the login page. Keeping only 'keycloak' (dropping
+# 'localdb') leaves just the "Sign in with Scout" button; the built-in admin
+# account still works via the REST API.
+xnat_enabled_providers:
+  - keycloak
+
+# --- Outbound mail --------------------------------------------------------
+# XNAT sends through Scout's shared relay (no per-XNAT postfix). The chart's
+# bundled Postfix subchart is disabled via mail.enabled: false in values.yaml.j2.
+# Defaults to in-cluster MailHog; point at your org relay for prod.
+xnat_smtp_enabled: true
+xnat_smtp_host: mailhog-service.mailhog
+xnat_smtp_port: '1025'
+
+# --- Postgres (CNPG-managed, like the rest of Scout) ----------------------
+# REQUIRED when enable_xnat is true — set in inventory (vault-encrypted).
+xnat_postgres_password: ''
+xnat_postgres_db: xnat
+xnat_postgres_user: xnat
+
+# --- Startup probe --------------------------------------------------------
+# 60 * 10s = 10 min budget for Hibernate's first-boot DDL (3-5 min). Pairs with
+# the 20m helm --wait timeout below.
+xnat_startup_failure_threshold: 60
+xnat_helm_timeout: 20m
+
+# --- Extra xnat-conf.properties entries (merged with plugin extraConfig) ---
+xnat_extra_config: {}
+# --- Plugins --------------------------------------------------------------
+# xnat_plugins_default, xnat_plugins_all, and xnat_coordinate_repo_urls live in
+# scout_common/defaults (shared with the staging Nexus role, which derives its
+# Maven proxy members from them). Operators add plugins via `xnat_plugins` in
+# all.vars. See scout_common/defaults/main.yaml for the per-plugin shape.

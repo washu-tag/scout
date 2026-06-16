@@ -188,7 +188,16 @@
             "clientRole": true,
             "attributes": {}
           }
-        ]
+        ]{% if enable_xnat | default(false) | bool %},
+        "{{ keycloak_xnat_client_id }}": [
+          {
+            "name": "xnat-access",
+            "description": "Scout User Role for XNAT Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ]{% endif %}
       }
     },
     "groups": [
@@ -245,7 +254,10 @@
           ],
           "{{ keycloak_open_webui_client_id }}": [
             "open-webui-user"
-          ]
+          ]{% if enable_xnat | default(false) | bool %},
+          "{{ keycloak_xnat_client_id }}": [
+            "xnat-access"
+          ]{% endif %}
         }
       }
     ],
@@ -622,7 +634,54 @@
           "microprofile-jwt",
           "trino-audience"
         ]
-      }
+      }{% if enable_xnat | default(false) | bool %},
+      {
+        "name": "{{ keycloak_xnat_client_id }}",
+        "description": "XNAT Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_xnat_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_xnat_client_secret }}",
+        "redirectUris": [
+          "https://xnat.{{ server_hostname }}/openid-login"
+        ],
+        "webOrigins": [
+          "https://xnat.{{ server_hostname }}"
+        ],
+        "attributes": {
+          "pkce.code.challenge.method": "S256"
+        },
+        "protocolMappers": [
+          {
+            "name": "groups",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-group-membership-mapper",
+            "consentRequired": false,
+            "config": {
+              "claim.name": "groups",
+              "full.path": "false",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true"
+            }
+          }
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
+        ]
+      }{% endif %}
     ],
     "identityProviders": [
         {% if keycloak_gh_client_id is defined and keycloak_gh_client_id %}

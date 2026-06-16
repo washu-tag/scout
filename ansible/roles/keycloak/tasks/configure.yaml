@@ -1,4 +1,21 @@
 ---
+# The realm template consumes keycloak_xnat_client_secret inside its
+# enable_xnat-gated client block, and the auth play runs before the xnat role
+# (whose own assert can therefore never fire first) — fail here with a clear
+# message instead of a raw AnsibleUndefinedVariable mid-template.
+- name: Validate XNAT client secret is set when enable_xnat is true
+  ansible.builtin.assert:
+    that:
+      - keycloak_xnat_client_secret is defined
+      - keycloak_xnat_client_secret | length > 0
+    fail_msg: >
+      keycloak_xnat_client_secret is required when enable_xnat is true: the
+      Keycloak realm provisions the xnat client. Set it in your inventory.yaml
+      (use vault encryption).
+      Example: openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+  when: enable_xnat | default(false) | bool
+
 - name: Create Secret for Scout Keycloak Realm
   delegate_to: localhost
   no_log: true

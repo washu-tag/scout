@@ -1,0 +1,11 @@
+---
+- name: Deploy XNAT
+  hosts: server
+  gather_facts: false
+  pre_tasks:
+    - name: Skip if XNAT not enabled
+      ansible.builtin.meta: end_play
+      when: not (enable_xnat | default(false) | bool)
+  environment: '{{ cluster_k8s_environment }}'
+  roles:
+    - role: xnat

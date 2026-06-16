@@ -1,0 +1,87 @@
+---
+# Maven proxy trust for coordinate-resolved plugins.
+#
+# The plugin-installer image is generic: it resolves coordinates with Maven and
+# only knows about a repo if the deploy hands it a settings.xml (and a CA if the
+# repo is HTTPS with a self-signed cert). All the "which repo / air-gapped"
+# decisions live here, so the image stays a dumb Maven runner.
+#
+# Two independent triggers:
+#   * a coordinates plugin declares source.repo_url (artifact not on Central), or
+#   * air-gapped (no egress -> mirror everything through the Nexus group).
+# The staging CA is needed only when air-gapped against the self-signed Nexus.
+
+- name: Adopt the shared coordinate repo-URL lists for the settings.xml template
+  ansible.builtin.set_fact:
+    # Computed once in scout_common (also consumed by the Nexus role); the
+    # settings.xml template reads these facts. _xnat_snapshot_repo_urls is the
+    # subset whose plugins opted into snapshots (settings.xml enables snapshots
+    # for those repos only).
+    _xnat_coordinate_repo_urls: '{{ xnat_coordinate_repo_urls | default([]) }}'
+    _xnat_snapshot_repo_urls: '{{ xnat_snapshot_repo_urls | default([]) }}'
+
+- name: Decide whether a Maven settings.xml is needed
+  ansible.builtin.set_fact:
+    _xnat_maven_settings_needed: >-
+      {{ (air_gapped | default(false) | bool)
+         or (_xnat_coordinate_repo_urls | length > 0) }}
+
+# Air-gapped preflight: every coordinate plugin must resolve through the Nexus
+# group NOW. Catches the common slip of adding a plugin (with a new repo_url) and
+# running the XNAT deploy without re-running install-staging, so the scout-maven
+# group doesn't yet proxy the plugin's repo. We HEAD the artifact via
+# maven_proxy_url — the same path the init container uses — so this also catches
+# an unreachable upstream or a release/snapshot policy mismatch.
+- name: Preflight - coordinate plugins resolve through the Nexus group (air-gapped)
+  when: air_gapped | default(false) | bool
+  block:
+    - name: HEAD each coordinate plugin artifact through the Nexus group
+      ansible.builtin.uri:
+        url: '{{ maven_proxy_url }}/{{ item.source.coordinates | maven_artifact_path }}'
+        method: HEAD
+        ca_path: /etc/pki/ca-trust/source/anchors/staging-ca.crt
+        status_code: [200]
+      loop: "{{ xnat_plugins_all | selectattr('source.type', 'equalto', 'coordinates') | list }}"
+      loop_control:
+        label: '{{ item.name }}'
+  rescue:
+    - name: Fail with guidance when a plugin repo is not proxied
+      ansible.builtin.fail:
+        msg: >-
+          A coordinate XNAT plugin could not be resolved through the Nexus group
+          ({{ maven_proxy_url }}). Its repo is most likely not yet proxied by the
+          scout-maven group. Ensure the plugin is declared in `xnat_plugins` in
+          all.vars, then re-run `make install-staging` (which rebuilds the Nexus
+          Maven proxies from the plugin list) before re-running the XNAT deploy.
+          If the artifact is a -SNAPSHOT, the plugin's repo also needs
+          `source.snapshots: true` (proxies are release-only by default).
+
+# Staging cert trust (per ADR-0016)
+- name: Create the staging CA Secret for the installer
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: staging_ca_secret
+  vars:
+    staging_ca_namespace: '{{ xnat_namespace }}'
+
+- name: Set staging CA facts for the installer templates
+  ansible.builtin.set_fact:
+    _xnat_needs_staging_cert: '{{ _staging_ca_needed }}'
+
+- name: Set staging CA pod path
+  ansible.builtin.set_fact:
+    _xnat_staging_ca_path: /mnt/staging-ca/ca.crt
+  when: _xnat_needs_staging_cert | bool
+
+- name: Render and create the Maven settings.xml ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: xnat-maven-settings
+        namespace: '{{ xnat_namespace }}'
+      data:
+        settings.xml: "{{ lookup('template', 'settings.xml.j2') }}"
+  when: _xnat_maven_settings_needed | bool

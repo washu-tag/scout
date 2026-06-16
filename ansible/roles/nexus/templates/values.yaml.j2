@@ -96,3 +96,47 @@ config:
         enabled: true
         timeToLive: 1440
 {% endfor %}
+{% for repo in nexus_maven_repos | default([]) %}
+    - name: {{ repo.name }}
+      format: maven
+      type: proxy
+      online: true
+      storage:
+        blobStoreName: {{ repo.blobStoreName }}
+        strictContentTypeValidation: false
+      cleanup:
+        policyNames:
+          - purge-unused
+      proxy:
+        remoteUrl: {{ repo.remoteUrl }}
+        contentMaxAge: -1
+        metadataMaxAge: 1440
+      httpClient:
+        blocked: false
+        autoBlock: true
+      negativeCache:
+        enabled: true
+        timeToLive: 1440
+      maven:
+        versionPolicy: {{ repo.versionPolicy | default('RELEASE') }}
+        layoutPolicy: PERMISSIVE
+        contentDisposition: ATTACHMENT
+{% endfor %}
+{% if nexus_maven_group is defined and nexus_maven_group %}
+    - name: {{ nexus_maven_group.name }}
+      format: maven
+      type: group
+      online: true
+      storage:
+        blobStoreName: {{ nexus_maven_group.blobStoreName }}
+        strictContentTypeValidation: false
+      group:
+        memberNames:
+{% for member in nexus_maven_group.memberNames %}
+          - {{ member }}
+{% endfor %}
+      maven:
+        versionPolicy: {{ nexus_maven_group.versionPolicy | default('RELEASE') }}
+        layoutPolicy: PERMISSIVE
+        contentDisposition: ATTACHMENT
+{% endif %}
