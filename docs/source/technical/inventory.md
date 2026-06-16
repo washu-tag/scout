@@ -941,7 +941,7 @@ xnat_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vau
 ```
 
 Outbound emails will be sent from the `xnat_admin_email` value. This must be overriden with a real address; the 
-default placeholder `admin@{{ sever_hostname }}` may not exist.
+default placeholder `admin@{{ server_hostname }}` may not exist.
 
 Plugins beyond the bundled openid plugin are **additive**: entries in `xnat_plugins` are installed *in addition to* the role's `xnat_plugins_default` (which carries the required openid plugin), so you never repeat or risk dropping it. Each entry names a source (`file`, `url`, `coordinates`, or `image`) and optional config files — see the `xnat` role README.
 
