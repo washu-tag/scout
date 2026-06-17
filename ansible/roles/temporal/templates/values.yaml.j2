@@ -1,45 +1,51 @@
-prometheus:
-  enabled: false
-grafana:
-  enabled: false
-cassandra:
-  enabled: false
-elasticsearch:
-  enabled: false
-  external: true
-  version: 'v7' # All ES versions (7/8/9) use v7 template format
-  scheme: 'http' # TLS disabled on Elasticsearch for simplicity
-  host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ scout_extractor_namespace }}'
-  port: 9200
-  username: 'elastic'
-  existingSecret: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
-  secretKey: 'elastic'
-  visibilityIndex: 'temporal_visibility_v1'
-  logLevel: 'error'
+# Temporal Helm chart 1.x values.
+# The bundled Cassandra / Elasticsearch / Prometheus / Grafana sub-charts were
+# removed in chart v1.0.0-rc.2, so those top-level keys are gone. Scout already
+# runs external datastores (K8ssandra + ECK), now wired under
+# server.config.persistence.datastores. See docs/internal/temporal-1x-chart-migration-notes.md.
+
+# The 1.30+ server images dropped the in-image dockerize / elasticsearch-tool
+# shims, so disable the chart's compatibility shims (defaults target 1.29.x).
+shims:
+  dockerize: false
+  elasticsearchTool: false
 server:
   replicaCount: '{{ temporal_server_replica_count | default(1) }}'
   resources: {{ temporal_resources_default | combine(temporal_resources | default({}), recursive=true) | to_json }}
-  internalFrontend:
+  internal-frontend:
     enabled: true
   config:
     namespaces:
       create: true
     persistence:
-      default:
-        driver: 'cassandra'
-        cassandra:
-          hosts:
-            [
-              '{{ cassandra_cluster_name | default("cassandra-cluster") }}-{{ cassandra_datacenter_name | default("dc1") }}-service.{{ scout_extractor_namespace }}',
-            ]
-          port: 9042
-          keyspace: temporal
-          existingSecret: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-superuser'
-          replicationFactor: 1
-          consistency:
-            default:
-              consistency: 'local_quorum'
-              serialConsistency: 'local_serial'
+      defaultStore: default
+      visibilityStore: visibility
+      datastores:
+        default:
+          cassandra:
+            hosts: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-{{ cassandra_datacenter_name | default("dc1") }}-service.{{ scout_extractor_namespace }}'
+            port: 9042
+            keyspace: temporal
+            user: user
+            existingSecret: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-superuser'
+            secretKey: password
+            replicationFactor: 1
+            consistency:
+              default:
+                consistency: 'local_quorum'
+                serialConsistency: 'local_serial'
+        visibility:
+          elasticsearch:
+            version: 'v7' # All ES versions (7/8/9) use v7 template format
+            url:
+              scheme: 'http' # TLS disabled on Elasticsearch for simplicity
+              host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ scout_extractor_namespace }}:9200'
+            username: 'elastic'
+            existingSecret: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
+            secretKey: 'elastic'
+            logLevel: 'error'
+            indices:
+              visibility: 'temporal_visibility_v1'
 {% if temporal_oidc_enabled %}
     authorization:
       jwtKeyProvider:
@@ -50,16 +56,10 @@ server:
       authorizer: default
       claimMapper: default
 {% endif %}
-  env:
-    - name: ELASTICSEARCH_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
-          key: elastic
 web:
   ingress:
     enabled: true
-    ingressClassName: traefik
+    className: traefik
     hosts:
       - 'temporal.{{ server_hostname }}'
     annotations:
