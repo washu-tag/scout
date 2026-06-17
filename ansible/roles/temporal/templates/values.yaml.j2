@@ -1,45 +1,43 @@
-prometheus:
-  enabled: false
-grafana:
-  enabled: false
-cassandra:
-  enabled: false
-elasticsearch:
-  enabled: false
-  external: true
-  version: 'v7' # All ES versions (7/8/9) use v7 template format
-  scheme: 'http' # TLS disabled on Elasticsearch for simplicity
-  host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ scout_extractor_namespace }}'
-  port: 9200
-  username: 'elastic'
-  existingSecret: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
-  secretKey: 'elastic'
-  visibilityIndex: 'temporal_visibility_v1'
-  logLevel: 'error'
+shims:
+  dockerize: false
+  elasticsearchTool: false
 server:
   replicaCount: '{{ temporal_server_replica_count | default(1) }}'
   resources: {{ temporal_resources_default | combine(temporal_resources | default({}), recursive=true) | to_json }}
-  internalFrontend:
+  internal-frontend:
     enabled: true
   config:
     namespaces:
       create: true
     persistence:
-      default:
-        driver: 'cassandra'
-        cassandra:
-          hosts:
-            [
-              '{{ cassandra_cluster_name | default("cassandra-cluster") }}-{{ cassandra_datacenter_name | default("dc1") }}-service.{{ scout_extractor_namespace }}',
-            ]
-          port: 9042
-          keyspace: temporal
-          existingSecret: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-superuser'
-          replicationFactor: 1
-          consistency:
-            default:
-              consistency: 'local_quorum'
-              serialConsistency: 'local_serial'
+      defaultStore: default
+      visibilityStore: visibility
+      datastores:
+        default:
+          cassandra:
+            hosts: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-{{ cassandra_datacenter_name | default("dc1") }}-service.{{ scout_extractor_namespace }}'
+            port: 9042
+            keyspace: temporal
+            user: user
+            existingSecret: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-superuser'
+            secretKey: password
+            replicationFactor: 1
+            consistency:
+              default:
+                consistency: 'local_quorum'
+                serialConsistency: 'local_serial'
+        visibility:
+          elasticsearch:
+            version: 'v7' # All ES versions (7/8/9) use v7 template format
+            url:
+              scheme: 'http' # TLS disabled on Elasticsearch for simplicity
+              host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ scout_extractor_namespace }}:9200'
+            username: 'elastic'
+            existingSecret: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
+            secretKey: 'elastic'
+            logLevel: 'error'
+            indices:
+              visibility: 'temporal_visibility_v1'
 {% if temporal_oidc_enabled %}
     authorization:
       jwtKeyProvider:
@@ -50,16 +48,10 @@ server:
       authorizer: default
       claimMapper: default
 {% endif %}
-  env:
-    - name: ELASTICSEARCH_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
-          key: elastic
 web:
   ingress:
     enabled: true
-    ingressClassName: traefik
+    className: traefik
     hosts:
       - 'temporal.{{ server_hostname }}'
     annotations:
