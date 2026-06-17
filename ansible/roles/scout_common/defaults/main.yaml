@@ -501,6 +501,14 @@ keycloak_wellknown_url: '{{ keycloak_realm_url }}/.well-known/openid-configurati
 # their own longer client-level lifespans (ADR 0022) and are unaffected.
 keycloak_access_token_lifespan: 300
 
+# Realm-level SSO session lifetime (seconds). Drives the realm's
+# ssoSessionIdleTimeout + ssoSessionMaxLifespan, and caps the launchpad next-auth
+# session (NEXTAUTH_SESSION_MAX_AGE) so that app cookie can't outlive the Keycloak
+# refresh token it carries. Should match oauth2_proxy_cookie_expire (the ingress
+# session) — both are the Scout-wide 8h session. Shared here (not in the keycloak
+# role) so the launchpad role can reference the same single value.
+keycloak_token_lifespan: 28800
+
 # Internal Keycloak URL for in-cluster service-to-service token minting
 # (e.g. Superset/Voila minting a *_svc client_credentials JWT for Trino).
 # Bypasses Traefik + TLS entirely — avoids self-signed-cert trust issues

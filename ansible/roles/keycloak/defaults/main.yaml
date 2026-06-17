@@ -52,9 +52,9 @@ keycloak_default_provider: github
 # available to override too, but rarely need changes.
 keycloak_terms_localizations: {}
 
-# Token lifespan (in seconds) — should match oauth2_proxy_cookie_expire
-keycloak_token_lifespan: 28800
-
+# keycloak_token_lifespan (the Scout-wide 8h SSO session) lives in
+# scout_common/defaults so the launchpad role can share the same value; these
+# client-level lifespans derive from it.
 keycloak_temporal_token_lifespan: '{{ keycloak_token_lifespan }}'
 keycloak_minio_token_lifespan: '{{ keycloak_token_lifespan }}'
 # Trino impersonation-pattern service principals (superset_svc, voila_svc,

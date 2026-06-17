@@ -11,6 +11,15 @@ import { NextRequest, NextResponse } from 'next/server';
 // users/{id}/membership) match alongside the flat ones (schema, pending, users,
 // approve). Each method's allowlist of path shapes is checked before forwarding.
 
+// Both auth-failure responses below use 440 (Login Time-out), NOT 401. The shared
+// `oauth2-proxy-error` Traefik middleware rewrites every upstream 401 into the
+// oauth2-proxy sign-in page (status: ["401"] -> /oauth2/sign_in), which would
+// swallow these app-level "re-authenticate me" signals before the launchpad UI
+// ever sees them. 440 is caught by no middleware, so it reaches the browser
+// intact. (Still never 403 — a genuine authz denial is the SPI's 403, forwarded
+// as-is below.)
+const REAUTH_REQUIRED = 440;
+
 const ALLOWED: Record<string, readonly RegExp[]> = {
   GET: [/^schema$/, /^pending$/, /^users$/],
   POST: [/^approve$/, /^users\/[^/]+\/attributes$/, /^users\/[^/]+\/admin$/],
@@ -81,17 +90,17 @@ async function forward(req: NextRequest, segments: string[], method: 'GET' | 'PO
   }
   const jwt = await getToken({ req });
   if (!jwt) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    return NextResponse.json({ error: 'Not authenticated' }, { status: REAUTH_REQUIRED });
   }
 
   const body = method === 'POST' ? await req.text() : undefined;
   const accessToken = await freshAccessToken(jwt);
   if (!accessToken) {
     // Couldn't mint a token from the stored refresh token: the SSO session is
-    // gone. 401 (not 403) so the console prompts re-login rather than showing a
-    // misleading "not scout-admin" — a genuine authz denial is the SPI's 403,
-    // forwarded as-is below.
-    return NextResponse.json({ error: 'session_expired' }, { status: 401 });
+    // gone. Return REAUTH_REQUIRED (440, see above) so the console can prompt
+    // re-login — a bare 401 would be rewritten into the oauth2-proxy sign-in page
+    // by the ingress before the UI sees it.
+    return NextResponse.json({ error: 'session_expired' }, { status: REAUTH_REQUIRED });
   }
 
   const upstream = await callKeycloak(issuer, target, method, accessToken, body);
