@@ -63,4 +63,3 @@
 
 - name: Install data-generator
   import_playbook: data_generator.yaml
-
