@@ -20,6 +20,7 @@ data:
         "tool_server_connections" (.Values.persistentConfig.tool_server_connections | default list)
         "default_model_id" (.Values.persistentConfig.default_model_id | default "")
         "task_model_id" (.Values.persistentConfig.task_model_id | default "")
+        "webhook_url" (.Values.persistentConfig.webhook_url | default "")
     | toJson }}
 
   # Filter function payloads — bootstrap.py inlines each entry's content_file
@@ -41,6 +42,30 @@ data:
     ) -}}
     {{- end }}
     {{ $filters | toJson }}
+
+  # Orphan filter functions to delete. OWUI stores function source in a
+  # DB column, so simply dropping a filter from `filterFunctions` leaves
+  # its row in place and its outlet keeps firing. Add the id here on the
+  # release where the filter was retired; can be removed in a later
+  # release once no clusters have the orphan.
+  filters_to_delete.json: |-
+    {{ (.Values.filterFunctionsToDelete | default list) | toJson }}
+
+  # Python tool payloads — same `content_file` inlining as filters.
+  # Tools have no global/active toggles; visibility is per-model via
+  # `scoutDefaults.toolIds` / model `meta.toolIds`.
+  tools.json: |-
+    {{- $tools := list -}}
+    {{- range $t := .Values.toolFunctions -}}
+    {{- $tools = append $tools (dict
+        "id" $t.id
+        "name" $t.name
+        "description" (default "" $t.description)
+        "content_file" $t.source_file
+        "valves" (default (dict) $t.valves)
+    ) -}}
+    {{- end }}
+    {{ $tools | toJson }}
 
   # Scout Explorer model payloads — one per scoutModels[].ui entry, plus a
   # hide-base override per raw Ollama tag (unless hideBaseModels=false or the

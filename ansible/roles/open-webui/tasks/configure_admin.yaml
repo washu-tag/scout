@@ -63,7 +63,14 @@
         tool_server_connections: '{{ tool_server_connections | default([]) }}'
         default_model_id: '{{ open_webui_default_model_id | default("") }}'
         task_model_id: '{{ open_webui_task_model_id | default("") }}'
+        # Webhook URL — fires on new-user signups (ADR 0026's auto-
+        # enable receiver). Defaults to the datasets-service in-cluster
+        # endpoint so deploys without an inventory override still wire
+        # auto-enable correctly. Set to '' in inventory to disable.
+        webhook_url: '{{ open_webui_webhook_url | default("http://datasets-service." ~ (datasets_service_namespace | default(chatbot_namespace)) ~ ":8000/webhooks/owui-new-user") }}'
       filterFunctions: '{{ open_webui_filter_functions | default([]) }}'
+      filterFunctionsToDelete: '{{ open_webui_filter_functions_to_delete | default([]) }}'
+      toolFunctions: '{{ open_webui_tool_functions | default([]) }}'
       scoutModels: '{{ scout_models | default([]) }}'
       scoutDefaults:
         systemPromptFile: '{{ open_webui_scout_system_prompt_file }}'

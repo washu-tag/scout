@@ -1,0 +1,3 @@
+---
+- name: Deploy datasets service
+  ansible.builtin.import_tasks: deploy.yaml

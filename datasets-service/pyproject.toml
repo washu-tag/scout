@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scout_datasets"
+version = "0.0.dev0"
+description = "Scout datasets service — holds cohort/query results outside OWUI so the chat surface stays light"
+authors = [
+    {name = "Scout Team"},
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+]
+requires-python = ">= 3.11"
+dependencies = [
+    # Pin below 0.137 — that release added a `_IncludedRouter` wrapper into
+    # `app.routes` which prometheus-fastapi-instrumentator 8.0.0 doesn't
+    # recognize (crashes on `.path` lookup during request routing).
+    "fastapi<0.137",
+    "uvicorn[standard]",
+    "httpx",
+    "psycopg[binary,pool]",
+    "pydantic>=2",
+    "pydantic-settings>=2",
+    "trino",
+    # trino-python-client 0.337+ imports tzlocal but doesn't declare it
+    # as required — packaging bug. Listed explicitly so installs work.
+    "tzlocal",
+    # Phase 2 — Keycloak JWT validation. Listed now so dev iteration in
+    # Phase 0/1 doesn't need a second `pip install` round when auth lands.
+    "python-jose[cryptography]",
+    # Prometheus metrics — instrumentator wires standard HTTP histograms
+    # at /metrics; prometheus-client provides the custom counters in
+    # scout_datasets.metrics.
+    "prometheus-fastapi-instrumentator>=7",
+    "prometheus-client>=0.20",
+    # OpenTelemetry — wired but inert unless OTEL_EXPORTER_OTLP_ENDPOINT
+    # is set. When Scout adds a collector (Tempo/Jaeger/OTel Collector),
+    # flipping one env var turns on traces; no code changes needed.
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-http",
+    "opentelemetry-instrumentation-fastapi",
+    "opentelemetry-instrumentation-httpx",
+    "opentelemetry-instrumentation-psycopg",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Include the Vite-built SPA assets (src/scout_datasets/static/*) so `pip install`
+# carries them into the install target. The frontend build (cd frontend && npm
+# run build) writes there; the ansible source-bundle picks it up; FastAPI's
+# StaticFiles mount serves it.
+[tool.setuptools.package-data]
+scout_datasets = ["static/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

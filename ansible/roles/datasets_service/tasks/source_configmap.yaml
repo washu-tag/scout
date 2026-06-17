@@ -1,0 +1,62 @@
+---
+# Build a ConfigMap that ships the datasets-service source tree (as a
+# tar.gz) + the flat requirements.txt to the in-cluster init container.
+# Used only when datasets_service_test_mode: true; never in prod.
+#
+# The init container untars `source.tar.gz` into /work and pip-installs
+# `requirements.txt` (data key) into a shared emptyDir. See
+# helm/datasets-service/templates/deployment.yaml for the consumer side.
+
+- name: Build temp dir for source bundle
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: scout_datasets_src
+  register: _ds_src_tmpdir
+  delegate_to: localhost
+
+- name: Pack datasets-service source tree
+  community.general.archive:
+    path:
+      - '{{ datasets_service_src_dir }}/src'
+      - '{{ datasets_service_src_dir }}/pyproject.toml'
+    dest: '{{ _ds_src_tmpdir.path }}/source.tar.gz'
+    format: gz
+    mode: '0644'
+  delegate_to: localhost
+
+- name: Slurp packed source
+  ansible.builtin.slurp:
+    src: '{{ _ds_src_tmpdir.path }}/source.tar.gz'
+  register: _ds_packed_src
+  delegate_to: localhost
+
+- name: Read requirements.txt
+  ansible.builtin.slurp:
+    src: '{{ datasets_service_src_dir }}/requirements.txt'
+  register: _ds_requirements
+  delegate_to: localhost
+
+- name: Create datasets-service source ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: '{{ datasets_service_helm_release_name }}-source'
+        namespace: '{{ datasets_service_namespace }}'
+        labels:
+          app.kubernetes.io/name: datasets-service
+          app.kubernetes.io/component: source-bundle
+      data:
+        requirements.txt: '{{ _ds_requirements.content | b64decode }}'
+      # binaryData accepts already-b64-encoded bytes — `slurp` returns
+      # base64 of the file, which is exactly the right shape here.
+      binaryData:
+        source.tar.gz: '{{ _ds_packed_src.content }}'
+
+- name: Discard temp bundle
+  ansible.builtin.file:
+    path: '{{ _ds_src_tmpdir.path }}'
+    state: absent
+  delegate_to: localhost

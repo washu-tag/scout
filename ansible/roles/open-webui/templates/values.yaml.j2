@@ -178,6 +178,23 @@ extraEnvVars:
   - name: RAG_EMBEDDING_ENGINE
     value: 'ollama'
 
+  # Allow OWUI's outbound webhook to target the cluster-internal
+  # datasets-service URL (ADR 0026 auto-enable). OWUI's `validate_url`
+  # SSRF guard otherwise rejects any hostname resolving to an RFC1918
+  # private IP, which blocks every in-cluster Service DNS name —
+  # `datasets-service.scout-analytics:8000` resolves to a 10.x ClusterIP
+  # and is denied at OWUI's `post_webhook` validation step.
+  #
+  # Upstream OWUI explicitly endorses this env var as the documented
+  # opt-out for "operators who legitimately need to webhook to private
+  # IPs (internal monitoring, self-hosted Slack alternatives, etc.)" —
+  # see open-webui/open-webui#24587. Same flag also relaxes RAG's URL
+  # fetch to allow private IPs; for Scout this is acceptable because
+  # Scout Explorer runs with native function-calling (RAG auto-injection
+  # bypassed) and the RAG knowledge surface isn't user-uploaded URLs.
+  - name: ENABLE_RAG_LOCAL_WEB_FETCH
+    value: 'true'
+
   # Disable local authentication (email/password)
   - name: ENABLE_SIGNUP
     value: 'false'

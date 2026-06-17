@@ -266,6 +266,10 @@
         "attributes": {
           "post.logout.redirect.uris": "https://{{ server_hostname }}"
         },
+        {#- trino-audience: oauth2-proxy's cached access token is forwarded
+            via X-Auth-Request-Access-Token to datasets-service, which
+            Bearer-forwards it to Trino. cookie_refresh keeps the token
+            fresh; trino-audience ensures Trino accepts aud. -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -273,7 +277,8 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt"
+          "microprofile-jwt",
+          "trino-audience"
         ],
         "optionalClientScopes": [
           "address",
@@ -507,11 +512,19 @@
         "webOrigins": [
           "https://chat.{{ server_hostname }}"
         ],
-        {#- mcp-trino-audience adds aud=mcp-trino to access tokens so the
-            MCP server (tuannvm/mcp-trino) can validate them and impersonate
-            the chat user on the outbound Trino call (ADR 0022).
+        {#- Both audience scopes are needed because OWUI's user token is
+            forwarded to two different upstream validators:
 
-            "roles" is intentionally absent from defaultClientScopes here.
+              * mcp-trino-audience (aud=mcp-trino) — the MCP server
+                (tuannvm/mcp-trino) validates incoming user tokens with
+                required-audience=mcp-trino, then impersonates the user
+                on its own service-principal Trino call (ADR 0022).
+
+              * trino-audience (aud=trino) — datasets-service forwards
+                the same user token to Trino as Bearer (JWT pass-through,
+                ADR 0022 Jupyter pattern); Trino requires aud=trino.
+
+            "roles" is intentionally absent from defaultClientScopes.
             Keycloak's built-in roles scope carries an audience-resolve
             protocol mapper that adds an `aud` entry for every client the
             user has any role in — for an admin user that swelled the
@@ -522,7 +535,7 @@
             claim (via microprofile-jwt) for role mapping and doesn't
             consume realm_access.roles, so dropping the scope here is
             safe for OWUI's own auth flow while tightening downstream
-            (mcp-trino) trust. -#}
+            (mcp-trino, trino) trust. -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -530,7 +543,8 @@
           "basic",
           "email",
           "microprofile-jwt",
-          "mcp-trino-audience"
+          "mcp-trino-audience",
+          "trino-audience"
         ],
         "optionalClientScopes": [
           "address",

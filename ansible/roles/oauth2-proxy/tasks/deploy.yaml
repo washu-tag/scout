@@ -93,8 +93,11 @@
           # request (and overwriting any client-supplied value of the same name).
           # Voila reads X-Auth-Request-Preferred-Username for X-Trino-User
           # impersonation (ADR 0022); voila_runtime captures it per-request.
+          # X-Auth-Request-Access-Token carries the user's Keycloak JWT;
+          # datasets-service Bearer-forwards it to Trino (JWT pass-through).
           authResponseHeaders:
             - X-Auth-Request-Preferred-Username
+            - X-Auth-Request-Access-Token
 
 - name: Install OAuth2 Proxy Error Middleware
   kubernetes.core.k8s:

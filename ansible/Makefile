@@ -1,7 +1,7 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-valkey install-auth install-lake install-trino install-superset install-orchestrator \
-    install-extractor install-monitor install-jupyter install-launchpad install-voila install-staging \
-    verify-node echo
+    install-extractor install-monitor install-jupyter install-launchpad install-voila install-datasets-service \
+    install-staging verify-node echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -95,6 +95,9 @@ install-launchpad:
 
 install-voila:
 	$(ANSIBLE_CMD) playbooks/voila.yaml
+
+install-datasets-service:
+	$(ANSIBLE_CMD) playbooks/datasets-service.yaml
 
 # For tests
 install-orthanc:

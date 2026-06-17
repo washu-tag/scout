@@ -1,0 +1,9 @@
+apiVersion: v2
+name: datasets-service
+description: Scout datasets service — stores cohort/query results outside Open WebUI
+
+type: application
+
+version: 0.0.0-dev
+
+appVersion: "0.0.dev0"

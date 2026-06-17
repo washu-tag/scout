@@ -1,0 +1,14 @@
+# Build output (built locally before deploy; ansible source-bundle picks it up).
+dist/
+dist-ssr/
+
+# Node deps
+node_modules/
+
+# Editor + tooling
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.local
+*.log

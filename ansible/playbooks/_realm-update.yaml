@@ -1,0 +1,12 @@
+---
+- name: Update Scout realm only (one-off, skips operator install)
+  hosts: server
+  gather_facts: false
+  roles:
+    - role: scout_common
+  environment: '{{ cluster_k8s_environment }}'
+  tasks:
+    - name: Apply realm config (configure.yaml from keycloak role)
+      ansible.builtin.include_role:
+        name: keycloak
+        tasks_from: configure
