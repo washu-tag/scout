@@ -410,6 +410,10 @@ it so it's not a blocker.
 
 - Check auth patterns
 
+- Test CSV Upload
+
+- Send to XNAT handoff with IQ plugin. Not needed for the initial release but will be needed soon after.
+
 - **Auto-set per-user `iframeSandboxAllowSameOrigin` (and `iframeSandboxAllowForms`) on new OWUI signups.** Required so the in-chat iframe viewer renders with `allow-same-origin` from a new user's very first search, without making them dig into Settings > Interface > Artifacts and toggle it manually. OWUI 0.9.6 has no admin-global default for these flags and no admin API to write another user's UI settings (`UserUpdateForm` only accepts `role`/`name`/`email`/`profile_image_url`/`password`; `/user/settings/update` writes the session user's own id, ignoring admin role). Upstream PR open-webui/open-webui#20770 would add the missing admin endpoint but per the contributor "probably won't get merged anytime soon."
 
   Path picked: direct write into the OWUI Postgres `"user".settings` JSON column from the existing signup-webhook receiver, scoped via a least-privileged Postgres role granted only `UPDATE (settings) ON "user"`. The webhook is `await`ed inside OWUI's OAuth callback (`oauth.py` ~1745 in 0.9.6), so the settings stamp completes before OWUI redirects the browser → first page-load already sees the corrected flags → no first-iframe-needs-reload race.
