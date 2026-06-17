@@ -61,6 +61,8 @@ Default storage allocations (can be customized in `inventory.yaml`):
 - Ollama: 200Gi (AI models)
 - Open WebUI: 100Gi (chat interface data)
 
+The optional Data Generator service uses **host paths** (e.g., BeeGFS, NFS) rather than Kubernetes PVs — see {ref}`Data Generator <data-generator-config>` for setup.
+
 ## Inventory Structure
 
 The inventory file is organized into host groups and variables. Here's the basic structure:
@@ -428,7 +430,7 @@ prometheus_resources:
     memory: 4Gi
 ```
 
-**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, mcp_trino, cassandra_system_logger
+**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, mcp_trino, cassandra_system_logger, data_generator
 
 **Services NOT supporting partial overrides** (use flattened variables instead): Trino coordinator/worker, Cassandra (main container), Elasticsearch, HL7 Transformer. These services use individual variables (e.g., `cassandra_max_heap`, `trino_worker_cpu_limit`) because JVM heap sizes drive memory calculations with different multipliers for requests vs limits. Note: Cassandra's system logger sidecar (Vector) does support partial overrides via `cassandra_system_logger_resources`.
 
@@ -661,6 +663,13 @@ open_webui_resources:
   limits:
     cpu: 4
     memory: 4Gi
+
+data_generator_resources:
+  requests:
+    cpu: 1
+    memory: 4Gi
+  limits:
+    memory: 16Gi
 ```
 
 ### Service-Specific Configuration
@@ -849,6 +858,45 @@ hl7_transformer_spark_memory: 16G
 hl7_transformer_cpu_request: 2
 hl7_transformer_cpu_limit: 4
 ```
+
+(data-generator-config)=
+#### Data Generator
+
+The Data Generator is an optional service that produces synthetic HL7 radiology reports for testing and benchmarking Scout's ingestion pipeline. It deploys as a Temporal worker that calls a user-supplied LLM (OpenAI-compatible — Azure OpenAI, a local Ollama deployment, etc.) to generate report bodies. The LLM endpoint, model, and any per-run parameters are supplied at workflow submission time, not in inventory.
+
+It connects to the Temporal frontend in `scout_extractor_namespace`, so it must be deployed after the extractor stack.
+
+```yaml
+# Required: enable the optional service (default: false)
+enable_data_generator: true
+
+# Required: host paths for the data-generator's input/output
+data_generator_workspace: /beegfs/shared/data-generator-input   # Scratch/work dir
+data_generator_output:    /beegfs/shared/data-generator         # Generated reports land here
+
+# Required when calling a hosted LLM that needs authentication.
+# Keys here are exposed to the container as environment variables of the
+# same name (via envFrom on a Kubernetes Secret).
+data_generator_secrets:
+  AZURE_OPENAI_KEY: !vault |
+        $ANSIBLE_VAULT;1.1;AES256
+        ...encrypted...
+
+# Optional: number of worker replicas (each handles workflows in parallel)
+data_generator_replicas: 1
+
+# Optional: container image overrides (rarely needed)
+data_generator_image_repository: ghcr.io/washu-tag/data-generator
+data_generator_image_tag: latest
+data_generator_pull_policy: IfNotPresent
+
+# Optional: JVM tuning. Defaults to using 75% of the pod memory limit as heap.
+data_generator_java_tool_opts: '-XX:MaxRAMPercentage=75.0'
+```
+
+**Storage:** `data_generator_workspace` and `data_generator_output` are mounted as `hostPath` volumes (not Kubernetes-managed PVs). They must exist on every node where data-generator pods may schedule, or you must constrain scheduling via `nodeSelector`/affinity. A shared filesystem (e.g., BeeGFS, CephFS, NFS) is recommended for multi-replica deployments so any worker can pick up any job.
+
+**Secrets format note:** values in `data_generator_secrets` are passed verbatim into a Kubernetes `Secret` (via `stringData:`) and exposed as environment variables in the worker pod. Whatever keys you put in the dict become the env-var names — make sure they match what the data-generator code expects.
 
 #### Package Proxy (Conda and pip)
 

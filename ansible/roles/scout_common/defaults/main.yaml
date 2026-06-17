@@ -133,6 +133,7 @@ minio_tenant_name: scout
 hive_namespace: '{{ scout_data_namespace }}'
 dcm4chee_namespace: '{{ scout_data_namespace }}'
 orthanc_namespace: '{{ scout_data_namespace }}'
+data_generator_namespace: '{{ scout_data_namespace }}'
 
 # XNAT runs in its own namespace (independent of the consolidated scout_* namespaces)
 xnat_namespace: xnat
@@ -281,6 +282,7 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
+
 # When false, nothing XNAT is created (no namespace/deploy; the Keycloak realm
 # omits the xnat client + xnat-access role). keycloak_xnat_client_secret is only
 # required when true.
@@ -391,6 +393,8 @@ xnat_snapshot_repo_urls: >-
      | selectattr('source.snapshots')
      | map(attribute='source.repo_url', default='')
      | reject('equalto', '') | unique | list }}
+
+enable_data_generator: false
 
 # Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
 # Jupyter singleuser) or are cluster-wide storage layers that span every
