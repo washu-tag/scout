@@ -480,8 +480,6 @@ it so it's not a blocker.
 
 - Prompt review needed, too much irrelevant stuff has built up while iterating on the service. 
 
-- Remove old classifier code.
-
 - Report snippets are not being given to the llm for context and the diagnosis codes are pressented outside of the results table given to the llm. This is a regression from the POC, the llm needs some report context.
 
 - Report loading is slow (a few seconds) on an individual report. This was faster and should be for a single report.
