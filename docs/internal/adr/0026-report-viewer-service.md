@@ -256,7 +256,7 @@ MCP later) all hit this same API.
 | POST | `/api/searches` | Save a SQL-defined search. Body: `{ sql, sql_explanation, highlight_terms, owui_chat_id/title }`. The service stores the SQL, runs `SELECT COUNT(*) FROM (<sql>) sub` to cache the count, and returns `id + count + sample + summary + view_url`. The CSV-upload path uses a sibling endpoint `POST /api/searches/from-file` that validates the supplied identifiers against `reports_latest` and saves a `WHERE <id_col> IN (...)` SQL — same downstream shape. No materialization in either case. |
 | GET | `/api/searches/{id}` | Search metadata (count, owner, timestamps). |
 | GET | `/api/searches/{id}/rows?page&limit&sort&filter` | Paginated rows for the SPA table. Server-side filter and sort on Trino-native columns. |
-| GET | `/api/searches/{id}/export.csv` | Streaming chunked CSV download. |
+| GET | `/api/searches/{id}/csv` | Streaming chunked CSV download (mirrors `/rows` — paginated JSON vs. streamed CSV). |
 | GET | `/api/searches/{id}/accessions` | Distinct accession-number list for the Send-to-XNAT handoff. |
 | DELETE | `/api/searches/{id}` | Explicit search deletion ahead of TTL. |
 
@@ -271,7 +271,7 @@ MCP later) all hit this same API.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/searches/{id}` and other non-`/api/` paths | Browser-loadable HTML; FastAPI serves the SPA's `index.html`. |
+| GET | `/spa/*` | Browser-loadable HTML + assets; FastAPI mounts the SPA build under `/spa/` and falls back to `index.html` for unknown paths so React Router's client-side routes (e.g. `/spa/searches/{id}`) work on direct navigation. |
 | GET | `/healthz` | Liveness. |
 
 **Tool → API mapping** (so the indirection is documented in one place):
@@ -499,6 +499,21 @@ it so it's not a blocker.
 -  PHI in searches.source_sql — imported CSV cohorts persist WHERE epic_mrn IN ('123',...) clear-text in Postgres. Retention/encryption decision needed.
 
 - Review auth patterns. New oauth2-proxy middleware may be needed so the trino audince is not exposed to every service.
+  1. Token over-forwarding in shared middleware. ansible/roles/oauth2-proxy/tasks/deploy.yaml:98-100 adds X-Auth-Request-Access-Token to the
+  shared oauth2-proxy-auth middleware — sends the raw Keycloak access token to all 9 services using it (temporal, open-webui, grafana, minio,
+  launchpad, voila, superset, jupyter, report-viewer-service). Split into a dedicated oauth2-proxy-auth-trino middleware; only
+  report-viewer-service references it.
+  2. trino-audience in oauth2-proxy defaultClientScopes. ansible/roles/keycloak/templates/scout-realm.json.j2:280 — every browser session token
+  is now Trino-usable. Combined with #1, anything that captures the cookie can talk to Trino as the user. Move to optionalClientScopes and
+  request it explicitly only where needed.
+  3. Owner-scope bypass on non-owner endpoints. routes/searches.py:605, 693, 753, 818 pass owner_sub=None to store.get_search on /rows,
+  /reports/{id}, /accessions, /export.csv. Pass user.sub instead — chat-host iframe also goes through oauth2-proxy, identity is available.
+  Frontend comment at frontend/src/api/client.ts:78-83 is wrong.
+  4. Search ID entropy. ids.py:14 — 6 base62 chars ≈ 36 bits, not "56 bits" as the comment claims. Brute-forceable. Bump length and fix the
+  comment.
+  5. PHI in searches.source_sql. ADR TODO line 497. File-import cohorts bake MRNs into the SQL text and return it on GET /spa/searches/{id}.
+  After #3 it's owner-only, which is the right baseline — but the at-rest exposure in Postgres still wants a separate look (column-level
+  encryption, or hash-and-store IDs rather than literal IN-lists).
 
 - Test CSV Upload and Download.
 
