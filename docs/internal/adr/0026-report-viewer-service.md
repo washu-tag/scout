@@ -469,6 +469,8 @@ it so it's not a blocker.
 
 - Test on preprod
 
+- Performance test large chat with large queries. Currently tell LLM to use a 50k limit.
+
 - Test with Qwen 3.6
 
 - Test aggregate queries and non-cohort queries from the LLM.
