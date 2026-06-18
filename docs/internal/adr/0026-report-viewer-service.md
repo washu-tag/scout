@@ -565,3 +565,24 @@ it so it's not a blocker.
 
   Fix: add a `REPORT_VIEWER_PUBLIC_URL` env var on the service (rendered in `ansible/roles/report_viewer_service/templates/values.yaml.j2` from the same `report_viewer_service_host` already used by the ingress), have `_view_url` use it instead of `request.base_url`, drop `public_base_url` / `keycloak_*` plumbing from the tool valves (the latter pending the #4 verification above). After that the tool's only URL knob is the in-cluster service URL — no naming pair to bikeshed.
 
+
+- Auth: "JSON in and out except CSV streaming. "" GET /api/searches/{id}/csv streams Content-Type: text/csv, chunked." what is auth on this endpoint for csv export?
+
+- Why "/api/searches/{id}/reports/{report_id}  " and not just use "/api/reports/read"
+
+- "highlight_terms" in json for /api/searches, I thought we added a highlight_diagnosis as well to capture the ICD evidence that the LLM can use in summarization?
+
+- ""owui_chat_title": "Pulmonary Nodule CT Search"" do we care about the chat title? the title also isn;t availbe on first search creation for a particualr chat so this wouldn't be known if there is only ever one search in a chat. 
+
+- "POST /api/searches/from-file" i thought we discused sending the file to the service directly instead of OWUI parsing it? I think the logic is better handeled in the service and not in OWUI.
+
+- Why row cap in the json POST /api/reports/query:
+  { "sql": "SELECT modality, COUNT(*) FROM reports_latest GROUP BY 1", "row_cap": 500 } - this should be handled by a LIMIT clause or we have a hard limit on the backend for the number of rows returned this is a bit of an odd pattern to have in the API.
+
+- VERY IMPORTANT AND THIS APPLIES TO EVERYTHING : POST /api/reports/read: { "ids": ["m1","m2"], "id_column": "message_control_id" } "message_control_id" is not the appropriate id column to use for a report identifier, you must use the file location in the lake as the identifier!! check this everywhere in the code for consistency.
+
+- Does "/webhooks/owui-new-user" have auth? is it behind oa2p? What about healhtz and metrics endpoints?
+
+- updatingg ... info thing could be a bit more promenient in the ui banner
+
+- Review the Markdown summary shapping.
