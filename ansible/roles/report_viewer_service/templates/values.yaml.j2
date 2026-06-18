@@ -1,0 +1,136 @@
+# Report-viewer service Helm values - rendered from Ansible
+replicaCount: {{ report_viewer_service_replicas }}
+
+image:
+  repository: "{{ report_viewer_service_image_repository }}"
+  tag: "{{ report_viewer_service_image_tag }}"
+
+resources: {{ report_viewer_service_resources_default | combine(report_viewer_service_resources | default({}), recursive=true) | to_json }}
+
+env:
+  # Trino — matches the voila pattern (ADR 0022). Phase 1 uses the
+  # in-cluster HTTP listener; Phase 2 may switch to HTTPS + per-user
+  # JWT impersonation once that path is exercised end-to-end.
+  REPORT_VIEWER_TRINO_HOST: "{{ report_viewer_service_trino_host }}"
+  REPORT_VIEWER_TRINO_PORT: "{{ report_viewer_service_trino_port }}"
+  REPORT_VIEWER_TRINO_SCHEME: "{{ report_viewer_service_trino_scheme }}"
+  REPORT_VIEWER_TRINO_CATALOG: "{{ report_viewer_service_trino_catalog }}"
+  REPORT_VIEWER_TRINO_SCHEMA: "{{ report_viewer_service_trino_schema }}"
+  # Phase 2 — Keycloak JWKS for end-user JWT validation. Internal URL so
+  # service-to-service token validation bypasses Traefik + external cert.
+  REPORT_VIEWER_KEYCLOAK_JWKS_URL: "{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs"
+  # External realm URL is what Keycloak puts in `iss`, even when JWKS is
+  # fetched internally. Validating iss against this string proves the
+  # token came from our Keycloak.
+  REPORT_VIEWER_KEYCLOAK_ISSUER: "{{ keycloak_realm_url }}"
+  # CSP frame-ancestors — origins allowed to embed our /view iframe.
+  # The chat ingress is the primary embedder; add more (Slack, etc.) by
+  # space-separating in the inventory override.
+  REPORT_VIEWER_CSP_FRAME_ANCESTORS: "https://chat.{{ server_hostname }}"
+  # OWUI webhook receiver — picks up new-user signups and writes
+  # iframeSandbox* UI defaults directly into OWUI's "user".settings
+  # JSON column so the in-chat iframe renders with allow-same-origin
+  # from the very first search (no manual Settings>Interface toggle).
+  # OWUI 0.9.6 has no admin API to write another user's UI settings,
+  # so direct DB is the only path synchronous to signup. See ADR 0026.
+  # Empty url disables the receiver (it 503s).
+
+# Pull the OWUI Postgres password from the existing open-webui-secrets
+# Secret. The connection URL is assembled below from the same role
+# defaults the OWUI role itself uses (open_webui_postgres_user,
+# open_webui_database). Optional so the deployment still rolls if
+# the Secret isn't present yet — receiver just 503s on empty URL.
+secretEnv:
+  # Mount OWUI's existing DATABASE_URL key — the receiver writes
+  # iframeSandbox UI flags into OWUI's "user".settings JSON column
+  # on signup (ADR 0026). Future least-privileged role swap: change
+  # only this `key` to point at a separate UPDATE-only credential.
+  REPORT_VIEWER_OWUI_DATABASE_URL:
+    secretName: open-webui-secrets
+    key: DATABASE_URL
+    optional: true
+{% if report_viewer_service_otel_endpoint | length > 0 %}
+  # OpenTelemetry — pointing at the configured OTLP HTTP collector.
+  # `scout_report_viewer.telemetry.bootstrap` activates auto-instrumentation
+  # when this env is set; absent, no spans are created.
+  OTEL_EXPORTER_OTLP_ENDPOINT: "{{ report_viewer_service_otel_endpoint }}"
+  OTEL_SERVICE_NAME: "{{ report_viewer_service_otel_service_name }}"
+{% endif %}
+
+# REPORT_VIEWER_DATABASE_URL is rendered into the chart-managed Secret.
+databaseUrl: "postgresql://{{ report_viewer_service_db_user }}:{{ report_viewer_service_db_password }}@{{ db_host }}:{{ db_port }}/{{ report_viewer_service_database }}"
+
+devSharedSecret: "{{ report_viewer_service_dev_shared_secret }}"
+
+{% if report_viewer_service_trino_ca_cert | length > 0 %}
+trinoCaCert: |
+{{ report_viewer_service_trino_ca_cert | indent(2, true) }}
+{% endif %}
+
+{% if report_viewer_service_test_mode | bool %}
+# Test mode — image baked at deploy time from source via the role-managed
+# ConfigMap (`{{ report_viewer_service_helm_release_name }}-source`).
+sourceConfigMap:
+  enabled: true
+  name: "{{ report_viewer_service_helm_release_name }}-source"
+  pythonImage: "{{ report_viewer_service_test_mode_python_image }}"
+{% if pip_proxy_url | default('') | length > 0 %}
+  pipIndexUrl: "{{ pip_proxy_url }}"
+{% endif %}
+{% if _rv_package_proxy_needs_staging_cert | default(false) | bool %}
+  stagingCaSecret:
+    name: staging-ca-cert
+    key: ca.crt
+{% endif %}
+{% endif %}
+
+# Trino is HTTPS-only (ADR 0022); mount the cert-manager-managed
+# trino-tls Secret directly. Same pattern as superset, jupyter, voila,
+# mcp-trino. Same namespace as Trino (scout-analytics), so kubelet
+# picks up CA rotations on the next pod start without any Ansible loop.
+trustedCaSecret:
+  name: trino-tls
+  key: ca.crt
+
+networkPolicy:
+  enabled: true
+  traefikNamespace: "{{ traefik_namespace }}"
+  # Phase 4 needs OWUI's tool runtime to call our service in-cluster. Same
+  # namespace (chatbot_namespace = scout_analytics), so a bare podSelector
+  # suffices — k8s defaults to same-ns when namespaceSelector is omitted.
+  extraFrom:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: open-webui
+
+ingress:
+  enabled: true
+  className: traefik
+  # oauth2-proxy in front of every viewer/POST endpoint. With pass_access_token,
+  # the middleware forwards the user's Keycloak JWT as X-Auth-Request-Access-Token;
+  # auth.py reads it and the trino client Bearer-forwards it so OPA filters per
+  # requester (ADR 0022, Jupyter pattern).
+  # No security-headers middleware: it sets `frame-ancestors 'none'`
+  # which would block the chat iframe. The app emits a narrower CSP via
+  # response middleware that allows chat.<server_hostname> to embed us.
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd
+  host: "{{ report_viewer_service_host }}"
+  # Same-origin alias on the OWUI chat host. The chat ingress also
+  # routes `/searches/...` to this service, so the viewer iframe can
+  # be loaded as a same-origin URL from chat — fixing the OWUI 0.9.5
+  # cross-origin embed height bug (every embed pinned to 150px).
+  sameOriginAlias:
+    enabled: {{ report_viewer_service_chat_alias_enabled | default(true) | bool | to_json }}
+    host: "chat.{{ server_hostname }}"
+    annotations:
+      traefik.ingress.kubernetes.io/router.middlewares: >-
+        kube-system-oauth2-proxy-error@kubernetescrd,
+        kube-system-oauth2-proxy-auth@kubernetescrd
+    # TLS cert for chat host is provisioned by the open-webui ingress,
+    # not this chart — leaving tls: [] makes Traefik fall through to
+    # the existing chat-host SAN coverage rather than requesting a
+    # second cert for the same name.
+    tls: []

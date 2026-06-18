@@ -72,7 +72,7 @@ For a cohort-building question:
    - a 5 to 10 row sample (with snippet text around matching terms) for immediate LLM context
    - an LLM-bound summary markdown blob
    - a `view_url` pointing at the SPA route for this search
-4. An OWUI filter (`dataset_iframe_lift_filter.py`) renders the SPA in an
+4. An OWUI filter (`search_iframe_lift_filter.py`) renders the SPA in an
    iframe below the LLM's reply.
 5. The LLM uses the sample plus summary to continue the conversation; the
    user uses the iframe to browse the full cohort table, refine with follow-up questions, 
@@ -329,48 +329,111 @@ mentioned in context (not just inside HISTORY), and that the row also
 carries an I63 diagnosis code, before deciding whether to summarize
 or recommend refinement.
 
-### OWUI new-user auto-enable
+### OWUI new-user iframe-sandbox seeding
 
-ADR 0003's approval gate requires an admin to manually flip new
-Keycloak-federated users from pending → enabled before they can use
-Scout. For a single demo cluster that overhead is acceptable; for
-shared dev/eval environments it's a constant friction.
+Out-of-the-box, every new OWUI user has `iframeSandboxAllowSameOrigin`
+and `iframeSandboxAllowForms` set to false (per-user UI defaults; no
+admin-global override exists in OWUI 0.9.6). Without those flags the
+chat's `message.embeds` iframe loads as a unique opaque origin —
+`window.frameElement` reads as cross-origin, same-host fetches drop
+the chat session cookie, and the report viewer breaks in a way that
+forces every researcher to dig into *Settings > Interface > Artifacts*
+and flip both toggles before their first search works.
 
-Datasets-service exposes `POST /webhooks/owui-new-user` as the receiver
-for OWUI's admin notification webhook. On a signup event it signs in
-as the existing `scout-deploy` admin (same credentials the bootstrap
-chart already uses) and calls `/api/v1/users/{id}/update/role` to
-auto-enable the new user. Best-effort: 5xx is swallowed so OWUI's
-retry loop doesn't hammer transient failures; `OWUI_WEBHOOK_EVENTS`
-counter exposes success/error counts.
+To avoid that, report-viewer-service exposes `POST /webhooks/owui-new-user`
+as the receiver for OWUI's admin signup webhook (configured via
+OWUI's `WEBHOOK_URL` PersistentConfig field). On a signup event the
+receiver does one Postgres statement against OWUI's own database
+that merge-sets both flags to true on the new user's `settings` JSON
+column. Best-effort: errors are logged + recorded as a metric but
+not raised, so OWUI's webhook retry loop doesn't hammer transient
+failures.
 
-**Deploy-time wiring requirements (not auto-provisioned today):**
+**Why direct DB, not OWUI's HTTP API?** OWUI 0.9.6 has no admin
+endpoint to write another user's UI settings:
 
-1. **Cross-namespace secret reference** — datasets-service deployment
-   needs `DATASETS_OWUI_ADMIN_PASSWORD` mounted from the
-   `open-webui-secrets` Secret's `BOOTSTRAP_PASSWORD` key. The Secret
-   lives in `scout-analytics` (chatbot_namespace) along with the
-   datasets-service Pod, so no cross-namespace mount is actually
-   needed — just a `valueFrom.secretKeyRef` in the datasets-service
-   chart values. Confirm `secretName: open-webui-secrets, key:
-   BOOTSTRAP_PASSWORD` resolves at deploy time.
+- `POST /api/v1/users/{user_id}/update` (admin-only) accepts only
+  `role`, `name`, `email`, `profile_image_url`, `password` — see
+  `UserUpdateForm` in `backend/open_webui/models/users.py`.
+- `POST /api/v1/users/user/settings/update` writes the *session
+  user's own id* regardless of admin role.
+
+Upstream [open-webui/open-webui#20770](https://github.com/open-webui/open-webui/pull/20770)
+would add the missing admin endpoint but the contributor states it
+"probably won't get merged anytime soon." That leaves direct DB
+write as the only path that lands the setting BEFORE the user's
+first page hydrate (the in-tool / first-chat-filter alternatives
+have a race against OWUI's client-side settings cache).
+
+**Why this isn't a race.** OWUI's signup webhook is `await`ed inside
+the OAuth callback handler (`open_webui/utils/oauth.py` ~line 1745).
+That means OWUI's server holds the response open until the webhook
+returns. Sequence:
+
+1. Keycloak redirects back with auth code
+2. OWUI creates the user record
+3. OWUI calls our webhook (blocking)
+4. Our receiver merge-updates `"user".settings`
+5. Webhook returns, OWUI redirects the browser
+6. Browser's first page hydrate reads settings with flags already true
+7. First search renders iframe with `allow-same-origin` from the very
+   first message — no manual toggle, no page reload required
+
+**The SQL.** One statement, idempotent (handles null `settings`,
+missing `ui` sub-object, missing keys via `jsonb_set(create_missing=true)`):
+
+```sql
+UPDATE "user"
+   SET settings = jsonb_set(
+       jsonb_set(
+           COALESCE(settings::jsonb, '{}'::jsonb),
+           '{ui,iframeSandboxAllowSameOrigin}', 'true'::jsonb, true
+       ),
+       '{ui,iframeSandboxAllowForms}', 'true'::jsonb, true
+   )::json
+ WHERE id = $1;
+```
+
+**Deploy-time wiring:**
+
+1. **OWUI Postgres connection** — report-viewer-service mounts a
+   `REPORT_VIEWER_OWUI_DATABASE_URL` env via `secretKeyRef` from
+   `open-webui-secrets`, key `DATABASE_URL` (OWUI's own Postgres
+   credential, reused for now — see the least-privileged-role
+   follow-up below).
 
 2. **OWUI admin-settings `WEBHOOK_URL`** — set to
-   `http://datasets-service.<chatbot_namespace>:8000/webhooks/owui-new-user`.
-   This is a PersistentConfig value; the open-webui-bootstrap chart
-   re-pushes it on every install-chat via the existing
-   `persistent_config` mechanism. Add `webhook_url` to the
-   persistent_config payload alongside `default_model_id` /
-   `task_model_id`.
+   `http://report-viewer-service.<chatbot_namespace>:8000/webhooks/owui-new-user`.
+   PersistentConfig value pushed by the open-webui-bootstrap chart on
+   every install-chat. Note that OWUI's `validate_url()` SSRF guard
+   rejects RFC1918 hostnames by default — we set
+   `ENABLE_RAG_LOCAL_WEB_FETCH=true` on the OWUI deployment per
+   upstream [#24587](https://github.com/open-webui/open-webui/pull/24587)
+   to allow the in-cluster Service URL.
 
-3. **(Optional but recommended)** `DATASETS_OWUI_WEBHOOK_SECRET` env
-   on datasets-service + matching header on OWUI's webhook config so
-   forged requests can't auto-enable arbitrary users. NetworkPolicy
-   on datasets-service already gates intra-cluster ingress, so this is
-   defense-in-depth.
+3. **(Optional but recommended)** `REPORT_VIEWER_OWUI_WEBHOOK_SECRET`
+   env on report-viewer-service + matching `X-Scout-Webhook-Secret`
+   header on OWUI's webhook config so forged requests can't seed
+   settings for arbitrary users. NetworkPolicy on report-viewer-service
+   already gates intra-cluster ingress; this is defense-in-depth.
 
-Until those three pieces land, the receiver code path is reachable
-(returns 503 on missing admin password) but no auto-enable occurs.
+Until #1 lands, the receiver path is reachable but returns 503 ("OWUI
+database URL not configured") and no settings are written.
+
+**Follow-up — least-privileged Postgres role.** v1 reuses OWUI's
+own Postgres credential (which has full table access). Future
+hardening: create a dedicated role
+`CREATE ROLE rvs_owui_settings_writer; GRANT UPDATE (settings) ON "user" TO rvs_owui_settings_writer;`
+add a new secret key with that role's URL, and point
+report-viewer-service's `secretEnv` at it instead of `DATABASE_URL`.
+
+**Note on the previously-documented "auto-enable" role flip.** Earlier
+drafts of this ADR described the receiver as flipping the new user's
+`role` from pending → user via OWUI's HTTP admin API. That requirement
+turned out to be fictional — users in the current realm config are
+already auto-enabled via the Keycloak SSO + OWUI OIDC flow, no manual
+admin approval needed. The receiver's only legitimate job is seeding
+the iframe UI flags described above.
 
 ### Observability
 
@@ -404,13 +467,48 @@ it so it's not a blocker.
 
 ## TODOs
 
+- Test on preprod
+
+- Test with Qwen 3.6
+
+- Test aggregate queries and non-cohort queries from the LLM.
+  - What is the /aggregate endpoint??
+
+- Review the scout query OWUI tool implemntation.
+
+- Review React App SPA implementaition.
+
+- Prompt review needed, too much irrelevant stuff has built up while iterating on the service. 
+
+- Remove old classifier code.
+
+- Report snippets are not being given to the llm for context and the diagnosis codes are pressented outside of the results table given to the llm. This is a regression from the POC, the llm needs some report context.
+
+- Report loading is slow (a few seconds) on an individual report. This was faster and should be for a single report.
+
+- When clicking on a report for details, split left and right panes to make better use of space. Patient info and report metadata on the left, full report text on the right.
+
+- Text moves under the "Filter..." row as you scroll and is not hidden behind it. The filter row is sticky but the text is apperaing between the filter row and the header row.
+
+- The LLM is picking too many highlight terms, maybe limite to 3 - 5.
+
 - Update code from dataservice to report-viewer-service, including the new SPA and API endpoints and the OWUI integration points.
 
 - Update observability stack
 
-- Check auth patterns
+-  PHI in searches.source_sql — imported CSV cohorts persist WHERE epic_mrn IN ('123',...) clear-text in Postgres. Retention/encryption decision needed.
 
-- Test CSV Upload
+- Review auth patterns. New oauth2-proxy middleware may be needed so the trino audince is not exposed to every service.
+
+- Test CSV Upload and Download.
+
+- Improve "Explain SQL" UI / UX
+  - The sql is pretty ugly to read
+  - Add a copy to clipboard button for the sql code.
+
+- When reviewing a row / report add a button that says "Discuss Report with Chat" (or something like that) that tells the LLM to pull that report into context and discuss to with the user. Make sure to use the file location of the report in the lake as the identifier when pulling the report into context.
+
+- Age filter takes just a single number right now, needs to accept a range.
 
 - Send to XNAT handoff with IQ plugin. Not needed for the initial release but will be needed soon after.
 
@@ -421,7 +519,7 @@ it so it's not a blocker.
   Eliminated alternatives (documented so we don't re-litigate):
   - Image fork of OWUI with PR #20770 baked in — perpetual maintenance burden until upstream merges
   - InitContainer overlay that appends the PR snippet to `users.py` at pod start — brittle to upstream router-file shape changes
-  - In-tool update from `scout_datasets_tool.py` calling `Users.update_user_settings_by_id` — has a race (server-side write doesn't push to client's settings cache; first iframe renders with stale sandbox attr, user has to reload once)
+  - In-tool update from `scout_report_viewer_tool.py` calling `Users.update_user_settings_by_id` — has a race (server-side write doesn't push to client's settings cache; first iframe renders with stale sandbox attr, user has to reload once)
   - OWUI admin webhook for new-user notification with `WEBHOOK_URL` — fires correctly post-`ENABLE_RAG_LOCAL_WEB_FETCH=true` and post-receiver-fix, but only gives us a *trigger*; we still need a way to actually write the setting, and OWUI's API doesn't expose one
 
   Note: the receiver already exists at `routes/owui_webhook.py` with the trigger wired. Earlier work in this session built it around a fictional "auto-enable" role-flip — replace that body with `_apply_iframe_defaults(user_id)` doing the one-row `jsonb_set` UPDATE.
