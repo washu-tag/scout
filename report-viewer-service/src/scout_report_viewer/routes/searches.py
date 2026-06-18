@@ -1,4 +1,4 @@
-"""HTTP routes for `/searches` (V1.1 — just-in-time SQL evaluation).
+"""HTTP routes for `/api/searches` (V1.1 — just-in-time SQL evaluation).
 
 A search is a saved SQL query plus minimal metadata. Nothing about
 which rows match is stored. Every read wraps `source_sql` as a
@@ -7,14 +7,13 @@ subquery and applies pagination/sort/filter at the Trino layer.
 See ADR 0026.
 
 Endpoints:
-  POST /searches              — save SQL, cache COUNT(*), return sample
-  POST /searches/from-file     — validate IDs against reports_latest, save WHERE id IN (...) SQL
-  POST /reports/query    — ad-hoc SQL, return rows directly (scout_query_sql backend)
-  GET  /searches/{id}         — metadata
-  GET  /searches/{id}/rows    — paginated rows (wraps source_sql)
-  GET  /searches/{id}/reports/{report_id} — single full report from a search
-  GET  /searches/{id}/accessions — DISTINCT accession_number list
-  GET  /searches/{id}/export.csv — streaming CSV
+  POST /api/searches                            — save SQL, cache COUNT(*), return sample
+  POST /api/searches/from-file                  — validate IDs against reports_latest, save WHERE id IN (...) SQL
+  GET  /api/searches/{id}                       — metadata
+  GET  /api/searches/{id}/rows                  — paginated rows (wraps source_sql)
+  GET  /api/searches/{id}/reports/{report_id}   — single full report from a search
+  GET  /api/searches/{id}/accessions            — DISTINCT accession_number list
+  GET  /api/searches/{id}/csv                   — streaming CSV download
 """
 
 from __future__ import annotations
@@ -42,10 +41,10 @@ from ..models import (
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/searches", tags=["searches"])
+router = APIRouter(prefix="/api/searches", tags=["searches"])
 
 
-# Safety cap on submitted IDs for /searches/from-file. The same cap
+# Safety cap on submitted IDs for /api/searches/from-file. The same cap
 # becomes the upper bound on the IN-clause length in the saved SQL.
 _MAX_FROM_FILE = 1_000_000
 
@@ -121,7 +120,41 @@ def _wrap_source_sql(source_sql: str, *, alias: str = "src") -> str:
 
 
 # ---------------------------------------------------------------------------
-# POST /searches — save SQL, cache COUNT, return sample
+# GET /api/searches — owner-scoped list (drives the SPA homepage)
+# ---------------------------------------------------------------------------
+
+
+def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
+    return SearchMeta(
+        id=r["id"],
+        kind=r["kind"],
+        id_column=r["id_column"],
+        count=r["count"],
+        parent_id=r["parent_id"],
+        source_sql=r["source_sql"],
+        owner_sub=r["owner_sub"],
+        created_at=r["created_at"],
+        expires_at=r["expires_at"],
+        last_read_at=r["last_read_at"],
+        highlight_terms=r.get("highlight_terms") or [],
+        sql_explanation=r.get("sql_explanation") or "",
+        owui_chat_id=r.get("owui_chat_id") or "",
+        owui_chat_title=r.get("owui_chat_title") or "",
+    )
+
+
+@router.get("", response_model=list[SearchMeta])
+async def list_searches(
+    user: User = Depends(get_current_user),
+) -> list[SearchMeta]:
+    """Caller's non-expired searches, newest first. Drives the SPA
+    homepage. Owner-scoped — only the authenticated user's own."""
+    rows = await store.list_searches(user.sub)
+    return [_meta_from_row(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# POST /api/searches — save SQL, cache COUNT, return sample
 # ---------------------------------------------------------------------------
 
 
@@ -315,7 +348,7 @@ async def create_search(
 
 
 # ---------------------------------------------------------------------------
-# POST /searches/from-file — validate IDs, save WHERE id IN (...) SQL
+# POST /api/searches/from-file — validate IDs, save WHERE id IN (...) SQL
 # ---------------------------------------------------------------------------
 
 
@@ -334,8 +367,8 @@ async def create_search_from_file(
     them here. We validate each id against reports_latest and save a
     `WHERE <id_col> IN ('a', 'b', ...)` SQL as the search's source.
 
-    Same downstream shape as POST /searches — the saved SQL is what
-    /rows / /accessions / /export.csv re-run on each read."""
+    Same downstream shape as POST /api/searches — the saved SQL is
+    what /rows / /accessions / /csv re-run on each read."""
     if body.id_column not in KNOWN_ID_COLUMNS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -483,7 +516,7 @@ async def create_search_from_file(
 
 
 # ---------------------------------------------------------------------------
-# GET /searches/{id}
+# GET /api/searches/{id}
 # ---------------------------------------------------------------------------
 
 
@@ -583,7 +616,7 @@ def _filter_clause(col: str, value: str, *, alias: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-# GET /searches/{id}/rows — wrap source_sql + paginate / sort / filter
+# GET /api/searches/{id}/rows — wrap source_sql + paginate / sort / filter
 # ---------------------------------------------------------------------------
 
 
@@ -676,7 +709,7 @@ async def get_search_rows(
 
 
 # ---------------------------------------------------------------------------
-# GET /searches/{id}/reports/{report_id} — single full report from a search
+# GET /api/searches/{id}/reports/{report_id} — single full report from a search
 # ---------------------------------------------------------------------------
 
 
@@ -741,7 +774,7 @@ async def get_search_report(
 
 
 # ---------------------------------------------------------------------------
-# GET /searches/{id}/accessions
+# GET /api/searches/{id}/accessions
 # ---------------------------------------------------------------------------
 
 
@@ -785,7 +818,7 @@ async def get_search_accessions(
 
 
 # ---------------------------------------------------------------------------
-# GET /searches/{id}/export.csv — streaming, page-through via OFFSET/LIMIT
+# GET /api/searches/{id}/csv — streaming CSV, page-through via OFFSET/LIMIT
 # ---------------------------------------------------------------------------
 
 
@@ -810,7 +843,7 @@ def _csv_quote(value: Any) -> str:
     return s
 
 
-@router.get("/{search_id}/export.csv")
+@router.get("/{search_id}/csv")
 async def export_search_csv(
     search_id: str,
     user: User = Depends(get_current_user),

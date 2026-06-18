@@ -62,7 +62,7 @@ SEARCH_SIZE = Histogram(
 # dashboard can show the unmatched-rate per import.
 IDS_SUBMITTED = Counter(
     "scout_report_viewer_ids_submitted_total",
-    "Total identifiers submitted via /searches/from-file.",
+    "Total identifiers submitted via /api/searches/from-file.",
     ["id_column"],
 )
 
@@ -80,8 +80,9 @@ OWUI_WEBHOOK_EVENTS = Counter(
     ["action", "result"],  # action: signup|other; result: enabled|skipped|error
 )
 
-# /reports/{id} lazy fetch — separate counter so we can see how much
-# row-expand traffic the SPA generates and tune cache behavior.
+# /api/searches/{id}/reports/{report_id} lazy fetch — separate counter
+# so we can see how much row-expand traffic the SPA generates and tune
+# cache behavior.
 REPORT_FETCH = Counter(
     "scout_report_viewer_report_fetch_total",
     "On-the-fly full-report fetches from the row-expand panel.",

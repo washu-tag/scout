@@ -38,7 +38,7 @@ def test_create_search_increments_counters(client, auth_headers, fake_trino):
         ],
     )
     r = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     )

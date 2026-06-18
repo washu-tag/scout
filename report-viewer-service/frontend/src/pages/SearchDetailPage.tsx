@@ -111,8 +111,8 @@ export default function SearchDetailPage() {
   const lastPage = Math.max(1, Math.ceil(total / limit));
 
   // Build columns once per row-shape change. Lock to COLUMNS_CONFIG —
-  // anything else in the row stays in the underlying data (and in
-  // /export.csv) but isn't surfaced as a column.
+  // anything else in the row stays in the underlying data (and in the
+  // CSV download) but isn't surfaced as a column.
   const available = useMemo<string[]>(
     () => rowsQ.data?.columns ?? (rowsQ.data?.rows?.[0] ? Object.keys(rowsQ.data.rows[0]) : []),
     [rowsQ.data],
@@ -505,7 +505,7 @@ export default function SearchDetailPage() {
                 </button>
               )}
               <a
-                href={`/searches/${encodeURIComponent(searchId)}/export.csv`}
+                href={`/api/searches/${encodeURIComponent(searchId)}/csv`}
                 style={{
                   ...(embedded ? paginationBtnEmbed : paginationBtn),
                   color: '#222',

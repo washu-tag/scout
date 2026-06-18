@@ -35,15 +35,23 @@ spec:
 {{- end }}
 {{- if and .Values.ingress.enabled .Values.ingress.sameOriginAlias.enabled }}
 # Same-origin alias. The OWUI chat host (chat.<env>.tag.rcif.io) proxies
-# `/searches/...` straight through to the report-viewer-service. The viewer is
-# served from the chat origin, so when OWUI embeds it via `message.embeds`,
-# the iframe document is same-origin with the chat page. That lets the
-# viewer access `window.frameElement` and resize itself to fit content —
+# `/spa/...` and the `/api/searches/...` + `/api/reports/...` JSON
+# endpoints through to the report-viewer-service. The viewer is served
+# from the chat origin, so when OWUI embeds it via `message.embeds`,
+# the iframe document is same-origin with the chat page — letting the
+# SPA access `window.frameElement` and resize itself to fit content,
 # fixing the OWUI 0.9.5 cross-origin auto-resize gap that pinned every
 # embedded viewer to 150px tall.
 #
-# Read paths use capability-URL auth (the search_id is the cap), so no
-# auth annotations needed here either.
+# Traefik longest-prefix matching routes `/api/searches/...` and
+# `/api/reports/...` here while bare `/api/...` (everything else) still
+# resolves to OWUI on the chat host. OWUI's catch-all returns its SPA
+# shell for unknown `/api/*` paths rather than 404, so the explicit
+# Ingress rules below are what actually splits the traffic.
+#
+# Capability-style read paths under `/api/searches/{id}/{rows,...}`
+# don't need oauth2-proxy auth annotations — the search_id IS the cap
+# and the service validates ownership at the DB level.
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -71,20 +79,28 @@ spec:
     - host: {{ .Values.ingress.sameOriginAlias.host | quote }}
       http:
         paths:
-          - path: /searches
+          # SPA static + client-side routes. /spa/searches/{id} loads
+          # index.html (SpaStaticFiles fallback) and bootstraps the
+          # React app.
+          - path: /spa
             pathType: Prefix
             backend:
               service:
                 name: {{ include "report-viewer-service.fullname" . }}
                 port:
                   number: {{ .Values.service.port }}
-          # SPA assets + client routes need to be same-origin with the
-          # chat page so the iframe can resize itself (window.frameElement
-          # access). The SPA inside the iframe uses capability-auth via
-          # /searches/{id}/rows (already proxied above) so we don't need
-          # /api/* here — and adding it would collide with OWUI's own
-          # /api/* endpoints on the chat host.
-          - path: /spa
+          # JSON API. The SPA inside the iframe fetches rows / report
+          # detail / accessions / CSV from /api/searches/*; the OWUI
+          # tools post to /api/reports/* and /api/searches. Longest-
+          # prefix match wins over OWUI's catch-all on the same host.
+          - path: /api/searches
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "report-viewer-service.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+          - path: /api/reports
             pathType: Prefix
             backend:
               service:

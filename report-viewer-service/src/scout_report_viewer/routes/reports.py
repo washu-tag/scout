@@ -1,7 +1,7 @@
-"""HTTP routes for `/reports` — RPC-style operations that don't persist
-state. Used by `scout_query_sql` and `scout_get_reports` in the OWUI
-tool, and by the SPA row-expand panel (which posts an array of one ID
-to /reports/read)."""
+"""HTTP routes for `/api/reports` — RPC-style operations that don't
+persist state. Used by `scout_query_sql` and `scout_get_reports` in
+the OWUI tool, and by the SPA row-expand panel (which posts an array
+of one ID to /api/reports/read)."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from ..models import (
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/reports", tags=["reports"])
+router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 
 def _jsonsafe(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -31,7 +31,7 @@ def lift_iframe(content: str, base_url: str) -> str:
         return stripped
     search_id = matches[-1]
     base = base_url.rstrip("/")
-    src = f"{base}/searches/{search_id}"
+    src = f"{base}/spa/searches/{search_id}"
     # We can't put scripts directly in here that fetch /rows (OWUI's
     # artifact sandbox has no allow-same-origin by default — that's a
     # per-user toggle), so for now the artifact srcdoc just hosts an

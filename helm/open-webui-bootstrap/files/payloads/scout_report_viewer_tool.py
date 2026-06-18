@@ -29,13 +29,13 @@ class Tools:
     built-ins (search_notes, view_note, search_chats, etc.).
 
       * `scout_find_reports(sql, highlight_terms?, sql_explanation?)`
-        — POST /searches, saves the SQL, returns a short summary for
-        the LLM plus a viewer iframe for the user. For row-level
+        — POST /api/searches, saves the SQL, returns a short summary
+        for the LLM plus a viewer iframe for the user. For row-level
         discovery. When refining, write a NEW call with the original
         conditions plus the new constraint; the SQL is standalone, no
         placeholder substitution.
 
-      * `scout_query_sql(sql)` — POST /reports/query, runs SQL and
+      * `scout_query_sql(sql)` — POST /api/reports/query, runs SQL and
         returns rows directly to LLM context. No persistence, no
         iframe. For aggregate questions (COUNT, GROUP BY, time-series).
 
@@ -108,7 +108,7 @@ class Tools:
         Build a saved search. Two input modes:
 
         * **SQL mode (default)**: pass `sql` (and `highlight_terms`,
-          `sql_explanation`). The tool POSTs the SQL to `/searches`.
+          `sql_explanation`). The tool POSTs the SQL to `/api/searches`.
         * **File mode**: pass `file_id` (OWUI file ID from the user's
           attachment) and `id_column`. The tool reads the file
           server-side, validates IDs against `reports_latest`, and saves
@@ -493,7 +493,7 @@ class Tools:
             f"Validating {len(ids)} IDs from {file_model.filename}…",
             done=False,
         )
-        url = f"{self.valves.report_viewer_service_url.rstrip('/')}/searches/from-file"
+        url = f"{self.valves.report_viewer_service_url.rstrip('/')}/api/searches/from-file"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -656,7 +656,7 @@ class Tools:
         service computed from the request host."""
         if not self.valves.public_base_url:
             return service_view_url
-        # service_view_url looks like 'http://report-viewer-service/searches/s_xxx'
+        # service_view_url looks like 'http://report-viewer-service/spa/searches/s_xxx'
         # Replace the scheme+host with the public base.
         try:
             path = service_view_url.split("/", 3)[-1]
@@ -670,7 +670,7 @@ class Tools:
         *,
         bearer: Optional[str],
     ) -> dict:
-        url = f"{self.valves.report_viewer_service_url.rstrip('/')}/reports/query"
+        url = f"{self.valves.report_viewer_service_url.rstrip('/')}/api/reports/query"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -723,7 +723,7 @@ class Tools:
         owui_chat_id: Optional[str] = None,
         owui_chat_title: Optional[str] = None,
     ) -> dict:
-        url = f"{self.valves.report_viewer_service_url.rstrip('/')}/searches"
+        url = f"{self.valves.report_viewer_service_url.rstrip('/')}/api/searches"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -748,7 +748,7 @@ class Tools:
         self, search_id: str, *, page: int, limit: int, bearer: Optional[str]
     ) -> dict:
         url = (
-            f"{self.valves.report_viewer_service_url.rstrip('/')}/searches/{search_id}"
+            f"{self.valves.report_viewer_service_url.rstrip('/')}/api/searches/{search_id}"
             f"/rows?page={page}&limit={limit}"
         )
         headers = {"Authorization": f"Bearer {bearer}"} if bearer else {}

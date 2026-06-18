@@ -33,7 +33,7 @@ def _run(coro):
 
 @respx.mock
 def test_search_reports_returns_iframe_with_view_url():
-    create = respx.post(f"{SERVICE}/searches").mock(
+    create = respx.post(f"{SERVICE}/api/searches").mock(
         return_value=httpx.Response(
             201,
             json={
@@ -42,12 +42,12 @@ def test_search_reports_returns_iframe_with_view_url():
                 "id_column": "message_control_id",
                 "kind": "report",
                 "sample": [{"message_control_id": "m1"}],
-                "view_url": f"{SERVICE}/searches/s_abc123/view",
+                "view_url": f"{SERVICE}/spa/searches/s_abc123",
                 "summary": "Materialized 42 rows.",
             },
         )
     )
-    summary = respx.get(f"{SERVICE}/searches/s_abc123/summary").mock(
+    summary = respx.get(f"{SERVICE}/api/searches/s_abc123/summary").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -71,7 +71,7 @@ def test_search_reports_returns_iframe_with_view_url():
     assert "42 reports" in body
     assert "CT (30)" in body  # top modality threaded through
     assert "<iframe" in body
-    assert "/searches/s_abc123/view" in body
+    assert "/spa/searches/s_abc123" in body
     # Total payload size is the whole point: should be tiny (~few hundred B).
     assert len(body) < 1500
 
@@ -90,13 +90,13 @@ def test_search_reports_forwards_bearer_from_oauth_dict():
                 "id_column": "message_control_id",
                 "kind": "report",
                 "sample": [],
-                "view_url": f"{SERVICE}/searches/s_xyz/view",
+                "view_url": f"{SERVICE}/spa/searches/s_xyz",
                 "summary": "",
             },
         )
 
-    respx.post(f"{SERVICE}/searches").mock(side_effect=_check)
-    respx.get(f"{SERVICE}/searches/s_xyz/summary").mock(
+    respx.post(f"{SERVICE}/api/searches").mock(side_effect=_check)
+    respx.get(f"{SERVICE}/api/searches/s_xyz/summary").mock(
         return_value=httpx.Response(
             200, json={"search_id": "s_xyz", "count": 1, "buckets": {}}
         )
@@ -114,7 +114,7 @@ def test_search_reports_forwards_bearer_from_oauth_dict():
 
 @respx.mock
 def test_search_reports_handles_400_from_service():
-    respx.post(f"{SERVICE}/searches").mock(
+    respx.post(f"{SERVICE}/api/searches").mock(
         return_value=httpx.Response(400, json={"detail": "query returned no rows"})
     )
 
@@ -128,7 +128,7 @@ def test_search_reports_handles_400_from_service():
 
 @respx.mock
 def test_public_base_url_rewrites_iframe_host():
-    respx.post(f"{SERVICE}/searches").mock(
+    respx.post(f"{SERVICE}/api/searches").mock(
         return_value=httpx.Response(
             201,
             json={
@@ -138,12 +138,12 @@ def test_public_base_url_rewrites_iframe_host():
                 "kind": "report",
                 "sample": [],
                 # Service computed this from in-cluster request host.
-                "view_url": f"{SERVICE}/searches/s_pub/view",
+                "view_url": f"{SERVICE}/spa/searches/s_pub",
                 "summary": "",
             },
         )
     )
-    respx.get(f"{SERVICE}/searches/s_pub/summary").mock(
+    respx.get(f"{SERVICE}/api/searches/s_pub/summary").mock(
         return_value=httpx.Response(
             200, json={"search_id": "s_pub", "count": 1, "buckets": {}}
         )
@@ -153,14 +153,14 @@ def test_public_base_url_rewrites_iframe_host():
     t.valves.public_base_url = "https://report-viewer.dev02.tag.rcif.io"
     resp = _run(t.search_reports(sql="SELECT 1"))
     body = resp.body.decode()
-    assert "https://report-viewer.dev02.tag.rcif.io/searches/s_pub/view" in body
+    assert "https://report-viewer.dev02.tag.rcif.io/spa/searches/s_pub" in body
     # Must not leak the in-cluster URL.
     assert SERVICE not in body
 
 
 @respx.mock
 def test_read_reports_returns_rows_json():
-    rows_url = f"{SERVICE}/searches/s_qq/rows"
+    rows_url = f"{SERVICE}/api/searches/s_qq/rows"
     respx.get(rows_url, params={"page": 1, "limit": 5}).mock(
         return_value=httpx.Response(
             200,

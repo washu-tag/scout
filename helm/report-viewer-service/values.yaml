@@ -42,11 +42,11 @@ ingress:
   host: ''
   tls: []
   # Optional same-origin alias on the OWUI chat host. When enabled, the
-  # chat ingress also routes `/searches/...` straight to this service,
-  # so the viewer iframe can be loaded as a same-origin URL from chat —
-  # which (a) lets the viewer self-resize via `window.frameElement` and
-  # (b) drops the dependency on OWUI's per-user
-  # `iframeSandboxAllowSameOrigin` toggle for /rows fetches.
+  # chat ingress also routes `/spa/...` and `/api/{searches,reports}/...`
+  # straight to this service, so the viewer iframe can be loaded as a
+  # same-origin URL from chat — which (a) lets the viewer self-resize
+  # via `window.frameElement` and (b) drops the dependency on OWUI's
+  # per-user `iframeSandboxAllowSameOrigin` toggle for SPA fetches.
   sameOriginAlias:
     enabled: false
     host: ''

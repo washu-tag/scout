@@ -1,9 +1,9 @@
 // Single thin fetch wrapper. The SPA is served from the same origin as
 // the FastAPI backend (via the /spa/ StaticFiles mount), so absolute URLs
-// like /searches resolve correctly and the oauth2-proxy session cookie
-// rides along automatically (credentials: 'same-origin' is the default).
-// No bearer plumbing is needed in V1 — auth.py's Path 2 picks up the
-// oauth2-proxy headers injected at the ingress.
+// like /api/searches resolve correctly and the oauth2-proxy session
+// cookie rides along automatically (credentials: 'same-origin' is the
+// default). No bearer plumbing is needed in V1 — auth.py's Path 2 picks
+// up the oauth2-proxy headers injected at the ingress.
 
 export class ApiError extends Error {
   status: number;
@@ -40,8 +40,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
         : null) ?? resp.statusText;
     throw new ApiError(resp.status, detail, body);
   }
-  // Some endpoints (export.csv) aren't JSON, but those aren't called via
-  // this wrapper — they're navigated to directly.
+  // Some endpoints (CSV download) aren't JSON, but those aren't called
+  // via this wrapper — they're navigated to directly.
   return (await resp.json()) as T;
 }
 
@@ -75,14 +75,13 @@ export interface RowsResponse {
   rows: Array<Record<string, unknown>>;
 }
 
-// Detail page calls capability-auth endpoints (search_id IS the cap)
-// instead of /api/searches/{id}* because the page is also loaded inside
-// the OWUI chat iframe, where the user identity isn't always available
-// (oauth2-proxy gates the searches host but not the chat-host alias).
-// /api/searches/{id}* are owner-scoped — fine for the SPA homepage
-// where the user is logged in, but they'd 401 inside the iframe.
+// Detail-page reads use the capability-auth routes (search_id IS the
+// cap) because the page also loads inside the OWUI chat iframe, where
+// owner-scoped routes would 401 without a session cookie. List + meta
+// are owner-scoped; rows/reports/accessions/csv treat the search_id as
+// the capability.
 export function getSearch(searchId: string): Promise<SearchMeta> {
-  return api<SearchMeta>(`/searches/${encodeURIComponent(searchId)}`);
+  return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
 }
 
 export interface RowsParams {
@@ -130,7 +129,7 @@ export interface ReportDetail {
 // powers the future read_reports LLM tool (single or batched).
 export function getReport(searchId: string, reportId: string): Promise<ReportDetail> {
   return api<ReportDetail>(
-    `/searches/${encodeURIComponent(searchId)}/reports/${encodeURIComponent(reportId)}`,
+    `/api/searches/${encodeURIComponent(searchId)}/reports/${encodeURIComponent(reportId)}`,
   );
 }
 
@@ -144,5 +143,5 @@ export function getSearchRows(searchId: string, params: RowsParams): Promise<Row
   for (const [col, val] of Object.entries(params.filters ?? {})) {
     if (val) qs.set(`filter.${col}`, val);
   }
-  return api<RowsResponse>(`/searches/${encodeURIComponent(searchId)}/rows?${qs.toString()}`);
+  return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows?${qs.toString()}`);
 }

@@ -9,7 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from . import logging_setup, metrics, telemetry
 from .config import settings
 from .db import close_pool, ensure_schema
-from .routes import api_router, reports_router, searches_router, owui_webhook_router
+from .routes import reports_router, searches_router, owui_webhook_router
 from .security import SecurityHeadersMiddleware
 
 # Replace stdlib handlers with our JSON formatter BEFORE anything else
@@ -78,15 +78,15 @@ def create_app() -> FastAPI:
 
     app.include_router(searches_router)
     app.include_router(reports_router)
-    app.include_router(api_router)
     app.include_router(owui_webhook_router)
 
     # SPA static files. Vite builds frontend/ into src/scout_report_viewer/static/;
-    # pip install carries those files alongside the Python code. The mount is
-    # at /spa/ for the V1 first slice so it doesn't collide with the existing
-    # / and /searches/ routes; the SPA's own client-side router takes over
-    # once /spa/index.html loads. html=True lets unmapped /spa/* paths fall
-    # back to index.html so client-side route refreshes work.
+    # pip install carries those files alongside the Python code. JSON/RPC
+    # endpoints all live under /api/, the SPA shell mounts under /spa/, so
+    # the two never collide. The SPA's client-side router (basename=/spa)
+    # takes over once /spa/index.html loads. html=True lets unmapped
+    # /spa/* paths fall back to index.html so client-side route refreshes
+    # work.
     _spa_dir = Path(__file__).parent / "static"
     if _spa_dir.is_dir():
         app.mount("/spa", SpaStaticFiles(directory=_spa_dir, html=True), name="spa")

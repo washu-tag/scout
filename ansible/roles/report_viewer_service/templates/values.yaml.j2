@@ -119,9 +119,10 @@ ingress:
       kube-system-oauth2-proxy-auth@kubernetescrd
   host: "{{ report_viewer_service_host }}"
   # Same-origin alias on the OWUI chat host. The chat ingress also
-  # routes `/searches/...` to this service, so the viewer iframe can
-  # be loaded as a same-origin URL from chat — fixing the OWUI 0.9.5
-  # cross-origin embed height bug (every embed pinned to 150px).
+  # routes `/spa/searches/...` and the `/api/...` JSON endpoints to
+  # this service, so the viewer iframe can be loaded as a same-origin
+  # URL from chat — fixing the OWUI 0.9.5 cross-origin embed height
+  # bug (every embed pinned to 150px).
   sameOriginAlias:
     enabled: {{ report_viewer_service_chat_alias_enabled | default(true) | bool | to_json }}
     host: "chat.{{ server_hostname }}"

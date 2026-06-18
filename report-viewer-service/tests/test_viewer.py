@@ -6,12 +6,12 @@ from __future__ import annotations
 def test_view_returns_html_for_owner(client, auth_headers, fake_trino):
     fake_trino(["message_control_id"], [{"message_control_id": "m1"}])
     dsid = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     ).json()["search_id"]
 
-    r = client.get(f"/searches/{dsid}/view", headers=auth_headers)
+    r = client.get(f"/api/searches/{dsid}/view", headers=auth_headers)
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     # Page contains the search id and the Tabulator integrity tag —
@@ -24,13 +24,13 @@ def test_view_returns_html_for_owner(client, auth_headers, fake_trino):
 def test_view_404_for_other_user(client, auth_headers, fake_trino):
     fake_trino(["message_control_id"], [{"message_control_id": "m1"}])
     dsid = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     ).json()["search_id"]
 
     r = client.get(
-        f"/searches/{dsid}/view",
+        f"/api/searches/{dsid}/view",
         headers={"X-Auth-Request-Preferred-Username": "bob"},
     )
     assert r.status_code == 404
@@ -41,7 +41,7 @@ def test_accessions_returns_deduped_list(client, auth_headers, fake_trino):
         ["message_control_id"], [{"message_control_id": f"m{i}"} for i in range(3)]
     )
     dsid = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     ).json()["search_id"]
@@ -50,7 +50,7 @@ def test_accessions_returns_deduped_list(client, auth_headers, fake_trino):
         ["accession_number"],
         [{"accession_number": "ACC100"}, {"accession_number": "ACC200"}],
     )
-    r = client.get(f"/searches/{dsid}/accessions", headers=auth_headers)
+    r = client.get(f"/api/searches/{dsid}/accessions", headers=auth_headers)
     assert r.status_code == 200
     assert r.json()["accessions"] == ["ACC100", "ACC200"]
 
@@ -61,7 +61,7 @@ def test_export_csv_streams_with_header_and_rows(client, auth_headers, fake_trin
         [{"message_control_id": "m1"}, {"message_control_id": "m2"}],
     )
     dsid = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     ).json()["search_id"]
@@ -97,7 +97,7 @@ def test_export_csv_streams_with_header_and_rows(client, auth_headers, fake_trin
             },
         ],
     )
-    r = client.get(f"/searches/{dsid}/export.csv", headers=auth_headers)
+    r = client.get(f"/api/searches/{dsid}/csv", headers=auth_headers)
     assert r.status_code == 200
     assert "text/csv" in r.headers["content-type"]
     assert f"{dsid}.csv" in r.headers["content-disposition"]
@@ -119,7 +119,7 @@ def test_export_csv_empty_search_returns_header_only(client, auth_headers, fake_
     # handles the empty id_list gracefully — only the header line.
     fake_trino(["message_control_id"], [{"message_control_id": "only"}])
     dsid = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     ).json()["search_id"]
@@ -136,7 +136,7 @@ def test_export_csv_empty_search_returns_header_only(client, auth_headers, fake_
         ],
         [],
     )
-    r = client.get(f"/searches/{dsid}/export.csv", headers=auth_headers)
+    r = client.get(f"/api/searches/{dsid}/csv", headers=auth_headers)
     assert r.status_code == 200
     lines = r.text.strip().splitlines()
     assert lines == [

@@ -1,4 +1,4 @@
-"""End-to-end tests for the /searches routes.
+"""End-to-end tests for the /api/searches routes.
 
 Skipped unless `REPORT_VIEWER_TEST_DATABASE_URL` is exported — they exercise
 the real Postgres schema with a mocked Trino. Run locally with:
@@ -47,7 +47,7 @@ def _sample_rows() -> list[dict]:
 def test_create_search_happy_path(client, auth_headers, fake_trino):
     fake_trino(_sample_columns(), _sample_rows())
     r = client.post(
-        "/searches",
+        "/api/searches",
         json={
             "sql": "SELECT message_control_id, modality, year, service_name FROM reports_latest"
         },
@@ -59,13 +59,13 @@ def test_create_search_happy_path(client, auth_headers, fake_trino):
     assert body["id_column"] == "message_control_id"
     assert body["search_id"].startswith("ds_")
     assert len(body["sample"]) == 3
-    assert body["view_url"].endswith(f"/searches/{body['search_id']}/view")
+    assert body["view_url"].endswith(f"/spa/searches/{body['search_id']}")
 
 
 def test_create_search_requires_known_id_column(client, auth_headers, fake_trino):
     fake_trino(["modality", "year"], [{"modality": "CT", "year": 2024}])
     r = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT modality, year FROM reports_latest"},
         headers=auth_headers,
     )
@@ -79,7 +79,7 @@ def test_create_search_explicit_id_column(client, auth_headers, fake_trino):
         [{"my_id": "a", "modality": "CT"}, {"my_id": "b", "modality": "MR"}],
     )
     r = client.post(
-        "/searches",
+        "/api/searches",
         json={
             "sql": "SELECT my_id, modality FROM reports_latest",
             "id_column": "my_id",
@@ -94,18 +94,18 @@ def test_create_search_explicit_id_column(client, auth_headers, fake_trino):
 def test_get_meta_returns_404_for_other_user(client, auth_headers, fake_trino):
     fake_trino(_sample_columns(), _sample_rows())
     r = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     )
     dsid = r.json()["search_id"]
     # alice can see hers.
-    r1 = client.get(f"/searches/{dsid}", headers=auth_headers)
+    r1 = client.get(f"/api/searches/{dsid}", headers=auth_headers)
     assert r1.status_code == 200
 
     # bob cannot.
     r2 = client.get(
-        f"/searches/{dsid}",
+        f"/api/searches/{dsid}",
         headers={"X-Auth-Request-Preferred-Username": "bob"},
     )
     assert r2.status_code == 404
@@ -118,7 +118,7 @@ def test_get_rows_paginates_in_id_list_order(client, auth_headers, fake_trino):
         [{"message_control_id": f"m{i}"} for i in range(5)],
     )
     r = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     )
@@ -133,7 +133,7 @@ def test_get_rows_paginates_in_id_list_order(client, auth_headers, fake_trino):
             {"message_control_id": "m0", "modality": "MR"},
         ],
     )
-    r = client.get(f"/searches/{dsid}/rows?page=1&limit=2", headers=auth_headers)
+    r = client.get(f"/api/searches/{dsid}/rows?page=1&limit=2", headers=auth_headers)
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["page"] == 1
@@ -145,12 +145,12 @@ def test_get_rows_paginates_in_id_list_order(client, auth_headers, fake_trino):
 def test_get_rows_returns_empty_past_end(client, auth_headers, fake_trino):
     fake_trino(["message_control_id"], [{"message_control_id": "only"}])
     dsid = client.post(
-        "/searches",
+        "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     ).json()["search_id"]
 
     # No fake_trino enqueue — the route must short-circuit before calling Trino.
-    r = client.get(f"/searches/{dsid}/rows?page=99&limit=10", headers=auth_headers)
+    r = client.get(f"/api/searches/{dsid}/rows?page=99&limit=10", headers=auth_headers)
     assert r.status_code == 200
     assert r.json()["rows"] == []

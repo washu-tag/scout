@@ -81,7 +81,7 @@ def test_valid_bearer_authenticates_via_sub_claim(keypair):
     token = _mint(priv)
     with TestClient(create_app()) as client:
         r = client.post(
-            "/searches",
+            "/api/searches",
             json={"sql": "SELECT 1"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -95,7 +95,7 @@ def test_expired_bearer_returns_401(keypair):
     token = _mint(priv, exp=int(time.time()) - 60)
     with TestClient(create_app()) as client:
         r = client.post(
-            "/searches",
+            "/api/searches",
             json={"sql": "SELECT 1"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -114,7 +114,7 @@ def test_unknown_kid_returns_401(keypair):
     )
     with TestClient(create_app()) as client:
         r = client.post(
-            "/searches",
+            "/api/searches",
             json={"sql": "SELECT 1"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -131,7 +131,7 @@ def test_bearer_without_sub_returns_401(keypair):
     )
     with TestClient(create_app()) as client:
         r = client.post(
-            "/searches",
+            "/api/searches",
             json={"sql": "SELECT 1"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -143,7 +143,7 @@ def test_oauth2_proxy_header_still_works(keypair):
     # shouldn't break it.
     with TestClient(create_app()) as client:
         r = client.post(
-            "/searches",
+            "/api/searches",
             json={"sql": "SELECT 1"},
             headers={"X-Auth-Request-Preferred-Username": "alice"},
         )
@@ -157,7 +157,7 @@ def test_invalid_bearer_does_NOT_fall_through_to_header(keypair):
     expired = _mint(priv, exp=int(time.time()) - 60)
     with TestClient(create_app()) as client:
         r = client.post(
-            "/searches",
+            "/api/searches",
             json={"sql": "SELECT 1"},
             headers={
                 "Authorization": f"Bearer {expired}",
