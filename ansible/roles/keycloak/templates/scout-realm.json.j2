@@ -267,7 +267,7 @@
           "post.logout.redirect.uris": "https://{{ server_hostname }}"
         },
         {#- trino-audience: oauth2-proxy's cached access token is forwarded
-            via X-Auth-Request-Access-Token to datasets-service, which
+            via X-Auth-Request-Access-Token to report-viewer-service, which
             Bearer-forwards it to Trino. cookie_refresh keeps the token
             fresh; trino-audience ensures Trino accepts aud. -#}
         "defaultClientScopes": [
@@ -520,7 +520,7 @@
                 required-audience=mcp-trino, then impersonates the user
                 on its own service-principal Trino call (ADR 0022).
 
-              * trino-audience (aud=trino) — datasets-service forwards
+              * trino-audience (aud=trino) — report-viewer-service forwards
                 the same user token to Trino as Bearer (JWT pass-through,
                 ADR 0022 Jupyter pattern); Trino requires aud=trino.
 

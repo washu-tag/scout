@@ -12,6 +12,17 @@ const compat = new FlatCompat({
 });
 
 module.exports = tseslint.config(
+  // Built artifacts — minified Vite output that ships inside the
+  // service container so FastAPI's StaticFiles can serve the SPA at
+  // /. Don't lint these; the rules don't apply to bundler output.
+  {
+    ignores: [
+      "**/static/assets/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/node_modules/**",
+    ],
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   ...compat.extends("next/core-web-vitals"),

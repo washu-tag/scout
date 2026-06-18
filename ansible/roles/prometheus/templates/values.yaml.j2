@@ -132,15 +132,15 @@ extraScrapeConfigs: |
         regex: metrics
       - source_labels: [__meta_kubernetes_namespace]
         target_label: namespace
-{% if enable_datasets_service | default(false) | bool %}
+{% if enable_report_viewer_service | default(false) | bool %}
 
-  # Optional — gated on `enable_datasets_service`. The service exposes
+  # Optional — gated on `enable_report_viewer_service`. The service exposes
   # /metrics via prometheus-fastapi-instrumentator + custom counters in
-  # `scout_datasets.metrics`. Same static-target pattern as launchpad /
+  # `scout_report_viewer.metrics`. Same static-target pattern as launchpad /
   # keycloak; no kubernetes_sd needed since the chart's Service DNS is
   # stable.
-  - job_name: datasets-service
+  - job_name: report-viewer-service
     metrics_path: /metrics
     static_configs:
-      - targets: ['{{ datasets_service_helm_release_name | default("datasets-service") }}.{{ datasets_service_namespace | default(chatbot_namespace) }}:{{ datasets_service_port | default(8000) }}']
+      - targets: ['{{ report_viewer_service_helm_release_name | default("report-viewer-service") }}.{{ report_viewer_service_namespace | default(chatbot_namespace) }}:{{ report_viewer_service_port | default(8000) }}']
 {% endif %}

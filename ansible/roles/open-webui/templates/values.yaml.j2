@@ -179,10 +179,10 @@ extraEnvVars:
     value: 'ollama'
 
   # Allow OWUI's outbound webhook to target the cluster-internal
-  # datasets-service URL (ADR 0026 auto-enable). OWUI's `validate_url`
+  # report-viewer-service URL (ADR 0026 auto-enable). OWUI's `validate_url`
   # SSRF guard otherwise rejects any hostname resolving to an RFC1918
   # private IP, which blocks every in-cluster Service DNS name —
-  # `datasets-service.scout-analytics:8000` resolves to a 10.x ClusterIP
+  # `report-viewer-service.scout-analytics:8000` resolves to a 10.x ClusterIP
   # and is denied at OWUI's `post_webhook` validation step.
   #
   # Upstream OWUI explicitly endorses this env var as the documented

@@ -312,7 +312,7 @@ open_webui_filter_functions:
 # multiple releases.
 # ----------------------------------------------------------------------------
 open_webui_filter_functions_to_delete:
-  # Retired in favor of the search_reports tool emitting the viewer URL
+  # Retired in favor of the scout_find_reports tool emitting the viewer URL
   # via OWUI's `message.embeds` event. The filter's outlet was unreliable
   # (OWUI 0.9.5 silently skips it for some tool-calling completions) and
   # its content rewrite leaked BEGIN/END comment markers into chats.
@@ -329,27 +329,25 @@ open_webui_filter_functions_to_delete:
 # name, description, source_file, and optional valves.
 # ----------------------------------------------------------------------------
 open_webui_tool_functions:
-  - id: scout_datasets_tool
-    name: Scout Datasets Tool
-    description: Materialize cohort queries against the Scout datasets-service and emit the viewer iframe via OWUI's message.embeds field.
-    source_file: scout_datasets_tool.py
+  - id: scout_report_viewer_tool
+    name: Scout Report Viewer Tool
+    description: Run report searches against the Scout report-viewer-service and emit the viewer iframe via OWUI's message.embeds field.
+    source_file: scout_report_viewer_tool.py
     valves:
-      datasets_service_url: 'http://datasets-service.{{ datasets_service_namespace | default(chatbot_namespace) }}:8000'
+      report_viewer_service_url: 'http://report-viewer-service.{{ report_viewer_service_namespace | default(chatbot_namespace) }}:8000'
       # The viewer URL the tool emits to OWUI's message.embeds must be
       # SAME-ORIGIN with the chat page, otherwise OWUI's iframe-resize
       # onload handler silently fails on cross-origin and the embed
-      # stays at the browser default 150px. The datasets-service chart
-      # exposes `/datasets/...` on the chat host via the same-origin
+      # stays at the browser default 150px. The report-viewer-service chart
+      # exposes `/searches/...` on the chat host via the same-origin
       # alias ingress (sameOriginAlias.enabled = true), so we point
-      # the embed src here. The legacy datasets.<server_hostname> host
-      # still works for direct browser access — just don't use it as
-      # the iframe src.
+      # the embed src here.
       public_base_url: 'https://chat.{{ server_hostname }}'
       iframe_height_px: 500
       request_timeout_seconds: 120
       # Keycloak refresh-token grant credentials. The tool uses these
       # to refresh OWUI's cached bearer right before forwarding to
-      # datasets-service when the cached access token is near expiry.
+      # report-viewer-service when the cached access token is near expiry.
       # Without these, the tool just forwards the stale bearer and we
       # see "bearer rejected: token expired" 401s on the backend.
       keycloak_token_url: '{{ keycloak_oidc_token_url }}'

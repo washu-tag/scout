@@ -9,7 +9,7 @@ config:
     allowed_roles = "oauth2-proxy:oauth2-proxy-user"
     cookie_expire = "{{ oauth2_proxy_cookie_expire }}"
     # Refresh the cached access token via the refresh_token before it
-    # expires so downstream Bearer-forward consumers (datasets-service →
+    # expires so downstream Bearer-forward consumers (report-viewer-service →
     # Trino) don't see "JWT expired". 4/5 of the realm's accessTokenLifespan
     # matches ADR 0024's refresh-at-⅘ ratio (Jupyter's auth_refresh_age is
     # derived from the same variable for the same reason).
@@ -36,7 +36,7 @@ config:
     # it from the request and threads it into spawned kernels.
     set_xauthrequest = true
     # Also emit X-Auth-Request-Access-Token so services that pass-through to
-    # Trino (datasets-service viewer endpoints) can Bearer-forward the
+    # Trino (report-viewer-service viewer endpoints) can Bearer-forward the
     # user's JWT instead of impersonating via X-Trino-User. The middleware
     # in deploy.yaml must include this header in authResponseHeaders for
     # it to actually reach upstreams.

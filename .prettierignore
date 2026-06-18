@@ -1,2 +1,10 @@
 helm/**/*.yaml
 !helm/**/*values.yaml
+
+# Built SPA bundles shipped inside the report-viewer-service image so
+# FastAPI's StaticFiles can serve them. They're Vite output, not
+# source — prettier reformatting them is pointless churn and balloons
+# the commit diff.
+**/static/assets/**
+**/dist/**
+**/build/**

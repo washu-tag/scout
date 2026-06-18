@@ -1,0 +1,12 @@
+# Vite build output. The frontend/ folder builds INTO the Python package's
+# static/ directory so `pip install` ships the SPA with the service. Generated
+# artifacts shouldn't be committed; build them in the deploy pipeline.
+src/scout_searchs/static/
+
+# Python build / cache
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/

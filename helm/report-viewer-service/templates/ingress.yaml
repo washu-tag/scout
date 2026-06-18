@@ -1,0 +1,94 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "report-viewer-service.fullname" . }}
+  labels:
+    {{- include "report-viewer-service.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- range .Values.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "report-viewer-service.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+{{- end }}
+{{- if and .Values.ingress.enabled .Values.ingress.sameOriginAlias.enabled }}
+# Same-origin alias. The OWUI chat host (chat.<env>.tag.rcif.io) proxies
+# `/searches/...` straight through to the report-viewer-service. The viewer is
+# served from the chat origin, so when OWUI embeds it via `message.embeds`,
+# the iframe document is same-origin with the chat page. That lets the
+# viewer access `window.frameElement` and resize itself to fit content —
+# fixing the OWUI 0.9.5 cross-origin auto-resize gap that pinned every
+# embedded viewer to 150px tall.
+#
+# Read paths use capability-URL auth (the search_id is the cap), so no
+# auth annotations needed here either.
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "report-viewer-service.fullname" . }}-chat-alias
+  labels:
+    {{- include "report-viewer-service.labels" . | nindent 4 }}
+  {{- with .Values.ingress.sameOriginAlias.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.sameOriginAlias.tls }}
+  tls:
+    {{- range .Values.ingress.sameOriginAlias.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.sameOriginAlias.host | quote }}
+      http:
+        paths:
+          - path: /searches
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "report-viewer-service.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+          # SPA assets + client routes need to be same-origin with the
+          # chat page so the iframe can resize itself (window.frameElement
+          # access). The SPA inside the iframe uses capability-auth via
+          # /searches/{id}/rows (already proxied above) so we don't need
+          # /api/* here — and adding it would collide with OWUI's own
+          # /api/* endpoints on the chat host.
+          - path: /spa
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "report-viewer-service.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+{{- end }}

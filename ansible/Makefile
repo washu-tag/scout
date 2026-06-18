@@ -1,6 +1,6 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-valkey install-auth install-lake install-trino install-superset install-orchestrator \
-    install-extractor install-monitor install-jupyter install-launchpad install-voila install-datasets-service \
+    install-extractor install-monitor install-jupyter install-launchpad install-voila install-report-viewer-service \
     install-staging verify-node echo
 
 # Variables
@@ -96,8 +96,8 @@ install-launchpad:
 install-voila:
 	$(ANSIBLE_CMD) playbooks/voila.yaml
 
-install-datasets-service:
-	$(ANSIBLE_CMD) playbooks/datasets-service.yaml
+install-report-viewer-service:
+	$(ANSIBLE_CMD) playbooks/report-viewer-service.yaml
 
 # For tests
 install-orthanc:
