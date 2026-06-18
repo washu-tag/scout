@@ -473,6 +473,8 @@ it so it's not a blocker.
 
 - Test with Qwen 3.6
 
+- TTL for searches? did we do? can you delete?
+
 - SPA emits parent.postMessage({type:'iframe:height', height: N}, '*') for height instead for better cross-origin support.
 
 - Test aggregate queries and non-cohort queries from the LLM.
@@ -525,7 +527,15 @@ it so it's not a blocker.
 
   3. **Search ID entropy.** `ids.py:14` generates 6 base62 chars and the comment claims "56 bits" — actual entropy is `log2(62^6) ≈ 35.7 bits`, brute-forceable. After fix #2 this is owner-scoped so the attack window is narrower, but it's a cheap fix on top: bump to ~16 chars (~95 bits) and correct the comment math.
 
+  4. **OWUI tool's Keycloak refresh creds may be vestigial.** `helm/open-webui-bootstrap/files/payloads/scout_report_viewer_tool.py` carries `keycloak_token_url` / `keycloak_client_id` / `keycloak_client_secret` valves so the tool can refresh the user's access token via refresh-token grant right before forwarding to report-viewer-service. The stated reason — "OWUI's refresh loop drifts past `exp` so the cached bearer can be stale at tool-fire time" — was never verified. If OWUI 0.9.6's auth-state refresh tracks `exp` (half-life rotation like JupyterHub's `eagerTokenRefresh`), the Scout-side refresh never fires and the three valves are dead code that pin the OWUI Keycloak client secret into the bootstrap payload unnecessarily. Check by instrumenting the refresh path with one log line and watching a normal workday on dev02, or by reading OWUI 0.9.6's auth-state refresh source. If silent, delete the refresh code + drop the three valves + revert the OWUI Keycloak client's exposure of the refresh-token grant where unneeded.
+
+  5. Can you log out of this new service??
+
 - Test CSV Upload and Download.
+
+- Apply to Chat Filter is not working, also how does this work when you have multiple tables open in the chat?
+
+- Better button names needed. SQL and CSV and Apply to Chat are not clear enough.
 
 - Improve "Explain SQL" UI / UX
   - The sql is pretty ugly to read
@@ -550,4 +560,8 @@ it so it's not a blocker.
   Note: the receiver already exists at `routes/owui_webhook.py` with the trigger wired. Earlier work in this session built it around a fictional "auto-enable" role-flip — replace that body with `_apply_iframe_defaults(user_id)` doing the one-row `jsonb_set` UPDATE.
 
   Earlier sections of this ADR's "OWUI new-user auto-enable" framing were misleading — it was never about flipping `pending → enabled` (users are already auto-enabled in the current realm config) — it was always about getting these UI flags set so the iframe works out of the box.
+
+- **Service owns its own public URL; drop the tool's `public_base_url` valve.** Today `routes/searches.py:_view_url` builds `view_url` from `str(request.base_url)`, which is the URL the inbound request came in on. When the OWUI tool dials the in-cluster Service DNS (`http://report-viewer-service.scout-analytics:8000`), that's what gets stamped into the response — useless to a browser. The tool's `public_base_url` valve (`ansible/roles/open-webui/defaults/main.yaml`) exists solely to swap scheme+host back to the public ingress host. Two soft problems with the current shape: (a) deriving response URLs from a caller-supplied `Host` header is the canonical host-header-injection pattern (no direct exploit today since the response goes back to the requester, but if shared-cohort flows surface a `view_url` to a different user the poisoned URL becomes a phishing vector); (b) every future caller has to know the override trick.
+
+  Fix: add a `REPORT_VIEWER_PUBLIC_URL` env var on the service (rendered in `ansible/roles/report_viewer_service/templates/values.yaml.j2` from the same `report_viewer_service_host` already used by the ingress), have `_view_url` use it instead of `request.base_url`, drop `public_base_url` / `keycloak_*` plumbing from the tool valves (the latter pending the #4 verification above). After that the tool's only URL knob is the in-cluster service URL — no naming pair to bikeshed.
 
