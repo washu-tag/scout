@@ -39,26 +39,17 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// Iframe auto-resize. When loaded as an iframe whose parent is on the
-// same origin (chat-host alias), grow ourselves to fit content so OWUI's
-// `message.embeds` stops pinning the embed to the default ~150-250px.
-// Same pattern as the legacy Tabulator viewer in routes/searches.py.
-// Cross-origin case throws on window.frameElement access — silently
-// catch and let OWUI's own onload handler (if any) take over.
-// Embed iframe height policy: fixed 500px. Big enough to show ~10
-// rows + header + pagination, small enough to not push the chat
-// composer off-screen. The table container inside owns its own
-// vertical scroll so a 1000-row search doesn't stretch the iframe.
+// Fixed 500px, delivered via postMessage. OWUI's FullHeightIframe.svelte
+// listens for {type:'iframe:height'} and sets the iframe height — works
+// cross-origin (frameElement does not). Big enough to show ~10 rows +
+// header + pagination, small enough not to push the chat composer off
+// screen. The table container inside owns its own vertical scroll past
+// that.
 const EMBED_HEIGHT_PX = 500;
 
 function fitParentIframe() {
-  try {
-    const f = window.frameElement as HTMLIFrameElement | null;
-    if (!f) return;
-    f.style.height = EMBED_HEIGHT_PX + 'px';
-  } catch {
-    /* cross-origin — can't resize */
-  }
+  if (window.parent === window) return; // not embedded
+  window.parent.postMessage({ type: 'iframe:height', height: EMBED_HEIGHT_PX }, '*');
 }
 window.addEventListener('load', fitParentIframe);
 // Re-fire after async data lands (TanStack Query fetch → table renders).

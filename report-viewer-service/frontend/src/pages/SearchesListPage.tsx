@@ -15,11 +15,9 @@ function rowStyle(): React.CSSProperties {
   };
 }
 
-// Build an OWUI chat URL. The SPA can be loaded from either:
-//   - chat.<env>/spa/...           (iframe via same-origin alias)
-//   - report-viewer.<env>/spa/...  (standalone admin view)
-// In the first case, /c/{chatId} is on the same host. In the second,
-// we need to swap the leading "report-viewer." for "chat." to hop hosts.
+// Build an OWUI chat URL. The SPA is always served from report-viewer.<env>/spa/...
+// (iframe embed and standalone admin view share the host now); swap the
+// leading "report-viewer." for "chat." to land on the chat origin.
 function chatUrl(chatId: string): string {
   const host = window.location.host;
   const chatHost = host.startsWith('report-viewer.')

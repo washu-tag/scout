@@ -331,18 +331,15 @@ open_webui_filter_functions_to_delete:
 open_webui_tool_functions:
   - id: scout_report_viewer_tool
     name: Scout Report Viewer Tool
-    description: Run report searches against the Scout report-viewer-service and emit the viewer iframe via OWUI's message.embeds field.
+    description: Search for radiology reports in Scout's Delta Lake and view results in an embedded iframe.
     source_file: scout_report_viewer_tool.py
     valves:
       report_viewer_service_url: 'http://report-viewer-service.{{ report_viewer_service_namespace | default(chatbot_namespace) }}:8000'
-      # The viewer URL the tool emits to OWUI's message.embeds must be
-      # SAME-ORIGIN with the chat page, otherwise OWUI's iframe-resize
-      # onload handler silently fails on cross-origin and the embed
-      # stays at the browser default 150px. The report-viewer-service chart
-      # exposes `/searches/...` on the chat host via the same-origin
-      # alias ingress (sameOriginAlias.enabled = true), so we point
-      # the embed src here.
-      public_base_url: 'https://chat.{{ server_hostname }}'
+      # Viewer URL the tool emits to OWUI's message.embeds. The SPA
+      # posts {type:'iframe:height'} to its parent on load and resize,
+      # which OWUI's FullHeightIframe.svelte (>= 0.9.5) honors for
+      # iframes regardless of origin.
+      public_base_url: 'https://report-viewer.{{ server_hostname }}'
       iframe_height_px: 500
       request_timeout_seconds: 120
       # Keycloak refresh-token grant credentials. The tool uses these
@@ -350,6 +347,7 @@ open_webui_tool_functions:
       # report-viewer-service when the cached access token is near expiry.
       # Without these, the tool just forwards the stale bearer and we
       # see "bearer rejected: token expired" 401s on the backend.
+      # TODO: IS THIS NEEDED? SEEMS SPECULATIVE
       keycloak_token_url: '{{ keycloak_oidc_token_url }}'
       keycloak_client_id: '{{ keycloak_open_webui_client_id }}'
       keycloak_client_secret: '{{ keycloak_open_webui_client_secret }}'

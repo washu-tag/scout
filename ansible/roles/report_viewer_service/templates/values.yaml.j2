@@ -98,6 +98,7 @@ networkPolicy:
   # Phase 4 needs OWUI's tool runtime to call our service in-cluster. Same
   # namespace (chatbot_namespace = scout_analytics), so a bare podSelector
   # suffices — k8s defaults to same-ns when namespaceSelector is omitted.
+  # TODO WHAT IS THIS PHASE 4?? CLEANUP
   extraFrom:
     - podSelector:
         matchLabels:
@@ -113,25 +114,9 @@ ingress:
   # No security-headers middleware: it sets `frame-ancestors 'none'`
   # which would block the chat iframe. The app emits a narrower CSP via
   # response middleware that allows chat.<server_hostname> to embed us.
+  # TODO: LOOK INTO THIS CSP CONFIG
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd
   host: "{{ report_viewer_service_host }}"
-  # Same-origin alias on the OWUI chat host. The chat ingress also
-  # routes `/spa/searches/...` and the `/api/...` JSON endpoints to
-  # this service, so the viewer iframe can be loaded as a same-origin
-  # URL from chat — fixing the OWUI 0.9.5 cross-origin embed height
-  # bug (every embed pinned to 150px).
-  sameOriginAlias:
-    enabled: {{ report_viewer_service_chat_alias_enabled | default(true) | bool | to_json }}
-    host: "chat.{{ server_hostname }}"
-    annotations:
-      traefik.ingress.kubernetes.io/router.middlewares: >-
-        kube-system-oauth2-proxy-error@kubernetescrd,
-        kube-system-oauth2-proxy-auth@kubernetescrd
-    # TLS cert for chat host is provisioned by the open-webui ingress,
-    # not this chart — leaving tls: [] makes Traefik fall through to
-    # the existing chat-host SAN coverage rather than requesting a
-    # second cert for the same name.
-    tls: []

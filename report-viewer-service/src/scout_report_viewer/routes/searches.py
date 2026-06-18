@@ -97,9 +97,10 @@ def _qualified_reports() -> str:
 
 
 def _view_url(request: Request, search_id: str) -> str:
-    # The OWUI tool overwrites scheme+host via its public_base_url
-    # valve to point at the chat-host same-origin alias; we just
-    # supply the path. `/spa/searches/{id}` is the React detail page.
+    # The OWUI tool rewrites scheme+host via its public_base_url valve
+    # (set to report-viewer.<env> so the iframe loads cross-origin to
+    # chat and resizes via postMessage). We just supply the path.
+    # `/spa/searches/{id}` is the React detail page.
     base = str(request.base_url).rstrip("/")
     return f"{base}/spa/searches/{search_id}"
 

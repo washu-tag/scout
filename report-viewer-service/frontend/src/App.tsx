@@ -2,11 +2,12 @@ import { Outlet } from 'react-router-dom';
 import { isEmbedded } from './embed';
 
 // App shell — outer layout shared by every route. Two modes:
-//   1. Standalone (searches.<env>/spa/...): full chrome — banner header,
-//      page padding, "All searches" back link.
-//   2. Embedded (chat host iframe, same-origin alias): chrome stripped —
-//      no banner, minimal padding, no back link. The chat itself
-//      provides the surrounding context; the iframe is just the table.
+//   1. Standalone (report-viewer.<env>/spa/...): full chrome — banner
+//      header, page padding, "All searches" back link.
+//   2. Embedded (chat iframe; iframe is cross-origin to chat): chrome
+//      stripped — no banner, minimal padding, no back link. The chat
+//      itself provides the surrounding context; the iframe is just the
+//      table.
 function App() {
   const embedded = isEmbedded();
   if (embedded) {

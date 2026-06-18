@@ -546,15 +546,13 @@ export default function SearchDetailPage() {
 
 // Apply the active filters as a chat-side refinement.
 //
-// The SPA iframe is served from the OWUI chat host's same-origin alias
-// (https://chat.<env>/spa/...), so window.parent.document is reachable.
-// We poke OWUI's composer directly: find the contenteditable, set its
-// text, dispatch input + Enter events so SvelteKit's reactive bindings
-// fire and the message submits. This sidesteps needing a new OWUI
-// filter/event handler.
-//
-// Fallback: if the cross-frame access throws (cross-origin / OWUI DOM
-// restructured), we postMessage and alert the user.
+// The SPA iframe is loaded cross-origin (report-viewer.<env>) under the
+// chat page, so window.parent.document access throws SecurityError. The
+// in-place try block stays as a defense-in-depth for any future re-host
+// to a same-origin alias, but the postMessage + alert fallback is the
+// real path today. OWUI doesn't yet have a `scout-refine` postMessage
+// handler — until it grows one, the user has to copy/paste from the
+// alert.
 function applyFilterToChat(filters: Record<string, string>) {
   const summary = Object.entries(filters)
     .map(([col, val]) => `${col} contains "${val}"`)
