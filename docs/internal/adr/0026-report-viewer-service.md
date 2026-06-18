@@ -498,22 +498,30 @@ it so it's not a blocker.
 
 -  PHI in searches.source_sql — imported CSV cohorts persist WHERE epic_mrn IN ('123',...) clear-text in Postgres. Retention/encryption decision needed.
 
-- Review auth patterns. New oauth2-proxy middleware may be needed so the trino audince is not exposed to every service.
-  1. Token over-forwarding in shared middleware. ansible/roles/oauth2-proxy/tasks/deploy.yaml:98-100 adds X-Auth-Request-Access-Token to the
-  shared oauth2-proxy-auth middleware — sends the raw Keycloak access token to all 9 services using it (temporal, open-webui, grafana, minio,
-  launchpad, voila, superset, jupyter, report-viewer-service). Split into a dedicated oauth2-proxy-auth-trino middleware; only
-  report-viewer-service references it.
-  2. trino-audience in oauth2-proxy defaultClientScopes. ansible/roles/keycloak/templates/scout-realm.json.j2:280 — every browser session token
-  is now Trino-usable. Combined with #1, anything that captures the cookie can talk to Trino as the user. Move to optionalClientScopes and
-  request it explicitly only where needed.
-  3. Owner-scope bypass on non-owner endpoints. routes/searches.py:605, 693, 753, 818 pass owner_sub=None to store.get_search on /rows,
-  /reports/{id}, /accessions, /export.csv. Pass user.sub instead — chat-host iframe also goes through oauth2-proxy, identity is available.
-  Frontend comment at frontend/src/api/client.ts:78-83 is wrong.
-  4. Search ID entropy. ids.py:14 — 6 base62 chars ≈ 36 bits, not "56 bits" as the comment claims. Brute-forceable. Bump length and fix the
-  comment.
-  5. PHI in searches.source_sql. ADR TODO line 497. File-import cohorts bake MRNs into the SQL text and return it on GET /spa/searches/{id}.
-  After #3 it's owner-only, which is the right baseline — but the at-rest exposure in Postgres still wants a separate look (column-level
-  encryption, or hash-and-store IDs rather than literal IN-lists).
+- **Auth hardening pass.** Issues found on review. Pick **either** option A or option B for issue #1 — they are mutually exclusive approaches to the same problem. Issues #2 and #3 apply regardless of which option is chosen.
+
+  1. **Keycloak access token forwarding to the service.** `ansible/roles/oauth2-proxy/tasks/deploy.yaml:98-100` adds `X-Auth-Request-Access-Token` to the shared `oauth2-proxy-auth` middleware — fans the raw user JWT out to every service annotated with that middleware (temporal, open-webui, grafana, minio, launchpad, voila, superset, jupyter, report-viewer-service). Only report-viewer-service has a documented reason to consume it. Combined with `trino-audience` now in the oauth2-proxy client's `defaultClientScopes` (`ansible/roles/keycloak/templates/scout-realm.json.j2:280`), anything that captures the cookie can call Trino as the user. This pattern ("oauth2-proxy as token broker") is novel — no other Scout service uses it, and it conflicts with ADR 0003's framing of oauth2-proxy as approval-gate only.
+
+     **Option A — Contain the current shape (dedicated middleware).** Keep the cookie-based browser flow; restrict the leak.
+     - Split out a dedicated `oauth2-proxy-auth-trino` middleware that includes the token header; revert the shared middleware to headers only; reference the new middleware only from `ansible/roles/report_viewer_service/templates/values.yaml.j2`.
+     - Defense-in-depth: move `trino-audience` to `optionalClientScopes` on the oauth2-proxy client and have oauth2-proxy request it explicitly via its `scope` config (`trino-audience` on the open-webui client stays in defaults since OWUI can't toggle scope per-tool).
+     - Pros: smaller diff, no SPA changes, no new Keycloak client.
+     - Cons: leaves a brand-new auth pattern in Scout's catalog. Service keeps 3 inbound auth paths (Bearer / oauth2-proxy headers / dev secret). Future services may copy the pattern. ADR 0003 and ADR 0026's own Authentication section (lines 226-243) need amendments justifying the new pattern.
+
+     **Option B — Unify on Bearer JWT (oidc-client-ts in the SPA).** Match Jupyter's pattern; collapse browser + OWUI tool onto one auth path. This is what ADR 0026's Authentication section actually describes today.
+     - Add a new public Keycloak client `report_viewer_app` (PKCE, no client_secret) with `trino-audience` in `defaultClientScopes` and redirect URIs for both the rvs host and the chat-host alias.
+     - Bootstrap `oidc-client-ts` in `frontend/src/main.tsx` before React renders; use silent SSO (`signinSilent` with `prompt=none`) so the browser inherits the existing Keycloak SSO session with no extra login.
+     - SPA sends `Authorization: Bearer <jwt>` on every fetch; `auth.py` Path 1 (existing) handles it.
+     - Revert the branch's oauth2-proxy changes: drop `pass_access_token`, `cookie_refresh`, and `X-Auth-Request-Access-Token` from the middleware; drop `trino-audience` from the oauth2-proxy Keycloak client.
+     - Service's `auth.py` collapses to one real path (Bearer JWT); Path 2 (oauth2-proxy headers) can be removed or kept as a thin fallback.
+     - Pros: one auth pattern in the service (Bearer JWT), matches Jupyter and ADR 0022 exactly. oauth2-proxy reverts to its ADR 0003 shape (approval gate, headers only). OWUI tool path unchanged. No new pattern in the Scout catalog. ADR 0026's Authentication section becomes accurate without edits.
+     - Cons: larger diff (new client in realm template, new bootstrap in SPA, error handling for silent-SSO failure → full-window redirect). One new public Keycloak client (Scout's first public client; the existing user-facing clients are confidential).
+
+  2. **Owner-or-admin scope on search endpoints.** `routes/searches.py:605, 693, 753, 818` (the `/rows`, `/reports/{id}`, `/accessions`, `/export.csv` handlers) pass `owner_sub=None` to `store.get_search`, so anyone authenticated with the search ID gets the saved SQL back. OPA still clamps row-level data per-requester, but `source_sql` itself can carry PHI (file-imported `WHERE epic_mrn IN (...)`) and the metadata response leaks regardless. Comment in `frontend/src/api/client.ts:78-83` rationalizes this as "iframe context can't always resolve user identity" — false; the chat-host alias goes through the same oauth2-proxy middleware.
+
+     Fix: add `groups` to the `User` dataclass (Path 1: from JWT claims; Path 2 if still present: from the forwarded access token or an added `X-Auth-Request-Groups` header). Replace `owner_sub=None` with a helper that returns 404 unless `user.sub == owner_sub` OR `"scout-admin" in user.groups`. Same group name as ADR 0020's hardcoded `scout-admin` so admin status is consistent across services. 404 (not 403) so search IDs don't become an existence oracle.
+
+  3. **Search ID entropy.** `ids.py:14` generates 6 base62 chars and the comment claims "56 bits" — actual entropy is `log2(62^6) ≈ 35.7 bits`, brute-forceable. After fix #2 this is owner-scoped so the attack window is narrower, but it's a cheap fix on top: bump to ~16 chars (~95 bits) and correct the comment math.
 
 - Test CSV Upload and Download.
 
