@@ -188,7 +188,32 @@ export default function SearchDetailPage() {
               ? 'Failed to load metadata'
               : `${total.toLocaleString()} rows`}
           {rowsQ.isFetching && !rowsQ.isLoading && (
-            <span style={{ marginLeft: '0.5rem', color: '#999' }}>· updating…</span>
+            <span
+              style={{
+                marginLeft: '0.6rem',
+                padding: '1px 8px 1px 7px',
+                borderRadius: 999,
+                background: '#fff4d6',
+                color: '#8a5a00',
+                fontSize: '0.72rem',
+                fontWeight: 500,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                verticalAlign: 'middle',
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: '#b07a00',
+                  animation: 'scoutPulse 2s ease-in-out infinite',
+                }}
+              />
+              Updating
+            </span>
           )}
         </span>
       </div>
@@ -200,7 +225,7 @@ export default function SearchDetailPage() {
           previous data via keepPreviousData). The wrapping ternary
           shows a single first-load skeleton when there's no data at
           all yet — otherwise the existing data stays put and the
-          header shows "· updating…". */}
+          header shows the "Updating" pill. */}
       {!rowsQ.data && rowsQ.isLoading ? (
         <p style={{ color: '#666' }}>Loading rows…</p>
       ) : (

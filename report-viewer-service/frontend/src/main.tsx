@@ -33,6 +33,10 @@ const queryClient = new QueryClient({
   },
 });
 
+const pulseStyle = document.createElement('style');
+pulseStyle.textContent = '@keyframes scoutPulse{0%,100%{opacity:1}50%{opacity:.25}}';
+document.head.appendChild(pulseStyle);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>{router}</QueryClientProvider>
