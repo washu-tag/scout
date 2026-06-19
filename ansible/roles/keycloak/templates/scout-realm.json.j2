@@ -266,10 +266,6 @@
         "attributes": {
           "post.logout.redirect.uris": "https://{{ server_hostname }}"
         },
-        {#- trino-audience: oauth2-proxy's cached access token is forwarded
-            via X-Auth-Request-Access-Token to report-viewer-service, which
-            Bearer-forwards it to Trino. cookie_refresh keeps the token
-            fresh; trino-audience ensures Trino accepts aud. -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -277,8 +273,7 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt",
-          "trino-audience"
+          "microprofile-jwt"
         ],
         "optionalClientScopes": [
           "address",
@@ -553,7 +548,7 @@
           "offline_access",
         ]
       },
-      {#- Service principals for the three Trino client surfaces. Each
+      {#- Service principals for the Trino client surfaces. Each
           authenticates to Trino via client_credentials and impersonates
           the end user via X-Trino-User. Token lifespan is 4h so
           long-running notebook/dashboard queries don't expire mid-
@@ -618,6 +613,32 @@
         "clientId": "voila_svc",
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_voila_svc_client_secret }}",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "{{ keycloak_trino_svc_token_lifespan }}"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
+        ]
+      },
+      {
+        "name": "report_viewer_svc",
+        "description": "Service principal for report-viewer-service impersonating the chat/iframe user via X-Trino-User",
+        "enabled": true,
+        "clientId": "report_viewer_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_report_viewer_svc_client_secret }}",
         "serviceAccountsEnabled": true,
         "standardFlowEnabled": false,
         "directAccessGrantsEnabled": false,

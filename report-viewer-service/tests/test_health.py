@@ -16,5 +16,5 @@ def test_root_returns_service_identity():
         r = client.get("/")
         assert r.status_code == 200
         body = r.json()
-        assert body["service"] == "scout-report-viewer"
+        assert body["service"] == "report-viewer-service"
         assert "version" in body

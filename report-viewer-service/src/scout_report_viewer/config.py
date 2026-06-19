@@ -20,28 +20,23 @@ class Settings(BaseSettings):
         "postgresql://report_viewer:report_viewer@localhost:5432/report_viewer"
     )
 
-    # Trino (read-only analytics instance — user JWT pass-through)
+    # Trino connection
     trino_host: str = "trino"
     trino_port: int = 8080
     trino_scheme: str = "http"
     trino_catalog: str = "delta"
     trino_schema: str = "default"
     trino_ca_cert: str | None = None
+    trino_auth_token_url: str = ""
+    trino_auth_client_id: str = "report_viewer_svc"
+    trino_auth_client_secret: str = ""
 
-    # No trino-rw / write-side config — the service never writes to
-    # Trino. Searches are saved SQL in Postgres; rows are evaluated on
-    # demand against the read-only Trino instance.
-
-    # Auth — Phase 0 uses a shared header secret. Phase 2 replaces this
-    # with Keycloak JWT validation; the dev_shared_secret stays available
-    # as an opt-in escape hatch for in-cluster smoke tests.
+    # OIDC settings for inbound JWT validation.
+    # TODO: dev_shared_secret???
     dev_shared_secret: str = ""
-    keycloak_jwks_url: str = ""
-    keycloak_audience: str = "report-viewer-service"
-    # Expected `iss` claim — Keycloak realm URL. Empty disables iss check
-    # (useful for tests). The Ansible role sets this to
-    # `{keycloak_realm_url}` so it matches what voila / OWUI mint.
-    keycloak_issuer: str = ""
+    oidc_jwks_url: str = ""
+    oidc_audience: str = "report-viewer-service"
+    oidc_issuer: str = ""
 
     # Search behavior
     search_ttl_days: int = 30
@@ -49,6 +44,7 @@ class Settings(BaseSettings):
     # CSP — comma-separated list of origins that are allowed to embed the
     # viewer in an iframe. The default lets the Scout chat ingress embed
     # us; tighten per env via env var. Empty disables the CSP header.
+    # TODO: do not hard code the dev URL!!!
     csp_frame_ancestors: str = "https://chat.dev02.tag.rcif.io"
 
     # OWUI Postgres URL — receiver writes iframe-sandbox UI defaults

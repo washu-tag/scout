@@ -82,6 +82,9 @@ devSharedSecret: ''
 # at /etc/trino-ca/ca.crt so the service can verify HTTPS Trino.
 trinoCaCert: ''
 
+# report_viewer_svc client_secret for outbound Trino auth (ADR 0022).
+trinoAuthClientSecret: ''
+
 # ---------------------------------------------------------------------------
 # Test mode — bypass the published image, run from source mounted as a
 # ConfigMap on top of a stock `python:3.12-slim`. Lets us iterate on dev02

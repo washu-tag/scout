@@ -51,11 +51,13 @@ the export CSV and Send-to-XNAT functionality. `scout_get_reports` and
 - **Backend**: Python (FastAPI), exposes `/api/...` for all three operations
   and the search resource endpoints.
 - **Frontend**: React + Vite + TypeScript + Tailwind + TanStack Table +
-  TanStack Query + React Router + `oidc-client-ts`. Built as static files via
-  Vite, bundled into the Python container, served by FastAPI's `StaticFiles`
-  at `/`. No Node runtime in production.
+  TanStack Query + React Router. Built as static files via Vite, bundled
+  into the Python container, served by FastAPI's `StaticFiles` at `/`.
+  No Node runtime in production. The SPA does NOT hold a Keycloak token;
+  browser auth comes from oauth2-proxy at the ingress (see Authentication).
 - **Deployment**: Single Kubernetes deployment in `scout-analytics`. One
-  ingress, one Helm chart, one Keycloak client (`report_viewer_app`).
+  ingress, one Helm chart, one Keycloak client (`report_viewer_svc`,
+  confidential service-account used for Trino impersonation).
 
 ### How the chat integrates
 
@@ -225,22 +227,44 @@ tweak the filters.
 
 ### Authentication
 
-- The SPA holds the user's Keycloak access token directly via
-  `oidc-client-ts`, minted by the new `datasets_app` Keycloak client (with
-  `trino-audience` in `defaultClientScopes`, PKCE on).
-- The iframe uses **silent SSO** (`signinSilent` against Keycloak's
-  authentication endpoint with `prompt=none`) to pick up Keycloak's existing
-  SSO session without a full-window redirect.
-- API calls go out as `Authorization: Bearer <token>`. FastAPI's existing
-  Path 1 (Bearer JWT, JWKS-validated) handles authentication; the same
-  Bearer forwards to Trino per
-  [ADR 0022](0022-trino-auth-and-impersonation.md)'s JupyterHub-style JWT
-  pass-through pattern.
-- oauth2-proxy stays at the ingress for the approval gate
-  ([ADR 0003](0003-oauth2-proxy.md)) but is **not** part of the token-
-  forwarding chain. No `pass_access_token`, no `X-Auth-Request-Access-Token`
-  in the forwardAuth middleware, no `trino-audience` on the oauth2-proxy
-  Keycloak client.
+Two callers, two inbound paths, one outbound Trino auth pattern.
+
+**Inbound, caller authenticates to the service:**
+
+- **Browser SPA / iframe**: oauth2-proxy gates the chat-host alias and
+  the rvs ingress at the Traefik layer (approval gate per
+  [ADR 0003](0003-oauth2-proxy.md)). It forwards identity-only via
+  `X-Auth-Request-Preferred-Username`. No access token is forwarded.
+  FastAPI reads the header and resolves the user.
+- **OWUI tool runtime**: in-cluster POST to the service with
+  `Authorization: Bearer <__oauth_token__>` (the user's Keycloak access
+  token, minted by the `open-webui` client). FastAPI validates the JWT
+  against Keycloak JWKS (signature + iss + exp) and resolves the user
+  from `preferred_username`. NetworkPolicy restricts Bearer-bearing
+  in-cluster traffic to OWUI pods so the header can't be forged from
+  elsewhere in the cluster.
+
+Both paths produce the same `User(sub=...)` model. The user's JWT is
+NEVER forwarded onward to Trino; it's used only for inbound AuthN.
+
+**Outbound, service authenticates to Trino:**
+
+The service follows the impersonation pattern from
+[ADR 0022](0022-trino-auth-and-impersonation.md) (same as Superset,
+Voila, OWUI MCP):
+
+- New confidential Keycloak client `report_viewer_svc` with
+  `trino-audience` in `defaultClientScopes`. Service Accounts enabled;
+  no user-facing flows.
+- The service mints a Bearer via `client_credentials` against Keycloak
+  on demand, caches it in-process, and refreshes when ⅕ of the lifetime
+  remains (ADR 0024 ratio). Single-flight under a `threading.Lock` so a
+  burst of concurrent queries triggers one refetch.
+- Every Trino call goes out as `Authorization: Bearer <svc-token>` +
+  `X-Trino-User: <user.sub>`. OPA's `trino_service_principals` set
+  includes `report_viewer_svc` and grants it `ImpersonateUser`; the
+  per-user row filters and column masks then evaluate against the
+  impersonated identity.
 
 ### REST API endpoints
 
@@ -485,6 +509,7 @@ it so it's not a blocker.
 - Review React App SPA implementaition.
 
 - Prompt review needed, too much irrelevant stuff has built up while iterating on the service. 
+ - when to use reports_latest vs reports_latest_epic_view and other Scout tables and views.
 
 - Report snippets are not being given to the llm for context and the diagnosis codes are pressented outside of the results table given to the llm. This is a regression from the POC, the llm needs some report context.
 
@@ -502,34 +527,17 @@ it so it's not a blocker.
 
 -  PHI in searches.source_sql — imported CSV cohorts persist WHERE epic_mrn IN ('123',...) clear-text in Postgres. Retention/encryption decision needed.
 
-- **Auth hardening pass.** Issues found on review. Pick **either** option A or option B for issue #1 — they are mutually exclusive approaches to the same problem. Issues #2 and #3 apply regardless of which option is chosen.
+- **Auth hardening pass.** Remaining fixes:
 
-  1. **Keycloak access token forwarding to the service.** `ansible/roles/oauth2-proxy/tasks/deploy.yaml:98-100` adds `X-Auth-Request-Access-Token` to the shared `oauth2-proxy-auth` middleware — fans the raw user JWT out to every service annotated with that middleware (temporal, open-webui, grafana, minio, launchpad, voila, superset, jupyter, report-viewer-service). Only report-viewer-service has a documented reason to consume it. Combined with `trino-audience` now in the oauth2-proxy client's `defaultClientScopes` (`ansible/roles/keycloak/templates/scout-realm.json.j2:280`), anything that captures the cookie can call Trino as the user. This pattern ("oauth2-proxy as token broker") is novel — no other Scout service uses it, and it conflicts with ADR 0003's framing of oauth2-proxy as approval-gate only.
+  1. **Owner-or-admin scope on search endpoints.** `routes/searches.py:605, 693, 753, 818` (the `/rows`, `/reports/{id}`, `/accessions`, `/export.csv` handlers) pass `owner_sub=None` to `store.get_search`, so anyone authenticated with the search ID gets the saved SQL back. OPA still clamps row-level data per-requester, but `source_sql` itself can carry PHI (file-imported `WHERE epic_mrn IN (...)`) and the metadata response leaks regardless. Comment in `frontend/src/api/client.ts:78-83` rationalizes this as "iframe context can't always resolve user identity"; that's false. The chat-host alias goes through the same oauth2-proxy middleware.
 
-     **Option A — Contain the current shape (dedicated middleware).** Keep the cookie-based browser flow; restrict the leak.
-     - Split out a dedicated `oauth2-proxy-auth-trino` middleware that includes the token header; revert the shared middleware to headers only; reference the new middleware only from `ansible/roles/report_viewer_service/templates/values.yaml.j2`.
-     - Defense-in-depth: move `trino-audience` to `optionalClientScopes` on the oauth2-proxy client and have oauth2-proxy request it explicitly via its `scope` config (`trino-audience` on the open-webui client stays in defaults since OWUI can't toggle scope per-tool).
-     - Pros: smaller diff, no SPA changes, no new Keycloak client.
-     - Cons: leaves a brand-new auth pattern in Scout's catalog. Service keeps 3 inbound auth paths (Bearer / oauth2-proxy headers / dev secret). Future services may copy the pattern. ADR 0003 and ADR 0026's own Authentication section (lines 226-243) need amendments justifying the new pattern.
+     Fix: add `groups` to the `User` dataclass. The OWUI tool path reads `groups` from JWT claims; the browser path reads from a new `X-Auth-Request-Groups` entry in the oauth2-proxy middleware's `authResponseHeaders` (oauth2-proxy already populates it via `set_xauthrequest = true` + Keycloak's group-membership mapper). Replace `owner_sub=None` with a helper that returns 404 unless `user.sub == owner_sub` OR `"scout-admin" in user.groups`. Same group name as ADR 0020's hardcoded `scout-admin` so admin status is consistent across services. 404 (not 403) so search IDs don't become an existence oracle.
 
-     **Option B — Unify on Bearer JWT (oidc-client-ts in the SPA).** Match Jupyter's pattern; collapse browser + OWUI tool onto one auth path. This is what ADR 0026's Authentication section actually describes today.
-     - Add a new public Keycloak client `report_viewer_app` (PKCE, no client_secret) with `trino-audience` in `defaultClientScopes` and redirect URIs for both the rvs host and the chat-host alias.
-     - Bootstrap `oidc-client-ts` in `frontend/src/main.tsx` before React renders; use silent SSO (`signinSilent` with `prompt=none`) so the browser inherits the existing Keycloak SSO session with no extra login.
-     - SPA sends `Authorization: Bearer <jwt>` on every fetch; `auth.py` Path 1 (existing) handles it.
-     - Revert the branch's oauth2-proxy changes: drop `pass_access_token`, `cookie_refresh`, and `X-Auth-Request-Access-Token` from the middleware; drop `trino-audience` from the oauth2-proxy Keycloak client.
-     - Service's `auth.py` collapses to one real path (Bearer JWT); Path 2 (oauth2-proxy headers) can be removed or kept as a thin fallback.
-     - Pros: one auth pattern in the service (Bearer JWT), matches Jupyter and ADR 0022 exactly. oauth2-proxy reverts to its ADR 0003 shape (approval gate, headers only). OWUI tool path unchanged. No new pattern in the Scout catalog. ADR 0026's Authentication section becomes accurate without edits.
-     - Cons: larger diff (new client in realm template, new bootstrap in SPA, error handling for silent-SSO failure → full-window redirect). One new public Keycloak client (Scout's first public client; the existing user-facing clients are confidential).
+  2. **Search ID entropy.** `ids.py:14` generates 6 base62 chars and the comment claims "56 bits"; actual entropy is `log2(62^6) ≈ 35.7 bits`, brute-forceable. After fix #1 this is owner-scoped so the attack window is narrower, but it's a cheap fix on top: bump to ~16 chars (~95 bits) and correct the comment math.
 
-  2. **Owner-or-admin scope on search endpoints.** `routes/searches.py:605, 693, 753, 818` (the `/rows`, `/reports/{id}`, `/accessions`, `/export.csv` handlers) pass `owner_sub=None` to `store.get_search`, so anyone authenticated with the search ID gets the saved SQL back. OPA still clamps row-level data per-requester, but `source_sql` itself can carry PHI (file-imported `WHERE epic_mrn IN (...)`) and the metadata response leaks regardless. Comment in `frontend/src/api/client.ts:78-83` rationalizes this as "iframe context can't always resolve user identity" — false; the chat-host alias goes through the same oauth2-proxy middleware.
+  3. **OWUI tool's Keycloak refresh creds may be vestigial.** `helm/open-webui-bootstrap/files/payloads/scout_report_viewer_tool.py` carries `keycloak_token_url` / `keycloak_client_id` / `keycloak_client_secret` valves so the tool can refresh the user's access token via refresh-token grant right before forwarding to report-viewer-service. The stated reason ("OWUI's refresh loop drifts past `exp` so the cached bearer can be stale at tool-fire time") was never verified. If OWUI 0.9.6's auth-state refresh tracks `exp` (half-life rotation like JupyterHub's `eagerTokenRefresh`), the Scout-side refresh never fires and the three valves are dead code that pin the OWUI Keycloak client secret into the bootstrap payload unnecessarily. Check by instrumenting the refresh path with one log line and watching a normal workday on dev02, or by reading OWUI 0.9.6's auth-state refresh source. If silent, delete the refresh code + drop the three valves + revert the OWUI Keycloak client's exposure of the refresh-token grant where unneeded.
 
-     Fix: add `groups` to the `User` dataclass (Path 1: from JWT claims; Path 2 if still present: from the forwarded access token or an added `X-Auth-Request-Groups` header). Replace `owner_sub=None` with a helper that returns 404 unless `user.sub == owner_sub` OR `"scout-admin" in user.groups`. Same group name as ADR 0020's hardcoded `scout-admin` so admin status is consistent across services. 404 (not 403) so search IDs don't become an existence oracle.
-
-  3. **Search ID entropy.** `ids.py:14` generates 6 base62 chars and the comment claims "56 bits" — actual entropy is `log2(62^6) ≈ 35.7 bits`, brute-forceable. After fix #2 this is owner-scoped so the attack window is narrower, but it's a cheap fix on top: bump to ~16 chars (~95 bits) and correct the comment math.
-
-  4. **OWUI tool's Keycloak refresh creds may be vestigial.** `helm/open-webui-bootstrap/files/payloads/scout_report_viewer_tool.py` carries `keycloak_token_url` / `keycloak_client_id` / `keycloak_client_secret` valves so the tool can refresh the user's access token via refresh-token grant right before forwarding to report-viewer-service. The stated reason — "OWUI's refresh loop drifts past `exp` so the cached bearer can be stale at tool-fire time" — was never verified. If OWUI 0.9.6's auth-state refresh tracks `exp` (half-life rotation like JupyterHub's `eagerTokenRefresh`), the Scout-side refresh never fires and the three valves are dead code that pin the OWUI Keycloak client secret into the bootstrap payload unnecessarily. Check by instrumenting the refresh path with one log line and watching a normal workday on dev02, or by reading OWUI 0.9.6's auth-state refresh source. If silent, delete the refresh code + drop the three valves + revert the OWUI Keycloak client's exposure of the refresh-token grant where unneeded.
-
-  5. Can you log out of this new service??
+  4. Can you log out of this new service??
 
 - Test CSV Upload and Download.
 
@@ -586,3 +594,9 @@ it so it's not a blocker.
 - updatingg ... info thing could be a bit more promenient in the ui banner
 
 - Review the Markdown summary shapping.
+
+- Difficult too distinuguish between rows and report card
+
+- What sort of testing automated testing is in place and is needed?
+
+- CI needed to build image for this service and push. Remove report_viewer_service_test_mode!

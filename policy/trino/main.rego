@@ -65,13 +65,13 @@ user_attrs := attrs if {
 #   * View-owner principals (`trino`, used by hl7-transformer for DEFINER
 #     views) — see the `is_view_owner` carve-out in row filters / masks.
 #   * Impersonation service principals (`superset_svc`, `openwebui_mcp_svc`,
-#     `voila_svc`) — only ever issue ImpersonateUser; the impersonated
-#     end-user is what subsequent /allow calls evaluate.
+#     `voila_svc`, `report_viewer_svc`). These only ever issue ImpersonateUser;
+#     the impersonated end-user is what subsequent /allow calls evaluate.
 # These don't appear in the bundle. Gating /allow on `user_attrs.enabled`
 # without a carve-out would deny their queries entirely, so they get an
 # explicit exemption from the enabled check.
 
-trino_service_principals := {"superset_svc", "openwebui_mcp_svc", "voila_svc"}
+trino_service_principals := {"superset_svc", "openwebui_mcp_svc", "voila_svc", "report_viewer_svc"}
 
 is_system_identity if input.context.identity.user in view_owner_principals_set
 
@@ -198,7 +198,7 @@ allow if {
 # ImpersonateUser: only the configured Trino service principals may set
 # X-Trino-User to override the effective query identity. End users connecting
 # directly via JWT (Jupyter) cannot impersonate; only the impersonation-pattern
-# clients (Superset, Open WebUI MCP, Voila) can. The Trino JWT user-mapping
+# clients (Superset, Open WebUI MCP, Voila, report-viewer-service) can. The Trino JWT user-mapping
 # strips the Keycloak `service-account-` prefix, so identity.user matches the
 # bare client_id here. Deliberately does NOT check user_enabled — service
 # principals aren't in data.users.

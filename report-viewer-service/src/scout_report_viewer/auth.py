@@ -14,7 +14,9 @@
    `dev_shared_secret`.
 
 All three populate the same `User(sub=...)` model. Downstream code never
-needs to know which path produced the identity.
+needs to know which path produced the identity. The user JWT is not
+forwarded to Trino. `trino_client` uses the `report_viewer_svc` service
+principal and impersonates this `sub` via X-Trino-User (ADR 0022).
 """
 
 from __future__ import annotations
@@ -34,12 +36,7 @@ log = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class User:
-    sub: str  # owner_sub stored on the search row
-    # Raw Keycloak access token, present when auth Path 1 (Bearer JWT)
-    # was used. Forwarded onward to Trino so OPA evaluates row filters
-    # against the real requester (ADR 0022). None for header/shared-
-    # secret paths — those callers can't reach Trino.
-    token: str | None = None
+    sub: str  # owner_sub stored on the search row; also sent as X-Trino-User
 
 
 def _bearer_token(auth_header: str | None) -> str | None:
@@ -59,7 +56,7 @@ def _validate_jwt(token: str) -> str | None:
     secret). Logs at INFO so failed-then-fallback succeeds quietly while
     repeated failures are still searchable in Loki.
     """
-    if not settings.keycloak_jwks_url:
+    if not settings.oidc_jwks_url:
         # Not configured (test / local). Skip silently so the other
         # auth paths still work.
         return None
@@ -72,7 +69,7 @@ def _validate_jwt(token: str) -> str | None:
     if not kid:
         log.info("bearer rejected: no kid in header")
         return None
-    cache = jwks.get_default(settings.keycloak_jwks_url)
+    cache = jwks.get_default(settings.oidc_jwks_url)
     key = cache.get_key(kid)
     if key is None:
         log.info("bearer rejected: kid %s not in JWKS", kid)
@@ -85,7 +82,7 @@ def _validate_jwt(token: str) -> str | None:
             # Skip aud verification until a dedicated client exists; iss
             # gives us the strong signal "this token came from our IdP".
             options={"verify_aud": False},
-            issuer=settings.keycloak_issuer or None,
+            issuer=settings.oidc_issuer or None,
         )
     except ExpiredSignatureError:
         log.info("bearer rejected: token expired")
@@ -111,7 +108,6 @@ def _validate_jwt(token: str) -> str | None:
 async def get_current_user(
     authorization: str | None = Header(default=None),
     x_auth_request_preferred_username: str | None = Header(default=None),
-    x_auth_request_access_token: str | None = Header(default=None),
     x_report_viewer_test_user: str | None = Header(default=None),
     x_report_viewer_shared_secret: str | None = Header(default=None),
 ) -> User:
@@ -120,7 +116,7 @@ async def get_current_user(
     if token:
         sub = _validate_jwt(token)
         if sub:
-            return User(sub=sub, token=token)
+            return User(sub=sub)
         # Bearer was present but invalid — 401 directly instead of falling
         # through. If a caller bothered to send a bearer, they meant to
         # authenticate as that user; silently downgrading to header trust
@@ -131,15 +127,11 @@ async def get_current_user(
         )
 
     # Path 2: oauth2-proxy headers (Traefik-gated; NetworkPolicy prevents
-    # in-cluster forgery). The access token is the user's Keycloak JWT
-    # (oauth2-proxy `pass_access_token = true` + middleware
-    # `authResponseHeaders: X-Auth-Request-Access-Token`); forwarded to
-    # Trino as Bearer so OPA evaluates per requester.
+    # in-cluster forgery). Identity-only; we no longer read the user's
+    # access token here. Outbound Trino calls use the report_viewer_svc
+    # service principal and impersonate this username via X-Trino-User.
     if x_auth_request_preferred_username:
-        return User(
-            sub=x_auth_request_preferred_username,
-            token=x_auth_request_access_token,
-        )
+        return User(sub=x_auth_request_preferred_username)
 
     # Path 3: dev shared secret (env-gated; default disabled).
     if (

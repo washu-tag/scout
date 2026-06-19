@@ -192,9 +192,7 @@ async def create_search(
     sample_sql = f"SELECT s.* FROM ({source_sql}) s LIMIT 5"
     try:
         with metrics.time_trino("create_sample_query"):
-            columns, sample_rows = await trino_client.execute(
-                sample_sql, user=user.sub, token=user.token
-            )
+            columns, sample_rows = await trino_client.execute(sample_sql, user=user.sub)
     except Exception as exc:
         log.exception("trino sample query failed")
         metrics.SEARCHES_CREATED.labels(
@@ -219,9 +217,7 @@ async def create_search(
     count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s"
     try:
         with metrics.time_trino("create_count_query"):
-            _cols, count_rows = await trino_client.execute(
-                count_sql, user=user.sub, token=user.token
-            )
+            _cols, count_rows = await trino_client.execute(count_sql, user=user.sub)
         row_count = int(count_rows[0]["n"]) if count_rows else 0
     except Exception as exc:
         log.exception("trino count query failed")
@@ -253,7 +249,7 @@ async def create_search(
             try:
                 with metrics.time_trino("sample_text_fetch"):
                     _cols, ex_rows = await trino_client.execute(
-                        extras_sql, user=user.sub, token=user.token
+                        extras_sql, user=user.sub
                     )
                 for er in ex_rows:
                     key = er.get("_id")
@@ -418,9 +414,7 @@ async def create_search_from_file(
         )
         try:
             with metrics.time_trino("from_file_validate"):
-                _cols, rows = await trino_client.execute(
-                    sql, user=user.sub, token=user.token
-                )
+                _cols, rows = await trino_client.execute(sql, user=user.sub)
         except Exception as exc:
             log.exception("trino id-list validation failed")
             raise HTTPException(
@@ -673,9 +667,7 @@ async def get_search_rows(
         count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s" f"{where_sql}"
         try:
             with metrics.time_trino("rows_count_query"):
-                _, count_rows = await trino_client.execute(
-                    count_sql, user=user.sub, token=user.token
-                )
+                _, count_rows = await trino_client.execute(count_sql, user=user.sub)
             sql_total = int(count_rows[0]["n"]) if count_rows else 0
         except Exception as exc:
             log.exception("trino count query failed")
@@ -688,9 +680,7 @@ async def get_search_rows(
 
     try:
         with metrics.time_trino("rows_query"):
-            columns, rows = await trino_client.execute(
-                sql, user=user.sub, token=user.token
-            )
+            columns, rows = await trino_client.execute(sql, user=user.sub)
     except Exception as exc:
         log.exception("trino rows query failed")
         raise HTTPException(
@@ -756,7 +746,7 @@ async def get_search_report(
     )
     try:
         with metrics.time_trino("report_lookup"):
-            _, rows = await trino_client.execute(sql, user=user.sub, token=user.token)
+            _, rows = await trino_client.execute(sql, user=user.sub)
     except Exception as exc:
         log.exception("trino report fetch failed")
         metrics.REPORT_FETCH.labels(result="error").inc()
@@ -801,9 +791,7 @@ async def get_search_accessions(
     )
     try:
         with metrics.time_trino("accessions_query"):
-            _cols, rows = await trino_client.execute(
-                sql, user=user.sub, token=user.token
-            )
+            _cols, rows = await trino_client.execute(sql, user=user.sub)
     except Exception as exc:
         log.exception("trino accessions query failed")
         raise HTTPException(
@@ -872,9 +860,7 @@ async def export_search_csv(
             )
             try:
                 with metrics.time_trino("export_csv_query"):
-                    _, rows = await trino_client.execute(
-                        sql, user=user.sub, token=user.token
-                    )
+                    _, rows = await trino_client.execute(sql, user=user.sub)
             except Exception:
                 log.exception("trino export query failed at offset=%d", offset)
                 yield b"# ERROR: query failed mid-export; file is incomplete\n"

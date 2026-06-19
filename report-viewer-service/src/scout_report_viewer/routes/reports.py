@@ -44,9 +44,7 @@ async def query_reports(
     iframe rendered. Backs `scout_query_sql` in the OWUI tool."""
     try:
         with metrics.time_trino("query_reports"):
-            columns, rows = await trino_client.execute(
-                body.sql, user=user.sub, token=user.token
-            )
+            columns, rows = await trino_client.execute(body.sql, user=user.sub)
     except Exception as exc:
         log.exception("trino query failed")
         raise HTTPException(
@@ -91,9 +89,7 @@ async def read_reports(
     sql = f"SELECT * FROM {table} " f'WHERE "{body.id_column}" IN ({quoted})'
     try:
         with metrics.time_trino("read_reports"):
-            columns, rows = await trino_client.execute(
-                sql, user=user.sub, token=user.token
-            )
+            columns, rows = await trino_client.execute(sql, user=user.sub)
     except Exception as exc:
         log.exception("trino read_reports failed")
         raise HTTPException(

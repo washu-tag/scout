@@ -35,10 +35,10 @@ The shape of the problem differs per client:
 | Pattern | Outbound to Trino | Who appears in `identity.user` | Used by |
 |---|---|---|---|
 | **JWT pass-through** | User's own Keycloak JWT | The end user (from JWT's `preferred_username`) | JupyterHub |
-| **JWT + impersonation** | Service-principal JWT (`client_credentials`) + `X-Trino-User: <end user>` | The end user (from the header) | Superset, Voila |
+| **JWT + impersonation** | Service-principal JWT (`client_credentials`) + `X-Trino-User: <end user>` | The end user (from the header) | Superset, Voila, report-viewer-service |
 | **HTTP Basic + impersonation** | Service-principal password + `X-Trino-User: <end user>` | The end user (from the header) | Open WebUI MCP |
 
-Each impersonation-pattern client gets its own Keycloak service principal — `superset_svc`, `voila_svc`, `openwebui_mcp_svc` — so a compromised credential blasts only that client's surface.
+Each impersonation-pattern client gets its own Keycloak service principal (`superset_svc`, `voila_svc`, `openwebui_mcp_svc`, `report_viewer_svc`), so a compromised credential blasts only that client's surface.
 
 ### Trino-side configuration
 
@@ -105,13 +105,35 @@ Open WebUI MCP (HTTP Basic + impersonation)
        ↓ (HTTP Basic, not a JWT — Trino's aud=trino check doesn't apply to this leg)
   Trino: principal=openwebui_mcp_svc, user=alice → OPA evaluates against data.users["alice"]
                                        impersonation: openwebui_mcp_svc ∈ trino_service_principals
+
+report-viewer-service, browser SPA / iframe (JWT + impersonation, header-driven)
+────────────────────────────────────────────────────────────────────────────────
+  user → oauth2-proxy (set_xauthrequest=true)
+       ↓ X-Auth-Request-Preferred-Username: <username>   (username only; no token forwarded)
+  Traefik forwardAuth → report-viewer-service pod
+       ↓ reads username header → user context
+       ↓ trino_client mints report_viewer_svc JWT (client_credentials; aud=trino; cached, re-minted at 4/5 lifetime)
+       ↓ HTTP: Bearer <report_viewer_svc JWT>, X-Trino-User: <user>
+  Trino: principal=report_viewer_svc, user=alice → OPA evaluates against data.users["alice"]
+                                       impersonation: report_viewer_svc ∈ trino_service_principals
+
+report-viewer-service, OWUI tool runtime (JWT + impersonation, Bearer inbound)
+──────────────────────────────────────────────────────────────────────────────
+  user chats in OWUI → tool runtime POSTs to report-viewer-service in-cluster
+       ↓ Authorization: Bearer <user-jwt>                # user JWT minted by `open-webui` client; aud includes trino
+  report-viewer-service: validates inbound JWT vs Keycloak JWKS (signature, iss, exp)
+       ↓ reads preferred_username from validated token; JWT discarded (never forwarded)
+       ↓ trino_client mints report_viewer_svc JWT (client_credentials; aud=trino; cached, re-minted at 4/5 lifetime)
+       ↓ HTTP: Bearer <report_viewer_svc JWT>, X-Trino-User: <user>
+  Trino: principal=report_viewer_svc, user=alice → OPA evaluates against data.users["alice"]
+                                       impersonation: report_viewer_svc ∈ trino_service_principals
 ```
 
 ### Token lifespans
 
 | Token type | Lifespan | Refresh path |
 |---|---|---|
-| Service-principal access token (`superset_svc`, `voila_svc`) | 14400 s (~4 h) | Client helpers re-mint before exp via cached `client_credentials` |
+| Service-principal access token (`superset_svc`, `voila_svc`, `report_viewer_svc`) | 14400 s (~4 h) | Client helpers re-mint before exp via cached `client_credentials` |
 | MCP service-principal password | Static (rotated via Ansible) | N/A — bcrypted into `password.db` |
 | End-user access token (Jupyter, held Hub-side in `auth_state`) | Realm default (~5 min access, ~30 min refresh) | Hub's `refresh_user` refreshes via the refresh token; `scout_trino` re-fetches from the Hub API before expiry |
 
@@ -122,7 +144,7 @@ Service-principal tokens are deliberately long-lived (~4 h) so token minting sta
 The OPA policy gates who can set `X-Trino-User`:
 
 ```rego
-trino_service_principals := {"superset_svc", "openwebui_mcp_svc", "voila_svc"}
+trino_service_principals := {"superset_svc", "openwebui_mcp_svc", "voila_svc", "report_viewer_svc"}
 
 allow if {
     input.action.operation == "ImpersonateUser"

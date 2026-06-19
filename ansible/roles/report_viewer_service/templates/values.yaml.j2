@@ -8,21 +8,18 @@ image:
 resources: {{ report_viewer_service_resources_default | combine(report_viewer_service_resources | default({}), recursive=true) | to_json }}
 
 env:
-  # Trino — matches the voila pattern (ADR 0022). Phase 1 uses the
-  # in-cluster HTTP listener; Phase 2 may switch to HTTPS + per-user
-  # JWT impersonation once that path is exercised end-to-end.
+  # Trino service + principal impersonation (ADR 0022).
   REPORT_VIEWER_TRINO_HOST: "{{ report_viewer_service_trino_host }}"
   REPORT_VIEWER_TRINO_PORT: "{{ report_viewer_service_trino_port }}"
   REPORT_VIEWER_TRINO_SCHEME: "{{ report_viewer_service_trino_scheme }}"
   REPORT_VIEWER_TRINO_CATALOG: "{{ report_viewer_service_trino_catalog }}"
   REPORT_VIEWER_TRINO_SCHEMA: "{{ report_viewer_service_trino_schema }}"
-  # Phase 2 — Keycloak JWKS for end-user JWT validation. Internal URL so
-  # service-to-service token validation bypasses Traefik + external cert.
-  REPORT_VIEWER_KEYCLOAK_JWKS_URL: "{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs"
-  # External realm URL is what Keycloak puts in `iss`, even when JWKS is
-  # fetched internally. Validating iss against this string proves the
-  # token came from our Keycloak.
-  REPORT_VIEWER_KEYCLOAK_ISSUER: "{{ keycloak_realm_url }}"
+  REPORT_VIEWER_TRINO_AUTH_TOKEN_URL: "{{ report_viewer_service_trino_auth_token_url }}"
+  REPORT_VIEWER_TRINO_AUTH_CLIENT_ID: "{{ report_viewer_service_trino_auth_client_id }}"
+  # OIDC for inbound JWT validation. Internal JWKS URL bypasses Traefik +
+  # external cert; issuer must match the JWT.
+  REPORT_VIEWER_OIDC_ISSUER: "{{ keycloak_realm_url }}"
+  REPORT_VIEWER_OIDC_JWKS_URL: "{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs"
   # CSP frame-ancestors — origins allowed to embed our /view iframe.
   # The chat ingress is the primary embedder; add more (Slack, etc.) by
   # space-separating in the inventory override.
@@ -59,6 +56,8 @@ secretEnv:
 
 # REPORT_VIEWER_DATABASE_URL is rendered into the chart-managed Secret.
 databaseUrl: "postgresql://{{ report_viewer_service_db_user }}:{{ report_viewer_service_db_password }}@{{ db_host }}:{{ db_port }}/{{ report_viewer_service_database }}"
+
+trinoAuthClientSecret: "{{ report_viewer_service_trino_auth_client_secret }}"
 
 devSharedSecret: "{{ report_viewer_service_dev_shared_secret }}"
 
@@ -107,13 +106,10 @@ networkPolicy:
 ingress:
   enabled: true
   className: traefik
-  # oauth2-proxy in front of every viewer/POST endpoint. With pass_access_token,
-  # the middleware forwards the user's Keycloak JWT as X-Auth-Request-Access-Token;
-  # auth.py reads it and the trino client Bearer-forwards it so OPA filters per
-  # requester (ADR 0022, Jupyter pattern).
-  # No security-headers middleware: it sets `frame-ancestors 'none'`
-  # which would block the chat iframe. The app emits a narrower CSP via
-  # response middleware that allows chat.<server_hostname> to embed us.
+  # oauth2-proxy approval gate (ADR 0003); identity forwarded via
+  # X-Auth-Request-Preferred-Username only. No security-headers middleware:
+  # it sets `frame-ancestors 'none'` which would block the chat iframe;
+  # the app emits a narrower CSP from response middleware.
   # TODO: LOOK INTO THIS CSP CONFIG
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: >-

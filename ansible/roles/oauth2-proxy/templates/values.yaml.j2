@@ -8,12 +8,6 @@ config:
     oidc_issuer_url = "{{ keycloak_realm_url }}"
     allowed_roles = "oauth2-proxy:oauth2-proxy-user"
     cookie_expire = "{{ oauth2_proxy_cookie_expire }}"
-    # Refresh the cached access token via the refresh_token before it
-    # expires so downstream Bearer-forward consumers (report-viewer-service →
-    # Trino) don't see "JWT expired". 4/5 of the realm's accessTokenLifespan
-    # matches ADR 0024's refresh-at-⅘ ratio (Jupyter's auth_refresh_age is
-    # derived from the same variable for the same reason).
-    cookie_refresh = "{{ keycloak_access_token_lifespan | int * 4 // 5 }}s"
     skip_provider_button = false
     email_domains=  ['*']
     reverse_proxy = true
@@ -35,12 +29,6 @@ config:
     # Voila reads it to set X-Trino-User per ADR 0022; voila_runtime captures
     # it from the request and threads it into spawned kernels.
     set_xauthrequest = true
-    # Also emit X-Auth-Request-Access-Token so services that pass-through to
-    # Trino (report-viewer-service viewer endpoints) can Bearer-forward the
-    # user's JWT instead of impersonating via X-Trino-User. The middleware
-    # in deploy.yaml must include this header in authResponseHeaders for
-    # it to actually reach upstreams.
-    pass_access_token = true
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true
 {% endif %}

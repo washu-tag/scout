@@ -59,8 +59,8 @@ def install_test_jwks(keypair, monkeypatch):
             return jwk if kid == _KID else None
 
     monkeypatch.setattr(jwks, "get_default", lambda url: _StaticCache())
-    monkeypatch.setattr(settings, "keycloak_jwks_url", "http://test/jwks")
-    monkeypatch.setattr(settings, "keycloak_issuer", "")
+    monkeypatch.setattr(settings, "oidc_jwks_url", "http://test/jwks")
+    monkeypatch.setattr(settings, "oidc_issuer", "")
     yield
 
 

@@ -35,6 +35,7 @@ report_viewer_service_dev_shared_secret: ''
 # we don't need to publish an image. See helm/report-viewer-service/values.yaml
 # (sourceConfigMap) for the chart-side details. Slower restarts (per-pod
 # pip install ~30-60s) — switch off once a real image is published.
+# TODO REMOVE TEEST MODE!!!!
 report_viewer_service_test_mode: false
 report_viewer_service_test_mode_python_image: python:3.12-slim
 # Source/requirements files projected into the CM. Resolved from the
@@ -57,13 +58,13 @@ report_viewer_service_resources_default:
     cpu: 1
     memory: 1Gi
 
-# Trino — pass-through JWT auth (ADR 0022): hits the HTTPS Trino with the
-# user's bearer, so OPA's per-user row filters + column masks apply to
-# materialize queries. Port 8080 (plain HTTP) was closed when ADR 0022
-# landed; everyone uses 8443 + https now.
+# Trino connection
 report_viewer_service_trino_host: 'trino.{{ trino_namespace }}'
 report_viewer_service_trino_port: '{{ trino_https_port }}'
 report_viewer_service_trino_scheme: https
 report_viewer_service_trino_catalog: delta
 report_viewer_service_trino_schema: default
 report_viewer_service_trino_ca_cert: ''
+report_viewer_service_trino_auth_token_url: '{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/token'
+report_viewer_service_trino_auth_client_id: report_viewer_svc
+report_viewer_service_trino_auth_client_secret: '{{ keycloak_report_viewer_svc_client_secret }}'
