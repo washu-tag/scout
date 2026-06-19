@@ -600,3 +600,5 @@ it so it's not a blocker.
 - What sort of testing automated testing is in place and is needed?
 
 - CI needed to build image for this service and push. Remove report_viewer_service_test_mode!
+
+- Embed vs non-embed view -> not a big use case for non-embed, claude is putting to much into this distinciton, need to remove that notion from the code.
