@@ -3,10 +3,19 @@
 This chart defines the deployment of the minimum services of [dcm4chee-arc-light](https://github.com/dcm4che/dcm4chee-arc-light/wiki/Run-minimum-set-of-archive-services-on-a-single-host)
 and is configured with Ansible as an optional part of a standard Scout installation.
 
+## HTTP routing (subdomain, not subpath)
+
+The dcm4chee archive UI/API only works when served from the root path (`/`) of a host —
+it cannot be reverse-proxied under a subpath prefix (e.g. `<host>/dcm4chee`). Scout therefore
+gives it its own subdomain, `dcm4chee.<server_hostname>`, rather than a subpath of the main
+host. This avoids the previous conflict with Superset (which has the same root-only constraint)
+and is the same approach used for Orthanc (`orthanc.<server_hostname>`). The wildcard
+`*.<server_hostname>` TLS cert (see `scout_common`) already covers the subdomain, and the app's
+own UI path (`/dcm4chee-arc/ui2`) lives under that subdomain root.
+
 ## Known limitations
 
-As of right now, the deployment only works when deployed at the root of the server, so it is not
-compatible with running superset at the same time. Additionally, there may be some sort of persistent and intermittent connectivity
+There may be some sort of persistent and intermittent connectivity
 issue in attempting to communicate with the PACS over DIMSE. For example, in attempting to perform a C-ECHO twice, it may work once and then fail the next time like this:
 ```shell
 $ echoscu -aec DCM4CHEE myurl 11112 -v

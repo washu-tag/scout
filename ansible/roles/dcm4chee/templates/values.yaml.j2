@@ -17,7 +17,7 @@ ingress:
   enabled: true
   className: traefik
   hosts:
-    - host: '{{ server_hostname }}'
+    - host: 'dcm4chee.{{ server_hostname }}'
       paths:
         - path: /
           pathType: Prefix
