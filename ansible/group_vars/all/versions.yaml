@@ -148,7 +148,7 @@ gpu_operator_version: ~25.10.1
 # renovate: datasource=docker depName=dcm4che/dcm4che-tools
 dcm4che_tools_version: 5.33.1
 # renovate: datasource=docker depName=dcm4che/dcm4chee-arc-psql
-dcm4chee_arc_version: 5.34.0
+dcm4chee_arc_version: 5.34.3
 # renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose
 dcm4chee_db_version: 17.4-34
 # renovate: datasource=docker depName=dcm4che/slapd-dcm4chee versioning=loose
