@@ -12,6 +12,8 @@ service:
   type: ClusterIP
   http: 8080
   dicom: {{ dcm4chee_dicom_port }}
+  dicomAnnotations: {{ dcm4chee_dicom_service_annotations | to_json }}
+  dicomLoadBalancerClass: {{ dcm4chee_dicom_service_load_balancer_class | to_json }}
 
 ingress:
   enabled: true

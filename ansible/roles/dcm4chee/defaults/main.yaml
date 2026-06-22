@@ -5,6 +5,12 @@ dcm4chee_timezone: '{{ timezone }}'
 # DICOM configuration
 dcm4chee_dicom_port: 11112
 
+# To use Cloud Provider load balancers, annotations and a load balancer class may be needed
+# for the DIMSE LoadBalancer service. Leave empty on-prem (K3s ServiceLB binds the port on
+# every node, so it is reachable at <node>:<dcm4chee_dicom_port>).
+dcm4chee_dicom_service_annotations: {}
+dcm4chee_dicom_service_load_balancer_class: ''
+
 # Storage configuration
 # Per-volume storage classes allow different I/O profiles:
 # - wildfly: Application server state

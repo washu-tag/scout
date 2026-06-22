@@ -51,6 +51,8 @@ The following variables all have default values if not provided in your inventor
 `dcm4chee_db_password`: Password for the database account. Defaults to `pacs`.
 
 The following variables are fully optional and can be omitted entirely:
+`dcm4chee_dicom_service_load_balancer_class`: `loadBalancerClass` for the DIMSE `LoadBalancer` service. Needed on cloud providers (e.g. `service.k8s.aws/nlb`); leave unset on-prem, where K3s ServiceLB binds the port on every node.
+`dcm4chee_dicom_service_annotations`: Annotations for the DIMSE `LoadBalancer` service (cloud-provider LB tuning). Defaults to `{}`.
 `dcm4chee_populate`: The path on the local disk to use for a job to send data to the PACS. If the variable is not defined,
 the populate job will be skipped. Otherwise, it will be created as an async job to populate the PACS from the provided
 directory.
