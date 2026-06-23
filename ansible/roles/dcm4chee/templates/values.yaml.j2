@@ -97,3 +97,6 @@ uiManagementUrl: {{ dcm4chee_ui_management_url | default('https://dcm4chee.' ~ s
 managementConsole:
   enabled: {{ dcm4chee_expose_management_console | bool | to_json }}
   httpsPort: {{ dcm4chee_management_https_port }}
+
+adminBootstrap:
+  enabled: {{ dcm4chee_expose_management_console | bool | to_json }}

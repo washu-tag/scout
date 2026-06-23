@@ -838,6 +838,11 @@ k3s_cluster:
     # non-standard :9993/console. The dcm4chee ingress is not behind oauth2-proxy, so this puts
     # the management console on the public subdomain — set false for internet-facing deployments.
     # dcm4chee_expose_management_console: true
+    # Seeds the WildFly ManagementRealm admin (login for the console above). The password is
+    # REQUIRED whenever the console is enabled; vault-encrypt it. Seeded on first boot only —
+    # changing it later won't rotate the existing user (re-run add-user.sh or recreate the PVC).
+    # dcm4chee_admin_user: admin
+    # dcm4chee_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Cloud Provider load balancer for the DICOM port (mirrors orthanc_dicom_service_*).
     # Leave unset on-prem — K3s ServiceLB binds the port on every node, so it is reachable

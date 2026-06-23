@@ -23,6 +23,14 @@ dcm4chee_management_https_port: 9993
 # Override the console URL the UI links to (defaults to the ingress subdomain above):
 # dcm4chee_ui_management_url: ''
 
+# WildFly ManagementRealm admin, seeded on first boot so the console is loggable-into.
+# dcm4chee_admin_password is REQUIRED when dcm4chee_expose_management_console is true (the deploy
+# asserts it) — set it in inventory, vault-encrypted. It seeds the user only on first boot (the
+# account then persists on the wildfly PVC), so changing it later does not rotate the existing
+# user; re-run add-user.sh in the pod or recreate the PVC to change it.
+dcm4chee_admin_user: admin
+# dcm4chee_admin_password: ''  # required when the console is enabled (vault-encrypt it)
+
 # Reverse-proxy behavior: the archive runs behind the Traefik ingress on 443, so trust
 # X-Forwarded-* headers and use 443 (not the default :8443) for HTTPS redirects, keeping every
 # UI link/redirect on a standard port.
