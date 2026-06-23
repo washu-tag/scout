@@ -23,6 +23,20 @@ ingress:
       paths:
         - path: /
           pathType: Prefix
+{% if dcm4chee_expose_management_console | bool %}
+        # WildFly admin console (HAL). /console and /management are HAL's native paths (no prefix
+        # rewrite). They target the management HTTPS port via the dedicated arc-management service
+        # (HTTP port 9990 always 302s to :9993 absolutely; the HTTPS port serves relative
+        # redirects). Traefik prioritizes these longer prefixes over '/'.
+        - path: /console
+          pathType: Prefix
+          serviceName: arc-management
+          port: {{ dcm4chee_management_https_port }}
+        - path: /management
+          pathType: Prefix
+          serviceName: arc-management
+          port: {{ dcm4chee_management_https_port }}
+{% endif %}
 
 resources: {{ dcm4chee_resources_default | combine(dcm4chee_resources | default({}), recursive=true) | to_json }}
 
@@ -71,3 +85,15 @@ versions:
   ldap: '{{ dcm4chee_ldap_version }}'
 
 timezone: '{{ dcm4chee_timezone }}'
+
+# Reverse-proxy / browser-facing URL settings. The archive runs behind the Traefik ingress on
+# 443, so keep every UI link and redirect on a standard port (no :8443, no :9993).
+httpProxyAddressForwarding: {{ dcm4chee_http_proxy_address_forwarding | to_json }}
+redirectHttpsPort: {{ dcm4chee_redirect_https_port | to_json }}
+{% if dcm4chee_expose_management_console | bool %}
+uiManagementUrl: {{ dcm4chee_ui_management_url | default('https://dcm4chee.' ~ server_hostname ~ '/console', true) | to_json }}
+{% endif %}
+
+managementConsole:
+  enabled: {{ dcm4chee_expose_management_console | bool | to_json }}
+  httpsPort: {{ dcm4chee_management_https_port }}

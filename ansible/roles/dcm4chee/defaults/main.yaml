@@ -5,6 +5,30 @@ dcm4chee_timezone: '{{ timezone }}'
 # DICOM configuration
 dcm4chee_dicom_port: 11112
 
+# WildFly management / administration console.
+# When true, the Archive UI's "Administration Console" link is served through the ingress at
+# https://dcm4chee.<server_hostname>/console instead of WildFly's default non-standard
+# MANAGEMENT_HTTPS_PORT (:9993/console). HAL's native /console + /management paths are routed to
+# the management HTTPS port (9990 always 302s to :9993 absolutely; 9993 serves relative
+# redirects) via a dedicated arc-management service whose Traefik ServersTransport speaks HTTPS
+# to the pod. TLS to the browser terminates at the ingress.
+# NOTE: the dcm4chee image seeds no WildFly management user, so the console will prompt for
+# ManagementRealm credentials that don't exist until one is created (e.g. add-user.sh, or the
+# image's WILDFLY_ADMIN_USER/WILDFLY_ADMIN_PASSWORD env). This flag only fixes reachability.
+# SECURITY: the dcm4chee ingress is not behind oauth2-proxy, so this exposes the WildFly
+# management console on the public subdomain. Acceptable for dev PACS; gate or disable for
+# anything internet-facing.
+dcm4chee_expose_management_console: true
+dcm4chee_management_https_port: 9993
+# Override the console URL the UI links to (defaults to the ingress subdomain above):
+# dcm4chee_ui_management_url: ''
+
+# Reverse-proxy behavior: the archive runs behind the Traefik ingress on 443, so trust
+# X-Forwarded-* headers and use 443 (not the default :8443) for HTTPS redirects, keeping every
+# UI link/redirect on a standard port.
+dcm4chee_http_proxy_address_forwarding: true
+dcm4chee_redirect_https_port: 443
+
 # To use Cloud Provider load balancers, annotations and a load balancer class may be needed
 # for the DIMSE LoadBalancer service. Leave empty on-prem (K3s ServiceLB binds the port on
 # every node, so it is reachable at <node>:<dcm4chee_dicom_port>).

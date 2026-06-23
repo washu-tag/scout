@@ -1,0 +1,13 @@
+{{- if .Values.managementConsole.enabled }}
+# Lets Traefik speak HTTPS to the WildFly management port over the in-cluster hop. The
+# management interface presents a self-signed cert, so verification is skipped for this
+# internal pod-to-pod connection (TLS to the browser is still terminated at the ingress).
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: arc-management-transport
+  labels:
+    {{- include "dcm4chee.labels" . | nindent 4 }}
+spec:
+  insecureSkipVerify: true
+{{- end }}

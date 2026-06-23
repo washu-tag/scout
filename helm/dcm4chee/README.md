@@ -49,10 +49,15 @@ The following variables all have default values if not provided in your inventor
 `dcm4chee_db`: Name of the (postgres) database to use for DCM4CHEE. Defaults to `pacsdb`.
 `dcm4chee_db_user`: Username for the database account. Defaults to `pacs`.
 `dcm4chee_db_password`: Password for the database account. Defaults to `pacs`.
+`dcm4chee_expose_management_console`: When `true` (default), serve the WildFly admin console through the ingress at `https://dcm4chee.<server_hostname>/console` and point the Archive UI's "Administration Console" link there (via `UI_MANAGEMENT_URL`), instead of the WildFly default non-standard port `:9993/console`. HAL's `/console` and `/management` paths are routed to the management **HTTPS** port via a dedicated `arc-management` service + a Traefik `ServersTransport` (the management HTTP port always 302-redirects to `:9993` absolutely; the HTTPS port serves relative redirects). **Note:** the image seeds no management user, so the console prompts for `ManagementRealm` credentials that don't exist until you create one — this flag only fixes reachability. **Security:** the dcm4chee ingress is not behind oauth2-proxy, so this exposes the management console on the public subdomain — fine for dev, gate or set `false` for internet-facing deployments.
+`dcm4chee_management_https_port`: WildFly management HTTPS port the console/management ingress paths target. Defaults to `9993`.
+`dcm4chee_http_proxy_address_forwarding`: Sets `HTTP_PROXY_ADDRESS_FORWARDING` so WildFly trusts `X-Forwarded-*` from the ingress. Defaults to `true`.
+`dcm4chee_redirect_https_port`: Sets `REDIRECT_HTTPS_PORT` — the port WildFly uses for HTTPS redirects. Defaults to `443` (WildFly's own default is `8443`, a non-standard port) so no UI redirect lands on a non-standard port.
 
 The following variables are fully optional and can be omitted entirely:
 `dcm4chee_dicom_service_load_balancer_class`: `loadBalancerClass` for the DIMSE `LoadBalancer` service. Needed on cloud providers (e.g. `service.k8s.aws/nlb`); leave unset on-prem, where K3s ServiceLB binds the port on every node.
 `dcm4chee_dicom_service_annotations`: Annotations for the DIMSE `LoadBalancer` service (cloud-provider LB tuning). Defaults to `{}`.
+`dcm4chee_ui_management_url`: Override the HTTPS URL the Archive UI links to for the admin console. Defaults to `https://dcm4chee.<server_hostname>/console` (only used when `dcm4chee_expose_management_console` is `true`).
 `dcm4chee_populate`: The path on the local disk to use for a job to send data to the PACS. If the variable is not defined,
 the populate job will be skipped. Otherwise, it will be created as an async job to populate the PACS from the provided
 directory.
