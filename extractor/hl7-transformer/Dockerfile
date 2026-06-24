@@ -18,10 +18,10 @@ WORKDIR /app
 # (2.29.52 for 3.4.2); newer 2.x releases are compatible and carry SDK and
 # embedded-netty CVE fixes.
 ADD --chown=spark \
-    https://repo1.maven.org/maven2/io/delta/delta-spark_4.1_2.13/4.2.0/delta-spark_4.1_2.13-4.2.0.jar \
-    https://repo1.maven.org/maven2/io/delta/delta-storage/4.2.0/delta-storage-4.2.0.jar \
+    https://repo1.maven.org/maven2/io/delta/delta-spark_4.1_2.13/4.3.0/delta-spark_4.1_2.13-4.3.0.jar \
+    https://repo1.maven.org/maven2/io/delta/delta-storage/4.3.0/delta-storage-4.3.0.jar \
     https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.4.2/hadoop-aws-3.4.2.jar \
-    https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.46.9/bundle-2.46.9.jar \
+    https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.46.17/bundle-2.46.17.jar \
     ${SPARK_HOME}/jars/
 
 # Create venv. The seeded setuptools (ubuntu's 59.6.0) has known CVEs.
