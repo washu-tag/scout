@@ -163,3 +163,34 @@ def test_downstream_extraction_pattern(spark, tmp_path):
     assert row.msh[9] == "2.25.705"  # MSH-10 message control id
     assert row.pid[1] == "MPI123"  # PID-2
     assert row.obx_lines[0].fields[4] == "Report text line"  # OBX-5
+
+
+def test_repeated_segments_keep_file_order(spark, tmp_path):
+    # deltalake.py posexplodes the OBX segments and assembles report_text in
+    # array order, so the reader must keep repeated segments in file order.
+    path = write_hl7(
+        tmp_path,
+        "multi_obx.hl7",
+        [MSH, "OBX|1|TX|||LINE-A", "OBX|2|TX|||LINE-B", "OBX|3|TX|||LINE-C"],
+    )
+    obx = (
+        read_hl7(spark, [path])
+        .select(F.expr("filter(segments, x -> x.id = 'OBX')").alias("obx"))
+        .collect()[0]
+        .obx
+    )
+
+    assert [segment.fields[4] for segment in obx] == ["LINE-A", "LINE-B", "LINE-C"]
+
+
+def test_segment_of_only_pipes_yields_empty_id(spark, tmp_path):
+    # Documented divergence from smolder, which threw on an empty field array
+    # and failed the whole task. A pipes-only line yields a segment with an
+    # empty id and no fields, which matches no downstream id filter and is
+    # harmless. hl7log-extractor never produces this (segment lines start with
+    # an id).
+    path = write_hl7(tmp_path, "pipes_only.hl7", [MSH, "|||"])
+    row = read_one(spark, path)
+
+    assert [segment.id for segment in row.segments] == [""]
+    assert list(row.segments[0].fields) == []
