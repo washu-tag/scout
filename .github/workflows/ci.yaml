@@ -100,7 +100,6 @@ jobs:
             allow-failure: true
           - image-name: keycloak
             subproject: keycloak
-            allow-failure: true
           - image-name: xnat-plugin-installer
             subproject: docker/xnat-plugin-installer
             allow-failure: true
