@@ -147,8 +147,8 @@ jobs:
       # JVM for the PySpark local-mode tests
       - uses: actions/setup-java@v5
         with:
-          distribution: ${{ ENV.JAVA_DIST }}
-          java-version: ${{ ENV.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DIST }}
+          java-version: ${{ env.JAVA_VERSION }}
       - name: Install Molecule and dependencies
         run: |
           pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests pyspark==3.5.4
