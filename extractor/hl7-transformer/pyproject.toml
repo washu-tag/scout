@@ -19,12 +19,12 @@ classifiers = [
 ]
 requires-python = ">= 3.10"  # delta-spark 4.x requires 3.10
 dependencies = [
-    "delta-spark==4.2.0",
+    "delta-spark==4.3.0",
     "fastapi",
     "psycopg[binary]",
     "pyspark==4.1.1",
     "s3fs",
-    "temporalio ~= 1.28.0",
+    "temporalio ~= 1.29.0",
     "trino",
     "uvicorn",
 ]
