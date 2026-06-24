@@ -35,6 +35,14 @@ ext['postgresql.version'] = '42.7.11'
 // plus the earlier 4.2.13 batch (CVE-2026-42577 through -42587).
 ext['netty.version'] = '4.2.15.Final'
 
+// TODO: Remove once Spring Boot manages jackson-databind >= 2.21.4 / 3.1.4.
+// Overrides the Spring Boot BOM's pinned Jackson lines to address
+// CVE-2026-54512 and CVE-2026-54513 (HIGH) in jackson-databind. Spring Boot 4
+// carries both Jackson 2 (com.fasterxml, jackson-2-bom) and Jackson 3
+// (tools.jackson, jackson-bom).
+ext['jackson-2-bom.version'] = '2.21.4'
+ext['jackson-bom.version'] = '3.1.4'
+
 // TODO: Remove once Temporal ships a release that brings opentelemetry >= 1.62.0.
 // Pins the io.opentelemetry:* family (transitively from temporal-sdk) to 1.62.0
 // to address the opentelemetry-api vulnerability CVE-2026-45292. Imported via
