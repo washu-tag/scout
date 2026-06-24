@@ -202,6 +202,46 @@ will re-wedge it the same way.
    cancelled; confirm the start-to-close/`deltaIngestTimeout` covers the realistic
    derivative + mapping + epic-view runtime, especially under concurrent-ingest load.
 
+## The Postgres `file_statuses` error rows — two distinct causes
+
+The ingest-status DB (`ingest` database on `postgresql-cluster`, scout-core) has
+**5,665,043 `failed` HL7 rows**. The merge error itself writes nothing (the Python
+activity's `except` just re-raises); the rows come from the **Java workflow**
+`IngestHl7ToDeltaLakeWorkflowImpl` — on any `ActivityFailure` it calls
+`writeHl7FilesErrorStatusToDb`, marking **every HL7 file in that run's manifest**
+`failed` with `"Error ingesting HL7 to delta lake: " + e.getMessage()`. So one failed
+run produces *manifest-size* rows. Breakdown by `workflow_id`:
+
+| When | workflow_id | rows | `e.getMessage()` | Cause |
+|---|---|---|---|---|
+| 2026-06-05 | `59e3b220…` | 3,040,278 | **`Activity task timed out` … MAXIMUM_ATTEMPTS_REACHED** | full-dataset backfill **timed out** |
+| 2026-06-06 | `04f76828…` | 2,422,329 | **`Activity task timed out` … MAXIMUM_ATTEMPTS_REACHED** | full-dataset backfill **timed out** |
+| 2026-06-12 → 24 | daily ids (`a167dec6…`, `f9b8d494…`, … `c5a74e0c…`) + 6-23 cluster | ~202,429 | **`Activity task failed`** (`identity='…hl7-transformer…'`) | the **merge wedge** |
+| 6-04/05 | `24db33a4…`, `0b8b9725…` | 7 | "File is not parsable as HL7" / "empty" | unparsable messages |
+
+**Answer to "what caused all those errors": ~96% are a separate, earlier event, not the
+wedge.** The two 6-05/6-06 runs are the **full-dataset backfill timing out** — manifests
+of ~3.04M and ~2.42M files whose `ingest_hl7_files_to_delta_lake` activity exceeded its
+Temporal timeout (retried to max attempts, `identity=''` — the worker never reported
+back), so the workflow flagged every file in each manifest. These predate the wedge
+(which began 6-12, when the derivative checkpoint was still advancing) and carry a
+different failure (`timed out`, not the merge error).
+
+Only the ~202k rows from 6-12 onward (one daily manifest each, sizes matching the base
+commits: 10,321 / 10,442 / …, plus the larger 6-23 cluster) are the merge wedge
+(`Activity task failed`).
+
+**Common root, different symptom.** Both stem from the same coupled
+base-merge + derivative activity exceeding its Temporal timeout on heavy work. On
+6-05/6-06 the *full dataset* timed out outright → millions of `failed` rows, no wedge.
+On 6-12 a *daily* run's derivative was cancelled/timed-out **after** its base merge
+committed → Temporal retry re-merged the same rows → duplicate CDC → the permanent
+merge wedge. So the giant error count and the wedge are siblings of the same timeout
+problem, but the 5.46M rows are the backfill timeout, not the wedge.
+
+(Counts reconcile exactly: 3,040,278 + 2,422,329 timeout + 202,429 wedge + 7 parse =
+5,665,043 = total HL7 `failed`.)
+
 ## What was NOT the problem
 
 - No corrupt/unreadable parquet or `_delta_log` entries.

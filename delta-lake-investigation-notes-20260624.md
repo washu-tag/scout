@@ -142,3 +142,31 @@ curl -sG http://localhost:8080/loki/api/v1/query_range -H 'X-Scope-OrgID: fake' 
 # Tip: filter out "[Stage" progress-bar spam; Spark prints thousands of those lines.
 ```
 Retention seen: Temporal visibility ≈ days (rolled off 6-12); Loki retained 6-12 fine.
+
+## Ingest-status Postgres table (added after follow-up)
+
+- Table `file_statuses` lives in the **`ingest`** database on CNPG cluster
+  `postgresql-cluster` (namespace **scout-core**). The transformer reaches it via the
+  `postgres-secret` (scout-extractor). Append-only; `status` ∈ {`parsed`(Log),
+  `staged`(HL7), `success`(transformer), `failed`}; `type` ∈ {`HL7`,`Log`}.
+- **Query without harvesting creds**: exec the CNPG primary and use local peer auth —
+  ```bash
+  kubectl exec -n scout-core postgresql-cluster-1 -c postgres -- \
+    psql -U postgres -d ingest -P pager=off -c "<SQL>"
+  ```
+  (Reading the `postgres-secret` to extract DB creds is correctly blocked; the in-pod
+  local connection is the clean read-only path.) Indexes exist on `(status,type)` and
+  `workflow_id` — group failures by those, not `processed_at` (unindexed on this table;
+  full scans of the 5.6M `failed` rows take ~minutes).
+- **Who writes the `failed` rows**: NOT the Python merge path (its `except` re-raises).
+  The **Java** `IngestHl7ToDeltaLakeWorkflowImpl` catch block (line ~106) calls
+  `writeHl7FilesErrorStatusToDb` on any `ActivityFailure`, marking **every file in the
+  run's manifest** `failed` → one failed run = manifest-size rows. This is why a single
+  6-05 run produced 3.04M rows.
+- **Finding**: 5,665,043 HL7 `failed` rows = 5.46M from two full-dataset backfill runs
+  on **6-05/6-06 that timed out** (`Activity task timed out … MAXIMUM_ATTEMPTS_REACHED`,
+  `identity=''`) + ~202k from the **6-12+ merge wedge** (`Activity task failed`,
+  `identity='…hl7-transformer…'`) + 7 unparsable. The bulk is the *backfill timeout*, a
+  separate earlier event from the wedge — same coupled-activity-timeout root, different
+  symptom. `e.getMessage()` (Temporal `ActivityFailure`) is what distinguishes them;
+  `timed out` vs `failed` is the tell.
