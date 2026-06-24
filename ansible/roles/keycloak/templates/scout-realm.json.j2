@@ -515,7 +515,7 @@
                 required-audience=mcp-trino, then impersonates the user
                 on its own service-principal Trino call (ADR 0022).
 
-              * trino-audience (aud=trino) — report-viewer-service forwards
+              * trino-audience (aud=trino) — report-viewer forwards
                 the same user token to Trino as Bearer (JWT pass-through,
                 ADR 0022 Jupyter pattern); Trino requires aud=trino.
 
@@ -634,7 +634,7 @@
       },
       {
         "name": "report_viewer_svc",
-        "description": "Service principal for report-viewer-service impersonating the chat/iframe user via X-Trino-User",
+        "description": "Service principal for report-viewer impersonating the chat/iframe user via X-Trino-User",
         "enabled": true,
         "clientId": "report_viewer_svc",
         "clientAuthenticatorType": "client-secret",

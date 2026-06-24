@@ -1,6 +1,6 @@
 """
 title: Scout Report Viewer Tool
-description: Save search SQL with the Scout report-viewer-service and surface
+description: Save search SQL with the Scout report-viewer and surface
              the search in chat as a small text summary + an iframe
              linking to the viewer. Rows are evaluated on demand by the
              service (no row materialization); chat carries only the
@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 class Tools:
-    """LLM-callable functions backed by the report-viewer-service. All
+    """LLM-callable functions backed by the report-viewer. All
     methods are namespaced `scout_*` to disambiguate from OWUI
     built-ins (search_notes, view_note, search_chats, etc.).
 
@@ -48,10 +48,10 @@ class Tools:
     """
 
     class Valves(BaseModel):
-        report_viewer_service_url: str = Field(
-            default="http://report-viewer-service.scout-analytics:8000",
+        report_viewer_url: str = Field(
+            default="http://report-viewer.scout-analytics:8000",
             description=(
-                "In-cluster base URL of the report-viewer-service. The tool "
+                "In-cluster base URL of the report-viewer. The tool "
                 "POSTs SQL here and embeds the public `view_url` it "
                 "returns into the chat message."
             ),
@@ -72,7 +72,7 @@ class Tools:
         # OWUI's cached access token if it's near expiry by the time we
         # dispatch a tool call. OWUI's own refresh loop runs on a schedule
         # that can drift across the access-token lifespan, leaving us
-        # forwarding a stale bearer to report-viewer-service (which 401s).
+        # forwarding a stale bearer to report-viewer (which 401s).
         # When all three are set, the tool calls Keycloak's token endpoint
         # with `__oauth_token__.refresh_token` to mint a fresh access token
         # right before its outbound POST. When any are empty, the tool
@@ -493,7 +493,7 @@ class Tools:
             f"Validating {len(ids)} IDs from {file_model.filename}…",
             done=False,
         )
-        url = f"{self.valves.report_viewer_service_url.rstrip('/')}/api/searches/from-file"
+        url = f"{self.valves.report_viewer_url.rstrip('/')}/api/searches/from-file"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -517,7 +517,7 @@ class Tools:
             await self._emit(
                 __event_emitter__, f"Import failed: HTTP {resp.status_code}", done=True
             )
-            return f"Error: HTTP {resp.status_code} from report-viewer-service: {resp.text}"
+            return f"Error: HTTP {resp.status_code} from report-viewer: {resp.text}"
         created = resp.json()
         view_url = self._resolve_view_url(created["view_url"])
         await self._emit(
@@ -656,7 +656,7 @@ class Tools:
         service computed from the request host."""
         if not self.valves.public_base_url:
             return service_view_url
-        # service_view_url looks like 'http://report-viewer-service/spa/searches/s_xxx'
+        # service_view_url looks like 'http://report-viewer/spa/searches/s_xxx'
         # Replace the scheme+host with the public base.
         try:
             path = service_view_url.split("/", 3)[-1]
@@ -670,7 +670,7 @@ class Tools:
         *,
         bearer: Optional[str],
     ) -> dict:
-        url = f"{self.valves.report_viewer_service_url.rstrip('/')}/api/reports/query"
+        url = f"{self.valves.report_viewer_url.rstrip('/')}/api/reports/query"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -723,7 +723,7 @@ class Tools:
         owui_chat_id: Optional[str] = None,
         owui_chat_title: Optional[str] = None,
     ) -> dict:
-        url = f"{self.valves.report_viewer_service_url.rstrip('/')}/api/searches"
+        url = f"{self.valves.report_viewer_url.rstrip('/')}/api/searches"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -748,7 +748,7 @@ class Tools:
         self, search_id: str, *, page: int, limit: int, bearer: Optional[str]
     ) -> dict:
         url = (
-            f"{self.valves.report_viewer_service_url.rstrip('/')}/api/searches/{search_id}"
+            f"{self.valves.report_viewer_url.rstrip('/')}/api/searches/{search_id}"
             f"/rows?page={page}&limit={limit}"
         )
         headers = {"Authorization": f"Bearer {bearer}"} if bearer else {}

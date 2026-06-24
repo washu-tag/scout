@@ -230,7 +230,7 @@ def push_persistent_config(token):
 
     if cfg.get("webhook_url") is not None:
         # OWUI's admin notification webhook URL — fires on new-user
-        # signup. We point it at report-viewer-service's receiver so
+        # signup. We point it at report-viewer's receiver so
         # newly-federated users get auto-enabled instead of waiting
         # for a manual admin flip (automates the approval gate from
         # ADR 0003 via ADR 0026's receiver). Endpoint discovered by

@@ -64,10 +64,10 @@
         default_model_id: '{{ open_webui_default_model_id | default("") }}'
         task_model_id: '{{ open_webui_task_model_id | default("") }}'
         # Webhook URL — fires on new-user signups (ADR 0026's auto-
-        # enable receiver). Defaults to the report-viewer-service in-cluster
+        # enable receiver). Defaults to the report-viewer in-cluster
         # endpoint so deploys without an inventory override still wire
         # auto-enable correctly. Set to '' in inventory to disable.
-        webhook_url: '{{ open_webui_webhook_url | default("http://report-viewer-service." ~ (report_viewer_service_namespace | default(chatbot_namespace)) ~ ":8000/webhooks/owui-new-user") }}'
+        webhook_url: '{{ open_webui_webhook_url | default("http://report-viewer." ~ (report_viewer_namespace | default(chatbot_namespace)) ~ ":8000/webhooks/owui-new-user") }}'
       filterFunctions: '{{ open_webui_filter_functions | default([]) }}'
       filterFunctionsToDelete: '{{ open_webui_filter_functions_to_delete | default([]) }}'
       toolFunctions: '{{ open_webui_tool_functions | default([]) }}'

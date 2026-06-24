@@ -16,6 +16,7 @@ k3s_cluster:
     hl7log_extractor_image_repository: docker.io/local/washu-tag/hl7log-extractor
     hl7_transformer_image_repository: docker.io/local/washu-tag/hl7-transformer
     launchpad_image_repository: docker.io/local/washu-tag/launchpad
+    report_viewer_image_repository: docker.io/local/washu-tag/report-viewer
 
     # Custom image repositories (for k3s-image-import-or-pull)
     superset_image_repository: docker.io/local/washu-tag/superset
@@ -46,6 +47,7 @@ k3s_cluster:
             NODE_IP minio.scout.test
             NODE_IP chat.scout.test
             NODE_IP playbooks.scout.test
+            NODE_IP report-viewer.scout.test
             NODE_IP testuser.jupyter.scout.test
             fallthrough
           }
@@ -211,6 +213,7 @@ k3s_cluster:
     keycloak_superset_svc_client_secret: ci-secret-svc-superset
     keycloak_openwebui_mcp_svc_client_secret: ci-secret-svc-mcp
     keycloak_voila_svc_client_secret: ci-secret-svc-voila
+    keycloak_report_viewer_svc_client_secret: ci-secret-svc-report-viewer
 
     # OPA bundle writer/reader (ADR 0021). Same shape as s3_lake_*
     # secrets; one is mounted into the Keycloak pod for the bundle
@@ -258,6 +261,9 @@ k3s_cluster:
 
     # Playbooks (Voilà)
     enable_playbooks: true
+
+    # Report Viewer
+    report_viewer_db_password: report-viewer123
 
     # Loki (disable caches for CI)
     loki_chunks_cache_enabled: false

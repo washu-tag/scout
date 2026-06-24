@@ -334,7 +334,7 @@ open_webui_tool_functions:
     description: Search for radiology reports in Scout's Delta Lake and view results in an embedded iframe.
     source_file: scout_report_viewer_tool.py
     valves:
-      report_viewer_service_url: 'http://report-viewer-service.{{ report_viewer_service_namespace | default(chatbot_namespace) }}:8000'
+      report_viewer_url: 'http://report-viewer.{{ report_viewer_namespace | default(chatbot_namespace) }}:8000'
       # Viewer URL the tool emits to OWUI's message.embeds. The SPA
       # posts {type:'iframe:height'} to its parent on load and resize,
       # which OWUI's FullHeightIframe.svelte (>= 0.9.5) honors for
@@ -344,7 +344,7 @@ open_webui_tool_functions:
       request_timeout_seconds: 120
       # Keycloak refresh-token grant credentials. The tool uses these
       # to refresh OWUI's cached bearer right before forwarding to
-      # report-viewer-service when the cached access token is near expiry.
+      # report-viewer when the cached access token is near expiry.
       # Without these, the tool just forwards the stale bearer and we
       # see "bearer rejected: token expired" 401s on the backend.
       # TODO: IS THIS NEEDED? SEEMS SPECULATIVE

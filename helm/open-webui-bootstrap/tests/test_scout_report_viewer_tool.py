@@ -1,4 +1,4 @@
-"""Smoke tests for scout_report_viewer_tool against a mocked report-viewer-service.
+"""Smoke tests for scout_report_viewer_tool against a mocked report-viewer.
 
 We're testing the integration shape: bearer forwarding, the iframe URL
 in the response, the public_base_url override, and graceful error
@@ -24,7 +24,7 @@ sys.path.insert(0, str(PAYLOADS))
 from scout_report_viewer_tool import ReportViewerServiceError, Tools  # noqa: E402
 
 
-SERVICE = "http://report-viewer-service.scout-analytics:8000"
+SERVICE = "http://report-viewer.scout-analytics:8000"
 
 
 def _run(coro):

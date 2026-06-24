@@ -28,6 +28,7 @@ jobs:
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
+      report-viewer: ${{ steps.filter.outputs.report-viewer }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
@@ -51,6 +52,8 @@ jobs:
               - 'helm/superset/**'
             keycloak:
               - 'keycloak/**'
+            report-viewer:
+              - 'report-viewer/**'
   lint:
     runs-on: ubuntu-latest
     permissions:
@@ -98,6 +101,8 @@ jobs:
           - image-name: keycloak
             subproject: keycloak
             allow-failure: true
+          - image-name: report-viewer
+            subproject: report-viewer
     steps:
       - uses: actions/checkout@v6
       - name: 'Check if image exists'
@@ -141,7 +146,7 @@ jobs:
           python-version: '3.12'
       - name: Install Molecule and dependencies
         run: |
-          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests
+          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests respx
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
@@ -154,6 +159,12 @@ jobs:
       - name: 'Unit tests: Open WebUI tool result attribute migrator filter'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_tool_result_attr_filter.py -v
+      - name: 'Unit tests: Open WebUI scout_report_viewer tool'
+        shell: bash
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_scout_report_viewer_tool.py -v
+      - name: 'Unit tests: report-viewer'
+        shell: bash
+        run: cd report-viewer && pip install -e '.[dev]' && pytest -v
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v
@@ -376,9 +387,9 @@ jobs:
       matrix:
         include:
           - side: analytics
-            subdomains: superset,chat,keycloak,auth,minio
+            subdomains: superset,chat,keycloak,auth,minio,report-viewer
             san_extra: ''
-            playbooks: k3s traefik postgres valkey auth lake trino superset chatbot launchpad
+            playbooks: k3s traefik postgres valkey auth lake trino superset chatbot report-viewer launchpad
             netpol_include: '--include trino-rw,opa-trino,mcp-trino-ingress'
           - side: notebooks
             # testuser.jupyter is the per-user singleuser pod ingress
@@ -469,6 +480,12 @@ jobs:
         with:
           subproject: helm/superset
           image-name: superset
+      - name: 'Push image to k3s - report-viewer'
+        if: matrix.side == 'analytics'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: report-viewer
+          image-name: report-viewer
       # hl7-transformer image is needed by the data-authorization seed
       # Job (writes the synthetic test_reports Delta table via PySpark
       # + Hive-Metastore-registered saveAsTable). The transformer
@@ -513,6 +530,8 @@ jobs:
           if [ "$SIDE" = "analytics" ]; then
             echo "=== Checking MCP Trino ==="
             sudo -E kubectl rollout status deployment/mcp-trino -n scout-analytics --timeout=180s
+            echo "=== Checking Report Viewer ==="
+            sudo -E kubectl rollout status deployment/report-viewer -n scout-analytics --timeout=180s
           fi
           if [ "$SIDE" = "notebooks" ]; then
             echo "=== Checking Voila ==="
@@ -720,6 +739,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
+      - name: 'Push Image - report-viewer'
+        if: needs.changes.outputs.report-viewer == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: report-viewer
   publish-demo:
     if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
@@ -785,3 +809,8 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
+      - name: 'Push Image - report-viewer'
+        if: needs.changes.outputs.report-viewer == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: report-viewer

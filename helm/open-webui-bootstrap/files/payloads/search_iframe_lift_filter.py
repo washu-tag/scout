@@ -72,7 +72,7 @@ class Filter:
         )
         base_url: str = Field(
             default="https://report-viewer.dev02.tag.rcif.io",
-            description="Public origin where the report-viewer-service viewer is reachable.",
+            description="Public origin where the report-viewer viewer is reachable.",
         )
 
     def __init__(self) -> None:

@@ -35,7 +35,7 @@ The shape of the problem differs per client:
 | Pattern | Outbound to Trino | Who appears in `identity.user` | Used by |
 |---|---|---|---|
 | **JWT pass-through** | User's own Keycloak JWT | The end user (from JWT's `preferred_username`) | JupyterHub |
-| **JWT + impersonation** | Service-principal JWT (`client_credentials`) + `X-Trino-User: <end user>` | The end user (from the header) | Superset, Voila, report-viewer-service |
+| **JWT + impersonation** | Service-principal JWT (`client_credentials`) + `X-Trino-User: <end user>` | The end user (from the header) | Superset, Voila, report-viewer |
 | **HTTP Basic + impersonation** | Service-principal password + `X-Trino-User: <end user>` | The end user (from the header) | Open WebUI MCP |
 
 Each impersonation-pattern client gets its own Keycloak service principal (`superset_svc`, `voila_svc`, `openwebui_mcp_svc`, `report_viewer_svc`), so a compromised credential blasts only that client's surface.
@@ -106,22 +106,22 @@ Open WebUI MCP (HTTP Basic + impersonation)
   Trino: principal=openwebui_mcp_svc, user=alice → OPA evaluates against data.users["alice"]
                                        impersonation: openwebui_mcp_svc ∈ trino_service_principals
 
-report-viewer-service, browser SPA / iframe (JWT + impersonation, header-driven)
+report-viewer, browser SPA / iframe (JWT + impersonation, header-driven)
 ────────────────────────────────────────────────────────────────────────────────
   user → oauth2-proxy (set_xauthrequest=true)
        ↓ X-Auth-Request-Preferred-Username: <username>   (username only; no token forwarded)
-  Traefik forwardAuth → report-viewer-service pod
+  Traefik forwardAuth → report-viewer pod
        ↓ reads username header → user context
        ↓ trino_client mints report_viewer_svc JWT (client_credentials; aud=trino; cached, re-minted at 4/5 lifetime)
        ↓ HTTP: Bearer <report_viewer_svc JWT>, X-Trino-User: <user>
   Trino: principal=report_viewer_svc, user=alice → OPA evaluates against data.users["alice"]
                                        impersonation: report_viewer_svc ∈ trino_service_principals
 
-report-viewer-service, OWUI tool runtime (JWT + impersonation, Bearer inbound)
+report-viewer, OWUI tool runtime (JWT + impersonation, Bearer inbound)
 ──────────────────────────────────────────────────────────────────────────────
-  user chats in OWUI → tool runtime POSTs to report-viewer-service in-cluster
+  user chats in OWUI → tool runtime POSTs to report-viewer in-cluster
        ↓ Authorization: Bearer <user-jwt>                # user JWT minted by `open-webui` client; aud includes trino
-  report-viewer-service: validates inbound JWT vs Keycloak JWKS (signature, iss, exp)
+  report-viewer: validates inbound JWT vs Keycloak JWKS (signature, iss, exp)
        ↓ reads preferred_username from validated token; JWT discarded (never forwarded)
        ↓ trino_client mints report_viewer_svc JWT (client_credentials; aud=trino; cached, re-minted at 4/5 lifetime)
        ↓ HTTP: Bearer <report_viewer_svc JWT>, X-Trino-User: <user>
