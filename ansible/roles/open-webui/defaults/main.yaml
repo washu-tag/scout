@@ -200,6 +200,18 @@ tool_server_connections:
     auth_type: system_oauth
     config:
       enable: true
+      # OWUI's has_connection_access() treats a tool server with missing/empty
+      # config.access_grants as private (admin-only): admins bypass the check,
+      # but non-admin users are denied, so the Trino MCP tool is invisible to
+      # regular users even though it's attached to the public Scout Explorer
+      # models. This public-read grant (same wildcard shape the models use)
+      # makes the connection available to all authenticated users; per-user
+      # data security is still enforced at Trino via the forwarded token
+      # (OPA row filters / column masks, ADR 0020/0022).
+      access_grants:
+        - principal_type: user
+          principal_id: '*'
+          permission: read
     info:
       id: '{{ mcp_trino_tool_id }}' # Referenced from models as `server:mcp:{id}`
       name: 'Trino MCP'
