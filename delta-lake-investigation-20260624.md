@@ -248,3 +248,50 @@ problem, but the 5.46M rows are the backfill timeout, not the wedge.
 - No duplicate keys *within* the base `reports` table (base MERGEs are 1:1).
 - Not specific to any particular report content — purely a function of the stuck
   checkpoint range and the curated table's missing dedup.
+
+## Appendix — Data accessed and PHI handling
+
+This investigation touched the production preprod lake and cluster. For the record, what
+was accessed and how PHI exposure was checked:
+
+**Data accessed**
+- **Pipeline source code** — no PHI.
+- **MinIO (`lake`, `scratch`) via `mc` (read-only service account)** — listed delta-table
+  layouts, `_delta_log` entries, scratch manifests; read checkpoint offset/commit files.
+- **Downloaded to local temp for analysis (these files *contain* PHI):** 6 `reports` CDC
+  parquet files (`_change_data/year=2026/` for base versions 63, 64, 68–71) and the
+  `reports` `_delta_log` commit JSONs (v55–121). The CDC parquet rows carry full report
+  PHI (`report_text`, `report_section_*`, `patient_name`/`full_patient_name`,
+  `birth_date`, `mpi`, `epic_mrn`, the `*_mr`/`*_ee`/`*_mrn` patient IDs,
+  `zip_or_postal_code`, `diagnoses`, `patient_ids`, …). Delta-log `add.stats` can carry
+  per-column min/max (potential PHI).
+- **Cluster (kubeconfig):** Temporal workflow history (visibility + one workflow's
+  history/input), Loki transformer logs around the incident, and the `ingest` Postgres
+  DB (`file_statuses`) queried via the CNPG pod's local connection.
+
+**How PHI exposure was checked**
+- **Column-projection audit of every parquet query.** All DuckDB queries projected only
+  `source_file`, `_change_type`, and `COUNT` aggregates. No PHI column was ever selected,
+  filtered on, or printed. The only row-level values displayed were `source_file` paths
+  (e.g. `…/AdtDftOru_7780_20260611.zip/…/AdtDftOru_7780_20260611_10197.hl7`) — feed name +
+  date + message-sequence, which contain no patient identifiers.
+- **Schema confirmed by name only** (`DESCRIBE`), not by reading values, to identify which
+  columns are PHI.
+- **Delta-log parsing limited to non-PHI fields** (`commitInfo`, `operationMetrics`, `cdc`
+  paths, timestamps, merge predicate). `add.stats` was never parsed or printed; raw JSON
+  did not enter the analysis context.
+- **Loki output** was Spark progress/lifecycle/error lines only — no report content.
+- **Postgres** queries returned only `type`/`status`/counts/`error_message`/`workflow_id`/
+  `processed_at`/`file_path` (file paths); that table holds no report content.
+- **Deliverables checked** — both `.md` files contain only file paths, counts, version
+  numbers, workflow IDs, and error strings; no PHI values.
+
+**Conclusion / hygiene.** No PHI values were viewed or written into context or the
+reports. PHI did transit local disk (the 6 CDC parquet files were downloaded and scanned
+by local queries for non-PHI aggregates only); all downloaded parquet, delta-log JSONs,
+and cluster query dumps were **deleted afterward** (verified none remain in temp dirs or
+the scratchpad). Note for compliance: if "PHI written to the analyst's local disk" is a
+reportable handling event regardless of whether values were viewed, that did occur for
+those files between download and deletion. A cleaner future approach is to project only
+the needed columns server-side (e.g. Trino `SELECT source_file …`) instead of pulling
+whole parquet files locally.
