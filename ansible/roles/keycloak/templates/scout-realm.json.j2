@@ -507,25 +507,18 @@
         "webOrigins": [
           "https://chat.{{ server_hostname }}"
         ],
-        {#- Audience scopes the OWUI user token carries to downstream
-            services it calls on the user's behalf (ADR 0022):
-
-              * mcp-trino-audience (aud=mcp-trino) — the MCP server
-                (tuannvm/mcp-trino) validates incoming user tokens with
-                required-audience=mcp-trino, then impersonates the user
-                on its own service-principal Trino call.
-
-              * report-viewer-audience (aud=report-viewer) — report-viewer
-                validates required-audience=report-viewer on inbound
-                Bearer tokens from the OWUI tool runtime.
+        {#- Audience scope the OWUI user token carries to report-viewer
+            on the user's behalf (ADR 0022). report-viewer validates
+            required-audience=report-viewer on inbound Bearer tokens
+            from the OWUI tool runtime.
 
             "roles" is intentionally absent from defaultClientScopes.
             Keycloak's built-in roles scope carries an audience-resolve
             protocol mapper that adds an `aud` entry for every client the
-            user has any role in — for an admin user that swelled the
-            token to 9 audiences (mcp-trino, oauth2-proxy, realm-management,
-            launchpad, superset, jupyterhub, grafana, account, temporal),
-            so a stolen OWUI token had implicit grants against half the
+            user has any role in. For an admin user that previously
+            swelled the token to 9 audiences (realm-management, launchpad,
+            superset, jupyterhub, grafana, account, temporal, etc.), so a
+            stolen OWUI token had implicit grants against half the
             cluster including realm-management. OWUI uses the `groups`
             claim (via microprofile-jwt) for role mapping and doesn't
             consume realm_access.roles, so dropping the scope here is
@@ -538,7 +531,6 @@
           "basic",
           "email",
           "microprofile-jwt",
-          "mcp-trino-audience",
           "report-viewer-audience"
         ],
         "optionalClientScopes": [
@@ -561,32 +553,6 @@
         "clientId": "superset_svc",
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_superset_svc_client_secret }}",
-        "serviceAccountsEnabled": true,
-        "standardFlowEnabled": false,
-        "directAccessGrantsEnabled": false,
-        "publicClient": false,
-        "protocol": "openid-connect",
-        "attributes": {
-          "access.token.lifespan": "{{ keycloak_trino_svc_token_lifespan }}"
-        },
-        "defaultClientScopes": [
-          "web-origins",
-          "acr",
-          "profile",
-          "roles",
-          "basic",
-          "email",
-          "microprofile-jwt",
-          "trino-audience"
-        ]
-      },
-      {
-        "name": "openwebui_mcp_svc",
-        "description": "Service principal for the Open WebUI Trino MCP sidecar (validates inbound Keycloak OIDC token, sets X-Trino-User to its preferred_username claim)",
-        "enabled": true,
-        "clientId": "openwebui_mcp_svc",
-        "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_openwebui_mcp_svc_client_secret }}",
         "serviceAccountsEnabled": true,
         "standardFlowEnabled": false,
         "directAccessGrantsEnabled": false,
@@ -1014,39 +980,6 @@
             "consentRequired": false,
             "config": {
               "included.custom.audience": "trino",
-              "id.token.claim": "false",
-              "access.token.claim": "true",
-              "introspection.token.claim": "true",
-              "lightweight.claim": "false"
-            }
-          }
-        ]
-      },
-      {#- Adds aud=mcp-trino to access tokens for the Open WebUI client.
-          The MCP Trino tool server (tuannvm/mcp-trino) validates inbound
-          tokens against this audience to authenticate the chat user
-          before impersonating them on the outbound Trino call. Without
-          this mapper Keycloak doesn't put a deterministic aud on OWUI
-          tokens, so oauth-mcp-proxy's audience check fails silently and
-          the user context never makes it to the impersonation path —
-          every chat query then hits Trino as the service account with
-          no row-filter attributes, and returns zero rows. -#}
-      {
-        "name": "mcp-trino-audience",
-        "description": "Adds aud=mcp-trino to access tokens for Open WebUI users querying via the MCP tool",
-        "protocol": "openid-connect",
-        "attributes": {
-          "include.in.token.scope": "false",
-          "display.on.consent.screen": "false"
-        },
-        "protocolMappers": [
-          {
-            "name": "mcp-trino-audience-mapper",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-audience-mapper",
-            "consentRequired": false,
-            "config": {
-              "included.custom.audience": "mcp-trino",
               "id.token.claim": "false",
               "access.token.claim": "true",
               "introspection.token.claim": "true",

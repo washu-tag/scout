@@ -172,38 +172,9 @@ open_webui_csp_enabled: true
 # OAuth fields are env-only (ENABLE_OAUTH_PERSISTENT_CONFIG=false skips
 # loading them from the config table).
 
-# Trino MCP tool server — registered automatically as an Open WebUI external tool
-# so users don't have to add it via Admin → Settings → Integrations.
-# Override `tool_server_connections: []` to skip registration (e.g., environments
-# without MCP Trino deployed).
-mcp_trino_url: 'http://mcp-trino.{{ scout_analytics_namespace }}:8080/mcp'
-mcp_trino_tool_id: 'scout-db'
-tool_server_connections:
-  - type: mcp # OWUI defaults to 'openapi'; MCP servers must declare explicitly
-    url: '{{ mcp_trino_url }}'
-    # `path`, `key`, `auth_type`, and `config` are all REQUIRED dict keys on
-    # OWUI's ToolServerConnection Pydantic model (Optional[X] without default
-    # = required-but-nullable in Pydantic v2). Missing any of them causes
-    # GET /api/v1/configs/tool_servers to return 500 because the response
-    # serializer validates against the model — that breaks the admin
-    # Integrations page. The runtime hot path uses .get() with defaults so
-    # the MCP tool itself works regardless, but the admin UI doesn't.
-    path: '' # openapi-spec path; meaningless for MCP but required by the model
-    key: null # API key for openapi/oauth tool servers; null for MCP-anonymous
-    # system_oauth forwards the logged-in user's Keycloak access token as
-    # `Authorization: Bearer <token>` on every MCP call. mcp-trino validates
-    # the token, extracts preferred_username, and sets X-Trino-User on the
-    # outbound Trino call (TRINO_ENABLE_IMPERSONATION=true). Requires users
-    # to authenticate via OAuth (OWUI's OIDC login flow); locally-authed
-    # users have no IdP token to forward and the Authorization header is
-    # silently omitted.
-    auth_type: system_oauth
-    config:
-      enable: true
-    info:
-      id: '{{ mcp_trino_tool_id }}' # Referenced from models as `server:mcp:{id}`
-      name: 'Trino MCP'
-      description: 'Query Scout Delta Lake with Trino'
+# No external tool servers registered by default. The Scout Explorer
+# models use the in-image `scout_report_viewer` Python tool instead.
+tool_server_connections: []
 
 # Disable Arena Model evaluation feature (per README post-deploy step 7)
 open_webui_enable_arena_models: false
@@ -365,7 +336,7 @@ open_webui_tool_functions:
 # name / advanced params).
 open_webui_scout_system_prompt_file: scout-system-prompt.md
 open_webui_scout_tool_ids:
-  - 'server:mcp:{{ mcp_trino_tool_id }}'
+  - scout_report_viewer_tool
 open_webui_scout_default_reasoning_effort: high
 open_webui_scout_default_function_calling: native
 # keep_alive defaults are derived from each scout_models entry's `preload`:

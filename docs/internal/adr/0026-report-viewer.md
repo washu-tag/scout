@@ -251,8 +251,8 @@ NEVER forwarded onward to Trino; it's used only for inbound AuthN.
 **Outbound, service authenticates to Trino:**
 
 The service follows the impersonation pattern from
-[ADR 0022](0022-trino-auth-and-impersonation.md) (same as Superset,
-Voila, OWUI MCP):
+[ADR 0022](0022-trino-auth-and-impersonation.md) (same as Superset
+and Voila):
 
 - New confidential Keycloak client `report_viewer_svc` with
   `trino-audience` in `defaultClientScopes`. Service Accounts enabled;
@@ -271,8 +271,8 @@ Voila, OWUI MCP):
 
 The REST API is the underlying service contract. It's resource-shaped (CRUD
 on searches plus RPC operations on reports), independent of the
-intent-shaped tool surface the LLM sees. Multiple tool consumers (OWUI today,
-MCP later) all hit this same API.
+intent-shaped tool surface the LLM sees. Multiple tool consumers can hit
+this same API; today the only one is the OWUI in-image tool.
 
 **Search CRUD** (the search resource):
 

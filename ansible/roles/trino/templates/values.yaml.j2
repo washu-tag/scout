@@ -7,14 +7,9 @@ server:
     query:
       # Cluster-wide max memory = workers × worker_heap × per_node_fraction
       maxMemory: "{{ trino_worker_max_heap | multiply_memory(trino_worker_count * trino_per_node_query_memory_fraction) }}B"
-    # Dual-mode auth. JWT is the primary path (user JWTs from Jupyter,
-    # service-account JWTs from Superset/Voila); PASSWORD is the interim
-    # accommodation for upstream `tuannvm/mcp-trino`, which only supports
-    # HTTP Basic outbound (sole entry: openwebui_mcp_svc rendered from
-    # trino_openwebui_mcp_svc_password; ADR 0022). When the custom MCP
-    # tool ships and starts speaking JWT, the password authenticator and
-    # the PASSWORD entry on this line are removed.
-    authenticationType: PASSWORD,JWT
+    # JWT-only: user JWTs from Jupyter, service-principal JWTs from
+    # Superset/Voila/report-viewer (ADR 0022).
+    authenticationType: JWT
     https:
       enabled: true
       port: {{ trino_https_port }}
@@ -22,16 +17,13 @@ server:
         path: /etc/trino/tls/keystore.p12
   # Coordinator-only config. JWT settings + keystore password aren't
   # recognized by workers (they don't serve auth or HTTPS), so the chart
-  # writes them only to the coordinator's config.properties. The file-
-  # based PASSWORD authenticator is also coordinator-only — workers
-  # don't terminate client auth.
+  # writes them only to the coordinator's config.properties.
   coordinatorExtraConfig: |
     http-server.authentication.jwt.key-file={{ trino_keycloak_jwks_url }}
     http-server.authentication.jwt.required-audience={{ trino_keycloak_required_audience }}
     http-server.authentication.jwt.principal-field=preferred_username
     http-server.authentication.jwt.user-mapping.pattern=(?:service-account-)?(.+)
     http-server.https.keystore.key=${ENV:KEYSTORE_PASSWORD}
-    password-authenticator.config-files=/etc/trino/password-auth/password-authenticator.properties
 
 # Service exposes both ports per the chart's design:
 #   - 8080/http: worker→coordinator internal-communication (shared-secret-
@@ -71,19 +63,10 @@ accessControl:
 # chart mounts on every pod (coordinator + workers); workers don't read
 # keystore.p12 since internal-comm runs over HTTP, but the mount is
 # harmless and keeps the values structure simple.
-#
-# trino-password-auth: contains password-authenticator.properties +
-# password.db for the file-based PASSWORD authenticator. Coordinator
-# reads it on startup and again every `file.refresh-period` so adding
-# / rotating a service principal doesn't need a pod restart. Mount is
-# also harmless on workers (they don't terminate client auth).
 secretMounts:
   - name: trino-tls
     secretName: trino-tls
     path: /etc/trino/tls
-  - name: trino-password-auth
-    secretName: trino-password-auth
-    path: /etc/trino/password-auth
 
 {% if aws_deployment %}
 serviceAccount:

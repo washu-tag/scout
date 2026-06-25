@@ -299,16 +299,12 @@ k3s_cluster:
     keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_open_webui_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # Trino AuthZ service principals (ADR 0022): Superset, Voila, the Open
-    # WebUI MCP, and report-viewer-service each authenticate to Trino as a
-    # dedicated Keycloak client and impersonate the end user via X-Trino-User.
+    # Trino AuthZ service principals (ADR 0022): Superset, Voila, and
+    # report-viewer each authenticate to Trino as a dedicated Keycloak
+    # client and impersonate the end user via X-Trino-User.
     keycloak_superset_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_voila_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_openwebui_mcp_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_report_viewer_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # Trino file-based PASSWORD authenticator entry for the Open WebUI MCP
-    # (tuannvm/mcp-trino speaks HTTP Basic outbound only — ADR 0022).
-    trino_openwebui_mcp_svc_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
@@ -615,14 +611,6 @@ k3s_cluster:
     trino_coordinator_cpu_limit: 3
     # Override query memory allocation if needed (default: 0.3 = 30% of heap per Trino docs)
     # trino_per_node_query_memory_fraction: 0.3
-    # MCP Trino server resources (used by Open WebUI for natural language SQL queries)
-    mcp_trino_resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 1
-        memory: 2Gi
 
     #---------------------------------------------------------------------------
     # Extractor

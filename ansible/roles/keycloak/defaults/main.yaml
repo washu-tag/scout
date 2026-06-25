@@ -58,6 +58,6 @@ keycloak_token_lifespan: 28800
 keycloak_temporal_token_lifespan: '{{ keycloak_token_lifespan }}'
 keycloak_minio_token_lifespan: '{{ keycloak_token_lifespan }}'
 # Trino impersonation-pattern service principals (superset_svc, voila_svc,
-# openwebui_mcp_svc) — ADR 0022. Deliberately ~4h so token minting stays
+# report_viewer_svc) — ADR 0022. Deliberately ~4h so token minting stays
 # off the per-query hot path; the client helpers re-mint before expiry.
 keycloak_trino_svc_token_lifespan: 14400

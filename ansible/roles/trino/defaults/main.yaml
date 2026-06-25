@@ -79,18 +79,3 @@ trino_rw_worker_resources:
   limits:
     cpu: 500m
     memory: '{{ trino_rw_worker_max_heap | jvm_memory_to_k8s(4) }}'
-
-# Trino MCP server configuration
-mcp_trino_repo_url: https://github.com/tuannvm/mcp-trino.git
-mcp_trino_repo_version: 'v{{ mcp_trino_version }}'
-mcp_trino_chart_path: /tmp/mcp-trino-chart
-mcp_trino_release_name: mcp-trino
-
-# MCP Trino resources (dev defaults - CI friendly)
-mcp_trino_resources_default:
-  requests:
-    cpu: 100m
-    memory: 128Mi
-  limits:
-    cpu: 1
-    memory: 1Gi

@@ -12,7 +12,7 @@ Trino is the shared query layer for several Scout services — not just one user
 
 - **Superset**: SQL Lab text editor, virtual datasets, charts and dashboards
 - **Voilà / Playbooks**: notebooks served as web apps, querying Trino directly
-- **Open WebUI / MCP Trino tool**: natural-language SQL via chat (when the optional chat feature is enabled)
+- **Open WebUI / report-viewer tool**: natural-language SQL via chat, routed through the report-viewer microservice (when the optional chat feature is enabled)
 - **JupyterHub**: notebooks that go through the Trino Python client (`trino.dbapi.connect`) rather than PySpark
 
 Any solution to the joined-view problem has to serve all of them — not just one. A view that exists only for a subset of these consumers ends up forcing the others to either re-implement the join in client code or remain unable to query the resolved patient IDs at all.
@@ -69,7 +69,7 @@ Drop `delta.security=READ_ONLY`, enable Trino's file-based or system access cont
 
 Define the join as a Superset virtual dataset. Superset users see a "table" in Superset's metadata catalog that's actually a saved SQL query Superset injects when the dataset is referenced.
 
-**Rejected**: Virtual datasets are a Superset-side abstraction only — they exist as rows in Superset's PostgreSQL metadata DB, not in the Hive metastore that Trino reads. So they're invisible to every other Trino consumer. Voilà playbooks issuing `SELECT * FROM reports_curated_epic_view` against Trino get a "table not found" error; same for the MCP Trino tool, JupyterHub notebooks using the Trino Python client, and any future direct consumer. Even within Superset, virtual datasets aren't queryable by name in SQL Lab's text editor — they only surface in chart/dashboard authoring. So this approach covers a fraction of one consumer's use cases and leaves the rest with no joined-view access at all.
+**Rejected**: Virtual datasets are a Superset-side abstraction only — they exist as rows in Superset's PostgreSQL metadata DB, not in the Hive metastore that Trino reads. So they're invisible to every other Trino consumer. Voilà playbooks issuing `SELECT * FROM reports_curated_epic_view` against Trino get a "table not found" error; same for the report-viewer tool, JupyterHub notebooks using the Trino Python client, and any future direct consumer. Even within Superset, virtual datasets aren't queryable by name in SQL Lab's text editor — they only surface in chart/dashboard authoring. So this approach covers a fraction of one consumer's use cases and leaves the rest with no joined-view access at all.
 
 ### Skip Spark views, only create Trino views
 

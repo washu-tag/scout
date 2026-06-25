@@ -63,8 +63,6 @@ temporal_version: ~0.67.0
 trino_helm_chart_version: ~1.42.2
 # renovate: datasource=docker depName=bitnamilegacy/jmx-exporter
 trino_jmx_exporter_version: 1.0.1
-# renovate: datasource=github-releases depName=tuannvm/mcp-trino
-mcp_trino_version: 4.3.1
 
 # Analytics & Query Engines - OPA (Trino access control)
 # renovate: datasource=docker depName=openpolicyagent/opa

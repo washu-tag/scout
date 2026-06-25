@@ -6,7 +6,7 @@ Deploys Open WebUI with Ollama for AI-powered chat interface in Scout.
 
 Open WebUI provides a user-friendly interface for interacting with language models via Ollama. In Scout, it's configured with:
 - **Keycloak OAuth** for authentication and role-based access control
-- **Trino MCP tool** for natural language querying of radiology reports in the Delta Lake
+- **Scout report-viewer tool** (in-image Python tool) for cohort-shaped natural-language querying of radiology reports
 - **Valkey** for distributed websocket coordination
 
 ## Deployment
@@ -128,7 +128,7 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 
 ### What gets configured automatically
 
-**Scout Explorer models** — per `scout_models` entry with a `ui:` block: display name, description, system prompt (`helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`), Trino MCP tool reference (`server:mcp:scout-db`), suggestion prompts, profile image, capability flags (`web_search` / `code_interpreter` / `terminal` / `image_generation` disabled), and advanced params (`function_calling: native`, `reasoning_effort: high`, `keep_alive` derived from `preload`). The raw Ollama tag (e.g. `gemma4:31b`) is hidden from the picker.
+**Scout Explorer models** — per `scout_models` entry with a `ui:` block: display name, description, system prompt (`helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`), Scout report-viewer tool reference (`scout_report_viewer_tool`), suggestion prompts, profile image, capability flags (`web_search` / `code_interpreter` / `terminal` / `image_generation` disabled), and advanced params (`function_calling: native`, `reasoning_effort: high`, `keep_alive` derived from `preload`). The raw Ollama tag (e.g. `gemma4:31b`) is hidden from the picker.
 
 **Filter Functions** — installed, configured with valves, and toggled global on every deploy:
 - **Link Sanitizer** ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md))
@@ -210,10 +210,10 @@ kubectl exec -n scout-analytics deploy/ollama -- ollama list
 - Check Job logs: `kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap`
 - Common cause: existing OWUI cluster with other users but no `scout-deploy@scout-deploy.local` row — see Migration steps case B above.
 
-**MCP tool not working:**
-- Verify MCP server is running: `kubectl get pods -n scout-analytics -l app.kubernetes.io/name=mcp-trino`
-- Test connectivity: `kubectl exec -n scout-analytics deploy/open-webui -- curl http://mcp-trino.scout-analytics:8080/health`
-- Confirm the tool server is registered: `kubectl exec -n scout-analytics open-webui-0 -- curl -s http://localhost:8080/api/v1/configs/tool_servers` (set declaratively from `tool_server_connections` in inventory).
+**Report-viewer tool not working:**
+- Verify report-viewer is running: `kubectl get pods -n scout-analytics -l app.kubernetes.io/name=report-viewer`
+- Test connectivity from OWUI: `kubectl exec -n scout-analytics deploy/open-webui -- curl http://report-viewer.scout-analytics:8000/healthz`
+- Confirm the tool function is registered: `kubectl exec -n scout-analytics open-webui-0 -- curl -s http://localhost:8080/api/v1/tools | jq '.[].id'` (the tool is installed declaratively from `open_webui_tool_functions` in inventory).
 
 **Authentication issues:**
 - Users must have Keycloak roles: `open-webui-user` or `open-webui-admin`
