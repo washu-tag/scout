@@ -37,10 +37,10 @@ const COLUMNS_CONFIG: Array<{
   mono?: boolean;
   kind?: 'date';
 }> = [
-  { field: 'accession_number', title: 'Acc', width: 140, embedWidth: 100, mono: true },
-  { field: 'epic_mrn', title: 'MRN', width: 130, embedWidth: 100, mono: true },
-  { field: 'message_dt', title: 'Date', width: 140, embedWidth: 110, kind: 'date' },
-  { field: 'modality', title: 'Modality', width: 100, embedWidth: 70 },
+  { field: 'accession_number', title: 'Acc', width: 110, embedWidth: 85, mono: true },
+  { field: 'epic_mrn', title: 'MRN', width: 105, embedWidth: 80, mono: true },
+  { field: 'message_dt', title: 'Date', width: 125, embedWidth: 100, kind: 'date' },
+  { field: 'modality', title: 'Modality', width: 80, embedWidth: 60 },
   { field: 'service_name', title: 'Service', width: 240, embedWidth: 180 },
   // Facility is the least-clicked column; drop in embed mode to free space.
   { field: 'sending_facility', title: 'Facility', width: 120, embedHidden: true },
@@ -147,18 +147,16 @@ export default function SearchDetailPage() {
     () =>
       COLUMNS_CONFIG.filter(
         (c) => available.includes(c.field) && !(embeddedNow && c.embedHidden),
-      ).map((c) =>
-        columnHelper.accessor((row: Row) => row[c.field], {
+      ).map((c) => {
+        const initialWidth = embeddedNow ? (c.embedWidth ?? c.width) : c.width;
+        return columnHelper.accessor((row: Row) => row[c.field], {
           id: c.field,
           header: c.title,
+          size: initialWidth,
           cell: (info) => (c.kind === 'date' ? fmtDate(info.getValue()) : fmtCell(info.getValue())),
-          meta: {
-            align: c.align,
-            mono: c.mono,
-            width: embeddedNow ? (c.embedWidth ?? c.width) : c.width,
-          },
-        }),
-      ),
+          meta: { align: c.align, mono: c.mono },
+        });
+      }),
     [available, embeddedNow],
   );
 
@@ -183,6 +181,8 @@ export default function SearchDetailPage() {
     // client-side sort model so it doesn't re-sort what the server
     // already sorted (and only across the visible page).
     manualSorting: true,
+    columnResizeMode: 'onChange',
+    defaultColumn: { minSize: 40 },
   });
 
   const embedded = embeddedNow;
@@ -228,6 +228,9 @@ export default function SearchDetailPage() {
                   borderCollapse: 'collapse',
                   fontSize: '0.85rem',
                   width: '100%',
+                  // Fixed layout makes the <th> widths authoritative
+                  // so the resize state is what actually renders.
+                  tableLayout: 'fixed',
                 }}
               >
                 <thead>
@@ -235,9 +238,10 @@ export default function SearchDetailPage() {
                     <tr key={hg.id}>
                       {hg.headers.map((header) => {
                         const colMeta = header.column.columnDef.meta as
-                          | { align?: 'right' | 'center'; width?: number }
+                          | { align?: 'right' | 'center' }
                           | undefined;
                         const sorted = header.column.getIsSorted();
+                        const isResizing = header.column.getIsResizing();
                         return (
                           <th
                             key={header.id}
@@ -251,7 +255,7 @@ export default function SearchDetailPage() {
                               background: '#f5f5f5',
                               borderBottom: '1px solid #e2e2e2',
                               whiteSpace: 'nowrap',
-                              minWidth: colMeta?.width ?? 100,
+                              width: header.getSize(),
                               cursor: 'pointer',
                               userSelect: 'none',
                               // Sticky header so column titles stay visible
@@ -263,6 +267,23 @@ export default function SearchDetailPage() {
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
                             {sorted === 'asc' ? ' ↑' : sorted === 'desc' ? ' ↓' : ''}
+                            <div
+                              className="scout-col-resize"
+                              onMouseDown={header.getResizeHandler()}
+                              onTouchStart={header.getResizeHandler()}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: 'absolute',
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: 8,
+                                cursor: 'col-resize',
+                                userSelect: 'none',
+                                touchAction: 'none',
+                                ...(isResizing ? { borderRight: '2px solid #4477AA' } : {}),
+                              }}
+                            />
                           </th>
                         );
                       })}
@@ -370,7 +391,6 @@ export default function SearchDetailPage() {
                                   whiteSpace: 'nowrap',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
-                                  maxWidth: embedded ? 220 : 360,
                                   fontFamily: colMeta?.mono
                                     ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
                                     : 'inherit',
