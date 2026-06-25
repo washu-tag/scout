@@ -597,8 +597,8 @@ it so it's not a blocker.
 
 - Difficult too distinuguish between rows and report card
 
-- What sort of testing automated testing is in place and is needed?
-
-- CI needed to build image for this service and push. Remove report_viewer_test_mode!
+- Remove report_viewer_test_mode!
 
 - Embed vs non-embed view -> not a big use case for non-embed, claude is putting to much into this distinciton, need to remove that notion from the code.
+
+- TODO: review sql schema
