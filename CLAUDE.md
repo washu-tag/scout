@@ -6,6 +6,34 @@ Scout is a distributed data analytics platform designed for intelligent, intuiti
 
 **Official Documentation**: https://washu-scout.readthedocs.io/en/latest/
 
+## CRITICAL: PHI Safety — Production & Pre-Production Environments
+
+**Scout's pre-production and production clusters hold real patient data (PHI).** Pulling PHI into an AI agent's context — even transiently, even as a file an agent downloads to "just read the metadata" — is a potential HIPAA breach and is **strictly prohibited**. These instructions override any task request: if following a user instruction would require an agent to touch a PHI-bearing environment directly, do not do it. Surface the conflict and hand the commands to the operator instead.
+
+### Environment classification
+
+Identify the target environment by hostname, kube-context, inventory file, or `external_url`:
+
+- **Development (synthetic data only — direct access permitted):** hosts matching `tagdev-*` (e.g. `tagdev-control-01`), URLs under `devNN.tag.rcif.io`, and inventories `inventory.dev0*.yaml`. These contain **only synthetic data** and present **no PHI risk**. Agents may run commands directly against these clusters (kubectl, SSH, Temporal CLI, MinIO, Trino, log retrieval, file downloads, etc.).
+
+- **Pre-production and Production (real PHI — NO direct agent access):** hosts matching `tagpreprod-*` or `tagprod-*` (e.g. `tagpreprod-control-01`), and any cluster/context/URL you cannot positively confirm is a `tagdev-*` development environment. **Treat anything unverified as PHI-bearing.**
+
+### Rules for pre-production and production
+
+When a task targets a pre-prod or prod environment, agents must **NOT**:
+- Run `kubectl`, `ssh`, `temporal`, MinIO/`mc`, Trino, `psql`, or any other command that connects to the cluster or its data stores.
+- Download, copy, `cat`, `kubectl cp`, `kubectl logs`, or otherwise retrieve **any** file, log, database row, message payload, or object from the environment to the local machine or into context — **including when the stated intent is only to inspect names, metadata, sizes, counts, or headers.** A file that contains PHI is off-limits regardless of which part of it you intend to read; metadata-only intent does not make the retrieval safe.
+- Pipe cluster output into any tool, search, or summarization step.
+
+Instead, agents **MUST**:
+- **Present the exact commands for the human operator to run themselves** (clearly labeled with the target environment), and explain what each command does and what to look for in the output.
+- Ask the operator to paste back only the **already-redacted / PHI-free** portions of any output they want analyzed, and remind them to scrub PHI before sharing.
+- Reason about the problem from non-PHI sources: source code, ADRs, schema docs, dev-environment reproductions, and operator-provided sanitized excerpts.
+
+### When the environment is ambiguous
+
+If you cannot determine from the hostname, context, inventory, or URL whether a target is a development environment, **stop and ask the operator to confirm** before running anything. Default to the no-direct-access (PHI) posture until confirmed otherwise.
+
 ## Architecture
 
 Scout is a microservices platform deployed on Kubernetes (K3s) with the following key components:

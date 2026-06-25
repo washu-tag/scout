@@ -18,4 +18,8 @@ build/
 **/*.iml
 zap/*.json
 .playwright-mcp/
-.claude
+# Ignore personal/transient Claude Code state, but track shared team config
+# (committed PHI-safety hook + settings). settings.local.json stays ignored above.
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
