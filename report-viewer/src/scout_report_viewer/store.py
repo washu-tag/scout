@@ -86,11 +86,10 @@ async def insert_search(
 async def get_search(
     search_id: str, owner_sub: str | None, *, touch: bool = True
 ) -> dict[str, Any] | None:
-    """Fetch a search by id. `owner_sub=None` skips the ownership check,
-    treating the URL as a capability — used by the read-only viewer
-    endpoints (iframe context, no cookie auth available). The search_id
-    is 56 bits of entropy, so direct enumeration is impractical within
-    the TTL window. `touch=True` slides the expiry via last_read_at."""
+    """Fetch a search by id, scoped to `owner_sub` (rows with a different
+    owner return None — callers should 404). `owner_sub=None` skips the
+    check; reserved for service-internal callers, not request handlers.
+    `touch=True` slides the expiry via last_read_at."""
     with metrics.time_postgres("get_search"):
         async with get_conn() as conn:
             async with conn.cursor() as cur:

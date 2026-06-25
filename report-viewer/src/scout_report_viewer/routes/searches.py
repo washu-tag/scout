@@ -661,7 +661,7 @@ async def get_search_rows(
 
     Server-side filter values are ANDed and applied to whitelisted
     columns; sort accepts the same whitelist."""
-    ds = await store.get_search(search_id, owner_sub=None)
+    ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
@@ -740,7 +740,7 @@ async def get_search_accessions(
     search_id: str,
     user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    ds = await store.get_search(search_id, owner_sub=None)
+    ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     source_sql = ds["source_sql"]
@@ -803,7 +803,7 @@ async def export_search_csv(
     search_id: str,
     user: User = Depends(get_current_user),
 ) -> StreamingResponse:
-    ds = await store.get_search(search_id, owner_sub=None)
+    ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     source_sql = ds["source_sql"]

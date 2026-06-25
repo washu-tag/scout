@@ -75,11 +75,6 @@ export interface RowsResponse {
   rows: Array<Record<string, unknown>>;
 }
 
-// Detail-page reads use the capability-auth routes (search_id IS the
-// cap) because the page also loads inside the OWUI chat iframe, where
-// owner-scoped routes would 401 without a session cookie. List + meta
-// are owner-scoped; rows/reports/accessions/csv treat the search_id as
-// the capability.
 export function getSearch(searchId: string): Promise<SearchMeta> {
   return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
 }
