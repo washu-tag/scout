@@ -563,10 +563,8 @@ it so it's not a blocker.
 
 - **Service owns its own public URL; drop the tool's `public_base_url` valve.** Today `routes/searches.py:_view_url` builds `view_url` from `str(request.base_url)`, which is the URL the inbound request came in on. When the OWUI tool dials the in-cluster Service DNS (`http://report-viewer.scout-analytics:8000`), that's what gets stamped into the response — useless to a browser. The tool's `public_base_url` valve (`ansible/roles/open-webui/defaults/main.yaml`) exists solely to swap scheme+host back to the public ingress host. Two soft problems with the current shape: (a) deriving response URLs from a caller-supplied `Host` header is the canonical host-header-injection pattern (no direct exploit today since the response goes back to the requester, but if shared-cohort flows surface a `view_url` to a different user the poisoned URL becomes a phishing vector); (b) every future caller has to know the override trick.
 
-  Fix: add a `REPORT_VIEWER_PUBLIC_URL` env var on the service (rendered in `ansible/roles/report_viewer/templates/values.yaml.j2` from the same `report_viewer_host` already used by the ingress), have `_view_url` use it instead of `request.base_url`, drop `public_base_url` / `keycloak_*` plumbing from the tool valves (the latter pending the #4 verification above). After that the tool's only URL knob is the in-cluster service URL — no naming pair to bikeshed.
+  Fix: add a `REPORT_VIEWER_PUBLIC_URL` env var on the service (rendered in `ansible/roles/report_viewer/templates/values.yaml.j2` from the same `report_viewer_host` already used by the ingress), have `_view_url` use it instead of `request.base_url`, drop the `public_base_url` valve from the tool. After that the tool's only URL knob is the in-cluster service URL — no naming pair to bikeshed.
 
-
-- Auth: "JSON in and out except CSV streaming. "" GET /api/searches/{id}/csv streams Content-Type: text/csv, chunked." what is auth on this endpoint for csv export?
 
 - "highlight_terms" in json for /api/searches, I thought we added a highlight_diagnosis as well to capture the ICD evidence that the LLM can use in summarization?
 

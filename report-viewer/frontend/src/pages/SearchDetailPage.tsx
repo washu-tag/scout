@@ -13,7 +13,12 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import { getSearch, getSearchRows, getReport } from '../api/client';
-import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
+import {
+  HEIGHT_COMPACT,
+  HEIGHT_EXPANDED,
+  chatOrigin,
+  setHeight as setIframeHeight,
+} from '../iframeHeight';
 
 const ROW_ACTIVE_BG = '#e8f0fa';
 const DETAIL_ZONE_BG = '#f0f6fc';
@@ -641,7 +646,7 @@ export default function SearchDetailPage() {
 // avoids the dialog. See OWUI docs / Chat.svelte handler.
 function submitChatPrompt(text: string): void {
   if (window.parent === window) return;
-  window.parent.postMessage({ type: 'input:prompt', text }, '*');
+  window.parent.postMessage({ type: 'input:prompt', text }, chatOrigin());
 }
 
 function applyFilterToChat(filters: Record<string, string>) {
