@@ -499,8 +499,6 @@ it so it's not a blocker.
 
 - TTL for searches? did we do? can you delete?
 
-- SPA emits parent.postMessage({type:'iframe:height', height: N}, '*') for height instead for better cross-origin support.
-
 - Test aggregate queries and non-cohort queries from the LLM.
   - What is the /aggregate endpoint??
 
