@@ -84,8 +84,25 @@ export interface RowsParams {
   limit: number;
   // Server-side sort. e.g. { col: 'message_dt', dir: 'desc' }
   sort?: { col: string; dir: 'asc' | 'desc' } | null;
-  // Server-side filters keyed by column name → substring match.
-  filters?: Record<string, string>;
+  filters?: FilterState;
+}
+
+export interface FilterState {
+  patient_age?: { min?: string; max?: string };
+  message_dt?: { min?: string; max?: string };
+  sex?: string[];
+  modality?: string[];
+  service_name?: string;
+}
+
+export function activeFilterCount(f: FilterState): number {
+  let n = 0;
+  if (f.patient_age && (f.patient_age.min || f.patient_age.max)) n++;
+  if (f.message_dt && (f.message_dt.min || f.message_dt.max)) n++;
+  if (f.sex && f.sex.length > 0) n++;
+  if (f.modality && f.modality.length > 0) n++;
+  if (f.service_name && f.service_name.length > 0) n++;
+  return n;
 }
 
 export interface ReportDetail {
@@ -149,8 +166,15 @@ export function getSearchRows(searchId: string, params: RowsParams): Promise<Row
   if (params.sort) {
     qs.set('sort', `${params.sort.col}:${params.sort.dir}`);
   }
-  for (const [col, val] of Object.entries(params.filters ?? {})) {
-    if (val) qs.set(`filter.${col}`, val);
+  const f = params.filters;
+  if (f) {
+    if (f.patient_age?.min) qs.set('filter.patient_age.min', f.patient_age.min);
+    if (f.patient_age?.max) qs.set('filter.patient_age.max', f.patient_age.max);
+    if (f.message_dt?.min) qs.set('filter.message_dt.min', f.message_dt.min);
+    if (f.message_dt?.max) qs.set('filter.message_dt.max', f.message_dt.max);
+    for (const v of f.sex ?? []) qs.append('filter.sex', v);
+    for (const v of f.modality ?? []) qs.append('filter.modality', v);
+    if (f.service_name) qs.set('filter.service_name', f.service_name);
   }
   return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows?${qs.toString()}`);
 }

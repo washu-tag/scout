@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from datetime import date
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -581,15 +582,14 @@ def _parse_sort(sort: str | None) -> tuple[str, str] | None:
     return col, direction.upper()
 
 
-# Filter keys that accept a `.min` / `.max` suffix for range filtering.
-# The SPA's age column ships two number inputs whose values arrive as
-# `filter.patient_age.min` / `filter.patient_age.max`; any extension to
-# other numeric columns is one entry here.
-_RANGE_FILTER_COLUMNS: frozenset[str] = frozenset({"patient_age"})
+# Columns that accept a `.min` / `.max` suffix; everything else single-value.
+_RANGE_FILTER_COLUMNS: frozenset[str] = frozenset({"patient_age", "message_dt"})
+# Columns whose repeated `filter.<col>=…` query params collapse into IN (…).
+_MULTI_VALUE_COLUMNS: frozenset[str] = frozenset({"sex", "modality"})
 
 
-def _parse_filters(request: Request) -> list[tuple[str, str]]:
-    out: list[tuple[str, str]] = []
+def _parse_filters(request: Request) -> list[tuple[str, list[str]]]:
+    grouped: dict[str, list[str]] = {}
     for key, val in request.query_params.multi_items():
         if not key.startswith("filter."):
             continue
@@ -610,17 +610,16 @@ def _parse_filters(request: Request) -> list[tuple[str, str]]:
                     ),
                 )
         if val:
-            out.append((spec, val))
-    return out
+            grouped.setdefault(spec, []).append(val)
+    return list(grouped.items())
 
 
-def _filter_clause(col: str, value: str, *, alias: str = "") -> str:
+def _filter_clause(col: str, values: list[str], *, alias: str = "") -> str:
     prefix = f"{alias}." if alias else ""
-    # Range filters arrive as `<col>.min` / `<col>.max`; render one
-    # comparison per bound, ANDed together at the call site.
     if "." in col:
         base, _, bound = col.partition(".")
         qcol = f"{prefix}{_quote_ident(base)}"
+        value = values[0]
         if base == "patient_age":
             try:
                 n = int(value)
@@ -628,8 +627,21 @@ def _filter_clause(col: str, value: str, *, alias: str = "") -> str:
                 return "FALSE"
             op = ">=" if bound == "min" else "<="
             return f"{qcol} {op} {n}"
+        if base == "message_dt":
+            try:
+                date.fromisoformat(value)
+            except ValueError:
+                return "FALSE"
+            op = ">=" if bound == "min" else "<="
+            return f"CAST({qcol} AS DATE) {op} DATE {_quote_literal(value)}"
         return "FALSE"
     qcol = f"{prefix}{_quote_ident(col)}"
+    if col in _MULTI_VALUE_COLUMNS:
+        if not values:
+            return "FALSE"
+        literals = ", ".join(_quote_literal(v) for v in values)
+        return f"{qcol} IN ({literals})"
+    value = values[0]
     if col == "patient_age":
         try:
             int(value)
@@ -677,7 +689,7 @@ async def get_search_rows(
     sort_spec = _parse_sort(sort)
     filters = _parse_filters(request)
 
-    where_parts = [_filter_clause(fcol, fval, alias="s") for fcol, fval in filters]
+    where_parts = [_filter_clause(fcol, fvals, alias="s") for fcol, fvals in filters]
     where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
     order_sql = ""
     if sort_spec:

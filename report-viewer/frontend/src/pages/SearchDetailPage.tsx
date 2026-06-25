@@ -12,7 +12,13 @@ import {
   type ExpandedState,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { getSearch, getSearchRows, getReport } from '../api/client';
+import {
+  activeFilterCount,
+  getSearch,
+  getSearchRows,
+  getReport,
+  type FilterState,
+} from '../api/client';
 import {
   HEIGHT_COMPACT,
   HEIGHT_EXPANDED,
@@ -79,28 +85,15 @@ export default function SearchDetailPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(100);
   const [sorting, setSorting] = useState<SortingState>([]);
-  // Two-tier filter state:
-  //  - filterInputs: drives the <input> values, updates immediately on
-  //    each keystroke (no lag, focus is preserved).
-  //  - filters: debounced copy used in the queryKey + sent to the backend.
-  // Without this split, every keystroke fires a query refetch, and the
-  // "no data yet" branch unmounts the table mid-type which yanks focus.
-  const [filterInputs, setFilterInputs] = useState<Record<string, string>>({});
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({});
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [xnatModalOpen, setXnatModalOpen] = useState(false);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [iframeExpanded, setIframeExpanded] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setFilters(filterInputs);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(t);
-  }, [filterInputs]);
+  const appliedFiltersKey = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
 
   const meta = useQuery({
     queryKey: ['search', searchId],
@@ -114,8 +107,9 @@ export default function SearchDetailPage() {
     ? { col: sorting[0].id, dir: (sorting[0].desc ? 'desc' : 'asc') as 'asc' | 'desc' }
     : null;
   const rowsQ = useQuery({
-    queryKey: ['search', searchId, 'rows', page, limit, sortParam, filters],
-    queryFn: () => getSearchRows(searchId, { page, limit, sort: sortParam, filters }),
+    queryKey: ['search', searchId, 'rows', page, limit, sortParam, appliedFiltersKey],
+    queryFn: () =>
+      getSearchRows(searchId, { page, limit, sort: sortParam, filters: appliedFilters }),
     enabled: !!searchId,
     // Keep the previously-fetched page visible while a sort/filter/page
     // change is in flight. Without this, the table unmounts on every
@@ -294,66 +288,6 @@ export default function SearchDetailPage() {
                       })}
                     </tr>
                   ))}
-                  {/* Filter row — one text input per column. Substring match,
-                    case-insensitive on the server. Pinned just below the
-                    sticky title row so rows underneath don't leak through
-                    a gap while scrolling. The patient_age column gets a
-                    two-input min–max range instead; range keys are stored
-                    as `patient_age.min` / `patient_age.max` and shipped to
-                    the backend as the matching dotted query params. */}
-                  <tr>
-                    {table.getHeaderGroups()[0]?.headers.map((header) => (
-                      <th
-                        key={`f-${header.id}`}
-                        style={{
-                          padding: '0.25rem 0.4rem',
-                          background: '#fff',
-                          borderBottom: '1px solid #e2e2e2',
-                          position: 'sticky',
-                          // Sticky-stack right under the title row. Heights:
-                          // embedded title row ≈ 28px (smaller font),
-                          // standalone title row ≈ 36px. Use a fixed
-                          // value tuned to whichever mode we're in.
-                          top: embedded ? 28 : 36,
-                          zIndex: 2,
-                        }}
-                      >
-                        {header.id === 'patient_age' ? (
-                          <AgeRangeFilter
-                            min={filterInputs['patient_age.min'] ?? ''}
-                            max={filterInputs['patient_age.max'] ?? ''}
-                            onChange={(which, value) => {
-                              const next = { ...filterInputs };
-                              const key = `patient_age.${which}`;
-                              if (value) next[key] = value;
-                              else delete next[key];
-                              setFilterInputs(next);
-                            }}
-                          />
-                        ) : (
-                          <input
-                            type="text"
-                            value={filterInputs[header.id] ?? ''}
-                            onChange={(e) => {
-                              const next = { ...filterInputs };
-                              if (e.target.value) next[header.id] = e.target.value;
-                              else delete next[header.id];
-                              setFilterInputs(next);
-                            }}
-                            placeholder="Filter…"
-                            style={{
-                              width: '100%',
-                              fontSize: '0.78rem',
-                              padding: '0.15rem 0.35rem',
-                              border: '1px solid #ccc',
-                              borderRadius: 2,
-                              boxSizing: 'border-box',
-                            }}
-                          />
-                        )}
-                      </th>
-                    ))}
-                  </tr>
                 </thead>
                 <tbody>
                   {table.getRowModel().rows.map((row) => {
@@ -415,11 +349,9 @@ export default function SearchDetailPage() {
                                   idColumn={meta.data?.id_column ?? 'message_control_id'}
                                   highlightTerms={[
                                     ...(meta.data?.highlight_terms ?? []),
-                                    // Drop numeric range bounds (patient_age.min/.max)
-                                    // — they're not searchable text.
-                                    ...Object.entries(filters)
-                                      .filter(([k, v]) => v && !k.includes('.'))
-                                      .map(([, v]) => v),
+                                    ...(appliedFilters.service_name
+                                      ? [appliedFilters.service_name]
+                                      : []),
                                   ]}
                                 />
                               </div>
@@ -449,8 +381,8 @@ export default function SearchDetailPage() {
               >
                 Prev
               </button>
-              <span>
-                Page {page} of {lastPage}
+              <span style={{ whiteSpace: 'nowrap' }}>
+                {embedded ? `${page} / ${lastPage}` : `Page ${page} of ${lastPage}`}
               </span>
               <button
                 type="button"
@@ -460,7 +392,15 @@ export default function SearchDetailPage() {
               >
                 Next
               </button>
-              <span style={{ marginLeft: '1rem', color: '#888' }}>Rows per page:</span>
+              <span
+                style={{
+                  marginLeft: embedded ? '0.4rem' : '1rem',
+                  color: '#888',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {embedded ? 'Per page:' : 'Rows per page:'}
+              </span>
               <select
                 value={limit}
                 onChange={(e) => {
@@ -474,7 +414,13 @@ export default function SearchDetailPage() {
                 <option value={200}>200</option>
                 <option value={500}>500</option>
               </select>
-              <span style={{ color: '#666', fontSize: embedded ? '0.75rem' : '0.8rem' }}>
+              <span
+                style={{
+                  color: '#666',
+                  fontSize: embedded ? '0.75rem' : '0.8rem',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {meta.isLoading
                   ? 'Loading…'
                   : meta.error
@@ -499,20 +445,27 @@ export default function SearchDetailPage() {
                 }}
               />
               <span style={{ flex: 1 }} />
-              {Object.keys(filters).length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => applyFilterToChat(filters)}
-                  style={{
-                    ...(embedded ? paginationBtnEmbed : paginationBtn),
-                    background: '#4477AA',
-                    color: '#fff',
-                    borderColor: '#4477AA',
-                  }}
-                >
-                  {embedded ? 'Apply to chat' : 'Apply filter to chat'}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setFiltersModalOpen(true)}
+                style={
+                  activeFilterCount(appliedFilters) > 0
+                    ? {
+                        ...(embedded ? paginationBtnEmbed : paginationBtn),
+                        background: '#4477AA',
+                        color: '#fff',
+                        borderColor: '#4477AA',
+                      }
+                    : embedded
+                      ? paginationBtnEmbed
+                      : paginationBtn
+                }
+                title="Filter rows"
+              >
+                {activeFilterCount(appliedFilters) > 0
+                  ? `Filters (${activeFilterCount(appliedFilters)})`
+                  : 'Filters'}
+              </button>
               {/* Column visibility picker — quick dropdown above the
                 button rather than a modal. Lets users toggle which
                 visible-table columns are shown. */}
@@ -634,6 +587,23 @@ export default function SearchDetailPage() {
           onClose={() => setSqlModalOpen(false)}
         />
       )}
+      {filtersModalOpen && (
+        <FiltersModal
+          initial={appliedFilters}
+          onApply={(next) => {
+            setAppliedFilters(next);
+            setPage(1);
+            setFiltersModalOpen(false);
+          }}
+          onRefineInChat={(next) => {
+            setAppliedFilters(next);
+            setPage(1);
+            applyFilterToChat(searchId, next);
+            setFiltersModalOpen(false);
+          }}
+          onClose={() => setFiltersModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -649,18 +619,31 @@ function submitChatPrompt(text: string): void {
   window.parent.postMessage({ type: 'input:prompt', text }, chatOrigin());
 }
 
-function applyFilterToChat(filters: Record<string, string>) {
+function applyFilterToChat(searchId: string, filters: FilterState): void {
   const clauses: string[] = [];
-  const ageMin = filters['patient_age.min'];
-  const ageMax = filters['patient_age.max'];
-  if (ageMin && ageMax) clauses.push(`patient_age between ${ageMin} and ${ageMax}`);
-  else if (ageMin) clauses.push(`patient_age >= ${ageMin}`);
-  else if (ageMax) clauses.push(`patient_age <= ${ageMax}`);
-  for (const [col, val] of Object.entries(filters)) {
-    if (!val || col.startsWith('patient_age.')) continue;
-    clauses.push(`${col} contains "${val}"`);
+  if (filters.patient_age) {
+    const { min, max } = filters.patient_age;
+    if (min && max) clauses.push(`patient_age between ${min} and ${max}`);
+    else if (min) clauses.push(`patient_age >= ${min}`);
+    else if (max) clauses.push(`patient_age <= ${max}`);
   }
-  submitChatPrompt(`Filter rows where ${clauses.join(' and ')}.`);
+  if (filters.message_dt) {
+    const { min, max } = filters.message_dt;
+    if (min && max) clauses.push(`message_dt between ${min} and ${max}`);
+    else if (min) clauses.push(`message_dt >= ${min}`);
+    else if (max) clauses.push(`message_dt <= ${max}`);
+  }
+  if (filters.sex && filters.sex.length > 0) {
+    clauses.push(`sex in (${filters.sex.join(', ')})`);
+  }
+  if (filters.modality && filters.modality.length > 0) {
+    clauses.push(`modality in (${filters.modality.join(', ')})`);
+  }
+  if (filters.service_name) {
+    clauses.push(`service_name contains "${filters.service_name}"`);
+  }
+  if (clauses.length === 0) return;
+  submitChatPrompt(`Refine search ${searchId}. Filter rows where ${clauses.join(', ')}.`);
 }
 
 function discussInChat(sourceFile: string): void {
@@ -797,8 +780,7 @@ const paginationBtn: React.CSSProperties = {
 };
 
 // Tighter button styling for the chat-iframe context — the embed is
-// ~900px wide and the bottom row has 7 buttons when Apply-filter is
-// active. Smaller padding + font + nowrap keeps each one compact.
+// ~900px wide and the bottom action row is crowded.
 const paginationBtnEmbed: React.CSSProperties = {
   fontSize: '0.72rem',
   padding: '0.2rem 0.45rem',
@@ -1178,55 +1160,254 @@ function CardRow(props: { children: React.ReactNode }) {
   );
 }
 
-// Two narrow number inputs separated by a "—", driving the
-// patient_age min/max range filter. Either side can be left blank
-// for an open-ended range; the backend reads them as filter.patient_age.min
-// and filter.patient_age.max.
-function AgeRangeFilter(props: {
-  min: string;
-  max: string;
-  onChange: (which: 'min' | 'max', value: string) => void;
+const SEX_OPTIONS = ['M', 'F', 'U'] as const;
+const MODALITY_OPTIONS = [
+  '3D',
+  'CT',
+  'CTA',
+  'DXA',
+  'ECH',
+  'FL',
+  'IR',
+  'MG',
+  'MR',
+  'MRA',
+  'NM',
+  'PET',
+  'US',
+  'XR',
+] as const;
+
+function FiltersModal(props: {
+  initial: FilterState;
+  onApply: (next: FilterState) => void;
+  onRefineInChat: (next: FilterState) => void;
+  onClose: () => void;
 }) {
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    minWidth: 0,
-    fontSize: '0.78rem',
-    padding: '0.15rem 0.25rem',
-    border: '1px solid #ccc',
-    borderRadius: 2,
-    boxSizing: 'border-box',
-    textAlign: 'right',
-  };
+  const [staged, setStaged] = useState<FilterState>(props.initial);
+
+  const setAgeBound = (which: 'min' | 'max', value: string) =>
+    setStaged((s) => ({
+      ...s,
+      patient_age: { ...s.patient_age, [which]: value || undefined },
+    }));
+  const setDateBound = (which: 'min' | 'max', value: string) =>
+    setStaged((s) => ({
+      ...s,
+      message_dt: { ...s.message_dt, [which]: value || undefined },
+    }));
+  const toggleEnum = (col: 'sex' | 'modality', value: string) =>
+    setStaged((s) => {
+      const cur = new Set(s[col] ?? []);
+      if (cur.has(value)) cur.delete(value);
+      else cur.add(value);
+      const next = Array.from(cur);
+      return { ...s, [col]: next.length > 0 ? next : undefined };
+    });
+  const setServiceName = (value: string) =>
+    setStaged((s) => ({ ...s, service_name: value || undefined }));
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Filter rows"
+      onClick={props.onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#fff',
+          padding: '1rem 1.25rem',
+          borderRadius: 6,
+          minWidth: 420,
+          maxWidth: 560,
+          maxHeight: 'calc(100vh - 40px)',
+          overflowY: 'auto',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+          fontSize: '0.85rem',
+        }}
+      >
+        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Filter rows</h3>
+
+        <FieldRow label="Age">
+          <RangeInputs
+            min={staged.patient_age?.min ?? ''}
+            max={staged.patient_age?.max ?? ''}
+            inputType="number"
+            placeholder={{ min: 'min', max: 'max' }}
+            onChange={setAgeBound}
+          />
+        </FieldRow>
+
+        <FieldRow label="Sex">
+          <CheckboxRow
+            options={SEX_OPTIONS as readonly string[]}
+            selected={staged.sex ?? []}
+            onToggle={(v) => toggleEnum('sex', v)}
+          />
+        </FieldRow>
+
+        <FieldRow label="Modality">
+          <CheckboxRow
+            options={MODALITY_OPTIONS as readonly string[]}
+            selected={staged.modality ?? []}
+            onToggle={(v) => toggleEnum('modality', v)}
+          />
+        </FieldRow>
+
+        <FieldRow label="Date">
+          <RangeInputs
+            min={staged.message_dt?.min ?? ''}
+            max={staged.message_dt?.max ?? ''}
+            inputType="date"
+            placeholder={{ min: 'from', max: 'to' }}
+            onChange={setDateBound}
+          />
+        </FieldRow>
+
+        <FieldRow label="Service">
+          <input
+            type="text"
+            value={staged.service_name ?? ''}
+            onChange={(e) => setServiceName(e.target.value)}
+            placeholder="contains…"
+            style={{
+              width: '100%',
+              fontSize: '0.85rem',
+              padding: '0.3rem 0.45rem',
+              border: '1px solid #ccc',
+              borderRadius: 3,
+              boxSizing: 'border-box',
+            }}
+          />
+        </FieldRow>
+
+        <div
+          style={{
+            marginTop: '1rem',
+            paddingTop: '0.75rem',
+            borderTop: '1px solid #eee',
+            display: 'flex',
+            gap: '0.5rem',
+            alignItems: 'center',
+          }}
+        >
+          <button type="button" onClick={() => setStaged({})} style={paginationBtn}>
+            Reset
+          </button>
+          <span style={{ flex: 1 }} />
+          <button type="button" onClick={props.onClose} style={paginationBtn}>
+            Cancel
+          </button>
+          <button type="button" onClick={() => props.onRefineInChat(staged)} style={paginationBtn}>
+            Refine in Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => props.onApply(staged)}
+            style={{
+              ...paginationBtn,
+              background: '#4477AA',
+              color: '#fff',
+              borderColor: '#4477AA',
+            }}
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FieldRow(props: { label: string; children: React.ReactNode }) {
   return (
     <div
       style={{
         display: 'flex',
-        alignItems: 'center',
-        gap: '0.2rem',
-        width: '100%',
+        alignItems: 'flex-start',
+        gap: '0.75rem',
+        padding: '0.4rem 0',
       }}
     >
+      <div style={{ width: 80, color: '#555', fontWeight: 600, paddingTop: '0.25rem' }}>
+        {props.label}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>{props.children}</div>
+    </div>
+  );
+}
+
+function RangeInputs(props: {
+  min: string;
+  max: string;
+  inputType: 'number' | 'date';
+  placeholder: { min: string; max: string };
+  onChange: (which: 'min' | 'max', value: string) => void;
+}) {
+  const style: React.CSSProperties = {
+    flex: 1,
+    minWidth: 0,
+    fontSize: '0.85rem',
+    padding: '0.3rem 0.45rem',
+    border: '1px solid #ccc',
+    borderRadius: 3,
+    boxSizing: 'border-box',
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
       <input
-        type="number"
-        min={0}
-        max={150}
+        type={props.inputType}
         value={props.min}
         onChange={(e) => props.onChange('min', e.target.value)}
-        placeholder="min"
-        aria-label="Minimum age"
-        style={inputStyle}
+        placeholder={props.placeholder.min}
+        style={style}
       />
-      <span style={{ color: '#888', fontSize: '0.78rem' }}>-</span>
+      <span style={{ color: '#888' }}>-</span>
       <input
-        type="number"
-        min={0}
-        max={150}
+        type={props.inputType}
         value={props.max}
         onChange={(e) => props.onChange('max', e.target.value)}
-        placeholder="max"
-        aria-label="Maximum age"
-        style={inputStyle}
+        placeholder={props.placeholder.max}
+        style={style}
       />
+    </div>
+  );
+}
+
+function CheckboxRow(props: {
+  options: readonly string[];
+  selected: string[];
+  onToggle: (value: string) => void;
+}) {
+  const set = new Set(props.selected);
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 0.75rem' }}>
+      {props.options.map((opt) => (
+        <label
+          key={opt}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <input type="checkbox" checked={set.has(opt)} onChange={() => props.onToggle(opt)} />
+          {opt}
+        </label>
+      ))}
     </div>
   );
 }

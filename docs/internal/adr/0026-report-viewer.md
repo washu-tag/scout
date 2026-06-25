@@ -527,8 +527,6 @@ it so it's not a blocker.
 
 - When clicking on a report for details, split left and right panes to make better use of space. Patient info and report metadata on the left, full report text on the right.
 
-- Text moves under the "Filter..." row as you scroll and is not hidden behind it. The filter row is sticky but the text is apperaing between the filter row and the header row.
-
 - The LLM is picking too many highlight terms, maybe limite to 3 - 5.
 
 - Update code from dataservice to report-viewer, including the new SPA and API endpoints and the OWUI integration points.
@@ -538,8 +536,6 @@ it so it's not a blocker.
 -  PHI in searches.source_sql — imported CSV cohorts persist WHERE epic_mrn IN ('123',...) clear-text in Postgres. Retention/encryption decision needed.
 
 - Test CSV Upload and Download.
-
-- Apply to Chat: how should this work when multiple tables are open in the chat? Also the button disapeeared..
 
 - Improve "Explain SQL" UI / UX
   - The sql is pretty ugly to read
@@ -583,6 +579,5 @@ it so it's not a blocker.
 
 - TODO: review sql schema
 
-- **Playwright canary for the iframe-sandbox seeding flow.** Unit-testing `owui_webhook.py` against our own assumptions won't catch regressions in OWUI itself (table/column rename, payload-shape change, flag name change, OWUI stops `await`-ing the webhook in the OAuth callback, an admin-global default makes the seeding moot, etc.). Add a Playwright test in `tests/auth/tests/` that signs in a freshly-provisioned Keycloak user, lets the OWUI signup flow run, then either calls `GET /api/v1/users/user/settings` as that user or inspects the rendered iframe's `sandbox` attribute, and asserts `iframeSandboxAllowSameOrigin` is true. Random username per run (e.g. `iframe-seed-test-{uuid}@scout.test`) so the signup webhook actually fires every time — orphans accumulate in dev02 / CI at ~1 per OWUI version bump, tolerable without a delete hook. Add `tests/auth/helpers/owui-admin.ts` later if hygiene matters. Wire as part of the OWUI version-bump checklist (Renovate PR is the trigger per ADR 0015). Complement (not replace) with a Grafana alert on `scout_report_viewer_owui_webhook_events_total{result="error"}` — cheap and catches loud regressions; alert misses silent ones (flag rename → we write a wrong key with `result="enabled"`), which is exactly what the Playwright test plugs.
+- **Playwright canary for the iframe-sandbox seeding flow.**  Unit-testing `owui_webhook.py` against our own assumptions won't catch regressions in OWUI itself (table/column rename, payload-shape change, flag name change, OWUI stops `await`-ing the webhook in the OAuth callback, an admin-global default makes the seeding moot, etc.). Add a Playwright test in `tests/auth/tests/` that signs in a freshly-provisioned Keycloak user, lets the OWUI signup flow run, then either calls `GET /api/v1/users/user/settings` as that user or inspects the rendered iframe's `sandbox` attribute, and asserts `iframeSandboxAllowSameOrigin` is true. Random username per run (e.g. `iframe-seed-test-{uuid}@scout.test`) so the signup webhook actually fires every time — orphans accumulate in dev02 / CI at ~1 per OWUI version bump, tolerable without a delete hook. Add `tests/auth/helpers/owui-admin.ts` later if hygiene matters. Wire as part of the OWUI version-bump checklist (Renovate PR is the trigger per ADR 0015). Complement (not replace) with a Grafana alert on `scout_report_viewer_owui_webhook_events_total{result="error"}` — cheap and catches loud regressions; alert misses silent ones (flag rename → we write a wrong key with `result="enabled"`), which is exactly what the Playwright test plugs.
 
-- Maybe have a filter modal instead of filter row
