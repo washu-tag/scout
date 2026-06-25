@@ -313,15 +313,6 @@ open_webui_tool_functions:
       public_base_url: 'https://report-viewer.{{ server_hostname }}'
       iframe_height_px: 500
       request_timeout_seconds: 120
-      # Keycloak refresh-token grant credentials. The tool uses these
-      # to refresh OWUI's cached bearer right before forwarding to
-      # report-viewer when the cached access token is near expiry.
-      # Without these, the tool just forwards the stale bearer and we
-      # see "bearer rejected: token expired" 401s on the backend.
-      # TODO: IS THIS NEEDED? SEEMS SPECULATIVE
-      keycloak_token_url: '{{ keycloak_oidc_token_url }}'
-      keycloak_client_id: '{{ keycloak_open_webui_client_id }}'
-      keycloak_client_secret: '{{ keycloak_open_webui_client_secret }}'
 
 # ----------------------------------------------------------------------------
 # Scout Explorer custom model UI config

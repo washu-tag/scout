@@ -67,22 +67,6 @@ class Tools:
         )
         iframe_height_px: int = Field(default=500, ge=200, le=1200)
         request_timeout_seconds: int = Field(default=120, ge=10, le=600)
-        # Keycloak refresh credentials — used to proactively refresh
-        # OWUI's cached access token if it's near expiry by the time we
-        # dispatch a tool call. OWUI's own refresh loop runs on a schedule
-        # that can drift across the access-token lifespan, leaving us
-        # forwarding a stale bearer to report-viewer (which 401s).
-        # When all three are set, the tool calls Keycloak's token endpoint
-        # with `__oauth_token__.refresh_token` to mint a fresh access token
-        # right before its outbound POST. When any are empty, the tool
-        # falls back to the cached bearer as-is.
-        keycloak_token_url: str = Field(default="")
-        keycloak_client_id: str = Field(default="")
-        keycloak_client_secret: str = Field(default="")
-        # Refresh when the cached access_token's `exp` claim is within
-        # this many seconds of `now`. 60s gives plenty of headroom for
-        # the round trip + clock skew.
-        token_refresh_threshold_seconds: int = Field(default=60, ge=5, le=300)
 
     def __init__(self) -> None:
         self.valves = self.Valves()
@@ -577,19 +561,10 @@ class Tools:
         return None
 
     @staticmethod
-    def _refresh_token_from_owui(oauth: Any) -> Optional[str]:
-        if isinstance(oauth, dict):
-            return oauth.get("refresh_token") or None
-        return None
-
-    @staticmethod
     def _jwt_exp(access_token: str) -> Optional[int]:
-        """Extract the `exp` epoch from a JWT without verifying the
-        signature. We're not authenticating against this token — we just
-        want to know whether to refresh before forwarding."""
+        """Extract the exp epoch from a JWT (no signature check)."""
         try:
             payload_b64 = access_token.split(".")[1]
-            # JWT base64url, may lack padding.
             payload_b64 += "=" * (-len(payload_b64) % 4)
             payload = json.loads(base64.urlsafe_b64decode(payload_b64))
             exp = payload.get("exp")
@@ -598,60 +573,17 @@ class Tools:
             return None
 
     async def _bearer_for_outbound(self, oauth: Any) -> Optional[str]:
-        """Return an access_token to use on the outbound POST. If the
-        cached token is within `token_refresh_threshold_seconds` of
-        expiry AND we have refresh-token + Keycloak client creds
-        configured, mint a fresh one via the refresh_token grant before
-        returning. Otherwise return the cached token as-is so the caller
-        can still try (and degrade to today's 401 behavior if stale)."""
+        """Return the cached OWUI access_token. Warns if past exp."""
         access = self._token_from_owui(oauth)
         if not access:
             return None
         exp = self._jwt_exp(access)
-        if exp is None:
-            return access
-        remaining = exp - int(time.time())
-        if remaining > self.valves.token_refresh_threshold_seconds:
-            return access
-        refresh = self._refresh_token_from_owui(oauth)
-        if not (
-            refresh
-            and self.valves.keycloak_token_url
-            and self.valves.keycloak_client_id
-            and self.valves.keycloak_client_secret
-        ):
-            log.info(
-                "bearer near-expiry but cannot refresh "
-                "(missing refresh_token or client creds); forwarding as-is",
-                extra={"remaining_s": remaining},
+        if exp is not None and exp <= int(time.time()):
+            log.warning(
+                "forwarding expired OWUI bearer token to report-viewer, may get 401",
+                extra={"expired_s_ago": int(time.time()) - exp},
             )
-            return access
-        data = {
-            "grant_type": "refresh_token",
-            "refresh_token": refresh,
-            "client_id": self.valves.keycloak_client_id,
-            "client_secret": self.valves.keycloak_client_secret,
-        }
-        try:
-            async with httpx.AsyncClient(timeout=15) as c:
-                r = await c.post(self.valves.keycloak_token_url, data=data)
-            if r.status_code != 200:
-                log.warning(
-                    "keycloak refresh failed; forwarding stale bearer",
-                    extra={"status": r.status_code, "body": r.text[:200]},
-                )
-                return access
-            new_access = r.json().get("access_token")
-            if not new_access:
-                return access
-            log.info(
-                "refreshed OWUI bearer via keycloak",
-                extra={"prev_remaining_s": remaining},
-            )
-            return new_access
-        except Exception:
-            log.exception("keycloak refresh raised; forwarding stale bearer")
-            return access
+        return access
 
     def _resolve_view_url(self, service_view_url: str) -> str:
         """If `public_base_url` is set, swap the host so the iframe
