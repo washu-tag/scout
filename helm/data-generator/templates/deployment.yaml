@@ -48,6 +48,8 @@ spec:
               value: "/app/application.yaml"
             - name: "JAVA_TOOL_OPTIONS"
               value: {{ .Values.javaToolOptions | quote }}
+            - name: "NUM_WORKERS"
+              value: {{ .Values.replicaCount }}
           {{- with .Values.env.secrets }}
           envFrom:
             - secretRef:
