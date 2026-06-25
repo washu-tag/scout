@@ -55,8 +55,6 @@ databaseUrl: "postgresql://{{ report_viewer_db_user }}:{{ report_viewer_db_passw
 
 trinoAuthClientSecret: "{{ report_viewer_trino_auth_client_secret }}"
 
-devSharedSecret: "{{ report_viewer_dev_shared_secret }}"
-
 {% if report_viewer_trino_ca_cert | length > 0 %}
 trinoCaCert: |
 {{ report_viewer_trino_ca_cert | indent(2, true) }}

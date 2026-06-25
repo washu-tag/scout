@@ -507,17 +507,17 @@
         "webOrigins": [
           "https://chat.{{ server_hostname }}"
         ],
-        {#- Both audience scopes are needed because OWUI's user token is
-            forwarded to two different upstream validators:
+        {#- Audience scopes the OWUI user token carries to downstream
+            services it calls on the user's behalf (ADR 0022):
 
               * mcp-trino-audience (aud=mcp-trino) — the MCP server
                 (tuannvm/mcp-trino) validates incoming user tokens with
                 required-audience=mcp-trino, then impersonates the user
-                on its own service-principal Trino call (ADR 0022).
+                on its own service-principal Trino call.
 
-              * trino-audience (aud=trino) — report-viewer forwards
-                the same user token to Trino as Bearer (JWT pass-through,
-                ADR 0022 Jupyter pattern); Trino requires aud=trino.
+              * report-viewer-audience (aud=report-viewer) — report-viewer
+                validates required-audience=report-viewer on inbound
+                Bearer tokens from the OWUI tool runtime.
 
             "roles" is intentionally absent from defaultClientScopes.
             Keycloak's built-in roles scope carries an audience-resolve
@@ -530,7 +530,7 @@
             claim (via microprofile-jwt) for role mapping and doesn't
             consume realm_access.roles, so dropping the scope here is
             safe for OWUI's own auth flow while tightening downstream
-            (mcp-trino, trino) trust. -#}
+            trust. -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -539,7 +539,7 @@
           "email",
           "microprofile-jwt",
           "mcp-trino-audience",
-          "trino-audience"
+          "report-viewer-audience"
         ],
         "optionalClientScopes": [
           "address",
@@ -1047,6 +1047,34 @@
             "consentRequired": false,
             "config": {
               "included.custom.audience": "mcp-trino",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
+        ]
+      },
+      {#- Adds aud=report-viewer to access tokens. Report-viewer validates
+          required-audience=report-viewer on inbound bearer tokens (ADR 0022).
+          Any client whose users call report-viewer needs this scope in
+          its default scopes. -#}
+      {
+        "name": "report-viewer-audience",
+        "description": "Adds aud=report-viewer to access tokens for clients calling report-viewer",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "report-viewer-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "report-viewer",
               "id.token.claim": "false",
               "access.token.claim": "true",
               "introspection.token.claim": "true",

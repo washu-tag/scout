@@ -239,10 +239,11 @@ Two callers, two inbound paths, one outbound Trino auth pattern.
 - **OWUI tool runtime**: in-cluster POST to the service with
   `Authorization: Bearer <__oauth_token__>` (the user's Keycloak access
   token, minted by the `open-webui` client). FastAPI validates the JWT
-  against Keycloak JWKS (signature + iss + exp) and resolves the user
-  from `preferred_username`. NetworkPolicy restricts Bearer-bearing
-  in-cluster traffic to OWUI pods so the header can't be forged from
-  elsewhere in the cluster.
+  against Keycloak JWKS (signature + iss + exp + `aud=report-viewer`,
+  stamped by the `report-viewer-audience` client scope on the OWUI
+  client) and resolves the user from `preferred_username`.
+  NetworkPolicy restricts Bearer-bearing in-cluster traffic to OWUI
+  pods so the header can't be forged from elsewhere in the cluster.
 
 Both paths produce the same `User(sub=...)` model. The user's JWT is
 NEVER forwarded onward to Trino; it's used only for inbound AuthN.

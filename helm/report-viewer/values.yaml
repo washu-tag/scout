@@ -67,10 +67,6 @@ envFrom: []
 # value, or leave empty to let the role manage the Secret externally.
 databaseUrl: ''
 
-# Optional: shared dev secret used in Phase 0/1 before Keycloak JWT lands.
-# Empty string disables the shared-header gate.
-devSharedSecret: ''
-
 # Trino CA cert (PEM). When set, the chart renders a Secret and mounts it
 # at /etc/trino-ca/ca.crt so the service can verify HTTPS Trino.
 trinoCaCert: ''

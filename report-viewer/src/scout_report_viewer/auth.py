@@ -1,19 +1,15 @@
-"""Auth — three paths, first match wins.
+"""Auth — two paths, first match wins.
 
 1. **Bearer JWT** validated against Keycloak JWKS. Used by the OWUI tool
    path (forwards `__oauth_token__`) and by anything else that wants to
-   present a real end-user token. Validates signature + exp + iss; aud
-   verification is OFF by default since Scout doesn't have a dedicated
-   `report-viewer` Keycloak client yet — flip `aud_verify=True` in
-   config when one exists.
+   present a real end-user token. Validates signature + exp + iss + aud
+   (`aud=report-viewer`, stamped by the `report-viewer-audience` client
+   scope).
 2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`) — the
    ingress path. The NetworkPolicy restricts ingress to Traefik so the
    header can't be forged from inside the cluster.
-3. **Dev shared secret** (`X-Report-Viewer-Shared-Secret` + `X-Report-Viewer-Test-User`)
-   — for in-cluster smoke testing only; gated on the env-supplied
-   `dev_shared_secret`.
 
-All three populate the same `User(sub=...)` model. Downstream code never
+Both populate the same `User(sub=...)` model. Downstream code never
 needs to know which path produced the identity. The user JWT is not
 forwarded to Trino. `trino_client` uses the `report_viewer_svc` service
 principal and impersonates this `sub` via X-Trino-User (ADR 0022).
@@ -79,9 +75,7 @@ def _validate_jwt(token: str) -> str | None:
             token,
             key,
             algorithms=[key.get("alg", "RS256")],
-            # Skip aud verification until a dedicated client exists; iss
-            # gives us the strong signal "this token came from our IdP".
-            options={"verify_aud": False},
+            audience=settings.oidc_audience,
             issuer=settings.oidc_issuer or None,
         )
     except ExpiredSignatureError:
@@ -108,8 +102,6 @@ def _validate_jwt(token: str) -> str | None:
 async def get_current_user(
     authorization: str | None = Header(default=None),
     x_auth_request_preferred_username: str | None = Header(default=None),
-    x_report_viewer_test_user: str | None = Header(default=None),
-    x_report_viewer_shared_secret: str | None = Header(default=None),
 ) -> User:
     # Path 1: Bearer JWT (highest trust; carries the real user identity).
     token = _bearer_token(authorization)
@@ -132,14 +124,6 @@ async def get_current_user(
     # service principal and impersonate this username via X-Trino-User.
     if x_auth_request_preferred_username:
         return User(sub=x_auth_request_preferred_username)
-
-    # Path 3: dev shared secret (env-gated; default disabled).
-    if (
-        settings.dev_shared_secret
-        and x_report_viewer_shared_secret == settings.dev_shared_secret
-        and x_report_viewer_test_user
-    ):
-        return User(sub=x_report_viewer_test_user)
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

@@ -32,8 +32,6 @@ class Settings(BaseSettings):
     trino_auth_client_secret: str = ""
 
     # OIDC settings for inbound JWT validation.
-    # TODO: dev_shared_secret???
-    dev_shared_secret: str = ""
     oidc_jwks_url: str = ""
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
