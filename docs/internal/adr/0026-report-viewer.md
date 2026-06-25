@@ -541,8 +541,6 @@ it so it's not a blocker.
 
   1. **OWUI tool's Keycloak refresh creds may be vestigial.** `helm/open-webui-bootstrap/files/payloads/scout_report_viewer_tool.py` carries `keycloak_token_url` / `keycloak_client_id` / `keycloak_client_secret` valves so the tool can refresh the user's access token via refresh-token grant right before forwarding to report-viewer. The stated reason ("OWUI's refresh loop drifts past `exp` so the cached bearer can be stale at tool-fire time") was never verified. If OWUI 0.9.6's auth-state refresh tracks `exp` (half-life rotation like JupyterHub's `eagerTokenRefresh`), the Scout-side refresh never fires and the three valves are dead code that pin the OWUI Keycloak client secret into the bootstrap payload unnecessarily. Check by instrumenting the refresh path with one log line and watching a normal workday on dev02, or by reading OWUI 0.9.6's auth-state refresh source. If silent, delete the refresh code + drop the three valves + revert the OWUI Keycloak client's exposure of the refresh-token grant where unneeded.
 
-  2. Can you log out of this new service??
-
 - Test CSV Upload and Download.
 
 - Apply to Chat: how should this work when multiple tables are open in the chat? Also the button disapeeared..
