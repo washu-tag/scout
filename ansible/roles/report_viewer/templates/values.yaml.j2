@@ -90,14 +90,17 @@ trustedCaSecret:
 networkPolicy:
   enabled: true
   traefikNamespace: "{{ traefik_namespace }}"
-  # Phase 4 needs OWUI's tool runtime to call our service in-cluster. Same
-  # namespace (chatbot_namespace = scout_analytics), so a bare podSelector
-  # suffices — k8s defaults to same-ns when namespaceSelector is omitted.
-  # TODO WHAT IS THIS PHASE 4?? CLEANUP
   extraFrom:
     - podSelector:
         matchLabels:
           app.kubernetes.io/name: open-webui
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: '{{ prometheus_namespace }}'
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+          app.kubernetes.io/component: server
 
 ingress:
   enabled: true
