@@ -511,8 +511,6 @@ it so it's not a blocker.
 
 - Report snippets are not being given to the llm for context and the diagnosis codes are pressented outside of the results table given to the llm. This is a regression from the POC, the llm needs some report context.
 
-- Report loading is slow (a few seconds) on an individual report. This was faster and should be for a single report.
-
 - When clicking on a report for details, split left and right panes to make better use of space. Patient info and report metadata on the left, full report text on the right.
 
 - Text moves under the "Filter..." row as you scroll and is not hidden behind it. The filter row is sticky but the text is apperaing between the filter row and the header row.
