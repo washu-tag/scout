@@ -550,17 +550,11 @@ it so it's not a blocker.
 
 - Test CSV Upload and Download.
 
-- Apply to Chat Filter is not working, also how does this work when you have multiple tables open in the chat?
-
-- Better button names needed. SQL and CSV and Apply to Chat are not clear enough.
+- Apply to Chat: how should this work when multiple tables are open in the chat? Also the button disapeeared..
 
 - Improve "Explain SQL" UI / UX
   - The sql is pretty ugly to read
   - Add a copy to clipboard button for the sql code.
-
-- When reviewing a row / report add a button that says "Discuss Report with Chat" (or something like that) that tells the LLM to pull that report into context and discuss to with the user. Make sure to use the file location of the report in the lake as the identifier when pulling the report into context.
-
-- Age filter takes just a single number right now, needs to accept a range.
 
 - Send to XNAT handoff with IQ plugin. Not needed for the initial release but will be needed soon after.
 
@@ -585,8 +579,6 @@ it so it's not a blocker.
 
 - Auth: "JSON in and out except CSV streaming. "" GET /api/searches/{id}/csv streams Content-Type: text/csv, chunked." what is auth on this endpoint for csv export?
 
-- Why "/api/searches/{id}/reports/{report_id}  " and not just use "/api/reports/read"
-
 - "highlight_terms" in json for /api/searches, I thought we added a highlight_diagnosis as well to capture the ICD evidence that the LLM can use in summarization?
 
 - ""owui_chat_title": "Pulmonary Nodule CT Search"" do we care about the chat title? the title also isn;t availbe on first search creation for a particualr chat so this wouldn't be known if there is only ever one search in a chat. 
@@ -596,11 +588,7 @@ it so it's not a blocker.
 - Why row cap in the json POST /api/reports/query:
   { "sql": "SELECT modality, COUNT(*) FROM reports_latest GROUP BY 1", "row_cap": 500 } - this should be handled by a LIMIT clause or we have a hard limit on the backend for the number of rows returned this is a bit of an odd pattern to have in the API.
 
-- VERY IMPORTANT AND THIS APPLIES TO EVERYTHING : POST /api/reports/read: { "ids": ["m1","m2"], "id_column": "message_control_id" } "message_control_id" is not the appropriate id column to use for a report identifier, you must use the file location in the lake as the identifier!! check this everywhere in the code for consistency.
-
 - Review the Markdown summary shapping.
-
-- Difficult too distinuguish between rows and report card
 
 - Remove report_viewer_test_mode!
 
@@ -611,3 +599,5 @@ it so it's not a blocker.
 - Date formating
 
 - **Playwright canary for the iframe-sandbox seeding flow.** Unit-testing `owui_webhook.py` against our own assumptions won't catch regressions in OWUI itself (table/column rename, payload-shape change, flag name change, OWUI stops `await`-ing the webhook in the OAuth callback, an admin-global default makes the seeding moot, etc.). Add a Playwright test in `tests/auth/tests/` that signs in a freshly-provisioned Keycloak user, lets the OWUI signup flow run, then either calls `GET /api/v1/users/user/settings` as that user or inspects the rendered iframe's `sandbox` attribute, and asserts `iframeSandboxAllowSameOrigin` is true. Random username per run (e.g. `iframe-seed-test-{uuid}@scout.test`) so the signup webhook actually fires every time — orphans accumulate in dev02 / CI at ~1 per OWUI version bump, tolerable without a delete hook. Add `tests/auth/helpers/owui-admin.ts` later if hygiene matters. Wire as part of the OWUI version-bump checklist (Renovate PR is the trigger per ADR 0015). Complement (not replace) with a Grafana alert on `scout_report_viewer_owui_webhook_events_total{result="error"}` — cheap and catches loud regressions; alert misses silent ones (flag rename → we write a wrong key with `result="enabled"`), which is exactly what the Playwright test plugs.
+
+- Maybe have a filter modal instead of filter row

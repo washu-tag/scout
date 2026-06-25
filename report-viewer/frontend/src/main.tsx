@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import App from './App';
 import SearchesListPage from './pages/SearchesListPage';
 import SearchDetailPage from './pages/SearchDetailPage';
+import { postHeight } from './iframeHeight';
 
 // React Router basename matches the FastAPI StaticFiles mount in app.py
 // (/spa/). Vite's `base` only handles asset URLs, not the SPA's own
@@ -34,7 +35,9 @@ const queryClient = new QueryClient({
 });
 
 const pulseStyle = document.createElement('style');
-pulseStyle.textContent = '@keyframes scoutPulse{0%,100%{opacity:1}50%{opacity:.25}}';
+pulseStyle.textContent =
+  '@keyframes scoutPulse{0%,100%{opacity:1}50%{opacity:.25}}' +
+  '@keyframes scoutSpin{to{transform:rotate(360deg)}}';
 document.head.appendChild(pulseStyle);
 
 createRoot(document.getElementById('root')!).render(
@@ -43,24 +46,12 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// Fixed 500px, delivered via postMessage. OWUI's FullHeightIframe.svelte
-// listens for {type:'iframe:height'} and sets the iframe height — works
-// cross-origin (frameElement does not). Big enough to show ~10 rows +
-// header + pagination, small enough not to push the chat composer off
-// screen. The table container inside owns its own vertical scroll past
-// that.
-const EMBED_HEIGHT_PX = 500;
-
-function fitParentIframe() {
-  if (window.parent === window) return; // not embedded
-  window.parent.postMessage({ type: 'iframe:height', height: EMBED_HEIGHT_PX }, '*');
-}
-window.addEventListener('load', fitParentIframe);
-// Re-fire after async data lands (TanStack Query fetch → table renders).
-setTimeout(fitParentIframe, 300);
-setTimeout(fitParentIframe, 1200);
-// And whenever the body's resize observer notices a change (sort, page
-// flip, etc.) so the iframe tracks content size live.
+// Fire size updates at load + after a couple async ticks so the iframe
+// tracks content size live. Height value lives in iframeHeight.ts so
+// the in-page toggle can flip compact/expanded without competing here.
+window.addEventListener('load', postHeight);
+setTimeout(postHeight, 300);
+setTimeout(postHeight, 1200);
 if (typeof ResizeObserver !== 'undefined') {
-  new ResizeObserver(fitParentIframe).observe(document.body);
+  new ResizeObserver(postHeight).observe(document.body);
 }

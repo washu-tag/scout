@@ -80,15 +80,6 @@ OWUI_WEBHOOK_EVENTS = Counter(
     ["action", "result"],  # action: signup|other; result: enabled|skipped|error
 )
 
-# /api/searches/{id}/reports/{report_id} lazy fetch — separate counter
-# so we can see how much row-expand traffic the SPA generates and tune
-# cache behavior.
-REPORT_FETCH = Counter(
-    "scout_report_viewer_report_fetch_total",
-    "On-the-fly full-report fetches from the row-expand panel.",
-    ["result"],  # ok | not_found | error
-)
-
 
 @contextmanager
 def time_trino(op: str) -> Iterator[None]:

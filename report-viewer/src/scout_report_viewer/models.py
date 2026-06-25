@@ -8,14 +8,25 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-# Identifier columns we know how to materialize from. Order = preference:
-# `message_control_id` > `accession_number` > `epic_mrn`. Caller can override
-# via the request body. Patient-scoped searches will add `scout_patient_id`.
+# Identifier columns accepted by /api/reports/read. Order = preference
+# for the auto-pick in searches.py (report-scoped first).
 KNOWN_ID_COLUMNS: tuple[str, ...] = (
     "message_control_id",
     "accession_number",
+    "primary_report_identifier",
     "epic_mrn",
+    "mpi",
+    "scout_patient_id",
 )
+
+# Patient-scoped IDs go through reports_latest_epic_view; epic_mrn / mpi
+# transparently match the resolved_* columns so reports missing the raw
+# value still come back when the same patient appears elsewhere.
+PATIENT_ID_COLUMNS: dict[str, str] = {
+    "epic_mrn": "resolved_epic_mrn",
+    "mpi": "resolved_mpi",
+    "scout_patient_id": "scout_patient_id",
+}
 
 
 class CreateSearchRequest(BaseModel):

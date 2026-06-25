@@ -13,6 +13,10 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import { getSearch, getSearchRows, getReport } from '../api/client';
+import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
+
+const ROW_ACTIVE_BG = '#e8f0fa';
+const DETAIL_ZONE_BG = '#f0f6fc';
 
 // Locked column set, mirrors the legacy iframe viewer. The /rows
 // endpoint returns the full SELECTed column set; we render only these
@@ -39,8 +43,8 @@ const COLUMNS_CONFIG: Array<{
   { field: 'service_name', title: 'Service', width: 240, embedWidth: 180 },
   // Facility is the least-clicked column; drop in embed mode to free space.
   { field: 'sending_facility', title: 'Facility', width: 120, embedHidden: true },
-  { field: 'patient_age', title: 'Age', width: 70, embedWidth: 50, align: 'right' },
-  { field: 'sex', title: 'Sex', width: 70, embedWidth: 50, align: 'center' },
+  { field: 'patient_age', title: 'Age', width: 110, embedWidth: 90, align: 'right' },
+  { field: 'sex', title: 'Sex', width: 50, embedWidth: 40, align: 'center' },
   { field: 'evidence', title: 'Label', width: 110, embedHidden: true },
 ];
 
@@ -72,6 +76,7 @@ export default function SearchDetailPage() {
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [iframeExpanded, setIframeExpanded] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -103,6 +108,14 @@ export default function SearchDetailPage() {
     // re-mounts when data lands.
     placeholderData: keepPreviousData,
   });
+
+  // Row-expansion state is keyed by row index; clear it when the row
+  // set actually changes so a page-2 row at index 0 doesn't inherit
+  // page-1's expanded card. Gating on rowsQ.data (not page) avoids a
+  // mid-fetch collapse flash thanks to keepPreviousData.
+  useEffect(() => {
+    setExpanded({});
+  }, [rowsQ.data]);
 
   // total comes from the rows response when filters are active (it's
   // the post-filter count). Fall back to search meta when there's no
@@ -171,53 +184,6 @@ export default function SearchDetailPage() {
           </Link>
         </div>
       )}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
-          marginBottom: embedded ? '0.4rem' : '1rem',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-        }}
-      >
-        <span style={{ color: '#666', fontSize: '0.8rem' }}>
-          {meta.isLoading
-            ? 'Loading…'
-            : meta.error
-              ? 'Failed to load metadata'
-              : `${total.toLocaleString()} rows`}
-          {rowsQ.isFetching && !rowsQ.isLoading && (
-            <span
-              style={{
-                marginLeft: '0.6rem',
-                padding: '1px 8px 1px 7px',
-                borderRadius: 999,
-                background: '#fff4d6',
-                color: '#8a5a00',
-                fontSize: '0.72rem',
-                fontWeight: 500,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                verticalAlign: 'middle',
-              }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: '#b07a00',
-                  animation: 'scoutPulse 2s ease-in-out infinite',
-                }}
-              />
-              Updating
-            </span>
-          )}
-        </span>
-      </div>
-
       {rowsQ.error && (
         <p style={{ color: '#b00' }}>Failed to load rows: {(rowsQ.error as Error).message}</p>
       )}
@@ -233,12 +199,14 @@ export default function SearchDetailPage() {
           <>
             <div
               style={{
-                // Embedded iframe is capped at ~500px so the chat composer
-                // stays in view; the table itself owns vertical scroll
-                // inside that. Standalone view uses viewport-based height.
                 overflowX: 'auto',
                 overflowY: 'auto',
-                maxHeight: embedded ? 380 : 'calc(100vh - 220px)',
+                // -80px reserves room for the bottom pagination row.
+                maxHeight: embedded
+                  ? iframeExpanded
+                    ? HEIGHT_EXPANDED - 80
+                    : HEIGHT_COMPACT - 80
+                  : 'calc(100vh - 220px)',
                 background: '#fff',
                 border: '1px solid #e2e2e2',
                 borderRadius: 4,
@@ -292,7 +260,10 @@ export default function SearchDetailPage() {
                   {/* Filter row — one text input per column. Substring match,
                     case-insensitive on the server. Pinned just below the
                     sticky title row so rows underneath don't leak through
-                    a gap while scrolling. */}
+                    a gap while scrolling. The patient_age column gets a
+                    two-input min–max range instead; range keys are stored
+                    as `patient_age.min` / `patient_age.max` and shipped to
+                    the backend as the matching dotted query params. */}
                   <tr>
                     {table.getHeaderGroups()[0]?.headers.map((header) => (
                       <th
@@ -310,25 +281,39 @@ export default function SearchDetailPage() {
                           zIndex: 2,
                         }}
                       >
-                        <input
-                          type="text"
-                          value={filterInputs[header.id] ?? ''}
-                          onChange={(e) => {
-                            const next = { ...filterInputs };
-                            if (e.target.value) next[header.id] = e.target.value;
-                            else delete next[header.id];
-                            setFilterInputs(next);
-                          }}
-                          placeholder="Filter…"
-                          style={{
-                            width: '100%',
-                            fontSize: '0.78rem',
-                            padding: '0.15rem 0.35rem',
-                            border: '1px solid #ccc',
-                            borderRadius: 2,
-                            boxSizing: 'border-box',
-                          }}
-                        />
+                        {header.id === 'patient_age' ? (
+                          <AgeRangeFilter
+                            min={filterInputs['patient_age.min'] ?? ''}
+                            max={filterInputs['patient_age.max'] ?? ''}
+                            onChange={(which, value) => {
+                              const next = { ...filterInputs };
+                              const key = `patient_age.${which}`;
+                              if (value) next[key] = value;
+                              else delete next[key];
+                              setFilterInputs(next);
+                            }}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={filterInputs[header.id] ?? ''}
+                            onChange={(e) => {
+                              const next = { ...filterInputs };
+                              if (e.target.value) next[header.id] = e.target.value;
+                              else delete next[header.id];
+                              setFilterInputs(next);
+                            }}
+                            placeholder="Filter…"
+                            style={{
+                              width: '100%',
+                              fontSize: '0.78rem',
+                              padding: '0.15rem 0.35rem',
+                              border: '1px solid #ccc',
+                              borderRadius: 2,
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                        )}
                       </th>
                     ))}
                   </tr>
@@ -357,7 +342,7 @@ export default function SearchDetailPage() {
                           style={{
                             borderBottom: '1px solid #f0f0f0',
                             cursor: 'pointer',
-                            background: isExpanded ? '#f6f8fa' : 'transparent',
+                            background: isExpanded ? ROW_ACTIVE_BG : 'transparent',
                           }}
                         >
                           {row.getVisibleCells().map((cell) => {
@@ -386,17 +371,22 @@ export default function SearchDetailPage() {
                           })}
                         </tr>
                         {isExpanded && (
-                          <tr style={{ background: '#fafbfc' }}>
-                            <td colSpan={columns.length} style={{ padding: '0.75rem 1rem' }}>
-                              <RowDetail
-                                searchId={searchId}
-                                row={row.original}
-                                idColumn={meta.data?.id_column ?? 'message_control_id'}
-                                highlightTerms={[
-                                  ...(meta.data?.highlight_terms ?? []),
-                                  ...Object.values(filters).filter(Boolean),
-                                ]}
-                              />
+                          <tr style={{ background: DETAIL_ZONE_BG }}>
+                            <td colSpan={columns.length} style={{ padding: 0 }}>
+                              <div style={{ padding: '0.75rem 1rem' }}>
+                                <RowDetail
+                                  row={row.original}
+                                  idColumn={meta.data?.id_column ?? 'message_control_id'}
+                                  highlightTerms={[
+                                    ...(meta.data?.highlight_terms ?? []),
+                                    // Drop numeric range bounds (patient_age.min/.max)
+                                    // — they're not searchable text.
+                                    ...Object.entries(filters)
+                                      .filter(([k, v]) => v && !k.includes('.'))
+                                      .map(([, v]) => v),
+                                  ]}
+                                />
+                              </div>
                             </td>
                           </tr>
                         )}
@@ -448,12 +438,31 @@ export default function SearchDetailPage() {
                 <option value={200}>200</option>
                 <option value={500}>500</option>
               </select>
+              <span style={{ color: '#666', fontSize: embedded ? '0.75rem' : '0.8rem' }}>
+                {meta.isLoading
+                  ? 'Loading…'
+                  : meta.error
+                    ? 'Failed to load metadata'
+                    : `${total.toLocaleString()} rows`}
+              </span>
+              {/* Reserved slot; visibility toggles instead of mount so
+                  the row doesn't reflow when a fetch starts. */}
+              <span
+                aria-label="Loading"
+                role="status"
+                aria-hidden={!(rowsQ.isFetching && !rowsQ.isLoading)}
+                style={{
+                  visibility: rowsQ.isFetching && !rowsQ.isLoading ? 'visible' : 'hidden',
+                  width: 13,
+                  height: 13,
+                  borderRadius: '50%',
+                  border: '2px solid #fde6c2',
+                  borderTopColor: '#ea580c',
+                  animation: 'scoutSpin 0.8s linear infinite',
+                  display: 'inline-block',
+                }}
+              />
               <span style={{ flex: 1 }} />
-              {/* "Apply filter to chat" — only meaningful when filters are
-                active. Pokes the OWUI chat composer (same-origin via the
-                chat-host alias) with a refinement instruction so the LLM
-                rebuilds the search with the same filters baked into the
-                SQL. */}
               {Object.keys(filters).length > 0 && (
                 <button
                   type="button"
@@ -526,7 +535,7 @@ export default function SearchDetailPage() {
                   style={embedded ? paginationBtnEmbed : paginationBtn}
                   title="See what this search matches and the underlying SQL"
                 >
-                  {embedded ? 'SQL' : 'Explain SQL'}
+                  Explain Search
                 </button>
               )}
               <a
@@ -538,7 +547,7 @@ export default function SearchDetailPage() {
                   background: '#fff',
                 }}
               >
-                {embedded ? 'CSV' : 'Export CSV'}
+                Download CSV
               </a>
               <button
                 type="button"
@@ -547,6 +556,30 @@ export default function SearchDetailPage() {
               >
                 Send to XNAT
               </button>
+              {embedded && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !iframeExpanded;
+                    setIframeExpanded(next);
+                    setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
+                  }}
+                  title={
+                    iframeExpanded
+                      ? 'Shrink viewer back to compact size'
+                      : 'Grow viewer for more room'
+                  }
+                  aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
+                  style={{
+                    ...paginationBtnEmbed,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '0.2rem 0.35rem',
+                  }}
+                >
+                  {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
+                </button>
+              )}
             </div>
           </>
         )
@@ -569,56 +602,35 @@ export default function SearchDetailPage() {
   );
 }
 
-// Apply the active filters as a chat-side refinement.
-//
-// The SPA iframe is loaded cross-origin (report-viewer.<env>) under the
-// chat page, so window.parent.document access throws SecurityError. The
-// in-place try block stays as a defense-in-depth for any future re-host
-// to a same-origin alias, but the postMessage + alert fallback is the
-// real path today. OWUI doesn't yet have a `scout-refine` postMessage
-// handler — until it grows one, the user has to copy/paste from the
-// alert.
+// `input:prompt` (not `:submit`) on purpose: OWUI's auto-submit gates
+// on real same-origin between iframe and chat, not on the
+// `iframeSandboxAllowSameOrigin` user setting. Scout's iframe is on a
+// dedicated subdomain, so :submit would force a confirmation dialog
+// every click. Filling the composer and letting the user hit Enter
+// avoids the dialog. See OWUI docs / Chat.svelte handler.
+function submitChatPrompt(text: string): void {
+  if (window.parent === window) return;
+  window.parent.postMessage({ type: 'input:prompt', text }, '*');
+}
+
 function applyFilterToChat(filters: Record<string, string>) {
-  const summary = Object.entries(filters)
-    .map(([col, val]) => `${col} contains "${val}"`)
-    .join(' and ');
-  // Short, declarative. The LLM's system prompt instructs it to chain
-  // via parent_search_id when the user asks to filter an existing
-  // search, so we don't need to spell out "rebuild" / "refine the
-  // saved search" / etc. — just say what to filter on.
-  const text = `Filter rows where ${summary}.`;
-  try {
-    const parentDoc = window.parent.document;
-    // OWUI's composer is a contenteditable div with role="textbox" or
-    // the prosemirror-like editor. Grab the deepest editable element.
-    const editables = parentDoc.querySelectorAll<HTMLElement>('[contenteditable="true"]');
-    // Pick the last one — OWUI sometimes has multiple (note editor,
-    // search box, etc.); the composer is rendered last in the chat
-    // panel.
-    const composer = editables[editables.length - 1];
-    if (!composer) throw new Error('composer not found');
-    composer.focus();
-    // Set the text. For ProseMirror/Tiptap-style editors, setting
-    // textContent + dispatching input is the canonical pattern.
-    composer.textContent = text;
-    composer.dispatchEvent(new Event('input', { bubbles: true }));
-    // Simulate Enter to submit. OWUI binds keydown on the composer.
-    const enter = new KeyboardEvent('keydown', {
-      key: 'Enter',
-      code: 'Enter',
-      bubbles: true,
-      cancelable: true,
-    });
-    composer.dispatchEvent(enter);
-  } catch (e) {
-    console.warn('direct composer poke failed; falling back to postMessage', e);
-    try {
-      window.parent.postMessage({ type: 'scout-refine', text, filters }, '*');
-    } catch {
-      /* nothing else to try */
-    }
-    alert('Could not auto-fill the chat. Copy this and paste into the chat:\n\n' + text);
+  const clauses: string[] = [];
+  const ageMin = filters['patient_age.min'];
+  const ageMax = filters['patient_age.max'];
+  if (ageMin && ageMax) clauses.push(`patient_age between ${ageMin} and ${ageMax}`);
+  else if (ageMin) clauses.push(`patient_age >= ${ageMin}`);
+  else if (ageMax) clauses.push(`patient_age <= ${ageMax}`);
+  for (const [col, val] of Object.entries(filters)) {
+    if (!val || col.startsWith('patient_age.')) continue;
+    clauses.push(`${col} contains "${val}"`);
   }
+  submitChatPrompt(`Filter rows where ${clauses.join(' and ')}.`);
+}
+
+function discussInChat(sourceFile: string): void {
+  submitChatPrompt(
+    `Read the report at \`${sourceFile}\`. Walk me through the findings, impression, and key diagnoses.`,
+  );
 }
 
 // Send-to-XNAT modal. V1 placeholder — walks the user through the
@@ -769,7 +781,6 @@ const paginationBtnEmbed: React.CSSProperties = {
 // matches light up via client-side regex (no server-side snippet
 // extraction, no stored snippet column).
 function RowDetail(props: {
-  searchId: string;
   row: Record<string, unknown>;
   idColumn: string;
   highlightTerms: string[];
@@ -778,8 +789,8 @@ function RowDetail(props: {
   // id_column value lives on the slim /rows row under the same key.
   const reportId = String(props.row[props.idColumn] ?? '');
   const reportQ = useQuery({
-    queryKey: ['report', props.searchId, reportId],
-    queryFn: () => getReport(props.searchId, reportId),
+    queryKey: ['report', props.idColumn, reportId],
+    queryFn: () => getReport(reportId, props.idColumn),
     enabled: !!reportId,
     staleTime: 5 * 60_000, // 5 min — same row reopens instantly
   });
@@ -792,8 +803,8 @@ function RowDetail(props: {
     .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const highlightRe = escaped.length ? new RegExp(`(${escaped.join('|')})`, 'gi') : null;
 
-  const renderWithHighlights = (text: string): React.ReactNode => {
-    if (!text) return <em style={{ color: '#888' }}>(empty)</em>;
+  const applyTextHighlights = (text: string): React.ReactNode => {
+    if (!text) return null;
     if (!highlightRe) return text;
     const parts = text.split(highlightRe);
     return parts.map((p, i) =>
@@ -881,15 +892,18 @@ function RowDetail(props: {
       {/* Report card — three compact sections sized to fit inside the
           500px iframe without scrolling away from anything important.
           Each row is a sequence of label·value pairs separated by
-          subtle bullets so a clinician can scan left-to-right. */}
+          subtle bullets so a clinician can scan left-to-right. The
+          shadow lifts the card off the blue-tinted detail zone so it
+          reads as a distinct surface, not "another row." */}
       <div
         style={{
-          padding: '0.4rem 0.6rem',
-          marginBottom: '0.45rem',
+          padding: '0.5rem 0.7rem',
+          marginBottom: '0.5rem',
           background: '#fff',
-          border: '1px solid #e2e2e2',
-          borderRadius: 3,
+          border: '1px solid #d8dde3',
+          borderRadius: 4,
           fontSize: '0.74rem',
+          boxShadow: '0 1px 4px rgba(31, 95, 168, 0.10)',
         }}
       >
         <CardRow>
@@ -997,9 +1011,6 @@ function RowDetail(props: {
         </div>
       )}
 
-      {/* Report text — sized for the chat iframe (~500px total panel).
-          Caps at 260px to leave room for the metadata strip + chips
-          above; the text container scrolls internally. */}
       {reportQ.isLoading && <div style={{ color: '#888' }}>Loading report…</div>}
       {reportQ.error && (
         <div style={{ color: '#b00' }}>
@@ -1011,8 +1022,6 @@ function RowDetail(props: {
           style={{
             whiteSpace: 'pre-wrap',
             color: '#333',
-            maxHeight: 260,
-            overflowY: 'auto',
             background: '#fff',
             border: '1px solid #e2e2e2',
             borderRadius: 3,
@@ -1021,14 +1030,28 @@ function RowDetail(props: {
             fontSize: '0.74rem',
           }}
         >
-          {renderWithHighlights(
-            reportQ.data.report_text ??
-              reportQ.data.report_section_impression ??
-              reportQ.data.report_section_findings ??
+          {applyTextHighlights(
+            (reportQ.data.report_text as string | null) ??
+              (reportQ.data.report_section_impression as string | null) ??
+              (reportQ.data.report_section_findings as string | null) ??
               '',
-          )}
+          ) || <em style={{ color: '#888' }}>(empty)</em>}
         </div>
       )}
+
+      {(() => {
+        const sourceFile =
+          (reportQ.data?.source_file as string | undefined) ??
+          (props.row.source_file as string | undefined);
+        if (!sourceFile) return null;
+        return (
+          <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="button" onClick={() => discussInChat(sourceFile)} style={paginationBtn}>
+              Discuss in Chat
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1123,6 +1146,95 @@ function CardRow(props: { children: React.ReactNode }) {
     >
       {props.children}
     </div>
+  );
+}
+
+// Two narrow number inputs separated by a "—", driving the
+// patient_age min/max range filter. Either side can be left blank
+// for an open-ended range; the backend reads them as filter.patient_age.min
+// and filter.patient_age.max.
+function AgeRangeFilter(props: {
+  min: string;
+  max: string;
+  onChange: (which: 'min' | 'max', value: string) => void;
+}) {
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    minWidth: 0,
+    fontSize: '0.78rem',
+    padding: '0.15rem 0.25rem',
+    border: '1px solid #ccc',
+    borderRadius: 2,
+    boxSizing: 'border-box',
+    textAlign: 'right',
+  };
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.2rem',
+        width: '100%',
+      }}
+    >
+      <input
+        type="number"
+        min={0}
+        max={150}
+        value={props.min}
+        onChange={(e) => props.onChange('min', e.target.value)}
+        placeholder="min"
+        aria-label="Minimum age"
+        style={inputStyle}
+      />
+      <span style={{ color: '#888', fontSize: '0.78rem' }}>-</span>
+      <input
+        type="number"
+        min={0}
+        max={150}
+        value={props.max}
+        onChange={(e) => props.onChange('max', e.target.value)}
+        placeholder="max"
+        aria-label="Maximum age"
+        style={inputStyle}
+      />
+    </div>
+  );
+}
+
+function ExpandIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 6V3h3M10 3h3v3M13 10v3h-3M6 13H3v-3" />
+    </svg>
+  );
+}
+
+function ContractIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 3v3H3M13 6h-3V3M10 13v-3h3M3 10h3v3" />
+    </svg>
   );
 }
 

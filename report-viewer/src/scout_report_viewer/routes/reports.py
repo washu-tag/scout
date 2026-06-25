@@ -16,6 +16,7 @@ from ..auth import User, get_current_user
 from ..config import settings
 from ..models import (
     KNOWN_ID_COLUMNS,
+    PATIENT_ID_COLUMNS,
     QueryRequest,
     QueryResponse,
     ReadReportsRequest,
@@ -82,11 +83,19 @@ async def read_reports(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"unsafe id_column: {body.id_column!r}",
         )
-    table = f"{settings.trino_catalog}.{settings.trino_schema}.reports_latest"
-    # Safely-quoted literals — psycopg-style ? binding isn't supported by
-    # the trino driver path here.
+    # Report-scoped IDs hit reports_latest directly; patient-scoped IDs
+    # route through reports_latest_epic_view (raw mrn/mpi mapped to
+    # resolved_* under the hood).
+    base = f"{settings.trino_catalog}.{settings.trino_schema}."
+    if body.id_column in PATIENT_ID_COLUMNS:
+        table = base + "reports_latest_epic_view"
+        column = PATIENT_ID_COLUMNS[body.id_column]
+    else:
+        table = base + "reports_latest"
+        column = body.id_column
+    # Trino driver doesn't support ?-binding here, so quote literals.
     quoted = ", ".join("'" + str(i).replace("'", "''") + "'" for i in body.ids)
-    sql = f"SELECT * FROM {table} " f'WHERE "{body.id_column}" IN ({quoted})'
+    sql = f'SELECT * FROM {table} WHERE "{column}" IN ({quoted})'
     try:
         with metrics.time_trino("read_reports"):
             columns, rows = await trino_client.execute(sql, user=user.sub)

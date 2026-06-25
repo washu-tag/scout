@@ -39,12 +39,11 @@ class Tools:
         returns rows directly to LLM context. No persistence, no
         iframe. For aggregate questions (COUNT, GROUP BY, time-series).
 
-      * `scout_get_reports(search_id, limit)` — fetch the first N
-        rows of an existing search with full report text. For "show
-        me the impressions of these cases" follow-ups.
-
-    Every method that operates on an existing search uses the same
-    parameter name `search_id` (e.g. `s_abc123`).
+      * `scout_get_reports(ids, id_column)` — POST /api/reports/read,
+        direct fetch of full report content by identifier. Use when
+        you have a lake file path (default `id_column`), accession
+        number, MRN, etc. and want the actual report. No prior search
+        needed.
     """
 
     class Valves(BaseModel):
@@ -529,34 +528,38 @@ class Tools:
         return created.get("summary") or ""
 
     # ------------------------------------------------------------------
-    # scout_get_reports — fetch full report rows from a search
+    # scout_get_reports — direct fetch by id, no prior search needed
     # ------------------------------------------------------------------
     async def scout_get_reports(
         self,
-        search_id: str,
-        limit: int = 10,
+        ids: list[str],
+        id_column: str = "primary_report_identifier",
         __user__: Optional[dict] = None,
         __oauth_token__: Any = None,
     ) -> Any:
         """
-        Fetch the first `limit` rows of an existing search, including
-        their full report text. Use this after `scout_find_reports`
-        when the user asks for specifics ("show me the impressions",
-        "what did report X say").
+        Fetch full report content (text, sections, diagnoses, metadata)
+        by identifier. Use whenever you have an id and want the actual
+        report — no prior search needed.
 
-        :param search_id: A search handle from a prior
-            `scout_find_reports` call (e.g. `s_aB3zX9`).
-        :param limit: max rows to return to your context (1-100;
-            default 10).
+        :param ids: List of identifiers (max 100).
+        :param id_column: Which column the ids match. Report-scoped (1
+            row each, fast): `primary_report_identifier` (lake file
+            path; default), `accession_number`, `message_control_id`.
+            Patient-scoped (all reports for that patient):
+            `epic_mrn`, `mpi`, `scout_patient_id`. The mrn/mpi columns
+            auto-use cross-report patient resolution.
         """
-        if limit < 1 or limit > 100:
-            return "Error: limit must be between 1 and 100."
+        if not ids:
+            return "Error: ids must be a non-empty list."
+        if len(ids) > 100:
+            return "Error: at most 100 ids per call."
         bearer = await self._bearer_for_outbound(__oauth_token__)
         try:
-            rows = await self._get_rows(search_id, page=1, limit=limit, bearer=bearer)
+            result = await self._post_read(ids=ids, id_column=id_column, bearer=bearer)
         except ReportViewerServiceError as exc:
-            return f"Error reading search: {exc}"
-        return json.dumps(rows, default=str, indent=2)
+            return f"Error reading reports: {exc}"
+        return json.dumps(result, default=str, indent=2)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -663,6 +666,27 @@ class Tools:
         except Exception:
             return service_view_url
         return f"{self.valves.public_base_url.rstrip('/')}/{path}"
+
+    async def _post_read(
+        self,
+        *,
+        ids: list[str],
+        id_column: str,
+        bearer: Optional[str],
+    ) -> dict:
+        """POST /api/reports/read — direct fetch by id (the
+        scout_get_reports backend). Returns `{columns, rows}` with the
+        full report content."""
+        url = f"{self.valves.report_viewer_url.rstrip('/')}/api/reports/read"
+        headers = {"Content-Type": "application/json"}
+        if bearer:
+            headers["Authorization"] = f"Bearer {bearer}"
+        payload: dict[str, Any] = {"ids": ids, "id_column": id_column}
+        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
+            r = await c.post(url, headers=headers, json=payload)
+        if r.status_code >= 400:
+            raise ReportViewerServiceError(_short_error(r))
+        return r.json()
 
     async def _post_aggregate(
         self,

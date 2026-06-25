@@ -94,6 +94,7 @@ export interface RowsParams {
 }
 
 export interface ReportDetail {
+  source_file: string | null;
   message_control_id: string | null;
   accession_number: string | null;
   epic_mrn: string | null;
@@ -124,13 +125,26 @@ export interface ReportDetail {
   diagnoses: Array<Record<string, unknown>> | null;
 }
 
-// On-the-fly full-report fetch. Search-scoped — the backend verifies
-// the report is in the search before returning text. Same endpoint
-// powers the future read_reports LLM tool (single or batched).
-export function getReport(searchId: string, reportId: string): Promise<ReportDetail> {
-  return api<ReportDetail>(
-    `/api/searches/${encodeURIComponent(searchId)}/reports/${encodeURIComponent(reportId)}`,
+// On-the-fly full-report fetch via the shared /api/reports/read
+// endpoint (the same one that backs the OWUI scout_get_reports tool).
+// OPA gates row visibility at the Trino layer; no application-side
+// cohort-membership check is needed.
+export async function getReport(reportId: string, idColumn: string): Promise<ReportDetail> {
+  const resp = await api<{ columns: string[]; rows: Array<Record<string, unknown>> }>(
+    '/api/reports/read',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [reportId], id_column: idColumn }),
+    },
   );
+  const row = resp.rows[0] ?? {};
+  // reports_latest exposes the lake file path as `primary_report_identifier`;
+  // the frontend (and ADR 0026) refers to it as `source_file`.
+  if (row.primary_report_identifier !== undefined && row.source_file === undefined) {
+    row.source_file = row.primary_report_identifier;
+  }
+  return row as unknown as ReportDetail;
 }
 
 export function getSearchRows(searchId: string, params: RowsParams): Promise<RowsResponse> {

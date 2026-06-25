@@ -11,9 +11,10 @@ Endpoints:
   POST /api/searches/from-file                  — validate IDs against reports_latest, save WHERE id IN (...) SQL
   GET  /api/searches/{id}                       — metadata
   GET  /api/searches/{id}/rows                  — paginated rows (wraps source_sql)
-  GET  /api/searches/{id}/reports/{report_id}   — single full report from a search
   GET  /api/searches/{id}/accessions            — DISTINCT accession_number list
   GET  /api/searches/{id}/csv                   — streaming CSV download
+
+Single-report reads go through POST /api/reports/read (see routes/reports.py).
 """
 
 from __future__ import annotations
@@ -580,24 +581,54 @@ def _parse_sort(sort: str | None) -> tuple[str, str] | None:
     return col, direction.upper()
 
 
+# Filter keys that accept a `.min` / `.max` suffix for range filtering.
+# The SPA's age column ships two number inputs whose values arrive as
+# `filter.patient_age.min` / `filter.patient_age.max`; any extension to
+# other numeric columns is one entry here.
+_RANGE_FILTER_COLUMNS: frozenset[str] = frozenset({"patient_age"})
+
+
 def _parse_filters(request: Request) -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
     for key, val in request.query_params.multi_items():
         if not key.startswith("filter."):
             continue
-        col = key[len("filter.") :]
+        spec = key[len("filter.") :]
+        col, _, suffix = spec.partition(".")
         if col not in _SORTABLE_COLUMNS:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"filter column {col!r} not allowed; one of {sorted(_SORTABLE_COLUMNS)}",
             )
+        if suffix:
+            if col not in _RANGE_FILTER_COLUMNS or suffix not in ("min", "max"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"filter suffix {suffix!r} not allowed on column "
+                        f"{col!r} (range filters: {sorted(_RANGE_FILTER_COLUMNS)})"
+                    ),
+                )
         if val:
-            out.append((col, val))
+            out.append((spec, val))
     return out
 
 
 def _filter_clause(col: str, value: str, *, alias: str = "") -> str:
     prefix = f"{alias}." if alias else ""
+    # Range filters arrive as `<col>.min` / `<col>.max`; render one
+    # comparison per bound, ANDed together at the call site.
+    if "." in col:
+        base, _, bound = col.partition(".")
+        qcol = f"{prefix}{_quote_ident(base)}"
+        if base == "patient_age":
+            try:
+                n = int(value)
+            except ValueError:
+                return "FALSE"
+            op = ">=" if bound == "min" else "<="
+            return f"{qcol} {op} {n}"
+        return "FALSE"
     qcol = f"{prefix}{_quote_ident(col)}"
     if col == "patient_age":
         try:
@@ -697,71 +728,6 @@ async def get_search_rows(
         columns=columns,
         rows=ordered,
     )
-
-
-# ---------------------------------------------------------------------------
-# GET /api/searches/{id}/reports/{report_id} — single full report from a search
-# ---------------------------------------------------------------------------
-
-
-@router.get("/{search_id}/reports/{report_id}")
-async def get_search_report(
-    search_id: str,
-    report_id: str,
-    user: User = Depends(get_current_user),
-) -> dict[str, Any]:
-    """Fetch the full row for one report in a search. Membership check
-    wraps source_sql as a subquery: `<id_col> IN (SELECT <id_col> FROM
-    (<source_sql>) s)`. Cheap because Trino filters the subquery to
-    the single requested ID via predicate pushdown."""
-    ds = await store.get_search(search_id, owner_sub=None)
-    if ds is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="search not found"
-        )
-    source_sql = ds["source_sql"]
-    if not source_sql:
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail="this search has no source SQL (pre-rename row)",
-        )
-
-    id_column = ds["id_column"]
-    col = _quote_ident(id_column)
-    val = _quote_literal(report_id)
-    sql = (
-        f"SELECT message_control_id, accession_number, epic_mrn, mpi, "
-        f"message_dt, modality, service_name, sending_facility, "
-        f"diagnostic_service_id, patient_age, sex, race, ethnic_group, "
-        f"birth_date, requested_dt, observation_dt, observation_end_dt, "
-        f"results_report_status_change_dt, report_status, "
-        f"study_instance_uid, principal_result_interpreter, "
-        f"assistant_result_interpreter, technician, report_text, "
-        f"report_section_impression, report_section_findings, "
-        f"report_section_addendum, diagnoses "
-        f"FROM {_qualified_reports()} r "
-        f"WHERE r.{col} = {val} "
-        f"AND r.{col} IN (SELECT s.{col} FROM ({source_sql}) s WHERE s.{col} = {val}) "
-        f"LIMIT 1"
-    )
-    try:
-        with metrics.time_trino("report_lookup"):
-            _, rows = await trino_client.execute(sql, user=user.sub)
-    except Exception as exc:
-        log.exception("trino report fetch failed")
-        metrics.REPORT_FETCH.labels(result="error").inc()
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"trino report fetch failed: {exc}",
-        )
-    if not rows:
-        metrics.REPORT_FETCH.labels(result="not_found").inc()
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"report {report_id!r} not in search {search_id}",
-        )
-    metrics.REPORT_FETCH.labels(result="ok").inc()
-    return json.loads(json.dumps(rows[0], default=str))
 
 
 # ---------------------------------------------------------------------------
