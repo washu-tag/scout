@@ -35,10 +35,11 @@ const COLUMNS_CONFIG: Array<{
   embedHidden?: boolean;
   align?: 'right' | 'center';
   mono?: boolean;
+  kind?: 'date';
 }> = [
   { field: 'accession_number', title: 'Acc', width: 140, embedWidth: 100, mono: true },
   { field: 'epic_mrn', title: 'MRN', width: 130, embedWidth: 100, mono: true },
-  { field: 'message_dt', title: 'Date', width: 170, embedWidth: 120 },
+  { field: 'message_dt', title: 'Date', width: 140, embedWidth: 110, kind: 'date' },
   { field: 'modality', title: 'Modality', width: 100, embedWidth: 70 },
   { field: 'service_name', title: 'Service', width: 240, embedWidth: 180 },
   // Facility is the least-clicked column; drop in embed mode to free space.
@@ -54,6 +55,16 @@ function fmtCell(v: unknown): string {
   if (v === null || v === undefined) return '';
   if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
   return JSON.stringify(v);
+}
+
+// Trino returns `timestamp with time zone` as `YYYY-MM-DDTHH:MM:SS+00:00`
+// (everything in the lake is UTC). Trim seconds and TZ offset for the UI.
+function fmtDate(v: unknown): string {
+  if (!v) return '—';
+  const d = new Date(String(v));
+  if (isNaN(d.getTime())) return String(v);
+  const iso = d.toISOString();
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)}`;
 }
 
 const columnHelper = createColumnHelper<Row>();
@@ -140,7 +151,7 @@ export default function SearchDetailPage() {
         columnHelper.accessor((row: Row) => row[c.field], {
           id: c.field,
           header: c.title,
-          cell: (info) => fmtCell(info.getValue()),
+          cell: (info) => (c.kind === 'date' ? fmtDate(info.getValue()) : fmtCell(info.getValue())),
           meta: {
             align: c.align,
             mono: c.mono,
@@ -839,13 +850,6 @@ function RowDetail(props: {
     if (v === null || v === undefined) return '—';
     const s = String(v);
     return s.length > 0 ? s : '—';
-  };
-  const fmtDate = (v: unknown): string => {
-    if (!v) return '—';
-    const s = String(v);
-    // 2024-01-15T12:34:56+00:00 → 2024-01-15 12:34
-    const m = s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
-    return m ? `${m[1]} ${m[2]}` : s;
   };
   const fmtPerson = (v: unknown): string => {
     if (!v) return '—';
