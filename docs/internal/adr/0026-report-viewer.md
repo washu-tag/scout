@@ -369,20 +369,11 @@ as the receiver for OWUI's admin signup webhook (configured via
 OWUI's `WEBHOOK_URL` PersistentConfig field). On a signup event the
 receiver does one Postgres statement against OWUI's own database
 that merge-sets both flags to true on the new user's `settings` JSON
-column. Best-effort: errors are logged + recorded as a metric but
-not raised, so OWUI's webhook retry loop doesn't hammer transient
-failures.
+column.
 
 **Why direct DB, not OWUI's HTTP API?** OWUI 0.9.6 has no admin
-endpoint to write another user's UI settings:
-
-- `POST /api/v1/users/{user_id}/update` (admin-only) accepts only
-  `role`, `name`, `email`, `profile_image_url`, `password` — see
-  `UserUpdateForm` in `backend/open_webui/models/users.py`.
-- `POST /api/v1/users/user/settings/update` writes the *session
-  user's own id* regardless of admin role.
-
-Upstream [open-webui/open-webui#20770](https://github.com/open-webui/open-webui/pull/20770)
+endpoint to write another user's UI settings. Upstream 
+[open-webui/open-webui#20770](https://github.com/open-webui/open-webui/pull/20770)
 would add the missing admin endpoint but the contributor states it
 "probably won't get merged anytime soon." That leaves direct DB
 write as the only path that lands the setting BEFORE the user's
@@ -435,14 +426,36 @@ UPDATE "user"
    upstream [#24587](https://github.com/open-webui/open-webui/pull/24587)
    to allow the in-cluster Service URL.
 
-3. **(Optional but recommended)** `REPORT_VIEWER_OWUI_WEBHOOK_SECRET`
-   env on report-viewer + matching `X-Scout-Webhook-Secret`
-   header on OWUI's webhook config so forged requests can't seed
-   settings for arbitrary users. NetworkPolicy on report-viewer
-   already gates intra-cluster ingress; this is defense-in-depth.
-
 Until #1 lands, the receiver path is reachable but returns 503 ("OWUI
 database URL not configured") and no settings are written.
+
+**Webhook trust model.** The receiver has no application-layer
+authentication, by design. OWUI's `POST /api/webhook` admin endpoint
+only accepts `{"url": "..."}` — no headers, no signing key, no caller
+identity — so no Keycloak service-principal or shared-secret pattern
+is wireable on the OWUI side (we'd have to fork OWUI). Protection
+comes from three layers stacked instead:
+
+1. **Ingress path enumeration.** `helm/report-viewer/templates/ingress.yaml`
+   only routes `/api/*` and `/spa/*` externally. `/webhooks/*` (along
+   with `/metrics`, `/healthz`, `/docs`) is not in the Ingress path
+   list, so Traefik returns 404 for any external request. The webhook
+   is only reachable via in-cluster Service DNS.
+
+2. **NetworkPolicy.** In-cluster ingress to the pod's port 8000 is
+   restricted to Traefik and `open-webui` peers (and Prometheus, for
+   the scrape). Same precedent as trino-rw (ADR 0019), which gates
+   its in-cluster surface to the hl7-transformer pod with no
+   application-layer credential.
+
+3. **Operation narrowness.** The receiver sets two boolean UI flags
+   (`iframeSandboxAllowSameOrigin`, `iframeSandboxAllowForms`) to
+   `true` on the user_id in the payload. The response is 204 No
+   Content whether the user exists, doesn't exist, or already has
+   the flags set — no oracle, no data leak. Calls against missing
+   users are logged no-ops. Setting the flags `true` is the desired
+   state; an attacker calling the endpoint either helps a user
+   reach that state or hits a no-op. SQL is parameterized.
 
 **Follow-up — least-privileged Postgres role.** v1 reuses OWUI's
 own Postgres credential (which has full table access). Future
@@ -585,10 +598,6 @@ it so it's not a blocker.
 
 - VERY IMPORTANT AND THIS APPLIES TO EVERYTHING : POST /api/reports/read: { "ids": ["m1","m2"], "id_column": "message_control_id" } "message_control_id" is not the appropriate id column to use for a report identifier, you must use the file location in the lake as the identifier!! check this everywhere in the code for consistency.
 
-- Does "/webhooks/owui-new-user" have auth? is it behind oa2p? What about healhtz and metrics endpoints?
-
-- updatingg ... info thing could be a bit more promenient in the ui banner
-
 - Review the Markdown summary shapping.
 
 - Difficult too distinuguish between rows and report card
@@ -598,3 +607,7 @@ it so it's not a blocker.
 - Embed vs non-embed view -> not a big use case for non-embed, claude is putting to much into this distinciton, need to remove that notion from the code.
 
 - TODO: review sql schema
+
+- Date formating
+
+- **Playwright canary for the iframe-sandbox seeding flow.** Unit-testing `owui_webhook.py` against our own assumptions won't catch regressions in OWUI itself (table/column rename, payload-shape change, flag name change, OWUI stops `await`-ing the webhook in the OAuth callback, an admin-global default makes the seeding moot, etc.). Add a Playwright test in `tests/auth/tests/` that signs in a freshly-provisioned Keycloak user, lets the OWUI signup flow run, then either calls `GET /api/v1/users/user/settings` as that user or inspects the rendered iframe's `sandbox` attribute, and asserts `iframeSandboxAllowSameOrigin` is true. Random username per run (e.g. `iframe-seed-test-{uuid}@scout.test`) so the signup webhook actually fires every time — orphans accumulate in dev02 / CI at ~1 per OWUI version bump, tolerable without a delete hook. Add `tests/auth/helpers/owui-admin.ts` later if hygiene matters. Wire as part of the OWUI version-bump checklist (Renovate PR is the trigger per ADR 0015). Complement (not replace) with a Grafana alert on `scout_report_viewer_owui_webhook_events_total{result="error"}` — cheap and catches loud regressions; alert misses silent ones (flag rename → we write a wrong key with `result="enabled"`), which is exactly what the Playwright test plugs.

@@ -1,15 +1,9 @@
-"""OWUI new-user webhook receiver.
+"""OWUI signup webhook receiver.
 
-OWUI fires `WEBHOOK_URL` on signup. We use it to seed
-`iframeSandboxAllowSameOrigin` / `iframeSandboxAllowForms` on the new
-user so the in-chat report-viewer iframe renders with
-`allow-same-origin` from the first search — without these the user
-has to dig into Settings > Interface and flip the toggles themselves.
-
-OWUI 0.9.6 has no admin endpoint to write another user's UI settings,
-so we go direct to OWUI's Postgres. The signup webhook is `await`ed
-inside the OAuth callback, so the write lands before the browser's
-first page hydrate — no first-render race. See ADR 0026.
+Writes iframeSandboxAllowSameOrigin and iframeSandboxAllowForms to true
+on the new user's OWUI Postgres row so the chat iframe renders with
+allow-same-origin from the first search. Direct DB write because OWUI
+has no admin API for per-user UI settings.
 """
 
 from __future__ import annotations
@@ -35,14 +29,6 @@ async def owui_new_user(request: Request) -> None:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="OWUI database URL not configured",
         )
-
-    if settings.owui_webhook_secret:
-        got = request.headers.get("X-Scout-Webhook-Secret", "")
-        if got != settings.owui_webhook_secret:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="webhook secret mismatch",
-            )
 
     try:
         body = await request.json()

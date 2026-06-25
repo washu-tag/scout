@@ -45,9 +45,6 @@ class Settings(BaseSettings):
     # into OWUI's "user".settings JSON column on signup. Empty disables
     # the webhook (returns 503). See ADR 0026.
     owui_database_url: str = ""
-    # Shared secret OWUI sends in X-Scout-Webhook-Secret. Empty skips
-    # verification.
-    owui_webhook_secret: str = ""
 
 
 settings = Settings()
