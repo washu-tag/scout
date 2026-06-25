@@ -20,10 +20,6 @@ env:
   # external cert; issuer must match the JWT.
   REPORT_VIEWER_OIDC_ISSUER: "{{ keycloak_realm_url }}"
   REPORT_VIEWER_OIDC_JWKS_URL: "{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs"
-  # CSP frame-ancestors — origins allowed to embed our /view iframe.
-  # The chat ingress is the primary embedder; add more (Slack, etc.) by
-  # space-separating in the inventory override.
-  REPORT_VIEWER_CSP_FRAME_ANCESTORS: "https://chat.{{ server_hostname }}"
   # OWUI webhook receiver — picks up new-user signups and writes
   # iframeSandbox* UI defaults directly into OWUI's "user".settings
   # JSON column so the in-chat iframe renders with allow-same-origin
@@ -106,13 +102,11 @@ networkPolicy:
 ingress:
   enabled: true
   className: traefik
-  # oauth2-proxy approval gate (ADR 0003); identity forwarded via
-  # X-Auth-Request-Preferred-Username only. No security-headers middleware:
-  # it sets `frame-ancestors 'none'` which would block the chat iframe;
-  # the app emits a narrower CSP from response middleware.
-  # TODO: LOOK INTO THIS CSP CONFIG
+  # embeddable-security-headers replaces the global security-headers so
+  # the chat can iframe the report viewer.
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
-      kube-system-oauth2-proxy-auth@kubernetescrd
+      kube-system-oauth2-proxy-auth@kubernetescrd,
+      kube-system-embeddable-security-headers@kubernetescrd
   host: "{{ report_viewer_host }}"

@@ -41,12 +41,6 @@ class Settings(BaseSettings):
     # Search behavior
     search_ttl_days: int = 30
 
-    # CSP — comma-separated list of origins that are allowed to embed the
-    # viewer in an iframe. The default lets the Scout chat ingress embed
-    # us; tighten per env via env var. Empty disables the CSP header.
-    # TODO: do not hard code the dev URL!!!
-    csp_frame_ancestors: str = "https://chat.dev02.tag.rcif.io"
-
     # OWUI Postgres URL — receiver writes iframe-sandbox UI defaults
     # into OWUI's "user".settings JSON column on signup. Empty disables
     # the webhook (returns 503). See ADR 0026.

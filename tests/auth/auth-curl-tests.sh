@@ -116,6 +116,12 @@ TESTS=(
   chat POST /api/v1/chats/00000000-0000-0000-0000-000000000000 401 "Open WebUI API create chat"
   chat DELETE /api/v1/chats/00000000-0000-0000-0000-000000000000 401 "Open WebUI API delete specific chat"
 
+  # Report Viewer
+  report-viewer GET / 401 "Report Viewer root"
+  report-viewer GET /api/searches 401 "Report Viewer searches API"
+  report-viewer GET /api/searches/abc/rows 401 "Report Viewer rows API"
+  report-viewer GET /spa/searches/abc 401 "Report Viewer SPA route"
+
   # Grafana
   grafana GET / 401 "Grafana root"
   grafana GET /login/generic_oauth 401 "Grafana OAuth callback"

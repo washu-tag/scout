@@ -10,7 +10,6 @@ from . import logging_setup, metrics, telemetry
 from .config import settings
 from .db import close_pool, ensure_schema
 from .routes import reports_router, searches_router, owui_webhook_router
-from .security import SecurityHeadersMiddleware
 
 # Replace stdlib handlers with our JSON formatter BEFORE anything else
 # logs. Otherwise FastAPI / uvicorn imports print plain-text lines before
@@ -59,10 +58,6 @@ def create_app() -> FastAPI:
         description="Surfaces saved searches over Scout reports for the chat iframe.",
         lifespan=lifespan,
     )
-
-    # Headers (CSP w/ chat-origin frame-ancestors) — must be added before
-    # routes are registered so the middleware sees every response.
-    app.add_middleware(SecurityHeadersMiddleware)
 
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, str]:

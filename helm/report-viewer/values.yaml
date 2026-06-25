@@ -31,13 +31,6 @@ service:
 ingress:
   enabled: true
   className: traefik
-  # No default middlewares: this service uses capability-URL auth on
-  # read paths (the search id is the cap) so oauth2-proxy can't share
-  # cookies across the chat→report-viewer origin. POST writes are JWT-authed
-  # in-app. CSP headers are emitted by SecurityHeadersMiddleware in the
-  # FastAPI app (with `frame-ancestors` allowing the chat origin),
-  # replacing the shared Traefik security-headers middleware which
-  # would set `frame-ancestors 'none'` and block the chat iframe.
   annotations: {}
   host: ''
   tls: []
