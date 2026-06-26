@@ -37,6 +37,7 @@ async def insert_search(
     row_count: int | None,
     parent_id: str | None = None,
     highlight_terms: list[str] | None = None,
+    highlight_diagnosis: list[str] | None = None,
     sql_explanation: str | None = None,
     owui_chat_id: str | None = None,
     owui_chat_title: str | None = None,
@@ -53,14 +54,16 @@ async def insert_search(
                     """
                     INSERT INTO searches
                       (id, kind, id_column, source_sql, sql_explanation,
-                       highlight_terms, row_count, parent_id, owner_sub,
-                       owui_chat_id, owui_chat_title, expires_at)
+                       highlight_terms, highlight_diagnosis, row_count,
+                       parent_id, owner_sub, owui_chat_id, owui_chat_title,
+                       expires_at)
                     VALUES
-                      (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                      (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id, kind, id_column, source_sql, sql_explanation,
-                              highlight_terms, row_count, parent_id, owner_sub,
-                              owui_chat_id, owui_chat_title, created_at,
-                              expires_at, last_read_at
+                              highlight_terms, highlight_diagnosis, row_count,
+                              parent_id, owner_sub, owui_chat_id,
+                              owui_chat_title, created_at, expires_at,
+                              last_read_at
                     """,
                     (
                         search_id,
@@ -69,6 +72,7 @@ async def insert_search(
                         source_sql,
                         sql_explanation or "",
                         highlight_terms or [],
+                        highlight_diagnosis or [],
                         row_count,
                         parent_id,
                         owner_sub,
@@ -97,9 +101,10 @@ async def get_search(
                     await cur.execute(
                         """
                         SELECT id, kind, id_column, source_sql, sql_explanation,
-                               highlight_terms, row_count, parent_id, owner_sub,
-                               owui_chat_id, owui_chat_title, created_at,
-                               expires_at, last_read_at
+                               highlight_terms, highlight_diagnosis, row_count,
+                               parent_id, owner_sub, owui_chat_id,
+                               owui_chat_title, created_at, expires_at,
+                               last_read_at
                         FROM searches
                         WHERE id = %s
                           AND expires_at > now()
@@ -110,9 +115,10 @@ async def get_search(
                     await cur.execute(
                         """
                         SELECT id, kind, id_column, source_sql, sql_explanation,
-                               highlight_terms, row_count, parent_id, owner_sub,
-                               owui_chat_id, owui_chat_title, created_at,
-                               expires_at, last_read_at
+                               highlight_terms, highlight_diagnosis, row_count,
+                               parent_id, owner_sub, owui_chat_id,
+                               owui_chat_title, created_at, expires_at,
+                               last_read_at
                         FROM searches
                         WHERE id = %s
                           AND owner_sub = %s
@@ -148,9 +154,10 @@ async def list_searches(owner_sub: str, *, limit: int = 200) -> list[dict[str, A
                 await cur.execute(
                     """
                     SELECT id, kind, id_column, source_sql, sql_explanation,
-                           highlight_terms, row_count, parent_id, owner_sub,
-                           owui_chat_id, owui_chat_title, created_at,
-                           expires_at, last_read_at
+                           highlight_terms, highlight_diagnosis, row_count,
+                           parent_id, owner_sub, owui_chat_id,
+                           owui_chat_title, created_at, expires_at,
+                           last_read_at
                     FROM searches
                     WHERE owner_sub = %s
                       AND expires_at > now()
@@ -171,6 +178,7 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
         source_sql,
         sql_explanation,
         highlight_terms,
+        highlight_diagnosis,
         row_count,
         parent_id,
         owner_sub,
@@ -187,6 +195,7 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
         "source_sql": source_sql,
         "sql_explanation": sql_explanation or "",
         "highlight_terms": highlight_terms or [],
+        "highlight_diagnosis": highlight_diagnosis or [],
         "count": row_count if row_count is not None else 0,
         "parent_id": parent_id,
         "owner_sub": owner_sub,

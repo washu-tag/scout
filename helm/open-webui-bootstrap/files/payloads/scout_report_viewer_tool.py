@@ -78,6 +78,7 @@ class Tools:
         self,
         sql: Optional[str] = None,
         highlight_terms: Optional[list[str]] = None,
+        highlight_diagnosis: Optional[list[str]] = None,
         sql_explanation: Optional[str] = None,
         llm_context_rows: Optional[int] = None,
         file_id: Optional[str] = None,
@@ -129,17 +130,26 @@ class Tools:
         :param sql: Trino SQL against `delta.default.reports_latest`
             (or `_epic_view`). Each search SQL stands alone — no
             placeholder substitution.
-        :param highlight_terms: Clinical terms for the row-expand
-            viewer to highlight in the report text. Good values:
+        :param highlight_terms: Clinical text terms (max ~5) for the
+            row-expand viewer to highlight in the report text. Matched
+            with word boundaries on the SPA side. Good values:
             `["pulmonary embolism", "PE"]`, `["cerebral infarction"]`,
             `["glioblastoma", "GBM"]`. BAD values: `["brain"]`,
-            `["chest"]`, `["MRI"]` — those belong in the SQL itself,
-            not as highlight markers. UI-only: highlighting does NOT
-            filter rows. The SQL is what decides what's in the search;
-            these strings just make the matches visually obvious when
-            the user expands a row. Without highlight_terms, you get
-            no `snippet` field on sample rows — pass them so you can
-            see why each row matched.
+            `["chest"]`, `["MRI"]` — those belong in the SQL itself.
+            UI-only: highlighting does NOT filter rows. Without
+            highlight_terms, the LLM-bound sample loses the `snippet`
+            field that shows ±80 chars around each match.
+        :param highlight_diagnosis: ICD codes or code prefixes (max
+            ~5) that drove this cohort. Examples: `["R91.1"]`,
+            `["R91"]` (prefix matches R91.1, R91.8, ...), `["J18%"]`
+            (SQL-LIKE prefix, treated the same). Matched against
+            `diagnosis_code` with case-insensitive startswith. Use
+            when the SQL filters on diagnosis codes (e.g.
+            `any_match(diagnoses, x -> x.diagnosis_code LIKE 'R91%')`)
+            so the LLM-bound sample's `positive_dx` field — and the
+            chip-row in the row-expand viewer — flag the matching
+            codes explicitly. Distinct from `highlight_terms`; use
+            both when the cohort is both text-driven and code-driven.
         :param sql_explanation: One- to three-sentence plain-language
             description of what the SQL matches and why. Surfaced in
             the SPA's "About this search" panel so the user can
@@ -215,6 +225,7 @@ class Tools:
                 sql,
                 bearer=bearer,
                 highlight_terms=highlight_terms,
+                highlight_diagnosis=highlight_diagnosis,
                 sql_explanation=sql_explanation,
                 llm_context_rows=llm_context_rows,
                 owui_chat_id=chat_id,
@@ -674,6 +685,7 @@ class Tools:
         *,
         bearer: Optional[str],
         highlight_terms: Optional[list[str]] = None,
+        highlight_diagnosis: Optional[list[str]] = None,
         sql_explanation: Optional[str] = None,
         llm_context_rows: Optional[int] = None,
         owui_chat_id: Optional[str] = None,
@@ -686,6 +698,8 @@ class Tools:
         payload: dict[str, Any] = {"sql": sql}
         if highlight_terms:
             payload["highlight_terms"] = highlight_terms
+        if highlight_diagnosis:
+            payload["highlight_diagnosis"] = highlight_diagnosis
         if sql_explanation:
             payload["sql_explanation"] = sql_explanation
         if llm_context_rows is not None:

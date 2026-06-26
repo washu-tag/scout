@@ -140,6 +140,7 @@ def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
         expires_at=r["expires_at"],
         last_read_at=r["last_read_at"],
         highlight_terms=r.get("highlight_terms") or [],
+        highlight_diagnosis=r.get("highlight_diagnosis") or [],
         sql_explanation=r.get("sql_explanation") or "",
         owui_chat_id=r.get("owui_chat_id") or "",
         owui_chat_title=r.get("owui_chat_title") or "",
@@ -228,13 +229,11 @@ async def create_search(
         # better than failing the whole create.
         row_count = 0
 
-    # Snippet + positive_dx extras: when highlight_terms is set, do
-    # ONE small Trino fetch against reports_latest with the 5 sample
-    # IDs to grab report_section_* + diagnoses, then attach
-    # snippet/positive_dx fields to the LLM-bound sample. Nothing
-    # persisted; pure LLM-context aid.
+    # Pure LLM-context aid: one small Trino fetch for the sample IDs,
+    # used to attach snippet (text-match) + positive_dx (chip-match)
+    # to the sample rows. Nothing persisted.
     sample_extras: dict[str, dict[str, Any]] = {}
-    if body.highlight_terms:
+    if body.highlight_terms or body.highlight_diagnosis:
         sample_ids = [
             str(r.get(id_column)) for r in sample_rows if r.get(id_column) is not None
         ]
@@ -261,11 +260,19 @@ async def create_search(
                 # Snippet feedback is a nice-to-have; carry on without.
                 log.exception("sample-text fetch failed (non-fatal)")
 
+    # \b boundaries so short tokens like "PE" don't match in "pectoralis".
     hl_pattern = None
     if body.highlight_terms:
         atoms = [re.escape(t.strip()) for t in body.highlight_terms if t and t.strip()]
         if atoms:
-            hl_pattern = re.compile("(?is)(" + "|".join(atoms) + ")")
+            hl_pattern = re.compile(r"(?is)\b(" + "|".join(atoms) + r")\b")
+
+    # Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` — same thing.
+    dx_prefixes: list[str] = []
+    if body.highlight_diagnosis:
+        for d in body.highlight_diagnosis:
+            if d and d.strip():
+                dx_prefixes.append(d.strip().rstrip("%").lower())
 
     _drop_cols = {
         "report_text",
@@ -276,25 +283,33 @@ async def create_search(
     sample = []
     for r in sample_rows:
         row_out = {k: v for k, v in r.items() if k not in _drop_cols}
-        if body.highlight_terms:
+        if body.highlight_terms or dx_prefixes:
             key = str(r.get(id_column)) if r.get(id_column) is not None else None
             extra = sample_extras.get(key, {}) if key else {}
             merged = {**r, **extra}
-            snip = _extract_snippet(merged, body.highlight_terms)
-            if snip:
-                row_out["snippet"] = snip
-            if hl_pattern:
-                dxs = extra.get("diagnoses") or r.get("diagnoses") or []
-                positive_dx: list[dict[str, str]] = []
-                for d in dxs if isinstance(dxs, list) else []:
-                    if not isinstance(d, dict):
-                        continue
-                    code = str(d.get("diagnosis_code") or "")
-                    text = str(d.get("diagnosis_code_text") or "")
-                    if code and hl_pattern.search(f"{code} {text}"):
-                        positive_dx.append({"code": code, "text": text})
-                if positive_dx:
-                    row_out["positive_dx"] = positive_dx
+            if body.highlight_terms:
+                snip = _extract_snippet(merged, body.highlight_terms)
+                if snip:
+                    row_out["snippet"] = snip
+            dxs = extra.get("diagnoses") or r.get("diagnoses") or []
+            positive_dx: list[dict[str, str]] = []
+            for d in dxs if isinstance(dxs, list) else []:
+                if not isinstance(d, dict):
+                    continue
+                code = str(d.get("diagnosis_code") or "")
+                text = str(d.get("diagnosis_code_text") or "")
+                if not code:
+                    continue
+                code_lc = code.lower()
+                matched = False
+                if dx_prefixes and any(code_lc.startswith(p) for p in dx_prefixes):
+                    matched = True
+                elif hl_pattern and hl_pattern.search(f"{code} {text}"):
+                    matched = True
+                if matched:
+                    positive_dx.append({"code": code, "text": text})
+            if positive_dx:
+                row_out["positive_dx"] = positive_dx
         sample.append(row_out)
     sample = _jsonsafe(sample)
 
@@ -308,6 +323,7 @@ async def create_search(
         row_count=row_count,
         parent_id=parent_id,
         highlight_terms=body.highlight_terms or [],
+        highlight_diagnosis=body.highlight_diagnosis or [],
         sql_explanation=body.sql_explanation or "",
         owui_chat_id=body.owui_chat_id or "",
         owui_chat_title=body.owui_chat_title or "",
@@ -537,6 +553,7 @@ async def get_search_meta(
         expires_at=ds["expires_at"],
         last_read_at=ds["last_read_at"],
         highlight_terms=ds.get("highlight_terms") or [],
+        highlight_diagnosis=ds.get("highlight_diagnosis") or [],
         sql_explanation=ds.get("sql_explanation") or "",
         owui_chat_id=ds.get("owui_chat_id") or "",
         owui_chat_title=ds.get("owui_chat_title") or "",
@@ -873,7 +890,7 @@ def _extract_snippet(
     escaped = [re.escape(t.strip()) for t in terms if t and t.strip()]
     if not escaped:
         return None
-    pat = re.compile("(?is)(" + "|".join(escaped) + ")")
+    pat = re.compile(r"(?is)\b(" + "|".join(escaped) + r")\b")
     for col in ("report_section_impression", "report_section_findings", "report_text"):
         text = row.get(col)
         if not text or not isinstance(text, str):

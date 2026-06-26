@@ -353,6 +353,7 @@ export default function SearchDetailPage() {
                                       ? [appliedFilters.service_name]
                                       : []),
                                   ]}
+                                  highlightDiagnosis={meta.data?.highlight_diagnosis ?? []}
                                 />
                               </div>
                             </td>
@@ -802,6 +803,7 @@ function RowDetail(props: {
   row: Record<string, unknown>;
   idColumn: string;
   highlightTerms: string[];
+  highlightDiagnosis: string[];
 }) {
   // The row's identifier for the /reports lookup. The search's
   // id_column value lives on the slim /rows row under the same key.
@@ -813,13 +815,17 @@ function RowDetail(props: {
     staleTime: 5 * 60_000, // 5 min — same row reopens instantly
   });
 
-  // Escape regex special chars in user-supplied filter values, then
-  // join into one alternation pattern. Case-insensitive.
+  // \b boundaries so short tokens like "PE" don't match in "pectoralis".
   const escaped = props.highlightTerms
     .map((t) => t.trim())
     .filter((t) => t.length >= 2)
     .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  const highlightRe = escaped.length ? new RegExp(`(${escaped.join('|')})`, 'gi') : null;
+  const highlightRe = escaped.length ? new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi') : null;
+
+  // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` — same thing.
+  const dxPrefixes = props.highlightDiagnosis
+    .map((d) => d.trim().replace(/%+$/, '').toLowerCase())
+    .filter((d) => d.length >= 1);
 
   const applyTextHighlights = (text: string): React.ReactNode => {
     if (!text) return null;
@@ -864,16 +870,19 @@ function RowDetail(props: {
     return String(v);
   };
 
-  // Identify which diagnosis codes / texts match the search's
-  // highlight_terms so we can call them out visually — those are the
-  // "the LLM was right" signal at a glance.
   const dxList = Array.isArray(diagnoses) ? (diagnoses as Array<Record<string, unknown>>) : [];
   const positiveDxIndex = new Set<number>();
-  if (highlightRe) {
-    for (let i = 0; i < dxList.length; i++) {
-      const code = String(dxList[i].diagnosis_code ?? '');
-      const text = String(dxList[i].diagnosis_code_text ?? '');
-      // Reset regex state — lastIndex sticks across .test() calls.
+  for (let i = 0; i < dxList.length; i++) {
+    const code = String(dxList[i].diagnosis_code ?? '');
+    const text = String(dxList[i].diagnosis_code_text ?? '');
+    if (!code) continue;
+    const codeLc = code.toLowerCase();
+    if (dxPrefixes.some((p) => codeLc.startsWith(p))) {
+      positiveDxIndex.add(i);
+      continue;
+    }
+    if (highlightRe) {
+      // Reset lastIndex; it sticks across .test() calls on /g regexes.
       highlightRe.lastIndex = 0;
       if (highlightRe.test(code + ' ' + text)) positiveDxIndex.add(i);
     }
@@ -1002,26 +1011,6 @@ function RowDetail(props: {
         </div>
       )}
 
-      {/* Compact "highlighting" hint above the report text. */}
-      {uniqueTerms.length > 0 && (
-        <div style={{ color: '#666', fontSize: '0.7rem', marginBottom: '0.25rem' }}>
-          Highlighting:{' '}
-          {uniqueTerms.map((t, i) => (
-            <code
-              key={i}
-              style={{
-                background: '#fff3a3',
-                padding: '0 4px',
-                marginRight: 4,
-                borderRadius: 2,
-              }}
-            >
-              {t}
-            </code>
-          ))}
-        </div>
-      )}
-
       {reportQ.isLoading && <div style={{ color: '#888' }}>Loading report…</div>}
       {reportQ.error && (
         <div style={{ color: '#b00' }}>
@@ -1054,12 +1043,41 @@ function RowDetail(props: {
         const sourceFile =
           (reportQ.data?.source_file as string | undefined) ??
           (props.row.source_file as string | undefined);
-        if (!sourceFile) return null;
+        const hasHighlights = uniqueTerms.length > 0;
+        if (!sourceFile && !hasHighlights) return null;
         return (
-          <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="button" onClick={() => discussInChat(sourceFile)} style={paginationBtn}>
-              Discuss in Chat
-            </button>
+          <div
+            style={{
+              marginTop: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            {hasHighlights && (
+              <div style={{ color: '#666', fontSize: '0.7rem', flex: 1, minWidth: 0 }}>
+                LLM Highlights:{' '}
+                {uniqueTerms.map((t, i) => (
+                  <code
+                    key={i}
+                    style={{
+                      background: '#fff3a3',
+                      padding: '0 4px',
+                      marginRight: 4,
+                      borderRadius: 2,
+                    }}
+                  >
+                    {t}
+                  </code>
+                ))}
+              </div>
+            )}
+            {!hasHighlights && <span style={{ flex: 1 }} />}
+            {sourceFile && (
+              <button type="button" onClick={() => discussInChat(sourceFile)} style={paginationBtn}>
+                Discuss in Chat
+              </button>
+            )}
           </div>
         );
       })()}

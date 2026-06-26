@@ -57,6 +57,7 @@ export interface SearchMeta {
   expires_at: string;
   last_read_at: string;
   highlight_terms: string[];
+  highlight_diagnosis: string[];
   sql_explanation: string;
   owui_chat_id: string;
   owui_chat_title: string;

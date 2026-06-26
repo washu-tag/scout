@@ -49,10 +49,23 @@ class CreateSearchRequest(BaseModel):
     highlight_terms: list[str] | None = Field(
         default=None,
         description=(
-            "Clinical terms to highlight in the row-expand viewer (e.g. "
-            "['pulmonary embolism', 'PE']). UI-only; the SQL is what "
-            "decides which rows are in the search. Anatomy/exam-type "
-            "words don't belong here — those go in the SQL."
+            "Clinical text terms to highlight in the row-expand viewer "
+            "(e.g. ['pulmonary embolism', 'PE']). UI-only; the SQL is "
+            "what decides which rows are in the search. Anatomy/exam-"
+            "type words don't belong here — those go in the SQL. "
+            "Matched with word boundaries on the SPA side, so short "
+            "abbreviations don't bleed into longer words."
+        ),
+    )
+    highlight_diagnosis: list[str] | None = Field(
+        default=None,
+        description=(
+            "ICD codes (or code prefixes) to flag on the diagnosis "
+            "chips in the row-expand viewer. Examples: ['R91.1'], "
+            "['J18', 'R91'] (prefix match against diagnosis_code). "
+            "UI-only; the SQL still drives inclusion. Use this when "
+            "the cohort is code-driven and the user benefits from "
+            "seeing the matching codes called out."
         ),
     )
     sql_explanation: str | None = Field(
@@ -209,10 +222,8 @@ class SearchMeta(BaseModel):
     created_at: datetime
     expires_at: datetime
     last_read_at: datetime
-    # Clinical terms the LLM was searching for at create time —
-    # surfaced to the SPA so the row-expand panel can highlight
-    # them in the report text without the user typing anything.
     highlight_terms: list[str] = []
+    highlight_diagnosis: list[str] = []
     # Plain-language summary of what the SQL matches and why,
     # written by the LLM at create time. Surfaced in the SPA's
     # "About this search" panel. Empty string if not provided.
