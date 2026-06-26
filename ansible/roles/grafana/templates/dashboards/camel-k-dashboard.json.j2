@@ -89,7 +89,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(camel_exchanges_total{integration=~\"$integration\"})",
+          "expr": "sum(camel_exchanges_total{integration=~\"$integration\",eventType=\"context\"})",
           "legendFormat": "Total",
           "range": true,
           "refId": "A"
@@ -163,7 +163,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(camel_exchanges_succeeded_total{integration=~\"$integration\"}) / sum(camel_exchanges_total{integration=~\"$integration\"}) * 100",
+          "expr": "sum(camel_exchanges_succeeded_total{integration=~\"$integration\",eventType=\"context\"}) / sum(camel_exchanges_total{integration=~\"$integration\",eventType=\"context\"}) * 100",
           "legendFormat": "Success Rate",
           "range": true,
           "refId": "A"
@@ -234,7 +234,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(camel_exchanges_failed_total{integration=~\"$integration\"})",
+          "expr": "sum(camel_exchanges_failed_total{integration=~\"$integration\",eventType=\"context\"})",
           "legendFormat": "Failed",
           "range": true,
           "refId": "A"
@@ -412,7 +412,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum by(integration) (rate(camel_exchanges_total{integration=~\"$integration\"}[5m]))",
+          "expr": "sum by(integration) (rate(camel_exchanges_total{integration=~\"$integration\",eventType=\"context\"}[5m]))",
           "legendFormat": "{{ integration }}",
           "range": true,
           "refId": "A"
@@ -519,7 +519,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum by(integration) (rate(camel_exchanges_succeeded_total{integration=~\"$integration\"}[5m]))",
+          "expr": "sum by(integration) (rate(camel_exchanges_succeeded_total{integration=~\"$integration\",eventType=\"context\"}[5m]))",
           "legendFormat": "{{ integration }} - succeeded",
           "range": true,
           "refId": "A"
@@ -613,7 +613,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum by(integration) (rate(camel_exchanges_failed_total{integration=~\"$integration\"}[5m]))",
+          "expr": "sum by(integration) (rate(camel_exchanges_failed_total{integration=~\"$integration\",eventType=\"context\"}[5m]))",
           "legendFormat": "{{ integration }} - failed",
           "range": true,
           "refId": "A"

@@ -110,11 +110,12 @@ extraScrapeConfigs: |
       - source_labels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
         action: keep
         regex: {{ kafka_cluster_name | default("kafka") }}
-      - source_labels: [__address__]
-        action: replace
-        regex: ([^:]+)(?::\d+)?
-        replacement: $1:9404
-        target_label: __address__
+      # Scrape only the named Strimzi metrics port (tcp-prometheus, 9404). Pods
+      # that lack it — e.g. the entity-operator (healthcheck ports only) — yield
+      # no target, instead of a perpetually-down :9404 scrape.
+      - source_labels: [__meta_kubernetes_pod_container_port_name]
+        action: keep
+        regex: tcp-prometheus
       - source_labels: [__meta_kubernetes_pod_name]
         target_label: pod
       - source_labels: [__meta_kubernetes_namespace]
