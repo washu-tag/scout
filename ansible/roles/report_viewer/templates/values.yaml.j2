@@ -20,38 +20,15 @@ env:
   # external cert; issuer must match the JWT.
   REPORT_VIEWER_OIDC_ISSUER: "{{ keycloak_realm_url }}"
   REPORT_VIEWER_OIDC_JWKS_URL: "{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs"
-  # OWUI webhook receiver — picks up new-user signups and writes
-  # iframeSandbox* UI defaults directly into OWUI's "user".settings
-  # JSON column so the in-chat iframe renders with allow-same-origin
-  # from the very first search (no manual Settings>Interface toggle).
-  # OWUI 0.9.6 has no admin API to write another user's UI settings,
-  # so direct DB is the only path synchronous to signup. See ADR 0026.
-  # Empty url disables the receiver (it 503s).
 
-# Pull the OWUI Postgres password from the existing open-webui-secrets
-# Secret. The connection URL is assembled below from the same role
-# defaults the OWUI role itself uses (open_webui_postgres_user,
-# open_webui_database). Optional so the deployment still rolls if
-# the Secret isn't present yet — receiver just 503s on empty URL.
-secretEnv:
-  # Mount OWUI's existing DATABASE_URL key — the receiver writes
-  # iframeSandbox UI flags into OWUI's "user".settings JSON column
-  # on signup (ADR 0026). Future least-privileged role swap: change
-  # only this `key` to point at a separate UPDATE-only credential.
-  REPORT_VIEWER_OWUI_DATABASE_URL:
-    secretName: open-webui-secrets
-    key: DATABASE_URL
-    optional: true
 {% if report_viewer_otel_endpoint | length > 0 %}
-  # OpenTelemetry — pointing at the configured OTLP HTTP collector.
-  # `scout_report_viewer.telemetry.bootstrap` activates auto-instrumentation
-  # when this env is set; absent, no spans are created.
+secretEnv:
   OTEL_EXPORTER_OTLP_ENDPOINT: "{{ report_viewer_otel_endpoint }}"
   OTEL_SERVICE_NAME: "{{ report_viewer_otel_service_name }}"
 {% endif %}
 
-# REPORT_VIEWER_DATABASE_URL is rendered into the chart-managed Secret.
 databaseUrl: "postgresql://{{ report_viewer_db_user }}:{{ report_viewer_db_password }}@{{ db_host }}:{{ db_port }}/{{ report_viewer_database }}"
+owuiDatabaseUrl: "postgresql://{{ report_viewer_owui_settings_writer_role }}:{{ report_viewer_owui_settings_writer_password }}@{{ db_host }}:{{ db_port }}/{{ report_viewer_owui_database }}"
 
 trinoAuthClientSecret: "{{ report_viewer_trino_auth_client_secret }}"
 

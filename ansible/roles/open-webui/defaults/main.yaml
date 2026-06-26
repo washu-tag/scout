@@ -94,6 +94,9 @@ open_webui_postgres_user: openwebui
 # Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
 open_webui_postgres_password: ''
 
+# Mirror of report_viewer/defaults; both roles need this name.
+report_viewer_owui_settings_writer_role: rvs_owui_settings_writer
+
 # WebUI Secret Key for session management and OAuth security
 # REQUIRED: Must be set in inventory.yaml (use vault encryption)
 # Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh

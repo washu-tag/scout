@@ -177,7 +177,7 @@ spec:
                   optional: {{ default false $ref.optional }}
             {{- end }}
           envFrom:
-            {{- if or .Values.databaseUrl .Values.trinoAuthClientSecret }}
+            {{- if or .Values.databaseUrl .Values.owuiDatabaseUrl .Values.trinoAuthClientSecret }}
             - secretRef:
                 name: {{ include "report-viewer.fullname" . }}
             {{- end }}

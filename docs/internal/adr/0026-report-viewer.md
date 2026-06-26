@@ -458,12 +458,15 @@ comes from three layers stacked instead:
    state; an attacker calling the endpoint either helps a user
    reach that state or hits a no-op. SQL is parameterized.
 
-**Follow-up — least-privileged Postgres role.** v1 reuses OWUI's
-own Postgres credential (which has full table access). Future
-hardening: create a dedicated role
-`CREATE ROLE rvs_owui_settings_writer; GRANT UPDATE (settings) ON "user" TO rvs_owui_settings_writer;`
-add a new secret key with that role's URL, and point
-report-viewer's `secretEnv` at it instead of `DATABASE_URL`.
+**Postgres role and secret ownership.** The receiver connects as a
+dedicated `rvs_owui_settings_writer` role granted only `SELECT (id,
+settings)` and `UPDATE (settings)` on `"user"`. No access to other
+tables, no PII reads outside the settings column. The role is
+provisioned by the open-webui Ansible role on every install-chat,
+so it stays in sync with the openwebui database lifecycle. The
+connection URL is rendered into report-viewer's own Helm Secret from
+inventory vars, not borrowed from `open-webui-secrets`, so each
+service owns its own credentials.
 
 **Note on the previously-documented "auto-enable" role flip.** Earlier
 drafts of this ADR described the receiver as flipping the new user's
@@ -543,19 +546,7 @@ it so it's not a blocker.
 
 - Send to XNAT handoff with IQ plugin. Not needed for the initial release but will be needed soon after.
 
-- **Auto-set per-user `iframeSandboxAllowSameOrigin` (and `iframeSandboxAllowForms`) on new OWUI signups.** Required so the in-chat iframe viewer renders with `allow-same-origin` from a new user's very first search, without making them dig into Settings > Interface > Artifacts and toggle it manually. OWUI 0.9.6 has no admin-global default for these flags and no admin API to write another user's UI settings (`UserUpdateForm` only accepts `role`/`name`/`email`/`profile_image_url`/`password`; `/user/settings/update` writes the session user's own id, ignoring admin role). Upstream PR open-webui/open-webui#20770 would add the missing admin endpoint but per the contributor "probably won't get merged anytime soon."
-
-  Path picked: direct write into the OWUI Postgres `"user".settings` JSON column from the existing signup-webhook receiver, scoped via a least-privileged Postgres role granted only `UPDATE (settings) ON "user"`. The webhook is `await`ed inside OWUI's OAuth callback (`oauth.py` ~1745 in 0.9.6), so the settings stamp completes before OWUI redirects the browser → first page-load already sees the corrected flags → no first-iframe-needs-reload race.
-
-  Eliminated alternatives (documented so we don't re-litigate):
-  - Image fork of OWUI with PR #20770 baked in — perpetual maintenance burden until upstream merges
-  - InitContainer overlay that appends the PR snippet to `users.py` at pod start — brittle to upstream router-file shape changes
-  - In-tool update from `scout_report_viewer_tool.py` calling `Users.update_user_settings_by_id` — has a race (server-side write doesn't push to client's settings cache; first iframe renders with stale sandbox attr, user has to reload once)
-  - OWUI admin webhook for new-user notification with `WEBHOOK_URL` — fires correctly post-`ENABLE_RAG_LOCAL_WEB_FETCH=true` and post-receiver-fix, but only gives us a *trigger*; we still need a way to actually write the setting, and OWUI's API doesn't expose one
-
-  Note: the receiver already exists at `routes/owui_webhook.py` with the trigger wired. Earlier work in this session built it around a fictional "auto-enable" role-flip — replace that body with `_apply_iframe_defaults(user_id)` doing the one-row `jsonb_set` UPDATE.
-
-  Earlier sections of this ADR's "OWUI new-user auto-enable" framing were misleading — it was never about flipping `pending → enabled` (users are already auto-enabled in the current realm config) — it was always about getting these UI flags set so the iframe works out of the box.
+- **Backfill iframeSandbox flags for existing OWUI users.** The signup webhook only fires for new users, so anyone who signed up before the webhook was wired has `iframeSandboxAllowSameOrigin` and `iframeSandboxAllowForms` still at the default false. Add an idempotent UPDATE pass to `make install-chat` that walks all rows in OWUI's `"user"` table, mirroring the receiver's SELECT-then-UPDATE shape (must handle the JSON-null seed case the receiver already deals with). Idempotent via a WHERE clause that skips rows already at `true`. Combine with the least-privileged Postgres role from the "Follow-up" subsection above: the same `UPDATE (settings)` grant covers both the webhook and the backfill.
 
 - **Service owns its own public URL; drop the tool's `public_base_url` valve.** Today `routes/searches.py:_view_url` builds `view_url` from `str(request.base_url)`, which is the URL the inbound request came in on. When the OWUI tool dials the in-cluster Service DNS (`http://report-viewer.scout-analytics:8000`), that's what gets stamped into the response — useless to a browser. The tool's `public_base_url` valve (`ansible/roles/open-webui/defaults/main.yaml`) exists solely to swap scheme+host back to the public ingress host. Two soft problems with the current shape: (a) deriving response URLs from a caller-supplied `Host` header is the canonical host-header-injection pattern (no direct exploit today since the response goes back to the requester, but if shared-cohort flows surface a `view_url` to a different user the poisoned URL becomes a phishing vector); (b) every future caller has to know the override trick.
 
