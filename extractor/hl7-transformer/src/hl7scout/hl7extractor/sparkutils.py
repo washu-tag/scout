@@ -20,7 +20,9 @@ def merge_df_into_dt_on_column(
     )
 
 
-def filter_df_for_update_inserts(batch_df: DataFrame, dedupe_col: str) -> Optional[DataFrame]:
+def filter_df_for_update_inserts(
+    batch_df: DataFrame, dedupe_col: str
+) -> Optional[DataFrame]:
     if batch_df.isEmpty():
         return None
 
@@ -41,7 +43,9 @@ def filter_df_for_update_inserts(batch_df: DataFrame, dedupe_col: str) -> Option
 
 
 def dedupe_df_on_accession_number(batch_df: DataFrame) -> Optional[DataFrame]:
-    updates_insert_df = filter_df_for_update_inserts(batch_df, "primary_report_identifier")
+    updates_insert_df = filter_df_for_update_inserts(
+        batch_df, "primary_report_identifier"
+    )
 
     if updates_insert_df is None:
         return None
