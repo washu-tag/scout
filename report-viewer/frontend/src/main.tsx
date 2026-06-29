@@ -39,7 +39,8 @@ pulseStyle.textContent =
   '@keyframes scoutPulse{0%,100%{opacity:1}50%{opacity:.25}}' +
   '@keyframes scoutSpin{to{transform:rotate(360deg)}}' +
   '.scout-col-resize{border-right:1px solid #d0d0d0}' +
-  '.scout-col-resize:hover{border-right-color:#888}';
+  '.scout-col-resize:hover{border-right-color:#888}' +
+  'tr.scout-row:hover{background:#f5f7f9 !important}';
 document.head.appendChild(pulseStyle);
 
 createRoot(document.getElementById('root')!).render(

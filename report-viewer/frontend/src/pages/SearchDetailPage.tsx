@@ -187,13 +187,34 @@ export default function SearchDetailPage() {
   const embedded = embeddedNow;
   return (
     <div>
-      {!embedded && (
-        <div style={{ marginBottom: '0.75rem' }}>
-          <Link to="/" style={{ fontSize: '0.85rem', color: '#4477AA' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          marginBottom: embedded ? '0.3rem' : '0.75rem',
+          fontSize: '0.85rem',
+        }}
+      >
+        {!embedded && (
+          <Link to="/" style={{ color: '#4477AA' }}>
             ← All searches
           </Link>
-        </div>
-      )}
+        )}
+        <span style={{ flex: 1 }} />
+        {rowsQ.data && (
+          <span
+            title="Search ID"
+            style={{
+              color: '#999',
+              fontSize: '0.7rem',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              userSelect: 'all',
+            }}
+          >
+            {searchId}
+          </span>
+        )}
+      </div>
       {rowsQ.error && (
         <p style={{ color: '#b00' }}>Failed to load rows: {(rowsQ.error as Error).message}</p>
       )}
@@ -252,13 +273,14 @@ export default function SearchDetailPage() {
                               fontWeight: 600,
                               color: '#555',
                               background: '#f5f5f5',
-                              borderBottom: '1px solid #e2e2e2',
+                              // Box-shadow not border-bottom: with
+                              // border-collapse: collapse + sticky, the
+                              // border disappears when content scrolls.
+                              boxShadow: 'inset 0 -1px 0 #c8ccd0',
                               whiteSpace: 'nowrap',
                               width: header.getSize(),
                               cursor: 'pointer',
                               userSelect: 'none',
-                              // Sticky header so column titles stay visible
-                              // while scrolling rows in the bounded table.
                               position: 'sticky',
                               top: 0,
                               zIndex: 1,
@@ -295,6 +317,7 @@ export default function SearchDetailPage() {
                     return (
                       <React.Fragment key={row.id}>
                         <tr
+                          className={isExpanded ? undefined : 'scout-row'}
                           onClick={(e) => {
                             row.toggleExpanded();
                             // Scroll the clicked row into view so the
@@ -585,6 +608,8 @@ export default function SearchDetailPage() {
         <ExplainSqlModal
           explanation={meta.data?.sql_explanation ?? ''}
           sql={meta.data?.source_sql ?? ''}
+          highlightTerms={meta.data?.highlight_terms ?? []}
+          highlightDiagnosis={meta.data?.highlight_diagnosis ?? []}
           onClose={() => setSqlModalOpen(false)}
         />
       )}
@@ -849,12 +874,6 @@ function RowDetail(props: {
   // do include `diagnoses` in their SELECT.
   const diagnoses = reportQ.data?.diagnoses ?? props.row.diagnoses;
 
-  // De-dup the highlight terms (LLM-time + filter-time can overlap)
-  // and drop short / empty entries that would match too much.
-  const uniqueTerms = Array.from(
-    new Set(props.highlightTerms.map((t) => t.trim()).filter((t) => t.length >= 2)),
-  );
-
   // Metadata sources. Prefer the lazy-fetched ReportDetail when it's
   // landed (more fields, fresher), but fall back to whatever the slim
   // /rows row already has so the card doesn't pop in late.
@@ -1043,41 +1062,46 @@ function RowDetail(props: {
         const sourceFile =
           (reportQ.data?.source_file as string | undefined) ??
           (props.row.source_file as string | undefined);
-        const hasHighlights = uniqueTerms.length > 0;
-        if (!sourceFile && !hasHighlights) return null;
+        if (!sourceFile) return null;
         return (
           <div
             style={{
               marginTop: '0.5rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.75rem',
             }}
           >
-            {hasHighlights && (
-              <div style={{ color: '#666', fontSize: '0.7rem', flex: 1, minWidth: 0 }}>
-                LLM Highlights:{' '}
-                {uniqueTerms.map((t, i) => (
-                  <code
-                    key={i}
-                    style={{
-                      background: '#fff3a3',
-                      padding: '0 4px',
-                      marginRight: 4,
-                      borderRadius: 2,
-                    }}
-                  >
-                    {t}
-                  </code>
-                ))}
-              </div>
-            )}
-            {!hasHighlights && <span style={{ flex: 1 }} />}
-            {sourceFile && (
-              <button type="button" onClick={() => discussInChat(sourceFile)} style={paginationBtn}>
-                Discuss in Chat
-              </button>
-            )}
+            <div
+              title={sourceFile}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                color: '#888',
+                fontSize: '0.7rem',
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '0.35rem',
+              }}
+            >
+              <span style={{ fontWeight: 600, flexShrink: 0 }}>Lake path:</span>
+              <span
+                style={{
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  userSelect: 'all',
+                  minWidth: 0,
+                  flex: 1,
+                }}
+              >
+                {sourceFile}
+              </span>
+            </div>
+            <button type="button" onClick={() => discussInChat(sourceFile)} style={paginationBtn}>
+              Discuss in Chat
+            </button>
           </div>
         );
       })()}
@@ -1088,7 +1112,15 @@ function RowDetail(props: {
 // "Explain SQL" modal — LLM-written explanation + raw SQL. Opened
 // from the Explain SQL button in the bottom action row so we don't
 // burn real estate above the table.
-function ExplainSqlModal(props: { explanation: string; sql: string; onClose: () => void }) {
+function ExplainSqlModal(props: {
+  explanation: string;
+  sql: string;
+  highlightTerms: string[];
+  highlightDiagnosis: string[];
+  onClose: () => void;
+}) {
+  const terms = props.highlightTerms.filter((t) => t.trim().length > 0);
+  const codes = props.highlightDiagnosis.filter((d) => d.trim().length > 0);
   return (
     <div
       role="dialog"
@@ -1143,6 +1175,62 @@ function ExplainSqlModal(props: { explanation: string; sql: string; onClose: () 
         >
           {props.sql || '(no SQL recorded)'}
         </pre>
+        {(terms.length > 0 || codes.length > 0) && (
+          <div style={{ marginTop: '1rem' }}>
+            <div style={{ fontWeight: 600, marginBottom: '0.2rem', fontSize: '0.85rem' }}>
+              LLM Highlights
+            </div>
+            <p
+              style={{ margin: '0 0 0.5rem', color: '#666', fontSize: '0.78rem', lineHeight: 1.4 }}
+            >
+              Words and diagnosis codes the LLM flagged as positive signals. They are highlighted in
+              the report text and diagnosis codes when you expand a row to help spot-check why each
+              row matched.
+            </p>
+            {terms.length > 0 && (
+              <div style={{ marginBottom: codes.length > 0 ? '0.4rem' : 0 }}>
+                <span style={{ color: '#666', fontSize: '0.78rem', marginRight: '0.4rem' }}>
+                  Text terms:
+                </span>
+                {terms.map((t, i) => (
+                  <code
+                    key={i}
+                    style={{
+                      background: '#fff3a3',
+                      padding: '0 4px',
+                      marginRight: 4,
+                      borderRadius: 2,
+                      fontSize: '0.78rem',
+                    }}
+                  >
+                    {t}
+                  </code>
+                ))}
+              </div>
+            )}
+            {codes.length > 0 && (
+              <div>
+                <span style={{ color: '#666', fontSize: '0.78rem', marginRight: '0.4rem' }}>
+                  Diagnosis codes:
+                </span>
+                {codes.map((d, i) => (
+                  <code
+                    key={i}
+                    style={{
+                      background: '#fff3a3',
+                      padding: '0 4px',
+                      marginRight: 4,
+                      borderRadius: 2,
+                      fontSize: '0.78rem',
+                    }}
+                  >
+                    {d}
+                  </code>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div
           style={{
             display: 'flex',
@@ -1328,7 +1416,7 @@ function FiltersModal(props: {
             Cancel
           </button>
           <button type="button" onClick={() => props.onRefineInChat(staged)} style={paginationBtn}>
-            Refine in Chat
+            Filter via Chat
           </button>
           <button
             type="button"
