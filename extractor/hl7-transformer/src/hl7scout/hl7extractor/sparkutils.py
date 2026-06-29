@@ -20,22 +20,32 @@ def merge_df_into_dt_on_column(
     )
 
 
-def filter_df_for_update_inserts(batch_df: DataFrame) -> Optional[DataFrame]:
+def filter_df_for_update_inserts(
+    batch_df: DataFrame, dedupe_col: str
+) -> Optional[DataFrame]:
     if batch_df.isEmpty():
         return None
 
     updates_insert_df = batch_df.filter(
         F.col("_change_type").isin(["insert", "update_postimage"])
-    ).drop("_change_type", "_commit_version", "_commit_timestamp")
+    )
 
     if updates_insert_df.isEmpty():
         return None
 
-    return updates_insert_df
+    dedupe_window = Window.partitionBy(dedupe_col).orderBy(F.desc("_commit_version"))
+
+    return (
+        updates_insert_df.withColumn("dedupe_index", F.row_number().over(dedupe_window))
+        .filter(F.col("dedupe_index") == 1)
+        .drop("_change_type", "_commit_version", "_commit_timestamp", "dedupe_index")
+    )
 
 
 def dedupe_df_on_accession_number(batch_df: DataFrame) -> Optional[DataFrame]:
-    updates_insert_df = filter_df_for_update_inserts(batch_df)
+    updates_insert_df = filter_df_for_update_inserts(
+        batch_df, "primary_report_identifier"
+    )
 
     if updates_insert_df is None:
         return None
