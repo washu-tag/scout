@@ -530,8 +530,6 @@ it so it's not a blocker.
 
 - The LLM is picking too many highlight terms, maybe limite to 3 - 5.
 
-- Update code from dataservice to report-viewer, including the new SPA and API endpoints and the OWUI integration points.
-
 - Update observability stack
 
 -  PHI in searches.source_sql — imported CSV cohorts persist WHERE epic_mrn IN ('123',...) clear-text in Postgres. Retention/encryption decision needed.
