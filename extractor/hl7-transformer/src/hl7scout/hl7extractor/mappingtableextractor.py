@@ -67,7 +67,9 @@ class MappingTableExtractor:
         self.dataframes_to_unpersist: List[DataFrame] = []
 
     def extract(self, batch_df: DataFrame):
-        filtered_df = filter_df_for_update_inserts(batch_df)
+        filtered_df = filter_df_for_update_inserts(
+            batch_df, "primary_report_identifier"
+        )
         if filtered_df is None:
             return
         processed_df = self.preprocess(filtered_df)

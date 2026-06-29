@@ -71,7 +71,7 @@ def curate_silver_table(batch_df, spark, table_name):
       more complex workflow to implement.
     """
 
-    filtered_df = filter_df_for_update_inserts(batch_df)
+    filtered_df = filter_df_for_update_inserts(batch_df, "source_file")
     if filtered_df is None:
         return
 
