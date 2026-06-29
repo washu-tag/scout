@@ -528,8 +528,6 @@ it so it's not a blocker.
 
 - Report snippets are not being given to the llm for context and the diagnosis codes are pressented outside of the results table given to the llm. This is a regression from the POC, the llm needs some report context.
 
-- When clicking on a report for details, split left and right panes to make better use of space. Patient info and report metadata on the left, full report text on the right.
-
 - The LLM is picking too many highlight terms, maybe limite to 3 - 5.
 
 - Update code from dataservice to report-viewer, including the new SPA and API endpoints and the OWUI integration points.
