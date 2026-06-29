@@ -168,3 +168,22 @@
 - name: Bootstrap Open WebUI admin + push declarative config
   ansible.builtin.include_tasks: configure_admin.yaml
   when: open_webui_admin_setup_enabled | bool
+
+# Backfill for users who signed up before the report-viewer webhook was wired.
+- name: Backfill iframeSandbox flags on existing OWUI users
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: execute_sql
+  vars:
+    db_connect_name: '{{ open_webui_database }}'
+    sql_script: |
+      UPDATE "user"
+         SET settings = jsonb_set(
+             jsonb_set(
+                 COALESCE(settings::jsonb, '{}'::jsonb),
+                 '{ui,iframeSandboxAllowSameOrigin}', 'true'::jsonb, true
+             ),
+             '{ui,iframeSandboxAllowForms}', 'true'::jsonb, true
+         )::json
+       WHERE COALESCE(settings::jsonb #>> '{ui,iframeSandboxAllowSameOrigin}', 'false') <> 'true'
+          OR COALESCE(settings::jsonb #>> '{ui,iframeSandboxAllowForms}', 'false') <> 'true';
