@@ -175,8 +175,7 @@ open_webui_csp_enabled: true
 # OAuth fields are env-only (ENABLE_OAUTH_PERSISTENT_CONFIG=false skips
 # loading them from the config table).
 
-# No external tool servers registered by default. The Scout Explorer
-# models use the in-image `scout_report_viewer` Python tool instead.
+# No external tool servers registered by default.
 tool_server_connections: []
 
 # Disable Arena Model evaluation feature (per README post-deploy step 7)
@@ -278,12 +277,6 @@ open_webui_filter_functions:
     valves:
       debug_logging: false
 
-# ----------------------------------------------------------------------------
-# OWUI Python tools — declarative reconcile, same idempotent shape as
-# `open_webui_filter_functions`. Tools don't have global/active toggles
-# (visibility is via `open_webui_scout_tool_ids` per model), so just id,
-# name, description, source_file, and optional valves.
-# ----------------------------------------------------------------------------
 open_webui_tool_functions:
   - id: scout_report_viewer_tool
     name: Scout Report Viewer Tool
