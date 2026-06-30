@@ -35,7 +35,10 @@ async def run_worker(
             worker = Worker(
                 client,
                 task_queue=TASK_QUEUE_NAME,
-                activities=[ingest_hl7_files_activity.ingest_hl7_files_to_delta_lake],
+                activities=[
+                    ingest_hl7_files_activity.ingest_hl7_files_to_delta_lake,
+                    ingest_hl7_files_activity.derive_delta_tables,
+                ],
                 activity_executor=pool,
                 max_cached_workflows=1,
                 max_concurrent_workflow_tasks=2,

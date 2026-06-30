@@ -5,6 +5,7 @@ import logging
 from concurrent.futures._base import TimeoutError
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
@@ -94,9 +95,14 @@ def import_hl7_files_to_deltalake(
     modality_map_csv_path: str,
     report_table_name: str,
     health_file: Path,
-    create_mapping: bool = True,
 ) -> int:
-    """Extract data from HL7 messages and write to Delta Lake."""
+    """Extract data from HL7 messages and merge into the base Delta Lake report table.
+
+    This is the base-ingest half of the pipeline. Derivative tables are produced
+    separately by ``derive_delta_tables`` (a distinct Temporal activity), which reads
+    this table's committed change data feed — so a derivative failure never re-runs this
+    merge. See issue #457.
+    """
     activity_info = activity.info()
     workflow_id = activity_info.workflow_id
     activity_id = activity_info.activity_id
@@ -509,7 +515,6 @@ def import_hl7_files_to_deltalake(
         success_paths = [row.source_file for row in df.select("source_file").collect()]
 
         df.unpersist()
-        process_derivative_data(spark, report_table_name, create_mapping=create_mapping)
 
     except (Py4JError, ConnectionError) as e:
         activity.logger.error(
@@ -560,3 +565,72 @@ def import_hl7_files_to_deltalake(
 
     activity.logger.info("All done")
     return len(success_paths)
+
+
+def derive_delta_tables(
+    report_table_name: str,
+    create_mapping: bool = True,
+    health_file: Optional[Path] = None,
+    spark: Optional[SparkSession] = None,
+) -> None:
+    """Derive the curated/latest/dx/mapping tables (and epic views) from the base report
+    table's committed change data feed.
+
+    This is the derivative half of the pipeline, split out of
+    ``import_hl7_files_to_deltalake`` (issue #457). It reads only *committed* state (the
+    base table's CDF + on-disk streaming checkpoints), so it carries no in-memory
+    dependency on the base merge and is safe to retry independently — a failure here
+    never re-runs the base merge.
+
+    When ``spark`` is provided the caller owns its lifecycle (used by tests); otherwise a
+    session is created and torn down here, mirroring the base activity.
+    """
+    own_spark = spark is None
+    try:
+        if own_spark:
+            activity.logger.info("Creating Spark session")
+            spark = (
+                SparkSession.builder.appName("DeriveDeltaTables")
+                .enableHiveSupport()
+                .getOrCreate()
+            )
+
+        activity.heartbeat()
+        process_derivative_data(spark, report_table_name, create_mapping=create_mapping)
+        activity.logger.info("Finished deriving delta tables")
+
+    except (Py4JError, ConnectionError) as e:
+        activity.logger.error(
+            "Spark error deriving delta tables. Marking pod unhealthy."
+        )
+        try:
+            message = str(e)
+        except:
+            message = "Unknown error"
+
+        if health_file is not None:
+            # Write the error message to the health file
+            with health_file.open("a") as f:
+                f.write(message + "\n")
+        raise
+    except TimeoutError:
+        activity.logger.info("Temporal activity has been cancelled")
+        return
+    except Exception as e:
+        activity.logger.exception("Error deriving delta tables", exc_info=e)
+        raise
+    finally:
+        if own_spark and spark is not None:
+            activity.logger.info("Clearing spark cache")
+            activity.heartbeat()
+            try:
+                spark.catalog.clearCache()
+            except Exception as e:
+                activity.logger.error("Error clearing spark cache", exc_info=e)
+
+            activity.logger.info("Stopping spark")
+            activity.heartbeat()
+            try:
+                spark.stop()
+            except Exception:
+                activity.logger.error("Error stopping spark")
