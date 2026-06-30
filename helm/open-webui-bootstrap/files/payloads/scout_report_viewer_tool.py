@@ -75,7 +75,6 @@ class Tools:
         highlight_terms: Optional[list[str]] = None,
         highlight_diagnosis: Optional[list[str]] = None,
         sql_explanation: Optional[str] = None,
-        llm_context_rows: Optional[int] = None,
         file_id: Optional[str] = None,
         id_column: Optional[str] = None,
         __user__: Optional[dict] = None,
@@ -154,7 +153,6 @@ class Tools:
             section, excluding any negated mentions like 'no nodule'.
             ICD-coded R91% diagnoses are also included regardless of
             text negation." Required on every search.
-        :param llm_context_rows: Sample-row cap. Default 5.
         :return: Rich text summary + an embedded `<iframe>` of the
             viewer. Service renders the summary; tool just forwards it.
         """
@@ -191,7 +189,6 @@ class Tools:
                 highlight_terms=highlight_terms,
                 highlight_diagnosis=highlight_diagnosis,
                 sql_explanation=sql_explanation,
-                llm_context_rows=llm_context_rows,
                 owui_chat_id=chat_id,
             )
         except ReportViewerServiceError as exc:
@@ -247,9 +244,10 @@ class Tools:
         iframe.
 
         :param sql: Trino SQL against `delta.default.reports_latest`
-            (or `_epic_view`). LIMIT 1000 is enforced server-side
-            for safety; if your query is shaped to return fewer
-            rows naturally (GROUP BY / COUNT), no LIMIT is needed.
+            (or `_epic_view`). Add `LIMIT 1000` (or smaller) for
+            row-returning queries so chat context stays bounded;
+            aggregates that naturally collapse (COUNT / GROUP BY /
+            time series) don't need a LIMIT.
         :return: Markdown-formatted table of rows, suitable for direct
             inclusion in your prose reply.
         """
@@ -562,8 +560,8 @@ class Tools:
     def _format_aggregate(agg: dict) -> str:
         """Render an aggregate result as a small markdown table so the
         LLM can drop it straight into its prose reply. Service returns
-        `{columns, rows, truncated}`. Empty result → a literal "no rows"
-        marker the LLM can phrase around."""
+        `{columns, rows}`. Empty result → a literal "no rows" marker the
+        LLM can phrase around."""
         cols: list[str] = agg.get("columns") or []
         rows: list[dict] = agg.get("rows") or []
         if not rows:
@@ -581,13 +579,7 @@ class Tools:
         body = "\n".join(
             "| " + " | ".join(_cell(r.get(c)) for c in cols) + " |" for r in rows
         )
-        note = ""
-        if agg.get("truncated"):
-            note = (
-                f"\n\n_(Result was truncated. Showing the first {len(rows)} rows; "
-                f"narrow the query if you need more.)_"
-            )
-        return head + "\n" + sep + "\n" + body + note
+        return head + "\n" + sep + "\n" + body
 
     async def _post_search(
         self,
@@ -597,7 +589,6 @@ class Tools:
         highlight_terms: Optional[list[str]] = None,
         highlight_diagnosis: Optional[list[str]] = None,
         sql_explanation: Optional[str] = None,
-        llm_context_rows: Optional[int] = None,
         owui_chat_id: Optional[str] = None,
     ) -> dict:
         url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/searches"
@@ -611,8 +602,6 @@ class Tools:
             payload["highlight_diagnosis"] = highlight_diagnosis
         if sql_explanation:
             payload["sql_explanation"] = sql_explanation
-        if llm_context_rows is not None:
-            payload["llm_context_rows"] = llm_context_rows
         if owui_chat_id:
             payload["owui_chat_id"] = owui_chat_id
         async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:

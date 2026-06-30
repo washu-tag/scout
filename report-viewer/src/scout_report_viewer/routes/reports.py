@@ -52,11 +52,7 @@ async def query_reports(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}",
         )
-    truncated = len(rows) > body.row_cap
-    if truncated:
-        rows = rows[: body.row_cap]
-    rows = _jsonsafe(rows)
-    return QueryResponse(columns=columns, rows=rows, truncated=truncated)
+    return QueryResponse(columns=columns, rows=_jsonsafe(rows))
 
 
 @router.post(

@@ -83,10 +83,6 @@ class CreateSearchRequest(BaseModel):
             "conversation that produced them."
         ),
     )
-    llm_context_rows: int | None = Field(
-        default=None,
-        description="Max sample rows returned to the LLM (default 5).",
-    )
 
 
 class CreateFromFileRequest(BaseModel):
@@ -138,21 +134,11 @@ class QueryRequest(BaseModel):
     not a search viewer."""
 
     sql: str = Field(..., description="Trino SQL to execute.")
-    row_cap: int = Field(
-        default=500,
-        ge=1,
-        le=10000,
-        description="Hard cap on returned rows so a runaway GROUP BY can't dump the world to chat context.",
-    )
 
 
 class QueryResponse(BaseModel):
     columns: list[str]
     rows: list[dict[str, Any]]
-    truncated: bool = Field(
-        default=False,
-        description="True when the query returned more than `row_cap` rows; rows were truncated to the cap.",
-    )
 
 
 class ReadReportsRequest(BaseModel):

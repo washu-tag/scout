@@ -51,6 +51,8 @@ router = APIRouter(prefix="/api/searches", tags=["searches"])
 # becomes the upper bound on the IN-clause length in the saved SQL.
 _MAX_FROM_FILE = 1_000_000
 
+_LLM_SAMPLE_ROWS = 5
+
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -175,7 +177,7 @@ async def create_search(
     # we need for the LLM-bound summary. The LIMIT lives outside the
     # sql we save — we wrap as a subquery so the LLM's own
     # LIMIT (e.g. LIMIT 50000) is respected on later /rows reads.
-    sample_sql = f"SELECT s.* FROM ({sql}) s LIMIT 5"
+    sample_sql = f"SELECT s.* FROM ({sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
         with metrics.time_trino("create_sample_query"):
             columns, sample_rows = await trino_client.execute(sample_sql, user=user.sub)
