@@ -88,14 +88,10 @@ open_webui_storage_size: 2Gi
 open_webui_storage_class: ''
 
 # PostgreSQL configuration
-open_webui_database: openwebui
 open_webui_postgres_user: openwebui
 # REQUIRED: Must be set in inventory.yaml (use vault encryption)
 # Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
 open_webui_postgres_password: ''
-
-owui_settings_writer_role: owui_settings_writer
-# REQUIRED in inventory: owui_settings_writer_password
 
 # WebUI Secret Key for session management and OAuth security
 # REQUIRED: Must be set in inventory.yaml (use vault encryption)
