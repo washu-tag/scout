@@ -19,6 +19,7 @@ public class DefaultArgs {
     private static Integer splitAndUploadConcurrency;
     private static String reportTableName;
     private static Integer deltaIngestTimeout;
+    private static Integer deriveDeltaTablesTimeout;
 
     /**
      * Logs root path for HL7 log files.
@@ -178,6 +179,26 @@ public class DefaultArgs {
      */
     public static Integer getDeltaIngestTimeout(Integer input) {
         return getValueOrDefault(input, deltaIngestTimeout);
+    }
+
+    /**
+     * Derive Delta tables timeout.
+     *
+     * @param deriveDeltaTablesTimeout The input value for the derivative-table activity timeout.
+     */
+    @Value("${scout.workflowArgDefaults.ingestHl7ToDeltaLake.deriveDeltaTablesTimeout}")
+    public void setDeriveDeltaTablesTimeout(Integer deriveDeltaTablesTimeout) {
+        DefaultArgs.deriveDeltaTablesTimeout = deriveDeltaTablesTimeout;
+    }
+
+    /**
+     * Derive Delta tables timeout.
+     *
+     * @param input The input value for the derivative-table activity timeout.
+     * @return The derivative-table activity timeout value or the default.
+     */
+    public static Integer getDeriveDeltaTablesTimeout(Integer input) {
+        return getValueOrDefault(input, deriveDeltaTablesTimeout);
     }
 
     private static String getValueOrDefault(String value, String defaultValue) {

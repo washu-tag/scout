@@ -71,4 +71,5 @@ config:
           splitAndUploadConcurrency: {{ hl7log_extractor_concurrency | default(150) }}
         ingestHl7ToDeltaLake:
           deltaIngestTimeout: {{ hl7_transformer_timeout | default(480) }}
+          deriveDeltaTablesTimeout: {{ hl7_transformer_derive_timeout | default(480) }}
           reportTableName: '{{ report_delta_table_name }}'

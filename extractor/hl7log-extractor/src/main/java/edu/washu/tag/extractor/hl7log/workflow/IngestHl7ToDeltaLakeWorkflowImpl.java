@@ -1,12 +1,14 @@
 package edu.washu.tag.extractor.hl7log.workflow;
 
 import static edu.washu.tag.extractor.hl7log.util.Constants.BUILD_MANIFEST_QUEUE;
+import static edu.washu.tag.extractor.hl7log.util.Constants.DERIVE_ACTIVITY;
 import static edu.washu.tag.extractor.hl7log.util.Constants.INGEST_DELTA_LAKE_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.PYTHON_ACTIVITY;
 import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_QUEUE;
 
 import edu.washu.tag.extractor.hl7log.activity.FindHl7Files;
 import edu.washu.tag.extractor.hl7log.activity.SignalRefreshActivity;
+import edu.washu.tag.extractor.hl7log.model.DeriveDeltaTablesActivityInput;
 import edu.washu.tag.extractor.hl7log.model.FindHl7FilesInput;
 import edu.washu.tag.extractor.hl7log.model.FindHl7FilesOutput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeActivityInput;
@@ -70,6 +72,20 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
                         .build())
                     .build());
 
+        // Derivative-table activity: derives curated/latest/dx/mapping (and epic views)
+        // from the base table's change data feed. Retried independently of the base merge
+        // so a failure here never re-runs the merge (issue #457).
+        final ActivityStub deriveActivity =
+            Workflow.newUntypedActivityStub(
+                ActivityOptions.newBuilder()
+                    .setTaskQueue(INGEST_DELTA_LAKE_QUEUE)
+                    .setStartToCloseTimeout(Duration.ofMinutes(DefaultArgs.getDeriveDeltaTablesTimeout(null)))
+                    .setRetryOptions(RetryOptions.newBuilder()
+                        .setMaximumInterval(Duration.ofMinutes(5))
+                        .setMaximumAttempts(5)
+                        .build())
+                    .build());
+
         String hl7ManifestFilePath = input.hl7ManifestFilePath();
         if (input.hl7ManifestFilePath() == null || input.hl7ManifestFilePath().isEmpty()) {
             // Find HL7 files and build manifest
@@ -88,15 +104,13 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
 
         // Validate input
         String reportTableName = DefaultArgs.getReportTableName(input.reportTableName());
-        // Default null/unset to true so production runs derive the mapping table by default.
-        Boolean createMapping = input.createMapping() == null ? Boolean.TRUE : input.createMapping();
 
         // Ingest HL7 into delta lake
         logger.info("WorkflowId {} - Launching activity to ingest HL7 files", workflowInfo.getWorkflowId());
         Promise<IngestHl7FilesToDeltaLakeOutput> ingestHl7Promise = ingestActivity.executeAsync(
             PYTHON_ACTIVITY,
             IngestHl7FilesToDeltaLakeOutput.class,
-            new IngestHl7FilesToDeltaLakeActivityInput(reportTableName, hl7ManifestFilePath, createMapping)
+            new IngestHl7FilesToDeltaLakeActivityInput(reportTableName, hl7ManifestFilePath)
         );
 
         IngestHl7FilesToDeltaLakeOutput ingestHl7Output;
@@ -118,9 +132,24 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
         logger.info("WorkflowId {} - Activity complete, ingested {} HL7 files",
             workflowInfo.getWorkflowId(), ingestHl7Output.numHl7Ingested());
 
-        // Signal the view refresh entity workflow
+        // Signal the view refresh entity workflow. Fires right after the base ingest and
+        // its per-file status writes (reverted to the pre-derivative-tables placement), not
+        // behind the long derivative step.
         signalRefreshActivity.signalRefresh(workflowInfo.getWorkflowId());
         logger.info("WorkflowId {} - Signaled view refresh workflow", workflowInfo.getWorkflowId());
+
+        // Derive downstream tables from the base table's change data feed. A failure here
+        // fails this workflow (surfaced by the existing workflow-failure alert) but does
+        // NOT mark files failed — they are already committed to the base table (#457).
+        logger.info("WorkflowId {} - Deriving delta tables", workflowInfo.getWorkflowId());
+        // Default null/unset to true so production runs derive the mapping table by default.
+        Boolean createMapping = input.createMapping() == null ? Boolean.TRUE : input.createMapping();
+        deriveActivity.execute(
+            DERIVE_ACTIVITY,
+            Void.class,
+            new DeriveDeltaTablesActivityInput(reportTableName, createMapping)
+        );
+        logger.info("WorkflowId {} - Derived delta tables", workflowInfo.getWorkflowId());
 
         return ingestHl7Output;
     }

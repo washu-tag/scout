@@ -34,4 +34,5 @@ scout:
       splitAndUploadConcurrency: 150
     ingestHl7ToDeltaLake:
       deltaIngestTimeout: 60
+      deriveDeltaTablesTimeout: 60
       reportTableName: 'reports'
