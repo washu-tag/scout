@@ -5,13 +5,12 @@ exercise the derivative-table logic against an in-process metastore. Production 
 is mirrored from ansible/roles/scout_common/templates/spark-defaults.conf.j2 (minus the
 S3A / remote Hive settings).
 
-Run (from extractor/hl7-transformer) with a Spark-compatible Java + Python:
+Run from extractor/hl7-transformer. Spark/Delta versions are NOT pinned here — they come
+from pyproject.toml (the single Python-side source of truth), so this command tracks a
+Spark upgrade automatically. Locally select a Spark-compatible interpreter + JVM: Python
+3.11 (Spark 3.5.x ships no wheels for 3.13+) and Java 17 (Spark 3.5.x supports <= 17):
 
-    JAVA_HOME=<java-17> PYTHONPATH=src uv run --python 3.11 \
-        --with pyspark==3.5.4 --with delta-spark==3.3.0 --with 'temporalio~=1.25.0' \
-        --with trino --with s3fs --with 'psycopg[binary]' \
-        --with pytest --with pytest-rerunfailures \
-        pytest tests/ -v
+    JAVA_HOME=<java-17> uv run --python 3.11 --extra test pytest tests/ -v
 """
 
 import os
