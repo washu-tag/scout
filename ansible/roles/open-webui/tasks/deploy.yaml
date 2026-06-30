@@ -42,8 +42,7 @@
     sql_script: 'ALTER SCHEMA public OWNER TO {{ open_webui_postgres_user }};'
     sql_dbname: '{{ open_webui_database }}'
 
-# Least-privileged role for the signup-webhook receiver. ADR 0026.
-- name: Provision report-viewer signup-webhook Postgres role
+- name: Provision OWUI DB settings writer role
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: execute_sql
@@ -51,14 +50,14 @@
     # Table GRANTs need the openwebui DB, not the default postgres.
     db_connect_name: '{{ open_webui_database }}'
     sql_script: |
-      DO $rvs$ BEGIN
-        CREATE ROLE {{ report_viewer_owui_settings_writer_role }} LOGIN PASSWORD '{{ report_viewer_owui_settings_writer_password }}';
+      DO $$ BEGIN
+        CREATE ROLE {{ owui_settings_writer_role }} LOGIN PASSWORD '{{ owui_settings_writer_password }}';
       EXCEPTION WHEN duplicate_object THEN
-        ALTER ROLE {{ report_viewer_owui_settings_writer_role }} WITH PASSWORD '{{ report_viewer_owui_settings_writer_password }}';
-      END $rvs$;
-      GRANT CONNECT ON DATABASE {{ open_webui_database }} TO {{ report_viewer_owui_settings_writer_role }};
-      GRANT USAGE ON SCHEMA public TO {{ report_viewer_owui_settings_writer_role }};
-      GRANT SELECT (id, settings), UPDATE (settings) ON "user" TO {{ report_viewer_owui_settings_writer_role }};
+        ALTER ROLE {{ owui_settings_writer_role }} WITH PASSWORD '{{ owui_settings_writer_password }}';
+      END $$;
+      GRANT CONNECT ON DATABASE {{ open_webui_database }} TO {{ owui_settings_writer_role }};
+      GRANT USAGE ON SCHEMA public TO {{ owui_settings_writer_role }};
+      GRANT SELECT (id, settings), UPDATE (settings) ON "user" TO {{ owui_settings_writer_role }};
 
 - name: Create Kubernetes Secret for sensitive env vars
   ansible.builtin.include_tasks: create_secret.yaml
