@@ -1,11 +1,11 @@
-"""Auth — two paths, first match wins.
+"""Auth - two paths, first match wins.
 
 1. **Bearer JWT** validated against Keycloak JWKS. Used by the OWUI tool
    path (forwards `__oauth_token__`) and by anything else that wants to
    present a real end-user token. Validates signature + exp + iss + aud
    (`aud=report-viewer`, stamped by the `report-viewer-audience` client
    scope).
-2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`) — the
+2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`) - the
    ingress path. The NetworkPolicy restricts ingress to Traefik so the
    header can't be forged from inside the cluster.
 
@@ -47,7 +47,7 @@ def _bearer_token(auth_header: str | None) -> str | None:
 def _validate_jwt(token: str) -> str | None:
     """Validate `token` against Keycloak JWKS, return `sub` or None.
 
-    Returns None — rather than raising — on validation failure so the
+    Returns None - rather than raising - on validation failure so the
     caller can fall through to the next auth path (header, shared
     secret). Logs at INFO so failed-then-fallback succeeds quietly while
     repeated failures are still searchable in Loki.
@@ -109,7 +109,7 @@ async def get_current_user(
         sub = _validate_jwt(token)
         if sub:
             return User(sub=sub)
-        # Bearer was present but invalid — 401 directly instead of falling
+        # Bearer was present but invalid - 401 directly instead of falling
         # through. If a caller bothered to send a bearer, they meant to
         # authenticate as that user; silently downgrading to header trust
         # would mask token-expiry bugs.

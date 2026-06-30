@@ -1,4 +1,4 @@
-"""Prometheus metrics — exposes /metrics + a few custom domain counters.
+"""Prometheus metrics - exposes /metrics + a few custom domain counters.
 
 We use `prometheus-fastapi-instrumentator` for the standard HTTP histograms
 (request count, latency, in-flight) and `prometheus-client` directly for
@@ -46,7 +46,7 @@ POSTGRES_OP_DURATION = Histogram(
     buckets=(0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0),
 )
 
-# Search row-count distribution — wide log-ish buckets so we can see "most
+# Search row-count distribution - wide log-ish buckets so we can see "most
 # searches are ~hundreds, a few are big". Recorded once per successful
 # create_search / create_from_file.
 SEARCH_SIZE = Histogram(
@@ -90,7 +90,7 @@ def time_trino(op: str) -> Iterator[None]:
             # Re-label the just-observed sample as error. Cheaper than
             # cancelling the context manager's sample: we observe twice
             # (once on the ok path's `time()`, but on exception that ctx
-            # was never entered) — so only this error path increments.
+            # was never entered) - so only this error path increments.
             TRINO_QUERY_DURATION.labels(op=op, result="error").observe(0.0)
             raise
 
@@ -108,7 +108,7 @@ def time_postgres(op: str) -> Iterator[None]:
 def install(app: FastAPI) -> None:
     """Mount /metrics and the standard HTTP request instrumentator.
 
-    Idempotent — the instrumentator only attaches once per app instance.
+    Idempotent - the instrumentator only attaches once per app instance.
     """
     instrumentator = (
         Instrumentator(

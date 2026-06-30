@@ -34,9 +34,9 @@ In air-gapped environments (`air_gapped: true`), both model pulling and Scout mo
 **Required for air-gapped:**
 - `ollama_nfs_path`: Shared NFS path accessible by both staging and cluster
 
-**Timing — staging pull Job vs production pod start:**
+**Timing - staging pull Job vs production pod start:**
 
-The Ollama pod's `lifecycle.postStart` hook preloads `preload: true` models into memory on every pod start. If the staging cluster's pull Job hasn't finished writing models to NFS by the time the air-gapped production Ollama pod first starts, those models won't appear in `ollama list` yet and the hook will skip them — the next user request triggers a cold start, or restart the Ollama pod after the pull Job completes to trigger preload.
+The Ollama pod's `lifecycle.postStart` hook preloads `preload: true` models into memory on every pod start. If the staging cluster's pull Job hasn't finished writing models to NFS by the time the air-gapped production Ollama pod first starts, those models won't appear in `ollama list` yet and the hook will skip them - the next user request triggers a cold start, or restart the Ollama pod after the pull Job completes to trigger preload.
 
 Watch the staging pull Job:
 ```bash
@@ -44,7 +44,7 @@ Watch the staging pull Job:
 kubectl get jobs -n scout-analytics -l app=ollama-pull-models -w
 ```
 
-`preload: false` models always cold-load on first request (intentional — see Multi-model VRAM management below).
+`preload: false` models always cold-load on first request (intentional - see Multi-model VRAM management below).
 
 ### Required Configuration
 
@@ -52,8 +52,8 @@ See `defaults/main.yaml` for all available variables. Key requirements in `inven
 
 **Required Secrets** (use Ansible Vault):
 - `open_webui_postgres_password`
-- `open_webui_secret_key` — backs OWUI session signing
-- `open_webui_bootstrap_password` — bootstrap admin user's password
+- `open_webui_secret_key` - backs OWUI session signing
+- `open_webui_bootstrap_password` - bootstrap admin user's password
 - `open_webui_redis_password`
 - `keycloak_open_webui_client_secret`
 
@@ -67,7 +67,7 @@ See `defaults/main.yaml` for all available variables. Key requirements in `inven
 
 **Multi-model VRAM management:**
 
-Ollama's runtime default `num_ctx` is 4096 regardless of the model's native max — that's why each Scout model bakes its `num_ctx` into a Modelfile-derived variant. With multiple `scout_models`, total resident weights + KV cache may exceed GPU memory if all models are kept hot. Set `preload: false` on entries that should cold-load on demand; the bootstrap Job derives each model's `keep_alive` from `preload` (`-1` for resident, `5m` for cold-load) so cold-load models unload when idle and free VRAM for the resident set. Override per-entry via `ui.keep_alive` if needed.
+Ollama's runtime default `num_ctx` is 4096 regardless of the model's native max - that's why each Scout model bakes its `num_ctx` into a Modelfile-derived variant. With multiple `scout_models`, total resident weights + KV cache may exceed GPU memory if all models are kept hot. Set `preload: false` on entries that should cold-load on demand; the bootstrap Job derives each model's `keep_alive` from `preload` (`-1` for resident, `5m` for cold-load) so cold-load models unload when idle and free VRAM for the resident set. Override per-entry via `ui.keep_alive` if needed.
 
 See `inventory.example.yaml` for configuration examples
 
@@ -79,11 +79,11 @@ The bootstrap user is `scout-deploy@scout-deploy.local` (configurable via `open_
 
 ### How it works
 
-- **The Job uses OWUI's own container image** so the password-migration step can `import open_webui.internal.db` / `open_webui.models.auths` (same modules the app uses), and bcrypt versions match. The image tag is **discovered at deploy time** from the running OWUI Pod, not pinned separately — Renovate bumps `open_webui_helm_chart_version` in `versions.yaml`, the chart's `appVersion` determines the image that runs, and `configure_admin.yaml` reads it back via `kubernetes.core.k8s_info` before installing the bootstrap chart. One pin, no drift.
+- **The Job uses OWUI's own container image** so the password-migration step can `import open_webui.internal.db` / `open_webui.models.auths` (same modules the app uses), and bcrypt versions match. The image tag is **discovered at deploy time** from the running OWUI Pod, not pinned separately - Renovate bumps `open_webui_helm_chart_version` in `versions.yaml`, the chart's `appVersion` determines the image that runs, and `configure_admin.yaml` reads it back via `kubernetes.core.k8s_info` before installing the bootstrap chart. One pin, no drift.
 - **Password comes from `open_webui_bootstrap_password`** in inventory (vault-encrypted), mounted into the Job via `secretKeyRef` from the `open-webui-secrets` Secret. Rotate by updating inventory and re-running `make install-chat`.
-- **`ENABLE_INITIAL_ADMIN_SIGNUP=true`** (set on the OWUI deployment via extraEnvVars) lets `/signup` create the very first user as admin even with `ENABLE_SIGNUP=false`. Once any user exists, OWUI's `has_users` short-circuit blocks `/signup` permanently — so the env var is safe to leave on.
+- **`ENABLE_INITIAL_ADMIN_SIGNUP=true`** (set on the OWUI deployment via extraEnvVars) lets `/signup` create the very first user as admin even with `ENABLE_SIGNUP=false`. Once any user exists, OWUI's `has_users` short-circuit blocks `/signup` permanently - so the env var is safe to leave on.
 - **Migration step (idempotent)** runs on every Job execution. It rewrites the `scout-deploy@scout-deploy.local` bcrypt hash to match the current `open_webui_bootstrap_password`. No-op on a clean DB; on an existing cluster it ensures `/signin` works after a password rotation.
-- **Inputs to the Job come from a ConfigMap** the chart renders from inventory: filter function source code, full Scout Explorer model payloads (system prompt inlined, capability flags, suggestion prompts, tool refs), and the PersistentConfig field values. Edit inventory, `make install-chat`, Helm replaces the ConfigMap+Job and the new state takes effect — no SQL surgery.
+- **Inputs to the Job come from a ConfigMap** the chart renders from inventory: filter function source code, full Scout Explorer model payloads (system prompt inlined, capability flags, suggestion prompts, tool refs), and the PersistentConfig field values. Edit inventory, `make install-chat`, Helm replaces the ConfigMap+Job and the new state takes effect - no SQL surgery.
 
 The full script lives at `helm/open-webui-bootstrap/files/bootstrap.py`. Watch a deploy in real time:
 
@@ -95,12 +95,12 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 
 **A) Fresh cluster (empty DB).** No action needed. `/signup` runs on the first `make install-chat` and creates `scout-deploy@scout-deploy.local` as admin.
 
-**B) Existing OWUI cluster with other users but no `scout-deploy@scout-deploy.local`.** The only case requiring manual action — OWUI's `has_users` check blocks `/signup` once any user exists, so a fresh signup attempt returns `ACCESS_PROHIBITED`. The bootstrap Job will exit non-zero with a diagnostic pointing at this section. **One-time manual step**, signed in as an existing admin:
+**B) Existing OWUI cluster with other users but no `scout-deploy@scout-deploy.local`.** The only case requiring manual action - OWUI's `has_users` check blocks `/signup` once any user exists, so a fresh signup attempt returns `ACCESS_PROHIBITED`. The bootstrap Job will exit non-zero with a diagnostic pointing at this section. **One-time manual step**, signed in as an existing admin:
 
 1. **Admin Panel → Users → Create new user**
 2. Email: `scout-deploy@scout-deploy.local` (or whatever `open_webui_bootstrap_email` is set to)
 3. Name: `Scout Deploy Bot`
-4. Password: any value — the migration step rewrites it on the next deploy
+4. Password: any value - the migration step rewrites it on the next deploy
 5. Role: `admin`
 6. Re-run `make install-chat`
 
@@ -112,7 +112,7 @@ Set `open_webui_admin_setup_enabled: false` in inventory. The OWUI Helm deploy s
 
 ## Reference & Verification
 
-The bootstrap Job leaves OWUI fully configured — there are no manual UI steps on a normal deploy. This section covers what gets set, what's overridable in inventory, and how to verify.
+The bootstrap Job leaves OWUI fully configured - there are no manual UI steps on a normal deploy. This section covers what gets set, what's overridable in inventory, and how to verify.
 
 ### Smoke test
 
@@ -128,16 +128,16 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 
 ### What gets configured automatically
 
-**Scout Explorer models** — per `scout_models` entry with a `ui:` block: display name, description, system prompt (`helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`), Scout report-viewer tool reference (`scout_report_viewer_tool`), suggestion prompts, profile image, capability flags (`web_search` / `code_interpreter` / `terminal` / `image_generation` disabled), and advanced params (`function_calling: native`, `reasoning_effort: high`, `keep_alive` derived from `preload`). The raw Ollama tag (e.g. `gemma4:31b`) is hidden from the picker.
+**Scout Explorer models** - per `scout_models` entry with a `ui:` block: display name, description, system prompt (`helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`), Scout report-viewer tool reference (`scout_report_viewer_tool`), suggestion prompts, profile image, capability flags (`web_search` / `code_interpreter` / `terminal` / `image_generation` disabled), and advanced params (`function_calling: native`, `reasoning_effort: high`, `keep_alive` derived from `preload`). The raw Ollama tag (e.g. `gemma4:31b`) is hidden from the picker.
 
-**Filter Functions** — installed, configured with valves, and toggled global on every deploy:
+**Filter Functions** - installed, configured with valves, and toggled global on every deploy:
 - **Link Sanitizer** ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md))
 - **Context Summarization** ([ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md))
-- **Tool Result Body→Attribute Migrator** — diagnostic workaround for an OWUI 0.9.5 rendering regression (upstream commit 45e49d33e, Apr 2026, moved tool-call results from a `result="..."` attribute on the `<details>` tag into the body; the new path doesn't display). Confirmed still broken in 0.9.6 (`ToolCallDisplay.svelte` byte-identical between v0.9.5 and v0.9.6). When bumping `open_webui_helm_chart_version` past `~14.8.0`, test without the filter (set `enable_active: false` in inventory) — if the regression is fixed, delete the inventory entry, the filter source, and its tests.
+- **Tool Result Body→Attribute Migrator** - diagnostic workaround for an OWUI 0.9.5 rendering regression (upstream commit 45e49d33e, Apr 2026, moved tool-call results from a `result="..."` attribute on the `<details>` tag into the body; the new path doesn't display). Confirmed still broken in 0.9.6 (`ToolCallDisplay.svelte` byte-identical between v0.9.5 and v0.9.6). When bumping `open_webui_helm_chart_version` past `~14.8.0`, test without the filter (set `enable_active: false` in inventory) - if the regression is fixed, delete the inventory entry, the filter source, and its tests.
 
-**PersistentConfig** — re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`).
+**PersistentConfig** - re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`).
 
-**Other** — Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`).
+**Other** - Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`).
 
 ### Common inventory overrides
 
@@ -169,9 +169,9 @@ open_webui_admin_setup_enabled: false
 
 Query instructions, schema reference, and charting-output rules all live in `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`. Edit, re-run `make install-chat`; the bootstrap Job updates each Scout Explorer model on the next deploy. `docs/source/dataschema.md` remains the canonical schema reference for humans and notebooks; the prompt is a query-focused subset.
 
-### PersistentConfig — note for the curious
+### PersistentConfig - note for the curious
 
-OWUI stores tool servers, default/task model IDs, etc. in its Postgres `config` table as PersistentConfig — env-var changes after first launch are silent no-ops. The bootstrap Job side-steps this by re-POSTing the declarative fields via REST on every deploy. `RAG_TEMPLATE` is intentionally not pushed (Scout Explorer's `function_calling: native` bypasses OWUI's RAG auto-injection — schema docs are inlined into the system prompt instead).
+OWUI stores tool servers, default/task model IDs, etc. in its Postgres `config` table as PersistentConfig - env-var changes after first launch are silent no-ops. The bootstrap Job side-steps this by re-POSTing the declarative fields via REST on every deploy. `RAG_TEMPLATE` is intentionally not pushed (Scout Explorer's `function_calling: native` bypasses OWUI's RAG auto-injection - schema docs are inlined into the system prompt instead).
 
 Genuinely seed-only knobs (`WEBUI_URL`, `ENABLE_SIGNUP`, `ENABLE_LOGIN_FORM`, `ENABLE_COMMUNITY_SHARING`) are set via Helm extraEnvVars and only take effect at first launch. To flip one post-launch: `DELETE FROM config WHERE key = '<KEY>'`, restart the OWUI pod, env re-seeds. OAuth fields (`OAUTH_*`, `OPENID_*`) are env-only because `ENABLE_OAUTH_PERSISTENT_CONFIG=false` skips loading them from the config table.
 
@@ -208,7 +208,7 @@ kubectl exec -n scout-analytics deploy/ollama -- ollama list
 
 **Bootstrap Job failed (filters / models / tool servers not configured):**
 - Check Job logs: `kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap`
-- Common cause: existing OWUI cluster with other users but no `scout-deploy@scout-deploy.local` row — see Migration steps case B above.
+- Common cause: existing OWUI cluster with other users but no `scout-deploy@scout-deploy.local` row - see Migration steps case B above.
 
 **Report-viewer tool not working:**
 - Verify report-viewer is running: `kubectl get pods -n scout-analytics -l app.kubernetes.io/name=report-viewer`
@@ -225,7 +225,7 @@ kubectl exec -n scout-analytics deploy/ollama -- ollama list
 - **Scout Query Prompt**: `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`
 - **Link Sanitizer Filter**: `helm/open-webui-bootstrap/files/payloads/link_sanitizer_filter.py`
 - **Context Summarization Filter**: `helm/open-webui-bootstrap/files/payloads/context_summarization_filter.py`
-- **Tool Result Body→Attribute Migrator (diagnostic — remove when upstream bug is fixed)**: `helm/open-webui-bootstrap/files/payloads/tool_result_attr_filter.py`
+- **Tool Result Body→Attribute Migrator (diagnostic - remove when upstream bug is fixed)**: `helm/open-webui-bootstrap/files/payloads/tool_result_attr_filter.py`
 - **ADRs**:
   - [ADR 0009: Content Security Policy](../../../docs/internal/adr/0009-open-webui-content-security-policy.md)
   - [ADR 0010: Link Exfiltration Filter](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)

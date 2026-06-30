@@ -1,4 +1,4 @@
-"""HTTP routes for `/api/reports` — RPC-style operations that don't
+"""HTTP routes for `/api/reports` - RPC-style operations that don't
 persist state. Used by `scout_query_sql` and `scout_get_reports` in
 the OWUI tool, and by the SPA row-expand panel (which posts an array
 of one ID to /api/reports/read)."""
@@ -89,7 +89,7 @@ async def read_reports(
     else:
         table = base + "reports_latest"
         column = body.id_column
-    # contains(?, col) — the driver doesn't expand list params into IN.
+    # contains(?, col) - the driver doesn't expand list params into IN.
     sql = f'SELECT * FROM {table} WHERE contains(?, "{column}")'
     try:
         with metrics.time_trino("read_reports"):

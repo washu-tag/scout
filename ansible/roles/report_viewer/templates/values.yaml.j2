@@ -33,7 +33,7 @@ trinoCaCert: |
 {% endif %}
 
 {% if report_viewer_test_mode | bool %}
-# Test mode — image baked at deploy time from source via the role-managed
+# Test mode - image baked at deploy time from source via the role-managed
 # ConfigMap (`{{ report_viewer_helm_release_name }}-source`).
 sourceConfigMap:
   enabled: true

@@ -152,7 +152,7 @@ def test_oauth2_proxy_header_still_works(keypair):
 
 def test_invalid_bearer_does_NOT_fall_through_to_header(keypair):
     """If a caller sends both a bad bearer AND the header, we should 401
-    on the bearer — silently falling back would mask token-expiry bugs."""
+    on the bearer - silently falling back would mask token-expiry bugs."""
     priv, _ = keypair
     expired = _mint(priv, exp=int(time.time()) - 60)
     with TestClient(create_app()) as client:

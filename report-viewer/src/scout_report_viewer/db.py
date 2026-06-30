@@ -1,4 +1,4 @@
-"""Postgres access — psycopg3 connection pool + the searches schema.
+"""Postgres access - psycopg3 connection pool + the searches schema.
 
 We use raw SQL via psycopg rather than SQLAlchemy + Alembic for Phase 1.
 The schema is small enough that an idempotent `ensure_schema()` at startup

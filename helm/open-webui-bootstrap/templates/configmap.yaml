@@ -23,10 +23,10 @@ data:
         "webhook_url" (.Values.persistentConfig.webhook_url | default "")
     | toJson }}
 
-  # Filter function payloads — bootstrap.py inlines each entry's content_file
+  # Filter function payloads - bootstrap.py inlines each entry's content_file
   # contents as the function `content` before POSTing to /api/v1/functions.
   # `dig` is used for boolean fields because Helm's `default` treats `false`
-  # as "value missing" and returns the default — biting any user who sets
+  # as "value missing" and returns the default - biting any user who sets
   # `enable_active: false` expecting the filter to stay disabled.
   filters.json: |-
     {{- $filters := list -}}
@@ -43,7 +43,7 @@ data:
     {{- end }}
     {{ $filters | toJson }}
 
-  # Python tool payloads — same `content_file` inlining as filters.
+  # Python tool payloads - same `content_file` inlining as filters.
   # Tools have no global/active toggles; visibility is per-model via
   # `scoutDefaults.toolIds` / model `meta.toolIds`.
   tools.json: |-
@@ -59,7 +59,7 @@ data:
     {{- end }}
     {{ $tools | toJson }}
 
-  # Scout Explorer model payloads — one per scoutModels[].ui entry, plus a
+  # Scout Explorer model payloads - one per scoutModels[].ui entry, plus a
   # hide-base override per raw Ollama tag (unless hideBaseModels=false or the
   # base name equals the explorer id). bootstrap.py inlines params.system_file
   # as params.system before POSTing to /api/v1/models.
@@ -112,7 +112,7 @@ data:
     {{ $models | toJson }}
 
   # Payload files referenced by filters.json[].content_file and
-  # models.json[].params.system_file — globbed straight from the chart's
+  # models.json[].params.system_file - globbed straight from the chart's
   # files/payloads/ directory so adding a new file there + referencing it
   # from inventory just works.
 {{- range $path, $_ := .Files.Glob "files/payloads/*" }}

@@ -49,7 +49,7 @@ class CreateSearchRequest(BaseModel):
             "Clinical text terms to highlight in the row-expand viewer "
             "(e.g. ['pulmonary embolism', 'PE']). UI-only; the SQL is "
             "what decides which rows are in the search. Anatomy/exam-"
-            "type words don't belong here — those go in the SQL. "
+            "type words don't belong here those go in the SQL. "
             "Matched with word boundaries on the SPA side, so short "
             "abbreviations don't bleed into longer words."
         ),
@@ -88,7 +88,7 @@ class CreateSearchRequest(BaseModel):
 class CreateFromFileRequest(BaseModel):
     """Materialize a search from an explicit list of identifiers (parsed
     out of an uploaded CSV/Excel file). Used by the OWUI
-    `scout_find_reports` tool's file-upload branch — the tool parses
+    `scout_find_reports` tool's file-upload branch - the tool parses
     the file, extracts IDs, and POSTs them here.
 
     Backend validates each id exists in reports_latest, returns the
@@ -128,7 +128,7 @@ class CreateFromFileResponse(BaseModel):
 
 
 class QueryRequest(BaseModel):
-    """One-shot SQL query — runs against Trino, returns rows directly,
+    """One-shot SQL query - runs against Trino, returns rows directly,
     persists nothing. Backs the `scout_query_sql` tool surface for
     aggregate / COUNT / GROUP BY questions where the user wants prose,
     not a search viewer."""
@@ -184,7 +184,7 @@ class SearchMeta(BaseModel):
     # written by the LLM at create time. Surfaced in the SPA's
     # "About this search" panel. Empty string if not provided.
     sql_explanation: str = ""
-    # OWUI conversation ID — drives the SPA homepage's per-chat
+    # OWUI conversation ID - drives the SPA homepage's per-chat
     # grouping. Empty when the caller didn't supply it.
     owui_chat_id: str = ""
 

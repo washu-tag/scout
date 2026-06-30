@@ -2,7 +2,7 @@
 # Restrict ingress to Traefik (the browser path comes through oauth2-proxy
 # at the ingress) plus any optional explicit peers. The Authorization-
 # bearer trust model assumes incoming requests carry an unforged end-user
-# JWT — defence-in-depth, label-based, not cryptographic.
+# JWT - defence-in-depth, label-based, not cryptographic.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

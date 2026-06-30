@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
 
-    # OWUI Postgres URL — receiver writes iframe-sandbox UI defaults
+    # OWUI Postgres URL - receiver writes iframe-sandbox UI defaults
     # into OWUI's "user".settings JSON column on signup. Empty disables
     # the webhook (returns 503). See ADR 0026.
     owui_database_url: str = ""

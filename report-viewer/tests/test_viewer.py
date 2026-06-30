@@ -14,7 +14,7 @@ def test_view_returns_html_for_owner(client, auth_headers, fake_trino):
     r = client.get(f"/api/searches/{dsid}/view", headers=auth_headers)
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
-    # Page contains the search id and the Tabulator integrity tag —
+    # Page contains the search id and the Tabulator integrity tag
     # not just an empty shell.
     assert dsid in r.text
     assert "tabulator.min.js" in r.text
@@ -108,7 +108,7 @@ def test_export_csv_streams_with_header_and_rows(client, auth_headers, fake_trin
         == "message_control_id,accession_number,modality,service_name,message_dt,patient_age,sex"
     )
     assert lines[1].startswith("m1,ACC1,CT,CT BRAIN,")
-    # Second row's service_name has an embedded quote — must be CSV-escaped.
+    # Second row's service_name has an embedded quote - must be CSV-escaped.
     assert '"MR ""BRAIN"""' in lines[2]
 
 
@@ -116,7 +116,7 @@ def test_export_csv_empty_search_returns_header_only(client, auth_headers, fake_
     # We can't actually have an empty search (POST rejects), but a
     # subsequent refine that strips it to 0 rows would. Simulate via
     # direct store insert in the future. For now: verify the generator
-    # handles the empty id_list gracefully — only the header line.
+    # handles the empty id_list gracefully - only the header line.
     fake_trino(["message_control_id"], [{"message_control_id": "only"}])
     dsid = client.post(
         "/api/searches",

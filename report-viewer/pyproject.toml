@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "scout_report_viewer"
 version = "0.0.dev0"
-description = "Scout report-viewer service — surfaces saved searches outside OWUI so the chat surface stays light"
+description = "Scout report-viewer service - surfaces saved searches outside OWUI so the chat surface stays light"
 authors = [
     {name = "Scout Team"},
 ]
@@ -16,7 +16,7 @@ classifiers = [
 ]
 requires-python = ">= 3.11"
 dependencies = [
-    # Pin below 0.137 — that release added a `_IncludedRouter` wrapper into
+    # Pin below 0.137 - that release added a `_IncludedRouter` wrapper into
     # `app.routes` which prometheus-fastapi-instrumentator 8.0.0 doesn't
     # recognize (crashes on `.path` lookup during request routing).
     "fastapi<0.137",
@@ -27,12 +27,12 @@ dependencies = [
     "pydantic-settings>=2",
     "trino",
     # trino-python-client 0.337+ imports tzlocal but doesn't declare it
-    # as required — packaging bug. Listed explicitly so installs work.
+    # as required - packaging bug. Listed explicitly so installs work.
     "tzlocal",
-    # Phase 2 — Keycloak JWT validation. Listed now so dev iteration in
+    # Phase 2 - Keycloak JWT validation. Listed now so dev iteration in
     # Phase 0/1 doesn't need a second `pip install` round when auth lands.
     "python-jose[cryptography]",
-    # Prometheus metrics — instrumentator wires standard HTTP histograms
+    # Prometheus metrics - instrumentator wires standard HTTP histograms
     # at /metrics; prometheus-client provides the custom counters in
     # scout_report_viewer.metrics.
     "prometheus-fastapi-instrumentator>=7",

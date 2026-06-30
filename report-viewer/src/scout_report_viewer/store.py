@@ -1,4 +1,4 @@
-"""Persistence layer for searches — pure Postgres reads/writes.
+"""Persistence layer for searches.
 
 A search row is just metadata + the saved SQL. Nothing about which
 rows match is persisted (see ADR 0026); /rows wraps `sql` as
@@ -72,7 +72,7 @@ async def insert_search(
 
 async def get_search(search_id: str, owner_sub: str | None) -> dict[str, Any] | None:
     """Fetch a search by id, scoped to `owner_sub` (rows with a different
-    owner return None — callers should 404). `owner_sub=None` skips the
+    owner return None - callers should 404). `owner_sub=None` skips the
     check; reserved for service-internal callers, not request handlers."""
     with metrics.time_postgres("get_search"):
         async with get_conn() as conn:
@@ -124,7 +124,7 @@ async def delete_search(search_id: str, owner_sub: str) -> bool:
 
 async def list_searches(owner_sub: str, *, limit: int = 200) -> list[dict[str, Any]]:
     """Return the caller's searches, newest first. Excludes the sql
-    blob to keep the listing payload small — the SPA homepage only needs
+    blob to keep the listing payload small - the SPA homepage only needs
     metadata and the row count."""
     with metrics.time_postgres("list_searches"):
         async with get_conn() as conn:

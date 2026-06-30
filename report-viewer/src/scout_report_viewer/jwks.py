@@ -20,7 +20,7 @@ import httpx
 log = logging.getLogger(__name__)
 
 
-JWKS_CACHE_TTL_SECONDS = 300  # 5 min — matches Keycloak's default rotation window
+JWKS_CACHE_TTL_SECONDS = 300  # 5 min - matches Keycloak's default rotation window
 
 
 class JwksCache:
@@ -40,7 +40,7 @@ class JwksCache:
         """Return the JWK matching `kid`, refreshing the cache if absent.
 
         Returns None only when the second fetch (post-miss) also lacks
-        the kid — i.e. the kid genuinely isn't ours.
+        the kid - i.e. the kid genuinely isn't ours.
         """
         with self._lock:
             self._maybe_refresh()

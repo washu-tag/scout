@@ -34,17 +34,17 @@ class Tools:
     built-ins (search_notes, view_note, search_chats, etc.).
 
       * `scout_find_reports(sql, highlight_terms?, sql_explanation?)`
-        — POST /api/searches, saves the SQL, returns a short summary
+        - POST /api/searches, saves the SQL, returns a short summary
         for the LLM plus a viewer iframe for the user. For row-level
         discovery. When refining, write a NEW call with the original
         conditions plus the new constraint; the SQL is standalone, no
         placeholder substitution.
 
-      * `scout_query_sql(sql)` — POST /api/reports/query, runs SQL and
+      * `scout_query_sql(sql)` - POST /api/reports/query, runs SQL and
         returns rows directly to LLM context. No persistence, no
         iframe. For aggregate questions (COUNT, GROUP BY, time-series).
 
-      * `scout_get_reports(ids, id_column)` — POST /api/reports/read,
+      * `scout_get_reports(ids, id_column)` - POST /api/reports/read,
         direct fetch of full report content by identifier. Use when
         you have a lake file path (default `id_column`), accession
         number, MRN, etc. and want the actual report. No prior search
@@ -67,7 +67,7 @@ class Tools:
         self.valves = self.Valves()
 
     # ------------------------------------------------------------------
-    # scout_find_reports — build a search from a SQL query
+    # scout_find_reports - build a search from a SQL query
     # ------------------------------------------------------------------
     async def scout_find_reports(
         self,
@@ -91,26 +91,26 @@ class Tools:
           attachment) and `id_column`. The tool reads the file
           server-side, validates IDs against `reports_latest`, and saves
           a `WHERE <id_col> IN (...)` SQL. Do NOT read file contents
-          into your context — that's what the file mode is for.
+          into your context - that's what the file mode is for.
 
         Saves the search SQL,
         renders the search viewer iframe in chat, and returns a rich
         summary (count + columns + sample table + anti-restatement
         directive) to your context. Full report text never enters your
-        context — the user sees all rows in the iframe and can click
+        context - the user sees all rows in the iframe and can click
         any row to expand into the full report (with highlight terms
         emphasized) on demand.
 
         Use for search building (row-level discovery). For aggregate
-        questions (COUNT, GROUP BY, time-series — anything where the
+        questions (COUNT, GROUP BY, time-series - anything where the
         answer is a number or a small summary table) use
-        `scout_query_sql` instead — it doesn't persist anything and
+        `scout_query_sql` instead - it doesn't persist anything and
         returns rows directly to your context.
 
         Refinement: when the user asks to narrow the search ("only MRs",
         "drop the under-18 patients"), write a NEW `scout_find_reports`
         call with the original conditions plus the new constraint.
-        Each search is a standalone saved query — there is no
+        Each search is a standalone saved query - there is no
         placeholder substitution or parent-search SQL injection. The
         SPA homepage groups the chain by chat for the user's benefit.
 
@@ -122,14 +122,14 @@ class Tools:
         them in your SELECT). Prefer specific projections over `SELECT *`.
 
         :param sql: Trino SQL against `delta.default.reports_latest`
-            (or `_epic_view`). Each search SQL stands alone — no
+            (or `_epic_view`). Each search SQL stands alone - no
             placeholder substitution.
         :param highlight_terms: Clinical text terms (max ~5) for the
             row-expand viewer to highlight in the report text. Matched
             with word boundaries on the SPA side. Good values:
             `["pulmonary embolism", "PE"]`, `["cerebral infarction"]`,
             `["glioblastoma", "GBM"]`. BAD values: `["brain"]`,
-            `["chest"]`, `["MRI"]` — those belong in the SQL itself.
+            `["chest"]`, `["MRI"]` - those belong in the SQL itself.
             UI-only: highlighting does NOT filter rows. Without
             highlight_terms, the LLM-bound sample loses the `snippet`
             field that shows ±80 chars around each match.
@@ -140,8 +140,8 @@ class Tools:
             `diagnosis_code` with case-insensitive startswith. Use
             when the SQL filters on diagnosis codes (e.g.
             `any_match(diagnoses, x -> x.diagnosis_code LIKE 'R91%')`)
-            so the LLM-bound sample's `positive_dx` field — and the
-            chip-row in the row-expand viewer — flag the matching
+            so the LLM-bound sample's `positive_dx` field - and the
+            chip-row in the row-expand viewer - flag the matching
             codes explicitly. Distinct from `highlight_terms`; use
             both when the cohort is both text-driven and code-driven.
         :param sql_explanation: One- to three-sentence plain-language
@@ -203,7 +203,7 @@ class Tools:
             __event_emitter__, f"Found {count:,} matching reports", done=True
         )
 
-        # Push the viewer URL into OWUI's `message.embeds` field —
+        # Push the viewer URL into OWUI's `message.embeds` field
         # scout_find_reports always saves the search + renders the
         # iframe. Aggregate / GROUP-BY questions use `scout_query_sql`
         # instead (ephemeral, no iframe).
@@ -217,13 +217,13 @@ class Tools:
 
         # The service returns the rich LLM-bound markdown summary
         # (count + columns + USER DISPLAY directive + sample table
-        # + internal search handle). Return it verbatim — the LLM uses
+        # + internal search handle). Return it verbatim - the LLM uses
         # it for its reply; the user sees the iframe via the embeds
         # field above.
         return created.get("summary") or ""
 
     # ------------------------------------------------------------------
-    # scout_query_sql — ad-hoc SQL, ephemeral, returns rows to LLM
+    # scout_query_sql - ad-hoc SQL, ephemeral, returns rows to LLM
     # ------------------------------------------------------------------
     async def scout_query_sql(
         self,
@@ -240,7 +240,7 @@ class Tools:
 
         For row-level search building (the answer is a LIST of
         reports the user will browse), use `scout_find_reports`
-        instead — that one persists the SQL + renders the viewer
+        instead - that one persists the SQL + renders the viewer
         iframe.
 
         :param sql: Trino SQL against `delta.default.reports_latest`
@@ -263,7 +263,7 @@ class Tools:
         return self._format_aggregate(agg)
 
     # ------------------------------------------------------------------
-    # _import_from_file — CSV/TSV upload → search (private; invoked
+    # _import_from_file - CSV/TSV upload → search (private; invoked
     # from scout_find_reports when file_id is set, not exposed as its
     # own tool surface).
     # ------------------------------------------------------------------
@@ -281,13 +281,13 @@ class Tools:
         Use when the user uploads a CSV/TSV/TXT of identifiers (patient
         MRNs, accession numbers, message-control-ids) and wants Scout to
         build a search over those reports. The TOOL reads the file
-        server-side (you, the LLM, never see its contents — that
+        server-side (you, the LLM, never see its contents - that
         protects PHI from leaking into your context). The backend
         validates each id against reports_latest and returns the count
         of matched + unmatched.
 
         :param file_id: OWUI file ID of the upload. Get this from the
-            chat's file attachments — usually `__files__[0].id` in the
+            chat's file attachments - usually `__files__[0].id` in the
             tool's environment.
         :param id_column: Which Scout column the IDs map to. One of
             'accession_number' (default, most common), 'epic_mrn',
@@ -386,7 +386,7 @@ class Tools:
                         if v:
                             ids.append(v)
             else:
-                # No header — every row is just an id in column 0.
+                # No header - every row is just an id in column 0.
                 for r in rows:
                     if r and r[0].strip():
                         ids.append(r[0].strip())
@@ -445,7 +445,7 @@ class Tools:
         return created.get("summary") or ""
 
     # ------------------------------------------------------------------
-    # scout_get_reports — direct fetch by id, no prior search needed
+    # scout_get_reports - direct fetch by id, no prior search needed
     # ------------------------------------------------------------------
     async def scout_get_reports(
         self,
@@ -457,7 +457,7 @@ class Tools:
         """
         Fetch full report content (text, sections, diagnoses, metadata)
         by identifier. Use whenever you have an id and want the actual
-        report — no prior search needed.
+        report - no prior search needed.
 
         :param ids: List of identifiers (max 100).
         :param id_column: Which column the ids match. Report-scoped (1
@@ -525,7 +525,7 @@ class Tools:
         id_column: str,
         bearer: Optional[str],
     ) -> dict:
-        """POST /api/reports/read — direct fetch by id (the
+        """POST /api/reports/read - direct fetch by id (the
         scout_get_reports backend). Returns `{columns, rows}` with the
         full report content."""
         url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/reports/read"
@@ -568,7 +568,7 @@ class Tools:
             return "Aggregate query returned no rows."
 
         # Markdown table. Cells get the string form of whatever Trino
-        # serialized — pipe characters get escaped so they don't break
+        # serialized - pipe characters get escaped so they don't break
         # the row.
         def _cell(v: Any) -> str:
             s = "" if v is None else str(v)

@@ -8,7 +8,7 @@ Two deployment shapes share this template:
     runs `python -m scout_report_viewer` against the same mounted source.
 
 The shared values (envFrom, env, probes, volumes for trino-ca etc.) are
-the same in both paths — only the image/command/initContainers/volumes
+the same in both paths - only the image/command/initContainers/volumes
 diverge.
 */}}
 {{- $useSrc := .Values.sourceConfigMap.enabled -}}
@@ -31,7 +31,7 @@ spec:
         # Trino CA) changes, since env values are only read at start.
         checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
         {{- if $useSrc }}
-        # In test mode, also roll on source changes — the init container's
+        # In test mode, also roll on source changes - the init container's
         # pip install + the runtime source come from this ConfigMap.
         # Ansible regenerates it from the repo on every `make install-`.
         # NOTE: the configmap isn't shipped by the chart in test mode; it

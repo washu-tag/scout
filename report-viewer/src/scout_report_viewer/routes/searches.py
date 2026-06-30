@@ -1,4 +1,4 @@
-"""HTTP routes for `/api/searches` (V1.1 — just-in-time SQL evaluation).
+"""HTTP routes for `/api/searches` (V1.1 - just-in-time SQL evaluation).
 
 A search is a saved SQL query plus minimal metadata. Nothing about
 which rows match is stored. Every read wraps `sql` as a
@@ -7,12 +7,12 @@ subquery and applies pagination/sort/filter at the Trino layer.
 See ADR 0026.
 
 Endpoints:
-  POST /api/searches                            — save SQL, cache COUNT(*), return sample
-  POST /api/searches/from-file                  — validate IDs against reports_latest, save WHERE id IN (...) SQL
-  GET  /api/searches/{id}                       — metadata
-  GET  /api/searches/{id}/rows                  — paginated rows (wraps sql)
-  GET  /api/searches/{id}/accessions            — DISTINCT accession_number list
-  GET  /api/searches/{id}/csv                   — streaming CSV download
+  POST /api/searches                            - save SQL, cache COUNT(*), return sample
+  POST /api/searches/from-file                  - validate IDs against reports_latest, save WHERE id IN (...) SQL
+  GET  /api/searches/{id}                       - metadata
+  GET  /api/searches/{id}/rows                  - paginated rows (wraps sql)
+  GET  /api/searches/{id}/accessions            - DISTINCT accession_number list
+  GET  /api/searches/{id}/csv                   - streaming CSV download
 
 Single-report reads go through POST /api/reports/read (see routes/reports.py).
 """
@@ -54,11 +54,6 @@ _MAX_FROM_FILE = 1_000_000
 _LLM_SAMPLE_ROWS = 5
 
 
-# ---------------------------------------------------------------------------
-# helpers
-# ---------------------------------------------------------------------------
-
-
 def _pick_id_column(columns: list[str], override: str | None) -> str:
     if override:
         if override not in columns:
@@ -82,7 +77,7 @@ def _pick_id_column(columns: list[str], override: str | None) -> str:
 
 # Trino driver doesn't param-bind identifiers, so we interpolate
 # column/table names through here. Literal values bind via `?` in
-# trino_client.execute() — see /from-file for the one exception.
+# trino_client.execute() - see /from-file for the one exception.
 def _quote_ident(name: str) -> str:
     if not name.replace("_", "").isalnum():
         raise HTTPException(
@@ -115,11 +110,6 @@ def _wrap_sql(sql: str, *, alias: str = "src") -> str:
     return sql.rstrip().rstrip(";")
 
 
-# ---------------------------------------------------------------------------
-# GET /api/searches — owner-scoped list (drives the SPA homepage)
-# ---------------------------------------------------------------------------
-
-
 def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
     return SearchMeta(
         id=r["id"],
@@ -140,14 +130,9 @@ async def list_searches(
     user: User = Depends(get_current_user),
 ) -> list[SearchMeta]:
     """Caller's searches, newest first. Drives the SPA homepage.
-    Owner-scoped — only the authenticated user's own."""
+    Owner-scoped - only the authenticated user's own."""
     rows = await store.list_searches(user.sub)
     return [_meta_from_row(r) for r in rows]
-
-
-# ---------------------------------------------------------------------------
-# POST /api/searches — save SQL, cache COUNT, return sample
-# ---------------------------------------------------------------------------
 
 
 @router.post(
@@ -159,7 +144,7 @@ async def create_search(
     body: CreateSearchRequest,
     user: User = Depends(get_current_user),
 ) -> CreateSearchResponse:
-    """Save a SQL query as a search. No row materialization — runs one
+    """Save a SQL query as a search. No row materialization - runs one
     `SELECT COUNT(*)` to cache the count, fetches 5 sample rows for
     the LLM, and (if highlight_terms is set) one additional small
     query against reports_latest to attach snippet + positive_dx
@@ -167,7 +152,7 @@ async def create_search(
 
     Refinement: when the LLM wants to narrow a search, it writes a new
     `POST /searches` call with the original conditions plus the new
-    constraint — the saved SQL is standalone, no placeholder
+    constraint - the saved SQL is standalone, no placeholder
     substitution, no parent reference required.
     """
     sql = _wrap_sql(body.sql)
@@ -175,7 +160,7 @@ async def create_search(
     # Validate the search SQL by fetching the first 5 sample rows.
     # This both surfaces SQL errors early and gives us the sample
     # we need for the LLM-bound summary. The LIMIT lives outside the
-    # sql we save — we wrap as a subquery so the LLM's own
+    # sql we save - we wrap as a subquery so the LLM's own
     # LIMIT (e.g. LIMIT 50000) is respected on later /rows reads.
     sample_sql = f"SELECT s.* FROM ({sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
@@ -193,12 +178,12 @@ async def create_search(
     if not sample_rows:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="query returned no rows — try broadening the filter.",
+            detail="query returned no rows - try broadening the filter.",
         )
 
     id_column = _pick_id_column(columns, body.id_column)
 
-    # Cached COUNT(*) — separate Trino call. Cheap on top of the
+    # Cached COUNT(*) - separate Trino call. Cheap on top of the
     # sample query because Trino caches the inner subquery's predicate
     # execution between same-session calls of the same shape (and
     # because the optimizer recognizes COUNT-only subquery patterns).
@@ -251,7 +236,7 @@ async def create_search(
         if atoms:
             hl_pattern = re.compile(r"(?is)\b(" + "|".join(atoms) + r")\b")
 
-    # Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` — same thing.
+    # Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
     dx_prefixes: list[str] = []
     if body.highlight_diagnosis:
         for d in body.highlight_diagnosis:
@@ -339,11 +324,6 @@ async def create_search(
     )
 
 
-# ---------------------------------------------------------------------------
-# POST /api/searches/from-file — validate IDs, save WHERE id IN (...) SQL
-# ---------------------------------------------------------------------------
-
-
 @router.post(
     "/from-file",
     response_model=CreateFromFileResponse,
@@ -358,7 +338,7 @@ async def create_search_from_file(
     them here. We validate each id against reports_latest and save a
     `WHERE <id_col> IN ('a', 'b', ...)` SQL as the search's source.
 
-    Same downstream shape as POST /api/searches — the saved SQL is
+    Same downstream shape as POST /api/searches - the saved SQL is
     what /rows / /accessions / /csv re-run on each read."""
     if body.id_column not in KNOWN_ID_COLUMNS:
         raise HTTPException(
@@ -432,7 +412,7 @@ async def create_search_from_file(
 
     # Compose the saved search SQL. IDs are inlined as literals (not
     # bound) because the SQL is persisted to Postgres as text and
-    # replayed later by /rows /accessions /csv as a subquery — there
+    # replayed later by /rows /accessions /csv as a subquery - there
     # is no read-time params plumbing. This is the only place the
     # service interpolates user-supplied values into SQL text; every
     # other Trino call goes through `?` binding. If you find yourself
@@ -502,11 +482,6 @@ async def create_search_from_file(
     )
 
 
-# ---------------------------------------------------------------------------
-# GET /api/searches/{id}
-# ---------------------------------------------------------------------------
-
-
 @router.get("/{search_id}", response_model=SearchMeta)
 async def get_search_meta(
     search_id: str,
@@ -529,28 +504,18 @@ async def get_search_meta(
     )
 
 
-# ---------------------------------------------------------------------------
-# DELETE /api/searches/{id}
-# ---------------------------------------------------------------------------
-
-
 @router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_search(
     search_id: str,
     user: User = Depends(get_current_user),
 ) -> Response:
-    """Delete a search by id. Owner-scoped — a delete against a search
+    """Delete a search by id. Owner-scoped - a delete against a search
     you don't own returns 404 (same shape as GET, so we don't leak the
     existence of other users' rows)."""
     deleted = await store.delete_search(search_id, user.sub)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-# ---------------------------------------------------------------------------
-# Sort / filter helpers for /rows
-# ---------------------------------------------------------------------------
 
 
 _SORTABLE_COLUMNS: frozenset[str] = frozenset(
@@ -660,11 +625,6 @@ def _filter_clause(col: str, values: list[str], *, alias: str = "") -> tuple[str
     return f"LOWER({qcol}) LIKE LOWER(?)", ["%" + value + "%"]
 
 
-# ---------------------------------------------------------------------------
-# GET /api/searches/{id}/rows — wrap sql + paginate / sort / filter
-# ---------------------------------------------------------------------------
-
-
 @router.get("/{search_id}/rows", response_model=RowsResponse)
 async def get_search_rows(
     search_id: str,
@@ -676,7 +636,7 @@ async def get_search_rows(
 ) -> RowsResponse:
     """Paginated search rows. Wraps the saved sql as a
     subquery: `SELECT s.* FROM (<sql>) s [WHERE ...] [ORDER BY ...]
-    OFFSET N LIMIT M`. Each page re-runs Trino — rows are never cached.
+    OFFSET N LIMIT M`. Each page re-runs Trino - rows are never cached.
 
     Server-side filter values are ANDed and applied to whitelisted
     columns; sort accepts the same whitelist."""
@@ -711,7 +671,7 @@ async def get_search_rows(
     )
 
     # Total count after filtering. When no filter is active and we
-    # have a cached_total, skip this query — saves a Trino scan per
+    # have a cached_total, skip this query - saves a Trino scan per
     # page request. Sort-only doesn't change the count.
     if filters:
         count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s{where_sql}"
@@ -753,11 +713,6 @@ async def get_search_rows(
     )
 
 
-# ---------------------------------------------------------------------------
-# GET /api/searches/{id}/accessions
-# ---------------------------------------------------------------------------
-
-
 @router.get("/{search_id}/accessions")
 async def get_search_accessions(
     search_id: str,
@@ -788,11 +743,6 @@ async def get_search_accessions(
             r["accession_number"] for r in rows if r.get("accession_number")
         ],
     }
-
-
-# ---------------------------------------------------------------------------
-# GET /api/searches/{id}/csv — streaming CSV, page-through via OFFSET/LIMIT
-# ---------------------------------------------------------------------------
 
 
 _CSV_COLUMNS = (
@@ -859,11 +809,6 @@ async def export_search_csv(
     )
 
 
-# ---------------------------------------------------------------------------
-# Snippet + summary helpers
-# ---------------------------------------------------------------------------
-
-
 def _extract_snippet(
     row: dict[str, Any], terms: list[str], *, window: int = 80
 ) -> str | None:
@@ -915,7 +860,7 @@ def _build_summary(
             "below your reply (sortable columns, header filters, "
             "click-row-to-expand for full report with matched terms "
             "highlighted, plus Export CSV and Send to XNAT). "
-            "DO NOT restate the table or re-list rows in markdown — the "
+            "DO NOT restate the table or re-list rows in markdown - the "
             "user already sees them. Spend your reply on what the table "
             "can't carry: pattern observations, refinement suggestions, "
             "follow-up queries worth running, a one-sentence summary. "
@@ -942,7 +887,7 @@ def _build_summary(
                     cells.append(v)
                 parts.append("| " + " | ".join(cells) + " |")
         # Snippet + positive_dx feedback lives on the sample rows
-        # themselves (attached by the create flow) — surface them
+        # themselves (attached by the create flow) - surface them
         # alongside the table so the LLM sees per-row evidence.
         snippet_lines = []
         for i, r in enumerate(sample_rows):
@@ -962,7 +907,7 @@ def _build_summary(
     parts.append(
         f"Internal search handle: {saved_search_id}. Keep this backstage; "
         f"only mention it to the user when discussing the search by name. "
-        f"XNAT export is a button in the viewer — only mention it when "
+        f"XNAT export is a button in the viewer - only mention it when "
         f"the user explicitly says they're ready to export."
     )
     return "\n".join(parts)

@@ -2,7 +2,7 @@
 // the FastAPI backend (via the /spa/ StaticFiles mount), so absolute URLs
 // like /api/searches resolve correctly and the oauth2-proxy session
 // cookie rides along automatically (credentials: 'same-origin' is the
-// default). No bearer plumbing is needed in V1 — auth.py's Path 2 picks
+// default). No bearer plumbing is needed in V1 - auth.py's Path 2 picks
 // up the oauth2-proxy headers injected at the ingress.
 
 export class ApiError extends Error {
@@ -41,7 +41,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(resp.status, detail, body);
   }
   // Some endpoints (CSV download) aren't JSON, but those aren't called
-  // via this wrapper — they're navigated to directly.
+  // via this wrapper - they're navigated to directly.
   return (await resp.json()) as T;
 }
 

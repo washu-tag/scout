@@ -1,4 +1,4 @@
-"""Metrics surface tests — confirms /metrics renders and the custom
+"""Metrics surface tests - confirms /metrics renders and the custom
 counters react to search creation. Postgres-backed."""
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ def test_metrics_endpoint_renders_prometheus_format():
 
 
 def test_create_search_increments_counters(client, auth_headers, fake_trino):
-    # Pull the counter delta around a create — exact value isn't important
+    # Pull the counter delta around a create - exact value isn't important
     # (other tests may bump it first), only that it moves by the count.
     from scout_report_viewer.metrics import SEARCHES_CREATED
 

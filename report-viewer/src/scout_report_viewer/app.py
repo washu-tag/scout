@@ -24,7 +24,7 @@ class SpaStaticFiles(StaticFiles):
     React Router's client-side routes work on direct navigation / refresh.
 
     Without this, hitting /spa/searches/ds_X 404s because there's no such
-    file on disk — the SPA expects to handle that route itself."""
+    file on disk - the SPA expects to handle that route itself."""
 
     async def get_response(self, path: str, scope):
         try:
@@ -43,9 +43,9 @@ async def lifespan(app: FastAPI):
         # The service may boot before its CNPG database is provisioned;
         # log loudly but don't crash-loop. /healthz keeps answering so
         # the readiness probe can tell us "alive but DB not ready yet."
-        # Also avoid leaving a partially-opened pool around —
+        # Also avoid leaving a partially-opened pool around
         # subsequent requests will lazy-reopen if/when DB recovers.
-        log.exception("schema bootstrap failed — DB not ready?")
+        log.exception("schema bootstrap failed - DB not ready?")
         await close_pool()
     yield
     await close_pool()
@@ -87,7 +87,7 @@ def create_app() -> FastAPI:
         app.mount("/spa", SpaStaticFiles(directory=_spa_dir, html=True), name="spa")
     else:
         log.warning(
-            "SPA static directory missing — frontend not bundled into image",
+            "SPA static directory missing - frontend not bundled into image",
             extra={"path": str(_spa_dir)},
         )
 

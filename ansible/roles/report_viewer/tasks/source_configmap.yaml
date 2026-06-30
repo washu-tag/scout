@@ -50,7 +50,7 @@
           app.kubernetes.io/component: source-bundle
       data:
         requirements.txt: '{{ _rv_requirements.content | b64decode }}'
-      # binaryData accepts already-b64-encoded bytes — `slurp` returns
+      # binaryData accepts already-b64-encoded bytes - `slurp` returns
       # base64 of the file, which is exactly the right shape here.
       binaryData:
         source.tar.gz: '{{ _rv_packed_src.content }}'

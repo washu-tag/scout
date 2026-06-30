@@ -44,7 +44,7 @@ networkPolicy:
   enabled: true
   traefikNamespace: kube-system
   # Optional additional pod selectors that may reach the service on
-  # service.port — e.g. the OWUI tool pod once it talks to us directly.
+  # service.port - e.g. the OWUI tool pod once it talks to us directly.
   # Each entry becomes one `from:` block in the NetworkPolicy.
   extraFrom: []
 
@@ -56,7 +56,7 @@ resources:
     cpu: 2
     memory: 4Gi
 
-# Env vars injected as REPORT_VIEWER_* — see scout_report_viewer.config.Settings.
+# Env vars injected as REPORT_VIEWER_* - see scout_report_viewer.config.Settings.
 # Populated by the Ansible role's values.yaml.j2 in production.
 env: {}
 
@@ -78,7 +78,7 @@ trinoCaCert: ''
 trinoAuthClientSecret: ''
 
 # ---------------------------------------------------------------------------
-# Test mode — bypass the published image, run from source mounted as a
+# Test mode - bypass the published image, run from source mounted as a
 # ConfigMap on top of a stock `python:3.12-slim`. Lets us iterate on dev02
 # without publishing an image. Per-restart pip install is slow (~30-60s);
 # acceptable for dev, never use in prod.
@@ -90,7 +90,7 @@ trinoAuthClientSecret: ''
 # ---------------------------------------------------------------------------
 sourceConfigMap:
   enabled: false
-  # ConfigMap name — defaults to `<fullname>-source` when unset.
+  # ConfigMap name - defaults to `<fullname>-source` when unset.
   name: ''
   # Stock image used in test mode. Pinned so an unexpected upstream change
   # doesn't break startup at the worst possible moment.

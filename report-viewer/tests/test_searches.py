@@ -1,6 +1,6 @@
 """End-to-end tests for the /api/searches routes.
 
-Skipped unless `REPORT_VIEWER_TEST_DATABASE_URL` is exported — they exercise
+Skipped unless `REPORT_VIEWER_TEST_DATABASE_URL` is exported - they exercise
 the real Postgres schema with a mocked Trino. Run locally with:
 
     docker run --rm -d -p 55432:5432 -e POSTGRES_PASSWORD=test \\
@@ -124,7 +124,7 @@ def test_get_rows_paginates_in_id_list_order(client, auth_headers, fake_trino):
     )
     dsid = r.json()["search_id"]
 
-    # Page 1 limit 2 — Trino returns the rows in reverse order; the route
+    # Page 1 limit 2 - Trino returns the rows in reverse order; the route
     # is supposed to re-sort to match the materialized order.
     fake_trino(
         ["message_control_id", "modality"],
@@ -150,7 +150,7 @@ def test_get_rows_returns_empty_past_end(client, auth_headers, fake_trino):
         headers=auth_headers,
     ).json()["search_id"]
 
-    # No fake_trino enqueue — the route must short-circuit before calling Trino.
+    # No fake_trino enqueue - the route must short-circuit before calling Trino.
     r = client.get(f"/api/searches/{dsid}/rows?page=99&limit=10", headers=auth_headers)
     assert r.status_code == 200
     assert r.json()["rows"] == []

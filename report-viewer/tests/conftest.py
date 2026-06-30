@@ -1,7 +1,7 @@
 """Test fixtures.
 
 Postgres-bound tests look for `REPORT_VIEWER_TEST_DATABASE_URL` and are
-skipped if it isn't set. Trino calls are always monkey-patched — we
+skipped if it isn't set. Trino calls are always monkey-patched - we
 test the API surface and the SQL we generate, not the live cluster.
 """
 
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 
-# Settings() resolves at import — provide a placeholder for required vars
+# Settings() resolves at import - provide a placeholder for required vars
 # before the package gets loaded.
 os.environ.setdefault("REPORT_VIEWER_EXTERNAL_URL", "http://testserver")
 
@@ -30,7 +30,7 @@ TEST_DB_URL = os.environ.get("REPORT_VIEWER_TEST_DATABASE_URL", "")
 def _needs_pg(request):
     if not TEST_DB_URL:
         pytest.skip(
-            "REPORT_VIEWER_TEST_DATABASE_URL not set — Postgres-backed tests skipped"
+            "REPORT_VIEWER_TEST_DATABASE_URL not set - Postgres-backed tests skipped"
         )
 
 

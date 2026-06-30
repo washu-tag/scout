@@ -71,7 +71,7 @@ function fmtCell(v: unknown): string {
 // Trino returns `timestamp with time zone` as `YYYY-MM-DDTHH:MM:SS+00:00`
 // (everything in the lake is UTC). Trim seconds and TZ offset for the UI.
 function fmtDate(v: unknown): string {
-  if (!v) return '—';
+  if (!v) return '-';
   const d = new Date(String(v));
   if (isNaN(d.getTime())) return String(v);
   const iso = d.toISOString();
@@ -133,7 +133,7 @@ export default function SearchDetailPage() {
   const total = rowsQ.data?.total ?? meta.data?.count ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / limit));
 
-  // Build columns once per row-shape change. Lock to COLUMNS_CONFIG —
+  // Build columns once per row-shape change. Lock to COLUMNS_CONFIG
   // anything else in the row stays in the underlying data (and in the
   // CSV download) but isn't surfaced as a column.
   const available = useMemo<string[]>(
@@ -176,7 +176,7 @@ export default function SearchDetailPage() {
     getRowCanExpand: () => true,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
-    // Manual sort — server returns rows already ordered. Disable the
+    // Manual sort - server returns rows already ordered. Disable the
     // client-side sort model so it doesn't re-sort what the server
     // already sorted (and only across the visible page).
     manualSorting: true,
@@ -221,7 +221,7 @@ export default function SearchDetailPage() {
       {/* Always render the table once we have anything (including the
           previous data via keepPreviousData). The wrapping ternary
           shows a single first-load skeleton when there's no data at
-          all yet — otherwise the existing data stays put and the
+          all yet - otherwise the existing data stays put and the
           header shows the "Updating" pill. */}
       {!rowsQ.data && rowsQ.isLoading ? (
         <p style={{ color: '#666' }}>Loading rows…</p>
@@ -490,7 +490,7 @@ export default function SearchDetailPage() {
                   ? `Filters (${activeFilterCount(appliedFilters)})`
                   : 'Filters'}
               </button>
-              {/* Column visibility picker — quick dropdown above the
+              {/* Column visibility picker - quick dropdown above the
                 button rather than a modal. Lets users toggle which
                 visible-table columns are shown. */}
               <div style={{ position: 'relative' }}>
@@ -678,7 +678,7 @@ function discussInChat(sourceFile: string): void {
   );
 }
 
-// Send-to-XNAT modal. V1 placeholder — walks the user through the
+// Send-to-XNAT modal. V1 placeholder - walks the user through the
 // steps (project pick, IRB attestation, accession review) but the
 // Send button is a no-op TBD. Backend XNAT push lands later.
 function SendToXnatModal(props: { searchId: string; total: number; onClose: () => void }) {
@@ -688,7 +688,7 @@ function SendToXnatModal(props: { searchId: string; total: number; onClose: () =
   const canSubmit = !!project && !!irb && confirmed;
   const onSend = () => {
     alert(
-      `TBD — XNAT push not wired yet.\n\nWould send ${props.total} accessions from ${props.searchId} to project "${project}" under IRB ${irb}.`,
+      `TBD - XNAT push not wired yet.\n\nWould send ${props.total} accessions from ${props.searchId} to project "${project}" under IRB ${irb}.`,
     );
     props.onClose();
   };
@@ -733,7 +733,7 @@ function SendToXnatModal(props: { searchId: string; total: number; onClose: () =
           onChange={(e) => setProject(e.target.value)}
           style={{ width: '100%', padding: '0.4rem', marginBottom: '0.75rem' }}
         >
-          <option value="">— select project —</option>
+          <option value="">- select project -</option>
           <option value="SCOUT_DEMO">SCOUT_DEMO</option>
           <option value="RADIOLOGY_RES">RADIOLOGY_RES</option>
         </select>
@@ -805,7 +805,7 @@ const paginationBtn: React.CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-// Tighter button styling for the chat-iframe context — the embed is
+// Tighter button styling for the chat-iframe context - the embed is
 // ~900px wide and the bottom action row is crowded.
 const paginationBtnEmbed: React.CSSProperties = {
   fontSize: '0.72rem',
@@ -819,7 +819,7 @@ const paginationBtnEmbed: React.CSSProperties = {
 
 // Detail panel rendered when a row is expanded. Lazy-fetches the full
 // report on first expand (kept in TanStack Query cache so reopening is
-// instant). Default view: the full report_text — uniform across older
+// instant). Default view: the full report_text - uniform across older
 // reports (no parsed sections) and newer ones. Diagnoses chip-row
 // underneath. Highlight terms come from the active column filters; the
 // matches light up via client-side regex (no server-side snippet
@@ -837,7 +837,7 @@ function RowDetail(props: {
     queryKey: ['report', props.idColumn, reportId],
     queryFn: () => getReport(reportId, props.idColumn),
     enabled: !!reportId,
-    staleTime: 5 * 60_000, // 5 min — same row reopens instantly
+    staleTime: 5 * 60_000, // 5 min - same row reopens instantly
   });
 
   // \b boundaries so short tokens like "PE" don't match in "pectoralis".
@@ -847,7 +847,7 @@ function RowDetail(props: {
     .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const highlightRe = escaped.length ? new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi') : null;
 
-  // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` — same thing.
+  // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
   const dxPrefixes = props.highlightDiagnosis
     .map((d) => d.trim().replace(/%+$/, '').toLowerCase())
     .filter((d) => d.length >= 1);
@@ -867,7 +867,7 @@ function RowDetail(props: {
     );
   };
 
-  // Diagnoses live on the full /reports/{id} fetch — the slim /rows
+  // Diagnoses live on the full /reports/{id} fetch - the slim /rows
   // payload only carries the LLM's SELECT columns, which usually omits
   // `diagnoses`. Prefer reportQ when it's landed; fall back to whatever
   // the row already has so the panel doesn't sit empty for the LLMs that
@@ -879,13 +879,13 @@ function RowDetail(props: {
   // /rows row already has so the card doesn't pop in late.
   const meta = reportQ.data ?? props.row;
   const fmt = (v: unknown): string => {
-    if (v === null || v === undefined) return '—';
+    if (v === null || v === undefined) return '-';
     const s = String(v);
-    return s.length > 0 ? s : '—';
+    return s.length > 0 ? s : '-';
   };
   const fmtPerson = (v: unknown): string => {
-    if (!v) return '—';
-    if (Array.isArray(v)) return v.length ? v.join(', ') : '—';
+    if (!v) return '-';
+    if (Array.isArray(v)) return v.length ? v.join(', ') : '-';
     return String(v);
   };
 
@@ -908,7 +908,7 @@ function RowDetail(props: {
   }
 
   // ReportDetail extras land asynchronously; cast for the fields the
-  // slim /rows row doesn't carry. fmt() returns "—" for null/undefined
+  // slim /rows row doesn't carry. fmt() returns "-" for null/undefined
   // so missing fields don't break the card layout.
   const m = meta as Partial<{
     race: unknown;
@@ -928,7 +928,7 @@ function RowDetail(props: {
 
   return (
     <div style={{ fontSize: '0.78rem', lineHeight: 1.4, color: '#222' }}>
-      {/* Report card — three compact sections sized to fit inside the
+      {/* Report card - three compact sections sized to fit inside the
           500px iframe without scrolling away from anything important.
           Each row is a sequence of label·value pairs separated by
           subtle bullets so a clinician can scan left-to-right. The
@@ -975,7 +975,7 @@ function RowDetail(props: {
         ) : null}
       </div>
 
-      {/* Diagnoses chips — TOP of panel so the user sees the ICD
+      {/* Diagnoses chips - TOP of panel so the user sees the ICD
           evidence first. Positive matches (codes/text matching the
           search's highlight terms) get a yellow background + bold so
           the eye lands on them. Non-matching codes are still visible
@@ -1136,7 +1136,7 @@ function CloseIcon() {
   );
 }
 
-// "Explain SQL" modal — LLM-written explanation + raw SQL. Opened
+// "Explain SQL" modal - LLM-written explanation + raw SQL. Opened
 // from the Explain SQL button in the bottom action row so we don't
 // burn real estate above the table.
 function ExplainSqlModal(props: {
@@ -1354,7 +1354,7 @@ function ExplainSqlModal(props: {
   );
 }
 
-// CardRow / CardField — inline label·value pairs separated by a faint
+// CardRow / CardField - inline label·value pairs separated by a faint
 // bullet. Wraps naturally so on narrow widths fields stack onto the
 // next line. Replaces the older grid-based MetaCell which forced its
 // own row per pair.

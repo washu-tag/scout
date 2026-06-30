@@ -10,7 +10,7 @@ import { postHeight } from './iframeHeight';
 
 // React Router basename matches the FastAPI StaticFiles mount in app.py
 // (/spa/). Vite's `base` only handles asset URLs, not the SPA's own
-// internal routes — without basename here, /spa/foo would be parsed as
+// internal routes - without basename here, /spa/foo would be parsed as
 // /foo and fall through to the FastAPI 404 handler.
 const router = (
   <BrowserRouter basename="/spa">

@@ -34,7 +34,7 @@
     sql_script: 'ALTER SCHEMA public OWNER TO {{ report_viewer_db_user }};'
     sql_dbname: '{{ report_viewer_database }}'
 
-# Test mode bootstrap — source-tarball ConfigMap consumed by the chart's
+# Test mode bootstrap - source-tarball ConfigMap consumed by the chart's
 # init container. Mirror of the cert-distribution pattern in jupyter
 # (ADR 0015): determine cert needs once, then thread the result into the
 # Helm values. We bind to the same staging-ca-cert Secret jupyter

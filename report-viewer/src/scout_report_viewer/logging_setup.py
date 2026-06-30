@@ -26,7 +26,7 @@ class JsonFormatter(logging.Formatter):
     """Emit each record as a single JSON line.
 
     Fields beyond the standard set come from `record.__dict__` keys that
-    aren't part of the stdlib LogRecord attribute set — i.e. anything the
+    aren't part of the stdlib LogRecord attribute set - i.e. anything the
     caller passed via `logger.info("msg", extra={"search_id": ...})`.
     """
 
@@ -85,7 +85,7 @@ class JsonFormatter(logging.Formatter):
 def configure(level: str = "INFO") -> None:
     """Replace the root handler with a single JSON-on-stdout handler.
 
-    Idempotent — re-running clears the previous handler set so a noisy
+    Idempotent - re-running clears the previous handler set so a noisy
     library that called `basicConfig()` doesn't leave duplicate sinks.
     Honors `REPORT_VIEWER_LOG_LEVEL` if set; otherwise uses the passed level.
     """
@@ -99,7 +99,7 @@ def configure(level: str = "INFO") -> None:
     root.addHandler(handler)
     root.setLevel(effective_level)
 
-    # uvicorn ships its own loggers with formatters — clear them so the
+    # uvicorn ships its own loggers with formatters - clear them so the
     # JSON path is the single source of truth for stdout.
     for name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
         ulog = logging.getLogger(name)
