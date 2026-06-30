@@ -291,11 +291,9 @@ def push_filter_functions(token):
 
 
 def push_tools(token):
-    """Reconcile Python tool functions. Mirrors push_filter_functions, but
-    against /api/v1/tools. Tools don't have global/active toggles — they
-    attach per-model via the model's toolIds — so we just upsert the
-    source + meta + valves + public-read access grants and let the model
-    definitions reference them."""
+    """Upsert Python tools against /api/v1/tools. Tools attach per-model
+    via toolIds (no global/active toggles), so we push source, meta,
+    valves, and re-assert public-read access grants."""
     public_read = [
         {"principal_type": "user", "principal_id": "*", "permission": "read"}
     ]
@@ -331,7 +329,7 @@ def push_tools(token):
             )
 
         # Re-assert public-read access grants on every run via the dedicated
-        # endpoint — the update payload's `access_grants` is only honored on
+        # endpoint. The update payload's `access_grants` is only honored on
         # create, so this ensures the grant stays correct even if someone
         # edited it in the UI.
         http_or_raise(
