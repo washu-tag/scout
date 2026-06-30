@@ -312,20 +312,12 @@ class Tools:
         # async, which made the sync caller blow up with
         # "'coroutine' object has no attribute 'path'" on file_model.path.)
         import inspect as _inspect
-        import sys
 
         file_model = Files.get_file_by_id(file_id)
         if _inspect.iscoroutine(file_model):
             file_model = await file_model
         if not file_model:
             return f"Error: file {file_id} not found in OWUI"
-        print(
-            f"[_import_from_file] file_id={file_id!r} "
-            f"filename={getattr(file_model, 'filename', None)!r} "
-            f"path={getattr(file_model, 'path', None)!r}",
-            file=sys.stderr,
-            flush=True,
-        )
         # OWUI 0.9.6 changed `Storage.get_file()` to return the local
         # filesystem path of the upload, not the file contents.
         # (Earlier versions returned bytes / a file-like object.) Handle
@@ -345,18 +337,7 @@ class Tools:
             else:
                 contents = got
         except Exception as exc:
-            print(
-                f"[_import_from_file] Storage.get_file raised: {exc!r}",
-                file=sys.stderr,
-                flush=True,
-            )
             return f"Error: could not read file {file_id}: {exc}"
-        print(
-            f"[_import_from_file] contents type={type(contents).__name__} "
-            f"len={len(contents) if hasattr(contents, '__len__') else 'n/a'}",
-            file=sys.stderr,
-            flush=True,
-        )
         if isinstance(contents, bytes):
             try:
                 text = contents.decode("utf-8")

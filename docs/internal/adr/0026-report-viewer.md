@@ -515,16 +515,16 @@ it so it's not a blocker.
 
 - Test aggregate queries and non-cohort queries from the LLM.
 
-- Review the scout query OWUI tool implemntation.
+- Review the scout query OWUI tool implementation.
 
-- Review React App SPA implementaition.
+- Review React App SPA implementation.
 
 - Prompt review needed, too much irrelevant stuff has built up while iterating on the service. 
  - when to use reports_latest vs reports_latest_epic_view and other Scout tables and views.
 
-- Report snippets are not being given to the llm for context and the diagnosis codes are pressented outside of the results table given to the llm. This is a regression from the POC, the llm needs some report context.
+- Report snippets are not being given to the llm for context and the diagnosis codes are presented outside of the results table given to the llm. This is a regression from the POC, the llm needs some report context.
 
-- The LLM is picking too many highlight terms, maybe limite to 3 - 5.
+- The LLM is picking too many highlight terms, maybe limit to 3 - 5.
 
 - Update observability stack
 

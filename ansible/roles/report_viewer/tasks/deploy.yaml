@@ -72,12 +72,6 @@
   when: _rv_package_proxy_needs_staging_cert | bool
 
 - name: Create staging CA cert Secret for report-viewer pods
-  # Run on the server host (no delegate_to: localhost). The server's
-  # KUBECONFIG (set via the play's environment block from
-  # cluster_k8s_environment) is the live /etc/rancher/k3s/k3s.yaml. The
-  # localhost-delegated path (jupyter's pattern) depends on a previously-
-  # fetched local kubeconfig copy that can go stale between cert
-  # rotations and `make install-k3s` runs; running here avoids that.
   kubernetes.core.k8s:
     state: present
     definition:
