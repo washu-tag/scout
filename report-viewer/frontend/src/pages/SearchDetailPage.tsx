@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { isEmbedded } from '../embed';
 import {
   createColumnHelper,
   flexRender,
@@ -29,35 +28,24 @@ import {
 const ROW_ACTIVE_BG = '#e8f0fa';
 const DETAIL_ZONE_BG = '#f0f6fc';
 
-// Locked column set, mirrors the legacy iframe viewer. The /rows
-// endpoint returns the full SELECTed column set; we render only these
-// preferred ones to keep the table readable when the LLM SELECTs *
-// from the wide reports_latest_epic_view.
-//
-// `embedWidth` is the min-width used inside the OWUI chat iframe
-// (~900px wide); `width` is the standalone-page min-width. The
-// embed sizes are tuned to fit without horizontal scroll in the chat
-// embed. `embedHidden` drops a column entirely when embedded.
 const COLUMNS_CONFIG: Array<{
   field: string;
   title: string;
-  width?: number;
-  embedWidth?: number;
-  embedHidden?: boolean;
+  width: number;
+  defaultHidden?: boolean;
   align?: 'right' | 'center';
   mono?: boolean;
   kind?: 'date';
 }> = [
-  { field: 'accession_number', title: 'Acc', width: 110, embedWidth: 85, mono: true },
-  { field: 'epic_mrn', title: 'MRN', width: 105, embedWidth: 80, mono: true },
-  { field: 'message_dt', title: 'Date', width: 125, embedWidth: 100, kind: 'date' },
-  { field: 'modality', title: 'Modality', width: 80, embedWidth: 60 },
-  { field: 'service_name', title: 'Service', width: 240, embedWidth: 180 },
-  // Facility is the least-clicked column; drop in embed mode to free space.
-  { field: 'sending_facility', title: 'Facility', width: 120, embedHidden: true },
-  { field: 'patient_age', title: 'Age', width: 110, embedWidth: 90, align: 'right' },
-  { field: 'sex', title: 'Sex', width: 50, embedWidth: 40, align: 'center' },
-  { field: 'evidence', title: 'Label', width: 110, embedHidden: true },
+  { field: 'accession_number', title: 'Accession', width: 100, mono: true },
+  { field: 'epic_mrn', title: 'MRN', width: 80, mono: true },
+  { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
+  { field: 'modality', title: 'Modality', width: 60 },
+  { field: 'service_name', title: 'Service', width: 180 },
+  { field: 'sending_facility', title: 'Facility', width: 120, defaultHidden: true },
+  { field: 'patient_age', title: 'Age', width: 90, align: 'right' },
+  { field: 'sex', title: 'Sex', width: 40, align: 'center' },
+  { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
 ];
 
 type Row = Record<string, unknown>;
@@ -91,7 +79,9 @@ export default function SearchDetailPage() {
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedState>({});
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
+    Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
+  );
   const [iframeExpanded, setIframeExpanded] = useState(false);
   const appliedFiltersKey = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
 
@@ -101,8 +91,6 @@ export default function SearchDetailPage() {
     enabled: !!searchId,
   });
 
-  // Sort/filter state goes into the cache key so a change re-fetches.
-  // Sort string normalized via JSON so the key is stable.
   const sortParam = sorting[0]
     ? { col: sorting[0].id, dir: (sorting[0].desc ? 'desc' : 'asc') as 'asc' | 'desc' }
     : null;
@@ -111,25 +99,18 @@ export default function SearchDetailPage() {
     queryFn: () =>
       getSearchRows(searchId, { page, limit, sort: sortParam, filters: appliedFilters }),
     enabled: !!searchId,
-    // Keep the previously-fetched page visible while a sort/filter/page
-    // change is in flight. Without this, the table unmounts on every
-    // refetch, the "Loading rows…" branch takes over, and a debounced
-    // filter input would still lose focus because the whole subtree
-    // re-mounts when data lands.
+    // Keep previous page visible during refetch so debounced filter inputs don't lose focus.
     placeholderData: keepPreviousData,
   });
 
-  // Row-expansion state is keyed by row index; clear it when the row
-  // set actually changes so a page-2 row at index 0 doesn't inherit
-  // page-1's expanded card. Gating on rowsQ.data (not page) avoids a
-  // mid-fetch collapse flash thanks to keepPreviousData.
+  // Expansion state is keyed by row index; clear on row-set change so page-2 row 0
+  // doesn't inherit page-1's expanded card. Gate on rowsQ.data, not page, to avoid
+  // mid-fetch collapse flash under keepPreviousData.
   useEffect(() => {
     setExpanded({});
   }, [rowsQ.data]);
 
-  // total comes from the rows response when filters are active (it's
-  // the post-filter count). Fall back to search meta when there's no
-  // filter applied.
+  // Prefer the rows-response total (post-filter count); meta count is the unfiltered fallback.
   const total = rowsQ.data?.total ?? meta.data?.count ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / limit));
 
@@ -141,22 +122,18 @@ export default function SearchDetailPage() {
     [rowsQ.data],
   );
 
-  const embeddedNow = isEmbedded();
   const columns = useMemo(
     () =>
-      COLUMNS_CONFIG.filter(
-        (c) => available.includes(c.field) && !(embeddedNow && c.embedHidden),
-      ).map((c) => {
-        const initialWidth = embeddedNow ? (c.embedWidth ?? c.width) : c.width;
-        return columnHelper.accessor((row: Row) => row[c.field], {
+      COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
+        columnHelper.accessor((row: Row) => row[c.field], {
           id: c.field,
           header: c.title,
-          size: initialWidth,
+          size: c.width,
           cell: (info) => (c.kind === 'date' ? fmtDate(info.getValue()) : fmtCell(info.getValue())),
           meta: { align: c.align, mono: c.mono },
-        });
-      }),
-    [available, embeddedNow],
+        }),
+      ),
+    [available],
   );
 
   const data = rowsQ.data?.rows ?? [];
@@ -176,30 +153,30 @@ export default function SearchDetailPage() {
     getRowCanExpand: () => true,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
-    // Manual sort - server returns rows already ordered. Disable the
-    // client-side sort model so it doesn't re-sort what the server
-    // already sorted (and only across the visible page).
+    // Server returns rows already ordered; disable client-side re-sort of the visible page.
     manualSorting: true,
     columnResizeMode: 'onChange',
     defaultColumn: { minSize: 40 },
   });
 
-  const embedded = embeddedNow;
   return (
-    <div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: '1 1 auto',
+        minHeight: 0,
+      }}
+    >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          marginBottom: embedded ? '0.3rem' : '0.75rem',
+          marginBottom: '0.3rem',
           fontSize: '0.85rem',
+          flex: '0 0 auto',
         }}
       >
-        {!embedded && (
-          <Link to="/" style={{ color: '#4477AA' }}>
-            ← All searches
-          </Link>
-        )}
         <span style={{ flex: 1 }} />
         {rowsQ.data && (
           <span
@@ -227,17 +204,20 @@ export default function SearchDetailPage() {
         <p style={{ color: '#666' }}>Loading rows…</p>
       ) : (
         rowsQ.data && (
-          <>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: '1 1 auto',
+              minHeight: 0,
+            }}
+          >
             <div
               style={{
                 overflowX: 'auto',
                 overflowY: 'auto',
-                // -80px reserves room for the bottom pagination row.
-                maxHeight: embedded
-                  ? iframeExpanded
-                    ? HEIGHT_EXPANDED - 80
-                    : HEIGHT_COMPACT - 80
-                  : 'calc(100vh - 220px)',
+                flex: '1 1 auto',
+                minHeight: 0,
                 background: '#fff',
                 border: '1px solid #e2e2e2',
                 borderRadius: 4,
@@ -268,8 +248,8 @@ export default function SearchDetailPage() {
                             onClick={header.column.getToggleSortingHandler()}
                             style={{
                               textAlign: colMeta?.align ?? 'left',
-                              padding: embedded ? '0.35rem 0.45rem' : '0.5rem 0.75rem',
-                              fontSize: embedded ? '0.78rem' : 'inherit',
+                              padding: '0.35rem 0.45rem',
+                              fontSize: '0.78rem',
                               fontWeight: 600,
                               color: '#555',
                               background: '#f5f5f5',
@@ -347,8 +327,8 @@ export default function SearchDetailPage() {
                               <td
                                 key={cell.id}
                                 style={{
-                                  padding: embedded ? '0.3rem 0.45rem' : '0.4rem 0.75rem',
-                                  fontSize: embedded ? '0.78rem' : 'inherit',
+                                  padding: '0.3rem 0.45rem',
+                                  fontSize: '0.78rem',
                                   textAlign: colMeta?.align ?? 'left',
                                   whiteSpace: 'nowrap',
                                   overflow: 'hidden',
@@ -371,12 +351,12 @@ export default function SearchDetailPage() {
                                   row={row.original}
                                   idColumn={meta.data?.id_column ?? 'message_control_id'}
                                   highlightTerms={[
-                                    ...(meta.data?.highlight_terms ?? []),
+                                    ...(meta.data?.match_terms ?? []),
                                     ...(appliedFilters.service_name
                                       ? [appliedFilters.service_name]
                                       : []),
                                   ]}
-                                  highlightDiagnosis={meta.data?.highlight_diagnosis ?? []}
+                                  highlightDiagnosis={meta.data?.match_diagnoses ?? []}
                                 />
                               </div>
                             </td>
@@ -395,35 +375,31 @@ export default function SearchDetailPage() {
                 alignItems: 'center',
                 marginTop: '0.75rem',
                 fontSize: '0.85rem',
+                flex: '0 0 auto',
+                flexWrap: 'wrap',
               }}
             >
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                style={embedded ? paginationBtnEmbed : paginationBtn}
+                style={paginationBtn}
               >
                 Prev
               </button>
               <span style={{ whiteSpace: 'nowrap' }}>
-                {embedded ? `${page} / ${lastPage}` : `Page ${page} of ${lastPage}`}
+                {page} / {lastPage}
               </span>
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
                 disabled={page >= lastPage}
-                style={embedded ? paginationBtnEmbed : paginationBtn}
+                style={paginationBtn}
               >
                 Next
               </button>
-              <span
-                style={{
-                  marginLeft: embedded ? '0.4rem' : '1rem',
-                  color: '#888',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {embedded ? 'Per page:' : 'Rows per page:'}
+              <span style={{ marginLeft: '0.4rem', color: '#888', whiteSpace: 'nowrap' }}>
+                Per page:
               </span>
               <select
                 value={limit}
@@ -441,7 +417,7 @@ export default function SearchDetailPage() {
               <span
                 style={{
                   color: '#666',
-                  fontSize: embedded ? '0.75rem' : '0.8rem',
+                  fontSize: '0.75rem',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -475,14 +451,12 @@ export default function SearchDetailPage() {
                 style={
                   activeFilterCount(appliedFilters) > 0
                     ? {
-                        ...(embedded ? paginationBtnEmbed : paginationBtn),
+                        ...paginationBtn,
                         background: '#4477AA',
                         color: '#fff',
                         borderColor: '#4477AA',
                       }
-                    : embedded
-                      ? paginationBtnEmbed
-                      : paginationBtn
+                    : paginationBtn
                 }
                 title="Filter rows"
               >
@@ -490,14 +464,11 @@ export default function SearchDetailPage() {
                   ? `Filters (${activeFilterCount(appliedFilters)})`
                   : 'Filters'}
               </button>
-              {/* Column visibility picker - quick dropdown above the
-                button rather than a modal. Lets users toggle which
-                visible-table columns are shown. */}
               <div style={{ position: 'relative' }}>
                 <button
                   type="button"
                   onClick={() => setColPickerOpen((v) => !v)}
-                  style={embedded ? paginationBtnEmbed : paginationBtn}
+                  style={paginationBtn}
                   title="Show/hide columns"
                 >
                   Columns ▾
@@ -545,7 +516,7 @@ export default function SearchDetailPage() {
                 <button
                   type="button"
                   onClick={() => setSqlModalOpen(true)}
-                  style={embedded ? paginationBtnEmbed : paginationBtn}
+                  style={paginationBtn}
                   title="See what this search matches and the underlying SQL"
                 >
                   Explain Search
@@ -554,7 +525,7 @@ export default function SearchDetailPage() {
               <a
                 href={`/api/searches/${encodeURIComponent(searchId)}/csv`}
                 style={{
-                  ...(embedded ? paginationBtnEmbed : paginationBtn),
+                  ...paginationBtn,
                   color: '#222',
                   textDecoration: 'none',
                   background: '#fff',
@@ -562,39 +533,33 @@ export default function SearchDetailPage() {
               >
                 Download CSV
               </a>
-              <button
-                type="button"
-                onClick={() => setXnatModalOpen(true)}
-                style={embedded ? paginationBtnEmbed : paginationBtn}
-              >
+              <button type="button" onClick={() => setXnatModalOpen(true)} style={paginationBtn}>
                 Send to XNAT
               </button>
-              {embedded && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !iframeExpanded;
-                    setIframeExpanded(next);
-                    setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
-                  }}
-                  title={
-                    iframeExpanded
-                      ? 'Shrink viewer back to compact size'
-                      : 'Grow viewer for more room'
-                  }
-                  aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
-                  style={{
-                    ...paginationBtnEmbed,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '0.2rem 0.35rem',
-                  }}
-                >
-                  {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !iframeExpanded;
+                  setIframeExpanded(next);
+                  setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
+                }}
+                title={
+                  iframeExpanded
+                    ? 'Shrink viewer back to compact size'
+                    : 'Grow viewer for more room'
+                }
+                aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
+                style={{
+                  ...paginationBtn,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0.2rem 0.35rem',
+                }}
+              >
+                {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
+              </button>
             </div>
-          </>
+          </div>
         )
       )}
       {xnatModalOpen && (
@@ -608,8 +573,8 @@ export default function SearchDetailPage() {
         <ExplainSqlModal
           explanation={meta.data?.sql_explanation ?? ''}
           sql={meta.data?.sql ?? ''}
-          highlightTerms={meta.data?.highlight_terms ?? []}
-          highlightDiagnosis={meta.data?.highlight_diagnosis ?? []}
+          highlightTerms={meta.data?.match_terms ?? []}
+          highlightDiagnosis={meta.data?.match_diagnoses ?? []}
           onClose={() => setSqlModalOpen(false)}
         />
       )}
@@ -678,9 +643,8 @@ function discussInChat(sourceFile: string): void {
   );
 }
 
-// Send-to-XNAT modal. V1 placeholder - walks the user through the
-// steps (project pick, IRB attestation, accession review) but the
-// Send button is a no-op TBD. Backend XNAT push lands later.
+// Send-to-XNAT modal. The Send button is a no-op TBD - backend XNAT
+// push is not wired yet.
 function SendToXnatModal(props: { searchId: string; total: number; onClose: () => void }) {
   const [project, setProject] = useState('');
   const [irb, setIrb] = useState('');
@@ -796,18 +760,6 @@ function SendToXnatModal(props: { searchId: string; total: number; onClose: () =
 }
 
 const paginationBtn: React.CSSProperties = {
-  fontSize: '0.85rem',
-  padding: '0.25rem 0.7rem',
-  border: '1px solid #aaa',
-  background: '#fff',
-  borderRadius: 3,
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
-};
-
-// Tighter button styling for the chat-iframe context - the embed is
-// ~900px wide and the bottom action row is crowded.
-const paginationBtnEmbed: React.CSSProperties = {
   fontSize: '0.72rem',
   padding: '0.2rem 0.45rem',
   border: '1px solid #aaa',
@@ -947,7 +899,7 @@ function RowDetail(props: {
       >
         <CardRow>
           <CardField label="MRN" value={fmt(meta.epic_mrn)} mono />
-          <CardField label="Acc" value={fmt(meta.accession_number)} mono />
+          <CardField label="Accession" value={fmt(meta.accession_number)} mono />
           <CardField label="Age" value={fmt(meta.patient_age)} />
           <CardField label="Sex" value={fmt(meta.sex)} />
           {m.race ? <CardField label="Race" value={fmt(m.race)} /> : null}
@@ -1296,19 +1248,19 @@ function ExplainSqlModal(props: {
         {(terms.length > 0 || codes.length > 0) && (
           <div style={{ marginTop: '1rem' }}>
             <div style={{ fontWeight: 600, marginBottom: '0.2rem', fontSize: '0.85rem' }}>
-              LLM Highlights
+              Match criteria
             </div>
             <p
               style={{ margin: '0 0 0.5rem', color: '#666', fontSize: '0.78rem', lineHeight: 1.4 }}
             >
               Words and diagnosis codes the LLM flagged as positive signals. They are highlighted in
-              the report text and diagnosis codes when you expand a row to help spot-check why each
-              row matched.
+              the report text and diagnosis chips when you expand a row, so you can spot-check why
+              each row matched.
             </p>
             {terms.length > 0 && (
               <div style={{ marginBottom: codes.length > 0 ? '0.4rem' : 0 }}>
                 <span style={{ color: '#666', fontSize: '0.78rem', marginRight: '0.4rem' }}>
-                  Text terms:
+                  Match terms:
                 </span>
                 {terms.map((t, i) => (
                   <code
@@ -1329,7 +1281,7 @@ function ExplainSqlModal(props: {
             {codes.length > 0 && (
               <div>
                 <span style={{ color: '#666', fontSize: '0.78rem', marginRight: '0.4rem' }}>
-                  Diagnosis codes:
+                  Match diagnoses:
                 </span>
                 {codes.map((d, i) => (
                   <code
