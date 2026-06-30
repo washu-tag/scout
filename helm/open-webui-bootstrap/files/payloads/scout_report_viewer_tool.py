@@ -12,8 +12,13 @@ version: 0.1.0
 from __future__ import annotations
 
 import base64
+import csv
+import inspect
+import io
 import json
 import logging
+import os
+import re
 import time
 from typing import Any, Awaitable, Callable, Optional
 
@@ -294,8 +299,6 @@ class Tools:
             an iframe of the resulting search. Same renderable format
             as scout_find_reports.
         """
-        import csv, io, re
-
         bearer = await self._bearer_for_outbound(__oauth_token__)
 
         # Read the file out of OWUI's local storage. Same access path
@@ -311,10 +314,8 @@ class Tools:
         # so we work on both. (Real bug: 0.9.6 made get_file_by_id
         # async, which made the sync caller blow up with
         # "'coroutine' object has no attribute 'path'" on file_model.path.)
-        import inspect as _inspect
-
         file_model = Files.get_file_by_id(file_id)
-        if _inspect.iscoroutine(file_model):
+        if inspect.iscoroutine(file_model):
             file_model = await file_model
         if not file_model:
             return f"Error: file {file_id} not found in OWUI"
@@ -325,11 +326,9 @@ class Tools:
         # use directly; file-like → .read().
         try:
             got = Storage.get_file(file_model.path)
-            if _inspect.iscoroutine(got):
+            if inspect.iscoroutine(got):
                 got = await got
-            import os as _os
-
-            if isinstance(got, str) and _os.path.exists(got):
+            if isinstance(got, str) and os.path.exists(got):
                 with open(got, "rb") as _fh:
                     contents = _fh.read()
             elif hasattr(got, "read"):
