@@ -20,29 +20,24 @@ from .config import settings
 log = logging.getLogger(__name__)
 
 SCHEMA_SQL = """
--- Searches are saved SQL only. /rows wraps source_sql as a subquery
+-- Searches are saved SQL only. /rows wraps sql as a subquery
 -- and applies pagination/sort/filter at the Trino layer on every read.
 -- See ADR 0026.
 CREATE TABLE IF NOT EXISTS searches (
   id                  TEXT PRIMARY KEY,
-  kind                TEXT NOT NULL,
   id_column           TEXT NOT NULL,
-  source_sql          TEXT NOT NULL,
+  sql                 TEXT NOT NULL,
   sql_explanation     TEXT NOT NULL DEFAULT '',
   highlight_terms     TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
   highlight_diagnosis TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
   row_count           INTEGER,
-  parent_id           TEXT REFERENCES searches(id) ON DELETE SET NULL,
   owner_sub           TEXT NOT NULL,
   owui_chat_id        TEXT NOT NULL DEFAULT '',
-  owui_chat_title     TEXT NOT NULL DEFAULT '',
-  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-  expires_at          TIMESTAMPTZ NOT NULL,
-  last_read_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS searches_owner_expires_idx
-  ON searches (owner_sub, expires_at);
+CREATE INDEX IF NOT EXISTS searches_owner_created_idx
+  ON searches (owner_sub, created_at DESC);
 """
 
 

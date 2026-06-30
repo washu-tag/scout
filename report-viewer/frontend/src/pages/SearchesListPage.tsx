@@ -30,30 +30,19 @@ function chatUrl(chatId: string): string {
 // already in newest-first order from the backend's ORDER BY created_at
 // DESC. Legacy searches (no chat_id) fall into an "ungrouped" bucket
 // so the user can still find them.
-function groupByChat(
-  searches: SearchMeta[],
-): Array<{ chatId: string; title: string; items: SearchMeta[] }> {
-  const seen = new Map<string, { title: string; items: SearchMeta[] }>();
+function groupByChat(searches: SearchMeta[]): Array<{ chatId: string; items: SearchMeta[] }> {
+  const seen = new Map<string, SearchMeta[]>();
   for (const d of searches) {
     const key = d.owui_chat_id || '__ungrouped__';
     const existing = seen.get(key);
     if (existing) {
-      existing.items.push(d);
-      // First non-empty title wins (most recent in DESC order).
-      if (!existing.title && d.owui_chat_title) existing.title = d.owui_chat_title;
+      existing.push(d);
     } else {
-      seen.set(key, {
-        title: d.owui_chat_title || '',
-        items: [d],
-      });
+      seen.set(key, [d]);
     }
   }
-  // Preserve insertion order — backend already sorted by created_at DESC,
-  // and we want groups in that same order (group of the most recent
-  // search appears first).
-  return Array.from(seen.entries()).map(([chatId, { title, items }]) => ({
+  return Array.from(seen.entries()).map(([chatId, items]) => ({
     chatId,
-    title,
     items,
   }));
 }
@@ -103,15 +92,10 @@ export default function SearchesListPage() {
   );
 }
 
-function ChatGroup(props: { group: { chatId: string; title: string; items: SearchMeta[] } }) {
-  const { chatId, title, items } = props.group;
+function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
+  const { chatId, items } = props.group;
   const isUngrouped = chatId === '__ungrouped__';
-  // Fall back to a short chat-id slug when the title snapshot is
-  // empty (older searches, or OWUI metadata didn't surface the title
-  // at create time). Truncate the UUID so the header doesn't run.
-  const displayTitle = isUngrouped
-    ? 'Searches not tied to a chat'
-    : title || `Chat ${chatId.slice(0, 8)}…`;
+  const displayTitle = isUngrouped ? 'Searches not tied to a chat' : `Chat ${chatId.slice(0, 8)}…`;
   return (
     <div style={{ marginBottom: '1.25rem' }}>
       <div
@@ -145,7 +129,7 @@ function ChatGroup(props: { group: { chatId: string; title: string; items: Searc
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 0.7fr 0.6fr 1fr 1fr',
+            gridTemplateColumns: '1fr 0.6fr 1fr',
             background: '#f5f5f5',
             fontSize: '0.8rem',
             color: '#555',
@@ -154,10 +138,8 @@ function ChatGroup(props: { group: { chatId: string; title: string; items: Searc
           }}
         >
           <span>ID</span>
-          <span>Kind</span>
-          <span style={{ textAlign: 'right' }}>Rows</span>
+          <span>Rows</span>
           <span>Created</span>
-          <span>Expires</span>
         </div>
         {items.map((d) => (
           <Link
@@ -165,7 +147,7 @@ function ChatGroup(props: { group: { chatId: string; title: string; items: Searc
             to={`/searches/${d.id}`}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 0.7fr 0.6fr 1fr 1fr',
+              gridTemplateColumns: '1fr 0.6fr 1fr',
               fontSize: '0.88rem',
               color: '#222',
               textDecoration: 'none',
@@ -179,10 +161,8 @@ function ChatGroup(props: { group: { chatId: string; title: string; items: Searc
             >
               {d.id}
             </span>
-            <span>{d.kind}</span>
-            <span style={{ textAlign: 'right' }}>{d.count.toLocaleString()}</span>
+            <span>{d.count.toLocaleString()}</span>
             <span style={{ color: '#555' }}>{fmtTime(d.created_at)}</span>
-            <span style={{ color: '#555' }}>{fmtTime(d.expires_at)}</span>
           </Link>
         ))}
       </div>

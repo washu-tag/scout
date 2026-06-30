@@ -541,7 +541,7 @@ export default function SearchDetailPage() {
                   </div>
                 )}
               </div>
-              {(meta.data?.sql_explanation || meta.data?.source_sql) && (
+              {(meta.data?.sql_explanation || meta.data?.sql) && (
                 <button
                   type="button"
                   onClick={() => setSqlModalOpen(true)}
@@ -607,7 +607,7 @@ export default function SearchDetailPage() {
       {sqlModalOpen && (
         <ExplainSqlModal
           explanation={meta.data?.sql_explanation ?? ''}
-          sql={meta.data?.source_sql ?? ''}
+          sql={meta.data?.sql ?? ''}
           highlightTerms={meta.data?.highlight_terms ?? []}
           highlightDiagnosis={meta.data?.highlight_diagnosis ?? []}
           onClose={() => setSqlModalOpen(false)}

@@ -36,9 +36,6 @@ class Settings(BaseSettings):
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
 
-    # Search behavior
-    search_ttl_days: int = 30
-
     # OWUI Postgres URL — receiver writes iframe-sandbox UI defaults
     # into OWUI's "user".settings JSON column on signup. Empty disables
     # the webhook (returns 503). See ADR 0026.

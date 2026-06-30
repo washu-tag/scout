@@ -1,7 +1,7 @@
 """HTTP routes for `/api/searches` (V1.1 — just-in-time SQL evaluation).
 
 A search is a saved SQL query plus minimal metadata. Nothing about
-which rows match is stored. Every read wraps `source_sql` as a
+which rows match is stored. Every read wraps `sql` as a
 subquery and applies pagination/sort/filter at the Trino layer.
 
 See ADR 0026.
@@ -10,7 +10,7 @@ Endpoints:
   POST /api/searches                            — save SQL, cache COUNT(*), return sample
   POST /api/searches/from-file                  — validate IDs against reports_latest, save WHERE id IN (...) SQL
   GET  /api/searches/{id}                       — metadata
-  GET  /api/searches/{id}/rows                  — paginated rows (wraps source_sql)
+  GET  /api/searches/{id}/rows                  — paginated rows (wraps sql)
   GET  /api/searches/{id}/accessions            — DISTINCT accession_number list
   GET  /api/searches/{id}/csv                   — streaming CSV download
 
@@ -25,7 +25,7 @@ import re
 from datetime import date
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 
 from .. import metrics, store, trino_client
@@ -114,12 +114,12 @@ def _jsonsafe(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return json.loads(json.dumps(rows, default=str))
 
 
-def _wrap_source_sql(source_sql: str, *, alias: str = "src") -> str:
+def _wrap_sql(sql: str, *, alias: str = "src") -> str:
     """Strip trailing semicolons so the SQL can be embedded as a
-    subquery: `SELECT ... FROM (<source_sql>) <alias>`. The LLM
+    subquery: `SELECT ... FROM (<sql>) <alias>`. The LLM
     sometimes ends its SQL with a semicolon which breaks subquery
     syntax."""
-    return source_sql.rstrip().rstrip(";")
+    return sql.rstrip().rstrip(";")
 
 
 # ---------------------------------------------------------------------------
@@ -130,20 +130,15 @@ def _wrap_source_sql(source_sql: str, *, alias: str = "src") -> str:
 def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
     return SearchMeta(
         id=r["id"],
-        kind=r["kind"],
         id_column=r["id_column"],
         count=r["count"],
-        parent_id=r["parent_id"],
-        source_sql=r["source_sql"],
+        sql=r["sql"],
         owner_sub=r["owner_sub"],
         created_at=r["created_at"],
-        expires_at=r["expires_at"],
-        last_read_at=r["last_read_at"],
         highlight_terms=r.get("highlight_terms") or [],
         highlight_diagnosis=r.get("highlight_diagnosis") or [],
         sql_explanation=r.get("sql_explanation") or "",
         owui_chat_id=r.get("owui_chat_id") or "",
-        owui_chat_title=r.get("owui_chat_title") or "",
     )
 
 
@@ -151,8 +146,8 @@ def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
 async def list_searches(
     user: User = Depends(get_current_user),
 ) -> list[SearchMeta]:
-    """Caller's non-expired searches, newest first. Drives the SPA
-    homepage. Owner-scoped — only the authenticated user's own."""
+    """Caller's searches, newest first. Drives the SPA homepage.
+    Owner-scoped — only the authenticated user's own."""
     rows = await store.list_searches(user.sub)
     return [_meta_from_row(r) for r in rows]
 
@@ -181,25 +176,23 @@ async def create_search(
     Refinement: when the LLM wants to narrow a search, it writes a new
     `POST /searches` call with the original conditions plus the new
     constraint — the saved SQL is standalone, no placeholder
-    substitution, no parent reference required at SQL time.
-    `parent_id` on the search row is informational lineage only.
+    substitution, no parent reference required.
     """
-    source_sql = _wrap_source_sql(body.sql)
-    parent_id = body.parent_id  # lineage only — not used in SQL
+    sql = _wrap_sql(body.sql)
 
     # Validate the search SQL by fetching the first 5 sample rows.
     # This both surfaces SQL errors early and gives us the sample
     # we need for the LLM-bound summary. The LIMIT lives outside the
-    # source_sql we save — we wrap as a subquery so the LLM's own
+    # sql we save — we wrap as a subquery so the LLM's own
     # LIMIT (e.g. LIMIT 50000) is respected on later /rows reads.
-    sample_sql = f"SELECT s.* FROM ({source_sql}) s LIMIT 5"
+    sample_sql = f"SELECT s.* FROM ({sql}) s LIMIT 5"
     try:
         with metrics.time_trino("create_sample_query"):
             columns, sample_rows = await trino_client.execute(sample_sql, user=user.sub)
     except Exception as exc:
         log.exception("trino sample query failed")
         metrics.SEARCHES_CREATED.labels(
-            kind=body.kind, id_column=body.id_column or "?", result="error"
+            id_column=body.id_column or "?", result="error"
         ).inc()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -217,7 +210,7 @@ async def create_search(
     # sample query because Trino caches the inner subquery's predicate
     # execution between same-session calls of the same shape (and
     # because the optimizer recognizes COUNT-only subquery patterns).
-    count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s"
+    count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
     try:
         with metrics.time_trino("create_count_query"):
             _cols, count_rows = await trino_client.execute(count_sql, user=user.sub)
@@ -316,30 +309,24 @@ async def create_search(
     search_id = new_search_id()
     stored = await store.insert_search(
         search_id=search_id,
-        kind=body.kind,
         id_column=id_column,
-        source_sql=source_sql,
+        sql=sql,
         owner_sub=user.sub,
         row_count=row_count,
-        parent_id=parent_id,
         highlight_terms=body.highlight_terms or [],
         highlight_diagnosis=body.highlight_diagnosis or [],
         sql_explanation=body.sql_explanation or "",
         owui_chat_id=body.owui_chat_id or "",
-        owui_chat_title=body.owui_chat_title or "",
     )
 
-    metrics.SEARCHES_CREATED.labels(
-        kind=body.kind, id_column=id_column, result="ok"
-    ).inc()
-    metrics.SEARCH_SIZE.labels(kind=body.kind, source="sql").observe(stored["count"])
+    metrics.SEARCHES_CREATED.labels(id_column=id_column, result="ok").inc()
+    metrics.SEARCH_SIZE.labels(source="sql").observe(stored["count"])
     log.info(
         "search created",
         extra={
             "search_id": stored["id"],
             "count": stored["count"],
             "id_column": id_column,
-            "kind": body.kind,
             "user_sub": user.sub,
         },
     )
@@ -355,7 +342,6 @@ async def create_search(
         id=stored["id"],
         count=stored["count"],
         id_column=stored["id_column"],
-        kind=stored["kind"],
         sample=sample,
         view_url=_view_url(request, search_id),
         summary=summary,
@@ -459,7 +445,7 @@ async def create_search_from_file(
     # plus a few canonical row-level columns so the SPA's table view
     # has something to display when /rows wraps this query.
     in_literal = ", ".join(_quote_literal(i) for i in final_ids)
-    source_sql = (
+    sql = (
         f"SELECT message_control_id, accession_number, "
         f"resolved_epic_mrn AS epic_mrn, modality, service_name, "
         f"message_dt, patient_age, sex "
@@ -471,22 +457,16 @@ async def create_search_from_file(
     search_id = new_search_id()
     stored = await store.insert_search(
         search_id=search_id,
-        kind=body.kind,
         id_column=body.id_column,
-        source_sql=source_sql,
+        sql=sql,
         owner_sub=user.sub,
         row_count=row_count,
         sql_explanation=body.sql_explanation or "",
         owui_chat_id=body.owui_chat_id or "",
-        owui_chat_title=body.owui_chat_title or "",
     )
 
-    metrics.SEARCHES_CREATED.labels(
-        kind=body.kind, id_column=body.id_column, result="ok"
-    ).inc()
-    metrics.SEARCH_SIZE.labels(kind=body.kind, source="from_file").observe(
-        stored["count"]
-    )
+    metrics.SEARCHES_CREATED.labels(id_column=body.id_column, result="ok").inc()
+    metrics.SEARCH_SIZE.labels(source="from_file").observe(stored["count"])
     metrics.IDS_SUBMITTED.labels(id_column=body.id_column).inc(submitted)
     metrics.IDS_UNMATCHED.labels(id_column=body.id_column).inc(len(unmatched))
     log.info(
@@ -543,21 +523,35 @@ async def get_search_meta(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return SearchMeta(
         id=ds["id"],
-        kind=ds["kind"],
         id_column=ds["id_column"],
         count=ds["count"],
-        parent_id=ds["parent_id"],
-        source_sql=ds["source_sql"],
+        sql=ds["sql"],
         owner_sub=ds["owner_sub"],
         created_at=ds["created_at"],
-        expires_at=ds["expires_at"],
-        last_read_at=ds["last_read_at"],
         highlight_terms=ds.get("highlight_terms") or [],
         highlight_diagnosis=ds.get("highlight_diagnosis") or [],
         sql_explanation=ds.get("sql_explanation") or "",
         owui_chat_id=ds.get("owui_chat_id") or "",
-        owui_chat_title=ds.get("owui_chat_title") or "",
     )
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/searches/{id}
+# ---------------------------------------------------------------------------
+
+
+@router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_search(
+    search_id: str,
+    user: User = Depends(get_current_user),
+) -> Response:
+    """Delete a search by id. Owner-scoped — a delete against a search
+    you don't own returns 404 (same shape as GET, so we don't leak the
+    existence of other users' rows)."""
+    deleted = await store.delete_search(search_id, user.sub)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ---------------------------------------------------------------------------
@@ -671,7 +665,7 @@ def _filter_clause(col: str, values: list[str], *, alias: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-# GET /api/searches/{id}/rows — wrap source_sql + paginate / sort / filter
+# GET /api/searches/{id}/rows — wrap sql + paginate / sort / filter
 # ---------------------------------------------------------------------------
 
 
@@ -684,8 +678,8 @@ async def get_search_rows(
     sort: str | None = Query(default=None, description="col:dir, e.g. message_dt:desc"),
     user: User = Depends(get_current_user),
 ) -> RowsResponse:
-    """Paginated search rows. Wraps the saved source_sql as a
-    subquery: `SELECT s.* FROM (<source_sql>) s [WHERE ...] [ORDER BY ...]
+    """Paginated search rows. Wraps the saved sql as a
+    subquery: `SELECT s.* FROM (<sql>) s [WHERE ...] [ORDER BY ...]
     OFFSET N LIMIT M`. Each page re-runs Trino — rows are never cached.
 
     Server-side filter values are ANDed and applied to whitelisted
@@ -695,8 +689,8 @@ async def get_search_rows(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     cached_total = ds["count"]
-    source_sql = ds["source_sql"]
-    if not source_sql:
+    sql = ds["sql"]
+    if not sql:
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
             detail="this search has no source SQL (pre-rename row)",
@@ -714,7 +708,7 @@ async def get_search_rows(
         order_sql = f" ORDER BY s.{_quote_ident(scol)} {sdir} NULLS LAST"
 
     sql = (
-        f"SELECT s.* FROM ({source_sql}) s"
+        f"SELECT s.* FROM ({sql}) s"
         f"{where_sql}"
         f"{order_sql} "
         f"OFFSET {offset} LIMIT {limit}"
@@ -724,7 +718,7 @@ async def get_search_rows(
     # have a cached_total, skip this query — saves a Trino scan per
     # page request. Sort-only doesn't change the count.
     if filters:
-        count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s" f"{where_sql}"
+        count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s" f"{where_sql}"
         try:
             with metrics.time_trino("rows_count_query"):
                 _, count_rows = await trino_client.execute(count_sql, user=user.sub)
@@ -772,15 +766,15 @@ async def get_search_accessions(
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    source_sql = ds["source_sql"]
-    if not source_sql:
+    sql = ds["sql"]
+    if not sql:
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
             detail="this search has no source SQL (pre-rename row)",
         )
     sql = (
         f"SELECT DISTINCT s.accession_number "
-        f"FROM ({source_sql}) s "
+        f"FROM ({sql}) s "
         f"WHERE s.accession_number IS NOT NULL "
         f"ORDER BY s.accession_number"
     )
@@ -835,8 +829,8 @@ async def export_search_csv(
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    source_sql = ds["source_sql"]
-    if not source_sql:
+    sql = ds["sql"]
+    if not sql:
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
             detail="this search has no source SQL (pre-rename row)",
@@ -850,7 +844,7 @@ async def export_search_csv(
             return
         for offset in range(0, total, _CSV_CHUNK):
             sql = (
-                f"SELECT {cols_select} FROM ({source_sql}) s "
+                f"SELECT {cols_select} FROM ({sql}) s "
                 f"OFFSET {offset} LIMIT {_CSV_CHUNK}"
             )
             try:

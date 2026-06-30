@@ -22,7 +22,6 @@ log = logging.getLogger(__name__)
 
 
 # Custom domain metrics. Label cardinality is bounded on purpose:
-#   - `kind` ∈ {"report", "patient"} (~2)
 #   - `id_column` ∈ {"message_control_id", "accession_number", "epic_mrn", "scout_patient_id"} (~4)
 #   - `op` ∈ {"create_query", "rows_query", "summary_query"} (~3)
 #   - `result` ∈ {"ok", "error"} (~2)
@@ -31,7 +30,7 @@ log = logging.getLogger(__name__)
 SEARCHES_CREATED = Counter(
     "scout_report_viewer_searches_created_total",
     "Searches saved via POST /searches.",
-    ["kind", "id_column", "result"],
+    ["id_column", "result"],
 )
 
 TRINO_QUERY_DURATION = Histogram(
@@ -54,7 +53,7 @@ POSTGRES_OP_DURATION = Histogram(
 SEARCH_SIZE = Histogram(
     "scout_report_viewer_search_size_rows",
     "Row count of each search at create time (cached COUNT(*) of the saved SQL).",
-    ["kind", "source"],  # source ∈ {"sql", "from_file"}
+    ["source"],  # source ∈ {"sql", "from_file"}
     buckets=(10, 100, 500, 1_000, 5_000, 10_000, 50_000, 100_000, 500_000, 1_000_000),
 )
 

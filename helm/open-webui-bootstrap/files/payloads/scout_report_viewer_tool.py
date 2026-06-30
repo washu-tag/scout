@@ -184,42 +184,11 @@ class Tools:
         await self._emit(__event_emitter__, "Searching reports…", done=False)
         try:
             # OWUI injects chat metadata into the tool call. Pull the
-            # chat ID + title so the SPA homepage can group searches by
-            # conversation. Best-effort: probe several possible shapes
-            # since OWUI metadata structure varies across versions.
+            # chat ID so the SPA homepage can group searches by
+            # conversation.
             chat_id = ""
-            chat_title = ""
             if isinstance(__metadata__, dict):
                 chat_id = str(__metadata__.get("chat_id") or "")
-                # Title can live in several places depending on OWUI version.
-                title_candidates = [
-                    __metadata__.get("chat_title"),
-                    __metadata__.get("title"),
-                    (
-                        (__metadata__.get("chat") or {}).get("title")
-                        if isinstance(__metadata__.get("chat"), dict)
-                        else None
-                    ),
-                    (
-                        (__metadata__.get("session") or {}).get("title")
-                        if isinstance(__metadata__.get("session"), dict)
-                        else None
-                    ),
-                ]
-                for c in title_candidates:
-                    if c:
-                        chat_title = str(c)
-                        break
-                # One-time INFO log so we can see what OWUI actually
-                # gives us in the cluster logs and adjust this list.
-                log.info(
-                    "owui tool metadata",
-                    extra={
-                        "metadata_keys": list(__metadata__.keys()),
-                        "chat_id": chat_id,
-                        "chat_title": chat_title,
-                    },
-                )
 
             created = await self._post_search(
                 sql,
@@ -229,7 +198,6 @@ class Tools:
                 sql_explanation=sql_explanation,
                 llm_context_rows=llm_context_rows,
                 owui_chat_id=chat_id,
-                owui_chat_title=chat_title,
             )
         except ReportViewerServiceError as exc:
             await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
@@ -466,21 +434,8 @@ class Tools:
             )
 
         chat_id = ""
-        chat_title = ""
         if isinstance(__metadata__, dict):
             chat_id = str(__metadata__.get("chat_id") or "")
-            for c in [
-                __metadata__.get("chat_title"),
-                __metadata__.get("title"),
-                (
-                    (__metadata__.get("chat") or {}).get("title")
-                    if isinstance(__metadata__.get("chat"), dict)
-                    else None
-                ),
-            ]:
-                if c:
-                    chat_title = str(c)
-                    break
 
         await self._emit(
             __event_emitter__,
@@ -499,7 +454,6 @@ class Tools:
                 f"{file_model.filename}."
             ),
             "owui_chat_id": chat_id,
-            "owui_chat_title": chat_title,
         }
         async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
             try:
@@ -689,7 +643,6 @@ class Tools:
         sql_explanation: Optional[str] = None,
         llm_context_rows: Optional[int] = None,
         owui_chat_id: Optional[str] = None,
-        owui_chat_title: Optional[str] = None,
     ) -> dict:
         url = f"{self.valves.report_viewer_url.rstrip('/')}/api/searches"
         headers = {"Content-Type": "application/json"}
@@ -706,8 +659,6 @@ class Tools:
             payload["llm_context_rows"] = llm_context_rows
         if owui_chat_id:
             payload["owui_chat_id"] = owui_chat_id
-        if owui_chat_title:
-            payload["owui_chat_title"] = owui_chat_title
         async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
             r = await c.post(url, headers=headers, json=payload)
         if r.status_code >= 400:

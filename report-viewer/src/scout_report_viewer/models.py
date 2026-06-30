@@ -34,9 +34,6 @@ class CreateSearchRequest(BaseModel):
         ...,
         description="Trino SQL to materialize. SELECT must include one of the known identifier columns.",
     )
-    kind: str = Field(
-        default="report", description="`report` for now; `patient` lands in v1.1."
-    )
     id_column: str | None = Field(
         default=None,
         description="Override the auto-picked identifier column. Must be present in the SELECT.",
@@ -86,26 +83,9 @@ class CreateSearchRequest(BaseModel):
             "conversation that produced them."
         ),
     )
-    owui_chat_title: str | None = Field(
-        default=None,
-        description=(
-            "Snapshot of the OWUI chat title at create time. The chat "
-            "title can change after the search exists; we freeze it so "
-            "the SPA's section header stays stable."
-        ),
-    )
     llm_context_rows: int | None = Field(
         default=None,
         description="Max sample rows returned to the LLM (default 5).",
-    )
-    parent_id: str | None = Field(
-        default=None,
-        description=(
-            "Optional lineage tag — when set, the new search's "
-            "`parent_id` points at this row. The SPA homepage uses "
-            "this to group refinement chains visually. No SQL-level "
-            "effect — the new SQL stands alone."
-        ),
     )
 
 
@@ -131,10 +111,6 @@ class CreateFromFileRequest(BaseModel):
             "'message_control_id', 'accession_number', 'epic_mrn'."
         ),
     )
-    kind: str = Field(
-        default="report",
-        description="`report` for now; `patient` lands in v1.1.",
-    )
     sql_explanation: str | None = Field(
         default=None,
         description=(
@@ -143,7 +119,6 @@ class CreateFromFileRequest(BaseModel):
         ),
     )
     owui_chat_id: str | None = Field(default=None)
-    owui_chat_title: str | None = Field(default=None)
 
 
 class CreateFromFileResponse(BaseModel):
@@ -201,7 +176,6 @@ class CreateSearchResponse(BaseModel):
     id: str
     count: int
     id_column: str
-    kind: str
     # The LLM-bound summary (count + columns + sample table +
     # anti-restatement directive + internal search handle note).
     summary: str
@@ -213,26 +187,20 @@ class CreateSearchResponse(BaseModel):
 
 class SearchMeta(BaseModel):
     id: str
-    kind: str
     id_column: str
     count: int
-    parent_id: str | None
-    source_sql: str
+    sql: str
     owner_sub: str
     created_at: datetime
-    expires_at: datetime
-    last_read_at: datetime
     highlight_terms: list[str] = []
     highlight_diagnosis: list[str] = []
     # Plain-language summary of what the SQL matches and why,
     # written by the LLM at create time. Surfaced in the SPA's
     # "About this search" panel. Empty string if not provided.
     sql_explanation: str = ""
-    # OWUI conversation ID + chat-title snapshot — drives the SPA
-    # homepage's per-chat grouping. Empty when the caller didn't
-    # supply them.
+    # OWUI conversation ID — drives the SPA homepage's per-chat
+    # grouping. Empty when the caller didn't supply it.
     owui_chat_id: str = ""
-    owui_chat_title: str = ""
 
 
 class RowsResponse(BaseModel):

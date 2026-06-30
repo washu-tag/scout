@@ -143,13 +143,12 @@ A cohort is a saved SQL query plus minimal metadata — nothing about
 which rows match is stored. The query runs against Trino each time the
 SPA fetches rows, exports CSV, or fetches a single report.
 
-- **Postgres `searches` table** holds: `id`, `owner_sub`, `kind`,
-  `id_column`, `source_sql`, `sql_explanation`, `highlight_terms`,
-  `parent_id` (informational lineage only — has no SQL impact),
-  `count` (cached at create time via one `SELECT COUNT(*) FROM
-  (<source_sql>)`), `owui_chat_id`, `owui_chat_title`, timestamps.
+- **Postgres `searches` table** holds: `id`, `owner_sub`,
+  `id_column`, `sql`, `sql_explanation`, `highlight_terms`,
+  `highlight_diagnosis`, `row_count` (cached at create time via one
+  `SELECT COUNT(*) FROM (<sql>)`), `owui_chat_id`, `created_at`.
 - **No Delta side-table**, no Postgres `id_list`, no row_metadata blob.
-  Every read wraps `source_sql` as a subquery and applies
+  Every read wraps the saved `sql` as a subquery and applies
   pagination/sort/filter at the Trino layer.
 - Imported ID lists (CSV upload) become a saved `WHERE <id_col> IN
   ('a','b','c',...)` SQL — the IDs are validated against
@@ -278,12 +277,12 @@ this same API; today the only one is the OWUI in-image tool.
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/searches` | Save a SQL-defined search. Body: `{ sql, sql_explanation, highlight_terms, owui_chat_id/title }`. The service stores the SQL, runs `SELECT COUNT(*) FROM (<sql>) sub` to cache the count, and returns `id + count + sample + summary + view_url`. The CSV-upload path uses a sibling endpoint `POST /api/searches/from-file` that validates the supplied identifiers against `reports_latest` and saves a `WHERE <id_col> IN (...)` SQL — same downstream shape. No materialization in either case. |
+| POST | `/api/searches` | Save a SQL-defined search. Body: `{ sql, sql_explanation, highlight_terms, owui_chat_id }`. The service stores the SQL, runs `SELECT COUNT(*) FROM (<sql>) sub` to cache the count, and returns `id + count + sample + summary + view_url`. The CSV-upload path uses a sibling endpoint `POST /api/searches/from-file` that validates the supplied identifiers against `reports_latest` and saves a `WHERE <id_col> IN (...)` SQL — same downstream shape. No materialization in either case. |
 | GET | `/api/searches/{id}` | Search metadata (count, owner, timestamps). |
 | GET | `/api/searches/{id}/rows?page&limit&sort&filter` | Paginated rows for the SPA table. Server-side filter and sort on Trino-native columns. |
 | GET | `/api/searches/{id}/csv` | Streaming chunked CSV download (mirrors `/rows` — paginated JSON vs. streamed CSV). |
 | GET | `/api/searches/{id}/accessions` | Distinct accession-number list for the Send-to-XNAT handoff. |
-| DELETE | `/api/searches/{id}` | Explicit search deletion ahead of TTL. |
+| DELETE | `/api/searches/{id}` | Owner-scoped delete. Returns 204; 404 for unknown id or wrong owner. |
 
 **Reports operations** (RPC-style; don't produce a resource):
 
@@ -485,7 +484,7 @@ The service follows the Scout observability conventions:
   the standard HTTP histograms from `prometheus-fastapi-instrumentator`. Labels 
   are kept low-cardinality; user-derived values (owner, search id) stay out of labels.
 - **Logs**: structured JSON to stdout, picked up by Loki. Search events are
-  stamped with contextual fields (search id, count, kind, owner) so log lines
+  stamped with contextual fields (search id, count, owner) so log lines
   correlate to specific operations.
 - **Grafana dashboard**: an operator dashboard packaged with the rest of the
   Scout dashboards, surfacing search-creation rate, Trino/Postgres latency
@@ -514,10 +513,7 @@ it so it's not a blocker.
 
 - Test with Qwen 3.6
 
-- TTL for searches? did we do? can you delete?
-
 - Test aggregate queries and non-cohort queries from the LLM.
-  - What is the /aggregate endpoint??
 
 - Review the scout query OWUI tool implemntation.
 
@@ -532,7 +528,7 @@ it so it's not a blocker.
 
 - Update observability stack
 
--  PHI in searches.source_sql — imported CSV cohorts persist WHERE epic_mrn IN ('123',...) clear-text in Postgres. Retention/encryption decision needed.
+-  PHI in searches.sql — imported CSV cohorts persist WHERE epic_mrn IN ('123',...) clear-text in Postgres. Retention/encryption decision needed.
 
 - Test CSV Upload and Download.
 
@@ -546,11 +542,6 @@ it so it's not a blocker.
 
   Fix: add a `REPORT_VIEWER_PUBLIC_URL` env var on the service (rendered in `ansible/roles/report_viewer/templates/values.yaml.j2` from the same `report_viewer_host` already used by the ingress), have `_view_url` use it instead of `request.base_url`, drop the `public_base_url` valve from the tool. After that the tool's only URL knob is the in-cluster service URL — no naming pair to bikeshed.
 
-
-- "highlight_terms" in json for /api/searches, I thought we added a highlight_diagnosis as well to capture the ICD evidence that the LLM can use in summarization?
-
-- ""owui_chat_title": "Pulmonary Nodule CT Search"" do we care about the chat title? the title also isn;t availbe on first search creation for a particualr chat so this wouldn't be known if there is only ever one search in a chat. 
-
 - "POST /api/searches/from-file" i thought we discused sending the file to the service directly instead of OWUI parsing it? I think the logic is better handeled in the service and not in OWUI.
 
 - Why row cap in the json POST /api/reports/query:
@@ -558,11 +549,7 @@ it so it's not a blocker.
 
 - Review the Markdown summary shapping.
 
-- Remove report_viewer_test_mode!
-
 - Embed vs non-embed view -> not a big use case for non-embed, claude is putting to much into this distinciton, need to remove that notion from the code.
-
-- TODO: review sql schema
 
 - **Playwright canary for the iframe-sandbox seeding flow.**  Unit-testing `owui_webhook.py` against our own assumptions won't catch regressions in OWUI itself (table/column rename, payload-shape change, flag name change, OWUI stops `await`-ing the webhook in the OAuth callback, an admin-global default makes the seeding moot, etc.). Add a Playwright test in `tests/auth/tests/` that signs in a freshly-provisioned Keycloak user, lets the OWUI signup flow run, then either calls `GET /api/v1/users/user/settings` as that user or inspects the rendered iframe's `sandbox` attribute, and asserts `iframeSandboxAllowSameOrigin` is true. Random username per run (e.g. `iframe-seed-test-{uuid}@scout.test`) so the signup webhook actually fires every time — orphans accumulate in dev02 / CI at ~1 per OWUI version bump, tolerable without a delete hook. Add `tests/auth/helpers/owui-admin.ts` later if hygiene matters. Wire as part of the OWUI version-bump checklist (Renovate PR is the trigger per ADR 0015). Complement (not replace) with a Grafana alert on `scout_report_viewer_owui_webhook_events_total{result="error"}` — cheap and catches loud regressions; alert misses silent ones (flag rename → we write a wrong key with `result="enabled"`), which is exactly what the Playwright test plugs.
 
