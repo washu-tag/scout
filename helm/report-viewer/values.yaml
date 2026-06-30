@@ -53,8 +53,8 @@ resources:
     cpu: 100m
     memory: 256Mi
   limits:
-    cpu: 1
-    memory: 1Gi
+    cpu: 2
+    memory: 4Gi
 
 # Env vars injected as REPORT_VIEWER_* — see scout_report_viewer.config.Settings.
 # Populated by the Ansible role's values.yaml.j2 in production.

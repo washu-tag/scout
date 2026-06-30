@@ -42,8 +42,8 @@ report_viewer_resources_default:
     cpu: 100m
     memory: 256Mi
   limits:
-    cpu: 1
-    memory: 1Gi
+    cpu: 2
+    memory: 4Gi
 
 # Trino connection
 report_viewer_trino_host: 'trino.{{ trino_namespace }}'
