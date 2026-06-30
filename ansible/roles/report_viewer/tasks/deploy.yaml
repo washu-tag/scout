@@ -7,18 +7,8 @@
     fail_msg: >
       report_viewer_db_password is required. Set it in inventory.yaml
       (use Ansible Vault).
-      Example: openssl rand -hex 32 | tr -d '\n' | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+      Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
-
-# Defensive trim. `openssl rand -hex N | ansible-vault encrypt_string`
-# without `tr -d '\n'` captures the trailing newline; Postgres stores it
-# in the password (so does the DATABASE_URL), and the two never compare
-# equal through pg's auth. Strip here so a future regeneration that
-# forgets to pipe through `tr` still produces a working deploy.
-- name: Normalize report-viewer DB password
-  ansible.builtin.set_fact:
-    report_viewer_db_password: '{{ report_viewer_db_password | trim }}'
-  no_log: true
 
 - name: Create namespace
   ansible.builtin.include_role:
