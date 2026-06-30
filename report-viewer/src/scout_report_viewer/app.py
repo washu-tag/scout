@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import logging_setup, metrics, telemetry
+from . import logging_setup, metrics
 from .config import settings
 from .db import close_pool, ensure_schema
 from .routes import reports_router, searches_router, owui_webhook_router
@@ -91,10 +91,9 @@ def create_app() -> FastAPI:
             extra={"path": str(_spa_dir)},
         )
 
-    # /metrics and OTel must be installed AFTER routes so the FastAPI
-    # instrumentor sees the final route table for templated-path labels.
+    # /metrics must install AFTER routes so the FastAPI instrumentor
+    # sees the final route table for templated-path labels.
     metrics.install(app)
-    telemetry.bootstrap(app)
 
     log.info(
         "report-viewer initialized",

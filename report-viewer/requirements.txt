@@ -21,9 +21,3 @@ tzlocal<5
 python-jose[cryptography]
 prometheus-fastapi-instrumentator>=7
 prometheus-client>=0.20
-opentelemetry-api
-opentelemetry-sdk
-opentelemetry-exporter-otlp-proto-http
-opentelemetry-instrumentation-fastapi
-opentelemetry-instrumentation-httpx
-opentelemetry-instrumentation-psycopg

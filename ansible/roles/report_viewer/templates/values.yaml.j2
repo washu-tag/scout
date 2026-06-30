@@ -22,12 +22,6 @@ env:
   REPORT_VIEWER_OIDC_ISSUER: "{{ keycloak_realm_url }}"
   REPORT_VIEWER_OIDC_JWKS_URL: "{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs"
 
-{% if report_viewer_otel_endpoint | length > 0 %}
-secretEnv:
-  OTEL_EXPORTER_OTLP_ENDPOINT: "{{ report_viewer_otel_endpoint }}"
-  OTEL_SERVICE_NAME: "{{ report_viewer_otel_service_name }}"
-{% endif %}
-
 databaseUrl: "postgresql://{{ report_viewer_db_user }}:{{ report_viewer_db_password }}@{{ db_host }}:{{ db_port }}/{{ report_viewer_database }}"
 owuiDatabaseUrl: "postgresql://{{ owui_settings_writer_role }}:{{ owui_settings_writer_password }}@{{ db_host }}:{{ db_port }}/{{ open_webui_database }}"
 

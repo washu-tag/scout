@@ -37,15 +37,6 @@ dependencies = [
     # scout_report_viewer.metrics.
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
-    # OpenTelemetry — wired but inert unless OTEL_EXPORTER_OTLP_ENDPOINT
-    # is set. When Scout adds a collector (Tempo/Jaeger/OTel Collector),
-    # flipping one env var turns on traces; no code changes needed.
-    "opentelemetry-api",
-    "opentelemetry-sdk",
-    "opentelemetry-exporter-otlp-proto-http",
-    "opentelemetry-instrumentation-fastapi",
-    "opentelemetry-instrumentation-httpx",
-    "opentelemetry-instrumentation-psycopg",
 ]
 
 [project.optional-dependencies]

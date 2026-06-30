@@ -2,16 +2,13 @@
 # Report viewer service role defaults
 # User-configurable settings are in inventory.yaml
 
-# Namespace — co-locates the service with the chat surface so a single
-# NetworkPolicy can later allow OWUI tool → report-viewer traffic if we
-# decide the OWUI pod should call us in-cluster (Phase 4).
 report_viewer_namespace: '{{ chatbot_namespace }}'
 
 # Helm
 report_viewer_helm_chart_ref: '{{ scout_repo_dir }}/helm/report-viewer'
 report_viewer_helm_release_name: report-viewer
 
-# Image (override from inventory for CI/CD)
+# Image
 report_viewer_image_repository: ghcr.io/washu-tag/report-viewer
 report_viewer_image_tag: latest
 
@@ -37,12 +34,6 @@ report_viewer_test_mode_python_image: python:3.12-slim
 # Source/requirements files projected into the CM. Resolved from the
 # scout_repo_dir on the Ansible control node.
 report_viewer_src_dir: '{{ scout_repo_dir }}/report-viewer'
-
-# OpenTelemetry — leave OFF until Scout deploys a collector. When ready,
-# set report_viewer_otel_endpoint to the OTLP HTTP endpoint (e.g.
-# 'http://otel-collector.monitoring:4318') and traces start flowing.
-report_viewer_otel_endpoint: ''
-report_viewer_otel_service_name: scout-report-viewer
 
 # Replicas + resources
 report_viewer_replicas: 1
