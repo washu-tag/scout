@@ -4,8 +4,7 @@ We use `prometheus-fastapi-instrumentator` for the standard HTTP histograms
 (request count, latency, in-flight) and `prometheus-client` directly for
 the search-specific counters that the LLM-bound and viewer paths care
 about. The Scout Prometheus instance picks /metrics up via an explicit
-scrape job in `ansible/roles/prometheus/templates/values.yaml.j2`,
-gated on `enable_report_viewer` in inventory.
+scrape job in `ansible/roles/prometheus/templates/values.yaml.j2`.
 """
 
 from __future__ import annotations
