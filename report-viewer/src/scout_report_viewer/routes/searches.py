@@ -30,6 +30,7 @@ from fastapi.responses import StreamingResponse
 
 from .. import metrics, store, trino_client
 from ..auth import User, get_current_user
+from ..config import settings
 from ..ids import new_search_id
 from ..models import (
     KNOWN_ID_COLUMNS,
@@ -93,18 +94,11 @@ def _quote_literal(s: str) -> str:
 
 
 def _qualified_reports() -> str:
-    from ..config import settings
-
     return f"{settings.trino_catalog}.{settings.trino_schema}.reports_latest"
 
 
-def _view_url(request: Request, search_id: str) -> str:
-    # The OWUI tool rewrites scheme+host via its public_base_url valve
-    # (set to report-viewer.<env> so the iframe loads cross-origin to
-    # chat and resizes via postMessage). We just supply the path.
-    # `/spa/searches/{id}` is the React detail page.
-    base = str(request.base_url).rstrip("/")
-    return f"{base}/spa/searches/{search_id}"
+def _view_url(search_id: str) -> str:
+    return f"{settings.external_url.rstrip('/')}/spa/searches/{search_id}"
 
 
 def _jsonsafe(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -164,7 +158,6 @@ async def list_searches(
 )
 async def create_search(
     body: CreateSearchRequest,
-    request: Request,
     user: User = Depends(get_current_user),
 ) -> CreateSearchResponse:
     """Save a SQL query as a search. No row materialization — runs one
@@ -343,7 +336,7 @@ async def create_search(
         count=stored["count"],
         id_column=stored["id_column"],
         sample=sample,
-        view_url=_view_url(request, search_id),
+        view_url=_view_url(search_id),
         summary=summary,
     )
 
@@ -360,7 +353,6 @@ async def create_search(
 )
 async def create_search_from_file(
     body: CreateFromFileRequest,
-    request: Request,
     user: User = Depends(get_current_user),
 ) -> CreateFromFileResponse:
     """Materialize a search from a researcher-supplied ID list. The
@@ -503,7 +495,7 @@ async def create_search_from_file(
         submitted_count=submitted,
         unmatched_sample=unmatched[:50],
         unmatched_total=len(unmatched),
-        view_url=_view_url(request, search_id),
+        view_url=_view_url(search_id),
         summary="\n".join(summary_lines),
     )
 

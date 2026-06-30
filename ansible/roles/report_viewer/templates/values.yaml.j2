@@ -8,6 +8,7 @@ image:
 resources: {{ report_viewer_resources_default | combine(report_viewer_resources | default({}), recursive=true) | to_json }}
 
 env:
+  REPORT_VIEWER_EXTERNAL_URL: "https://{{ report_viewer_host }}"
   # Trino service + principal impersonation (ADR 0022).
   REPORT_VIEWER_TRINO_HOST: "{{ report_viewer_trino_host }}"
   REPORT_VIEWER_TRINO_PORT: "{{ report_viewer_trino_port }}"

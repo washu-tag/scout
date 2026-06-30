@@ -1,9 +1,8 @@
 """Smoke tests for scout_report_viewer_tool against a mocked report-viewer.
 
 We're testing the integration shape: bearer forwarding, the iframe URL
-in the response, the public_base_url override, and graceful error
-handling. Lives next to the chart's existing tests so it ships with the
-helm/open-webui-bootstrap suite.
+in the response, and graceful error handling. Lives next to the chart's
+existing tests so it ships with the helm/open-webui-bootstrap suite.
 """
 
 from __future__ import annotations
@@ -124,38 +123,6 @@ def test_search_reports_handles_400_from_service():
     assert isinstance(out, str)
     assert "no rows" in out
     assert "400" in out
-
-
-@respx.mock
-def test_public_base_url_rewrites_iframe_host():
-    respx.post(f"{SERVICE}/api/searches").mock(
-        return_value=httpx.Response(
-            201,
-            json={
-                "search_id": "s_pub",
-                "count": 1,
-                "id_column": "message_control_id",
-                "kind": "report",
-                "sample": [],
-                # Service computed this from in-cluster request host.
-                "view_url": f"{SERVICE}/spa/searches/s_pub",
-                "summary": "",
-            },
-        )
-    )
-    respx.get(f"{SERVICE}/api/searches/s_pub/summary").mock(
-        return_value=httpx.Response(
-            200, json={"search_id": "s_pub", "count": 1, "buckets": {}}
-        )
-    )
-
-    t = Tools()
-    t.valves.public_base_url = "https://report-viewer.dev02.tag.rcif.io"
-    resp = _run(t.search_reports(sql="SELECT 1"))
-    body = resp.body.decode()
-    assert "https://report-viewer.dev02.tag.rcif.io/spa/searches/s_pub" in body
-    # Must not leak the in-cluster URL.
-    assert SERVICE not in body
 
 
 @respx.mock

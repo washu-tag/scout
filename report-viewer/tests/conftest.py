@@ -8,6 +8,11 @@ test the API surface and the SQL we generate, not the live cluster.
 from __future__ import annotations
 
 import os
+
+# Settings() resolves at import — provide a placeholder for required vars
+# before the package gets loaded.
+os.environ.setdefault("REPORT_VIEWER_EXTERNAL_URL", "http://testserver")
+
 from typing import Any, Callable
 
 import pytest

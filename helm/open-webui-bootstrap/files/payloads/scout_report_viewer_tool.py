@@ -47,22 +47,12 @@ class Tools:
     """
 
     class Valves(BaseModel):
-        report_viewer_url: str = Field(
+        report_viewer_internal_url: str = Field(
             default="http://report-viewer.scout-analytics:8000",
             description=(
                 "In-cluster base URL of the report-viewer. The tool "
                 "POSTs SQL here and embeds the public `view_url` it "
                 "returns into the chat message."
-            ),
-        )
-        public_base_url: str = Field(
-            default="",
-            description=(
-                "Override the iframe's src host. Defaults to whatever the "
-                "service returns in `view_url` (which is request-host-"
-                "derived). Set this to `https://report-viewer.<env>.tag.rcif.io` "
-                "if the tool ever calls the service via an internal URL "
-                "but the iframe needs to load via the public ingress."
             ),
         )
         iframe_height_px: int = Field(default=500, ge=200, le=1200)
@@ -205,7 +195,7 @@ class Tools:
 
         search_id = created["id"]
         count = created["count"]
-        view_url = self._resolve_view_url(created["view_url"])
+        view_url = created["view_url"]
 
         await self._emit(
             __event_emitter__, f"Found {count:,} matching reports", done=True
@@ -442,7 +432,7 @@ class Tools:
             f"Validating {len(ids)} IDs from {file_model.filename}…",
             done=False,
         )
-        url = f"{self.valves.report_viewer_url.rstrip('/')}/api/searches/from-file"
+        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/searches/from-file"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -467,7 +457,7 @@ class Tools:
             )
             return f"Error: HTTP {resp.status_code} from report-viewer: {resp.text}"
         created = resp.json()
-        view_url = self._resolve_view_url(created["view_url"])
+        view_url = created["view_url"]
         await self._emit(
             __event_emitter__,
             f"Matched {created['count']:,} reports from your ID list",
@@ -550,20 +540,6 @@ class Tools:
             )
         return access
 
-    def _resolve_view_url(self, service_view_url: str) -> str:
-        """If `public_base_url` is set, swap the host so the iframe
-        loads via the public ingress regardless of which URL the
-        service computed from the request host."""
-        if not self.valves.public_base_url:
-            return service_view_url
-        # service_view_url looks like 'http://report-viewer/spa/searches/s_xxx'
-        # Replace the scheme+host with the public base.
-        try:
-            path = service_view_url.split("/", 3)[-1]
-        except Exception:
-            return service_view_url
-        return f"{self.valves.public_base_url.rstrip('/')}/{path}"
-
     async def _post_read(
         self,
         *,
@@ -574,7 +550,7 @@ class Tools:
         """POST /api/reports/read — direct fetch by id (the
         scout_get_reports backend). Returns `{columns, rows}` with the
         full report content."""
-        url = f"{self.valves.report_viewer_url.rstrip('/')}/api/reports/read"
+        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/reports/read"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -591,7 +567,7 @@ class Tools:
         *,
         bearer: Optional[str],
     ) -> dict:
-        url = f"{self.valves.report_viewer_url.rstrip('/')}/api/reports/query"
+        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/reports/query"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -644,7 +620,7 @@ class Tools:
         llm_context_rows: Optional[int] = None,
         owui_chat_id: Optional[str] = None,
     ) -> dict:
-        url = f"{self.valves.report_viewer_url.rstrip('/')}/api/searches"
+        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/searches"
         headers = {"Content-Type": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
@@ -669,7 +645,7 @@ class Tools:
         self, search_id: str, *, page: int, limit: int, bearer: Optional[str]
     ) -> dict:
         url = (
-            f"{self.valves.report_viewer_url.rstrip('/')}/api/searches/{search_id}"
+            f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/searches/{search_id}"
             f"/rows?page={page}&limit={limit}"
         )
         headers = {"Authorization": f"Bearer {bearer}"} if bearer else {}

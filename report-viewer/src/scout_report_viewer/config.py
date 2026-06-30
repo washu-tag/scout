@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     port: int = 8000
     log_level: str = "info"
 
+    external_url: str
+
     # Postgres
     database_url: str = (
         "postgresql://report_viewer:report_viewer@localhost:5432/report_viewer"
