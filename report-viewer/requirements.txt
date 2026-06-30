@@ -1,10 +1,5 @@
-# Runtime dependencies for the test-mode source-mount initContainer.
-# Keep in sync with `[project.dependencies]` in pyproject.toml — the
-# normal Dockerfile path uses `pip install .` which reads pyproject
-# directly; the source-mount path needs a flat list here because the
-# init container pip-installs into a shared emptyDir before the project
-# itself is installed.
-# Pin below 0.137 — see pyproject.toml note on prometheus-fastapi-instrumentator incompat.
+# Mirror of pyproject.toml deps for the test-mode source-mount init container.
+# tzlocal<5 is the one divergence: 5.x wheels don't package under `pip --target`.
 fastapi<0.137
 uvicorn[standard]
 httpx
@@ -12,11 +7,6 @@ psycopg[binary,pool]
 pydantic>=2
 pydantic-settings>=2
 trino
-# trino-python-client 0.337+ imports tzlocal but doesn't declare it as a
-# required dep — packaging bug. Pin to <5 because the 5.x wheels lose
-# their package contents when pip --target runs twice into the same dir
-# (init container installs requirements then the project), leaving only
-# the .dist-info behind. 4.3.x packages cleanly under --target.
 tzlocal<5
 python-jose[cryptography]
 prometheus-fastapi-instrumentator>=7
