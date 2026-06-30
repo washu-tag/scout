@@ -15,9 +15,7 @@ function rowStyle(): React.CSSProperties {
   };
 }
 
-// Build an OWUI chat URL. The SPA is always served from report-viewer.<env>/spa/...
-// (iframe embed and standalone admin view share the host now); swap the
-// leading "report-viewer." for "chat." to land on the chat origin.
+// Swap the leading "report-viewer." for "chat." to reach the chat origin.
 function chatUrl(chatId: string): string {
   const host = window.location.host;
   const chatHost = host.startsWith('report-viewer.')
@@ -26,10 +24,7 @@ function chatUrl(chatId: string): string {
   return `${window.location.protocol}//${chatHost}/c/${encodeURIComponent(chatId)}`;
 }
 
-// Group searches by their owui_chat_id. Within each group rows are
-// already in newest-first order from the backend's ORDER BY created_at
-// DESC. Legacy searches (no chat_id) fall into an "ungrouped" bucket
-// so the user can still find them.
+// Group searches by owui_chat_id; rows with no chat_id go into "ungrouped".
 function groupByChat(searches: SearchMeta[]): Array<{ chatId: string; items: SearchMeta[] }> {
   const seen = new Map<string, SearchMeta[]>();
   for (const d of searches) {

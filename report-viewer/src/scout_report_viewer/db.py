@@ -1,10 +1,4 @@
-"""Postgres access - psycopg3 connection pool + the searches schema.
-
-We use raw SQL via psycopg rather than SQLAlchemy + Alembic for Phase 1.
-The schema is small enough that an idempotent `ensure_schema()` at startup
-is simpler than carrying migration tooling. If/when columns start changing,
-swap to Alembic.
-"""
+"""Postgres access - psycopg3 connection pool + the searches schema."""
 
 from __future__ import annotations
 

@@ -29,12 +29,7 @@ dependencies = [
     # trino-python-client 0.337+ imports tzlocal but doesn't declare it
     # as required - packaging bug. Listed explicitly so installs work.
     "tzlocal",
-    # Phase 2 - Keycloak JWT validation. Listed now so dev iteration in
-    # Phase 0/1 doesn't need a second `pip install` round when auth lands.
     "python-jose[cryptography]",
-    # Prometheus metrics - instrumentator wires standard HTTP histograms
-    # at /metrics; prometheus-client provides the custom counters in
-    # scout_report_viewer.metrics.
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
 ]

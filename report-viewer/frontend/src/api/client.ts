@@ -2,8 +2,8 @@
 // the FastAPI backend (via the /spa/ StaticFiles mount), so absolute URLs
 // like /api/searches resolve correctly and the oauth2-proxy session
 // cookie rides along automatically (credentials: 'same-origin' is the
-// default). No bearer plumbing is needed in V1 - auth.py's Path 2 picks
-// up the oauth2-proxy headers injected at the ingress.
+// default). The backend reads identity from the oauth2-proxy headers
+// Traefik injects at the ingress, so no bearer plumbing is needed here.
 
 export class ApiError extends Error {
   status: number;

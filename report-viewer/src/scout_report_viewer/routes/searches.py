@@ -1,4 +1,4 @@
-"""HTTP routes for `/api/searches` (V1.1 - just-in-time SQL evaluation).
+"""HTTP routes for `/api/searches`.
 
 A search is a saved SQL query plus minimal metadata. Nothing about
 which rows match is stored. Every read wraps `sql` as a
@@ -183,10 +183,6 @@ async def create_search(
 
     id_column = _pick_id_column(columns, body.id_column)
 
-    # Cached COUNT(*) - separate Trino call. Cheap on top of the
-    # sample query because Trino caches the inner subquery's predicate
-    # execution between same-session calls of the same shape (and
-    # because the optimizer recognizes COUNT-only subquery patterns).
     count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
     try:
         with metrics.time_trino("create_count_query"):
@@ -886,9 +882,7 @@ def _build_summary(
                         v = v[:137] + "…"
                     cells.append(v)
                 parts.append("| " + " | ".join(cells) + " |")
-        # Snippet + positive_dx feedback lives on the sample rows
-        # themselves (attached by the create flow) - surface them
-        # alongside the table so the LLM sees per-row evidence.
+        # Surface per-row evidence (snippet + positive_dx) alongside the table for the LLM.
         snippet_lines = []
         for i, r in enumerate(sample_rows):
             evidence = []

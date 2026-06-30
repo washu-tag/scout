@@ -113,10 +113,6 @@ def test_export_csv_streams_with_header_and_rows(client, auth_headers, fake_trin
 
 
 def test_export_csv_empty_search_returns_header_only(client, auth_headers, fake_trino):
-    # We can't actually have an empty search (POST rejects), but a
-    # subsequent refine that strips it to 0 rows would. Simulate via
-    # direct store insert in the future. For now: verify the generator
-    # handles the empty id_list gracefully - only the header line.
     fake_trino(["message_control_id"], [{"message_control_id": "only"}])
     dsid = client.post(
         "/api/searches",

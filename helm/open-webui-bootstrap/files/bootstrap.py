@@ -66,11 +66,7 @@ BOOTSTRAP_PASSWORD = os.environ["BOOTSTRAP_PASSWORD"]
 def http(method, path, body=None, token=None):
     """Call OWUI and return (status_code, response_body_text)."""
     url = f"{OWUI_BASE}{path}"
-    # urllib.urlopen accepts file://, ftp://, etc. by default. OWUI_BASE comes
-    # from chart values (always http://open-webui:80 in Scout) and `path` is
-    # hardcoded below - so this is defense in depth, not a real attack surface,
-    # but the allowlist makes the intent explicit and quiets static-analysis
-    # warnings about urllib + dynamic URLs.
+    # urllib.urlopen accepts file://, ftp://, etc. by default; allowlist HTTP(S) only.
     if not url.startswith(("http://", "https://")):
         raise ValueError(f"Refusing to call non-HTTP(S) URL: {url}")
     headers = {"Content-Type": "application/json"}
@@ -244,8 +240,6 @@ def push_persistent_config(token):
 def push_filter_functions(token):
     for fn in load_config("filters.json") or []:
         fn_id = fn["id"]
-        # Inventory-overridable, so encode for safety even though current entries
-        # (link_sanitizer_filter, etc.) are all URL-safe. Matches push_models.
         fn_id_q = urllib.parse.quote(fn_id, safe="")
         payload = {
             "id": fn_id,
@@ -272,7 +266,6 @@ def push_filter_functions(token):
                 token,
             )
 
-        # Toggles - GET current, only flip when state differs.
         current = json.loads(
             http_or_raise("GET", f"/api/v1/functions/id/{fn_id_q}", token=token)
         )

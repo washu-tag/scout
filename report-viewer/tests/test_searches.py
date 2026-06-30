@@ -112,7 +112,6 @@ def test_get_meta_returns_404_for_other_user(client, auth_headers, fake_trino):
 
 
 def test_get_rows_paginates_in_id_list_order(client, auth_headers, fake_trino):
-    # Materialize with 5 IDs.
     fake_trino(
         ["message_control_id"],
         [{"message_control_id": f"m{i}"} for i in range(5)],
@@ -124,8 +123,7 @@ def test_get_rows_paginates_in_id_list_order(client, auth_headers, fake_trino):
     )
     dsid = r.json()["search_id"]
 
-    # Page 1 limit 2 - Trino returns the rows in reverse order; the route
-    # is supposed to re-sort to match the materialized order.
+    # Trino returns rows in reverse order; the route must re-sort to materialized order.
     fake_trino(
         ["message_control_id", "modality"],
         [
@@ -150,7 +148,6 @@ def test_get_rows_returns_empty_past_end(client, auth_headers, fake_trino):
         headers=auth_headers,
     ).json()["search_id"]
 
-    # No fake_trino enqueue - the route must short-circuit before calling Trino.
     r = client.get(f"/api/searches/{dsid}/rows?page=99&limit=10", headers=auth_headers)
     assert r.status_code == 200
     assert r.json()["rows"] == []

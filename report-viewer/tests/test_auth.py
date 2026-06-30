@@ -11,9 +11,7 @@ def test_unauthenticated_create_returns_401():
 
 def test_oauth2_proxy_header_authenticates():
     with TestClient(create_app()) as client:
-        # No fake_trino enqueue → the route should reach Trino and 400
-        # the empty-result path, NOT 401. Either outcome other than 401
-        # proves the username header authenticated us.
+        # Any non-401 response proves the username header authenticated us.
         r = client.post(
             "/api/searches",
             json={"sql": "SELECT 1"},

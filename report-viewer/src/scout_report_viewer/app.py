@@ -75,13 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(reports_router)
     app.include_router(owui_webhook_router)
 
-    # SPA static files. Vite builds frontend/ into src/scout_report_viewer/static/;
-    # pip install carries those files alongside the Python code. JSON/RPC
-    # endpoints all live under /api/, the SPA shell mounts under /spa/, so
-    # the two never collide. The SPA's client-side router (basename=/spa)
-    # takes over once /spa/index.html loads. html=True lets unmapped
-    # /spa/* paths fall back to index.html so client-side route refreshes
-    # work.
+    # html=True falls unmapped /spa/* back to index.html so SPA-router refreshes work.
     _spa_dir = Path(__file__).parent / "static"
     if _spa_dir.is_dir():
         app.mount("/spa", SpaStaticFiles(directory=_spa_dir, html=True), name="spa")

@@ -35,11 +35,10 @@ ingress:
   host: ''
   tls: []
 
-# Restrict ingress to Traefik only. The Authorization-bearer trust model
-# (Phase 2) expects in-cluster callers to be (a) Traefik forwarding an
-# end-user JWT, or (b) the OWUI tool pod forwarding the same JWT. Direct
-# in-cluster reachability would let any pod craft a forged bearer.
-# Defence-in-depth (label-based, not cryptographic).
+# Restrict ingress to Traefik only. In-cluster callers must be either
+# Traefik forwarding an end-user JWT, or the OWUI tool pod forwarding
+# the same JWT. Direct pod-to-pod reachability would let any pod craft
+# a forged bearer. Defence-in-depth (label-based, not cryptographic).
 networkPolicy:
   enabled: true
   traefikNamespace: kube-system
