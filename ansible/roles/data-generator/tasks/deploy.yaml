@@ -1,0 +1,41 @@
+---
+- name: Create data-generator namespace
+  kubernetes.core.k8s:
+    name: '{{ data_generator_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Deploy data-generator
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: data-generator
+    helm_chart_ref: '{{ data_generator_helm_chart_ref }}'
+    helm_chart_namespace: '{{ data_generator_namespace }}'
+    helm_chart_values_files:
+      - '{{ scout_repo_dir }}/helm/data-generator/values.yaml'
+    helm_chart_values:
+      replicaCount: '{{ data_generator_replicas }}'
+      image:
+        repository: '{{ data_generator_image_repository }}'
+        tag: '{{ data_generator_image_tag }}'
+        pullPolicy: '{{ data_generator_pull_policy }}'
+      resources: '{{ data_generator_resources_default | combine(data_generator_resources | default({}), recursive=true) }}'
+      volumes:
+        - name: data
+          hostPath:
+            path: '{{ data_generator_workspace }}'
+        - name: output
+          hostPath:
+            path: '{{ data_generator_output }}'
+      config:
+        application:
+          spring:
+            temporal:
+              connection:
+                target: 'temporal-internal-frontend.{{ scout_extractor_namespace }}:7236'
+      env:
+        secrets: '{{ data_generator_secrets }}'
+      javaToolOptions: '{{ data_generator_java_tool_opts }}'

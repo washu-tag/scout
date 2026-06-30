@@ -16,6 +16,10 @@ scoutEnv: ''
 # footer copyright line. Empty string hides the copyright line.
 deployerName: ''
 
+# Base URL for Scout documentation links (no trailing slash). Empty string
+# falls back to the latest published docs.
+docsUrl: ''
+
 image:
   repository: ghcr.io/washu-tag/launchpad
   tag: latest
@@ -131,6 +135,9 @@ auth:
     issuer: 'https://keycloak.example.com/auth/realms/scout'
   nextAuthUrl: 'https://launchpad.example.com'
   nextAuthSecret: 'changeme'
+  # next-auth session lifetime (seconds). Must match the Keycloak SSO session
+  # lifetime so the cookie can't outlive the refresh token it carries (8h).
+  sessionMaxAge: 28800
   oauth2ProxySignOutUrl: 'https://launchpad.example.com/oauth2/sign_out'
 
 # Additional environment variables

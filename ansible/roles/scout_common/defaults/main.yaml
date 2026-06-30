@@ -26,6 +26,18 @@ helm_chart_values_files: []
 scout_notebook_image_name: ghcr.io/washu-tag/scout-notebook
 scout_notebook_image_tag: latest
 
+# Docs base URL as hardcoded in repo files (quickstart samples, OAuth2 Proxy
+# html); deploy tasks rewrite it to scout_docs_url. Not a knob — change only
+# if the links in those files change.
+scout_docs_latest_url: https://washu-scout.readthedocs.io/en/latest
+
+# Base URL for Scout user documentation links surfaced in deployed services
+# (Launchpad, OAuth2 Proxy error page, JupyterHub spawn page, quickstart
+# notebooks). No trailing slash. Override in inventory to pin users to the
+# docs for a released version, e.g.
+#   scout_docs_url: https://washu-scout.readthedocs.io/en/v4.0.0
+scout_docs_url: '{{ scout_docs_latest_url }}'
+
 # Kubernetes configuration
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 air_gapped: false
@@ -121,6 +133,10 @@ minio_tenant_name: scout
 hive_namespace: '{{ scout_data_namespace }}'
 dcm4chee_namespace: '{{ scout_data_namespace }}'
 orthanc_namespace: '{{ scout_data_namespace }}'
+data_generator_namespace: '{{ scout_data_namespace }}'
+
+# XNAT runs in its own namespace (independent of the consolidated scout_* namespaces)
+xnat_namespace: xnat
 
 # Extractor & workflow orchestration
 extractor_namespace: '{{ scout_extractor_namespace }}'
@@ -173,6 +189,7 @@ keycloak_temporal_client_id: temporal
 keycloak_minio_client_id: minio
 keycloak_launchpad_client_id: launchpad
 keycloak_open_webui_client_id: open-webui
+keycloak_xnat_client_id: xnat
 
 # OAuth callback URLs for each client
 open_webui_callback_url: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'
@@ -266,6 +283,119 @@ keycloak_subdomain: keycloak
 enable_chat: false
 enable_playbooks: false
 
+# When false, nothing XNAT is created (no namespace/deploy; the Keycloak realm
+# omits the xnat client + xnat-access role). keycloak_xnat_client_secret is only
+# required when true.
+# NOTE: toggling this off deletes the xnat client on the next auth deploy,
+# orphaning provisioned XNAT users.
+enable_xnat: false
+
+# --- XNAT plugins (shared) -------------------------------------------------
+# Defined here in scout_common, NOT the xnat role, because the staging Nexus
+# role derives its Maven proxy members from these (air-gapped resolution) and
+# the staging host doesn't load xnat-role defaults. enable_xnat (above) gates
+# whether any of it is used.
+#
+# The required openid plugin. Operators ADD their own via `xnat_plugins` — set
+# in all.vars so the staging host sees them too (same reason as enable_xnat).
+# xnat_plugins_all combines the two so the openid entry is never repeated or
+# accidentally dropped.
+#
+# Per-plugin shape:
+#   name:    str  - init-container name + Secret name suffix
+#   target:  str  - filename written into the plugins dir
+#   source:
+#     type: file | url | coordinates | image
+#     # file:        secret: {name, key, from_file}   (from_file = jar path on control node)
+#     # url:         url: https://...
+#     # coordinates: coordinates: <Maven -Dartifact coord>  groupId:artifactId:version[:packaging[:classifier]]
+#     #              repo_url: <repo the artifact lives in>  (OPTIONAL; omit for Maven Central)
+#     #              When set, the deploy mounts a settings.xml pointing Maven at it; when
+#     #              air-gapped, all resolution is mirrored through the Nexus group instead
+#     #              (maven_proxy_url), regardless of repo_url. So set repo_url only for
+#     #              artifacts not on Central (e.g. XNAT plugins published to jfrog).
+#     #              snapshots: bool (default false) - opt this repo_url into -SNAPSHOT
+#     #              resolution. Default is release-only; setting it true enables snapshots
+#     #              for that repo in settings.xml AND (air-gapped) makes its Nexus proxy
+#     #              versionPolicy MIXED. Maven Central never hosts snapshots, so this only
+#     #              applies to repos you name via repo_url.
+#     # image:       repository, tag                       (chart-native plugins: map)
+#   skip_logback_rewrite: bool (default false)
+#   config: list of property files, each:
+#     mechanism: authplugins | file | extraConfig
+#     # authplugins: provider, entry (-> Secret xnat-plugin-<entry>), properties{}
+#     # file:        dest (path under /data/xnat/home/), properties{}
+#     # extraConfig: properties{} merged into xnat-conf.properties
+xnat_plugins_default:
+  - name: openid
+    target: openid-auth-plugin.jar
+    source:
+      type: coordinates
+      # Maven -Dartifact format: groupId:artifactId:version:packaging:classifier
+      # (the -xpl.jar is a 'jar' with classifier 'xpl', not packaging 'xpl').
+      # Version pinned in group_vars/all/versions.yaml (Renovate-monitored).
+      coordinates: 'au.edu.qcif.xnat.openid:openid-auth-plugin:{{ xnat_openid_plugin_version }}:jar:xpl'
+      # Published only to the NrgXnat Artifactory (never on Maven Central), so the
+      # repo must be named. Air-gapped deploys resolve via the Nexus group instead.
+      repo_url: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
+    skip_logback_rewrite: false
+    config:
+      - mechanism: authplugins
+        provider: openid
+        entry: keycloak
+        properties:
+          auth.method: openid
+          type: openid
+          provider.id: keycloak
+          name: Scout SSO
+          auto.enabled: 'true'
+          auto.verified: 'true'
+          siteUrl: 'https://xnat.{{ server_hostname }}'
+          preEstablishedRedirUri: /openid-login
+          openid.keycloak.clientId: '{{ keycloak_xnat_client_id }}'
+          openid.keycloak.clientSecret: '{{ keycloak_xnat_client_secret }}'
+          openid.keycloak.accessTokenUri: '{{ keycloak_realm_url }}/protocol/openid-connect/token'
+          openid.keycloak.userAuthUri: '{{ keycloak_realm_url }}/protocol/openid-connect/auth'
+          openid.keycloak.userInfoUri: '{{ keycloak_realm_url }}/protocol/openid-connect/userinfo'
+          openid.keycloak.scopes: openid,profile,email
+          openid.keycloak.shouldFilterEmailDomains: 'false'
+          openid.keycloak.forceUserCreate: 'true'
+          openid.keycloak.emailProperty: email
+          openid.keycloak.givenNameProperty: given_name
+          openid.keycloak.familyNameProperty: family_name
+          openid.keycloak.pkceEnabled: 'true'
+          openid.keycloak.usernamePattern: '[preferred_username]'
+          openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
+
+# Combined list the xnat role's templates/tasks iterate. xnat_plugins is
+# operator-supplied (defaulted to [] inline here).
+xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'
+
+# Distinct repo URLs for coordinate-resolved plugins. Consumed by the xnat role
+# (settings.xml) and the Nexus role (proxy members, air-gapped). Projects ONLY
+# source.repo_url, so resolving it on the staging host never templates the
+# plugins' config blocks (which carry prod-only secret refs like the keycloak
+# client secret) — this relies on Ansible's lazy attribute templating.
+xnat_coordinate_repo_urls: >-
+  {{ xnat_plugins_all
+     | selectattr('source.type', 'equalto', 'coordinates')
+     | map(attribute='source.repo_url', default='')
+     | reject('equalto', '') | unique | list }}
+
+# Subset of the above whose plugins opted into snapshots (source.snapshots true).
+# The xnat role enables snapshots for these repos in settings.xml; the Nexus role
+# sets their proxy versionPolicy to MIXED. Same lazy-projection rationale as
+# above (touches only source.*, never config).
+xnat_snapshot_repo_urls: >-
+  {{ xnat_plugins_all
+     | selectattr('source.type', 'equalto', 'coordinates')
+     | selectattr('source.snapshots', 'defined')
+     | selectattr('source.snapshots')
+     | map(attribute='source.repo_url', default='')
+     | reject('equalto', '') | unique | list }}
+
+enable_data_generator: false
+
 # Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
 # Jupyter singleuser) or are cluster-wide storage layers that span every
 # node by design (MinIO pool). With this on, the GPU node gets
@@ -337,6 +467,13 @@ yum_proxy_base_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository')
      if package_proxy_mode == 'nexus'
      else '' }}
+# Maven proxy URL for resolving plugin coordinates (xnat role). Points at the
+# Nexus scout-maven group when proxying, empty otherwise (like the other
+# *_proxy_url values); when set, rendered as a mirror in the xnat settings.xml.
+maven_proxy_url: >-
+  {{ ('https://' ~ nexus_host ~ '/repository/scout-maven')
+     if package_proxy_mode == 'nexus'
+     else '' }}
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
 s3_endpoint: "{{ aws_deployment | ternary('', 'http://minio.' ~ minio_tenant_namespace) }}"
 hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'
@@ -363,6 +500,14 @@ keycloak_wellknown_url: '{{ keycloak_realm_url }}/.well-known/openid-configurati
 # auth_refresh_age) can compute from the same value. Service principals get
 # their own longer client-level lifespans (ADR 0022) and are unaffected.
 keycloak_access_token_lifespan: 300
+
+# Realm-level SSO session lifetime (seconds). Drives the realm's
+# ssoSessionIdleTimeout + ssoSessionMaxLifespan, and caps the launchpad next-auth
+# session (NEXTAUTH_SESSION_MAX_AGE) so that app cookie can't outlive the Keycloak
+# refresh token it carries. Should match oauth2_proxy_cookie_expire (the ingress
+# session) — both are the Scout-wide 8h session. Shared here (not in the keycloak
+# role) so the launchpad role can reference the same single value.
+keycloak_token_lifespan: 28800
 
 # Internal Keycloak URL for in-cluster service-to-service token minting
 # (e.g. Superset/Voila minting a *_svc client_credentials JWT for Trino).

@@ -55,3 +55,11 @@
 
 - name: Install Launchpad
   import_playbook: launchpad.yaml
+
+# Optional, self-gated on enable_xnat (no-op when disabled). Sequenced after
+# auth — XNAT relies on the Keycloak xnat client and oauth2-proxy.
+- name: Install XNAT
+  import_playbook: xnat.yaml
+
+- name: Install data-generator
+  import_playbook: data_generator.yaml

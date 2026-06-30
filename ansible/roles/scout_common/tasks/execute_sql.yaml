@@ -1,15 +1,22 @@
-- name: Configure DB variables
-  ansible.builtin.set_fact:
-    db_connect_name: "{{ db_connect_name | default('postgres', true) }}"
-    db_connect_user: "{{ db_connect_user | default('postgres', true) }}"
-    db_connect_pass: '{{ db_connect_pass | default(postgres_superuser_password, true) }}'
-    db_connect_sslmode: "{{ db_connect_sslmode | default('require', true) }}"
-    maintenance_namespace: '{{ scout_core_namespace }}'
-
+# Resolve the target database for THIS invocation only. We deliberately do NOT
+# set_fact the caller-supplied inputs (sql_dbname / db_connect_*) back onto
+# themselves: set_fact persists as a host fact for the rest of the play, so a
+# self-referential default would leak one role's connection target into every
+# later execute_sql call. (That leak previously let open-webui's ALTER SCHEMA
+# run against the hive database.) Instead we derive everything below into
+# distinct psql_* facts, applying defaults inline so each call starts clean.
 - name: Configure DB derived variables
   ansible.builtin.set_fact:
-    psql_connection: 'host={{ db_host }} port={{ db_port }} dbname={{ db_connect_name }} user={{ db_connect_user }} sslmode={{ db_connect_sslmode }}'
-    psql_job_name: "psql-{{ (db_connect_name | lower | regex_replace('[^a-z0-9-]', '-') | regex_replace('^-+', '') | regex_replace('-+$', '')) | default('db', true) }}-{{ lookup('pipe', 'date +%s') }}"
+    psql_dbname: "{{ sql_dbname | default('postgres', true) }}"
+    psql_user: "{{ db_connect_user | default('postgres', true) }}"
+    psql_pass: '{{ db_connect_pass | default(postgres_superuser_password, true) }}'
+    psql_sslmode: "{{ db_connect_sslmode | default('require', true) }}"
+    maintenance_namespace: '{{ scout_core_namespace }}'
+
+- name: Configure DB connection string
+  ansible.builtin.set_fact:
+    psql_connection: 'host={{ db_host }} port={{ db_port }} dbname={{ psql_dbname }} user={{ psql_user }} sslmode={{ psql_sslmode }}'
+    psql_job_name: "psql-{{ (psql_dbname | lower | regex_replace('[^a-z0-9-]', '-') | regex_replace('^-+', '') | regex_replace('-+$', '')) | default('db', true) }}-{{ lookup('pipe', 'date +%s') }}"
 
 - name: Verify SQL script input
   ansible.builtin.assert:
@@ -51,7 +58,7 @@
                 image: postgres:16
                 env:
                   - name: PGPASSWORD
-                    value: '{{ db_connect_pass }}'
+                    value: '{{ psql_pass }}'
                 command:
                   - sh
                   - -lc

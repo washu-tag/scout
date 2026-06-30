@@ -8,6 +8,8 @@
       register: oauth2_proxy_templates
       delegate_to: localhost
 
+    # The html files are Go templates rendered by oauth2-proxy, so they can't
+    # go through Jinja; rewrite their docs links to scout_docs_url instead.
     - name: Create ConfigMap for OAuth2 Proxy templates
       delegate_to: localhost
       no_log: true
@@ -21,7 +23,7 @@
             namespace: {{ oauth2_proxy_namespace }}
           data:
             '{{ item.path | basename }}': |-
-              {{ lookup("file", item.path) | indent(4) }}
+              {{ lookup("file", item.path) | replace(scout_docs_latest_url, scout_docs_url) | indent(4) }}
         kubeconfig: '{{ local_kubeconfig_yaml }}'
       loop: '{{ oauth2_proxy_templates.files }}'
       loop_control:

@@ -27,13 +27,21 @@ def checkstyleVersion = "13.4.2"
 // (CVE-2026-42198, HIGH: pgjdbc SCRAM PBKDF2 DoS).
 ext['postgresql.version'] = '42.7.11'
 
-// TODO: Remove once Spring Boot manages netty >= 4.2.13.Final.
+// TODO: Remove once Spring Boot manages netty >= 4.2.15.Final.
 // Overrides the Spring Boot BOM's pinned 4.2.12.Final to address
-// CVE-2026-42577 (epoll, 4.2.x only), CVE-2026-42579, CVE-2026-42583,
-// CVE-2026-42584, and CVE-2026-42587 (all HIGH) across netty-codec,
-// netty-codec-http, netty-codec-http2, netty-codec-dns, and
-// netty-transport-native-epoll.
-ext['netty.version'] = '4.2.13.Final'
+// CVE-2026-44249, CVE-2026-44892, CVE-2026-44894, CVE-2026-45416,
+// CVE-2026-45674, and CVE-2026-47691 (all HIGH) across netty-handler,
+// netty-codec-http3, netty-codec-classes-quic, and netty-resolver-dns,
+// plus the earlier 4.2.13 batch (CVE-2026-42577 through -42587).
+ext['netty.version'] = '4.2.15.Final'
+
+// TODO: Remove once Spring Boot manages jackson-databind >= 2.21.4 / 3.1.4.
+// Overrides the Spring Boot BOM's pinned Jackson lines to address
+// CVE-2026-54512 and CVE-2026-54513 (HIGH) in jackson-databind. Spring Boot 4
+// carries both Jackson 2 (com.fasterxml, jackson-2-bom) and Jackson 3
+// (tools.jackson, jackson-bom).
+ext['jackson-2-bom.version'] = '2.21.4'
+ext['jackson-bom.version'] = '3.1.4'
 
 // TODO: Remove once Temporal ships a release that brings opentelemetry >= 1.62.0.
 // Pins the io.opentelemetry:* family (transitively from temporal-sdk) to 1.62.0

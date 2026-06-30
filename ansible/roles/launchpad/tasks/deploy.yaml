@@ -21,6 +21,7 @@
       enablePlaybooks: '{{ enable_playbooks }}'
       scoutEnv: '{{ scout_env }}'
       deployerName: '{{ deployer_name }}'
+      docsUrl: '{{ scout_docs_url }}'
       image:
         repository: '{{ launchpad_image_repository }}'
         tag: '{{ launchpad_image_tag }}'
@@ -33,6 +34,7 @@
           issuer: '{{ keycloak_realm_url }}'
         nextAuthUrl: 'https://{{ server_hostname }}/api/auth'
         nextAuthSecret: '{{ launchpad_nextauth_secret }}'
+        sessionMaxAge: '{{ keycloak_token_lifespan }}'
         oauth2ProxySignOutUrl: '{{ oauth2_proxy_signout_url }}'
       ingress:
         enabled: true

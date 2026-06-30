@@ -60,9 +60,11 @@ export default function UserDropdown() {
               // First sign out from NextAuth
               await signOut({ redirect: false });
 
-              // Get the OAuth2 sign out URL from the API
+              // Then get the oauth2-proxy sign-out URL (a non-/api/auth route so it
+              // doesn't shadow next-auth's /api/auth/signout, which the signOut()
+              // above needs in order to clear the httpOnly session cookie).
               try {
-                const response = await fetch('/api/auth/signout', {
+                const response = await fetch('/api/signout', {
                   method: 'POST',
                 });
                 const data = await response.json();

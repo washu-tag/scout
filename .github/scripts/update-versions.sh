@@ -88,6 +88,11 @@ update_file "ansible/roles/launchpad/defaults/main.yaml" \
     "\\1 $DOCKER_TAG" \
     "launchpad_image_tag"
 
+update_file "ansible/roles/xnat/defaults/main.yaml" \
+    "^(xnat_plugin_installer_image_tag:) .+$" \
+    "\\1 $DOCKER_TAG" \
+    "xnat_plugin_installer_image_tag"
+
 echo ""
 echo "Python package..."
 update_file "extractor/hl7-transformer/pyproject.toml" \
@@ -185,6 +190,9 @@ echo ""
 echo "VERSION files..."
 echo "$DOCKER_TAG" > "helm/scout-notebook/VERSION"
 echo "  - VERSION file: helm/scout-notebook/VERSION"
+
+echo "$DOCKER_TAG" > "docker/xnat-plugin-installer/VERSION"
+echo "  - VERSION file: docker/xnat-plugin-installer/VERSION"
 
 echo ""
 echo "Version update complete!"

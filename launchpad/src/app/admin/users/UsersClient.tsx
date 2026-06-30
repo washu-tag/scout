@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import TopBar from '@/components/TopBar';
 import Brand from '@/components/Brand';
@@ -199,16 +199,28 @@ function seedValues(user: Row, schema: AttrSchema[]): Record<string, string[]> {
   return init;
 }
 
-// A 401 from the /api/users proxy means the SSO session backing our refresh
-// token is gone (Keycloak redeploy, a logout elsewhere, idle/max timeout), so
-// the proxy couldn't mint a token — distinct from a 403, which is a genuine
-// "not scout-admin". Throw a sentinel so callers prompt re-login instead of
-// surfacing the misleading authz message.
+// The /api/users proxy signals a dead session with 440 (it avoids 401, which the
+// oauth2-proxy ingress rewrites into its sign-in page — see the proxy route). A
+// 401 here instead means the ingress itself denied us. Either way the SSO session
+// backing our refresh token is gone (Keycloak redeploy, logout elsewhere, idle/max
+// timeout) — distinct from a 403, a genuine "not scout-admin". Throw a sentinel so
+// callers trigger recovery instead of surfacing the misleading authz message.
 const SESSION_EXPIRED = 'SESSION_EXPIRED';
+
+// One-shot guard (in sessionStorage so it survives the re-auth redirect) that
+// caps the silent re-login in recoverFromExpiry to one attempt per page load.
+// Cleared the moment any request succeeds — a returned response means the proxy
+// minted a token, so the refresh token is alive again.
+const REAUTH_GUARD = 'scoutUsersReauthAttempted';
 
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const r = await fetch(path, init);
-  if (r.status === 401) throw new Error(SESSION_EXPIRED);
+  // 440: the proxy's app-level "re-authenticate" signal (refresh token dead or no
+  // session), chosen to slip past the oauth2-proxy-error middleware that rewrites
+  // 401s into the sign-in page. 401: the ingress itself denied us (oauth2-proxy
+  // session gone) — same recovery either way.
+  if (r.status === 440 || r.status === 401) throw new Error(SESSION_EXPIRED);
+  if (typeof window !== 'undefined') sessionStorage.removeItem(REAUTH_GUARD);
   return r;
 }
 
@@ -667,7 +679,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'admin', label: 'Admins' },
 ];
 
-export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
+export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; docsUrl: string }) {
   const { data: session, status } = useSession();
   const environment = scoutEnv ?? 'local';
   const [schema, setSchema] = useState<AttrSchema[]>([]);
@@ -694,6 +706,34 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
 
   const isAdmin = !!session?.user?.isAdmin;
 
+  // True once a re-auth redirect is kicked off this page load. The panel fires
+  // several /api/users calls at once (schema + rows), so multiple can 440
+  // together; only the first should start the redirect and the rest must no-op —
+  // otherwise the second trips the cross-load guard below and flashes the
+  // "session expired" banner for the moment before signIn() navigates away.
+  const recoveringRef = useRef(false);
+
+  // The session is dead (proxy 440/401) but our next-auth cookie is still present
+  // — a stale refresh token (e.g. signed out elsewhere, killing the SSO but not
+  // this cookie) or one that briefly outlived its SSO — so the no-session
+  // auto-login below won't fire. Re-mint via signIn(): with the 8h cookie cap, the
+  // original all-expired case is handled by cookie expiry + that auto-login, so
+  // whenever THIS path is reachable the oauth2-proxy session is still alive (you
+  // loaded the SPA through it). Keycloak then re-issues silently and the fresh
+  // refresh token replaces the dead one — no manual "Sign in again" step.
+  const recoverFromExpiry = useCallback(() => {
+    if (recoveringRef.current) return;
+    // Already tried a silent re-auth in a prior load and still landed here with a
+    // dead session — surface the manual banner rather than redirecting again.
+    if (sessionStorage.getItem(REAUTH_GUARD)) {
+      setAuthExpired(true);
+      return;
+    }
+    recoveringRef.current = true;
+    sessionStorage.setItem(REAUTH_GUARD, '1');
+    signIn('keycloak');
+  }, []);
+
   useEffect(() => {
     if (status !== 'loading' && !session) signIn('keycloak');
   }, [status, session]);
@@ -711,31 +751,34 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
       .then((s) => setSchema(s as AttrSchema[]))
       .catch((e) =>
         (e as Error).message === SESSION_EXPIRED
-          ? setAuthExpired(true)
+          ? recoverFromExpiry()
           : setError('Could not load the attribute schema. You may not have the scout-admin role.'),
       );
-  }, [isAdmin]);
+  }, [isAdmin, recoverFromExpiry]);
 
   // Pending uses /pending (carries requestedAt for the queue sort); active and
   // admin use /users?status= (carries current attributes for the editor).
-  const loadRows = useCallback(async (t: Tab) => {
-    setRows(null);
-    setError(null);
-    try {
-      if (t === 'pending') {
-        const r = await apiFetch('/api/users/pending');
-        if (!r.ok) throw new Error();
-        setRows(((await r.json()) as PendingUser[]).map(pendingToRow));
-      } else {
-        const r = await apiFetch(`/api/users/users?status=${t}`);
-        if (!r.ok) throw new Error();
-        setRows(((await r.json()) as ScoutUser[]).map(scoutToRow));
+  const loadRows = useCallback(
+    async (t: Tab) => {
+      setRows(null);
+      setError(null);
+      try {
+        if (t === 'pending') {
+          const r = await apiFetch('/api/users/pending');
+          if (!r.ok) throw new Error();
+          setRows(((await r.json()) as PendingUser[]).map(pendingToRow));
+        } else {
+          const r = await apiFetch(`/api/users/users?status=${t}`);
+          if (!r.ok) throw new Error();
+          setRows(((await r.json()) as ScoutUser[]).map(scoutToRow));
+        }
+      } catch (e) {
+        if ((e as Error).message === SESSION_EXPIRED) recoverFromExpiry();
+        else setError('Could not load users. You may not have the scout-admin role.');
       }
-    } catch (e) {
-      if ((e as Error).message === SESSION_EXPIRED) setAuthExpired(true);
-      else setError('Could not load users. You may not have the scout-admin role.');
-    }
-  }, []);
+    },
+    [recoverFromExpiry],
+  );
 
   useEffect(() => {
     if (isAdmin) loadRows(tab);
@@ -794,7 +837,7 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
                 Open in Keycloak
               </a>
             )}
-            <TopBar />
+            <TopBar docsUrl={docsUrl} />
           </div>
         </div>
       </div>
@@ -975,7 +1018,7 @@ export default function UsersClient({ scoutEnv }: { scoutEnv?: string }) {
           onDone={onDone}
           onAuthExpired={() => {
             setSelected(null);
-            setAuthExpired(true);
+            recoverFromExpiry();
           }}
         />
       )}

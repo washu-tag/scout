@@ -61,6 +61,8 @@ Default storage allocations (can be customized in `inventory.yaml`):
 - Ollama: 200Gi (AI models)
 - Open WebUI: 100Gi (chat interface data)
 
+The optional Data Generator service uses **host paths** (e.g., BeeGFS, NFS) rather than Kubernetes PVs — see {ref}`Data Generator <data-generator-config>` for setup.
+
 ## Inventory Structure
 
 The inventory file is organized into host groups and variables. Here's the basic structure:
@@ -126,6 +128,11 @@ all:
 - `ansible_become`: Enable privilege escalation. Note: This should _not_ be set to `true` when running air-gapped installs as a non-privileged user on a remote host.
 - `ansible_become_method`: How to escalate privileges (typically `sudo`)
 - `ansible_become_password`: Encrypted sudo password
+
+A few feature variables must also live at the `all` level (not under a cluster group) because the **staging** node evaluates them and does not inherit `k3s_cluster` vars:
+
+- `enable_xnat`: toggles the optional XNAT service. The staging Nexus role gates the XNAT plugin Maven proxies on it.
+- `xnat_plugins`: extra XNAT plugins, additive over the required openid plugin. The staging Nexus role derives one Maven proxy per distinct coordinate `repo_url` from this list, so air-gapped deploys can resolve the plugin artifacts. Because of this, **after changing `xnat_plugins` you must re-run `make install-staging`** (to rebuild the Nexus proxies) before re-running the XNAT deploy. The XNAT deploy includes an air-gapped preflight that fails with guidance if a plugin's repo isn't reachable through the Nexus group. Plugin repos are release-only by default; set `snapshots: true` on a plugin's `source` to opt that repo into `-SNAPSHOT` resolution (enables snapshots in `settings.xml` and makes the repo's Nexus proxy `versionPolicy: MIXED`). Maven Central is release-only and not configurable here (it never hosts snapshots).
 
 See [Ansible connection parameters](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters) for additional options.
 
@@ -423,7 +430,7 @@ prometheus_resources:
     memory: 4Gi
 ```
 
-**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, cassandra_system_logger
+**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, cassandra_system_logger, data_generator
 
 **Services NOT supporting partial overrides** (use flattened variables instead): Trino coordinator/worker, Cassandra (main container), Elasticsearch, HL7 Transformer. These services use individual variables (e.g., `cassandra_max_heap`, `trino_worker_cpu_limit`) because JVM heap sizes drive memory calculations with different multipliers for requests vs limits. Note: Cassandra's system logger sidecar (Vector) does support partial overrides via `cassandra_system_logger_resources`.
 
@@ -644,6 +651,13 @@ open_webui_resources:
   limits:
     cpu: 4
     memory: 4Gi
+
+data_generator_resources:
+  requests:
+    cpu: 1
+    memory: 4Gi
+  limits:
+    memory: 16Gi
 ```
 
 ### Service-Specific Configuration
@@ -745,6 +759,18 @@ grafana_smtp_skip_verify: false
 grafana_email_recipients: ['admin@example.com']
 ```
 
+#### Documentation Links
+
+Services that link to the Scout documentation (Launchpad, the sign-in error
+page, the JupyterHub spawn page, and the quickstart notebooks) default to the
+latest published docs. Pin them to the docs for your deployed release so users
+aren't shown features they don't have yet:
+
+```yaml
+# Base URL for documentation links (no trailing slash)
+scout_docs_url: https://washu-scout.readthedocs.io/en/v4.0.0
+```
+
 #### Superset Dashboards
 
 Scout ships its Superset dashboards via a separate Helm chart
@@ -821,6 +847,45 @@ hl7_transformer_cpu_request: 2
 hl7_transformer_cpu_limit: 4
 ```
 
+(data-generator-config)=
+#### Data Generator
+
+The Data Generator is an optional service that produces synthetic HL7 radiology reports for testing and benchmarking Scout's ingestion pipeline. It deploys as a Temporal worker that calls a user-supplied LLM (OpenAI-compatible — Azure OpenAI, a local Ollama deployment, etc.) to generate report bodies. The LLM endpoint, model, and any per-run parameters are supplied at workflow submission time, not in inventory.
+
+It connects to the Temporal frontend in `scout_extractor_namespace`, so it must be deployed after the extractor stack.
+
+```yaml
+# Required: enable the optional service (default: false)
+enable_data_generator: true
+
+# Required: host paths for the data-generator's input/output
+data_generator_workspace: /beegfs/shared/data-generator-input   # Scratch/work dir
+data_generator_output:    /beegfs/shared/data-generator         # Generated reports land here
+
+# Required when calling a hosted LLM that needs authentication.
+# Keys here are exposed to the container as environment variables of the
+# same name (via envFrom on a Kubernetes Secret).
+data_generator_secrets:
+  AZURE_OPENAI_KEY: !vault |
+        $ANSIBLE_VAULT;1.1;AES256
+        ...encrypted...
+
+# Optional: number of worker replicas (each handles workflows in parallel)
+data_generator_replicas: 1
+
+# Optional: container image overrides (rarely needed)
+data_generator_image_repository: ghcr.io/washu-tag/data-generator
+data_generator_image_tag: latest
+data_generator_pull_policy: IfNotPresent
+
+# Optional: JVM tuning. Defaults to using 75% of the pod memory limit as heap.
+data_generator_java_tool_opts: '-XX:MaxRAMPercentage=75.0'
+```
+
+**Storage:** `data_generator_workspace` and `data_generator_output` are mounted as `hostPath` volumes (not Kubernetes-managed PVs). They must exist on every node where data-generator pods may schedule, or you must constrain scheduling via `nodeSelector`/affinity. A shared filesystem (e.g., BeeGFS, CephFS, NFS) is recommended for multi-replica deployments so any worker can pick up any job.
+
+**Secrets format note:** values in `data_generator_secrets` are passed verbatim into a Kubernetes `Secret` (via `stringData:`) and exposed as environment variables in the worker pod. Whatever keys you put in the dict become the env-var names — make sure they match what the data-generator code expects.
+
 #### Package Proxy (Conda and pip)
 
 In air-gapped environments, Jupyter notebook users cannot install conda or pip packages directly from the internet. Scout supports routing package installations through a proxy so that users can install packages on demand.
@@ -880,6 +945,66 @@ In air-gapped environments, users cannot install extensions anyway due to lack o
 :::{warning}
 Even with the Extension Manager disabled, users with terminal access can still run `jupyter labextension` commands. However, in air-gapped environments, these commands will fail due to lack of internet connectivity. The Extension Manager setting primarily controls the UI, not a comprehensive security lockdown.
 :::
+
+#### XNAT (optional)
+
+XNAT is an optional service, gated by `enable_xnat` (default `false`) and deployed with `make install-xnat` (or as part of `make all`). It is installed using the `xnat-openid-auth-plugin` for auth, which runs an authorization-code flow against Keycloak (callback `/openid-login`); XNAT still sits behind oauth2-proxy as the edge approval gate, the same posture as every other Scout service.
+
+When `enable_xnat` is `false`, **nothing** XNAT is created — no namespace, no deploy, and the Keycloak realm omits the `xnat` client and the `xnat-access` role (mapped onto the `scout-user` group). Set it to enable the feature:
+
+```yaml
+enable_xnat: true
+```
+
+> **Note:** toggling `enable_xnat` from `true` back to `false` deletes the `xnat` Keycloak client on the next auth deploy (keycloak-config-cli reconciles the realm), orphaning any provisioned XNAT users.
+
+The confidential client requires a secret — required only when `enable_xnat` is `true`:
+
+```yaml
+keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+XNAT's CNPG-managed Postgres also needs a password when enabled:
+
+```yaml
+xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+So does `xnat_admin_password`, which seeds XNAT's built-in `admin` account on first boot via the `[system] defaultAdminPassword` preference, replacing XNAT's insecure `admin:admin` default. **The deploy fails if it is unset**, so a deployed XNAT never ships with the default admin credentials. Set a strong, vault-encrypted value:
+
+```yaml
+xnat_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+Outbound emails will be sent from the `xnat_admin_email` value. This must be overriden with a real address; the 
+default placeholder `admin@{{ server_hostname }}` may not exist.
+
+Plugins beyond the bundled openid plugin are **additive**: entries in `xnat_plugins` are installed *in addition to* the role's `xnat_plugins_default` (which carries the required openid plugin), so you never repeat or risk dropping it. Each entry names a source (`file`, `url`, `coordinates`, or `image`) and optional config files — see the `xnat` role README.
+
+The remaining XNAT variables have sane defaults and only need to be set to override them:
+
+```yaml
+# Site config seeded on XNAT's first boot (skips the setup wizard).
+xnat_site_id: scout-xnat
+
+# Keycloak clientId for the XNAT client (default: xnat)
+keycloak_xnat_client_id: xnat
+
+# Namespace where XNAT is deployed (default: xnat)
+xnat_namespace: xnat
+
+# XNAT Helm chart version to deploy from GHCR (default: 2.0.0)
+xnat_chart_version: 2.0.0
+
+# xnatworks/xnat-web image tag (default: 1.10.0)
+xnat_image_tag: '1.10.0'
+
+# Outbound mail relay (defaults to in-cluster MailHog; point at your org relay for prod)
+xnat_smtp_host: mailhog-service.mailhog
+xnat_smtp_port: '1025'
+```
+
+`xnat_namespace` is independent of the six consolidated `scout_*_namespace` variables — XNAT runs in its own namespace.
 
 ### Namespace Customization
 

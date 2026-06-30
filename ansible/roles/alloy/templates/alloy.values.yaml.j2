@@ -10,6 +10,11 @@ controller:
   tolerations: {{ alloy_tolerations | to_json }}
 
 alloy:
+  # Disable the anonymous usage report to stats.grafana.org (fails on
+  # air-gapped systems and wastes resources), mirroring how the grafana and
+  # loki roles disable analytics.reporting_enabled.
+  enableReporting: false
+
   configMap:
     content: |
       discovery.kubernetes "pods" {

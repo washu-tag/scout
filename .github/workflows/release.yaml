@@ -57,7 +57,7 @@ jobs:
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -163,7 +163,7 @@ jobs:
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ steps.app_token.outputs.token }}
@@ -207,7 +207,7 @@ jobs:
       ci_run_id: ${{ steps.wait.outputs.run_id }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -307,7 +307,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
         run: |
-          IMAGES="hl7log-extractor hl7-transformer scout-notebook launchpad superset keycloak"
+          IMAGES="hl7log-extractor hl7-transformer scout-notebook launchpad superset keycloak xnat-plugin-installer"
           for IMAGE in $IMAGES; do
             echo "=== Publishing $IMAGE ==="
             gh run download "$RUN_ID" --repo "${{ github.repository }}" -n "$IMAGE" -D "${{ runner.temp }}/$IMAGE"
@@ -363,7 +363,7 @@ jobs:
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ steps.app_token.outputs.token }}
