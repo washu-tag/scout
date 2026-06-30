@@ -78,19 +78,16 @@ def _pick_id_column(columns: list[str], override: str | None) -> str:
     )
 
 
+# Trino driver doesn't param-bind identifiers, so we interpolate
+# column/table names through here. Literal values bind via `?` in
+# trino_client.execute() — see /from-file for the one exception.
 def _quote_ident(name: str) -> str:
-    """Quote a Trino identifier — only word chars allowed in source."""
     if not name.replace("_", "").isalnum():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"unsafe identifier: {name!r}",
         )
     return f'"{name}"'
-
-
-def _quote_literal(s: str) -> str:
-    """Quote a Trino string literal — doubled-up single quotes."""
-    return "'" + s.replace("'", "''") + "'"
 
 
 def _qualified_reports() -> str:
@@ -224,19 +221,18 @@ async def create_search(
             str(r.get(id_column)) for r in sample_rows if r.get(id_column) is not None
         ]
         if sample_ids:
-            in_clause = ", ".join(_quote_literal(i) for i in sample_ids)
             col_q = _quote_ident(id_column)
             extras_sql = (
                 f"SELECT {col_q} AS _id, "
                 f"report_section_impression, report_section_findings, "
                 f"report_text, diagnoses "
                 f"FROM {_qualified_reports()} "
-                f"WHERE {col_q} IN ({in_clause})"
+                f"WHERE contains(?, {col_q})"
             )
             try:
                 with metrics.time_trino("sample_text_fetch"):
                     _cols, ex_rows = await trino_client.execute(
-                        extras_sql, user=user.sub
+                        extras_sql, user=user.sub, params=[sample_ids]
                     )
                 for er in ex_rows:
                     key = er.get("_id")
@@ -402,15 +398,14 @@ async def create_search_from_file(
     col = _quote_ident(body.id_column)
     matched: set[str] = set()
     CHUNK = 5000
+    sql = f"SELECT DISTINCT {col} AS id FROM {qualified} " f"WHERE contains(?, {col})"
     for start in range(0, len(cleaned), CHUNK):
         chunk = cleaned[start : start + CHUNK]
-        in_clause = ", ".join(_quote_literal(i) for i in chunk)
-        sql = (
-            f"SELECT DISTINCT {col} AS id FROM {qualified} WHERE {col} IN ({in_clause})"
-        )
         try:
             with metrics.time_trino("from_file_validate"):
-                _cols, rows = await trino_client.execute(sql, user=user.sub)
+                _cols, rows = await trino_client.execute(
+                    sql, user=user.sub, params=[chunk]
+                )
         except Exception as exc:
             log.exception("trino id-list validation failed")
             raise HTTPException(
@@ -433,10 +428,15 @@ async def create_search_from_file(
             ),
         )
 
-    # Compose the saved search SQL. The same id_column is selected
-    # plus a few canonical row-level columns so the SPA's table view
-    # has something to display when /rows wraps this query.
-    in_literal = ", ".join(_quote_literal(i) for i in final_ids)
+    # Compose the saved search SQL. IDs are inlined as literals (not
+    # bound) because the SQL is persisted to Postgres as text and
+    # replayed later by /rows /accessions /csv as a subquery — there
+    # is no read-time params plumbing. This is the only place the
+    # service interpolates user-supplied values into SQL text; every
+    # other Trino call goes through `?` binding. If you find yourself
+    # reaching for inline literal quoting elsewhere, you want
+    # trino_client.execute(..., params=[...]) instead.
+    in_literal = ", ".join("'" + str(i).replace("'", "''") + "'" for i in final_ids)
     sql = (
         f"SELECT message_control_id, accession_number, "
         f"resolved_epic_mrn AS epic_mrn, modality, service_name, "
@@ -617,7 +617,9 @@ def _parse_filters(request: Request) -> list[tuple[str, list[str]]]:
     return list(grouped.items())
 
 
-def _filter_clause(col: str, values: list[str], *, alias: str = "") -> str:
+def _filter_clause(col: str, values: list[str], *, alias: str = "") -> tuple[str, list]:
+    """Return (sql_fragment, params) for one filter spec. Identifier
+    is interpolated via _quote_ident; every value is bound via `?`."""
     prefix = f"{alias}." if alias else ""
     if "." in col:
         base, _, bound = col.partition(".")
@@ -627,33 +629,33 @@ def _filter_clause(col: str, values: list[str], *, alias: str = "") -> str:
             try:
                 n = int(value)
             except ValueError:
-                return "FALSE"
+                return "FALSE", []
             op = ">=" if bound == "min" else "<="
-            return f"{qcol} {op} {n}"
+            return f"{qcol} {op} ?", [n]
         if base == "message_dt":
             try:
                 date.fromisoformat(value)
             except ValueError:
-                return "FALSE"
+                return "FALSE", []
             op = ">=" if bound == "min" else "<="
-            return f"CAST({qcol} AS DATE) {op} DATE {_quote_literal(value)}"
-        return "FALSE"
+            return f"CAST({qcol} AS DATE) {op} CAST(? AS DATE)", [value]
+        return "FALSE", []
     qcol = f"{prefix}{_quote_ident(col)}"
     if col in _MULTI_VALUE_COLUMNS:
         if not values:
-            return "FALSE"
-        literals = ", ".join(_quote_literal(v) for v in values)
-        return f"{qcol} IN ({literals})"
+            return "FALSE", []
+        placeholders = ", ".join(["?"] * len(values))
+        return f"{qcol} IN ({placeholders})", list(values)
     value = values[0]
     if col == "patient_age":
         try:
-            int(value)
+            n = int(value)
         except ValueError:
-            return "FALSE"
-        return f"{qcol} = {int(value)}"
+            return "FALSE", []
+        return f"{qcol} = ?", [n]
     if col == "message_dt":
-        return f"CAST({qcol} AS varchar) LIKE {_quote_literal('%' + value + '%')}"
-    return f"LOWER({qcol}) LIKE LOWER({_quote_literal('%' + value + '%')})"
+        return f"CAST({qcol} AS varchar) LIKE ?", ["%" + value + "%"]
+    return f"LOWER({qcol}) LIKE LOWER(?)", ["%" + value + "%"]
 
 
 # ---------------------------------------------------------------------------
@@ -681,8 +683,8 @@ async def get_search_rows(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     cached_total = ds["count"]
-    sql = ds["sql"]
-    if not sql:
+    source_sql = ds["sql"]
+    if not source_sql:
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
             detail="this search has no source SQL (pre-rename row)",
@@ -692,15 +694,20 @@ async def get_search_rows(
     sort_spec = _parse_sort(sort)
     filters = _parse_filters(request)
 
-    where_parts = [_filter_clause(fcol, fvals, alias="s") for fcol, fvals in filters]
+    where_parts: list[str] = []
+    filter_params: list = []
+    for fcol, fvals in filters:
+        clause, p = _filter_clause(fcol, fvals, alias="s")
+        where_parts.append(clause)
+        filter_params.extend(p)
     where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
     order_sql = ""
     if sort_spec:
         scol, sdir = sort_spec
         order_sql = f" ORDER BY s.{_quote_ident(scol)} {sdir} NULLS LAST"
 
-    sql = (
-        f"SELECT s.* FROM ({sql}) s"
+    rows_sql = (
+        f"SELECT s.* FROM ({source_sql}) s"
         f"{where_sql}"
         f"{order_sql} "
         f"OFFSET {offset} LIMIT {limit}"
@@ -710,10 +717,12 @@ async def get_search_rows(
     # have a cached_total, skip this query — saves a Trino scan per
     # page request. Sort-only doesn't change the count.
     if filters:
-        count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s" f"{where_sql}"
+        count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s{where_sql}"
         try:
             with metrics.time_trino("rows_count_query"):
-                _, count_rows = await trino_client.execute(count_sql, user=user.sub)
+                _, count_rows = await trino_client.execute(
+                    count_sql, user=user.sub, params=filter_params or None
+                )
             sql_total = int(count_rows[0]["n"]) if count_rows else 0
         except Exception as exc:
             log.exception("trino count query failed")
@@ -726,7 +735,9 @@ async def get_search_rows(
 
     try:
         with metrics.time_trino("rows_query"):
-            columns, rows = await trino_client.execute(sql, user=user.sub)
+            columns, rows = await trino_client.execute(
+                rows_sql, user=user.sub, params=filter_params or None
+            )
     except Exception as exc:
         log.exception("trino rows query failed")
         raise HTTPException(

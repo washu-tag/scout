@@ -60,7 +60,11 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
     """
     queue: list[tuple[list[str], list[dict[str, Any]]]] = []
 
-    async def fake_execute(sql: str, user: str | None = None):
+    async def fake_execute(
+        sql: str,
+        user: str | None = None,
+        params: list | tuple | None = None,
+    ):
         if not queue:
             raise AssertionError(
                 f"fake_trino had no queued response for SQL: {sql[:120]}..."

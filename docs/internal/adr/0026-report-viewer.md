@@ -538,6 +538,9 @@ it so it's not a blocker.
 
 - Why row cap in the json POST /api/reports/query:
   { "sql": "SELECT modality, COUNT(*) FROM reports_latest GROUP BY 1", "row_cap": 500 } - this should be handled by a LIMIT clause or we have a hard limit on the backend for the number of rows returned this is a bit of an odd pattern to have in the API.
+  - row caps in genral what is up
+
+- 410 (legacy row, missing source_sql) drop! this is from dev code not on prod!!!
 
 - Review the Markdown summary shapping.
 

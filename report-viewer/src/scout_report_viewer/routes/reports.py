@@ -93,12 +93,13 @@ async def read_reports(
     else:
         table = base + "reports_latest"
         column = body.id_column
-    # Trino driver doesn't support ?-binding here, so quote literals.
-    quoted = ", ".join("'" + str(i).replace("'", "''") + "'" for i in body.ids)
-    sql = f'SELECT * FROM {table} WHERE "{column}" IN ({quoted})'
+    # contains(?, col) — the driver doesn't expand list params into IN.
+    sql = f'SELECT * FROM {table} WHERE contains(?, "{column}")'
     try:
         with metrics.time_trino("read_reports"):
-            columns, rows = await trino_client.execute(sql, user=user.sub)
+            columns, rows = await trino_client.execute(
+                sql, user=user.sub, params=[[str(i) for i in body.ids]]
+            )
     except Exception as exc:
         log.exception("trino read_reports failed")
         raise HTTPException(

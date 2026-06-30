@@ -145,10 +145,16 @@ def _connect(user: str | None) -> Iterator[Any]:
             log.debug("trino connection close failed (ignored)", exc_info=True)
 
 
-def _execute_sync(sql: str, user: str | None) -> tuple[list[str], list[list[Any]]]:
+def _execute_sync(
+    sql: str, user: str | None, params: list | tuple | None
+) -> tuple[list[str], list[list[Any]]]:
     with _connect(user) as conn:
         cur = conn.cursor()
-        cur.execute(sql)
+        # Driver requires None or non-empty sequence for params (asserts on type).
+        if params:
+            cur.execute(sql, params)
+        else:
+            cur.execute(sql)
         rows = cur.fetchall()
         columns = [d[0] for d in cur.description] if cur.description else []
         return columns, rows
@@ -189,8 +195,16 @@ def _normalize(value: Any) -> Any:
 async def execute(
     sql: str,
     user: str | None = None,
+    params: list | tuple | None = None,
 ) -> tuple[list[str], list[dict[str, Any]]]:
-    columns, raw_rows = await asyncio.to_thread(_execute_sync, sql, user)
+    """Run `sql` against Trino. `params` is bound positionally (`?`).
+
+    Lists/tuples bind as Trino ARRAY values, so prefer
+    `WHERE contains(?, col)` over `WHERE col IN (...)` for matching a
+    column against a caller-supplied list (the driver doesn't expand
+    list params into IN-clauses).
+    """
+    columns, raw_rows = await asyncio.to_thread(_execute_sync, sql, user, params)
     dict_rows = [
         {col: _normalize(raw_rows[i][j]) for j, col in enumerate(columns)}
         for i in range(len(raw_rows))
