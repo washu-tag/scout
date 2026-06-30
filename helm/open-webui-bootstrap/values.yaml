@@ -67,12 +67,6 @@ persistentConfig:
 # of optional fields). Empty list = skip filter seeding.
 filterFunctions: []
 
-# IDs of filter functions to DELETE on every bootstrap. Used to retire
-# filters that were previously bootstrap-deployed but have since been
-# removed from `filterFunctions` — the row stays in OWUI's DB otherwise
-# and its outlet keeps firing. Idempotent (404 → skip).
-filterFunctionsToDelete: []
-
 # OWUI Python tools. Each entry: id, name, description, source_file
 # (filename in files/payloads/), valves. No global/active toggle —
 # visibility is per-model via scoutDefaults.toolIds. Empty list = skip

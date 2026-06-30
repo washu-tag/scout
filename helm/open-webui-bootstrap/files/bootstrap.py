@@ -294,31 +294,6 @@ def push_filter_functions(token):
             print(f"  {fn_id}: is_active → {desired_active}")
 
 
-def delete_orphan_filters(token):
-    """DELETE filter functions listed in `filters_to_delete.json`. Used to
-    retire filters that were previously bootstrap-deployed but have since
-    been removed from inventory — OWUI keeps the function source in a DB
-    column, so just dropping the file from files/payloads/ leaves an
-    orphan row whose outlet still runs."""
-    for fn_id in load_config("filters_to_delete.json") or []:
-        fn_id_q = urllib.parse.quote(fn_id, safe="")
-        exists_code, _ = http("GET", f"/api/v1/functions/id/{fn_id_q}", token=token)
-        if exists_code != 200:
-            print(f"  {fn_id}: not present, skip")
-            continue
-        del_code, del_body = http(
-            "DELETE", f"/api/v1/functions/id/{fn_id_q}/delete", token=token
-        )
-        if del_code in (200, 204):
-            print(f"  {fn_id}: deleted")
-        else:
-            # Non-fatal — log and continue; an orphan filter is annoying
-            # but not fatal to the rest of the bootstrap.
-            print(
-                f"  {fn_id}: delete failed ({del_code}) {del_body[:200] if del_body else ''}"
-            )
-
-
 def push_tools(token):
     """Reconcile Python tool functions. Mirrors push_filter_functions, but
     against /api/v1/tools. Tools don't have global/active toggles — they
@@ -410,16 +385,13 @@ def main():
     print("[3/6] Pushing PersistentConfig...")
     push_persistent_config(token)
 
-    print("[4/7] Configuring filter functions...")
+    print("[4/6] Configuring filter functions...")
     push_filter_functions(token)
 
-    print("[5/7] Deleting orphan filter functions...")
-    delete_orphan_filters(token)
-
-    print("[6/7] Configuring Python tools...")
+    print("[5/6] Configuring Python tools...")
     push_tools(token)
 
-    print("[7/7] Configuring custom models...")
+    print("[6/6] Configuring custom models...")
     push_models(token)
 
     print("Bootstrap complete.")

@@ -69,7 +69,6 @@
         # auto-enable correctly. Set to '' in inventory to disable.
         webhook_url: '{{ open_webui_webhook_url | default("http://report-viewer." ~ (report_viewer_namespace | default(chatbot_namespace)) ~ ":8000/webhooks/owui-new-user") }}'
       filterFunctions: '{{ open_webui_filter_functions | default([]) }}'
-      filterFunctionsToDelete: '{{ open_webui_filter_functions_to_delete | default([]) }}'
       toolFunctions: '{{ open_webui_tool_functions | default([]) }}'
       scoutModels: '{{ scout_models | default([]) }}'
       scoutDefaults:

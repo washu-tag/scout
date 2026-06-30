@@ -43,14 +43,6 @@ data:
     {{- end }}
     {{ $filters | toJson }}
 
-  # Orphan filter functions to delete. OWUI stores function source in a
-  # DB column, so simply dropping a filter from `filterFunctions` leaves
-  # its row in place and its outlet keeps firing. Add the id here on the
-  # release where the filter was retired; can be removed in a later
-  # release once no clusters have the orphan.
-  filters_to_delete.json: |-
-    {{ (.Values.filterFunctionsToDelete | default list) | toJson }}
-
   # Python tool payloads — same `content_file` inlining as filters.
   # Tools have no global/active toggles; visibility is per-model via
   # `scoutDefaults.toolIds` / model `meta.toolIds`.

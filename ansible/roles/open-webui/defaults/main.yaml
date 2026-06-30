@@ -279,24 +279,6 @@ open_webui_filter_functions:
       debug_logging: false
 
 # ----------------------------------------------------------------------------
-# IDs of filter functions to DELETE on every bootstrap. Used to retire a
-# previously-bootstrap-deployed filter whose row would otherwise sit in
-# OWUI's DB with stale source code, outlet still firing on every chat.
-# Idempotent — bootstrap GETs first and skips on 404. Safe to leave for
-# multiple releases.
-# ----------------------------------------------------------------------------
-open_webui_filter_functions_to_delete:
-  # Retired in favor of the scout_find_reports tool emitting the viewer URL
-  # via OWUI's `message.embeds` event. The filter's outlet was unreliable
-  # (OWUI 0.9.5 silently skips it for some tool-calling completions) and
-  # its content rewrite leaked BEGIN/END comment markers into chats.
-  # Remove this entry once dev02 + demo01 + prod have all been redeployed.
-  - dataset_iframe_lift_filter
-  # Diagnostic-only filter from the outlet-debugging session; printed on
-  # every chat to prove the outlet pipeline ran. No longer needed.
-  - hello_filter
-
-# ----------------------------------------------------------------------------
 # OWUI Python tools — declarative reconcile, same idempotent shape as
 # `open_webui_filter_functions`. Tools don't have global/active toggles
 # (visibility is via `open_webui_scout_tool_ids` per model), so just id,
