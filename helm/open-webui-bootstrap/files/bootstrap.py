@@ -5,7 +5,7 @@ Runs as a Job under Helm post-install/post-upgrade hooks (see
 helm/open-webui-bootstrap/templates/job.yaml). Replaces what used to be a
 chain of Ansible tasks doing kubectl-exec'd curls.
 
-Seven phases:
+Six phases:
 1. Password migration. Rewrite the bootstrap user's bcrypt hash to match
    the configured password (no-op on a clean DB; recovers signin on any
    cluster where `open_webui_bootstrap_password` was rotated).
@@ -49,6 +49,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+
+import bcrypt
 
 CONFIG_DIR = "/app/config"
 HTTP_TIMEOUT = 30
@@ -229,13 +231,7 @@ def push_persistent_config(token):
         print(f'  task_model_id: {cfg["task_model_id"]}')
 
     if cfg.get("webhook_url") is not None:
-        # OWUI's admin notification webhook URL — fires on new-user
-        # signup. We point it at report-viewer's receiver so
-        # newly-federated users get auto-enabled instead of waiting
-        # for a manual admin flip (automates the approval gate from
-        # ADR 0003 via ADR 0026's receiver). Endpoint discovered by
-        # grepping the running OWUI image: GET/POST /api/webhook with
-        # {"url": "..."}.
+        # Auto-enable receiver for new-user signups (ADR 0003 + ADR 0026).
         http_or_raise(
             "POST",
             "/api/webhook",
