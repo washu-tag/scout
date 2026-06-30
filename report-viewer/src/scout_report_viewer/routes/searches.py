@@ -684,11 +684,6 @@ async def get_search_rows(
 
     cached_total = ds["count"]
     source_sql = ds["sql"]
-    if not source_sql:
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail="this search has no source SQL (pre-rename row)",
-        )
 
     offset = (page - 1) * limit
     sort_spec = _parse_sort(sort)
@@ -770,11 +765,6 @@ async def get_search_accessions(
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     sql = ds["sql"]
-    if not sql:
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail="this search has no source SQL (pre-rename row)",
-        )
     sql = (
         f"SELECT DISTINCT s.accession_number "
         f"FROM ({sql}) s "
@@ -833,11 +823,6 @@ async def export_search_csv(
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     sql = ds["sql"]
-    if not sql:
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail="this search has no source SQL (pre-rename row)",
-        )
     total = ds["count"]
     cols_select = ", ".join(f"s.{_quote_ident(c)}" for c in _CSV_COLUMNS)
 
