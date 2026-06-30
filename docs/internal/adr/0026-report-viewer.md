@@ -532,10 +532,6 @@ it so it's not a blocker.
 
 - Test CSV Upload and Download.
 
-- Improve "Explain SQL" UI / UX
-  - The sql is pretty ugly to read
-  - Add a copy to clipboard button for the sql code.
-
 - Send to XNAT handoff with IQ plugin. Not needed for the initial release but will be needed soon after.
 
 - **Service owns its own public URL; drop the tool's `public_base_url` valve.** Today `routes/searches.py:_view_url` builds `view_url` from `str(request.base_url)`, which is the URL the inbound request came in on. When the OWUI tool dials the in-cluster Service DNS (`http://report-viewer.scout-analytics:8000`), that's what gets stamped into the response — useless to a browser. The tool's `public_base_url` valve (`ansible/roles/open-webui/defaults/main.yaml`) exists solely to swap scheme+host back to the public ingress host. Two soft problems with the current shape: (a) deriving response URLs from a caller-supplied `Host` header is the canonical host-header-injection pattern (no direct exploit today since the response goes back to the requester, but if shared-cohort flows surface a `view_url` to a different user the poisoned URL becomes a phishing vector); (b) every future caller has to know the override trick.
