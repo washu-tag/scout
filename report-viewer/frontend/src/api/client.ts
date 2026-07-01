@@ -15,9 +15,8 @@ export class ApiError extends Error {
   }
 }
 
-// User-facing error text. Never surfaces the raw FastAPI `detail` (which can
-// leak SQL fragments or stack-trace remnants); leaks the status code as small
-// print only so support requests carry something diagnostic.
+// Never surfaces the raw FastAPI `detail` (can leak SQL fragments / stack
+// remnants). Status code stays as small print for support triage.
 export function friendlyError(err: unknown, subject: string): string {
   if (!(err instanceof ApiError)) {
     return `Couldn't reach the report-viewer service. Check your connection or try again in a moment.`;
@@ -58,8 +57,6 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
         : null) ?? resp.statusText;
     throw new ApiError(resp.status, detail, body);
   }
-  // Some endpoints (CSV download) aren't JSON, but those aren't called
-  // via this wrapper - they're navigated to directly.
   return (await resp.json()) as T;
 }
 
@@ -96,7 +93,6 @@ export function getSearch(searchId: string): Promise<SearchMeta> {
 export interface RowsParams {
   page: number;
   limit: number;
-  // Server-side sort. e.g. { col: 'message_dt', dir: 'desc' }
   sort?: { col: string; dir: 'asc' | 'desc' } | null;
   filters?: FilterState;
 }
@@ -151,10 +147,8 @@ export interface ReportDetail {
   diagnoses: Array<Record<string, unknown>> | null;
 }
 
-// On-the-fly full-report fetch via the shared /api/reports/read
-// endpoint (the same one that backs the OWUI scout_get_reports tool).
-// OPA gates row visibility at the Trino layer; no application-side
-// cohort-membership check is needed.
+// Shares /api/reports/read with the OWUI scout_get_reports tool.
+// Row visibility is enforced by OPA at Trino; no app-side cohort check.
 export async function getReport(reportId: string, idColumn: string): Promise<ReportDetail> {
   const resp = await api<{ columns: string[]; rows: Array<Record<string, unknown>> }>(
     '/api/reports/read',
@@ -166,7 +160,7 @@ export async function getReport(reportId: string, idColumn: string): Promise<Rep
   );
   const row = resp.rows[0] ?? {};
   // reports_latest exposes the lake file path as `primary_report_identifier`;
-  // the frontend (and ADR 0026) refers to it as `source_file`.
+  // the frontend refers to it as `source_file`.
   if (row.primary_report_identifier !== undefined && row.source_file === undefined) {
     row.source_file = row.primary_report_identifier;
   }

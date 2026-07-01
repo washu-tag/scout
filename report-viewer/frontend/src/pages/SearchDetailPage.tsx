@@ -19,12 +19,8 @@ import {
   getReport,
   type FilterState,
 } from '../api/client';
-import {
-  HEIGHT_COMPACT,
-  HEIGHT_EXPANDED,
-  chatOrigin,
-  setHeight as setIframeHeight,
-} from '../iframeHeight';
+import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
+import { chatOrigin } from '../chat';
 
 const ROW_ACTIVE_BG = '#e8f0fa';
 const DETAIL_ZONE_BG = '#f0f6fc';
@@ -104,20 +100,16 @@ export default function SearchDetailPage() {
     placeholderData: keepPreviousData,
   });
 
-  // Expansion state is keyed by row index; clear on row-set change so page-2 row 0
-  // doesn't inherit page-1's expanded card. Gate on rowsQ.data, not page, to avoid
-  // mid-fetch collapse flash under keepPreviousData.
+  // Expansion is keyed by row index; clear on data change so page-2 row 0
+  // doesn't inherit page-1's expanded card. Gate on rowsQ.data (not page)
+  // to avoid a mid-fetch collapse flash under keepPreviousData.
   useEffect(() => {
     setExpanded({});
   }, [rowsQ.data]);
 
-  // Prefer the rows-response total (post-filter count); meta count is the unfiltered fallback.
   const total = rowsQ.data?.total ?? meta.data?.count ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / limit));
 
-  // Build columns once per row-shape change. Lock to COLUMNS_CONFIG
-  // anything else in the row stays in the underlying data (and in the
-  // CSV download) but isn't surfaced as a column.
   const available = useMemo<string[]>(
     () => rowsQ.data?.columns ?? (rowsQ.data?.rows?.[0] ? Object.keys(rowsQ.data.rows[0]) : []),
     [rowsQ.data],
@@ -144,8 +136,6 @@ export default function SearchDetailPage() {
     columns,
     state: { sorting, expanded, columnVisibility },
     onSortingChange: (updater) => {
-      // Server-side sort: state change drives a refetch via queryKey.
-      // Reset to page 1 so users don't end up on an out-of-range page.
       setSorting(updater);
       setPage(1);
     },
@@ -154,7 +144,6 @@ export default function SearchDetailPage() {
     getRowCanExpand: () => true,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
-    // Server returns rows already ordered; disable client-side re-sort of the visible page.
     manualSorting: true,
     columnResizeMode: 'onChange',
     defaultColumn: { minSize: 40 },
@@ -194,11 +183,6 @@ export default function SearchDetailPage() {
         )}
       </div>
       {rowsQ.error && <p style={{ color: '#b00' }}>{friendlyError(rowsQ.error, 'these rows')}</p>}
-      {/* Always render the table once we have anything (including the
-          previous data via keepPreviousData). The wrapping ternary
-          shows a single first-load skeleton when there's no data at
-          all yet - otherwise the existing data stays put and the
-          header shows the "Updating" pill. */}
       {!rowsQ.data && rowsQ.isLoading ? (
         <p style={{ color: '#666' }}>Loading rows…</p>
       ) : (
@@ -227,8 +211,7 @@ export default function SearchDetailPage() {
                   borderCollapse: 'collapse',
                   fontSize: '0.85rem',
                   width: '100%',
-                  // Fixed layout makes the <th> widths authoritative
-                  // so the resize state is what actually renders.
+                  // Fixed layout so column-resize widths actually render.
                   tableLayout: 'fixed',
                 }}
               >
@@ -252,9 +235,8 @@ export default function SearchDetailPage() {
                               fontWeight: 600,
                               color: '#555',
                               background: '#f5f5f5',
-                              // Box-shadow not border-bottom: with
-                              // border-collapse: collapse + sticky, the
-                              // border disappears when content scrolls.
+                              // border-collapse: collapse + sticky drops
+                              // border-bottom on scroll; box-shadow survives.
                               boxShadow: 'inset 0 -1px 0 #c8ccd0',
                               whiteSpace: 'nowrap',
                               width: header.getSize(),
@@ -299,10 +281,8 @@ export default function SearchDetailPage() {
                           className={isExpanded ? undefined : 'scout-row'}
                           onClick={(e) => {
                             row.toggleExpanded();
-                            // Scroll the clicked row into view so the
-                            // expanded panel beneath isn't pushed below
-                            // the iframe's visible region. Run after the
-                            // detail row mounts (microtask).
+                            // Scroll into view so the expanded panel doesn't
+                            // land below the iframe's visible region.
                             if (!isExpanded) {
                               requestAnimationFrame(() => {
                                 (e.currentTarget as HTMLElement | null)?.scrollIntoView({
@@ -426,8 +406,7 @@ export default function SearchDetailPage() {
                     ? 'Failed to load metadata'
                     : `${total.toLocaleString()} rows`}
               </span>
-              {/* Reserved slot; visibility toggles instead of mount so
-                  the row doesn't reflow when a fetch starts. */}
+              {/* visibility (not mount) so the row doesn't reflow on fetch. */}
               <span
                 aria-label="Loading"
                 role="status"
@@ -768,27 +747,18 @@ const paginationBtn: React.CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-// Detail panel rendered when a row is expanded. Lazy-fetches the full
-// report on first expand (kept in TanStack Query cache so reopening is
-// instant). Default view: the full report_text - uniform across older
-// reports (no parsed sections) and newer ones. Diagnoses chip-row
-// underneath. Highlight terms come from the active column filters; the
-// matches light up via client-side regex (no server-side snippet
-// extraction, no stored snippet column).
 function RowDetail(props: {
   row: Record<string, unknown>;
   idColumn: string;
   highlightTerms: string[];
   highlightDiagnosis: string[];
 }) {
-  // The row's identifier for the /reports lookup. The search's
-  // id_column value lives on the slim /rows row under the same key.
   const reportId = String(props.row[props.idColumn] ?? '');
   const reportQ = useQuery({
     queryKey: ['report', props.idColumn, reportId],
     queryFn: () => getReport(reportId, props.idColumn),
     enabled: !!reportId,
-    staleTime: 5 * 60_000, // 5 min - same row reopens instantly
+    staleTime: 5 * 60_000,
   });
 
   // \b boundaries so short tokens like "PE" don't match in "pectoralis".
@@ -818,16 +788,9 @@ function RowDetail(props: {
     );
   };
 
-  // Diagnoses live on the full /reports/{id} fetch - the slim /rows
-  // payload only carries the LLM's SELECT columns, which usually omits
-  // `diagnoses`. Prefer reportQ when it's landed; fall back to whatever
-  // the row already has so the panel doesn't sit empty for the LLMs that
-  // do include `diagnoses` in their SELECT.
+  // Prefer the lazy /reports fetch (all fields) but fall back to the slim
+  // /rows row so the panel doesn't pop in late.
   const diagnoses = reportQ.data?.diagnoses ?? props.row.diagnoses;
-
-  // Metadata sources. Prefer the lazy-fetched ReportDetail when it's
-  // landed (more fields, fresher), but fall back to whatever the slim
-  // /rows row already has so the card doesn't pop in late.
   const meta = reportQ.data ?? props.row;
   const fmt = (v: unknown): string => {
     if (v === null || v === undefined) return '-';
@@ -858,9 +821,6 @@ function RowDetail(props: {
     }
   }
 
-  // ReportDetail extras land asynchronously; cast for the fields the
-  // slim /rows row doesn't carry. fmt() returns "-" for null/undefined
-  // so missing fields don't break the card layout.
   const m = meta as Partial<{
     race: unknown;
     ethnic_group: unknown;
@@ -879,12 +839,6 @@ function RowDetail(props: {
 
   return (
     <div style={{ fontSize: '0.78rem', lineHeight: 1.4, color: '#222' }}>
-      {/* Report card - three compact sections sized to fit inside the
-          500px iframe without scrolling away from anything important.
-          Each row is a sequence of label·value pairs separated by
-          subtle bullets so a clinician can scan left-to-right. The
-          shadow lifts the card off the blue-tinted detail zone so it
-          reads as a distinct surface, not "another row." */}
       <div
         style={{
           padding: '0.5rem 0.7rem',
@@ -926,11 +880,6 @@ function RowDetail(props: {
         ) : null}
       </div>
 
-      {/* Diagnoses chips - TOP of panel so the user sees the ICD
-          evidence first. Positive matches (codes/text matching the
-          search's highlight terms) get a yellow background + bold so
-          the eye lands on them. Non-matching codes are still visible
-          but greyed. */}
       {dxList.length > 0 && (
         <div style={{ marginBottom: '0.5rem' }}>
           <div
@@ -1058,8 +1007,8 @@ function RowDetail(props: {
   );
 }
 
-// Octicons copy / check (16px viewBox, MIT). Inline so we don't pull
-// an icon dependency just for this one button.
+// Octicons copy / check / close (16px viewBox, MIT). Inline to avoid
+// pulling an icon dependency for three buttons.
 function CopyIcon() {
   return (
     <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
@@ -1085,9 +1034,6 @@ function CloseIcon() {
   );
 }
 
-// "Explain SQL" modal - LLM-written explanation + raw SQL. Opened
-// from the Explain SQL button in the bottom action row so we don't
-// burn real estate above the table.
 function ExplainSqlModal(props: {
   explanation: string;
   sql: string;
@@ -1100,9 +1046,8 @@ function ExplainSqlModal(props: {
   const [copied, setCopied] = useState(false);
   const onCopySql = () => {
     if (!props.sql) return;
-    // execCommand is deprecated but unavoidable: the modern
-    // navigator.clipboard API is blocked by OWUI's artifact-iframe
-    // Permissions-Policy
+    // execCommand is deprecated but unavoidable: navigator.clipboard is
+    // blocked by OWUI's artifact-iframe Permissions-Policy.
     const ta = document.createElement('textarea');
     ta.value = props.sql;
     ta.style.position = 'fixed';
@@ -1304,10 +1249,6 @@ function ExplainSqlModal(props: {
   );
 }
 
-// CardRow / CardField - inline label·value pairs separated by a faint
-// bullet. Wraps naturally so on narrow widths fields stack onto the
-// next line. Replaces the older grid-based MetaCell which forced its
-// own row per pair.
 function CardRow(props: { children: React.ReactNode }) {
   return (
     <div
@@ -1612,10 +1553,7 @@ function ContractIcon() {
 }
 
 function CardField(props: { label: string; value: string; mono?: boolean }) {
-  // Long values (service names like "MRI BRAIN WITHOUT CONTRAST W AND
-  // WO CONTRAST") need to wrap rather than truncate so the user
-  // doesn't lose information. Keep the label · value pair as a single
-  // unit but allow it to break across lines within its row.
+  // Wrap rather than truncate so long service names stay legible.
   return (
     <span
       style={{

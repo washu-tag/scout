@@ -8,10 +8,8 @@ import SearchesListPage from './pages/SearchesListPage';
 import SearchDetailPage from './pages/SearchDetailPage';
 import { postHeight } from './iframeHeight';
 
-// React Router basename matches the FastAPI StaticFiles mount in app.py
-// (/spa/). Vite's `base` only handles asset URLs, not the SPA's own
-// internal routes - without basename here, /spa/foo would be parsed as
-// /foo and fall through to the FastAPI 404 handler.
+// basename must match the FastAPI StaticFiles mount (/spa/); Vite's `base`
+// only handles asset URLs, not React Router's internal routes.
 const router = (
   <BrowserRouter basename="/spa">
     <Routes>
@@ -26,8 +24,6 @@ const router = (
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Search metadata is owned by the caller; tabs of the SPA aren't
-      // racing each other. 30s keeps "refresh on focus" from being noisy.
       staleTime: 30_000,
       refetchOnWindowFocus: false,
     },
@@ -36,7 +32,6 @@ const queryClient = new QueryClient({
 
 const pulseStyle = document.createElement('style');
 pulseStyle.textContent =
-  '@keyframes scoutPulse{0%,100%{opacity:1}50%{opacity:.25}}' +
   '@keyframes scoutSpin{to{transform:rotate(360deg)}}' +
   '.scout-col-resize{border-right:1px solid #d0d0d0}' +
   '.scout-col-resize:hover{border-right-color:#888}' +
@@ -49,9 +44,8 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// Fire size updates at load + after a couple async ticks so the iframe
-// tracks content size live. Height value lives in iframeHeight.ts so
-// the in-page toggle can flip compact/expanded without competing here.
+// Belt-and-suspenders around ResizeObserver: catch late layout shifts
+// from font loads / third-party CSS that the observer can miss.
 window.addEventListener('load', postHeight);
 setTimeout(postHeight, 300);
 setTimeout(postHeight, 1200);
