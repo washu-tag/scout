@@ -146,6 +146,28 @@ jobs:
       - name: 'Unit tests: keycloak event-listener'
         shell: bash
         run: cd keycloak/event-listener && ./gradlew test
+  hl7-transformer-unit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      # Spark 3.5.x requires Java <= 17 (the repo default JAVA_VERSION is 21). Java 17 is
+      # also valid for the pending Spark 4 upgrade, so this is upgrade-safe. Spark/Delta
+      # versions are read from the package's pyproject.toml, so this job pins no versions.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: ${{ ENV.JAVA_DIST }}
+          java-version: '17'
+      - uses: actions/setup-python@v6.3.0
+        with:
+          # pyspark 3.5.x ships no wheels for 3.13+; 3.12 is the newest supported.
+          python-version: '3.12'
+      - name: 'Unit tests: hl7-transformer'
+        shell: bash
+        run: |
+          pip install ./extractor/hl7-transformer[test]
+          cd extractor/hl7-transformer && pytest tests/ -v
   ansible-and-python-tests:
     runs-on: ubuntu-latest
     permissions:
