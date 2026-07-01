@@ -1,17 +1,15 @@
 """
 title: Scout Report Viewer Tool
 description: Save search SQL with the Scout report-viewer and surface
-             the search in chat as a small text summary + an iframe
-             linking to the viewer. Rows are evaluated on demand by the
-             service (no row materialization); chat carries only the
-             search_id + view URL.
+             the result in chat as a sample + evidence table for the
+             LLM plus an iframe of the viewer for the user. Rows are
+             evaluated on demand by the service (no materialization).
 author: Scout Team
 version: 0.1.0
 """
 
 from __future__ import annotations
 
-import base64
 import csv
 import inspect
 import io
@@ -19,7 +17,6 @@ import json
 import logging
 import os
 import re
-import time
 from typing import Any, Awaitable, Callable, Optional
 
 import httpx
@@ -27,29 +24,16 @@ from pydantic import BaseModel, Field
 
 log = logging.getLogger(__name__)
 
+_MAX_GET_IDS = 100
+_MD_CELL_MAX = 400
+
 
 class Tools:
-    """LLM-callable functions backed by the report-viewer. All
-    methods are namespaced `scout_*` to disambiguate from OWUI
-    built-ins (search_notes, view_note, search_chats, etc.).
-
-      * `scout_find_reports(sql, highlight_terms?, sql_explanation?)`
-        - POST /api/searches, saves the SQL, returns a short summary
-        for the LLM plus a viewer iframe for the user. For row-level
-        discovery. When refining, write a NEW call with the original
-        conditions plus the new constraint; the SQL is standalone, no
-        placeholder substitution.
-
-      * `scout_query_sql(sql)` - POST /api/reports/query, runs SQL and
-        returns rows directly to LLM context. No persistence, no
-        iframe. For aggregate questions (COUNT, GROUP BY, time-series).
-
-      * `scout_get_reports(ids, id_column)` - POST /api/reports/read,
-        direct fetch of full report content by identifier. Use when
-        you have a lake file path (default `id_column`), accession
-        number, MRN, etc. and want the actual report. No prior search
-        needed.
-    """
+    """Thin client over the Scout report-viewer service. Exposes three
+    LLM-callable methods - `scout_find_reports`, `scout_query_sql`,
+    `scout_get_reports` - all namespaced `scout_*` to disambiguate
+    from OWUI built-ins (search_notes, view_note, etc.). See each
+    method's docstring for its contract."""
 
     class Valves(BaseModel):
         report_viewer_internal_url: str = Field(
@@ -60,101 +44,52 @@ class Tools:
                 "returns into the chat message."
             ),
         )
-        iframe_height_px: int = Field(default=500, ge=200, le=1200)
         request_timeout_seconds: int = Field(default=120, ge=10, le=600)
 
     def __init__(self) -> None:
         self.valves = self.Valves()
 
-    # ------------------------------------------------------------------
-    # scout_find_reports - build a search from a SQL query
-    # ------------------------------------------------------------------
     async def scout_find_reports(
         self,
         sql: Optional[str] = None,
-        highlight_terms: Optional[list[str]] = None,
-        highlight_diagnosis: Optional[list[str]] = None,
+        match_terms: Optional[list[str]] = None,
+        match_diagnoses: Optional[list[str]] = None,
         sql_explanation: Optional[str] = None,
         file_id: Optional[str] = None,
         id_column: Optional[str] = None,
-        __user__: Optional[dict] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
         __metadata__: Optional[dict] = None,
     ) -> Any:
-        """
-        Build a saved search. Two input modes:
+        """Save a SQL search and render the viewer iframe.
 
-        * **SQL mode (default)**: pass `sql` (and `highlight_terms`,
-          `sql_explanation`). The tool POSTs the SQL to `/api/searches`.
-        * **File mode**: pass `file_id` (OWUI file ID from the user's
-          attachment) and `id_column`. The tool reads the file
-          server-side, validates IDs against `reports_latest`, and saves
-          a `WHERE <id_col> IN (...)` SQL. Do NOT read file contents
-          into your context - that's what the file mode is for.
-
-        Saves the search SQL,
-        renders the search viewer iframe in chat, and returns a rich
-        summary (count + columns + sample table + anti-restatement
-        directive) to your context. Full report text never enters your
-        context - the user sees all rows in the iframe and can click
-        any row to expand into the full report (with highlight terms
-        emphasized) on demand.
-
-        Use for search building (row-level discovery). For aggregate
-        questions (COUNT, GROUP BY, time-series - anything where the
-        answer is a number or a small summary table) use
-        `scout_query_sql` instead - it doesn't persist anything and
-        returns rows directly to your context.
-
-        Refinement: when the user asks to narrow the search ("only MRs",
-        "drop the under-18 patients"), write a NEW `scout_find_reports`
-        call with the original conditions plus the new constraint.
-        Each search is a standalone saved query - there is no
-        placeholder substitution or parent-search SQL injection. The
-        SPA homepage groups the chain by chat for the user's benefit.
-
-        Your SELECT must include one of `message_control_id`,
-        `accession_number`, or `epic_mrn`. The canonical row-level
-        SELECT is `message_control_id, accession_number, modality,
-        service_name, message_dt, patient_age, sex`. The SPA fetches
-        full report text + diagnoses on row-expand (no need to include
-        them in your SELECT). Prefer specific projections over `SELECT *`.
+        Two modes:
+        * SQL mode: pass `sql` (and optional `match_terms`,
+          `match_diagnoses`, `sql_explanation`). The SELECT must
+          project one of the known identifier columns
+          (`primary_report_identifier`, `accession_number`,
+          `message_control_id`, `epic_mrn`, `mpi`, `scout_patient_id`).
+        * File mode: pass `file_id` and `id_column`. The tool reads
+          the file server-side - your context never sees its bytes.
 
         :param sql: Trino SQL against `delta.default.reports_latest`
-            (or `_epic_view`). Each search SQL stands alone - no
+            or `_epic_view`. Each saved search is standalone, no
             placeholder substitution.
-        :param highlight_terms: Clinical text terms (max ~5) for the
-            row-expand viewer to highlight in the report text. Matched
-            with word boundaries on the SPA side. Good values:
-            `["pulmonary embolism", "PE"]`, `["cerebral infarction"]`,
-            `["glioblastoma", "GBM"]`. BAD values: `["brain"]`,
-            `["chest"]`, `["MRI"]` - those belong in the SQL itself.
-            UI-only: highlighting does NOT filter rows. Without
-            highlight_terms, the LLM-bound sample loses the `snippet`
-            field that shows ±80 chars around each match.
-        :param highlight_diagnosis: ICD codes or code prefixes (max
-            ~5) that drove this cohort. Examples: `["R91.1"]`,
-            `["R91"]` (prefix matches R91.1, R91.8, ...), `["J18%"]`
-            (SQL-LIKE prefix, treated the same). Matched against
-            `diagnosis_code` with case-insensitive startswith. Use
-            when the SQL filters on diagnosis codes (e.g.
-            `any_match(diagnoses, x -> x.diagnosis_code LIKE 'R91%')`)
-            so the LLM-bound sample's `positive_dx` field - and the
-            chip-row in the row-expand viewer - flag the matching
-            codes explicitly. Distinct from `highlight_terms`; use
-            both when the cohort is both text-driven and code-driven.
+        :param match_terms: Clinical text terms. Populates the
+            `excerpt` field on each evidence row and highlights the
+            terms in the row-expand viewer.
+        :param match_diagnoses: ICD codes or code prefixes (e.g.
+            `R91`, `R91.1`, `J18%`). Populates `matched_diagnoses` on
+            each evidence row and lights up matching chips in the
+            row-expand viewer.
         :param sql_explanation: One- to three-sentence plain-language
-            description of what the SQL matches and why. Surfaced in
-            the SPA's "About this search" panel so the user can
-            sanity-check what was built without reading raw SQL.
-            Example: "Patients with chest CT reports from 2024+ that
-            mention pulmonary nodules in the impression or findings
-            section, excluding any negated mentions like 'no nodule'.
-            ICD-coded R91% diagnoses are also included regardless of
-            text negation." Required on every search.
-        :return: Rich text summary + an embedded `<iframe>` of the
-            viewer. Service renders the summary; tool just forwards it.
+            description of what the SQL matches. Surfaced in the
+            "About this search" panel for the user.
+        :param file_id: OWUI file id (file mode only).
+        :param id_column: Which column the file's IDs map to (file
+            mode only).
+        :return: Markdown sample + evidence tables for your reasoning,
+            plus an embedded `<iframe>` of the viewer for the user.
         """
         # File mode: delegate to the file-import branch. The LLM passes
         # file_id from `__files__[0].id`; the tool reads file bytes
@@ -163,7 +98,6 @@ class Tools:
             return await self._import_from_file(
                 file_id=file_id,
                 id_column=id_column or "accession_number",
-                __user__=__user__,
                 __event_emitter__=__event_emitter__,
                 __oauth_token__=__oauth_token__,
                 __metadata__=__metadata__,
@@ -172,89 +106,58 @@ class Tools:
         if not sql:
             return "Error: scout_find_reports requires either `sql` or `file_id`."
 
-        bearer = await self._bearer_for_outbound(__oauth_token__)
+        payload: dict[str, Any] = {"sql": sql}
+        if match_terms:
+            payload["match_terms"] = match_terms
+        if match_diagnoses:
+            payload["match_diagnoses"] = match_diagnoses
+        if sql_explanation:
+            payload["sql_explanation"] = sql_explanation
+        chat_id = _chat_id(__metadata__)
+        if chat_id:
+            payload["owui_chat_id"] = chat_id
 
         await self._emit(__event_emitter__, "Searching reports…", done=False)
         try:
-            # OWUI injects chat metadata into the tool call. Pull the
-            # chat ID so the SPA homepage can group searches by
-            # conversation.
-            chat_id = ""
-            if isinstance(__metadata__, dict):
-                chat_id = str(__metadata__.get("chat_id") or "")
-
-            created = await self._post_search(
-                sql,
-                bearer=bearer,
-                highlight_terms=highlight_terms,
-                highlight_diagnosis=highlight_diagnosis,
-                sql_explanation=sql_explanation,
-                owui_chat_id=chat_id,
-            )
+            created = await self._post("/api/searches", payload, oauth=__oauth_token__)
         except ReportViewerServiceError as exc:
             await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
             return f"Error fetching reports: {exc}"
 
-        search_id = created["id"]
-        count = created["count"]
-        view_url = created["view_url"]
-
         await self._emit(
-            __event_emitter__, f"Found {count:,} matching reports", done=True
+            __event_emitter__,
+            f"Found {created['count']:,} matching reports",
+            done=True,
         )
 
-        # Push the viewer URL into OWUI's `message.embeds` field
-        # scout_find_reports always saves the search + renders the
-        # iframe. Aggregate / GROUP-BY questions use `scout_query_sql`
-        # instead (ephemeral, no iframe).
-        #
-        # `replace: true` keeps a single iframe per message even if
-        # the LLM iterates scout_find_reports mid-turn. The embeds
-        # field is separate from message.content so this works
-        # around OWUI 0.9.5's outlet-filter + message-event injection
-        # gaps.
-        await self._emit_embed(__event_emitter__, view_url)
+        # `replace: true` keeps a single iframe per message even if the
+        # LLM iterates scout_find_reports mid-turn. embeds is separate
+        # from message.content, working around OWUI 0.9.5's outlet-filter
+        # + message-event injection gaps.
+        await self._emit_embed(__event_emitter__, created["view_url"])
 
-        # The service returns the rich LLM-bound markdown summary
-        # (count + columns + USER DISPLAY directive + sample table
-        # + internal search handle). Return it verbatim - the LLM uses
-        # it for its reply; the user sees the iframe via the embeds
-        # field above.
-        return created.get("summary") or ""
+        return self._render_search_summary(created)
 
-    # ------------------------------------------------------------------
-    # scout_query_sql - ad-hoc SQL, ephemeral, returns rows to LLM
-    # ------------------------------------------------------------------
     async def scout_query_sql(
         self,
         sql: str,
-        __user__: Optional[dict] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
     ) -> Any:
-        """
-        Run an ad-hoc SQL query and return rows directly to your
-        context. No search is persisted, NO iframe is rendered. Use
-        for aggregate questions: COUNT, GROUP BY, breakdowns, time
-        series, distinct-value lookups.
+        """Run an ad-hoc SQL query and return rows inline.
 
-        For row-level search building (the answer is a LIST of
-        reports the user will browse), use `scout_find_reports`
-        instead - that one persists the SQL + renders the viewer
-        iframe.
+        No search is persisted; no iframe is rendered.
 
         :param sql: Trino SQL against `delta.default.reports_latest`
-            (or `_epic_view`). Add `LIMIT 1000` (or smaller) for
-            row-returning queries so chat context stays bounded;
-            aggregates that naturally collapse (COUNT / GROUP BY /
-            time series) don't need a LIMIT.
-        :return: Markdown-formatted table of rows, suitable for direct
-            inclusion in your prose reply.
+            or `_epic_view`.
+        :return: Markdown table of rows for direct inclusion in your
+            prose reply.
         """
-        bearer = await self._bearer_for_outbound(__oauth_token__)
         await self._emit(__event_emitter__, "Running query…", done=False)
         try:
-            agg = await self._post_aggregate(sql, bearer=bearer)
+            agg = await self._post(
+                "/api/reports/query", {"sql": sql}, oauth=__oauth_token__
+            )
         except ReportViewerServiceError as exc:
             await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
             return f"Error running query: {exc}"
@@ -262,45 +165,24 @@ class Tools:
         await self._emit(__event_emitter__, f"Query complete ({n} rows)", done=True)
         return self._format_aggregate(agg)
 
-    # ------------------------------------------------------------------
-    # _import_from_file - CSV/TSV upload → search (private; invoked
-    # from scout_find_reports when file_id is set, not exposed as its
-    # own tool surface).
-    # ------------------------------------------------------------------
     async def _import_from_file(
         self,
         file_id: str,
         id_column: str = "accession_number",
-        __user__: Optional[dict] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
         __metadata__: Optional[dict] = None,
     ) -> Any:
-        """Import an external ID list as a Scout search.
+        """Import an external ID list as a search. Tool reads the file
+        server-side; the LLM context never sees its bytes.
 
-        Use when the user uploads a CSV/TSV/TXT of identifiers (patient
-        MRNs, accession numbers, message-control-ids) and wants Scout to
-        build a search over those reports. The TOOL reads the file
-        server-side (you, the LLM, never see its contents - that
-        protects PHI from leaking into your context). The backend
-        validates each id against reports_latest and returns the count
-        of matched + unmatched.
-
-        :param file_id: OWUI file ID of the upload. Get this from the
-            chat's file attachments - usually `__files__[0].id` in the
-            tool's environment.
-        :param id_column: Which Scout column the IDs map to. One of
-            'accession_number' (default, most common), 'epic_mrn',
-            'message_control_id'. Pick based on the column header or
-            the user's prompt.
-        :return: Markdown summary with the matched/unmatched counts and
-            an iframe of the resulting search. Same renderable format
-            as scout_find_reports.
+        :param file_id: OWUI file id (typically `__files__[0].id`).
+        :param id_column: Column the IDs map to.
+        :return: Markdown with matched/unmatched counts plus an iframe
+            of the resulting search.
         """
-        bearer = await self._bearer_for_outbound(__oauth_token__)
-
-        # Read the file out of OWUI's local storage. Same access path
-        # the awl-search-building-chat-poc tool used.
+        # Read the file out of OWUI's local storage via the in-process
+        # OWUI Python API (the tool runs inside the OWUI worker).
         try:
             from open_webui.models.files import Files
             from open_webui.storage.provider import Storage
@@ -401,19 +283,11 @@ class Tools:
                 f"rows_parsed={len(rows)}, preview={preview!r}"
             )
 
-        chat_id = ""
-        if isinstance(__metadata__, dict):
-            chat_id = str(__metadata__.get("chat_id") or "")
-
         await self._emit(
             __event_emitter__,
             f"Validating {len(ids)} IDs from {file_model.filename}…",
             done=False,
         )
-        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/searches/from-file"
-        headers = {"Content-Type": "application/json"}
-        if bearer:
-            headers["Authorization"] = f"Bearer {bearer}"
         payload = {
             "ids": ids,
             "id_column": id_column,
@@ -421,20 +295,15 @@ class Tools:
                 f"Imported {len(ids)} {id_column} values from "
                 f"{file_model.filename}."
             ),
-            "owui_chat_id": chat_id,
+            "owui_chat_id": _chat_id(__metadata__),
         }
-        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
-            try:
-                resp = await c.post(url, headers=headers, json=payload)
-            except httpx.HTTPError as exc:
-                await self._emit(__event_emitter__, f"Import failed: {exc}", done=True)
-                return f"Error: {exc}"
-        if resp.status_code != 201:
-            await self._emit(
-                __event_emitter__, f"Import failed: HTTP {resp.status_code}", done=True
+        try:
+            created = await self._post(
+                "/api/searches/from-file", payload, oauth=__oauth_token__
             )
-            return f"Error: HTTP {resp.status_code} from report-viewer: {resp.text}"
-        created = resp.json()
+        except ReportViewerServiceError as exc:
+            await self._emit(__event_emitter__, f"Import failed: {exc}", done=True)
+            return f"Error: {exc}"
         view_url = created["view_url"]
         await self._emit(
             __event_emitter__,
@@ -442,45 +311,37 @@ class Tools:
             done=True,
         )
         await self._emit_embed(__event_emitter__, view_url)
-        return created.get("summary") or ""
+        return self._render_from_file_summary(created)
 
-    # ------------------------------------------------------------------
-    # scout_get_reports - direct fetch by id, no prior search needed
-    # ------------------------------------------------------------------
     async def scout_get_reports(
         self,
         ids: list[str],
         id_column: str = "primary_report_identifier",
-        __user__: Optional[dict] = None,
         __oauth_token__: Any = None,
     ) -> Any:
-        """
-        Fetch full report content (text, sections, diagnoses, metadata)
-        by identifier. Use whenever you have an id and want the actual
-        report - no prior search needed.
+        """Fetch full report content (text, sections, diagnoses,
+        metadata) by identifier.
 
-        :param ids: List of identifiers (max 100).
-        :param id_column: Which column the ids match. Report-scoped (1
-            row each, fast): `primary_report_identifier` (lake file
-            path; default), `accession_number`, `message_control_id`.
-            Patient-scoped (all reports for that patient):
-            `epic_mrn`, `mpi`, `scout_patient_id`. The mrn/mpi columns
-            auto-use cross-report patient resolution.
+        :param ids: Identifier list (max 100).
+        :param id_column: Report-scoped (1 row each):
+            `primary_report_identifier` (default), `accession_number`,
+            `message_control_id`. Patient-scoped (all reports for
+            that patient): `epic_mrn`, `mpi`, `scout_patient_id`.
         """
         if not ids:
             return "Error: ids must be a non-empty list."
-        if len(ids) > 100:
-            return "Error: at most 100 ids per call."
-        bearer = await self._bearer_for_outbound(__oauth_token__)
+        if len(ids) > _MAX_GET_IDS:
+            return f"Error: at most {_MAX_GET_IDS} ids per call."
         try:
-            result = await self._post_read(ids=ids, id_column=id_column, bearer=bearer)
+            result = await self._post(
+                "/api/reports/read",
+                {"ids": ids, "id_column": id_column},
+                oauth=__oauth_token__,
+            )
         except ReportViewerServiceError as exc:
             return f"Error reading reports: {exc}"
         return json.dumps(result, default=str, indent=2)
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
     @staticmethod
     def _token_from_owui(oauth: Any) -> Optional[str]:
         """OWUI passes `__oauth_token__` as either a string access_token
@@ -493,68 +354,84 @@ class Tools:
             return oauth
         return None
 
+    async def _post(self, path: str, payload: dict, *, oauth: Any) -> dict:
+        """POST `payload` as JSON to `report_viewer_internal_url + path`,
+        forwarding the caller's OWUI access token as Bearer if present.
+        Raises ReportViewerServiceError on any 4xx/5xx."""
+        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}{path}"
+        headers = {"Content-Type": "application/json"}
+        bearer = self._token_from_owui(oauth)
+        if bearer:
+            headers["Authorization"] = f"Bearer {bearer}"
+        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
+            r = await c.post(url, headers=headers, json=payload)
+        if r.status_code >= 400:
+            raise ReportViewerServiceError(_short_error(r))
+        return r.json()
+
     @staticmethod
-    def _jwt_exp(access_token: str) -> Optional[int]:
-        """Extract the exp epoch from a JWT (no signature check)."""
-        try:
-            payload_b64 = access_token.split(".")[1]
-            payload_b64 += "=" * (-len(payload_b64) % 4)
-            payload = json.loads(base64.urlsafe_b64decode(payload_b64))
-            exp = payload.get("exp")
-            return int(exp) if exp is not None else None
-        except Exception:
-            return None
+    def _render_search_summary(created: dict) -> str:
+        """Sample table + evidence table (omitted if every row's
+        excerpt is null and matched_diagnoses is empty). Both keyed by
+        id_column so they align visually."""
+        count = int(created.get("count") or 0)
+        columns: list[str] = created.get("columns") or []
+        sample: list[dict] = created.get("sample") or []
+        evidence: list[dict] = created.get("evidence") or []
+        sid = created.get("id") or ""
+        id_column = created.get("id_column") or ""
 
-    async def _bearer_for_outbound(self, oauth: Any) -> Optional[str]:
-        """Return the cached OWUI access_token. Warns if past exp."""
-        access = self._token_from_owui(oauth)
-        if not access:
-            return None
-        exp = self._jwt_exp(access)
-        if exp is not None and exp <= int(time.time()):
-            log.warning(
-                "forwarding expired OWUI bearer token to report-viewer, may get 401",
-                extra={"expired_s_ago": int(time.time()) - exp},
+        rows_word = "row" if count == 1 else "rows"
+        parts = [f"SQL matched {count:,} {rows_word} across {len(columns)} columns."]
+
+        if sample and columns:
+            parts.append("")
+            parts.extend(_md_table(columns, sample))
+
+        ev_rows: list[dict] = []
+        for ev in evidence:
+            excerpt = ev.get("excerpt")
+            mdx = ev.get("matched_diagnoses") or []
+            if not excerpt and not mdx:
+                continue
+            ev_rows.append(
+                {
+                    id_column: ev.get(id_column, ""),
+                    "excerpt": excerpt or "",
+                    "matched diagnoses": "; ".join(
+                        f"{d.get('code', '')} ({d.get('text', '')})" for d in mdx
+                    ),
+                }
             )
-        return access
+        if ev_rows:
+            parts.append("")
+            parts.extend(
+                _md_table([id_column, "excerpt", "matched diagnoses"], ev_rows)
+            )
 
-    async def _post_read(
-        self,
-        *,
-        ids: list[str],
-        id_column: str,
-        bearer: Optional[str],
-    ) -> dict:
-        """POST /api/reports/read - direct fetch by id (the
-        scout_get_reports backend). Returns `{columns, rows}` with the
-        full report content."""
-        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/reports/read"
-        headers = {"Content-Type": "application/json"}
-        if bearer:
-            headers["Authorization"] = f"Bearer {bearer}"
-        payload: dict[str, Any] = {"ids": ids, "id_column": id_column}
-        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
-            r = await c.post(url, headers=headers, json=payload)
-        if r.status_code >= 400:
-            raise ReportViewerServiceError(_short_error(r))
-        return r.json()
+        parts.append("")
+        parts.append(f"Internal search handle: {sid}.")
+        return "\n".join(parts)
 
-    async def _post_aggregate(
-        self,
-        sql: str,
-        *,
-        bearer: Optional[str],
-    ) -> dict:
-        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/reports/query"
-        headers = {"Content-Type": "application/json"}
-        if bearer:
-            headers["Authorization"] = f"Bearer {bearer}"
-        payload: dict[str, Any] = {"sql": sql}
-        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
-            r = await c.post(url, headers=headers, json=payload)
-        if r.status_code >= 400:
-            raise ReportViewerServiceError(_short_error(r))
-        return r.json()
+    @staticmethod
+    def _render_from_file_summary(created: dict) -> str:
+        """Matched/submitted/unmatched counts. No sample or evidence
+        on this path (file mode takes no match_terms / match_diagnoses)."""
+        count = int(created.get("count") or 0)
+        submitted = int(created.get("submitted_count") or 0)
+        unmatched_total = int(created.get("unmatched_total") or 0)
+        id_column = created.get("id_column") or "id"
+        sid = created.get("id") or ""
+
+        parts = [f"Imported {count:,} of {submitted:,} submitted {id_column} values."]
+        if unmatched_total:
+            parts.append(
+                f"{unmatched_total:,} IDs were not found in reports_latest "
+                f"and were dropped."
+            )
+        parts.append("")
+        parts.append(f"Internal search handle: {sid}.")
+        return "\n".join(parts)
 
     @staticmethod
     def _format_aggregate(agg: dict) -> str:
@@ -566,63 +443,7 @@ class Tools:
         rows: list[dict] = agg.get("rows") or []
         if not rows:
             return "Aggregate query returned no rows."
-
-        # Markdown table. Cells get the string form of whatever Trino
-        # serialized - pipe characters get escaped so they don't break
-        # the row.
-        def _cell(v: Any) -> str:
-            s = "" if v is None else str(v)
-            return s.replace("|", "\\|")
-
-        head = "| " + " | ".join(cols) + " |"
-        sep = "| " + " | ".join("---" for _ in cols) + " |"
-        body = "\n".join(
-            "| " + " | ".join(_cell(r.get(c)) for c in cols) + " |" for r in rows
-        )
-        return head + "\n" + sep + "\n" + body
-
-    async def _post_search(
-        self,
-        sql: str,
-        *,
-        bearer: Optional[str],
-        highlight_terms: Optional[list[str]] = None,
-        highlight_diagnosis: Optional[list[str]] = None,
-        sql_explanation: Optional[str] = None,
-        owui_chat_id: Optional[str] = None,
-    ) -> dict:
-        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/searches"
-        headers = {"Content-Type": "application/json"}
-        if bearer:
-            headers["Authorization"] = f"Bearer {bearer}"
-        payload: dict[str, Any] = {"sql": sql}
-        if highlight_terms:
-            payload["highlight_terms"] = highlight_terms
-        if highlight_diagnosis:
-            payload["highlight_diagnosis"] = highlight_diagnosis
-        if sql_explanation:
-            payload["sql_explanation"] = sql_explanation
-        if owui_chat_id:
-            payload["owui_chat_id"] = owui_chat_id
-        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
-            r = await c.post(url, headers=headers, json=payload)
-        if r.status_code >= 400:
-            raise ReportViewerServiceError(_short_error(r))
-        return r.json()
-
-    async def _get_rows(
-        self, search_id: str, *, page: int, limit: int, bearer: Optional[str]
-    ) -> dict:
-        url = (
-            f"{self.valves.report_viewer_internal_url.rstrip('/')}/api/searches/{search_id}"
-            f"/rows?page={page}&limit={limit}"
-        )
-        headers = {"Authorization": f"Bearer {bearer}"} if bearer else {}
-        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
-            r = await c.get(url, headers=headers)
-        if r.status_code >= 400:
-            raise ReportViewerServiceError(_short_error(r))
-        return r.json()
+        return "\n".join(_md_table(cols, rows))
 
     @staticmethod
     async def _emit(
@@ -666,6 +487,34 @@ class Tools:
 
 class ReportViewerServiceError(RuntimeError):
     pass
+
+
+def _chat_id(meta: Any) -> str:
+    """Pull `chat_id` out of OWUI's `__metadata__` so the SPA can group
+    searches by conversation. Falls back to empty string if absent."""
+    if isinstance(meta, dict):
+        return str(meta.get("chat_id") or "")
+    return ""
+
+
+def _md_table(columns: list[str], rows: list[dict]) -> list[str]:
+    """Markdown table lines. Cells truncate at _MD_CELL_MAX to bound
+    chat context against a runaway projection; under typical use the
+    excerpt + projection columns are well under the cap."""
+    header = "| " + " | ".join(columns) + " |"
+    sep = "|" + "|".join("---" for _ in columns) + "|"
+    out = [header, sep]
+    for r in rows:
+        cells = []
+        for c in columns:
+            raw = r.get(c)
+            v = "" if raw is None else str(raw)
+            v = v.replace("|", "\\|").replace("\n", " ")
+            if len(v) > _MD_CELL_MAX:
+                v = v[: _MD_CELL_MAX - 1] + "…"
+            cells.append(v)
+        out.append("| " + " | ".join(cells) + " |")
+    return out
 
 
 def _short_error(resp: httpx.Response) -> str:

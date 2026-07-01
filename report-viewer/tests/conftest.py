@@ -54,9 +54,9 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
     """Stub out `trino_client.execute`. Returns a setter the test calls to
     enqueue the (columns, rows) the next Trino call should return.
 
-    We support multiple queued responses so a test exercising
-    `create_search` -> `get_rows` -> `get_summary` can prime distinct
-    payloads for each Trino round-trip.
+    Tests can queue multiple responses so a flow like
+    `create_search` -> `get_rows` -> `get_csv` primes a distinct payload
+    for each Trino round-trip.
     """
     queue: list[tuple[list[str], list[dict[str, Any]]]] = []
 

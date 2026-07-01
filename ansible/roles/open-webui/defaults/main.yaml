@@ -280,7 +280,6 @@ open_webui_tool_functions:
     source_file: scout_report_viewer_tool.py
     valves:
       report_viewer_internal_url: 'http://report-viewer.{{ report_viewer_namespace | default(chatbot_namespace) }}:8000'
-      iframe_height_px: 500
       request_timeout_seconds: 120
 
 # ----------------------------------------------------------------------------

@@ -28,8 +28,8 @@ async def insert_search(
     sql: str,
     owner_sub: str,
     row_count: int | None,
-    highlight_terms: list[str] | None = None,
-    highlight_diagnosis: list[str] | None = None,
+    match_terms: list[str] | None = None,
+    match_diagnoses: list[str] | None = None,
     sql_explanation: str | None = None,
     owui_chat_id: str | None = None,
 ) -> dict[str, Any]:
@@ -44,12 +44,12 @@ async def insert_search(
                     """
                     INSERT INTO searches
                       (id, id_column, sql, sql_explanation,
-                       highlight_terms, highlight_diagnosis, row_count,
+                       match_terms, match_diagnoses, row_count,
                        owner_sub, owui_chat_id)
                     VALUES
                       (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id, id_column, sql, sql_explanation,
-                              highlight_terms, highlight_diagnosis, row_count,
+                              match_terms, match_diagnoses, row_count,
                               owner_sub, owui_chat_id, created_at
                     """,
                     (
@@ -57,8 +57,8 @@ async def insert_search(
                         id_column,
                         sql,
                         sql_explanation or "",
-                        highlight_terms or [],
-                        highlight_diagnosis or [],
+                        match_terms or [],
+                        match_diagnoses or [],
                         row_count,
                         owner_sub,
                         owui_chat_id or "",
@@ -81,7 +81,7 @@ async def get_search(search_id: str, owner_sub: str | None) -> dict[str, Any] | 
                     await cur.execute(
                         """
                         SELECT id, id_column, sql, sql_explanation,
-                               highlight_terms, highlight_diagnosis, row_count,
+                               match_terms, match_diagnoses, row_count,
                                owner_sub, owui_chat_id, created_at
                         FROM searches
                         WHERE id = %s
@@ -92,7 +92,7 @@ async def get_search(search_id: str, owner_sub: str | None) -> dict[str, Any] | 
                     await cur.execute(
                         """
                         SELECT id, id_column, sql, sql_explanation,
-                               highlight_terms, highlight_diagnosis, row_count,
+                               match_terms, match_diagnoses, row_count,
                                owner_sub, owui_chat_id, created_at
                         FROM searches
                         WHERE id = %s
@@ -132,7 +132,7 @@ async def list_searches(owner_sub: str, *, limit: int = 200) -> list[dict[str, A
                 await cur.execute(
                     """
                     SELECT id, id_column, sql, sql_explanation,
-                           highlight_terms, highlight_diagnosis, row_count,
+                           match_terms, match_diagnoses, row_count,
                            owner_sub, owui_chat_id, created_at
                     FROM searches
                     WHERE owner_sub = %s
@@ -151,8 +151,8 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
         id_column,
         sql,
         sql_explanation,
-        highlight_terms,
-        highlight_diagnosis,
+        match_terms,
+        match_diagnoses,
         row_count,
         owner_sub,
         owui_chat_id,
@@ -163,8 +163,8 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
         "id_column": id_column,
         "sql": sql,
         "sql_explanation": sql_explanation or "",
-        "highlight_terms": highlight_terms or [],
-        "highlight_diagnosis": highlight_diagnosis or [],
+        "match_terms": match_terms or [],
+        "match_diagnoses": match_diagnoses or [],
         "count": row_count if row_count is not None else 0,
         "owner_sub": owner_sub,
         "owui_chat_id": owui_chat_id or "",

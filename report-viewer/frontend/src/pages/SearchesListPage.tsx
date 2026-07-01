@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { listSearches, type SearchMeta } from '../api/client';
+import { friendlyError, listSearches, type SearchMeta } from '../api/client';
 
 function fmtTime(iso: string): string {
   const d = new Date(iso);
@@ -52,7 +52,7 @@ export default function SearchesListPage() {
     return <p style={{ color: '#666' }}>Loading searches…</p>;
   }
   if (error) {
-    return <p style={{ color: '#b00' }}>Failed to load searches: {(error as Error).message}</p>;
+    return <p style={{ color: '#b00' }}>{friendlyError(error, 'your searches')}</p>;
   }
   const searches = data ?? [];
   if (searches.length === 0) {

@@ -46,6 +46,7 @@ def _sample_rows() -> list[dict]:
 
 def test_create_search_happy_path(client, auth_headers, fake_trino):
     fake_trino(_sample_columns(), _sample_rows())
+    fake_trino(["n"], [{"n": 3}])
     r = client.post(
         "/api/searches",
         json={
@@ -57,9 +58,34 @@ def test_create_search_happy_path(client, auth_headers, fake_trino):
     body = r.json()
     assert body["count"] == 3
     assert body["id_column"] == "message_control_id"
-    assert body["search_id"].startswith("ds_")
+    assert body["id"].startswith("ds_")
+    assert body["columns"] == _sample_columns()
     assert len(body["sample"]) == 3
-    assert body["view_url"].endswith(f"/spa/searches/{body['search_id']}")
+    assert len(body["evidence"]) == 3
+    for ev in body["evidence"]:
+        assert ev["excerpt"] is None
+        assert ev["matched_diagnoses"] == []
+        assert "message_control_id" in ev
+    assert "summary" not in body
+    assert body["view_url"].endswith(f"/spa/searches/{body['id']}")
+
+
+def test_create_search_empty_result_is_201(client, auth_headers, fake_trino):
+    fake_trino(_sample_columns(), [])
+    fake_trino(["n"], [{"n": 0}])
+    r = client.post(
+        "/api/searches",
+        json={
+            "sql": "SELECT message_control_id, modality, year, service_name FROM reports_latest WHERE 1=0"
+        },
+        headers=auth_headers,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["count"] == 0
+    assert body["sample"] == []
+    assert body["evidence"] == []
+    assert body["columns"] == _sample_columns()
 
 
 def test_create_search_requires_known_id_column(client, auth_headers, fake_trino):
@@ -78,6 +104,7 @@ def test_create_search_explicit_id_column(client, auth_headers, fake_trino):
         ["my_id", "modality"],
         [{"my_id": "a", "modality": "CT"}, {"my_id": "b", "modality": "MR"}],
     )
+    fake_trino(["n"], [{"n": 2}])
     r = client.post(
         "/api/searches",
         json={
@@ -93,12 +120,13 @@ def test_create_search_explicit_id_column(client, auth_headers, fake_trino):
 
 def test_get_meta_returns_404_for_other_user(client, auth_headers, fake_trino):
     fake_trino(_sample_columns(), _sample_rows())
+    fake_trino(["n"], [{"n": 3}])
     r = client.post(
         "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     )
-    dsid = r.json()["search_id"]
+    dsid = r.json()["id"]
     # alice can see hers.
     r1 = client.get(f"/api/searches/{dsid}", headers=auth_headers)
     assert r1.status_code == 200
@@ -116,12 +144,13 @@ def test_get_rows_paginates_in_id_list_order(client, auth_headers, fake_trino):
         ["message_control_id"],
         [{"message_control_id": f"m{i}"} for i in range(5)],
     )
+    fake_trino(["n"], [{"n": 5}])
     r = client.post(
         "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
     )
-    dsid = r.json()["search_id"]
+    dsid = r.json()["id"]
 
     # Trino returns rows in reverse order; the route must re-sort to materialized order.
     fake_trino(
@@ -142,11 +171,12 @@ def test_get_rows_paginates_in_id_list_order(client, auth_headers, fake_trino):
 
 def test_get_rows_returns_empty_past_end(client, auth_headers, fake_trino):
     fake_trino(["message_control_id"], [{"message_control_id": "only"}])
+    fake_trino(["n"], [{"n": 1}])
     dsid = client.post(
         "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
-    ).json()["search_id"]
+    ).json()["id"]
 
     r = client.get(f"/api/searches/{dsid}/rows?page=99&limit=10", headers=auth_headers)
     assert r.status_code == 200

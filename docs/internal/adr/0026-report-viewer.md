@@ -75,7 +75,7 @@ For a cohort-building question:
    - an LLM-bound summary markdown blob
    - a `view_url` pointing at the SPA route for this search
 4. An OWUI filter (`search_iframe_lift_filter.py`) renders the SPA in an
-   iframe below the LLM's reply.
+   iframe above the LLM's reply.
 5. The LLM uses the sample plus summary to continue the conversation; the
    user uses the iframe to browse the full cohort table, refine with follow-up questions, 
   and trigger bulk actions like export CSV and Send-to-XNAT.
@@ -144,8 +144,8 @@ which rows match is stored. The query runs against Trino each time the
 SPA fetches rows, exports CSV, or fetches a single report.
 
 - **Postgres `searches` table** holds: `id`, `owner_sub`,
-  `id_column`, `sql`, `sql_explanation`, `highlight_terms`,
-  `highlight_diagnosis`, `row_count` (cached at create time via one
+  `id_column`, `sql`, `sql_explanation`, `match_terms`,
+  `match_diagnoses`, `row_count` (cached at create time via one
   `SELECT COUNT(*) FROM (<sql>)`), `owui_chat_id`, `created_at`.
 - **No Delta side-table**, no Postgres `id_list`, no row_metadata blob.
   Every read wraps the saved `sql` as a subquery and applies
@@ -277,7 +277,7 @@ this same API; today the only one is the OWUI in-image tool.
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/searches` | Save a SQL-defined search. Body: `{ sql, sql_explanation, highlight_terms, owui_chat_id }`. The service stores the SQL, runs `SELECT COUNT(*) FROM (<sql>) sub` to cache the count, and returns `id + count + sample + summary + view_url`. The CSV-upload path uses a sibling endpoint `POST /api/searches/from-file` that validates the supplied identifiers against `reports_latest` and saves a `WHERE <id_col> IN (...)` SQL — same downstream shape. No materialization in either case. |
+| POST | `/api/searches` | Save a SQL-defined search. Body: `{ sql, sql_explanation, match_terms, owui_chat_id }`. The service stores the SQL, runs `SELECT COUNT(*) FROM (<sql>) sub` to cache the count, and returns `id + count + sample + summary + view_url`. The CSV-upload path uses a sibling endpoint `POST /api/searches/from-file` that validates the supplied identifiers against `reports_latest` and saves a `WHERE <id_col> IN (...)` SQL — same downstream shape. No materialization in either case. |
 | GET | `/api/searches/{id}` | Search metadata (count, owner, timestamps). |
 | GET | `/api/searches/{id}/rows?page&limit&sort&filter` | Paginated rows for the SPA table. Server-side filter and sort on Trino-native columns. |
 | GET | `/api/searches/{id}/csv` | Streaming chunked CSV download (mirrors `/rows` — paginated JSON vs. streamed CSV). |
@@ -288,7 +288,7 @@ this same API; today the only one is the OWUI in-image tool.
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/reports/query` | Run ad-hoc analytical SQL. Returns rows up to `row_cap` (default 500). No persistence. (Maps to the `scout_query_sql` tool surface.) |
+| POST | `/api/reports/query` | Run ad-hoc analytical SQL. Callers cap row count with `LIMIT` in the SQL. No persistence. (Maps to the `scout_query_sql` tool surface.) |
 | POST | `/api/reports/read` | Fetch specific reports by ID array. Returns matching rows directly. No persistence. (Maps to the `scout_get_reports` tool surface.) |
 
 **SPA and infrastructure:**
@@ -302,7 +302,7 @@ this same API; today the only one is the OWUI in-image tool.
 
 | Tool | REST call |
 |---|---|
-| `scout_find_reports` (criteria) | `POST /api/searches` with `{ sql, sql_explanation, highlight_terms, parent_id? }` |
+| `scout_find_reports` (criteria) | `POST /api/searches` with `{ sql, sql_explanation, match_terms, parent_id? }` |
 | `scout_find_reports` (file) | `POST /api/searches/from-file` (multipart with file plus optional column hints) |
 | `scout_get_reports` | `POST /api/reports/read` |
 | `scout_query_sql` | `POST /api/reports/query` |
@@ -323,7 +323,7 @@ prompt enforces with examples.
 
 ### Snippet + positive-diagnosis feedback to the LLM
 
-The LLM passes `highlight_terms` (e.g. `["stroke", "cerebral
+The LLM passes `match_terms` (e.g. `["stroke", "cerebral
 infarction", "cva"]`) on every clinical-finding cohort. The service
 uses those terms to feed evidence back to the LLM in the sample rows
 returned alongside the cohort summary:
@@ -522,8 +522,6 @@ it so it's not a blocker.
 - Prompt review needed, too much irrelevant stuff has built up while iterating on the service. 
  - when to use reports_latest vs reports_latest_epic_view and other Scout tables and views.
 
-- Report snippets are not being given to the llm for context and the diagnosis codes are presented outside of the results table given to the llm. This is a regression from the POC, the llm needs some report context.
-
 - The LLM is picking too many highlight terms, maybe limit to 3 - 5.
 
 - Update observability stack
@@ -532,13 +530,13 @@ it so it's not a blocker.
 
 - Test CSV Upload and Download.
 
+- Handle CSV files in service instead of owui.
+
 - Send to XNAT handoff with IQ plugin. Not needed for the initial release but will be needed soon after.
 
 - "POST /api/searches/from-file" i thought we discused sending the file to the service directly instead of OWUI parsing it? I think the logic is better handeled in the service and not in OWUI.
 
-- Why row cap in the json POST /api/reports/query:
-  { "sql": "SELECT modality, COUNT(*) FROM reports_latest GROUP BY 1", "row_cap": 500 } - this should be handled by a LIMIT clause or we have a hard limit on the backend for the number of rows returned this is a bit of an odd pattern to have in the API.
-  - row caps in genral what is up
+- Remove Test mode for the front end
 
 - Review the Markdown summary shapping.
 

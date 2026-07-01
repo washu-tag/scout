@@ -118,8 +118,8 @@ def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
         sql=r["sql"],
         owner_sub=r["owner_sub"],
         created_at=r["created_at"],
-        highlight_terms=r.get("highlight_terms") or [],
-        highlight_diagnosis=r.get("highlight_diagnosis") or [],
+        match_terms=r.get("match_terms") or [],
+        match_diagnoses=r.get("match_diagnoses") or [],
         sql_explanation=r.get("sql_explanation") or "",
         owui_chat_id=r.get("owui_chat_id") or "",
     )
@@ -146,22 +146,20 @@ async def create_search(
 ) -> CreateSearchResponse:
     """Save a SQL query as a search. No row materialization - runs one
     `SELECT COUNT(*)` to cache the count, fetches 5 sample rows for
-    the LLM, and (if highlight_terms is set) one additional small
-    query against reports_latest to attach snippet + positive_dx
-    fields to the sample.
+    the LLM, and (if match_terms or match_diagnoses is set) one
+    additional small query against reports_latest to populate per-row
+    evidence (excerpt + matched_diagnoses).
 
     Refinement: when the LLM wants to narrow a search, it writes a new
     `POST /searches` call with the original conditions plus the new
-    constraint - the saved SQL is standalone, no placeholder
+    constraint. The saved SQL is standalone, no placeholder
     substitution, no parent reference required.
     """
     sql = _wrap_sql(body.sql)
 
-    # Validate the search SQL by fetching the first 5 sample rows.
-    # This both surfaces SQL errors early and gives us the sample
-    # we need for the LLM-bound summary. The LIMIT lives outside the
-    # sql we save - we wrap as a subquery so the LLM's own
-    # LIMIT (e.g. LIMIT 50000) is respected on later /rows reads.
+    # Sample query doubles as SQL validation: errors surface here before
+    # we persist anything. The LIMIT lives outside the saved sql so the
+    # LLM's own LIMIT is respected on later /rows reads.
     sample_sql = f"SELECT s.* FROM ({sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
         with metrics.time_trino("create_sample_query"):
@@ -175,12 +173,6 @@ async def create_search(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}",
         )
-    if not sample_rows:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="query returned no rows - try broadening the filter.",
-        )
-
     id_column = _pick_id_column(columns, body.id_column)
 
     count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
@@ -195,11 +187,8 @@ async def create_search(
         # better than failing the whole create.
         row_count = 0
 
-    # Pure LLM-context aid: one small Trino fetch for the sample IDs,
-    # used to attach snippet (text-match) + positive_dx (chip-match)
-    # to the sample rows. Nothing persisted.
     sample_extras: dict[str, dict[str, Any]] = {}
-    if body.highlight_terms or body.highlight_diagnosis:
+    if body.match_terms or body.match_diagnoses:
         sample_ids = [
             str(r.get(id_column)) for r in sample_rows if r.get(id_column) is not None
         ]
@@ -222,20 +211,20 @@ async def create_search(
                     if key is not None:
                         sample_extras[str(key)] = er
             except Exception:
-                # Snippet feedback is a nice-to-have; carry on without.
+                # Evidence is a nice-to-have; carry on without it.
                 log.exception("sample-text fetch failed (non-fatal)")
 
     # \b boundaries so short tokens like "PE" don't match in "pectoralis".
-    hl_pattern = None
-    if body.highlight_terms:
-        atoms = [re.escape(t.strip()) for t in body.highlight_terms if t and t.strip()]
+    match_pattern = None
+    if body.match_terms:
+        atoms = [re.escape(t.strip()) for t in body.match_terms if t and t.strip()]
         if atoms:
-            hl_pattern = re.compile(r"(?is)\b(" + "|".join(atoms) + r")\b")
+            match_pattern = re.compile(r"(?is)\b(" + "|".join(atoms) + r")\b")
 
     # Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
     dx_prefixes: list[str] = []
-    if body.highlight_diagnosis:
-        for d in body.highlight_diagnosis:
+    if body.match_diagnoses:
+        for d in body.match_diagnoses:
             if d and d.strip():
                 dx_prefixes.append(d.strip().rstrip("%").lower())
 
@@ -245,19 +234,23 @@ async def create_search(
         "report_section_impression",
         "report_section_addendum",
     }
-    sample = []
+    sample: list[dict[str, Any]] = []
+    evidence: list[dict[str, Any]] = []
     for r in sample_rows:
         row_out = {k: v for k, v in r.items() if k not in _drop_cols}
-        if body.highlight_terms or dx_prefixes:
+        ev: dict[str, Any] = {
+            id_column: r.get(id_column),
+            "excerpt": None,
+            "matched_diagnoses": [],
+        }
+        if body.match_terms or dx_prefixes:
             key = str(r.get(id_column)) if r.get(id_column) is not None else None
             extra = sample_extras.get(key, {}) if key else {}
             merged = {**r, **extra}
-            if body.highlight_terms:
-                snip = _extract_snippet(merged, body.highlight_terms)
-                if snip:
-                    row_out["snippet"] = snip
+            if body.match_terms:
+                ev["excerpt"] = _extract_excerpt(merged, body.match_terms)
             dxs = extra.get("diagnoses") or r.get("diagnoses") or []
-            positive_dx: list[dict[str, str]] = []
+            matched_diagnoses: list[dict[str, str]] = []
             for d in dxs if isinstance(dxs, list) else []:
                 if not isinstance(d, dict):
                     continue
@@ -266,17 +259,15 @@ async def create_search(
                 if not code:
                     continue
                 code_lc = code.lower()
-                matched = False
                 if dx_prefixes and any(code_lc.startswith(p) for p in dx_prefixes):
-                    matched = True
-                elif hl_pattern and hl_pattern.search(f"{code} {text}"):
-                    matched = True
-                if matched:
-                    positive_dx.append({"code": code, "text": text})
-            if positive_dx:
-                row_out["positive_dx"] = positive_dx
+                    matched_diagnoses.append({"code": code, "text": text})
+                elif match_pattern and match_pattern.search(f"{code} {text}"):
+                    matched_diagnoses.append({"code": code, "text": text})
+            ev["matched_diagnoses"] = matched_diagnoses
         sample.append(row_out)
+        evidence.append(ev)
     sample = _jsonsafe(sample)
+    evidence = _jsonsafe(evidence)
 
     search_id = new_search_id()
     stored = await store.insert_search(
@@ -285,8 +276,8 @@ async def create_search(
         sql=sql,
         owner_sub=user.sub,
         row_count=row_count,
-        highlight_terms=body.highlight_terms or [],
-        highlight_diagnosis=body.highlight_diagnosis or [],
+        match_terms=body.match_terms or [],
+        match_diagnoses=body.match_diagnoses or [],
         sql_explanation=body.sql_explanation or "",
         owui_chat_id=body.owui_chat_id or "",
     )
@@ -303,20 +294,14 @@ async def create_search(
         },
     )
 
-    summary = _build_summary(
-        total_rows=stored["count"],
-        columns=columns,
-        sample_rows=sample,
-        saved_search_id=stored["id"],
-    )
-
     return CreateSearchResponse(
         id=stored["id"],
         count=stored["count"],
         id_column=stored["id_column"],
-        sample=sample,
         view_url=_view_url(search_id),
-        summary=summary,
+        columns=[c for c in columns if c not in _drop_cols],
+        sample=sample,
+        evidence=evidence,
     )
 
 
@@ -449,32 +434,14 @@ async def create_search_from_file(
         },
     )
 
-    summary_lines = [
-        f"Imported {len(final_ids):,} of {submitted:,} submitted {body.id_column} values.",
-    ]
-    if unmatched:
-        summary_lines.append(
-            f"{len(unmatched):,} IDs were not found in reports_latest and "
-            f"were dropped from the search."
-        )
-    summary_lines.append("")
-    summary_lines.append(
-        "USER DISPLAY: the matched IDs render as a search in the viewer "
-        "iframe below. The dropped IDs are listed in `unmatched_sample` "
-        "above (up to 50 shown); summarize them for the user if asked. "
-        "DO NOT restate the matched rows."
-    )
-    summary_lines.append("")
-    summary_lines.append(f"Internal search handle for chaining: {stored['id']}.")
-
     return CreateFromFileResponse(
         id=stored["id"],
         count=stored["count"],
+        id_column=stored["id_column"],
         submitted_count=submitted,
         unmatched_sample=unmatched[:50],
         unmatched_total=len(unmatched),
         view_url=_view_url(search_id),
-        summary="\n".join(summary_lines),
     )
 
 
@@ -493,8 +460,8 @@ async def get_search_meta(
         sql=ds["sql"],
         owner_sub=ds["owner_sub"],
         created_at=ds["created_at"],
-        highlight_terms=ds.get("highlight_terms") or [],
-        highlight_diagnosis=ds.get("highlight_diagnosis") or [],
+        match_terms=ds.get("match_terms") or [],
+        match_diagnoses=ds.get("match_diagnoses") or [],
         sql_explanation=ds.get("sql_explanation") or "",
         owui_chat_id=ds.get("owui_chat_id") or "",
     )
@@ -779,13 +746,13 @@ async def export_search_csv(
         if total == 0:
             return
         for offset in range(0, total, _CSV_CHUNK):
-            sql = (
+            page_sql = (
                 f"SELECT {cols_select} FROM ({sql}) s "
                 f"OFFSET {offset} LIMIT {_CSV_CHUNK}"
             )
             try:
                 with metrics.time_trino("export_csv_query"):
-                    _, rows = await trino_client.execute(sql, user=user.sub)
+                    _, rows = await trino_client.execute(page_sql, user=user.sub)
             except Exception:
                 log.exception("trino export query failed at offset=%d", offset)
                 yield b"# ERROR: query failed mid-export; file is incomplete\n"
@@ -805,11 +772,11 @@ async def export_search_csv(
     )
 
 
-def _extract_snippet(
+def _extract_excerpt(
     row: dict[str, Any], terms: list[str], *, window: int = 80
 ) -> str | None:
-    """Return a short text excerpt around the first highlight_term hit
-    in this row's report text. Pure regex; no stored snippets."""
+    """Excerpt of ±window chars around the first match_terms hit in
+    this row's parsed report sections, falling back to report_text."""
     if not terms:
         return None
     escaped = [re.escape(t.strip()) for t in terms if t and t.strip()]
@@ -832,76 +799,3 @@ def _extract_snippet(
             out = out + "…"
         return out
     return None
-
-
-def _build_summary(
-    *,
-    total_rows: int,
-    columns: list[str],
-    sample_rows: list[dict[str, Any]],
-    saved_search_id: str,
-) -> str:
-    """LLM-bound markdown summary returned alongside the search."""
-    parts: list[str] = []
-    rows_word = "row" if total_rows == 1 else "rows"
-    parts.append(
-        f"SQL matched {total_rows:,} {rows_word} across {len(columns)} columns."
-    )
-    parts.append("")
-    parts.append(f"Columns: {', '.join(columns)}")
-    if sample_rows:
-        parts.append("")
-        parts.append(
-            "USER DISPLAY: an interactive table of these rows is rendered "
-            "below your reply (sortable columns, header filters, "
-            "click-row-to-expand for full report with matched terms "
-            "highlighted, plus Export CSV and Send to XNAT). "
-            "DO NOT restate the table or re-list rows in markdown - the "
-            "user already sees them. Spend your reply on what the table "
-            "can't carry: pattern observations, refinement suggestions, "
-            "follow-up queries worth running, a one-sentence summary. "
-            "The sample below is FOR YOUR REASONING ONLY; do not echo "
-            "it back."
-        )
-        parts.append("")
-        parts.append(
-            f"Sample for your reasoning ({len(sample_rows)} of {total_rows:,} rows):"
-        )
-        visible_cols = [c for c in columns if c in sample_rows[0]]
-        if visible_cols:
-            header = "| " + " | ".join(visible_cols) + " |"
-            sep = "|" + "|".join("---" for _ in visible_cols) + "|"
-            parts.append(header)
-            parts.append(sep)
-            for r in sample_rows:
-                cells = []
-                for c in visible_cols:
-                    v = str(r.get(c) or "")
-                    v = v.replace("|", "\\|").replace("\n", " ")
-                    if len(v) > 140:
-                        v = v[:137] + "…"
-                    cells.append(v)
-                parts.append("| " + " | ".join(cells) + " |")
-        # Surface per-row evidence (snippet + positive_dx) alongside the table for the LLM.
-        snippet_lines = []
-        for i, r in enumerate(sample_rows):
-            evidence = []
-            if r.get("snippet"):
-                evidence.append(f"snippet: \"{r['snippet']}\"")
-            if r.get("positive_dx"):
-                dx = "; ".join(f"{d['code']} ({d['text']})" for d in r["positive_dx"])
-                evidence.append(f"matching dx: {dx}")
-            if evidence:
-                snippet_lines.append(f"  row {i+1}: " + " | ".join(evidence))
-        if snippet_lines:
-            parts.append("")
-            parts.append("Evidence for each sample row:")
-            parts.extend(snippet_lines)
-    parts.append("")
-    parts.append(
-        f"Internal search handle: {saved_search_id}. Keep this backstage; "
-        f"only mention it to the user when discussing the search by name. "
-        f"XNAT export is a button in the viewer - only mention it when "
-        f"the user explicitly says they're ready to export."
-    )
-    return "\n".join(parts)

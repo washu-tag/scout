@@ -5,11 +5,12 @@ from __future__ import annotations
 
 def test_view_returns_html_for_owner(client, auth_headers, fake_trino):
     fake_trino(["message_control_id"], [{"message_control_id": "m1"}])
+    fake_trino(["n"], [{"n": 1}])
     dsid = client.post(
         "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
-    ).json()["search_id"]
+    ).json()["id"]
 
     r = client.get(f"/api/searches/{dsid}/view", headers=auth_headers)
     assert r.status_code == 200
@@ -23,11 +24,12 @@ def test_view_returns_html_for_owner(client, auth_headers, fake_trino):
 
 def test_view_404_for_other_user(client, auth_headers, fake_trino):
     fake_trino(["message_control_id"], [{"message_control_id": "m1"}])
+    fake_trino(["n"], [{"n": 1}])
     dsid = client.post(
         "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
-    ).json()["search_id"]
+    ).json()["id"]
 
     r = client.get(
         f"/api/searches/{dsid}/view",
@@ -40,11 +42,12 @@ def test_accessions_returns_deduped_list(client, auth_headers, fake_trino):
     fake_trino(
         ["message_control_id"], [{"message_control_id": f"m{i}"} for i in range(3)]
     )
+    fake_trino(["n"], [{"n": 3}])
     dsid = client.post(
         "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
-    ).json()["search_id"]
+    ).json()["id"]
 
     fake_trino(
         ["accession_number"],
@@ -60,11 +63,12 @@ def test_export_csv_streams_with_header_and_rows(client, auth_headers, fake_trin
         ["message_control_id"],
         [{"message_control_id": "m1"}, {"message_control_id": "m2"}],
     )
+    fake_trino(["n"], [{"n": 2}])
     dsid = client.post(
         "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
-    ).json()["search_id"]
+    ).json()["id"]
 
     fake_trino(
         [
@@ -114,24 +118,12 @@ def test_export_csv_streams_with_header_and_rows(client, auth_headers, fake_trin
 
 def test_export_csv_empty_search_returns_header_only(client, auth_headers, fake_trino):
     fake_trino(["message_control_id"], [{"message_control_id": "only"}])
+    fake_trino(["n"], [{"n": 0}])
     dsid = client.post(
         "/api/searches",
         json={"sql": "SELECT message_control_id FROM reports_latest"},
         headers=auth_headers,
-    ).json()["search_id"]
-    # Empty Trino response for the export step → 1 chunk → 0 rows.
-    fake_trino(
-        [
-            "message_control_id",
-            "accession_number",
-            "modality",
-            "service_name",
-            "message_dt",
-            "patient_age",
-            "sex",
-        ],
-        [],
-    )
+    ).json()["id"]
     r = client.get(f"/api/searches/{dsid}/csv", headers=auth_headers)
     assert r.status_code == 200
     lines = r.text.strip().splitlines()

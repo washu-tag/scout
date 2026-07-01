@@ -15,6 +15,24 @@ export class ApiError extends Error {
   }
 }
 
+// User-facing error text. Never surfaces the raw FastAPI `detail` (which can
+// leak SQL fragments or stack-trace remnants); leaks the status code as small
+// print only so support requests carry something diagnostic.
+export function friendlyError(err: unknown, subject: string): string {
+  if (!(err instanceof ApiError)) {
+    return `Couldn't reach the report-viewer service. Check your connection or try again in a moment.`;
+  }
+  switch (err.status) {
+    case 401:
+    case 403:
+      return `Your session has expired, or you don't have access to ${subject}. Refresh the page to sign back in.`;
+    case 404:
+      return `${subject[0].toUpperCase() + subject.slice(1)} couldn't be found — it may have been removed.`;
+    default:
+      return `Something went wrong loading ${subject}. Try again in a moment; if it keeps happening, let the Scout team know.`;
+  }
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const resp = await fetch(path, {
     ...init,
@@ -52,8 +70,8 @@ export interface SearchMeta {
   sql: string;
   owner_sub: string;
   created_at: string;
-  highlight_terms: string[];
-  highlight_diagnosis: string[];
+  match_terms: string[];
+  match_diagnoses: string[];
   sql_explanation: string;
   owui_chat_id: string;
 }

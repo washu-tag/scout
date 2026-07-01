@@ -8,12 +8,14 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-# Identifier columns accepted by /api/reports/read. Order = preference
-# for the auto-pick in searches.py (report-scoped first).
+# Order = preference for the auto-pick in searches.py.
+# primary_report_identifier is first because it's the only column
+# guaranteed unique in reports_latest (it's the renamed source_file,
+# the S3 path). message_control_id can collide across sending facilities.
 KNOWN_ID_COLUMNS: tuple[str, ...] = (
-    "message_control_id",
-    "accession_number",
     "primary_report_identifier",
+    "accession_number",
+    "message_control_id",
     "epic_mrn",
     "mpi",
     "scout_patient_id",
@@ -39,30 +41,25 @@ class CreateSearchRequest(BaseModel):
         description="Override the auto-picked identifier column. Must be present in the SELECT.",
     )
 
-    # Clinical terms to highlight in the report-text viewer when a user
-    # expands a row. The SQL itself does positive/negative filtering;
-    # these are purely for UI emphasis so the user can see WHY the LLM
-    # selected each row.
-    highlight_terms: list[str] | None = Field(
+    match_terms: list[str] | None = Field(
         default=None,
         description=(
-            "Clinical text terms to highlight in the row-expand viewer "
-            "(e.g. ['pulmonary embolism', 'PE']). UI-only; the SQL is "
-            "what decides which rows are in the search. Anatomy/exam-"
-            "type words don't belong here those go in the SQL. "
-            "Matched with word boundaries on the SPA side, so short "
-            "abbreviations don't bleed into longer words."
+            "Clinical text terms (e.g. ['pulmonary embolism', 'PE']) "
+            "matched against report sections to produce the `excerpt` "
+            "field on each evidence row, and highlighted in the "
+            "row-expand viewer. Matched with word boundaries on the "
+            "SPA side. Anatomy/exam-type words belong in the SQL, "
+            "not here."
         ),
     )
-    highlight_diagnosis: list[str] | None = Field(
+    match_diagnoses: list[str] | None = Field(
         default=None,
         description=(
-            "ICD codes (or code prefixes) to flag on the diagnosis "
-            "chips in the row-expand viewer. Examples: ['R91.1'], "
-            "['J18', 'R91'] (prefix match against diagnosis_code). "
-            "UI-only; the SQL still drives inclusion. Use this when "
-            "the cohort is code-driven and the user benefits from "
-            "seeing the matching codes called out."
+            "ICD codes (or code prefixes) matched against "
+            "`diagnosis_code` to populate `matched_diagnoses` on each "
+            "evidence row, and surfaced as chips in the row-expand "
+            "viewer. Examples: ['R91.1'], ['J18', 'R91']. UI/evidence "
+            "only; the SQL still drives inclusion."
         ),
     )
     sql_explanation: str | None = Field(
@@ -119,12 +116,12 @@ class CreateFromFileRequest(BaseModel):
 
 class CreateFromFileResponse(BaseModel):
     id: str
-    count: int  # matched count encoded into the saved IN-list SQL
-    submitted_count: int  # total IDs the caller submitted (before dedup/validate)
-    unmatched_sample: list[str]  # up to 50 IDs we didn't find in reports_latest
+    count: int
+    id_column: str
+    submitted_count: int
+    unmatched_sample: list[str]
     unmatched_total: int
     view_url: str
-    summary: str  # LLM-bound markdown
 
 
 class QueryRequest(BaseModel):
@@ -162,13 +159,12 @@ class CreateSearchResponse(BaseModel):
     id: str
     count: int
     id_column: str
-    # The LLM-bound summary (count + columns + sample table +
-    # anti-restatement directive + internal search handle note).
-    summary: str
-    # Per-row sample for the LLM's reasoning context. Big text columns
-    # stripped server-side. JSON-safe (Trino types coerced).
-    sample: list[dict[str, Any]]
     view_url: str
+    columns: list[str]
+    sample: list[dict[str, Any]]
+    # Parallel-indexed to `sample`. Each item is {id_column: value,
+    # excerpt: str | None, matched_diagnoses: list[{code, text}]}.
+    evidence: list[dict[str, Any]]
 
 
 class SearchMeta(BaseModel):
@@ -178,8 +174,8 @@ class SearchMeta(BaseModel):
     sql: str
     owner_sub: str
     created_at: datetime
-    highlight_terms: list[str] = []
-    highlight_diagnosis: list[str] = []
+    match_terms: list[str] = []
+    match_diagnoses: list[str] = []
     # Plain-language summary of what the SQL matches and why,
     # written by the LLM at create time. Surfaced in the SPA's
     # "About this search" panel. Empty string if not provided.

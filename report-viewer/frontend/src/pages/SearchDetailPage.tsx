@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-table';
 import {
   activeFilterCount,
+  friendlyError,
   getSearch,
   getSearchRows,
   getReport,
@@ -192,9 +193,7 @@ export default function SearchDetailPage() {
           </span>
         )}
       </div>
-      {rowsQ.error && (
-        <p style={{ color: '#b00' }}>Failed to load rows: {(rowsQ.error as Error).message}</p>
-      )}
+      {rowsQ.error && <p style={{ color: '#b00' }}>{friendlyError(rowsQ.error, 'these rows')}</p>}
       {/* Always render the table once we have anything (including the
           previous data via keepPreviousData). The wrapping ternary
           shows a single first-load skeleton when there's no data at
@@ -984,9 +983,7 @@ function RowDetail(props: {
 
       {reportQ.isLoading && <div style={{ color: '#888' }}>Loading report…</div>}
       {reportQ.error && (
-        <div style={{ color: '#b00' }}>
-          Failed to load report: {(reportQ.error as Error).message}
-        </div>
+        <div style={{ color: '#b00' }}>{friendlyError(reportQ.error, 'this report')}</div>
       )}
       {reportQ.data && (
         <div
@@ -1255,7 +1252,8 @@ function ExplainSqlModal(props: {
             >
               Words and diagnosis codes the LLM flagged as positive signals. They are highlighted in
               the report text and diagnosis chips when you expand a row, so you can spot-check why
-              each row matched.
+              each row matched. <strong>Display only:</strong> these do not filter the search, the
+              SQL above is what selected these rows.
             </p>
             {terms.length > 0 && (
               <div style={{ marginBottom: codes.length > 0 ? '0.4rem' : 0 }}>
