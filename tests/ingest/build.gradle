@@ -25,9 +25,9 @@ repositories {
 final String vQuerySpec = '1.2-SNAPSHOT'
 final String vCheckstyle = '13.4.2'
 final String vLog4j2Bridge = '2.24.2'
-final String vSparkSql = '3.5.4'
-final String vDeltaSpark = '3.1.0'
-final String vHadoop = '3.2.0'
+final String vSparkSql = '4.1.1'
+final String vDeltaSpark = '4.3.0'
+final String vHadoop = '3.4.2'
 final String vPostgres = '42.7.5'
 final String vTemporal = '1.27.0'
 final String vAwaitility = '4.3.0'
@@ -56,6 +56,8 @@ test {
     // TODO: from https://github.com/apache/spark/blob/master/launcher/src/main/java/org/apache/spark/launcher/JavaModuleOptions.java
     // Is there not a better way?
     jvmArgs([
+        '--add-modules=jdk.incubator.vector',
+        '--enable-native-access=ALL-UNNAMED',
         '--add-opens=java.base/java.lang=ALL-UNNAMED',
         '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
         '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
@@ -75,12 +77,17 @@ test {
 }
 
 dependencies {
-    testImplementation("edu.washu.tag:query-spec:${vQuerySpec}")
+    // query-spec declares spark-sql_2.12 (Spark 3.5) at runtime scope; Spark 4
+    // is Scala 2.13 only, so excluding it here keeps the 2.12 jars off the
+    // classpath and runs query-spec against the 2.13 Spark below instead.
+    testImplementation("edu.washu.tag:query-spec:${vQuerySpec}") {
+        exclude group: 'org.apache.spark'
+    }
     testImplementation("org.apache.logging.log4j:log4j-slf4j2-impl:${vLog4j2Bridge}")
-    testImplementation("org.apache.spark:spark-sql_2.12:${vSparkSql}")
-    testImplementation("org.apache.spark:spark-hive_2.12:${vSparkSql}")
-    testImplementation("org.apache.spark:spark-hive-thriftserver_2.12:${vSparkSql}")
-    testImplementation("io.delta:delta-spark_2.12:${vDeltaSpark}")
+    testImplementation("org.apache.spark:spark-sql_2.13:${vSparkSql}")
+    testImplementation("org.apache.spark:spark-hive_2.13:${vSparkSql}")
+    testImplementation("org.apache.spark:spark-hive-thriftserver_2.13:${vSparkSql}")
+    testImplementation("io.delta:delta-spark_4.1_2.13:${vDeltaSpark}")
     testImplementation("org.apache.hadoop:hadoop-aws:${vHadoop}")
     testImplementation("org.postgresql:postgresql:${vPostgres}")
     testImplementation("io.temporal:temporal-sdk:${vTemporal}")
