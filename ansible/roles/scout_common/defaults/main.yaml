@@ -467,9 +467,10 @@ yum_proxy_base_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository')
      if package_proxy_mode == 'nexus'
      else '' }}
-# Maven proxy URL for resolving plugin coordinates (xnat role). Points at the
-# Nexus scout-maven group when proxying, empty otherwise (like the other
-# *_proxy_url values); when set, rendered as a mirror in the xnat settings.xml.
+# Maven proxy URL for the Nexus scout-maven group (a MIXED group that includes the
+# maven-central proxy). Consumed by the xnat role (rendered as a mirror in its
+# settings.xml) and by the hl7-listener role (Camel K build mirror). Empty when not
+# proxying, like the other *_proxy_url values.
 maven_proxy_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository/scout-maven')
      if package_proxy_mode == 'nexus'

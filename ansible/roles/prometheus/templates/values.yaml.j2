@@ -74,6 +74,69 @@ extraScrapeConfigs: |
     static_configs:
       - targets: ['hl7log-extractor.{{ extractor_namespace }}:8080']
 
+  # Real-time HL7 listener stack: Strimzi operator, Kafka brokers, Camel K integrations
+  - job_name: strimzi-operator
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace]
+        action: keep
+        regex: {{ strimzi_operator_namespace | default(scout_operators_namespace) }}
+      - source_labels: [__meta_kubernetes_pod_label_name]
+        action: keep
+        regex: strimzi-cluster-operator
+      - source_labels: [__address__]
+        action: replace
+        regex: ([^:]+)(?::\d+)?
+        replacement: $1:8080
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+
+  - job_name: kafka
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace]
+        action: keep
+        regex: {{ hl7_listener_namespace | default(scout_extractor_namespace) }}
+      - source_labels: [__meta_kubernetes_pod_label_strimzi_io_kind]
+        action: keep
+        regex: Kafka
+      - source_labels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+        action: keep
+        regex: {{ kafka_cluster_name | default("kafka") }}
+      # Scrape only the named Strimzi metrics port (tcp-prometheus, 9404). Pods
+      # that lack it — e.g. the entity-operator (healthcheck ports only) — yield
+      # no target, instead of a perpetually-down :9404 scrape.
+      - source_labels: [__meta_kubernetes_pod_container_port_name]
+        action: keep
+        regex: tcp-prometheus
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+
+  - job_name: camel-k
+    metrics_path: /q/metrics
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace]
+        action: keep
+        regex: {{ hl7_listener_namespace | default(scout_extractor_namespace) }}
+      - source_labels: [__meta_kubernetes_pod_label_camel_apache_org_integration]
+        action: keep
+        regex: .+
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_label_camel_apache_org_integration]
+        target_label: integration
+
   - job_name: postgres
     metrics_path: /metrics
     kubernetes_sd_configs:

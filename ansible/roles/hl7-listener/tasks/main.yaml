@@ -1,0 +1,6 @@
+---
+# Main entry point for hl7-listener role
+# Deploys Strimzi Kafka, Camel K operator, and HL7 listener integration
+
+- name: Include deployment tasks
+  ansible.builtin.include_tasks: deploy.yaml
