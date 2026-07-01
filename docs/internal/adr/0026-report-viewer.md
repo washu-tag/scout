@@ -515,10 +515,6 @@ it so it's not a blocker.
 
 - Test aggregate queries and non-cohort queries from the LLM.
 
-- Prompt review needed, too much irrelevant stuff has built up while iterating on the service. 
- - when to use reports_latest vs reports_latest_epic_view and other Scout tables and views.
-
-- The LLM is picking too many highlight terms, maybe limit to 3 - 5.
 
 
 - Test CSV Upload and Download.
