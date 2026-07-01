@@ -43,6 +43,10 @@ async def reset_schema():
     async with db.get_conn() as conn:
         async with conn.cursor() as cur:
             await cur.execute("DROP TABLE IF EXISTS searches CASCADE")
+            await cur.execute("DROP TABLE IF EXISTS _yoyo_migration CASCADE")
+            await cur.execute("DROP TABLE IF EXISTS _yoyo_log CASCADE")
+            await cur.execute("DROP TABLE IF EXISTS _yoyo_version CASCADE")
+            await cur.execute("DROP TABLE IF EXISTS yoyo_lock CASCADE")
         await conn.commit()
     await db.ensure_schema()
     yield

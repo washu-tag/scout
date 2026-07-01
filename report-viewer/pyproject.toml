@@ -32,6 +32,7 @@ dependencies = [
     "python-jose[cryptography]",
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
+    "yoyo-migrations",
 ]
 
 [project.optional-dependencies]
@@ -49,7 +50,7 @@ where = ["src"]
 # run build) writes there; the ansible source-bundle picks it up; FastAPI's
 # StaticFiles mount serves it.
 [tool.setuptools.package-data]
-scout_report_viewer = ["static/**/*"]
+scout_report_viewer = ["static/**/*", "migrations/*.sql"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
