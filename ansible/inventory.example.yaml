@@ -335,10 +335,6 @@ k3s_cluster:
     # Password for the least-privileged OWUI Postgres role. Provisioned by
     # the open-webui role, consumed by the report-viewer webhook.
     owui_settings_writer_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_openwebui_mcp_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # Trino file-based PASSWORD authenticator entry for the Open WebUI MCP
-    # (tuannvm/mcp-trino speaks HTTP Basic outbound only — ADR 0022).
-    trino_openwebui_mcp_svc_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # XNAT's confidential OIDC client secret. Required only when enable_xnat is
     # true. See the XNAT section below.
     # keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)

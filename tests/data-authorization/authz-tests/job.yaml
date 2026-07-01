@@ -9,8 +9,8 @@
 # Service FQDNs.
 #
 # The companion `data-authz-test-script` ConfigMap (run.sh) and
-# `data-authz-test-creds` Secret (KC admin pw + superset_svc client
-# secret) are created by the CI workflow before this Job is applied --
+# `data-authz-test-creds` Secret (KC admin pw + service-principal
+# client secrets) are created by the CI workflow before this Job is applied --
 # `kubectl create configmap --from-file` / `--from-literal` keep that
 # rendering trivial and avoid the multi-line / backslash-escape
 # pitfalls a `data: { run.sh: | ... }` template would invite.
@@ -65,16 +65,13 @@ spec:
                 secretKeyRef:
                   name: data-authz-test-creds
                   key: SUPERSET_SVC_CLIENT_SECRET
-            # PASSWORD-auth scenario (PR6): mcp-trino's HTTP-Basic outbound
-            # principal. Optional — run.sh skips scenario 10 if unset, so
-            # this Job runs unchanged against deployments without PR6's
-            # password-authenticator Secret.
-            - name: MCP_SVC_PASSWORD
+            - name: REPORT_VIEWER_SVC_CLIENT_ID
+              value: report_viewer_svc
+            - name: REPORT_VIEWER_SVC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: data-authz-test-creds
-                  key: MCP_SVC_PASSWORD
-                  optional: true
+                  key: REPORT_VIEWER_SVC_CLIENT_SECRET
             - name: OPA_URL
               value: http://opa-trino.scout-analytics:8181
             - name: TRINO_URL
