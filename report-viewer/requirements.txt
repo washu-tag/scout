@@ -11,3 +11,5 @@ tzlocal<5
 python-jose[cryptography]
 prometheus-fastapi-instrumentator>=7
 prometheus-client>=0.20
+yoyo-migrations
+psycopg2-binary

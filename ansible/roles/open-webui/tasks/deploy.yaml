@@ -48,13 +48,13 @@
     tasks_from: execute_sql
   vars:
     # Table GRANTs need the openwebui DB, not the default postgres.
-    db_connect_name: '{{ open_webui_database }}'
+    sql_dbname: '{{ open_webui_database }}'
     sql_script: |
-      DO $$ BEGIN
+      DO $do$ BEGIN
         CREATE ROLE {{ owui_settings_writer_role }} LOGIN PASSWORD '{{ owui_settings_writer_password }}';
       EXCEPTION WHEN duplicate_object THEN
         ALTER ROLE {{ owui_settings_writer_role }} WITH PASSWORD '{{ owui_settings_writer_password }}';
-      END $$;
+      END $do$;
       GRANT CONNECT ON DATABASE {{ open_webui_database }} TO {{ owui_settings_writer_role }};
       GRANT USAGE ON SCHEMA public TO {{ owui_settings_writer_role }};
       GRANT SELECT (id, settings), UPDATE (settings) ON "user" TO {{ owui_settings_writer_role }};
@@ -174,7 +174,7 @@
     name: scout_common
     tasks_from: execute_sql
   vars:
-    db_connect_name: '{{ open_webui_database }}'
+    sql_dbname: '{{ open_webui_database }}'
     sql_script: |
       UPDATE "user"
          SET settings = jsonb_set(
