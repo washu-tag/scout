@@ -5,9 +5,7 @@ of one ID to /api/reports/read)."""
 
 from __future__ import annotations
 
-import json
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -26,10 +24,6 @@ from ..models import (
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
-
-
-def _jsonsafe(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return json.loads(json.dumps(rows, default=str))
 
 
 @router.post(
@@ -52,7 +46,7 @@ async def query_reports(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}",
         )
-    return QueryResponse(columns=columns, rows=_jsonsafe(rows))
+    return QueryResponse(columns=columns, rows=rows)
 
 
 @router.post(
@@ -102,5 +96,4 @@ async def read_reports(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}",
         )
-    rows = _jsonsafe(rows)
     return ReadReportsResponse(columns=columns, rows=rows)

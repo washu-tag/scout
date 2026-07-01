@@ -56,35 +56,23 @@ async def insert_search(
     return _row_to_dict(row)
 
 
-async def get_search(search_id: str, owner_sub: str | None) -> dict[str, Any] | None:
-    """Fetch a search by id, scoped to `owner_sub` (None skips the check;
-    service-internal only, never from a request handler)."""
+async def get_search(search_id: str, owner_sub: str) -> dict[str, Any] | None:
+    """Owner-scoped fetch. Returns None when no row matches (wrong id or
+    wrong owner) so callers can 404 without distinguishing the two."""
     with metrics.time_postgres("get_search"):
         async with get_conn() as conn:
             async with conn.cursor() as cur:
-                if owner_sub is None:
-                    await cur.execute(
-                        """
-                        SELECT id, id_column, sql, sql_explanation,
-                               match_terms, match_diagnoses, row_count,
-                               owner_sub, owui_chat_id, created_at
-                        FROM searches
-                        WHERE id = %s
-                        """,
-                        (search_id,),
-                    )
-                else:
-                    await cur.execute(
-                        """
-                        SELECT id, id_column, sql, sql_explanation,
-                               match_terms, match_diagnoses, row_count,
-                               owner_sub, owui_chat_id, created_at
-                        FROM searches
-                        WHERE id = %s
-                          AND owner_sub = %s
-                        """,
-                        (search_id, owner_sub),
-                    )
+                await cur.execute(
+                    """
+                    SELECT id, id_column, sql, sql_explanation,
+                           match_terms, match_diagnoses, row_count,
+                           owner_sub, owui_chat_id, created_at
+                    FROM searches
+                    WHERE id = %s
+                      AND owner_sub = %s
+                    """,
+                    (search_id, owner_sub),
+                )
                 row = await cur.fetchone()
                 if row is None:
                     return None

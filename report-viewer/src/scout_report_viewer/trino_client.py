@@ -19,6 +19,8 @@ import logging
 import threading
 import time
 from contextlib import contextmanager
+from datetime import date, datetime, time as _time
+from decimal import Decimal
 from typing import Any, Iterator
 
 import httpx
@@ -180,6 +182,8 @@ def _normalize(value: Any) -> Any:
         return [_normalize(v) for v in value]
     if isinstance(value, tuple):
         return [_normalize(v) for v in value]
+    if isinstance(value, (datetime, date, _time, Decimal)):
+        return str(value)
     return value
 
 

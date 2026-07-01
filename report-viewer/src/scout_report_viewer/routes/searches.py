@@ -19,7 +19,6 @@ Single-report reads go through POST /api/reports/read (see routes/reports.py).
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from datetime import date
@@ -93,13 +92,6 @@ def _qualified_reports() -> str:
 
 def _view_url(search_id: str) -> str:
     return f"{settings.external_url.rstrip('/')}/spa/searches/{search_id}"
-
-
-def _jsonsafe(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Coerce Trino-native types (datetime, Decimal) to JSON-safe scalars
-    so pydantic v2's serializer accepts them. One round-trip through
-    json.dumps(default=str) collapses every leaf."""
-    return json.loads(json.dumps(rows, default=str))
 
 
 def _wrap_sql(sql: str) -> str:
@@ -263,8 +255,6 @@ async def create_search(
             ev["matched_diagnoses"] = matched_diagnoses
         sample.append(row_out)
         evidence.append(ev)
-    sample = _jsonsafe(sample)
-    evidence = _jsonsafe(evidence)
 
     search_id = new_search_id()
     stored = await store.insert_search(
@@ -666,14 +656,13 @@ async def get_search_rows(
             detail=f"trino rows query failed: {exc}",
         )
 
-    ordered = json.loads(json.dumps(rows, default=str))
     return RowsResponse(
         id=search_id,
         page=page,
         limit=limit,
         total=sql_total,
         columns=columns,
-        rows=ordered,
+        rows=rows,
     )
 
 
