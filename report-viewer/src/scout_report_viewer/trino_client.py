@@ -113,15 +113,6 @@ def _token_lifetime(jwt_token: str, expires_in: int | None) -> int:
 _default_cache = _SvcTokenCache()
 
 
-def get_default_cache() -> _SvcTokenCache:
-    return _default_cache
-
-
-def set_default_cache(cache: _SvcTokenCache) -> None:
-    global _default_cache
-    _default_cache = cache
-
-
 @contextmanager
 def _connect(user: str | None) -> Iterator[Any]:
     token = _default_cache.get()

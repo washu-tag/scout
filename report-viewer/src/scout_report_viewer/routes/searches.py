@@ -543,6 +543,10 @@ def _parse_filters(request: Request) -> list[tuple[str, list[str]]]:
     return list(grouped.items())
 
 
+def _like_escape(value: str) -> str:
+    return value.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+
+
 def _filter_clause(col: str, values: list[str], *, alias: str = "") -> tuple[str, list]:
     """Return (sql_fragment, params) for one filter spec. Identifier
     is interpolated via _quote_ident; every value is bound via `?`."""
@@ -579,9 +583,10 @@ def _filter_clause(col: str, values: list[str], *, alias: str = "") -> tuple[str
         except ValueError:
             return "FALSE", []
         return f"{qcol} = ?", [n]
+    pattern = "%" + _like_escape(value) + "%"
     if col == "message_dt":
-        return f"CAST({qcol} AS varchar) LIKE ?", ["%" + value + "%"]
-    return f"LOWER({qcol}) LIKE LOWER(?)", ["%" + value + "%"]
+        return f"CAST({qcol} AS varchar) LIKE ? ESCAPE '!'", [pattern]
+    return f"LOWER({qcol}) LIKE LOWER(?) ESCAPE '!'", [pattern]
 
 
 @router.get("/{search_id}/rows", response_model=RowsResponse)

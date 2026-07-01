@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from importlib.metadata import version
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -10,6 +11,8 @@ from . import logging_setup, metrics
 from .config import settings
 from .db import close_pool, ensure_schema
 from .routes import reports_router, searches_router, owui_webhook_router
+
+_VERSION = version("scout_report_viewer")
 
 # Replace stdlib handlers with our JSON formatter BEFORE anything else
 # logs. Otherwise FastAPI / uvicorn imports print plain-text lines before
@@ -54,7 +57,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Scout Report Viewer Service",
-        version="0.0.dev0",
+        version=_VERSION,
         description="Surfaces saved searches over Scout reports for the chat iframe.",
         lifespan=lifespan,
     )
@@ -67,7 +70,7 @@ def create_app() -> FastAPI:
     def root() -> dict[str, str]:
         return {
             "service": "report-viewer",
-            "version": "0.0.dev0",
+            "version": _VERSION,
             "docs": "/docs",
         }
 
