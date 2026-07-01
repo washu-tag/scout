@@ -21,6 +21,7 @@ from scout_report_viewer.config import settings
 
 
 _KID = "test-key-1"
+_ISSUER = "http://test/realms/scout"
 
 
 @pytest.fixture(scope="module")
@@ -60,7 +61,7 @@ def install_test_jwks(keypair, monkeypatch):
 
     monkeypatch.setattr(jwks, "get_default", lambda url: _StaticCache())
     monkeypatch.setattr(settings, "oidc_jwks_url", "http://test/jwks")
-    monkeypatch.setattr(settings, "oidc_issuer", "")
+    monkeypatch.setattr(settings, "oidc_issuer", _ISSUER)
     yield
 
 
@@ -69,6 +70,7 @@ def _mint(priv_pem: bytes, **overrides) -> str:
     claims = {
         "sub": "alice-keycloak-uuid",
         "preferred_username": "alice",
+        "iss": _ISSUER,
         "iat": now,
         "exp": now + 300,
     }
@@ -165,3 +167,52 @@ def test_invalid_bearer_does_NOT_fall_through_to_header(keypair):
             },
         )
         assert r.status_code == 401
+
+
+def test_wrong_issuer_returns_401(keypair):
+    priv, _ = keypair
+    token = _mint(priv, iss="http://attacker/realms/evil")
+    with TestClient(create_app()) as client:
+        r = client.post(
+            "/api/searches",
+            json={"sql": "SELECT 1"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert r.status_code == 401
+
+
+def test_hs256_token_is_rejected_by_allowlist():
+    """The allowlist is enforced against the token header's `alg`
+    independent of the JWK. Sending an HS256 token with any secret must
+    401 - if this ever passes we've regressed to accepting whatever alg
+    the caller declared."""
+    now = int(time.time())
+    forged = jwt.encode(
+        {"sub": "attacker", "iss": _ISSUER, "iat": now, "exp": now + 300},
+        "any-symmetric-secret",
+        algorithm="HS256",
+        headers={"kid": _KID},
+    )
+    with TestClient(create_app()) as client:
+        r = client.post(
+            "/api/searches",
+            json={"sql": "SELECT 1"},
+            headers={"Authorization": f"Bearer {forged}"},
+        )
+        assert r.status_code == 401
+
+
+def test_settings_rejects_jwks_url_without_issuer(monkeypatch):
+    """Startup guard: if REPORT_VIEWER_OIDC_JWKS_URL is configured but
+    REPORT_VIEWER_OIDC_ISSUER is empty, Settings() must refuse to
+    construct - passing an empty issuer to python-jose disables `iss`
+    validation silently."""
+    from pydantic import ValidationError
+
+    from scout_report_viewer.config import Settings
+
+    monkeypatch.setenv("REPORT_VIEWER_EXTERNAL_URL", "http://testserver")
+    monkeypatch.setenv("REPORT_VIEWER_OIDC_JWKS_URL", "http://kc/realms/scout/jwks")
+    monkeypatch.delenv("REPORT_VIEWER_OIDC_ISSUER", raising=False)
+    with pytest.raises(ValidationError):
+        Settings()

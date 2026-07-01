@@ -1,4 +1,8 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+ALLOWED_JWT_ALGS: tuple[str, ...] = ("RS256",)
 
 
 class Settings(BaseSettings):
@@ -42,6 +46,15 @@ class Settings(BaseSettings):
     # into OWUI's "user".settings JSON column on signup. Empty disables
     # the webhook (returns 503). See ADR 0026.
     owui_database_url: str = ""
+
+    @model_validator(mode="after")
+    def _issuer_required_with_jwks(self) -> "Settings":
+        if self.oidc_jwks_url and not self.oidc_issuer:
+            raise ValueError(
+                "REPORT_VIEWER_OIDC_ISSUER must be set when "
+                "REPORT_VIEWER_OIDC_JWKS_URL is configured"
+            )
+        return self
 
 
 settings = Settings()

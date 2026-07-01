@@ -26,7 +26,7 @@ from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError
 
 from . import jwks
-from .config import settings
+from .config import ALLOWED_JWT_ALGS, settings
 
 log = logging.getLogger(__name__)
 
@@ -53,10 +53,6 @@ def _validate_jwt(token: str) -> str | None:
     secret). Logs at INFO so failed-then-fallback succeeds quietly while
     repeated failures are still searchable in Loki.
     """
-    if not settings.oidc_jwks_url:
-        # Not configured (test / local). Skip silently so the other
-        # auth paths still work.
-        return None
     try:
         unverified = jwt.get_unverified_header(token)
     except JWTError:
@@ -71,13 +67,17 @@ def _validate_jwt(token: str) -> str | None:
     if key is None:
         log.info("bearer rejected: kid %s not in JWKS", kid)
         return None
+    key_alg = key.get("alg")
+    if key_alg and key_alg not in ALLOWED_JWT_ALGS:
+        log.info("bearer rejected: JWK alg %s not in allowlist", key_alg)
+        return None
     try:
         claims = jwt.decode(
             token,
             key,
-            algorithms=[key.get("alg", "RS256")],
+            algorithms=list(ALLOWED_JWT_ALGS),
             audience=settings.oidc_audience,
-            issuer=settings.oidc_issuer or None,
+            issuer=settings.oidc_issuer,
         )
     except ExpiredSignatureError:
         log.info("bearer rejected: token expired")
