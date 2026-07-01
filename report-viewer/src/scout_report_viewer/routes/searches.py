@@ -32,7 +32,8 @@ from ..auth import User, get_current_user
 from ..config import settings
 from ..ids import new_search_id
 from ..models import (
-    KNOWN_ID_COLUMNS,
+    INPUT_ID_COLUMNS,
+    SEARCH_REQUIRED_COLUMNS,
     CreateSearchRequest,
     CreateSearchResponse,
     CreateFromFileRequest,
@@ -53,25 +54,16 @@ _MAX_FROM_FILE = 1_000_000
 _LLM_SAMPLE_ROWS = 5
 
 
-def _pick_id_column(columns: list[str], override: str | None) -> str:
-    if override:
-        if override not in columns:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"id_column {override!r} not in SELECT columns: {columns}",
-            )
-        return override
-    for cand in KNOWN_ID_COLUMNS:
-        if cand in columns:
-            return cand
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail=(
-            "SELECT must include one of "
-            f"{list(KNOWN_ID_COLUMNS)} (or pass id_column explicitly). "
-            f"Got columns: {columns}"
-        ),
-    )
+def _assert_required_projections(columns: list[str]) -> None:
+    missing = [c for c in SEARCH_REQUIRED_COLUMNS if c not in columns]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"SELECT must project {list(SEARCH_REQUIRED_COLUMNS)}; "
+                f"missing: {missing}. Got columns: {columns}"
+            ),
+        )
 
 
 # Trino driver doesn't param-bind identifiers, so we interpolate
@@ -156,13 +148,14 @@ async def create_search(
     except Exception as exc:
         log.exception("trino sample query failed")
         metrics.SEARCHES_CREATED.labels(
-            id_column=body.id_column or "?", result="error"
+            id_column="primary_report_identifier", result="error"
         ).inc()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}",
         )
-    id_column = _pick_id_column(columns, body.id_column)
+    _assert_required_projections(columns)
+    id_column = "primary_report_identifier"
 
     count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
     try:
@@ -308,11 +301,11 @@ async def create_search_from_file(
 
     Same downstream shape as POST /api/searches - the saved SQL is
     what /rows / /accessions / /csv re-run on each read."""
-    if body.id_column not in KNOWN_ID_COLUMNS:
+    if body.id_column not in INPUT_ID_COLUMNS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                f"id_column must be one of {list(KNOWN_ID_COLUMNS)}; "
+                f"id_column must be one of {list(INPUT_ID_COLUMNS)}; "
                 f"got {body.id_column!r}"
             ),
         )
@@ -388,7 +381,7 @@ async def create_search_from_file(
     # trino_client.execute(..., params=[...]) instead.
     in_literal = ", ".join("'" + str(i).replace("'", "''") + "'" for i in final_ids)
     sql = (
-        f"SELECT message_control_id, accession_number, "
+        f"SELECT primary_report_identifier, accession_number, "
         f"resolved_epic_mrn AS epic_mrn, modality, service_name, "
         f"message_dt, patient_age, sex "
         f"FROM reports_latest_epic_view "
@@ -698,15 +691,7 @@ async def get_search_accessions(
     }
 
 
-_CSV_COLUMNS = (
-    "message_control_id",
-    "accession_number",
-    "modality",
-    "service_name",
-    "message_dt",
-    "patient_age",
-    "sex",
-)
+_CSV_COLUMNS = SEARCH_REQUIRED_COLUMNS
 _CSV_CHUNK = 500
 
 

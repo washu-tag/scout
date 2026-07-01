@@ -8,17 +8,20 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-# Order = preference for the auto-pick in searches.py.
-# primary_report_identifier is first because it's the only column
-# guaranteed unique in reports_latest (it's the renamed source_file,
-# the S3 path). message_control_id can collide across sending facilities.
-KNOWN_ID_COLUMNS: tuple[str, ...] = (
+# Identifier columns accepted as inputs to /reports/read and
+# /searches/from-file.
+INPUT_ID_COLUMNS: tuple[str, ...] = (
     "primary_report_identifier",
     "accession_number",
-    "message_control_id",
     "epic_mrn",
     "mpi",
     "scout_patient_id",
+)
+
+# Every saved /searches SQL must project these in its outer SELECT.
+SEARCH_REQUIRED_COLUMNS: tuple[str, ...] = (
+    "primary_report_identifier",
+    "accession_number",
 )
 
 # Patient-scoped IDs go through reports_latest_epic_view; epic_mrn / mpi
@@ -34,13 +37,11 @@ PATIENT_ID_COLUMNS: dict[str, str] = {
 class CreateSearchRequest(BaseModel):
     sql: str = Field(
         ...,
-        description="Trino SQL to materialize. SELECT must include one of the known identifier columns.",
+        description=(
+            "Trino SQL to save. Outer SELECT must project "
+            "primary_report_identifier and accession_number."
+        ),
     )
-    id_column: str | None = Field(
-        default=None,
-        description="Override the auto-picked identifier column. Must be present in the SELECT.",
-    )
-
     match_terms: list[str] | None = Field(
         default=None,
         description=(
@@ -99,7 +100,7 @@ class CreateFromFileRequest(BaseModel):
     )
     id_column: str = Field(
         ...,
-        description=f"Which column the ids map to. One of: {list(KNOWN_ID_COLUMNS)}.",
+        description=f"Which column the ids map to. One of: {list(INPUT_ID_COLUMNS)}.",
     )
     sql_explanation: str | None = Field(
         default=None,
@@ -142,7 +143,7 @@ class ReadReportsRequest(BaseModel):
 
     ids: list[str] = Field(..., description="Report identifiers to fetch.")
     id_column: str = Field(
-        default="message_control_id",
+        default="primary_report_identifier",
         description="Column to match `ids` against.",
     )
 

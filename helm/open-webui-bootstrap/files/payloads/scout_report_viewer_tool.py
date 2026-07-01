@@ -61,16 +61,22 @@ class Tools:
         __oauth_token__: Any = None,
         __metadata__: Optional[dict] = None,
     ) -> Any:
-        """Save a SQL search and render the viewer iframe.
+        """Save a SQL search over Scout's radiology reports and render
+        the results in an iframed viewer.
 
         Two modes:
         * SQL mode: pass `sql` (and optional `match_terms`,
-          `match_diagnoses`, `sql_explanation`). The SELECT must
-          project one of the known identifier columns
-          (`primary_report_identifier`, `accession_number`,
-          `message_control_id`, `epic_mrn`, `mpi`, `scout_patient_id`).
-        * File mode: pass `file_id` and `id_column`. The tool reads
-          the file server-side - your context never sees its bytes.
+          `match_diagnoses`, `sql_explanation`). Every row must
+          project `primary_report_identifier` and `accession_number`.
+          Example:
+              SELECT primary_report_identifier, accession_number,
+                     resolved_epic_mrn AS epic_mrn, modality,
+                     service_name, message_dt, patient_age, sex
+              FROM reports_latest_epic_view
+              WHERE modality = 'CT'
+        * File mode: pass `file_id` and `id_column` (one of
+          `accession_number` (default), `epic_mrn`, `mpi`,
+          `scout_patient_id`, `primary_report_identifier`).
 
         :param sql: Trino SQL against `delta.default.reports_latest`
             or `_epic_view`. Each saved search is standalone, no
@@ -86,8 +92,7 @@ class Tools:
             description of what the SQL matches. Surfaced in the
             "About this search" panel for the user.
         :param file_id: OWUI file id (file mode only).
-        :param id_column: Which column the file's IDs map to (file
-            mode only).
+        :param id_column: File mode only. See allowed values above.
         :return: Markdown sample + evidence tables for your reasoning,
             plus an embedded `<iframe>` of the viewer for the user.
         """
@@ -254,7 +259,6 @@ class Tools:
                     aliases = {
                         "accession_number": ["accession", "acc", "acc_num"],
                         "epic_mrn": ["mrn", "epic_mrn", "epicmrn", "patient_mrn"],
-                        "message_control_id": ["message_control_id", "msg_id", "mcid"],
                     }.get(want, [])
                     for i, h in enumerate(lowered):
                         if any(a in h for a in aliases):
@@ -324,9 +328,9 @@ class Tools:
 
         :param ids: Identifier list (max 100).
         :param id_column: Report-scoped (1 row each):
-            `primary_report_identifier` (default), `accession_number`,
-            `message_control_id`. Patient-scoped (all reports for
-            that patient): `epic_mrn`, `mpi`, `scout_patient_id`.
+            `primary_report_identifier` (default), `accession_number`.
+            Patient-scoped (all reports for that patient):
+            `epic_mrn`, `mpi`, `scout_patient_id`.
         """
         if not ids:
             return "Error: ids must be a non-empty list."

@@ -26,26 +26,30 @@ def test_create_search_increments_counters(client, auth_headers, fake_trino):
     from scout_report_viewer.metrics import SEARCHES_CREATED
 
     before_created = SEARCHES_CREATED.labels(
-        id_column="message_control_id", result="ok"
+        id_column="primary_report_identifier", result="ok"
     )._value.get()
 
     fake_trino(
-        ["message_control_id"],
+        ["primary_report_identifier", "accession_number"],
         [
-            {"message_control_id": "a"},
-            {"message_control_id": "b"},
-            {"message_control_id": "c"},
+            {
+                "primary_report_identifier": f"s3://bucket/{i}",
+                "accession_number": f"ACC{i}",
+            }
+            for i in range(3)
         ],
     )
     fake_trino(["n"], [{"n": 3}])
     r = client.post(
         "/api/searches",
-        json={"sql": "SELECT message_control_id FROM reports_latest"},
+        json={
+            "sql": "SELECT primary_report_identifier, accession_number FROM reports_latest"
+        },
         headers=auth_headers,
     )
     assert r.status_code == 201
 
     after_created = SEARCHES_CREATED.labels(
-        id_column="message_control_id", result="ok"
+        id_column="primary_report_identifier", result="ok"
     )._value.get()
     assert after_created == before_created + 1

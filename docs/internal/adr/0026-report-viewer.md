@@ -515,10 +515,6 @@ it so it's not a blocker.
 
 - Test aggregate queries and non-cohort queries from the LLM.
 
-- Review the scout query OWUI tool implementation.
-
-- Review React App SPA implementation.
-
 - Prompt review needed, too much irrelevant stuff has built up while iterating on the service. 
  - when to use reports_latest vs reports_latest_epic_view and other Scout tables and views.
 
@@ -526,19 +522,13 @@ it so it's not a blocker.
 
 - Update observability stack
 
--  PHI in searches.sql — imported CSV cohorts persist WHERE epic_mrn IN ('123',...) clear-text in Postgres. Retention/encryption decision needed.
-
 - Test CSV Upload and Download.
 
 - Handle CSV files in service instead of owui.
 
 - Send to XNAT handoff with IQ plugin. Not needed for the initial release but will be needed soon after.
 
-- "POST /api/searches/from-file" i thought we discused sending the file to the service directly instead of OWUI parsing it? I think the logic is better handeled in the service and not in OWUI.
-
 - Remove Test mode for the front end
-
-- Review the Markdown summary shapping.
 
 - **Playwright canary for the iframe-sandbox seeding flow.**  Unit-testing `owui_webhook.py` against our own assumptions won't catch regressions in OWUI itself (table/column rename, payload-shape change, flag name change, OWUI stops `await`-ing the webhook in the OAuth callback, an admin-global default makes the seeding moot, etc.). Add a Playwright test in `tests/auth/tests/` that signs in a freshly-provisioned Keycloak user, lets the OWUI signup flow run, then either calls `GET /api/v1/users/user/settings` as that user or inspects the rendered iframe's `sandbox` attribute, and asserts `iframeSandboxAllowSameOrigin` is true. Random username per run (e.g. `iframe-seed-test-{uuid}@scout.test`) so the signup webhook actually fires every time — orphans accumulate in dev02 / CI at ~1 per OWUI version bump, tolerable without a delete hook. Add `tests/auth/helpers/owui-admin.ts` later if hygiene matters. Wire as part of the OWUI version-bump checklist (Renovate PR is the trigger per ADR 0015). Complement (not replace) with a Grafana alert on `scout_report_viewer_owui_webhook_events_total{result="error"}` — cheap and catches loud regressions; alert misses silent ones (flag rename → we write a wrong key with `result="enabled"`), which is exactly what the Playwright test plugs.
 

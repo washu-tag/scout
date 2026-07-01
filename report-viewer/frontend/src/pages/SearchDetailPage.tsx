@@ -330,7 +330,7 @@ export default function SearchDetailPage() {
                               <div style={{ padding: '0.75rem 1rem' }}>
                                 <RowDetail
                                   row={row.original}
-                                  idColumn={meta.data?.id_column ?? 'message_control_id'}
+                                  idColumn={meta.data?.id_column ?? 'primary_report_identifier'}
                                   highlightTerms={[
                                     ...(meta.data?.match_terms ?? []),
                                     ...(appliedFilters.service_name

@@ -3,14 +3,23 @@
 from __future__ import annotations
 
 
+_SQL = "SELECT primary_report_identifier, accession_number FROM reports_latest"
+_SAMPLE_COLS = ["primary_report_identifier", "accession_number"]
+
+
+def _sample_rows(n: int) -> list[dict]:
+    return [
+        {"primary_report_identifier": f"s3://bucket/{i}", "accession_number": f"ACC{i}"}
+        for i in range(n)
+    ]
+
+
 def test_accessions_returns_deduped_list(client, auth_headers, fake_trino):
-    fake_trino(
-        ["message_control_id"], [{"message_control_id": f"m{i}"} for i in range(3)]
-    )
+    fake_trino(_SAMPLE_COLS, _sample_rows(3))
     fake_trino(["n"], [{"n": 3}])
     dsid = client.post(
         "/api/searches",
-        json={"sql": "SELECT message_control_id FROM reports_latest"},
+        json={"sql": _SQL},
         headers=auth_headers,
     ).json()["id"]
 
@@ -24,45 +33,21 @@ def test_accessions_returns_deduped_list(client, auth_headers, fake_trino):
 
 
 def test_export_csv_streams_with_header_and_rows(client, auth_headers, fake_trino):
-    fake_trino(
-        ["message_control_id"],
-        [{"message_control_id": "m1"}, {"message_control_id": "m2"}],
-    )
+    fake_trino(_SAMPLE_COLS, _sample_rows(2))
     fake_trino(["n"], [{"n": 2}])
     dsid = client.post(
         "/api/searches",
-        json={"sql": "SELECT message_control_id FROM reports_latest"},
+        json={"sql": _SQL},
         headers=auth_headers,
     ).json()["id"]
 
     fake_trino(
+        ["primary_report_identifier", "accession_number"],
         [
-            "message_control_id",
-            "accession_number",
-            "modality",
-            "service_name",
-            "message_dt",
-            "patient_age",
-            "sex",
-        ],
-        [
+            {"primary_report_identifier": "s3://bucket/1", "accession_number": "ACC1"},
             {
-                "message_control_id": "m1",
-                "accession_number": "ACC1",
-                "modality": "CT",
-                "service_name": "CT BRAIN",
-                "message_dt": "2024-01-01",
-                "patient_age": 42,
-                "sex": "F",
-            },
-            {
-                "message_control_id": "m2",
+                "primary_report_identifier": "s3://bucket/2,and,commas",
                 "accession_number": "ACC2",
-                "modality": "MR",
-                "service_name": 'MR "BRAIN"',  # quote in value
-                "message_dt": "2024-01-02",
-                "patient_age": 30,
-                "sex": "M",
             },
         ],
     )
@@ -72,26 +57,21 @@ def test_export_csv_streams_with_header_and_rows(client, auth_headers, fake_trin
     assert f"{dsid}.csv" in r.headers["content-disposition"]
     body = r.text
     lines = body.strip().splitlines()
-    assert (
-        lines[0]
-        == "message_control_id,accession_number,modality,service_name,message_dt,patient_age,sex"
-    )
-    assert lines[1].startswith("m1,ACC1,CT,CT BRAIN,")
-    # Second row's service_name has an embedded quote - must be CSV-escaped.
-    assert '"MR ""BRAIN"""' in lines[2]
+    assert lines[0] == "primary_report_identifier,accession_number"
+    assert lines[1] == "s3://bucket/1,ACC1"
+    # Value with commas must be quoted.
+    assert lines[2] == '"s3://bucket/2,and,commas",ACC2'
 
 
 def test_export_csv_empty_search_returns_header_only(client, auth_headers, fake_trino):
-    fake_trino(["message_control_id"], [{"message_control_id": "only"}])
+    fake_trino(_SAMPLE_COLS, _sample_rows(1))
     fake_trino(["n"], [{"n": 0}])
     dsid = client.post(
         "/api/searches",
-        json={"sql": "SELECT message_control_id FROM reports_latest"},
+        json={"sql": _SQL},
         headers=auth_headers,
     ).json()["id"]
     r = client.get(f"/api/searches/{dsid}/csv", headers=auth_headers)
     assert r.status_code == 200
     lines = r.text.strip().splitlines()
-    assert lines == [
-        "message_control_id,accession_number,modality,service_name,message_dt,patient_age,sex"
-    ]
+    assert lines == ["primary_report_identifier,accession_number"]

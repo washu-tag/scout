@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 
 
 # Custom domain metrics. Label cardinality is bounded on purpose:
-#   - `id_column` ∈ {"message_control_id", "accession_number", "epic_mrn", "scout_patient_id"} (~4)
+#   - `id_column` ∈ {"primary_report_identifier", "accession_number", "epic_mrn", "mpi", "scout_patient_id"} (~5)
 #   - `op` ∈ {"create_query", "rows_query", "summary_query"} (~3)
 #   - `result` ∈ {"ok", "error"} (~2)
 # Anything user-derived (owner_sub, search_id) stays OUT of labels.

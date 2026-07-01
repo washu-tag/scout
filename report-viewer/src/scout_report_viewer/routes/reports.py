@@ -13,7 +13,7 @@ from .. import metrics, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
 from ..models import (
-    KNOWN_ID_COLUMNS,
+    INPUT_ID_COLUMNS,
     PATIENT_ID_COLUMNS,
     QueryRequest,
     QueryResponse,
@@ -63,10 +63,10 @@ async def read_reports(
     (which sends an array of one ID)."""
     if not body.ids:
         return ReadReportsResponse(columns=[], rows=[])
-    if body.id_column not in KNOWN_ID_COLUMNS:
+    if body.id_column not in INPUT_ID_COLUMNS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"id_column must be one of {list(KNOWN_ID_COLUMNS)}, got {body.id_column!r}",
+            detail=f"id_column must be one of {list(INPUT_ID_COLUMNS)}, got {body.id_column!r}",
         )
     if not body.id_column.replace("_", "").isalnum():
         raise HTTPException(
