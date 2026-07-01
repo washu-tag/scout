@@ -713,16 +713,14 @@ async def export_search_csv(
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     sql = ds["sql"]
-    total = ds["count"]
     cols_select = ", ".join(f"s.{_quote_ident(c)}" for c in _CSV_COLUMNS)
     # OFFSET/LIMIT across queries is non-deterministic without ORDER BY.
     order_col = f"s.{_quote_ident(_CSV_COLUMNS[0])}"
 
     async def gen():
         yield (",".join(_CSV_COLUMNS) + "\n").encode()
-        if total == 0:
-            return
-        for offset in range(0, total, _CSV_CHUNK):
+        offset = 0
+        while True:
             page_sql = (
                 f"SELECT {cols_select} FROM ({sql}) s "
                 f"ORDER BY {order_col} "
@@ -739,6 +737,9 @@ async def export_search_csv(
                 yield (
                     ",".join(_csv_quote(row.get(c)) for c in _CSV_COLUMNS) + "\n"
                 ).encode()
+            if len(rows) < _CSV_CHUNK:
+                return
+            offset += _CSV_CHUNK
 
     return StreamingResponse(
         gen(),
