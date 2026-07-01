@@ -133,6 +133,28 @@ def test_get_meta_returns_404_for_other_user(client, auth_headers, fake_trino):
     assert r2.status_code == 404
 
 
+def test_delete_by_non_owner_is_404_and_leaves_row_intact(
+    client, auth_headers, fake_trino
+):
+    fake_trino(_sample_columns(), _sample_rows())
+    fake_trino(["n"], [{"n": 3}])
+    dsid = client.post(
+        "/api/searches",
+        json={"sql": _SQL_HAPPY},
+        headers=auth_headers,
+    ).json()["id"]
+
+    r = client.delete(
+        f"/api/searches/{dsid}",
+        headers={"X-Auth-Request-Preferred-Username": "bob"},
+    )
+    assert r.status_code == 404
+
+    # Owner can still read it - the failed delete did not touch the row.
+    r_owner = client.get(f"/api/searches/{dsid}", headers=auth_headers)
+    assert r_owner.status_code == 200
+
+
 def test_get_rows_paginates_in_id_list_order(client, auth_headers, fake_trino):
     fake_trino(
         ["primary_report_identifier", "accession_number"],
