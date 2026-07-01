@@ -520,7 +520,6 @@ it so it's not a blocker.
 
 - The LLM is picking too many highlight terms, maybe limit to 3 - 5.
 
-- Update observability stack
 
 - Test CSV Upload and Download.
 

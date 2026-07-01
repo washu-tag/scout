@@ -25,9 +25,7 @@ def test_create_search_increments_counters(client, auth_headers, fake_trino):
     # (other tests may bump it first), only that it moves by the count.
     from scout_report_viewer.metrics import SEARCHES_CREATED
 
-    before_created = SEARCHES_CREATED.labels(
-        id_column="primary_report_identifier", result="ok"
-    )._value.get()
+    before_created = SEARCHES_CREATED._value.get()
 
     fake_trino(
         ["primary_report_identifier", "accession_number"],
@@ -49,7 +47,5 @@ def test_create_search_increments_counters(client, auth_headers, fake_trino):
     )
     assert r.status_code == 201
 
-    after_created = SEARCHES_CREATED.labels(
-        id_column="primary_report_identifier", result="ok"
-    )._value.get()
+    after_created = SEARCHES_CREATED._value.get()
     assert after_created == before_created + 1

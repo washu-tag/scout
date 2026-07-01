@@ -147,9 +147,6 @@ async def create_search(
             columns, sample_rows = await trino_client.execute(sample_sql, user=user.sub)
     except Exception as exc:
         log.exception("trino sample query failed")
-        metrics.SEARCHES_CREATED.labels(
-            id_column="primary_report_identifier", result="error"
-        ).inc()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}",
@@ -262,8 +259,8 @@ async def create_search(
         owui_chat_id=body.owui_chat_id or "",
     )
 
-    metrics.SEARCHES_CREATED.labels(id_column=id_column, result="ok").inc()
-    metrics.SEARCH_SIZE.labels(source="sql").observe(stored["count"])
+    metrics.SEARCHES_CREATED.inc()
+    metrics.SEARCH_SIZE.observe(stored["count"])
     log.info(
         "search created",
         extra={
@@ -400,10 +397,8 @@ async def create_search_from_file(
         owui_chat_id=body.owui_chat_id or "",
     )
 
-    metrics.SEARCHES_CREATED.labels(id_column=body.id_column, result="ok").inc()
-    metrics.SEARCH_SIZE.labels(source="from_file").observe(stored["count"])
-    metrics.IDS_SUBMITTED.labels(id_column=body.id_column).inc(submitted)
-    metrics.IDS_UNMATCHED.labels(id_column=body.id_column).inc(len(unmatched))
+    metrics.SEARCHES_CREATED.inc()
+    metrics.SEARCH_SIZE.observe(stored["count"])
     log.info(
         "search imported from file",
         extra={

@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "Scout report-viewer — HTTP traffic and latency per endpoint, Trino / Postgres timings per op, and domain counters for searches, imports, and webhooks.",
+  "description": "Scout report-viewer — HTTP traffic and latency per endpoint, Trino / Postgres timings per op, and domain counters for searches and webhooks.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -84,36 +84,11 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 50 } ] },
-          "unit": "short"
-        }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
-      "id": 103,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "pluginVersion": "11",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-          "editorMode": "code",
-          "expr": "sum(scout_report_viewer_http_requests_in_progress{job=\"report-viewer\"})",
-          "refId": "A"
-        }
-      ],
-      "title": "In-flight requests",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 } ] },
           "unit": "s"
         }
       },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 1 },
       "id": 104,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -359,16 +334,9 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
-          "expr": "sum by (kind, id_column) (rate(scout_report_viewer_searches_created_total{result=\"ok\"}[5m]))",
-          "legendFormat": "{{kind}} via {{id_column}}",
+          "expr": "sum (rate(scout_report_viewer_searches_created_total[5m]))",
+          "legendFormat": "created",
           "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-          "editorMode": "code",
-          "expr": "sum (rate(scout_report_viewer_searches_created_total{result=\"error\"}[5m]))",
-          "legendFormat": "errors",
-          "refId": "B"
         }
       ],
       "title": "Searches created / sec (5m rate)",
@@ -391,15 +359,15 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum by (le, source) (rate(scout_report_viewer_search_size_rows_bucket[15m])))",
-          "legendFormat": "p50 ({{source}})",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(scout_report_viewer_search_size_rows_bucket[15m])))",
+          "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le, source) (rate(scout_report_viewer_search_size_rows_bucket[15m])))",
-          "legendFormat": "p95 ({{source}})",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(scout_report_viewer_search_size_rows_bucket[15m])))",
+          "legendFormat": "p95",
           "refId": "B"
         }
       ],
@@ -410,7 +378,7 @@
       "collapsed": true,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 },
       "id": 600,
-      "title": "Imports & webhooks",
+      "title": "Webhooks",
       "type": "row",
       "panels": [
         {
@@ -423,38 +391,6 @@
             }
           },
           "gridPos": { "h": 9, "w": 12, "x": 0, "y": 46 },
-          "id": 601,
-          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
-          "pluginVersion": "11",
-          "targets": [
-            {
-              "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-              "editorMode": "code",
-              "expr": "sum by (id_column) (rate(scout_report_viewer_ids_submitted_total[15m]))",
-              "legendFormat": "submitted {{id_column}}",
-              "refId": "A"
-            },
-            {
-              "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-              "editorMode": "code",
-              "expr": "sum by (id_column) (rate(scout_report_viewer_ids_unmatched_total[15m]))",
-              "legendFormat": "unmatched {{id_column}}",
-              "refId": "B"
-            }
-          ],
-          "title": "ID-list imports — submitted vs unmatched",
-          "type": "timeseries"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "palette-classic" },
-              "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never" },
-              "unit": "short"
-            }
-          },
-          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 46 },
           "id": 602,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
           "pluginVersion": "11",
