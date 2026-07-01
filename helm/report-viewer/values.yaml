@@ -59,8 +59,12 @@ resources:
 # Populated by the Ansible role's values.yaml.j2 in production.
 env: {}
 
-# Optional envFrom (e.g. secretRef for DATABASE_URL).
+# Optional envFrom, appended verbatim to the container's envFrom list.
 envFrom: []
+
+# Map of envVarName -> {secretName, key, optional} rendered as
+# valueFrom.secretKeyRef entries on the main container.
+secretEnv: {}
 
 # REPORT_VIEWER_DATABASE_URL is sensitive; chart can render a Secret from this
 # value, or leave empty to let the role manage the Secret externally.
