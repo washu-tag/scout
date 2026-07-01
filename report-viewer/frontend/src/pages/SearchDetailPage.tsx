@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
@@ -21,6 +21,7 @@ import {
 } from '../api/client';
 import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
 import { chatOrigin } from '../chat';
+import { Modal } from '../Modal';
 
 const ROW_ACTIVE_BG = '#e8f0fa';
 const DETAIL_ZONE_BG = '#f0f6fc';
@@ -75,6 +76,7 @@ export default function SearchDetailPage() {
   const [xnatModalOpen, setXnatModalOpen] = useState(false);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [colPickerOpen, setColPickerOpen] = useState(false);
+  const colPickerRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
@@ -106,6 +108,21 @@ export default function SearchDetailPage() {
   useEffect(() => {
     setExpanded({});
   }, [rowsQ.data]);
+
+  useEffect(() => {
+    if (!colPickerOpen) return;
+    const onEvent = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent && e.key !== 'Escape') return;
+      if (e instanceof MouseEvent && colPickerRef.current?.contains(e.target as Node)) return;
+      setColPickerOpen(false);
+    };
+    document.addEventListener('mousedown', onEvent);
+    document.addEventListener('keydown', onEvent);
+    return () => {
+      document.removeEventListener('mousedown', onEvent);
+      document.removeEventListener('keydown', onEvent);
+    };
+  }, [colPickerOpen]);
 
   const total = rowsQ.data?.total ?? meta.data?.count ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / limit));
@@ -442,7 +459,7 @@ export default function SearchDetailPage() {
                   ? `Filters (${activeFilterCount(appliedFilters)})`
                   : 'Filters'}
               </button>
-              <div style={{ position: 'relative' }}>
+              <div ref={colPickerRef} style={{ position: 'relative' }}>
                 <button
                   type="button"
                   onClick={() => setColPickerOpen((v) => !v)}
@@ -635,32 +652,8 @@ function SendToXnatModal(props: { searchId: string; total: number; onClose: () =
     props.onClose();
   };
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      onClick={props.onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: '#fff',
-          padding: '1.25rem 1.5rem',
-          borderRadius: 6,
-          minWidth: 380,
-          maxWidth: 520,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-          fontSize: '0.9rem',
-        }}
-      >
+    <Modal onClose={props.onClose} minWidth={380} maxWidth={520}>
+      <div style={{ fontSize: '0.9rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Send to XNAT</h3>
         <p style={{ color: '#555', margin: '0 0 1rem', fontSize: '0.85rem' }}>
           This will push <strong>{props.total.toLocaleString()}</strong> accessions from{' '}
@@ -733,7 +726,7 @@ function SendToXnatModal(props: { searchId: string; total: number; onClose: () =
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1063,35 +1056,8 @@ function ExplainSqlModal(props: {
     }
   };
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      onClick={props.onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          position: 'relative',
-          background: '#fff',
-          padding: '1.25rem 1.5rem',
-          borderRadius: 6,
-          minWidth: 480,
-          maxWidth: 760,
-          maxHeight: '80vh',
-          overflowY: 'auto',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-          fontSize: '0.9rem',
-        }}
-      >
+    <Modal onClose={props.onClose} minWidth={480} maxWidth={760} maxHeight="80vh">
+      <div style={{ fontSize: '0.9rem' }}>
         <button
           type="button"
           onClick={props.onClose}
@@ -1245,7 +1211,7 @@ function ExplainSqlModal(props: {
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1312,35 +1278,14 @@ function FiltersModal(props: {
     setStaged((s) => ({ ...s, service_name: value || undefined }));
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Filter rows"
-      onClick={props.onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-      }}
+    <Modal
+      onClose={props.onClose}
+      ariaLabel="Filter rows"
+      minWidth={420}
+      maxWidth={560}
+      maxHeight="calc(100vh - 40px)"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: '#fff',
-          padding: '1rem 1.25rem',
-          borderRadius: 6,
-          minWidth: 420,
-          maxWidth: 560,
-          maxHeight: 'calc(100vh - 40px)',
-          overflowY: 'auto',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-          fontSize: '0.85rem',
-        }}
-      >
+      <div style={{ fontSize: '0.85rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Filter rows</h3>
 
         <FieldRow label="Age">
@@ -1430,7 +1375,7 @@ function FiltersModal(props: {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
