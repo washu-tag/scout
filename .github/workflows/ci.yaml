@@ -670,6 +670,30 @@ jobs:
         env:
           SUBDOMAINS: ${{ matrix.subdomains }}
         run: bash tests/auth/auth-curl-tests.sh scout.test --include "$SUBDOMAINS"
+      - name: 'Auth playwright tests'
+        if: matrix.side == 'analytics'
+        shell: bash
+        working-directory: tests/auth
+        env:
+          SCOUT_HOSTNAME: scout.test
+          KEYCLOAK_ADMIN_USER: admin
+          NODE_EXTRA_CA_CERTS: /tmp/scout-ci-tls/cert.pem
+          PLAYWRIGHT_IGNORE_HTTPS_ERRORS: 'true'
+          UNAUTHORIZED_USER_USERNAME: scout-unauthorized-ci-user
+          AUTHORIZED_USER_USERNAME: scout-authorized-ci-user
+          TEST_USER_PASSWORD: ci-test-user-password-1234
+        run: |
+          set -euo pipefail
+          export KEYCLOAK_ADMIN_PASSWORD=$(yq '.k3s_cluster.vars.keycloak_bootstrap_admin_password' ../../ansible/inventory.yaml)
+          npm ci
+          npx playwright test owui-iframe-seed.spec.ts
+      - name: 'Auth playwright report'
+        if: ${{ failure() && matrix.side == 'analytics' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.side }}
+          path: tests/auth/playwright-report/
+          retention-days: 7
       # NetworkPolicy tests. Analytics filters to trino-rw (voila isn't
       # deployed there, so the Traefik→voila allow-path test would 000
       # on a missing Service). Notebooks runs the full suite.
