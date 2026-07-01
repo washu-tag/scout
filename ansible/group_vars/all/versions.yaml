@@ -60,12 +60,12 @@ temporal_version: ~1.2.0
 
 # Real-Time HL7 Ingestion - Strimzi Kafka & Camel K (MLLP listener → Kafka → batcher → MinIO)
 # renovate: datasource=helm registryUrl=https://strimzi.io/charts/ depName=strimzi-kafka-operator
-strimzi_operator_version: ~0.49.0
+strimzi_operator_version: 1.1.0
 # Kafka broker version deployed by Strimzi; must be within the operator's supported set
 # renovate: datasource=docker depName=apache/kafka
-kafka_version: 4.1.1
+kafka_version: 4.3.0
 # renovate: datasource=helm registryUrl=https://apache.github.io/camel-k/charts/ depName=camel-k
-camel_k_version: ~2.5.0
+camel_k_version: 2.10.1
 
 # Analytics & Query Engines - Trino
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
