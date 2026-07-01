@@ -17,6 +17,7 @@ principal and impersonates this `sub` via X-Trino-User (ADR 0022).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 
@@ -106,7 +107,8 @@ async def get_current_user(
     # Path 1: Bearer JWT (highest trust; carries the real user identity).
     token = _bearer_token(authorization)
     if token:
-        sub = _validate_jwt(token)
+        # JWKS fetch on cache miss is blocking; keep it off the event loop.
+        sub = await asyncio.to_thread(_validate_jwt, token)
         if sub:
             return User(sub=sub)
         # Bearer was present but invalid - 401 directly instead of falling

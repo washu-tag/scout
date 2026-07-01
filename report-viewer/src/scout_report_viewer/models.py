@@ -99,10 +99,7 @@ class CreateFromFileRequest(BaseModel):
     )
     id_column: str = Field(
         ...,
-        description=(
-            "Which column the ids map to. One of: "
-            "'message_control_id', 'accession_number', 'epic_mrn'."
-        ),
+        description=f"Which column the ids map to. One of: {list(KNOWN_ID_COLUMNS)}.",
     )
     sql_explanation: str | None = Field(
         default=None,

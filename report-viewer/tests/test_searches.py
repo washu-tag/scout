@@ -58,7 +58,7 @@ def test_create_search_happy_path(client, auth_headers, fake_trino):
     body = r.json()
     assert body["count"] == 3
     assert body["id_column"] == "message_control_id"
-    assert body["id"].startswith("ds_")
+    assert body["id"].startswith("s_")
     assert body["columns"] == _sample_columns()
     assert len(body["sample"]) == 3
     assert len(body["evidence"]) == 3

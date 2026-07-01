@@ -102,11 +102,8 @@ def _jsonsafe(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return json.loads(json.dumps(rows, default=str))
 
 
-def _wrap_sql(sql: str, *, alias: str = "src") -> str:
-    """Strip trailing semicolons so the SQL can be embedded as a
-    subquery: `SELECT ... FROM (<sql>) <alias>`. The LLM
-    sometimes ends its SQL with a semicolon which breaks subquery
-    syntax."""
+def _wrap_sql(sql: str) -> str:
+    """Strip trailing semicolons so the SQL can be nested as a subquery."""
     return sql.rstrip().rstrip(";")
 
 
@@ -491,7 +488,6 @@ _SORTABLE_COLUMNS: frozenset[str] = frozenset(
         "sending_facility",
         "patient_age",
         "sex",
-        "evidence",
     }
 )
 
@@ -740,6 +736,8 @@ async def export_search_csv(
     sql = ds["sql"]
     total = ds["count"]
     cols_select = ", ".join(f"s.{_quote_ident(c)}" for c in _CSV_COLUMNS)
+    # OFFSET/LIMIT across queries is non-deterministic without ORDER BY.
+    order_col = f"s.{_quote_ident(_CSV_COLUMNS[0])}"
 
     async def gen():
         yield (",".join(_CSV_COLUMNS) + "\n").encode()
@@ -748,6 +746,7 @@ async def export_search_csv(
         for offset in range(0, total, _CSV_CHUNK):
             page_sql = (
                 f"SELECT {cols_select} FROM ({sql}) s "
+                f"ORDER BY {order_col} "
                 f"OFFSET {offset} LIMIT {_CSV_CHUNK}"
             )
             try:

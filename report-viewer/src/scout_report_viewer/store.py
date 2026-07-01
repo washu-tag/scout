@@ -1,14 +1,4 @@
-"""Persistence layer for searches.
-
-A search row is just metadata + the saved SQL. Nothing about which
-rows match is persisted (see ADR 0026); /rows wraps `sql` as
-a subquery and Trino evaluates on demand. `row_count` is cached at
-create time via a single COUNT(*) wrap so the homepage list + search
-summary don't need to re-run the query just to display "1,151 rows".
-
-Every mutation is keyed by (search_id, owner_sub) so an authenticated
-user can never reach another user's search.
-"""
+"""Persistence layer for searches. See ADR 0026."""
 
 from __future__ import annotations
 
@@ -33,10 +23,6 @@ async def insert_search(
     sql_explanation: str | None = None,
     owui_chat_id: str | None = None,
 ) -> dict[str, Any]:
-    """Persist a new search row. `row_count` is the cached COUNT(*)
-    from wrapping `sql`; can be None if the caller didn't
-    pre-compute it (in which case the SPA falls back to reading total
-    from the /rows response)."""
     with metrics.time_postgres("insert_search"):
         async with get_conn() as conn:
             async with conn.cursor() as cur:
@@ -71,9 +57,8 @@ async def insert_search(
 
 
 async def get_search(search_id: str, owner_sub: str | None) -> dict[str, Any] | None:
-    """Fetch a search by id, scoped to `owner_sub` (rows with a different
-    owner return None - callers should 404). `owner_sub=None` skips the
-    check; reserved for service-internal callers, not request handlers."""
+    """Fetch a search by id, scoped to `owner_sub` (None skips the check;
+    service-internal only, never from a request handler)."""
     with metrics.time_postgres("get_search"):
         async with get_conn() as conn:
             async with conn.cursor() as cur:
@@ -107,9 +92,7 @@ async def get_search(search_id: str, owner_sub: str | None) -> dict[str, Any] | 
 
 
 async def delete_search(search_id: str, owner_sub: str) -> bool:
-    """Delete a search by id, scoped to `owner_sub`. Returns True if a
-    row was removed, False if no matching row existed (wrong id, or
-    owned by someone else)."""
+    """Owner-scoped delete. Returns True if a row was removed."""
     with metrics.time_postgres("delete_search"):
         async with get_conn() as conn:
             async with conn.cursor() as cur:
@@ -123,9 +106,7 @@ async def delete_search(search_id: str, owner_sub: str) -> bool:
 
 
 async def list_searches(owner_sub: str, *, limit: int = 200) -> list[dict[str, Any]]:
-    """Return the caller's searches, newest first. Excludes the sql
-    blob to keep the listing payload small - the SPA homepage only needs
-    metadata and the row count."""
+    """Return the caller's searches, newest first."""
     with metrics.time_postgres("list_searches"):
         async with get_conn() as conn:
             async with conn.cursor() as cur:

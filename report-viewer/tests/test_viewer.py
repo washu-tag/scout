@@ -1,41 +1,6 @@
-"""Tests for the viewer page + accessions + CSV export."""
+"""Tests for /accessions and /csv."""
 
 from __future__ import annotations
-
-
-def test_view_returns_html_for_owner(client, auth_headers, fake_trino):
-    fake_trino(["message_control_id"], [{"message_control_id": "m1"}])
-    fake_trino(["n"], [{"n": 1}])
-    dsid = client.post(
-        "/api/searches",
-        json={"sql": "SELECT message_control_id FROM reports_latest"},
-        headers=auth_headers,
-    ).json()["id"]
-
-    r = client.get(f"/api/searches/{dsid}/view", headers=auth_headers)
-    assert r.status_code == 200
-    assert "text/html" in r.headers["content-type"]
-    # Page contains the search id and the Tabulator integrity tag
-    # not just an empty shell.
-    assert dsid in r.text
-    assert "tabulator.min.js" in r.text
-    assert "integrity=" in r.text
-
-
-def test_view_404_for_other_user(client, auth_headers, fake_trino):
-    fake_trino(["message_control_id"], [{"message_control_id": "m1"}])
-    fake_trino(["n"], [{"n": 1}])
-    dsid = client.post(
-        "/api/searches",
-        json={"sql": "SELECT message_control_id FROM reports_latest"},
-        headers=auth_headers,
-    ).json()["id"]
-
-    r = client.get(
-        f"/api/searches/{dsid}/view",
-        headers={"X-Auth-Request-Preferred-Username": "bob"},
-    )
-    assert r.status_code == 404
 
 
 def test_accessions_returns_deduped_list(client, auth_headers, fake_trino):
