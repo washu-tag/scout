@@ -15,7 +15,7 @@ hl7_transformer_image_tag: latest
 hl7log_extractor_timeout: 480
 hl7log_extractor_heartbeat_timeout: 30
 hl7log_extractor_concurrency: 150
-hl7_transformer_timeout: 60
+hl7_transformer_timeout: 480
 # HL7 Transformer resources
 # Memory: requests = spark_memory, limits = 4x spark_memory to account for Spark overhead
 # Memory is computed in templates using jvm_memory_to_k8s filter (not computable here in defaults)
