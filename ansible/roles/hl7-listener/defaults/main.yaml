@@ -12,9 +12,12 @@ kafka_replicas: 1
 kafka_storage_size: 10Gi
 kafka_storage_class: ''
 
-# Kafka retention (7 days per ADR)
-kafka_retention_ms: 604800000
-kafka_retention_bytes: -1
+# Kafka retention. Kafka is only a transport buffer here (MinIO bronze is the durable
+# record), so retention is a short replay window, not long-term storage. retention.bytes
+# is per-partition: 2Gi x 3 partitions ~= 6Gi, safely under kafka_storage_size (10Gi), so a
+# high-volume feed can never fill the PV and crash the broker.
+kafka_retention_ms: 172800000 # 2 days
+kafka_retention_bytes: 2147483648 # 2Gi per partition
 
 # Kafka resource configuration
 kafka_cpu_request: 100m
@@ -63,9 +66,12 @@ camel_k_base_image_proxy_path: 'dockerhub-proxy/library/eclipse-temurin:17'
 hl7_batcher_name: hl7-batcher
 hl7_batcher_enabled: true
 
-# Batching parameters
-hl7_batcher_completion_size: 10
-hl7_batcher_completion_timeout: 30000
+# Batching parameters — sized for the production feed (~200K messages/day, bursty).
+# completion_size caps a burst batch; completion_timeout (ms) flushes a partial batch
+# after a gap in traffic so quiet periods still land promptly. At prod volume size
+# dominates (~1000-message zips); the timeout bounds latency during lulls.
+hl7_batcher_completion_size: 1000
+hl7_batcher_completion_timeout: 300000
 
 # Batcher resource configuration
 hl7_batcher_cpu_request: 100m
