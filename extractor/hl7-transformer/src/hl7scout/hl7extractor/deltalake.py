@@ -25,6 +25,7 @@ from .schemautils import (
     struct_with_nulls,
 )
 from .dataextraction import process_derivative_data
+from .hl7reader import read_hl7
 from .sparkutils import merge_df_into_dt_on_column
 
 import os
@@ -146,7 +147,7 @@ def import_hl7_files_to_deltalake(
         )
 
         # Read the temp HL7 files
-        df = spark.read.format("hl7").load(temp_hl7_files)
+        df = read_hl7(spark, temp_hl7_files)
 
         # Join with the temp to s3 mapping df to get the S3 paths
         df = df.withColumn("temp_path", F.input_file_name())
@@ -154,7 +155,7 @@ def import_hl7_files_to_deltalake(
         df = df.drop("temp_path")
 
         activity.heartbeat()
-        # Extract the HL7 segments from the smolder objects
+        # Extract the HL7 segments from the parsed messages
         df = (
             df.select(
                 "source_file",
