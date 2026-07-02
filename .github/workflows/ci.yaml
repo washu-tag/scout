@@ -13,6 +13,14 @@ env:
   JAVA_DIST: 'zulu'
   JAVA_VERSION: '21'
   REGISTRY: ghcr.io
+  # GitHub-hosted runners mount a large, near-empty scratch disk at /mnt (the
+  # Azure temp resource disk); the root fs is smaller and already half-full of
+  # preinstalled tooling. There is no built-in env var for this mount
+  # (RUNNER_TEMP / RUNNER_TOOL_CACHE both live on the root fs), so /mnt is
+  # named once here and templated into the CI inventory's k3s data-dir by the
+  # "Prepare inventory.yaml" steps — keeping k3s's image store + PVs off the
+  # root fs so large image pulls don't trigger DiskPressure eviction.
+  K3S_DATA_DIR: /mnt/k3s
 
 jobs:
   changes:
@@ -248,6 +256,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /usr/share/swift
           sudo rm -rf /opt/ghc
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo apt-get clean
           docker system prune -af --volumes
 
@@ -259,6 +268,7 @@ jobs:
           NODE_IP=$(hostname -I | awk '{print $1}')
           sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" \
             -e "s:WORK_DIR:$(pwd):" -e "s/NODE_IP/$NODE_IP/g" \
+            -e "s:K3S_DATA_DIR:$K3S_DATA_DIR:g" \
             .github/ci_resources/inventory.yaml > ansible/inventory.yaml
       - name: 'ansible-galaxy dependencies'
         shell: bash
@@ -411,6 +421,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /usr/share/swift
           sudo rm -rf /opt/ghc
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo apt-get clean
           docker system prune -af --volumes
           echo "Disk space after cleanup:"
@@ -444,6 +455,7 @@ jobs:
           echo "Node IP for CoreDNS: $NODE_IP"
           sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" \
             -e "s:WORK_DIR:$(pwd):" -e "s/NODE_IP/$NODE_IP/g" \
+            -e "s:K3S_DATA_DIR:$K3S_DATA_DIR:g" \
             .github/ci_resources/inventory.yaml > ansible/inventory.yaml
       - name: 'ansible-galaxy dependencies'
         shell: bash
