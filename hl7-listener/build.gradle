@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.13'
+	id 'org.springframework.boot' version '3.5.14'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -61,6 +61,28 @@ dependencies {
 	runtimeOnly "ca.uhn.hapi:hapi-structures-v251:${hapiVersion}"
 	runtimeOnly "ca.uhn.hapi:hapi-structures-v26:${hapiVersion}"
 	runtimeOnly "ca.uhn.hapi:hapi-structures-v27:${hapiVersion}"
+}
+
+// Force patched versions of transitive libraries flagged by the image scan (Trivy). These
+// are pinned by the camel-spring-boot-dependencies / Spring Boot BOMs; resolutionStrategy
+// runs after BOM resolution, so it overrides those pins unconditionally. All are patch-level
+// bumps within the same minor line. Drop each entry once the managing BOM ships the fix.
+// (spring-boot itself, CVE-2026-40973, is handled by the 3.5.14 plugin bump above.)
+configurations.all {
+	resolutionStrategy.eachDependency { details ->
+		def g = details.requested.group
+		def n = details.requested.name
+		if (g == 'io.netty' && n.startsWith('netty') && !n.contains('tcnative')) {
+			details.useVersion '4.1.135.Final' // CVE-2026-44249/-45416/-50010/-42583/-42584/-42587
+			details.because 'Trivy CRITICAL/HIGH'
+		} else if (g == 'com.fasterxml.jackson.core' && (n == 'jackson-databind' || n == 'jackson-core')) {
+			details.useVersion '2.21.4' // CVE-2026-54512/-54513 (jackson-annotations has no 2.21.4 release)
+			details.because 'Trivy HIGH'
+		} else if (g == 'org.apache.tomcat.embed') {
+			details.useVersion '10.1.55' // CVE-2026-41293/-43512/-43515 (CRITICAL) + -34483/-41284/-42498/-43513
+			details.because 'Trivy CRITICAL/HIGH'
+		}
+	}
 }
 
 // Spring Boot's plain (library) jar is not needed; only the executable bootJar ships, so

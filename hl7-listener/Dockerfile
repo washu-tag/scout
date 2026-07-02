@@ -25,4 +25,9 @@ WORKDIR /app
 # Copy the executable bootJar from the build stage
 COPY --from=build /app/build/libs/*.jar app.jar
 
+# Run as a non-root user. Defense-in-depth: the Helm chart also sets
+# runAsNonRoot/runAsUser: 1000, but pinning it here keeps the image non-root if it's
+# ever run outside that chart, and satisfies image-scanning (no root ENTRYPOINT).
+USER 1000
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
