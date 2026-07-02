@@ -1,9 +1,8 @@
 """Structured JSON logging to stdout (Loki picks it up via Promtail).
 
-We deliberately use stdlib `logging` + a tiny JSON formatter rather than
-pulling in `structlog` / `python-json-logger`. The set of fields we need
-is small and stable, and one fewer dependency keeps the test-mode
-source-mount image's startup pip install fast.
+We use stdlib `logging` + a tiny JSON formatter rather than pulling in
+`structlog` / `python-json-logger`; the set of fields we need is small
+and stable.
 
 Every log line carries: timestamp (ISO-8601 UTC), level, logger, message,
 exception info if any, and a `service` field to disambiguate in Loki when

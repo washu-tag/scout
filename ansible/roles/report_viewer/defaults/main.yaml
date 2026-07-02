@@ -23,18 +23,6 @@ report_viewer_db_user: report_viewer
 # `report_viewer_db_password` is required and must be set in inventory
 # (use Ansible Vault).
 
-# Test mode - bypass the published image and run from a source-mounted
-# ConfigMap on top of python:3.12-slim. Use during early dev iteration so
-# we don't need to publish an image. See helm/report-viewer/values.yaml
-# (sourceConfigMap) for the chart-side details. Slower restarts (per-pod
-# pip install ~30-60s) - switch off once a real image is published.
-# TODO REMOVE TEEST MODE!!!!
-report_viewer_test_mode: false
-report_viewer_test_mode_python_image: python:3.12-slim
-# Source/requirements files projected into the CM. Resolved from the
-# scout_repo_dir on the Ansible control node.
-report_viewer_src_dir: '{{ scout_repo_dir }}/report-viewer'
-
 # Replicas + resources
 report_viewer_replicas: 1
 report_viewer_resources_default:

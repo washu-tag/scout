@@ -20,9 +20,21 @@ serviceAccount:
 podAnnotations: {}
 podLabels: {}
 
-podSecurityContext: {}
+# K8s "restricted" Pod Security Standard. UID/GID must match the
+# searchs user in report-viewer/Dockerfile.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
 
-securityContext: {}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
 
 service:
   type: ClusterIP
@@ -80,37 +92,8 @@ trinoCaCert: ''
 # report_viewer_svc client_secret for outbound Trino auth (ADR 0022).
 trinoAuthClientSecret: ''
 
-# ---------------------------------------------------------------------------
-# Test mode - bypass the published image, run from source mounted as a
-# ConfigMap on top of a stock `python:3.12-slim`. Lets us iterate on dev02
-# without publishing an image. Per-restart pip install is slow (~30-60s);
-# acceptable for dev, never use in prod.
-#
-# The Ansible role projects `report-viewer/src/scout_report_viewer/`
-# plus a `requirements.txt` into the ConfigMap referenced here. An init
-# container pip-installs into a shared emptyDir; the main container runs
-# the source.
-# ---------------------------------------------------------------------------
-sourceConfigMap:
-  enabled: false
-  # ConfigMap name - defaults to `<fullname>-source` when unset.
-  name: ''
-  # Stock image used in test mode. Pinned so an unexpected upstream change
-  # doesn't break startup at the worst possible moment.
-  pythonImage: python:3.12-slim
-  # PIP_INDEX_URL for the init container (typically the air-gapped pip
-  # proxy). Empty falls through to PyPI defaults.
-  pipIndexUrl: ''
-  # When pipIndexUrl is a self-signed-cert host (Scout's air-gapped Nexus),
-  # mount the staging CA into the init container via this Secret + key.
-  # The secret should be in the same namespace as the deployment.
-  stagingCaSecret:
-    name: '' # e.g. 'staging-ca-cert'
-    key: 'ca.crt'
-
-# Trust an extra CA bundle in BOTH the init container (for pip) and the
-# main container (for outbound HTTPS to Trino, Keycloak, etc.). Same
-# secret as sourceConfigMap.stagingCaSecret in air-gapped setups.
+# Extra CA bundle mounted into the main container for outbound HTTPS
+# (Trino, Keycloak, anything behind the staging cert).
 trustedCaSecret:
   name: ''
   key: 'ca.crt'

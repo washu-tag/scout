@@ -13,7 +13,8 @@ FROM python:3.12-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HOME=/tmp
 
 WORKDIR /app
 
@@ -24,7 +25,9 @@ RUN pip install .
 
 EXPOSE 8000
 
-RUN groupadd --system searchs && useradd --system --gid searchs --home /app searchs
+# UID/GID pinned so the K8s podSecurityContext (runAsUser=1001) matches.
+RUN groupadd --system --gid 1001 searchs \
+    && useradd --system --uid 1001 --gid 1001 --home /app searchs
 USER searchs
 
 CMD ["python", "-m", "scout_report_viewer"]

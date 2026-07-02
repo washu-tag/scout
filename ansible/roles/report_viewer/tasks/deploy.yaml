@@ -36,56 +36,6 @@
     sql_script: 'ALTER SCHEMA public OWNER TO {{ report_viewer_db_user }};'
     sql_dbname: '{{ report_viewer_database }}'
 
-# Test mode bootstrap - source-tarball ConfigMap consumed by the chart's
-# init container. Mirror of the cert-distribution pattern in jupyter
-# (ADR 0015): determine cert needs once, then thread the result into the
-# Helm values. We bind to the same staging-ca-cert Secret jupyter
-# creates so we don't duplicate the cert plumbing.
-- name: Determine if staging cert trust is needed for package proxy
-  ansible.builtin.set_fact:
-    _rv_package_proxy_needs_staging_cert: false
-  when: not (report_viewer_test_mode | bool)
-
-- name: Evaluate staging cert requirement (test mode + nexus proxy)
-  ansible.builtin.set_fact:
-    _rv_uses_self_signed_cert: >-
-      {{ (hostvars[groups['staging'][0]].tls_cert_path | default(staging_self_signed_tls_cert_path)) == staging_self_signed_tls_cert_path }}
-    _rv_package_proxy_needs_staging_cert: false
-  when:
-    - report_viewer_test_mode | bool
-    - package_proxy_mode | default('') == 'nexus'
-    - groups['staging'] is defined
-    - groups['staging'] | length > 0
-
-- name: Set staging cert needed
-  ansible.builtin.set_fact:
-    _rv_package_proxy_needs_staging_cert: '{{ _rv_uses_self_signed_cert | bool }}'
-  when: _rv_uses_self_signed_cert is defined
-
-- name: Build report-viewer source ConfigMap (test mode)
-  ansible.builtin.include_tasks: source_configmap.yaml
-  when: report_viewer_test_mode | bool
-
-- name: Slurp staging CA certificate (test mode + nexus self-signed)
-  ansible.builtin.slurp:
-    src: "{{ hostvars[groups['staging'][0]].tls_cert_path | default(staging_self_signed_tls_cert_path) }}"
-  delegate_to: "{{ groups['staging'][0] | default('localhost') }}"
-  register: _rv_staging_ca_cert
-  when: _rv_package_proxy_needs_staging_cert | bool
-
-- name: Create staging CA cert Secret for report-viewer pods
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: staging-ca-cert
-        namespace: '{{ report_viewer_namespace }}'
-      data:
-        ca.crt: '{{ _rv_staging_ca_cert.content }}'
-  when: _rv_package_proxy_needs_staging_cert | bool
-
 - name: Parse Helm values
   ansible.builtin.set_fact:
     report_viewer_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

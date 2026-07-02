@@ -521,5 +521,3 @@ it so it's not a blocker.
 
 - Handle CSV files in service instead of owui.
 
-- Remove Test mode for the front end. Add in pod security.
-

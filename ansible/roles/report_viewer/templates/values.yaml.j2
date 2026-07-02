@@ -32,23 +32,6 @@ trinoCaCert: |
 {{ report_viewer_trino_ca_cert | indent(2, true) }}
 {% endif %}
 
-{% if report_viewer_test_mode | bool %}
-# Test mode - image baked at deploy time from source via the role-managed
-# ConfigMap (`{{ report_viewer_helm_release_name }}-source`).
-sourceConfigMap:
-  enabled: true
-  name: "{{ report_viewer_helm_release_name }}-source"
-  pythonImage: "{{ report_viewer_test_mode_python_image }}"
-{% if pip_proxy_url | default('') | length > 0 %}
-  pipIndexUrl: "{{ pip_proxy_url }}"
-{% endif %}
-{% if _rv_package_proxy_needs_staging_cert | default(false) | bool %}
-  stagingCaSecret:
-    name: staging-ca-cert
-    key: ca.crt
-{% endif %}
-{% endif %}
-
 # Trino is HTTPS-only (ADR 0022); mount the cert-manager-managed
 # trino-tls Secret directly. Same pattern as superset, jupyter, voila.
 # Same namespace as Trino (scout-analytics), so kubelet picks up CA
