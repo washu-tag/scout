@@ -521,7 +521,5 @@ it so it's not a blocker.
 
 - Handle CSV files in service instead of owui.
 
-- Send to XNAT handoff with IQ plugin. Not needed for the initial release but will be needed soon after.
-
 - Remove Test mode for the front end. Add in pod security.
 
