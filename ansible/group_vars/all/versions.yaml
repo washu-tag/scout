@@ -87,7 +87,7 @@ opa_image_tag: 1.16.2
 # stay in sync. See the packageRule in renovate.json5 for the SPI
 # compatibility reminder attached to those PRs.
 # renovate: datasource=docker depName=quay.io/keycloak/keycloak
-keycloak_version: 26.6.3
+keycloak_version: 26.6.4
 
 # Analytics & Query Engines - Hive
 # Regex versioning restricts updates to the plain multi-arch tags; loose
