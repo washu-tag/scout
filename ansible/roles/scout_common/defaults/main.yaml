@@ -212,6 +212,9 @@ s3_loki_writer: loki-writer
 s3_opa_bundle_writer: opa-bundle-writer
 s3_opa_bundle_reader: opa-bundle-reader
 lake_bucket: lake
+# Bronze bucket for raw HL7 captured by the real-time listener (ADR 0028), kept
+# physically separate from the log-file bronze under {{ lake_bucket }}.
+hl7_raw_bucket: hl7-raw
 scratch_bucket: scratch
 loki_chunks_bucket: loki-chunks
 loki_ruler_bucket: loki-ruler
@@ -469,8 +472,7 @@ yum_proxy_base_url: >-
      else '' }}
 # Maven proxy URL for the Nexus scout-maven group (a MIXED group that includes the
 # maven-central proxy). Consumed by the xnat role (rendered as a mirror in its
-# settings.xml) and by the hl7-listener role (Camel K build mirror). Empty when not
-# proxying, like the other *_proxy_url values.
+# settings.xml). Empty when not proxying, like the other *_proxy_url values.
 maven_proxy_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository/scout-maven')
      if package_proxy_mode == 'nexus'

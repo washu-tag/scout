@@ -43,13 +43,13 @@ These are the message types we requested; we can ask for more or fewer as needed
 
 ## Decision
 
-Use **Apache Camel K** for the MLLP listener and batching, with **Kafka (Strimzi)** as a durable buffer. The pipeline is deployed to production, but runs as an **observer** (next section). It is implemented in `ansible/roles/hl7-listener` and deployed via `make install-hl7-listener`; the Camel routes are defined declaratively in that role rather than reproduced here.
+Use **Apache Camel on Spring Boot** for the MLLP listener and batching, with **Kafka (Strimzi)** as a durable buffer. The pipeline is deployed to production, but runs as an **observer** (next section). The application (Camel YAML routes on a Spring Boot runtime) lives in `hl7-listener/`, is built and published to GHCR by CI like every other Scout image, and is deployed from a Helm chart (`helm/hl7-listener`) carrying the listener/batcher Deployments and Services — installed by `ansible/roles/hl7-listener` (`make install-hl7-listener`) today, and consumable directly by Flux under the planned GitOps model. Kafka (Strimzi) is provisioned alongside by the same role; the `hl7-raw` bucket and the batcher's S3 access follow the platform's cross-backend pattern — declared in the `minio` role on-prem, and provisioned by Terraform with IRSA on AWS.
 
 Data flow:
 
 ```
 HL7 Source ──► hl7-listener ──► Kafka ──► hl7-batcher ──► Object Storage (Bronze: hl7-raw)
-   (MLLP)      (Camel K)     (hl7-messages) (Camel K)             │
+   (MLLP)      (Camel)       (hl7-messages) (Camel)             │
                     │                                             ▼
                     ▼                            Kafka ◄──── (hl7-batches topic: batch manifests)
                    ACK                                            │
@@ -60,11 +60,13 @@ HL7 Source ──► hl7-listener ──► Kafka ──► hl7-batcher ──�
                                                           Delta Lake (Silver)
 ```
 
-- **hl7-listener** (Camel K) receives MLLP on port 2575, parses the message (HAPI), keys it by HL7 message control ID, writes it to the `hl7-messages` Kafka topic, and ACKs. The ACK is gated on a successful write, so backpressure propagates upstream to the interface engine rather than dropping messages.
+- **hl7-listener** (Camel/Spring Boot) receives MLLP on port 2575, parses the message (HAPI), keys it by HL7 message control ID, writes it to the `hl7-messages` Kafka topic, and ACKs. The ACK is gated on a successful write, so backpressure propagates upstream to the interface engine rather than dropping messages.
 - **Kafka** (Strimzi, KRaft) is a durable buffer that decouples ingest rate from downstream processing and enables replay.
-- **hl7-batcher** (Camel K) consumes `hl7-messages`, aggregates messages into ZIP files, uploads them to the Bronze object-storage bucket, and publishes each batch's object key to the `hl7-batches` topic. It replaces the batch-zipping the `hl7log-extractor` did for the file-based path.
+- **hl7-batcher** (Camel/Spring Boot) consumes `hl7-messages`, aggregates messages into ZIP files, uploads them to the Bronze object-storage bucket, and publishes each batch's object key to the `hl7-batches` topic. It replaces the batch-zipping the `hl7log-extractor` did for the file-based path.
 
-**Why Camel K:** a Kubernetes operator that runs Camel routes as custom resources; routes are declarative YAML, the operator builds and deploys the container; built-in, production-tested MLLP/HL7/Kafka components; no bespoke Dockerfile or Helm chart. The one cost is that the operator needs a container registry to push the images it builds per Integration.
+**Why Camel (on Spring Boot):** Camel gives built-in, production-tested MLLP/HL7/Kafka components and declarative YAML routes, so the listener and batcher are ~100 lines of route YAML rather than bespoke networking code. Packaging those routes on a Spring Boot runtime lets the app build and ship exactly like every other Scout JVM service (`hl7log-extractor`, `keycloak`): a normal Dockerfile built by CI, published to GHCR, and pulled by the cluster. The listener and batcher run as ordinary Deployments; both routes live in one image and each Deployment selects its route via `camel.main.routes-include-pattern`.
+
+**Why not Camel K:** the earlier design used the Camel K operator, which builds a per-Integration container image *in-cluster* at deploy time. That requires the cluster to reach a Maven repository and — critically — to hold **push** credentials to a container registry. In air-gapped mode that meant the production cluster pushing built images to the staging Harbor, inverting the normal pull-only trust direction and placing a broad registry credential inside the PHI-bearing production cluster (a supply-chain concern). Building the image in CI and having production only *pull* it (through the Harbor mirror, like every other image) removes the in-cluster build, the deploy-time Maven dependency, and the prod→staging push entirely. The images carry application code only — PHI never enters them; it flows MLLP → Kafka → Bronze at runtime.
 
 **Why batching:** individual HL7 messages are small (a few KB). Writing ~220k tiny objects/day to object storage performs poorly (small-file overhead) and inflates S3 API calls/cost. Batching into ZIPs cuts object count while preserving individual message boundaries (messages remain individually extractable). A batch closes when either `completionSize` messages accumulate **or** `completionTimeout` milliseconds elapse with no new message (Camel's inactivity timeout). Size-based (byte) batching has no built-in Camel option and would need a custom `completionPredicate`; not pursued.
 
@@ -80,11 +82,11 @@ Everything about downstream *processing* — the transformer trigger, Silver wri
 
 ## Implementation (as deployed)
 
-- **Versions:** Strimzi 1.1.0, Kafka 4.3.0 (Strimzi 1.1.0's supported default), Camel K 2.10.1. Pinned exactly in `group_vars/all/versions.yaml` (Renovate/Dependabot drives upgrades).
+- **Versions:** Strimzi 1.1.0 and Kafka 4.3.0 (Strimzi 1.1.0's supported default) are pinned in `group_vars/all/versions.yaml`. The listener app is Camel 4.18.2 (LTS) on Spring Boot, pinned in `hl7-listener/build.gradle`. (Renovate/Dependabot drives upgrades.)
 - **Kafka:** single-broker KRaft (no ZooKeeper), replication factor 1. `hl7-messages` has 3 partitions. Retention is **2 days** with a **`retention.bytes` cap of 2Gi/partition** (~6Gi < the 10Gi PV) so a high-volume feed cannot fill the disk. Kafka is a transport buffer only — Bronze is the durable record — so a short retention window is sufficient.
 - **Batching:** `completionSize: 1000`, `completionTimeout: 300000` (5 minutes). Sized for production volume: at ~2–3 msg/sec, size dominates (~1000-message zips, ~200/day), and the timeout flushes partial batches during lulls. (The earlier POC value of `30000` was mis-described as seconds; it is milliseconds. Batch sizing is tunable per environment.)
-- **Air-gapped builds:** Camel K pushes built Integration images to the staging Harbor and resolves Maven dependencies through the Nexus `scout-maven` group, trusting the staging CA.
-- **Monitoring:** Grafana dashboards (Camel K, Kafka/Strimzi) and Prometheus scrape jobs for the Strimzi operator, Kafka broker, and Camel K integrations, plus dedicated alerts (below).
+- **Image build & air-gapped pulls:** the app image is built by CI (GitHub Actions) and published to `ghcr.io/washu-tag/hl7-listener`. The cluster only *pulls* it — directly on connected clusters, and through the Harbor `ghcr-proxy` pull-through mirror on air-gapped clusters (identical to every other Scout image). There is no in-cluster build, no deploy-time Maven resolution, and no prod→staging registry push.
+- **Monitoring:** Grafana dashboards (HL7 Listener, Kafka/Strimzi) and Prometheus scrape jobs for the Strimzi operator, Kafka broker, and the listener/batcher Deployments (Camel micrometer metrics on the Spring Boot Actuator `/actuator/prometheus` endpoint), plus dedicated alerts (below).
 
 ### Changes to existing Scout components
 
@@ -95,7 +97,7 @@ None to the active pipeline. `hl7log-extractor` and `hl7-transformer` are untouc
 In observer mode, observability is entirely metrics-based (Prometheus/Grafana):
 
 - **Kafka/Strimzi metrics** — broker health, throughput, partition offsets.
-- **Camel K route metrics** — per-integration exchange counts, latency, success/failure.
+- **Camel route metrics** — per-integration exchange counts, latency, success/failure (micrometer).
 - **Alerts** (Grafana, following the existing `roles/grafana/templates/alerts/` pattern): no HL7 received by the listener; pipeline exchange failures; batcher stalled while the listener is receiving (Kafka lag building); Kafka broker down. Existing node (CPU/memory/disk/iowait) and Temporal alerts cover collateral impact on co-located components.
 
 The current file-based pipeline tracks each message through a Postgres ingest-status database for per-message fate visibility. That per-message tracking is **not** part of observer mode; if/when the real-time path becomes an active ingest, extending the status database to streaming (stages: `received` → `staged` → `ingested`/`failed`) will be part of the cutover design. Writing status before ACK would add latency to the ACK path (and, if Postgres were down, would withhold ACKs — messages would remain queued upstream for retry), so its placement warrants care at that time.
@@ -104,7 +106,8 @@ The current file-based pipeline tracks each message through a Postgres ingest-st
 
 | Option | Verdict |
 |--------|---------|
-| **Apache Camel K + Kafka (selected)** | Kubernetes-native, YAML routes, built-in MLLP + Kafka, durable buffer with replay |
+| **Apache Camel on Spring Boot + Kafka (selected)** | Built-in MLLP + HL7 + Kafka components, declarative YAML routes, durable buffer with replay; ships as a normal CI-built image like every other Scout service |
+| Apache Camel K (operator) | Rejected: builds a per-Integration image in-cluster, so the cluster needs Maven access and registry **push** credentials — in air-gapped mode a prod→staging Harbor push (supply-chain concern). A CI-built, pull-only image gives the same Camel routes without it. |
 | `hl7-to-kafka` (or fork) | Code to write/maintain; must publish images and a Helm chart |
 | `python-hl7` MLLP → Kafka | More code to write/maintain; must publish images and a Helm chart |
 | Direct to object storage | Too many small writes |
@@ -114,7 +117,7 @@ The current file-based pipeline tracks each message through a Postgres ingest-st
 
 The following are recorded for the eventual event-driven cutover; none are implemented here.
 
-**Transformer trigger.** Something must drive the `hl7-transformer` from the `hl7-batches` manifests. Two candidates: (a) a **Temporal trigger** — a Kafka consumer / Camel K route / Temporal scheduled job kicks off the existing workflow (low effort, low risk, reuses today's batch-oriented transformer); or (b) **Spark Structured Streaming** — a long-running job consumes Kafka directly and writes Delta, removing Temporal from the real-time flow (lower latency, but a significant refactor and higher risk). Recommendation: spike Structured Streaming to gauge effort/risk; fall back to a Temporal trigger otherwise. (A plain Kubernetes CronJob → Temporal is *not* preferred — Temporal's own scheduled jobs are the better fit if Temporal stays in the stack.)
+**Transformer trigger.** Something must drive the `hl7-transformer` from the `hl7-batches` manifests. Two candidates: (a) a **Temporal trigger** — a Kafka consumer / Camel route / Temporal scheduled job kicks off the existing workflow (low effort, low risk, reuses today's batch-oriented transformer); or (b) **Spark Structured Streaming** — a long-running job consumes Kafka directly and writes Delta, removing Temporal from the real-time flow (lower latency, but a significant refactor and higher risk). Recommendation: spike Structured Streaming to gauge effort/risk; fall back to a Temporal trigger otherwise. (A plain Kubernetes CronJob → Temporal is *not* preferred — Temporal's own scheduled jobs are the better fit if Temporal stays in the stack.)
 
 **Message-type handling.** `ORU^R01` → Delta Lake, later handling status updates (P→F→C). ADT messages stored raw (with `message_dt` for ordering) for future processing; `ADT^A40` (merges) will need a patient-ID mapping table; other ADT types may inform a demographics table pending research into their contents. Note `ORU^R01` carries patient demographics in its PID segment, so ADT is not required for basic patient info.
 
@@ -126,7 +129,7 @@ The following are recorded for the eventual event-driven cutover; none are imple
 
 ## Open Questions
 
-Resolved by this deployment: Kafka topics/partitions/retention (decided — see Implementation); container registry (Camel K pushes to the staging Harbor, air-gapped build wired); test environment (live on the `washu-4` dev cluster against the hospital test feed); ADT message contents (being characterized now, which is the point of observer mode).
+Resolved by this deployment: Kafka topics/partitions/retention (decided — see Implementation); container image (built in CI, published to GHCR, pulled via the Harbor mirror in air-gapped mode — no prod→staging push); test environment (live on the `washu-4` dev cluster against the hospital test feed); ADT message contents (being characterized now, which is the point of observer mode).
 
 Still open:
 
@@ -145,7 +148,7 @@ Still open:
 
 ## References
 
-- [Apache Camel K](https://github.com/apache/camel-k)
+- [Apache Camel on Spring Boot](https://camel.apache.org/camel-spring-boot/)
 - [Apache Camel MLLP Component](https://camel.apache.org/components/4.8.x/mllp-component.html)
 - [Apache Camel Kafka Component](https://camel.apache.org/components/4.8.x/kafka-component.html)
 - [Strimzi Kafka Operator](https://strimzi.io/)

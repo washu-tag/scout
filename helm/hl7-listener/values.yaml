@@ -1,0 +1,95 @@
+# Default values for the hl7-listener chart.
+#
+# The chart deploys the real-time HL7 ingest *application* (the listener, batcher, and
+# opt-in test-sender), all from a single image built in CI. It does NOT deploy Kafka:
+# the Strimzi operator, the Kafka cluster, its topics, and the object-storage bucket are
+# provisioned separately (by the hl7-listener Ansible role today, and would become their
+# own Flux resources under GitOps). The chart only needs the broker address + topic names.
+
+image:
+  repository: ghcr.io/washu-tag/hl7-listener
+  # Defaults to the chart appVersion when empty.
+  tag: ''
+  pullPolicy: Always
+
+# Kafka connection (the cluster itself is provisioned outside this chart).
+kafka:
+  brokers: kafka-kafka-bootstrap.scout-extractor:9092
+  hl7Topic: hl7-messages
+  batchesTopic: hl7-batches
+
+# Pod- and container-level hardening applied to every workload.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ['ALL']
+
+# MLLP listener: HL7 over MLLP -> Kafka.
+listener:
+  enabled: true
+  name: hl7-listener
+  port: 2575
+  service:
+    # External MLLP ingress from the upstream interface engine.
+    type: LoadBalancer
+    nodePort: ''
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Batcher: Kafka -> zip -> object storage (bronze) -> manifest to Kafka.
+batcher:
+  enabled: true
+  name: hl7-batcher
+  # ServiceAccount for the pod: the lake-writer IRSA SA on AWS; empty -> default SA on
+  # MinIO (which authenticates with the static-key secret below).
+  serviceAccountName: ''
+  groupId: hl7-batcher
+  completionSize: 1000
+  completionTimeout: 300000
+  s3:
+    bucket: hl7-raw
+    region: us-east-1
+    # Endpoint override for MinIO; empty on AWS (real S3, endpoint derived from region).
+    endpoint: ''
+    overrideEndpoint: true
+    forcePathStyle: true
+    # false on MinIO (static keys); true on AWS (IRSA via the default credentials provider).
+    useDefaultCredentialsProvider: false
+    # Mount static access/secret-key env from the secret (MinIO). false on AWS (IRSA).
+    staticCredentials: true
+    # Secret carrying the static object-storage credentials (MinIO). Provisioned
+    # out-of-band (the Ansible role today; a SealedSecret/SOPS secret under GitOps).
+    secretName: hl7-batcher-s3-creds
+    accessKeyKey: aws-access-key
+    secretKeyKey: aws-secret-key
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Synthetic test sender (opt-in; never in normal operation).
+testSender:
+  enabled: false
+  name: hl7-test-sender
+  period: 5000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi

@@ -1,0 +1,95 @@
+{{- if .Values.batcher.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.batcher.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "hl7-listener.labels" (dict "root" $ "name" .Values.batcher.name "component" "batcher") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "hl7-listener.selectorLabels" (dict "component" "batcher") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "hl7-listener.labels" (dict "root" $ "name" .Values.batcher.name "component" "batcher") | nindent 8 }}
+    spec:
+      {{- with .Values.batcher.serviceAccountName }}
+      serviceAccountName: {{ . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: hl7-batcher
+          image: {{ include "hl7-listener.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--camel.main.routes-include-pattern=classpath:camel/batcher.camel.yaml"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: KAFKA_BROKERS
+              value: {{ .Values.kafka.brokers | quote }}
+            - name: KAFKA_HL7_TOPIC
+              value: {{ .Values.kafka.hl7Topic | quote }}
+            - name: KAFKA_HL7_BATCHES_TOPIC
+              value: {{ .Values.kafka.batchesTopic | quote }}
+            - name: HL7_BATCHER_GROUP_ID
+              value: {{ .Values.batcher.groupId | quote }}
+            - name: HL7_BATCHER_COMPLETION_SIZE
+              value: {{ .Values.batcher.completionSize | quote }}
+            - name: HL7_BATCHER_COMPLETION_TIMEOUT
+              value: {{ .Values.batcher.completionTimeout | quote }}
+            - name: S3_BUCKET
+              value: {{ .Values.batcher.s3.bucket | quote }}
+            - name: S3_ENDPOINT
+              value: {{ .Values.batcher.s3.endpoint | quote }}
+            - name: AWS_REGION
+              value: {{ .Values.batcher.s3.region | quote }}
+            - name: S3_USE_DEFAULT_CREDS
+              value: {{ .Values.batcher.s3.useDefaultCredentialsProvider | quote }}
+            - name: S3_OVERRIDE_ENDPOINT
+              value: {{ .Values.batcher.s3.overrideEndpoint | quote }}
+            - name: S3_FORCE_PATH_STYLE
+              value: {{ .Values.batcher.s3.forcePathStyle | quote }}
+            {{- if .Values.batcher.s3.staticCredentials }}
+            # Static object-storage credentials (MinIO). On AWS these are omitted and
+            # Camel's default credentials provider resolves IRSA from the ServiceAccount.
+            - name: AWS_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.batcher.s3.secretName }}
+                  key: {{ .Values.batcher.s3.accessKeyKey }}
+            - name: AWS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.batcher.s3.secretName }}
+                  key: {{ .Values.batcher.s3.secretKeyKey }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.batcher.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+{{- end }}

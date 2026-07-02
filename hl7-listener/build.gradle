@@ -1,0 +1,70 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.13'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'edu.washu.tag'
+version = 'latest'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+def camelVersion = '4.18.2'
+def hapiVersion = '2.5.1'
+
+// camel-spring-boot-dependencies is the harmonized BOM that reconciles the Camel and
+// Spring Boot dependency trees (it also manages the Spring Boot version), so we import
+// it rather than picking Spring Boot library versions by hand.
+dependencyManagement {
+	imports {
+		mavenBom "org.apache.camel.springboot:camel-spring-boot-dependencies:${camelVersion}"
+	}
+}
+
+dependencies {
+	// Camel on Spring Boot + YAML route loading (routes live in src/main/resources/camel)
+	implementation 'org.apache.camel.springboot:camel-spring-boot-starter'
+	implementation 'org.apache.camel.springboot:camel-yaml-dsl-starter'
+
+	// Route components: MLLP listener, HL7 parsing, Kafka, S3, zip aggregation
+	implementation 'org.apache.camel.springboot:camel-mllp-starter'
+	implementation 'org.apache.camel.springboot:camel-hl7-starter'
+	implementation 'org.apache.camel.springboot:camel-kafka-starter'
+	implementation 'org.apache.camel.springboot:camel-aws2-s3-starter'
+	implementation 'org.apache.camel.springboot:camel-zipfile-starter'
+
+	// Metrics: Camel micrometer meters exposed on the Spring Boot Actuator Prometheus
+	// endpoint (/actuator/prometheus). The route-policy + event-notifier meters carry the
+	// routeId/eventType tags the HL7 Listener dashboards and alerts key on.
+	implementation 'org.apache.camel.springboot:camel-micrometer-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
+	// HAPI HL7v2 structure libraries — the versions Scout ingests (v2.1–v2.7). Camel's
+	// hl7 dataformat needs these on the classpath to build typed messages; without them
+	// HAPI logs "No HL7 structure libraries found on the classpath!".
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v21:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v22:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v23:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v231:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v24:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v25:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v251:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v26:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v27:${hapiVersion}"
+}
+
+// Spring Boot's plain (library) jar is not needed; only the executable bootJar ships, so
+// the Dockerfile's build/libs/*.jar glob resolves to a single artifact.
+tasks.named('jar') {
+	enabled = false
+}

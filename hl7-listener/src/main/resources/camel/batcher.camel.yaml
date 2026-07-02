@@ -1,0 +1,54 @@
+# Batcher route: consume HL7 messages from Kafka, aggregate into zip archives, upload each
+# archive to object storage (bronze), then publish the archive's S3 key back to Kafka as a
+# manifest. Config values are Camel property placeholders resolved from the Deployment env.
+- beans:
+    - name: zipAggregator
+      type: '#class:org.apache.camel.processor.aggregate.zipfile.ZipAggregationStrategy'
+      constructors:
+        0: false
+        1: true
+- route:
+    id: batchHl7Messages
+    from:
+      uri: 'kafka:{{kafka.hl7.topic}}?brokers={{kafka.brokers}}&groupId={{hl7.batcher.group.id}}&autoOffsetReset=earliest'
+      steps:
+        - log:
+            message: 'Consumed from Kafka: partition=${header.kafka.PARTITION}, offset=${header.kafka.OFFSET}, key=${header.kafka.KEY}'
+            loggingLevel: DEBUG
+        - setHeader:
+            name: CamelFileName
+            expression:
+              simple: '${header.kafka.KEY}-${date:now:yyyyMMddHHmmssSSS}.hl7'
+        - log:
+            message: 'Adding message to batch: ${header.CamelFileName}'
+            loggingLevel: DEBUG
+        - aggregate:
+            completionSize: '{{hl7.batcher.completion.size}}'
+            completionTimeout: '{{hl7.batcher.completion.timeout}}'
+            aggregationStrategy: '#zipAggregator'
+            correlationExpression:
+              constant: 'true'
+            steps:
+              - log:
+                  message: 'Batch complete: aggregatedSize=${header.CamelAggregatedSize}, completedBy=${header.CamelAggregatedCompletedBy}'
+                  loggingLevel: INFO
+              - setHeader:
+                  name: CamelAwsS3Key
+                  expression:
+                    simple: 'hl7-batches/${date:now:yyyy/MM/dd}/batch-${date:now:HHmmssSSS}.zip'
+              - log:
+                  message: 'Uploading batch to S3: bucket={{s3.bucket}}, key=${header.CamelAwsS3Key}'
+                  loggingLevel: INFO
+              - to:
+                  uri: 'aws2-s3://{{s3.bucket}}?region={{aws.region}}&useDefaultCredentialsProvider={{s3.use.default.creds}}&overrideEndpoint={{s3.override.endpoint}}&uriEndpointOverride={{s3.endpoint:}}&forcePathStyle={{s3.force.path.style}}&accessKey=RAW({{aws.access.key:}})&secretKey=RAW({{aws.secret.key:}})'
+              - log:
+                  message: 'S3 upload successful: ${header.CamelAwsS3Key}, eTag=${header.CamelAwsS3ETag}'
+                  loggingLevel: INFO
+              - setBody:
+                  expression:
+                    simple: '${header.CamelAwsS3Key}'
+              - to:
+                  uri: 'kafka:{{kafka.hl7.batches.topic}}?brokers={{kafka.brokers}}'
+              - log:
+                  message: 'Published batch manifest to Kafka: topic={{kafka.hl7.batches.topic}}, s3Key=${body}'
+                  loggingLevel: INFO

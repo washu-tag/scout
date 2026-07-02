@@ -1,0 +1,22 @@
+# Opt-in synthetic sender: emits a sample ORU^R01 message to the listener on a timer. Only
+# deployed for smoke tests (hl7_test_sender_enabled); never runs in normal operation.
+- route:
+    id: sendTestHl7
+    from:
+      uri: 'timer:test?period={{hl7.test.sender.period}}'
+      steps:
+        - setHeader:
+            name: messageId
+            expression:
+              simple: 'MSG${date:now:yyyyMMddHHmmssSSS}'
+        - setBody:
+            expression:
+              simple: "MSH|^~\\&|RIS|RADIOLOGY|SCOUT|HOSPITAL|${date:now:yyyyMMddHHmmss}||ORU^R01^ORU_R01|${header.messageId}|P|2.7\rPID|1||MRN${random(100000,999999)}^^^HOSP^MR||DOE^JOHN^A||19651215|M|||123 MAIN ST^^CHICAGO^IL^60601||3125551234\rPV1|1|O|RAD^^^HOSP||||1234^SMITH^ROBERT^J^MD|||RAD\rORC|RE|ORD${random(100,999)}|FIL${random(100,999)}||CM\rOBR|1|ORD789|FIL456|71020^XR CHEST 2 VIEWS^CPT|||${date:now:yyyyMMddHHmmss}|||||||${date:now:yyyyMMddHHmmss}||1234^SMITH^ROBERT^J^MD||||||${date:now:yyyyMMddHHmmss}|||F\rOBX|1|TX|GDT^REPORT TEXT||CHEST X-RAY: Normal findings.||||||F"
+        - log:
+            message: 'Sending test HL7 message: ${header.messageId}'
+            loggingLevel: INFO
+        - to:
+            uri: 'mllp://{{hl7.listener.host}}:{{hl7.listener.port}}'
+        - log:
+            message: 'Test HL7 message sent successfully: ${header.messageId}'
+            loggingLevel: INFO

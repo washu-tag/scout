@@ -1,5 +1,5 @@
 ---
-- name: Install HL7 Listener (Kafka + Camel K)
+- name: Install HL7 Listener (Strimzi Kafka + Camel on Spring Boot)
   hosts: server
   gather_facts: false
   environment: '{{ cluster_k8s_environment }}'

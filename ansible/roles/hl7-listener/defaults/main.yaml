@@ -1,6 +1,6 @@
 ---
 # Default values for HL7 Listener deployment
-# Deploys Strimzi Kafka, Camel K operator, and HL7 listener integration
+# Deploys Strimzi Kafka and the HL7 listener/batcher Deployments (image built in CI, pulled from GHCR)
 
 # Namespace configuration
 hl7_listener_namespace: '{{ scout_extractor_namespace }}'
@@ -45,21 +45,9 @@ hl7_listener_service_type: LoadBalancer
 # Optional: NodePort if service_type is NodePort
 hl7_listener_node_port: ''
 
-# Camel K IntegrationPlatform registry configuration
-# Default uses ttl.sh - anonymous ephemeral registry for testing (images expire after 24h).
-# In air-gapped mode (air_gapped: true + a staging group present) the role ignores this and
-# points Camel K at the staging Harbor (image push) and Nexus (Maven resolution) instead —
-# see tasks/deploy.yaml. Override for other connected registries.
-camel_k_registry_address: 'ttl.sh'
-# Skip registry TLS verification on image push. Leave false to verify Harbor's CA via the
-# camel-k-registry-ca ConfigMap; flip to true only if the Jib push fails with x509
-# (Camel K registry.ca trust can be flaky) — acceptable on the internal air-gapped network.
-camel_k_registry_insecure: false
-# Air-gapped only: Harbor project Camel K pushes built integration images to (created if missing, public).
-camel_k_harbor_project: camelk
-# Air-gapped only: base image Jib pulls to assemble integration images. Jib pulls this itself
-# (not via containerd), so it must be a reachable path — the staging Harbor docker.io proxy.
-camel_k_base_image_proxy_path: 'dockerhub-proxy/library/eclipse-temurin:17'
+# Container image (built in CI, published to GHCR; pulled via the Harbor mirror in air-gapped mode)
+hl7_listener_image_repository: ghcr.io/washu-tag/hl7-listener
+hl7_listener_image_tag: latest
 
 # HL7 Batcher configuration
 # Aggregates HL7 messages from Kafka, zips them, uploads to S3, publishes manifest to Kafka
