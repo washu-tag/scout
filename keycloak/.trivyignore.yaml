@@ -1,22 +1,13 @@
-# Everything below ships inside the upstream quay.io/keycloak/keycloak:26.6.3
-# server distribution (its bundled netty / jackson / JDBC-driver jars), not in
+# Everything below ships inside the upstream quay.io/keycloak/keycloak
+# server distribution (its bundled jackson / JDBC-driver jars), not in
 # our event-listener provider jar (whose Keycloak deps are compileOnly and
-# don't ship). We're already on the latest Keycloak release, and these CVEs
-# were disclosed too recently for any Keycloak build to carry the fixed deps —
-# so there's nothing to bump in our layer and no fixed base image to adopt.
-# Revisit when a newer Keycloak release bundles the fixed versions.
+# don't ship). There's nothing to bump in our layer and no fixed base image
+# to adopt yet. Revisit when a newer Keycloak release bundles the fixed
+# versions.
 vulnerabilities:
   # mssql-jdbc (Keycloak bundles JDBC drivers for all supported DBs; Scout
   # uses postgres, so the SQL Server driver is never loaded)
   - id: CVE-2025-59250 # com.microsoft.sqlserver:mssql-jdbc 13.2.1
-  # netty 4.1.133 family bundled by Keycloak/Quarkus (fixed in 4.1.135)
-  - id: CVE-2026-44249 # netty-handler
-  - id: CVE-2026-44893 # netty-codec-haproxy
-  - id: CVE-2026-45416 # netty-handler
-  - id: CVE-2026-45674 # netty-resolver-dns
-  - id: CVE-2026-47691 # netty-resolver-dns
-  - id: CVE-2026-48059 # netty-codec-haproxy
-  - id: CVE-2026-50010 # netty-handler
-  # jackson-databind 2.21.2 bundled by Keycloak (fixed in 2.21.4)
+  # jackson-databind bundled by Keycloak
   - id: CVE-2026-54512 # jackson-databind
   - id: CVE-2026-54513 # jackson-databind
