@@ -7,10 +7,11 @@ S3A / remote Hive settings).
 
 Run from extractor/hl7-transformer. Spark/Delta versions are NOT pinned here — they come
 from pyproject.toml (the single Python-side source of truth), so this command tracks a
-Spark upgrade automatically. Locally select a Spark-compatible interpreter + JVM: Python
-3.11 (Spark 3.5.x ships no wheels for 3.13+) and Java 17 (Spark 3.5.x supports <= 17):
+Spark upgrade automatically. Locally select a Spark-compatible interpreter + JVM: Spark
+4.1.x runs on Python 3.10–3.13 and Java 17 or 21. Any supported pair works; the CI job
+uses Python 3.12 + Java 21 (the repo default):
 
-    JAVA_HOME=<java-17> uv run --python 3.11 --extra test pytest tests/ -v
+    JAVA_HOME=<java-17-or-21> uv run --python 3.12 --extra test pytest tests/ -v
 """
 
 import os

@@ -152,16 +152,16 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      # Spark 3.5.x requires Java <= 17 (the repo default JAVA_VERSION is 21). Java 17 is
-      # also valid for the pending Spark 4 upgrade, so this is upgrade-safe. Spark/Delta
-      # versions are read from the package's pyproject.toml, so this job pins no versions.
+      # Spark 4.1.x runs on Java 17 or 21; use the repo default JAVA_VERSION (21) like
+      # every other Java job. Spark/Delta versions are read from the package's
+      # pyproject.toml, so this job pins no versions.
       - uses: actions/setup-java@v5
         with:
           distribution: ${{ ENV.JAVA_DIST }}
-          java-version: '17'
+          java-version: ${{ ENV.JAVA_VERSION }}
       - uses: actions/setup-python@v6.3.0
         with:
-          # pyspark 3.5.x ships no wheels for 3.13+; 3.12 is the newest supported.
+          # Spark 4.1.x supports Python 3.10–3.13; 3.12 is a known-good pin.
           python-version: '3.12'
       - name: 'Unit tests: hl7-transformer'
         shell: bash
