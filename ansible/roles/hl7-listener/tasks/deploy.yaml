@@ -516,9 +516,26 @@
         template:
           spec:
             restartPolicy: Never
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000
+              fsGroup: 1000
+              seccompProfile:
+                type: RuntimeDefault
             containers:
               - name: mc
                 image: '{{ minio_client_image }}'
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop: ['ALL']
+                # mc writes its config under $HOME/.mc and the policy file under /tmp;
+                # point HOME at the writable emptyDir so the container can run non-root
+                # with a read-only root filesystem.
+                env:
+                  - name: HOME
+                    value: /tmp
                 command: ['/bin/sh', '-c']
                 args:
                   - |
@@ -557,10 +574,14 @@
 
                     echo "HL7 bucket setup completed successfully"
                 volumeMounts:
+                  - name: tmp
+                    mountPath: /tmp
                   - name: rootcreds
                     mountPath: /rootcreds
                     readOnly: true
             volumes:
+              - name: tmp
+                emptyDir: {}
               - name: rootcreds
                 secret:
                   secretName: minio-root-creds
