@@ -36,13 +36,13 @@ const COLUMNS_CONFIG: Array<{
   mono?: boolean;
   kind?: 'date';
 }> = [
-  { field: 'accession_number', title: 'Accession', width: 100, mono: true },
   { field: 'epic_mrn', title: 'MRN', width: 80, mono: true },
+  { field: 'accession_number', title: 'Accession', width: 85, mono: true },
   { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
   { field: 'modality', title: 'Modality', width: 60 },
   { field: 'service_name', title: 'Service', width: 180 },
   { field: 'sending_facility', title: 'Facility', width: 120, defaultHidden: true },
-  { field: 'patient_age', title: 'Age', width: 90, align: 'right' },
+  { field: 'patient_age', title: 'Age', width: 50, align: 'right' },
   { field: 'sex', title: 'Sex', width: 40, align: 'center' },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
 ];

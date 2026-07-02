@@ -686,7 +686,6 @@ async def get_search_accessions(
     }
 
 
-_CSV_COLUMNS = SEARCH_REQUIRED_COLUMNS
 _CSV_CHUNK = 500
 
 
@@ -708,29 +707,30 @@ async def export_search_csv(
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     sql = ds["sql"]
-    cols_select = ", ".join(f"s.{_quote_ident(c)}" for c in _CSV_COLUMNS)
-    # OFFSET/LIMIT across queries is non-deterministic without ORDER BY.
-    order_col = f"s.{_quote_ident(_CSV_COLUMNS[0])}"
 
     async def gen():
-        yield (",".join(_CSV_COLUMNS) + "\n").encode()
+        order_col = f"s.{_quote_ident('primary_report_identifier')}"
         offset = 0
+        columns_written = False
         while True:
             page_sql = (
-                f"SELECT {cols_select} FROM ({sql}) s "
+                f"SELECT s.* FROM ({sql}) s "
                 f"ORDER BY {order_col} "
                 f"OFFSET {offset} LIMIT {_CSV_CHUNK}"
             )
             try:
                 with metrics.time_trino("export_csv_query"):
-                    _, rows = await trino_client.execute(page_sql, user=user.sub)
+                    columns, rows = await trino_client.execute(page_sql, user=user.sub)
             except Exception:
                 log.exception("trino export query failed at offset=%d", offset)
                 yield b"# ERROR: query failed mid-export; file is incomplete\n"
                 return
+            if not columns_written:
+                yield (",".join(columns) + "\n").encode()
+                columns_written = True
             for row in rows:
                 yield (
-                    ",".join(_csv_quote(row.get(c)) for c in _CSV_COLUMNS) + "\n"
+                    ",".join(_csv_quote(row.get(c)) for c in columns) + "\n"
                 ).encode()
             if len(rows) < _CSV_CHUNK:
                 return

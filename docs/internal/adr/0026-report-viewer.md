@@ -515,9 +515,9 @@ it so it's not a blocker.
 
 - Test aggregate queries and non-cohort queries from the LLM.
 
+- issue with removing Columns
 
-
-- Test CSV Upload and Download.
+- Test CSV Upload.
 
 - Handle CSV files in service instead of owui.
 

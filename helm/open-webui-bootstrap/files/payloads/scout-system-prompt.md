@@ -27,8 +27,9 @@ Find and display radiology reports matching a SQL query. User gets an iframed vi
 scout_find_reports(
   sql="""
     SELECT primary_report_identifier, accession_number,
+           resolved_epic_mrn AS epic_mrn, sending_facility,
            modality, service_name, message_dt, patient_age, sex
-    FROM reports_latest
+    FROM reports_latest_epic_view
     WHERE modality = 'CT'
       AND REGEXP_LIKE(service_name, '(?i)(chest|thorax|lung)')
       AND (
@@ -62,8 +63,10 @@ scout_find_reports(
 ```
 scout_find_reports(
   sql="""
-    SELECT primary_report_identifier, accession_number, modality, service_name, message_dt, patient_age, sex
-    FROM reports_latest
+    SELECT primary_report_identifier, accession_number,
+           resolved_epic_mrn AS epic_mrn, sending_facility,
+           modality, service_name, message_dt, patient_age, sex
+    FROM reports_latest_epic_view
     WHERE modality = 'CT'
       AND REGEXP_LIKE(service_name, '(?i)(chest|thorax)')
       AND any_match(diagnoses, d ->
