@@ -80,6 +80,7 @@ dependencies {
     // query-spec declares spark-sql_2.12 (Spark 3.5) at runtime scope; Spark 4
     // is Scala 2.13 only, so excluding it here keeps the 2.12 jars off the
     // classpath and runs query-spec against the 2.13 Spark below instead.
+    // Remove after query-spec bumps to Spark 4 and Scala 2.13: washu-tag/data-generator#14
     testImplementation("edu.washu.tag:query-spec:${vQuerySpec}") {
         exclude group: 'org.apache.spark'
     }
