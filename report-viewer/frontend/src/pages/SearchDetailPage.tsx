@@ -36,7 +36,7 @@ const COLUMNS_CONFIG: Array<{
   mono?: boolean;
   kind?: 'date';
 }> = [
-  { field: 'epic_mrn', title: 'MRN', width: 80, mono: true },
+  { field: 'epic_mrn', title: 'MRN', width: 80, mono: true, defaultHidden: true },
   { field: 'accession_number', title: 'Accession', width: 85, mono: true },
   { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
   { field: 'modality', title: 'Modality', width: 60 },
