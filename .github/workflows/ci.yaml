@@ -256,6 +256,7 @@ jobs:
       - lint
       - build-and-upload
       - unit-test
+      - hl7-transformer-unit
       - ansible-and-python-tests
     permissions:
       contents: read

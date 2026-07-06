@@ -1,0 +1,4 @@
+# verify_node.py is a standalone script (run via ansible.builtin.script); the
+# lockfile uv generates when running it locally has no consumer. Packages that
+# DO consume their lockfile in CI (e.g. extractor/hl7-transformer) commit it.
+uv.lock
