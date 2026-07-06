@@ -42,23 +42,6 @@
     sql_script: 'ALTER SCHEMA public OWNER TO {{ open_webui_postgres_user }};'
     sql_dbname: '{{ open_webui_database }}'
 
-- name: Provision OWUI DB settings writer role
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: execute_sql
-  vars:
-    # Table GRANTs need the openwebui DB, not the default postgres.
-    sql_dbname: '{{ open_webui_database }}'
-    sql_script: |
-      DO $do$ BEGIN
-        CREATE ROLE {{ owui_settings_writer_role }} LOGIN PASSWORD '{{ owui_settings_writer_password }}';
-      EXCEPTION WHEN duplicate_object THEN
-        ALTER ROLE {{ owui_settings_writer_role }} WITH PASSWORD '{{ owui_settings_writer_password }}';
-      END $do$;
-      GRANT CONNECT ON DATABASE {{ open_webui_database }} TO {{ owui_settings_writer_role }};
-      GRANT USAGE ON SCHEMA public TO {{ owui_settings_writer_role }};
-      GRANT SELECT (id, settings), UPDATE (settings) ON "user" TO {{ owui_settings_writer_role }};
-
 - name: Create Kubernetes Secret for sensitive env vars
   ansible.builtin.include_tasks: create_secret.yaml
 
@@ -167,6 +150,23 @@
 - name: Bootstrap Open WebUI admin + push declarative config
   ansible.builtin.include_tasks: configure_admin.yaml
   when: open_webui_admin_setup_enabled | bool
+
+# Runs after OWUI boots so the `user` table exists for the column-level GRANT.
+- name: Provision OWUI DB settings writer role
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: execute_sql
+  vars:
+    sql_dbname: '{{ open_webui_database }}'
+    sql_script: |
+      DO $do$ BEGIN
+        CREATE ROLE {{ owui_settings_writer_role }} LOGIN PASSWORD '{{ owui_settings_writer_password }}';
+      EXCEPTION WHEN duplicate_object THEN
+        ALTER ROLE {{ owui_settings_writer_role }} WITH PASSWORD '{{ owui_settings_writer_password }}';
+      END $do$;
+      GRANT CONNECT ON DATABASE {{ open_webui_database }} TO {{ owui_settings_writer_role }};
+      GRANT USAGE ON SCHEMA public TO {{ owui_settings_writer_role }};
+      GRANT SELECT (id, settings), UPDATE (settings) ON "user" TO {{ owui_settings_writer_role }};
 
 # Backfill for users who signed up before the report-viewer webhook was wired.
 - name: Backfill iframeSandbox flags on existing OWUI users
