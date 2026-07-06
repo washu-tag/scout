@@ -548,8 +548,8 @@ def import_hl7_files_to_deltalake(
             activity.heartbeat()
             try:
                 spark.stop()
-            except:
-                activity.logger.error("Error stopping spark", exc_info=e)
+            except Exception:
+                activity.logger.error("Error stopping spark")
 
         if temp_dir is not None:
             # CLean up temp dir after Spark is finished processing
@@ -599,6 +599,11 @@ def derive_delta_tables(
         process_derivative_data(spark, report_table_name, create_mapping=create_mapping)
         activity.logger.info("Finished deriving delta tables")
 
+    # NOTE(#458): the cancellation / Spark-error classification below mirrors the base
+    # activity and is imperfect on purpose for now — a real Temporal cancel surfaces as
+    # CancelledError (caught by ``except Exception`` and re-raised), and a genuine
+    # TimeoutError is swallowed as success. Reworking this ladder so a cancel neither
+    # marks the pod unhealthy nor reports a partial derive as success is tracked in #458.
     except (Py4JError, ConnectionError) as e:
         activity.logger.error(
             "Spark error deriving delta tables. Marking pod unhealthy."
