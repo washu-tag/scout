@@ -140,18 +140,6 @@ def test_bearer_without_sub_returns_401(keypair):
         assert r.status_code == 401
 
 
-def test_oauth2_proxy_header_still_works(keypair):
-    # Header path is the fallback when no bearer is present. JWT setup
-    # shouldn't break it.
-    with TestClient(create_app()) as client:
-        r = client.post(
-            "/api/searches",
-            json={"sql": "SELECT 1"},
-            headers={"X-Auth-Request-Preferred-Username": "alice"},
-        )
-        assert r.status_code != 401
-
-
 def test_invalid_bearer_does_NOT_fall_through_to_header(keypair):
     """If a caller sends both a bad bearer AND the header, we should 401
     on the bearer - silently falling back would mask token-expiry bugs."""

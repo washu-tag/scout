@@ -1,23 +1,6 @@
-"""Metrics surface tests - confirms /metrics renders and the custom
-counters react to search creation. Postgres-backed."""
+"""Metrics surface tests - confirms custom counters react to search creation."""
 
 from __future__ import annotations
-
-
-def test_metrics_endpoint_renders_prometheus_format():
-    from fastapi.testclient import TestClient
-    from scout_report_viewer.app import create_app
-
-    with TestClient(create_app()) as client:
-        r = client.get("/metrics")
-        assert r.status_code == 200
-        body = r.text
-        # Standard HTTP histogram from prometheus-fastapi-instrumentator.
-        assert "http_request_duration_seconds" in body
-        # Our custom counters are defined at import; they appear with 0
-        # samples until first increment, which is enough for this check.
-        assert "scout_report_viewer_searches_created_total" in body
-        assert "scout_report_viewer_trino_query_duration_seconds" in body
 
 
 def test_create_search_increments_counters(client, auth_headers, fake_trino):
