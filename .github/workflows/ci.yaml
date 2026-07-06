@@ -438,7 +438,7 @@ jobs:
             subdomains: jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
             san_extra: ',DNS:*.jupyter.scout.test'
             playbooks: k3s traefik postgres valkey auth lake trino voila jupyter monitor launchpad
-            netpol_include: ''
+            netpol_include: '--include trino-rw,opa-trino,voila-ingress'
     steps:
       - uses: actions/checkout@v7
       - name: 'Free up disk space'
