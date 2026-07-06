@@ -118,7 +118,7 @@ class IngestHl7ToDeltaLakeWorkflowImplTest {
             WorkflowOptions.newBuilder().setTaskQueue(INGEST_DELTA_LAKE_QUEUE).build());
         // Non-empty manifest path so the workflow skips findHl7FilesAndWriteManifest.
         return workflow.ingestHl7FileToDeltaLake(
-            new IngestHl7FilesToDeltaLakeInput(null, "manifest.txt", null, "reports", null, true));
+            new IngestHl7FilesToDeltaLakeInput(null, "manifest.txt", null, "reports", null, null, true));
     }
 
     @Test

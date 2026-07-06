@@ -79,7 +79,7 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
             Workflow.newUntypedActivityStub(
                 ActivityOptions.newBuilder()
                     .setTaskQueue(INGEST_DELTA_LAKE_QUEUE)
-                    .setStartToCloseTimeout(Duration.ofMinutes(DefaultArgs.getDeriveDeltaTablesTimeout(null)))
+                    .setStartToCloseTimeout(Duration.ofMinutes(DefaultArgs.getDeriveDeltaTablesTimeout(input.deriveDeltaTablesTimeout())))
                     .setRetryOptions(RetryOptions.newBuilder()
                         .setMaximumInterval(Duration.ofMinutes(5))
                         .setMaximumAttempts(5)
