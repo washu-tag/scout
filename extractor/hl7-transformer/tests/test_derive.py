@@ -7,22 +7,43 @@ parsing / MinIO / Hive / Trino.
 
 import threading
 import time
+from contextlib import contextmanager
 from unittest import mock
 
 import pytest
+from py4j.protocol import Py4JError
 from temporalio import activity
 from temporalio.exceptions import CancelledError
 from temporalio.testing import ActivityEnvironment
 
-from hl7scout.hl7extractor.deltalake import derive_delta_tables
+from hl7scout.hl7extractor.deltalake import derive_delta_tables, spark_activity_session
+
+
+@contextmanager
+def _injected_session(spark):
+    """Stand-in for spark_activity_session that yields the test's shared session without
+    creating or stopping one (the real CM's getOrCreate would return the session fixture
+    and its finally would then stop it for the rest of the suite)."""
+    yield spark
+
+
+def _patched_session(spark):
+    """mock.patch replacement for spark_activity_session: ignore the (app_name,
+    health_file) args and yield the test session."""
+    return mock.patch(
+        "hl7scout.hl7extractor.deltalake.spark_activity_session",
+        lambda *args, **kwargs: _injected_session(spark),
+    )
 
 
 def _derive(spark, table, *, create_mapping, health_file):
     """Run derive_delta_tables inside an activity context (so activity.heartbeat()/
-    logger work), injecting the test's Spark session so it isn't torn down."""
-    ActivityEnvironment().run(
-        derive_delta_tables, table, create_mapping, health_file, spark
-    )
+    logger work), injecting the test's Spark session via spark_activity_session so it
+    isn't torn down."""
+    with _patched_session(spark):
+        ActivityEnvironment().run(
+            derive_delta_tables, table, create_mapping, health_file
+        )
 
 
 def _table_version(spark, table):
@@ -189,7 +210,8 @@ def test_temporal_cancel_of_running_derivative_leaves_base_untouched(
     canceller = threading.Thread(target=_cancel_soon, daemon=True)
     canceller.start()
     try:
-        env.run(derive_delta_tables, table, False, tmp_path / "h", spark)
+        with _patched_session(spark):
+            env.run(derive_delta_tables, table, False, tmp_path / "h")
     except (
         BaseException
     ):  # noqa: BLE001 - cancellation surfaces here; the invariant is what matters
@@ -205,3 +227,62 @@ def test_temporal_cancel_of_running_derivative_leaves_base_untouched(
     monkeypatch.undo()
     _derive(spark, table, create_mapping=False, health_file=tmp_path / "h")
     assert spark.table(f"default.{table}_curated").count() == 1
+
+
+# --- spark_activity_session (the shared session/error contract, issue #457) -----------
+# These cover the centralized context manager directly, with SparkSession mocked so no
+# real session is created or torn down.
+
+
+def _fake_spark_session_class(fake_session):
+    """Return a patch context for deltalake.SparkSession whose builder chain resolves to
+    `fake_session`, so the CM's getOrCreate() yields a mock we can assert teardown on.
+    """
+    patch = mock.patch("hl7scout.hl7extractor.deltalake.SparkSession")
+    spark_cls = patch.start()
+    (
+        spark_cls.builder.appName.return_value.enableHiveSupport.return_value.getOrCreate.return_value
+    ) = fake_session
+    return patch
+
+
+def test_spark_activity_session_marks_unhealthy_and_reraises_on_spark_error(tmp_path):
+    """A Spark connectivity error is appended to the health file and re-raised; the
+    session is still stopped."""
+    health = tmp_path / "health"
+    fake_session = mock.MagicMock()
+
+    def _use_cm():
+        with spark_activity_session("test-cm", health):
+            raise Py4JError("gateway gone")
+
+    patch = _fake_spark_session_class(fake_session)
+    try:
+        with pytest.raises(Py4JError):
+            ActivityEnvironment().run(_use_cm)
+    finally:
+        patch.stop()
+
+    assert "gateway gone" in health.read_text()
+    fake_session.stop.assert_called_once()
+
+
+def test_spark_activity_session_suppresses_cancellation(tmp_path):
+    """A TimeoutError (Temporal cancellation) is suppressed so the body stops without
+    failing; control resumes after the `with` and the session is still stopped."""
+    reached_after = []
+    fake_session = mock.MagicMock()
+
+    def _use_cm():
+        with spark_activity_session("test-cm", None):
+            raise TimeoutError()
+        reached_after.append(True)  # only reached if the CM suppressed the timeout
+
+    patch = _fake_spark_session_class(fake_session)
+    try:
+        ActivityEnvironment().run(_use_cm)  # must not raise
+    finally:
+        patch.stop()
+
+    assert reached_after == [True]
+    fake_session.stop.assert_called_once()
