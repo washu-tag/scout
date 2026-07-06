@@ -164,12 +164,25 @@ jobs:
           version: '0.11.26'
           enable-cache: true
           cache-dependency-glob: 'extractor/hl7-transformer/uv.lock'
+      - name: 'hl7-transformer: verify uv.lock is in sync with pyproject.toml'
+        shell: bash
+        # `uv run --locked` below already fails on drift, but check here first with
+        # actionable guidance so a red build reads as "re-lock", not "tests broke".
+        # uv.lock feeds only these tests, NOT the runtime image (the Dockerfile does a
+        # fresh `pip install .`), so it is refreshed by hand — this is the reminder.
+        run: |
+          cd extractor/hl7-transformer
+          if ! uv lock --check; then
+            echo "::error file=extractor/hl7-transformer/pyproject.toml,title=uv.lock is out of date::pyproject.toml changed without re-locking. Run 'uv lock' in extractor/hl7-transformer and commit the updated uv.lock. To refresh transitive pins (e.g. for a CVE), run 'uv lock --upgrade'."
+            exit 1
+          fi
       - name: 'Unit tests: hl7-transformer'
         shell: bash
         # Same resolution path as local runs (see tests/conftest.py): deps come from
-        # pyproject.toml + uv.lock, not a hand-maintained list. Spark 4.1.x supports
-        # Python 3.10–3.13; 3.12 is a known-good pin.
-        run: cd extractor/hl7-transformer && uv run --locked --python 3.12 --extra test pytest tests/ -v
+        # pyproject.toml + uv.lock, not a hand-maintained list. Python is pinned to 3.10
+        # to match the runtime image (spark:4.1.1-...-python3 ships Python 3.10), so the
+        # tests exercise the interpreter that actually ships. Spark 4.1.x supports 3.10-3.13.
+        run: cd extractor/hl7-transformer && uv run --locked --python 3.10 --extra test pytest tests/ -v
   ansible-and-python-tests:
     runs-on: ubuntu-latest
     permissions:

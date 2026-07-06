@@ -7,6 +7,7 @@ parsing / MinIO / Hive / Trino.
 
 import threading
 import time
+from concurrent.futures._base import TimeoutError as FuturesTimeoutError
 from contextlib import contextmanager
 from unittest import mock
 
@@ -268,14 +269,20 @@ def test_spark_activity_session_marks_unhealthy_and_reraises_on_spark_error(tmp_
 
 
 def test_spark_activity_session_suppresses_cancellation(tmp_path):
-    """A TimeoutError (Temporal cancellation) is suppressed so the body stops without
-    failing; control resumes after the `with` and the session is still stopped."""
+    """A cancellation TimeoutError is suppressed so the body stops without failing;
+    control resumes after the `with` and the session is still stopped.
+
+    Raise the *same* class the CM catches — concurrent.futures._base.TimeoutError — not
+    the builtin. They are the same object on Python 3.11+, but a DISTINCT class on 3.10
+    (the runtime image's interpreter), so raising the builtin here would slip past the
+    CM's except clause on 3.10. This is the "catching the builtin doesn't work" caveat
+    the deltalake module documents."""
     reached_after = []
     fake_session = mock.MagicMock()
 
     def _use_cm():
         with spark_activity_session("test-cm", None):
-            raise TimeoutError()
+            raise FuturesTimeoutError()
         reached_after.append(True)  # only reached if the CM suppressed the timeout
 
     patch = _fake_spark_session_class(fake_session)

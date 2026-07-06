@@ -18,6 +18,11 @@ classifiers = [
     "Intended Audience :: Developers",
 ]
 requires-python = ">= 3.10"  # delta-spark 4.x requires 3.10
+# Editing dependencies (or the test extra below) requires re-locking: run `uv lock` and
+# commit uv.lock, or CI's `uv run --locked` fails. uv.lock feeds only the unit tests (CI
+# + local); the runtime image installs from this file directly via `pip install .` (see
+# Dockerfile), so bumps to the pinned Spark/Delta versions here drive both. Refresh
+# transitive pins for CVEs with `uv lock --upgrade`.
 dependencies = [
     "delta-spark==4.3.0",
     "fastapi",
