@@ -6,5 +6,8 @@ on:
 
 jobs:
   status:
+    permissions: {}
     uses: washu-tag/.github/.github/workflows/pr-status.yaml@main
-    secrets: inherit
+    secrets:
+      PROJECT_APP_ID: ${{ secrets.PROJECT_APP_ID }}
+      PROJECT_APP_PRIVATE_KEY: ${{ secrets.PROJECT_APP_PRIVATE_KEY }}
