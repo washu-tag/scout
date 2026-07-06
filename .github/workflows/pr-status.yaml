@@ -1,0 +1,10 @@
+name: PR to In Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+jobs:
+  status:
+    uses: washu-tag/.github/.github/workflows/pr-status.yaml@main
+    secrets: inherit
