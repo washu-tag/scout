@@ -159,15 +159,17 @@ jobs:
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
-      - uses: actions/setup-python@v6.3.0
+      - uses: astral-sh/setup-uv@d31148d669074a8d0a63714ba94f3201e7020bc3 # v8.3.0
         with:
-          # Spark 4.1.x supports Python 3.10–3.13; 3.12 is a known-good pin.
-          python-version: '3.12'
+          version: '0.11.26'
+          enable-cache: true
+          cache-dependency-glob: 'extractor/hl7-transformer/uv.lock'
       - name: 'Unit tests: hl7-transformer'
         shell: bash
-        run: |
-          pip install ./extractor/hl7-transformer[test]
-          cd extractor/hl7-transformer && pytest tests/ -v
+        # Same resolution path as local runs (see tests/conftest.py): deps come from
+        # pyproject.toml + uv.lock, not a hand-maintained list. Spark 4.1.x supports
+        # Python 3.10–3.13; 3.12 is a known-good pin.
+        run: cd extractor/hl7-transformer && uv run --locked --python 3.12 --extra test pytest tests/ -v
   ansible-and-python-tests:
     runs-on: ubuntu-latest
     permissions:
@@ -177,20 +179,12 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.12'
-      # JVM for the PySpark local-mode tests
-      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
-        with:
-          distribution: ${{ env.JAVA_DIST }}
-          java-version: ${{ env.JAVA_VERSION }}
       - name: Install Molecule and dependencies
         run: |
-          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests pyspark==4.1.1
+          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
-      - name: 'Unit tests: hl7-transformer'
-        shell: bash
-        run: cd extractor/hl7-transformer && PYTHONPATH=src pytest tests/ -v
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v
