@@ -1,4 +1,4 @@
-FROM spark:3.5.4-scala2.12-java17-python3-ubuntu
+FROM spark:4.1.1-scala2.13-java21-python3-ubuntu
 
 USER root
 
@@ -12,20 +12,20 @@ USER spark
 # Set the working directory
 WORKDIR /app
 
-# Copy spark jars, be sure to download the same jars in the pyspark notebook image and the temporal python worker image
+# Delta Lake and S3A jars. hadoop-aws must match the hadoop-client version
+# bundled in the base image. The awssdk bundle must be at least the
+# aws-java-sdk-v2 version that hadoop-aws declares in hadoop-project's pom
+# (2.29.52 for 3.4.2); newer 2.x releases are compatible and carry SDK and
+# embedded-netty CVE fixes.
 ADD --chown=spark \
-    https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.3.0/delta-spark_2.12-3.3.0.jar \
-    https://repo1.maven.org/maven2/io/delta/delta-storage/3.3.0/delta-storage-3.3.0.jar \
-    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.2.2/hadoop-aws-3.2.2.jar \
-    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/3.2.2/hadoop-common-3.2.2.jar \
-    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-hdfs/3.2.2/hadoop-hdfs-3.2.2.jar \
-    https://repo1.maven.org/maven2/org/antlr/antlr4-runtime/4.9.3/antlr4-runtime-4.9.3.jar \
-    https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.793/aws-java-sdk-bundle-1.12.793.jar \
-    https://github.com/washu-tag/smolder/releases/download/0.1.0-20250306/smolder_2.12-0.1.0-SNAPSHOT.jar \
+    https://repo1.maven.org/maven2/io/delta/delta-spark_4.1_2.13/4.3.0/delta-spark_4.1_2.13-4.3.0.jar \
+    https://repo1.maven.org/maven2/io/delta/delta-storage/4.3.0/delta-storage-4.3.0.jar \
+    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.4.2/hadoop-aws-3.4.2.jar \
+    https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.46.17/bundle-2.46.17.jar \
     ${SPARK_HOME}/jars/
 
-# Create venv
-RUN python3 -m venv venv
+# Create venv. The seeded setuptools (ubuntu's 59.6.0) has known CVEs.
+RUN python3 -m venv venv && venv/bin/pip install --no-cache --upgrade pip setuptools
 
 # Copy the pyproject.toml so we can install the dependencies first
 COPY --chown=spark pyproject.toml /app
@@ -35,7 +35,11 @@ RUN venv/bin/python3 -m pip install --no-cache .
 COPY --chown=spark . /app
 
 # Install the applicationp
-RUN venv/bin/python3 -m pip install .
+RUN venv/bin/python3 -m pip install . \
+    # The pyspark wheel ships its own full copy of the Spark jars; the runtime
+    # resolves jars from SPARK_HOME (that's where the Delta/S3A jars above
+    # live), so the duplicate copy is dead weight and CVE-scan noise.
+    && rm -rf venv/lib/python3.10/site-packages/pyspark/jars
 
 # Define environment variable
 ENV PYTHONUNBUFFERED=1

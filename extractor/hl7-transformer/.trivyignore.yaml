@@ -1,0 +1,96 @@
+# Everything below lives in the upstream spark:4.1.1 base image (its bundled
+# jars or ubuntu packages), which we don't patch in our own layers. Revisit
+# when a newer Spark 4.1.x image is adoptable — currently gated on PyPI
+# delta-spark, whose latest (4.3.0) pins pyspark<=4.1.1.
+vulnerabilities:
+  # Ubuntu base not yet rebuilt with openssl 3.0.2-0ubuntu1.25
+  - id: CVE-2026-45447 # openssl/libssl3 3.0.2-0ubuntu1.23 → 3.0.2-0ubuntu1.25
+  # linux-libc-dev: Trivy maps upstream Linux *kernel* CVEs onto this binary
+  # package, but it ships only C headers (no runtime code) and containers use
+  # the host kernel, so none are exploitable here. Nothing in this image
+  # compiles native code either. The base ubuntu is pinned to 5.15.0-179.189;
+  # fixes land in the base, not our layers. Full current CRITICAL/HIGH set:
+  - id: CVE-2025-37924 # linux-libc-dev
+  - id: CVE-2025-68263 # linux-libc-dev
+  - id: CVE-2026-23428 # linux-libc-dev
+  - id: CVE-2026-23450 # linux-libc-dev
+  - id: CVE-2026-23455 # linux-libc-dev
+  - id: CVE-2026-31402 # linux-libc-dev
+  - id: CVE-2026-31478 # linux-libc-dev
+  - id: CVE-2026-31607 # linux-libc-dev
+  - id: CVE-2026-31637 # linux-libc-dev
+  - id: CVE-2026-31657 # linux-libc-dev
+  - id: CVE-2026-31659 # linux-libc-dev
+  - id: CVE-2026-31669 # linux-libc-dev
+  - id: CVE-2026-43011 # linux-libc-dev
+  - id: CVE-2026-43037 # linux-libc-dev
+  - id: CVE-2026-43038 # linux-libc-dev
+  - id: CVE-2026-43186 # linux-libc-dev
+  - id: CVE-2026-43284 # linux-libc-dev
+  - id: CVE-2026-43304 # linux-libc-dev
+  - id: CVE-2026-43341 # linux-libc-dev
+  - id: CVE-2026-43406 # linux-libc-dev
+  - id: CVE-2026-43407 # linux-libc-dev
+  - id: CVE-2026-43493 # linux-libc-dev
+  - id: CVE-2026-43500 # linux-libc-dev
+  - id: CVE-2026-43501 # linux-libc-dev
+  - id: CVE-2026-45988 # linux-libc-dev
+  - id: CVE-2026-46043 # linux-libc-dev
+  - id: CVE-2026-46119 # linux-libc-dev
+  - id: CVE-2026-46135 # linux-libc-dev
+  - id: CVE-2026-46195 # linux-libc-dev
+  - id: CVE-2026-46300 # linux-libc-dev
+  - id: CVE-2026-46333 # linux-libc-dev
+  - id: CVE-2026-23216 # linux-libc-dev
+  - id: CVE-2023-53673 # linux-libc-dev
+  - id: CVE-2025-37778 # linux-libc-dev
+  - id: CVE-2025-71089 # linux-libc-dev
+  - id: CVE-2026-43494 # linux-libc-dev
+  - id: CVE-2026-43503 # linux-libc-dev
+  # netty 4.2.7 family bundled by Spark (plus copies shaded into the
+  # connect-repl client jars, which the worker never loads)
+  - id: CVE-2026-33870 # netty-codec-http
+  - id: CVE-2026-33871 # netty-codec-http2
+  - id: CVE-2026-42577 # netty-transport-native-epoll
+  - id: CVE-2026-42579 # netty-codec-dns
+  - id: CVE-2026-42582 # netty-codec-http3
+  - id: CVE-2026-42583 # netty-codec-compression
+  - id: CVE-2026-42584 # netty-codec-http
+  - id: CVE-2026-42587 # netty-codec-http/http2
+  - id: CVE-2026-44249 # netty-handler
+  - id: CVE-2026-44892 # netty-codec-http3
+  - id: CVE-2026-44894 # netty-codec-classes-quic
+  - id: CVE-2026-45416 # netty-handler
+  - id: CVE-2026-45674 # netty-resolver-dns
+  - id: CVE-2026-47691 # netty-resolver-dns
+  - id: CVE-2026-48748 # netty-codec-http3
+  - id: CVE-2026-50010 # netty-handler
+  # derby backs Spark's embedded metastore, which Scout doesn't use (remote
+  # HMS); the advisory's 10.16.1.2 was never published to Maven Central
+  - id: CVE-2022-46337 # derby 10.16.1.1
+  # zookeeper client, unused in local-mode Spark
+  - id: CVE-2026-24281 # zookeeper 3.9.4
+  - id: CVE-2026-24308 # zookeeper 3.9.4
+  - id: CVE-2025-67721 # aircompressor 2.0.2
+  # lz4-java 1.8.1 was published to Maven Central as pom-only (no jar), so
+  # the fixed version is not installable anywhere, including upstream
+  - id: CVE-2025-12183 # lz4-java 1.8.0
+  # Shaded inside hadoop-client-runtime; hadoop 3.4.3 (latest) still ships
+  # jackson2 2.12.7, so there is no upstream fix to move to yet
+  - id: CVE-2025-52999 # jackson-core 2.12.7 (shaded in hadoop-client-runtime)
+  # jackson-databind bundled by the Apache Spark engine base image (2.19/2.20)
+  # and shaded in hadoop-client-runtime (2.12.7.1); no rebuild of the Spark
+  # 4.1.x engine line with a fixed jackson exists yet (Spark engine version —
+  # distinct from Delta Lake, which is 4.3.0)
+  - id: CVE-2026-54512 # jackson-databind
+  - id: CVE-2026-54513 # jackson-databind
+  # jetty-http shaded inside hadoop-client-runtime and spark-core; the fix
+  # exists only in jetty 12, which neither upstream has moved to
+  - id: CVE-2026-2332 # jetty-http (shaded in hadoop-client-runtime, spark-core)
+  # libthrift fix is a major bump (0.16 → 0.23) coupled to Spark's hive
+  # thrift client
+  - id: CVE-2026-43869 # libthrift 0.16.0
+  # jline-remote-telnet ships in Spark's connect-repl / spark-shell REPL,
+  # which the transformer worker never launches
+  - id: GHSA-2r2c-cx56-8933 # jline-remote-telnet 3.x
+  - id: GHSA-47qp-hqvx-6r3f # jline-remote-telnet 3.x

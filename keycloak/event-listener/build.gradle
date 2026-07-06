@@ -18,7 +18,7 @@ configurations {
     testImplementation.extendsFrom compileOnly
 }
 
-def kcVersion = "26.6.3"
+def kcVersion = "26.6.4"
 def jbossLoggingVersion = "3.6.1.Final"
 def checkstyleVersion = "13.4.2"
 // ADR 0021: OPA bundle publisher uses tar.gz as OPA's standard bundle
