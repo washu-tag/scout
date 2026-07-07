@@ -256,11 +256,18 @@ const PlaybooksGrid = ({ playbooksUrl }: PlaybooksGridProps) => {
 interface ContentGridProps {
   enableChat: boolean;
   enablePlaybooks: boolean;
+  enableMinio: boolean;
   subdomainUrls: Record<string, string>;
   docsUrl: string;
 }
 
-const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: ContentGridProps) => {
+const ContentGrid = ({
+  enableChat,
+  enablePlaybooks,
+  enableMinio,
+  subdomainUrls,
+  docsUrl,
+}: ContentGridProps) => {
   // Don't render until subdomain URLs are set on client side
   if (Object.keys(subdomainUrls).length === 0) {
     return (
@@ -386,17 +393,24 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: Co
                   hoverBorder: 'hover:border-indigo-200 dark:hover:border-indigo-900/60',
                   hoverShadow: 'hover:shadow-indigo-200/50 dark:hover:shadow-indigo-500/15',
                 },
-                {
-                  href: subdomainUrls.minio,
-                  external: true,
-                  label: 'Lake',
-                  description: 'Medical data lake storage',
-                  Icon: SiMinio,
-                  iconBg: 'bg-red-50 border-red-100 dark:bg-red-950/40 dark:border-red-900/50',
-                  iconColor: 'text-red-600 dark:text-red-400',
-                  hoverBorder: 'hover:border-red-200 dark:hover:border-red-900/60',
-                  hoverShadow: 'hover:shadow-red-200/50 dark:hover:shadow-red-500/15',
-                },
+                // Sites that have cut over from in-cluster MinIO to cloud object
+                // storage hide the Lake card via ENABLE_MINIO=false.
+                ...(enableMinio
+                  ? [
+                      {
+                        href: subdomainUrls.minio,
+                        external: true,
+                        label: 'Lake',
+                        description: 'Medical data lake storage',
+                        Icon: SiMinio,
+                        iconBg:
+                          'bg-red-50 border-red-100 dark:bg-red-950/40 dark:border-red-900/50',
+                        iconColor: 'text-red-600 dark:text-red-400',
+                        hoverBorder: 'hover:border-red-200 dark:hover:border-red-900/60',
+                        hoverShadow: 'hover:shadow-red-200/50 dark:hover:shadow-red-500/15',
+                      },
+                    ]
+                  : []),
                 {
                   href: subdomainUrls.temporal,
                   external: true,
@@ -453,6 +467,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls, docsUrl }: Co
 interface HomeClientProps {
   enableChat: boolean;
   enablePlaybooks: boolean;
+  enableMinio: boolean;
   scoutEnv?: string;
   deployerName?: string;
   docsUrl: string;
@@ -461,6 +476,7 @@ interface HomeClientProps {
 export default function HomeClient({
   enableChat,
   enablePlaybooks,
+  enableMinio,
   scoutEnv,
   deployerName,
   docsUrl,
@@ -543,6 +559,7 @@ export default function HomeClient({
         <ContentGrid
           enableChat={enableChat}
           enablePlaybooks={enablePlaybooks}
+          enableMinio={enableMinio}
           subdomainUrls={subdomainUrls}
           docsUrl={docsUrl}
         />

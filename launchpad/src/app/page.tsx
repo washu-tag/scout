@@ -8,6 +8,10 @@ export const dynamic = 'force-dynamic';
 export default function Home() {
   const enableChat = process.env.ENABLE_CHAT === 'true';
   const enablePlaybooks = process.env.ENABLE_PLAYBOOKS === 'true';
+  // Default true so deployments still running an in-cluster MinIO (e.g. on-prem)
+  // continue to show the Lake card without setting a new env var. Sites that
+  // have cut over to AWS S3 set ENABLE_MINIO=false to hide it.
+  const enableMinio = process.env.ENABLE_MINIO !== 'false';
   const scoutEnv = process.env.SCOUT_ENV;
   const deployerName = process.env.DEPLOYER_NAME;
 
@@ -15,6 +19,7 @@ export default function Home() {
     <HomeClient
       enableChat={enableChat}
       enablePlaybooks={enablePlaybooks}
+      enableMinio={enableMinio}
       scoutEnv={scoutEnv}
       deployerName={deployerName}
       docsUrl={getDocsUrl()}
