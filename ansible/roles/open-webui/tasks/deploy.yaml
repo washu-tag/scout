@@ -169,6 +169,9 @@
       GRANT SELECT (id, settings), UPDATE (settings) ON "user" TO {{ owui_settings_writer_role }};
 
 # Backfill for users who signed up before the report-viewer webhook was wired.
+# OWUI seeds settings to jsonb null (a scalar), which jsonb_set refuses to
+# descend into. Build the new object with `||` merges instead, using CASE
+# to coerce scalar/null settings and scalar/null ui to empty objects.
 - name: Backfill iframeSandbox flags on existing OWUI users
   ansible.builtin.include_role:
     name: scout_common
@@ -177,12 +180,23 @@
     sql_dbname: '{{ open_webui_database }}'
     sql_script: |
       UPDATE "user"
-         SET settings = jsonb_set(
-             jsonb_set(
-                 COALESCE(settings::jsonb, '{}'::jsonb),
-                 '{ui,iframeSandboxAllowSameOrigin}', 'true'::jsonb, true
-             ),
-             '{ui,iframeSandboxAllowForms}', 'true'::jsonb, true
+         SET settings = (
+           (CASE WHEN jsonb_typeof(settings::jsonb) = 'object'
+                 THEN settings::jsonb
+                 ELSE '{}'::jsonb
+            END)
+           || jsonb_build_object(
+             'ui',
+             (CASE WHEN jsonb_typeof(settings::jsonb -> 'ui') = 'object'
+                   THEN settings::jsonb -> 'ui'
+                   ELSE '{}'::jsonb
+              END) || jsonb_build_object(
+               'iframeSandboxAllowSameOrigin', true,
+               'iframeSandboxAllowForms', true
+             )
+           )
          )::json
-       WHERE COALESCE(settings::jsonb #>> '{ui,iframeSandboxAllowSameOrigin}', 'false') <> 'true'
+       WHERE settings IS NULL
+          OR jsonb_typeof(settings::jsonb) <> 'object'
+          OR COALESCE(settings::jsonb #>> '{ui,iframeSandboxAllowSameOrigin}', 'false') <> 'true'
           OR COALESCE(settings::jsonb #>> '{ui,iframeSandboxAllowForms}', 'false') <> 'true';
