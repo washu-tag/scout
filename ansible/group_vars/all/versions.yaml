@@ -152,16 +152,20 @@ dcm4che_tools_version: 5.33.1
 
 # dcm4chee archive stack: arc, postgres, and slapd ship as one "family" (the number after the
 # dash on db/ldap; the minor on arc). They MUST stay on the same family — arc waits on and
-# expects a matching db/ldap — so each pin carries an allowedVersions that locks Renovate's
-# `loose` versioning to the current family (and postgres major). This prevents the kind of
-# out-of-step jump PR #400 made: 2.6.10-35.0 was an unpublished base/family combo that wedged
-# the deploy. Current family: 35 (arc 5.35.x, postgres 18.x-35, slapd 2.6.x-35.x). To move to
-# a new family, bump all three values AND update all three regexes together in one change.
-# renovate: datasource=docker depName=dcm4che/dcm4chee-arc-psql allowedVersions=/^5\.35\.\d+$/
+# expects a matching db/ldap — so each image is pinned to the current family (and postgres major)
+# by an `allowedVersions` packageRule in renovate.json5, which bounds Renovate's `loose`
+# versioning. allowedVersions CANNOT live in these `# renovate:` comments: the custom regex
+# manager has no allowedVersionsTemplate, and appending `allowedVersions=` breaks the matchString
+# (the trailing text fails the required newline anchor), silently dropping the image from tracking
+# altogether. This pinning prevents the kind of out-of-step jump PR #400 made: 2.6.10-35.0 was an
+# unpublished base/family combo that wedged the deploy. Current family: 35 (arc 5.35.x,
+# postgres 18.x-35, slapd 2.6.x-35.x). To move to a new family, bump all three values here AND
+# update all three allowedVersions regexes in renovate.json5 together in one change.
+# renovate: datasource=docker depName=dcm4che/dcm4chee-arc-psql
 dcm4chee_arc_version: 5.35.0
-# renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose allowedVersions=/^18\.\d+-35$/
+# renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose
 dcm4chee_db_version: 18.3-35
-# renovate: datasource=docker depName=dcm4che/slapd-dcm4chee versioning=loose allowedVersions=/^2\.6\.\d+-35\.\d+$/
+# renovate: datasource=docker depName=dcm4che/slapd-dcm4chee versioning=loose
 dcm4chee_ldap_version: 2.6.13-35.0
 
 # Medical Imaging - Orthanc
