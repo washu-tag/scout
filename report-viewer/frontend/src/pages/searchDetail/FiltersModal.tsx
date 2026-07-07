@@ -23,11 +23,14 @@ const MODALITY_OPTIONS = [
 
 export function FiltersModal(props: {
   initial: FilterState;
+  availableColumns: string[];
   onApply: (next: FilterState) => void;
   onRefineInChat: (next: FilterState) => void;
   onClose: () => void;
 }) {
   const [staged, setStaged] = useState<FilterState>(props.initial);
+  const available = new Set(props.availableColumns);
+  const has = (col: string) => available.has(col);
 
   const setAgeBound = (which: 'min' | 'max', value: string) =>
     setStaged((s) => ({
@@ -47,8 +50,10 @@ export function FiltersModal(props: {
       const next = Array.from(cur);
       return { ...s, [col]: next.length > 0 ? next : undefined };
     });
-  const setServiceName = (value: string) =>
-    setStaged((s) => ({ ...s, service_name: value || undefined }));
+  const setStringField = (
+    col: 'service_name' | 'epic_mrn' | 'accession_number' | 'sending_facility',
+    value: string,
+  ) => setStaged((s) => ({ ...s, [col]: value || undefined }));
 
   return (
     <Modal
@@ -61,58 +66,85 @@ export function FiltersModal(props: {
       <div style={{ fontSize: '0.85rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Filter rows</h3>
 
-        <FieldRow label="Age">
-          <RangeInputs
-            min={staged.patient_age?.min ?? ''}
-            max={staged.patient_age?.max ?? ''}
-            inputType="number"
-            placeholder={{ min: 'min', max: 'max' }}
-            onChange={setAgeBound}
-          />
-        </FieldRow>
+        {has('patient_age') && (
+          <FieldRow label="Age">
+            <RangeInputs
+              min={staged.patient_age?.min ?? ''}
+              max={staged.patient_age?.max ?? ''}
+              inputType="number"
+              placeholder={{ min: 'min', max: 'max' }}
+              onChange={setAgeBound}
+            />
+          </FieldRow>
+        )}
 
-        <FieldRow label="Sex">
-          <CheckboxRow
-            options={SEX_OPTIONS as readonly string[]}
-            selected={staged.sex ?? []}
-            onToggle={(v) => toggleEnum('sex', v)}
-          />
-        </FieldRow>
+        {has('sex') && (
+          <FieldRow label="Sex">
+            <CheckboxRow
+              options={SEX_OPTIONS as readonly string[]}
+              selected={staged.sex ?? []}
+              onToggle={(v) => toggleEnum('sex', v)}
+            />
+          </FieldRow>
+        )}
 
-        <FieldRow label="Modality">
-          <CheckboxRow
-            options={MODALITY_OPTIONS as readonly string[]}
-            selected={staged.modality ?? []}
-            onToggle={(v) => toggleEnum('modality', v)}
-          />
-        </FieldRow>
+        {has('modality') && (
+          <FieldRow label="Modality">
+            <CheckboxRow
+              options={MODALITY_OPTIONS as readonly string[]}
+              selected={staged.modality ?? []}
+              onToggle={(v) => toggleEnum('modality', v)}
+            />
+          </FieldRow>
+        )}
 
-        <FieldRow label="Date">
-          <RangeInputs
-            min={staged.message_dt?.min ?? ''}
-            max={staged.message_dt?.max ?? ''}
-            inputType="date"
-            placeholder={{ min: 'from', max: 'to' }}
-            onChange={setDateBound}
-          />
-        </FieldRow>
+        {has('message_dt') && (
+          <FieldRow label="Date">
+            <RangeInputs
+              min={staged.message_dt?.min ?? ''}
+              max={staged.message_dt?.max ?? ''}
+              inputType="date"
+              placeholder={{ min: 'from', max: 'to' }}
+              onChange={setDateBound}
+            />
+          </FieldRow>
+        )}
 
-        <FieldRow label="Service">
-          <input
-            type="text"
-            value={staged.service_name ?? ''}
-            onChange={(e) => setServiceName(e.target.value)}
-            placeholder="contains…"
-            style={{
-              width: '100%',
-              fontSize: '0.85rem',
-              padding: '0.3rem 0.45rem',
-              border: '1px solid #ccc',
-              borderRadius: 3,
-              boxSizing: 'border-box',
-            }}
-          />
-        </FieldRow>
+        {has('service_name') && (
+          <FieldRow label="Service">
+            <TextInput
+              value={staged.service_name ?? ''}
+              onChange={(v) => setStringField('service_name', v)}
+            />
+          </FieldRow>
+        )}
+
+        {has('epic_mrn') && (
+          <FieldRow label="MRN">
+            <TextInput
+              value={staged.epic_mrn ?? ''}
+              onChange={(v) => setStringField('epic_mrn', v)}
+            />
+          </FieldRow>
+        )}
+
+        {has('accession_number') && (
+          <FieldRow label="Accession">
+            <TextInput
+              value={staged.accession_number ?? ''}
+              onChange={(v) => setStringField('accession_number', v)}
+            />
+          </FieldRow>
+        )}
+
+        {has('sending_facility') && (
+          <FieldRow label="Facility">
+            <TextInput
+              value={staged.sending_facility ?? ''}
+              onChange={(v) => setStringField('sending_facility', v)}
+            />
+          </FieldRow>
+        )}
 
         <div
           style={{
@@ -204,6 +236,25 @@ function RangeInputs(props: {
         style={style}
       />
     </div>
+  );
+}
+
+function TextInput(props: { value: string; onChange: (value: string) => void }) {
+  return (
+    <input
+      type="text"
+      value={props.value}
+      onChange={(e) => props.onChange(e.target.value)}
+      placeholder="contains…"
+      style={{
+        width: '100%',
+        fontSize: '0.85rem',
+        padding: '0.3rem 0.45rem',
+        border: '1px solid #ccc',
+        borderRadius: 3,
+        boxSizing: 'border-box',
+      }}
+    />
   );
 }
 

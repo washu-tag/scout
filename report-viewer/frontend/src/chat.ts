@@ -40,6 +40,15 @@ export function applyFilterToChat(searchId: string, filters: FilterState): void 
   if (filters.service_name) {
     clauses.push(`service_name contains "${filters.service_name}"`);
   }
+  if (filters.epic_mrn) {
+    clauses.push(`epic_mrn contains "${filters.epic_mrn}"`);
+  }
+  if (filters.accession_number) {
+    clauses.push(`accession_number contains "${filters.accession_number}"`);
+  }
+  if (filters.sending_facility) {
+    clauses.push(`sending_facility contains "${filters.sending_facility}"`);
+  }
   if (clauses.length === 0) return;
   submitChatPrompt(`Refine search ${searchId}. Filter rows where ${clauses.join(', ')}.`);
 }

@@ -103,6 +103,9 @@ export interface FilterState {
   sex?: string[];
   modality?: string[];
   service_name?: string;
+  epic_mrn?: string;
+  accession_number?: string;
+  sending_facility?: string;
 }
 
 export function activeFilterCount(f: FilterState): number {
@@ -112,6 +115,9 @@ export function activeFilterCount(f: FilterState): number {
   if (f.sex && f.sex.length > 0) n++;
   if (f.modality && f.modality.length > 0) n++;
   if (f.service_name && f.service_name.length > 0) n++;
+  if (f.epic_mrn && f.epic_mrn.length > 0) n++;
+  if (f.accession_number && f.accession_number.length > 0) n++;
+  if (f.sending_facility && f.sending_facility.length > 0) n++;
   return n;
 }
 
@@ -183,6 +189,9 @@ export function getSearchRows(searchId: string, params: RowsParams): Promise<Row
     for (const v of f.sex ?? []) qs.append('filter.sex', v);
     for (const v of f.modality ?? []) qs.append('filter.modality', v);
     if (f.service_name) qs.set('filter.service_name', f.service_name);
+    if (f.epic_mrn) qs.set('filter.epic_mrn', f.epic_mrn);
+    if (f.accession_number) qs.set('filter.accession_number', f.accession_number);
+    if (f.sending_facility) qs.set('filter.sending_facility', f.sending_facility);
   }
   return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows?${qs.toString()}`);
 }
