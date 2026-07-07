@@ -179,9 +179,10 @@ def test_temporal_cancel_of_running_derivative_leaves_base_untouched(
     Cancellation is delivered reliably (not raced against Spark) by blocking the
     derivative in a heartbeat/is-cancelled loop on the activity thread — env.cancel()
     then makes activity.heartbeat() raise CancelledError (see probe). The loop is
-    bounded so a delivery bug fails the test instead of hanging. How the CancelledError
-    is ultimately classified/handled is the separate cancellation-handling issue; here
-    we only assert the base-table invariant and resumability.
+    bounded so a delivery bug fails the test instead of hanging. This test uses the
+    passthrough _patched_session, so how the CancelledError is classified is covered
+    separately (issue #458, resolved) by the spark_activity_session tests below; here we
+    only assert the base-table invariant and resumability.
     """
     table = "reports_cancel"
     seed_reports(table, [report_row("s3://bucket/a.hl7", filler="ACC1")])
@@ -268,28 +269,87 @@ def test_spark_activity_session_marks_unhealthy_and_reraises_on_spark_error(tmp_
     fake_session.stop.assert_called_once()
 
 
-def test_spark_activity_session_suppresses_cancellation(tmp_path):
-    """A cancellation TimeoutError is suppressed so the body stops without failing;
-    control resumes after the `with` and the session is still stopped.
+@pytest.mark.parametrize("exc_type", [Py4JError, TimeoutError, FuturesTimeoutError])
+def test_spark_activity_session_cancelled_propagates_without_marking_unhealthy(
+    tmp_path, exc_type
+):
+    """Issue #458: when the activity is cancelled, whatever the torn-down Spark call raises
+    — a Py4JError, or either TimeoutError variant — must NOT mark the pod unhealthy and
+    must re-raise as a Temporal CancelledError (so the activity is recorded Cancelled, not
+    a phantom success and not a retryable failure). The session is still stopped.
 
-    Raise the *same* class the CM catches — concurrent.futures._base.TimeoutError — not
-    the builtin. They are the same object on Python 3.11+, but a DISTINCT class on 3.10
-    (the runtime image's interpreter), so raising the builtin here would slip past the
-    CM's except clause on 3.10. This is the "catching the builtin doesn't work" caveat
-    the deltalake module documents."""
-    reached_after = []
+    Cancellation is simulated with ActivityEnvironment.cancel() *before* run(), which sets
+    the cancelled flag with no thread-injection race, so activity.is_cancelled() is True
+    throughout the body — the state the CM now classifies on."""
+    health = tmp_path / "health"
     fake_session = mock.MagicMock()
 
     def _use_cm():
-        with spark_activity_session("test-cm", None):
-            raise FuturesTimeoutError()
-        reached_after.append(True)  # only reached if the CM suppressed the timeout
+        with spark_activity_session("test-cm", health):
+            raise exc_type("torn down by cancel")
 
+    env = ActivityEnvironment()
+    env.cancel()
     patch = _fake_spark_session_class(fake_session)
     try:
-        ActivityEnvironment().run(_use_cm)  # must not raise
+        with pytest.raises(CancelledError):
+            env.run(_use_cm)
     finally:
         patch.stop()
 
-    assert reached_after == [True]
+    assert not health.exists()  # no unhealthy mark on cancel
+    fake_session.stop.assert_called_once()  # session still torn down
+
+
+@pytest.mark.parametrize("timeout_exc", [TimeoutError, FuturesTimeoutError])
+def test_spark_activity_session_uncancelled_timeout_reraises_for_retry(
+    tmp_path, timeout_exc
+):
+    """A genuine (non-cancellation) timeout is re-raised so Temporal's retry policy fires
+    — NOT suppressed as success (the old #458 bug) and NOT treated as a connectivity
+    failure (no health-file write). Both the builtin and concurrent.futures TimeoutError
+    behave identically now, since the CM no longer catches TimeoutError by name (it keys
+    on is_cancelled() instead), so the 3.10-vs-3.11 class distinction no longer matters.
+    """
+    health = tmp_path / "health"
+    fake_session = mock.MagicMock()
+
+    def _use_cm():
+        with spark_activity_session("test-cm", health):
+            raise timeout_exc("slow py4j call")
+
+    patch = _fake_spark_session_class(fake_session)
+    try:
+        with pytest.raises(timeout_exc):
+            ActivityEnvironment().run(_use_cm)  # not cancelled
+    finally:
+        patch.stop()
+
+    assert not health.exists()  # a timeout is not a connectivity failure
+    fake_session.stop.assert_called_once()
+
+
+def test_cancelled_derive_raises_instead_of_phantom_success(tmp_path):
+    """Activity-level guard (issue #458): a cancelled derive activity must raise (recorded
+    Cancelled) rather than return None, which Temporal would record as a successful
+    completion. Runs the REAL spark_activity_session (SparkSession mocked) with
+    process_derivative_data blowing up as if Spark were torn down mid-derive; asserts a
+    CancelledError propagates and the health file is never written."""
+    health = tmp_path / "h"
+    fake_session = mock.MagicMock()
+
+    env = ActivityEnvironment()
+    env.cancel()
+    patch = _fake_spark_session_class(fake_session)
+    try:
+        with mock.patch(
+            "hl7scout.hl7extractor.deltalake.process_derivative_data",
+            side_effect=Py4JError("torn down mid-derive"),
+        ):
+            with pytest.raises(CancelledError):
+                env.run(derive_delta_tables, "reports", False, health)
+    finally:
+        patch.stop()
+
+    assert not health.exists()
     fake_session.stop.assert_called_once()

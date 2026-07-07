@@ -1,8 +1,4 @@
-# I don't know why we have to import this specific exception type, since it is
-# literally just an alias for the builtin TimeoutError.
-# But if we try to catch the builtin TimeoutError, it doesn't work.
 import logging
-from concurrent.futures._base import TimeoutError
 from contextlib import contextmanager
 from collections import defaultdict
 from pathlib import Path
@@ -14,7 +10,7 @@ from pyspark.sql import SparkSession, Column, Window
 from pyspark.sql import functions as F
 from s3fs import S3FileSystem
 from temporalio import activity
-from temporalio.exceptions import ApplicationError
+from temporalio.exceptions import ApplicationError, CancelledError
 
 from hl7scout.db import write_errors, write_successes
 from .schemautils import (
@@ -97,19 +93,23 @@ def spark_activity_session(app_name: str, health_file: Optional[Path] = None):
     activities:
 
     * create the session and heartbeat once it is up;
-    * on a Spark connectivity failure (``Py4JError`` / ``ConnectionError``) append the
-      message to ``health_file`` (marking the pod unhealthy) and re-raise;
-    * on a Temporal cancellation (surfaced here as ``TimeoutError``) log and *suppress*
-      it, so the activity body stops without failing and the caller returns its own
-      cancellation default;
-    * always clear the cache and stop the session on the way out.
+    * classify any failure by *cancellation state*, not exception type (issue #458). A
+      Temporal cancel is delivered to these threaded activities by async thread-exception
+      injection, which cannot interrupt a blocking py4j/JVM call — so a cancel that lands
+      mid-Spark surfaces here as whatever the torn-down call raises (``CancelledError``,
+      ``Py4JError``, ``ConnectionError``, or ``TimeoutError``). ``activity.is_cancelled()``
+      is the reliable signal (set before the exception is injected):
 
-    NOTE(#458): the cancellation / Spark-error classification here is imperfect on
-    purpose for now — a real Temporal cancel surfaces as ``CancelledError`` (re-raised
-    by ``except Exception``), and a genuine ``TimeoutError`` is suppressed as if it were
-    a cancellation. Centralizing it in this one place is deliberate: reworking that
-    behavior for #458 (so a cancel neither marks the pod unhealthy nor reports a partial
-    run as success) becomes a single edit that both activities inherit.
+        - if cancelled: do *not* touch ``health_file``; re-raise as a Temporal
+          ``CancelledError`` so the activity is recorded Cancelled — never a phantom
+          success, never a retryable failure;
+        - else on a genuine Spark connectivity failure (``Py4JError`` /
+          ``ConnectionError``): append the message to ``health_file`` (marking the pod
+          unhealthy so k8s restarts it) and re-raise;
+        - else (any other error, including a genuine ``TimeoutError``): re-raise so
+          Temporal's retry policy fires;
+
+    * always clear the cache and stop the session on the way out.
     """
     spark = None
     try:
@@ -117,21 +117,34 @@ def spark_activity_session(app_name: str, health_file: Optional[Path] = None):
         spark = SparkSession.builder.appName(app_name).enableHiveSupport().getOrCreate()
         activity.heartbeat()
         yield spark
-    except (Py4JError, ConnectionError) as e:
-        activity.logger.error("Spark error in %s. Marking pod unhealthy.", app_name)
-        try:
-            message = str(e)
-        except Exception:
-            message = "Unknown error"
-        if health_file is not None:
-            # Write the error message to the health file
-            with health_file.open("a") as f:
-                f.write(message + "\n")
-        raise
-    except TimeoutError:
-        # Temporal cancellation surfaced as a timeout — stop gracefully (suppress).
-        activity.logger.info("Temporal activity has been cancelled")
     except Exception as e:
+        # Classify on cancellation STATE, not exception type. A Temporal cancel can
+        # surface here as the injected CancelledError OR, if it interrupts an in-flight
+        # py4j call while Spark is torn down, as Py4JError / ConnectionError / TimeoutError.
+        if activity.is_cancelled():
+            activity.logger.info(
+                "Activity %s cancelled; propagating cancellation", app_name
+            )
+            if isinstance(e, CancelledError):
+                raise
+            # Re-raise as a Temporal cancellation so the activity is recorded Cancelled
+            # (not a phantom success, not a retryable failure). Do NOT touch health_file.
+            raise CancelledError("Activity cancelled during Spark work") from e
+        # Not cancelled: a genuine Spark connectivity failure marks the pod unhealthy so
+        # k8s restarts it.
+        if isinstance(e, (Py4JError, ConnectionError)):
+            activity.logger.error("Spark error in %s. Marking pod unhealthy.", app_name)
+            try:
+                message = str(e)
+            except Exception:
+                message = "Unknown error"
+            if health_file is not None:
+                # Write the error message to the health file
+                with health_file.open("a") as f:
+                    f.write(message + "\n")
+            raise
+        # Anything else (including a real TimeoutError) is re-raised untouched so
+        # Temporal's retry policy fires.
         activity.logger.exception("Error in %s", app_name, exc_info=e)
         raise
     finally:
@@ -571,9 +584,9 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
         # write_successes runs inside the session context so that a cancellation
-        # (TimeoutError, suppressed by spark_activity_session) skips it — preserving the
-        # prior behavior of not touching the status DB on a cancelled activity (and
-        # avoiding an otherwise-pointless Postgres connection for zero rows).
+        # (re-raised by spark_activity_session as a Temporal CancelledError) propagates
+        # out before this line — the status DB is never touched on a cancelled activity,
+        # and no Postgres connection is opened for a run that never completed.
         write_successes(success_paths, workflow_id, activity_id)
         activity.logger.info("All done")
 
