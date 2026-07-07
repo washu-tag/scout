@@ -153,3 +153,155 @@ def test_delete_by_non_owner_is_404_and_leaves_row_intact(
     # Owner can still read it - the failed delete did not touch the row.
     r_owner = client.get(f"/api/searches/{dsid}", headers=auth_headers)
     assert r_owner.status_code == 200
+
+
+def test_from_file_epic_mrn_routes_through_resolved_column_and_view(
+    client, auth_headers, fake_trino
+):
+    fake_trino(["id"], [{"id": "EPIC1"}, {"id": "EPIC2"}])
+    fake_trino(["n"], [{"n": 27}])
+    csv = b"epic_mrn,extra\nEPIC1,x\nEPIC2,y\nEPIC1,z\n"
+    r = client.post(
+        "/api/searches/from-file",
+        files={"file": ("cohort.csv", csv, "text/csv")},
+        data={"id_column": "epic_mrn"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["id_column"] == "epic_mrn"
+    assert body["column_inferred"] is False
+    assert body["count"] == 27
+    assert body["unmatched"] == []
+    assert body["unmatched_count"] == 0
+
+    meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
+    assert "reports_latest_epic_view" in meta["sql"]
+    assert '"resolved_epic_mrn" IN' in meta["sql"]
+    assert '"epic_mrn" IN' not in meta["sql"]
+
+
+def test_from_file_infers_column_from_header_alias(client, auth_headers, fake_trino):
+    fake_trino(["id"], [{"id": "EPIC1"}])
+    fake_trino(["n"], [{"n": 5}])
+    csv = b"MRN,Study Date\nEPIC1,2024-01-01\n"
+    r = client.post(
+        "/api/searches/from-file",
+        files={"file": ("cohort.csv", csv, "text/csv")},
+        data={},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["id_column"] == "epic_mrn"
+    assert body["column_inferred"] is True
+
+
+def test_from_file_reports_unmatched_ids(client, auth_headers, fake_trino):
+    fake_trino(["id"], [{"id": "ACC1"}])
+    fake_trino(["n"], [{"n": 3}])
+    csv = b"accession_number\nACC1\nACC2\nACC3\n"
+    r = client.post(
+        "/api/searches/from-file",
+        files={"file": ("cohort.csv", csv, "text/csv")},
+        data={"id_column": "accession_number"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["id_column"] == "accession_number"
+    assert body["unmatched_count"] == 2
+    assert set(body["unmatched"]) == {"ACC2", "ACC3"}
+
+
+def test_from_file_multiple_candidates_prefers_accession(
+    client, auth_headers, fake_trino
+):
+    fake_trino(["id"], [{"id": "ACC1"}])
+    fake_trino(["n"], [{"n": 1}])
+    csv = b"epic_mrn,accession_number\nEPIC1,ACC1\n"
+    r = client.post(
+        "/api/searches/from-file",
+        files={"file": ("cohort.csv", csv, "text/csv")},
+        data={},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["id_column"] == "accession_number"
+    assert body["column_inferred"] is True
+
+
+def test_from_file_custom_sql_substitutes_cohort(client, auth_headers, fake_trino):
+    fake_trino(["id"], [{"id": "EPIC1"}])
+    # sample query runs before count when custom sql is passed
+    fake_trino(
+        ["primary_report_identifier", "accession_number"],
+        [{"primary_report_identifier": "r1", "accession_number": "A1"}],
+    )
+    fake_trino(["n"], [{"n": 12}])
+    csv = b"epic_mrn\nEPIC1\n"
+    sql = (
+        "SELECT primary_report_identifier, accession_number "
+        "FROM reports_latest_epic_view "
+        "WHERE {{cohort}} AND modality = 'CT'"
+    )
+    r = client.post(
+        "/api/searches/from-file",
+        files={"file": ("cohort.csv", csv, "text/csv")},
+        data={"id_column": "epic_mrn", "sql": sql},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["count"] == 12
+
+    meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
+    assert "{{cohort}}" not in meta["sql"]
+    assert '"resolved_epic_mrn" IN' in meta["sql"]
+    assert "modality = 'CT'" in meta["sql"]
+
+
+def test_from_file_missing_cohort_placeholder_is_400(client, auth_headers, fake_trino):
+    csv = b"epic_mrn\nEPIC1\n"
+    r = client.post(
+        "/api/searches/from-file",
+        files={"file": ("cohort.csv", csv, "text/csv")},
+        data={
+            "id_column": "epic_mrn",
+            "sql": "SELECT primary_report_identifier FROM reports_latest_epic_view",
+        },
+        headers=auth_headers,
+    )
+    assert r.status_code == 400
+    assert "{{cohort}}" in r.text
+
+
+def test_query_from_file_returns_rows_and_substitutes_cohort(
+    client, auth_headers, fake_trino
+):
+    fake_trino(["id"], [{"id": "EPIC1"}])
+    fake_trino(
+        ["modality", "n"],
+        [{"modality": "CT", "n": 5}, {"modality": "MR", "n": 3}],
+    )
+    csv = b"epic_mrn\nEPIC1\n"
+    sql = (
+        "SELECT modality, COUNT(*) AS n FROM reports_latest_epic_view "
+        "WHERE {{cohort}} GROUP BY modality"
+    )
+    r = client.post(
+        "/api/reports/query/from-file",
+        files={"file": ("cohort.csv", csv, "text/csv")},
+        data={"id_column": "epic_mrn", "sql": sql},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["id_column"] == "epic_mrn"
+    assert body["column_inferred"] is False
+    assert body["rows"] == [
+        {"modality": "CT", "n": 5},
+        {"modality": "MR", "n": 3},
+    ]
+    assert body["unmatched"] == []

@@ -25,7 +25,7 @@ Find and display radiology reports matching a SQL query. User gets an iframed vi
 scout_find_reports(
   sql="""
     SELECT primary_report_identifier, accession_number,
-           resolved_epic_mrn AS epic_mrn, sending_facility,
+           resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, sending_facility,
            modality, service_name, message_dt, patient_age, sex
     FROM reports_latest_epic_view
     WHERE modality = 'CT'
@@ -62,7 +62,7 @@ scout_find_reports(
 scout_find_reports(
   sql="""
     SELECT primary_report_identifier, accession_number,
-           resolved_epic_mrn AS epic_mrn, sending_facility,
+           resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, sending_facility,
            modality, service_name, message_dt, patient_age, sex
     FROM reports_latest_epic_view
     WHERE modality = 'CT'
@@ -77,6 +77,41 @@ scout_find_reports(
   match_diagnoses=["J1"],
 )
 ```
+
+**File mode — user attached a CSV of identifiers:**
+
+When the user uploads a CSV, call `scout_find_reports` with `file_id` from `__files__[0].id`. Baseline call omits `sql` and lets the backend use its default projection over `reports_latest_epic_view`:
+
+```
+scout_find_reports(
+    file_id=__files__[0].id,
+    id_column="epic_mrn",  # optional; inferred from the CSV header when omitted
+)
+```
+
+To refine — same file, additional predicates — pass `sql` with the `{{cohort}}` placeholder standing in for the cohort filter. The backend substitutes it with the right resolved-column IN clause; you never write the ID list.
+
+```
+scout_find_reports(
+    file_id=__files__[0].id,
+    sql="""
+        SELECT primary_report_identifier, accession_number,
+               resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi,
+               sending_facility, modality, service_name, message_dt,
+               patient_age, sex
+        FROM reports_latest_epic_view
+        WHERE {{cohort}}
+          AND modality = 'CT'
+          AND year >= 2024
+    """,
+)
+```
+
+- Supported `id_column`: `epic_mrn`, `accession_number`, `mpi`. Anything else 400s.
+- If the CSV has multiple candidate columns (e.g. both `epic_mrn` and `accession_number`), the backend prefers `accession_number` (report-scoped, safer). Response echoes `id_column` and `column_inferred=true` so you can tell the user which was picked; if it's wrong, re-run with `id_column` explicit.
+- `{{cohort}}` must appear exactly once in the `sql` when file mode is used with custom SQL.
+- Refinement = copy the prior `sql` verbatim (including `{{cohort}}`) and append `AND <new clause>` — same rule as SQL mode.
+- The tool reads the file server-side. Do NOT re-parse the CSV, iterate its rows, or write out the ID list yourself. Use `file_id` + `{{cohort}}`.
 
 Rules:
 
@@ -94,6 +129,23 @@ Rules:
 ### scout_query_sql
 
 Run ad-hoc SQL against Scout's tables. Rows come back inline (no viewer, no persistence). Use for aggregates, counts, distinct-value scouting, one-row-per-diagnosis output, etc.
+
+If the user's question is about a CSV cohort they uploaded, pass `file_id` and use the `{{cohort}}` placeholder in your SQL exactly as in `scout_find_reports` file mode.
+
+**Example — Modality breakdown for the uploaded cohort:**
+
+```
+scout_query_sql(
+  file_id=__files__[0].id,
+  sql="""
+    SELECT modality, COUNT(*) AS n
+    FROM reports_latest_epic_view
+    WHERE {{cohort}}
+    GROUP BY modality
+    ORDER BY n DESC
+  """,
+)
+```
 
 **Example — Patients per modality:**
 

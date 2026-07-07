@@ -8,7 +8,7 @@ See ADR 0026.
 
 Endpoints:
   POST /api/searches                            - save SQL, cache COUNT(*), return sample
-  POST /api/searches/from-file                  - validate IDs against reports_latest, save WHERE id IN (...) SQL
+  POST /api/searches/from-file                  - upload CSV of IDs, save WHERE id IN (...) SQL against reports_latest_epic_view
   GET  /api/searches/{id}                       - metadata
   GET  /api/searches/{id}/rows                  - paginated rows (wraps sql)
   GET  /api/searches/{id}/accessions            - DISTINCT accession_number list
@@ -24,32 +24,46 @@ import re
 from datetime import date
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import StreamingResponse
 
 from .. import metrics, store, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
+from ..csv_upload import (
+    UNMATCHED_SAMPLE_CAP,
+    assert_cohort_placeholder,
+    dedup_ids,
+    guard_upload_size,
+    parse_csv_ids,
+    resolve_sql_column,
+    substitute_cohort,
+)
 from ..ids import new_search_id
 from ..models import (
-    INPUT_ID_COLUMNS,
     SEARCH_REQUIRED_COLUMNS,
+    CreateFromFileResponse,
     CreateSearchRequest,
     CreateSearchResponse,
-    CreateFromFileRequest,
-    CreateFromFileResponse,
-    SearchMeta,
     RowsResponse,
+    SearchMeta,
 )
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/searches", tags=["searches"])
 
-
-# Safety cap on submitted IDs for /api/searches/from-file. The same cap
-# becomes the upper bound on the IN-clause length in the saved SQL.
-_MAX_FROM_FILE = 1_000_000
 
 _LLM_SAMPLE_ROWS = 5
 
@@ -80,6 +94,10 @@ def _quote_ident(name: str) -> str:
 
 def _qualified_reports() -> str:
     return f"{settings.trino_catalog}.{settings.trino_schema}.reports_latest"
+
+
+def _qualified_reports_epic_view() -> str:
+    return f"{settings.trino_catalog}.{settings.trino_schema}.reports_latest_epic_view"
 
 
 def _view_url(search_id: str) -> str:
@@ -282,69 +300,66 @@ async def create_search(
     )
 
 
+_DEFAULT_FROM_FILE_SQL = (
+    "SELECT primary_report_identifier, accession_number, "
+    "resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, "
+    "sending_facility, modality, service_name, "
+    "message_dt, patient_age, sex "
+    "FROM reports_latest_epic_view "
+    "WHERE {{cohort}}"
+)
+
+
 @router.post(
     "/from-file",
     response_model=CreateFromFileResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_search_from_file(
-    body: CreateFromFileRequest,
+    file: UploadFile = File(...),
+    id_column: str | None = Form(default=None),
+    sql: str | None = Form(default=None),
+    sql_explanation: str | None = Form(default=None),
+    owui_chat_id: str | None = Form(default=None),
     user: User = Depends(get_current_user),
 ) -> CreateFromFileResponse:
-    """Materialize a search from a researcher-supplied ID list. The
-    OWUI tool reads the uploaded CSV/TSV, extracts the IDs, and POSTs
-    them here. We validate each id against reports_latest and save a
-    `WHERE <id_col> IN ('a', 'b', ...)` SQL as the search's source.
+    """Materialize a search from a researcher-supplied CSV of IDs.
 
-    Same downstream shape as POST /api/searches - the saved SQL is
-    what /rows / /accessions / /csv re-run on each read."""
-    if body.id_column not in INPUT_ID_COLUMNS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                f"id_column must be one of {list(INPUT_ID_COLUMNS)}; "
-                f"got {body.id_column!r}"
-            ),
-        )
+    The uploaded CSV must have a header row. `id_column` is either sent
+    explicitly (one of FILE_UPLOAD_ID_COLUMNS) or inferred from the
+    header via FILE_UPLOAD_HEADER_ALIASES.
 
-    # Dedup + strip whitespace + drop blanks. Preserve insertion order.
-    seen: set[str] = set()
-    cleaned: list[str] = []
-    for raw in body.ids:
-        if raw is None:
-            continue
-        s = str(raw).strip()
-        if not s or s in seen:
-            continue
-        seen.add(s)
-        cleaned.append(s)
-    submitted = len(body.ids)
-    if not cleaned:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="no usable IDs in submission (all blank / duplicates)",
-        )
-    if len(cleaned) > _MAX_FROM_FILE:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=(
-                f"submitted ID list exceeds cap ({_MAX_FROM_FILE}); "
-                f"narrow the upload or raise the limit if storage is verified."
-            ),
-        )
+    If `sql` is provided it must include `{{cohort}}` exactly once; the
+    backend substitutes the appropriate `IN (...)` predicate. When
+    omitted, a default projection over reports_latest_epic_view is used.
 
-    # Validate ID existence: chunked SELECTs against reports_latest.
-    qualified = _qualified_reports()
-    col = _quote_ident(body.id_column)
+    Patient-scoped inputs are translated through PATIENT_ID_COLUMNS so
+    `epic_mrn` filters on `resolved_epic_mrn`."""
+    try:
+        raw = await file.read()
+    finally:
+        await file.close()
+    guard_upload_size(raw)
+    if sql:
+        assert_cohort_placeholder(sql)
+    ids, resolved_id_column, column_inferred = parse_csv_ids(raw, id_column)
+    cleaned = dedup_ids(ids)
+
+    sql_column = resolve_sql_column(resolved_id_column)
+    view = _qualified_reports_epic_view()
+    col_q = _quote_ident(sql_column)
+
     matched: set[str] = set()
     CHUNK = 5000
-    sql = f"SELECT DISTINCT {col} AS id FROM {qualified} " f"WHERE contains(?, {col})"
+    validate_sql = (
+        f"SELECT DISTINCT {col_q} AS id FROM {view} WHERE contains(?, {col_q})"
+    )
     for start in range(0, len(cleaned), CHUNK):
         chunk = cleaned[start : start + CHUNK]
         try:
             with metrics.time_trino("from_file_validate"):
                 _cols, rows = await trino_client.execute(
-                    sql, user=user.sub, params=[chunk]
+                    validate_sql, user=user.sub, params=[chunk]
                 )
         except Exception as exc:
             log.exception("trino id-list validation failed")
@@ -364,37 +379,49 @@ async def create_search_from_file(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
                 f"none of the {len(cleaned)} submitted IDs matched "
-                f"{body.id_column} in reports_latest"
+                f"{resolved_id_column} in reports_latest_epic_view"
             ),
         )
 
-    # Compose the saved search SQL. IDs are inlined as literals (not
-    # bound) because the SQL is persisted to Postgres as text and
-    # replayed later by /rows /accessions /csv as a subquery - there
-    # is no read-time params plumbing. This is the only place the
-    # service interpolates user-supplied values into SQL text; every
-    # other Trino call goes through `?` binding. If you find yourself
-    # reaching for inline literal quoting elsewhere, you want
-    # trino_client.execute(..., params=[...]) instead.
+    # IDs are inlined as literals because the SQL is persisted to Postgres
+    # and replayed later as a subquery; there is no read-time params
+    # plumbing. Every other Trino call in this module binds via `?`.
     in_literal = ", ".join("'" + str(i).replace("'", "''") + "'" for i in final_ids)
-    sql = (
-        f"SELECT primary_report_identifier, accession_number, "
-        f"resolved_epic_mrn AS epic_mrn, modality, service_name, "
-        f"message_dt, patient_age, sex "
-        f"FROM reports_latest_epic_view "
-        f"WHERE {col} IN ({in_literal})"
-    )
-    row_count = len(final_ids)
+    predicate = f"{col_q} IN ({in_literal})"
+    template = _wrap_sql(sql) if sql else _DEFAULT_FROM_FILE_SQL
+    saved_sql = substitute_cohort(template, predicate)
+
+    if sql:
+        sample_sql = f"SELECT s.* FROM ({saved_sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
+        try:
+            with metrics.time_trino("from_file_sample"):
+                columns, _ = await trino_client.execute(sample_sql, user=user.sub)
+        except Exception as exc:
+            log.exception("trino from-file sample failed")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"trino query failed: {exc}",
+            )
+        _assert_required_projections(columns)
+
+    count_sql = f"SELECT COUNT(*) AS n FROM ({saved_sql}) s"
+    try:
+        with metrics.time_trino("from_file_count"):
+            _cols, count_rows = await trino_client.execute(count_sql, user=user.sub)
+        row_count = int(count_rows[0]["n"]) if count_rows else 0
+    except Exception:
+        log.exception("trino from-file count failed")
+        row_count = 0
 
     search_id = new_search_id()
     stored = await store.insert_search(
         search_id=search_id,
-        id_column=body.id_column,
-        sql=sql,
+        id_column=resolved_id_column,
+        sql=saved_sql,
         owner_sub=user.sub,
         row_count=row_count,
-        sql_explanation=body.sql_explanation or "",
-        owui_chat_id=body.owui_chat_id or "",
+        sql_explanation=sql_explanation or "",
+        owui_chat_id=owui_chat_id or "",
     )
 
     metrics.SEARCHES_CREATED.inc()
@@ -403,19 +430,23 @@ async def create_search_from_file(
         "search imported from file",
         extra={
             "search_id": stored["id"],
-            "submitted": submitted,
-            "matched": len(final_ids),
-            "unmatched": len(unmatched),
+            "id_column": resolved_id_column,
+            "column_inferred": column_inferred,
+            "unique_ids": len(cleaned),
+            "matched_ids": len(final_ids),
+            "unmatched_ids": len(unmatched),
+            "report_count": row_count,
+            "custom_sql": bool(sql),
         },
     )
 
     return CreateFromFileResponse(
         id=stored["id"],
-        count=stored["count"],
         id_column=stored["id_column"],
-        submitted_count=submitted,
-        unmatched_sample=unmatched[:50],
-        unmatched_total=len(unmatched),
+        column_inferred=column_inferred,
+        count=stored["count"],
+        unmatched=unmatched[:UNMATCHED_SAMPLE_CAP],
+        unmatched_count=len(unmatched),
         view_url=_view_url(search_id),
     )
 
@@ -460,6 +491,7 @@ _SORTABLE_COLUMNS: frozenset[str] = frozenset(
     {
         "accession_number",
         "epic_mrn",
+        "mpi",
         "message_dt",
         "modality",
         "service_name",

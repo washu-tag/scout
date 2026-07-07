@@ -10,13 +10,10 @@ version: 0.1.0
 
 from __future__ import annotations
 
-import csv
 import inspect
-import io
 import json
 import logging
 import os
-import re
 from typing import Any, Awaitable, Callable, Optional
 
 import httpx
@@ -26,6 +23,7 @@ log = logging.getLogger(__name__)
 
 _MAX_GET_IDS = 100
 _MD_CELL_MAX = 400
+_MAX_UPLOAD_BYTES = 32 * 1024 * 1024
 
 
 class Tools:
@@ -74,13 +72,15 @@ class Tools:
                      service_name, message_dt, patient_age, sex
               FROM reports_latest_epic_view
               WHERE modality = 'CT'
-        * File mode: pass `file_id` and `id_column` (one of
-          `accession_number` (default), `epic_mrn`, `mpi`,
-          `scout_patient_id`, `primary_report_identifier`).
+        * File mode: pass `file_id` (uploaded CSV) and optionally
+          `id_column` (one of `epic_mrn`, `accession_number`, `mpi`).
+          When omitted, the backend infers the column from the header.
+          Passing `sql` in file mode is optional: when set, it must
+          include `{{cohort}}` exactly once and the backend substitutes
+          the ID predicate. When omitted, a default projection is used.
 
-        :param sql: Trino SQL against `delta.default.reports_latest`
-            or `_epic_view`. Each saved search is standalone, no
-            placeholder substitution.
+        :param sql: SQL mode: full Trino query. File mode: optional
+            custom SQL with `{{cohort}}` placeholder.
         :param match_terms: Clinical text terms. Populates the
             `excerpt` field on each evidence row and highlights the
             terms in the row-expand viewer.
@@ -102,7 +102,8 @@ class Tools:
         if file_id:
             return await self._import_from_file(
                 file_id=file_id,
-                id_column=id_column or "accession_number",
+                id_column=id_column,
+                sql=sql,
                 __event_emitter__=__event_emitter__,
                 __oauth_token__=__oauth_token__,
                 __metadata__=__metadata__,
@@ -146,6 +147,8 @@ class Tools:
     async def scout_query_sql(
         self,
         sql: str,
+        file_id: Optional[str] = None,
+        id_column: Optional[str] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
     ) -> Any:
@@ -154,10 +157,22 @@ class Tools:
         No search is persisted; no iframe is rendered.
 
         :param sql: Trino SQL against `delta.default.reports_latest`
-            or `_epic_view`.
+            or `_epic_view`. When `file_id` is set, include
+            `{{cohort}}` exactly once and the backend substitutes the
+            CSV cohort predicate.
+        :param file_id: Optional. OWUI file id for a cohort CSV.
+        :param id_column: Optional (file mode only).
         :return: Markdown table of rows for direct inclusion in your
             prose reply.
         """
+        if file_id:
+            return await self._query_from_file(
+                file_id=file_id,
+                sql=sql,
+                id_column=id_column,
+                __event_emitter__=__event_emitter__,
+                __oauth_token__=__oauth_token__,
+            )
         await self._emit(__event_emitter__, "Running query…", done=False)
         try:
             agg = await self._post(
@@ -170,50 +185,38 @@ class Tools:
         await self._emit(__event_emitter__, f"Query complete ({n} rows)", done=True)
         return self._format_aggregate(agg)
 
-    async def _import_from_file(
-        self,
-        file_id: str,
-        id_column: str = "accession_number",
-        __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
-        __oauth_token__: Any = None,
-        __metadata__: Optional[dict] = None,
-    ) -> Any:
-        """Import an external ID list as a search. Tool reads the file
-        server-side; the LLM context never sees its bytes.
-
-        :param file_id: OWUI file id (typically `__files__[0].id`).
-        :param id_column: Column the IDs map to.
-        :return: Markdown with matched/unmatched counts plus an iframe
-            of the resulting search.
-        """
-        # Read the file out of OWUI's local storage via the in-process
-        # OWUI Python API (the tool runs inside the OWUI worker).
+    async def _fetch_owui_file(self, file_id: str) -> tuple[bytes, str] | str:
+        """Read an OWUI-uploaded file. Returns (contents, filename) or
+        an error string suitable for the LLM."""
         try:
             from open_webui.models.files import Files
             from open_webui.storage.provider import Storage
         except Exception as exc:
             return f"Error: could not import OWUI file modules: {exc}"
 
-        # OWUI 0.9.x has both sync and async signatures for these
-        # depending on minor version; await if it returns a coroutine
-        # so we work on both. (Real bug: 0.9.6 made get_file_by_id
-        # async, which made the sync caller blow up with
-        # "'coroutine' object has no attribute 'path'" on file_model.path.)
+        # OWUI 0.9.6 made get_file_by_id async; earlier versions were
+        # sync. Await if we got a coroutine so this works on both.
         file_model = Files.get_file_by_id(file_id)
         if inspect.iscoroutine(file_model):
             file_model = await file_model
         if not file_model:
             return f"Error: file {file_id} not found in OWUI"
-        # OWUI 0.9.6 changed `Storage.get_file()` to return the local
-        # filesystem path of the upload, not the file contents.
-        # (Earlier versions returned bytes / a file-like object.) Handle
-        # all three shapes: str path → open ourselves; bytes/str data →
-        # use directly; file-like → .read().
+        file_path = getattr(file_model, "path", None)
+        filename = getattr(file_model, "filename", None) or file_id
+        if not file_path:
+            return f"Error: file {file_id} has no readable path"
+        # OWUI 0.9.6 returns a filesystem path; earlier versions returned
+        # bytes or a file-like. Handle all three.
         try:
-            got = Storage.get_file(file_model.path)
+            got = Storage.get_file(file_path)
             if inspect.iscoroutine(got):
                 got = await got
             if isinstance(got, str) and os.path.exists(got):
+                if os.path.getsize(got) > _MAX_UPLOAD_BYTES:
+                    return (
+                        f"Error: {filename} exceeds "
+                        f"{_MAX_UPLOAD_BYTES // (1024 * 1024)} MiB upload cap"
+                    )
                 with open(got, "rb") as _fh:
                     contents = _fh.read()
             elif hasattr(got, "read"):
@@ -222,100 +225,100 @@ class Tools:
                 contents = got
         except Exception as exc:
             return f"Error: could not read file {file_id}: {exc}"
-        if isinstance(contents, bytes):
-            try:
-                text = contents.decode("utf-8")
-            except UnicodeDecodeError:
-                text = contents.decode("latin-1", errors="replace")
-        else:
-            text = str(contents)
-
-        # Parse IDs. Accepts:
-        #   * one-id-per-line plain text
-        #   * CSV/TSV with a recognized id-column header
-        # Picks the id_column header automatically if present, else
-        # uses the first column.
-        ids: list[str] = []
-        try:
-            reader = csv.reader(io.StringIO(text))
-            rows = list(reader)
-        except Exception:
-            rows = [[line] for line in text.splitlines() if line.strip()]
-
-        if rows:
-            header = rows[0]
-            looks_like_header = any(
-                re.search(r"[a-zA-Z]", c) and not re.fullmatch(r"\d[\d.-]*", c.strip())
-                for c in header
-            )
-            if looks_like_header:
-                # Find the column by exact match first, then by substring.
-                target_idx = None
-                lowered = [c.strip().lower() for c in header]
-                want = id_column.lower()
-                if want in lowered:
-                    target_idx = lowered.index(want)
-                else:
-                    aliases = {
-                        "accession_number": ["accession", "acc", "acc_num"],
-                        "epic_mrn": ["mrn", "epic_mrn", "epicmrn", "patient_mrn"],
-                    }.get(want, [])
-                    for i, h in enumerate(lowered):
-                        if any(a in h for a in aliases):
-                            target_idx = i
-                            break
-                if target_idx is None:
-                    target_idx = 0  # fall back to first column
-                for r in rows[1:]:
-                    if target_idx < len(r):
-                        v = r[target_idx].strip()
-                        if v:
-                            ids.append(v)
-            else:
-                # No header - every row is just an id in column 0.
-                for r in rows:
-                    if r and r[0].strip():
-                        ids.append(r[0].strip())
-
-        if not ids:
-            # Debug aid: surface what we actually saw so we can tell whether
-            # the file read came back empty vs the header didn't match.
-            preview = (text or "")[:200].replace("\n", "\\n")
+        if not isinstance(contents, bytes):
+            contents = str(contents).encode("utf-8")
+        if len(contents) > _MAX_UPLOAD_BYTES:
             return (
-                f"Error: could not extract any IDs from "
-                f"{file_model.filename}. text_len={len(text or '')}, "
-                f"rows_parsed={len(rows)}, preview={preview!r}"
+                f"Error: {filename} exceeds "
+                f"{_MAX_UPLOAD_BYTES // (1024 * 1024)} MiB upload cap"
             )
+        return contents, filename
+
+    async def _import_from_file(
+        self,
+        file_id: str,
+        id_column: Optional[str] = None,
+        sql: Optional[str] = None,
+        __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
+        __oauth_token__: Any = None,
+        __metadata__: Optional[dict] = None,
+    ) -> Any:
+        """Forward an OWUI-uploaded CSV to the report-viewer service,
+        which parses, dedups, validates, and saves the search.
+
+        :param file_id: OWUI file id (typically `__files__[0].id`).
+        :param id_column: Optional. Backend infers from CSV header when
+            omitted.
+        :param sql: Optional custom SQL with `{{cohort}}` placeholder.
+        """
+        fetched = await self._fetch_owui_file(file_id)
+        if isinstance(fetched, str):
+            return fetched
+        contents, filename = fetched
 
         await self._emit(
             __event_emitter__,
-            f"Validating {len(ids)} IDs from {file_model.filename}…",
+            f"Uploading {filename}…",
             done=False,
         )
-        payload = {
-            "ids": ids,
-            "id_column": id_column,
-            "sql_explanation": (
-                f"Imported {len(ids)} {id_column} values from "
-                f"{file_model.filename}."
-            ),
-            "owui_chat_id": _chat_id(__metadata__),
-        }
+        form: dict[str, str] = {}
+        if id_column:
+            form["id_column"] = id_column
+        if sql:
+            form["sql"] = sql
+        chat_id = _chat_id(__metadata__)
+        if chat_id:
+            form["owui_chat_id"] = chat_id
         try:
-            created = await self._post(
-                "/api/searches/from-file", payload, oauth=__oauth_token__
+            created = await self._post_multipart(
+                "/api/searches/from-file",
+                files={"file": (filename, contents, "text/csv")},
+                data=form,
+                oauth=__oauth_token__,
             )
         except ReportViewerServiceError as exc:
             await self._emit(__event_emitter__, f"Import failed: {exc}", done=True)
             return f"Error: {exc}"
-        view_url = created["view_url"]
         await self._emit(
             __event_emitter__,
-            f"Matched {created['count']:,} reports from your ID list",
+            f"Matched {created['count']:,} reports from your list",
             done=True,
         )
-        await self._emit_embed(__event_emitter__, view_url)
-        return self._render_from_file_summary(created)
+        await self._emit_embed(__event_emitter__, created["view_url"])
+        return self._render_from_file_summary(created, filename)
+
+    async def _query_from_file(
+        self,
+        file_id: str,
+        sql: str,
+        id_column: Optional[str] = None,
+        __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
+        __oauth_token__: Any = None,
+    ) -> Any:
+        """One-shot cohort-scoped query. `sql` must include `{{cohort}}`
+        exactly once."""
+        fetched = await self._fetch_owui_file(file_id)
+        if isinstance(fetched, str):
+            return fetched
+        contents, filename = fetched
+
+        await self._emit(__event_emitter__, f"Querying {filename}…", done=False)
+        form: dict[str, str] = {"sql": sql}
+        if id_column:
+            form["id_column"] = id_column
+        try:
+            agg = await self._post_multipart(
+                "/api/reports/query/from-file",
+                files={"file": (filename, contents, "text/csv")},
+                data=form,
+                oauth=__oauth_token__,
+            )
+        except ReportViewerServiceError as exc:
+            await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
+            return f"Error running query: {exc}"
+        n = len(agg.get("rows", []))
+        await self._emit(__event_emitter__, f"Query complete ({n} rows)", done=True)
+        return self._format_aggregate(agg)
 
     async def scout_get_reports(
         self,
@@ -373,6 +376,25 @@ class Tools:
             raise ReportViewerServiceError(_short_error(r))
         return r.json()
 
+    async def _post_multipart(
+        self,
+        path: str,
+        *,
+        files: dict,
+        data: dict,
+        oauth: Any,
+    ) -> dict:
+        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}{path}"
+        headers: dict[str, str] = {}
+        bearer = self._token_from_owui(oauth)
+        if bearer:
+            headers["Authorization"] = f"Bearer {bearer}"
+        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
+            r = await c.post(url, headers=headers, files=files, data=data)
+        if r.status_code >= 400:
+            raise ReportViewerServiceError(_short_error(r))
+        return r.json()
+
     @staticmethod
     def _render_search_summary(created: dict) -> str:
         """Sample table + evidence table (omitted if every row's
@@ -418,21 +440,29 @@ class Tools:
         return "\n".join(parts)
 
     @staticmethod
-    def _render_from_file_summary(created: dict) -> str:
-        """Matched/submitted/unmatched counts. No sample or evidence
-        on this path (file mode takes no match_terms / match_diagnoses)."""
+    def _render_from_file_summary(created: dict, filename: str) -> str:
         count = int(created.get("count") or 0)
-        submitted = int(created.get("submitted_count") or 0)
-        unmatched_total = int(created.get("unmatched_total") or 0)
         id_column = created.get("id_column") or "id"
+        column_inferred = bool(created.get("column_inferred"))
+        unmatched = list(created.get("unmatched") or [])
+        unmatched_count = int(created.get("unmatched_count") or 0)
         sid = created.get("id") or ""
 
-        parts = [f"Imported {count:,} of {submitted:,} submitted {id_column} values."]
-        if unmatched_total:
-            parts.append(
-                f"{unmatched_total:,} IDs were not found in reports_latest "
-                f"and were dropped."
-            )
+        rows_word = "report" if count == 1 else "reports"
+        parts = [
+            f"Imported {count:,} {rows_word} from {filename} (keyed on {id_column})."
+        ]
+        if column_inferred:
+            parts.append(f"Inferred column: {id_column}.")
+        if unmatched_count:
+            sample = ", ".join(unmatched)
+            if unmatched_count > len(unmatched):
+                parts.append(
+                    f"{unmatched_count:,} IDs weren't found "
+                    f"(showing {len(unmatched)}): {sample}."
+                )
+            else:
+                parts.append(f"{unmatched_count:,} IDs weren't found: {sample}.")
         parts.append("")
         parts.append(f"Internal search handle: {sid}.")
         return "\n".join(parts)

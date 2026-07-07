@@ -18,6 +18,23 @@ INPUT_ID_COLUMNS: tuple[str, ...] = (
     "scout_patient_id",
 )
 
+# The columns an uploaded CSV can key on. Order is preference: when a
+# CSV header matches multiple, inference picks the first match, which
+# means report-scoped (accession) wins over patient-scoped (mrn/mpi).
+FILE_UPLOAD_ID_COLUMNS: tuple[str, ...] = (
+    "accession_number",
+    "epic_mrn",
+    "mpi",
+)
+
+# Header aliases for CSV column inference. Substring match on lowercased
+# headers, first hit wins.
+FILE_UPLOAD_HEADER_ALIASES: dict[str, tuple[str, ...]] = {
+    "epic_mrn": ("epic_mrn", "epicmrn", "mrn", "patient_mrn", "patient_id"),
+    "accession_number": ("accession_number", "accession", "acc_num"),
+    "mpi": ("mpi", "empi"),
+}
+
 # Every saved /searches SQL must project these in its outer SELECT.
 SEARCH_REQUIRED_COLUMNS: tuple[str, ...] = (
     "primary_report_identifier",
@@ -83,42 +100,13 @@ class CreateSearchRequest(BaseModel):
     )
 
 
-class CreateFromFileRequest(BaseModel):
-    """Materialize a search from an explicit list of identifiers (parsed
-    out of an uploaded CSV/Excel file). Used by the OWUI
-    `scout_find_reports` tool's file-upload branch - the tool parses
-    the file, extracts IDs, and POSTs them here.
-
-    Backend validates each id exists in reports_latest, returns the
-    matched count + a sample of unmatched ids so the LLM can surface
-    which entries weren't found.
-    """
-
-    ids: list[str] = Field(
-        ...,
-        description="The identifier list to materialize. Deduplicated before insert.",
-    )
-    id_column: str = Field(
-        ...,
-        description=f"Which column the ids map to. One of: {list(INPUT_ID_COLUMNS)}.",
-    )
-    sql_explanation: str | None = Field(
-        default=None,
-        description=(
-            "Plain-language summary of where the IDs came from "
-            "(e.g. 'Imported 234 accession numbers from research_search.csv')."
-        ),
-    )
-    owui_chat_id: str | None = Field(default=None)
-
-
 class CreateFromFileResponse(BaseModel):
     id: str
-    count: int
     id_column: str
-    submitted_count: int
-    unmatched_sample: list[str]
-    unmatched_total: int
+    column_inferred: bool
+    count: int
+    unmatched: list[str]
+    unmatched_count: int
     view_url: str
 
 
@@ -134,6 +122,15 @@ class QueryRequest(BaseModel):
 class QueryResponse(BaseModel):
     columns: list[str]
     rows: list[dict[str, Any]]
+
+
+class QueryFromFileResponse(BaseModel):
+    columns: list[str]
+    rows: list[dict[str, Any]]
+    id_column: str
+    column_inferred: bool
+    unmatched: list[str]
+    unmatched_count: int
 
 
 class ReadReportsRequest(BaseModel):

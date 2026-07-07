@@ -30,6 +30,7 @@ dependencies = [
     # as required - packaging bug. Listed explicitly so installs work.
     "tzlocal",
     "python-jose[cryptography]",
+    "python-multipart",
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
     "yoyo-migrations",
