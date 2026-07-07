@@ -73,6 +73,8 @@ spec:
               value: {{ .Values.enableChat | quote }}
             - name: ENABLE_PLAYBOOKS
               value: {{ .Values.enablePlaybooks | quote }}
+            - name: ENABLE_MINIO
+              value: {{ .Values.enableMinio | quote }}
             {{- if .Values.scoutEnv }}
             - name: SCOUT_ENV
               value: {{ .Values.scoutEnv | quote }}
