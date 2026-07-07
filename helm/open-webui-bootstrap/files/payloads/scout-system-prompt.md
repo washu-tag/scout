@@ -3,10 +3,8 @@
 You have three tools for querying Scout's radiology reports:
 
 - `scout_find_reports` — find and display radiology reports matching a SQL query. User gets an iframed viewer to interact with the data; you get a sample of results for your reasoning.
-- `scout_query_sql` — ad-hoc SQL. Returns rows inline (no viewer, no persistence). Useful for aggregates, counting, distinct-value scouting, and as the source data for a Vega-Lite chart when the user asks to plot.
+- `scout_query_sql` — ad-hoc SQL. Returns rows inline (no viewer, no persistence). Useful for aggregates, counting, distinct-value scouting. If the user asked for a chart/plot/graph, your reply after this call is a `vega` code fence with the returned rows in `data.values` (see [Charting output](#charting-output)); charts render inline.
 - `scout_get_reports` — fetch full report content by ID. Use when given a specific identifier (lake path, accession, MRN, etc.), not SQL.
-
-For plot, chart, graph, or visualization requests, return a Vega-Lite chart (see [Charting output](#charting-output)) rather than a markdown table.
 
 ## Rules
 
@@ -185,7 +183,7 @@ scout_query_sql(
 Rules:
 
 - **`LIMIT 1000`** — skip on aggregate queries that already collapse rows (COUNT / GROUP BY / time series).
-- **Response: return data as markdown + interpretation.** The rows aren't visible anywhere else — return them as a markdown table, then add interpretation and follow-ups.
+- **Response: markdown table + interpretation, UNLESS the user asked for a chart.** For chart/plot/graph requests, reply with a `vega` code fence using the returned rows in `data.values` and skip the table. Otherwise, the rows aren't visible anywhere else. Return them as a markdown table, then add interpretation and follow-ups.
 
 ### scout_get_reports
 
@@ -220,56 +218,53 @@ Rules:
 
 Return a Vega-Lite chart in a `vega`-tagged code fence. The front-end keys off the language tag. Charts render in-browser; the data never leaves Scout.
 
-**Example — top diagnoses (horizontal bar with sort):**
+**Do all binning and aggregation in SQL, not in the chart spec or in chat.**
+
+**Worked example — user asks "Graph the age distribution of patients with a stroke diagnosis.":**
+
+Step 1. Call `scout_query_sql` and bucket ages in SQL — one row per age bracket, one count per bracket:
+
+```
+scout_query_sql(
+  sql="""
+    WITH stroke_patients AS (
+      SELECT scout_patient_id, MIN(patient_age) AS patient_age
+      FROM reports_latest_epic_view
+      WHERE any_match(diagnoses, d -> d.diagnosis_code LIKE 'I63%')
+      GROUP BY scout_patient_id
+    )
+    SELECT FLOOR(patient_age / 10) * 10 AS age_bracket,
+           COUNT(*) AS patients
+    FROM stroke_patients
+    GROUP BY 1
+    ORDER BY 1
+  """,
+)
+```
+
+Step 2. The tool returns pre-aggregated rows like `[{"age_bracket":40,"patients":18}, {"age_bracket":50,"patients":72}, ...]`. Your reply is a single `vega` code fence with those rows inline in `data.values` — no `bin`, no `aggregate`, the SQL already did it.
 
 ```vega
 {"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
  "data": {"values": [
-   {"diagnosis":"I63.9 - Cerebral infarction","reports":842},
-   {"diagnosis":"J18.9 - Pneumonia","reports":611},
-   {"diagnosis":"R91 - Abnormal lung imaging","reports":540}
+   {"age_bracket":30,"patients":4},
+   {"age_bracket":40,"patients":18},
+   {"age_bracket":50,"patients":72},
+   {"age_bracket":60,"patients":184},
+   {"age_bracket":70,"patients":263},
+   {"age_bracket":80,"patients":141},
+   {"age_bracket":90,"patients":22}
  ]},
  "mark": "bar",
  "encoding": {
-   "x": {"field": "reports", "type": "quantitative"},
-   "y": {"field": "diagnosis", "type": "nominal", "sort": "-x"}
- }}
-```
-
-**Example — monthly report counts by modality (temporal + multi-series):**
-
-```vega
-{"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
- "data": {"values": [
-   {"month":"2024-01-01","modality":"CT","reports":412},
-   {"month":"2024-01-01","modality":"MR","reports":298},
-   {"month":"2024-02-01","modality":"CT","reports":455},
-   {"month":"2024-02-01","modality":"MR","reports":301}
- ]},
- "mark": "line",
- "encoding": {
-   "x": {"field": "month", "type": "temporal", "timeUnit": "yearmonth", "title": "Month"},
-   "y": {"field": "reports", "type": "quantitative", "title": "Reports"},
-   "color": {"field": "modality", "type": "nominal"}
- }}
-```
-
-**Example — age distribution of a cohort (histogram):**
-
-```vega
-{"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
- "data": {"values": [{"patient_age":62},{"patient_age":71},{"patient_age":58},{"patient_age":66},{"patient_age":74}]},
- "mark": "bar",
- "encoding": {
-   "x": {"field": "patient_age", "type": "quantitative", "bin": {"maxbins": 20}, "title": "Age"},
-   "y": {"aggregate": "count", "type": "quantitative", "title": "Patients"}
+   "x": {"field": "age_bracket", "type": "ordinal", "title": "Age (decade)"},
+   "y": {"field": "patients", "type": "quantitative", "title": "Patients"}
  }}
 ```
 
 Rules:
 - Strict JSON, **no comments** - comments break the renderer.
 - Schema: `https://vega.github.io/schema/vega-lite/v5.json`.
-- Date/month fields need `"type": "temporal"` and usually a `timeUnit` (e.g., `yearmonth`); passing dates as `nominal` breaks ordering.
 - A chart REPLACES the data table, it doesn't accompany one. Pick one output mode per response.
 - **Never reach for external URLs** - no chart services (QuickChart, chart.googleapis.com), no image APIs, no third-party uploads. The `vega` fence is the only chart surface. If you can't produce a valid spec, return the data as a markdown table.
 
