@@ -55,8 +55,8 @@ batcher:
   # MinIO (which authenticates with the static-key secret below).
   serviceAccountName: ''
   groupId: hl7-batcher
-  completionSize: 1000
-  completionTimeout: 300000
+  maxPollRecords: 1000
+  pollTimeoutMs: 30000
   s3:
     bucket: hl7-raw
     region: us-east-1

@@ -24,8 +24,8 @@ batcher:
   name: '{{ hl7_batcher_name }}'
   serviceAccountName: '{{ (aws_deployment | bool) | ternary(lake_writer_service_account_name, "") }}'
   groupId: '{{ hl7_batcher_name }}'
-  completionSize: {{ hl7_batcher_completion_size }}
-  completionTimeout: {{ hl7_batcher_completion_timeout }}
+  maxPollRecords: {{ hl7_batcher_max_poll_records }}
+  pollTimeoutMs: {{ hl7_batcher_poll_timeout_ms }}
   s3:
     bucket: '{{ hl7_batcher_s3_bucket }}'
     region: '{{ hl7_batcher_s3_region }}'

@@ -14,20 +14,20 @@
 # follows the platform pattern (cf. loki): static-key secret on MinIO, IRSA ServiceAccount
 # on AWS.
 
-# Create namespaces
+# Create namespaces (shared scout_common task)
 - name: Create HL7 listener namespace
-  kubernetes.core.k8s:
-    name: '{{ hl7_listener_namespace }}'
-    api_version: v1
-    kind: Namespace
-    state: present
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ hl7_listener_namespace }}'
 
 - name: Create operators namespace
-  kubernetes.core.k8s:
-    name: '{{ strimzi_operator_namespace }}'
-    api_version: v1
-    kind: Namespace
-    state: present
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ strimzi_operator_namespace }}'
 
 # Deploy Strimzi Kafka operator to scout-operators namespace
 # Operator watches scout-extractor namespace where Kafka resources are deployed
@@ -173,6 +173,19 @@
         config:
           retention.ms: '{{ kafka_retention_ms }}'
   when: hl7_batcher_enabled | bool
+
+# Fail fast if the static S3 key is missing (MinIO path); otherwise the deploy succeeds but the
+# batcher's S3 auth fails silently at runtime.
+- name: Assert the HL7 batcher S3 secret key is set (MinIO)
+  ansible.builtin.assert:
+    that:
+      - hl7_batcher_s3_secret_key | length > 0
+    fail_msg: >-
+      hl7_batcher_s3_secret_key is empty — set s3_lake_writer_secret (or
+      hl7_batcher_s3_secret_key) in inventory for the MinIO batcher's S3 credentials.
+  when:
+    - hl7_batcher_enabled | bool
+    - not (aws_deployment | bool)
 
 # MinIO: the batcher authenticates with static lake-writer keys from this secret.
 - name: Create S3 credentials secret for HL7 Batcher (MinIO)

@@ -40,10 +40,10 @@ spec:
               value: {{ .Values.kafka.batchesTopic | quote }}
             - name: HL7_BATCHER_GROUP_ID
               value: {{ .Values.batcher.groupId | quote }}
-            - name: HL7_BATCHER_COMPLETION_SIZE
-              value: {{ .Values.batcher.completionSize | quote }}
-            - name: HL7_BATCHER_COMPLETION_TIMEOUT
-              value: {{ .Values.batcher.completionTimeout | quote }}
+            - name: HL7_BATCHER_MAX_POLL_RECORDS
+              value: {{ .Values.batcher.maxPollRecords | quote }}
+            - name: HL7_BATCHER_POLL_TIMEOUT_MS
+              value: {{ .Values.batcher.pollTimeoutMs | quote }}
             - name: S3_BUCKET
               value: {{ .Values.batcher.s3.bucket | quote }}
             - name: S3_ENDPOINT

@@ -39,7 +39,6 @@ dependencies {
 	implementation 'org.apache.camel.springboot:camel-hl7-starter'
 	implementation 'org.apache.camel.springboot:camel-kafka-starter'
 	implementation 'org.apache.camel.springboot:camel-aws2-s3-starter'
-	implementation 'org.apache.camel.springboot:camel-zipfile-starter'
 
 	// Metrics: Camel micrometer meters exposed on the Spring Boot Actuator Prometheus
 	// endpoint (/actuator/prometheus). The route-policy + event-notifier meters carry the
