@@ -689,7 +689,7 @@ jobs:
         env:
           SUBDOMAINS: ${{ matrix.subdomains }}
         run: bash tests/auth/auth-curl-tests.sh scout.test --include "$SUBDOMAINS"
-      - name: 'Auth playwright tests'
+      - name: 'Auth playwright tests: OWUI iframe seed'
         if: matrix.side == 'analytics'
         shell: bash
         working-directory: tests/auth
