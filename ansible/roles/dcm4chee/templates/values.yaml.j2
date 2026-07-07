@@ -18,6 +18,17 @@ service:
 ingress:
   enabled: true
   className: traefik
+  annotations:
+    # oauth2-proxy ForwardAuth — Scout's edge approval gate (ADR 0003) — plus the error-redirect
+    # and Scout-wide security-headers middlewares, the same hardcoded stack every other Scout
+    # web service uses. This gates EVERY path on this subdomain (Archive UI /dcm4chee-arc/ui2 and
+    # the WildFly console /console + /management) behind Keycloak login + Scout approval before a
+    # request reaches the pod; dcm4chee stays auth-unaware. It does NOT cover DIMSE
+    # ({{ dcm4chee_dicom_port }}), which is a raw-TCP LoadBalancer rather than the HTTP ingress.
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd,
+      kube-system-security-headers@kubernetescrd
   hosts:
     - host: 'dcm4chee.{{ server_hostname }}'
       paths:
