@@ -1,0 +1,13 @@
+name: PR to In Review
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+jobs:
+  status:
+    permissions: {}
+    uses: washu-tag/.github/.github/workflows/pr-status.yaml@main
+    secrets:
+      PROJECT_APP_ID: ${{ secrets.PROJECT_APP_ID }}
+      PROJECT_APP_PRIVATE_KEY: ${{ secrets.PROJECT_APP_PRIVATE_KEY }}

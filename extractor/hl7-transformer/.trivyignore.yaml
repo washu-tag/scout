@@ -41,12 +41,10 @@ vulnerabilities:
   - id: CVE-2026-46195 # linux-libc-dev
   - id: CVE-2026-46300 # linux-libc-dev
   - id: CVE-2026-46333 # linux-libc-dev
-  # Additional linux-libc-dev kernel-header CVEs (same rationale as above),
-  # surfaced by the Trivy DB on 2026-07-06.
+  - id: CVE-2026-23216 # linux-libc-dev
   - id: CVE-2023-53673 # linux-libc-dev
   - id: CVE-2025-37778 # linux-libc-dev
   - id: CVE-2025-71089 # linux-libc-dev
-  - id: CVE-2026-23216 # linux-libc-dev
   - id: CVE-2026-43494 # linux-libc-dev
   - id: CVE-2026-43503 # linux-libc-dev
   # netty 4.2.7 family bundled by Spark (plus copies shaded into the
