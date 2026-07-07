@@ -6,14 +6,15 @@ is mirrored from ansible/roles/scout_common/templates/spark-defaults.conf.j2 (mi
 S3A / remote Hive settings).
 
 Run from extractor/hl7-transformer. Spark/Delta versions are NOT pinned here — they come
-from pyproject.toml (the single Python-side source of truth), so this command tracks a
+from pyproject.toml (the single Python-side source of truth), so these tests track a
 Spark upgrade automatically. Locally select a Spark-compatible interpreter + JVM: Spark
 4.1.x runs on Python 3.10–3.13 and Java 17 or 21. Any supported pair works; the CI job
 pins Python 3.10 to match the runtime image (spark:4.1.1-...-python3 ships Python 3.10),
 so the tests exercise the interpreter that actually ships — matters for version-sensitive
 behavior like concurrent.futures TimeoutError, which is a distinct class before 3.11:
 
-    JAVA_HOME=<java-17-or-21> uv run --python 3.10 --extra test pytest tests/ -v
+    python3.10 -m venv .venv && .venv/bin/pip install -e '.[test]'
+    JAVA_HOME=<java-17-or-21> .venv/bin/pytest tests/ -v
 """
 
 import os
