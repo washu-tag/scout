@@ -124,7 +124,10 @@ async def query_from_file(
         log.exception("trino query-from-file failed")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"trino query failed: {exc}",
+            detail=(
+                f"trino query failed: {exc}. Your SQL (before "
+                f"{{{{cohort}}}} substitution): {sql}"
+            ),
         )
 
     return QueryFromFileResponse(
@@ -161,18 +164,18 @@ async def read_reports(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"unsafe id_column: {body.id_column!r}",
         )
-    # Report-scoped IDs hit reports_latest directly; patient-scoped IDs
-    # route through reports_latest_epic_view (raw mrn/mpi mapped to
-    # resolved_* under the hood).
     base = f"{settings.trino_catalog}.{settings.trino_schema}."
+    table = base + "reports_latest_epic_view"
     if body.id_column in PATIENT_ID_COLUMNS:
-        table = base + "reports_latest_epic_view"
         column = PATIENT_ID_COLUMNS[body.id_column]
     else:
-        table = base + "reports_latest"
         column = body.id_column
     # contains(?, col) - the driver doesn't expand list params into IN.
-    sql = f'SELECT * FROM {table} WHERE contains(?, "{column}")'
+    sql = (
+        f"SELECT * EXCEPT (epic_mrn, mpi), "
+        f"resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi "
+        f'FROM {table} WHERE contains(?, "{column}")'
+    )
     try:
         with metrics.time_trino("read_reports"):
             columns, rows = await trino_client.execute(

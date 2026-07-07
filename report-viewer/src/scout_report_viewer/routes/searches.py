@@ -400,7 +400,10 @@ async def create_search_from_file(
             log.exception("trino from-file sample failed")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"trino query failed: {exc}",
+                detail=(
+                    f"trino query failed: {exc}. Your SQL (before "
+                    f"{{{{cohort}}}} substitution): {sql}"
+                ),
             )
         _assert_required_projections(columns)
 
