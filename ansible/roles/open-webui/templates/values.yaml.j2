@@ -292,3 +292,24 @@ extraEnvVars:
     value: 'http://prometheus-server.{{ prometheus_namespace }}:9090/api/v1/otlp/v1/metrics'
   - name: OTEL_SERVICE_NAME
     value: 'open-webui'
+
+{% if open_webui_trust_traefik_ca | bool %}
+  - name: REQUESTS_CA_BUNDLE
+    value: /etc/pki/trust/ca.crt
+  - name: SSL_CERT_FILE
+    value: /etc/pki/trust/ca.crt
+
+volumes:
+  - name: trusted-ca
+    secret:
+      secretName: open-webui-trusted-ca
+      items:
+        - key: ca.crt
+          path: ca.crt
+
+volumeMounts:
+  container:
+    - name: trusted-ca
+      mountPath: /etc/pki/trust
+      readOnly: true
+{% endif %}

@@ -87,6 +87,10 @@ ollama_models: []
 open_webui_storage_size: 2Gi
 open_webui_storage_class: ''
 
+# On envs where Traefik serves a self-signed cert (CI), OWUI needs to trust
+# it to reach Keycloak over HTTPS. Off on envs with public certs.
+open_webui_trust_traefik_ca: false
+
 # PostgreSQL configuration
 open_webui_postgres_user: openwebui
 # REQUIRED: Must be set in inventory.yaml (use vault encryption)
