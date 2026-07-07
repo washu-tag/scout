@@ -1,0 +1,24 @@
+{{- if .Values.managementConsole.enabled }}
+# Dedicated Service for the WildFly admin console, fronting the management HTTPS port.
+# The management HTTP port (9990) always 302-redirects to the HTTPS port with an absolute URL
+# (…:9993/console), so it cannot be proxied on a standard port; the HTTPS port (9993) serves
+# the console with relative redirects. This needs its own Service (not the shared `arc` one)
+# because Traefik's serversscheme/serverstransport annotations apply per-Service, and the main
+# UI path uses a plaintext HTTP backend (8080).
+apiVersion: v1
+kind: Service
+metadata:
+  name: arc-management
+  labels:
+    {{- include "dcm4chee.arc.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/service.serverstransport: {{ .Release.Namespace }}-arc-management-transport@kubernetescrd
+spec:
+  ports:
+    - name: management-https
+      port: {{ .Values.managementConsole.httpsPort }}
+      targetPort: {{ .Values.managementConsole.httpsPort }}
+  selector:
+    dcm4chee-component: arc
+{{- end }}

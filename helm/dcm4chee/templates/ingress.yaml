@@ -35,9 +35,9 @@ spec:
             {{- end }}
             backend:
               service:
-                name: arc
+                name: {{ .serviceName | default "arc" }}
                 port:
-                  number: {{ $.Values.service.http }}
+                  number: {{ .port | default $.Values.service.http }}
           {{- end }}
     {{- end }}
 {{- end }}
