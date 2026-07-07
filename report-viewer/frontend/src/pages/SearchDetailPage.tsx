@@ -326,7 +326,7 @@ export default function SearchDetailPage() {
                         </tr>
                         {isExpanded && (
                           <tr style={{ background: DETAIL_ZONE_BG }}>
-                            <td colSpan={columns.length} style={{ padding: 0 }}>
+                            <td colSpan={row.getVisibleCells().length} style={{ padding: 0 }}>
                               <div style={{ padding: '0.75rem 1rem' }}>
                                 <RowDetail
                                   row={row.original}
