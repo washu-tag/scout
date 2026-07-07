@@ -2,6 +2,19 @@
 # Kubernetes deployment tasks for Dcm4chee
 # These tasks run on the server host (which has access to k3s_cluster inventory variables)
 
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - dcm4chee_admin_password is defined
+      - dcm4chee_admin_password | length > 0
+    fail_msg: >
+      dcm4chee_admin_password is required when dcm4chee_expose_management_console is true.
+      It seeds the WildFly admin console's ManagementRealm user; without it the console is
+      reachable but has no credentials to log in with. Set it in inventory.yaml (vault-encrypted),
+      e.g. openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+  when: dcm4chee_expose_management_console | bool
+
 - name: Create Dcm4chee namespace
   kubernetes.core.k8s:
     name: '{{ dcm4chee_namespace }}'
@@ -57,6 +70,22 @@
         POSTGRES_DB: "{{ dcm4chee_db | default('pacsdb') }}"
         POSTGRES_USER: "{{ dcm4chee_db_user | default('pacs') }}"
         POSTGRES_PASSWORD: "{{ dcm4chee_db_password | default('pacs') }}"
+
+- name: Create WildFly admin secret
+  no_log: true
+  when: dcm4chee_expose_management_console | bool
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: dcm4chee-arc-secret
+        namespace: '{{ dcm4chee_namespace }}'
+      type: Opaque
+      stringData:
+        WILDFLY_ADMIN_USER: '{{ dcm4chee_admin_user }}'
+        WILDFLY_ADMIN_PASSWORD: '{{ dcm4chee_admin_password }}'
 
 - name: Deploy Dcm4chee
   ansible.builtin.include_role:

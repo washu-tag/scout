@@ -29,6 +29,36 @@ spec:
               value: ldap:389 db:5432
             - name: TZ
               value: "{{ .Values.timezone }}"
+            {{- with .Values.httpProxyAddressForwarding }}
+            - name: HTTP_PROXY_ADDRESS_FORWARDING
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.redirectHttpsPort }}
+            - name: REDIRECT_HTTPS_PORT
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.uiManagementUrl }}
+            # HTTPS URL the Archive UI links to for the WildFly admin console; without this the
+            # UI links to the non-standard MANAGEMENT_HTTPS_PORT (:9993/console).
+            - name: UI_MANAGEMENT_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.adminBootstrap.enabled }}
+            # Seeds the WildFly ManagementRealm user on first boot (the entrypoint runs add-user.sh
+            # when both are set and no mgmt user exists yet). Without it the admin console has no
+            # credentials to log in with. The user persists on the wildfly PVC, so changing the
+            # password later does not rotate it — re-run add-user.sh or recreate the PVC.
+            - name: WILDFLY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: dcm4chee-arc-secret
+                  key: WILDFLY_ADMIN_USER
+            - name: WILDFLY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dcm4chee-arc-secret
+                  key: WILDFLY_ADMIN_PASSWORD
+            {{- end }}
           envFrom:
             - secretRef:
                 name: dcm4chee-db-secret

@@ -12,15 +12,42 @@ service:
   type: ClusterIP
   http: 8080
   dicom: {{ dcm4chee_dicom_port }}
+  dicomAnnotations: {{ dcm4chee_dicom_service_annotations | to_json }}
+  dicomLoadBalancerClass: {{ dcm4chee_dicom_service_load_balancer_class | to_json }}
 
 ingress:
   enabled: true
   className: traefik
+  annotations:
+    # oauth2-proxy ForwardAuth — Scout's edge approval gate (ADR 0003) — plus the error-redirect
+    # and Scout-wide security-headers middlewares, the same hardcoded stack every other Scout
+    # web service uses. This gates EVERY path on this subdomain (Archive UI /dcm4chee-arc/ui2 and
+    # the WildFly console /console + /management) behind Keycloak login + Scout approval before a
+    # request reaches the pod; dcm4chee stays auth-unaware. It does NOT cover DIMSE
+    # ({{ dcm4chee_dicom_port }}), which is a raw-TCP LoadBalancer rather than the HTTP ingress.
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd,
+      kube-system-security-headers@kubernetescrd
   hosts:
-    - host: '{{ server_hostname }}'
+    - host: 'dcm4chee.{{ server_hostname }}'
       paths:
         - path: /
           pathType: Prefix
+{% if dcm4chee_expose_management_console | bool %}
+        # WildFly admin console (HAL). /console and /management are HAL's native paths (no prefix
+        # rewrite). They target the management HTTPS port via the dedicated arc-management service
+        # (HTTP port 9990 always 302s to :9993 absolutely; the HTTPS port serves relative
+        # redirects). Traefik prioritizes these longer prefixes over '/'.
+        - path: /console
+          pathType: Prefix
+          serviceName: arc-management
+          port: {{ dcm4chee_management_https_port }}
+        - path: /management
+          pathType: Prefix
+          serviceName: arc-management
+          port: {{ dcm4chee_management_https_port }}
+{% endif %}
 
 resources: {{ dcm4chee_resources_default | combine(dcm4chee_resources | default({}), recursive=true) | to_json }}
 
@@ -69,3 +96,18 @@ versions:
   ldap: '{{ dcm4chee_ldap_version }}'
 
 timezone: '{{ dcm4chee_timezone }}'
+
+# Reverse-proxy / browser-facing URL settings. The archive runs behind the Traefik ingress on
+# 443, so keep every UI link and redirect on a standard port (no :8443, no :9993).
+httpProxyAddressForwarding: {{ dcm4chee_http_proxy_address_forwarding | to_json }}
+redirectHttpsPort: {{ dcm4chee_redirect_https_port | to_json }}
+{% if dcm4chee_expose_management_console | bool %}
+uiManagementUrl: {{ dcm4chee_ui_management_url | default('https://dcm4chee.' ~ server_hostname ~ '/console', true) | to_json }}
+{% endif %}
+
+managementConsole:
+  enabled: {{ dcm4chee_expose_management_console | bool | to_json }}
+  httpsPort: {{ dcm4chee_management_https_port }}
+
+adminBootstrap:
+  enabled: {{ dcm4chee_expose_management_console | bool | to_json }}
