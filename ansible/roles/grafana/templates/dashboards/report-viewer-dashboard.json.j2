@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "Scout report-viewer — HTTP traffic and latency per endpoint, Trino / Postgres timings per op, and domain counters for searches and webhooks.",
+  "description": "Scout report-viewer: HTTP traffic and latency per endpoint, Trino / Postgres timings per op, and domain counters for searches and webhooks.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -36,7 +36,7 @@
           "unit": "reqps"
         }
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
       "id": 101,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -63,7 +63,7 @@
           "max": 1
         }
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
       "id": 102,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -71,7 +71,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
-          "expr": "sum(rate(http_requests_total{job=\"report-viewer\",status=\"5xx\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"report-viewer\"}[5m])), 1e-9)",
+          "expr": "(sum(rate(http_requests_total{job=\"report-viewer\",status=\"5xx\"}[5m])) or vector(0)) / clamp_min(sum(rate(http_requests_total{job=\"report-viewer\"}[5m])), 1e-9)",
           "refId": "A"
         }
       ],
@@ -84,11 +84,36 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 } ] },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 2 } ] },
           "unit": "s"
         }
       },
-      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 1 },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 103,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "11",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_highr_seconds_bucket{job=\"report-viewer\"}[5m])))",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP p50 latency (global)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 30 } ] },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
       "id": 104,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -101,6 +126,56 @@
         }
       ],
       "title": "HTTP p95 latency (global)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 30 } ] },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 105,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "11",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(scout_report_viewer_trino_query_duration_seconds_bucket{result=\"ok\"}[5m])))",
+          "refId": "A"
+        }
+      ],
+      "title": "Trino p95 (all ops)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 106,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "11",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
+          "expr": "sum(increase(scout_report_viewer_searches_created_total[$__range]))",
+          "refId": "A"
+        }
+      ],
+      "title": "Searches in timerange",
       "type": "stat"
     },
     {
@@ -153,12 +228,19 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"report-viewer\"}[5m])))",
+          "legendFormat": "p50 {{handler}}",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"report-viewer\"}[5m])))",
           "legendFormat": "p95 {{handler}}",
-          "refId": "A"
+          "refId": "B"
         }
       ],
-      "title": "p95 latency by endpoint",
+      "title": "p50 / p95 latency by endpoint",
       "type": "timeseries"
     },
     {
@@ -186,12 +268,19 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum by (le, op) (rate(scout_report_viewer_trino_query_duration_seconds_bucket{result=\"ok\"}[5m])))",
+          "legendFormat": "p50 {{op}}",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum by (le, op) (rate(scout_report_viewer_trino_query_duration_seconds_bucket{result=\"ok\"}[5m])))",
           "legendFormat": "p95 {{op}}",
-          "refId": "A"
+          "refId": "B"
         }
       ],
-      "title": "Trino query p95 by op",
+      "title": "Trino p50 / p95 by op",
       "type": "timeseries"
     },
     {
@@ -260,12 +349,19 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum by (le, op) (rate(scout_report_viewer_postgres_op_duration_seconds_bucket{result=\"ok\"}[5m])))",
+          "legendFormat": "p50 {{op}}",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum by (le, op) (rate(scout_report_viewer_postgres_op_duration_seconds_bucket{result=\"ok\"}[5m])))",
           "legendFormat": "p95 {{op}}",
-          "refId": "A"
+          "refId": "B"
         }
       ],
-      "title": "Postgres p95 by op",
+      "title": "Postgres p50 / p95 by op",
       "type": "timeseries"
     },
     {
@@ -322,24 +418,24 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 25, "lineWidth": 2, "showPoints": "never" },
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "lineWidth": 1, "showPoints": "never" },
           "unit": "short"
         }
       },
       "gridPos": { "h": 9, "w": 12, "x": 0, "y": 36 },
       "id": 501,
-      "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false }, "tooltip": { "mode": "single", "sort": "none" } },
       "pluginVersion": "11",
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
-          "expr": "sum (rate(scout_report_viewer_searches_created_total[5m]))",
-          "legendFormat": "created",
+          "expr": "sum(increase(scout_report_viewer_searches_created_total[5m]))",
+          "legendFormat": "searches (5m)",
           "refId": "A"
         }
       ],
-      "title": "Searches created / sec (5m rate)",
+      "title": "Search creation rate",
       "type": "timeseries"
     },
     {
@@ -371,54 +467,20 @@
           "refId": "B"
         }
       ],
-      "title": "Search size distribution (rows per search)",
+      "title": "Search size p50 / p95 (rows per search)",
       "type": "timeseries"
-    },
-    {
-      "collapsed": true,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 },
-      "id": 600,
-      "title": "Webhooks",
-      "type": "row",
-      "panels": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "palette-classic" },
-              "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never" },
-              "unit": "short"
-            }
-          },
-          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 46 },
-          "id": 602,
-          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
-          "pluginVersion": "11",
-          "targets": [
-            {
-              "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-              "editorMode": "code",
-              "expr": "sum by (action, result) (rate(scout_report_viewer_owui_webhook_events_total[15m]))",
-              "legendFormat": "{{action}} {{result}}",
-              "refId": "A"
-            }
-          ],
-          "title": "OWUI new-user webhook events",
-          "type": "timeseries"
-        }
-      ]
     }
   ],
   "preload": false,
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["scout", "report-viewer"],
+  "tags": [],
   "templating": { "list": [] },
-  "time": { "from": "now-6h", "to": "now" },
+  "time": { "from": "now-7d", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "Scout — Report Viewer",
+  "title": "Scout Report Viewer",
   "uid": "report-viewer",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }
