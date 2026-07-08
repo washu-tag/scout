@@ -16,7 +16,8 @@ Scout Chat is powered by [Open WebUI](https://docs.openwebui.com/) with [Ollama]
 
 - **Natural language SQL**: Converts questions into SQL queries against the data lake
 - **Scout Explorer model**: Custom-configured LLM that understands the Scout data schema
-- **Real-time data access**: Direct Trino connection via MCP (Model Context Protocol)
+- **Data lake access**: Queries Trino through the Scout report-viewer service
+- **Interactive results**: Cohort searches render inline as an interactive table
 - **Context-aware responses**: Understands Scout terminology, fields, and data structure
 
 ## Getting Started
@@ -56,13 +57,17 @@ Scout Chat is powered by [Open WebUI](https://docs.openwebui.com/) with [Ollama]
 When you ask a question, Scout Chat:
 
 1. **Interprets** your question in its "Thinking" mode
-2. **Executes** a SQL query via the Trino MCP tool (expandable to view)
-3. **Retrieves** results from the Scout data lake
-4. **Analyzes** the data and provides a natural language answer
+2. **Calls a tool** to fetch data. Three tools are available:
+   - `scout_find_reports` for cohort building. Saves the search and renders a browsable table above the reply.
+   - `scout_get_reports` for looking up specific reports.
+   - `scout_query_sql` for aggregate analytics like counts, distributions, and groupings.
+3. **Analyzes** the returned data and provides a natural language answer
 
 ### Viewing the SQL Query
 
-Click the expandable **View Result from scout-db_execute_query** section to see the exact SQL query. 
+For cohort searches (`scout_find_reports`), click **Explain Search** in the results table to see the SQL alongside the model's plain-English description of what it filtered on.
+
+For other tool calls, expand the tool-call block in the reply.
 
 ![Scout Query](images/ScoutQuery.png)
 
@@ -72,6 +77,28 @@ This is useful for:
 - Learning SQL syntax for use in {ref}`Analytics <analytics>` SQL Lab
 - Debugging unexpected results
 - Adapting queries for {ref}`Notebooks <notebooks>`
+
+## Working with Search Results
+
+When the LLM calls `scout_find_reports`, an interactive table renders above its reply.
+
+- **Sort** by clicking a column header.
+- **Filter** with the **Filters** button to narrow by MRN, accession, facility, or the model's match terms.
+- **Expand a row** to see the full report text and metadata.
+- **Explain Search** shows the SQL alongside the model's plain-English description of what it filtered on.
+- **Export CSV** downloads the full search result, not just the current page.
+
+Searches are saved. You can reopen a past search from the **Searches** list at the top of the viewer, and share the URL with other Scout users.
+
+### Refining a Cohort
+
+To narrow or broaden a search, ask a follow-up in the chat:
+
+```
+User: Filter to just CT angiography studies
+```
+
+The LLM re-emits fresh SQL as a **new** saved search. The original stays intact so you can compare or return to it.
 
 ## Tips for Effective Queries
 
@@ -219,7 +246,7 @@ For advanced analysis, consider:
 
 ### Model Limitations
 
-The AI may occasionally misinterpret questions or generate incorrect queries. Always review the SQL in the **View Result from scout-db_execute_query** section to verify it matches your intent.
+The AI may occasionally misinterpret questions or generate incorrect queries. Use **Explain Search** on the results table (or expand the tool-call block for non-cohort tools) to review the SQL and verify it matches your intent.
 
 ## Troubleshooting
 
@@ -236,14 +263,14 @@ If Chat doesn't appear on the Launchpad, the service may not be enabled in your 
 
 ### Unexpected Results
 
-1. Expand **View Result from scout-db_execute_query** to review the SQL query
+1. Click **Explain Search** on the results table (or expand the tool-call block for non-cohort tools) to review the SQL
 2. Verify your question was specific and unambiguous
 3. Check if the data contains what you expect
 4. Rephrase with more specific criteria
 
 ### Tool Not Working
 
-If you see Trino tool errors, contact your administrator to verify the MCP tool configuration.
+If you see tool errors, contact your administrator.
 
 ## Additional Resources
 
