@@ -1,0 +1,106 @@
+{{- if .Values.listener.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.listener.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "hl7-listener.labels" (dict "root" $ "name" .Values.listener.name "component" "listener") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "hl7-listener.selectorLabels" (dict "component" "listener") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "hl7-listener.labels" (dict "root" $ "name" .Values.listener.name "component" "listener") | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: hl7-listener
+          image: {{ include "hl7-listener.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--camel.main.routes-include-pattern=classpath:camel/listener.camel.yaml"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: HL7_LISTENER_PORT
+              value: {{ .Values.listener.port | quote }}
+            - name: KAFKA_BROKERS
+              value: {{ .Values.kafka.brokers | quote }}
+            - name: KAFKA_HL7_TOPIC
+              value: {{ .Values.kafka.hl7Topic | quote }}
+          ports:
+            - name: mllp
+              containerPort: {{ .Values.listener.port }}
+              protocol: TCP
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.listener.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+---
+# Internal Service: stable MLLP endpoint (used by the test sender) + metrics port.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.listener.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "hl7-listener.labels" (dict "root" $ "name" .Values.listener.name "component" "listener") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "hl7-listener.selectorLabels" (dict "component" "listener") | nindent 4 }}
+  ports:
+    - name: mllp
+      port: {{ .Values.listener.port }}
+      targetPort: mllp
+      protocol: TCP
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+---
+# External Service: MLLP ingress from the upstream interface engine (hospital feed).
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.listener.name }}-external
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "hl7-listener.labels" (dict "root" $ "name" .Values.listener.name "component" "listener") | nindent 4 }}
+spec:
+  type: {{ .Values.listener.service.type }}
+  selector:
+    {{- include "hl7-listener.selectorLabels" (dict "component" "listener") | nindent 4 }}
+  ports:
+    - name: mllp
+      port: {{ .Values.listener.port }}
+      targetPort: mllp
+      protocol: TCP
+      {{- if and (eq .Values.listener.service.type "NodePort") .Values.listener.service.nodePort }}
+      nodePort: {{ .Values.listener.service.nodePort }}
+      {{- end }}
+{{- end }}

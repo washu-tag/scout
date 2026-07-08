@@ -32,6 +32,7 @@ jobs:
       ci: ${{ steps.filter.outputs.ci }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
+      hl7-listener: ${{ steps.filter.outputs.hl7-listener }}
       scout-notebook: ${{ steps.filter.outputs.scout-notebook }}
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
@@ -51,6 +52,8 @@ jobs:
               - 'linting_java_checkstyle.xml'
             hl7-transformer:
               - 'extractor/hl7-transformer/**'
+            hl7-listener:
+              - 'hl7-listener/**'
             scout-notebook:
               - 'helm/scout-notebook/**'
               - 'sdk/python/**'
@@ -93,6 +96,8 @@ jobs:
             subproject: extractor/hl7log-extractor
           - image-name: hl7-transformer
             subproject: extractor/hl7-transformer
+          - image-name: hl7-listener
+            subproject: hl7-listener
           - image-name: scout-notebook
             subproject: helm/scout-notebook
             # Build from repo root so the Dockerfile can COPY sdk/python/
@@ -723,6 +728,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
+      - name: 'Push Image - hl7-listener'
+        if: needs.changes.outputs.hl7-listener == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: hl7-listener
       - name: 'Push Image - scout-notebook'
         if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push
@@ -798,6 +808,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
+      - name: 'Push Image - hl7-listener'
+        if: needs.changes.outputs.hl7-listener == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: hl7-listener
       - name: 'Push Image - launchpad'
         if: needs.changes.outputs.launchpad == 'true'
         uses: ./.github/actions/docker-push

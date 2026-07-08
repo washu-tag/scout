@@ -1,0 +1,238 @@
+---
+# Kubernetes deployment tasks for the HL7 real-time listener.
+#
+# Ansible provisions the Kafka infrastructure (Strimzi operator, KRaft cluster, topics) and
+# the batcher's S3 auth, then installs the hl7-listener Helm chart (helm/hl7-listener), which
+# carries the application workloads (listener/batcher/test-sender Deployments + Services).
+#
+# The application image is built in CI and pulled from GHCR (Harbor pull-through mirror in
+# air-gapped mode, like every other Scout image) — no in-cluster build, no prod->staging
+# registry push. See ADR 0028.
+#
+# The hl7-raw bucket and lake-writer's access to it are declared in the minio role
+# (make install-lake) on MinIO, and provisioned by Terraform on AWS — not here. S3 auth
+# follows the platform pattern (cf. loki): static-key secret on MinIO, IRSA ServiceAccount
+# on AWS.
+
+# Create namespaces (shared scout_common task)
+- name: Create HL7 listener namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ hl7_listener_namespace }}'
+
+- name: Create operators namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ strimzi_operator_namespace }}'
+
+# Deploy Strimzi Kafka operator to scout-operators namespace
+# Operator watches scout-extractor namespace where Kafka resources are deployed
+- name: Deploy Strimzi Kafka operator
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: strimzi-kafka-operator
+    helm_chart_ref: strimzi/strimzi-kafka-operator
+    helm_chart_version: '{{ strimzi_operator_version }}'
+    helm_chart_namespace: '{{ strimzi_operator_namespace }}'
+    helm_repo_name: strimzi
+    helm_repo_url: https://strimzi.io/charts/
+    helm_chart_timeout: 10m
+    helm_chart_values:
+      watchNamespaces:
+        - '{{ hl7_listener_namespace }}'
+
+# Deploy Kafka NodePool (KRaft mode - no ZooKeeper)
+# In KRaft mode, we use a single node pool with both controller and broker roles for simplicity
+- name: Deploy Kafka NodePool
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kafka.strimzi.io/v1
+      kind: KafkaNodePool
+      metadata:
+        name: '{{ kafka_cluster_name }}-pool'
+        namespace: '{{ hl7_listener_namespace }}'
+        labels:
+          strimzi.io/cluster: '{{ kafka_cluster_name }}'
+      spec:
+        replicas: '{{ kafka_replicas }}'
+        roles:
+          - controller
+          - broker
+        storage:
+          type: jbod
+          volumes:
+            - id: 0
+              type: persistent-claim
+              size: '{{ kafka_storage_size }}'
+              class: '{{ kafka_storage_class | default(omit, true) }}'
+              deleteClaim: false
+        resources:
+          requests:
+            cpu: '{{ kafka_cpu_request }}'
+            memory: '{{ kafka_memory_request }}'
+          limits:
+            cpu: '{{ kafka_cpu_limit }}'
+            memory: '{{ kafka_memory_limit }}'
+
+# Deploy Kafka cluster (KRaft mode is default in Strimzi 0.48+)
+- name: Deploy Kafka cluster
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kafka.strimzi.io/v1
+      kind: Kafka
+      metadata:
+        name: '{{ kafka_cluster_name }}'
+        namespace: '{{ hl7_listener_namespace }}'
+      spec:
+        kafka:
+          version: '{{ kafka_version }}'
+          listeners:
+            - name: plain
+              port: 9092
+              type: internal
+              tls: false
+          metricsConfig:
+            type: strimziMetricsReporter
+            values:
+              allowList:
+                - '.*'
+          config:
+            offsets.topic.replication.factor: 1
+            transaction.state.log.replication.factor: 1
+            transaction.state.log.min.isr: 1
+            default.replication.factor: 1
+            min.insync.replicas: 1
+            log.retention.ms: '{{ kafka_retention_ms }}'
+            log.retention.bytes: '{{ kafka_retention_bytes }}'
+        entityOperator:
+          topicOperator: {}
+          userOperator: {}
+
+- name: Wait for Kafka cluster to be ready
+  kubernetes.core.k8s_info:
+    api_version: kafka.strimzi.io/v1
+    kind: Kafka
+    name: '{{ kafka_cluster_name }}'
+    namespace: '{{ hl7_listener_namespace }}'
+  register: kafka_status
+  until:
+    - kafka_status.resources | length > 0
+    - kafka_status.resources[0].status is defined
+    - kafka_status.resources[0].status.conditions is defined
+    - kafka_status.resources[0].status.conditions | selectattr('type', 'equalto', 'Ready') | selectattr('status', 'equalto', 'True') | list | length > 0
+  retries: 60
+  delay: 10
+  changed_when: false
+
+# Create Kafka topic for HL7 messages
+- name: Create HL7 messages Kafka topic
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kafka.strimzi.io/v1
+      kind: KafkaTopic
+      metadata:
+        name: '{{ kafka_hl7_topic }}'
+        namespace: '{{ hl7_listener_namespace }}'
+        labels:
+          strimzi.io/cluster: '{{ kafka_cluster_name }}'
+      spec:
+        partitions: '{{ kafka_hl7_topic_partitions }}'
+        replicas: '{{ kafka_hl7_topic_replicas }}'
+        config:
+          retention.ms: '{{ kafka_retention_ms }}'
+
+# Kafka bootstrap address consumed by the chart values (listener + batcher brokers)
+- name: Compute Kafka bootstrap brokers
+  ansible.builtin.set_fact:
+    _hl7_kafka_brokers: '{{ kafka_cluster_name }}-kafka-bootstrap.{{ hl7_listener_namespace }}:9092'
+
+# HL7 Batcher prerequisites - Kafka topic + S3 auth
+- name: Create HL7 batches Kafka topic
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kafka.strimzi.io/v1
+      kind: KafkaTopic
+      metadata:
+        name: '{{ kafka_hl7_batches_topic }}'
+        namespace: '{{ hl7_listener_namespace }}'
+        labels:
+          strimzi.io/cluster: '{{ kafka_cluster_name }}'
+      spec:
+        partitions: '{{ kafka_hl7_batches_topic_partitions }}'
+        replicas: '{{ kafka_hl7_batches_topic_replicas }}'
+        config:
+          retention.ms: '{{ kafka_retention_ms }}'
+  when: hl7_batcher_enabled | bool
+
+# Fail fast if the static S3 key is missing (MinIO path); otherwise the deploy succeeds but the
+# batcher's S3 auth fails silently at runtime.
+- name: Assert the HL7 batcher S3 secret key is set (MinIO)
+  ansible.builtin.assert:
+    that:
+      - hl7_batcher_s3_secret_key | length > 0
+    fail_msg: >-
+      hl7_batcher_s3_secret_key is empty — set s3_lake_writer_secret (or
+      hl7_batcher_s3_secret_key) in inventory for the MinIO batcher's S3 credentials.
+  when:
+    - hl7_batcher_enabled | bool
+    - not (aws_deployment | bool)
+
+# MinIO: the batcher authenticates with static lake-writer keys from this secret.
+- name: Create S3 credentials secret for HL7 Batcher (MinIO)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ hl7_batcher_name }}-s3-creds'
+        namespace: '{{ hl7_listener_namespace }}'
+      type: Opaque
+      stringData:
+        aws-access-key: '{{ hl7_batcher_s3_access_key }}'
+        aws-secret-key: '{{ hl7_batcher_s3_secret_key }}'
+  when:
+    - hl7_batcher_enabled | bool
+    - not (aws_deployment | bool)
+  no_log: true
+
+# AWS: the batcher runs under the lake-writer ServiceAccount (IRSA) and Camel uses the
+# default credentials provider — no static keys. The lake-writer IAM role's policy must
+# grant access to the hl7-raw bucket (provisioned in Terraform alongside the bucket).
+- name: Create lake-writer ServiceAccount for the batcher (IRSA)
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_service_account
+  vars:
+    sa_name: '{{ lake_writer_service_account_name }}'
+    sa_namespace: '{{ hl7_listener_namespace }}'
+    sa_role_arn: '{{ lake_writer_role_arn }}'
+  when:
+    - hl7_batcher_enabled | bool
+    - aws_deployment | bool
+
+# Deploy the HL7 listener application (listener/batcher/test-sender Deployments + Services).
+# Kafka is already up and the hl7-raw bucket exists (minio role / Terraform), so the
+# workloads reach readiness during the Helm --wait. The image is pulled from GHCR (Harbor
+# mirror in air-gapped mode).
+- name: Deploy HL7 listener application
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: hl7-listener
+    helm_chart_ref: '{{ scout_repo_dir }}/helm/hl7-listener'
+    helm_chart_namespace: '{{ hl7_listener_namespace }}'
+    helm_chart_create_namespace: false
+    helm_chart_timeout: 10m
+    helm_chart_values: "{{ lookup('template', 'hl7-listener.values.yaml.j2') | from_yaml }}"

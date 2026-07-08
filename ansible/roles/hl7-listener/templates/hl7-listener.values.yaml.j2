@@ -1,0 +1,57 @@
+image:
+  repository: '{{ hl7_listener_image_repository }}'
+  tag: '{{ hl7_listener_image_tag }}'
+kafka:
+  brokers: '{{ _hl7_kafka_brokers }}'
+  hl7Topic: '{{ kafka_hl7_topic }}'
+  batchesTopic: '{{ kafka_hl7_batches_topic }}'
+listener:
+  enabled: true
+  name: '{{ hl7_listener_name }}'
+  port: {{ hl7_listener_port }}
+  service:
+    type: '{{ hl7_listener_service_type }}'
+    nodePort: '{{ hl7_listener_node_port }}'
+  resources:
+    requests:
+      cpu: '{{ hl7_listener_cpu_request }}'
+      memory: '{{ hl7_listener_memory_request }}'
+    limits:
+      cpu: '{{ hl7_listener_cpu_limit }}'
+      memory: '{{ hl7_listener_memory_limit }}'
+batcher:
+  enabled: {{ hl7_batcher_enabled | bool | lower }}
+  name: '{{ hl7_batcher_name }}'
+  serviceAccountName: '{{ (aws_deployment | bool) | ternary(lake_writer_service_account_name, "") }}'
+  groupId: '{{ hl7_batcher_name }}'
+  maxPollRecords: {{ hl7_batcher_max_poll_records }}
+  pollTimeoutMs: {{ hl7_batcher_poll_timeout_ms }}
+  s3:
+    bucket: '{{ hl7_batcher_s3_bucket }}'
+    region: '{{ hl7_batcher_s3_region }}'
+    endpoint: '{{ (aws_deployment | bool) | ternary("", hl7_batcher_s3_endpoint) }}'
+    overrideEndpoint: {{ (aws_deployment | bool) | ternary("false", "true") }}
+    forcePathStyle: {{ (aws_deployment | bool) | ternary("false", "true") }}
+    useDefaultCredentialsProvider: {{ (aws_deployment | bool) | ternary("true", "false") }}
+    staticCredentials: {{ (aws_deployment | bool) | ternary("false", "true") }}
+    secretName: '{{ hl7_batcher_name }}-s3-creds'
+    accessKeyKey: aws-access-key
+    secretKeyKey: aws-secret-key
+  resources:
+    requests:
+      cpu: '{{ hl7_batcher_cpu_request }}'
+      memory: '{{ hl7_batcher_memory_request }}'
+    limits:
+      cpu: '{{ hl7_batcher_cpu_limit }}'
+      memory: '{{ hl7_batcher_memory_limit }}'
+testSender:
+  enabled: {{ hl7_test_sender_enabled | bool | lower }}
+  name: '{{ hl7_test_sender_name }}'
+  period: {{ hl7_test_sender_period }}
+  resources:
+    requests:
+      cpu: '{{ hl7_test_sender_cpu_request }}'
+      memory: '{{ hl7_test_sender_memory_request }}'
+    limits:
+      cpu: '{{ hl7_test_sender_cpu_limit }}'
+      memory: '{{ hl7_test_sender_memory_limit }}'

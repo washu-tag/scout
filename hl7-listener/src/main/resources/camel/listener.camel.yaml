@@ -1,0 +1,25 @@
+# MLLP listener route: accept HL7 v2 over MLLP, parse, key by message control id, and
+# publish to Kafka. Config values are Camel property placeholders resolved at runtime from
+# environment variables set on the Deployment (see the hl7-listener Ansible role).
+- route:
+    id: hl7Listener
+    from:
+      uri: 'mllp://0.0.0.0:{{hl7.listener.port}}'
+      steps:
+        - log:
+            message: 'Received HL7 message from ${header.CamelMllpRemoteAddress}'
+            loggingLevel: INFO
+        - unmarshal:
+            hl7: {}
+        - log:
+            message: 'Parsed HL7 message: controlId=${header.CamelHL7MessageControl}, type=${header.CamelHL7TriggerEvent}, version=${header.CamelHL7VersionId}'
+            loggingLevel: INFO
+        - setHeader:
+            name: kafka.KEY
+            expression:
+              header: CamelHL7MessageControl
+        - to:
+            uri: 'kafka:{{kafka.hl7.topic}}?brokers={{kafka.brokers}}'
+        - log:
+            message: 'Sent to Kafka: topic={{kafka.hl7.topic}}, key=${header.kafka.KEY}'
+            loggingLevel: INFO

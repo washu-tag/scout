@@ -1,0 +1,92 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "1h-evaluations",
+      "folder": "Scout",
+      "interval": "1h",
+      "rules": [
+        {
+          "uid": "no_hl7_received_01",
+          "title": "No HL7 received by listener",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 21600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus_datasource_01",
+              "model": {
+                "editorMode": "code",
+                "expr": "sum(increase(camel_exchanges_total{integration=\"hl7-listener\", eventType=\"context\"}[6h]))",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        0
+                      ],
+                      "type": "eq"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "C"
+                      ]
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "annotations": {
+            "description": "No HL7 messages received by the real-time listener in the last 6 hours. The upstream feed may have stopped or the connection dropped.",
+            "summary": "No HL7 received by the real-time listener in the last 6 hours.",
+            "URL": "[% server_hostname %]"
+          },
+          "labels": {},
+          "isPaused": [% alert_is_disabled | default(false) | bool | tojson %],
+          "notification_settings": {
+            "receiver": "[% grafana_alert_contact_point %]"
+          }
+        }
+      ]
+    }
+  ]
+}
