@@ -1,0 +1,60 @@
+{{- if .Values.testSender.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.testSender.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "hl7-listener.labels" (dict "root" $ "name" .Values.testSender.name "component" "test-sender") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "hl7-listener.selectorLabels" (dict "component" "test-sender") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "hl7-listener.labels" (dict "root" $ "name" .Values.testSender.name "component" "test-sender") | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: hl7-test-sender
+          image: {{ include "hl7-listener.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--camel.main.routes-include-pattern=classpath:camel/test-sender.camel.yaml"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: HL7_TEST_SENDER_PERIOD
+              value: {{ .Values.testSender.period | quote }}
+            - name: HL7_LISTENER_HOST
+              value: {{ printf "%s.%s.svc.cluster.local" .Values.listener.name .Release.Namespace | quote }}
+            - name: HL7_LISTENER_PORT
+              value: {{ .Values.listener.port | quote }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.testSender.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+{{- end }}

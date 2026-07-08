@@ -32,6 +32,7 @@ jobs:
       ci: ${{ steps.filter.outputs.ci }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
+      hl7-listener: ${{ steps.filter.outputs.hl7-listener }}
       scout-notebook: ${{ steps.filter.outputs.scout-notebook }}
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
@@ -40,7 +41,7 @@ jobs:
       xnat-plugin-installer: ${{ steps.filter.outputs.xnat-plugin-installer }}
     steps:
       - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
+      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4
         id: filter
         with:
           filters: |
@@ -52,6 +53,8 @@ jobs:
               - 'linting_java_checkstyle.xml'
             hl7-transformer:
               - 'extractor/hl7-transformer/**'
+            hl7-listener:
+              - 'hl7-listener/**'
             scout-notebook:
               - 'helm/scout-notebook/**'
               - 'sdk/python/**'
@@ -96,13 +99,14 @@ jobs:
             subproject: extractor/hl7log-extractor
           - image-name: hl7-transformer
             subproject: extractor/hl7-transformer
+          - image-name: hl7-listener
+            subproject: hl7-listener
           - image-name: scout-notebook
             subproject: helm/scout-notebook
             # Build from repo root so the Dockerfile can COPY sdk/python/
             # into the image. The Dockerfile path is derived from
             # `subproject` (see docker-build-cache action).
             context: '.'
-            allow-failure: true
           - image-name: launchpad
             subproject: launchpad
           - image-name: superset
@@ -316,7 +320,7 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -501,7 +505,7 @@ jobs:
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -753,7 +757,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@v7
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -785,6 +789,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
+      - name: 'Push Image - hl7-listener'
+        if: needs.changes.outputs.hl7-listener == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: hl7-listener
       - name: 'Push Image - scout-notebook'
         if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push
@@ -828,7 +837,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@v7
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -865,6 +874,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
+      - name: 'Push Image - hl7-listener'
+        if: needs.changes.outputs.hl7-listener == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: hl7-listener
       - name: 'Push Image - launchpad'
         if: needs.changes.outputs.launchpad == 'true'
         uses: ./.github/actions/docker-push

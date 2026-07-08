@@ -1,0 +1,93 @@
+---
+# Default values for HL7 Listener deployment
+# Deploys Strimzi Kafka and the HL7 listener/batcher Deployments (image built in CI, pulled from GHCR)
+
+# Namespace configuration
+hl7_listener_namespace: '{{ scout_extractor_namespace }}'
+strimzi_operator_namespace: '{{ scout_operators_namespace }}'
+
+# Kafka configuration
+kafka_cluster_name: kafka
+kafka_replicas: 1
+kafka_storage_size: 10Gi
+kafka_storage_class: ''
+
+# Kafka retention. Kafka is only a transport buffer here (MinIO bronze is the durable
+# record), so retention is a short replay window, not long-term storage. retention.bytes
+# is per-partition: 2Gi x 3 partitions ~= 6Gi, safely under kafka_storage_size (10Gi), so a
+# high-volume feed can never fill the PV and crash the broker.
+kafka_retention_ms: 172800000 # 2 days
+kafka_retention_bytes: 2147483648 # 2Gi per partition
+
+# Kafka resource configuration
+kafka_cpu_request: 100m
+kafka_cpu_limit: 1
+kafka_memory_request: 1Gi
+kafka_memory_limit: 2Gi
+
+# Kafka topic configuration
+kafka_hl7_topic: hl7-messages
+kafka_hl7_topic_partitions: 3
+kafka_hl7_topic_replicas: 1
+
+# HL7 Listener configuration
+hl7_listener_name: hl7-listener
+hl7_listener_port: 2575
+
+# HL7 Listener resource configuration
+hl7_listener_cpu_request: 100m
+hl7_listener_cpu_limit: 500m
+hl7_listener_memory_request: 256Mi
+hl7_listener_memory_limit: 512Mi
+
+# Service type for external access (LoadBalancer, NodePort, or ClusterIP)
+hl7_listener_service_type: LoadBalancer
+# Optional: NodePort if service_type is NodePort
+hl7_listener_node_port: ''
+
+# Container image (built in CI, published to GHCR; pulled via the Harbor mirror in air-gapped mode)
+hl7_listener_image_repository: ghcr.io/washu-tag/hl7-listener
+hl7_listener_image_tag: latest
+
+# HL7 Batcher configuration
+# Aggregates HL7 messages from Kafka, zips them, uploads to S3, publishes manifest to Kafka
+hl7_batcher_name: hl7-batcher
+hl7_batcher_enabled: true
+
+# Batching (Camel Kafka batching consumer): a batch closes at max_poll_records OR after
+# poll_timeout_ms of inactivity, then it is zipped and uploaded to S3 in one O(n) pass. Sized
+# for the production feed (~200K messages/day, bursty): size dominates at volume (~1000-message
+# zips), the timeout flushes partial batches during lulls. poll_timeout_ms doubles as the Kafka
+# poll timeout, so keep it well under max.poll.interval.ms (5 min).
+hl7_batcher_max_poll_records: 1000
+hl7_batcher_poll_timeout_ms: 30000
+
+# Batcher resource configuration
+hl7_batcher_cpu_request: 100m
+hl7_batcher_cpu_limit: 500m
+hl7_batcher_memory_request: 256Mi
+hl7_batcher_memory_limit: 512Mi
+
+# Kafka topic for batch manifests (output)
+kafka_hl7_batches_topic: hl7-batches
+kafka_hl7_batches_topic_partitions: 1
+kafka_hl7_batches_topic_replicas: 1
+
+# S3/MinIO configuration for batch uploads
+hl7_batcher_s3_bucket: '{{ hl7_raw_bucket | default("hl7-raw") }}'
+hl7_batcher_s3_endpoint: 'http://minio.{{ minio_tenant_namespace | default("minio-tenant") }}.svc.cluster.local:80'
+hl7_batcher_s3_region: us-east-1
+hl7_batcher_s3_access_key: '{{ s3_lake_writer | default("lake-writer") }}'
+hl7_batcher_s3_secret_key: '{{ s3_lake_writer_secret | default("") }}'
+
+# HL7 Test Sender configuration
+# Sends test HL7 messages to the listener for testing/demo purposes
+hl7_test_sender_name: hl7-test-sender
+# Off by default: with a real feed the synthetic generator would pollute the live stream.
+# Flip to true in inventory only for an isolated smoke test.
+hl7_test_sender_enabled: false
+hl7_test_sender_period: 5000
+hl7_test_sender_cpu_request: 50m
+hl7_test_sender_cpu_limit: 200m
+hl7_test_sender_memory_request: 128Mi
+hl7_test_sender_memory_limit: 256Mi

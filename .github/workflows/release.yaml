@@ -296,7 +296,7 @@ jobs:
       && needs.wait-for-build.result == 'success'
     steps:
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -307,7 +307,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
         run: |
-          IMAGES="hl7log-extractor hl7-transformer scout-notebook launchpad superset keycloak xnat-plugin-installer"
+          IMAGES="hl7log-extractor hl7-transformer hl7-listener scout-notebook launchpad superset keycloak xnat-plugin-installer"
           for IMAGE in $IMAGES; do
             echo "=== Publishing $IMAGE ==="
             gh run download "$RUN_ID" --repo "${{ github.repository }}" -n "$IMAGE" -D "${{ runner.temp }}/$IMAGE"

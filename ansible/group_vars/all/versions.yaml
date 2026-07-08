@@ -58,6 +58,14 @@ minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
 temporal_version: ~1.2.0
 
+# Real-Time HL7 Ingestion - Strimzi Kafka (MLLP listener → Kafka → batcher → MinIO).
+# The listener/batcher application image is built in CI (see hl7-listener/), not pinned here.
+# renovate: datasource=helm registryUrl=https://strimzi.io/charts/ depName=strimzi-kafka-operator
+strimzi_operator_version: 1.1.0
+# Kafka broker version deployed by Strimzi; must be within the operator's supported set
+# renovate: datasource=docker depName=apache/kafka
+kafka_version: 4.3.1
+
 # Analytics & Query Engines - Trino
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
 trino_helm_chart_version: ~1.42.2
@@ -143,14 +151,28 @@ nexus_helm_chart_version: 5.22.0
 gpu_operator_version: ~25.10.1
 
 # Medical Imaging - DCM4CHEE
+# dcm4che-tools tracks the dcm4che toolkit (used only by the populate Job's storescu), not the
+# dcm4chee-arc release family below — bump it independently.
 # renovate: datasource=docker depName=dcm4che/dcm4che-tools
 dcm4che_tools_version: 5.33.1
+
+# dcm4chee archive stack: arc, postgres, and slapd ship as one "family" (the number after the
+# dash on db/ldap; the minor on arc). They MUST stay on the same family — arc waits on and
+# expects a matching db/ldap — so each image is pinned to the current family (and postgres major)
+# by an `allowedVersions` packageRule in renovate.json5, which bounds Renovate's `loose`
+# versioning. allowedVersions CANNOT live in these `# renovate:` comments: the custom regex
+# manager has no allowedVersionsTemplate, and appending `allowedVersions=` breaks the matchString
+# (the trailing text fails the required newline anchor), silently dropping the image from tracking
+# altogether. This pinning prevents the kind of out-of-step jump PR #400 made: 2.6.10-35.0 was an
+# unpublished base/family combo that wedged the deploy. Current family: 35 (arc 5.35.x,
+# postgres 18.x-35, slapd 2.6.x-35.x). To move to a new family, bump all three values here AND
+# update all three allowedVersions regexes in renovate.json5 together in one change.
 # renovate: datasource=docker depName=dcm4che/dcm4chee-arc-psql
-dcm4chee_arc_version: 5.34.3
+dcm4chee_arc_version: 5.35.0
 # renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose
-dcm4chee_db_version: 17.4-34
+dcm4chee_db_version: 18.3-35
 # renovate: datasource=docker depName=dcm4che/slapd-dcm4chee versioning=loose
-dcm4chee_ldap_version: 2.6.10-35.0
+dcm4chee_ldap_version: 2.6.13-35.0
 
 # Medical Imaging - Orthanc
 # orthanc_version is set to "latest" (not a pinned version); not monitored by Renovate

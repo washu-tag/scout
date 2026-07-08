@@ -93,6 +93,11 @@ update_file "ansible/roles/report_viewer/defaults/main.yaml" \
     "\\1 $DOCKER_TAG" \
     "report_viewer_image_tag"
 
+update_file "ansible/roles/hl7-listener/defaults/main.yaml" \
+    "^(hl7_listener_image_tag:) .+$" \
+    "\\1 $DOCKER_TAG" \
+    "hl7_listener_image_tag"
+
 update_file "ansible/roles/xnat/defaults/main.yaml" \
     "^(xnat_plugin_installer_image_tag:) .+$" \
     "\\1 $DOCKER_TAG" \
@@ -123,6 +128,11 @@ update_file "extractor/hl7log-extractor/build.gradle" \
     "\\1$DOCKER_TAG\\2" \
     "hl7log-extractor version"
 
+update_file "hl7-listener/build.gradle" \
+    "^(version = ')[^']+(')" \
+    "\\1$DOCKER_TAG\\2" \
+    "hl7-listener version"
+
 update_file "keycloak/event-listener/build.gradle" \
     "^(version = ')[^']+(')" \
     "\\1$DOCKER_TAG\\2" \
@@ -150,7 +160,8 @@ echo "Helm charts (Scout applications - version + appVersion)..."
 for chart in helm/launchpad/Chart.yaml \
              helm/report-viewer/Chart.yaml \
              helm/extractor/hl7-transformer/Chart.yaml \
-             helm/extractor/hl7log-extractor/Chart.yaml; do
+             helm/extractor/hl7log-extractor/Chart.yaml \
+             helm/hl7-listener/Chart.yaml; do
     update_file "$chart" \
         "^(version:) .+$" \
         "\\1 $HELM_VERSION" \

@@ -1,7 +1,7 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-valkey install-auth install-lake install-trino install-superset install-orchestrator \
-    install-extractor install-monitor install-jupyter install-launchpad install-voila install-report-viewer \
-    install-staging install-xnat install-data-generator verify-node echo
+    install-extractor install-hl7-listener install-monitor install-jupyter install-launchpad install-voila \
+    install-report-viewer install-staging install-xnat install-data-generator verify-node echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -83,6 +83,9 @@ install-orchestrator:
 
 install-extractor:
 	$(ANSIBLE_CMD) playbooks/extractor.yaml
+
+install-hl7-listener:
+	$(ANSIBLE_CMD) playbooks/hl7-listener.yaml
 
 install-jupyter:
 	$(ANSIBLE_CMD) playbooks/jupyter.yaml

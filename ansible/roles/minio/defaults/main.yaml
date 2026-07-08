@@ -48,6 +48,7 @@ minio_buckets:
   - name: '{{ loki_ruler_bucket }}'
   - name: '{{ loki_admin_bucket }}'
   - name: '{{ lake_bucket }}'
+  - name: '{{ hl7_raw_bucket }}'
   - name: '{{ scratch_bucket }}'
   # Versioning enabled so a corrupt bundle PUT can be rolled back to a
   # prior object version. Per ADR 0021 — the OPA bundle is the only
@@ -96,6 +97,8 @@ minio_policies:
       - 'arn:aws:s3:::{{ lake_bucket }}/*'
       - 'arn:aws:s3:::{{ scratch_bucket }}'
       - 'arn:aws:s3:::{{ scratch_bucket }}/*'
+      - 'arn:aws:s3:::{{ hl7_raw_bucket }}'
+      - 'arn:aws:s3:::{{ hl7_raw_bucket }}/*'
     user: '{{ s3_lake_writer }}'
   - name: loki-rw
     actions:

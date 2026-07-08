@@ -4,8 +4,15 @@ metadata:
   name: dcm4chee-expose-dicom
   labels:
     {{- include "dcm4chee.arc.labels" . | nindent 4 }}
+  {{- with .Values.service.dicomAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: LoadBalancer
+  {{- with .Values.service.dicomLoadBalancerClass }}
+  loadBalancerClass: {{ . }}
+  {{- end }}
   allocateLoadBalancerNodePorts: false
   ports:
     - port: {{ .Values.service.dicom }}

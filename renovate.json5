@@ -57,6 +57,28 @@
       "matchDepNames": ["k3s-io/k3s"],
       "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?<compatibility>\\+k3s)(?<build>\\d+)$"
     },
+    // dcm4chee archive stack (arc + postgres + slapd) ships as one release
+    // "family" (the number after the dash). Lock each image to family 35 so
+    // Renovate's `loose` versioning can't bump one image out of step with the
+    // others. allowedVersions MUST live here in packageRules, not in the
+    // versions.yaml `# renovate:` comments: the custom regex manager has no
+    // allowedVersionsTemplate, and appending `allowedVersions=` to a comment
+    // breaks its matchString (the trailing text fails the required newline
+    // anchor), silently dropping the image from tracking. To move to a new
+    // family, bump the three values in versions.yaml AND these three regexes
+    // together in one change.
+    {
+      "matchDepNames": ["dcm4che/dcm4chee-arc-psql"],
+      "allowedVersions": "/^5\\.35\\.\\d+$/"
+    },
+    {
+      "matchDepNames": ["dcm4che/postgres-dcm4chee"],
+      "allowedVersions": "/^18\\.\\d+-35$/"
+    },
+    {
+      "matchDepNames": ["dcm4che/slapd-dcm4chee"],
+      "allowedVersions": "/^2\\.6\\.\\d+-35\\.\\d+$/"
+    },
     {
       "matchDepNames": ["cass-operator"],
       "prBodyNotes": [

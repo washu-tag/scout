@@ -411,6 +411,7 @@ This section documents all files containing version strings. The Release Workflo
 | `ansible/roles/extractor/defaults/main.yaml` | `hl7_transformer_image_tag` |
 | `ansible/roles/launchpad/defaults/main.yaml` | `launchpad_image_tag` |
 | `ansible/roles/report_viewer/defaults/main.yaml` | `report_viewer_image_tag` |
+| `ansible/roles/hl7-listener/defaults/main.yaml` | `hl7_listener_image_tag` |
 
 ### Python Packages
 
@@ -426,6 +427,7 @@ This section documents all files containing version strings. The Release Workflo
 | File | Field |
 |------|-------|
 | `extractor/hl7log-extractor/build.gradle` | `version` |
+| `hl7-listener/build.gradle` | `version` |
 | `keycloak/event-listener/build.gradle` | `version` |
 | `tests/ingest/build.gradle` | `version` |
 
@@ -450,6 +452,7 @@ This section documents all files containing version strings. The Release Workflo
 | `helm/report-viewer/values.yaml` | `image.tag` | `latest` |
 | `helm/extractor/hl7-transformer/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 | `helm/extractor/hl7log-extractor/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
+| `helm/hl7-listener/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 
 **Charts for External Applications** (do NOT update `appVersion`):
 

@@ -5,7 +5,7 @@ inputs:
     description: 'Name of the image artifact'
     required: true
   subproject:
-    description: 'Path to the subproject directory (used to find .trivyignore.yaml)'
+    description: 'Path to the subproject directory (used to find .trivyignore.yaml and .trivyignore.rego)'
     required: false
     default: ''
   severity:
@@ -36,14 +36,28 @@ runs:
       env:
         SUBPROJECT: ${{ inputs.subproject }}
       run: |
-        ignorefile="${SUBPROJECT}/.trivyignore.yaml"
-        if [ -n "${SUBPROJECT}" ] && [ -f "${ignorefile}" ]; then
-          echo "Using ignore file: ${ignorefile}"
-          echo "ignorefile: ${ignorefile}" > trivy-config.yaml
-        else
-          echo "No per-image ignore file found"
-          echo "# No ignore file" > trivy-config.yaml
+        # Build trivy-config.yaml from whichever per-image suppressions exist:
+        #   .trivyignore.yaml  -> ignorefile    (individual CVEs, by ID)
+        #   .trivyignore.rego  -> ignore-policy (whole package families, by Rego)
+        : > trivy-config.yaml
+        if [ -n "${SUBPROJECT}" ]; then
+          ignorefile="${SUBPROJECT}/.trivyignore.yaml"
+          if [ -f "${ignorefile}" ]; then
+            echo "Using ignore file: ${ignorefile}"
+            echo "ignorefile: ${ignorefile}" >> trivy-config.yaml
+          fi
+          ignorepolicy="${SUBPROJECT}/.trivyignore.rego"
+          if [ -f "${ignorepolicy}" ]; then
+            echo "Using ignore policy: ${ignorepolicy}"
+            echo "ignore-policy: ${ignorepolicy}" >> trivy-config.yaml
+          fi
         fi
+        if [ ! -s trivy-config.yaml ]; then
+          echo "No per-image ignore file or policy found"
+          echo "# none" > trivy-config.yaml
+        fi
+        echo "--- trivy-config.yaml ---"
+        cat trivy-config.yaml
 
     - name: Run Trivy (JSON — single scan)
       if: steps.download.outcome == 'success'
