@@ -7,6 +7,10 @@ replicaCount: 1
 # Feature flags
 enableChat: false
 enablePlaybooks: false
+# Show the MinIO "Lake" card in the launchpad. Default true so deployments
+# still running an in-cluster MinIO continue to surface the console; sites
+# that have cut over to cloud object storage set this false.
+enableMinio: true
 
 # Environment label shown next to the Scout brand (e.g. "synthetic", "production").
 # Empty string falls back to "local" in the UI.
