@@ -391,20 +391,20 @@ async def create_search_from_file(
     template = _wrap_sql(sql) if sql else _DEFAULT_FROM_FILE_SQL
     saved_sql = substitute_cohort(template, predicate)
 
+    sample_sql = f"SELECT s.* FROM ({saved_sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
+    try:
+        with metrics.time_trino("from_file_sample"):
+            columns, sample_rows = await trino_client.execute(sample_sql, user=user.sub)
+    except Exception as exc:
+        log.exception("trino from-file sample failed")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"trino query failed: {exc}. Your SQL (before "
+                f"{{{{cohort}}}} substitution): {sql or '<default template>'}"
+            ),
+        )
     if sql:
-        sample_sql = f"SELECT s.* FROM ({saved_sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
-        try:
-            with metrics.time_trino("from_file_sample"):
-                columns, _ = await trino_client.execute(sample_sql, user=user.sub)
-        except Exception as exc:
-            log.exception("trino from-file sample failed")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    f"trino query failed: {exc}. Your SQL (before "
-                    f"{{{{cohort}}}} substitution): {sql}"
-                ),
-            )
         _assert_required_projections(columns)
 
     count_sql = f"SELECT COUNT(*) AS n FROM ({saved_sql}) s"
@@ -448,6 +448,8 @@ async def create_search_from_file(
         id_column=stored["id_column"],
         column_inferred=column_inferred,
         count=stored["count"],
+        columns=columns,
+        sample=sample_rows,
         unmatched=unmatched[:UNMATCHED_SAMPLE_CAP],
         unmatched_count=len(unmatched),
         view_url=_view_url(search_id),

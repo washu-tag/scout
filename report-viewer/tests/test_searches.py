@@ -155,10 +155,19 @@ def test_delete_by_non_owner_is_404_and_leaves_row_intact(
     assert r_owner.status_code == 200
 
 
+_SAMPLE_COLS = ["primary_report_identifier", "accession_number", "epic_mrn"]
+_SAMPLE_ROW = {
+    "primary_report_identifier": "s3://bucket/1",
+    "accession_number": "ACC1",
+    "epic_mrn": "EPIC1",
+}
+
+
 def test_from_file_epic_mrn_routes_through_resolved_column_and_view(
     client, auth_headers, fake_trino
 ):
     fake_trino(["id"], [{"id": "EPIC1"}, {"id": "EPIC2"}])
+    fake_trino(_SAMPLE_COLS, [_SAMPLE_ROW])
     fake_trino(["n"], [{"n": 27}])
     csv = b"epic_mrn,extra\nEPIC1,x\nEPIC2,y\nEPIC1,z\n"
     r = client.post(
@@ -172,6 +181,8 @@ def test_from_file_epic_mrn_routes_through_resolved_column_and_view(
     assert body["id_column"] == "epic_mrn"
     assert body["column_inferred"] is False
     assert body["count"] == 27
+    assert body["columns"] == _SAMPLE_COLS
+    assert body["sample"] == [_SAMPLE_ROW]
     assert body["unmatched"] == []
     assert body["unmatched_count"] == 0
 
@@ -183,6 +194,7 @@ def test_from_file_epic_mrn_routes_through_resolved_column_and_view(
 
 def test_from_file_infers_column_from_header_alias(client, auth_headers, fake_trino):
     fake_trino(["id"], [{"id": "EPIC1"}])
+    fake_trino(_SAMPLE_COLS, [_SAMPLE_ROW])
     fake_trino(["n"], [{"n": 5}])
     csv = b"MRN,Study Date\nEPIC1,2024-01-01\n"
     r = client.post(
@@ -199,6 +211,7 @@ def test_from_file_infers_column_from_header_alias(client, auth_headers, fake_tr
 
 def test_from_file_reports_unmatched_ids(client, auth_headers, fake_trino):
     fake_trino(["id"], [{"id": "ACC1"}])
+    fake_trino(_SAMPLE_COLS, [_SAMPLE_ROW])
     fake_trino(["n"], [{"n": 3}])
     csv = b"accession_number\nACC1\nACC2\nACC3\n"
     r = client.post(
@@ -218,6 +231,7 @@ def test_from_file_multiple_candidates_prefers_accession(
     client, auth_headers, fake_trino
 ):
     fake_trino(["id"], [{"id": "ACC1"}])
+    fake_trino(_SAMPLE_COLS, [_SAMPLE_ROW])
     fake_trino(["n"], [{"n": 1}])
     csv = b"epic_mrn,accession_number\nEPIC1,ACC1\n"
     r = client.post(

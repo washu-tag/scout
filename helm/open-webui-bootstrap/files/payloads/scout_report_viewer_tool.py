@@ -24,6 +24,10 @@ log = logging.getLogger(__name__)
 _MAX_GET_IDS = 100
 _MD_CELL_MAX = 400
 _MAX_UPLOAD_BYTES = 32 * 1024 * 1024
+_VIEWER_NOTE = (
+    "The search viewer is rendered as an iframe above this message. "
+    "The user can already sort/filter/expand rows. Don't restate the table"
+)
 
 
 class Tools:
@@ -436,12 +440,16 @@ class Tools:
             )
 
         parts.append("")
+        parts.append(_VIEWER_NOTE)
+        parts.append("")
         parts.append(f"Internal search handle: {sid}.")
         return "\n".join(parts)
 
     @staticmethod
     def _render_from_file_summary(created: dict, filename: str) -> str:
         count = int(created.get("count") or 0)
+        columns: list[str] = created.get("columns") or []
+        sample: list[dict] = created.get("sample") or []
         id_column = created.get("id_column") or "id"
         column_inferred = bool(created.get("column_inferred"))
         unmatched = list(created.get("unmatched") or [])
@@ -455,14 +463,21 @@ class Tools:
         if column_inferred:
             parts.append(f"Inferred column: {id_column}.")
         if unmatched_count:
-            sample = ", ".join(unmatched)
+            unmatched_sample = ", ".join(unmatched)
             if unmatched_count > len(unmatched):
                 parts.append(
                     f"{unmatched_count:,} IDs weren't found "
-                    f"(showing {len(unmatched)}): {sample}."
+                    f"(showing {len(unmatched)}): {unmatched_sample}."
                 )
             else:
-                parts.append(f"{unmatched_count:,} IDs weren't found: {sample}.")
+                parts.append(
+                    f"{unmatched_count:,} IDs weren't found: {unmatched_sample}."
+                )
+        if sample and columns:
+            parts.append("")
+            parts.extend(_md_table(columns, sample))
+        parts.append("")
+        parts.append(_VIEWER_NOTE)
         parts.append("")
         parts.append(f"Internal search handle: {sid}.")
         return "\n".join(parts)

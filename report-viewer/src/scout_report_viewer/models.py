@@ -105,6 +105,8 @@ class CreateFromFileResponse(BaseModel):
     id_column: str
     column_inferred: bool
     count: int
+    columns: list[str]
+    sample: list[dict[str, Any]]
     unmatched: list[str]
     unmatched_count: int
     view_url: str

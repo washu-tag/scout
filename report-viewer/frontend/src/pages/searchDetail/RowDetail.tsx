@@ -107,7 +107,7 @@ export function RowDetail(props: {
         }}
       >
         <CardRow>
-          <CardField label="MRN" value={fmt(meta.epic_mrn)} mono />
+          <CardField label="MRN" value={fmt(meta.resolved_epic_mrn)} mono />
           <CardField label="Accession" value={fmt(meta.accession_number)} mono />
           <CardField label="Age" value={fmt(meta.patient_age)} />
           <CardField label="Sex" value={fmt(meta.sex)} />

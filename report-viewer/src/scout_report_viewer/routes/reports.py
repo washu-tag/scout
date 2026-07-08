@@ -171,11 +171,7 @@ async def read_reports(
     else:
         column = body.id_column
     # contains(?, col) - the driver doesn't expand list params into IN.
-    sql = (
-        f"SELECT * EXCEPT (epic_mrn, mpi), "
-        f"resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi "
-        f'FROM {table} WHERE contains(?, "{column}")'
-    )
+    sql = f'SELECT * FROM {table} WHERE contains(?, "{column}")'
     try:
         with metrics.time_trino("read_reports"):
             columns, rows = await trino_client.execute(
