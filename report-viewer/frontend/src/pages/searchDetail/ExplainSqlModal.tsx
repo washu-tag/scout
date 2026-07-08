@@ -69,8 +69,7 @@ export function ExplainSqlModal(props: {
           <p style={{ margin: '0 0 1rem', lineHeight: 1.5 }}>{props.explanation}</p>
         ) : (
           <p style={{ margin: '0 0 1rem', color: '#888', fontStyle: 'italic' }}>
-            No plain-language explanation was attached to this search (older searches, or the model
-            didn&apos;t supply one).
+            No plain-language explanation was attached to this search.
           </p>
         )}
         <div style={{ fontWeight: 600, marginBottom: '0.35rem', fontSize: '0.85rem' }}>SQL</div>

@@ -104,6 +104,7 @@ scout_find_reports(
           AND modality = 'CT'
           AND year >= 2024
     """,
+    sql_explanation="Uploaded cohort filtered to CT reports from 2024 onwards.",
 )
 ```
 
@@ -111,6 +112,7 @@ scout_find_reports(
 - If the CSV has multiple candidate columns (e.g. both `epic_mrn` and `accession_number`), the backend prefers `accession_number` (report-scoped, safer). Response echoes `id_column` and `column_inferred=true` so you can tell the user which was picked; if it's wrong, re-run with `id_column` explicit.
 - `{{cohort}}` must appear exactly once in the `sql` when file mode is used with custom SQL.
 - Refinement = copy the prior `sql` verbatim (including `{{cohort}}`) and append `AND <new clause>` — same rule as SQL mode.
+- **`sql_explanation` required whenever `sql` is set.** Users read it instead of the raw SQL. Use plain language, 1-3 sentences.
 - The tool reads the file server-side. Do NOT re-parse the CSV, iterate its rows, or write out the ID list yourself. Use `file_id` + `{{cohort}}`.
 
 Rules:
@@ -353,8 +355,8 @@ Rules:
 | `report_section_addendum` | string | Parsed addendum if any (signals a report amendment - quality metric). |
 | `report_section_technician_note` | string | Parsed technician note. |
 | `report_status` | string | Workflow status of the report. |
-| `resolved_epic_mrn` | string | (`*_epic_view` only) Patient's Epic MRN, inferred from same-patient reports when the report itself is missing it. **Always select as `resolved_epic_mrn AS epic_mrn` when you want to display it.** |
-| `resolved_mpi` | string | (`*_epic_view` only) Patient's legacy MPI, inferred from same-patient reports when missing. **Always select as `resolved_mpi AS mpi` when you want to display it.** |
+| `resolved_epic_mrn` | string | (`*_epic_view` only) Patient's Epic MRN. Raw `epic_mrn` on a report row can be NULL when the HL7 message didn't carry it; `resolved_epic_mrn` fills that from other reports on the same patient via the epic view's patient bridge. **Always select as `resolved_epic_mrn AS epic_mrn` when you want to display it.** |
+| `resolved_mpi` | string | (`*_epic_view` only) Patient's legacy MPI. Raw `mpi` on a report row can be NULL when the HL7 message didn't carry it; `resolved_mpi` fills that from other reports on the same patient via the epic view's patient bridge. **Always select as `resolved_mpi AS mpi` when you want to display it.** |
 | `scout_patient_id` | string | (`*_epic_view` only) UUID grouping key across reports for the same patient. Use with `COUNT(DISTINCT ...)` or `GROUP BY` for patient related queries. Don't return in result rows shown to users. |
 | `accession_number` | string | Study identifier. |
 | `primary_report_identifier` | string | Lake file path of the HL7 source (`s3://lake/...`). Use this column to look up a single report when given a lake file path (e.g., from the report viewer's "Discuss in Chat" handoff). |

@@ -108,6 +108,7 @@ class Tools:
                 file_id=file_id,
                 id_column=id_column,
                 sql=sql,
+                sql_explanation=sql_explanation,
                 __event_emitter__=__event_emitter__,
                 __oauth_token__=__oauth_token__,
                 __metadata__=__metadata__,
@@ -243,6 +244,7 @@ class Tools:
         file_id: str,
         id_column: Optional[str] = None,
         sql: Optional[str] = None,
+        sql_explanation: Optional[str] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
         __metadata__: Optional[dict] = None,
@@ -254,6 +256,8 @@ class Tools:
         :param id_column: Optional. Backend infers from CSV header when
             omitted.
         :param sql: Optional custom SQL with `{{cohort}}` placeholder.
+        :param sql_explanation: Optional. Surfaced in the SPA "About
+            this search" panel.
         """
         fetched = await self._fetch_owui_file(file_id)
         if isinstance(fetched, str):
@@ -270,6 +274,8 @@ class Tools:
             form["id_column"] = id_column
         if sql:
             form["sql"] = sql
+        if sql_explanation:
+            form["sql_explanation"] = sql_explanation
         chat_id = _chat_id(__metadata__)
         if chat_id:
             form["owui_chat_id"] = chat_id
