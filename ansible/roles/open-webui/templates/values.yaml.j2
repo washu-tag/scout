@@ -179,7 +179,7 @@ extraEnvVars:
     value: 'ollama'
 
   # OWUI's SSRF guard blocks RFC1918 hosts, which would reject the
-  # in-cluster webhook to report-viewer (ADR 0026). Opt out via the
+  # in-cluster webhook to report-viewer. Opt out via the
   # upstream-endorsed flag, open-webui/open-webui#24587.
   - name: ENABLE_RAG_LOCAL_WEB_FETCH
     value: 'true'

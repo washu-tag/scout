@@ -11,10 +11,13 @@
       - open_webui_secret_key | length > 0
       - open_webui_bootstrap_password is defined
       - open_webui_bootstrap_password | length > 0
+      - owui_settings_writer_password is defined
+      - owui_settings_writer_password | length > 0
     fail_msg: >
-      open_webui_postgres_password, open_webui_secret_key, and
-      open_webui_bootstrap_password are all required. Set them in your
-      inventory.yaml (use vault encryption).
+      open_webui_postgres_password, open_webui_secret_key,
+      open_webui_bootstrap_password, and owui_settings_writer_password
+      are all required. Set them in your inventory.yaml (use vault
+      encryption).
       Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 

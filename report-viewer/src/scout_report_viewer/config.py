@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
     # OWUI Postgres URL - receiver writes iframe-sandbox UI defaults
     # into OWUI's "user".settings JSON column on signup. Empty disables
-    # the webhook (returns 503). See ADR 0026.
+    # the webhook (returns 503).
     owui_database_url: str = ""
 
     @model_validator(mode="after")

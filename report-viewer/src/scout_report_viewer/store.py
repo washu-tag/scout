@@ -1,4 +1,4 @@
-"""Persistence layer for searches. See ADR 0026."""
+"""Persistence layer for searches."""
 
 from __future__ import annotations
 

@@ -227,7 +227,7 @@ def push_persistent_config(token):
         print(f'  task_model_id: {cfg["task_model_id"]}')
 
     if cfg.get("webhook_url") is not None:
-        # Auto-enable receiver for new-user signups (ADR 0003 + ADR 0026).
+        # Auto-enable receiver for new-user signups.
         http_or_raise(
             "POST",
             "/api/webhook",

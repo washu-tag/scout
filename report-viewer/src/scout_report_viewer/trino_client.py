@@ -2,8 +2,8 @@
 
 The service authenticates to Trino as `report_viewer_svc` and passes
 `X-Trino-User: <preferred_username>` on every query so OPA evaluates
-filters/masks against the real end user. Same pattern as Superset,
-Voila, OWUI MCP.
+filters/masks against the real end user. Same pattern as Superset
+and Voila.
 
 The svc access token is cached process-wide and refreshed proactively
 when ⅕ of the lifetime remains (ADR 0024 ratio). Refresh is

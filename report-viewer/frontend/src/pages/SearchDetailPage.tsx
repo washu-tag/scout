@@ -515,7 +515,7 @@ export default function SearchDetailPage() {
                 Download CSV
               </a>
               {/* Send to XNAT is hidden pre-release. The XNAT push isn't wired
-                  yet (SendToXnatModal is a stub). See ADR 0026. */}
+                  yet (SendToXnatModal is a stub). */}
               {/* <button type="button" onClick={() => setXnatModalOpen(true)} style={paginationBtn}>
                 Send to XNAT
               </button> */}

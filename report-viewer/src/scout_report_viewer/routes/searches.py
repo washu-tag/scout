@@ -4,8 +4,6 @@ A search is a saved SQL query plus minimal metadata. Nothing about
 which rows match is stored. Every read wraps `sql` as a
 subquery and applies pagination/sort/filter at the Trino layer.
 
-See ADR 0026.
-
 Endpoints:
   POST /api/searches                            - save SQL, cache COUNT(*), return sample
   POST /api/searches/from-file                  - upload CSV of IDs, save WHERE id IN (...) SQL against reports_latest_epic_view
@@ -637,10 +635,12 @@ async def get_search_rows(
         where_parts.append(clause)
         filter_params.extend(p)
     where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
-    order_sql = ""
     if sort_spec:
         scol, sdir = sort_spec
         order_sql = f" ORDER BY s.{_quote_ident(scol)} {sdir} NULLS LAST"
+    else:
+        # Stable default so OFFSET/LIMIT doesn't drift across pages.
+        order_sql = " ORDER BY s.primary_report_identifier"
 
     rows_sql = (
         f"SELECT s.* FROM ({source_sql}) s"

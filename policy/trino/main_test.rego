@@ -889,6 +889,10 @@ test_voila_svc_can_impersonate if {
 	trino.allow with input as impersonate_input("voila_svc", "alice@example.org")
 }
 
+test_report_viewer_svc_can_impersonate if {
+	trino.allow with input as impersonate_input("report_viewer_svc", "alice@example.org")
+}
+
 test_random_user_cannot_impersonate if {
 	not trino.allow with input as impersonate_input("alice@example.org", "bob@example.org")
 }
