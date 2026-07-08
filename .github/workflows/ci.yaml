@@ -151,11 +151,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       # Spark 4.1.x runs on Java 17 or 21; use the repo default JAVA_VERSION (21) like
       # every other Java job. Spark/Delta versions are read from the package's
       # pyproject.toml, so this job pins no versions.
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -163,7 +163,7 @@ jobs:
       # ships Python 3.10), so the tests exercise the interpreter that actually ships —
       # matters for version-sensitive behavior like concurrent.futures TimeoutError,
       # a distinct class before 3.11. Spark 4.1.x supports 3.10-3.13.
-      - uses: actions/setup-python@v6.3.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.10'
           cache: 'pip'
