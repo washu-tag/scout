@@ -187,7 +187,7 @@ export default function SearchDetailPage() {
       </div>
       {rowsQ.error && <p style={{ color: '#b00' }}>{friendlyError(rowsQ.error, 'these rows')}</p>}
       {!rowsQ.data && rowsQ.isLoading ? (
-        <p style={{ color: '#666' }}>Loading rows…</p>
+        <p style={{ color: '#666' }}>Loading reports…</p>
       ) : (
         rowsQ.data && (
           <div
