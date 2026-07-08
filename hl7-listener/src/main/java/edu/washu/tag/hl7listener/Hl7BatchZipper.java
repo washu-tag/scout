@@ -25,7 +25,8 @@ import org.springframework.stereotype.Component;
  * — unlike {@code ZipAggregationStrategy}, which rewrites the entire archive for every message
  * (O(n^2) disk IO). Each message becomes one entry named by its HL7 message control id plus the
  * unique Camel exchange id (guaranteeing uniqueness even if two messages share a control id
- * within the same millisecond).
+ * within the same millisecond). A record with an empty body is skipped (no entry written) but its
+ * offset is still committed, so it is not redelivered.
  *
  * <p>The batch spans all assigned partitions, and each record's {@link KafkaManualCommit} commits
  * only its own partition. Committing just the last record's handle would leave other partitions'
@@ -48,18 +49,24 @@ public class Hl7BatchZipper implements Processor {
         Map<Integer, Long> maxOffset = new HashMap<>();
         Map<Integer, KafkaManualCommit> commits = new HashMap<>();
 
+        int written = 0;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(buffer)) {
             for (Exchange child : batch) {
                 Message message = child.getMessage();
                 String key = message.getHeader("kafka.KEY", "unknown", String.class);
                 byte[] body = message.getBody(byte[].class);
-                if (body == null) {
-                    body = new byte[0];
+                if (body != null && body.length > 0) {
+                    zip.putNextEntry(new ZipEntry(key + "-" + child.getExchangeId() + ".hl7"));
+                    zip.write(body);
+                    zip.closeEntry();
+                    written++;
+                } else {
+                    // Nothing to archive, but fall through to still track this record's offset
+                    // below so it is committed and not redelivered on the next poll/restart.
+                    LOG.warn("Skipping Kafka record with empty HL7 body (key={}, exchangeId={})",
+                            key, child.getExchangeId());
                 }
-                zip.putNextEntry(new ZipEntry(key + "-" + child.getExchangeId() + ".hl7"));
-                zip.write(body);
-                zip.closeEntry();
 
                 Integer partition = message.getHeader(KafkaConstants.PARTITION, Integer.class);
                 Long offset = message.getHeader(KafkaConstants.OFFSET, Long.class);
@@ -75,6 +82,6 @@ public class Hl7BatchZipper implements Processor {
         exchange.getIn().setBody(buffer.toByteArray());
         exchange.setProperty(BATCH_COMMITS, new ArrayList<>(commits.values()));
         LOG.info("Zipped {} HL7 messages ({} bytes) across {} partition(s)",
-                batch.size(), buffer.size(), commits.size());
+                written, buffer.size(), commits.size());
     }
 }
