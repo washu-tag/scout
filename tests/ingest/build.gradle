@@ -79,6 +79,10 @@ test {
 dependencies {
     testImplementation("edu.washu.tag:query-spec:${vQuerySpec}")
     testImplementation("org.apache.logging.log4j:log4j-slf4j2-impl:${vLog4j2Bridge}")
+    testImplementation("org.apache.spark:spark-sql_2.13:${vSparkSql}")
+    testImplementation("org.apache.spark:spark-hive_2.13:${vSparkSql}")
+    testImplementation("org.apache.spark:spark-hive-thriftserver_2.13:${vSparkSql}")
+    testImplementation("io.delta:delta-spark_4.1_2.13:${vDeltaSpark}")
     testImplementation("org.apache.hadoop:hadoop-aws:${vHadoop}")
     testImplementation("org.postgresql:postgresql:${vPostgres}")
     testImplementation("io.temporal:temporal-sdk:${vTemporal}")
