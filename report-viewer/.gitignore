@@ -1,4 +1,4 @@
-src/scout_searchs/static/
+src/scout_report_viewer/static/
 __pycache__/
 *.pyc
 *.egg-info/
