@@ -99,7 +99,6 @@ jobs:
             # into the image. The Dockerfile path is derived from
             # `subproject` (see docker-build-cache action).
             context: '.'
-            allow-failure: true
           - image-name: launchpad
             subproject: launchpad
           - image-name: superset

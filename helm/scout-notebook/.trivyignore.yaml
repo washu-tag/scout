@@ -1,0 +1,25 @@
+# Everything below is bundled inside the upstream
+# quay.io/jupyter/scipy-notebook base image (or vendored inside its
+# dependencies' assets), not in the layers we add. There is nothing to bump in
+# our layer and no rebuilt base adopting the fixes yet. Recurring
+# linux-libc-dev kernel-header CVEs are handled separately, by package, in
+# .trivyignore.rego — not enumerated here. Revisit when a newer
+# scipy-notebook base ships these fixes.
+vulnerabilities:
+  # MathJax 2.7.9 ReDoS — vendored static asset inside the nbclassic package
+  # (nbclassic/static/components/MathJax/). MathJax 2.x is end-of-life with no
+  # 2.x fix (the fix is MathJax 3, which nbclassic does not ship), and the
+  # classic-notebook UI it serves is not Scout's interface (JupyterLab is).
+  - id: CVE-2023-39663 # mathjax 2.7.9 (vendored in nbclassic)
+  # underscore.js ReDoS — vendored static asset inside the nbclassic package
+  # (nbclassic/static/components/underscore/). The fix (1.13.8) exists upstream
+  # in underscore.js but cannot be delivered into this vendored JS copy from
+  # our layer without patching base contents; bumping nbclassic does not
+  # re-vendor it.
+  - id: CVE-2026-27601 # underscore 1.13.7 -> 1.13.8 (vendored in nbclassic)
+  # PyO3 out-of-bounds read — compiled into rattler's Rust extension
+  # (rattler.abi3.so), part of the base image's conda tooling. The fix
+  # (pyo3 0.29.0) is a Rust build-time dependency we cannot bump independently;
+  # it needs a newer rattler build, and rattler is not exercised at notebook
+  # runtime (package resolution only).
+  - id: GHSA-36hh-v3qg-5jq4 # pyo3 0.25.1 -> 0.29.0 (compiled into rattler)

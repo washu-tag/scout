@@ -91,7 +91,7 @@ Each matrix entry attempts to download the image tarball artifact. If the image 
 
 The composite action (`.github/actions/trivy-scan-image/action.yaml`) does a single Trivy invocation per image:
 
-1. **Configure** — checks for a per-image `.trivyignore.yaml` in the subproject directory and generates a Trivy config if found.
+1. **Configure** — checks the subproject directory for a per-image `.trivyignore.yaml` (individual CVE suppressions) and `.trivyignore.rego` (package-level ignore-policy) and generates a Trivy config referencing whichever are present.
 2. **Single JSON scan** — Trivy scans once, outputting JSON. The Trivy DB is cached automatically by the trivy-action.
 3. **SARIF conversion** — `trivy convert` produces SARIF from the JSON. The SARIF is post-processed with `jq` to tag the tool name and alert messages with the image name (e.g., "Trivy (launchpad)", "[launchpad] CVE description...") so findings are identifiable in the Security tab. The tagged SARIF is uploaded to GitHub.
 4. **Gate check** — a shell step parses the JSON for fixable vulnerabilities and fails the job if any exist at CRITICAL or HIGH severity. Images with `allow-failure: true` in the matrix still scan and report but don't block the build.
@@ -217,7 +217,8 @@ Each subproject can have its own `.trivyignore.yaml` alongside its `Dockerfile`.
 ```
 helm/scout-notebook/
 ├── Dockerfile
-└── .trivyignore.yaml    # CVE suppressions for this image only
+├── .trivyignore.yaml    # individual CVE suppressions for this image
+└── .trivyignore.rego    # package-level ignore-policy for this image
 ```
 
 Example ignore file:
@@ -229,6 +230,32 @@ vulnerabilities:
 ```
 
 Images without a `.trivyignore.yaml` in their subproject directory run with no suppressions.
+
+### Suppressing a whole package family (Rego ignore-policy)
+
+Some packages produce recurring, non-actionable findings that can't be pinned to a short list of CVE IDs — most notably `linux-libc-dev`, onto which Trivy maps the entire upstream Linux **kernel** CVE stream. That package ships only C headers (no runtime code) and containers run on the host kernel, so those CVEs aren't exploitable in the image, but new batches publish constantly and each re-appears as a fresh alert. Enumerating them by ID in `.trivyignore.yaml` is endless churn.
+
+For these, add a `.trivyignore.rego` next to the `Dockerfile`. It's a Trivy [Rego ignore policy](https://trivy.dev/latest/docs/configuration/filtering/): the composite action wires it in as `ignore-policy` (alongside `ignorefile`) whenever the file is present, so one rule suppresses **every** finding for that package, current and future:
+
+```rego
+package trivy
+
+default ignore = false
+
+ignore {
+	input.PkgName == "linux-libc-dev"
+}
+```
+
+`input` is one Trivy `DetectedVulnerability` (`PkgName`, `VulnerabilityID`, `Severity`, `InstalledVersion`, …); returning `true` from `ignore` drops it. Keep `.trivyignore.yaml` for individual CVEs that have per-item rationale (bundled jars, base-OS packages awaiting a rebuild); reach for `.trivyignore.rego` only when suppressing by package name is justified for every CVE that package will ever carry.
+
+Reproduce a scan locally with both suppressions applied:
+
+```bash
+trivy image --ignorefile helm/scout-notebook/.trivyignore.yaml \
+  --ignore-policy helm/scout-notebook/.trivyignore.rego \
+  <image>
+```
 
 ### Changing Trivy severity thresholds
 
