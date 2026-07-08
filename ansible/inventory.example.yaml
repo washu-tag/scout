@@ -822,6 +822,42 @@ k3s_cluster:
     #     cpu: 8
     #     memory: 16Gi
 
+    #---------------------------------------------------------------------------
+    # DCM4CHEE (optional PACS for development/testing — installed via `make install-dcm4chee`)
+    #---------------------------------------------------------------------------
+    # The HTTP UI/API is served from its own subdomain, dcm4chee.<server_hostname>
+    # (the app cannot run under a subpath). The wildcard cert covers it.
+    # dcm4chee_namespace: dcm4chee
+
+    # DIMSE (raw-TCP DICOM: C-ECHO/C-STORE/C-FIND/C-MOVE) is not HTTP and cannot use the
+    # ingress/subdomain — it is exposed on a TCP port via a LoadBalancer service.
+    # dcm4chee_dicom_port: 11112
+
+    # WildFly admin console: by default it is served through the ingress at
+    # https://dcm4chee.<server_hostname>/console (and the Archive UI links there) instead of the
+    # non-standard :9993/console. The dcm4chee ingress is not behind oauth2-proxy, so this puts
+    # the management console on the public subdomain — set false for internet-facing deployments.
+    # dcm4chee_expose_management_console: true
+    # Seeds the WildFly ManagementRealm admin (login for the console above). The password is
+    # REQUIRED whenever the console is enabled; vault-encrypt it. Seeded on first boot only —
+    # changing it later won't rotate the existing user (re-run add-user.sh or recreate the PVC).
+    # dcm4chee_admin_user: admin
+    # dcm4chee_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Cloud Provider load balancer for the DICOM port (mirrors orthanc_dicom_service_*).
+    # Leave unset on-prem — K3s ServiceLB binds the port on every node, so it is reachable
+    # at <node>:11112 (e.g. <server_hostname>:11112 if that name points at a node).
+    # AWS example (NLB, internet-facing):
+    # dcm4chee_dicom_service_load_balancer_class: service.k8s.aws/nlb
+    # dcm4chee_dicom_service_annotations:
+    #   service.beta.kubernetes.io/aws-load-balancer-type: external
+    #   service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    #   service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+
+    # Optional: populate the PACS with test data on deploy. Path must exist on the
+    # Kubernetes node (mounted into a storescu Job via hostPath), not on the Ansible host.
+    # dcm4chee_populate: /data/dicom/test-files
+
 # This group contains all nodes that are remote relative to the node running Ansible
 remotes:
   children:

@@ -5,48 +5,8 @@
 vulnerabilities:
   # Ubuntu base not yet rebuilt with openssl 3.0.2-0ubuntu1.25
   - id: CVE-2026-45447 # openssl/libssl3 3.0.2-0ubuntu1.23 → 3.0.2-0ubuntu1.25
-  # linux-libc-dev: Trivy maps upstream Linux *kernel* CVEs onto this binary
-  # package, but it ships only C headers (no runtime code) and containers use
-  # the host kernel, so none are exploitable here. Nothing in this image
-  # compiles native code either. The base ubuntu is pinned to 5.15.0-179.189;
-  # fixes land in the base, not our layers. Full current CRITICAL/HIGH set:
-  - id: CVE-2025-37924 # linux-libc-dev
-  - id: CVE-2025-68263 # linux-libc-dev
-  - id: CVE-2026-23428 # linux-libc-dev
-  - id: CVE-2026-23450 # linux-libc-dev
-  - id: CVE-2026-23455 # linux-libc-dev
-  - id: CVE-2026-31402 # linux-libc-dev
-  - id: CVE-2026-31478 # linux-libc-dev
-  - id: CVE-2026-31607 # linux-libc-dev
-  - id: CVE-2026-31637 # linux-libc-dev
-  - id: CVE-2026-31657 # linux-libc-dev
-  - id: CVE-2026-31659 # linux-libc-dev
-  - id: CVE-2026-31669 # linux-libc-dev
-  - id: CVE-2026-43011 # linux-libc-dev
-  - id: CVE-2026-43037 # linux-libc-dev
-  - id: CVE-2026-43038 # linux-libc-dev
-  - id: CVE-2026-43186 # linux-libc-dev
-  - id: CVE-2026-43284 # linux-libc-dev
-  - id: CVE-2026-43304 # linux-libc-dev
-  - id: CVE-2026-43341 # linux-libc-dev
-  - id: CVE-2026-43406 # linux-libc-dev
-  - id: CVE-2026-43407 # linux-libc-dev
-  - id: CVE-2026-43493 # linux-libc-dev
-  - id: CVE-2026-43500 # linux-libc-dev
-  - id: CVE-2026-43501 # linux-libc-dev
-  - id: CVE-2026-45988 # linux-libc-dev
-  - id: CVE-2026-46043 # linux-libc-dev
-  - id: CVE-2026-46119 # linux-libc-dev
-  - id: CVE-2026-46135 # linux-libc-dev
-  - id: CVE-2026-46195 # linux-libc-dev
-  - id: CVE-2026-46300 # linux-libc-dev
-  - id: CVE-2026-46333 # linux-libc-dev
-  - id: CVE-2026-23216 # linux-libc-dev
-  - id: CVE-2023-53673 # linux-libc-dev
-  - id: CVE-2025-37778 # linux-libc-dev
-  - id: CVE-2025-71089 # linux-libc-dev
-  - id: CVE-2026-43494 # linux-libc-dev
-  - id: CVE-2026-43503 # linux-libc-dev
+  # linux-libc-dev kernel-header CVEs are suppressed by package name in
+  # .trivyignore.rego (Trivy ignore-policy), not enumerated here — see #478.
   # netty 4.2.7 family bundled by Spark (plus copies shaded into the
   # connect-repl client jars, which the worker never loads)
   - id: CVE-2026-33870 # netty-codec-http
