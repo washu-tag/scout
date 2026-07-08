@@ -1,0 +1,7 @@
+# Patterns to ignore when building packages.
+*.tmproj
+.vscode/
+.idea/
+*.tgz
+.DS_Store
+.git/

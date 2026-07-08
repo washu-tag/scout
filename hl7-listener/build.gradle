@@ -1,0 +1,91 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.14'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'edu.washu.tag'
+version = 'latest'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+def camelVersion = '4.18.2'
+def hapiVersion = '2.5.1'
+
+// camel-spring-boot-dependencies is the harmonized BOM that reconciles the Camel and
+// Spring Boot dependency trees (it also manages the Spring Boot version), so we import
+// it rather than picking Spring Boot library versions by hand.
+dependencyManagement {
+	imports {
+		mavenBom "org.apache.camel.springboot:camel-spring-boot-dependencies:${camelVersion}"
+	}
+}
+
+dependencies {
+	// Camel on Spring Boot + YAML route loading (routes live in src/main/resources/camel)
+	implementation 'org.apache.camel.springboot:camel-spring-boot-starter'
+	implementation 'org.apache.camel.springboot:camel-yaml-dsl-starter'
+
+	// Route components: MLLP listener, HL7 parsing, Kafka, S3, zip aggregation
+	implementation 'org.apache.camel.springboot:camel-mllp-starter'
+	implementation 'org.apache.camel.springboot:camel-hl7-starter'
+	implementation 'org.apache.camel.springboot:camel-kafka-starter'
+	implementation 'org.apache.camel.springboot:camel-aws2-s3-starter'
+
+	// Metrics: Camel micrometer meters exposed on the Spring Boot Actuator Prometheus
+	// endpoint (/actuator/prometheus). The route-policy + event-notifier meters carry the
+	// routeId/eventType tags the HL7 Listener dashboards and alerts key on.
+	implementation 'org.apache.camel.springboot:camel-micrometer-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
+	// HAPI HL7v2 structure libraries — the versions Scout ingests (v2.1–v2.7). Camel's
+	// hl7 dataformat needs these on the classpath to build typed messages; without them
+	// HAPI logs "No HL7 structure libraries found on the classpath!".
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v21:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v22:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v23:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v231:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v24:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v25:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v251:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v26:${hapiVersion}"
+	runtimeOnly "ca.uhn.hapi:hapi-structures-v27:${hapiVersion}"
+}
+
+// Force patched versions of transitive libraries flagged by the image scan (Trivy). These
+// are pinned by the camel-spring-boot-dependencies / Spring Boot BOMs; resolutionStrategy
+// runs after BOM resolution, so it overrides those pins unconditionally. All are patch-level
+// bumps within the same minor line. Drop each entry once the managing BOM ships the fix.
+// (spring-boot itself, CVE-2026-40973, is handled by the 3.5.14 plugin bump above.)
+configurations.all {
+	resolutionStrategy.eachDependency { details ->
+		def g = details.requested.group
+		def n = details.requested.name
+		if (g == 'io.netty' && n.startsWith('netty') && !n.contains('tcnative')) {
+			details.useVersion '4.1.135.Final' // CVE-2026-44249/-45416/-50010/-42583/-42584/-42587
+			details.because 'Trivy CRITICAL/HIGH'
+		} else if (g == 'com.fasterxml.jackson.core' && (n == 'jackson-databind' || n == 'jackson-core')) {
+			details.useVersion '2.21.4' // CVE-2026-54512/-54513 (jackson-annotations has no 2.21.4 release)
+			details.because 'Trivy HIGH'
+		} else if (g == 'org.apache.tomcat.embed') {
+			details.useVersion '10.1.55' // CVE-2026-41293/-43512/-43515 (CRITICAL) + -34483/-41284/-42498/-43513
+			details.because 'Trivy CRITICAL/HIGH'
+		}
+	}
+}
+
+// Spring Boot's plain (library) jar is not needed; only the executable bootJar ships, so
+// the Dockerfile's build/libs/*.jar glob resolves to a single artifact.
+tasks.named('jar') {
+	enabled = false
+}
