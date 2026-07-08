@@ -181,8 +181,8 @@ k3s_cluster:
     trino_view_enabled: false
 
     # Trino AuthZ secrets (ADR 0022). Required by the trino role's
-    # AuthZ env Secret. Production deployments set this in
-    # scout-inventory; CI sets a fixed test value so the smoke-test
+    # AuthZ env Secret. Production deployments set these in
+    # scout-inventory; CI sets fixed test values so the smoke-test
     # deploy doesn't fail at template render.
     trino_internal_shared_secret: ci-trino-internal-shared-secret
 
@@ -209,7 +209,9 @@ k3s_cluster:
     keycloak_open_webui_client_secret: ci-secret-00000008
     # Trino AuthZ service principals (ADR 0022). Same client-credentials
     # pattern as the regular client secrets above; one per Trino-backed
-    # surface that impersonates end users via X-Trino-User.
+    # surface that impersonates end users via X-Trino-User. The realm
+    # template references all three unconditionally; without them defined
+    # the realm import fails to render.
     keycloak_superset_svc_client_secret: ci-secret-svc-superset
     keycloak_voila_svc_client_secret: ci-secret-svc-voila
     keycloak_report_viewer_svc_client_secret: ci-secret-svc-report-viewer

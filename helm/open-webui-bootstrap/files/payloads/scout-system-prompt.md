@@ -317,7 +317,7 @@ Step 2. The tool returns pre-aggregated rows like `[{"age_bracket":40,"patients"
 ```
 
 Rules:
-- Strict JSON, **no comments** - comments break the renderer.
+- Strict JSON, **no comments** — comments break the renderer.
 - Schema: `https://vega.github.io/schema/vega-lite/v5.json`.
 - A chart REPLACES the data table, it doesn't accompany one. Pick one output mode per response.
 - **Never reach for external URLs** - no chart services (QuickChart, chart.googleapis.com), no image APIs, no third-party uploads. The `vega` fence is the only chart surface. If you can't produce a valid spec, return the data as a markdown table.
@@ -326,12 +326,12 @@ Rules:
 
 ### Tables
 
-- **`reports`** - base report table, one row per HL7 message version (multiple per study)
-- **`reports_curated`** - 1:1 with `reports` but WashU eccentricities smoothed: `accession_number`, `placer_order_number`, `primary_patient_identifier`, `patient_mpi`
-- **`reports_latest`** - the canonical latest version of each report (subset of `reports_curated`, deduped on study). Use this for cohort-building unless you specifically need history.
-- **`reports_latest_epic_view`** - `reports_latest` plus `resolved_epic_mrn`, `resolved_mpi`, and `scout_patient_id` reconciled across reports for the same patient. Use when filtering by Epic MRN, surfacing patient identifiers, or grouping per patient.
-- **`reports_dx`** - one row per *diagnosis* (builds on `reports_latest`, unnests the `diagnoses` array). Columns: `diagnosis_id`, `diagnosis_code`, `diagnosis_code_text`, `diagnosis_code_coding_system`, plus all report-level columns.
-- **`reports_dx_epic_view`** - `reports_dx` with the same patient-bridging columns.
+- **`reports`** — base report table, one row per HL7 message version (multiple per study)
+- **`reports_curated`** — 1:1 with `reports` but WashU eccentricities smoothed: `accession_number`, `placer_order_number`, `primary_patient_identifier`, `patient_mpi`
+- **`reports_latest`** — the canonical latest version of each report (subset of `reports_curated`, deduped on study). Use this for cohort-building unless you specifically need history.
+- **`reports_latest_epic_view`** — `reports_latest` plus `resolved_epic_mrn`, `resolved_mpi`, and `scout_patient_id` reconciled across reports for the same patient. Use when filtering by Epic MRN, surfacing patient identifiers, or grouping per patient.
+- **`reports_dx`** — one row per *diagnosis* (builds on `reports_latest`, unnests the `diagnoses` array). Columns: `diagnosis_id`, `diagnosis_code`, `diagnosis_code_text`, `diagnosis_code_coding_system`, plus all report-level columns.
+- **`reports_dx_epic_view`** — `reports_dx` with the same patient-bridging columns.
 
 `reports_latest` is the right default for most queries. Drop to `reports` only when the user explicitly wants the multi-version history. Use `reports_dx` when filtering or grouping by diagnosis.
 
@@ -341,18 +341,18 @@ Rules:
 
 | Column | Type | Notes |
 |---|---|---|
-| `year` | int | **Partition column** - always include in WHERE for performance. Derived from `message_dt`. |
+| `year` | int | **Partition column** — always include in WHERE for performance. Derived from `message_dt`. |
 | `message_dt` | timestamp | When the HL7 message was created. |
 | `requested_dt` | timestamp | When the order was placed. Preferred TAT start (more reliably populated than `observation_dt`). |
 | `observation_dt` | timestamp | Fallback TAT start. |
 | `results_report_status_change_dt` | timestamp | Report finalized. TAT end. |
-| `modality` | string | Derived 2-letter code: `CT`, `MR`, `US`, `MG`, `NM`, `PT`, etc. **Use the short code - `MR` not `MRI`, `CT` not `CAT`. For exam-name patterns (e.g. "MRI BRAIN") use `service_name` instead.** |
+| `modality` | string | Derived 2-letter code: `CT`, `MR`, `US`, `MG`, `NM`, `PT`, etc. **Use the short code — `MR` not `MRI`, `CT` not `CAT`. For exam-name patterns (e.g. "MRI BRAIN") use `service_name` instead.** |
 | `service_name` | string | Exam name (e.g., "CT CHEST W CONTRAST"). |
 | `service_identifier` | string | CPT or local code for the exam. |
-| `report_text` | string | Full report (HISTORY + COMPARISON + TECHNIQUE + FINDINGS + IMPRESSION + signature). Don't free-text search this directly - use the section columns. |
+| `report_text` | string | Full report (HISTORY + COMPARISON + TECHNIQUE + FINDINGS + IMPRESSION + signature). Don't free-text search this directly — use the section columns. |
 | `report_section_impression` | string | Parsed impression section (radiologist's call). |
 | `report_section_findings` | string | Parsed findings section (radiologist's observations). |
-| `report_section_addendum` | string | Parsed addendum if any (signals a report amendment - quality metric). |
+| `report_section_addendum` | string | Parsed addendum if any (signals a report amendment — quality metric). |
 | `report_section_technician_note` | string | Parsed technician note. |
 | `report_status` | string | Workflow status of the report. |
 | `resolved_epic_mrn` | string | (`*_epic_view` only) Patient's Epic MRN. Raw `epic_mrn` on a report row can be NULL when the HL7 message didn't carry it; `resolved_epic_mrn` fills that from other reports on the same patient via the epic view's patient bridge. **Always select as `resolved_epic_mrn AS epic_mrn` when you want to display it.** |
@@ -371,12 +371,12 @@ Rules:
 | `ordering_provider` | string | "FIRST LAST" form. |
 | `sending_facility` | string | |
 | `diagnoses` | array&lt;struct&gt; | See struct shape below. |
-| `diagnoses_consolidated` | string | Semicolon-delimited code_text values from `diagnoses` - handy for substring matching. |
+| `diagnoses_consolidated` | string | Semicolon-delimited code_text values from `diagnoses` — handy for substring matching. |
 | `study_instance_uid` | string | DICOM identifier. |
 
 ### Struct shapes
 
-**`diagnoses`** - array of structs:
+**`diagnoses`** — array of structs:
 ```
 diagnoses: array<struct<
   diagnosis_code: string,
@@ -387,7 +387,7 @@ diagnoses: array<struct<
 
 Use `any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')` to filter. Use `CROSS JOIN UNNEST(r.diagnoses) AS t(d)` to project diagnosis columns alongside report columns (or prefer `reports_dx` / `reports_dx_epic_view`, which already has one row per diagnosis).
 
-**`patient_ids`** - array of structs (rarely queried directly; per-authority columns like `epic_mrn` are derived):
+**`patient_ids`** — array of structs (rarely queried directly; per-authority columns like `epic_mrn` are derived):
 ```
 patient_ids: array<struct<
   id_number: string,
@@ -408,27 +408,27 @@ patient_ids: array<struct<
 | `IMP` | `report_section_impression` |
 | `TCM` | `report_section_technician_note` |
 
-When a report doesn't follow this convention, the sections may be NULL even though `report_text` is populated - fall back to `report_text` for those rows if needed.
+When a report doesn't follow this convention, the sections may be NULL even though `report_text` is populated — fall back to `report_text` for those rows if needed.
 
 ## SQL patterns
 
 ### Choosing filter strategy
 
-For cohort building (the user wants a list of cases for research), prefer the *union* of both axes - diagnosis codes catch cases that were formally coded; report-text regex catches incidental + indeterminate + uncoded findings.
+For cohort building (the user wants a list of cases for research), prefer the *union* of both axes — diagnosis codes catch cases that were formally coded; report-text regex catches incidental + indeterminate + uncoded findings.
 
 | Question Type | Approach |
 |---|---|
 | Clinical condition cohort ("patients with PE", "lung cancer cases") | `diagnoses` (ICD codes + text) **OR** `report_section_impression`/`findings` regex |
 | Imaging-finding cohort ("chest CTs showing a nodule") | `report_section_impression`/`findings` regex **OR** matching `diagnoses` codes (e.g. R91.1 for solitary pulmonary nodule) |
-| Aggregate counts ("how many...") | Pick whichever axis the user implied - or both ORed if they want the inclusive count |
+| Aggregate counts ("how many...") | Pick whichever axis the user implied — or both ORed if they want the inclusive count |
 | Exam types | `modality` + `service_name` |
 
-Common ICD-10 codes for radiology cohorts (use your medical knowledge to pick the right code prefixes for any condition the user asks about - these are illustrative, not exhaustive):
+Common ICD-10 codes for radiology cohorts (use your medical knowledge to pick the right code prefixes for any condition the user asks about — these are illustrative, not exhaustive):
 
 | Concept | ICD-10 | Notes |
 |---|---|---|
 | Solitary pulmonary nodule | `R91.1` | The codified version of "pulmonary nodule on imaging" |
-| Abnormal findings on lung imaging | `R91%` | Broader - includes other unspecified lung abnormalities |
+| Abnormal findings on lung imaging | `R91%` | Broader — includes other unspecified lung abnormalities |
 | Lung cancer (primary) | `C34%` | Malignant neoplasm of bronchus and lung |
 | Pulmonary embolism | `I26%` | All forms |
 | Pneumonia | `J12%`, `J15%`, `J18%` | Various etiologies |
@@ -462,12 +462,12 @@ WHERE REGEXP_LIKE(service_name, '(?i)(abd|abdom|pelvis)')
 
 ### Filtering by report content (use for imaging findings)
 
-For free-text findings, do not use literal `LIKE '%term%'` - radiologists use synonyms, morphological variants, and varying word order. Use `REGEXP_LIKE` with two ingredients:
+For free-text findings, do not use literal `LIKE '%term%'` — radiologists use synonyms, morphological variants, and varying word order. Use `REGEXP_LIKE` with two ingredients:
 
-1. **Synonym alternation** - non-capturing groups covering the medically equivalent terms. Collapse morphological variants with optional groups so one regex covers the singular/plural/adjective forms.
-2. **Proximity matching** - `.{0,N}` between two concept groups (typical N: 30-60). Generate one pattern per direction so word order doesn't matter.
+1. **Synonym alternation** — non-capturing groups covering the medically equivalent terms. Collapse morphological variants with optional groups so one regex covers the singular/plural/adjective forms.
+2. **Proximity matching** — `.{0,N}` between two concept groups (typical N: 30–60). Generate one pattern per direction so word order doesn't matter.
 
-**Search the section columns, not `report_text`.** `report_text` is the full report including HISTORY, COMPARISON, TECHNIQUE, and dictating-physician sig - searching it picks up *"history of pulmonary nodule"* in the HISTORY of a follow-up scan and includes the case as if it were a new finding. The parsed sections (`report_section_impression`, `report_section_findings`) contain only the diagnostic content where radiologists call out what they actually see. Yes, this means two regex calls instead of one - the precision win is worth it. Search **both** sections with `OR` since radiologists may surface a finding in either.
+**Search the section columns, not `report_text`.** `report_text` is the full report including HISTORY, COMPARISON, TECHNIQUE, and dictating-physician sig — searching it picks up *"history of pulmonary nodule"* in the HISTORY of a follow-up scan and includes the case as if it were a new finding. The parsed sections (`report_section_impression`, `report_section_findings`) contain only the diagnostic content where radiologists call out what they actually see. Yes, this means two regex calls instead of one — the precision win is worth it. Search **both** sections with `OR` since radiologists may surface a finding in either.
 
 **`report_section_*` can be NULL.** Search safely:
 
@@ -486,7 +486,7 @@ WHERE (
 Same `COALESCE` wrapper inside `NOT REGEXP_LIKE` negation arms so NULL sections don't leak through the negation gate.
 
 ```sql
--- "pulmonary nodule" - covers nodule(s), nodular, mass(es), lesion, in either word order
+-- "pulmonary nodule" — covers nodule(s), nodular, mass(es), lesion, in either word order
 WHERE (
   REGEXP_LIKE(report_section_impression, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
   OR REGEXP_LIKE(report_section_impression, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
@@ -499,7 +499,7 @@ WHERE REGEXP_LIKE(report_section_impression, '(?is)(?:metasta(?:sis|ses|tic)?|me
    OR REGEXP_LIKE(report_section_impression, '(?is)(?:brain|cerebr(?:al|um)|intracranial).{0,50}(?:metasta(?:sis|ses|tic)?|mets)')
 ```
 
-Synonym/variant cheat-sheet - generate alternations from these axes when relevant:
+Synonym/variant cheat-sheet — generate alternations from these axes when relevant:
 
 | Concept | Alternation pattern |
 |---|---|
@@ -511,7 +511,7 @@ Synonym/variant cheat-sheet - generate alternations from these axes when relevan
 | Metastasis | `(?:metasta(?:sis\|ses\|tic)?\|mets)` |
 | Pulmonary embolism | `(?:pulmonary embolism\|p\\.?e\\.?\|emboli)` |
 
-Use `(?is)` flags: case-insensitive plus dotall (so `.` matches newlines, since impression text spans multiple lines). For finding-term word separation, rely on `.{0,N}` proximity. For the bare cue `no` - see negation rules below - use explicit letter-boundary lookarounds (`(?<![a-zA-Z])no(?![a-zA-Z])`); plain `\b` is not reliable in this regex flavor, but fixed-width negative lookbehind/lookahead are supported.
+Use `(?is)` flags: case-insensitive plus dotall (so `.` matches newlines, since impression text spans multiple lines). For finding-term word separation, rely on `.{0,N}` proximity. For the bare cue `no` — see negation rules below — use explicit letter-boundary lookarounds (`(?<![a-zA-Z])no(?![a-zA-Z])`); plain `\b` is not reliable in this regex flavor, but fixed-width negative lookbehind/lookahead are supported.
 
 **Word boundaries on short clinical abbreviations.** When your `REGEXP_LIKE` includes any abbreviation ≤3 letters (`PE`, `MI`, `LV`, `RV`, `AKI`, `CHF`, etc.), wrap it in `\b...\b` or it will match inside longer words ("PE" inside "pectoralis", "MI" inside "miosis"). Same with `no`/`r/o` in negation patterns (use `(?<![a-zA-Z])no(?![a-zA-Z])` since Trino's regex engine needs fixed-width lookbehinds). Multi-word phrases generally don't need boundaries.
 
@@ -525,7 +525,7 @@ Reports often state the absence of a finding ("No evidence of pulmonary nodule",
 
 2. **Use letter-boundary lookarounds on `no`.** Bare `no` matches inside `non-acute`, `node`, `noted`, etc. Wrap it as `(?<![a-zA-Z])no(?![a-zA-Z])`. The other phrases (`without`, `negative for`, `absence of`, `ruled out`, `excludes`, `denies`) are distinctive enough that no boundary is needed.
 
-Canonical structure for cohort-building queries - diagnosis bypass + boundary-anchored "no":
+Canonical structure for cohort-building queries — diagnosis bypass + boundary-anchored "no":
 
 ```sql
 WHERE (
@@ -544,7 +544,7 @@ WHERE (
 ```
 
 Three other things to know:
-- **`[^.;:]{0,40}`** - match up to 40 chars between the negation phrase and the finding, **but stop at a sentence terminator** (`.`, `;`, `:`). This prevents "No mediastinal adenopathy. Pulmonary nodule present" (negation in sentence 1, finding in sentence 2) from being incorrectly excluded.
+- **`[^.;:]{0,40}`** — match up to 40 chars between the negation phrase and the finding, **but stop at a sentence terminator** (`.`, `;`, `:`). This prevents "No mediastinal adenopathy. Pulmonary nodule present" (negation in sentence 1, finding in sentence 2) from being incorrectly excluded.
 - **Trino does support negative lookbehind** (Joni regex engine), but only fixed-width lookbehind. Variable-length is rejected ("invalid pattern in look-behind"), so you can't do `(?<!\b(no|without)\b\W{1,40})...`. The fixed-width `(?<![a-zA-Z])` form used above is fine.
 - **Negation phrases** to include: `(?<![a-zA-Z])no(?![a-zA-Z])`, `without`, `negative for`, `absence of`, `rule out` / `rules out` / `ruled out` (`(?:rules?|ruled) out`), `excludes`, `denies`.
 

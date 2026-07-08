@@ -524,13 +524,13 @@
             required-audience=report-viewer on inbound Bearer tokens
             from the OWUI tool runtime.
 
-            "roles" is intentionally absent from defaultClientScopes.
+            "roles" is intentionally absent from defaultClientScopes here.
             Keycloak's built-in roles scope carries an audience-resolve
             protocol mapper that adds an `aud` entry for every client the
-            user has any role in. For an admin user that previously
-            swelled the token to 9 audiences (realm-management, launchpad,
-            superset, jupyterhub, grafana, account, temporal, etc.), so a
-            stolen OWUI token had implicit grants against half the
+            user has any role in — for an admin user that swelled the
+            token to 9 audiences (oauth2-proxy, realm-management,
+            launchpad, superset, jupyterhub, grafana, account, temporal),
+            so a stolen OWUI token had implicit grants against half the
             cluster including realm-management. OWUI uses the `groups`
             claim (via microprofile-jwt) for role mapping and doesn't
             consume realm_access.roles, so dropping the scope here is

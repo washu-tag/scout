@@ -46,7 +46,7 @@ keycloak_default_provider: github
 
 # Per-site Terms of Use text overrides.
 # Leave empty to use the WashU-flavored defaults baked into the scout login
-# theme. Most sites only need to override `termsBody` with their own HTML
+# theme. Most sites only need to override `termsBody` with their own HTML —
 # that single string contains the intro paragraph, the bullet list, and the
 # closing acknowledgment. `termsTitle`, `doAccept`, and `doDecline` are
 # available to override too, but rarely need changes.
@@ -58,6 +58,6 @@ keycloak_terms_localizations: {}
 keycloak_temporal_token_lifespan: '{{ keycloak_token_lifespan }}'
 keycloak_minio_token_lifespan: '{{ keycloak_token_lifespan }}'
 # Trino impersonation-pattern service principals (superset_svc, voila_svc,
-# report_viewer_svc) - ADR 0022. Deliberately ~4h so token minting stays
+# report_viewer_svc) — ADR 0022. Deliberately ~4h so token minting stays
 # off the per-query hot path; the client helpers re-mint before expiry.
 keycloak_trino_svc_token_lifespan: 14400

@@ -13,7 +13,7 @@ Six phases:
    Falls through to /signup on a truly empty DB (gated by ENABLE_INITIAL_ADMIN_SIGNUP).
 3. PersistentConfig re-push. Tool servers (full overwrite); DEFAULT_MODELS
    + TASK_MODEL (GET-merge-POST to preserve siblings). RAG template is not
-   pushed - Scout Explorer models use function_calling: native, which
+   pushed — Scout Explorer models use function_calling: native, which
    bypasses OWUI's RAG auto-injection path entirely.
 4. Filter functions. Idempotent GET-create-or-update; then set valves and
    toggle global+active to the desired state.
@@ -24,20 +24,20 @@ Six phases:
    entry, plus hide-base overrides on the raw Ollama tags.
 
 Inputs (from env, set by the Job spec):
-  OWUI_BASE_URL          - e.g., http://open-webui:80
-  BOOTSTRAP_EMAIL        - primary key for the bootstrap admin user
-  BOOTSTRAP_NAME         - display name
-  BOOTSTRAP_PASSWORD     - bootstrap admin password (from a Secret)
+  OWUI_BASE_URL          — e.g., http://open-webui:80
+  BOOTSTRAP_EMAIL        — primary key for the bootstrap admin user
+  BOOTSTRAP_NAME         — display name
+  BOOTSTRAP_PASSWORD     — bootstrap admin password (from a Secret)
 
 Inputs (from /app/config/, mounted from a ConfigMap the chart renders):
-  persistent_config.json - dict with tool_server_connections / default_model_id
+  persistent_config.json — dict with tool_server_connections / default_model_id
                            / task_model_id (any subset)
-  filters.json           - list of filter-function specs; each entry's
+  filters.json           — list of filter-function specs; each entry's
                            `content_file` names a sibling file in /app/config/
                            whose contents are inlined as the filter `content`.
-  tools.json             - list of Python-tool specs; same `content_file`
+  tools.json             — list of Python-tool specs; same `content_file`
                            inline pattern as filters.json.
-  models.json            - list of ModelForm payloads; each entry's
+  models.json            — list of ModelForm payloads; each entry's
                            `params.system_file` names a sibling file whose
                            contents are inlined as `params.system`.
 """
@@ -94,7 +94,7 @@ def http_or_raise(method, path, body=None, token=None):
 
 def get_merge_post(get_path, post_path, key, value, token):
     """OWUI's models/tasks config handlers unconditionally assign every form
-    field - partial POSTs would clobber siblings. Read current, set one key,
+    field — partial POSTs would clobber siblings. Read current, set one key,
     write back."""
     current = json.loads(http_or_raise("GET", get_path, token=token))
     current[key] = value
@@ -114,7 +114,7 @@ def load_text(filename):
     """Read /app/config/<filename> as raw text.
 
     Used to resolve filter `content_file` and model `params.system_file`
-    references in the JSON payloads - bootstrap.py inlines these as `content`
+    references in the JSON payloads — bootstrap.py inlines these as `content`
     / `params.system` before POSTing to OWUI. Missing file is fatal: the
     payload references it explicitly, so silent skip would mask a bug.
     """
@@ -144,7 +144,7 @@ def migrate_password():
             db.commit()
             print(f"  migrated existing bcrypt hash for {BOOTSTRAP_EMAIL}")
         else:
-            print(f"  no-op (no {BOOTSTRAP_EMAIL} row yet - fresh DB)")
+            print(f"  no-op (no {BOOTSTRAP_EMAIL} row yet — fresh DB)")
 
 
 def mint_admin_jwt():
@@ -161,7 +161,7 @@ def mint_admin_jwt():
         if last_code == 200:
             return json.loads(last_body)["token"], "signin"
         if last_code == 400:
-            # Pydantic / auth-level rejection - won't fix itself on retry.
+            # Pydantic / auth-level rejection — won't fix itself on retry.
             break
         print(
             f"  signin attempt {attempt + 1}: HTTP {last_code}; retrying in {SIGNIN_RETRY_DELAY_SEC}s",
@@ -186,7 +186,7 @@ def mint_admin_jwt():
         f"  - Is ENABLE_INITIAL_ADMIN_SIGNUP=true in the OWUI pod env?\n"
         f"  - Did the OWUI pod restart after Helm picked up the env vars?\n"
         f"  - On a non-clean cluster where {BOOTSTRAP_EMAIL} was deleted but\n"
-        f"    other users exist, /signup will fail with ACCESS_PROHIBITED -\n"
+        f"    other users exist, /signup will fail with ACCESS_PROHIBITED —\n"
         f"    re-create the row manually (see the role README)."
     )
 
@@ -194,7 +194,7 @@ def mint_admin_jwt():
 def push_persistent_config(token):
     cfg = load_config("persistent_config.json") or {}
 
-    # Tool servers - full overwrite by design (handler unconditionally assigns).
+    # Tool servers — full overwrite by design (handler unconditionally assigns).
     if cfg.get("tool_server_connections") is not None:
         http_or_raise(
             "POST",
