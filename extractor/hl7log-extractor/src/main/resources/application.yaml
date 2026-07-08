@@ -38,7 +38,9 @@ management:
   endpoints:
     web:
       exposure:
-        include:
+        # prometheus + health are intentionally exposed for in-cluster Prometheus
+        # scraping and Kubernetes health probes; this worker has no external ingress.
+        include: # nosemgrep: java.spring.security.audit.spring-actuator-non-health-enabled-yaml.spring-actuator-dangerous-endpoints-enabled-yaml
           - prometheus # Access by /actuator/prometheus
           - health
   endpoint:

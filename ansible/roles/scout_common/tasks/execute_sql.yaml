@@ -56,9 +56,21 @@
             containers:
               - name: psql
                 image: postgres:16
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 999
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop:
+                      - ALL
+                  seccompProfile:
+                    type: RuntimeDefault
                 env:
                   - name: PGPASSWORD
                     value: '{{ psql_pass }}'
+                  - name: HOME
+                    value: /tmp
                 command:
                   - sh
                   - -lc
@@ -67,6 +79,12 @@
                     cat <<'SQL' | psql --no-psqlrc -v ON_ERROR_STOP=1 "{{ psql_connection }}"
                     {{ sql_script }}
                     SQL
+                volumeMounts:
+                  - name: tmp
+                    mountPath: /tmp
+            volumes:
+              - name: tmp
+                emptyDir: {}
 
 - name: Wait for PSQL job to complete
   kubernetes.core.k8s_info:

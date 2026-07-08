@@ -100,7 +100,6 @@ scout/
 │       └── pyproject.toml     # Package: hl7scout
 ├── orchestrator/              # Temporal workflows (TypeScript/Node.js)
 ├── helm/                      # Helm chart configurations
-├── terraform/                 # Infrastructure as Code (optional)
 └── tests/                     # Integration and unit tests
     ├── auth/                  # Playwright auth tests (TypeScript/Node.js)
     └── ingest/                # HL7 ingestion integration tests (Java/Gradle)
@@ -146,7 +145,7 @@ See `docs/source/dataschema.md` for complete schema documentation and HL7 field 
 - **Python Services**: Python 3.10+, PySpark 4.1.1
 - **TypeScript Services**: Node.js/npm
 - **Cluster Access**: kubectl configured for K3s cluster
-- **Optional**: Docker (local containerization), Terraform (IaC)
+- **Optional**: Docker (local containerization)
 
 ### Deployment Commands
 
