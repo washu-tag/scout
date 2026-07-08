@@ -126,7 +126,9 @@ export interface ReportDetail {
   message_control_id: string | null;
   accession_number: string | null;
   epic_mrn: string | null;
+  resolved_epic_mrn: string | null;
   mpi: string | null;
+  resolved_mpi: string | null;
   message_dt: string | null;
   modality: string | null;
   service_name: string | null;
