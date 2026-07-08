@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
 
+    # Chat origin the SPA postMessages to (iframe height + Discuss/Refine).
+    # Rendered into GET /api/config; empty disables cross-frame messaging.
+    chat_origin: str = ""
+
     # OWUI Postgres URL - receiver writes iframe-sandbox UI defaults
     # into OWUI's "user".settings JSON column on signup. Empty disables
     # the webhook (returns 503).

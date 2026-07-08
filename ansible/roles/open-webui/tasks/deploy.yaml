@@ -193,6 +193,7 @@
       GRANT CONNECT ON DATABASE {{ open_webui_database }} TO {{ owui_settings_writer_role }};
       GRANT USAGE ON SCHEMA public TO {{ owui_settings_writer_role }};
       GRANT SELECT (id, settings), UPDATE (settings) ON "user" TO {{ owui_settings_writer_role }};
+  no_log: true
 
 # Backfill for users who signed up before the report-viewer webhook was wired.
 # OWUI seeds settings to jsonb null (a scalar), which jsonb_set refuses to

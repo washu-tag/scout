@@ -39,6 +39,7 @@
 - name: Parse Helm values
   ansible.builtin.set_fact:
     report_viewer_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+  no_log: true
 
 - name: Deploy report-viewer
   ansible.builtin.include_role:

@@ -14,7 +14,9 @@ export function getHeight(): number {
 
 export function postHeight(): void {
   if (window.parent === window) return;
-  window.parent.postMessage({ type: 'iframe:height', height: current }, chatOrigin());
+  const origin = chatOrigin();
+  if (!origin) return;
+  window.parent.postMessage({ type: 'iframe:height', height: current }, origin);
 }
 
 export function setHeight(px: number): void {

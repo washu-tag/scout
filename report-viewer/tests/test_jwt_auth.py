@@ -71,6 +71,7 @@ def _mint(priv_pem: bytes, **overrides) -> str:
         "sub": "alice-keycloak-uuid",
         "preferred_username": "alice",
         "iss": _ISSUER,
+        "aud": settings.oidc_audience,
         "iat": now,
         "exp": now + 300,
     }
@@ -153,6 +154,32 @@ def test_invalid_bearer_does_NOT_fall_through_to_header(keypair):
                 "Authorization": f"Bearer {expired}",
                 "X-Auth-Request-Preferred-Username": "alice",
             },
+        )
+        assert r.status_code == 401
+
+
+def test_bearer_without_aud_returns_401(keypair):
+    """python-jose accepts tokens missing `aud` when `audience=` is passed;
+    the explicit post-decode guard must catch this."""
+    priv, _ = keypair
+    now = int(time.time())
+    token = jwt.encode(
+        {
+            "sub": "alice",
+            "preferred_username": "alice",
+            "iss": _ISSUER,
+            "iat": now,
+            "exp": now + 300,
+        },
+        priv,
+        algorithm="RS256",
+        headers={"kid": _KID},
+    )
+    with TestClient(create_app()) as client:
+        r = client.post(
+            "/api/searches",
+            json={"sql": "SELECT 1"},
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert r.status_code == 401
 

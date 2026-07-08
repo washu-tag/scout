@@ -1,11 +1,17 @@
 import type { FilterState } from './api/client';
 
+let _chatOrigin = '';
+
+export function setChatOrigin(origin: string): void {
+  _chatOrigin = origin;
+}
+
 export function chatOrigin(): string {
-  return window.location.origin.replace(/\/\/report-viewer\./, '//chat.');
+  return _chatOrigin;
 }
 
 export function chatUrl(chatId: string): string {
-  return `${chatOrigin()}/c/${encodeURIComponent(chatId)}`;
+  return `${_chatOrigin}/c/${encodeURIComponent(chatId)}`;
 }
 
 // `input:prompt` not `:submit`: OWUI's auto-submit requires real
@@ -13,8 +19,8 @@ export function chatUrl(chatId: string): string {
 // subdomain doesn't satisfy. Filling the composer avoids the
 // per-click confirmation dialog.
 export function submitChatPrompt(text: string): void {
-  if (window.parent === window) return;
-  window.parent.postMessage({ type: 'input:prompt', text }, chatOrigin());
+  if (window.parent === window || !_chatOrigin) return;
+  window.parent.postMessage({ type: 'input:prompt', text }, _chatOrigin);
 }
 
 export function applyFilterToChat(searchId: string, filters: FilterState): void {

@@ -88,6 +88,12 @@ def _validate_jwt(token: str) -> str | None:
     except JWTError as exc:
         log.info("bearer rejected: signature/decode (%s)", exc)
         return None
+    # python-jose 3.5 accepts tokens with no `aud` even when `audience=` is passed.
+    aud = claims.get("aud")
+    aud_list = [aud] if isinstance(aud, str) else (aud or [])
+    if settings.oidc_audience not in aud_list:
+        log.info("bearer rejected: aud missing/mismatch")
+        return None
     # Prefer preferred_username because Trino is configured with
     # http-server.authentication.jwt.principal-field=preferred_username
     # (matches Jupyter/Voila). Using sub (UUID) here would cause Trino to

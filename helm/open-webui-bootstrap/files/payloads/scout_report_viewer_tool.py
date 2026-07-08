@@ -25,13 +25,15 @@ _MAX_GET_IDS = 100
 _MD_CELL_MAX = 400
 _MAX_UPLOAD_BYTES = 32 * 1024 * 1024
 _VIEWER_NOTE = (
-    "A small sample of the results is returned for your insight. "
+    "The sample table above is a subset of results; when the search "
+    "used match_terms or match_diagnoses, an evidence table with "
+    "excerpts and matched diagnoses is included too. "
     "A search viewer is rendered as an iframe above this message. "
-    "The user can sort, filter, and explore the results there. "
-    "Do not restate the table or the SQL. "
-    "Use the sample to confirm your query and reply with insights, "
-    "refinement suggestions, follow-up queries, pattern observations, "
-    "etc."
+    "The user can sort, filter, and explore the full results there. "
+    "Do not restate the tables or the SQL. "
+    "Use the sample and evidence to confirm your query and reply "
+    "with insights, follow-up queries, pattern observations, "
+    "refinement suggestions, etc."
 )
 
 

@@ -77,6 +77,14 @@ export function listSearches(): Promise<SearchMeta[]> {
   return api<SearchMeta[]>('/api/searches');
 }
 
+export interface AppConfig {
+  chatOrigin: string;
+}
+
+export function getConfig(): Promise<AppConfig> {
+  return api<AppConfig>('/api/config');
+}
+
 export interface RowsResponse {
   id: string;
   page: number;

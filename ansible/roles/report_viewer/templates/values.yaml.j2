@@ -9,6 +9,7 @@ resources: {{ report_viewer_resources_default | combine(report_viewer_resources 
 
 env:
   REPORT_VIEWER_EXTERNAL_URL: "https://{{ report_viewer_host }}"
+  REPORT_VIEWER_CHAT_ORIGIN: "{{ report_viewer_chat_origin }}"
   # Trino service + principal impersonation (ADR 0022).
   REPORT_VIEWER_TRINO_HOST: "{{ report_viewer_trino_host }}"
   REPORT_VIEWER_TRINO_PORT: "{{ report_viewer_trino_port }}"

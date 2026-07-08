@@ -63,7 +63,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/searches", tags=["searches"])
 
 
-_LLM_SAMPLE_ROWS = 5
+_LLM_SAMPLE_ROWS = 10
 
 
 def _assert_required_projections(columns: list[str]) -> None:
@@ -142,7 +142,7 @@ async def create_search(
     user: User = Depends(get_current_user),
 ) -> CreateSearchResponse:
     """Save a SQL query as a search. No row materialization - runs one
-    `SELECT COUNT(*)` to cache the count, fetches 5 sample rows for
+    `SELECT COUNT(*)` to cache the count, fetches a small sample for
     the LLM, and (if match_terms or match_diagnoses is set) one
     additional small query against reports_latest to populate per-row
     evidence (excerpt + matched_diagnoses).

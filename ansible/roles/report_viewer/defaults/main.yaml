@@ -16,6 +16,9 @@ report_viewer_image_tag: latest
 report_viewer_subdomain: report-viewer
 report_viewer_host: '{{ report_viewer_subdomain }}.{{ server_hostname }}'
 
+# Chat origin the SPA postMessages to. Mirrors open-webui's ingress host.
+report_viewer_chat_origin: 'https://chat.{{ server_hostname }}'
+
 # Database - Postgres user/db are created via scout_common/create_db_with_owner
 # against the shared CNPG cluster (postgres_cluster_name).
 report_viewer_database: report_viewer

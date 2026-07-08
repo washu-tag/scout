@@ -6,6 +6,8 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import App from './App';
 import SearchesListPage from './pages/SearchesListPage';
 import SearchDetailPage from './pages/SearchDetailPage';
+import { getConfig } from './api/client';
+import { setChatOrigin } from './chat';
 import { postHeight } from './iframeHeight';
 
 // basename must match the FastAPI StaticFiles mount (/spa/); Vite's `base`
@@ -38,17 +40,21 @@ pulseStyle.textContent =
   'tr.scout-row:hover{background:#f5f7f9 !important}';
 document.head.appendChild(pulseStyle);
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>{router}</QueryClientProvider>
-  </StrictMode>,
-);
-
-// Belt-and-suspenders around ResizeObserver: catch late layout shifts
-// from font loads / third-party CSS that the observer can miss.
-window.addEventListener('load', postHeight);
-setTimeout(postHeight, 300);
-setTimeout(postHeight, 1200);
-if (typeof ResizeObserver !== 'undefined') {
-  new ResizeObserver(postHeight).observe(document.body);
-}
+// Fetch chat origin from the backend before mounting; a failure leaves
+// _chatOrigin empty and cross-frame postMessages no-op silently.
+getConfig()
+  .then((c) => setChatOrigin(c.chatOrigin))
+  .catch(() => {})
+  .finally(() => {
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>{router}</QueryClientProvider>
+      </StrictMode>,
+    );
+    window.addEventListener('load', postHeight);
+    setTimeout(postHeight, 300);
+    setTimeout(postHeight, 1200);
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(postHeight).observe(document.body);
+    }
+  });
