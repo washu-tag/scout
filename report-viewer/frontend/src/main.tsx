@@ -6,7 +6,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import App from './App';
 import SearchesListPage from './pages/SearchesListPage';
 import SearchDetailPage from './pages/SearchDetailPage';
-import { getConfig } from './api/client';
+import { ApiError, getConfig } from './api/client';
 import { setChatOrigin } from './chat';
 import { postHeight } from './iframeHeight';
 
@@ -28,6 +28,12 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       refetchOnWindowFocus: false,
+      retry: (failureCount, error) => {
+        if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
+          return false;
+        }
+        return failureCount < 3;
+      },
     },
   },
 });

@@ -26,7 +26,7 @@ export function friendlyError(err: unknown, subject: string): string {
     case 403:
       return `Your session has expired, or you don't have access to ${subject}. Refresh the page to sign back in.`;
     case 404:
-      return `${subject[0].toUpperCase() + subject.slice(1)} couldn't be found — it may have been removed.`;
+      return `${subject[0].toUpperCase() + subject.slice(1)} couldn't be found.`;
     default:
       return `Something went wrong loading ${subject}. Try again in a moment; if it keeps happening, let the Scout team know.`;
   }
