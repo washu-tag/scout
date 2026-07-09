@@ -6,6 +6,10 @@ updates:
       - '.github/actions/**'
     schedule:
       interval: 'weekly'
+    # Let a freshly published version age before Dependabot proposes it, to reduce
+    # exposure to a compromised release (security updates ignore the cooldown).
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns:
@@ -19,12 +23,16 @@ updates:
     directory: '/extractor/hl7log-extractor'
     schedule:
       interval: 'weekly'
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 0
 
   - package-ecosystem: 'gradle'
     directory: '/keycloak/event-listener'
     schedule:
       interval: 'weekly'
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 0
 
   - package-ecosystem: 'pip'

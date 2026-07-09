@@ -100,7 +100,6 @@ scout/
 │       └── pyproject.toml     # Package: hl7scout
 ├── orchestrator/              # Temporal workflows (TypeScript/Node.js)
 ├── helm/                      # Helm chart configurations
-├── terraform/                 # Infrastructure as Code (optional)
 └── tests/                     # Integration and unit tests
     ├── auth/                  # Playwright auth tests (TypeScript/Node.js)
     └── ingest/                # HL7 ingestion integration tests (Java/Gradle)
@@ -146,7 +145,7 @@ See `docs/source/dataschema.md` for complete schema documentation and HL7 field 
 - **Python Services**: Python 3.10+, PySpark 4.1.1
 - **TypeScript Services**: Node.js/npm
 - **Cluster Access**: kubectl configured for K3s cluster
-- **Optional**: Docker (local containerization), Terraform (IaC)
+- **Optional**: Docker (local containerization)
 
 ### Deployment Commands
 
@@ -264,7 +263,8 @@ HL7 reports are ingested via Temporal workflows:
   "splitAndUploadTimeout": 120,               // Activity timeout (minutes)
   "splitAndUploadHeartbeatTimeout": 10,       // Heartbeat timeout (minutes)
   "splitAndUploadConcurrency": 4,             // Concurrent log processing
-  "deltaIngestTimeout": 120                   // Transform timeout (minutes)
+  "deltaIngestTimeout": 120,                  // Base-ingest activity timeout (minutes)
+  "deriveDeltaTablesTimeout": 120             // Derivative-table activity timeout (minutes)
 }
 ```
 

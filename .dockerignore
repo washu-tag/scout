@@ -45,7 +45,6 @@ helm/hl7log-extractor
 helm/hive-metastore
 keycloak
 orchestrator
-terraform
 verify-node
 zap
 policy

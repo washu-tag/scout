@@ -27,7 +27,8 @@ heartbeats internally and could coalesce or drop heartbeats if they are too freq
    Scout ships with a default modality mapping file (`extractor/hl7-transformer/modality_mapping_codes.csv`) that is deployed as a Kubernetes ConfigMap to this location.
    To use a custom mapping, set `modality_map_source_file` in the inventory to point to your custom CSV file, then redeploy.
 - `reportTableName`: name of the Delta Lake table to write to. Ansible equivalent: `report_delta_table_name`.
-- `deltaIngestTimeout`: timeout in minutes for the activity and transforms the HL7 and uploads to the delta lake. Ansible equivalent: `hl7_transformer_timeout` 
+- `deltaIngestTimeout`: timeout in minutes for the base-ingest activity that transforms the HL7 and merges it into the base Delta Lake table. Ansible equivalent: `hl7_transformer_timeout`
+- `deriveDeltaTablesTimeout`: timeout in minutes for the derivative-table activity that builds the curated/latest/dx/mapping tables (and epic views) from the base table's change data feed. Ansible equivalent: `hl7_transformer_derive_timeout`
 
 ## admintools container
 

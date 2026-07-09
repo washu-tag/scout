@@ -7,9 +7,14 @@ spec:
   completions: 1
   backoffLimit: 0
   template:
+    # CI-only ephemeral Gradle test runner: needs a writable filesystem for the
+    # Gradle build and writes into a runner-owned hostPath, so running non-root
+    # with a read-only root filesystem isn't applicable here.
+    # nosemgrep: yaml.kubernetes.security.run-as-non-root.run-as-non-root
     spec:
       restartPolicy: Never
       containers:
+        # nosemgrep: yaml.kubernetes.security.allow-privilege-escalation-no-securitycontext.allow-privilege-escalation-no-securitycontext, yaml.kubernetes.security.writable-filesystem-container.writable-filesystem-container
         - name: tests
           image: sapmachine:21
           command: ['/bin/sh', '-c']

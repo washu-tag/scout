@@ -35,6 +35,19 @@
                 containers:
                   - name: mailhog
                     image: "{{ mailhog_image | default('mailhog/mailhog:latest') }}"
+                    securityContext:
+                      runAsNonRoot: true
+                      runAsUser: 1000
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities:
+                        drop:
+                          - ALL
+                      seccompProfile:
+                        type: RuntimeDefault
+                    env:
+                      - name: HOME
+                        value: /tmp
                     ports:
                       - containerPort: 1025
                         name: smtp
@@ -47,6 +60,12 @@
                       limits:
                         memory: '128Mi'
                         cpu: '100m'
+                    volumeMounts:
+                      - name: tmp
+                        mountPath: /tmp
+                volumes:
+                  - name: tmp
+                    emptyDir: {}
 
     - name: Deploy MailHog Service
       kubernetes.core.k8s:

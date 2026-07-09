@@ -28,3 +28,10 @@ dependencies = [
     "trino",
     "uvicorn",
 ]
+
+[project.optional-dependencies]
+# Unit-test deps only. Spark/Delta come from [project.dependencies] above so there is
+# no second place to bump on a Spark upgrade.
+test = [
+    "pytest",
+]

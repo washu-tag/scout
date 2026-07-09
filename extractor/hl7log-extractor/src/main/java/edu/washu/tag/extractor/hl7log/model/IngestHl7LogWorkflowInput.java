@@ -13,7 +13,8 @@ package edu.washu.tag.extractor.hl7log.model;
  * @param splitAndUploadHeartbeatTimeout The heartbeat timeout for the split and upload job in minutes.
  * @param splitAndUploadConcurrency How many logs we should process before continuing as new.
  * @param reportTableName Name of the report table to be created in Delta Lake.
- * @param deltaIngestTimeout The timeout for the delta lake ingest job in minutes.
+ * @param deltaIngestTimeout The timeout for the base-ingest (parse + merge) activity in minutes.
+ * @param deriveDeltaTablesTimeout The timeout for the derivative-table activity (curated/latest/dx/mapping) in minutes.
  * @param createMapping Whether to derive the report-patient mapping table and the epic views that depend on it.
  *                      Defaults to true. Set false to skip mapping work for ingests that don't need it
  *                      (faster, used by tests that don't assert on mapping output).
@@ -30,10 +31,12 @@ public record IngestHl7LogWorkflowInput(
         Integer splitAndUploadConcurrency,
         String reportTableName,
         Integer deltaIngestTimeout,
+        Integer deriveDeltaTablesTimeout,
         Boolean createMapping,
         ContinueIngestWorkflow continued
 ) {
     public static IngestHl7LogWorkflowInput EMPTY = new IngestHl7LogWorkflowInput(
+        null,
         null,
         null,
         null,

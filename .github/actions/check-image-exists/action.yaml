@@ -25,10 +25,9 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
+        VERSION: ${{ steps.derive-version.outputs.version }}
+        IMAGE_NAME: ${{ inputs.image-name }}
       run: |
-        VERSION="${{ steps.derive-version.outputs.version }}"
-        IMAGE_NAME="${{ inputs.image-name }}"
-
         # Query GitHub Container Registry API
         if gh api "/orgs/washu-tag/packages/container/${IMAGE_NAME}/versions" \
            --jq '.[] | select(.metadata.container.tags[]? == "'"${VERSION}"'")' 2>/dev/null | grep -q .; then
