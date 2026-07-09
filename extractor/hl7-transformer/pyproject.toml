@@ -34,5 +34,4 @@ dependencies = [
 # no second place to bump on a Spark upgrade.
 test = [
     "pytest",
-    "pytest-rerunfailures",
 ]

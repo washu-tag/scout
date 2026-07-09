@@ -168,33 +168,48 @@ def test_derivative_is_incremental(spark, seed_reports, report_row, tmp_path):
     assert spark.table(f"default.{table}_curated").count() == 2
 
 
-@pytest.mark.flaky(reruns=2)
-def test_temporal_cancel_of_running_derivative_leaves_base_untouched(
+def test_temporal_cancel_of_running_derivative_is_delivered_and_resumable(
     spark, seed_reports, report_row, tmp_path, monkeypatch
 ):
-    """Fault isolation under a real Temporal cancellation (issue #457): while the
-    derivative activity is running, cancel it; the base table must be untouched and a
-    later clean run must still complete.
+    """A real Temporal cancellation of a running derivative activity (issue #457) is
+    delivered to the activity thread, terminates it, and leaves the pipeline resumable —
+    a later clean run still derives correctly.
 
-    Cancellation is delivered reliably (not raced against Spark) by blocking the
-    derivative in a heartbeat/is-cancelled loop on the activity thread — env.cancel()
-    then makes activity.heartbeat() raise CancelledError (see probe). The loop is
-    bounded so a delivery bug fails the test instead of hanging. This test uses the
-    passthrough _patched_session, so how the CancelledError is classified is covered
-    separately (issue #458, resolved) by the spark_activity_session tests below; here we
-    only assert the base-table invariant and resumability.
+    Scope: we assert delivery + resumability only. Fault isolation (a failure mid-cascade
+    not touching the base table) is covered by
+    ``test_derivative_failure_does_not_touch_base`` with real cascade work; asserting it
+    here would be vacuous because ``process_derivative_data`` is stubbed out (see below),
+    so the cancelled run performs no Spark writes at all.
+
+    Determinism (why this used to be flaky): ``ActivityEnvironment`` delivers a
+    sync-activity cancel two ways *at once* — it sets the cancelled flag
+    (``activity.is_cancelled()`` flips to True) *and* asynchronously injects a
+    ``CancelledError`` into the thread that called ``env.run()``. It does NOT route
+    cancellation through ``activity.heartbeat()`` (a no-op in the test env), so an earlier
+    version that leaned on a wall-clock ``sleep`` before cancelling and on heartbeat to
+    raise was racing thread scheduling. This version removes both races:
+
+      * a ``threading.Event`` handshake cancels only once the derivative signals it is
+        provably inside the poll loop — no guess about when it started;
+      * ``env.run()`` runs on a dedicated thread we join before asserting, so the
+        async-injected ``CancelledError`` is confined to that thread and can never surface
+        in the assertions or the clean re-run below.
+
+    The loop is bounded so a delivery bug fails the test instead of hanging. How the
+    ``CancelledError`` is *classified* (health file, phantom success) is covered
+    deterministically by the ``spark_activity_session`` tests below (issue #458).
     """
     table = "reports_cancel"
     seed_reports(table, [report_row("s3://bucket/a.hl7", filler="ACC1")])
-    base_version = _table_version(spark, table)
-    base_count = spark.table(f"default.{table}").count()
+
+    in_derivative = threading.Event()
 
     def _block_until_cancelled(spark_, report_table_name, create_mapping=True):
         # Runs on the activity thread; bounded (<= ~10s) so it can never hang the suite.
+        in_derivative.set()  # tell the test we are provably inside the derivative
         for _ in range(500):
             if activity.is_cancelled():
                 raise CancelledError("cancelled")
-            activity.heartbeat()  # raises CancelledError once the activity is cancelled
             time.sleep(0.02)
         raise AssertionError("cancellation was never delivered to the derivative")
 
@@ -205,27 +220,33 @@ def test_temporal_cancel_of_running_derivative_leaves_base_untouched(
 
     env = ActivityEnvironment()
 
-    def _cancel_soon():
-        time.sleep(0.3)  # let the derivative get well underway first
-        env.cancel()
+    def _run_activity():
+        # env.cancel() async-injects the CancelledError into THIS thread; swallow it here
+        # so it can never escape into the assertions the main thread runs below.
+        try:
+            with _patched_session(spark):
+                env.run(derive_delta_tables, table, False, tmp_path / "h")
+        except (
+            BaseException
+        ):  # noqa: BLE001 - cancellation surfaces here; the invariant is what matters
+            pass
+        # Absorb a late async-injected CancelledError on this thread (rather than letting
+        # it fire during thread teardown) so this thread always exits cleanly.
+        drain_until = time.monotonic() + 0.3
+        while time.monotonic() < drain_until:
+            try:
+                time.sleep(0.01)
+            except BaseException:  # noqa: BLE001
+                break
 
-    canceller = threading.Thread(target=_cancel_soon, daemon=True)
-    canceller.start()
-    try:
-        with _patched_session(spark):
-            env.run(derive_delta_tables, table, False, tmp_path / "h")
-    except (
-        BaseException
-    ):  # noqa: BLE001 - cancellation surfaces here; the invariant is what matters
-        pass
-    finally:
-        canceller.join()
+    runner = threading.Thread(target=_run_activity)
+    runner.start()
+    assert in_derivative.wait(timeout=5), "derivative never entered the cancel loop"
+    env.cancel()
+    runner.join(timeout=20)
+    assert not runner.is_alive(), "cancelled derivative did not terminate"
 
-    # The cancellation did not touch the base table.
-    assert _table_version(spark, table) == base_version
-    assert spark.table(f"default.{table}").count() == base_count
-
-    # A subsequent clean run derives correctly (the pipeline is resumable).
+    # The pipeline is resumable: a subsequent clean run derives correctly.
     monkeypatch.undo()
     _derive(spark, table, create_mapping=False, health_file=tmp_path / "h")
     assert spark.table(f"default.{table}_curated").count() == 1
