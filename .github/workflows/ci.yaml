@@ -221,7 +221,7 @@ jobs:
         env:
           REPORT_VIEWER_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/report_viewer_test
         run: cd report-viewer && pip install -e '.[dev]' && pytest -v
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '20'
           cache: 'npm'
@@ -733,7 +733,7 @@ jobs:
           npx playwright test owui-iframe-seed.spec.ts
       - name: 'Auth playwright report'
         if: ${{ failure() && matrix.side == 'analytics' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playwright-report-${{ matrix.side }}
           path: tests/auth/playwright-report/
