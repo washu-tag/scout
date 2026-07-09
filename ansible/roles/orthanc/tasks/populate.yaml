@@ -25,6 +25,19 @@
             containers:
               - name: dcm4che
                 image: 'dcm4che/dcm4che-tools:{{ dcm4che_tools_version }}'
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 1000
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop:
+                      - ALL
+                  seccompProfile:
+                    type: RuntimeDefault
+                env:
+                  - name: HOME
+                    value: /tmp
                 command:
                   - storescu
                   - -c
@@ -34,7 +47,11 @@
                   - name: data
                     mountPath: /data
                     readOnly: true
+                  - name: tmp
+                    mountPath: /tmp
             volumes:
               - name: data
                 hostPath:
                   path: '{{ orthanc_populate }}'
+              - name: tmp
+                emptyDir: {}

@@ -41,8 +41,9 @@ jobs:
       reset_exists: ${{ steps.check_commits.outputs.reset_exists }}
     steps:
       - name: Validate version format
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
           if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Invalid version format. Expected X.Y.Z (e.g., 2.1.0)"
             exit 1
@@ -51,29 +52,31 @@ jobs:
 
       - name: Generate token from GitHub App
         id: app_token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
       - name: Check if tag already exists
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          if git tag -l "v${{ inputs.version }}" | grep -q .; then
-            echo "::error::Tag v${{ inputs.version }} already exists"
+          if git tag -l "v${VERSION}" | grep -q .; then
+            echo "::error::Tag v${VERSION} already exists"
             exit 1
           fi
-          echo "Tag v${{ inputs.version }} does not exist"
+          echo "Tag v${VERSION} does not exist"
 
       - name: Check for existing commits
         id: check_commits
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
-
           # Check for version bump commit
           VERSION_BUMP_SHA=$(git log --grep="^Update to version $VERSION$" --format="%H" | head -1)
           if [[ -n "$VERSION_BUMP_SHA" ]]; then
@@ -104,12 +107,13 @@ jobs:
         id: check_release
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          VERSION: ${{ inputs.version }}
         run: |
-          if gh release view "v${{ inputs.version }}" &>/dev/null; then
-            echo "Release v${{ inputs.version }} already exists"
+          if gh release view "v${VERSION}" &>/dev/null; then
+            echo "Release v${VERSION} already exists"
             echo "release_exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Release v${{ inputs.version }} does not exist"
+            echo "Release v${VERSION} does not exist"
             echo "release_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -117,8 +121,11 @@ jobs:
         if: inputs.dry_run
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          VERSION: ${{ inputs.version }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
         run: |
-          echo "## Changelog Preview for v${{ inputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Changelog Preview for v${VERSION}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           # Get the previous tag
@@ -131,9 +138,9 @@ jobs:
             NOTES=$(gh api \
               --method POST \
               -H "Accept: application/vnd.github+json" \
-              "/repos/${{ github.repository }}/releases/generate-notes" \
-              -f tag_name="v${{ inputs.version }}" \
-              -f target_commitish="${{ github.sha }}" \
+              "/repos/${REPO}/releases/generate-notes" \
+              -f tag_name="v${VERSION}" \
+              -f target_commitish="${SHA}" \
               -f previous_tag_name="$PREV_TAG" \
               --jq '.body')
 
@@ -157,13 +164,13 @@ jobs:
     steps:
       - name: Generate token from GitHub App
         id: app_token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
           token: ${{ steps.app_token.outputs.token }}
@@ -174,8 +181,10 @@ jobs:
           git config user.email "scout-release[bot]@users.noreply.github.com"
 
       - name: Update version files
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          bash .github/scripts/update-versions.sh "${{ inputs.version }}"
+          bash .github/scripts/update-versions.sh "$VERSION"
 
       - name: Update package-lock.json
         run: |
@@ -186,10 +195,13 @@ jobs:
 
       - name: Commit and push
         id: commit
+        env:
+          VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           git add -A
-          git commit -m "Update to version ${{ inputs.version }}"
-          git push origin ${{ github.ref_name }}
+          git commit -m "Update to version ${VERSION}"
+          git push origin "${REF_NAME}"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   wait-for-build:
@@ -207,17 +219,19 @@ jobs:
       ci_run_id: ${{ steps.wait.outputs.run_id }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
       - name: Determine target commit
         id: target
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
           # The release should include everything on main at this point — not just
           # the version bump commit, but also any fixes pushed after it (e.g., if a
           # previous release attempt failed and we pushed a fix before re-running).
-          git pull origin ${{ github.ref_name }}
+          git pull origin "${REF_NAME}"
           HEAD_SHA=$(git rev-parse HEAD)
           echo "Waiting for build on commit: $HEAD_SHA"
           echo "sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
@@ -226,8 +240,10 @@ jobs:
         id: wait
         env:
           GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          TARGET_SHA="${{ steps.target.outputs.sha }}"
           echo "Waiting for CI workflow to complete on $TARGET_SHA..."
 
           # Poll for up to 90 minutes (180 attempts * 30s)
@@ -240,7 +256,7 @@ jobs:
             if [[ -z "$RUN_ID" ]]; then
               RUN_ID=$(gh run list \
                 --workflow=ci.yaml \
-                --branch=${{ github.ref_name }} \
+                --branch="${REF_NAME}" \
                 --json databaseId,headSha,status \
                 --jq ".[] | select(.headSha == \"$TARGET_SHA\") | .databaseId" \
                 | head -1)
@@ -268,7 +284,7 @@ jobs:
                 ;;
               completed:*)
                 echo "::error::CI workflow failed (status: $STATUS)"
-                echo "See: https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
+                echo "See: https://github.com/${REPO}/actions/runs/$RUN_ID"
                 exit 1
                 ;;
               *)
@@ -329,7 +345,7 @@ jobs:
     steps:
       - name: Generate token from GitHub App
         id: app_token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
@@ -337,14 +353,17 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          VERSION: ${{ inputs.version }}
+          REPO: ${{ github.repository }}
+          COMMIT_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
         run: |
-          gh release create "v${{ inputs.version }}" \
-            --repo "${{ github.repository }}" \
-            --title "Scout v${{ inputs.version }}" \
+          gh release create "v${VERSION}" \
+            --repo "${REPO}" \
+            --title "Scout v${VERSION}" \
             --generate-notes \
-            --target "${{ needs.wait-for-build.outputs.commit_sha }}"
+            --target "${COMMIT_SHA}"
 
-          echo "::notice::Created release v${{ inputs.version }}"
+          echo "::notice::Created release v${VERSION}"
 
   reset-dev:
     name: Reset to Dev Versions
@@ -357,19 +376,21 @@ jobs:
     steps:
       - name: Generate token from GitHub App
         id: app_token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
           token: ${{ steps.app_token.outputs.token }}
 
       - name: Pull latest
-        run: git pull origin ${{ github.ref_name }}
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: git pull origin "${REF_NAME}"
 
       - name: Configure git
         run: |
@@ -388,6 +409,8 @@ jobs:
           npm install --package-lock-only
 
       - name: Commit and push
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
           git add -A
 
@@ -396,6 +419,6 @@ jobs:
             echo "No changes to commit (already at dev versions)"
           else
             git commit -m "Reset to dev versions"
-            git push origin ${{ github.ref_name }}
+            git push origin "${REF_NAME}"
             echo "::notice::Reset to dev versions complete"
           fi

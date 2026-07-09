@@ -18,10 +18,24 @@ jobs:
     container:
       image: semgrep/semgrep:1.152.0
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Run Semgrep
         run: semgrep scan --config p/default --config p/secrets --config p/docker --config p/kubernetes --config p/owasp-top-ten --sarif --output semgrep.sarif
+
+      - name: Drop in-source (nosemgrep) suppressed findings
+        # `semgrep scan --sarif` keeps `# nosemgrep`-suppressed findings in the
+        # SARIF (tagged with a `suppressions` entry), but GitHub code scanning
+        # ignores the SARIF `suppressions` property and would otherwise surface
+        # them as open alerts on every ref. Strip suppressed results so
+        # intentional in-code suppressions actually resolve the alert.
+        if: always()
+        shell: bash
+        run: |
+          if [ -f semgrep.sarif ]; then
+            jq '.runs[].results |= map(select((.suppressions // []) | length == 0))' \
+              semgrep.sarif > semgrep.sarif.tmp && mv semgrep.sarif.tmp semgrep.sarif
+          fi
 
       - name: Print findings to log
         if: always()
@@ -30,7 +44,7 @@ jobs:
           jq -r '.runs[].results[] | "\(.level)\t\(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine)\t\(.ruleId)\t\(.message.text[0:120])"' semgrep.sarif | sort || echo "No findings or failed to parse SARIF"
 
       - name: Upload Semgrep SARIF
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
         if: always()
         with:
           sarif_file: 'semgrep.sarif'

@@ -221,6 +221,19 @@
             containers:
               - name: mc
                 image: '{{ minio_client_image }}:{{ minio_client_image_tag }}'
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 1000
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop:
+                      - ALL
+                  seccompProfile:
+                    type: RuntimeDefault
+                env:
+                  - name: HOME
+                    value: /tmp
                 command: ['/bin/sh', '-c']
                 args:
                   - |
@@ -273,11 +286,13 @@
                   {{ [
                     {'name': 'policies', 'mountPath': '/policies', 'readOnly': true},
                     {'name': 'rootcreds', 'mountPath': '/rootcreds', 'readOnly': true},
+                    {'name': 'tmp', 'mountPath': '/tmp'},
                   ] + bootstrap_user_volume_mounts }}
             volumes: >-
               {{ [
                 {'name': 'policies', 'projected': {'defaultMode': 420, 'sources': policy_sources}},
                 {'name': 'rootcreds', 'secret': {'secretName': minio_env_secret_name | default('minio-env-configuration'), 'items': [{'key': 'config.env', 'path': 'config.env'}]}},
+                {'name': 'tmp', 'emptyDir': {}},
               ] + bootstrap_user_volumes }}
 
 - name: Wait for bootstrap job to complete

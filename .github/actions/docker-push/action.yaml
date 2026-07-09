@@ -8,14 +8,18 @@ runs:
   using: 'composite'
   steps:
     - name: Download artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         name: ${{ inputs.image-name }}
         path: ${{ runner.temp }}
     - name: Push image
       shell: bash
+      env:
+        IMAGE_NAME: ${{ inputs.image-name }}
       run: |
-        docker push $(docker load --input ${{ runner.temp }}/${{ inputs.image-name }}.tar | sed -e 's/.*: //g')
+        docker push "$(docker load --input "${RUNNER_TEMP}/${IMAGE_NAME}.tar" | sed -e 's/.*: //g')"
     - name: Cleanup temp image tar
       shell: bash
-      run: rm -f ${{ runner.temp }}/${{ inputs.image-name }}.tar
+      env:
+        IMAGE_NAME: ${{ inputs.image-name }}
+      run: rm -f "${RUNNER_TEMP}/${IMAGE_NAME}.tar"

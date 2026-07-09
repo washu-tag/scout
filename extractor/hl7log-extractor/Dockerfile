@@ -29,5 +29,9 @@ WORKDIR /app
 # Copy the built JAR file from the build stage
 COPY --from=build /app/build/libs/*.jar app.jar
 
+# Run as an unprivileged user rather than root
+RUN addgroup -S app && adduser -S -G app app
+USER app
+
 # Run the jar file
 ENTRYPOINT ["java", "-jar", "app.jar"]

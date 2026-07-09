@@ -75,9 +75,21 @@
             containers:
               - name: prospective-indexing-setup
                 image: temporalio/admin-tools
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 1000
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop:
+                      - ALL
+                  seccompProfile:
+                    type: RuntimeDefault
                 env:
                   - name: TEMPORAL_ADDRESS
                     value: 'temporal-internal-frontend.{{ scout_extractor_namespace }}:7236'
+                  - name: HOME
+                    value: /tmp
                 command:
                   - /bin/sh
                   - -c
@@ -97,3 +109,9 @@
                         --type IngestHl7LogWorkflow \
                         --cron '{{ scheduled_ingest_cron }}'
                     fi
+                volumeMounts:
+                  - name: tmp
+                    mountPath: /tmp
+            volumes:
+              - name: tmp
+                emptyDir: {}

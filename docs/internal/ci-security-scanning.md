@@ -98,9 +98,9 @@ The composite action (`.github/actions/trivy-scan-image/action.yaml`) does a sin
 
 The `publish` and `publish-demo` jobs require `scan-images` in their `needs:` array, so a failed or cancelled scan blocks publishing.
 
-All third-party action references are pinned to commit hashes (not tags) to prevent supply chain attacks. Dependabot's `github-actions` ecosystem in `dependabot.yml` keeps these pins current.
+All actions referenced with `uses:` — first-party (`actions/*`, `github/codeql-action`) and third-party alike — are pinned to full commit SHAs (not tags) across every workflow and composite action, to prevent supply-chain attacks. (The sole exception is the internal `washu-tag/.github` reusable workflow, referenced by `@main` by design.) Dependabot's `github-actions` ecosystem in `dependabot.yml` keeps these pins current.
 
-**Images scanned**: `hl7log-extractor`, `hl7-transformer`, `scout-notebook`, `launchpad`, `superset`, `keycloak`.
+**Images scanned**: `hl7log-extractor`, `hl7-transformer`, `scout-notebook`, `launchpad`, `superset`, `keycloak`, `xnat-plugin-installer`.
 
 ### Semgrep
 
@@ -113,6 +113,8 @@ Runs in the `security.yaml` workflow inside the official `semgrep/semgrep` conta
 - `p/owasp-top-ten` — OWASP Top 10 coverage
 
 Semgrep runs once in SARIF mode (`--sarif --output semgrep.sarif`). A follow-up step parses the SARIF with `jq` to print a human-readable summary of findings to the workflow log. The SARIF is uploaded to GitHub's Security tab, which handles diff-aware reporting — new findings in a PR appear as inline annotations, while pre-existing findings are tracked in the Security tab.
+
+Intentional findings are suppressed in-code with a `# nosemgrep: <rule-id>` comment plus a rationale (see [Suppressing a Semgrep finding](#suppressing-a-semgrep-finding)). Because GitHub code scanning ignores the SARIF `suppressions` property, a workflow step strips suppressed results from the SARIF before upload — otherwise `nosemgrep`'d findings would linger as open alerts.
 
 ### Dependency review
 
@@ -127,7 +129,7 @@ This only reviews **newly added or changed** dependencies — existing dependenc
 Dependabot handles two concerns:
 
 1. **Application dependency CVEs** — configured via GitHub UI settings (not `dependabot.yml`). Dependabot automatically detects manifest files, builds the dependency graph, and opens PRs for dependencies with known CVEs.
-2. **GitHub Actions version updates** — configured in `.github/dependabot.yml`. Actions pinned to commit hashes aren't tracked by the Advisory Database, so version updates are needed to keep them current. This is the only ecosystem with version-update PRs enabled.
+2. **GitHub Actions version updates** — configured in `.github/dependabot.yml`. Actions pinned to commit hashes aren't tracked by the Advisory Database, so version updates are needed to keep them current. This is the only ecosystem with version-update PRs enabled. A `cooldown` (`default-days: 7`) holds each freshly published version for a week before Dependabot proposes it, to reduce exposure to a compromised release; cooldown applies to version updates only, so security updates are unaffected.
 
 **Required GitHub settings** (**Settings > Security > Advanced Security**):
 
@@ -278,6 +280,18 @@ semgrep scan --config p/default --config p/secrets --config p/docker --config p/
 
 Add `--config p/<pack>` for each new pack. After adding a pack, review findings in a test branch before merging to `main` to assess noise.
 
+### Suppressing a Semgrep finding
+
+For an intentional pattern Semgrep flags (accepted risk or not applicable), add a `# nosemgrep: <rule-id>` comment on — or directly above — the flagged line, with a short rationale:
+
+```yaml
+# insecure-skip-tls-verify is required: the k3s cert isn't valid for the API address we must use
+# nosemgrep: yaml.kubernetes.security.skip-tls-verify-cluster.skip-tls-verify-cluster
+cluster:
+```
+
+`semgrep scan --sarif` keeps suppressed findings in the SARIF (tagged `suppressions`), but GitHub code scanning ignores that property, so the `security.yaml` workflow strips suppressed results from the SARIF before upload — the suppression then resolves the alert instead of leaving it open. The rationale comment is the audit trail. To exclude an entire path instead, use `.semgrepignore` (below).
+
 ### Excluding paths from Semgrep
 
 Edit `.semgrepignore` (gitignore syntax):
@@ -293,7 +307,7 @@ docs/
 In `.github/workflows/dependency-review.yaml`:
 
 ```yaml
-- uses: actions/dependency-review-action@v4
+- uses: actions/dependency-review-action@<sha>  # keep the existing SHA pin
   with:
     fail-on-severity: high  # was 'critical'
 ```

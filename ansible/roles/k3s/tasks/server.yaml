@@ -64,6 +64,9 @@
         cluster_update:
           clusters:
             - name: '{{ k3s_kubeconfig.clusters[0].name }}'
+              # insecure-skip-tls-verify is required here: the k3s server certificate
+              # is only valid for hostnames we can't use to reach the API (see NOTE below).
+              # nosemgrep: yaml.kubernetes.security.skip-tls-verify-cluster.skip-tls-verify-cluster
               cluster:
                 server: 'https://{{ ansible_host | default(inventory_hostname) }}:6443'
                 # certificate-authority-data: '{{ k3s_kubeconfig.clusters[0].cluster["certificate-authority-data"] }}'

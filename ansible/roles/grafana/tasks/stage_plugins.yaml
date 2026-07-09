@@ -171,9 +171,13 @@
           metadata:
             labels:
               app: grafana-plugin-stager
+          # Air-gapped plugin-staging Job: installs curl via `apk add`, which needs
+          # root and a writable root filesystem. Short-lived, staging-cluster only.
+          # nosemgrep: yaml.kubernetes.security.run-as-non-root.run-as-non-root
           spec:
             restartPolicy: Never
             containers:
+              # nosemgrep: yaml.kubernetes.security.allow-privilege-escalation-no-securitycontext.allow-privilege-escalation-no-securitycontext, yaml.kubernetes.security.writable-filesystem-container.writable-filesystem-container
               - name: stager
                 image: '{{ oras_image }}:v{{ oras_version }}'
                 workingDir: /workspace
