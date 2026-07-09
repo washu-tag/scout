@@ -113,7 +113,10 @@ def test_derivative_failure_does_not_touch_base(
         "hl7scout.hl7extractor.curatedtable.curate_silver_table",
         side_effect=RuntimeError("injected derivative failure"),
     ):
-        with pytest.raises(Exception):
+        # Assert it fails *because of the injected failure*, not some unrelated Spark
+        # error — Spark re-wraps the RuntimeError from foreachBatch as a
+        # StreamingQueryException, but the message is preserved, so match on it.
+        with pytest.raises(Exception, match="injected derivative failure"):
             _derive(spark, table, create_mapping=False, health_file=tmp_path / "h")
 
     # Base table is untouched by the failed derivative.
