@@ -94,7 +94,7 @@ Prometheus scrapes `/metrics` via `prometheus-fastapi-instrumentator`, plus doma
 
 ## Future work
 
-**XNAT handoff.** The Send-to-XNAT modal ships but the trigger button is commented out. Actual submission from an accession set into an XNAT project is deferred with the XNAT deployment work (ADR 0026).
+**XNAT handoff.** Submission from an accession set into an XNAT project is deferred with the XNAT deployment work (ADR 0026).
 
 **OWUI 0.10.x migration.** When Scout picks up OWUI 0.10, the events and webhooks surface changes. Move the new-user hook onto the new tooling, and if #20770 or a successor admin settings endpoint lands, retire the direct-DB write.
 
