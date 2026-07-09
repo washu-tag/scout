@@ -66,9 +66,10 @@ config:
           logsRootPath: '{{ hl7logs_root_dir }}'
           scratchSpaceRootPath: '{{ scratch_path }}'
           hl7OutputPath: '{{ hl7_path }}'
-          splitAndUploadTimeout: {{ hl7log_extractor_timeout | default(480) }}
-          splitAndUploadHeartbeatTimeout: {{ hl7log_extractor_heartbeat_timeout | default(30) }}
-          splitAndUploadConcurrency: {{ hl7log_extractor_concurrency | default(150) }}
+          splitAndUploadTimeout: {{ hl7log_extractor_timeout }}
+          splitAndUploadHeartbeatTimeout: {{ hl7log_extractor_heartbeat_timeout }}
+          splitAndUploadConcurrency: {{ hl7log_extractor_concurrency }}
         ingestHl7ToDeltaLake:
-          deltaIngestTimeout: {{ hl7_transformer_timeout | default(480) }}
+          deltaIngestTimeout: {{ hl7_transformer_timeout }}
+          deriveDeltaTablesTimeout: {{ hl7_transformer_derive_timeout }}
           reportTableName: '{{ report_delta_table_name }}'

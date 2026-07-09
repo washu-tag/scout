@@ -1,10 +1,8 @@
-# I don't know why we have to import this specific exception type, since it is
-# literally just an alias for the builtin TimeoutError.
-# But if we try to catch the builtin TimeoutError, it doesn't work.
 import logging
-from concurrent.futures._base import TimeoutError
+from contextlib import contextmanager
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
@@ -12,7 +10,7 @@ from pyspark.sql import SparkSession, Column, Window
 from pyspark.sql import functions as F
 from s3fs import S3FileSystem
 from temporalio import activity
-from temporalio.exceptions import ApplicationError
+from temporalio.exceptions import ApplicationError, CancelledError
 
 from hl7scout.db import write_errors, write_successes
 from .schemautils import (
@@ -29,7 +27,6 @@ from .hl7reader import read_hl7
 from .sparkutils import merge_df_into_dt_on_column
 
 import os
-import shutil
 import tempfile
 import zipfile
 
@@ -89,28 +86,104 @@ def extract_people_from_obr_field(column: str) -> Column:
     )
 
 
+@contextmanager
+def spark_activity_session(app_name: str, health_file: Optional[Path] = None):
+    """Yield a Hive-enabled Spark session for a Temporal activity, owning the full
+    session lifecycle + error-handling contract shared by the ingest and derive
+    activities:
+
+    * create the session and heartbeat once it is up;
+    * classify any failure by *cancellation state*, not exception type (issue #458). A
+      Temporal cancel is delivered to these threaded activities by async thread-exception
+      injection, which cannot interrupt a blocking py4j/JVM call — so a cancel that lands
+      mid-Spark surfaces here as whatever the torn-down call raises (``CancelledError``,
+      ``Py4JError``, ``ConnectionError``, or ``TimeoutError``). ``activity.is_cancelled()``
+      is the reliable signal (set before the exception is injected):
+
+        - if cancelled: do *not* touch ``health_file``; re-raise as a Temporal
+          ``CancelledError`` so the activity is recorded Cancelled — never a phantom
+          success, never a retryable failure;
+        - else on a genuine Spark connectivity failure (``Py4JError`` /
+          ``ConnectionError``): append the message to ``health_file`` (marking the pod
+          unhealthy so k8s restarts it) and re-raise;
+        - else (any other error, including a genuine ``TimeoutError``): re-raise so
+          Temporal's retry policy fires;
+
+    * always clear the cache and stop the session on the way out.
+    """
+    spark = None
+    try:
+        activity.logger.info("Creating Spark session")
+        spark = SparkSession.builder.appName(app_name).enableHiveSupport().getOrCreate()
+        activity.heartbeat()
+        yield spark
+    except Exception as e:
+        # Classify on cancellation STATE, not exception type. A Temporal cancel can
+        # surface here as the injected CancelledError OR, if it interrupts an in-flight
+        # py4j call while Spark is torn down, as Py4JError / ConnectionError / TimeoutError.
+        if activity.is_cancelled():
+            activity.logger.info(
+                "Activity %s cancelled; propagating cancellation", app_name
+            )
+            if isinstance(e, CancelledError):
+                raise
+            # Re-raise as a Temporal cancellation so the activity is recorded Cancelled
+            # (not a phantom success, not a retryable failure). Do NOT touch health_file.
+            raise CancelledError("Activity cancelled during Spark work") from e
+        # Not cancelled: a genuine Spark connectivity failure marks the pod unhealthy so
+        # k8s restarts it.
+        if isinstance(e, (Py4JError, ConnectionError)):
+            activity.logger.error("Spark error in %s. Marking pod unhealthy.", app_name)
+            try:
+                message = str(e)
+            except Exception:
+                message = "Unknown error"
+            if health_file is not None:
+                # Write the error message to the health file
+                with health_file.open("a") as f:
+                    f.write(message + "\n")
+            raise
+        # Anything else (including a real TimeoutError) is re-raised untouched so
+        # Temporal's retry policy fires.
+        activity.logger.exception("Error in %s", app_name, exc_info=e)
+        raise
+    finally:
+        if spark is not None:
+            activity.logger.info("Clearing spark cache")
+            activity.heartbeat()
+            try:
+                spark.catalog.clearCache()
+            except Exception as e:
+                activity.logger.error("Error clearing spark cache", exc_info=e)
+
+            activity.logger.info("Stopping spark")
+            activity.heartbeat()
+            try:
+                spark.stop()
+            except Exception:
+                activity.logger.error("Error stopping spark")
+
+
 def import_hl7_files_to_deltalake(
     hl7_manifest_file_path: str,
     modality_map_csv_path: str,
     report_table_name: str,
     health_file: Path,
-    create_mapping: bool = True,
 ) -> int:
-    """Extract data from HL7 messages and write to Delta Lake."""
+    """Extract data from HL7 messages and merge into the base Delta Lake report table.
+
+    This is the base-ingest half of the pipeline. Derivative tables are produced
+    separately by ``derive_delta_tables`` (a distinct Temporal activity), which reads
+    this table's committed change data feed — so a derivative failure never re-runs this
+    merge. See issue #457.
+    """
     activity_info = activity.info()
     workflow_id = activity_info.workflow_id
     activity_id = activity_info.activity_id
-    spark = None
-    temp_dir = None
     success_paths = []
-    try:
-        activity.logger.info("Creating Spark session")
-        spark = (
-            SparkSession.builder.appName("IngestHL7ToDeltaLake")
-            .enableHiveSupport()
-            .getOrCreate()
-        )
-
+    with tempfile.TemporaryDirectory() as temp_dir, spark_activity_session(
+        "IngestHL7ToDeltaLake", health_file
+    ) as spark:
         activity.heartbeat()
         activity.logger.info("Reading HL7 manifest file %s", hl7_manifest_file_path)
         hl7_manifest_file_path = hl7_manifest_file_path.replace("s3://", "s3a://")
@@ -124,7 +197,6 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
 
-        temp_dir = tempfile.mkdtemp()
         zip_map = parse_s3_zip_paths(zipped_hl7_file_paths_from_spark)
         activity.logger.info("Downloading and extracting %d zip files", len(zip_map))
         temp_to_s3 = download_and_extract_zips(zip_map, temp_dir)
@@ -509,54 +581,37 @@ def import_hl7_files_to_deltalake(
         success_paths = [row.source_file for row in df.select("source_file").collect()]
 
         df.unpersist()
-        process_derivative_data(spark, report_table_name, create_mapping=create_mapping)
 
-    except (Py4JError, ConnectionError) as e:
-        activity.logger.error(
-            "Spark error ingesting HL7 files to Delta Lake. Marking pod unhealthy."
-        )
-        try:
-            message = str(e)
-        except:
-            message = "Unknown error"
+        activity.heartbeat()
+        # write_successes runs inside the session context so that a cancellation
+        # (re-raised by spark_activity_session as a Temporal CancelledError) propagates
+        # out before this line — the status DB is never touched on a cancelled activity,
+        # and no Postgres connection is opened for a run that never completed.
+        write_successes(success_paths, workflow_id, activity_id)
+        activity.logger.info("All done")
 
-        # Write the error message to the health file
-        with health_file.open("a") as f:
-            f.write(message + "\n")
-        raise
-    except TimeoutError:
-        activity.logger.info("Temporal activity has been cancelled")
-        return 0
-    except Exception as e:
-        activity.logger.exception("Error ingesting HL7 files to Delta Lake", exc_info=e)
-        raise
-    finally:
-        if spark is not None:
-            activity.logger.info("Clearing spark cache")
-            activity.heartbeat()
-            try:
-                spark.catalog.clearCache()
-            except Exception as e:
-                activity.logger.error("Error clearing spark cache", exc_info=e)
-
-            activity.logger.info("Stopping spark")
-            activity.heartbeat()
-            try:
-                spark.stop()
-            except:
-                activity.logger.error("Error stopping spark", exc_info=e)
-
-        if temp_dir is not None:
-            # CLean up temp dir after Spark is finished processing
-            activity.logger.info("Cleaning up temp dir %s", temp_dir)
-            activity.heartbeat()
-            try:
-                shutil.rmtree(temp_dir)
-            except Exception as e:
-                activity.logger.error("Error cleaning up temp dir %s", exc_info=e)
-
-    activity.heartbeat()
-    write_successes(success_paths, workflow_id, activity_id)
-
-    activity.logger.info("All done")
     return len(success_paths)
+
+
+def derive_delta_tables(
+    report_table_name: str,
+    create_mapping: bool = True,
+    health_file: Optional[Path] = None,
+) -> None:
+    """Derive the curated/latest/dx/mapping tables (and epic views) from the base report
+    table's committed change data feed.
+
+    This is the derivative half of the pipeline, split out of
+    ``import_hl7_files_to_deltalake`` (issue #457). It reads only *committed* state (the
+    base table's CDF + on-disk streaming checkpoints), so it carries no in-memory
+    dependency on the base merge and is safe to retry independently — a failure here
+    never re-runs the base merge.
+
+    Session lifecycle and the Spark-error / cancellation contract are owned by
+    ``spark_activity_session`` (shared with the base activity). Tests inject a session by
+    patching that context manager so the real one isn't created or torn down.
+    """
+    with spark_activity_session("DeriveDeltaTables", health_file) as spark:
+        activity.heartbeat()
+        process_derivative_data(spark, report_table_name, create_mapping=create_mapping)
+        activity.logger.info("Finished deriving delta tables")

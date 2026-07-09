@@ -1,23 +1,15 @@
 from pathlib import Path
 
 import pytest
-from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
 from hl7scout.hl7extractor.hl7reader import read_hl7
 
-
-@pytest.fixture(scope="session")
-def spark():
-    spark = (
-        SparkSession.builder.master("local[1]")
-        .appName("test-hl7reader")
-        .config("spark.ui.enabled", "false")
-        .config("spark.sql.shuffle.partitions", "1")
-        .getOrCreate()
-    )
-    yield spark
-    spark.stop()
+# The session-scoped `spark` fixture is provided by conftest.py (a Delta-configured
+# session). Do not define a local one here: both would call SparkSession.getOrCreate()
+# on the single JVM session, so whichever test ran first would win and silently impose
+# its config on the other — a plain local[1] session here would strip Delta/CDF from the
+# derivative tests depending only on collection order.
 
 
 MSH = r"MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140713130856|TBD|ORU^R01|2.25.705|P|2.7"

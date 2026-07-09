@@ -263,7 +263,8 @@ HL7 reports are ingested via Temporal workflows:
   "splitAndUploadTimeout": 120,               // Activity timeout (minutes)
   "splitAndUploadHeartbeatTimeout": 10,       // Heartbeat timeout (minutes)
   "splitAndUploadConcurrency": 4,             // Concurrent log processing
-  "deltaIngestTimeout": 120                   // Transform timeout (minutes)
+  "deltaIngestTimeout": 120,                  // Base-ingest activity timeout (minutes)
+  "deriveDeltaTablesTimeout": 120             // Derivative-table activity timeout (minutes)
 }
 ```
 

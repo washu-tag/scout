@@ -4,10 +4,14 @@ from typing import Optional
 
 from temporalio import activity
 
-from hl7scout.hl7extractor.deltalake import import_hl7_files_to_deltalake
+from hl7scout.hl7extractor.deltalake import (
+    import_hl7_files_to_deltalake,
+    derive_delta_tables as derive_delta_tables_impl,
+)
 
 TASK_QUEUE_NAME = "ingest-hl7-delta-lake"
 ACTIVITY_NAME = "ingest_hl7_files_to_delta_lake"
+DERIVE_ACTIVITY_NAME = "derive_delta_tables"
 MODALITY_MAP_PATH = "/config/modality_mapping_codes.csv"
 
 
@@ -15,9 +19,6 @@ MODALITY_MAP_PATH = "/config/modality_mapping_codes.csv"
 class IngestHl7FilesToDeltaLakeActivityInput:
     hl7ManifestFilePath: str
     reportTableName: Optional[str] = None
-    # When False, skip the report-patient mapping table derivation and the
-    # epic views that depend on it. Defaults to True (production behavior).
-    createMapping: Optional[bool] = None
 
 
 @dataclass(frozen=True)
@@ -25,12 +26,26 @@ class IngestHl7FilesToDeltaLakeActivityOutput:
     numHl7Ingested: int
 
 
-class IngestHl7FilesActivity:
-    """Create an ingest HL7 files to Delta Lake activity.
+@dataclass(frozen=True)
+class DeriveDeltaTablesActivityInput:
+    reportTableName: Optional[str] = None
+    # When False, skip the report-patient mapping table derivation and the epic views
+    # that depend on it. Defaults to True (production behavior).
+    createMapping: Optional[bool] = None
 
-    By wrapping the activity in a function, several default values can be
-    provided once at startup, not for each activity invocation.
-    Though they can be overridden for individual invocations if needed.
+
+class IngestHl7FilesActivity:
+    """Create the ingest-HL7-to-Delta-Lake activities.
+
+    By wrapping the activities in a class, several default values can be provided once at
+    startup, not for each activity invocation. They can still be overridden per
+    invocation if needed.
+
+    The work is split into two independently-retryable activities (issue #457):
+      * ``ingest_hl7_files_to_delta_lake`` — parse HL7 and merge into the base table.
+      * ``derive_delta_tables`` — derive curated/latest/dx/mapping tables (and epic
+        views) from the base table's committed change data feed. A failure here does not
+        re-run the base merge.
     """
 
     default_report_table_name: str
@@ -49,7 +64,26 @@ class IngestHl7FilesActivity:
         self,
         activity_input: IngestHl7FilesToDeltaLakeActivityInput,
     ) -> IngestHl7FilesToDeltaLakeActivityOutput:
-        """Ingest HL7 files to Delta Lake."""
+        """Ingest HL7 files into the base Delta Lake report table."""
+        report_table_name = (
+            activity_input.reportTableName or self.default_report_table_name
+        )
+        activity.logger.info("Ingesting HL7 files to Delta Lake: %s", report_table_name)
+        num_hl7_ingested = import_hl7_files_to_deltalake(
+            activity_input.hl7ManifestFilePath,
+            MODALITY_MAP_PATH,
+            report_table_name,
+            self.health_file,
+        )
+
+        return IngestHl7FilesToDeltaLakeActivityOutput(num_hl7_ingested)
+
+    @activity.defn(name=DERIVE_ACTIVITY_NAME)
+    def derive_delta_tables(
+        self,
+        activity_input: DeriveDeltaTablesActivityInput,
+    ) -> None:
+        """Derive the curated/latest/dx/mapping tables from the base report table."""
         report_table_name = (
             activity_input.reportTableName or self.default_report_table_name
         )
@@ -59,13 +93,9 @@ class IngestHl7FilesActivity:
             if activity_input.createMapping is None
             else activity_input.createMapping
         )
-        activity.logger.info("Ingesting HL7 files to Delta Lake: %s", report_table_name)
-        num_hl7_ingested = import_hl7_files_to_deltalake(
-            activity_input.hl7ManifestFilePath,
-            MODALITY_MAP_PATH,
+        activity.logger.info("Deriving delta tables from: %s", report_table_name)
+        derive_delta_tables_impl(
             report_table_name,
-            self.health_file,
             create_mapping=create_mapping,
+            health_file=self.health_file,
         )
-
-        return IngestHl7FilesToDeltaLakeActivityOutput(num_hl7_ingested)
