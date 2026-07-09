@@ -23,7 +23,6 @@ import { applyFilterToChat } from '../chat';
 import { RowDetail } from './searchDetail/RowDetail';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
-import { SendToXnatModal } from './searchDetail/SendToXnatModal';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, paginationBtn } from './searchDetail/styles';
 
@@ -59,7 +58,6 @@ export default function SearchDetailPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({});
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
-  const [xnatModalOpen, setXnatModalOpen] = useState(false);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const colPickerRef = useRef<HTMLDivElement>(null);
@@ -514,11 +512,6 @@ export default function SearchDetailPage() {
               >
                 Download CSV
               </a>
-              {/* Send to XNAT is hidden pre-release. The XNAT push isn't wired
-                  yet (SendToXnatModal is a stub). */}
-              {/* <button type="button" onClick={() => setXnatModalOpen(true)} style={paginationBtn}>
-                Send to XNAT
-              </button> */}
               <button
                 type="button"
                 onClick={() => {
@@ -544,13 +537,6 @@ export default function SearchDetailPage() {
             </div>
           </div>
         )
-      )}
-      {xnatModalOpen && (
-        <SendToXnatModal
-          searchId={searchId}
-          total={total}
-          onClose={() => setXnatModalOpen(false)}
-        />
       )}
       {sqlModalOpen && (
         <ExplainSqlModal
