@@ -16,6 +16,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from .. import metrics
 from ..config import settings
+from ..logging_setup import scrub_for_log
 
 log = logging.getLogger(__name__)
 
@@ -40,14 +41,14 @@ async def owui_new_user(request: Request) -> None:
         )
 
     # OWUI 0.9.6 sends `user` as a JSON-encoded string; decode it.
-    action = body.get("action") or body.get("event") or ""
+    action = scrub_for_log(body.get("action") or body.get("event") or "")
     raw_user = body.get("user") or "{}"
     try:
         user_obj = _json.loads(raw_user) if isinstance(raw_user, str) else raw_user
     except Exception:
         user_obj = {}
-    new_user_id = user_obj.get("id") or body.get("user_id")
-    new_user_email = user_obj.get("email") or body.get("email")
+    new_user_id = scrub_for_log(user_obj.get("id") or body.get("user_id"))
+    new_user_email = scrub_for_log(user_obj.get("email") or body.get("email"))
 
     if not new_user_id:
         log.info("webhook fired with no user id", extra={"action": action})

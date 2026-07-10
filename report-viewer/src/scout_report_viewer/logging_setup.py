@@ -81,6 +81,18 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, separators=(",", ":"))
 
 
+def scrub_for_log(v):
+    """Strip CR/LF from a string before it lands in `extra=`.
+
+    Redundant against the JsonFormatter (json.dumps escapes control
+    chars, so log-forging is already impossible), but CodeQL's
+    py/log-injection tainter doesn't see through the formatter -
+    stripping at the source is what closes the alert."""
+    if isinstance(v, str):
+        return v.replace("\r", "").replace("\n", "")
+    return v
+
+
 def configure(level: str = "INFO") -> None:
     """Replace the root handler with a single JSON-on-stdout handler.
 

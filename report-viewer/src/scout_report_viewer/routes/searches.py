@@ -49,6 +49,7 @@ from ..csv_upload import (
     substitute_cohort,
 )
 from ..ids import new_search_id
+from ..logging_setup import scrub_for_log
 from ..models import (
     SEARCH_REQUIRED_COLUMNS,
     CreateFromFileResponse,
@@ -341,6 +342,7 @@ async def create_search_from_file(
     if sql:
         assert_cohort_placeholder(sql)
     ids, resolved_id_column, column_inferred = parse_csv_ids(raw, id_column)
+    resolved_id_column = scrub_for_log(resolved_id_column)
     cleaned = dedup_ids(ids)
 
     sql_column = resolve_sql_column(resolved_id_column)
