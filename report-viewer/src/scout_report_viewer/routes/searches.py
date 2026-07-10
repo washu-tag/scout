@@ -6,7 +6,7 @@ subquery and applies pagination/sort/filter at the Trino layer.
 
 Endpoints:
   POST /api/searches                            - save SQL, cache COUNT(*), return sample
-  POST /api/searches/from-file                  - upload CSV of IDs, save WHERE id IN (...) SQL against reports_latest_epic_view
+  POST /api/searches/from-file                  - upload CSV of IDs, save contains(?, col) SQL and bind the ID list on every read
   GET  /api/searches/{id}                       - metadata
   GET  /api/searches/{id}/rows                  - paginated rows (wraps sql)
   GET  /api/searches/{id}/accessions            - DISTINCT accession_number list
@@ -79,9 +79,7 @@ def _assert_required_projections(columns: list[str]) -> None:
         )
 
 
-# Trino driver doesn't param-bind identifiers, so we interpolate
-# column/table names through here. Literal values bind via `?` in
-# trino_client.execute() - see /from-file for the one exception.
+# Identifiers can't be param-bound in Trino; values always are.
 def _quote_ident(name: str) -> str:
     if not name.replace("_", "").isalnum():
         raise HTTPException(
@@ -158,6 +156,8 @@ async def create_search(
     # Sample query doubles as SQL validation: errors surface here before
     # we persist anything. The LIMIT lives outside the saved sql so the
     # LLM's own LIMIT is respected on later /rows reads.
+    # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
+    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     sample_sql = f"SELECT s.* FROM ({sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
         with metrics.time_trino("create_sample_query"):
@@ -171,6 +171,8 @@ async def create_search(
     _assert_required_projections(columns)
     id_column = "primary_report_identifier"
 
+    # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
+    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
     try:
         with metrics.time_trino("create_count_query"):
@@ -329,8 +331,9 @@ async def create_search_from_file(
     header via FILE_UPLOAD_HEADER_ALIASES.
 
     If `sql` is provided it must include `{{cohort}}` exactly once; the
-    backend substitutes the appropriate `IN (...)` predicate. When
-    omitted, a default projection over reports_latest_epic_view is used.
+    backend substitutes a `contains(?, col)` predicate and stores the ID
+    list separately so every read binds it as a param. When omitted, a
+    default projection over reports_latest_epic_view is used.
 
     Patient-scoped inputs are translated through PATIENT_ID_COLUMNS so
     `epic_mrn` filters on `resolved_epic_mrn`."""
@@ -351,6 +354,8 @@ async def create_search_from_file(
 
     matched: set[str] = set()
     CHUNK = 5000
+    # safe: identifier from _quote_ident allowlist, IDs bind via ?
+    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     validate_sql = (
         f"SELECT DISTINCT {col_q} AS id FROM {view} WHERE contains(?, {col_q})"
     )
@@ -383,18 +388,18 @@ async def create_search_from_file(
             ),
         )
 
-    # IDs are inlined as literals because the SQL is persisted to Postgres
-    # and replayed later as a subquery; there is no read-time params
-    # plumbing. Every other Trino call in this module binds via `?`.
-    in_literal = ", ".join("'" + str(i).replace("'", "''") + "'" for i in final_ids)
-    predicate = f"{col_q} IN ({in_literal})"
+    predicate = f"contains(?, {col_q})"
     template = _wrap_sql(sql) if sql else _DEFAULT_FROM_FILE_SQL
     saved_sql = substitute_cohort(template, predicate)
 
+    # safe: saved_sql uses contains(?, col); IDs bind at execute
+    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     sample_sql = f"SELECT s.* FROM ({saved_sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
         with metrics.time_trino("from_file_sample"):
-            columns, sample_rows = await trino_client.execute(sample_sql, user=user.sub)
+            columns, sample_rows = await trino_client.execute(
+                sample_sql, user=user.sub, params=[final_ids]
+            )
     except Exception as exc:
         log.exception("trino from-file sample failed")
         raise HTTPException(
@@ -407,10 +412,14 @@ async def create_search_from_file(
     if sql:
         _assert_required_projections(columns)
 
+    # safe: saved_sql uses contains(?, col); IDs bind at execute
+    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     count_sql = f"SELECT COUNT(*) AS n FROM ({saved_sql}) s"
     try:
         with metrics.time_trino("from_file_count"):
-            _cols, count_rows = await trino_client.execute(count_sql, user=user.sub)
+            _cols, count_rows = await trino_client.execute(
+                count_sql, user=user.sub, params=[final_ids]
+            )
         row_count = int(count_rows[0]["n"]) if count_rows else 0
     except Exception:
         log.exception("trino from-file count failed")
@@ -423,6 +432,7 @@ async def create_search_from_file(
         sql=saved_sql,
         owner_sub=user.sub,
         row_count=row_count,
+        uploaded_ids=final_ids,
         sql_explanation=sql_explanation or "",
         owui_chat_id=owui_chat_id or "",
     )
@@ -625,6 +635,8 @@ async def get_search_rows(
 
     cached_total = ds["count"]
     source_sql = ds["sql"]
+    uploaded_ids = ds.get("uploaded_ids")
+    base_params: list = [uploaded_ids] if uploaded_ids else []
 
     offset = (page - 1) * limit
     sort_spec = _parse_sort(sort)
@@ -655,11 +667,15 @@ async def get_search_rows(
     # have a cached_total, skip this query - saves a Trino scan per
     # page request. Sort-only doesn't change the count.
     if filters:
+        # safe: source_sql is persisted validated SQL, filter values bind via ?
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s{where_sql}"
         try:
             with metrics.time_trino("rows_count_query"):
                 _, count_rows = await trino_client.execute(
-                    count_sql, user=user.sub, params=filter_params or None
+                    count_sql,
+                    user=user.sub,
+                    params=(base_params + filter_params) or None,
                 )
             sql_total = int(count_rows[0]["n"]) if count_rows else 0
         except Exception as exc:
@@ -674,7 +690,7 @@ async def get_search_rows(
     try:
         with metrics.time_trino("rows_query"):
             columns, rows = await trino_client.execute(
-                rows_sql, user=user.sub, params=filter_params or None
+                rows_sql, user=user.sub, params=(base_params + filter_params) or None
             )
     except Exception as exc:
         log.exception("trino rows query failed")
@@ -702,6 +718,7 @@ async def get_search_accessions(
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     sql = ds["sql"]
+    uploaded_ids = ds.get("uploaded_ids")
     sql = (
         f"SELECT DISTINCT s.accession_number "
         f"FROM ({sql}) s "
@@ -710,7 +727,9 @@ async def get_search_accessions(
     )
     try:
         with metrics.time_trino("accessions_query"):
-            _cols, rows = await trino_client.execute(sql, user=user.sub)
+            _cols, rows = await trino_client.execute(
+                sql, user=user.sub, params=[uploaded_ids] if uploaded_ids else None
+            )
     except Exception as exc:
         log.exception("trino accessions query failed")
         raise HTTPException(
@@ -746,9 +765,11 @@ async def export_search_csv(
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     sql = ds["sql"]
+    uploaded_ids = ds.get("uploaded_ids")
 
     async def gen():
         order_col = f"s.{_quote_ident('primary_report_identifier')}"
+        params = [uploaded_ids] if uploaded_ids else None
         offset = 0
         columns_written = False
         while True:
@@ -759,7 +780,9 @@ async def export_search_csv(
             )
             try:
                 with metrics.time_trino("export_csv_query"):
-                    columns, rows = await trino_client.execute(page_sql, user=user.sub)
+                    columns, rows = await trino_client.execute(
+                        page_sql, user=user.sub, params=params
+                    )
             except Exception:
                 log.exception("trino export query failed at offset=%d", offset)
                 yield b"# ERROR: query failed mid-export; file is incomplete\n"

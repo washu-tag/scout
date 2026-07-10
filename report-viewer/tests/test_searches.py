@@ -188,8 +188,8 @@ def test_from_file_epic_mrn_routes_through_resolved_column_and_view(
 
     meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
     assert "reports_latest_epic_view" in meta["sql"]
-    assert '"resolved_epic_mrn" IN' in meta["sql"]
-    assert '"epic_mrn" IN' not in meta["sql"]
+    assert 'contains(?, "resolved_epic_mrn")' in meta["sql"]
+    assert 'contains(?, "epic_mrn")' not in meta["sql"]
 
 
 def test_from_file_infers_column_from_header_alias(client, auth_headers, fake_trino):
@@ -272,7 +272,7 @@ def test_from_file_custom_sql_substitutes_cohort(client, auth_headers, fake_trin
 
     meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
     assert "{{cohort}}" not in meta["sql"]
-    assert '"resolved_epic_mrn" IN' in meta["sql"]
+    assert 'contains(?, "resolved_epic_mrn")' in meta["sql"]
     assert "modality = 'CT'" in meta["sql"]
 
 

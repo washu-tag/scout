@@ -22,6 +22,7 @@ async def insert_search(
     match_diagnoses: list[str] | None = None,
     sql_explanation: str | None = None,
     owui_chat_id: str | None = None,
+    uploaded_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     with metrics.time_postgres("insert_search"):
         async with get_conn() as conn:
@@ -31,12 +32,12 @@ async def insert_search(
                     INSERT INTO searches
                       (id, id_column, sql, sql_explanation,
                        match_terms, match_diagnoses, row_count,
-                       owner_sub, owui_chat_id)
+                       uploaded_ids, owner_sub, owui_chat_id)
                     VALUES
-                      (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                      (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id, id_column, sql, sql_explanation,
                               match_terms, match_diagnoses, row_count,
-                              owner_sub, owui_chat_id, created_at
+                              uploaded_ids, owner_sub, owui_chat_id, created_at
                     """,
                     (
                         search_id,
@@ -46,6 +47,7 @@ async def insert_search(
                         match_terms or [],
                         match_diagnoses or [],
                         row_count,
+                        uploaded_ids,
                         owner_sub,
                         owui_chat_id or "",
                     ),
@@ -66,7 +68,7 @@ async def get_search(search_id: str, owner_sub: str) -> dict[str, Any] | None:
                     """
                     SELECT id, id_column, sql, sql_explanation,
                            match_terms, match_diagnoses, row_count,
-                           owner_sub, owui_chat_id, created_at
+                           uploaded_ids, owner_sub, owui_chat_id, created_at
                     FROM searches
                     WHERE id = %s
                       AND owner_sub = %s
@@ -102,7 +104,7 @@ async def list_searches(owner_sub: str, *, limit: int = 200) -> list[dict[str, A
                     """
                     SELECT id, id_column, sql, sql_explanation,
                            match_terms, match_diagnoses, row_count,
-                           owner_sub, owui_chat_id, created_at
+                           uploaded_ids, owner_sub, owui_chat_id, created_at
                     FROM searches
                     WHERE owner_sub = %s
                     ORDER BY created_at DESC
@@ -123,6 +125,7 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
         match_terms,
         match_diagnoses,
         row_count,
+        uploaded_ids,
         owner_sub,
         owui_chat_id,
         created_at,
@@ -135,6 +138,7 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
         "match_terms": match_terms or [],
         "match_diagnoses": match_diagnoses or [],
         "count": row_count if row_count is not None else 0,
+        "uploaded_ids": uploaded_ids,
         "owner_sub": owner_sub,
         "owui_chat_id": owui_chat_id or "",
         "created_at": created_at,
