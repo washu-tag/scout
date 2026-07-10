@@ -24,6 +24,8 @@ export function RowDetail(props: {
     .map((t) => t.trim())
     .filter((t) => t.length >= 2)
     .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  // safe: all regex metachars escaped above, alternation of literal strings is linear-time
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
   const highlightRe = escaped.length ? new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi') : null;
 
   // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
