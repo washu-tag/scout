@@ -156,11 +156,11 @@ async def create_search(
     # Sample query doubles as SQL validation: errors surface here before
     # we persist anything. The LIMIT lives outside the saved sql so the
     # LLM's own LIMIT is respected on later /rows reads.
-    # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
-    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     sample_sql = f"SELECT s.* FROM ({sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
         with metrics.time_trino("create_sample_query"):
+            # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             columns, sample_rows = await trino_client.execute(sample_sql, user=user.sub)
     except Exception as exc:
         log.exception("trino sample query failed")
@@ -171,11 +171,11 @@ async def create_search(
     _assert_required_projections(columns)
     id_column = "primary_report_identifier"
 
-    # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
-    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
     try:
         with metrics.time_trino("create_count_query"):
+            # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             _cols, count_rows = await trino_client.execute(count_sql, user=user.sub)
         row_count = int(count_rows[0]["n"]) if count_rows else 0
     except Exception as exc:
@@ -354,8 +354,6 @@ async def create_search_from_file(
 
     matched: set[str] = set()
     CHUNK = 5000
-    # safe: identifier from _quote_ident allowlist, IDs bind via ?
-    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     validate_sql = (
         f"SELECT DISTINCT {col_q} AS id FROM {view} WHERE contains(?, {col_q})"
     )
@@ -363,6 +361,8 @@ async def create_search_from_file(
         chunk = cleaned[start : start + CHUNK]
         try:
             with metrics.time_trino("from_file_validate"):
+                # safe: identifier from _quote_ident allowlist, IDs bind via ?
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 _cols, rows = await trino_client.execute(
                     validate_sql, user=user.sub, params=[chunk]
                 )
@@ -392,11 +392,11 @@ async def create_search_from_file(
     template = _wrap_sql(sql) if sql else _DEFAULT_FROM_FILE_SQL
     saved_sql = substitute_cohort(template, predicate)
 
-    # safe: saved_sql uses contains(?, col); IDs bind at execute
-    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     sample_sql = f"SELECT s.* FROM ({saved_sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
         with metrics.time_trino("from_file_sample"):
+            # safe: saved_sql uses contains(?, col); IDs bind at execute
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             columns, sample_rows = await trino_client.execute(
                 sample_sql, user=user.sub, params=[final_ids]
             )
@@ -412,11 +412,11 @@ async def create_search_from_file(
     if sql:
         _assert_required_projections(columns)
 
-    # safe: saved_sql uses contains(?, col); IDs bind at execute
-    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     count_sql = f"SELECT COUNT(*) AS n FROM ({saved_sql}) s"
     try:
         with metrics.time_trino("from_file_count"):
+            # safe: saved_sql uses contains(?, col); IDs bind at execute
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             _cols, count_rows = await trino_client.execute(
                 count_sql, user=user.sub, params=[final_ids]
             )
@@ -667,11 +667,11 @@ async def get_search_rows(
     # have a cached_total, skip this query - saves a Trino scan per
     # page request. Sort-only doesn't change the count.
     if filters:
-        # safe: source_sql is persisted validated SQL, filter values bind via ?
-        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s{where_sql}"
         try:
             with metrics.time_trino("rows_count_query"):
+                # safe: source_sql is persisted validated SQL, filter values bind via ?
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 _, count_rows = await trino_client.execute(
                     count_sql,
                     user=user.sub,

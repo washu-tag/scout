@@ -93,13 +93,13 @@ async def query_from_file(
     view = f"{settings.trino_catalog}.{settings.trino_schema}.reports_latest_epic_view"
 
     matched: set[str] = set()
-    # safe: sql_column allowlisted (isalnum + underscore), IDs bind via ?
-    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     validate_sql = (
         f"SELECT DISTINCT {col_q} AS id FROM {view} WHERE contains(?, {col_q})"
     )
     try:
         with metrics.time_trino("query_from_file_validate"):
+            # safe: sql_column allowlisted (isalnum + underscore), IDs bind via ?
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             _cols, vrows = await trino_client.execute(
                 validate_sql, user=user.sub, params=[cleaned]
             )
@@ -173,11 +173,11 @@ async def read_reports(
     else:
         column = body.id_column
     # contains(?, col) - the driver doesn't expand list params into IN.
-    # safe: column from PATIENT_ID_COLUMNS or INPUT_ID_COLUMNS allowlist, IDs bind via ?
-    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
     sql = f'SELECT * FROM {table} WHERE contains(?, "{column}")'
     try:
         with metrics.time_trino("read_reports"):
+            # safe: column from PATIENT_ID_COLUMNS or INPUT_ID_COLUMNS allowlist, IDs bind via ?
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             columns, rows = await trino_client.execute(
                 sql, user=user.sub, params=[[str(i) for i in body.ids]]
             )
