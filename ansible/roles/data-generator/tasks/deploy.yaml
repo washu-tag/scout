@@ -12,10 +12,13 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: data-generator
-    helm_chart_ref: '{{ data_generator_helm_chart_ref }}'
+    # Pull the published OCI chart from GHCR (helm runs on the jump node via the
+    # wrapper's localhost delegation). Dev override: data_generator_chart_path
+    # points helm at a local chart dir, in which case no --version is passed
+    # (helm rejects --version with a local path).
+    helm_chart_ref: '{{ data_generator_chart_path | default(data_generator_chart_oci_ref) }}'
+    helm_chart_version: '{{ data_generator_chart_version if data_generator_chart_path is not defined else omit }}'
     helm_chart_namespace: '{{ data_generator_namespace }}'
-    helm_chart_values_files:
-      - '{{ scout_repo_dir }}/helm/data-generator/values.yaml'
     helm_chart_values:
       replicaCount: '{{ data_generator_replicas }}'
       image:
