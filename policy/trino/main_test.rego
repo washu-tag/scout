@@ -589,6 +589,72 @@ test_facility_with_spaces_is_allowed if {
 		with data.filtered_tables as fixture_filtered_tables
 }
 
+# Empty-string / null entries inside a user's facility list ============
+# The value regex requires at least one character, so an empty string is
+# dropped from the IN list; a null yields undefined from regex.match and is
+# likewise dropped. In both cases the remaining valid values still produce a
+# filter — malformed list entries never widen access (fail-closed).
+
+test_empty_string_facility_dropped_but_valid_kept if {
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	expected := {{"expression": "sending_facility IN ('WUSM')"}}
+	trino.rowFilters == expected with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM", ""]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as fixture_filtered_tables
+}
+
+test_null_facility_dropped_but_valid_kept if {
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	expected := {{"expression": "sending_facility IN ('WUSM')"}}
+	trino.rowFilters == expected with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM", null]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as fixture_filtered_tables
+}
+
+test_only_empty_or_null_facilities_clamps_to_zero_rows if {
+	# A list containing only empty-string / null entries leaves no valid
+	# values, so the 1=0 clamp fires — the user sees nothing, not everything.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	expected := {{"expression": "1=0"}}
+	trino.rowFilters == expected with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": [""]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as fixture_filtered_tables
+	trino.rowFilters == expected with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": [null]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as fixture_filtered_tables
+}
+
+# Rows whose sending_facility is NULL ==================================
+# The policy only ever emits the row filter; the SQL engine applies it.
+# These two tests pin the emitted expression, which fixes the null-facility
+# row outcome by SQL three-valued logic:
+#   * A facility-scoped user gets `sending_facility IN (...)`. `NULL IN (...)`
+#     evaluates to NULL (not TRUE), so rows with no sending_facility are
+#     excluded — hidden from facility-restricted users.
+#   * A wildcard (full-access) user gets no filter at all, so no predicate
+#     constrains sending_facility and null-facility rows are returned.
+
+test_scoped_user_in_clause_excludes_null_facility_rows if {
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	expected := {{"expression": "sending_facility IN ('WUSM')"}}
+	trino.rowFilters == expected with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as fixture_filtered_tables
+}
+
+test_wildcard_user_sees_null_facility_rows if {
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	count(trino.rowFilters) == 0 with input as inp
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["*"]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as fixture_filtered_tables
+}
+
 # Autocomplete safety: filters must not apply to information_schema or other
 # tables outside the allowlist.
 

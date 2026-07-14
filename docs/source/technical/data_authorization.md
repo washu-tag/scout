@@ -18,6 +18,10 @@ Set per-user in the Keycloak admin console, in the **scout** realm (Scout's user
 Empty `allowed_facilities` means **deny-all rows**, not "see everything." Newly approved users have no attributes set and will see zero rows from filtered tables until an admin grants them values. Use `*` to grant "see all facilities." The same deny-by-default rule applies to any additional row-filter dimensions a deployment adds (see [Adding a new restriction dimension](#adding-a-new-restriction-dimension)).
 ```
 
+```{note}
+**Rows with no sending facility.** Some reports carry no `sending_facility` value. A facility-scoped user (any `allowed_facilities` value other than the `*` wildcard) does **not** see these rows: the emitted `sending_facility IN (...)` filter is false for a NULL facility, so they are excluded. A user with the `*` wildcard has no facility filter applied and **does** see them. Malformed `allowed_facilities` entries — an empty string or a stray null in the list — are dropped from the filter rather than matched; if that leaves the user with no valid values, they see zero rows (fail-closed), never all rows.
+```
+
 ## Setting attributes — example walkthrough
 
 A new user needs to query reports from the HOSP1 facility:
