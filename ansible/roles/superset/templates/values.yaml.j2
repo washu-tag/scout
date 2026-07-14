@@ -105,7 +105,9 @@ configOverrides:
     from flask_appbuilder.security.manager import AUTH_OAUTH
     from flask_appbuilder.security.views import AuthOAuthView, expose
     from superset.security import SupersetSecurityManager
-    from flask import redirect, session
+    from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
+    from superset.exceptions import SupersetSecurityException
+    from flask import g, redirect, session
     import logging
     OAUTH_PROVIDERS = OPENID_PROVIDERS = [
         {
@@ -163,6 +165,25 @@ configOverrides:
             app.config.setdefault("AUTH_ROLES_MAPPING", AUTH_ROLES_MAPPING)
             app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
             self.authoauthview = KeycloakOAuthView
+        def raise_for_access(self, **kwargs) -> None:
+            # The base check only confirms the caller can use the (shared) Trino
+            # database, not that they ran the query, so any signed-in user could
+            # download another user's SQL Lab results via its guessable id.
+            # Require query ownership unless the caller has all_query_access.
+            super().raise_for_access(**kwargs)
+            query = kwargs.get("query")
+            if (
+                query is not None
+                and not self.can_access("all_query_access", "all_query_access")
+                and query.user_id != g.user.id
+            ):
+                raise SupersetSecurityException(
+                    SupersetError(
+                        error_type=SupersetErrorType.QUERY_SECURITY_ACCESS_ERROR,
+                        message="You do not have access to this query.",
+                        level=ErrorLevel.ERROR,
+                    )
+                )
     CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
   proxy_configuration: |
     PREFERRED_URL_SCHEME = "https"
