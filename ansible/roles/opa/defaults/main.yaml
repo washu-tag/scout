@@ -87,7 +87,7 @@ trino_hidden_tables: []
 # user-profile attribute editors) and this role (renders the OPA data
 # document). Override in inventory.yaml to add restriction dimensions.
 
-# Columns the policy redacts when the calling user's mask_phi_fields
+# Columns the policy redacts when the calling user's redact_select_identifiers
 # attribute is unset or "true". Mask expression depends on column type:
 # varchar columns get the literal '[REDACTED]' (visible to the user);
 # anything else gets `NULL` (Trino's expression analyzer coerces the

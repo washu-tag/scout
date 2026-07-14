@@ -8,7 +8,7 @@
 
 ADR 0020 makes per-user Trino access attribute-driven: a Scout user's row
 filters and column masks come from Keycloak User Profile attributes
-(`allowed_facilities`, `mask_phi_fields`, `bypass_hidden_tables`, ...), rendered
+(`allowed_facilities`, `redact_select_identifiers`, `bypass_hidden_tables`, ...), rendered
 from `trino_attribute_filters`. Granting a new user access therefore means two
 manual Keycloak master-admin-console steps — add them to `scout-user`, then
 hand-edit each attribute on their user detail page. We have no upstream IdP data
@@ -62,7 +62,7 @@ audience mapper), so a `scout-admin`'s token minted for another resource — e.g
 Because the schema is discovered, **adding an authorization dimension stays the
 one-line inventory edit ADR 0020 promised**: the new attribute flows into the
 form and its server-side validation with no code change here. Safe defaults are
-config-driven too (`scoutDefault`: `mask_phi_fields=true`,
+config-driven too (`scoutDefault`: `redact_select_identifiers=true`,
 `bypass_hidden_tables=false`).
 
 **Guardrails** (package-private predicates, mutation-tested, enforced server-side
@@ -131,7 +131,7 @@ That removes the *direct* admin-API path — but it does not contain the credent
   needed.
 - *Self-service is gated only by account control* — if the thief controls an
   account they can authenticate as (their own, or a pending identity brokered in
-  via the IdP), one `approve` with `allowed_facilities=*` / `mask_phi_fields=false`
+  via the IdP), one `approve` with `allowed_facilities=*` / `redact_select_identifiers=false`
   grants *themselves* full unmasked data access, and a self-promote re-mints a
   `realm-admin` token from another full-scope client (e.g. the built-in
   `admin-cli`). The SPI cannot create users or set passwords and self-registration

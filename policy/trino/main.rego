@@ -7,7 +7,7 @@ package trino
 #   POST /v1/data/trino/rowFilters        -> [{expression}]  (WHERE clauses AND-merged)
 #   POST /v1/data/trino/batchColumnMasks  -> [{index, viewExpression}]  (per-column mask)
 #
-# Per-user attributes (`allowed_facilities`, `mask_phi_fields`, ...) live in
+# Per-user attributes (`allowed_facilities`, `redact_select_identifiers`, ...) live in
 # OPA's data document under `data.users.<username>`, populated by an OPA
 # bundle that the Keycloak SPI listener publishes to MinIO (see ADR 0021).
 # OPA's bundle plugin pulls every 5–10s, so a Keycloak change converges to
@@ -32,7 +32,7 @@ package trino
 #                                  "groups": [group_name, ...],
 #                                  "allowed_facilities": [...],
 #                                  "allowed_modalities": [...],
-#                                  "mask_phi_fields": ["true"|"false"],
+#                                  "redact_select_identifiers": ["true"|"false"],
 #                                  ...
 #                                }                               # bundled (Keycloak)
 # Table-list entries support two shapes — exact `table` match or
@@ -408,7 +408,7 @@ default masked_columns := set()
 masked_columns := {c | some c in data.masked_columns}
 
 # Keycloak returns user attribute values as arrays (multivalued by default).
-# `mask_phi_fields` is single-valued logically but lives in attributes[0].
+# `redact_select_identifiers` is single-valued logically but lives in attributes[0].
 # Opt-in: redaction applies ONLY when the attribute is explicitly ["true"].
 # Unset, missing, empty list, or any other value leaves the columns
 # unmasked. Masking here covers only data.masked_columns (a few identifier
@@ -416,7 +416,7 @@ masked_columns := {c | some c in data.masked_columns}
 # admin grants per user, not a default (see ADR 0020). Indexing [0] on an
 # unset/empty attribute yields undefined, so should_mask is undefined (no
 # mask) — the fail path here is "don't redact", matching the opt-in default.
-should_mask if user_attrs.mask_phi_fields[0] == "true"
+should_mask if user_attrs.redact_select_identifiers[0] == "true"
 
 # Mask expression dispatches on column type: varchar columns get the
 # literal '[REDACTED]' so the user sees something explicit was redacted;
@@ -459,7 +459,7 @@ decision_context := {
 	"approved": user_in_approved_group,
 	"enabled": user_enabled,
 	"attribute_values": attribute_snapshot,
-	"mask_phi_fields": object.get(user_attrs, "mask_phi_fields", ["unset"]),
+	"redact_select_identifiers": object.get(user_attrs, "redact_select_identifiers", ["unset"]),
 	"bypass_hidden_tables": hidden_table_bypass,
 	"row_filters": rowFilters,
 }
