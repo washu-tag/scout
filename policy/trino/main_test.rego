@@ -688,7 +688,7 @@ test_view_owner_bypasses_column_mask if {
 	inp := batch_mask_input("trino", [], "delta", "default", "reports",
 		["patient_name"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 		with data.view_owner_principals as fixture_view_owner_principals
 }
@@ -739,12 +739,13 @@ test_attribute_tables_override_skips_unscoped_table if {
 
 # === Column masks ============================================================
 
-test_phi_columns_masked_when_default_unset if {
-	# mask_phi_fields unset -> default mask
+test_phi_columns_unmasked_when_default_unset if {
+	# Opt-in: mask_phi_fields unset -> no mask. Redaction is an admin grant,
+	# not a default (a new user's projected identifier columns come through
+	# in the clear until an admin sets mask_phi_fields="true").
 	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
 		["patient_name", "modality", "sending_facility"])
-	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
-	trino.batchColumnMasks == expected with input as inp
+	count(trino.batchColumnMasks) == 0 with input as inp
 		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
@@ -766,25 +767,25 @@ test_phi_columns_unmasked_when_explicit_false if {
 		with data.masked_columns as fixture_masked_columns
 }
 
-test_phi_columns_masked_when_empty_list if {
+test_phi_columns_unmasked_when_empty_list if {
 	# mask_phi_fields present but [] (e.g. an admin-API PUT that bypasses the
-	# user-profile options validation) must still mask — only an explicit
-	# ["false"] disables masking.
+	# user-profile options validation) leaves columns unmasked — only an
+	# explicit ["true"] enables masking under the opt-in default.
 	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
 		["patient_name"])
-	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
-	trino.batchColumnMasks == expected with input as inp
+	count(trino.batchColumnMasks) == 0 with input as inp
 		with trino.user_attrs as {"enabled": true, "groups": ["scout-user"], "mask_phi_fields": []}
 		with data.masked_columns as fixture_masked_columns
 }
 
-test_phi_columns_masked_when_value_not_false if {
-	# Any value other than "false" masks (fail-safe for a malformed attribute).
+test_phi_columns_unmasked_when_value_not_true if {
+	# Only the literal "true" in attributes[0] enables masking. A leading
+	# value that isn't "true" leaves columns unmasked and doesn't fall
+	# through to a later "true" in the array.
 	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
 		["patient_name"])
-	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
-	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as {"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["", "false"]}
+	count(trino.batchColumnMasks) == 0 with input as inp
+		with trino.user_attrs as {"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["", "true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -797,12 +798,12 @@ test_admin_phi_unmasked_when_explicit_false if {
 		with data.masked_columns as fixture_masked_columns
 }
 
-test_admin_phi_masked_when_default if {
-	# Admin without explicit mask_phi_fields=false still gets masks applied
+test_admin_phi_unmasked_when_default if {
+	# Admins use the same opt-in as users — without an explicit
+	# mask_phi_fields="true" no mask is applied.
 	inp := batch_mask_input("admin", ["scout-admin"], "delta", "default", "reports",
 		["patient_name"])
-	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
-	trino.batchColumnMasks == expected with input as inp
+	count(trino.batchColumnMasks) == 0 with input as inp
 		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
@@ -815,24 +816,25 @@ test_multiple_phi_columns_in_batch_all_masked if {
 		{"index": 2, "viewExpression": {"expression": "'[REDACTED]'"}},
 	}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
 test_no_masked_columns_in_batch_emits_empty if {
+	# Masking on, but the projection has no PHI-named columns -> no masks.
 	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
 		["modality", "sending_facility"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
 test_mask_only_in_delta_catalog if {
-	# A PHI-named column outside delta gets no mask.
+	# A PHI-named column outside delta gets no mask, even with masking on.
 	inp := batch_mask_input("alice", ["scout-user"], "system", "runtime", "queries",
 		["patient_name"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -843,7 +845,7 @@ test_mask_applies_to_any_delta_table if {
 		["patient_name"])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -859,7 +861,7 @@ test_complex_type_masked_with_null if {
 		[{"name": "full_patient_name", "type": complex_type}])
 	expected := {{"index": 0, "viewExpression": {"expression": "NULL"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -870,7 +872,7 @@ test_varchar_with_length_masked_with_redacted if {
 		[{"name": "patient_name", "type": "varchar(255)"}])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -886,7 +888,7 @@ test_mixed_types_in_batch if {
 		{"index": 1, "viewExpression": {"expression": "NULL"}},
 	}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
