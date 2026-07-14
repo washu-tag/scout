@@ -194,6 +194,11 @@ configOverrides:
     FEATURE_FLAGS = {
         "CACHE_QUERY_BY_USER": True,
     }
+  data_cache_timeout: |
+    # Global default cache lifetime for chart/dashboard data; datasets
+    # inherit it unless they set their own cache_timeout. Per-user
+    # isolation is handled by CACHE_QUERY_BY_USER above (refs #502).
+    DATA_CACHE_CONFIG = {**DATA_CACHE_CONFIG, "CACHE_DEFAULT_TIMEOUT": 1800}
   prometheus_metrics: |
 {{ lookup('file', role_path + '/files/superset_metrics.py') | indent(4, first=True) }}
   trino_auth: |
