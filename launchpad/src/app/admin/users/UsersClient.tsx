@@ -10,6 +10,7 @@ import {
   HiChevronLeft,
   HiChevronRight,
   HiExternalLink,
+  HiInformationCircle,
   HiSearch,
   HiShieldCheck,
   HiTrash,
@@ -418,6 +419,16 @@ function UserDrawer({
                   <HiTrash className="text-base" /> Remove access
                 </button>
               </div>
+            </div>
+          )}
+
+          {mode === 'edit' && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-300">
+              <HiInformationCircle className="mt-0.5 flex-shrink-0 text-sm" />
+              <span>
+                Lowering a user&apos;s access applies to future queries only. It does not remove
+                data they already saved in notebooks or chat history.
+              </span>
             </div>
           )}
         </div>
