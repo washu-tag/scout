@@ -4,7 +4,7 @@ description: Per-report follow-up classifier output, with optional human ground-
   columns that get merged in by the reviewer Voila dashboard.
 default_endpoint: null
 offset: 0
-cache_timeout: 7200
+cache_timeout: 300
 catalog: delta
 schema: default
 sql: null

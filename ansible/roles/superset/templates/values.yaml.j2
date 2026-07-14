@@ -167,6 +167,12 @@ configOverrides:
   proxy_configuration: |
     PREFERRED_URL_SCHEME = "https"
     ENABLE_PROXY_FIX = True
+  feature_flags: |
+    # Key cached chart/dashboard results by user so a broad-access user's
+    # cached copy is never served to a narrower-access viewer (refs #502).
+    FEATURE_FLAGS = {
+        "CACHE_QUERY_BY_USER": True,
+    }
   prometheus_metrics: |
 {{ lookup('file', role_path + '/files/superset_metrics.py') | indent(4, first=True) }}
   trino_auth: |
