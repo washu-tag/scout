@@ -1,8 +1,12 @@
 ---
 # Default values for custom data-generator
 
-# Helm configuration
-data_generator_helm_chart_ref: '{{ scout_repo_dir }}/helm/data-generator'
+# --- Upstream chart (washu-tag/data-generator, published as an OCI artifact) ---
+# Pulled directly from GHCR by helm on the jump node. data_generator_chart_version
+# is pinned in group_vars/all/versions.yaml (Renovate-monitored, per ADR 0015).
+# Dev override: set data_generator_chart_path to a local chart dir for
+# unpublished edits.
+data_generator_chart_oci_ref: oci://ghcr.io/washu-tag/charts/data-generator
 
 # Storage configuration
 data_generator_workspace: /beegfs/shared/data-generator-input

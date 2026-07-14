@@ -191,3 +191,7 @@ xnat_openid_plugin_version: 1.5.0
 # XNAT Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/charts/xnat
 xnat_chart_version: 2.0.0
+
+# data-generator Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
+# renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator
+data_generator_chart_version: 1.0.0
