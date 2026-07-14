@@ -17,10 +17,13 @@ package trino
 # Data document (rendered by the opa Ansible role from inventory + bundle):
 #   data.filtered_tables       : [{catalog, schema, table|table_prefix}]
 #                                                                # static (inventory)
+#   data.baseline_hidden_tables : [{catalog, schema, table|table_prefix}]
+#                                # patient-mapping pair, derived by the opa
+#                                # role from report_delta_table_name; the
+#                                # rego falls back to the stock `reports`
+#                                # names below if this key is absent/empty
 #   data.hidden_tables      : [{catalog, schema, table|table_prefix}]
-#                                # site-specific additions only (inventory);
-#                                # baseline patient-mapping entries are
-#                                # hardcoded below in `baseline_hidden_tables`
+#                                # site-specific additions only (inventory)
 #   data.view_owner_principals : [identity_name]                 # static (inventory)
 #   data.attribute_filters     : {<attr_name>: {column, tables?}} # static (inventory)
 #   data.masked_columns        : [column_name]                   # static (inventory)
@@ -265,20 +268,26 @@ table_entry_matches(entry, in_table) if {
 }
 
 # Baseline hidden tables: the patient mapping pair written by the
-# hl7-transformer. Hardcoded here (not inventory-driven) because they're
-# intrinsic to Scout's data lake shape — every deployment has them, and
-# they carry cross-facility identifiers keyed on scout_patient_id rather
-# than sending_facility, so row filters can't constrain them. Direct
-# SELECT must be denied; removing the protection would be a security
-# regression. If the hl7-transformer renames these, update this list
-# (same-team coupling, same pattern as approved_groups above).
+# hl7-transformer. Their names derive from report_delta_table_name
+# (`<name>_report_patient_mapping` + `_history`), so the opa role renders
+# the derived names into data.baseline_hidden_tables from that same
+# setting — the hidden-list can't drift from the mapping table's actual
+# name when an operator renames the report table. The hardcoded default
+# below is the fail-safe for the stock `reports` table: if
+# data.baseline_hidden_tables is absent or empty (older data document,
+# misrender), protection still holds. These tables carry cross-facility
+# identifiers keyed on scout_patient_id rather than sending_facility, so
+# row filters can't constrain them — direct SELECT must be denied;
+# removing the protection would be a security regression.
 #
 # data.hidden_tables (inventory) is unioned on top for site-specific
 # additions (e.g., a partner's custom cross-facility join table).
-baseline_hidden_tables := [
+default baseline_hidden_tables := [
 	{"catalog": "delta", "schema": "default", "table": "reports_report_patient_mapping"},
 	{"catalog": "delta", "schema": "default", "table": "reports_report_patient_mapping_history"},
 ]
+
+baseline_hidden_tables := data.baseline_hidden_tables if count(data.baseline_hidden_tables) > 0
 
 # True if the input table matches any baseline or inventory-added
 # hidden-table entry (either shape — exact or prefix). Used both by

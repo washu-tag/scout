@@ -64,10 +64,14 @@ trino_filtered_tables:
 # Additional tables denied for direct access. Users querying these by
 # name get a permission error, and the tables are hidden from SHOW
 # TABLES output. The patient mapping pair written by the hl7-transformer
-# (reports_report_patient_mapping + _history) is hardcoded as a baseline
-# in policy/trino/main.rego — that's intrinsic to Scout's data lake
-# shape and can't be safely removed. This list is unioned on top for
-# site-specific cross-facility join tables.
+# (<report_delta_table_name>_report_patient_mapping + _history) is always
+# hidden as a baseline: the deploy task renders those derived names into
+# data.baseline_hidden_tables from report_delta_table_name (so a renamed
+# report table can't leave the mapping table unhidden), and
+# policy/trino/main.rego falls back to the stock `reports` names if that
+# data key is absent. That's intrinsic to Scout's data lake shape and
+# can't be safely removed. This list is unioned on top for site-specific
+# cross-facility join tables.
 #
 # Intended for join-target tables where the row filters can't reach
 # (e.g., tables keyed on scout_patient_id rather than sending_facility).

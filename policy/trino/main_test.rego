@@ -286,6 +286,28 @@ test_inventory_hidden_table_blocked if {
 		with data.hidden_tables as [{"catalog": "delta", "schema": "default", "table": "site_custom_join"}]
 }
 
+test_derived_mapping_table_hidden_when_report_table_renamed if {
+	# When the operator sets a non-default report_delta_table_name, the opa
+	# role renders the derived mapping-table names into
+	# data.baseline_hidden_tables (`<name>_report_patient_mapping` + _history).
+	# The rego must consume that data key so the renamed mapping table stays
+	# hidden — the default `reports_*` literal would no longer match it.
+	derived := [
+		{"catalog": "delta", "schema": "default", "table": "myreports_report_patient_mapping"},
+		{"catalog": "delta", "schema": "default", "table": "myreports_report_patient_mapping_history"},
+	]
+	mapping := select_input("alice", ["scout-user"], "delta", "default", "myreports_report_patient_mapping")
+	history := select_input("alice", ["scout-user"], "delta", "default", "myreports_report_patient_mapping_history")
+	not trino.allow with input as mapping
+		with trino.user_attrs as {"enabled": true, "groups": ["scout-user"]}
+		with data.baseline_hidden_tables as derived
+		with data.hidden_tables as []
+	not trino.allow with input as history
+		with trino.user_attrs as {"enabled": true, "groups": ["scout-user"]}
+		with data.baseline_hidden_tables as derived
+		with data.hidden_tables as []
+}
+
 # === bypass_hidden_tables ==================================================
 # Per-user escape hatch from the view-only block. Setting Keycloak
 # attribute bypass_hidden_tables: ["true"] permits direct SELECT
