@@ -7,6 +7,7 @@ This module provides the interactive UI components for the cohort builder dashbo
 import os
 import re
 import html
+import base64
 import pandas as pd
 import ipywidgets as widgets
 from IPython.display import display, HTML
@@ -950,7 +951,7 @@ def create_export_controls(state):
             export_output.clear_output(wait=True)
 
             try:
-                filepath = export_cohort(
+                csv_string, filename = export_cohort(
                     state["df"], state["annotations"], include_report_text_check.value
                 )
 
@@ -958,9 +959,15 @@ def create_export_controls(state):
                     1 for a in state["annotations"].values() if a.get("reviewed", False)
                 )
 
-                # Get filename and create download link
-                filename = os.path.basename(filepath)
-                download_url = f"/voila/files/exports/{filename}"
+                # Hand the CSV to the browser as a client-side Blob download
+                # instead of writing it to a shared server directory (a
+                # predictable /voila/files URL previously let other users fetch
+                # someone else's export). The CSV is base64-encoded into the page
+                # and reassembled into a Blob in the browser on click; a Blob (not
+                # a data: URI) has no URL length limit, so very large cohorts are
+                # held entirely in the user's browser memory.
+                csv_b64 = base64.b64encode(csv_string.encode("utf-8")).decode("ascii")
+                dl_id = f"cohort-dl-{os.urandom(6).hex()}"
 
                 display(
                     HTML(
@@ -976,7 +983,7 @@ def create_export_controls(state):
                         <div style='font-size: 14px; opacity: 0.95; margin-bottom: 16px;'>
                             Exported {len(state['df'])} reports ({annotated_count} annotated)
                         </div>
-                        <a href="{download_url}" download="{filename}"
+                        <a href="#" id="{dl_id}"
                            class='download-link'
                            style='display: block; width: 100%; box-sizing: border-box;
                                   background: rgba(255,255,255,0.2);
@@ -987,6 +994,31 @@ def create_export_controls(state):
                             📥 Download {filename}
                         </a>
                     </div>
+                    <script>
+                    (function() {{
+                        setTimeout(function() {{
+                            var link = document.getElementById("{dl_id}");
+                            if (!link) return;
+                            link.addEventListener("click", function(e) {{
+                                e.preventDefault();
+                                var bytes = atob("{csv_b64}");
+                                var arr = new Uint8Array(bytes.length);
+                                for (var i = 0; i < bytes.length; i++) {{
+                                    arr[i] = bytes.charCodeAt(i);
+                                }}
+                                var blob = new Blob([arr], {{type: "text/csv"}});
+                                var url = URL.createObjectURL(blob);
+                                var a = document.createElement("a");
+                                a.href = url;
+                                a.download = "{filename}";
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                            }});
+                        }}, 100);
+                    }})();
+                    </script>
                 """
                     )
                 )

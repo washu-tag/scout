@@ -63,11 +63,6 @@ DEFAULT_FACILITIES = [
     "SLCH",
 ]
 
-# Export directory (must be under /home/jovyan/notebooks for Voila file serving)
-EXPORT_DIR = "/home/jovyan/notebooks/exports"
-os.makedirs(EXPORT_DIR, exist_ok=True)
-
-
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
@@ -632,7 +627,9 @@ def export_cohort(df, annotations, include_report_text=False):
         include_report_text: Whether to include full report text
 
     Returns:
-        Path to exported file
+        (csv_string, filename) tuple. The CSV is built in memory and handed to
+        the browser as a client-side download (see cohort_ui.create_export_controls)
+        rather than written to a shared server directory.
     """
     # Build export dataframe
     export_df = df[
@@ -666,12 +663,11 @@ def export_cohort(df, annotations, include_report_text=False):
     if include_report_text:
         export_df["report_text"] = df["report_text"]
 
-    # Generate filename
+    # Generate filename and serialize to an in-memory CSV string. Passing no
+    # path to to_csv() returns the CSV as text so the caller can hand it to the
+    # browser as a Blob download; nothing is written to the server.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"cohort_{timestamp}.csv"
-    filepath = os.path.join(EXPORT_DIR, filename)
+    csv_string = export_df.to_csv(index=False)
 
-    # Save
-    export_df.to_csv(filepath, index=False)
-
-    return filepath
+    return csv_string, filename
