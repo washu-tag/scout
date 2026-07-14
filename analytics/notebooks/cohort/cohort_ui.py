@@ -720,7 +720,7 @@ def create_annotation_controls(
                     """
                 <div style='background: #fef3c7; color: #92400e; padding: 8px; border-radius: 4px;
                             font-size: 12px; text-align: center; border: 1px solid #f59e0b;'>
-                    🚧 XNAT integration is a planned feature. For now, use <strong>Export Cohort CSV</strong> to download your cohort.
+                    🚧 XNAT integration is a planned feature. For now, use <strong>Prepare Cohort CSV</strong> to download your cohort.
                 </div>
             """
                 )
@@ -939,7 +939,7 @@ def create_export_controls(state):
     )
 
     export_button = widgets.Button(
-        description="📥 Export Cohort CSV",
+        description="📝 Prepare Cohort CSV",
         button_style="info",
         layout=widgets.Layout(width="auto"),
     )
@@ -979,9 +979,9 @@ def create_export_controls(state):
                     </style>
                     <div style='background: {SUCCESS_GRADIENT}; padding: 16px; border-radius: 8px;
                                 color: white; margin-top: 12px; width: 100%; box-sizing: border-box;'>
-                        <div style='font-weight: 600; margin-bottom: 8px;'>✓ Export Successful</div>
+                        <div style='font-weight: 600; margin-bottom: 8px;'>✓ CSV ready — click below to download</div>
                         <div style='font-size: 14px; opacity: 0.95; margin-bottom: 16px;'>
-                            Exported {len(state['df'])} reports ({annotated_count} annotated)
+                            Prepared {len(state['df'])} reports ({annotated_count} annotated)
                         </div>
                         <a href="#" id="{dl_id}"
                            class='download-link'
@@ -1028,7 +1028,7 @@ def create_export_controls(state):
                         f"""
                     <div style='background: {RED_ERROR}; padding: 16px; border-radius: 8px;
                                 color: white; margin-top: 12px;'>
-                        <div style='font-weight: 600; margin-bottom: 8px;'>✗ Export Failed</div>
+                        <div style='font-weight: 600; margin-bottom: 8px;'>✗ CSV Preparation Failed</div>
                         <div style='font-size: 14px; opacity: 0.95;'>Error: {str(e)}</div>
                     </div>
                 """
