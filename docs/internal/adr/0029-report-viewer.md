@@ -3,6 +3,7 @@
 **Date**: 2026-07-07
 **Status**: Accepted
 **Decision Owner**: TAG Team
+**Supersedes**: Open WebUI's Trino-access parts of ADR 0019, ADR 0020, and ADR 0022 (the MCP Trino tool, openwebui_mcp_svc, and the interim PASSWORD authenticator)
 
 ## Context
 
@@ -47,6 +48,34 @@ There are two inbound callers and one outbound Trino pattern.
 **Inbound.** The SPA and iframe reach the backend through oauth2-proxy at the ingress (ADR 0003 approval gate). oauth2-proxy forwards identity-only via `X-Auth-Request-Preferred-Username`. No access token is forwarded. The OWUI tool runtime posts in-cluster with `Authorization: Bearer <__oauth_token__>`, the user's Keycloak access token. FastAPI validates the JWT against Keycloak JWKS: RS256 only (pinned allowlist), signature, `exp`, `iss`, and `aud=report-viewer` (stamped by a client scope on the OWUI client). NetworkPolicy restricts Bearer-bearing in-cluster traffic to OWUI pods so the header cannot be forged from elsewhere in the cluster. Both paths resolve to the same `User` model.
 
 **Outbound.** Report-viewer follows the impersonation pattern from ADR 0022, same as Superset and Voila. It authenticates to Trino as `report_viewer_svc` (a confidential Keycloak client with `trino-audience` in `defaultClientScopes`), mints a Bearer via `client_credentials`, caches it in-process, and refreshes when ⅕ of the lifetime remains (ADR 0024 ratio, single-flight under a lock). Every Trino call goes out as `Authorization: Bearer <svc-token>` plus `X-Trino-User: <user.sub>`. OPA's service-principal set grants `report_viewer_svc` `ImpersonateUser`; the per-user row filters and column masks evaluate against the impersonated identity. JWT pass-through is not used because report-viewer has no fresh-user-token custodian; impersonation is the established fallback for services in that position.
+
+**Trino auth mode.** Open WebUI no longer calls Trino directly, so the interim `PASSWORD` authenticator from ADR 0022 (`openwebui_mcp_svc`, `password.db.j2`, `authenticationType: PASSWORD,JWT`) is removed. Trino runs JWT-only. Every client, including report-viewer, authenticates with JWT.
+
+**Flows.** Both inbound paths converge on the same `report_viewer_svc` JWT + `X-Trino-User` impersonation call to Trino.
+
+```
+report-viewer, browser SPA / iframe (JWT + impersonation, header-driven)
+────────────────────────────────────────────────────────────────────────────────
+  user → oauth2-proxy (set_xauthrequest=true)
+       ↓ X-Auth-Request-Preferred-Username: <username>   (username only; no token forwarded)
+  Traefik forwardAuth → report-viewer pod
+       ↓ reads username header → user context
+       ↓ trino_client mints report_viewer_svc JWT (client_credentials; aud=trino; cached, re-minted at 4/5 lifetime)
+       ↓ HTTP: Bearer <report_viewer_svc JWT>, X-Trino-User: <user>
+  Trino: principal=report_viewer_svc, user=alice → OPA evaluates against data.users["alice"]
+                                       impersonation: report_viewer_svc ∈ trino_service_principals
+
+report-viewer, OWUI tool runtime (JWT + impersonation, Bearer inbound)
+──────────────────────────────────────────────────────────────────────────────
+  user chats in OWUI → tool runtime POSTs to report-viewer in-cluster
+       ↓ Authorization: Bearer <user-jwt>                # user JWT minted by `open-webui` client; aud=report-viewer
+  report-viewer: validates inbound JWT vs Keycloak JWKS (signature, iss, exp, aud=report-viewer)
+       ↓ reads preferred_username from validated token; JWT discarded (never forwarded)
+       ↓ trino_client mints report_viewer_svc JWT (client_credentials; aud=trino; cached, re-minted at 4/5 lifetime)
+       ↓ HTTP: Bearer <report_viewer_svc JWT>, X-Trino-User: <user>
+  Trino: principal=report_viewer_svc, user=alice → OPA evaluates against data.users["alice"]
+                                       impersonation: report_viewer_svc ∈ trino_service_principals
+```
 
 ### iframe embedding
 
@@ -114,6 +143,7 @@ Prometheus scrapes `/metrics` via `prometheus-fastapi-instrumentator`, plus doma
 
 - [ADR 0003: OAuth2 Proxy as Authentication Middleware](0003-oauth2-proxy-authentication-middleware.md)
 - [ADR 0019: Read-Write Trino Instance for Transformer-Issued View DDL](0019-trino-rw-instance-for-views.md)
+- [ADR 0020: Trino Authorization via OPA with Keycloak Attributes](0020-trino-authz-architecture.md)
 - [ADR 0022: Trino Authentication and Identity Propagation](0022-trino-auth-and-impersonation.md)
 - [ADR 0024: Token Refresh for SDK Trino Access](0024-sdk-trino-token-refresh.md)
 - [ADR 0026: XNAT Deployment Posture and Lifecycle](0026-xnat-deployment-posture-and-lifecycle.md)
