@@ -947,6 +947,12 @@ def create_export_controls(state):
     export_output = widgets.Output()
 
     def on_export(b):
+        # Preparing a large cohort with report text serializes a big CSV in the
+        # kernel and can take a minute or more; disable the button and show a
+        # working state so it's clear something is happening (mirrors the
+        # follow-up dashboard's "⏳ Loading..." button pattern).
+        export_button.disabled = True
+        export_button.description = "⏳ Preparing CSV…"
         with export_output:
             export_output.clear_output(wait=True)
 
@@ -1034,6 +1040,9 @@ def create_export_controls(state):
                 """
                     )
                 )
+            finally:
+                export_button.disabled = False
+                export_button.description = "📝 Prepare Cohort CSV"
 
     export_button.on_click(on_export)
 
