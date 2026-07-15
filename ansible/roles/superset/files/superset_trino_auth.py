@@ -5,7 +5,7 @@ principal (client_credentials grant), and impersonates the logged-in
 Superset user via the X-Trino-User HTTP header. Trino's OPA policy
 permits superset_svc to impersonate any user; the actual data-access
 decision uses the impersonated user's Keycloak attributes
-(allowed_facilities, mask_phi_fields).
+(allowed_facilities, redact_select_identifiers).
 
 Token caching: a single service-principal token is reused across all
 connections until ~80% of its lifetime has elapsed, then refreshed. The

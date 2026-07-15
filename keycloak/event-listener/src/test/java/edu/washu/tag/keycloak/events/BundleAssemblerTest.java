@@ -54,7 +54,7 @@ class BundleAssemblerTest {
     void user_payload_includes_enabled_groups_and_attributes() {
         Map<String, List<String>> attrs = new LinkedHashMap<>();
         attrs.put("allowed_facilities", List.of("WUSM", "BJH"));
-        attrs.put("mask_phi_fields", List.of("false"));
+        attrs.put("redact_select_identifiers", List.of("false"));
 
         Map<String, Object> payload = BundleAssembler.userPayload(
                 true, List.of("scout-user"), attrs);
@@ -62,7 +62,7 @@ class BundleAssemblerTest {
         assertEquals(true, payload.get("enabled"));
         assertEquals(List.of("scout-user"), payload.get("groups"));
         assertEquals(List.of("WUSM", "BJH"), payload.get("allowed_facilities"));
-        assertEquals(List.of("false"), payload.get("mask_phi_fields"));
+        assertEquals(List.of("false"), payload.get("redact_select_identifiers"));
     }
 
     @Test

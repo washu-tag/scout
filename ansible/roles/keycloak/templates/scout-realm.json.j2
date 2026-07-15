@@ -909,8 +909,8 @@
         },
 {% endfor %}
         {
-          "name": "mask_phi_fields",
-          "displayName": "Scout AuthZ — mask PHI fields",
+          "name": "redact_select_identifiers",
+          "displayName": "Scout AuthZ — redact select identifier columns",
           "permissions": {
             "view": ["admin"],
             "edit": ["admin"]
@@ -920,7 +920,7 @@
           "annotations": {
             "scoutAuthz": "true",
             "inputType": "select",
-            "scoutDefault": "true"
+            "scoutDefault": "false"
           },
           "validations": {
             "options": {
