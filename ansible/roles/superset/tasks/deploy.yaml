@@ -125,10 +125,28 @@
 
 # Deploy dashboards via a separate Helm release. The chart owns the
 # dashboard-config ConfigMap and an import Job whose pod template carries a
-# checksum/config annotation tied to the rendered ConfigMap. Any analytics
-# YAML edit or family toggle change changes the hash, Helm replaces the Job
-# (per before-hook-creation delete policy), and the import re-runs. No
-# Ansible-side change detection.
+# checksum/config annotation tied to the rendered ConfigMap, so once Helm
+# upgrades the release the Job is replaced (before-hook-creation) and the
+# import re-runs.
+#
+# kubernetes.core.helm won't upgrade a local chart on file-only edits: it
+# decides from the chart version (frozen at 0.0.0-dev) and the passed values,
+# not the rendered templates. So we hash the chart's files and pass the digest
+# as a value — it changes whenever a dashboard/dataset/import.py changes, which
+# makes the module actually run the upgrade (and re-run the import).
+- name: Hash scout-dashboards chart files (drives redeploy on file edits)
+  ansible.builtin.find:
+    paths: '{{ scout_dashboards_helm_chart_ref }}'
+    file_type: file
+    recurse: true
+    get_checksum: true
+  register: _scout_dashboards_files
+  delegate_to: localhost
+
+- name: Compute scout-dashboards config checksum
+  ansible.builtin.set_fact:
+    scout_dashboards_config_checksum: "{{ _scout_dashboards_files.files | map(attribute='checksum') | sort | join('') | hash('sha1') }}"
+
 - name: Deploy scout-dashboards chart
   ansible.builtin.include_role:
     name: scout_common
@@ -139,6 +157,9 @@
     helm_chart_namespace: '{{ superset_namespace }}'
     helm_chart_timeout: '{{ superset_helm_timeout }}'
     helm_chart_values:
+      # Changes when any chart file changes so the helm module runs the
+      # upgrade (see note above); not consumed by the chart templates.
+      configChecksum: '{{ scout_dashboards_config_checksum }}'
       image:
         repository: '{{ superset_image_repository }}'
         tag: '{{ superset_image_tag }}'

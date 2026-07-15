@@ -6,7 +6,7 @@ description: Canonical latest-version-per-exam view from the data lake. Built on
   raw `reports` only when you need raw HL7 throughput.
 default_endpoint: null
 offset: 0
-cache_timeout: 7200
+cache_timeout: null
 catalog: delta
 schema: default
 sql: null

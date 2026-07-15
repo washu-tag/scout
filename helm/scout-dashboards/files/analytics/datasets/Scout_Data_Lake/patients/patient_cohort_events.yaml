@@ -8,7 +8,7 @@ description: One row per exam from reports_latest_epic_view, tagged 'new' in the
   in each later month they appear — never both in the same month.
 default_endpoint: null
 offset: 0
-cache_timeout: 7200
+cache_timeout: null
 catalog: delta
 schema: default
 sql: |-

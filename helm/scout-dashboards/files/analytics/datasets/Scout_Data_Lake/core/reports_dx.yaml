@@ -5,7 +5,7 @@ description: Canonical one-row-per-diagnosis view from the data lake. Built on
   in-Superset diagnoses_flat virtual table.
 default_endpoint: null
 offset: 0
-cache_timeout: 7200
+cache_timeout: null
 catalog: delta
 schema: default
 sql: null
