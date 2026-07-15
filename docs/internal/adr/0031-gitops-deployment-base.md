@@ -1,4 +1,4 @@
-# ADR 0029: GitOps Deployment Base; Ansible Reduced to Bootstrap
+# ADR 0031: GitOps Deployment Base; Ansible Reduced to Bootstrap
 
 **Date**: 2026-07-09
 **Status**: Proposed
@@ -9,7 +9,7 @@
 - Scout ships its deployment definition as a `deploy/` directory in this
   repository: a Kustomize base per component, consumed by Flux. CI
   publishes it as a versioned **deployment-config artifact** with chart and
-  image references stamped in from the build manifest (ADR 0028). A cluster
+  image references stamped in from the build manifest (ADR 0030). A cluster
   is pinned to exactly one version of that artifact.
 - **Upgrades are pull requests** to a small per-site configuration repo.
   Renovate proposes the version bump with the changelog attached; a human
@@ -59,17 +59,6 @@ secrets, ConfigMaps, operator resources, one-off Jobs, computed
 configuration, file bundling, deployment ordering — and maps each to a
 GitOps equivalent.
 
-The Spark 4 incident showed what that drift costs: the new engine's
-required spark-defaults changes shipped in this repository's Ansible
-template while a GitOps cluster carried a stale hand-copy and received the
-new engine image without the configuration it needed. That specific
-incident is covered by two narrower fixes — chart-owned configuration
-(Section 4, shipped first) keeps the config from going stale, and
-ADR 0028's manifest ties image and configuration versions together — so it
-is not, by itself, what justifies the base. The base is for everything the
-incident is only an instance of: ordering, Jobs, feature-flag composition,
-file bundling.
-
 The second problem is adoption. The Ansible-only install is a barrier: a
 site already running Kubernetes, Flux, and Harbor cannot take Scout without
 also standing up an Ansible control node — SSH, inventory, vault — that it
@@ -95,19 +84,19 @@ Scout can be installed, but not simply consumed.
 - On-prem and air-gapped sites stay fully supported. Node-level bootstrap
   cannot be expressed as cluster manifests, so some Ansible remains.
 - Feature flags (`enable_chat`, `enable_xnat`, playbooks, GPU) stay
-  first-class, and both ADR 0028 lanes are consumable: dev clusters track
+  first-class, and both ADR 0030 lanes are consumable: dev clusters track
   builds, production sites pin releases.
 
 ### Out of scope
 
 Environment promotion, deployment gates, canary/progressive delivery
-(future ADR). Versioning and artifact publishing is ADR 0028.
+(future ADR). Versioning and artifact publishing is ADR 0030.
 
 ## Decision
 
 ```mermaid
 flowchart TB
-    SCOUT["scout repo<br/>code + charts + deploy base"] -->|"CI publishes (ADR 0028)"| REG["registry<br/>images, charts, config artifact, manifest"]
+    SCOUT["scout repo<br/>code + charts + deploy base"] -->|"CI publishes (ADR 0030)"| REG["registry<br/>images, charts, config artifact, manifest"]
     REN["Renovate"] -->|"upgrade PR: pin bump + changelog"| SITE["site config repo<br/>pin, cluster-vars, components, secrets"]
     SITE --> FLUX["cluster Flux"]
     REG --> FLUX
@@ -122,7 +111,7 @@ flowchart TB
   HelmRelease, its raw manifests (operator resources, Traefik
   middlewares), and `configMapGenerator` entries where Ansible used to
   bundle files dynamically.
-- HelmReleases reference the published OCI charts (ADR 0028) — never a
+- HelmReleases reference the published OCI charts (ADR 0030) — never a
   chart from a git branch.
 - CI publishes the base as a deployment-config OCI artifact on both
   lanes. At publish time, chart versions and image references are stamped
@@ -238,7 +227,7 @@ secrets. Flux on the cluster watches it. An upgrade is:
 
 Rollback is `git revert` — for declarative state. Reverting a pin does not
 un-run a database migration, a Delta schema change, or a Keycloak realm
-mutation. Releases containing such changes are marked `!` under ADR 0028's
+mutation. Releases containing such changes are marked `!` under ADR 0030's
 operator contract and ship a backout procedure, and state-changing
 upgrades are written so the previous version still works against the new
 state (expand first, contract in a later release).
@@ -295,12 +284,12 @@ committed example; that work is deferred — see the end of this section.
   `oci_registry` site variable (default `ghcr.io`, the Harbor proxy path
   for air-gapped sites) is substituted into those references via
   `postBuild`, ahead of the pinned digest, so only the host varies per
-  site — the digest, and ADR 0028's roll-only-on-change property, stay put.
+  site — the digest, and ADR 0030's roll-only-on-change property, stay put.
   Harbor's proxy cache does serve OCI Helm charts (confirmed by Harbor
   maintainers, though not in Harbor's own docs; the Flux config-artifact
   media type gets a one-time check in CI).
 - **No completeness gate**: a cache miss behaves exactly like today, a
-  fetch at pull time — never a broken upgrade. The ADR 0028 release
+  fetch at pull time — never a broken upgrade. The ADR 0030 release
   manifest doubles as an optional warm-up list (pull a release's artifacts
   into the cache before the upgrade window) and as the audit record of what
   a release contains.
@@ -417,7 +406,7 @@ porting cost.
 
 ### Ship versioned charts only
 
-ADR 0028 alone. Better than today, and supported indefinitely as a
+ADR 0030 alone. Better than today, and supported indefinitely as a
 consumption mode — but the ordering, Jobs, flag composition, and derived
 configuration stay duplicated per deployment.
 
@@ -464,7 +453,7 @@ not the design.
   instead of playbook runs. Small sites take on a git repo (see "the
   minimum site"); air-gapped sites also run the staging reconciler and a
   registry retention policy.
-- Scout owns custom tooling: the ADR 0028 publish pipeline, the
+- Scout owns custom tooling: the ADR 0030 publish pipeline, the
   reference-stamping step, and the staging reconciler. Each has failure
   modes that are ours to debug.
 - SOPS custody costs: the cluster key is a new critical secret, a leak
@@ -480,7 +469,7 @@ not the design.
 
 ## Related
 
-- ADR 0028 (two-lane versioning) — the artifacts this base pins.
+- ADR 0030 (two-lane versioning) — the artifacts this base pins.
 - ADR 0001/0002 (air-gapped Helm/K3s), 0016 (staging CA), 0017 (package
   proxy) — the staging-node architecture Section 7 extends.
 - ADR 0003/0012 (the edge auth/security posture the base's auth component
@@ -512,7 +501,7 @@ substitution gate above is the backstop at converge time; this check is
 the front door at review time.
 
 **Bill of materials (BOM).** The BOM is the list of every third-party
-image a Scout deployment pulls. It feeds the release manifest (ADR 0028),
+image a Scout deployment pulls. It feeds the release manifest (ADR 0030),
 the optional cache warm-up, and support audits. Its content ships now; the
 enforcement checks described below activate only with hard-gap transport
 (Section 7), the one consumer that depends on completeness outright.

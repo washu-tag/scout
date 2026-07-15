@@ -1,4 +1,4 @@
-# ADR 0028: Two-Lane Versioning and Artifact Publishing
+# ADR 0030: Two-Lane Versioning and Artifact Publishing
 
 **Date**: 2026-07-09
 **Status**: Proposed
@@ -21,7 +21,7 @@
   continuous build, `>= 1.0.0` is a release. Every automated consumer
   filters for one or the other.
 - The source tree stops carrying versions: `latest` tags, `VERSION` files,
-  and version-bump commits retire at the ADR 0029 cutover. Identity is
+  and version-bump commits retire at the ADR 0031 cutover. Identity is
   stamped onto artifacts when they are built and published.
 
 ## Context
@@ -70,7 +70,7 @@ continuously:
 
 Environment promotion, canary/progressive delivery, and CD to
 production-shaped environments (future ADR). How deployments consume these
-artifacts is ADR 0029.
+artifacts is ADR 0031.
 
 ## Decision
 
@@ -101,7 +101,7 @@ flowchart LR
   registry after all the artifacts it lists — is the authoritative answer
   to "what is Scout at `0.20260708.123`". Nothing is retagged so as to avoid churn (pods rolling).
 - Deployments consume `name:tag@digest` references stamped from the
-  manifest (ADR 0029's config artifact does the stamping). The digest pins
+  manifest (ADR 0031's config artifact does the stamping). The digest pins
   content for machines; the tag tells humans which build produced it.
   Unchanged components keep both, so a merge can never restart pods it
   didn't touch.
@@ -126,7 +126,7 @@ flowchart LR
   publishing, and unscanned bits never reach a release. (This retires the
   allow-failure CI flags, which gated the scans of three images, not their
   builds.)
-- Until the ADR 0029 cutover, `latest` continues to publish alongside
+- Until the ADR 0031 cutover, `latest` continues to publish alongside
   build tags for the Ansible-based deployments (Section 5).
 
 ### 2. Charts become published artifacts, coupled to their images
@@ -152,7 +152,7 @@ flowchart LR
 - Scout-built images that deploy through upstream charts (the
   xnat-plugin-installer under the XNAT chart, keycloak via its operator
   resource) are referenced in the deployment base's values and stamped
-  when the config artifact is stamped (ADR 0029) — the same mechanism at
+  when the config artifact is stamped (ADR 0031) — the same mechanism at
   the same moment, so they cannot drift separately.
 - Chart publishing ships first, in phase 0 of the implementation plan,
   as a plain per-chart path filter with no manifest. Even that minimal job
@@ -178,14 +178,14 @@ together under one version number. Three changes:
 - **A release manifest publishes** (`manifests/scout:X.Y.Z`), listing
   every artifact in the release by digest: Scout images and charts, the
   deployment-config artifact, the third-party images the deployment pulls
-  (the bill of materials, assembled per ADR 0029 Appendix B), and the
+  (the bill of materials, assembled per ADR 0031 Appendix B), and the
   signature artifacts themselves. It answers "is this registry complete
   for 4.2.0?" with a digest comparison, and a copy is attached to the
   GitHub Release so release history never lives only in a registry.
 
 Releases rebuild everything from the release-PR merge commit, with
 versions stamped at publish time. The current stamp-then-reset commit
-choreography and `update-versions.sh` disappear at the ADR 0029 cutover —
+choreography and `update-versions.sh` disappear at the ADR 0031 cutover —
 they exist only because Ansible reads stamped tags out of release
 checkouts, and the cutover removes that consumer. A leaner mode, where a
 release re-labels an existing already-tested build instead of rebuilding,
@@ -211,7 +211,7 @@ settings change lands with the lint, which otherwise guards nothing.
 Limits, accepted: a PR mixing a feature with a breaking change must be
 split or titled `!`, which files the feature under the major. The whole
 signal rests on title discipline — one mistitled `fix:` incorrectly tells
-operators "safe." ADR 0029's required-variables check catches the breaking
+operators "safe." ADR 0031's required-variables check catches the breaking
 changes that add a variable; behavioral breaks that don't are caught only
 by review. The version number stays a summary: breaking releases ship
 upgrade notes, and deprecations are announced before the major that
@@ -234,7 +234,7 @@ what keeps future release-candidate tags away from stable consumers.
 Renovate applies the same split with `allowedVersions` or regex
 versioning.
 
-Retired at the ADR 0029 cutover:
+Retired at the ADR 0031 cutover:
 
 - `latest` and the other mutable tags stop publishing; the build lane
   replaces every remaining consumer.
@@ -402,7 +402,7 @@ deleted the retags.
 
 ## Related
 
-- ADR 0029 (GitOps deployment base) — consumes both lanes.
+- ADR 0031 (GitOps deployment base) — consumes both lanes.
 - ADR 0011 (deployment portability), ADR 0015 (Renovate infrastructure).
 - [ScalVer](https://github.com/veiloq/scalver) ·
   [Flux ImagePolicy](https://fluxcd.io/flux/components/image/imagepolicies/) ·
@@ -413,8 +413,8 @@ deleted the retags.
 
 **What the manifest records.** For each build: the source commit; for
 every image and chart, its name, digest, version or tag, and the tag of
-the build that produced it; the deployment-config artifact (ADR 0029); the
-third-party images the deployment pulls (the bill of materials, ADR 0029
+the build that produced it; the deployment-config artifact (ADR 0031); the
+third-party images the deployment pulls (the bill of materials, ADR 0031
 Appendix B); and the signature artifacts for all of the above, listed
 explicitly so copying a release moves trust material along with content.
 Manifests publish at `manifests/scout:<version>` and are cosign-signed

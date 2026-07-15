@@ -3,9 +3,9 @@
 This document catalogs every operation the Ansible deployment performs **beyond** `helm upgrade --install`, organized by category. Each item represents something that must be accounted for in a GitOps migration — either as a manifest in Git, a dependency-ordered resource, a Job wired into the deployment graph, an init container, an operator, or a manual bootstrapping step. See [Section 11](#11-argo-cd-vs-flux-cd-considerations-for-scout) for a detailed comparison of Argo CD vs Flux CD for Scout's specific needs.
 
 > **Status update (2026-07-08):** the decisions this analysis fed are now
-> recorded as ADRs. **ADR 0029** adopts the GitOps deployment base and selects
+> recorded as ADRs. **ADR 0031** adopts the GitOps deployment base and selects
 > **Flux** (Section 11's comparison is retained as the analysis of record);
-> **ADR 0028** provides the artifact substrate (per-merge OCI charts and
+> **ADR 0030** provides the artifact substrate (per-merge OCI charts and
 > immutable image tags) that the HelmReleases in that base pin. This document
 > remains the operation inventory for the migration. Inventory refreshed the
 > same date: roles added since the original writing (OPA — ADR 0020/0021,
@@ -618,7 +618,7 @@ Cross-cluster dependencies (staging Harbor must be populated before production G
 
 ### Moves to GitOps-Managed Helm Releases
 - All upstream Helm chart releases (MinIO, Temporal, Superset, Grafana, Prometheus, Loki, JupyterHub, OAuth2-Proxy, Valkey, Harbor, Nexus, GPU Operator, XNAT — already an upstream OCI chart, etc.)
-- Scout-owned Helm charts (hive-metastore, hl7log-extractor, hl7-transformer, keycloak-config-cli, voila, scout-opa, scout-dashboards, launchpad) — published as versioned OCI artifacts per ADR 0028, pinned by version rather than sourced from a git branch
+- Scout-owned Helm charts (hive-metastore, hl7log-extractor, hl7-transformer, keycloak-config-cli, voila, scout-opa, scout-dashboards, launchpad) — published as versioned OCI artifacts per ADR 0030, pinned by version rather than sourced from a git branch
 - Each with environment-specific values referencing ConfigMaps/Secrets
 - In Argo: `Application` per chart. In Flux: `HelmRelease` per chart.
 
@@ -660,7 +660,7 @@ Cross-cluster dependencies (staging Harbor must be populated before production G
 
 ## 11. Argo CD vs Flux CD Considerations for Scout
 
-> **Decided (ADR 0029, 2026-07): Flux.** The comparison below is retained as
+> **Decided (ADR 0031, 2026-07): Flux.** The comparison below is retained as
 > the analysis of record.
 
 ### Where Flux is stronger for Scout

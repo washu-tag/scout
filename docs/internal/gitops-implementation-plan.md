@@ -1,7 +1,7 @@
 # GitOps & Versioning — Implementation Plan
 
-Phasing for ADRs 0028/0029 (orientation:
-`docs/internal/adr/0028-0029-tldr.md`). Phases are ordered by dependency,
+Phasing for ADRs 0030/0031 (orientation:
+`docs/internal/adr/0030-0031-tldr.md`). Phases are ordered by dependency,
 not dated; each has a definition of done. Items become tickets when their
 phase starts.
 
@@ -151,7 +151,7 @@ Ansible service roles are deleted from the repo.
 Mechanisms are specified in the ADRs, so these are triggers, not design
 work:
 
-- **Releases as promotions** (ADR 0028, Deferred work): re-label an
+- **Releases as promotions** (ADR 0030, Deferred work): re-label an
   existing tested build instead of rebuilding. Trigger: wanting releases
   to ship the exact bytes already validated, or release rebuilds becoming
   a cost/flakiness problem.
@@ -162,7 +162,7 @@ work:
 - **Registry pruning** (keep digests referenced by retained manifests;
   never prune by tag age). Trigger: registry growth actually hurting.
   Until then: keep everything.
-- **Hard-gap transport** (ADR 0029 Section 7, deferred block):
+- **Hard-gap transport** (ADR 0031 Section 7, deferred block):
   completeness-gated copying, BOM enforcement, an archive path. Trigger: a
   committed fully disconnected deployment. Tooling evaluation done (prefer
   `oras copy`; flux-mirror and Hauler are candidates; Zarf rejected).
