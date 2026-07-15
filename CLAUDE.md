@@ -124,7 +124,7 @@ scout/
 The Delta Lake silver layer contains a `reports` table with HL7 radiology report data:
 
 ### Core Fields
-- **Metadata**: `source_file`, `updated`, `message_control_id`, `sending_facility`, `version_id`, `message_dt`
+- **Metadata**: `source_file`, `updated`, `content_hash` (internal re-ingest dedup hash), `message_control_id`, `sending_facility`, `version_id`, `message_dt`
 - **Patient Info**: `mpi`, `birth_date`, `sex`, `race`, `ethnic_group`, `zip_or_postal_code`, `country`
 - **Patient IDs**: `patient_ids` (array of structs), `epic_mrn`, and dynamically-created ID columns per assigning authority
 - **Orders**: `orc_2_placer_order_number`, `obr_2_placer_order_number`, `orc_3_filler_order_number`, `obr_3_filler_order_number`
