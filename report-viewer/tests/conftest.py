@@ -75,7 +75,23 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
             )
         return queue.pop(0)
 
+    async def fake_stream(
+        sql: str,
+        user: str | None = None,
+        params: list | tuple | None = None,
+        chunk_size: int = 1000,
+    ):
+        if not queue:
+            raise AssertionError(
+                f"fake_trino had no queued response for SQL: {sql[:120]}..."
+            )
+        columns, rows = queue.pop(0)
+        yield columns, []
+        for i in range(0, len(rows), chunk_size):
+            yield columns, rows[i : i + chunk_size]
+
     monkeypatch.setattr(trino_client, "execute", fake_execute)
+    monkeypatch.setattr(trino_client, "stream", fake_stream)
 
     def enqueue(columns: list[str], rows: list[dict[str, Any]]) -> None:
         queue.append((columns, rows))

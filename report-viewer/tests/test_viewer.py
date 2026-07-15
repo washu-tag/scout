@@ -76,26 +76,3 @@ def test_export_csv_empty_search_returns_header_only(client, auth_headers, fake_
     assert r.status_code == 200
     lines = r.text.strip().splitlines()
     assert lines == ["primary_report_identifier,accession_number"]
-
-
-def test_export_csv_pages_until_chunk_underfills(
-    client, auth_headers, fake_trino, monkeypatch
-):
-    """Loop stops on a short chunk, not on the cached count."""
-    from scout_report_viewer.routes import searches as routes
-
-    monkeypatch.setattr(routes, "_CSV_CHUNK", 2)
-
-    fake_trino(_SAMPLE_COLS, _sample_rows(3))
-    fake_trino(["n"], [{"n": 1}])
-    dsid = client.post(
-        "/api/searches",
-        json={"sql": _SQL},
-        headers=auth_headers,
-    ).json()["id"]
-
-    fake_trino(_SAMPLE_COLS, _sample_rows(2))
-    fake_trino(_SAMPLE_COLS, _sample_rows(1))
-    r = client.get(f"/api/searches/{dsid}/csv", headers=auth_headers)
-    assert r.status_code == 200
-    assert len(r.text.strip().splitlines()) == 4

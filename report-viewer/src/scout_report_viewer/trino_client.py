@@ -21,7 +21,7 @@ import time
 from contextlib import contextmanager
 from datetime import date, datetime, time as _time
 from decimal import Decimal
-from typing import Any, Iterator
+from typing import Any, AsyncIterator, Iterator
 
 import httpx
 from trino.auth import JWTAuthentication
@@ -115,10 +115,9 @@ def _token_lifetime(jwt_token: str, expires_in: int | None) -> int:
 _default_cache = _SvcTokenCache()
 
 
-@contextmanager
-def _connect(user: str | None) -> Iterator[Any]:
+def _new_conn(user: str | None) -> Any:
     token = _default_cache.get()
-    conn = trino_connect(
+    return trino_connect(
         host=settings.trino_host,
         port=settings.trino_port,
         http_scheme=settings.trino_scheme,
@@ -129,6 +128,11 @@ def _connect(user: str | None) -> Iterator[Any]:
         verify=settings.trino_ca_cert or True,
         auth=JWTAuthentication(token),
     )
+
+
+@contextmanager
+def _connect(user: str | None) -> Iterator[Any]:
+    conn = _new_conn(user)
     try:
         yield conn
     finally:
@@ -205,3 +209,40 @@ async def execute(
         for i in range(len(raw_rows))
     ]
     return columns, dict_rows
+
+
+async def stream(
+    sql: str,
+    user: str | None = None,
+    params: list | tuple | None = None,
+    chunk_size: int = 1000,
+) -> AsyncIterator[tuple[list[str], list[dict[str, Any]]]]:
+    """Stream one query as (columns, rows) batches: a single Trino scan
+    paged with fetchmany, versus execute()'s buffered fetchall. The
+    first batch carries the columns with no rows (for a header); each
+    later batch carries up to chunk_size normalized rows.
+    """
+
+    def _open() -> tuple[Any, Any, list[str]]:
+        conn = _new_conn(user)
+        cur = conn.cursor()
+        if params:
+            cur.execute(sql, params)
+        else:
+            cur.execute(sql)
+        columns = [d[0] for d in cur.description] if cur.description else []
+        return conn, cur, columns
+
+    conn, cur, columns = await asyncio.to_thread(_open)
+    try:
+        yield columns, []
+        while True:
+            batch = await asyncio.to_thread(cur.fetchmany, chunk_size)
+            if not batch:
+                break
+            yield columns, [
+                {col: _normalize(row[j]) for j, col in enumerate(columns)}
+                for row in batch
+            ]
+    finally:
+        await asyncio.to_thread(conn.close)

@@ -747,10 +747,16 @@ async def get_search_accessions(
 _CSV_CHUNK = 500
 
 
+# Spreadsheet formula-injection prefixes.
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@")
+
+
 def _csv_quote(value: Any) -> str:
     if value is None:
         return ""
     s = str(value)
+    if s and s[0] in _CSV_FORMULA_PREFIXES:
+        s = "'" + s
     if any(c in s for c in (",", '"', "\n", "\r")):
         return '"' + s.replace('"', '""') + '"'
     return s
@@ -768,35 +774,28 @@ async def export_search_csv(
     uploaded_ids = ds.get("uploaded_ids")
 
     async def gen():
-        order_col = f"s.{_quote_ident('primary_report_identifier')}"
         params = [uploaded_ids] if uploaded_ids else None
-        offset = 0
-        columns_written = False
-        while True:
-            page_sql = (
-                f"SELECT s.* FROM ({sql}) s "
-                f"ORDER BY {order_col} "
-                f"OFFSET {offset} LIMIT {_CSV_CHUNK}"
-            )
-            try:
-                with metrics.time_trino("export_csv_query"):
-                    columns, rows = await trino_client.execute(
-                        page_sql, user=user.sub, params=params
-                    )
-            except Exception:
-                log.exception("trino export query failed at offset=%d", offset)
-                yield b"# ERROR: query failed mid-export; file is incomplete\n"
-                return
-            if not columns_written:
-                yield (",".join(columns) + "\n").encode()
-                columns_written = True
-            for row in rows:
-                yield (
-                    ",".join(_csv_quote(row.get(c)) for c in columns) + "\n"
-                ).encode()
-            if len(rows) < _CSV_CHUNK:
-                return
-            offset += _CSV_CHUNK
+        export_sql = (
+            f"SELECT s.* FROM ({sql}) s "
+            f"ORDER BY s.{_quote_ident('primary_report_identifier')}"
+        )
+        header_written = False
+        try:
+            with metrics.time_trino("export_csv_query"):
+                async for columns, rows in trino_client.stream(
+                    export_sql, user=user.sub, params=params, chunk_size=_CSV_CHUNK
+                ):
+                    if not header_written:
+                        yield (",".join(columns) + "\n").encode()
+                        header_written = True
+                    for row in rows:
+                        yield (
+                            ",".join(_csv_quote(row.get(c)) for c in columns) + "\n"
+                        ).encode()
+        except Exception:
+            log.exception("trino export query failed")
+            yield b"# ERROR: query failed mid-export; file is incomplete\n"
+            return
 
     return StreamingResponse(
         gen(),
