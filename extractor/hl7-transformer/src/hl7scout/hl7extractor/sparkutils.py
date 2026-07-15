@@ -8,11 +8,13 @@ from pyspark.sql import functions as F
 def merge_df_into_dt_on_column(
     dt: DeltaTable, df: DataFrame, merge_col: str, include_year_condition: bool = True
 ):
+    # Aliases follow MERGE convention (and latesttable.py): t = target Delta table,
+    # s = source DataFrame being merged in.
     (
-        dt.alias("s")
+        dt.alias("t")
         .merge(
-            df.alias("t"),
-            f"s.{merge_col} = t.{merge_col}{' AND s.year = t.year' if include_year_condition else ''}",
+            df.alias("s"),
+            f"t.{merge_col} = s.{merge_col}{' AND t.year = s.year' if include_year_condition else ''}",
         )
         .whenMatchedUpdateAll()
         .whenNotMatchedInsertAll()
