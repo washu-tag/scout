@@ -6,8 +6,9 @@
    (`aud=report-viewer`, stamped by the `report-viewer-audience` client
    scope).
 2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`) - the
-   ingress path. The NetworkPolicy restricts ingress to Traefik so the
-   header can't be forged from inside the cluster.
+   ingress path. Trusted only when the request also carries the
+   `X-Report-Viewer-Gateway` secret that Traefik injects, so a
+   pod-to-pod request (OWUI, Prometheus) can't forge the username.
 
 Both populate the same `User(sub=...)` model. Downstream code never
 needs to know which path produced the identity. The user JWT is not
@@ -18,6 +19,7 @@ principal and impersonates this `sub` via X-Trino-User (ADR 0022).
 from __future__ import annotations
 
 import asyncio
+import hmac
 import logging
 from dataclasses import dataclass
 
@@ -34,6 +36,13 @@ log = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class User:
     sub: str  # owner_sub stored on the search row; also sent as X-Trino-User
+
+
+def _gateway_ok(header: str | None) -> bool:
+    secret = settings.gateway_secret
+    if not secret or header is None:
+        return False
+    return hmac.compare_digest(header.encode(), secret.encode())
 
 
 def _bearer_token(auth_header: str | None) -> str | None:
@@ -109,6 +118,7 @@ def _validate_jwt(token: str) -> str | None:
 async def get_current_user(
     authorization: str | None = Header(default=None),
     x_auth_request_preferred_username: str | None = Header(default=None),
+    x_report_viewer_gateway: str | None = Header(default=None),
 ) -> User:
     # Path 1: Bearer JWT (highest trust; carries the real user identity).
     token = _bearer_token(authorization)
@@ -126,11 +136,8 @@ async def get_current_user(
             detail="bearer token validation failed",
         )
 
-    # Path 2: oauth2-proxy headers (Traefik-gated; NetworkPolicy prevents
-    # in-cluster forgery). Identity-only; we no longer read the user's
-    # access token here. Outbound Trino calls use the report_viewer_svc
-    # service principal and impersonate this username via X-Trino-User.
-    if x_auth_request_preferred_username:
+    # Path 2: oauth2-proxy header, trusted only with Traefik's shared secret.
+    if x_auth_request_preferred_username and _gateway_ok(x_report_viewer_gateway):
         return User(sub=x_auth_request_preferred_username)
 
     raise HTTPException(

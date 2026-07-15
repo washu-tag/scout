@@ -1,8 +1,7 @@
 {{- if .Values.networkPolicy.enabled }}
-# Restrict ingress to Traefik (the browser path comes through oauth2-proxy
-# at the ingress) plus any optional explicit peers. The Authorization-
-# bearer trust model assumes incoming requests carry an unforged end-user
-# JWT - defence-in-depth, label-based, not cryptographic.
+# Narrows who can reach the service (Traefik plus optional peers). Not the
+# auth gate: the bearer path is cryptographic and the header path is gated
+# by the gateway secret. Defence-in-depth, label-based.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

@@ -45,7 +45,12 @@ The LLM-emitted SQL is a researcher-facing artifact, not an internal detail. `sq
 
 There are two inbound callers and one outbound Trino pattern.
 
-**Inbound.** The SPA and iframe reach the backend through oauth2-proxy at the ingress (ADR 0003 approval gate). oauth2-proxy forwards identity-only via `X-Auth-Request-Preferred-Username`. No access token is forwarded. The OWUI tool runtime posts in-cluster with `Authorization: Bearer <__oauth_token__>`, the user's Keycloak access token. FastAPI validates the JWT against Keycloak JWKS: RS256 only (pinned allowlist), signature, `exp`, `iss`, and `aud=report-viewer` (stamped by a client scope on the OWUI client). NetworkPolicy restricts Bearer-bearing in-cluster traffic to OWUI pods so the header cannot be forged from elsewhere in the cluster. Both paths resolve to the same `User` model.
+**Inbound.** Two paths, because the browser has no JWT to present.
+
+- **Rendering results (`user → browser SPA/iframe → Traefik → report-viewer`).** At the ingress, Traefik runs oauth2-proxy as forwardAuth (the ADR 0003 approval gate): it validates the session, and Traefik forwards the request with the username in `X-Auth-Request-Preferred-Username` plus the `X-Report-Viewer-Gateway` secret. No token reaches report-viewer.
+- **Running a search / read (`user's chat prompt → LLM → OWUI tool → report-viewer`).** The tool carries the user's Keycloak access token as `Authorization: Bearer <__oauth_token__>`. FastAPI validates it against Keycloak JWKS (RS256-only allowlist, signature, `exp`, `iss`, `aud=report-viewer`).
+
+Both resolve to the same `User`, but are trusted differently. The bearer is cryptographically verified against Keycloak's JWKS, so a forged or tampered token is rejected no matter which pod sends it. The header can't be verified. `X-Auth-Request-Preferred-Username` is plaintext, only as trustworthy as its sender, and NetworkPolicy lets the OWUI and Prometheus pods reach `/api` directly, so either could send a forged username with no token (OWUI most of all, since it can run tool-driven server-side code). report-viewer therefore honors the header only when the request also carries `X-Report-Viewer-Gateway`, a secret Traefik injects at the ingress. A pod can't obtain that secret without passing through oauth2-proxy, which overwrites the username with the caller's real identity, so no caller can hold both a forged name and the secret. NetworkPolicy is defense-in-depth, not the gate.
 
 **Outbound.** Report-viewer follows the impersonation pattern from ADR 0022, same as Superset and Voila. It authenticates to Trino as `report_viewer_svc` (a confidential Keycloak client with `trino-audience` in `defaultClientScopes`), mints a Bearer via `client_credentials`, caches it in-process, and refreshes when ⅕ of the lifetime remains (ADR 0024 ratio, single-flight under a lock). Every Trino call goes out as `Authorization: Bearer <svc-token>` plus `X-Trino-User: <user.sub>`. OPA's service-principal set grants `report_viewer_svc` `ImpersonateUser`; the per-user row filters and column masks evaluate against the impersonated identity. JWT pass-through is not used because report-viewer has no fresh-user-token custodian; impersonation is the established fallback for services in that position.
 
@@ -56,10 +61,12 @@ There are two inbound callers and one outbound Trino pattern.
 ```
 report-viewer, browser SPA / iframe (JWT + impersonation, header-driven)
 ────────────────────────────────────────────────────────────────────────────────
-  user → oauth2-proxy (set_xauthrequest=true)
+  user → browser SPA/iframe → Traefik (ingress)
+       ↓ oauth2-proxy forwardAuth validates session (set_xauthrequest=true)
        ↓ X-Auth-Request-Preferred-Username: <username>   (username only; no token forwarded)
-  Traefik forwardAuth → report-viewer pod
-       ↓ reads username header → user context
+       ↓ X-Report-Viewer-Gateway: <secret>               (injected by Traefik; gates the header path)
+  report-viewer pod
+       ↓ verifies gateway secret, reads username header → user context
        ↓ trino_client mints report_viewer_svc JWT (client_credentials; aud=trino; cached, re-minted at 4/5 lifetime)
        ↓ HTTP: Bearer <report_viewer_svc JWT>, X-Trino-User: <user>
   Trino: principal=report_viewer_svc, user=alice → OPA evaluates against data.users["alice"]

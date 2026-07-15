@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
 
+    # Shared secret Traefik injects; the header path is refused unless it matches.
+    gateway_secret: str = ""
+
     # Chat origin the SPA postMessages to (iframe height + Discuss/Refine).
     # Rendered into GET /api/config; empty disables cross-frame messaging.
     chat_origin: str = ""

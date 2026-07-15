@@ -6,9 +6,12 @@
       - report_viewer_db_password | length > 0
       - owui_settings_writer_password is defined
       - owui_settings_writer_password | length > 0
+      - report_viewer_gateway_secret is defined
+      - report_viewer_gateway_secret | length > 0
     fail_msg: >
-      report_viewer_db_password and owui_settings_writer_password are
-      required. Set both in inventory.yaml (use Ansible Vault).
+      report_viewer_db_password, owui_settings_writer_password, and
+      report_viewer_gateway_secret are required. Set them in inventory.yaml
+      (use Ansible Vault).
       Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 

@@ -47,10 +47,8 @@ ingress:
   host: ''
   tls: []
 
-# Restrict ingress to Traefik only. In-cluster callers must be either
-# Traefik forwarding an end-user JWT, or the OWUI tool pod forwarding
-# the same JWT. Direct pod-to-pod reachability would let any pod craft
-# a forged bearer. Defence-in-depth (label-based, not cryptographic).
+# Defence-in-depth only: the bearer path is cryptographic and the header path
+# is gated by gatewaySecret, so this just narrows who can reach the service.
 networkPolicy:
   enabled: true
   traefikNamespace: kube-system
@@ -91,6 +89,10 @@ trinoCaCert: ''
 
 # report_viewer_svc client_secret for outbound Trino auth (ADR 0022).
 trinoAuthClientSecret: ''
+
+# Shared secret Traefik injects as X-Report-Viewer-Gateway; gates the header
+# path. Rendered into both the Secret and the gateway Middleware.
+gatewaySecret: ''
 
 # Extra CA bundle mounted into the main container for outbound HTTPS
 # (Trino, Keycloak, anything behind the staging cert).

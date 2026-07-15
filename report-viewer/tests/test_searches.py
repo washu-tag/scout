@@ -128,7 +128,7 @@ def test_get_meta_returns_404_for_other_user(client, auth_headers, fake_trino):
 
     r2 = client.get(
         f"/api/searches/{dsid}",
-        headers={"X-Auth-Request-Preferred-Username": "bob"},
+        headers={**auth_headers, "X-Auth-Request-Preferred-Username": "bob"},
     )
     assert r2.status_code == 404
 
@@ -146,7 +146,7 @@ def test_delete_by_non_owner_is_404_and_leaves_row_intact(
 
     r = client.delete(
         f"/api/searches/{dsid}",
-        headers={"X-Auth-Request-Preferred-Username": "bob"},
+        headers={**auth_headers, "X-Auth-Request-Preferred-Username": "bob"},
     )
     assert r.status_code == 404
 

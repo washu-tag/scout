@@ -753,6 +753,12 @@ k3s_cluster:
     # open_webui_link_sanitizer_internal_domains: 'example.com,trusted.partner.com'
 
     #---------------------------------------------------------------------------
+    # Report Viewer
+    #---------------------------------------------------------------------------
+    report_viewer_db_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    report_viewer_gateway_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    #---------------------------------------------------------------------------
     # data-generator
     #---------------------------------------------------------------------------
     # Uncomment the following line to enable the data generator for test reports

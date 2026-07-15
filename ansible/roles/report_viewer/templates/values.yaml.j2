@@ -28,6 +28,8 @@ owuiDatabaseUrl: "postgresql://{{ owui_settings_writer_role }}:{{ owui_settings_
 
 trinoAuthClientSecret: "{{ report_viewer_trino_auth_client_secret }}"
 
+gatewaySecret: "{{ report_viewer_gateway_secret }}"
+
 {% if report_viewer_trino_ca_cert | length > 0 %}
 trinoCaCert: |
 {{ report_viewer_trino_ca_cert | indent(2, true) }}
@@ -65,5 +67,6 @@ ingress:
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd,
-      kube-system-embeddable-security-headers@kubernetescrd
+      kube-system-embeddable-security-headers@kubernetescrd,
+      {{ report_viewer_namespace }}-{{ report_viewer_helm_release_name }}-gateway@kubernetescrd
   host: "{{ report_viewer_host }}"

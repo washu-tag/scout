@@ -12,6 +12,7 @@ import os
 # Settings() resolves at import - provide a placeholder for required vars
 # before the package gets loaded.
 os.environ.setdefault("REPORT_VIEWER_EXTERNAL_URL", "http://testserver")
+os.environ.setdefault("REPORT_VIEWER_GATEWAY_SECRET", "test-gateway-secret")
 
 from typing import Any, Callable
 
@@ -106,4 +107,7 @@ def client(reset_schema) -> TestClient:
 
 @pytest.fixture
 def auth_headers() -> dict[str, str]:
-    return {"X-Auth-Request-Preferred-Username": "alice"}
+    return {
+        "X-Auth-Request-Preferred-Username": "alice",
+        "X-Report-Viewer-Gateway": os.environ["REPORT_VIEWER_GATEWAY_SECRET"],
+    }
