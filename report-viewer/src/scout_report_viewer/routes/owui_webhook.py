@@ -54,7 +54,7 @@ async def owui_new_user(request: Request) -> None:
         log.info("webhook fired with no user id", extra={"action": action})
         metrics.OWUI_WEBHOOK_EVENTS.labels(action="other", result="skipped").inc()
         return None
-    if action and "signup" not in action.lower() and "new" not in action.lower():
+    if "signup" not in action.lower() and "new" not in action.lower():
         log.info("ignoring non-signup webhook", extra={"action": action})
         metrics.OWUI_WEBHOOK_EVENTS.labels(action="other", result="skipped").inc()
         return None
