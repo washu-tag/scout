@@ -10,6 +10,7 @@ import {
   HiChevronLeft,
   HiChevronRight,
   HiExternalLink,
+  HiInformationCircle,
   HiSearch,
   HiShieldCheck,
   HiTrash,
@@ -127,18 +128,28 @@ function matchesQuery(r: Row, query: string): boolean {
   return [r.name, r.username, r.email].some((f) => f?.toLowerCase().includes(q));
 }
 
-function StatusBadge({ status, isAdmin }: { status: string; isAdmin: boolean }) {
+// Lifecycle status only — admin is a separate dimension (see AdminBadge). An
+// admin is also active, so the backend's "admin" status reads as "Active" here.
+function StatusBadge({ status }: { status: string }) {
   const [label, cls] =
-    isAdmin || status === 'admin'
-      ? ['Admin', 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300']
-      : status === 'active'
-        ? ['Active', 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300']
-        : status === 'pending'
-          ? ['Pending', 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300']
-          : ['—', 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'];
+    status === 'active' || status === 'admin'
+      ? ['Active', 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300']
+      : status === 'pending'
+        ? ['Pending', 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300']
+        : ['—', 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'];
   return (
     <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
       {label}
+    </span>
+  );
+}
+
+// Admin role, shown alongside (not instead of) the lifecycle status.
+function AdminBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+      <HiShieldCheck className="text-sm" />
+      Admin
     </span>
   );
 }
@@ -356,7 +367,8 @@ function UserDrawer({
           <div className="min-w-0 flex-1">
             <h2 className="text-base font-semibold text-slate-900 dark:text-white truncate flex items-center gap-2">
               {display}
-              <StatusBadge status={user.status} isAdmin={user.isAdmin} />
+              <StatusBadge status={user.status} />
+              {user.isAdmin && <AdminBadge />}
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
               {[user.username, user.email].filter(Boolean).join(' · ')}
@@ -389,6 +401,16 @@ function UserDrawer({
               />
             ))}
           </div>
+
+          {mode === 'edit' && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-300">
+              <HiInformationCircle className="mt-0.5 flex-shrink-0 text-sm" />
+              <span>
+                Lowering a user&apos;s access applies to future queries only. It does not remove
+                data they already saved in notebooks or chat history.
+              </span>
+            </div>
+          )}
 
           {mode === 'edit' && (
             <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
@@ -978,7 +1000,10 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
                             {u.email || '—'}
                           </td>
                           <td className="px-5 py-3">
-                            <StatusBadge status={u.status} isAdmin={u.isAdmin} />
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <StatusBadge status={u.status} />
+                              {u.isAdmin && <AdminBadge />}
+                            </div>
                           </td>
                           {showRequested ? (
                             <td className="px-5 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell whitespace-nowrap">
