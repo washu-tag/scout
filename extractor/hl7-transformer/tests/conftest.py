@@ -39,6 +39,10 @@ def spark(tmp_path_factory):
             "spark.sql.catalog.spark_catalog",
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
+        # Mirrors production: Spark 4 enables ANSI mode by default, but the HL7
+        # extraction relies on out-of-range array access and unparseable
+        # timestamps yielding NULL.
+        .config("spark.sql.ansi.enabled", "false")
         .config("spark.databricks.delta.schema.autoMerge.enabled", "true")
         .config("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "true")
         .config(

@@ -171,6 +171,30 @@ def test_derivative_is_incremental(spark, seed_reports, report_row, tmp_path):
     assert spark.table(f"default.{table}_curated").count() == 2
 
 
+def test_identical_reseed_keeps_derivative_cascade_quiet(
+    spark, seed_reports, report_row, tmp_path
+):
+    """Re-ingest efficiency (issue #482): merging rows identical to what the base table
+    already holds must leave the whole pipeline quiet — no new base commit, no CDF batch,
+    and therefore no new commits on any derivative table."""
+    table = "reports_reingest_quiet"
+    rows = [
+        report_row("s3://bucket/a.hl7", filler="ACC1"),
+        report_row("s3://bucket/b.hl7", filler="ACC2"),
+    ]
+    seed_reports(table, rows)
+    _derive(spark, table, create_mapping=False, health_file=tmp_path / "h")
+
+    tables = [table, f"{table}_curated", f"{table}_latest", f"{table}_dx"]
+    versions_before = {t: _table_version(spark, t) for t in tables}
+
+    seed_reports(table, rows)  # byte-identical re-seed
+    _derive(spark, table, create_mapping=False, health_file=tmp_path / "h")
+
+    versions_after = {t: _table_version(spark, t) for t in tables}
+    assert versions_after == versions_before
+
+
 def test_temporal_cancel_of_running_derivative_is_delivered_and_resumable(
     spark, seed_reports, report_row, tmp_path, monkeypatch
 ):
