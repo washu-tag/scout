@@ -62,7 +62,7 @@ audience mapper), so a `scout-admin`'s token minted for another resource — e.g
 Because the schema is discovered, **adding an authorization dimension stays the
 one-line inventory edit ADR 0020 promised**: the new attribute flows into the
 form and its server-side validation with no code change here. Safe defaults are
-config-driven too (`scoutDefault`: `redact_select_identifiers=true`,
+config-driven too (`scoutDefault`: `redact_select_identifiers=false`,
 `bypass_hidden_tables=false`).
 
 **Guardrails** (package-private predicates, mutation-tested, enforced server-side
