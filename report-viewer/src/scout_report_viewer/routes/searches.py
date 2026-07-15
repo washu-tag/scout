@@ -651,7 +651,7 @@ async def get_search_rows(
     where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
     if sort_spec:
         scol, sdir = sort_spec
-        order_sql = f" ORDER BY s.{_quote_ident(scol)} {sdir} NULLS LAST"
+        order_sql = f" ORDER BY s.{_quote_ident(scol)} {sdir} NULLS LAST, s.primary_report_identifier"
     else:
         # Stable default so OFFSET/LIMIT doesn't drift across pages.
         order_sql = " ORDER BY s.primary_report_identifier"
