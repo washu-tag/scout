@@ -6,7 +6,7 @@ description: "Patient-resolved view over reports_dx. One row per diagnosis on th
   \ patients carry diagnosis X."
 default_endpoint: null
 offset: 0
-cache_timeout: 7200
+cache_timeout: null
 catalog: delta
 schema: default
 sql: null
