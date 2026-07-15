@@ -195,6 +195,18 @@ def test_identical_reseed_keeps_derivative_cascade_quiet(
     assert versions_after == versions_before
 
 
+def test_content_hash_confined_to_base_table(spark, seed_reports, report_row, tmp_path):
+    """content_hash is base-table bookkeeping: the derivative cascade must not carry it
+    (autoMerge is on, so a leak would silently evolve every derivative schema)."""
+    table = "reports_hash_confined"
+    seed_reports(table, [report_row("s3://bucket/a.hl7", filler="ACC1")])
+    _derive(spark, table, create_mapping=False, health_file=tmp_path / "h")
+
+    assert "content_hash" in spark.table(f"default.{table}").columns
+    for suffix in ("_curated", "_latest", "_dx"):
+        assert "content_hash" not in spark.table(f"default.{table}{suffix}").columns
+
+
 def test_temporal_cancel_of_running_derivative_is_delivered_and_resumable(
     spark, seed_reports, report_row, tmp_path, monkeypatch
 ):
