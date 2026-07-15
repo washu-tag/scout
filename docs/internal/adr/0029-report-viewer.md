@@ -31,7 +31,7 @@ Splitting the surface this way keeps the intent explicit for the LLM: cohort bui
 
 ### Just-in-time cohort evaluation
 
-A search is a saved SQL query plus minimal metadata. Nothing about which rows match is stored. Every read wraps the saved `sql` as a subquery and applies pagination, sort, and filter at the Trino layer. The `searches` table holds `id`, `owner_sub`, `id_column`, `sql`, `sql_explanation`, `match_terms`, `match_diagnoses`, `row_count` (cached at create time via one `SELECT COUNT(*)`), `owui_chat_id`, and `created_at`. Schema migrations are yoyo. Query refinement is not tracked with a `parent_id` column. When a user narrows a cohort, the LLM is instructed to re-emit full SQL for the new search and the old search is unchanged. 
+A search is a saved SQL query plus minimal metadata. Nothing about which rows match is stored. Every read wraps the saved `sql` as a subquery and applies pagination, sort, and filter at the Trino layer. The `searches` table holds `id`, `owner_sub`, `id_column`, `sql`, `sql_explanation`, `match_terms`, `match_diagnoses`, `row_count` (cached at create time via one `SELECT COUNT(*)`), `owui_chat_id`, and `created_at`. Schema migrations use [yoyo](https://ollycope.com/software/yoyo/), a standalone Python migration tool; `db.py` applies the versioned SQL files in `migrations/` on startup. Query refinement is not tracked with a `parent_id` column. When a user narrows a cohort, the LLM is instructed to re-emit full SQL for the new search and the old search is unchanged. 
 
 ### Required projections
 
@@ -138,6 +138,18 @@ Prometheus scrapes `/metrics` via `prometheus-fastapi-instrumentator`, plus doma
 | OWUI upstream changes the signup webhook contract or the settings JSONB schema | Medium | High (new users hit a broken iframe) | The least-privilege Postgres role limits blast radius, and the 0.10.x migration is on the roadmap |
 | Trino latency on saved-SQL scans degrades with data growth | Medium | Medium | Read-path cache or per-cohort materialization can be added without an API change |
 | `report_viewer_svc` token compromised in-cluster | Low | Medium | NetworkPolicy restricts Bearer-bearing traffic to OWUI pods; the token grants `ImpersonateUser` only, so per-user OPA row filters and column masks still apply to the impersonated identity |
+
+## Retiring the MCP Trino tool
+
+Open WebUI previously reached Trino through the upstream `tuannvm/mcp-trino` server. This change removes it from the Ansible roles, but removing a task does not delete resources already running in a cluster, so an in-place upgrade needs manual cleanup:
+
+```
+helm uninstall mcp-trino -n scout-analytics
+kubectl delete networkpolicy mcp-trino-ingress -n scout-analytics
+kubectl delete secret trino-password-auth -n scout-analytics
+```
+
+The Keycloak `openwebui_mcp_svc` client, the `mcp-trino-audience` scope, and the OWUI `scout-db` tool-server registration are reconciled away on redeploy (keycloak-config-cli is full-managed, and the OWUI config push is declarative). Drop the `keycloak_openwebui_mcp_svc_client_secret` and `trino_openwebui_mcp_svc_password` inventory keys.
 
 ## References
 
