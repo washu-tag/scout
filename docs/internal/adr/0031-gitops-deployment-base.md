@@ -359,7 +359,9 @@ Portability, stated plainly: the base's leaves are Flux resources
 substitution, so consuming the base means running Flux. The portable
 surface is the charts, which are plain Helm. The reference-stamping step
 also matters outside CI: anyone deploying from a git checkout (local
-development included) runs it to resolve the placeholder references.
+development included) runs it to resolve the placeholder references. The
+two pre-merge developer inner-loop workflows — deploying an unmerged branch
+to a dev cluster Flux otherwise owns — are in Appendix C.
 
 ### 9. Migration shape
 
@@ -557,3 +559,121 @@ site-repo/
 └── secrets/                # SOPS-encrypted (default posture)
     └── *.enc.yaml
 ```
+
+## Appendix C: developer inner-loop workflows
+
+Flux reconciles a managed cluster toward git continuously, so it reverts
+anything it did not deploy — the property that makes drift self-correct in
+production is the one a developer iterating on an unmerged branch has to
+work around. Two workflows do that, both scoped to a **developer-owned dev
+cluster**, never a shared or production one. The pre-cutover equivalent is
+`make install-<component>` from a checkout, which "just works" only because
+nothing reconciles yet; these replace it. The `make publish-dev` target and
+the `deploy-dev` PR label below are phase-3 work items (implementation
+plan); the `flux`, `helm`, and `kubectl` commands are current.
+
+**Surgical — fast iteration on one component.** The cluster is converged on
+`main`; you are changing one component (here, `launchpad`, in the
+`scout-core` namespace).
+
+1. Stop Flux reconciling that component — the non-negotiable first step,
+   because with drift detection on, helm-controller otherwise re-applies the
+   git state mid-edit:
+
+   ```bash
+   flux suspend helmrelease launchpad -n scout-core
+   ```
+
+2. Build and push your image under a throwaway tag:
+
+   ```bash
+   docker build -t ghcr.io/washu-tag/launchpad:dev-<user> ./launchpad
+   docker push ghcr.io/washu-tag/launchpad:dev-<user>
+   ```
+
+3. Deploy from your checkout's chart, overriding only the image
+   (`--reuse-values` keeps the configuration Flux set):
+
+   ```bash
+   helm upgrade launchpad ./helm/launchpad -n scout-core --reuse-values \
+     --set image.repository=ghcr.io/washu-tag/launchpad \
+     --set image.tag=dev-<user>
+   ```
+
+4. Iterate: rebuild, push to the same tag, then
+   `kubectl rollout restart deployment/launchpad -n scout-core`. Seconds per
+   loop. A file-watch tool (Tilt, Skaffold) pointed at the suspended
+   component automates this but isn't required.
+
+5. Reconverge when done — the exit discipline:
+
+   ```bash
+   flux resume helmrelease launchpad -n scout-core
+   ```
+
+   Flux re-applies `main`'s desired state and the overrides vanish. The
+   alert on anything suspended past a threshold (Section 6) catches a
+   forgotten resume.
+
+**Full-path — the whole branch, deployed as production would.** For changes
+that span components, touch ordering or the config artifact, or need a
+pre-merge "does it deploy and pass the suites" check. It exercises the exact
+artifact → pin → Flux path a real site runs.
+
+1. Publish the branch. By default CI does it on a `deploy-dev` PR label:
+   build the changed images and charts, stamp a dev config artifact, push
+   all of it under a dev-only tag (branch name sanitized for OCI), and
+   comment the tag on the PR:
+
+   ```
+   0.0.0-dev.feat-my-change.<run>
+   ```
+
+   The tag matches no production lane filter — the release lane is
+   `>=1.0.0`, which excludes prereleases (ADR 0030 §5) — so it cannot leak
+   into a real deployment. `make publish-dev` does the same from a checkout,
+   given registry credentials, for a tighter loop.
+
+2. Point your dev cluster's source at the tag (or bump it in your dev site
+   repo, to keep the change in git):
+
+   ```bash
+   flux create source oci scout-dev \
+     --url=oci://ghcr.io/washu-tag/scout-config \
+     --tag=0.0.0-dev.feat-my-change.<run> --interval=1m
+   ```
+
+3. Watch it converge through the dependency graph:
+
+   ```bash
+   flux get kustomizations --watch
+   ```
+
+4. Iterate: push, re-label, CI republishes at the next run number, bump the
+   tag. A minutes-scale integration loop, not a code loop.
+
+5. Clean up: repoint `scout-dev` at `main`'s tag, or delete it. Dev tags sit
+   outside ADR 0030's manifest-retention set and are reaped by a TTL prune.
+
+**Which to reach for.** Surgical for iterating on one component with a
+seconds-scale loop; Full-path for cross-component changes and the pre-merge
+end-to-end check. The usual rhythm is Surgical while coding a component,
+then one Full-path run before opening or merging the PR.
+
+**Known limits.** Full-path is cleanest once the digest-manifest pipeline
+exists (ADR 0030 §1, deferred); before that, stamping a dev config artifact
+means rebuilding everything or hand-overriding the HelmRelease image value.
+And a single shared dev cluster serves one branch at a time — Surgical
+suspends a component others may use, and one `scout-dev` source tracks one
+tag — so "your dev instance" is best a cluster or namespace you own. Closing
+that with per-PR isolation (a Flux Operator `ResourceSet` preview
+environment, or a vcluster per PR) is a possible later step, out of scope
+here.
+
+Grounded in Flux's documented behavior: reconciliation reverts manual
+changes by design and `spec.suspend` halts it ([Flux
+FAQ](https://fluxcd.io/flux/faq/), [HelmRelease
+API](https://fluxcd.io/flux/components/helm/helmreleases/)); OCI artifacts
+carry git-derived tags that an `OCIRepository` semver filter excludes from
+release lanes ([Flux OCI
+cheatsheet](https://fluxcd.io/flux/cheatsheets/oci-artifacts/)).
