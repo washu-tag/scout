@@ -29,12 +29,11 @@ dependencies = [
     # trino-python-client 0.337+ imports tzlocal but doesn't declare it
     # as required - packaging bug. Listed explicitly so installs work.
     "tzlocal",
-    "python-jose[cryptography]",
+    "python-jose[cryptography]>=3.4.0",
     "python-multipart",
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
     "yoyo-migrations",
-    "psycopg2-binary",
 ]
 
 [project.optional-dependencies]

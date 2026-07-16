@@ -47,7 +47,9 @@ async def check_ready(pool: AsyncConnectionPool) -> None:
 
 
 def _apply_migrations_sync() -> None:
-    backend = get_backend(settings.database_url)
+    # force yoyo's psycopg3 backend so psycopg2 isn't also needed
+    url = settings.database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    backend = get_backend(url)
     migrations = read_migrations(str(_MIGRATIONS_DIR))
     with backend.lock():
         pending = backend.to_apply(migrations)
