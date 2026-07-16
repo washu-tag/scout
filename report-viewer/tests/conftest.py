@@ -19,6 +19,7 @@ from typing import Any, Callable
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
+from psycopg_pool import AsyncConnectionPool
 
 from scout_report_viewer import db, trino_client
 from scout_report_viewer.app import create_app
@@ -40,18 +41,17 @@ async def reset_schema():
     """Drop and recreate the `searches` table so each test starts clean."""
     _needs_pg(None)
     settings.database_url = TEST_DB_URL
-    await db.close_pool()
-    async with db.get_conn() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute("DROP TABLE IF EXISTS searches CASCADE")
-            await cur.execute("DROP TABLE IF EXISTS _yoyo_migration CASCADE")
-            await cur.execute("DROP TABLE IF EXISTS _yoyo_log CASCADE")
-            await cur.execute("DROP TABLE IF EXISTS _yoyo_version CASCADE")
-            await cur.execute("DROP TABLE IF EXISTS yoyo_lock CASCADE")
-        await conn.commit()
+    async with AsyncConnectionPool(TEST_DB_URL, open=False) as pool:
+        async with pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute("DROP TABLE IF EXISTS searches CASCADE")
+                await cur.execute("DROP TABLE IF EXISTS _yoyo_migration CASCADE")
+                await cur.execute("DROP TABLE IF EXISTS _yoyo_log CASCADE")
+                await cur.execute("DROP TABLE IF EXISTS _yoyo_version CASCADE")
+                await cur.execute("DROP TABLE IF EXISTS yoyo_lock CASCADE")
+            await conn.commit()
     await db.ensure_schema()
     yield
-    await db.close_pool()
 
 
 @pytest.fixture
@@ -101,8 +101,10 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
 
 
 @pytest.fixture
-def client(reset_schema) -> TestClient:
-    return TestClient(create_app())
+def client(reset_schema):
+    # Enter the context so the lifespan opens app.state.pool.
+    with TestClient(create_app()) as c:
+        yield c
 
 
 @pytest.fixture

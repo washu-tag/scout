@@ -3,13 +3,13 @@ from contextlib import asynccontextmanager
 from importlib.metadata import version
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import logging_setup, metrics
 from .config import settings
-from .db import check_ready, close_pool, ensure_schema
+from .db import check_ready, create_pool, ensure_schema
 from .routes import config_router, reports_router, searches_router, owui_webhook_router
 
 _VERSION = version("scout_report_viewer")
@@ -40,16 +40,15 @@ class SpaStaticFiles(StaticFiles):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.pool = await create_pool()
     try:
         await ensure_schema()
     except Exception:
-        # May boot before the CNPG database is provisioned; don't crash-loop.
-        # Liveness (/healthz) stays up; readiness (/readyz) holds traffic until
-        # the DB recovers. Drop the partial pool so handlers lazy-reopen.
+        # May boot before the DB is provisioned; don't crash-loop.
+        # /healthz stays up; /readyz holds traffic until the pool self-heals.
         log.exception("schema bootstrap failed - DB not ready?")
-        await close_pool()
     yield
-    await close_pool()
+    await app.state.pool.close()
 
 
 def create_app() -> FastAPI:
@@ -65,9 +64,9 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     @app.get("/readyz", tags=["meta"])
-    async def readyz() -> dict[str, str]:
+    async def readyz(request: Request) -> dict[str, str]:
         try:
-            await check_ready()
+            await check_ready(request.app.state.pool)
         except Exception:
             raise HTTPException(status_code=503, detail="database not ready")
         return {"status": "ok"}

@@ -1,14 +1,16 @@
-"""Postgres access - psycopg3 connection pool + yoyo-driven migrations."""
+"""Postgres access - app-owned psycopg3 pool + yoyo-driven migrations.
+
+The pool is created once in the lifespan and lives on app.state.pool;
+handlers reach it via the get_pool / store dependencies.
+"""
 
 from __future__ import annotations
 
 import asyncio
 import logging
-from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
 
-import psycopg
+from fastapi import Request
 from psycopg_pool import AsyncConnectionPool
 from yoyo import get_backend, read_migrations
 
@@ -19,46 +21,26 @@ log = logging.getLogger(__name__)
 _MIGRATIONS_DIR = Path(__file__).parent / "migrations"
 
 
-_pool: AsyncConnectionPool | None = None
+async def create_pool() -> AsyncConnectionPool:
+    """Open the pool. Non-blocking so the app still boots when Postgres is
+    down; the pool self-heals and /readyz holds traffic until it can serve."""
+    pool = AsyncConnectionPool(
+        conninfo=settings.database_url,
+        min_size=1,
+        max_size=10,
+        open=False,
+    )
+    await pool.open(wait=False)
+    log.info("opened postgres pool")
+    return pool
 
 
-async def open_pool() -> AsyncConnectionPool:
-    """Lazy-init a process-wide AsyncConnectionPool."""
-    global _pool
-    if _pool is None:
-        _pool = AsyncConnectionPool(
-            conninfo=settings.database_url,
-            min_size=1,
-            max_size=10,
-            open=False,
-        )
-        # Wait at most a few seconds for the first connection at startup
-        # so an unreachable DB fails fast (test environment, cold cluster
-        # boot) instead of hanging behind psycopg's default 30s/3-attempt
-        # retry. /healthz keeps answering; per-request handlers re-open.
-        await _pool.open(wait=True, timeout=5.0)
-        log.info("opened postgres pool")
-    return _pool
+def get_pool(request: Request) -> AsyncConnectionPool:
+    return request.app.state.pool
 
 
-async def close_pool() -> None:
-    global _pool
-    if _pool is not None:
-        await _pool.close()
-        _pool = None
-        log.info("closed postgres pool")
-
-
-@asynccontextmanager
-async def get_conn() -> AsyncIterator[psycopg.AsyncConnection]:
-    pool = await open_pool()
-    async with pool.connection() as conn:
-        yield conn
-
-
-async def check_ready() -> None:
-    """Raise if the DB pool can't serve a query fast. Backs /readyz."""
-    pool = await open_pool()
+async def check_ready(pool: AsyncConnectionPool) -> None:
+    """Raise if the pool can't serve a query fast. Backs /readyz."""
     async with pool.connection(timeout=2.0) as conn:
         async with conn.cursor() as cur:
             await cur.execute("SELECT 1")

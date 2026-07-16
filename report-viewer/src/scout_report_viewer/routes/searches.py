@@ -36,7 +36,8 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 
-from .. import metrics, store, trino_client
+from .. import metrics, trino_client
+from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
 from ..csv_upload import (
@@ -124,6 +125,7 @@ def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
 @router.get("", response_model=list[SearchMeta])
 async def list_searches(
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> list[SearchMeta]:
     """Caller's searches, newest first. Drives the SPA homepage.
     Owner-scoped - only the authenticated user's own."""
@@ -139,6 +141,7 @@ async def list_searches(
 async def create_search(
     body: CreateSearchRequest,
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> CreateSearchResponse:
     """Save a SQL query as a search. No row materialization - runs one
     `SELECT COUNT(*)` to cache the count, fetches a small sample for
@@ -323,6 +326,7 @@ async def create_search_from_file(
     sql_explanation: str | None = Form(default=None),
     owui_chat_id: str | None = Form(default=None),
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> CreateFromFileResponse:
     """Materialize a search from a researcher-supplied CSV of IDs.
 
@@ -470,6 +474,7 @@ async def create_search_from_file(
 async def get_search_meta(
     search_id: str,
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> SearchMeta:
     ds = await store.get_search(search_id, user.sub)
     if ds is None:
@@ -492,6 +497,7 @@ async def get_search_meta(
 async def delete_search(
     search_id: str,
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> Response:
     """Delete a search by id. Owner-scoped - a delete against a search
     you don't own returns 404 (same shape as GET, so we don't leak the
@@ -622,6 +628,7 @@ async def get_search_rows(
     limit: int = Query(default=100, ge=1, le=1000),
     sort: str | None = Query(default=None, description="col:dir, e.g. message_dt:desc"),
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> RowsResponse:
     """Paginated search rows. Wraps the saved sql as a
     subquery: `SELECT s.* FROM (<sql>) s [WHERE ...] [ORDER BY ...]
@@ -713,6 +720,7 @@ async def get_search_rows(
 async def get_search_accessions(
     search_id: str,
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> dict[str, Any]:
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
@@ -766,6 +774,7 @@ def _csv_quote(value: Any) -> str:
 async def export_search_csv(
     search_id: str,
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> StreamingResponse:
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
