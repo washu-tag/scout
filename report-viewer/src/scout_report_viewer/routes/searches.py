@@ -53,6 +53,7 @@ from ..ids import new_search_id
 from ..logging_setup import scrub_for_log
 from ..models import (
     SEARCH_REQUIRED_COLUMNS,
+    SORT_FILTER_COLUMNS,
     CreateFromFileResponse,
     CreateSearchRequest,
     CreateSearchResponse,
@@ -508,19 +509,7 @@ async def delete_search(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-_SORTABLE_COLUMNS: frozenset[str] = frozenset(
-    {
-        "accession_number",
-        "epic_mrn",
-        "mpi",
-        "message_dt",
-        "modality",
-        "service_name",
-        "sending_facility",
-        "patient_age",
-        "sex",
-    }
-)
+_SORTABLE_COLUMNS: frozenset[str] = frozenset(SORT_FILTER_COLUMNS)
 
 
 def _parse_sort(sort: str | None) -> tuple[str, str] | None:
@@ -543,9 +532,13 @@ def _parse_sort(sort: str | None) -> tuple[str, str] | None:
 
 
 # Columns that accept a `.min` / `.max` suffix; everything else single-value.
-_RANGE_FILTER_COLUMNS: frozenset[str] = frozenset({"patient_age", "message_dt"})
+_RANGE_FILTER_COLUMNS: frozenset[str] = frozenset(
+    c for c, kind in SORT_FILTER_COLUMNS.items() if kind == "range"
+)
 # Columns whose repeated `filter.<col>=…` query params collapse into IN (…).
-_MULTI_VALUE_COLUMNS: frozenset[str] = frozenset({"sex", "modality"})
+_MULTI_VALUE_COLUMNS: frozenset[str] = frozenset(
+    c for c, kind in SORT_FILTER_COLUMNS.items() if kind == "multi"
+)
 
 
 def _parse_filters(request: Request) -> list[tuple[str, list[str]]]:
@@ -620,6 +613,21 @@ def _filter_clause(col: str, values: list[str], *, alias: str = "") -> tuple[str
     return f"LOWER({qcol}) LIKE LOWER(?) ESCAPE '!'", [pattern]
 
 
+def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
+    """400 when the sort/filter column isn't in this search's projection; 502 otherwise."""
+    if getattr(exc, "error_name", None) == "COLUMN_NOT_FOUND":
+        log.info("rows %s query rejected: unprojected sort/filter column", stage)
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="sort or filter column is not available for this search",
+        )
+    log.exception("trino %s query failed", stage)
+    return HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail=f"trino {stage} query failed: {exc}",
+    )
+
+
 @router.get("/{search_id}/rows", response_model=RowsResponse)
 async def get_search_rows(
     search_id: str,
@@ -686,11 +694,7 @@ async def get_search_rows(
                 )
             sql_total = int(count_rows[0]["n"]) if count_rows else 0
         except Exception as exc:
-            log.exception("trino count query failed")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"trino count query failed: {exc}",
-            )
+            raise _rows_query_error(exc, "count")
     else:
         sql_total = cached_total
 
@@ -700,11 +704,7 @@ async def get_search_rows(
                 rows_sql, user=user.sub, params=(base_params + filter_params) or None
             )
     except Exception as exc:
-        log.exception("trino rows query failed")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"trino rows query failed: {exc}",
-        )
+        raise _rows_query_error(exc, "rows")
 
     return RowsResponse(
         id=search_id,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -40,6 +40,20 @@ SEARCH_REQUIRED_COLUMNS: tuple[str, ...] = (
     "primary_report_identifier",
     "accession_number",
 )
+
+# Columns the viewer can sort and filter on if present in the result set.
+# searches.py derives its allowlist and filter-type sets from this.
+SORT_FILTER_COLUMNS: dict[str, Literal["text", "multi", "range"]] = {
+    "accession_number": "text",
+    "epic_mrn": "text",
+    "mpi": "text",
+    "sending_facility": "text",
+    "service_name": "text",
+    "modality": "multi",
+    "sex": "multi",
+    "message_dt": "range",
+    "patient_age": "range",
+}
 
 # Patient-scoped IDs go through reports_latest_epic_view; epic_mrn / mpi
 # transparently match the resolved_* columns so reports missing the raw
