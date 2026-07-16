@@ -122,6 +122,43 @@ def test_first_run_creates_and_inserts(spark, tmp_path, modality_csv):
     errors.assert_not_called()
 
 
+def test_multi_obx_lines_assemble_in_file_order(spark, tmp_path, modality_csv):
+    """report_text and the report sections must assemble OBX lines in file order.
+    The old extraction ran collect_list on the post-shuffle rows without sorting by
+    pos, so multi-OBX messages could reorder between runs — observed on dev03 as
+    64/9988 rows spuriously re-hashing on an identical re-ingest, every one a pure
+    line reordering. This pins the deterministic, pos-sorted assembly."""
+    table = "reports_e2e_obx_order"
+    zip_path = tmp_path / "log.zip"
+    message = [
+        r"MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|DEPT|20240102030405|TBD|ORU^R01"
+        + "|MCID9|P|2.7",
+        "PID|1||PAT9^^^ABC^MR||DOE^JANE||19800101|F",
+        "OBR|1|PLC1|FIL1|XRCHEST^CHEST XRAY^L|||20240102030405",
+        "OBX|1|TX|&GDT|1|First findings line",
+        "OBX|2|TX|&GDT|2|Second findings line",
+        "OBX|3|TX|&IMP|1|The impression",
+        "OBX|4|TX|&GDT|3|Third findings line",
+    ]
+    _write_zip(zip_path, {"msg_9.hl7": message})
+    manifest = tmp_path / "manifest.txt"
+    manifest.write_text(f"{zip_path}/msg_9.hl7\n")
+
+    _run_activity(spark, str(manifest), modality_csv, table, tmp_path / "health")
+
+    row = spark.table(f"default.{table}").collect()[0]
+    assert row.report_text == (
+        "First findings line\n"
+        "Second findings line\n"
+        "The impression\n"
+        "Third findings line"
+    )
+    assert row.report_section_findings == (
+        "First findings line\nSecond findings line\nThird findings line"
+    )
+    assert row.report_section_impression == "The impression"
+
+
 def test_second_identical_run_is_full_noop(spark, tmp_path, modality_csv):
     """Re-ingesting an unchanged manifest must not touch the base table at all: no new
     Delta commit, no CDF rows, no bumped `updated` — while the activity still reports
