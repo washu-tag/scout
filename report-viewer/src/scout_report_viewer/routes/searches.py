@@ -350,7 +350,6 @@ async def create_search_from_file(
     if sql:
         assert_cohort_placeholder(sql)
     ids, resolved_id_column, column_inferred = parse_csv_ids(raw, id_column)
-    resolved_id_column = scrub_for_log(resolved_id_column)
     cleaned = dedup_ids(ids)
 
     sql_column = resolve_sql_column(resolved_id_column)
@@ -448,7 +447,7 @@ async def create_search_from_file(
         "search imported from file",
         extra={
             "search_id": stored["id"],
-            "id_column": resolved_id_column,
+            "id_column": scrub_for_log(resolved_id_column),
             "column_inferred": column_inferred,
             "unique_ids": len(cleaned),
             "matched_ids": len(final_ids),

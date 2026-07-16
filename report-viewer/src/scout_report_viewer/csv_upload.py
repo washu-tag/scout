@@ -4,8 +4,9 @@ of identifiers - `/api/searches/from-file` and `/api/reports/query/from-file`.
 Both endpoints share the same parse + dedup + column-resolve pipeline
 and the same `{{cohort}}` placeholder substitution for LLM-authored
 custom SQL. The parse produces a normalized ID list; substitute_cohort
-lets each endpoint plug its own predicate (bound `contains(?, col)` for
-query-time, inlined `col IN (...)` for persistence) into the LLM's SQL.
+lets each endpoint plug its own bound `contains(?, col)` predicate into
+the LLM's SQL, and a persisted search stores the ID list so every later
+read re-binds it.
 """
 
 from __future__ import annotations

@@ -50,8 +50,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-import bcrypt
-
 CONFIG_DIR = "/app/config"
 HTTP_TIMEOUT = 30
 SIGNIN_RETRIES = 20

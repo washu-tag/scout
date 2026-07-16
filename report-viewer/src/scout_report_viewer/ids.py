@@ -1,7 +1,7 @@
 """Search ID generator.
 
 Format: `s_<16-char base62>`. log2(62^16) ~= 95 bits, well past any
-brute-force window over the TTL.
+brute-force window.
 """
 
 import secrets

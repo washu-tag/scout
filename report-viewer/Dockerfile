@@ -26,8 +26,8 @@ RUN pip install .
 EXPOSE 8000
 
 # UID/GID pinned so the K8s podSecurityContext (runAsUser=1001) matches.
-RUN groupadd --system --gid 1001 searchs \
-    && useradd --system --uid 1001 --gid 1001 --home /app searchs
-USER searchs
+RUN groupadd --system --gid 1001 report-viewer \
+    && useradd --system --uid 1001 --gid 1001 --home /app report-viewer
+USER report-viewer
 
 CMD ["python", "-m", "scout_report_viewer"]
