@@ -267,6 +267,7 @@ k3s_cluster:
 
     # Report Viewer
     report_viewer_db_password: report-viewer123
+    report_viewer_gateway_secret: cireportviewergatewaysecret12345678
 
     # Loki (disable caches for CI)
     loki_chunks_cache_enabled: false
