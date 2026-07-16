@@ -28,6 +28,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +50,19 @@ public class TestScoutQueries extends BaseTest {
     public static final String COLUMN_SOURCE_FILE = "source_file";
     public static final String COLUMN_MESSAGE_CONTROL_ID = "message_control_id";
     public static final String COLUMN_PRIMARY_REPORT_IDENTIFIER = "primary_report_identifier";
+
+    // issue #537: OBX line order in report_text / report sections must be deterministic.
+    // The /data/obx_ordering corpus carries multi-OBX messages whose OBX-5 values are
+    // zero-padded, strictly ascending markers in file order, laid out in contiguous
+    // GDT / IMP / TCM / ADT blocks (see staging_test_data/obx_ordering/README-style note).
+    // Correct assembly therefore yields, for every report, the markers in ascending order
+    // (report_text = 0000..0023) and each parsed section as its own ascending marker range.
+    private static final int OBX_ORDER_MESSAGE_COUNT = 150;
+    private static final String OBX_ORDER_REPORT_TEXT = markerRange(0, 23);
+    private static final String OBX_ORDER_FINDINGS = markerRange(0, 9);
+    private static final String OBX_ORDER_IMPRESSION = markerRange(10, 16);
+    private static final String OBX_ORDER_TECHNICIAN_NOTE = markerRange(17, 20);
+    private static final String OBX_ORDER_ADDENDUM = markerRange(21, 23);
 
     @BeforeClass
     private void initSparkSession() {
@@ -87,6 +102,48 @@ public class TestScoutQueries extends BaseTest {
         ingest();
         runTest("all"); // make sure no rows in the whole dataset have been duplicated
         runTest("extended_metadata"); // ...and let's make sure the metadata still looks good
+    }
+
+    /**
+     * Regression guard for issue #537: the OBX lines of a report must be assembled into
+     * report_text (and the parsed report sections) in file order, deterministically,
+     * across ingests. The report DataFrame is built by exploding OBX segments — keeping
+     * their index — then a groupBy(source_file) aggregation. collect_list after that
+     * shuffle carries no ordering guarantee, so before the fix a multi-OBX report's lines
+     * could concatenate in a different order from run to run (observed on dev03 as 64/9988
+     * rows re-hashing on an otherwise no-op re-ingest, every one a pure line reordering).
+     *
+     * <p>This drives a real ingest of the /data/obx_ordering corpus, whose OBX-5 values are
+     * zero-padded ascending markers in file order, so a correctly assembled report is those
+     * markers in ascending order. It then re-ingests the identical corpus and requires
+     * report_text to come back byte-identical for every source_file.
+     *
+     * <p>Note: reliably forcing the reorder needs the shuffle/spill pressure of a
+     * large-scale ingest (see the issue's "Steps to reproduce"); a single-node CI ingest of
+     * this small corpus is unlikely to reproduce it on its own. The test is a faithful,
+     * deterministic-green-with-the-fix guard, not a guaranteed red without it.
+     */
+    @Test
+    public void testObxLineOrderIsDeterministic() {
+        final String table = newTable("obxorder");
+        final IngestJobInput input = new IngestJobInput()
+            .setReportTableName(table)
+            .setLogsRootPath("/data/obx_ordering");
+
+        ingest(input);
+        final Map<String, String> reportTextFirstRun = assertReportsAssembledInFileOrder(table);
+
+        // A byte-identical re-ingest must reproduce byte-identical report text. Before the
+        // fix, an unstable OBX order would surface here as report_text that changed between
+        // the two ingests (and, under the content-hash re-ingest gate, as spurious
+        // re-merges instead of the promised no-op).
+        ingest(input);
+        final Map<String, String> reportTextSecondRun = reportTextBySourceFile(table);
+
+        assertThat(reportTextSecondRun)
+            .as("report_text per source_file must be identical across a pure re-ingest")
+            .isEqualTo(reportTextFirstRun);
+        assertReportsAssembledInFileOrder(table);
     }
 
     @Test
@@ -534,6 +591,52 @@ public class TestScoutQueries extends BaseTest {
         final String sql = query.getSql().replace(TestQuerySuite.TABLE_PLACEHOLDER, tableName);
         logger.info("Performing query with spark: {}", sql);
         query.getExpectedQueryResult().validateResult(spark.sql(sql), config.getTestContext());
+    }
+
+    /**
+     * Asserts every report in {@code table} assembled its OBX lines in file order —
+     * report_text and each parsed section equal to their expected ascending marker ranges —
+     * and returns the source_file -&gt; report_text map for cross-run comparison.
+     */
+    private Map<String, String> assertReportsAssembledInFileOrder(String table) {
+        final List<Row> rows = spark.sql(
+            "SELECT source_file, report_text, report_section_findings, report_section_impression, "
+                + "report_section_technician_note, report_section_addendum FROM " + table
+        ).collectAsList();
+
+        assertThat(rows).as("report row count for " + table).hasSize(OBX_ORDER_MESSAGE_COUNT);
+
+        final Map<String, String> bySourceFile = new HashMap<>();
+        for (Row row : rows) {
+            final String sourceFile = row.getString(0);
+            assertThat(row.getString(1))
+                .as("report_text (OBX lines in file order) for " + sourceFile)
+                .isEqualTo(OBX_ORDER_REPORT_TEXT);
+            assertThat(row.getString(2))
+                .as("report_section_findings for " + sourceFile).isEqualTo(OBX_ORDER_FINDINGS);
+            assertThat(row.getString(3))
+                .as("report_section_impression for " + sourceFile).isEqualTo(OBX_ORDER_IMPRESSION);
+            assertThat(row.getString(4))
+                .as("report_section_technician_note for " + sourceFile).isEqualTo(OBX_ORDER_TECHNICIAN_NOTE);
+            assertThat(row.getString(5))
+                .as("report_section_addendum for " + sourceFile).isEqualTo(OBX_ORDER_ADDENDUM);
+            bySourceFile.put(sourceFile, row.getString(1));
+        }
+        return bySourceFile;
+    }
+
+    private Map<String, String> reportTextBySourceFile(String table) {
+        return spark.sql("SELECT source_file, report_text FROM " + table)
+            .collectAsList()
+            .stream()
+            .collect(Collectors.toMap(row -> row.getString(0), row -> row.getString(1)));
+    }
+
+    /** Newline-joined zero-padded markers from firstInclusive to lastInclusive, in order. */
+    private static String markerRange(int firstInclusive, int lastInclusive) {
+        return IntStream.rangeClosed(firstInclusive, lastInclusive)
+            .mapToObj(marker -> String.format("%04d", marker))
+            .collect(Collectors.joining("\n"));
     }
 
     private String curatedTable(String baseTableName) {
