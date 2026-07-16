@@ -3,13 +3,13 @@ from contextlib import asynccontextmanager
 from importlib.metadata import version
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import logging_setup, metrics
 from .config import settings
-from .db import close_pool, ensure_schema
+from .db import check_ready, close_pool, ensure_schema
 from .routes import config_router, reports_router, searches_router, owui_webhook_router
 
 _VERSION = version("scout_report_viewer")
@@ -43,11 +43,9 @@ async def lifespan(app: FastAPI):
     try:
         await ensure_schema()
     except Exception:
-        # The service may boot before its CNPG database is provisioned;
-        # log loudly but don't crash-loop. /healthz keeps answering so
-        # the readiness probe can tell us "alive but DB not ready yet."
-        # Also avoid leaving a partially-opened pool around
-        # subsequent requests will lazy-reopen if/when DB recovers.
+        # May boot before the CNPG database is provisioned; don't crash-loop.
+        # Liveness (/healthz) stays up; readiness (/readyz) holds traffic until
+        # the DB recovers. Drop the partial pool so handlers lazy-reopen.
         log.exception("schema bootstrap failed - DB not ready?")
         await close_pool()
     yield
@@ -64,6 +62,14 @@ def create_app() -> FastAPI:
 
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.get("/readyz", tags=["meta"])
+    async def readyz() -> dict[str, str]:
+        try:
+            await check_ready()
+        except Exception:
+            raise HTTPException(status_code=503, detail="database not ready")
         return {"status": "ok"}
 
     @app.get("/", tags=["meta"])

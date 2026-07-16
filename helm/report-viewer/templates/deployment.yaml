@@ -49,10 +49,11 @@ spec:
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /healthz
+              path: /readyz
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 3
           env:
             - name: REPORT_VIEWER_PORT
               value: {{ .Values.service.port | quote }}

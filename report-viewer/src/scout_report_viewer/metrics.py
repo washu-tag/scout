@@ -84,7 +84,7 @@ def install(app: FastAPI) -> None:
         Instrumentator(
             should_group_status_codes=True,
             should_ignore_untemplated=True,
-            excluded_handlers=["/healthz", "/metrics"],
+            excluded_handlers=["/healthz", "/readyz", "/metrics"],
         )
         .instrument(app)
         .expose(app, endpoint="/metrics", include_in_schema=False, tags=["meta"])

@@ -56,6 +56,14 @@ async def get_conn() -> AsyncIterator[psycopg.AsyncConnection]:
         yield conn
 
 
+async def check_ready() -> None:
+    """Raise if the DB pool can't serve a query fast. Backs /readyz."""
+    pool = await open_pool()
+    async with pool.connection(timeout=2.0) as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("SELECT 1")
+
+
 def _apply_migrations_sync() -> None:
     backend = get_backend(settings.database_url)
     migrations = read_migrations(str(_MIGRATIONS_DIR))

@@ -387,8 +387,13 @@ class Tools:
         bearer = self._token_from_owui(oauth)
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
-        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
-            r = await c.post(url, headers=headers, json=payload)
+        try:
+            async with httpx.AsyncClient(
+                timeout=self.valves.request_timeout_seconds
+            ) as c:
+                r = await c.post(url, headers=headers, json=payload)
+        except httpx.RequestError:
+            raise ReportViewerServiceError("report-viewer is temporarily unavailable")
         if r.status_code >= 400:
             raise ReportViewerServiceError(_short_error(r))
         return r.json()
@@ -406,8 +411,13 @@ class Tools:
         bearer = self._token_from_owui(oauth)
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
-        async with httpx.AsyncClient(timeout=self.valves.request_timeout_seconds) as c:
-            r = await c.post(url, headers=headers, files=files, data=data)
+        try:
+            async with httpx.AsyncClient(
+                timeout=self.valves.request_timeout_seconds
+            ) as c:
+                r = await c.post(url, headers=headers, files=files, data=data)
+        except httpx.RequestError:
+            raise ReportViewerServiceError("report-viewer is temporarily unavailable")
         if r.status_code >= 400:
             raise ReportViewerServiceError(_short_error(r))
         return r.json()
