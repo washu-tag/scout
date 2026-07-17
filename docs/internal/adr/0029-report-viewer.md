@@ -31,7 +31,7 @@ Splitting the surface this way keeps the intent explicit for the LLM: cohort bui
 
 ### Just-in-time cohort evaluation
 
-A search is a saved SQL query plus minimal metadata. Nothing about which rows match is stored. Every read wraps the saved `sql` as a subquery and applies pagination, sort, and filter at the Trino layer. The `searches` table holds `id`, `owner_sub`, `id_column`, `sql`, `sql_explanation`, `match_terms`, `match_diagnoses`, `row_count` (cached at create time via one `SELECT COUNT(*)`), `owui_chat_id`, and `created_at`. Schema migrations use [yoyo](https://ollycope.com/software/yoyo/), a standalone Python migration tool; `db.py` applies the versioned SQL files in `migrations/` on startup. Query refinement is not tracked with a `parent_id` column. When a user narrows a cohort, the LLM is instructed to re-emit full SQL for the new search and the old search is unchanged. 
+A search is a saved SQL query plus minimal metadata. Nothing about which rows match is stored. Every read wraps the saved `sql` as a subquery and applies pagination, sort, and filter at the Trino layer. The `searches` table holds `id`, `owner_sub`, `id_column`, `sql`, `sql_explanation`, `match_terms`, `match_diagnoses`, `row_count` (cached at create time via one `SELECT COUNT(*)`), `owui_chat_id`, and `created_at`. Schema migrations use [yoyo](https://ollycope.com/software/yoyo/), a standalone Python migration tool; `db.py` applies the versioned SQL files in `migrations/` on startup. Query refinement is not tracked with a `parent_id` column. When a user narrows a cohort, the LLM is instructed to re-emit full SQL for the new search and the old search is unchanged. We evaluate just-in-time rather than persisting each search's result set (the matched row IDs). That would mean storing IDs for every search and every refinement of it, deciding whether they live in Postgres or the Delta Lake, and adding the joins and bookkeeping to work with them. Re-running the saved SQL avoids that data management for now. 
 
 ### Required projections
 
@@ -94,7 +94,7 @@ In OWUI 0.9.6 these flags are per-user settings with no admin-global override, a
 
 ### OWUI new-user webhook
 
-`POST /webhooks/owui-new-user` receives OWUI's admin signup webhook (configured via OWUI's `WEBHOOK_URL` field on install-chat). On a signup event the receiver runs one idempotent `UPDATE "user" SET settings = jsonb_set(...)` against OWUI's Postgres to set `iframeSandboxAllowSameOrigin` and `iframeSandboxAllowForms` to `true`.
+`POST /webhooks/owui-new-user` receives OWUI's admin signup webhook (configured via OWUI's `WEBHOOK_URL` field on install-chat). On a signup event the receiver sets `iframeSandboxAllowSameOrigin` and `iframeSandboxAllowForms` to `true` on the new user's `settings` row in OWUI's Postgres. The write is idempotent.
 
 **Why direct DB, not OWUI's HTTP API.** OWUI 0.9.6 has no admin endpoint to write another user's UI settings. Upstream open-webui#20770 would add one, but the contributor said it "probably won't get merged anytime soon." Direct DB is the only path that lands the setting before the user's first page hydrate.
 
@@ -114,8 +114,9 @@ Prometheus scrapes `/metrics` via `prometheus-fastapi-instrumentator`, plus doma
 
 ## Consequences
 
-- Report-viewer is default-on. The `enable_report_viewer` feature flag was removed.
+- Report-viewer is required for the chat experience. With the MCP tool gone it is the only path from Open WebUI to Trino, so there is no flag to disable it.
 - Every `/rows` page and CSV export costs a Trino scan of the saved SQL, so cohort browsing latency tracks Trino query performance directly.
+- Results are live, not a snapshot. Each read re-runs the saved SQL, so newly ingested or updated reports can make a cohort differ from what the chat described when it was built.
 - Refinement has no cross-cohort SQL dependency. The LLM must keep original conditions intact when adding a filter; the system prompt enforces this with examples.
 - The OWUI iframe experience depends on the sandbox flags being seeded at signup. If the webhook is unreachable or the DB URL is unset, new users will hit a broken iframe.
 
@@ -144,7 +145,8 @@ Prometheus scrapes `/metrics` via `prometheus-fastapi-instrumentator`, plus doma
 |------|------------|--------|------------|
 | OWUI upstream changes the signup webhook contract or the settings JSONB schema | Medium | High (new users hit a broken iframe) | The least-privilege Postgres role limits blast radius, and the 0.10.x migration is on the roadmap |
 | Trino latency on saved-SQL scans degrades with data growth | Medium | Medium | Read-path cache or per-cohort materialization can be added without an API change |
-| `report_viewer_svc` token compromised in-cluster | Low | Medium | NetworkPolicy restricts Bearer-bearing traffic to OWUI pods; the token grants `ImpersonateUser` only, so per-user OPA row filters and column masks still apply to the impersonated identity |
+| `report_viewer_svc` token compromised in-cluster | Low | Medium | Short-lived token granting only `ImpersonateUser`; OPA row filters and column masks still apply to the impersonated user |
+| Forged `X-Auth-Request-Preferred-Username` impersonates another user | Low | High (cross-user PHI) | report-viewer trusts the header only with Traefik's `X-Report-Viewer-Gateway` secret, and oauth2-proxy overwrites any browser-supplied username, so neither an in-cluster pod nor the iframe can assert another identity. Residual: code running server-side in OWUI (a pod compromise, or a future feature allowing user-added tools) runs as whoever invokes it and could replay that user's own bearer token to `/api`, still OPA-scoped to that user's data |
 
 ## Retiring the MCP Trino tool
 
