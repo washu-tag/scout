@@ -24,15 +24,6 @@ It should be marked as an error: unparsable HL7.
 7. Multiple log files for the same date: [20000216.log](postgres/2000/20000216.log) and [20000216_PORU.log](postgres/2000/20000216_PORU.log)
 share the date 2000-02-16. Both should be ingested successfully, and the HL7 filenames should use the full log filename
 as a prefix (`20000216_0.hl7` and `20000216_PORU_0.hl7` respectively) to avoid collisions.
-8. Deterministic OBX line order (issue #537): [20260601.log](obx_ordering/20260601.log) holds 150 multi-OBX messages
-whose OBX-5 values are zero-padded, strictly ascending markers in file order, laid out in contiguous `&GDT` / `&IMP` /
-`&TCM` / `&ADT` blocks (findings / impression / technician_note / addendum). It lives under its own `obx_ordering/` root
-and is ingested only by `TestScoutQueries.testObxLineOrderIsDeterministic` (into its own table, so it does not affect the
-exact-count assertions of the other corpora). A correctly assembled report is those markers in ascending order; the test
-asserts that and that a byte-identical re-ingest reproduces byte-identical `report_text` per `source_file`. This corpus is
-synthetic and was generated programmatically rather than by the data-generator. See §"Steps to reproduce" of the issue:
-forcing the reorder needs large-scale shuffle/spill pressure, so a single-node CI run is unlikely to reproduce it on its
-own — the test is a faithful regression guard, deterministically green with the fix.
 
 The original design of these tests allowed for the capability for the [data-generator](https://github.com/washu-tag/data-generator)
 to generate test data with corresponding tests as JSON automatically. However, as we have added more tests, they have required more
