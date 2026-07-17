@@ -113,3 +113,17 @@ affinity: {}
 spark:
   executor:
     memory: 1g
+
+# spark-defaults.conf, owned by the chart and rendered by
+# _helpers.tpl (see "hl7-transformer.sparkDefaultsConf"). `mode` is the
+# ADR 0011 service mode: `on-prem` (MinIO, path-style, env-sourced creds) or
+# `aws` (S3, web-identity/IRSA). Consumers set the tunables below; on-prem
+# credentials come from the s3-secret env, never from this ConfigMap.
+sparkDefaults:
+  enabled: true
+  mode: on-prem
+  shufflePartitions: 200
+  hiveMetastoreUri: ''
+  warehouseDir: ''
+  s3Region: us-east-1
+  s3Endpoint: ''

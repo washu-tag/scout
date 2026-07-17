@@ -1,0 +1,11 @@
+{{- if .Values.sparkDefaults.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hl7-transformer.fullname" . }}-spark-defaults
+  labels:
+    {{- include "hl7-transformer.labels" . | nindent 4 }}
+data:
+  spark-defaults.conf: |-
+    {{- include "hl7-transformer.sparkDefaultsConf" . | trim | nindent 4 }}
+{{- end }}
