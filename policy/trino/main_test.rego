@@ -975,12 +975,12 @@ test_superset_svc_can_impersonate if {
 	trino.allow with input as impersonate_input("superset_svc", "alice@example.org")
 }
 
-test_openwebui_mcp_svc_can_impersonate if {
-	trino.allow with input as impersonate_input("openwebui_mcp_svc", "alice@example.org")
-}
-
 test_voila_svc_can_impersonate if {
 	trino.allow with input as impersonate_input("voila_svc", "alice@example.org")
+}
+
+test_report_viewer_svc_can_impersonate if {
+	trino.allow with input as impersonate_input("report_viewer_svc", "alice@example.org")
 }
 
 test_random_user_cannot_impersonate if {
@@ -1083,7 +1083,7 @@ test_disabled_user_denied_on_show_catalogs if {
 
 # === System-identity carve-outs ==============================================
 # View-owner principals (trino) and impersonation service principals
-# (superset_svc, openwebui_mcp_svc) are not in data.users. The
+# (superset_svc, voila_svc, report_viewer_svc) are not in data.users. The
 # is_system_identity carve-out exempts them from user_enabled so their
 # operations don't deny by default.
 

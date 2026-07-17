@@ -67,6 +67,12 @@ persistentConfig:
 # of optional fields). Empty list = skip filter seeding.
 filterFunctions: []
 
+# OWUI Python tools. Each entry: id, name, description, source_file
+# (filename in files/payloads/), valves. No global/active toggle —
+# visibility is per-model via scoutDefaults.toolIds. Empty list = skip
+# tool seeding.
+toolFunctions: []
+
 # Scout custom models, raw inventory shape: name, base, num_ctx, num_keep,
 # num_predict, preload (default true), ui: {id?, name, description?, ...}.
 # Without `ui:`, an entry is left as a plain Ollama tag. The chart emits one

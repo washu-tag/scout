@@ -178,6 +178,12 @@ extraEnvVars:
   - name: RAG_EMBEDDING_ENGINE
     value: 'ollama'
 
+  # OWUI's SSRF guard blocks RFC1918 hosts, which would reject the
+  # in-cluster webhook to report-viewer. Opt out via the
+  # upstream-endorsed flag, open-webui/open-webui#24587.
+  - name: ENABLE_RAG_LOCAL_WEB_FETCH
+    value: 'true'
+
   # Disable local authentication (email/password)
   - name: ENABLE_SIGNUP
     value: 'false'
@@ -286,3 +292,24 @@ extraEnvVars:
     value: 'http://prometheus-server.{{ prometheus_namespace }}:9090/api/v1/otlp/v1/metrics'
   - name: OTEL_SERVICE_NAME
     value: 'open-webui'
+
+{% if open_webui_trust_traefik_ca | bool %}
+  - name: REQUESTS_CA_BUNDLE
+    value: /etc/pki/trust/ca.crt
+  - name: SSL_CERT_FILE
+    value: /etc/pki/trust/ca.crt
+
+volumes:
+  - name: trusted-ca
+    secret:
+      secretName: open-webui-trusted-ca
+      items:
+        - key: ca.crt
+          path: ca.crt
+
+volumeMounts:
+  container:
+    - name: trusted-ca
+      mountPath: /etc/pki/trust
+      readOnly: true
+{% endif %}

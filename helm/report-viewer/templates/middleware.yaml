@@ -1,0 +1,12 @@
+{{- if .Values.gatewaySecret }}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "report-viewer.fullname" . }}-gateway
+  labels:
+    {{- include "report-viewer.labels" . | nindent 4 }}
+spec:
+  headers:
+    customRequestHeaders:
+      X-Report-Viewer-Gateway: {{ .Values.gatewaySecret | quote }}
+{{- end }}

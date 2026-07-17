@@ -1,7 +1,7 @@
 # ADR 0020: Trino Authorization via OPA with Keycloak Attributes
 
 **Date**: 2026-05-19
-**Status**: Accepted
+**Status**: Accepted (the openwebui_mcp_svc service principal below is replaced by report_viewer_svc per [ADR 0029](0029-report-viewer.md))
 **Decision Owner**: TAG Team
 
 ## Context

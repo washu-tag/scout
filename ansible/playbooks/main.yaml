@@ -32,6 +32,9 @@
 - name: Install Chat
   import_playbook: chatbot.yaml
 
+- name: Install Report Viewer
+  import_playbook: report-viewer.yaml
+
 - name: Install Voila
   import_playbook: voila.yaml
 

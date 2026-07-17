@@ -1,0 +1,15 @@
+# Build output
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Node deps
+node_modules/
+
+# Editor + tooling
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.local
+*.log

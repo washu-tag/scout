@@ -201,3 +201,8 @@ extraScrapeConfigs: |
         regex: metrics
       - source_labels: [__meta_kubernetes_namespace]
         target_label: namespace
+
+  - job_name: report-viewer
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['{{ report_viewer_helm_release_name | default("report-viewer") }}.{{ report_viewer_namespace | default(chatbot_namespace) }}:{{ report_viewer_port | default(8000) }}']

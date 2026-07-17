@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "report-viewer.fullname" . }}
+  labels:
+    {{- include "report-viewer.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "report-viewer.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # Roll the pod when the rendered Secret (DB URL / shared secret /
+        # Trino CA) changes, since env values are only read at start.
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "report-viewer.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "report-viewer.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          env:
+            - name: REPORT_VIEWER_PORT
+              value: {{ .Values.service.port | quote }}
+            {{- if .Values.trinoCaCert }}
+            - name: REPORT_VIEWER_TRINO_CA_CERT
+              value: /etc/trino-ca/ca.crt
+            {{- end }}
+            {{- if .Values.trustedCaSecret.name }}
+            # Trust the extra CA bundle for outbound HTTPS (Trino, Keycloak).
+            - name: REQUESTS_CA_BUNDLE
+              value: /etc/pki/trust/{{ .Values.trustedCaSecret.key }}
+            - name: SSL_CERT_FILE
+              value: /etc/pki/trust/{{ .Values.trustedCaSecret.key }}
+            {{- end }}
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $envName, $ref := .Values.secretEnv }}
+            - name: {{ $envName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $ref.secretName | quote }}
+                  key: {{ $ref.key | quote }}
+                  optional: {{ default false $ref.optional }}
+            {{- end }}
+          envFrom:
+            {{- if or .Values.databaseUrl .Values.owuiDatabaseUrl .Values.trinoAuthClientSecret }}
+            - secretRef:
+                name: {{ include "report-viewer.fullname" . }}
+            {{- end }}
+            {{- with .Values.envFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            # readOnlyRootFilesystem is on; give the process a writable /tmp
+            # for uvicorn scratch space and any transient library writes.
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.trinoCaCert }}
+            - name: trino-ca
+              mountPath: /etc/trino-ca
+              readOnly: true
+            {{- end }}
+            {{- if .Values.trustedCaSecret.name }}
+            - name: trusted-ca
+              mountPath: /etc/pki/trust
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.trinoCaCert }}
+        - name: trino-ca
+          secret:
+            secretName: {{ include "report-viewer.fullname" . }}
+            items:
+              - key: ca.crt
+                path: ca.crt
+        {{- end }}
+        {{- if .Values.trustedCaSecret.name }}
+        - name: trusted-ca
+          secret:
+            secretName: {{ .Values.trustedCaSecret.name }}
+            items:
+              - key: {{ .Values.trustedCaSecret.key | quote }}
+                path: {{ .Values.trustedCaSecret.key | quote }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

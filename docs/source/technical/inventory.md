@@ -430,7 +430,7 @@ prometheus_resources:
     memory: 4Gi
 ```
 
-**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, mcp_trino, cassandra_system_logger, data_generator
+**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, cassandra_system_logger, data_generator
 
 **Services NOT supporting partial overrides** (use flattened variables instead): Trino coordinator/worker, Cassandra (main container), Elasticsearch, HL7 Transformer. These services use individual variables (e.g., `cassandra_max_heap`, `trino_worker_cpu_limit`) because JVM heap sizes drive memory calculations with different multipliers for requests vs limits. Note: Cassandra's system logger sidecar (Vector) does support partial overrides via `cassandra_system_logger_resources`.
 
@@ -490,15 +490,6 @@ trino_coordinator_cpu_request: 1
 trino_coordinator_cpu_limit: 3
 # Optional: Override query memory allocation (default 0.3 = 30% of heap)
 # trino_per_node_query_memory_fraction: 0.3
-
-# MCP Trino server resources (used by Open WebUI for natural language SQL queries)
-mcp_trino_resources:
-  requests:
-    cpu: 100m
-    memory: 256Mi
-  limits:
-    cpu: 1
-    memory: 2Gi
 ```
 
 Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
@@ -508,9 +499,6 @@ Memory is computed automatically from heap size (requests = 1x heap, limits = 2x
 - `query.max-memory` (cluster-wide) is calculated as `worker_count × worker_heap × trino_per_node_query_memory_fraction`
 - These limits scale automatically with worker count and heap size changes
 - Only override `trino_per_node_query_memory_fraction` if you understand [Trino's memory management](https://trino.io/docs/current/admin/properties-resource-management.html)
-
-**MCP Trino Server:**
-The MCP Trino server is deployed as part of the Trino role when the Chat service is enabled (`enable_chat: true`). It provides an MCP (Model Context Protocol) interface to Trino for AI-powered natural language SQL queries in Open WebUI. The default resources are suitable for most deployments, but can be overridden in `inventory.yaml` if needed for high-concurrency AI query workloads.
 
 #### MinIO
 

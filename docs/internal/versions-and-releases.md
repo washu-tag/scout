@@ -410,14 +410,17 @@ This section documents all files containing version strings. The Release Workflo
 | `ansible/roles/extractor/defaults/main.yaml` | `hl7log_extractor_image_tag` |
 | `ansible/roles/extractor/defaults/main.yaml` | `hl7_transformer_image_tag` |
 | `ansible/roles/launchpad/defaults/main.yaml` | `launchpad_image_tag` |
+| `ansible/roles/report_viewer/defaults/main.yaml` | `report_viewer_image_tag` |
 | `ansible/roles/hl7-listener/defaults/main.yaml` | `hl7_listener_image_tag` |
 
-### Python Package
+### Python Packages
 
 | File | Field | Dev Value |
 |------|-------|-----------|
 | `extractor/hl7-transformer/pyproject.toml` | `version` | `0.0.dev0` |
 | `extractor/hl7-transformer/VERSION` | entire file | `latest` |
+| `report-viewer/pyproject.toml` | `version` | `0.0.dev0` |
+| `report-viewer/VERSION` | entire file | `latest` |
 
 ### Java/Gradle Build Files
 
@@ -445,6 +448,8 @@ This section documents all files containing version strings. The Release Workflo
 |------|--------|------------|
 | `helm/launchpad/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 | `helm/launchpad/values.yaml` | `image.tag` | `latest` |
+| `helm/report-viewer/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
+| `helm/report-viewer/values.yaml` | `image.tag` | `latest` |
 | `helm/extractor/hl7-transformer/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 | `helm/extractor/hl7log-extractor/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 | `helm/hl7-listener/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |

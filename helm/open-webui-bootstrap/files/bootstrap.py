@@ -5,7 +5,7 @@ Runs as a Job under Helm post-install/post-upgrade hooks (see
 helm/open-webui-bootstrap/templates/job.yaml). Replaces what used to be a
 chain of Ansible tasks doing kubectl-exec'd curls.
 
-Five phases:
+Six phases:
 1. Password migration. Rewrite the bootstrap user's bcrypt hash to match
    the configured password (no-op on a clean DB; recovers signin on any
    cluster where `open_webui_bootstrap_password` was rotated).
@@ -17,7 +17,10 @@ Five phases:
    bypasses OWUI's RAG auto-injection path entirely.
 4. Filter functions. Idempotent GET-create-or-update; then set valves and
    toggle global+active to the desired state.
-5. Custom models. Idempotent GET-create-or-update one per scout_models[].ui
+5. Python tools. Same idempotent GET-create-or-update pattern as filters,
+   against /api/v1/tools. Each entry's `content_file` is inlined as the
+   tool source. Public read access grant so end users can attach the tool.
+6. Custom models. Idempotent GET-create-or-update one per scout_models[].ui
    entry, plus hide-base overrides on the raw Ollama tags.
 
 Inputs (from env, set by the Job spec):
@@ -32,6 +35,8 @@ Inputs (from /app/config/, mounted from a ConfigMap the chart renders):
   filters.json           — list of filter-function specs; each entry's
                            `content_file` names a sibling file in /app/config/
                            whose contents are inlined as the filter `content`.
+  tools.json             — list of Python-tool specs; same `content_file`
+                           inline pattern as filters.json.
   models.json            — list of ModelForm payloads; each entry's
                            `params.system_file` names a sibling file whose
                            contents are inlined as `params.system`.
@@ -59,11 +64,7 @@ BOOTSTRAP_PASSWORD = os.environ["BOOTSTRAP_PASSWORD"]
 def http(method, path, body=None, token=None):
     """Call OWUI and return (status_code, response_body_text)."""
     url = f"{OWUI_BASE}{path}"
-    # urllib.urlopen accepts file://, ftp://, etc. by default. OWUI_BASE comes
-    # from chart values (always http://open-webui:80 in Scout) and `path` is
-    # hardcoded below — so this is defense in depth, not a real attack surface,
-    # but the allowlist makes the intent explicit and quiets static-analysis
-    # warnings about urllib + dynamic URLs.
+    # urllib.urlopen accepts file://, ftp://, etc. by default; allowlist HTTP(S) only.
     if not url.startswith(("http://", "https://")):
         raise ValueError(f"Refusing to call non-HTTP(S) URL: {url}")
     headers = {"Content-Type": "application/json"}
@@ -223,12 +224,20 @@ def push_persistent_config(token):
         )
         print(f'  task_model_id: {cfg["task_model_id"]}')
 
+    if cfg.get("webhook_url") is not None:
+        # Auto-enable receiver for new-user signups.
+        http_or_raise(
+            "POST",
+            "/api/webhook",
+            {"url": cfg["webhook_url"]},
+            token,
+        )
+        print(f'  webhook_url: {cfg["webhook_url"] or "(cleared)"}')
+
 
 def push_filter_functions(token):
     for fn in load_config("filters.json") or []:
         fn_id = fn["id"]
-        # Inventory-overridable, so encode for safety even though current entries
-        # (link_sanitizer_filter, etc.) are all URL-safe. Matches push_models.
         fn_id_q = urllib.parse.quote(fn_id, safe="")
         payload = {
             "id": fn_id,
@@ -255,7 +264,6 @@ def push_filter_functions(token):
                 token,
             )
 
-        # Toggles — GET current, only flip when state differs.
         current = json.loads(
             http_or_raise("GET", f"/api/v1/functions/id/{fn_id_q}", token=token)
         )
@@ -271,6 +279,56 @@ def push_filter_functions(token):
         if current.get("is_active", False) != desired_active:
             http_or_raise("POST", f"/api/v1/functions/id/{fn_id_q}/toggle", token=token)
             print(f"  {fn_id}: is_active → {desired_active}")
+
+
+def push_tools(token):
+    """Upsert Python tools against /api/v1/tools. Tools attach per-model
+    via toolIds (no global/active toggles), so we push source, meta,
+    valves, and re-assert public-read access grants."""
+    public_read = [
+        {"principal_type": "user", "principal_id": "*", "permission": "read"}
+    ]
+    for t in load_config("tools.json") or []:
+        tool_id = t["id"]
+        tool_id_q = urllib.parse.quote(tool_id, safe="")
+        payload = {
+            "id": tool_id,
+            "name": t["name"],
+            "content": load_text(t["content_file"]),
+            "meta": {
+                "description": t.get("description", ""),
+                "manifest": t.get("manifest", {}),
+            },
+            "access_grants": public_read,
+        }
+        exists_code, _ = http("GET", f"/api/v1/tools/id/{tool_id_q}", token=token)
+        if exists_code == 200:
+            http_or_raise(
+                "POST", f"/api/v1/tools/id/{tool_id_q}/update", payload, token
+            )
+            print(f"  {tool_id}: updated")
+        else:
+            http_or_raise("POST", "/api/v1/tools/create", payload, token)
+            print(f"  {tool_id}: created")
+
+        if t.get("valves"):
+            http_or_raise(
+                "POST",
+                f"/api/v1/tools/id/{tool_id_q}/valves/update",
+                t["valves"],
+                token,
+            )
+
+        # Re-assert public-read access grants on every run via the dedicated
+        # endpoint. The update payload's `access_grants` is only honored on
+        # create, so this ensures the grant stays correct even if someone
+        # edited it in the UI.
+        http_or_raise(
+            "POST",
+            f"/api/v1/tools/id/{tool_id_q}/access/update",
+            {"access_grants": public_read},
+            token,
+        )
 
 
 def push_models(token):
@@ -302,20 +360,23 @@ def push_models(token):
 def main():
     print(f"Bootstrap against {OWUI_BASE} as {BOOTSTRAP_EMAIL}")
 
-    print("[1/5] Migrating bootstrap user password (idempotent)...")
+    print("[1/6] Migrating bootstrap user password (idempotent)...")
     migrate_password()
 
-    print("[2/5] Minting admin JWT...")
+    print("[2/6] Minting admin JWT...")
     token, via = mint_admin_jwt()
     print(f"  JWT acquired via {via}")
 
-    print("[3/5] Pushing PersistentConfig...")
+    print("[3/6] Pushing PersistentConfig...")
     push_persistent_config(token)
 
-    print("[4/5] Configuring filter functions...")
+    print("[4/6] Configuring filter functions...")
     push_filter_functions(token)
 
-    print("[5/5] Configuring custom models...")
+    print("[5/6] Configuring Python tools...")
+    push_tools(token)
+
+    print("[6/6] Configuring custom models...")
     push_models(token)
 
     print("Bootstrap complete.")

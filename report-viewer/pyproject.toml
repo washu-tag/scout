@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scout_report_viewer"
+version = "0.0.dev0"
+description = "Scout report-viewer service - surfaces saved searches outside OWUI so the chat surface stays light"
+authors = [
+    {name = "Scout Team"},
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+]
+requires-python = ">= 3.11"
+dependencies = [
+    # Pin below 0.137 - that release added a `_IncludedRouter` wrapper into
+    # `app.routes` which prometheus-fastapi-instrumentator 8.0.0 doesn't
+    # recognize (crashes on `.path` lookup during request routing).
+    "fastapi<0.137",
+    "uvicorn[standard]",
+    "httpx",
+    "psycopg[binary,pool]",
+    "pydantic>=2",
+    "pydantic-settings>=2",
+    "trino",
+    # trino-python-client 0.337+ imports tzlocal but doesn't declare it
+    # as required - packaging bug. Listed explicitly so installs work.
+    "tzlocal",
+    "python-jose[cryptography]>=3.4.0",
+    "python-multipart",
+    "prometheus-fastapi-instrumentator>=7",
+    "prometheus-client>=0.20",
+    "yoyo-migrations",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Include the Vite-built SPA assets (src/scout_report_viewer/static/*) so `pip install`
+# carries them into the install target. The frontend build (cd frontend && npm
+# run build) writes there; the ansible source-bundle picks it up; FastAPI's
+# StaticFiles mount serves it.
+[tool.setuptools.package-data]
+scout_report_viewer = ["static/**/*", "migrations/*.sql"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
