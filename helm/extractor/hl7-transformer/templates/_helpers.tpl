@@ -73,13 +73,14 @@ rather than inlining the keys here, so no credentials live in the ConfigMap.
 */}}
 {{- define "hl7-transformer.sparkDefaultsConf" -}}
 {{- $s := .Values.sparkDefaults -}}
-{{- if eq $s.mode "aws" }}
+{{- $aws := eq $s.mode "aws" -}}
+{{- if $aws }}
 spark.hadoop.fs.s3a.aws.credentials.provider software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 {{- else }}
 spark.hadoop.fs.s3a.endpoint {{ $s.s3Endpoint }}
 spark.hadoop.fs.s3a.aws.credentials.provider software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider
 {{- end }}
-spark.hadoop.fs.s3a.endpoint.region {{ $s.s3Region | default "us-east-1" }}
+spark.hadoop.fs.s3a.endpoint.region {{ $s.s3Region }}
 # Spark 4 enables ANSI mode by default; the HL7 extraction relies on
 # out-of-range array access and unparseable timestamps yielding NULL.
 spark.sql.ansi.enabled false
@@ -88,10 +89,10 @@ spark.databricks.delta.merge.repartitionBeforeWrite.enabled true
 spark.databricks.delta.constraints.allowUnenforcedNotNull.enabled true
 spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
 spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
-spark.hadoop.fs.s3a.path.style.access {{ if eq $s.mode "aws" }}false{{ else }}true{{ end }}
+spark.hadoop.fs.s3a.path.style.access {{ if $aws }}false{{ else }}true{{ end }}
 spark.hadoop.hive.metastore.uris {{ $s.hiveMetastoreUri }}
 spark.sql.warehouse.dir {{ $s.warehouseDir }}
-spark.sql.shuffle.partitions {{ $s.shufflePartitions | default 200 }}
+spark.sql.shuffle.partitions {{ $s.shufflePartitions }}
 spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
 spark.executor.memory {{ .Values.spark.executor.memory }}
 spark.driver.memory {{ .Values.spark.executor.memory }}

@@ -114,13 +114,16 @@ spark:
   executor:
     memory: 1g
 
-# spark-defaults.conf, owned by the chart and rendered by
-# _helpers.tpl (see "hl7-transformer.sparkDefaultsConf"). `mode` is the
-# ADR 0011 service mode: `on-prem` (MinIO, path-style, env-sourced creds) or
-# `aws` (S3, web-identity/IRSA). Consumers set the tunables below; on-prem
-# credentials come from the s3-secret env, never from this ConfigMap.
+# Optional chart-owned spark-defaults.conf, rendered by _helpers.tpl (see
+# "hl7-transformer.sparkDefaultsConf"). Opt-in (disabled by default) so it does
+# not double-render when a caller injects its own spark-defaults volume; the
+# Ansible on-prem path still renders its own ConfigMap, retired separately at the
+# ADR 0031 phase 5 cutover. GitOps consumers set `enabled: true` plus the tunables.
+# `mode` is the ADR 0011 service mode: `on-prem` (MinIO, path-style, env-sourced
+# creds) or `aws` (S3, web-identity/IRSA); on-prem credentials come from the
+# s3-secret env, never from this ConfigMap.
 sparkDefaults:
-  enabled: true
+  enabled: false
   mode: on-prem
   shufflePartitions: 200
   hiveMetastoreUri: ''

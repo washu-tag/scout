@@ -816,11 +816,11 @@ jobs:
       - name: 'Publish chart - ${{ matrix.chart-name }}'
         if: needs.changes.outputs[matrix.changed] == 'true'
         shell: bash
-        # helm is preinstalled on the runner (OCI push needs >= 3.8). The chart
-        # is stamped with the run's build version at package time; Chart.yaml
-        # keeps its 0.0.0-dev placeholder untouched. appVersion coupling to the
-        # image build lands in phase 2; until then consumers pin image.tag.
-        # Token via stdin (never argv); actor via env (CodeQL script-injection).
+        # helm is preinstalled on the runner (OCI push needs >= 3.8). Only the
+        # chart version is stamped (--version); Chart.yaml keeps its 0.0.0-dev /
+        # appVersion "latest" placeholders. appVersion-to-image coupling is phase
+        # 2, so the chart's default image tag stays :latest and phase-0 consumers
+        # pin image.tag for immutability. Token via stdin (never argv).
         env:
           CHART_DIR: ${{ matrix.chart-dir }}
           CHART_NAME: ${{ matrix.chart-name }}
@@ -831,7 +831,7 @@ jobs:
           set -euo pipefail
           helm version --short
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
-          helm package "${CHART_DIR}" --version "${VERSION}" --app-version "${VERSION}" --destination "${RUNNER_TEMP}"
+          helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
   publish-demo:
     if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'

@@ -68,6 +68,9 @@ volumes:
     hostPath:
       path: '{{ extractor_data_dir }}'
 {% endif %}
+  - name: spark-defaults
+    configMap:
+      name: {{ extractor_spark_defaults_configmap_name }}
   - name: modality-mapping
     configMap:
       name: modality-mapping
@@ -78,6 +81,9 @@ volumeMounts:
 {% if not aws_deployment %}
     mountPropagation: HostToContainer
 {% endif %}
+  - name: spark-defaults
+    mountPath: /opt/spark/conf/spark-defaults.conf
+    subPath: spark-defaults.conf
   - name: modality-mapping
     mountPath: /config/modality_mapping_codes.csv
     subPath: modality_mapping_codes.csv
@@ -99,14 +105,3 @@ livenessProbe:
 spark:
   executor:
     memory: '{{ hl7_transformer_spark_memory }}'
-# spark-defaults.conf is now owned by the chart (ADR 0031). These inputs
-# reproduce the values the former spark_config_setup ConfigMap was rendered
-# with; on-prem S3 credentials come from the s3-secret env, not this block.
-sparkDefaults:
-  enabled: true
-  mode: "{{ 'aws' if aws_deployment else 'on-prem' }}"
-  shufflePartitions: {{ spark_sql_shuffle_partitions | default(200) }}
-  hiveMetastoreUri: "{{ hive_metastore_endpoint }}"
-  warehouseDir: "{{ delta_lake_path }}"
-  s3Region: "{{ s3_region | default('us-east-1') }}"
-  s3Endpoint: "{{ s3_endpoint }}"
