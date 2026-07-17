@@ -383,7 +383,7 @@ const ContentGrid = ({
               {[
                 {
                   href: '/admin/users',
-                  external: false,
+                  external: true,
                   label: 'Users',
                   description: 'Approve requests and manage user access',
                   Icon: HiClipboardCheck,

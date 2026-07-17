@@ -122,6 +122,10 @@ def update_dataset(path: str) -> bool:
     ds.description = data.get("description", ds.description)
     if "sql" in data:
         ds.sql = data["sql"]
+    # Sync cache_timeout from the YAML (datasets ship it as null to inherit the
+    # database/global default). Unlike the fields above we always apply it, so a
+    # stale per-dataset value is cleared rather than preserved.
+    ds.cache_timeout = data.get("cache_timeout")
 
     existing_cols = {c.column_name: c for c in ds.columns}
     yaml_cols = {c["column_name"]: c for c in data.get("columns") or []}

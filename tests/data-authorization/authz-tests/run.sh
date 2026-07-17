@@ -40,10 +40,10 @@
 #      -> COUNT(*) = 2                     (intersection)
 #   4. allowed_facilities=[]  (unset)
 #      -> rowFilters emits 1=0 -> COUNT(*) = 0
-#   5. mask_phi_fields=["true"], allowed_facilities=["*"]
+#   5. redact_select_identifiers=["true"], allowed_facilities=["*"]
 #      -> patient_name & zip = '[REDACTED]' (varchar); full_patient_name
 #         = NULL (non-varchar) -- type-aware mask
-#   5b. mask_phi_fields=["false"]
+#   5b. redact_select_identifiers=["false"]
 #      -> real values returned (masking is conditional, not unconditional)
 #   6. SELECT * FROM reports_report_patient_mapping (no bypass)
 #      -> 403 / permission denied
@@ -471,10 +471,10 @@ if [[ "$count" == "0" ]]; then ok "row count=0 (1=0 clamp)"; else fail "expected
 # --- Scenario 5: PHI masking ON ---------------------------------------------
 # Type-aware mask (ADR 0020): varchar PHI -> literal '[REDACTED]'; non-varchar
 # PHI (full_patient_name struct) -> NULL. All three columns are in
-# trino_masked_columns, so all three must mask under mask_phi_fields=true.
-log "scenario 5: mask_phi_fields=true -> PHI columns masked"
-set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"mask_phi_fields":["true"]}'
-wait_for_bundle '.result.mask_phi_fields[0] == "true"' "$PROPAGATION_TIMEOUT"
+# trino_masked_columns, so all three must mask under redact_select_identifiers=true.
+log "scenario 5: redact_select_identifiers=true -> PHI columns masked"
+set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"redact_select_identifiers":["true"]}'
+wait_for_bundle '.result.redact_select_identifiers[0] == "true"' "$PROPAGATION_TIMEOUT"
 row=$(trino_query "SELECT patient_name, zip_or_postal_code, full_patient_name FROM test_reports ORDER BY patient_name LIMIT 1" "$TEST_USER")
 m_name=$(echo "$row" | jq -r '.[0][0]')
 m_zip=$(echo "$row" | jq -r '.[0][1]')
@@ -484,13 +484,13 @@ if [[ "$m_zip" == "[REDACTED]" ]]; then ok "zip_or_postal_code=[REDACTED] (varch
 if [[ "$m_struct" == "null" ]]; then ok "full_patient_name=NULL (non-varchar mask)"; else fail "expected NULL struct, got: $m_struct"; fi
 
 # --- Scenario 5b: PHI masking OFF (counter-assertion) -----------------------
-# Proves masking is *conditional*, not unconditional: with mask_phi_fields
+# Proves masking is *conditional*, not unconditional: with redact_select_identifiers
 # explicitly "false" the real values come back. Without this, a policy that
 # redacted these columns for everyone would pass scenario 5 just as well.
 # ORDER BY pins a deterministic row (Alice Anderson) under the wildcard filter.
-log "scenario 5b: mask_phi_fields=false -> real PHI values returned"
-set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"mask_phi_fields":["false"]}'
-wait_for_bundle '.result.mask_phi_fields[0] == "false"' "$PROPAGATION_TIMEOUT"
+log "scenario 5b: redact_select_identifiers=false -> real PHI values returned"
+set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"redact_select_identifiers":["false"]}'
+wait_for_bundle '.result.redact_select_identifiers[0] == "false"' "$PROPAGATION_TIMEOUT"
 row=$(trino_query "SELECT patient_name, zip_or_postal_code FROM test_reports ORDER BY patient_name LIMIT 1" "$TEST_USER")
 real_name=$(echo "$row" | jq -r '.[0][0]')
 real_zip=$(echo "$row" | jq -r '.[0][1]')

@@ -76,7 +76,7 @@ class ScoutUsersResourceTest {
         return g;
     }
 
-    // allowed_facilities (multivalued, options incl. wildcard) + mask_phi_fields
+    // allowed_facilities (multivalued, options incl. wildcard) + redact_select_identifiers
     // (single-valued, true/false) are scoutAuthz; email is not.
     private UPConfig profileConfig() {
         UPAttribute facilities = new UPAttribute("allowed_facilities");
@@ -84,7 +84,7 @@ class ScoutUsersResourceTest {
         facilities.setAnnotations(annotations("multiselect"));
         facilities.setValidations(optionsValidation(List.of("WUSM", "BJH", "*")));
 
-        UPAttribute mask = new UPAttribute("mask_phi_fields");
+        UPAttribute mask = new UPAttribute("redact_select_identifiers");
         mask.setMultivalued(false);
         Map<String, Object> maskAnnotations = annotations("select");
         maskAnnotations.put("scoutDefault", "true");
@@ -123,7 +123,7 @@ class ScoutUsersResourceTest {
     void schema_returns_only_scoutauthz_attributes_with_metadata() {
         List<ScoutUsersResource.AttrSchema> schema = resource.buildSchema();
 
-        assertEquals(List.of("allowed_facilities", "mask_phi_fields"),
+        assertEquals(List.of("allowed_facilities", "redact_select_identifiers"),
                 schema.stream().map(ScoutUsersResource.AttrSchema::name).toList(),
                 "email is not annotated scoutAuthz and must be excluded");
         var facilities = schema.get(0);
@@ -146,10 +146,10 @@ class ScoutUsersResourceTest {
 
         resource.applyApproval(new ScoutUsersResource.ApproveRequest("u1",
                 Map.of("allowed_facilities", List.of("WUSM"),
-                        "mask_phi_fields", List.of("false"))));
+                        "redact_select_identifiers", List.of("false"))));
 
         verify(target).setAttribute("allowed_facilities", List.of("WUSM"));
-        verify(target).setAttribute("mask_phi_fields", List.of("false"));
+        verify(target).setAttribute("redact_select_identifiers", List.of("false"));
         verify(target).joinGroup(scoutUserGroup);
     }
 
@@ -183,7 +183,7 @@ class ScoutUsersResourceTest {
 
         assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
                 new ScoutUsersResource.ApproveRequest("u1",
-                        Map.of("mask_phi_fields", List.of("true", "false")))));
+                        Map.of("redact_select_identifiers", List.of("true", "false")))));
         verify(target, never()).joinGroup(any());
     }
 
@@ -222,7 +222,7 @@ class ScoutUsersResourceTest {
         // invariant), independent of map iteration order.
         Map<String, List<String>> attrs = new HashMap<>();
         attrs.put("allowed_facilities", List.of("WUSM"));
-        attrs.put("mask_phi_fields", List.of("bogus"));
+        attrs.put("redact_select_identifiers", List.of("bogus"));
         assertThrows(IllegalArgumentException.class, () -> resource.applyApproval(
                 new ScoutUsersResource.ApproveRequest("u1", attrs)));
         verify(target, never()).setAttribute(any(), any());

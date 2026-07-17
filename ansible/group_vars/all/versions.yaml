@@ -6,7 +6,7 @@
 # k3s version - if not specified or empty, will use latest stable
 # Set to empty string or omit to auto-detect latest stable version
 # renovate: datasource=github-releases depName=k3s-io/k3s
-k3s_version: v1.36.1+k3s1
+k3s_version: v1.36.2+k3s1
 
 # helm version - if not specified or empty, will use latest
 # Using Helm 3.x until Helm 4 plugin ecosystem matures (helm-diff compatibility)
@@ -23,7 +23,7 @@ elasticsearch_version: 9.2.3
 
 # Databases & Data Storage - Cassandra
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
-cert_manager_version: ~v1.20.2
+cert_manager_version: ~v1.20.3
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
 cass_operator_version: ~0.65.0
 # cassandra_server_version is managed by K8ssandra cass-operator, which pulls k8ssandra/cass-management-api
@@ -189,3 +189,7 @@ xnat_openid_plugin_version: 1.5.0
 # XNAT Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/charts/xnat
 xnat_chart_version: 2.0.0
+
+# data-generator Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
+# renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator
+data_generator_chart_version: 1.0.0

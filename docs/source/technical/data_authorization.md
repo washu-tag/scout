@@ -11,26 +11,31 @@ Set per-user in the Keycloak admin console, in the **scout** realm (Scout's user
 | Attribute | Type | Default if unset | Effect |
 |---|---|---|---|
 | `allowed_facilities` | multivalued (codes or `*`) | empty → no rows | Row filter on `sending_facility`. Multiple values OR together. `*` is a wildcard. |
-| `mask_phi_fields` | single, `"true"` or `"false"` | `"true"` (mask) | Toggles PHI column masking. Set to `"false"` only for users authorized to see PHI in the clear. |
+| `redact_select_identifiers` | single, `"true"` or `"false"` | `"false"` (no masking) | Redacts the columns in `trino_masked_columns` for this user. Off by default; set to `"true"` to redact those identifier columns for a user who should not see them. |
 | `bypass_hidden_tables` | single, `"true"` or `"false"` | `"false"` (block) | Lets the user `SELECT` directly from join-target tables (patient mapping). See [View-only tables](#view-only-tables) below. |
 
 ```{important}
 Empty `allowed_facilities` means **deny-all rows**, not "see everything." Newly approved users have no attributes set and will see zero rows from filtered tables until an admin grants them values. Use `*` to grant "see all facilities." The same deny-by-default rule applies to any additional row-filter dimensions a deployment adds (see [Adding a new restriction dimension](#adding-a-new-restriction-dimension)).
 ```
 
+```{note}
+**Rows with no sending facility.** Some reports carry no `sending_facility` value. A facility-scoped user (any `allowed_facilities` value other than the `*` wildcard) does **not** see these rows: the emitted `sending_facility IN (...)` filter is false for a NULL facility, so they are excluded. A user with the `*` wildcard has no facility filter applied and **does** see them. Malformed `allowed_facilities` entries — an empty string or a stray null in the list — are dropped from the filter rather than matched; if that leaves the user with no valid values, they see zero rows (fail-closed), never all rows.
+```
+
 ## Setting attributes — example walkthrough
 
-A new user needs to query reports from the HOSP1 facility, with PHI columns visible:
+A new user needs to query reports from the HOSP1 facility:
 
 1. Open the Keycloak admin console (`https://keycloak.<your-scout-host>/admin`)
 2. Switch to the **scout** realm (realm selector, top-left — the console opens in **master** by default)
 3. **Users → \[the user\]** → **Attributes** tab
 4. Add:
    - `allowed_facilities`: `HOSP1`
-   - `mask_phi_fields`: `false`
 5. **Save**
 
 Within 5-15 seconds, the user's next Analytics query will reflect the new permissions. No restart, no logout, no cache clear required.
+
+Identifier columns are visible by default — masking is opt-in. To redact the `trino_masked_columns` set for this user, also add `redact_select_identifiers`: `true`.
 
 (how-propagation-works)=
 ## How propagation works
@@ -75,7 +80,7 @@ Example output:
   "attribute_values": {
     "allowed_facilities": ["HOSP1"]
   },
-  "mask_phi_fields": ["true"],
+  "redact_select_identifiers": ["unset"],
   "bypass_hidden_tables": false,
   "row_filters": [
     {"expression": "sending_facility IN ('HOSP1')"}
@@ -90,8 +95,8 @@ The full response also includes `approved` (approval-group membership) and `bund
 **"I see zero rows from `reports_latest`."**
 Run `decision_context` for the user. If `row_filters` includes `1=0`, the user is missing values for one of the configured attribute dimensions (`allowed_facilities` by default, plus whatever your deployment has added via `trino_attribute_filters`). Either the user has no values set, or the configured values don't match the regex `^[A-Za-z0-9_-]+$` (rare — usually caused by a space, comma, or other unsupported character).
 
-**"I see `[REDACTED]` everywhere; I should be able to see PHI."**
-Check the user's `mask_phi_fields` attribute. Default behavior is to mask, so absence of the attribute = masking on. Set explicitly to `"false"` (lowercase, as a string) to disable masking.
+**"I see `[REDACTED]` in the masked identifier columns; I should be able to see them in the clear."**
+Check the user's `redact_select_identifiers` attribute. Masking is off by default, so absence of the attribute = no masking. If the columns are redacted, the user has `redact_select_identifiers` set to `"true"`; remove the attribute (or set it to `"false"`, lowercase, as a string) to show those columns in the clear.
 
 **"`SELECT * FROM reports_report_patient_mapping` says permission denied."**
 The patient mapping table and its history variant are blocked from direct access for everyone — they let a facility-scoped user enumerate cross-facility patient identifiers, defeating the row-filter restriction. Use one of the `*_epic_view` join views instead (`reports_curated_epic_view`, `reports_latest_epic_view`, `reports_dx_epic_view`); these expose mapping data filtered to the invoker's permitted facilities. See [View-only tables](#view-only-tables) below if a specific admin user does need direct access.
@@ -121,7 +126,7 @@ The set of row-filter dimensions is configured per-deployment in the Ansible inv
 (configuring-masked-columns)=
 ## Configuring which columns are masked
 
-Which columns count as PHI is configured per-deployment in the Ansible inventory under `trino_masked_columns` (default: `patient_name`, `full_patient_name`, `zip_or_postal_code`). Adding a column is a one-line inventory edit — no policy change. The mask applies to that column name across every `delta` table that projects it, for any user whose `mask_phi_fields` is unset or `"true"`. `varchar` columns render as `[REDACTED]`; other types (arrays, rows, decimals, timestamps) render as `NULL`. The per-user `mask_phi_fields` attribute toggles whether this masking applies to a given user; `trino_masked_columns` controls *which* columns it covers.
+Which identifier columns are redacted is configured per-deployment in the Ansible inventory under `trino_masked_columns` (default: `patient_name`, `full_patient_name`, `zip_or_postal_code`). Adding a column is a one-line inventory edit — no policy change. The mask applies to that column name across every `delta` table that projects it, but only for a user whose `redact_select_identifiers` is explicitly `"true"` (masking is off by default). `varchar` columns render as `[REDACTED]`; other types (arrays, rows, decimals, timestamps) render as `NULL`. The per-user `redact_select_identifiers` attribute toggles whether this masking applies to a given user; `trino_masked_columns` controls *which* columns it covers. This is a targeted redaction of the listed columns, not a full de-identification pass — columns such as date of birth, medical record number, and the free-text report body are never masked here.
 
 ## Filtering a family of tables by prefix
 

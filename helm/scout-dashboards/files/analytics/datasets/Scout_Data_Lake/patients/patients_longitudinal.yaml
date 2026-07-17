@@ -8,7 +8,7 @@ description: One row per reconciled patient (scout_patient_id), with aggregates 
   dashboard date filter scopes by a reliably-populated date.
 default_endpoint: null
 offset: 0
-cache_timeout: 7200
+cache_timeout: null
 catalog: delta
 schema: default
 sql: |-

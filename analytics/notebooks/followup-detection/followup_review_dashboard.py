@@ -36,6 +36,7 @@ import ipywidgets as widgets
 from IPython.display import display, HTML
 import html as html_lib
 import os
+import base64
 
 # Global state
 annotations = {}
@@ -1496,33 +1497,20 @@ def create_review_dashboard(
                 if a.get("reviewed") and a.get("ground_truth") is None
             )
 
-            # Export to CSV with timestamp.
-            # Voilà mounts each notebook directory read-only, so we cannot write
-            # CSV next to the notebook. Use the canonical writable exports dir
-            # (sibling mount). Fall back to CWD for environments without it.
+            # Serialize the annotations to an in-memory CSV string and hand it to
+            # the browser as a Blob download (see the download link below) rather
+            # than writing a file on the shared server, so no other user can fetch
+            # this export from a predictable /voila/files URL.
             from datetime import datetime
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            export_dir = "/home/jovyan/notebooks/exports"
-            if not os.path.isdir(export_dir) or not os.access(export_dir, os.W_OK):
-                export_dir = os.getcwd()
-            output_path = os.path.join(
-                export_dir, f"followup_annotations_{timestamp}.csv"
-            )
+            csv_filename = f"followup_annotations_{timestamp}.csv"
 
             with annotation_status:
                 annotation_status.clear_output(wait=True)
-                print(f"📦 Preparing annotations for export...")
-                print(f"💾 Saving to CSV: {output_path}...")
+                print("📦 Preparing annotations for export...")
 
-            try:
-                ann_df.to_csv(output_path, index=False)
-            except OSError as e:
-                with annotation_status:
-                    annotation_status.clear_output(wait=True)
-                    print(f"❌ CSV write failed: {e}")
-                    print(f"   (target: {output_path})")
-                return
+            csv_string = ann_df.to_csv(index=False)
 
             # Write reviewer annotations back to the Delta table via trino-rw
             # (ADR 0019). Trino's Delta connector supports row-level UPDATE; the
@@ -1532,8 +1520,7 @@ def create_review_dashboard(
 
             with annotation_status:
                 annotation_status.clear_output(wait=True)
-                print(f"💾 Saved to CSV: {output_path}")
-                print(f"🔄 Updating Delta Lake table...")
+                print("🔄 Updating Delta Lake table...")
 
             try:
                 from playbook_helpers import connect_writeback
@@ -1613,24 +1600,66 @@ def create_review_dashboard(
             except Exception as e:
                 delta_error = str(e)
 
+            # Build a client-side Blob download for the CSV. The CSV is
+            # base64-encoded into the page and reassembled into a Blob in the
+            # browser on click; a Blob (not a data: URI) has no URL length limit,
+            # so very large annotation sets are held entirely in browser memory.
+            csv_b64 = base64.b64encode(csv_string.encode("utf-8")).decode("ascii")
+            dl_id = f"followup-dl-{os.urandom(6).hex()}"
+            download_html = f"""
+                <a href="#" id="{dl_id}"
+                   style='display: inline-block; margin-top: 8px; background: #10b981;
+                          padding: 8px 14px; border-radius: 6px; color: white;
+                          text-decoration: none; font-weight: bold; font-size: 13px;'>
+                    📥 Download {csv_filename}
+                </a>
+                <script>
+                (function() {{
+                    setTimeout(function() {{
+                        var link = document.getElementById("{dl_id}");
+                        if (!link) return;
+                        link.addEventListener("click", function(e) {{
+                            e.preventDefault();
+                            var bytes = atob("{csv_b64}");
+                            var arr = new Uint8Array(bytes.length);
+                            for (var i = 0; i < bytes.length; i++) {{
+                                arr[i] = bytes.charCodeAt(i);
+                            }}
+                            var blob = new Blob([arr], {{type: "text/csv"}});
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement("a");
+                            a.href = url;
+                            a.download = "{csv_filename}";
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        }});
+                    }}, 100);
+                }})();
+                </script>
+            """
+
             # Final success message
             with annotation_status:
                 annotation_status.clear_output(wait=True)
                 print(f"✅ Successfully exported {len(ann_data)} annotations")
-                print(f"   📄 CSV file: {output_path}")
                 if delta_success:
                     print(
                         f"   💾 Updated Delta Lake table: "
                         f"{table_name or 'default.reports_followup'}"
                     )
                 else:
-                    print("   ⚠️  Delta Lake update failed (CSV export still saved)")
+                    print(
+                        "   ⚠️  Delta Lake update failed (CSV download still available)"
+                    )
                     if delta_error:
                         print(f"       Error: {delta_error}")
                 print(f"\n📊 Annotation Summary:")
                 print(f"   ✓ {yes_count} Follow-up Needed")
                 print(f"   ✗ {no_count} No Follow-up")
                 print(f"   ? {uncertain_count} Uncertain")
+                display(HTML(download_html))
 
         finally:
             # Always re-enable button

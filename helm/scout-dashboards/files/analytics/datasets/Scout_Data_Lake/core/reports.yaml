@@ -6,7 +6,7 @@ description: Raw curated reports table — one row per HL7 message (every versio
   reports_latest.
 default_endpoint: null
 offset: 0
-cache_timeout: 7200
+cache_timeout: null
 catalog: delta
 schema: default
 sql: null
