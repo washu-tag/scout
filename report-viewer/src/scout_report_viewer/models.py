@@ -118,7 +118,7 @@ class CreateFromFileResponse(BaseModel):
     id: str
     id_column: str
     column_inferred: bool
-    count: int
+    count: int | None
     columns: list[str]
     sample: list[dict[str, Any]]
     unmatched: list[str]
@@ -168,7 +168,7 @@ class ReadReportsResponse(BaseModel):
 
 class CreateSearchResponse(BaseModel):
     id: str
-    count: int
+    count: int | None
     id_column: str
     view_url: str
     columns: list[str]
@@ -181,7 +181,7 @@ class CreateSearchResponse(BaseModel):
 class SearchMeta(BaseModel):
     id: str
     id_column: str
-    count: int
+    count: int | None
     sql: str
     owner_sub: str
     created_at: datetime

@@ -13,8 +13,7 @@ from __future__ import annotations
 
 
 _SQL_HAPPY = (
-    "SELECT primary_report_identifier, accession_number, modality "
-    "FROM reports_latest"
+    "SELECT primary_report_identifier, accession_number, modality FROM reports_latest"
 )
 
 
@@ -80,6 +79,26 @@ def test_create_search_empty_result_is_201(client, auth_headers, fake_trino):
     assert body["sample"] == []
     assert body["evidence"] == []
     assert body["columns"] == _sample_columns()
+
+
+def test_null_count_self_heals_on_rows(client, auth_headers, fake_trino):
+    # No count response queued, so the count query raises and count is NULL.
+    fake_trino(_sample_columns(), _sample_rows())
+    created = client.post(
+        "/api/searches", json={"sql": _SQL_HAPPY}, headers=auth_headers
+    ).json()
+    assert created["count"] is None
+
+    # Unfiltered /rows recomputes and backfills.
+    fake_trino(["n"], [{"n": 3}])
+    fake_trino(_sample_columns(), _sample_rows())
+    rows = client.get(
+        f"/api/searches/{created['id']}/rows", headers=auth_headers
+    ).json()
+    assert rows["total"] == 3
+
+    meta = client.get(f"/api/searches/{created['id']}", headers=auth_headers).json()
+    assert meta["count"] == 3
 
 
 def test_create_search_missing_primary_report_identifier_is_400(

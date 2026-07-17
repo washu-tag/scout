@@ -102,6 +102,20 @@ class SearchStore:
                 await conn.commit()
         return deleted > 0
 
+    async def update_row_count(
+        self, search_id: str, owner_sub: str, count: int
+    ) -> None:
+        """Backfill a cached count that failed at create time."""
+        with metrics.time_postgres("update_row_count"):
+            async with self._pool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        "UPDATE searches SET row_count = %s "
+                        "WHERE id = %s AND owner_sub = %s",
+                        (count, search_id, owner_sub),
+                    )
+                await conn.commit()
+
     async def list_searches(
         self, owner_sub: str, *, limit: int = 200
     ) -> list[dict[str, Any]]:
@@ -150,7 +164,7 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
         "sql_explanation": sql_explanation or "",
         "match_terms": match_terms or [],
         "match_diagnoses": match_diagnoses or [],
-        "count": row_count if row_count is not None else 0,
+        "count": row_count,
         "uploaded_ids": uploaded_ids,
         "owner_sub": owner_sub,
         "owui_chat_id": owui_chat_id or "",

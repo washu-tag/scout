@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { friendlyError, listSearches, type SearchMeta } from '../api/client';
-import { chatUrl } from '../chat';
+import { chatOrigin, chatUrl } from '../chat';
 
 function fmtTime(iso: string): string {
   const d = new Date(iso);
@@ -96,7 +96,7 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
         <span style={{ color: '#888', fontSize: '0.75rem' }}>
           {items.length} {items.length === 1 ? 'search' : 'searches'}
         </span>
-        {!isUngrouped && (
+        {!isUngrouped && chatOrigin() && (
           <a href={chatUrl(chatId)} target="_top" style={{ fontSize: '0.75rem', color: '#4477AA' }}>
             open chat ↗
           </a>
@@ -145,7 +145,7 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
             >
               {d.id}
             </span>
-            <span>{d.count.toLocaleString()}</span>
+            <span>{d.count === null ? '—' : d.count.toLocaleString()}</span>
             <span style={{ color: '#555' }}>{fmtTime(d.created_at)}</span>
           </Link>
         ))}

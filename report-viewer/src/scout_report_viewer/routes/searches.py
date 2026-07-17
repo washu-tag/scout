@@ -184,10 +184,8 @@ async def create_search(
         row_count = int(count_rows[0]["n"]) if count_rows else 0
     except Exception as exc:
         log.exception("trino count query failed")
-        # Non-fatal: search still gets created, just without cached
-        # count. Reads will report 0 until the next refresh, which is
-        # better than failing the whole create.
-        row_count = 0
+        # NULL (unknown), not 0, so reads can tell a failed count from empty.
+        row_count = None
 
     sample_extras: dict[str, dict[str, Any]] = {}
     if body.match_terms or body.match_diagnoses:
@@ -283,7 +281,8 @@ async def create_search(
     )
 
     metrics.SEARCHES_CREATED.inc()
-    metrics.SEARCH_SIZE.observe(stored["count"])
+    if stored["count"] is not None:
+        metrics.SEARCH_SIZE.observe(stored["count"])
     log.info(
         "search created",
         extra={
@@ -427,7 +426,7 @@ async def create_search_from_file(
         row_count = int(count_rows[0]["n"]) if count_rows else 0
     except Exception:
         log.exception("trino from-file count failed")
-        row_count = 0
+        row_count = None
 
     search_id = new_search_id()
     stored = await store.insert_search(
@@ -442,7 +441,8 @@ async def create_search_from_file(
     )
 
     metrics.SEARCHES_CREATED.inc()
-    metrics.SEARCH_SIZE.observe(stored["count"])
+    if stored["count"] is not None:
+        metrics.SEARCH_SIZE.observe(stored["count"])
     log.info(
         "search imported from file",
         extra={
@@ -677,10 +677,8 @@ async def get_search_rows(
         f"OFFSET {offset} LIMIT {limit}"
     )
 
-    # Total count after filtering. When no filter is active and we
-    # have a cached_total, skip this query - saves a Trino scan per
-    # page request. Sort-only doesn't change the count.
-    if filters:
+    # Recompute when filtered or the cached count is NULL; else reuse it.
+    if filters or cached_total is None:
         count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s{where_sql}"
         try:
             with metrics.time_trino("rows_count_query"):
@@ -694,6 +692,12 @@ async def get_search_rows(
             sql_total = int(count_rows[0]["n"]) if count_rows else 0
         except Exception as exc:
             raise _rows_query_error(exc, "count")
+        # Best-effort backfill; a failed write just costs one more recompute.
+        if not filters:
+            try:
+                await store.update_row_count(search_id, user.sub, sql_total)
+            except Exception:
+                log.warning("row_count backfill failed", exc_info=True)
     else:
         sql_total = cached_total
 

@@ -280,19 +280,7 @@ export default function SearchDetailPage() {
                       <React.Fragment key={row.id}>
                         <tr
                           className={isExpanded ? undefined : 'scout-row'}
-                          onClick={(e) => {
-                            row.toggleExpanded();
-                            // Scroll into view so the expanded panel doesn't
-                            // land below the iframe's visible region.
-                            if (!isExpanded) {
-                              requestAnimationFrame(() => {
-                                (e.currentTarget as HTMLElement | null)?.scrollIntoView({
-                                  block: 'start',
-                                  behavior: 'smooth',
-                                });
-                              });
-                            }
-                          }}
+                          onClick={() => row.toggleExpanded()}
                           style={{
                             borderBottom: '1px solid #f0f0f0',
                             cursor: 'pointer',
@@ -345,6 +333,18 @@ export default function SearchDetailPage() {
                       </React.Fragment>
                     );
                   })}
+                  {table.getRowModel().rows.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={table.getVisibleFlatColumns().length}
+                        style={{ padding: '1rem', textAlign: 'center', color: '#888' }}
+                      >
+                        {activeFilterCount(appliedFilters) > 0
+                          ? 'No rows match your filters.'
+                          : 'No reports in this search.'}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

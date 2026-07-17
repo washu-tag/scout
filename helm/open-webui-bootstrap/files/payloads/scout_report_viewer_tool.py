@@ -142,11 +142,19 @@ class Tools:
             await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
             return f"Error fetching reports: {exc}"
 
-        await self._emit(
-            __event_emitter__,
-            f"Found {created['count']:,} matching reports",
-            done=True,
+        count = created.get("count")
+        if count == 0:
+            await self._emit(__event_emitter__, "No matching reports", done=True)
+            return (
+                "No reports matched. Try scouting the data or broadening the criteria."
+            )
+
+        found = (
+            f"Found {count:,} matching reports"
+            if count is not None
+            else "Found matching reports"
         )
+        await self._emit(__event_emitter__, found, done=True)
 
         # `replace: true` keeps a single iframe per message even if the
         # LLM iterates scout_find_reports mid-turn. embeds is separate
@@ -296,11 +304,17 @@ class Tools:
         except ReportViewerServiceError as exc:
             await self._emit(__event_emitter__, f"Import failed: {exc}", done=True)
             return f"Error: {exc}"
-        await self._emit(
-            __event_emitter__,
-            f"Matched {created['count']:,} reports from your list",
-            done=True,
+        count = created.get("count")
+        if count == 0:
+            await self._emit(__event_emitter__, "No matching reports", done=True)
+            return "None of the IDs in your list matched. Try a different ID column."
+
+        matched = (
+            f"Matched {count:,} reports from your list"
+            if count is not None
+            else "Matched reports from your list"
         )
+        await self._emit(__event_emitter__, matched, done=True)
         await self._emit_embed(__event_emitter__, created["view_url"])
         return self._render_from_file_summary(created, filename)
 
@@ -427,15 +441,16 @@ class Tools:
         """Sample table + evidence table (omitted if every row's
         excerpt is null and matched_diagnoses is empty). Both keyed by
         id_column so they align visually."""
-        count = int(created.get("count") or 0)
+        count = created.get("count")
         columns: list[str] = created.get("columns") or []
         sample: list[dict] = created.get("sample") or []
         evidence: list[dict] = created.get("evidence") or []
         sid = created.get("id") or ""
         id_column = created.get("id_column") or ""
 
+        cnt = f"{count:,}" if isinstance(count, int) else "an unknown number of"
         rows_word = "row" if count == 1 else "rows"
-        parts = [f"SQL matched {count:,} {rows_word} across {len(columns)} columns."]
+        parts = [f"SQL matched {cnt} {rows_word} across {len(columns)} columns."]
 
         if sample and columns:
             parts.append("")
@@ -470,7 +485,7 @@ class Tools:
 
     @staticmethod
     def _render_from_file_summary(created: dict, filename: str) -> str:
-        count = int(created.get("count") or 0)
+        count = created.get("count")
         columns: list[str] = created.get("columns") or []
         sample: list[dict] = created.get("sample") or []
         id_column = created.get("id_column") or "id"
@@ -479,10 +494,9 @@ class Tools:
         unmatched_count = int(created.get("unmatched_count") or 0)
         sid = created.get("id") or ""
 
+        cnt = f"{count:,}" if isinstance(count, int) else "an unknown number of"
         rows_word = "report" if count == 1 else "reports"
-        parts = [
-            f"Imported {count:,} {rows_word} from {filename} (keyed on {id_column})."
-        ]
+        parts = [f"Imported {cnt} {rows_word} from {filename} (keyed on {id_column})."]
         if column_inferred:
             parts.append(f"Inferred column: {id_column}.")
         if unmatched_count:
