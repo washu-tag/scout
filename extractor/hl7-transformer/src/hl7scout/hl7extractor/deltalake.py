@@ -64,13 +64,14 @@ def download_and_extract_zips(zip_map, local_dir):
 
 
 def extract_observation_id_suffix_content(column, suffix_list):
+    """Assemble a report section from the pos-sorted obx_rows array: the obx_5 values
+    of the rows whose OBX-3 suffix matches, joined in file order (concat_ws skips
+    NULL values, matching the old collect_list behavior)."""
     return F.concat_ws(
         "\n",
-        F.collect_list(
-            F.when(
-                F.split(F.col("obx-3"), "&").getItem(1).isin(suffix_list),
-                F.col("obx-5"),
-            )
+        F.transform(
+            F.filter("obx_rows", lambda r: r["obx_3_suffix"].isin(suffix_list)),
+            lambda r: r["obx_5"],
         ),
     ).alias(f"report_section_{column.lower()}")
 
@@ -340,25 +341,41 @@ def import_hl7_files_to_deltalake(
             .withColumn("obx", F.col("col").getField("fields"))
             .select(
                 "source_file",
-                # "pos" holds the index of the OBX segment
-                "pos",
-                # "obx" holds the OBX segment data
-                F.when(
-                    # TX data type has a ~ delimiter, replace with newline
-                    F.col("obx").getItem(1) == "TX",
-                    F.regexp_replace(F.col("obx").getItem(4), "~", "\n"),
-                )
-                # Other data types are a single line as the value
-                .otherwise(F.col("obx").getItem(4)).alias("obx-5"),
-                F.col("obx").getItem(2).alias("obx-3"),
-                F.col("obx").getItem(10).alias("obx-11"),
+                # Bundle each OBX line into a pos-led struct so the aggregation below
+                # can restore file order after the groupBy shuffle.
+                F.struct(
+                    # "pos" holds the index of the OBX segment
+                    F.col("pos").alias("pos"),
+                    # "obx" holds the OBX segment data
+                    F.when(
+                        # TX data type has a ~ delimiter, replace with newline
+                        F.col("obx").getItem(1) == "TX",
+                        F.regexp_replace(F.col("obx").getItem(4), "~", "\n"),
+                    )
+                    # Other data types are a single line as the value
+                    .otherwise(F.col("obx").getItem(4)).alias("obx_5"),
+                    F.split(F.col("obx").getItem(2), "&")
+                    .getItem(1)
+                    .alias("obx_3_suffix"),
+                    F.col("obx").getItem(10).alias("obx_11"),
+                ).alias("obx_row"),
             )
             .groupby("source_file")
-            .agg(
-                # Join all lines of report text into one string
-                F.concat_ws("\n", F.collect_list("obx-5")).alias("report_text"),
-                # Assume report statuses are the same, pick first
-                F.first("obx-11").alias("report_status"),
+            # collect_list order after a shuffle is NOT deterministic; sorting the
+            # pos-led structs restores file order so re-parsing identical input always
+            # yields identical rows. The content-hash re-ingest gate (issue #482)
+            # depends on this — without it, multi-OBX reports hash differently from
+            # run to run and spuriously re-merge.
+            .agg(F.array_sort(F.collect_list("obx_row")).alias("obx_rows"))
+            .select(
+                "source_file",
+                # Join all lines of report text into one string, in file order
+                F.concat_ws("\n", F.transform("obx_rows", lambda r: r["obx_5"])).alias(
+                    "report_text"
+                ),
+                # Assume report statuses are the same, pick the first line's
+                # (F.first was order-nondeterministic)
+                F.col("obx_rows").getItem(0).getField("obx_11").alias("report_status"),
                 *[
                     extract_observation_id_suffix_content(column, suffix_list)
                     for column, suffix_list in suffixes.items()
@@ -492,8 +509,12 @@ def import_hl7_files_to_deltalake(
                 "patient_id_col_name"
             )  # Turn the patient_id_col_name values into columns
             .agg(
-                F.first("id_number")
-            )  # Assume they only have one patient id for each type
+                # Assume they only have one patient id for each type; when that
+                # assumption is violated, min() picks the same one every run
+                # (F.first was order-nondeterministic, which would churn the
+                # content-hash re-ingest gate)
+                F.min("id_number")
+            )
         )
 
         activity.heartbeat()
