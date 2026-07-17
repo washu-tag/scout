@@ -207,10 +207,27 @@ def merge_report_df_into_table(
             spark.sql(
                 f"ALTER TABLE {full_name} ADD COLUMNS ({CONTENT_HASH_COL} STRING)"
             )
-        existing = spark.table(full_name).select(
-            F.col("source_file").alias("_existing_source_file"),
-            F.col("year").alias("_existing_year"),
-            F.col(CONTENT_HASH_COL).alias("_existing_content_hash"),
+        # The anti-join requires year equality, so an incoming row can only match an
+        # existing row in the same year partition. Restrict `existing` to the batch's
+        # years (year is the partition column, so Delta prunes the scan to those dirs)
+        # rather than reading/shuffling all of history on every ingest. NULL-year rows
+        # are excluded — they never anti-match anyway (plain `=` below) and always fall
+        # through to insert; an all-NULL-year batch yields empty `existing`, so
+        # everything merges, matching the unfiltered behavior. `df` is cached at the
+        # call site, so this distinct() is a cheap job over materialized data.
+        batch_years = [
+            row.year
+            for row in df.select("year").distinct().collect()
+            if row.year is not None
+        ]
+        existing = (
+            spark.table(full_name)
+            .where(F.col("year").isin(batch_years))
+            .select(
+                F.col("source_file").alias("_existing_source_file"),
+                F.col("year").alias("_existing_year"),
+                F.col(CONTENT_HASH_COL).alias("_existing_content_hash"),
+            )
         )
         # Plain `=` on source_file/year mirrors the MERGE match condition exactly
         # (a NULL-year row never matches and still falls through to insert, as
