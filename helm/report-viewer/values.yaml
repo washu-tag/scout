@@ -80,9 +80,6 @@ secretEnv: {}
 # value, or leave empty to let the role manage the Secret externally.
 databaseUrl: ''
 
-# REPORT_VIEWER_OWUI_DATABASE_URL: signup-webhook DB credential.
-owuiDatabaseUrl: ''
-
 # Trino CA cert (PEM). When set, the chart renders a Secret and mounts it
 # at /etc/trino-ca/ca.crt so the service can verify HTTPS Trino.
 trinoCaCert: ''

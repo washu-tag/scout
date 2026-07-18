@@ -63,8 +63,8 @@
         tool_server_connections: '{{ tool_server_connections | default([]) }}'
         default_model_id: '{{ open_webui_default_model_id | default("") }}'
         task_model_id: '{{ open_webui_task_model_id | default("") }}'
-        webhook_url: '{{ open_webui_webhook_url | default("http://report-viewer." ~ (report_viewer_namespace | default(chatbot_namespace)) ~ ":8000/webhooks/owui-new-user") }}'
       filterFunctions: '{{ open_webui_filter_functions | default([]) }}'
+      eventFunctions: '{{ open_webui_event_functions | default([]) }}'
       toolFunctions: '{{ open_webui_tool_functions | default([]) }}'
       scoutModels: '{{ scout_models | default([]) }}'
       scoutDefaults:

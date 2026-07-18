@@ -67,6 +67,11 @@ persistentConfig:
 # of optional fields). Empty list = skip filter seeding.
 filterFunctions: []
 
+# OWUI Event functions. Same entry shape as filterFunctions
+# (id, name, description, source_file, valves). Dispatch on system events, so
+# enable_global is irrelevant — entries set only enable_active. Empty = skip.
+eventFunctions: []
+
 # OWUI Python tools. Each entry: id, name, description, source_file
 # (filename in files/payloads/), valves. No global/active toggle —
 # visibility is per-model via scoutDefaults.toolIds. Empty list = skip

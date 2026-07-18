@@ -118,9 +118,9 @@ The bootstrap Job leaves OWUI fully configured — there are no manual UI steps 
 
 1. Open the Chat UI → select **Scout Explorer (Gemma 4 31B)**.
 2. Ask: *"How many radiology reports are in the database?"*
-3. Expect: a `scout-db_execute_query` tool call, the real count from Delta Lake, results in an expandable Output panel.
+3. Expect: a `scout_find_reports` tool call and an embedded report-viewer iframe.
 
-If the Output panel renders empty: the `tool_result_attr_filter` diagnostic isn't active. Confirm the bootstrap Job created and enabled it:
+If something looks wrong, check the bootstrap Job logs:
 
 ```bash
 kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap --tail=200
@@ -132,12 +132,13 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 
 **Filter Functions** — installed, configured with valves, and toggled global on every deploy:
 - **Link Sanitizer** ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md))
-- **Context Summarization** ([ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md))
-- **Tool Result Body→Attribute Migrator** — diagnostic workaround for an OWUI 0.9.5 rendering regression (upstream commit 45e49d33e, Apr 2026, moved tool-call results from a `result="..."` attribute on the `<details>` tag into the body; the new path doesn't display). Confirmed still broken in 0.9.6 (`ToolCallDisplay.svelte` byte-identical between v0.9.5 and v0.9.6). When bumping `open_webui_helm_chart_version` past `~14.8.0`, test without the filter (set `enable_active: false` in inventory) — if the regression is fixed, delete the inventory entry, the filter source, and its tests.
+
+**Event Functions** — installed and enabled on every deploy:
+- **Scout Iframe Defaults** — forces the report-viewer iframe-sandbox UI flags on for every user ([ADR 0029](../../../docs/internal/adr/0029-report-viewer.md)).
 
 **PersistentConfig** — re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`).
 
-**Other** — Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`).
+**Other** — Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`); native context compaction on (`ENABLE_CONTEXT_COMPACTION`, replacing the former context_summarization filter).
 
 ### Common inventory overrides
 
@@ -224,9 +225,8 @@ kubectl exec -n scout-analytics deploy/ollama -- ollama list
 - **Open WebUI Docs**: https://docs.openwebui.com/
 - **Scout Query Prompt**: `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`
 - **Link Sanitizer Filter**: `helm/open-webui-bootstrap/files/payloads/link_sanitizer_filter.py`
-- **Context Summarization Filter**: `helm/open-webui-bootstrap/files/payloads/context_summarization_filter.py`
-- **Tool Result Body→Attribute Migrator (diagnostic — remove when upstream bug is fixed)**: `helm/open-webui-bootstrap/files/payloads/tool_result_attr_filter.py`
+- **Scout Iframe Defaults (Event function)**: `helm/open-webui-bootstrap/files/payloads/scout_iframe_defaults_event.py`
 - **ADRs**:
   - [ADR 0009: Content Security Policy](../../../docs/internal/adr/0009-open-webui-content-security-policy.md)
   - [ADR 0010: Link Exfiltration Filter](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)
-  - [ADR 0014: Context Summarization Filter](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md)
+  - [ADR 0014: Context Summarization Filter (superseded by OWUI 0.10 native compaction)](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md)

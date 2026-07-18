@@ -49,11 +49,6 @@ class Settings(BaseSettings):
     # Rendered into GET /api/config; empty disables cross-frame messaging.
     chat_origin: str = ""
 
-    # OWUI Postgres URL - receiver writes iframe-sandbox UI defaults
-    # into OWUI's "user".settings JSON column on signup. Empty disables
-    # the webhook (returns 503).
-    owui_database_url: str = ""
-
     @model_validator(mode="after")
     def _issuer_required_with_jwks(self) -> "Settings":
         if self.oidc_jwks_url and not self.oidc_issuer:

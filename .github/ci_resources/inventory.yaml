@@ -248,7 +248,6 @@ k3s_cluster:
     open_webui_postgres_password: openwebui123
     open_webui_secret_key: ciopenwebuisecretkeyvalue12345678
     open_webui_bootstrap_password: cibootstrappasswordvalue12345678
-    owui_settings_writer_password: ciowuiwriterpasswordvalue12345678
     open_webui_trust_traefik_ca: true
     scout_model_create: false
     ollama_models: []

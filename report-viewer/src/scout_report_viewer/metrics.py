@@ -40,12 +40,6 @@ SEARCH_SIZE = Histogram(
     buckets=(10, 100, 500, 1_000, 5_000, 10_000, 50_000, 100_000, 500_000, 1_000_000),
 )
 
-OWUI_WEBHOOK_EVENTS = Counter(
-    "scout_report_viewer_owui_webhook_events_total",
-    "OWUI admin-notification webhook events received.",
-    ["action", "result"],
-)
-
 
 @contextmanager
 def time_trino(op: str) -> Iterator[None]:

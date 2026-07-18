@@ -90,27 +90,18 @@ The SPA is served from its own subdomain (default `report-viewer.<domain>`) and 
 
 OWUI's `message.embeds` iframe sandbox must include `allow-same-origin` and `allow-forms`. `allow-same-origin` is required so the iframe keeps its own origin identity rather than loading as a unique opaque origin. Without it, the SPA cannot use `document.cookie` or storage APIs, and `fetch('/api/...')` on its own backend cannot send the oauth2-proxy session cookie that authenticates the request. `allow-forms` covers SPA form submissions.
 
-In OWUI 0.9.6 these flags are per-user settings with no admin-global override, and both default to `false`, so every new researcher would hit a broken iframe until they toggled the flags manually. To avoid that, report-viewer receives an OWUI signup webhook and seeds the flags on the new user's `settings` row before their first hydrate (see below).
+These flags are per-user settings with no admin-global override (upstream open-webui#18684 unshipped), and both default to `false`, so every new researcher would hit a broken iframe until they toggled the flags manually. Scout forces them on with an OWUI Event function (see below).
 
-### OWUI new-user webhook
+### OWUI iframe-defaults Event function
 
-`POST /webhooks/owui-new-user` receives OWUI's admin signup webhook (configured via OWUI's `WEBHOOK_URL` field on install-chat). On a signup event the receiver sets `iframeSandboxAllowSameOrigin` and `iframeSandboxAllowForms` to `true` on the new user's `settings` row in OWUI's Postgres. The write is idempotent.
+`scout_iframe_defaults_event.py` is an OWUI 0.10 Event function seeded by the open-webui-bootstrap Job (like the filter functions). It forces `iframeSandboxAllowSameOrigin` and `iframeSandboxAllowForms` on via OWUI's own `Users` model, in-process, on two events:
 
-**Why direct DB, not OWUI's HTTP API.** OWUI 0.9.6 has no admin endpoint to write another user's UI settings. Upstream open-webui#20770 would add one, but the contributor said it "probably won't get merged anytime soon." Direct DB is the only path that lands the setting before the user's first page hydrate.
-
-**Postgres role.** The receiver connects as a dedicated `owui_settings_writer` role granted only `SELECT (id, settings)` and `UPDATE (settings)` on `"user"`. The role is provisioned by the `open-webui` Ansible role so it stays in sync with the OWUI database lifecycle. The connection URL is rendered into report-viewer's Helm Secret from inventory vars.
-
-**Trust model.** The receiver has no application-layer authentication. OWUI's `POST /api/webhook` admin endpoint accepts only `{"url": "..."}` with no headers, no signing key, and no caller identity, so no shared-secret or service-principal pattern is wireable on the OWUI side without forking OWUI. Protection is three layers:
-
-1. **Ingress path enumeration.** Only `/api/*` and `/spa/*` are exposed. `/webhooks/*`, `/metrics`, and `/healthz` are not in the Ingress and return 404 externally.
-2. **NetworkPolicy.** In-cluster ingress to port 8000 is restricted to Traefik and OWUI peers, plus Prometheus for scraping. Same precedent as `trino-rw` (ADR 0019), which gates its in-cluster surface without an app-layer credential.
-3. **Operation narrowness.** The receiver sets two boolean UI flags to `true`. The response is 204 whether the user exists, does not exist, or already has the flags set, so there is no oracle to probe and no data leaked. SQL is parameterized.
-
-**OWUI 0.10.x.** OWUI 0.10 upstream reworks the events and webhooks surface. When Scout picks up 0.10, this webhook path is a natural candidate to move onto the new tooling, and the direct-DB write may become unnecessary if the admin settings endpoint from #20770 (or a successor) lands.
+- `user.created` — on new account. Fires on a user's first OAuth login; the OWUI OAuth callback never emits `auth.login`, so `user.created` is the only signal for SSO users.
+- `function.enabled` / `function.updated` (on this function) — sweeps every existing user. Fires when the bootstrap Job re-seeds the function on each deploy, so the backfill runs at deploy time (`user.created` covers new users; there is no per-login OAuth event to lean on). Idempotent: only writes users missing the flags.
 
 ### Observability
 
-Prometheus scrapes `/metrics` via `prometheus-fastapi-instrumentator`, plus domain counters and histograms for search creation, Trino op latency, Postgres op latency, search size, and webhook events. Logs are structured JSON to stdout and picked up by Loki.
+Prometheus scrapes `/metrics` via `prometheus-fastapi-instrumentator`, plus domain counters and histograms for search creation, Trino op latency, Postgres op latency, and search size. Logs are structured JSON to stdout and picked up by Loki.
 
 ## Consequences
 

@@ -11,13 +11,10 @@
       - open_webui_secret_key | length > 0
       - open_webui_bootstrap_password is defined
       - open_webui_bootstrap_password | length > 0
-      - owui_settings_writer_password is defined
-      - owui_settings_writer_password | length > 0
     fail_msg: >
-      open_webui_postgres_password, open_webui_secret_key,
-      open_webui_bootstrap_password, and owui_settings_writer_password
-      are all required. Set them in your inventory.yaml (use vault
-      encryption).
+      open_webui_postgres_password, open_webui_secret_key, and
+      open_webui_bootstrap_password are all required. Set them in your
+      inventory.yaml (use vault encryption).
       Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
@@ -176,54 +173,3 @@
 - name: Bootstrap Open WebUI admin + push declarative config
   ansible.builtin.include_tasks: configure_admin.yaml
   when: open_webui_admin_setup_enabled | bool
-
-# Runs after OWUI boots so the `user` table exists for the column-level GRANT.
-- name: Provision OWUI DB settings writer role
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: execute_sql
-  vars:
-    sql_dbname: '{{ open_webui_database }}'
-    sql_script: |
-      DO $do$ BEGIN
-        CREATE ROLE {{ owui_settings_writer_role }} LOGIN PASSWORD '{{ owui_settings_writer_password }}';
-      EXCEPTION WHEN duplicate_object THEN
-        ALTER ROLE {{ owui_settings_writer_role }} WITH PASSWORD '{{ owui_settings_writer_password }}';
-      END $do$;
-      GRANT CONNECT ON DATABASE {{ open_webui_database }} TO {{ owui_settings_writer_role }};
-      GRANT USAGE ON SCHEMA public TO {{ owui_settings_writer_role }};
-      GRANT SELECT (id, settings), UPDATE (settings) ON "user" TO {{ owui_settings_writer_role }};
-  no_log: true
-
-# Backfill for users who signed up before the report-viewer webhook was wired.
-# OWUI seeds settings to jsonb null (a scalar), which jsonb_set refuses to
-# descend into. Build the new object with `||` merges instead, using CASE
-# to coerce scalar/null settings and scalar/null ui to empty objects.
-- name: Backfill iframeSandbox flags on existing OWUI users
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: execute_sql
-  vars:
-    sql_dbname: '{{ open_webui_database }}'
-    sql_script: |
-      UPDATE "user"
-         SET settings = (
-           (CASE WHEN jsonb_typeof(settings::jsonb) = 'object'
-                 THEN settings::jsonb
-                 ELSE '{}'::jsonb
-            END)
-           || jsonb_build_object(
-             'ui',
-             (CASE WHEN jsonb_typeof(settings::jsonb -> 'ui') = 'object'
-                   THEN settings::jsonb -> 'ui'
-                   ELSE '{}'::jsonb
-              END) || jsonb_build_object(
-               'iframeSandboxAllowSameOrigin', true,
-               'iframeSandboxAllowForms', true
-             )
-           )
-         )::json
-       WHERE settings IS NULL
-          OR jsonb_typeof(settings::jsonb) <> 'object'
-          OR COALESCE(settings::jsonb #>> '{ui,iframeSandboxAllowSameOrigin}', 'false') <> 'true'
-          OR COALESCE(settings::jsonb #>> '{ui,iframeSandboxAllowForms}', 'false') <> 'true';

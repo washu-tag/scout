@@ -6,9 +6,9 @@ import { signInToScout } from '../helpers/scout-auth';
 const hostname = process.env.SCOUT_HOSTNAME!;
 const password = process.env.TEST_USER_PASSWORD!;
 
-// UUID per run: signup webhook only fires on first OAuth login for a given
-// identity, so a static user would silently no-op.
-test('OWUI signup webhook seeds iframeSandbox settings', async ({ page }) => {
+// UUID per run: the iframe-defaults Event function fires on user.created (first
+// OAuth login for a given identity), so a static user would silently no-op.
+test('new users get iframeSandbox settings enabled', async ({ page }) => {
   const username = `iframe-seed-${randomUUID()}`;
 
   const keycloak = new KeycloakAdmin();
