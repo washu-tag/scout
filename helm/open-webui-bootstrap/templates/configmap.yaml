@@ -42,7 +42,7 @@ data:
     {{- end }}
     {{ $filters | toJson }}
 
-  # Event function payloads (OWUI 0.10) — same shape/inlining as filters.
+  # Event function payloads
   events.json: |-
     {{- $events := list -}}
     {{- range $e := .Values.eventFunctions -}}
