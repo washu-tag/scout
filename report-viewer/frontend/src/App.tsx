@@ -7,8 +7,8 @@ function App() {
       <div
         style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
-          color: '#222',
-          background: '#fff',
+          color: 'var(--rv-fg)',
+          background: 'var(--rv-surface)',
           padding: '0.5rem',
           height: '100vh',
           boxSizing: 'border-box',
@@ -25,9 +25,9 @@ function App() {
     <div
       style={{
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
-        color: '#222',
+        color: 'var(--rv-fg)',
         height: '100vh',
-        background: '#fafafa',
+        background: 'var(--rv-bg)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -36,8 +36,8 @@ function App() {
       <header
         style={{
           padding: '0.75rem 1.5rem',
-          background: '#fff',
-          borderBottom: '1px solid #e2e2e2',
+          background: 'var(--rv-surface)',
+          borderBottom: '1px solid var(--rv-border)',
           flex: '0 0 auto',
         }}
       >
