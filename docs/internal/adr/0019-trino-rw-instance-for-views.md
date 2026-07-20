@@ -1,7 +1,7 @@
 # ADR 0019: Read-Write Trino Instance for Transformer-Issued View DDL
 
 **Date**: 2026-05-07
-**Status**: Accepted
+**Status**: Accepted (Open WebUI's Trino consumer, called the "MCP Trino tool" below, is now the report-viewer service per [ADR 0029](0029-report-viewer.md))
 **Decision Owner**: TAG Team
 
 ## Context

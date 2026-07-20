@@ -19,3 +19,4 @@ build/
 zap/*.json
 .playwright-mcp/
 .claude
+report-viewer/src/scout_report_viewer/static/

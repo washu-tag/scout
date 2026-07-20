@@ -37,6 +37,7 @@ jobs:
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
+      report-viewer: ${{ steps.filter.outputs.report-viewer }}
       xnat-plugin-installer: ${{ steps.filter.outputs.xnat-plugin-installer }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -63,6 +64,8 @@ jobs:
               - 'helm/superset/**'
             keycloak:
               - 'keycloak/**'
+            report-viewer:
+              - 'report-viewer/**'
             xnat-plugin-installer:
               - 'docker/xnat-plugin-installer/**'
   lint:
@@ -114,6 +117,8 @@ jobs:
           - image-name: xnat-plugin-installer
             subproject: docker/xnat-plugin-installer
             allow-failure: true
+          - image-name: report-viewer
+            subproject: report-viewer
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: 'Check if image exists'
@@ -178,6 +183,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: report_viewer_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -192,12 +210,22 @@ jobs:
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v
-      - name: 'Unit tests: Open WebUI context summarization filter'
+      - name: 'Unit tests: Open WebUI iframe-defaults event function'
         shell: bash
-        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_context_summarization_filter.py -v
-      - name: 'Unit tests: Open WebUI tool result attribute migrator filter'
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_scout_iframe_defaults_event.py -v
+      - name: 'Unit tests: report-viewer'
         shell: bash
-        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_tool_result_attr_filter.py -v
+        env:
+          REPORT_VIEWER_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/report_viewer_test
+        run: cd report-viewer && pip install -e '.[dev]' && pytest -v
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: report-viewer/frontend/package-lock.json
+      - name: 'Frontend build: report-viewer SPA'
+        shell: bash
+        run: cd report-viewer/frontend && npm ci && npm run build
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v
@@ -423,16 +451,16 @@ jobs:
       matrix:
         include:
           - side: analytics
-            subdomains: superset,chat,keycloak,auth,minio
+            subdomains: superset,chat,keycloak,auth,minio,report-viewer
             san_extra: ''
-            playbooks: k3s traefik postgres valkey auth lake trino superset chatbot launchpad
-            netpol_include: '--include trino-rw,opa-trino,mcp-trino-ingress'
+            playbooks: k3s traefik postgres valkey auth lake trino superset chatbot report-viewer launchpad
+            netpol_include: '--include trino-rw,opa-trino,report-viewer-ingress'
           - side: notebooks
             # testuser.jupyter is the per-user singleuser pod ingress
             subdomains: jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
             san_extra: ',DNS:*.jupyter.scout.test'
             playbooks: k3s traefik postgres valkey auth lake trino voila jupyter monitor launchpad
-            netpol_include: ''
+            netpol_include: '--include trino-rw,opa-trino,voila-ingress'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: 'Free up disk space'
@@ -518,6 +546,12 @@ jobs:
         with:
           subproject: helm/superset
           image-name: superset
+      - name: 'Push image to k3s - report-viewer'
+        if: matrix.side == 'analytics'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: report-viewer
+          image-name: report-viewer
       # hl7-transformer image is needed by the data-authorization seed
       # Job (writes the synthetic test_reports Delta table via PySpark
       # + Hive-Metastore-registered saveAsTable). The transformer
@@ -560,8 +594,8 @@ jobs:
           sudo -E kubectl rollout status deployment/trino-coordinator -n scout-analytics --timeout=180s
           sudo -E kubectl rollout status deployment/trino-worker -n scout-analytics --timeout=180s
           if [ "$SIDE" = "analytics" ]; then
-            echo "=== Checking MCP Trino ==="
-            sudo -E kubectl rollout status deployment/mcp-trino -n scout-analytics --timeout=180s
+            echo "=== Checking Report Viewer ==="
+            sudo -E kubectl rollout status deployment/report-viewer -n scout-analytics --timeout=180s
           fi
           if [ "$SIDE" = "notebooks" ]; then
             echo "=== Checking Voila ==="
@@ -643,7 +677,7 @@ jobs:
           set -euo pipefail
           KC_ADMIN_PW=$(yq '.k3s_cluster.vars.keycloak_bootstrap_admin_password' ansible/inventory.yaml)
           SUPERSET_SVC_SECRET=$(yq '.k3s_cluster.vars.keycloak_superset_svc_client_secret' ansible/inventory.yaml)
-          MCP_SVC_PW=$(yq '.k3s_cluster.vars.trino_openwebui_mcp_svc_password' ansible/inventory.yaml)
+          REPORT_VIEWER_SVC_SECRET=$(yq '.k3s_cluster.vars.keycloak_report_viewer_svc_client_secret' ansible/inventory.yaml)
 
           # Script in a ConfigMap (kubectl handles file content
           # correctly), secrets in a Secret. The Job manifest
@@ -657,7 +691,7 @@ jobs:
             -n scout-analytics \
             --from-literal=KC_ADMIN_PASSWORD="$KC_ADMIN_PW" \
             --from-literal=SUPERSET_SVC_CLIENT_SECRET="$SUPERSET_SVC_SECRET" \
-            --from-literal=MCP_SVC_PASSWORD="$MCP_SVC_PW" \
+            --from-literal=REPORT_VIEWER_SVC_CLIENT_SECRET="$REPORT_VIEWER_SVC_SECRET" \
             --dry-run=client -o yaml | sudo -E kubectl apply -f -
 
           sudo -E kubectl apply -f tests/data-authorization/authz-tests/job.yaml
@@ -677,6 +711,30 @@ jobs:
         env:
           SUBDOMAINS: ${{ matrix.subdomains }}
         run: bash tests/auth/auth-curl-tests.sh scout.test --include "$SUBDOMAINS"
+      - name: 'Auth playwright tests: OWUI iframe defaults'
+        if: matrix.side == 'analytics'
+        shell: bash
+        working-directory: tests/auth
+        env:
+          SCOUT_HOSTNAME: scout.test
+          KEYCLOAK_ADMIN_USER: admin
+          NODE_EXTRA_CA_CERTS: /tmp/scout-ci-tls/cert.pem
+          PLAYWRIGHT_IGNORE_HTTPS_ERRORS: 'true'
+          UNAUTHORIZED_USER_USERNAME: scout-unauthorized-ci-user
+          AUTHORIZED_USER_USERNAME: scout-authorized-ci-user
+          TEST_USER_PASSWORD: ci-test-user-password-1234
+        run: |
+          set -euo pipefail
+          export KEYCLOAK_ADMIN_PASSWORD=$(yq '.k3s_cluster.vars.keycloak_bootstrap_admin_password' ../../ansible/inventory.yaml)
+          npm ci
+          npx playwright test owui-iframe-seed.spec.ts
+      - name: 'Auth playwright report'
+        if: ${{ failure() && matrix.side == 'analytics' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-report-${{ matrix.side }}
+          path: tests/auth/playwright-report/
+          retention-days: 7
       # NetworkPolicy tests. Analytics filters to trino-rw (voila isn't
       # deployed there, so the Traefik→voila allow-path test would 000
       # on a missing Service). Notebooks runs the full suite.
@@ -774,6 +832,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
+      - name: 'Push Image - report-viewer'
+        if: needs.changes.outputs.report-viewer == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: report-viewer
       - name: 'Push Image - xnat-plugin-installer'
         if: needs.changes.outputs.xnat-plugin-installer == 'true'
         uses: ./.github/actions/docker-push
@@ -849,6 +912,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
+      - name: 'Push Image - report-viewer'
+        if: needs.changes.outputs.report-viewer == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: report-viewer
       - name: 'Push Image - xnat-plugin-installer'
         if: needs.changes.outputs.xnat-plugin-installer == 'true'
         uses: ./.github/actions/docker-push

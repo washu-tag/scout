@@ -17,7 +17,8 @@ export default defineConfig({
   globalTeardown: './setup/global-teardown.ts',
 
   use: {
-    ignoreHTTPSErrors: false,
+    // Chromium doesn't honor NODE_EXTRA_CA_CERTS, so CI opts in via env.
+    ignoreHTTPSErrors: process.env.PLAYWRIGHT_IGNORE_HTTPS_ERRORS === 'true',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },

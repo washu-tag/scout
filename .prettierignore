@@ -1,2 +1,5 @@
 helm/**/*.yaml
 !helm/**/*values.yaml
+report-viewer/**/static/assets/**
+report-viewer/**/dist/**
+report-viewer/**/build/**

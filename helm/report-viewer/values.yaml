@@ -1,0 +1,102 @@
+# Default values for report-viewer.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/washu-tag/report-viewer
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+
+serviceAccount:
+  create: true
+  automount: false
+  annotations: {}
+  name: ''
+
+podAnnotations: {}
+podLabels: {}
+
+# K8s "restricted" Pod Security Standard. UID/GID must match the
+# searchs user in report-viewer/Dockerfile.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations: {}
+  host: ''
+  tls: []
+
+# Defence-in-depth only: the bearer path is cryptographic and the header path
+# is gated by gatewaySecret, so this just narrows who can reach the service.
+networkPolicy:
+  enabled: true
+  traefikNamespace: kube-system
+  # Optional additional pod selectors that may reach the service on
+  # service.port - e.g. the OWUI tool pod once it talks to us directly.
+  # Each entry becomes one `from:` block in the NetworkPolicy.
+  extraFrom: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 2
+    memory: 4Gi
+
+# Env vars injected as REPORT_VIEWER_* - see scout_report_viewer.config.Settings.
+# Populated by the Ansible role's values.yaml.j2 in production.
+env: {}
+
+# Optional envFrom, appended verbatim to the container's envFrom list.
+envFrom: []
+
+# Map of envVarName -> {secretName, key, optional} rendered as
+# valueFrom.secretKeyRef entries on the main container.
+secretEnv: {}
+
+# REPORT_VIEWER_DATABASE_URL is sensitive; chart can render a Secret from this
+# value, or leave empty to let the role manage the Secret externally.
+databaseUrl: ''
+
+# Trino CA cert (PEM). When set, the chart renders a Secret and mounts it
+# at /etc/trino-ca/ca.crt so the service can verify HTTPS Trino.
+trinoCaCert: ''
+
+# report_viewer_svc client_secret for outbound Trino auth (ADR 0022).
+trinoAuthClientSecret: ''
+
+# Shared secret Traefik injects as X-Report-Viewer-Gateway; gates the header
+# path. Rendered into both the Secret and the gateway Middleware.
+gatewaySecret: ''
+
+# Extra CA bundle mounted into the main container for outbound HTTPS
+# (Trino, Keycloak, anything behind the staging cert).
+trustedCaSecret:
+  name: ''
+  key: 'ca.crt'
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

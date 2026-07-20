@@ -102,7 +102,7 @@ final class BundleAssembler {
             // user-defined AuthZ attributes). Anything starting with "kc."
             // is also internal. The rego policy only reads the explicitly
             // configured attribute names from data.attribute_filters and
-            // mask_phi_fields, so over-including is harmless but bloats
+            // redact_select_identifiers, so over-including is harmless but bloats
             // the bundle unnecessarily for every user.
             for (Map.Entry<String, List<String>> e : attributes.entrySet()) {
                 String key = e.getKey();

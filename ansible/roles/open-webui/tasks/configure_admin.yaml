@@ -64,6 +64,8 @@
         default_model_id: '{{ open_webui_default_model_id | default("") }}'
         task_model_id: '{{ open_webui_task_model_id | default("") }}'
       filterFunctions: '{{ open_webui_filter_functions | default([]) }}'
+      eventFunctions: '{{ open_webui_event_functions | default([]) }}'
+      toolFunctions: '{{ open_webui_tool_functions | default([]) }}'
       scoutModels: '{{ scout_models | default([]) }}'
       scoutDefaults:
         systemPromptFile: '{{ open_webui_scout_system_prompt_file }}'

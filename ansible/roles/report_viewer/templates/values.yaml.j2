@@ -1,0 +1,71 @@
+# Report-viewer service Helm values - rendered from Ansible
+replicaCount: {{ report_viewer_replicas }}
+
+image:
+  repository: "{{ report_viewer_image_repository }}"
+  tag: "{{ report_viewer_image_tag }}"
+
+resources: {{ report_viewer_resources_default | combine(report_viewer_resources | default({}), recursive=true) | to_json }}
+
+env:
+  REPORT_VIEWER_EXTERNAL_URL: "https://{{ report_viewer_host }}"
+  REPORT_VIEWER_CHAT_ORIGIN: "{{ report_viewer_chat_origin }}"
+  # Trino service + principal impersonation (ADR 0022).
+  REPORT_VIEWER_TRINO_HOST: "{{ report_viewer_trino_host }}"
+  REPORT_VIEWER_TRINO_PORT: "{{ report_viewer_trino_port }}"
+  REPORT_VIEWER_TRINO_SCHEME: "{{ report_viewer_trino_scheme }}"
+  REPORT_VIEWER_TRINO_CATALOG: "{{ report_viewer_trino_catalog }}"
+  REPORT_VIEWER_TRINO_SCHEMA: "{{ report_viewer_trino_schema }}"
+  REPORT_VIEWER_TRINO_AUTH_TOKEN_URL: "{{ report_viewer_trino_auth_token_url }}"
+  REPORT_VIEWER_TRINO_AUTH_CLIENT_ID: "{{ report_viewer_trino_auth_client_id }}"
+  # OIDC for inbound JWT validation. Internal JWKS URL bypasses Traefik +
+  # external cert; issuer must match the JWT.
+  REPORT_VIEWER_OIDC_ISSUER: "{{ keycloak_realm_url }}"
+  REPORT_VIEWER_OIDC_JWKS_URL: "{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs"
+
+databaseUrl: "postgresql://{{ report_viewer_db_user }}:{{ report_viewer_db_password }}@{{ db_host }}:{{ db_port }}/{{ report_viewer_database }}"
+
+trinoAuthClientSecret: "{{ report_viewer_trino_auth_client_secret }}"
+
+gatewaySecret: "{{ report_viewer_gateway_secret }}"
+
+{% if report_viewer_trino_ca_cert | length > 0 %}
+trinoCaCert: |
+{{ report_viewer_trino_ca_cert | indent(2, true) }}
+{% endif %}
+
+# Trino is HTTPS-only (ADR 0022); mount the cert-manager-managed
+# trino-tls Secret directly. Same pattern as superset, jupyter, voila.
+# Same namespace as Trino (scout-analytics), so kubelet picks up CA
+# rotations on the next pod start without any Ansible loop.
+trustedCaSecret:
+  name: trino-tls
+  key: ca.crt
+
+networkPolicy:
+  enabled: true
+  traefikNamespace: "{{ traefik_namespace }}"
+  extraFrom:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: open-webui
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: '{{ prometheus_namespace }}'
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+          app.kubernetes.io/component: server
+
+ingress:
+  enabled: true
+  className: traefik
+  # embeddable-security-headers replaces the global security-headers so
+  # the chat can iframe the report viewer.
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd,
+      kube-system-embeddable-security-headers@kubernetescrd,
+      {{ report_viewer_namespace }}-{{ report_viewer_helm_release_name }}-gateway@kubernetescrd
+  host: "{{ report_viewer_host }}"

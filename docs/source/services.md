@@ -41,7 +41,7 @@ Under the hood, Superset queries the data lake using [Trino](https://trino.io/),
 
 The Chat service is configured with:
 - **Natural language SQL**: Automatically converts your questions into SQL queries
-- **Trino MCP integration**: Direct access to the Delta Lake for real-time data retrieval
+- **Report-viewer tools**: Queries Trino through Scout's report-viewer service; cohort searches render inline as a sortable, filterable, CSV-exportable table
 - **Context-aware responses**: The AI understands the Scout data schema and can provide detailed analyses
 
 **Example queries** (for radiology reports in the current version):

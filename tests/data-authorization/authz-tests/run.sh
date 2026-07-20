@@ -40,10 +40,10 @@
 #      -> COUNT(*) = 2                     (intersection)
 #   4. allowed_facilities=[]  (unset)
 #      -> rowFilters emits 1=0 -> COUNT(*) = 0
-#   5. mask_phi_fields=["true"], allowed_facilities=["*"]
+#   5. redact_select_identifiers=["true"], allowed_facilities=["*"]
 #      -> patient_name & zip = '[REDACTED]' (varchar); full_patient_name
 #         = NULL (non-varchar) -- type-aware mask
-#   5b. mask_phi_fields=["false"]
+#   5b. redact_select_identifiers=["false"]
 #      -> real values returned (masking is conditional, not unconditional)
 #   6. SELECT * FROM reports_report_patient_mapping (no bypass)
 #      -> 403 / permission denied
@@ -54,10 +54,10 @@
 #      -> any SELECT denied at /allow
 #   9. not in scout-user group
 #      -> any SELECT denied at /allow
-#   10. PASSWORD auth + X-Trino-User impersonation (PR6, optional —
-#       requires MCP_SVC_PASSWORD env)
-#      -> COUNT(*) FROM test_reports = 3   (same as scenario 1 but
-#         exercising HTTP Basic instead of Bearer JWT)
+#   10. report_viewer_svc JWT + X-Trino-User impersonation
+#      -> COUNT(*) FROM test_reports = 3   (same shape as scenario 1
+#         but proves the report_viewer_svc client has the right
+#         Keycloak scopes and OPA impersonation grant)
 
 set -euo pipefail
 
@@ -67,6 +67,8 @@ KC_ADMIN_USERNAME=${KC_ADMIN_USERNAME:-admin}
 KC_ADMIN_PASSWORD=${KC_ADMIN_PASSWORD:?missing}
 SUPERSET_SVC_CLIENT_ID=${SUPERSET_SVC_CLIENT_ID:-superset_svc}
 SUPERSET_SVC_CLIENT_SECRET=${SUPERSET_SVC_CLIENT_SECRET:?missing}
+REPORT_VIEWER_SVC_CLIENT_ID=${REPORT_VIEWER_SVC_CLIENT_ID:-report_viewer_svc}
+REPORT_VIEWER_SVC_CLIENT_SECRET=${REPORT_VIEWER_SVC_CLIENT_SECRET:?missing}
 OPA_URL=${OPA_URL:-http://opa-trino.scout-analytics:8181}
 TRINO_URL=${TRINO_URL:-https://trino.scout-analytics:8443}
 TEST_USER=${TEST_USER:-authz-ci-user}
@@ -114,23 +116,39 @@ get_admin_token() {
     echo "$ADMIN_TOKEN"
 }
 
-# Get a superset_svc client_credentials token. This is the service-
-# principal JWT Trino accepts; X-Trino-User then names the impersonated
-# end-user for OPA decisions.
+# Client_credentials -> access_token. Wrappers below cache per
+# service principal for the script's lifetime.
+_get_svc_token() {
+    local client_id=$1 client_secret=$2
+    curl -fsS -X POST \
+        "$KC_URL/realms/$KC_REALM/protocol/openid-connect/token" \
+        -d "grant_type=client_credentials" \
+        -d "client_id=$client_id" \
+        --data-urlencode "client_secret=$client_secret" \
+        | jq -r .access_token
+}
+
 get_svc_token() {
     if [[ -z "${SVC_TOKEN:-}" ]]; then
-        SVC_TOKEN=$(curl -fsS -X POST \
-            "$KC_URL/realms/$KC_REALM/protocol/openid-connect/token" \
-            -d "grant_type=client_credentials" \
-            -d "client_id=$SUPERSET_SVC_CLIENT_ID" \
-            --data-urlencode "client_secret=$SUPERSET_SVC_CLIENT_SECRET" \
-            | jq -r .access_token)
+        SVC_TOKEN=$(_get_svc_token "$SUPERSET_SVC_CLIENT_ID" "$SUPERSET_SVC_CLIENT_SECRET")
         if [[ -z "$SVC_TOKEN" || "$SVC_TOKEN" == "null" ]]; then
             log "FATAL: could not obtain superset_svc token"
             exit 2
         fi
     fi
     echo "$SVC_TOKEN"
+}
+
+get_report_viewer_svc_token() {
+    if [[ -z "${REPORT_VIEWER_SVC_TOKEN:-}" ]]; then
+        REPORT_VIEWER_SVC_TOKEN=$(_get_svc_token \
+            "$REPORT_VIEWER_SVC_CLIENT_ID" "$REPORT_VIEWER_SVC_CLIENT_SECRET")
+        if [[ -z "$REPORT_VIEWER_SVC_TOKEN" || "$REPORT_VIEWER_SVC_TOKEN" == "null" ]]; then
+            log "FATAL: could not obtain report_viewer_svc token"
+            exit 2
+        fi
+    fi
+    echo "$REPORT_VIEWER_SVC_TOKEN"
 }
 
 # ---------------------------------------------------------------------------
@@ -296,13 +314,13 @@ trino_query() {
     _trino_run "$sql" "$user" -H "Authorization: Bearer $token"
 }
 
-# Submit via HTTP Basic against Trino's PASSWORD authenticator (ADR 0022) —
-# the path mcp-trino uses against the dual-auth listener (its outbound is
-# HTTP-Basic-only). Exercises the PASSWORD path end to end: bcrypt match in
-# password.db, OPA impersonation allow, row filter, Delta connector.
-trino_query_via_password() {
+# Same JWT + X-Trino-User pattern as trino_query, but authenticated
+# as report_viewer_svc.
+trino_query_via_report_viewer_svc() {
     local sql=$1 user=$2
-    _trino_run "$sql" "$user" -u "openwebui_mcp_svc:$MCP_SVC_PASSWORD"
+    local token
+    token=$(get_report_viewer_svc_token)
+    _trino_run "$sql" "$user" -H "Authorization: Bearer $token"
 }
 
 # Variant that expects the query to fail (deny). Returns 0 if Trino
@@ -453,10 +471,10 @@ if [[ "$count" == "0" ]]; then ok "row count=0 (1=0 clamp)"; else fail "expected
 # --- Scenario 5: PHI masking ON ---------------------------------------------
 # Type-aware mask (ADR 0020): varchar PHI -> literal '[REDACTED]'; non-varchar
 # PHI (full_patient_name struct) -> NULL. All three columns are in
-# trino_masked_columns, so all three must mask under mask_phi_fields=true.
-log "scenario 5: mask_phi_fields=true -> PHI columns masked"
-set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"mask_phi_fields":["true"]}'
-wait_for_bundle '.result.mask_phi_fields[0] == "true"' "$PROPAGATION_TIMEOUT"
+# trino_masked_columns, so all three must mask under redact_select_identifiers=true.
+log "scenario 5: redact_select_identifiers=true -> PHI columns masked"
+set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"redact_select_identifiers":["true"]}'
+wait_for_bundle '.result.redact_select_identifiers[0] == "true"' "$PROPAGATION_TIMEOUT"
 row=$(trino_query "SELECT patient_name, zip_or_postal_code, full_patient_name FROM test_reports ORDER BY patient_name LIMIT 1" "$TEST_USER")
 m_name=$(echo "$row" | jq -r '.[0][0]')
 m_zip=$(echo "$row" | jq -r '.[0][1]')
@@ -466,13 +484,13 @@ if [[ "$m_zip" == "[REDACTED]" ]]; then ok "zip_or_postal_code=[REDACTED] (varch
 if [[ "$m_struct" == "null" ]]; then ok "full_patient_name=NULL (non-varchar mask)"; else fail "expected NULL struct, got: $m_struct"; fi
 
 # --- Scenario 5b: PHI masking OFF (counter-assertion) -----------------------
-# Proves masking is *conditional*, not unconditional: with mask_phi_fields
+# Proves masking is *conditional*, not unconditional: with redact_select_identifiers
 # explicitly "false" the real values come back. Without this, a policy that
 # redacted these columns for everyone would pass scenario 5 just as well.
 # ORDER BY pins a deterministic row (Alice Anderson) under the wildcard filter.
-log "scenario 5b: mask_phi_fields=false -> real PHI values returned"
-set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"mask_phi_fields":["false"]}'
-wait_for_bundle '.result.mask_phi_fields[0] == "false"' "$PROPAGATION_TIMEOUT"
+log "scenario 5b: redact_select_identifiers=false -> real PHI values returned"
+set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"redact_select_identifiers":["false"]}'
+wait_for_bundle '.result.redact_select_identifiers[0] == "false"' "$PROPAGATION_TIMEOUT"
 row=$(trino_query "SELECT patient_name, zip_or_postal_code FROM test_reports ORDER BY patient_name LIMIT 1" "$TEST_USER")
 real_name=$(echo "$row" | jq -r '.[0][0]')
 real_zip=$(echo "$row" | jq -r '.[0][1]')
@@ -538,24 +556,15 @@ fi
 # instance start from a clean state.
 add_user_to_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
 
-# --- Scenario 10: PASSWORD auth + impersonation (PR6) -----------------------
-# Exercises the dual-auth listener's PASSWORD path that mcp-trino uses
-# (HTTP Basic + X-Trino-User), end to end: bcrypt match in password.db,
-# OPA permits openwebui_mcp_svc to impersonate, row filter applies.
-# Skipped if MCP_SVC_PASSWORD isn't injected (deploys without the
-# password-authenticator Secret task running, e.g. trino role pre-PR6).
-if [[ -n "${MCP_SVC_PASSWORD:-}" ]]; then
-    log "scenario 10: PASSWORD-auth + X-Trino-User -> 3 ABCHOSP1 rows"
-    set_user_state "$USER_ID" true '{"allowed_facilities":["ABCHOSP1"],"allowed_modalities":["*"]}'
-    wait_for_bundle '.result.allowed_facilities[0] == "ABCHOSP1"' "$PROPAGATION_TIMEOUT"
-    count=$(trino_query_via_password "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
-    if [[ "$count" == "3" ]]; then
-        ok "PASSWORD+impersonation: row filter sees 3 ABCHOSP1 rows"
-    else
-        fail "PASSWORD+impersonation expected 3 rows, got $count"
-    fi
+# --- Scenario 10: report_viewer_svc JWT + impersonation --------------------
+log "scenario 10: report_viewer_svc JWT + X-Trino-User -> 3 ABCHOSP1 rows"
+set_user_state "$USER_ID" true '{"allowed_facilities":["ABCHOSP1"],"allowed_modalities":["*"]}'
+wait_for_bundle '.result.allowed_facilities[0] == "ABCHOSP1"' "$PROPAGATION_TIMEOUT"
+count=$(trino_query_via_report_viewer_svc "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
+if [[ "$count" == "3" ]]; then
+    ok "report_viewer_svc+impersonation: row filter sees 3 ABCHOSP1 rows"
 else
-    log "scenario 10 skipped: MCP_SVC_PASSWORD not set"
+    fail "report_viewer_svc+impersonation expected 3 rows, got $count"
 fi
 
 # ---------------------------------------------------------------------------

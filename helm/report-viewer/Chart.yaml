@@ -1,0 +1,9 @@
+apiVersion: v2
+name: report-viewer
+description: Scout report-viewer service - surfaces saved searches outside Open WebUI
+
+type: application
+
+version: 0.0.0-dev
+
+appVersion: "latest"

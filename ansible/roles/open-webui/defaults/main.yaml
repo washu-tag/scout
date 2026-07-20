@@ -78,6 +78,7 @@ scout_models:
     ui:
       name: 'Scout Explorer (GPT-OSS 120B)'
       description: 'Largest alternative. Broadest medical knowledge — pick for nuanced free-text searches or edge cases the recommended model misses. Slower first response.'
+      compact_token_threshold: 100000 # 128K window: compact below the global 200K
 scout_model_create: true # Set to false to skip Scout model creation entirely
 
 # List of additional Ollama models to pull (see https://ollama.com/library)
@@ -87,8 +88,11 @@ ollama_models: []
 open_webui_storage_size: 2Gi
 open_webui_storage_class: ''
 
+# On envs where Traefik serves a self-signed cert (CI), OWUI needs to trust
+# it to reach Keycloak over HTTPS. Off on envs with public certs.
+open_webui_trust_traefik_ca: false
+
 # PostgreSQL configuration
-open_webui_database: openwebui
 open_webui_postgres_user: openwebui
 # REQUIRED: Must be set in inventory.yaml (use vault encryption)
 # Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
@@ -172,50 +176,8 @@ open_webui_csp_enabled: true
 # OAuth fields are env-only (ENABLE_OAUTH_PERSISTENT_CONFIG=false skips
 # loading them from the config table).
 
-# Trino MCP tool server — registered automatically as an Open WebUI external tool
-# so users don't have to add it via Admin → Settings → Integrations.
-# Override `tool_server_connections: []` to skip registration (e.g., environments
-# without MCP Trino deployed).
-mcp_trino_url: 'http://mcp-trino.{{ scout_analytics_namespace }}:8080/mcp'
-mcp_trino_tool_id: 'scout-db'
-tool_server_connections:
-  - type: mcp # OWUI defaults to 'openapi'; MCP servers must declare explicitly
-    url: '{{ mcp_trino_url }}'
-    # `path`, `key`, `auth_type`, and `config` are all REQUIRED dict keys on
-    # OWUI's ToolServerConnection Pydantic model (Optional[X] without default
-    # = required-but-nullable in Pydantic v2). Missing any of them causes
-    # GET /api/v1/configs/tool_servers to return 500 because the response
-    # serializer validates against the model — that breaks the admin
-    # Integrations page. The runtime hot path uses .get() with defaults so
-    # the MCP tool itself works regardless, but the admin UI doesn't.
-    path: '' # openapi-spec path; meaningless for MCP but required by the model
-    key: null # API key for openapi/oauth tool servers; null for MCP-anonymous
-    # system_oauth forwards the logged-in user's Keycloak access token as
-    # `Authorization: Bearer <token>` on every MCP call. mcp-trino validates
-    # the token, extracts preferred_username, and sets X-Trino-User on the
-    # outbound Trino call (TRINO_ENABLE_IMPERSONATION=true). Requires users
-    # to authenticate via OAuth (OWUI's OIDC login flow); locally-authed
-    # users have no IdP token to forward and the Authorization header is
-    # silently omitted.
-    auth_type: system_oauth
-    config:
-      enable: true
-      # OWUI's has_connection_access() treats a tool server with missing/empty
-      # config.access_grants as private (admin-only): admins bypass the check,
-      # but non-admin users are denied, so the Trino MCP tool is invisible to
-      # regular users even though it's attached to the public Scout Explorer
-      # models. This public-read grant (same wildcard shape the models use)
-      # makes the connection available to all authenticated users; per-user
-      # data security is still enforced at Trino via the forwarded token
-      # (OPA row filters / column masks, ADR 0020/0022).
-      access_grants:
-        - principal_type: user
-          principal_id: '*'
-          permission: read
-    info:
-      id: '{{ mcp_trino_tool_id }}' # Referenced from models as `server:mcp:{id}`
-      name: 'Trino MCP'
-      description: 'Query Scout Delta Lake with Trino'
+# No external tool servers registered by default.
+tool_server_connections: []
 
 # Disable Arena Model evaluation feature (per README post-deploy step 7)
 open_webui_enable_arena_models: false
@@ -271,6 +233,10 @@ open_webui_admin_setup_enabled: true
 # are stripped to prevent PHI exfiltration via clicked links. See ADR 0010.
 open_webui_link_sanitizer_internal_domains: '{{ server_hostname }}'
 
+# Default OWUI native context compaction, seeded via env in values.yaml.j2.
+open_webui_context_compaction_enabled: true
+open_webui_context_compaction_token_threshold: 200000
+
 # Filter functions seeded into Open WebUI on every deploy. Each entry maps to
 # one Function in OWUI Admin → Functions. The role reads `source_file` from
 # its files/ directory, creates/updates the function, sets valves, and
@@ -288,33 +254,22 @@ open_webui_filter_functions:
     enable_active: true
     valves:
       internal_domains: '{{ open_webui_link_sanitizer_internal_domains }}'
-  - id: context_summarization_filter
-    name: Context Summarization Filter
-    description: Summarizes older conversation history when approaching context limits (ADR 0014).
-    source_file: context_summarization_filter.py
-    enable_global: true
+
+open_webui_event_functions:
+  - id: scout_iframe_defaults_event
+    name: Scout Iframe Defaults
+    description: Forces the report-viewer iframe-sandbox UI flags on for every user (ADR 0029).
+    source_file: scout_iframe_defaults_event.py
     enable_active: true
+
+open_webui_tool_functions:
+  - id: scout_report_viewer_tool
+    name: Scout Report Viewer Tool
+    description: Search for radiology reports in Scout's Delta Lake and view results in an embedded iframe.
+    source_file: scout_report_viewer_tool.py
     valves:
-      token_threshold: 100000
-      messages_to_keep: 10
-      min_messages_to_keep: 2
-      tool_result_token_threshold: 500
-      ollama_url: 'http://ollama:11434'
-      summarizer_model: ''
-  # Diagnostic workaround for OWUI 0.9.5: the new body-content path for tool
-  # results doesn't render in the chat UI's Output panel even though the body
-  # is in storage. This filter rewrites the body back to a `result="..."`
-  # attribute on the opening <details> tag, hitting ToolCallDisplay.svelte's
-  # legacy fallback (`decode(attributes?.result ?? '')`). Remove or set
-  # `enable_active: false` once the upstream display bug is fixed.
-  - id: tool_result_attr_filter
-    name: Tool Result Body→Attribute Migrator
-    description: Diagnostic — rewrites OWUI 0.9.5 tool_calls body-content back to legacy result="..." attribute.
-    source_file: tool_result_attr_filter.py
-    enable_global: true
-    enable_active: true
-    valves:
-      debug_logging: false
+      report_viewer_internal_url: 'http://report-viewer.{{ report_viewer_namespace | default(chatbot_namespace) }}:8000'
+      request_timeout_seconds: 120
 
 # ----------------------------------------------------------------------------
 # Scout Explorer custom model UI config
@@ -329,7 +284,7 @@ open_webui_filter_functions:
 # name / advanced params).
 open_webui_scout_system_prompt_file: scout-system-prompt.md
 open_webui_scout_tool_ids:
-  - 'server:mcp:{{ mcp_trino_tool_id }}'
+  - scout_report_viewer_tool
 open_webui_scout_default_reasoning_effort: high
 open_webui_scout_default_function_calling: native
 # keep_alive defaults are derived from each scout_models entry's `preload`:

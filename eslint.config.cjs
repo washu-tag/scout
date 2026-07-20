@@ -12,6 +12,14 @@ const compat = new FlatCompat({
 });
 
 module.exports = tseslint.config(
+  {
+    ignores: [
+      "**/static/assets/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/node_modules/**",
+    ],
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   ...compat.extends("next/core-web-vitals"),

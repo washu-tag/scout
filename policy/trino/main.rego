@@ -7,7 +7,7 @@ package trino
 #   POST /v1/data/trino/rowFilters        -> [{expression}]  (WHERE clauses AND-merged)
 #   POST /v1/data/trino/batchColumnMasks  -> [{index, viewExpression}]  (per-column mask)
 #
-# Per-user attributes (`allowed_facilities`, `mask_phi_fields`, ...) live in
+# Per-user attributes (`allowed_facilities`, `redact_select_identifiers`, ...) live in
 # OPA's data document under `data.users.<username>`, populated by an OPA
 # bundle that the Keycloak SPI listener publishes to MinIO (see ADR 0021).
 # OPA's bundle plugin pulls every 5–10s, so a Keycloak change converges to
@@ -17,10 +17,13 @@ package trino
 # Data document (rendered by the opa Ansible role from inventory + bundle):
 #   data.filtered_tables       : [{catalog, schema, table|table_prefix}]
 #                                                                # static (inventory)
+#   data.baseline_hidden_tables : [{catalog, schema, table|table_prefix}]
+#                                # patient-mapping pair, derived by the opa
+#                                # role from report_delta_table_name; the
+#                                # rego falls back to the stock `reports`
+#                                # names below if this key is absent/empty
 #   data.hidden_tables      : [{catalog, schema, table|table_prefix}]
-#                                # site-specific additions only (inventory);
-#                                # baseline patient-mapping entries are
-#                                # hardcoded below in `baseline_hidden_tables`
+#                                # site-specific additions only (inventory)
 #   data.view_owner_principals : [identity_name]                 # static (inventory)
 #   data.attribute_filters     : {<attr_name>: {column, tables?}} # static (inventory)
 #   data.masked_columns        : [column_name]                   # static (inventory)
@@ -29,7 +32,7 @@ package trino
 #                                  "groups": [group_name, ...],
 #                                  "allowed_facilities": [...],
 #                                  "allowed_modalities": [...],
-#                                  "mask_phi_fields": ["true"|"false"],
+#                                  "redact_select_identifiers": ["true"|"false"],
 #                                  ...
 #                                }                               # bundled (Keycloak)
 # Table-list entries support two shapes — exact `table` match or
@@ -64,14 +67,14 @@ user_attrs := attrs if {
 # Two identity classes don't go through Keycloak's user-attribute store:
 #   * View-owner principals (`trino`, used by hl7-transformer for DEFINER
 #     views) — see the `is_view_owner` carve-out in row filters / masks.
-#   * Impersonation service principals (`superset_svc`, `openwebui_mcp_svc`,
-#     `voila_svc`) — only ever issue ImpersonateUser; the impersonated
-#     end-user is what subsequent /allow calls evaluate.
+#   * Impersonation service principals (`superset_svc`, `voila_svc`,
+#     `report_viewer_svc`). These only ever issue ImpersonateUser; the
+#     impersonated end-user is what subsequent /allow calls evaluate.
 # These don't appear in the bundle. Gating /allow on `user_attrs.enabled`
 # without a carve-out would deny their queries entirely, so they get an
 # explicit exemption from the enabled check.
 
-trino_service_principals := {"superset_svc", "openwebui_mcp_svc", "voila_svc"}
+trino_service_principals := {"superset_svc", "voila_svc", "report_viewer_svc"}
 
 is_system_identity if input.context.identity.user in view_owner_principals_set
 
@@ -198,7 +201,7 @@ allow if {
 # ImpersonateUser: only the configured Trino service principals may set
 # X-Trino-User to override the effective query identity. End users connecting
 # directly via JWT (Jupyter) cannot impersonate; only the impersonation-pattern
-# clients (Superset, Open WebUI MCP, Voila) can. The Trino JWT user-mapping
+# clients (Superset, Voila, report-viewer) can. The Trino JWT user-mapping
 # strips the Keycloak `service-account-` prefix, so identity.user matches the
 # bare client_id here. Deliberately does NOT check user_enabled — service
 # principals aren't in data.users.
@@ -265,20 +268,26 @@ table_entry_matches(entry, in_table) if {
 }
 
 # Baseline hidden tables: the patient mapping pair written by the
-# hl7-transformer. Hardcoded here (not inventory-driven) because they're
-# intrinsic to Scout's data lake shape — every deployment has them, and
-# they carry cross-facility identifiers keyed on scout_patient_id rather
-# than sending_facility, so row filters can't constrain them. Direct
-# SELECT must be denied; removing the protection would be a security
-# regression. If the hl7-transformer renames these, update this list
-# (same-team coupling, same pattern as approved_groups above).
+# hl7-transformer. Their names derive from report_delta_table_name
+# (`<name>_report_patient_mapping` + `_history`), so the opa role renders
+# the derived names into data.baseline_hidden_tables from that same
+# setting — the hidden-list can't drift from the mapping table's actual
+# name when an operator renames the report table. The hardcoded default
+# below is the fail-safe for the stock `reports` table: if
+# data.baseline_hidden_tables is absent or empty (older data document,
+# misrender), protection still holds. These tables carry cross-facility
+# identifiers keyed on scout_patient_id rather than sending_facility, so
+# row filters can't constrain them — direct SELECT must be denied;
+# removing the protection would be a security regression.
 #
 # data.hidden_tables (inventory) is unioned on top for site-specific
 # additions (e.g., a partner's custom cross-facility join table).
-baseline_hidden_tables := [
+default baseline_hidden_tables := [
 	{"catalog": "delta", "schema": "default", "table": "reports_report_patient_mapping"},
 	{"catalog": "delta", "schema": "default", "table": "reports_report_patient_mapping_history"},
 ]
+
+baseline_hidden_tables := data.baseline_hidden_tables if count(data.baseline_hidden_tables) > 0
 
 # True if the input table matches any baseline or inventory-added
 # hidden-table entry (either shape — exact or prefix). Used both by
@@ -399,15 +408,15 @@ default masked_columns := set()
 masked_columns := {c | some c in data.masked_columns}
 
 # Keycloak returns user attribute values as arrays (multivalued by default).
-# `mask_phi_fields` is single-valued logically but lives in attributes[0].
-# Default-mask: PHI is masked unless the attribute is explicitly ["false"].
-# Unset, missing, empty list, or any other value masks (fail-safe for PHI).
-# We test the disable condition and negate it rather than testing val[0]
-# directly: a present-but-empty [] makes a positive val[0] check fail, which
-# would silently skip masking — the opposite of the fail-safe we want.
-should_mask if not phi_masking_disabled
-
-phi_masking_disabled if user_attrs.mask_phi_fields[0] == "false"
+# `redact_select_identifiers` is single-valued logically but lives in attributes[0].
+# Opt-in: redaction applies ONLY when the attribute is explicitly ["true"].
+# Unset, missing, empty list, or any other value leaves the columns
+# unmasked. Masking here covers only data.masked_columns (a few identifier
+# columns — not date of birth, MRN, or report text), so it's a redaction an
+# admin grants per user, not a default (see ADR 0020). Indexing [0] on an
+# unset/empty attribute yields undefined, so should_mask is undefined (no
+# mask) — the fail path here is "don't redact", matching the opt-in default.
+should_mask if user_attrs.redact_select_identifiers[0] == "true"
 
 # Mask expression dispatches on column type: varchar columns get the
 # literal '[REDACTED]' so the user sees something explicit was redacted;
@@ -450,7 +459,7 @@ decision_context := {
 	"approved": user_in_approved_group,
 	"enabled": user_enabled,
 	"attribute_values": attribute_snapshot,
-	"mask_phi_fields": object.get(user_attrs, "mask_phi_fields", ["unset"]),
+	"redact_select_identifiers": object.get(user_attrs, "redact_select_identifiers", ["unset"]),
 	"bypass_hidden_tables": hidden_table_bypass,
 	"row_filters": rowFilters,
 }

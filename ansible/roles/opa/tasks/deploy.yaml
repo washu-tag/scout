@@ -14,9 +14,18 @@
 
 - name: Render OPA static data document
   ansible.builtin.set_fact:
+    # baseline_hidden_tables derives the patient-mapping pair's names from
+    # report_delta_table_name — the same setting the hl7-transformer builds
+    # them from (`<name>_report_patient_mapping` + `_history`) — so a
+    # renamed report table can't leave the mapping table unhidden. The rego
+    # falls back to the stock `reports` names if this key is absent/empty.
     opa_data_json: >-
       {{ {
         "filtered_tables": (trino_filtered_tables | default([])),
+        "baseline_hidden_tables": [
+          {"catalog": "delta", "schema": "default", "table": report_delta_table_name ~ "_report_patient_mapping"},
+          {"catalog": "delta", "schema": "default", "table": report_delta_table_name ~ "_report_patient_mapping_history"},
+        ],
         "hidden_tables": (trino_hidden_tables | default([])),
         "view_owner_principals": (trino_view_owner_principals | default([])),
         "attribute_filters": (trino_attribute_filters | default({})),

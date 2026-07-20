@@ -1,0 +1,7 @@
+src/scout_report_viewer/static/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/
