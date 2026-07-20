@@ -16,6 +16,7 @@ k3s_cluster:
     hl7log_extractor_image_repository: docker.io/local/washu-tag/hl7log-extractor
     hl7_transformer_image_repository: docker.io/local/washu-tag/hl7-transformer
     launchpad_image_repository: docker.io/local/washu-tag/launchpad
+    report_viewer_image_repository: docker.io/local/washu-tag/report-viewer
 
     # Custom image repositories (for k3s-image-import-or-pull)
     superset_image_repository: docker.io/local/washu-tag/superset
@@ -54,6 +55,7 @@ k3s_cluster:
             NODE_IP minio.scout.test
             NODE_IP chat.scout.test
             NODE_IP playbooks.scout.test
+            NODE_IP report-viewer.scout.test
             NODE_IP testuser.jupyter.scout.test
             fallthrough
           }
@@ -182,17 +184,10 @@ k3s_cluster:
     trino_view_enabled: false
 
     # Trino AuthZ secrets (ADR 0022). Required by the trino role's
-    # AuthZ env Secret + bcrypt password.db. Production deployments set
-    # these in scout-inventory; CI sets fixed test values so the
-    # smoke-test deploy doesn't fail at template render.
+    # AuthZ env Secret. Production deployments set these in
+    # scout-inventory; CI sets fixed test values so the smoke-test
+    # deploy doesn't fail at template render.
     trino_internal_shared_secret: ci-trino-internal-shared-secret
-    # Bcrypt-hashed at deploy time via htpasswd (see roles/trino/
-    # templates/password.db.j2) into the openwebui_mcp_svc entry the
-    # role's defaults wire up. The data-authorization tests don't
-    # exercise the PASSWORD auth path -- they use service-principal
-    # JWT with X-Trino-User -- but mcp-trino's HTTP Basic outbound
-    # requires the entry to exist.
-    trino_openwebui_mcp_svc_password: ci-trino-mcp-svc-pw
 
     # Valkey (single shared password for all services)
     valkey_password: valkey123
@@ -221,8 +216,8 @@ k3s_cluster:
     # template references all three unconditionally; without them defined
     # the realm import fails to render.
     keycloak_superset_svc_client_secret: ci-secret-svc-superset
-    keycloak_openwebui_mcp_svc_client_secret: ci-secret-svc-mcp
     keycloak_voila_svc_client_secret: ci-secret-svc-voila
+    keycloak_report_viewer_svc_client_secret: ci-secret-svc-report-viewer
 
     # OPA bundle writer/reader (ADR 0021). Same shape as s3_lake_*
     # secrets; one is mounted into the Keycloak pod for the bundle
@@ -256,6 +251,7 @@ k3s_cluster:
     open_webui_postgres_password: openwebui123
     open_webui_secret_key: ciopenwebuisecretkeyvalue12345678
     open_webui_bootstrap_password: cibootstrappasswordvalue12345678
+    open_webui_trust_traefik_ca: true
     scout_model_create: false
     ollama_models: []
     ollama_gpu_enabled: false
@@ -270,6 +266,10 @@ k3s_cluster:
 
     # Playbooks (Voilà)
     enable_playbooks: true
+
+    # Report Viewer
+    report_viewer_db_password: report-viewer123
+    report_viewer_gateway_secret: cireportviewergatewaysecret12345678
 
     # Loki (disable caches for CI)
     loki_chunks_cache_enabled: false

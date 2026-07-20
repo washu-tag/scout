@@ -73,6 +73,29 @@
     definition: "{{ lookup('template', 'csp-middleware.yaml.j2') | from_yaml }}"
   when: open_webui_csp_enabled | bool
 
+- name: Mirror Traefik TLS cert into OWUI namespace as CA bundle
+  when: open_webui_trust_traefik_ca | bool
+  block:
+    - name: Read Traefik TLS secret
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: '{{ traefik_tls_secret_name }}'
+        namespace: '{{ traefik_namespace }}'
+      register: _traefik_tls_secret
+    - name: Create open-webui-trusted-ca secret
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: open-webui-trusted-ca
+            namespace: '{{ chatbot_namespace }}'
+          data:
+            ca.crt: '{{ _traefik_tls_secret.resources[0].data["tls.crt"] }}'
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

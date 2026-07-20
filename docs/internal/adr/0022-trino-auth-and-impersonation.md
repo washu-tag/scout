@@ -1,8 +1,10 @@
 # ADR 0022: Trino Authentication and Identity Propagation
 
 **Date**: 2026-05-19
-**Status**: Accepted
+**Status**: Accepted (partially superseded by [ADR 0029](0029-report-viewer.md))
 **Decision Owner**: TAG Team
+
+**Superseded in part by [ADR 0029](0029-report-viewer.md).** Open WebUI no longer reaches Trino through an MCP server. Its tool runtime posts to the report-viewer service, which talks to Trino. The `PASSWORD` authenticator, the `openwebui_mcp_svc` service principal, and `authenticationType: PASSWORD,JWT` below are removed, and Trino runs JWT-only. The JWT mechanism and the identity-propagation patterns in this ADR still stand.
 
 ## Context
 

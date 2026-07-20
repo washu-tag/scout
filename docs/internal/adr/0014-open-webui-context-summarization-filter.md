@@ -1,7 +1,7 @@
 # ADR 0014: Temporary Open WebUI Context Summarization Filter
 
 **Date**: 2026-02-23
-**Status**: Accepted
+**Status**: Superseded — the custom filter was removed in the OWUI 0.10 upgrade in favor of OWUI's native automatic context compaction
 **Decision Owner**: Scout Team
 **Related**: [ADR 0010: Link Exfiltration Filter](0010-open-webui-link-exfiltration-filter.md)
 

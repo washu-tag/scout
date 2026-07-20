@@ -43,12 +43,9 @@ OPA_PATH=/health
 VOILA_HOST=voila.scout-analytics
 VOILA_PORT=8866
 VOILA_PATH=/
-MCP_HOST=mcp-trino.scout-analytics
-MCP_PORT=8080
-# /status is the chart's own startup/liveness/readiness probe path
-# (mcp-trino chart values.yaml -> healthCheck.*Probe.httpGet.path).
-# The OWUI README's `/health` reference is stale.
-MCP_PATH=/status
+REPORT_VIEWER_HOST=report-viewer.scout-analytics
+REPORT_VIEWER_PORT=8000
+REPORT_VIEWER_PATH=/healthz
 
 # Test groups can be filtered via --include for split CI runs where not
 # every target service is deployed. Empty = run all groups.
@@ -58,8 +55,7 @@ MCP_PATH=/status
 #                       (trino role deploys both).
 #   voila-ingress     — needs the voila Service to exist for the target URL
 #                       to resolve. Notebook side only.
-#   mcp-trino-ingress — needs the mcp-trino Service. Notebook side only
-#                       (chat is part of that smoke half).
+#   report-viewer-ingress — needs the report-viewer Service. Analytics side.
 INCLUDE_GROUPS=""
 
 while [[ $# -gt 0 ]]; do
@@ -74,12 +70,12 @@ Usage: $(basename "$0") [--include <groups>]
 
   --include <groups>   Comma-separated test groups to run (default: all).
                        Available: trino-rw, opa-trino, voila-ingress,
-                       mcp-trino-ingress.
+                       report-viewer-ingress.
 
 Examples:
   $(basename "$0")
   $(basename "$0") --include trino-rw
-  $(basename "$0") --include trino-rw,opa-trino,voila-ingress,mcp-trino-ingress
+  $(basename "$0") --include trino-rw,opa-trino,voila-ingress,report-viewer-ingress
 EOF
       exit 0
       ;;
@@ -169,17 +165,16 @@ if include_group "voila-ingress"; then
   queue_test voila-traefik-allowed  kube-system     200 'app.kubernetes.io/name=traefik'  "$VOILA_HOST" "$VOILA_PORT" "$VOILA_PATH"
 fi
 
-# mcp-trino ingress (port 8080).
-# mcp-trino's per-user impersonation trust model depends on this NetworkPolicy:
-# only Open WebUI pods should reach mcp-trino directly. A random in-cluster
-# pod hitting :8080 could either forge the Bearer (if it has any valid
-# realm-issued JWT) or skip auth entirely if mcp-trino's OIDC validator is
-# bypassed; either way it could ask the MCP to impersonate arbitrary users
-# on the outbound Trino call.
-if include_group "mcp-trino-ingress"; then
-  queue_test mcp-bypass-attack       scout-analytics 000 ''                                "$MCP_HOST" "$MCP_PORT" "$MCP_PATH"
-  queue_test mcp-extractor-rando     scout-extractor 000 ''                                "$MCP_HOST" "$MCP_PORT" "$MCP_PATH"
-  queue_test mcp-owui-allowed        scout-analytics 200 'app.kubernetes.io/name=open-webui' "$MCP_HOST" "$MCP_PORT" "$MCP_PATH"
+# report-viewer ingress (port 8000).
+# The service's JWT-impersonation trust model depends on this NetworkPolicy:
+# only Traefik and Open WebUI should reach it directly. A random in-cluster
+# pod hitting :8000 could forge a Bearer (any realm-issued JWT with the
+# right aud) and ask report-viewer to impersonate arbitrary users on the
+# outbound Trino call.
+if include_group "report-viewer-ingress"; then
+  queue_test rv-bypass-attack       scout-analytics 000 ''                                "$REPORT_VIEWER_HOST" "$REPORT_VIEWER_PORT" "$REPORT_VIEWER_PATH"
+  queue_test rv-extractor-rando     scout-extractor 000 ''                                "$REPORT_VIEWER_HOST" "$REPORT_VIEWER_PORT" "$REPORT_VIEWER_PATH"
+  queue_test rv-owui-allowed        scout-analytics 200 'app.kubernetes.io/name=open-webui' "$REPORT_VIEWER_HOST" "$REPORT_VIEWER_PORT" "$REPORT_VIEWER_PATH"
 fi
 
 if [ "${#NAMES[@]}" -eq 0 ]; then

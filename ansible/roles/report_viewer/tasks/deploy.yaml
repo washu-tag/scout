@@ -1,0 +1,55 @@
+---
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - report_viewer_db_password is defined
+      - report_viewer_db_password | length > 0
+      - report_viewer_gateway_secret is defined
+      - report_viewer_gateway_secret | length > 0
+    fail_msg: >
+      report_viewer_db_password and report_viewer_gateway_secret are required.
+      Set them in inventory.yaml (use Ansible Vault).
+      Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ report_viewer_namespace }}'
+
+- name: Initialize report-viewer database
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_db_with_owner
+  vars:
+    db_name: '{{ report_viewer_database }}'
+    db_owner: '{{ report_viewer_db_user }}'
+    db_owner_pass: '{{ report_viewer_db_password }}'
+
+- name: Grant schema ownership to user
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: execute_sql
+  vars:
+    sql_script: 'ALTER SCHEMA public OWNER TO {{ report_viewer_db_user }};'
+    sql_dbname: '{{ report_viewer_database }}'
+
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    report_viewer_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+  no_log: true
+
+- name: Deploy report-viewer
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ report_viewer_helm_release_name }}'
+    helm_chart_ref: '{{ report_viewer_helm_chart_ref }}'
+    helm_chart_namespace: '{{ report_viewer_namespace }}'
+    helm_chart_values_files:
+      - '{{ scout_repo_dir }}/helm/report-viewer/values.yaml'
+    helm_chart_values: '{{ report_viewer_helm_chart_values }}'
+    helm_chart_timeout: 10m

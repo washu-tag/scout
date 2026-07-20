@@ -519,22 +519,23 @@
         "webOrigins": [
           "https://chat.{{ server_hostname }}"
         ],
-        {#- mcp-trino-audience adds aud=mcp-trino to access tokens so the
-            MCP server (tuannvm/mcp-trino) can validate them and impersonate
-            the chat user on the outbound Trino call (ADR 0022).
+        {#- Audience scope the OWUI user token carries to report-viewer
+            on the user's behalf (ADR 0022). report-viewer validates
+            required-audience=report-viewer on inbound Bearer tokens
+            from the OWUI tool runtime.
 
             "roles" is intentionally absent from defaultClientScopes here.
             Keycloak's built-in roles scope carries an audience-resolve
             protocol mapper that adds an `aud` entry for every client the
             user has any role in — for an admin user that swelled the
-            token to 9 audiences (mcp-trino, oauth2-proxy, realm-management,
+            token to 9 audiences (oauth2-proxy, realm-management,
             launchpad, superset, jupyterhub, grafana, account, temporal),
             so a stolen OWUI token had implicit grants against half the
             cluster including realm-management. OWUI uses the `groups`
             claim (via microprofile-jwt) for role mapping and doesn't
             consume realm_access.roles, so dropping the scope here is
             safe for OWUI's own auth flow while tightening downstream
-            (mcp-trino) trust. -#}
+            trust. -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -542,7 +543,7 @@
           "basic",
           "email",
           "microprofile-jwt",
-          "mcp-trino-audience"
+          "report-viewer-audience"
         ],
         "optionalClientScopes": [
           "address",
@@ -551,7 +552,7 @@
           "offline_access",
         ]
       },
-      {#- Service principals for the three Trino client surfaces. Each
+      {#- Service principals for the Trino client surfaces. Each
           authenticates to Trino via client_credentials and impersonates
           the end user via X-Trino-User. Token lifespan is 4h so
           long-running notebook/dashboard queries don't expire mid-
@@ -584,12 +585,12 @@
         ]
       },
       {
-        "name": "openwebui_mcp_svc",
-        "description": "Service principal for the Open WebUI Trino MCP sidecar (validates inbound Keycloak OIDC token, sets X-Trino-User to its preferred_username claim)",
+        "name": "voila_svc",
+        "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User",
         "enabled": true,
-        "clientId": "openwebui_mcp_svc",
+        "clientId": "voila_svc",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_openwebui_mcp_svc_client_secret }}",
+        "secret": "{{ keycloak_voila_svc_client_secret }}",
         "serviceAccountsEnabled": true,
         "standardFlowEnabled": false,
         "directAccessGrantsEnabled": false,
@@ -610,12 +611,12 @@
         ]
       },
       {
-        "name": "voila_svc",
-        "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User",
+        "name": "report_viewer_svc",
+        "description": "Service principal for report-viewer impersonating the chat/iframe user via X-Trino-User",
         "enabled": true,
-        "clientId": "voila_svc",
+        "clientId": "report_viewer_svc",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_voila_svc_client_secret }}",
+        "secret": "{{ keycloak_report_viewer_svc_client_secret }}",
         "serviceAccountsEnabled": true,
         "standardFlowEnabled": false,
         "directAccessGrantsEnabled": false,
@@ -1046,18 +1047,13 @@
           }
         ]
       },
-      {#- Adds aud=mcp-trino to access tokens for the Open WebUI client.
-          The MCP Trino tool server (tuannvm/mcp-trino) validates inbound
-          tokens against this audience to authenticate the chat user
-          before impersonating them on the outbound Trino call. Without
-          this mapper Keycloak doesn't put a deterministic aud on OWUI
-          tokens, so oauth-mcp-proxy's audience check fails silently and
-          the user context never makes it to the impersonation path —
-          every chat query then hits Trino as the service account with
-          no row-filter attributes, and returns zero rows. -#}
+      {#- Adds aud=report-viewer to access tokens. Report-viewer validates
+          required-audience=report-viewer on inbound bearer tokens (ADR 0022).
+          Any client whose users call report-viewer needs this scope in
+          its default scopes. -#}
       {
-        "name": "mcp-trino-audience",
-        "description": "Adds aud=mcp-trino to access tokens for Open WebUI users querying via the MCP tool",
+        "name": "report-viewer-audience",
+        "description": "Adds aud=report-viewer to access tokens for clients calling report-viewer",
         "protocol": "openid-connect",
         "attributes": {
           "include.in.token.scope": "false",
@@ -1065,12 +1061,12 @@
         },
         "protocolMappers": [
           {
-            "name": "mcp-trino-audience-mapper",
+            "name": "report-viewer-audience-mapper",
             "protocol": "openid-connect",
             "protocolMapper": "oidc-audience-mapper",
             "consentRequired": false,
             "config": {
-              "included.custom.audience": "mcp-trino",
+              "included.custom.audience": "report-viewer",
               "id.token.claim": "false",
               "access.token.claim": "true",
               "introspection.token.claim": "true",

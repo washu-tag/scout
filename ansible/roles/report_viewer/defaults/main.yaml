@@ -1,0 +1,48 @@
+---
+# Report viewer service role defaults
+# User-configurable settings are in inventory.yaml
+
+report_viewer_namespace: '{{ chatbot_namespace }}'
+
+# Helm
+report_viewer_helm_chart_ref: '{{ scout_repo_dir }}/helm/report-viewer'
+report_viewer_helm_release_name: report-viewer
+
+# Image
+report_viewer_image_repository: ghcr.io/washu-tag/report-viewer
+report_viewer_image_tag: latest
+
+# Ingress
+report_viewer_subdomain: report-viewer
+report_viewer_host: '{{ report_viewer_subdomain }}.{{ server_hostname }}'
+
+# Chat origin the SPA postMessages to. Mirrors open-webui's ingress host.
+report_viewer_chat_origin: 'https://chat.{{ server_hostname }}'
+
+# Database - Postgres user/db are created via scout_common/create_db_with_owner
+# against the shared CNPG cluster (postgres_cluster_name).
+report_viewer_database: report_viewer
+report_viewer_db_user: report_viewer
+# `report_viewer_db_password` is required and must be set in inventory
+# `report_viewer_gateway_secret` is required and must be set in inventory
+
+# Replicas + resources
+report_viewer_replicas: 1
+report_viewer_resources_default:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 2
+    memory: 4Gi
+
+# Trino connection
+report_viewer_trino_host: 'trino.{{ trino_namespace }}'
+report_viewer_trino_port: '{{ trino_https_port }}'
+report_viewer_trino_scheme: https
+report_viewer_trino_catalog: delta
+report_viewer_trino_schema: default
+report_viewer_trino_ca_cert: ''
+report_viewer_trino_auth_token_url: '{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/token'
+report_viewer_trino_auth_client_id: report_viewer_svc
+report_viewer_trino_auth_client_secret: '{{ keycloak_report_viewer_svc_client_secret }}'

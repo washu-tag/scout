@@ -334,7 +334,7 @@ This works through Ansible's `combine` filter with `recursive=true`. Role defaul
 - temporal, postgres, minio, hive, prometheus, grafana, loki
 - superset, superset_statsd, jupyter_hub, hl7log_extractor
 - redis_operator, redis_cluster_node, voila, orthanc, dcm4chee
-- ollama, open_webui, mcp_trino
+- ollama, open_webui
 
 **Services NOT supporting partial overrides** (use flattened variables instead):
 - `trino_coordinator_*`, `trino_worker_*` - Use `trino_coordinator_max_heap`, `trino_coordinator_cpu_limit`, etc.

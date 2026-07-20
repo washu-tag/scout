@@ -6,7 +6,7 @@
 # k3s version - if not specified or empty, will use latest stable
 # Set to empty string or omit to auto-detect latest stable version
 # renovate: datasource=github-releases depName=k3s-io/k3s
-k3s_version: v1.36.1+k3s1
+k3s_version: v1.36.2+k3s1
 
 # helm version - if not specified or empty, will use latest
 # Using Helm 3.x until Helm 4 plugin ecosystem matures (helm-diff compatibility)
@@ -23,7 +23,7 @@ elasticsearch_version: 9.2.3
 
 # Databases & Data Storage - Cassandra
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
-cert_manager_version: ~v1.20.2
+cert_manager_version: ~v1.20.3
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
 cass_operator_version: ~0.65.0
 # cassandra_server_version is managed by K8ssandra cass-operator, which pulls k8ssandra/cass-management-api
@@ -71,8 +71,6 @@ kafka_version: 4.3.1
 trino_helm_chart_version: ~1.42.2
 # renovate: datasource=docker depName=bitnamilegacy/jmx-exporter
 trino_jmx_exporter_version: 1.0.1
-# renovate: datasource=github-releases depName=tuannvm/mcp-trino
-mcp_trino_version: 4.3.1
 
 # Analytics & Query Engines - OPA (Trino access control)
 # renovate: datasource=docker depName=openpolicyagent/opa
@@ -113,20 +111,9 @@ jupyter_helm_chart_version: ~4.3.5
 # tag — Scout doesn't override it. The open-webui-bootstrap Job discovers the
 # running Pod's image at deploy time (see configure_admin.yaml) so it stays
 # in lockstep with the chart's appVersion without a separate pin.
-#
-# Currently pinned to ~14.8.0 (appVersion 0.9.6): upstream refactor (OWUI
-# commit 45e49d33e, Apr 2026) moved tool-call results from a `result="..."`
-# attribute on the <details> tag into the body, and the new body-content
-# rendering path doesn't display results in the chat UI even though they
-# reach the LLM. Worked around by the `tool_result_attr_filter` Function
-# (see ansible/roles/open-webui/defaults/main.yaml). Confirmed still broken
-# in 0.9.6: ToolCallDisplay.svelte and MarkdownTokens.svelte are byte-
-# identical between v0.9.5 and v0.9.6. When Renovate proposes a bump that
-# advances appVersion past 0.9.6, verify the tool-call Output panel renders
-# correctly without the filter — if upstream has fixed it, delete the filter
-# source + the role's inventory entry + the chart payload + this note.
+
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
-open_webui_helm_chart_version: ~14.8.0
+open_webui_helm_chart_version: ~15.2.0
 # renovate: datasource=docker depName=ollama/ollama
 ollama_image_tag: 0.24.0
 

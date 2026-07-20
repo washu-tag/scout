@@ -38,4 +38,15 @@ export async function signInToScout(page: Page, targetUrl: string, user: TestUse
 
   // Wait for navigation to settle after the redirect chain completes
   await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+
+  await acceptScoutTermsIfPresent(page);
+}
+
+async function acceptScoutTermsIfPresent(page: Page): Promise<void> {
+  const heading = page.getByRole('heading', { name: 'Scout Terms of Use' });
+  if (!(await heading.isVisible({ timeout: 3000 }).catch(() => false))) {
+    return;
+  }
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
 }

@@ -4,6 +4,8 @@
 
 # Timeout for waiting on Traefik Helm jobs (in seconds)
 traefik_helm_job_timeout: 300
+
+traefik_embeddable_frame_ancestors: 'https://chat.{{ server_hostname }}'
 # Inventory requirements depend on tls_mode:
 #
 # tls_mode: file

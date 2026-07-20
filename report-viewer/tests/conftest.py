@@ -1,0 +1,115 @@
+"""Test fixtures.
+
+Postgres-bound tests look for `REPORT_VIEWER_TEST_DATABASE_URL` and are
+skipped if it isn't set. Trino calls are always monkey-patched - we
+test the API surface and the SQL we generate, not the live cluster.
+"""
+
+from __future__ import annotations
+
+import os
+
+# Settings() resolves at import - provide a placeholder for required vars
+# before the package gets loaded.
+os.environ.setdefault("REPORT_VIEWER_EXTERNAL_URL", "http://testserver")
+os.environ.setdefault("REPORT_VIEWER_GATEWAY_SECRET", "test-gateway-secret")
+
+from typing import Any, Callable
+
+import pytest
+import pytest_asyncio
+from fastapi.testclient import TestClient
+from psycopg_pool import AsyncConnectionPool
+
+from scout_report_viewer import db, trino_client
+from scout_report_viewer.app import create_app
+from scout_report_viewer.config import settings
+
+
+TEST_DB_URL = os.environ.get("REPORT_VIEWER_TEST_DATABASE_URL", "")
+
+
+def _needs_pg(request):
+    if not TEST_DB_URL:
+        pytest.skip(
+            "REPORT_VIEWER_TEST_DATABASE_URL not set - Postgres-backed tests skipped"
+        )
+
+
+@pytest_asyncio.fixture
+async def reset_schema():
+    """Drop and recreate the `searches` table so each test starts clean."""
+    _needs_pg(None)
+    settings.database_url = TEST_DB_URL
+    async with AsyncConnectionPool(TEST_DB_URL, open=False) as pool:
+        async with pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute("DROP TABLE IF EXISTS searches CASCADE")
+                await cur.execute("DROP TABLE IF EXISTS _yoyo_migration CASCADE")
+                await cur.execute("DROP TABLE IF EXISTS _yoyo_log CASCADE")
+                await cur.execute("DROP TABLE IF EXISTS _yoyo_version CASCADE")
+                await cur.execute("DROP TABLE IF EXISTS yoyo_lock CASCADE")
+            await conn.commit()
+    await db.ensure_schema()
+    yield
+
+
+@pytest.fixture
+def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]:
+    """Stub out `trino_client.execute`. Returns a setter the test calls to
+    enqueue the (columns, rows) the next Trino call should return.
+
+    Tests can queue multiple responses so a flow like
+    `create_search` -> `get_rows` -> `get_csv` primes a distinct payload
+    for each Trino round-trip.
+    """
+    queue: list[tuple[list[str], list[dict[str, Any]]]] = []
+
+    async def fake_execute(
+        sql: str,
+        user: str | None = None,
+        params: list | tuple | None = None,
+    ):
+        if not queue:
+            raise AssertionError(
+                f"fake_trino had no queued response for SQL: {sql[:120]}..."
+            )
+        return queue.pop(0)
+
+    async def fake_stream(
+        sql: str,
+        user: str | None = None,
+        params: list | tuple | None = None,
+        chunk_size: int = 1000,
+    ):
+        if not queue:
+            raise AssertionError(
+                f"fake_trino had no queued response for SQL: {sql[:120]}..."
+            )
+        columns, rows = queue.pop(0)
+        yield columns, []
+        for i in range(0, len(rows), chunk_size):
+            yield columns, rows[i : i + chunk_size]
+
+    monkeypatch.setattr(trino_client, "execute", fake_execute)
+    monkeypatch.setattr(trino_client, "stream", fake_stream)
+
+    def enqueue(columns: list[str], rows: list[dict[str, Any]]) -> None:
+        queue.append((columns, rows))
+
+    return enqueue
+
+
+@pytest.fixture
+def client(reset_schema):
+    # Enter the context so the lifespan opens app.state.pool.
+    with TestClient(create_app()) as c:
+        yield c
+
+
+@pytest.fixture
+def auth_headers() -> dict[str, str]:
+    return {
+        "X-Auth-Request-Preferred-Username": "alice",
+        "X-Report-Viewer-Gateway": os.environ["REPORT_VIEWER_GATEWAY_SECRET"],
+    }

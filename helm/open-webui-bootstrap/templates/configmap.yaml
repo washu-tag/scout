@@ -42,6 +42,38 @@ data:
     {{- end }}
     {{ $filters | toJson }}
 
+  # Event function payloads
+  events.json: |-
+    {{- $events := list -}}
+    {{- range $e := .Values.eventFunctions -}}
+    {{- $events = append $events (dict
+        "id" $e.id
+        "name" $e.name
+        "description" (default "" $e.description)
+        "content_file" $e.source_file
+        "enable_global" (dig "enable_global" false $e)
+        "enable_active" (dig "enable_active" true $e)
+        "valves" (default (dict) $e.valves)
+    ) -}}
+    {{- end }}
+    {{ $events | toJson }}
+
+  # Python tool payloads — same `content_file` inlining as filters.
+  # Tools have no global/active toggles; visibility is per-model via
+  # `scoutDefaults.toolIds` / model `meta.toolIds`.
+  tools.json: |-
+    {{- $tools := list -}}
+    {{- range $t := .Values.toolFunctions -}}
+    {{- $tools = append $tools (dict
+        "id" $t.id
+        "name" $t.name
+        "description" (default "" $t.description)
+        "content_file" $t.source_file
+        "valves" (default (dict) $t.valves)
+    ) -}}
+    {{- end }}
+    {{ $tools | toJson }}
+
   # Scout Explorer model payloads — one per scoutModels[].ui entry, plus a
   # hide-base override per raw Ollama tag (unless hideBaseModels=false or the
   # base name equals the explorer id). bootstrap.py inlines params.system_file
@@ -58,6 +90,14 @@ data:
     {{- /* dig (not default) because preload: false would otherwise be coerced to true */ -}}
     {{- $preload := dig "preload" true $m -}}
     {{- $keepDefault := ternary $defaults.keepAliveResident $defaults.keepAliveCold $preload -}}
+    {{- $params := dict
+        "system_file" $defaults.systemPromptFile
+        "function_calling" (default $defaults.functionCalling $m.ui.function_calling)
+        "reasoning_effort" (default $defaults.reasoningEffort $m.ui.reasoning_effort)
+        "keep_alive" (default $keepDefault $m.ui.keep_alive) -}}
+    {{- if $m.ui.compact_token_threshold -}}
+    {{- $_ := set $params "compact_token_threshold" ($m.ui.compact_token_threshold | int) -}}
+    {{- end -}}
     {{- $models = append $models (dict
         "id" $modelId
         "base_model_id" nil
@@ -70,12 +110,7 @@ data:
             "capabilities" (default $defaults.capabilities $m.ui.capabilities)
             "builtinTools" (default $defaults.builtinTools $m.ui.builtin_tools)
         )
-        "params" (dict
-            "system_file" $defaults.systemPromptFile
-            "function_calling" (default $defaults.functionCalling $m.ui.function_calling)
-            "reasoning_effort" (default $defaults.reasoningEffort $m.ui.reasoning_effort)
-            "keep_alive" (default $keepDefault $m.ui.keep_alive)
-        )
+        "params" $params
         "is_active" true
         "access_grants" $publicRead
     ) -}}
