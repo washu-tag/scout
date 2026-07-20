@@ -87,6 +87,14 @@ public class TestScoutQueries extends BaseTest {
         ingest();
         runTest("all"); // make sure no rows in the whole dataset have been duplicated
         runTest("extended_metadata"); // ...and let's make sure the metadata still looks good
+        // issue #537: a re-ingest must be a byte-identical no-op for assembled report text.
+        // OBX lines are collected after a groupBy(source_file) shuffle, whose ordering carries
+        // no guarantee, so an unstable OBX order would surface here as report_text / report
+        // sections that no longer match their golden assembly after the second ingest. Re-run
+        // the exact-content report_text and report_sections assertions against the re-ingested
+        // table to pin file-order assembly across ingests.
+        runTest("report_text");
+        runTest("report_sections");
     }
 
     @Test
