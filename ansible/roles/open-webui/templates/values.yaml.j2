@@ -189,6 +189,13 @@ extraEnvVars:
   - name: ENABLE_COMMUNITY_SHARING
     value: 'false'
 
+  # Disable per-chat sharing: a shared chat's report-viewer iframe 401s for the
+  # recipient because searches are owner-scoped (issue #506). This is seed-only
+  # PersistentConfig, so the open-webui-bootstrap Job re-asserts it on every
+  # deploy for clusters whose config table was already seeded with sharing on.
+  - name: USER_PERMISSIONS_CHAT_SHARE
+    value: 'false'
+
   # Enable OAuth signup and authentication
   - name: ENABLE_OAUTH_SIGNUP
     value: 'true'
