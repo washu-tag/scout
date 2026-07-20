@@ -424,7 +424,7 @@ export default function SearchDetailPage() {
                   width: 13,
                   height: 13,
                   borderRadius: '50%',
-                  border: '2px solid #fde6c2',
+                  border: '2px solid var(--rv-border)',
                   borderTopColor: '#ea580c',
                   animation: 'scoutSpin 0.8s linear infinite',
                   display: 'inline-block',
