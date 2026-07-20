@@ -5,7 +5,7 @@ Runs as a Job under Helm post-install/post-upgrade hooks (see
 helm/open-webui-bootstrap/templates/job.yaml). Replaces what used to be a
 chain of Ansible tasks doing kubectl-exec'd curls.
 
-Six phases:
+Phases:
 1. Password migration. Rewrite the bootstrap user's bcrypt hash to match
    the configured password (no-op on a clean DB; recovers signin on any
    cluster where `open_webui_bootstrap_password` was rotated).
@@ -15,12 +15,13 @@ Six phases:
    + TASK_MODEL (GET-merge-POST to preserve siblings). RAG template is not
    pushed — Scout Explorer models use function_calling: native, which
    bypasses OWUI's RAG auto-injection path entirely.
-4. Filter functions. Idempotent GET-create-or-update; then set valves and
-   toggle global+active to the desired state.
-5. Python tools. Same idempotent GET-create-or-update pattern as filters,
-   against /api/v1/tools. Each entry's `content_file` is inlined as the
-   tool source. Public read access grant so end users can attach the tool.
-6. Custom models. Idempotent GET-create-or-update one per scout_models[].ui
+4. Filter functions, then 5. event functions. Both seed via
+   /api/v1/functions: idempotent GET-create-or-update, set valves, toggle.
+6. Prune functions not in the seeded set (config-authoritative).
+7. Python tools. Idempotent GET-create-or-update against /api/v1/tools;
+   `content_file` inlined as source, public-read grant so users can attach.
+8. Prune tools not in the seeded set.
+9. Custom models. Idempotent GET-create-or-update one per scout_models[].ui
    entry, plus hide-base overrides on the raw Ollama tags.
 
 Inputs (from env, set by the Job spec):
@@ -35,6 +36,7 @@ Inputs (from /app/config/, mounted from a ConfigMap the chart renders):
   filters.json           — list of filter-function specs; each entry's
                            `content_file` names a sibling file in /app/config/
                            whose contents are inlined as the filter `content`.
+  events.json            — event-function specs; same shape as filters.json.
   tools.json             — list of Python-tool specs; same `content_file`
                            inline pattern as filters.json.
   models.json            — list of ModelForm payloads; each entry's
@@ -224,19 +226,14 @@ def push_persistent_config(token):
         )
         print(f'  task_model_id: {cfg["task_model_id"]}')
 
-    if cfg.get("webhook_url") is not None:
-        # Auto-enable receiver for new-user signups.
-        http_or_raise(
-            "POST",
-            "/api/webhook",
-            {"url": cfg["webhook_url"]},
-            token,
-        )
-        print(f'  webhook_url: {cfg["webhook_url"] or "(cleared)"}')
 
-
-def push_filter_functions(token):
-    for fn in load_config("filters.json") or []:
+def push_functions(token, config_file):
+    """Upsert OWUI Functions (filter or event) from a config file. Both types
+    live at /api/v1/functions and are seeded identically — create/update the
+    content, set valves, and toggle global/active. Event functions ignore
+    is_global (they dispatch on system events regardless), so their entries
+    just leave enable_global at its default (false)."""
+    for fn in load_config(config_file) or []:
         fn_id = fn["id"]
         fn_id_q = urllib.parse.quote(fn_id, safe="")
         payload = {
@@ -279,6 +276,21 @@ def push_filter_functions(token):
         if current.get("is_active", False) != desired_active:
             http_or_raise("POST", f"/api/v1/functions/id/{fn_id_q}/toggle", token=token)
             print(f"  {fn_id}: is_active → {desired_active}")
+
+
+def reconcile(token, list_path, delete_path, config_files, kind):
+    """Delete objects at list_path not seeded from config_files. Skips when the
+    desired set is empty so a failed config render can't wipe everything."""
+    desired = {i["id"] for cf in config_files for i in (load_config(cf) or [])}
+    if not desired:
+        print(f"  skip: no managed {kind}s loaded")
+        return
+    for obj in json.loads(http_or_raise("GET", list_path, token=token)):
+        obj_id = obj.get("id")
+        if obj_id and obj_id not in desired:
+            obj_id_q = urllib.parse.quote(obj_id, safe="")
+            http_or_raise("DELETE", delete_path.format(id=obj_id_q), token=token)
+            print(f"  pruned unmanaged {kind}: {obj_id}")
 
 
 def push_tools(token):
@@ -367,16 +379,37 @@ def main():
     token, via = mint_admin_jwt()
     print(f"  JWT acquired via {via}")
 
-    print("[3/6] Pushing PersistentConfig...")
+    print("[3/9] Pushing PersistentConfig...")
     push_persistent_config(token)
 
-    print("[4/6] Configuring filter functions...")
-    push_filter_functions(token)
+    print("[4/9] Configuring filter functions...")
+    push_functions(token, "filters.json")
 
-    print("[5/6] Configuring Python tools...")
+    print("[5/9] Configuring event functions...")
+    push_functions(token, "events.json")
+
+    print("[6/9] Pruning unmanaged functions...")
+    reconcile(
+        token,
+        "/api/v1/functions/",
+        "/api/v1/functions/id/{id}/delete",
+        ["filters.json", "events.json"],
+        "function",
+    )
+
+    print("[7/9] Configuring Python tools...")
     push_tools(token)
 
-    print("[6/6] Configuring custom models...")
+    print("[8/9] Pruning unmanaged tools...")
+    reconcile(
+        token,
+        "/api/v1/tools/",
+        "/api/v1/tools/id/{id}/delete",
+        ["tools.json"],
+        "tool",
+    )
+
+    print("[9/9] Configuring custom models...")
     push_models(token)
 
     print("Bootstrap complete.")

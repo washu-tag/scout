@@ -23,7 +23,7 @@ spec:
   {{- end }}
   rules:
     # External surface is /api (SPA fetches) and /spa (the React bundle).
-    # /webhooks, /metrics, /healthz, /docs are in-cluster only.
+    # /metrics, /healthz, /docs are in-cluster only.
     - host: {{ .Values.ingress.host | quote }}
       http:
         paths:

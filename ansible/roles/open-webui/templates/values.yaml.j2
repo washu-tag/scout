@@ -178,12 +178,6 @@ extraEnvVars:
   - name: RAG_EMBEDDING_ENGINE
     value: 'ollama'
 
-  # OWUI's SSRF guard blocks RFC1918 hosts, which would reject the
-  # in-cluster webhook to report-viewer. Opt out via the
-  # upstream-endorsed flag, open-webui/open-webui#24587.
-  - name: ENABLE_RAG_LOCAL_WEB_FETCH
-    value: 'true'
-
   # Disable local authentication (email/password)
   - name: ENABLE_SIGNUP
     value: 'false'
@@ -274,6 +268,11 @@ extraEnvVars:
   # to mint its admin user; subsequent runs sign in instead.
   - name: ENABLE_INITIAL_ADMIN_SIGNUP
     value: 'true'
+
+  - name: ENABLE_CONTEXT_COMPACTION
+    value: '{{ open_webui_context_compaction_enabled | string | lower }}'
+  - name: CONTEXT_COMPACTION_TOKEN_THRESHOLD
+    value: '{{ open_webui_context_compaction_token_threshold | string }}'
 
   # OpenTelemetry metrics push to Prometheus.
   - name: ENABLE_OTEL

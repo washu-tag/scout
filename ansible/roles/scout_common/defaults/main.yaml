@@ -26,9 +26,8 @@ helm_chart_values_files: []
 scout_notebook_image_name: ghcr.io/washu-tag/scout-notebook
 scout_notebook_image_tag: latest
 
-# Shared OWUI DB and settings writer role (report viewer)
+# Shared OWUI DB name
 open_webui_database: openwebui
-owui_settings_writer_role: owui_settings_writer
 
 # Docs base URL as hardcoded in repo files (quickstart samples, OAuth2 Proxy
 # html); deploy tasks rewrite it to scout_docs_url. Not a knob — change only

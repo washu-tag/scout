@@ -210,12 +210,9 @@ jobs:
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v
-      - name: 'Unit tests: Open WebUI context summarization filter'
+      - name: 'Unit tests: Open WebUI iframe-defaults event function'
         shell: bash
-        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_context_summarization_filter.py -v
-      - name: 'Unit tests: Open WebUI tool result attribute migrator filter'
-        shell: bash
-        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_tool_result_attr_filter.py -v
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_scout_iframe_defaults_event.py -v
       - name: 'Unit tests: report-viewer'
         shell: bash
         env:
@@ -714,7 +711,7 @@ jobs:
         env:
           SUBDOMAINS: ${{ matrix.subdomains }}
         run: bash tests/auth/auth-curl-tests.sh scout.test --include "$SUBDOMAINS"
-      - name: 'Auth playwright tests: OWUI iframe seed'
+      - name: 'Auth playwright tests: OWUI iframe defaults'
         if: matrix.side == 'analytics'
         shell: bash
         working-directory: tests/auth
