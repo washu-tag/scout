@@ -163,6 +163,10 @@ open_webui_csp_enabled: true
 # So these ARE fully declarative — change inventory, re-run make install-chat,
 # done. No SQL surgery on the `config` table needed.
 #
+# The Job also force-disables chat sharing (user.permissions.chat.share) on
+# every deploy — a fixed safety policy, not an inventory knob; see the role
+# README and issue #506.
+#
 # RAG_TEMPLATE is intentionally NOT pushed: Scout Explorer models run with
 # function_calling: native, which bypasses OWUI's RAG auto-injection path.
 # The schema/charting instructions that RAG would otherwise carry are inlined
