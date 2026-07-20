@@ -39,6 +39,10 @@ def spark(tmp_path_factory):
             "spark.sql.catalog.spark_catalog",
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
+        # Mirrors production: Spark 4 enables ANSI mode by default, but the HL7
+        # extraction relies on out-of-range array access and unparseable
+        # timestamps yielding NULL.
+        .config("spark.sql.ansi.enabled", "false")
         .config("spark.databricks.delta.schema.autoMerge.enabled", "true")
         .config("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "true")
         .config(
@@ -59,6 +63,8 @@ def spark(tmp_path_factory):
 # cascade (curated/latest/dx/mapping) actually reads. Missing per-authority id columns
 # (bjh_mr, etc.) are tolerated by extract_from_anticipated_column, so we only include a
 # representative few. Real HL7 parsing is covered by the Java tests/ingest suite.
+# Note: seeded tables additionally carry the bookkeeping columns (updated,
+# content_hash) added by merge_report_df_into_table.
 import datetime as _dt  # noqa: E402
 
 from pyspark.sql.types import (  # noqa: E402
@@ -151,27 +157,28 @@ def report_row():
 
 
 @pytest.fixture
-def seed_reports(spark):
-    """Returns fn(table_name, rows) that creates the base reports Delta table (CDF on,
-    partitioned by year) if needed and MERGEs the rows in on source_file — exactly the
-    path the base activity uses, so it produces the same change data feed."""
-    from delta.tables import DeltaTable
+def report_df(spark):
+    """Returns fn(rows) that builds a base-reports DataFrame (BASE_REPORTS_SCHEMA)
+    from report_row dicts."""
 
-    from hl7scout.hl7extractor.sparkutils import merge_df_into_dt_on_column
-
-    def _seed(table_name, rows):
+    def _build(rows):
         ordered = [
             tuple(row[f.name] for f in BASE_REPORTS_SCHEMA.fields) for row in rows
         ]
-        df = spark.createDataFrame(ordered, BASE_REPORTS_SCHEMA)
-        dt = (
-            DeltaTable.createIfNotExists(spark)
-            .tableName(f"default.{table_name}")
-            .property("delta.enableChangeDataFeed", "true")
-            .addColumns(BASE_REPORTS_SCHEMA)
-            .partitionedBy("year")
-            .execute()
-        )
-        merge_df_into_dt_on_column(dt, df, "source_file")
+        return spark.createDataFrame(ordered, BASE_REPORTS_SCHEMA)
+
+    return _build
+
+
+@pytest.fixture
+def seed_reports(spark, report_df):
+    """Returns fn(table_name, rows) that upserts the rows into the base reports Delta
+    table through merge_report_df_into_table — exactly the path the base activity
+    uses (bookkeeping columns, content-hash pre-filter, conditional merge), so it
+    produces the same change data feed. Returns True iff a merge commit executed."""
+    from hl7scout.hl7extractor.deltalake import merge_report_df_into_table
+
+    def _seed(table_name, rows):
+        return merge_report_df_into_table(spark, report_df(rows), table_name)
 
     return _seed
