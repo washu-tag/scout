@@ -73,11 +73,14 @@ rather than inlining the keys here, so no credentials live in the ConfigMap.
 */}}
 {{- define "hl7-transformer.sparkDefaultsConf" -}}
 {{- $s := .Values.sparkDefaults -}}
+{{- if not (has $s.mode (list "on-prem" "aws")) -}}
+{{- fail (printf "sparkDefaults.mode must be \"on-prem\" or \"aws\", got %q" $s.mode) -}}
+{{- end -}}
 {{- $aws := eq $s.mode "aws" -}}
 {{- if $aws }}
 spark.hadoop.fs.s3a.aws.credentials.provider software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 {{- else }}
-spark.hadoop.fs.s3a.endpoint {{ $s.s3Endpoint }}
+spark.hadoop.fs.s3a.endpoint {{ required "sparkDefaults.s3Endpoint is required when sparkDefaults.mode=on-prem" $s.s3Endpoint }}
 spark.hadoop.fs.s3a.aws.credentials.provider software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider
 {{- end }}
 spark.hadoop.fs.s3a.endpoint.region {{ $s.s3Region }}
@@ -90,8 +93,8 @@ spark.databricks.delta.constraints.allowUnenforcedNotNull.enabled true
 spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
 spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
 spark.hadoop.fs.s3a.path.style.access {{ if $aws }}false{{ else }}true{{ end }}
-spark.hadoop.hive.metastore.uris {{ $s.hiveMetastoreUri }}
-spark.sql.warehouse.dir {{ $s.warehouseDir }}
+spark.hadoop.hive.metastore.uris {{ required "sparkDefaults.hiveMetastoreUri is required when sparkDefaults is enabled" $s.hiveMetastoreUri }}
+spark.sql.warehouse.dir {{ required "sparkDefaults.warehouseDir is required when sparkDefaults is enabled" $s.warehouseDir }}
 spark.sql.shuffle.partitions {{ $s.shufflePartitions }}
 spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
 spark.executor.memory {{ .Values.spark.executor.memory }}

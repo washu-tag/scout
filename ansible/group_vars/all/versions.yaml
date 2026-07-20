@@ -195,3 +195,7 @@ xnat_chart_version: 2.0.0
 # data-generator Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
 # renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator
 data_generator_chart_version: 1.0.0
+# Placeholder until the first hl7-transformer chart publishes from main (ADR 0030
+# build lane, 0.YYYYMMDD.<run>); bump to a published version. CI and dev use the
+# hl7_transformer_chart_path local override, so this is not exercised in CI.
+hl7_transformer_chart_version: 0.0.0-dev

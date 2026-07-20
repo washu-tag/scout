@@ -791,12 +791,8 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: xnat-plugin-installer
-  # GitOps migration phase 0 (ADR 0030/0031): publish changed Helm charts as
-  # versioned OCI artifacts. Gated like the image `publish` job (main only,
-  # after deploy-and-test + smoke-test succeed). Vertical slice: hl7-transformer
-  # only; other charts join the matrix in a follow-up. Only changed charts
-  # publish; the chart version lands in helm.sh/chart pod labels, so publishing
-  # an unchanged chart would needlessly roll pods.
+  # Publish changed Helm charts as versioned OCI artifacts (ADR 0030/0031 phase 0),
+  # gated like the image `publish` job. Vertical slice: hl7-transformer only.
   publish-charts:
     if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest

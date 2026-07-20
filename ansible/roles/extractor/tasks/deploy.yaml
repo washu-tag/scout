@@ -96,22 +96,6 @@
       data:
         modality_mapping_codes.csv: '{{ lookup("file", modality_map_source_file) }}'
 
-# spark-defaults.conf is now also chart-owned in the hl7-transformer chart
-# (opt-in via sparkDefaults.*, ADR 0031 phase 0). This role keeps rendering its
-# own ConfigMap for the on-prem deploy path; it retires separately when the
-# Ansible service roles are removed (ADR 0031 phase 5 cutover).
-- name: Setup Spark defaults ConfigMap
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: spark_config_setup
-  vars:
-    spark_defaults_configmap_name: '{{ extractor_spark_defaults_configmap_name }}'
-    spark_defaults_configmap_namespace: '{{ extractor_namespace }}'
-    spark_memory: '{{ hl7_transformer_spark_memory }}'
-    spark_hive_metastore_uri: '{{ hive_metastore_endpoint }}'
-    spark_s3_username: '{{ s3_lake_writer }}'
-    spark_s3_password: '{{ s3_lake_writer_secret }}'
-
 - name: Deploy HL7Log Extractor
   ansible.builtin.include_role:
     name: scout_common
@@ -129,7 +113,11 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: hl7-transformer
-    helm_chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7-transformer'
+    # Pull the published OCI chart from GHCR (ADR 0030/0031). Dev/CI override:
+    # hl7_transformer_chart_path points helm at a local chart dir, in which case
+    # no --version is passed (helm rejects --version with a local path).
+    helm_chart_ref: '{{ hl7_transformer_chart_path | default(hl7_transformer_chart_oci_ref) }}'
+    helm_chart_version: '{{ hl7_transformer_chart_version if hl7_transformer_chart_path is not defined else omit }}'
     helm_chart_namespace: '{{ extractor_namespace }}'
     helm_chart_create_namespace: false
     helm_chart_values: "{{ lookup('template', 'hl7-transformer.values.yaml.j2') | from_yaml }}"
