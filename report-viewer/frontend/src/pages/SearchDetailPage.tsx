@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-table';
 import {
   activeFilterCount,
+  csvUrl,
   friendlyError,
   getSearch,
   getSearchRows,
@@ -508,7 +509,11 @@ export default function SearchDetailPage() {
                 </button>
               )}
               <a
-                href={`/api/searches/${encodeURIComponent(searchId)}/csv`}
+                href={csvUrl(searchId, {
+                  sort: sortParam,
+                  filters: appliedFilters,
+                  columns: table.getVisibleLeafColumns().map((c) => c.id),
+                })}
                 style={{
                   ...paginationBtn,
                   textDecoration: 'none',
