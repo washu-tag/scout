@@ -14,7 +14,8 @@ Phases:
 3. PersistentConfig re-push. Tool servers (full overwrite); DEFAULT_MODELS
    + TASK_MODEL (GET-merge-POST to preserve siblings). RAG template is not
    pushed — Scout Explorer models use function_calling: native, which
-   bypasses OWUI's RAG auto-injection path entirely.
+   bypasses OWUI's RAG auto-injection path entirely. Also force-disables
+   chat sharing (chat.share) platform-wide — see issue #506.
 4. Filter functions, then 5. event functions. Both seed via
    /api/v1/functions: idempotent GET-create-or-update, set valves, toggle.
 6. Prune functions not in the seeded set (config-authoritative).
@@ -225,6 +226,23 @@ def push_persistent_config(token):
             token,
         )
         print(f'  task_model_id: {cfg["task_model_id"]}')
+
+    # Force chat sharing off (issue #506). An OWUI shared chat re-runs its
+    # report-viewer search live under the *recipient's* identity, but searches
+    # are owner-scoped, so a shared chat's viewer 401s for anyone but the
+    # author. user.permissions is seed-only PersistentConfig, so re-assert it
+    # every deploy. The GET returns a complete UserPermissions object; flip the
+    # one nested field and POST it back, preserving all sibling permissions.
+    # (Only gates non-admins — OWUI exempts admins from the chat.share check.)
+    perms = json.loads(
+        http_or_raise("GET", "/api/v1/users/default/permissions", token=token)
+    )
+    if perms.get("chat", {}).get("share") is False:
+        print("  chat.share: already disabled")
+    else:
+        perms.setdefault("chat", {})["share"] = False
+        http_or_raise("POST", "/api/v1/users/default/permissions", perms, token)
+        print("  chat.share: disabled (chat sharing off)")
 
 
 def push_functions(token, config_file):

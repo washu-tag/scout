@@ -174,6 +174,8 @@ Query instructions, schema reference, and charting-output rules all live in `hel
 
 OWUI stores tool servers, default/task model IDs, etc. in its Postgres `config` table as PersistentConfig — env-var changes after first launch are silent no-ops. The bootstrap Job side-steps this by re-POSTing the declarative fields via REST on every deploy. `RAG_TEMPLATE` is intentionally not pushed (Scout Explorer's `function_calling: native` bypasses OWUI's RAG auto-injection — schema docs are inlined into the system prompt instead).
 
+The Job likewise re-asserts `chat.share=false` in the default user permissions on every deploy, keeping per-chat sharing disabled platform-wide (issue #506 — a shared chat's report-viewer iframe re-runs its saved search under the recipient's identity, but searches are owner-scoped). Unlike the fields above this is a fixed safety policy, not an inventory knob. It only gates non-admins: OWUI exempts admins from the `chat.share` check, so an admin can still create a share link.
+
 Genuinely seed-only knobs (`WEBUI_URL`, `ENABLE_SIGNUP`, `ENABLE_LOGIN_FORM`, `ENABLE_COMMUNITY_SHARING`) are set via Helm extraEnvVars and only take effect at first launch. To flip one post-launch: `DELETE FROM config WHERE key = '<KEY>'`, restart the OWUI pod, env re-seeds. OAuth fields (`OAUTH_*`, `OPENID_*`) are env-only because `ENABLE_OAUTH_PERSISTENT_CONFIG=false` skips loading them from the config table.
 
 ### Example queries
