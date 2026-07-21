@@ -6,7 +6,8 @@ import { paginationBtn } from './pages/searchDetail/styles';
 // Sending a prompt to chat overwrites whatever the user has typed but not
 // sent, and the iframe is cross-origin so we can't tell whether a draft
 // exists, hence a blind confirm before every send.
-type RequestPrompt = (text: string | null, onConfirm?: () => void) => void;
+type PromptOptions = { title: string; onConfirm?: () => void };
+type RequestPrompt = (text: string | null, opts: PromptOptions) => void;
 
 const ChatPromptContext = createContext<RequestPrompt | null>(null);
 
@@ -17,10 +18,10 @@ export function useChatPrompt(): RequestPrompt {
 }
 
 export function ChatPromptProvider(props: { children: ReactNode }) {
-  const [pending, setPending] = useState<{ text: string; onConfirm?: () => void } | null>(null);
+  const [pending, setPending] = useState<({ text: string } & PromptOptions) | null>(null);
 
-  const requestPrompt = useCallback<RequestPrompt>((text, onConfirm) => {
-    if (text) setPending({ text, onConfirm });
+  const requestPrompt = useCallback<RequestPrompt>((text, opts) => {
+    if (text) setPending({ text, ...opts });
   }, []);
 
   const send = () => {
@@ -35,8 +36,8 @@ export function ChatPromptProvider(props: { children: ReactNode }) {
     <ChatPromptContext.Provider value={requestPrompt}>
       {props.children}
       {pending !== null && (
-        <Modal onClose={() => setPending(null)} ariaLabel="Send to chat" maxWidth={360}>
-          <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>Send to chat?</p>
+        <Modal onClose={() => setPending(null)} ariaLabel={pending.title} maxWidth={360}>
+          <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>{pending.title}</p>
           <p style={{ margin: '0 0 1rem', fontSize: '0.85rem' }}>
             This replaces anything typed in the chat box but not yet sent.
           </p>
@@ -54,7 +55,7 @@ export function ChatPromptProvider(props: { children: ReactNode }) {
                 borderColor: 'var(--rv-accent)',
               }}
             >
-              Send
+              Continue
             </button>
           </div>
         </Modal>

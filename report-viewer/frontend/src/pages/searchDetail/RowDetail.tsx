@@ -261,7 +261,9 @@ export function RowDetail(props: {
             </div>
             <button
               type="button"
-              onClick={() => requestPrompt(buildDiscussPrompt(sourceFile))}
+              onClick={() =>
+                requestPrompt(buildDiscussPrompt(sourceFile), { title: 'Discuss in Chat?' })
+              }
               style={paginationBtn}
             >
               Discuss in Chat
