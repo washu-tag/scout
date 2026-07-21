@@ -6,7 +6,7 @@ import { paginationBtn } from './pages/searchDetail/styles';
 // Sending a prompt to chat overwrites whatever the user has typed but not
 // sent, and the iframe is cross-origin so we can't tell whether a draft
 // exists, hence a blind confirm before every send.
-type RequestPrompt = (text: string | null) => void;
+type RequestPrompt = (text: string | null, onConfirm?: () => void) => void;
 
 const ChatPromptContext = createContext<RequestPrompt | null>(null);
 
@@ -17,14 +17,17 @@ export function useChatPrompt(): RequestPrompt {
 }
 
 export function ChatPromptProvider(props: { children: ReactNode }) {
-  const [pending, setPending] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ text: string; onConfirm?: () => void } | null>(null);
 
-  const requestPrompt = useCallback<RequestPrompt>((text) => {
-    if (text) setPending(text);
+  const requestPrompt = useCallback<RequestPrompt>((text, onConfirm) => {
+    if (text) setPending({ text, onConfirm });
   }, []);
 
   const send = () => {
-    if (pending) submitChatPrompt(pending);
+    if (pending) {
+      submitChatPrompt(pending.text);
+      pending.onConfirm?.();
+    }
     setPending(null);
   };
 

@@ -568,8 +568,11 @@ export default function SearchDetailPage() {
             setFiltersModalOpen(false);
           }}
           onRefineInChat={(next) => {
-            requestPrompt(buildFilterPrompt(searchId, next));
-            setFiltersModalOpen(false);
+            requestPrompt(buildFilterPrompt(searchId, next), () => {
+              setAppliedFilters(next);
+              setPage(1);
+              setFiltersModalOpen(false);
+            });
           }}
           onClose={() => setFiltersModalOpen(false)}
         />
