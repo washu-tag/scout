@@ -104,6 +104,25 @@ are assumed pre-built to log to stdout.
   possible future enhancement; see ADR 0027).
 - **image** pulls through Harbor like every other Scout image.
 
+## Testing an unreleased WAR / plugins
+
+To test an unreleased XNAT WAR or plugin build against a dev cluster without
+publishing a custom image, set local paths in inventory:
+
+```yaml
+xnat_dev_war: /path/to/xnat-web-<ver>.war   # optional
+xnat_dev_plugins:                            # optional
+  - /path/to/<plugin>.jar
+```
+
+`make install-xnat` then stages them into MinIO (a throwaway pod copies them in
+and uploads them) and the chart runs `develop-war` / `develop-plugins` init
+containers that pull them into the pod at start-up; a `kubectl rollout restart`
+picks up a re-staged build with no redeploy. Requires in-cluster MinIO and a
+base image whose JDK matches the WAR (override `xnat_image_tag` via `-e` — it's
+pinned above inventory). Full guide:
+[`docs/internal/xnat-develop-testing.md`](../../../docs/internal/xnat-develop-testing.md).
+
 ## Mail
 
 XNAT routes outbound mail through Scout's shared relay (MailHog in dev,

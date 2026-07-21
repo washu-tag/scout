@@ -76,3 +76,16 @@ xnat_extra_config: {}
 # scout_common/defaults (shared with the staging Nexus role, which derives its
 # Maven proxy members from them). Operators add plugins via `xnat_plugins` in
 # all.vars. See scout_common/defaults/main.yaml for the per-plugin shape.
+
+# --- Dev: side-load an unreleased WAR / plugins (dev/test only) ------------
+# Local paths on the Ansible control node. When either is set, `make install-xnat`
+# stages the artifact(s) into MinIO (a throwaway pod: a busybox sidecar receives
+# them via `kubectl cp`, the mc container uploads them) and the chart runs
+# developWar init containers that re-pull them into the pod on every start — so a
+# `kubectl rollout restart` picks up a re-staged build with no redeploy. Requires
+# in-cluster MinIO (on-prem clusters, not aws_deployment) and a base image whose
+# JDK matches the WAR (override xnat_image_tag via -e; it's pinned above
+# inventory). See docs/internal/xnat-develop-testing.md.
+xnat_dev_war: '' # path to a local ROOT.war (empty = feature off)
+xnat_dev_plugins: [] # local plugin .jar paths (replace vs add: set xnat_plugins accordingly)
+xnat_dev_bucket: xnat-dev # MinIO bucket holding the staged dev artifacts

@@ -79,6 +79,13 @@
 - name: Create Kubernetes Secrets
   ansible.builtin.include_tasks: create_secrets.yaml
 
+# Stage a locally-built WAR / plugin jars into MinIO; the chart's developWar
+# init containers (values.yaml.j2) pull them at pod start. Dev/test only —
+# no-op unless xnat_dev_war / xnat_dev_plugins is set.
+- name: Stage dev WAR / plugins for side-loading
+  ansible.builtin.include_tasks: dev_stage.yaml
+  when: (xnat_dev_war | length > 0) or (xnat_dev_plugins | length > 0)
+
 # no_log: the rendered values contain xnat_postgres_password — a parse failure
 # (or -vvv) would otherwise print the whole document including the secret.
 - name: Parse Helm values
