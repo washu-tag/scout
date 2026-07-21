@@ -40,6 +40,7 @@ jobs:
       report-viewer: ${{ steps.filter.outputs.report-viewer }}
       xnat-plugin-installer: ${{ steps.filter.outputs.xnat-plugin-installer }}
       hl7-transformer-chart: ${{ steps.filter.outputs.hl7-transformer-chart }}
+      hl7log-extractor-chart: ${{ steps.filter.outputs.hl7log-extractor-chart }}
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -72,6 +73,8 @@ jobs:
               - 'docker/xnat-plugin-installer/**'
             hl7-transformer-chart:
               - 'helm/extractor/hl7-transformer/**'
+            hl7log-extractor-chart:
+              - 'helm/extractor/hl7log-extractor/**'
       - name: 'Mint build version'
         id: version
         shell: bash
@@ -870,6 +873,9 @@ jobs:
           - chart-name: hl7-transformer
             chart-dir: helm/extractor/hl7-transformer
             changed: hl7-transformer-chart
+          - chart-name: hl7log-extractor
+            chart-dir: helm/extractor/hl7log-extractor
+            changed: hl7log-extractor-chart
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: 'Publish chart - ${{ matrix.chart-name }}'
