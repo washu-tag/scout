@@ -29,6 +29,14 @@ from scout_report_viewer.config import settings
 TEST_DB_URL = os.environ.get("REPORT_VIEWER_TEST_DATABASE_URL", "")
 
 
+class _FakeTrinoError(Exception):
+    """Stub mirroring trino.exceptions.TrinoUserError's `error_name`."""
+
+    def __init__(self, error_name: str | None = None) -> None:
+        self.error_name = error_name
+        super().__init__(error_name or "fake trino error")
+
+
 def _needs_pg(request):
     if not TEST_DB_URL:
         pytest.skip(
@@ -63,7 +71,7 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
     `create_search` -> `get_rows` -> `get_csv` primes a distinct payload
     for each Trino round-trip.
     """
-    queue: list[tuple[list[str], list[dict[str, Any]]]] = []
+    queue: list[Any] = []
 
     async def fake_execute(
         sql: str,
@@ -74,7 +82,10 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
             raise AssertionError(
                 f"fake_trino had no queued response for SQL: {sql[:120]}..."
             )
-        return queue.pop(0)
+        item = queue.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
 
     async def fake_stream(
         sql: str,
@@ -86,7 +97,10 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
             raise AssertionError(
                 f"fake_trino had no queued response for SQL: {sql[:120]}..."
             )
-        columns, rows = queue.pop(0)
+        item = queue.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        columns, rows = item
         yield columns, []
         for i in range(0, len(rows), chunk_size):
             yield columns, rows[i : i + chunk_size]
@@ -97,6 +111,10 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
     def enqueue(columns: list[str], rows: list[dict[str, Any]]) -> None:
         queue.append((columns, rows))
 
+    def enqueue_error(error_name: str | None = None) -> None:
+        queue.append(_FakeTrinoError(error_name))
+
+    enqueue.error = enqueue_error  # type: ignore[attr-defined]
     return enqueue
 
 

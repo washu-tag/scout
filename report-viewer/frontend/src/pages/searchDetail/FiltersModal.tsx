@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { FilterState } from '../../api/client';
 import { Modal } from '../../Modal';
 import { paginationBtn } from './styles';
@@ -24,6 +24,8 @@ const MODALITY_OPTIONS = [
 export function FiltersModal(props: {
   initial: FilterState;
   availableColumns: string[];
+  modalityOptions?: string[];
+  modalitiesError?: boolean;
   onApply: (next: FilterState) => void;
   onRefineInChat: (next: FilterState) => void;
   onClose: () => void;
@@ -31,6 +33,15 @@ export function FiltersModal(props: {
   const [staged, setStaged] = useState<FilterState>(props.initial);
   const available = new Set(props.availableColumns);
   const has = (col: string) => available.has(col);
+
+  // Full list until the cohort's modalities load; union with the selection so a checked value can't vanish.
+  const modalityChoices = useMemo<string[]>(
+    () =>
+      props.modalitiesError || !props.modalityOptions
+        ? [...MODALITY_OPTIONS]
+        : Array.from(new Set([...props.modalityOptions, ...(staged.modality ?? [])])).sort(),
+    [props.modalityOptions, props.modalitiesError, staged.modality],
+  );
 
   const setAgeBound = (which: 'min' | 'max', value: string) =>
     setStaged((s) => ({
@@ -88,10 +99,10 @@ export function FiltersModal(props: {
           </FieldRow>
         )}
 
-        {has('modality') && (
+        {has('modality') && modalityChoices.length > 0 && (
           <FieldRow label="Modality">
             <CheckboxRow
-              options={MODALITY_OPTIONS as readonly string[]}
+              options={modalityChoices}
               selected={staged.modality ?? []}
               onToggle={(v) => toggleEnum('modality', v)}
             />

@@ -10,6 +10,7 @@ Endpoints:
   GET  /api/searches/{id}                       - metadata
   GET  /api/searches/{id}/rows                  - paginated rows (wraps sql)
   GET  /api/searches/{id}/accessions            - DISTINCT accession_number list
+  GET  /api/searches/{id}/modalities            - DISTINCT modality list
   GET  /api/searches/{id}/csv                   - streaming CSV download
 
 Single-report reads go through POST /api/reports/read (see routes/reports.py).
@@ -57,6 +58,7 @@ from ..models import (
     CreateFromFileResponse,
     CreateSearchRequest,
     CreateSearchResponse,
+    ModalitiesResponse,
     RowsResponse,
     SearchMeta,
 )
@@ -612,9 +614,13 @@ def _filter_clause(col: str, values: list[str], *, alias: str = "") -> tuple[str
     return f"LOWER({qcol}) LIKE LOWER(?) ESCAPE '!'", [pattern]
 
 
+def _is_column_not_found(exc: Exception) -> bool:
+    return getattr(exc, "error_name", None) == "COLUMN_NOT_FOUND"
+
+
 def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
     """400 when the sort/filter column isn't in this search's projection; 502 otherwise."""
-    if getattr(exc, "error_name", None) == "COLUMN_NOT_FOUND":
+    if _is_column_not_found(exc):
         log.info("rows %s query rejected: unprojected sort/filter column", stage)
         return HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -753,6 +759,45 @@ async def get_search_accessions(
             r["accession_number"] for r in rows if r.get("accession_number")
         ],
     }
+
+
+@router.get("/{search_id}/modalities", response_model=ModalitiesResponse)
+async def get_search_modalities(
+    search_id: str,
+    user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
+) -> ModalitiesResponse:
+    """Distinct modalities in the cohort, for the viewer's Modality filter.
+    Empty list when the saved SQL doesn't project `modality`."""
+    ds = await store.get_search(search_id, owner_sub=user.sub)
+    if ds is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    uploaded_ids = ds.get("uploaded_ids")
+    sql = (
+        f"SELECT DISTINCT s.modality "
+        f"FROM ({ds['sql']}) s "
+        f"WHERE s.modality IS NOT NULL "
+        f"ORDER BY s.modality"
+    )
+    try:
+        with metrics.time_trino("modalities_query"):
+            # safe: source_sql is persisted validated SQL, IDs bind via ?; OPA is the AuthZ boundary
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            _cols, rows = await trino_client.execute(
+                sql, user=user.sub, params=[uploaded_ids] if uploaded_ids else None
+            )
+    except Exception as exc:
+        if _is_column_not_found(exc):
+            return ModalitiesResponse(search_id=search_id, modalities=[])
+        log.exception("trino modalities query failed")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"trino modalities query failed: {exc}",
+        )
+    return ModalitiesResponse(
+        search_id=search_id,
+        modalities=[r["modality"] for r in rows if r.get("modality")],
+    )
 
 
 _CSV_CHUNK = 500
