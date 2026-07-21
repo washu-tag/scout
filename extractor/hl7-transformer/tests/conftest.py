@@ -2,8 +2,10 @@
 
 These tests run a real local Spark + Delta session (no MinIO/Hive/Trino) so we can
 exercise the derivative-table logic against an in-process metastore. Production config
-is mirrored from ansible/roles/scout_common/templates/spark-defaults.conf.j2 (minus the
-S3A / remote Hive settings).
+is mirrored from the hl7-transformer chart's spark-defaults ConfigMap (the
+"hl7-transformer.sparkDefaultsConf" helper in
+helm/extractor/hl7-transformer/templates/_helpers.tpl), minus the S3A / remote
+Hive settings.
 
 Run from extractor/hl7-transformer. Spark/Delta versions are NOT pinned here — they come
 from pyproject.toml (the single Python-side source of truth), so these tests track a

@@ -58,9 +58,16 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
+          {{- if or .Values.volumeMounts .Values.sparkDefaults.enabled }}
           volumeMounts:
+            {{- if .Values.sparkDefaults.enabled }}
+            - name: spark-defaults
+              mountPath: /opt/spark/conf/spark-defaults.conf
+              subPath: spark-defaults.conf
+            {{- end }}
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
+            {{- end }}
           {{- end }}
           env:
             {{- with .Values.env }}
@@ -73,9 +80,16 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
 
-      {{- with .Values.volumes }}
+      {{- if or .Values.volumes .Values.sparkDefaults.enabled }}
       volumes:
+        {{- if .Values.sparkDefaults.enabled }}
+        - name: spark-defaults
+          configMap:
+            name: {{ include "hl7-transformer.fullname" . }}-spark-defaults
+        {{- end }}
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

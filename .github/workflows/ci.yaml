@@ -39,6 +39,8 @@ jobs:
       keycloak: ${{ steps.filter.outputs.keycloak }}
       report-viewer: ${{ steps.filter.outputs.report-viewer }}
       xnat-plugin-installer: ${{ steps.filter.outputs.xnat-plugin-installer }}
+      hl7-transformer-chart: ${{ steps.filter.outputs.hl7-transformer-chart }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4
@@ -68,6 +70,16 @@ jobs:
               - 'report-viewer/**'
             xnat-plugin-installer:
               - 'docker/xnat-plugin-installer/**'
+            hl7-transformer-chart:
+              - 'helm/extractor/hl7-transformer/**'
+      - name: 'Mint build version'
+        id: version
+        shell: bash
+        # 0.YYYYMMDD.<run> is the ADR 0030 build lane. Computed once here (UTC)
+        # so every chart published in this run shares one version. run_number is
+        # scoped to this workflow file, so the chart-publish job must stay in
+        # ci.yaml; moving/renaming the workflow resets it and inverts tag order.
+        run: echo "version=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
   lint:
     runs-on: ubuntu-latest
     permissions:
@@ -842,6 +854,44 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: xnat-plugin-installer
+  # Publish changed Helm charts as versioned OCI artifacts (ADR 0030/0031 phase 0),
+  # gated like the image `publish` job. Vertical slice: hl7-transformer only.
+  publish-charts:
+    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    needs: [changes, deploy-and-test, smoke-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - chart-name: hl7-transformer
+            chart-dir: helm/extractor/hl7-transformer
+            changed: hl7-transformer-chart
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: 'Publish chart - ${{ matrix.chart-name }}'
+        if: needs.changes.outputs[matrix.changed] == 'true'
+        shell: bash
+        # helm is preinstalled on the runner (OCI push needs >= 3.8). Only the
+        # chart version is stamped (--version); Chart.yaml keeps its 0.0.0-dev /
+        # appVersion "latest" placeholders. appVersion-to-image coupling is phase
+        # 2, so the chart's default image tag stays :latest and phase-0 consumers
+        # pin image.tag for immutability. Token via stdin (never argv).
+        env:
+          CHART_DIR: ${{ matrix.chart-dir }}
+          CHART_NAME: ${{ matrix.chart-name }}
+          VERSION: ${{ needs.changes.outputs.version }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          helm version --short
+          printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
+          helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
+          helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
   publish-demo:
     if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
