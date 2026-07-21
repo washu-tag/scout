@@ -35,13 +35,11 @@ export function FiltersModal(props: {
   const has = (col: string) => available.has(col);
 
   // Full list until the cohort's modalities load; union with the selection so a checked value can't vanish.
-  const modalityChoices = useMemo<string[]>(
-    () =>
-      props.modalitiesError || !props.modalityOptions
-        ? [...MODALITY_OPTIONS]
-        : Array.from(new Set([...props.modalityOptions, ...(staged.modality ?? [])])).sort(),
-    [props.modalityOptions, props.modalitiesError, staged.modality],
-  );
+  const modalityChoices = useMemo<string[]>(() => {
+    const base =
+      props.modalitiesError || !props.modalityOptions ? MODALITY_OPTIONS : props.modalityOptions;
+    return Array.from(new Set([...base, ...(staged.modality ?? [])])).sort();
+  }, [props.modalityOptions, props.modalitiesError, staged.modality]);
 
   const setAgeBound = (which: 'min' | 'max', value: string) =>
     setStaged((s) => ({
