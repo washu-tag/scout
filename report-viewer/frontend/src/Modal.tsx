@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react';
 
+// So Escape only closes the top-most modal when dialogs are stacked.
+const modalStack: object[] = [];
+
 export function Modal(props: {
   onClose: () => void;
   ariaLabel?: string;
@@ -10,14 +13,24 @@ export function Modal(props: {
   children: React.ReactNode;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const idRef = useRef({});
+  const onCloseRef = useRef(props.onClose);
+  onCloseRef.current = props.onClose;
 
   useEffect(() => {
+    const id = idRef.current;
+    modalStack.push(id);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') props.onClose();
+      if (e.key === 'Escape' && modalStack[modalStack.length - 1] === id) {
+        onCloseRef.current();
+      }
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [props.onClose]);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      modalStack.splice(modalStack.indexOf(id), 1);
+    };
+  }, []);
 
   useEffect(() => {
     dialogRef.current?.focus();
