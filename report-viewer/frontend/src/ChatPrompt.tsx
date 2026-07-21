@@ -3,9 +3,8 @@ import { Modal } from './Modal';
 import { submitChatPrompt } from './chat';
 import { paginationBtn } from './pages/searchDetail/styles';
 
-// Sending a prompt to chat overwrites whatever the user has typed but not
-// sent, and the iframe is cross-origin so we can't tell whether a draft
-// exists, hence a blind confirm before every send.
+// Cross-origin from the chat, so we can't detect an existing draft; confirm
+// before overwriting it.
 type PromptOptions = { title: string; onConfirm?: () => void };
 type RequestPrompt = (text: string | null, opts: PromptOptions) => void;
 
@@ -39,7 +38,7 @@ export function ChatPromptProvider(props: { children: ReactNode }) {
         <Modal onClose={() => setPending(null)} ariaLabel={pending.title} maxWidth={360}>
           <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>{pending.title}</p>
           <p style={{ margin: '0 0 1rem', fontSize: '0.85rem' }}>
-            This replaces anything typed in the chat box but not yet sent.
+            This replaces any unsent text in the chat box.
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
             <button type="button" onClick={() => setPending(null)} style={paginationBtn}>
