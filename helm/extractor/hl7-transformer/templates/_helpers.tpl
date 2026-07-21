@@ -98,5 +98,8 @@ spark.sql.warehouse.dir {{ required "sparkDefaults.warehouseDir is required when
 spark.sql.shuffle.partitions {{ $s.shufflePartitions }}
 spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
 spark.executor.memory {{ .Values.spark.executor.memory }}
-spark.driver.memory {{ .Values.spark.executor.memory }}
+spark.driver.memory {{ $s.driverMemory | default .Values.spark.executor.memory }}
+{{- range $k, $v := $s.extraConf }}
+{{ $k }} {{ $v }}
+{{- end }}
 {{- end }}
