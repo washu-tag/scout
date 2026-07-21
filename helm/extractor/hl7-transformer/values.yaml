@@ -131,9 +131,7 @@ sparkDefaults:
   warehouseDir: ''
   s3Region: us-east-1
   s3Endpoint: ''
-  # driverMemory sizes the driver JVM independently; defaults to
-  # spark.executor.memory when empty. extraConf appends arbitrary `key value`
-  # lines for site-specific tuning the fixed keys above don't cover (e.g.
-  # spark.sql.files.maxPartitionBytes).
-  driverMemory: ''
+  # extraConf appends arbitrary `key value` lines for site-specific tuning the
+  # fixed keys above don't cover. (spark.executor.memory sizes both driver and
+  # executor; in local mode only the driver heap is live.)
   extraConf: {}
