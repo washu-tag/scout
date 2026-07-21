@@ -182,6 +182,9 @@ xnat_chart_version: 2.0.0
 # data-generator Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
 # renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator
 data_generator_chart_version: 1.0.0
-# hl7-transformer Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
-# renovate: datasource=docker depName=ghcr.io/washu-tag/charts/hl7-transformer
+# hl7-transformer Helm chart, built and published to GHCR by this repo's own CI
+# (ADR 0030 phase 0). Not Renovate-tracked, unlike the third-party charts above:
+# watching a chart we publish here would self-reference. On-prem Ansible pin only,
+# bumped by hand when the extractor is repointed to the OCI chart; the GitOps lane
+# owns the real version via its OCIRepository (ADR 0031).
 hl7_transformer_chart_version: 0.0.0
