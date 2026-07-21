@@ -17,3 +17,12 @@ default ignore = false
 ignore {
 	input.PkgName == "linux-libc-dev"
 }
+
+# org.jline:jline-remote-telnet is JLine's Telnet *server* transport, bundled by
+# Spark's spark-shell / connect REPL. The headless transformer worker never starts
+# a REPL or telnet server, so the server-side DoS CVEs Trivy maps onto it are not
+# reachable here. New CVEs keep landing in this niche module and their IDs churn
+# (GHSA→CVE), so match the package family rather than chasing IDs in .trivyignore.yaml.
+ignore {
+	input.PkgName == "org.jline:jline-remote-telnet"
+}

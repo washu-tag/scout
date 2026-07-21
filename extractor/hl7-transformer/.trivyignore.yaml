@@ -50,7 +50,8 @@ vulnerabilities:
   # libthrift fix is a major bump (0.16 → 0.23) coupled to Spark's hive
   # thrift client
   - id: CVE-2026-43869 # libthrift 0.16.0
-  # jline-remote-telnet ships in Spark's connect-repl / spark-shell REPL,
-  # which the transformer worker never launches
-  - id: GHSA-2r2c-cx56-8933 # jline-remote-telnet 3.x
-  - id: GHSA-47qp-hqvx-6r3f # jline-remote-telnet 3.x
+  # jline-remote-telnet (JLine's telnet-server transport, pulled in by Spark's
+  # spark-shell / connect REPL and never launched by the headless worker) is
+  # suppressed by package name in .trivyignore.rego — its advisory IDs churn
+  # (the GHSA aliases flipped to CVE-2026-56740/56741), so per-ID entries here
+  # kept going stale.

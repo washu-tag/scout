@@ -51,11 +51,11 @@ export function ExplainSqlModal(props: {
             background: 'transparent',
             borderRadius: 3,
             cursor: 'pointer',
-            color: '#5a6b80',
+            color: 'var(--rv-muted)',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#e6edf6';
-            e.currentTarget.style.borderColor = '#d0dceb';
+            e.currentTarget.style.background = 'var(--rv-surface-2)';
+            e.currentTarget.style.borderColor = 'var(--rv-border)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
@@ -68,7 +68,7 @@ export function ExplainSqlModal(props: {
         {props.explanation ? (
           <p style={{ margin: '0 0 1rem', lineHeight: 1.5 }}>{props.explanation}</p>
         ) : (
-          <p style={{ margin: '0 0 1rem', color: '#888', fontStyle: 'italic' }}>
+          <p style={{ margin: '0 0 1rem', color: 'var(--rv-muted)', fontStyle: 'italic' }}>
             No plain-language explanation was attached to this search.
           </p>
         )}
@@ -76,8 +76,8 @@ export function ExplainSqlModal(props: {
         <div style={{ position: 'relative' }}>
           <pre
             style={{
-              background: '#f4f7fb',
-              border: '1px solid #d0dceb',
+              background: 'var(--rv-surface-2)',
+              border: '1px solid var(--rv-border)',
               borderRadius: 3,
               padding: '0.6rem 0.75rem',
               paddingRight: '2.25rem',
@@ -110,13 +110,13 @@ export function ExplainSqlModal(props: {
               background: 'transparent',
               borderRadius: 3,
               cursor: props.sql ? 'pointer' : 'not-allowed',
-              color: copied ? '#1a7a3a' : '#5a6b80',
+              color: copied ? 'var(--rv-success)' : 'var(--rv-muted)',
               opacity: props.sql ? 1 : 0.4,
             }}
             onMouseEnter={(e) => {
               if (!props.sql) return;
-              e.currentTarget.style.background = '#e6edf6';
-              e.currentTarget.style.borderColor = '#d0dceb';
+              e.currentTarget.style.background = 'var(--rv-surface-2)';
+              e.currentTarget.style.borderColor = 'var(--rv-border)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent';
@@ -132,7 +132,12 @@ export function ExplainSqlModal(props: {
               Match criteria
             </div>
             <p
-              style={{ margin: '0 0 0.5rem', color: '#666', fontSize: '0.78rem', lineHeight: 1.4 }}
+              style={{
+                margin: '0 0 0.5rem',
+                color: 'var(--rv-muted)',
+                fontSize: '0.78rem',
+                lineHeight: 1.4,
+              }}
             >
               Words and diagnosis codes the LLM flagged as positive signals. They are highlighted in
               the report text and diagnosis chips when you expand a row, so you can spot-check why
@@ -141,7 +146,9 @@ export function ExplainSqlModal(props: {
             </p>
             {terms.length > 0 && (
               <div style={{ marginBottom: codes.length > 0 ? '0.4rem' : 0 }}>
-                <span style={{ color: '#666', fontSize: '0.78rem', marginRight: '0.4rem' }}>
+                <span
+                  style={{ color: 'var(--rv-muted)', fontSize: '0.78rem', marginRight: '0.4rem' }}
+                >
                   Match terms:
                 </span>
                 {terms.map((t, i) => (
@@ -149,6 +156,7 @@ export function ExplainSqlModal(props: {
                     key={i}
                     style={{
                       background: '#fff3a3',
+                      color: '#222',
                       padding: '0 4px',
                       marginRight: 4,
                       borderRadius: 2,
@@ -162,7 +170,9 @@ export function ExplainSqlModal(props: {
             )}
             {codes.length > 0 && (
               <div>
-                <span style={{ color: '#666', fontSize: '0.78rem', marginRight: '0.4rem' }}>
+                <span
+                  style={{ color: 'var(--rv-muted)', fontSize: '0.78rem', marginRight: '0.4rem' }}
+                >
                   Match diagnoses:
                 </span>
                 {codes.map((d, i) => (
@@ -170,6 +180,7 @@ export function ExplainSqlModal(props: {
                     key={i}
                     style={{
                       background: '#fff3a3',
+                      color: '#222',
                       padding: '0 4px',
                       marginRight: 4,
                       borderRadius: 2,

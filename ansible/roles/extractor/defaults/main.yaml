@@ -1,7 +1,11 @@
 ---
 # Default values for Extractor deployment
-# Spark ConfigMap name (unique per role to avoid collisions in shared namespaces)
-extractor_spark_defaults_configmap_name: spark-defaults-extractor
+
+# hl7-transformer Helm chart, published to GHCR by CI (ADR 0030/0031 phase 0).
+# Pulled by helm from the OCI ref pinned to hl7_transformer_chart_version
+# (group_vars/all/versions.yaml). Dev/CI override: set hl7_transformer_chart_path
+# to a local chart dir, in which case no --version is passed.
+hl7_transformer_chart_oci_ref: oci://ghcr.io/washu-tag/charts/hl7-transformer
 
 hl7log_extractor_timezone: '{{ timezone }}'
 

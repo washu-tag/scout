@@ -39,7 +39,7 @@ export function RowDetail(props: {
     const parts = text.split(highlightRe);
     return parts.map((p, i) =>
       i % 2 === 1 ? (
-        <mark key={i} style={{ background: '#fff3a3', padding: '0 1px' }}>
+        <mark key={i} style={{ background: '#fff3a3', color: '#222', padding: '0 1px' }}>
           {p}
         </mark>
       ) : (
@@ -96,13 +96,13 @@ export function RowDetail(props: {
     Record<string, unknown>;
 
   return (
-    <div style={{ fontSize: '0.78rem', lineHeight: 1.4, color: '#222' }}>
+    <div style={{ fontSize: '0.78rem', lineHeight: 1.4, color: 'var(--rv-fg)' }}>
       <div
         style={{
           padding: '0.5rem 0.7rem',
           marginBottom: '0.5rem',
-          background: '#fff',
-          border: '1px solid #d8dde3',
+          background: 'var(--rv-surface)',
+          border: '1px solid var(--rv-border)',
           borderRadius: 4,
           fontSize: '0.74rem',
           boxShadow: '0 1px 4px rgba(31, 95, 168, 0.10)',
@@ -145,7 +145,7 @@ export function RowDetail(props: {
               fontSize: '0.7rem',
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
-              color: '#5a6a7f',
+              color: 'var(--rv-muted)',
               marginBottom: '0.2rem',
             }}
           >
@@ -163,17 +163,17 @@ export function RowDetail(props: {
                     gap: '0.35rem',
                     padding: '0.15rem 0.4rem',
                     borderRadius: 3,
-                    background: positive ? '#fff3a3' : '#f4f4f6',
-                    border: positive ? '1px solid #d6b500' : '1px solid #e2e2e2',
+                    background: positive ? '#fff3a3' : 'var(--rv-surface-2)',
+                    border: positive ? '1px solid #d6b500' : '1px solid var(--rv-border)',
                     fontSize: '0.72rem',
-                    color: '#222',
+                    color: positive ? '#222' : 'var(--rv-fg)',
                     fontWeight: positive ? 600 : 400,
                   }}
                 >
                   <code
                     style={{
                       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                      color: positive ? '#7a5a00' : '#4477AA',
+                      color: positive ? '#7a5a00' : 'var(--rv-accent)',
                     }}
                   >
                     {String(d.diagnosis_code ?? '')}
@@ -188,17 +188,19 @@ export function RowDetail(props: {
         </div>
       )}
 
-      {reportQ.isLoading && <div style={{ color: '#888' }}>Loading report…</div>}
+      {reportQ.isLoading && <div style={{ color: 'var(--rv-muted)' }}>Loading report…</div>}
       {reportQ.error && (
-        <div style={{ color: '#b00' }}>{friendlyError(reportQ.error, 'this report')}</div>
+        <div style={{ color: 'var(--rv-danger)' }}>
+          {friendlyError(reportQ.error, 'this report')}
+        </div>
       )}
       {reportQ.data && (
         <div
           style={{
             whiteSpace: 'pre-wrap',
-            color: '#333',
-            background: '#fff',
-            border: '1px solid #e2e2e2',
+            color: 'var(--rv-fg)',
+            background: 'var(--rv-surface)',
+            border: '1px solid var(--rv-border)',
             borderRadius: 3,
             padding: '0.4rem 0.6rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
@@ -210,7 +212,7 @@ export function RowDetail(props: {
               (reportQ.data.report_section_impression as string | null) ??
               (reportQ.data.report_section_findings as string | null) ??
               '',
-          ) || <em style={{ color: '#888' }}>(empty)</em>}
+          ) || <em style={{ color: 'var(--rv-muted)' }}>(empty)</em>}
         </div>
       )}
 
@@ -233,7 +235,7 @@ export function RowDetail(props: {
               style={{
                 flex: 1,
                 minWidth: 0,
-                color: '#888',
+                color: 'var(--rv-muted)',
                 fontSize: '0.7rem',
                 display: 'flex',
                 alignItems: 'baseline',
@@ -291,10 +293,10 @@ function CardField(props: { label: string; value: string; mono?: boolean }) {
         alignItems: 'baseline',
       }}
     >
-      <span style={{ color: '#888', fontWeight: 600 }}>{props.label}</span>
+      <span style={{ color: 'var(--rv-muted)', fontWeight: 600 }}>{props.label}</span>
       <span
         style={{
-          color: '#222',
+          color: 'var(--rv-fg)',
           fontFamily: props.mono ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : 'inherit',
           wordBreak: 'break-word',
         }}
