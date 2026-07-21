@@ -40,6 +40,17 @@ jobs:
       report-viewer: ${{ steps.filter.outputs.report-viewer }}
       xnat-plugin-installer: ${{ steps.filter.outputs.xnat-plugin-installer }}
       hl7-transformer-chart: ${{ steps.filter.outputs.hl7-transformer-chart }}
+      dcm4chee-chart: ${{ steps.filter.outputs.dcm4chee-chart }}
+      hive-metastore-chart: ${{ steps.filter.outputs.hive-metastore-chart }}
+      hl7-listener-chart: ${{ steps.filter.outputs.hl7-listener-chart }}
+      keycloak-config-cli-chart: ${{ steps.filter.outputs.keycloak-config-cli-chart }}
+      launchpad-chart: ${{ steps.filter.outputs.launchpad-chart }}
+      open-webui-bootstrap-chart: ${{ steps.filter.outputs.open-webui-bootstrap-chart }}
+      orthanc-chart: ${{ steps.filter.outputs.orthanc-chart }}
+      report-viewer-chart: ${{ steps.filter.outputs.report-viewer-chart }}
+      scout-dashboards-chart: ${{ steps.filter.outputs.scout-dashboards-chart }}
+      scout-opa-chart: ${{ steps.filter.outputs.scout-opa-chart }}
+      voila-chart: ${{ steps.filter.outputs.voila-chart }}
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -72,6 +83,28 @@ jobs:
               - 'docker/xnat-plugin-installer/**'
             hl7-transformer-chart:
               - 'helm/extractor/hl7-transformer/**'
+            dcm4chee-chart:
+              - 'helm/dcm4chee/**'
+            hive-metastore-chart:
+              - 'helm/hive-metastore/**'
+            hl7-listener-chart:
+              - 'helm/hl7-listener/**'
+            keycloak-config-cli-chart:
+              - 'helm/keycloak-config-cli/**'
+            launchpad-chart:
+              - 'helm/launchpad/**'
+            open-webui-bootstrap-chart:
+              - 'helm/open-webui-bootstrap/**'
+            orthanc-chart:
+              - 'helm/orthanc/**'
+            report-viewer-chart:
+              - 'helm/report-viewer/**'
+            scout-dashboards-chart:
+              - 'helm/scout-dashboards/**'
+            scout-opa-chart:
+              - 'helm/scout-opa/**'
+            voila-chart:
+              - 'helm/voila/**'
       - name: 'Mint build version'
         id: version
         shell: bash
@@ -870,6 +903,39 @@ jobs:
           - chart-name: hl7-transformer
             chart-dir: helm/extractor/hl7-transformer
             changed: hl7-transformer-chart
+          - chart-name: dcm4chee
+            chart-dir: helm/dcm4chee
+            changed: dcm4chee-chart
+          - chart-name: hive-metastore
+            chart-dir: helm/hive-metastore
+            changed: hive-metastore-chart
+          - chart-name: hl7-listener
+            chart-dir: helm/hl7-listener
+            changed: hl7-listener-chart
+          - chart-name: keycloak-config-cli
+            chart-dir: helm/keycloak-config-cli
+            changed: keycloak-config-cli-chart
+          - chart-name: launchpad
+            chart-dir: helm/launchpad
+            changed: launchpad-chart
+          - chart-name: open-webui-bootstrap
+            chart-dir: helm/open-webui-bootstrap
+            changed: open-webui-bootstrap-chart
+          - chart-name: orthanc
+            chart-dir: helm/orthanc
+            changed: orthanc-chart
+          - chart-name: report-viewer
+            chart-dir: helm/report-viewer
+            changed: report-viewer-chart
+          - chart-name: scout-dashboards
+            chart-dir: helm/scout-dashboards
+            changed: scout-dashboards-chart
+          - chart-name: scout-opa
+            chart-dir: helm/scout-opa
+            changed: scout-opa-chart
+          - chart-name: voila
+            chart-dir: helm/voila
+            changed: voila-chart
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: 'Publish chart - ${{ matrix.chart-name }}'
