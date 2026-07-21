@@ -6,7 +6,7 @@ from typing import Optional
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
-from pyspark.sql import SparkSession, Column, Window
+from pyspark.sql import SparkSession, Column, DataFrame, Window
 from pyspark.sql import functions as F
 from s3fs import S3FileSystem
 from temporalio import activity
@@ -24,7 +24,11 @@ from .schemautils import (
 )
 from .dataextraction import process_derivative_data
 from .hl7reader import read_hl7
-from .sparkutils import merge_df_into_dt_on_column
+from .sparkutils import (
+    CONTENT_HASH_COL,
+    merge_df_into_dt_on_column,
+    with_content_hash,
+)
 
 import os
 import tempfile
@@ -163,6 +167,98 @@ def spark_activity_session(app_name: str, health_file: Optional[Path] = None):
                 spark.stop()
             except Exception:
                 activity.logger.error("Error stopping spark")
+
+
+def merge_report_df_into_table(
+    spark: SparkSession, report_df: DataFrame, report_table_name: str
+) -> bool:
+    """Upsert extracted report rows into ``default.<report_table_name>`` (issue #482).
+
+    Adds the bookkeeping columns (``updated``, ``content_hash``), creates the table if
+    needed, drops incoming rows whose (source_file, year) already exists with an
+    identical content_hash (pre-merge anti-join — an identical re-ingest produces NO
+    commit, no CDF, and therefore no derivative-table churn), and merges the remainder
+    with a conditional matched-update as a race/retry safety belt: even if an identical
+    row slips past the anti-join (concurrent merge, Temporal activity retry), the
+    matched clause updates nothing and emits no CDF event.
+
+    Returns True iff a merge commit was executed.
+    """
+    full_name = f"default.{report_table_name}"
+    df = with_content_hash(report_df.withColumn("updated", F.current_timestamp()))
+
+    table_exists = spark.catalog.tableExists(full_name)
+    (
+        DeltaTable.createIfNotExists(spark)
+        .tableName(full_name)
+        .property("delta.enableChangeDataFeed", "true")
+        .addColumns(df.schema)
+        .partitionedBy("year")
+        .execute()
+    )
+
+    df_to_merge = df
+    if table_exists:
+        if CONTENT_HASH_COL not in spark.table(full_name).columns:
+            # One-time, metadata-only migration for tables created before this
+            # column existed. Explicit ALTER (rather than merge-time schema
+            # evolution) so t.content_hash is guaranteed resolvable in the matched
+            # condition and the projection below is uniform.
+            spark.sql(
+                f"ALTER TABLE {full_name} ADD COLUMNS ({CONTENT_HASH_COL} STRING)"
+            )
+        # The anti-join requires year equality, so an incoming row can only match an
+        # existing row in the same year partition. Restrict `existing` to the batch's
+        # years (year is the partition column, so Delta prunes the scan to those dirs)
+        # rather than reading/shuffling all of history on every ingest. NULL-year rows
+        # are excluded — they never anti-match anyway (plain `=` below) and always fall
+        # through to insert; an all-NULL-year batch yields empty `existing`, so
+        # everything merges, matching the unfiltered behavior. `df` is cached at the
+        # call site, so this distinct() is a cheap job over materialized data.
+        batch_years = [
+            row.year
+            for row in df.select("year").distinct().collect()
+            if row.year is not None
+        ]
+        existing = (
+            spark.table(full_name)
+            .where(F.col("year").isin(batch_years))
+            .select(
+                F.col("source_file").alias("_existing_source_file"),
+                F.col("year").alias("_existing_year"),
+                F.col(CONTENT_HASH_COL).alias("_existing_content_hash"),
+            )
+        )
+        # Plain `=` on source_file/year mirrors the MERGE match condition exactly
+        # (a NULL-year row never matches and still falls through to insert, as
+        # today); null-safe `<=>` only on the hash, so a NULL legacy hash never
+        # suppresses its one-time backfill update.
+        unchanged = (
+            (F.col("source_file") == F.col("_existing_source_file"))
+            & (F.col("year") == F.col("_existing_year"))
+            & F.col(CONTENT_HASH_COL).eqNullSafe(F.col("_existing_content_hash"))
+        )
+        df_to_merge = df.join(existing, on=unchanged, how="left_anti").cache()
+
+    try:
+        if table_exists and df_to_merge.isEmpty():
+            return False  # nothing new or changed: no commit at all
+        merge_df_into_dt_on_column(
+            # A fresh handle, acquired after any ALTER above — a handle from before
+            # the migration would fail to resolve t.content_hash in the condition.
+            DeltaTable.forName(spark, full_name),
+            df_to_merge,
+            "source_file",
+            update_condition=f"NOT (t.{CONTENT_HASH_COL} <=> s.{CONTENT_HASH_COL})",
+            # The dynamically pivoted patient-ID columns can add new columns in any
+            # batch; production covers this via the session-wide autoMerge conf, but
+            # make it explicit here.
+            with_schema_evolution=True,
+        )
+        return True
+    finally:
+        if df_to_merge is not df:
+            df_to_merge.unpersist()
 
 
 def import_hl7_files_to_deltalake(
@@ -573,30 +669,21 @@ def import_hl7_files_to_deltalake(
             .join(name_df, "source_file", "left")
             .join(modality_map, "service_identifier", "left")
             .withColumn("year", F.year("message_dt"))
-            .withColumn("updated", F.current_timestamp())
         ).cache()
 
         modality_map.unpersist()
 
-        # Create table if it doesn't yet exist
-        activity.heartbeat()
-        activity.logger.info(
-            "Creating Delta Lake table %s if it does not exist", report_table_name
-        )
-        dt = (
-            DeltaTable.createIfNotExists(spark)
-            .tableName(f"default.{report_table_name}")
-            .property("delta.enableChangeDataFeed", "true")
-            .addColumns(df.schema)
-            .partitionedBy("year")
-            .execute()
-        )
-
         activity.heartbeat()
         activity.logger.info("Writing data to Delta Lake table %s", report_table_name)
-        merge_df_into_dt_on_column(dt, df, "source_file")
-
-        activity.logger.info(f"Finished writing {report_table_name} to delta lake")
+        merged = merge_report_df_into_table(spark, df, report_table_name)
+        if merged:
+            activity.logger.info("Finished writing %s to delta lake", report_table_name)
+        else:
+            activity.logger.info(
+                "All HL7 files already present in %s with unchanged content; "
+                "skipped merge",
+                report_table_name,
+            )
 
         activity.heartbeat()
         success_paths = [row.source_file for row in df.select("source_file").collect()]

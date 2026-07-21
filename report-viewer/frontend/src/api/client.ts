@@ -183,14 +183,17 @@ export async function getReport(reportId: string, idColumn: string): Promise<Rep
   return row as unknown as ReportDetail;
 }
 
-export function getSearchRows(searchId: string, params: RowsParams): Promise<RowsResponse> {
+// Serializes the sort + filter view state shared by the /rows and /csv
+// endpoints into query params. Callers add their own page/limit/columns.
+export function buildViewQuery(view: {
+  sort?: { col: string; dir: 'asc' | 'desc' } | null;
+  filters?: FilterState;
+}): URLSearchParams {
   const qs = new URLSearchParams();
-  qs.set('page', String(params.page));
-  qs.set('limit', String(params.limit));
-  if (params.sort) {
-    qs.set('sort', `${params.sort.col}:${params.sort.dir}`);
+  if (view.sort) {
+    qs.set('sort', `${view.sort.col}:${view.sort.dir}`);
   }
-  const f = params.filters;
+  const f = view.filters;
   if (f) {
     if (f.patient_age?.min) qs.set('filter.patient_age.min', f.patient_age.min);
     if (f.patient_age?.max) qs.set('filter.patient_age.max', f.patient_age.max);
@@ -203,5 +206,31 @@ export function getSearchRows(searchId: string, params: RowsParams): Promise<Row
     if (f.accession_number) qs.set('filter.accession_number', f.accession_number);
     if (f.sending_facility) qs.set('filter.sending_facility', f.sending_facility);
   }
+  return qs;
+}
+
+export function getSearchRows(searchId: string, params: RowsParams): Promise<RowsResponse> {
+  const qs = buildViewQuery({ sort: params.sort, filters: params.filters });
+  qs.set('page', String(params.page));
+  qs.set('limit', String(params.limit));
   return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows?${qs.toString()}`);
+}
+
+// Download URL for the CSV export. Mirrors the current view: same sort/filters
+// as the table, and `columns` restricts the export to the visible columns
+// (primary_report_identifier is always appended server-side).
+export function csvUrl(
+  searchId: string,
+  view: {
+    sort?: { col: string; dir: 'asc' | 'desc' } | null;
+    filters?: FilterState;
+    columns?: string[];
+  },
+): string {
+  const qs = buildViewQuery({ sort: view.sort, filters: view.filters });
+  if (view.columns && view.columns.length > 0) {
+    qs.set('columns', view.columns.join(','));
+  }
+  const suffix = qs.toString();
+  return `/api/searches/${encodeURIComponent(searchId)}/csv${suffix ? `?${suffix}` : ''}`;
 }

@@ -10,7 +10,7 @@ function fmtTime(iso: string): string {
 }
 
 const rowStyle: React.CSSProperties = {
-  borderBottom: '1px solid #eee',
+  borderBottom: '1px solid var(--rv-border)',
   padding: '0.55rem 0.75rem',
 };
 
@@ -38,15 +38,15 @@ export default function SearchesListPage() {
   });
 
   if (isLoading) {
-    return <p style={{ color: '#666' }}>Loading searches…</p>;
+    return <p style={{ color: 'var(--rv-muted)' }}>Loading searches…</p>;
   }
   if (error) {
-    return <p style={{ color: '#b00' }}>{friendlyError(error, 'your searches')}</p>;
+    return <p style={{ color: 'var(--rv-danger)' }}>{friendlyError(error, 'your searches')}</p>;
   }
   const searches = data ?? [];
   if (searches.length === 0) {
     return (
-      <p style={{ color: '#666' }}>
+      <p style={{ color: 'var(--rv-muted)' }}>
         No searches yet. Searches you run in Scout Chat will show up here.
       </p>
     );
@@ -64,7 +64,7 @@ export default function SearchesListPage() {
         }}
       >
         <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Your searches</h2>
-        <span style={{ color: '#888', fontSize: '0.85rem' }}>
+        <span style={{ color: 'var(--rv-muted)', fontSize: '0.85rem' }}>
           {searches.length} {searches.length === 1 ? 'search' : 'searches'}
           {groups.length > 1 ? ` across ${groups.length} chats` : ''}
         </span>
@@ -90,22 +90,26 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
           marginBottom: '0.4rem',
         }}
       >
-        <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#222' }}>
+        <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: 'var(--rv-fg)' }}>
           {displayTitle}
         </h3>
-        <span style={{ color: '#888', fontSize: '0.75rem' }}>
+        <span style={{ color: 'var(--rv-muted)', fontSize: '0.75rem' }}>
           {items.length} {items.length === 1 ? 'search' : 'searches'}
         </span>
         {!isUngrouped && chatOrigin() && (
-          <a href={chatUrl(chatId)} target="_top" style={{ fontSize: '0.75rem', color: '#4477AA' }}>
+          <a
+            href={chatUrl(chatId)}
+            target="_top"
+            style={{ fontSize: '0.75rem', color: 'var(--rv-accent)' }}
+          >
             open chat ↗
           </a>
         )}
       </div>
       <div
         style={{
-          background: '#fff',
-          border: '1px solid #e2e2e2',
+          background: 'var(--rv-surface)',
+          border: '1px solid var(--rv-border)',
           borderRadius: 4,
           overflow: 'hidden',
         }}
@@ -114,9 +118,9 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 0.6fr 1fr',
-            background: '#f5f5f5',
+            background: 'var(--rv-surface-2)',
             fontSize: '0.8rem',
-            color: '#555',
+            color: 'var(--rv-muted)',
             fontWeight: 600,
             ...rowStyle,
           }}
@@ -133,7 +137,7 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
               display: 'grid',
               gridTemplateColumns: '1fr 0.6fr 1fr',
               fontSize: '0.88rem',
-              color: '#222',
+              color: 'var(--rv-fg)',
               textDecoration: 'none',
               ...rowStyle,
             }}
@@ -146,7 +150,7 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
               {d.id}
             </span>
             <span>{d.count === null ? '—' : d.count.toLocaleString()}</span>
-            <span style={{ color: '#555' }}>{fmtTime(d.created_at)}</span>
+            <span style={{ color: 'var(--rv-muted)' }}>{fmtTime(d.created_at)}</span>
           </Link>
         ))}
       </div>
