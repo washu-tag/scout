@@ -612,6 +612,34 @@ def _filter_clause(col: str, values: list[str], *, alias: str = "") -> tuple[str
     return f"LOWER({qcol}) LIKE LOWER(?) ESCAPE '!'", [pattern]
 
 
+def _build_where_and_order(
+    filters: list[tuple[str, list[str]]],
+    sort_spec: tuple[str, str] | None,
+    *,
+    alias: str = "s",
+) -> tuple[str, str, list]:
+    """Shared WHERE + ORDER BY builder for the /rows and /csv views so both
+    apply identical filter and sort semantics. Returns (where_sql, order_sql,
+    filter_params). ORDER BY always tie-breaks on primary_report_identifier so
+    the order is stable."""
+    where_parts: list[str] = []
+    filter_params: list = []
+    for fcol, fvals in filters:
+        clause, p = _filter_clause(fcol, fvals, alias=alias)
+        where_parts.append(clause)
+        filter_params.extend(p)
+    where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
+    tiebreak = f"{alias}.primary_report_identifier"
+    if sort_spec:
+        scol, sdir = sort_spec
+        order_sql = (
+            f" ORDER BY {alias}.{_quote_ident(scol)} {sdir} NULLS LAST, {tiebreak}"
+        )
+    else:
+        order_sql = f" ORDER BY {tiebreak}"
+    return where_sql, order_sql, filter_params
+
+
 def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
     """400 when the sort/filter column isn't in this search's projection; 502 otherwise."""
     if getattr(exc, "error_name", None) == "COLUMN_NOT_FOUND":
@@ -655,20 +683,7 @@ async def get_search_rows(
     offset = (page - 1) * limit
     sort_spec = _parse_sort(sort)
     filters = _parse_filters(request)
-
-    where_parts: list[str] = []
-    filter_params: list = []
-    for fcol, fvals in filters:
-        clause, p = _filter_clause(fcol, fvals, alias="s")
-        where_parts.append(clause)
-        filter_params.extend(p)
-    where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
-    if sort_spec:
-        scol, sdir = sort_spec
-        order_sql = f" ORDER BY s.{_quote_ident(scol)} {sdir} NULLS LAST, s.primary_report_identifier"
-    else:
-        # Stable default so OFFSET/LIMIT doesn't drift across pages.
-        order_sql = " ORDER BY s.primary_report_identifier"
+    where_sql, order_sql, filter_params = _build_where_and_order(filters, sort_spec)
 
     rows_sql = (
         f"SELECT s.* FROM ({source_sql}) s"
@@ -773,24 +788,58 @@ def _csv_quote(value: Any) -> str:
     return s
 
 
+def _parse_export_columns(columns: str | None) -> str:
+    """Build the SELECT projection for the CSV export from a comma-separated
+    `columns` list. Each field is validated/quoted via _quote_ident (SQL-injection
+    safe). primary_report_identifier is always included so exported rows stay
+    uniquely identifiable, even if the user hid it. Empty/absent -> `s.*`."""
+    if not columns:
+        return "s.*"
+    fields: list[str] = []
+    seen: set[str] = set()
+    for raw in columns.split(","):
+        name = raw.strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        fields.append(name)
+    if "primary_report_identifier" not in seen:
+        fields.append("primary_report_identifier")
+    return ", ".join(f"s.{_quote_ident(f)}" for f in fields)
+
+
 @router.get("/{search_id}/csv")
 async def export_search_csv(
     search_id: str,
+    request: Request,
+    sort: str | None = Query(default=None, description="col:dir, e.g. message_dt:desc"),
+    columns: str | None = Query(
+        default=None, description="comma-separated fields to export; empty = all"
+    ),
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> StreamingResponse:
+    """Streaming CSV of a search. Mirrors the /rows view: the same whitelisted
+    filters and sort are applied, and `columns` restricts the projection to the
+    user's visible columns (plus primary_report_identifier)."""
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     sql = ds["sql"]
     uploaded_ids = ds.get("uploaded_ids")
+    base_params: list = [uploaded_ids] if uploaded_ids else []
+
+    # Validate up front: a bad sort/filter/column 400s before streaming starts
+    # (a StreamingResponse can't change status mid-stream). An unprojected but
+    # otherwise-valid column still slips through to a mid-stream error.
+    sort_spec = _parse_sort(sort)
+    filters = _parse_filters(request)
+    projection = _parse_export_columns(columns)
+    where_sql, order_sql, filter_params = _build_where_and_order(filters, sort_spec)
 
     async def gen():
-        params = [uploaded_ids] if uploaded_ids else None
-        export_sql = (
-            f"SELECT s.* FROM ({sql}) s "
-            f"ORDER BY s.{_quote_ident('primary_report_identifier')}"
-        )
+        params = (base_params + filter_params) or None
+        export_sql = f"SELECT {projection} FROM ({sql}) s{where_sql}{order_sql}"
         header_written = False
         try:
             with metrics.time_trino("export_csv_query"):

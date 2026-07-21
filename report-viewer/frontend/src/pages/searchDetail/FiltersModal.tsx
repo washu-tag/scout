@@ -150,7 +150,7 @@ export function FiltersModal(props: {
           style={{
             marginTop: '1rem',
             paddingTop: '0.75rem',
-            borderTop: '1px solid #eee',
+            borderTop: '1px solid var(--rv-border)',
             display: 'flex',
             gap: '0.5rem',
             alignItems: 'center',
@@ -171,9 +171,9 @@ export function FiltersModal(props: {
             onClick={() => props.onApply(staged)}
             style={{
               ...paginationBtn,
-              background: '#4477AA',
+              background: 'var(--rv-accent)',
               color: '#fff',
-              borderColor: '#4477AA',
+              borderColor: 'var(--rv-accent)',
             }}
           >
             Apply
@@ -194,7 +194,7 @@ function FieldRow(props: { label: string; children: ReactNode }) {
         padding: '0.4rem 0',
       }}
     >
-      <div style={{ width: 80, color: '#555', fontWeight: 600, paddingTop: '0.25rem' }}>
+      <div style={{ width: 80, color: 'var(--rv-muted)', fontWeight: 600, paddingTop: '0.25rem' }}>
         {props.label}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>{props.children}</div>
@@ -214,7 +214,7 @@ function RangeInputs(props: {
     minWidth: 0,
     fontSize: '0.85rem',
     padding: '0.3rem 0.45rem',
-    border: '1px solid #ccc',
+    border: '1px solid var(--rv-border)',
     borderRadius: 3,
     boxSizing: 'border-box',
   };
@@ -227,7 +227,7 @@ function RangeInputs(props: {
         placeholder={props.placeholder.min}
         style={style}
       />
-      <span style={{ color: '#888' }}>-</span>
+      <span style={{ color: 'var(--rv-muted)' }}>-</span>
       <input
         type={props.inputType}
         value={props.max}
@@ -250,7 +250,7 @@ function TextInput(props: { value: string; onChange: (value: string) => void }) 
         width: '100%',
         fontSize: '0.85rem',
         padding: '0.3rem 0.45rem',
-        border: '1px solid #ccc',
+        border: '1px solid var(--rv-border)',
         borderRadius: 3,
         boxSizing: 'border-box',
       }}

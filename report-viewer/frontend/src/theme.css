@@ -1,0 +1,44 @@
+/* Dark mode follows the browser; no in-app toggle. */
+:root {
+  color-scheme: light dark;
+  --rv-bg: #fafafa;
+  --rv-surface: #fff;
+  --rv-surface-2: #f5f5f5;
+  --rv-accent-soft: #e8f0fa;
+  --rv-fg: #222;
+  --rv-muted: #666;
+  --rv-border: #e2e2e2;
+  --rv-accent: #4477aa;
+  --rv-danger: #b00;
+  --rv-success: #1a7a3a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --rv-bg: #1a1a1a;
+    --rv-surface: #242424;
+    --rv-surface-2: #2e2e2e;
+    --rv-accent-soft: #2f3b4a;
+    --rv-fg: #e6e6e6;
+    --rv-muted: #9a9a9a;
+    --rv-border: #3a3a3a;
+    --rv-accent: #5b9bd5;
+    --rv-danger: #ff6b6b;
+    --rv-success: #3fbf6a;
+  }
+}
+
+@keyframes scoutSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.scout-col-resize {
+  border-right: 1px solid var(--rv-border);
+}
+.scout-col-resize:hover {
+  border-right-color: var(--rv-muted);
+}
+tr.scout-row:hover {
+  background: var(--rv-surface-2) !important;
+}
