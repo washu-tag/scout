@@ -44,7 +44,8 @@ export function Modal(props: {
         onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative',
-          background: '#fff',
+          background: 'var(--rv-surface)',
+          color: 'var(--rv-fg)',
           padding: '1.25rem 1.5rem',
           borderRadius: 6,
           minWidth: props.minWidth,

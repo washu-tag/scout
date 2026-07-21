@@ -70,14 +70,19 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
     Tests can queue multiple responses so a flow like
     `create_search` -> `get_rows` -> `get_csv` primes a distinct payload
     for each Trino round-trip.
+
+    Every (sql, params) round-trip is recorded on `enqueue.calls` so tests
+    can assert on the SQL/params the service generated.
     """
     queue: list[Any] = []
+    calls: list[tuple[str, list | tuple | None]] = []
 
     async def fake_execute(
         sql: str,
         user: str | None = None,
         params: list | tuple | None = None,
     ):
+        calls.append((sql, params))
         if not queue:
             raise AssertionError(
                 f"fake_trino had no queued response for SQL: {sql[:120]}..."
@@ -93,6 +98,7 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
         params: list | tuple | None = None,
         chunk_size: int = 1000,
     ):
+        calls.append((sql, params))
         if not queue:
             raise AssertionError(
                 f"fake_trino had no queued response for SQL: {sql[:120]}..."
@@ -115,6 +121,7 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
         queue.append(_FakeTrinoError(error_name))
 
     enqueue.error = enqueue_error  # type: ignore[attr-defined]
+    enqueue.calls = calls  # type: ignore[attr-defined]
     return enqueue
 
 

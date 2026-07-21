@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-table';
 import {
   activeFilterCount,
+  csvUrl,
   friendlyError,
   getSearch,
   getSearchModalities,
@@ -182,7 +183,7 @@ export default function SearchDetailPage() {
           <span
             title="Search ID"
             style={{
-              color: '#999',
+              color: 'var(--rv-muted)',
               fontSize: '0.7rem',
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
               userSelect: 'all',
@@ -192,9 +193,11 @@ export default function SearchDetailPage() {
           </span>
         )}
       </div>
-      {rowsQ.error && <p style={{ color: '#b00' }}>{friendlyError(rowsQ.error, 'these rows')}</p>}
+      {rowsQ.error && (
+        <p style={{ color: 'var(--rv-danger)' }}>{friendlyError(rowsQ.error, 'these rows')}</p>
+      )}
       {!rowsQ.data && rowsQ.isLoading ? (
-        <p style={{ color: '#666' }}>Loading reports…</p>
+        <p style={{ color: 'var(--rv-muted)' }}>Loading reports…</p>
       ) : (
         rowsQ.data && (
           <div
@@ -211,8 +214,8 @@ export default function SearchDetailPage() {
                 overflowY: 'auto',
                 flex: '1 1 auto',
                 minHeight: 0,
-                background: '#fff',
-                border: '1px solid #e2e2e2',
+                background: 'var(--rv-surface)',
+                border: '1px solid var(--rv-border)',
                 borderRadius: 4,
               }}
             >
@@ -243,11 +246,11 @@ export default function SearchDetailPage() {
                               padding: '0.35rem 0.45rem',
                               fontSize: '0.78rem',
                               fontWeight: 600,
-                              color: '#555',
-                              background: '#f5f5f5',
+                              color: 'var(--rv-muted)',
+                              background: 'var(--rv-surface-2)',
                               // border-collapse: collapse + sticky drops
                               // border-bottom on scroll; box-shadow survives.
-                              boxShadow: 'inset 0 -1px 0 #c8ccd0',
+                              boxShadow: 'inset 0 -1px 0 var(--rv-border)',
                               whiteSpace: 'nowrap',
                               width: header.getSize(),
                               cursor: 'pointer',
@@ -273,7 +276,9 @@ export default function SearchDetailPage() {
                                 cursor: 'col-resize',
                                 userSelect: 'none',
                                 touchAction: 'none',
-                                ...(isResizing ? { borderRight: '2px solid #4477AA' } : {}),
+                                ...(isResizing
+                                  ? { borderRight: '2px solid var(--rv-accent)' }
+                                  : {}),
                               }}
                             />
                           </th>
@@ -291,7 +296,7 @@ export default function SearchDetailPage() {
                           className={isExpanded ? undefined : 'scout-row'}
                           onClick={() => row.toggleExpanded()}
                           style={{
-                            borderBottom: '1px solid #f0f0f0',
+                            borderBottom: '1px solid var(--rv-border)',
                             cursor: 'pointer',
                             background: isExpanded ? ROW_ACTIVE_BG : 'transparent',
                           }}
@@ -346,7 +351,7 @@ export default function SearchDetailPage() {
                     <tr>
                       <td
                         colSpan={table.getVisibleFlatColumns().length}
-                        style={{ padding: '1rem', textAlign: 'center', color: '#888' }}
+                        style={{ padding: '1rem', textAlign: 'center', color: 'var(--rv-muted)' }}
                       >
                         {activeFilterCount(appliedFilters) > 0
                           ? 'No rows match your filters.'
@@ -387,7 +392,9 @@ export default function SearchDetailPage() {
               >
                 Next
               </button>
-              <span style={{ marginLeft: '0.4rem', color: '#888', whiteSpace: 'nowrap' }}>
+              <span
+                style={{ marginLeft: '0.4rem', color: 'var(--rv-muted)', whiteSpace: 'nowrap' }}
+              >
                 Per page:
               </span>
               <select
@@ -405,7 +412,7 @@ export default function SearchDetailPage() {
               </select>
               <span
                 style={{
-                  color: '#666',
+                  color: 'var(--rv-muted)',
                   fontSize: '0.75rem',
                   whiteSpace: 'nowrap',
                 }}
@@ -426,7 +433,7 @@ export default function SearchDetailPage() {
                   width: 13,
                   height: 13,
                   borderRadius: '50%',
-                  border: '2px solid #fde6c2',
+                  border: '2px solid var(--rv-border)',
                   borderTopColor: '#ea580c',
                   animation: 'scoutSpin 0.8s linear infinite',
                   display: 'inline-block',
@@ -440,9 +447,9 @@ export default function SearchDetailPage() {
                   activeFilterCount(appliedFilters) > 0
                     ? {
                         ...paginationBtn,
-                        background: '#4477AA',
+                        background: 'var(--rv-accent)',
                         color: '#fff',
-                        borderColor: '#4477AA',
+                        borderColor: 'var(--rv-accent)',
                       }
                     : paginationBtn
                 }
@@ -468,8 +475,8 @@ export default function SearchDetailPage() {
                       bottom: '100%',
                       right: 0,
                       marginBottom: 4,
-                      background: '#fff',
-                      border: '1px solid #d0d7e0',
+                      background: 'var(--rv-surface)',
+                      border: '1px solid var(--rv-border)',
                       borderRadius: 4,
                       boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
                       padding: '0.4rem 0.6rem',
@@ -511,12 +518,14 @@ export default function SearchDetailPage() {
                 </button>
               )}
               <a
-                href={`/api/searches/${encodeURIComponent(searchId)}/csv`}
+                href={csvUrl(searchId, {
+                  sort: sortParam,
+                  filters: appliedFilters,
+                  columns: table.getVisibleLeafColumns().map((c) => c.id),
+                })}
                 style={{
                   ...paginationBtn,
-                  color: '#222',
                   textDecoration: 'none',
-                  background: '#fff',
                 }}
               >
                 Download CSV
