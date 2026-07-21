@@ -148,18 +148,12 @@ export function FiltersModal(props: {
           </FieldRow>
         )}
 
-        <div
-          style={{
-            marginTop: '1rem',
-            paddingTop: '0.75rem',
-            borderTop: '1px solid var(--rv-border)',
-          }}
-        >
-          {needFilters && activeFilterCount(staged) === 0 && (
-            <div style={{ fontSize: '0.72rem', color: 'var(--rv-danger)', marginBottom: '0.5rem' }}>
-              Select at least one filter to send to chat.
-            </div>
-          )}
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--rv-danger)', margin: '0 0 0.5rem' }}>
+            {needFilters && activeFilterCount(staged) === 0
+              ? 'Select at least one filter first.'
+              : ' '}
+          </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <button type="button" onClick={() => setStaged({})} style={paginationBtn}>
               Reset
