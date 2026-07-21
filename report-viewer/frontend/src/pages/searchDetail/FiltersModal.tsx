@@ -72,9 +72,10 @@ export function FiltersModal(props: {
       minWidth={420}
       maxWidth={560}
       maxHeight="calc(100vh - 40px)"
+      showClose
     >
       <div style={{ fontSize: '0.85rem' }}>
-        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Filter rows</h3>
+        <h3 style={{ margin: '0 2rem 0.75rem 0', fontSize: '1rem' }}>Filter rows</h3>
 
         {has('patient_age') && (
           <FieldRow label="Age">
@@ -161,44 +162,44 @@ export function FiltersModal(props: {
             marginTop: '1rem',
             paddingTop: '0.75rem',
             borderTop: '1px solid var(--rv-border)',
-            display: 'flex',
-            gap: '0.5rem',
-            alignItems: 'center',
           }}
         >
-          <button type="button" onClick={() => setStaged({})} style={paginationBtn}>
-            Reset
-          </button>
-          <span style={{ flex: 1, fontSize: '0.72rem', color: 'var(--rv-danger)' }}>
-            {needFilters && activeFilterCount(staged) === 0
-              ? 'Select at least one filter to send to chat.'
-              : ''}
-          </span>
-          <button type="button" onClick={props.onClose} style={paginationBtn}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (activeFilterCount(staged) === 0) setNeedFilters(true);
-              else props.onRefineInChat(staged);
-            }}
-            style={paginationBtn}
-          >
-            Filter via Chat
-          </button>
-          <button
-            type="button"
-            onClick={() => props.onApply(staged)}
-            style={{
-              ...paginationBtn,
-              background: 'var(--rv-accent)',
-              color: '#fff',
-              borderColor: 'var(--rv-accent)',
-            }}
-          >
-            Apply
-          </button>
+          {needFilters && activeFilterCount(staged) === 0 && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--rv-danger)', marginBottom: '0.5rem' }}>
+              Select at least one filter to send to chat.
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button type="button" onClick={() => setStaged({})} style={paginationBtn}>
+              Reset
+            </button>
+            <span style={{ flex: 1 }} />
+            <button type="button" onClick={props.onClose} style={paginationBtn}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (activeFilterCount(staged) === 0) setNeedFilters(true);
+                else props.onRefineInChat(staged);
+              }}
+              style={paginationBtn}
+            >
+              Filter in Chat
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onApply(staged)}
+              style={{
+                ...paginationBtn,
+                background: 'var(--rv-accent)',
+                color: '#fff',
+                borderColor: 'var(--rv-accent)',
+              }}
+            >
+              Apply
+            </button>
+          </div>
         </div>
       </div>
     </Modal>
