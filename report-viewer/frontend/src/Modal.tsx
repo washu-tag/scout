@@ -44,6 +44,7 @@ export function Modal(props: {
         onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
           background: 'var(--rv-surface)',
           color: 'var(--rv-fg)',
           padding: '1.25rem 1.5rem',
