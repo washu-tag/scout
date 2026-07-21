@@ -20,7 +20,8 @@ import {
   type FilterState,
 } from '../api/client';
 import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
-import { applyFilterToChat } from '../chat';
+import { buildFilterPrompt } from '../chat';
+import { useChatPrompt } from '../ChatPrompt';
 import { RowDetail } from './searchDetail/RowDetail';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
@@ -54,6 +55,7 @@ const columnHelper = createColumnHelper<Row>();
 
 export default function SearchDetailPage() {
   const { searchId = '' } = useParams<{ searchId: string }>();
+  const requestPrompt = useChatPrompt();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(100);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -566,9 +568,7 @@ export default function SearchDetailPage() {
             setFiltersModalOpen(false);
           }}
           onRefineInChat={(next) => {
-            setAppliedFilters(next);
-            setPage(1);
-            applyFilterToChat(searchId, next);
+            requestPrompt(buildFilterPrompt(searchId, next));
             setFiltersModalOpen(false);
           }}
           onClose={() => setFiltersModalOpen(false)}

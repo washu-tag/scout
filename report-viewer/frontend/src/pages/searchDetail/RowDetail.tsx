@@ -1,7 +1,8 @@
 import { Fragment, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { friendlyError, getReport } from '../../api/client';
-import { discussInChat } from '../../chat';
+import { buildDiscussPrompt } from '../../chat';
+import { useChatPrompt } from '../../ChatPrompt';
 import { fmtDate } from './format';
 import { paginationBtn } from './styles';
 
@@ -11,6 +12,7 @@ export function RowDetail(props: {
   highlightTerms: string[];
   highlightDiagnosis: string[];
 }) {
+  const requestPrompt = useChatPrompt();
   const reportId = String(props.row[props.idColumn] ?? '');
   const reportQ = useQuery({
     queryKey: ['report', props.idColumn, reportId],
@@ -257,7 +259,11 @@ export function RowDetail(props: {
                 {sourceFile}
               </span>
             </div>
-            <button type="button" onClick={() => discussInChat(sourceFile)} style={paginationBtn}>
+            <button
+              type="button"
+              onClick={() => requestPrompt(buildDiscussPrompt(sourceFile))}
+              style={paginationBtn}
+            >
               Discuss in Chat
             </button>
           </div>

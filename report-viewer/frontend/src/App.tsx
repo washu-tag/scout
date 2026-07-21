@@ -1,26 +1,34 @@
 import { Outlet } from 'react-router-dom';
 import { isEmbedded } from './embed';
+import { ChatPromptProvider } from './ChatPrompt';
 
 function App() {
-  if (isEmbedded()) {
-    return (
-      <div
-        style={{
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
-          color: 'var(--rv-fg)',
-          background: 'var(--rv-surface)',
-          padding: '0.5rem',
-          height: '100vh',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        <Outlet />
-      </div>
-    );
-  }
+  return (
+    <ChatPromptProvider>{isEmbedded() ? <EmbeddedShell /> : <FullShell />}</ChatPromptProvider>
+  );
+}
+
+function EmbeddedShell() {
+  return (
+    <div
+      style={{
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+        color: 'var(--rv-fg)',
+        background: 'var(--rv-surface)',
+        padding: '0.5rem',
+        height: '100vh',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      <Outlet />
+    </div>
+  );
+}
+
+function FullShell() {
   return (
     <div
       style={{
