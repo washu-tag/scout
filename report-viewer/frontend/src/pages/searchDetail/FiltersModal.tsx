@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import type { FilterState } from '../../api/client';
+import { activeFilterCount, type FilterState } from '../../api/client';
 import { Modal } from '../../Modal';
 import { paginationBtn } from './styles';
 
@@ -31,6 +31,7 @@ export function FiltersModal(props: {
   onClose: () => void;
 }) {
   const [staged, setStaged] = useState<FilterState>(props.initial);
+  const [needFilters, setNeedFilters] = useState(false);
   const available = new Set(props.availableColumns);
   const has = (col: string) => available.has(col);
 
@@ -168,11 +169,22 @@ export function FiltersModal(props: {
           <button type="button" onClick={() => setStaged({})} style={paginationBtn}>
             Reset
           </button>
-          <span style={{ flex: 1 }} />
+          <span style={{ flex: 1, fontSize: '0.72rem', color: 'var(--rv-danger)' }}>
+            {needFilters && activeFilterCount(staged) === 0
+              ? 'Select at least one filter to send to chat.'
+              : ''}
+          </span>
           <button type="button" onClick={props.onClose} style={paginationBtn}>
             Cancel
           </button>
-          <button type="button" onClick={() => props.onRefineInChat(staged)} style={paginationBtn}>
+          <button
+            type="button"
+            onClick={() => {
+              if (activeFilterCount(staged) === 0) setNeedFilters(true);
+              else props.onRefineInChat(staged);
+            }}
+            style={paginationBtn}
+          >
             Filter via Chat
           </button>
           <button
