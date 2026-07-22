@@ -1,4 +1,4 @@
-"""Tests for /accessions and /csv."""
+"""Tests for /accessions, /modalities, and /csv."""
 
 from __future__ import annotations
 
@@ -12,6 +12,14 @@ def _sample_rows(n: int) -> list[dict]:
         {"primary_report_identifier": f"s3://bucket/{i}", "accession_number": f"ACC{i}"}
         for i in range(n)
     ]
+
+
+def _create_search(client, auth_headers, fake_trino) -> str:
+    fake_trino(_SAMPLE_COLS, _sample_rows(2))
+    fake_trino(["n"], [{"n": 2}])
+    return client.post(
+        "/api/searches", json={"sql": _SQL}, headers=auth_headers
+    ).json()["id"]
 
 
 def test_accessions_returns_deduped_list(client, auth_headers, fake_trino):
@@ -30,6 +38,37 @@ def test_accessions_returns_deduped_list(client, auth_headers, fake_trino):
     r = client.get(f"/api/searches/{dsid}/accessions", headers=auth_headers)
     assert r.status_code == 200
     assert r.json()["accessions"] == ["ACC100", "ACC200"]
+
+
+def test_modalities_returns_list_dropping_falsy(client, auth_headers, fake_trino):
+    dsid = _create_search(client, auth_headers, fake_trino)
+    fake_trino(
+        ["modality"],
+        [{"modality": "CT"}, {"modality": "MR"}, {"modality": None}, {"modality": ""}],
+    )
+    r = client.get(f"/api/searches/{dsid}/modalities", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json() == {"search_id": dsid, "modalities": ["CT", "MR"]}
+
+
+def test_modalities_column_not_found_returns_empty(client, auth_headers, fake_trino):
+    dsid = _create_search(client, auth_headers, fake_trino)
+    fake_trino.error("COLUMN_NOT_FOUND")
+    r = client.get(f"/api/searches/{dsid}/modalities", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json()["modalities"] == []
+
+
+def test_modalities_other_trino_error_is_502(client, auth_headers, fake_trino):
+    dsid = _create_search(client, auth_headers, fake_trino)
+    fake_trino.error("GENERIC_INTERNAL_ERROR")
+    r = client.get(f"/api/searches/{dsid}/modalities", headers=auth_headers)
+    assert r.status_code == 502
+
+
+def test_modalities_unknown_search_is_404(client, auth_headers):
+    r = client.get("/api/searches/does-not-exist/modalities", headers=auth_headers)
+    assert r.status_code == 404
 
 
 def test_export_csv_streams_with_header_and_rows(client, auth_headers, fake_trino):
