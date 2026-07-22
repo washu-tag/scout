@@ -213,6 +213,10 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.12'
+          cache: 'pip'
+          # report-viewer is the only pip-install in this job; keying on it, the
+          # shared pip wheel cache still speeds the inline molecule/ansible-core install.
+          cache-dependency-path: report-viewer/pyproject.toml
       - name: Install Molecule and dependencies
         run: |
           pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests
@@ -723,6 +727,25 @@ jobs:
         env:
           SUBDOMAINS: ${{ matrix.subdomains }}
         run: bash tests/auth/auth-curl-tests.sh scout.test --include "$SUBDOMAINS"
+      - name: 'Set up Node.js for auth playwright tests'
+        if: matrix.side == 'analytics'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tests/auth/package-lock.json
+      - name: 'Cache Playwright browsers'
+        # tests/auth package.json postinstall runs `npx playwright install chromium`
+        # (~150MB) on every `npm ci`; cache the browser store so it downloads once.
+        if: matrix.side == 'analytics'
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests/auth/package-lock.json') }}
+          # Fall back to the latest browser store on an unrelated lockfile bump;
+          # `playwright install` re-downloads only if the required build is missing.
+          restore-keys: |
+            playwright-${{ runner.os }}-
       - name: 'Auth playwright tests: OWUI iframe defaults'
         if: matrix.side == 'analytics'
         shell: bash

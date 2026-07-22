@@ -39,8 +39,12 @@ runs:
         file: ${{ inputs.subproject }}/Dockerfile
         tags: ${{ ENV.REGISTRY }}/washu-tag/${{ inputs.image-name }}:${{ steps.derive-version.outputs.version }}
         outputs: type=docker,dest=${{ runner.temp }}/${{ inputs.image-name }}.tar
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        # Per-image cache scope: without it all 9 matrix images share buildkit's
+        # default gha scope and clobber each other (near-zero cross-image hit rate).
+        # mode=max keeps builder-stage layers (launchpad/keycloak/report-viewer et al.
+        # are multi-stage).
+        cache-from: type=gha,scope=${{ inputs.image-name }}
+        cache-to: type=gha,mode=max,scope=${{ inputs.image-name }}
 
     - name: Upload artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
