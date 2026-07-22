@@ -203,3 +203,12 @@ class RowsResponse(BaseModel):
     total: int
     columns: list[str]
     rows: list[dict[str, Any]]
+
+
+class ModalitiesResponse(BaseModel):
+    """Distinct `modality` values present in a search's cohort, for the
+    viewer's Modality filter. Empty when none are present or the saved SQL
+    doesn't project `modality`."""
+
+    search_id: str
+    modalities: list[str]
