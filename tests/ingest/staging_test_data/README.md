@@ -33,3 +33,12 @@ Situations we'll need to consider if we pick that design back up include:
 
 1. The test JSON was manually updated to have knowledge of the PORU files manually.
 2. Some patient DOBs in the test files were manually tweaked to cause some edge cases in the patient age tests.
+
+## Fast PR gate fixtures (`postgres_pr/`)
+
+The ingest e2e runs in two modes. Pull requests use the fast gate (`-PprGate`), which
+ingests only `postgres_pr/` (the ~9 log files whose dates `TestStatusDatabase` asserts)
+instead of the full `postgres/` set, and skips the multi-ingest `slow` tests. The nightly
+schedule and `main` pushes ingest the complete `postgres/` set and run every test. When you
+add or change an asserted date in `TestStatusDatabase`, mirror the matching
+`postgres/<year>/<file>.log` into `postgres_pr/` so the fast gate keeps covering it.

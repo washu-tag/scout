@@ -22,8 +22,9 @@ spec:
             # Deps are pre-warmed into GRADLE_USER_HOME by the deploy-and-test
             # "Warm Gradle cache" step, so run --offline (no Maven Central /
             # dcm4che / nrgxnat fetches). No `clean`: the /app/tests mount is a
-            # fresh runner checkout with no prior build output.
-            - cd /app/tests && ./gradlew test --offline
+            # fresh runner checkout with no prior build output. GRADLE_EXTRA_ARGS
+            # is substituted by the "Run tests" step (-PprGate on PRs).
+            - cd /app/tests && ./gradlew test --offline GRADLE_EXTRA_ARGS
           env:
             - name: GRADLE_USER_HOME
               value: /gradle-cache

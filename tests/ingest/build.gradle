@@ -40,9 +40,19 @@ configurations {
 test {
     systemProperties System.getProperties()
 
+    // -PprGate = the fast PR gate: prune the postgres ingest to the asserted
+    // dates (read as the `prGate` system property by TestStatusDatabase) and skip
+    // the multi-ingest "slow" tests. Nightly / full runs pass no flag.
+    if (project.hasProperty('prGate')) {
+        systemProperty 'prGate', 'true'
+    }
+
     useTestNG() {
         testName = 'scout_tests'
         suiteName = testName
+        if (project.hasProperty('prGate')) {
+            excludeGroups 'slow'
+        }
     }
 
     testLogging {

@@ -45,12 +45,17 @@ public class TestStatusDatabase extends BaseTest {
     public static final int SPLIT_AND_UPLOAD_RETRIES = 5;
 
     private static final String TABLE = "postgres" + System.currentTimeMillis();
+    // On the PR gate (-PprGate) ingest only the ~9 asserted-date logs for speed;
+    // nightly / full runs ingest the complete /data/postgres set. postgres_pr must
+    // stay in sync with the dates asserted below (see staging_test_data/README.md).
+    private static final String POSTGRES_LOGS_ROOT =
+        Boolean.getBoolean("prGate") ? "/data/postgres_pr" : "/data/postgres";
     protected IngestJobDetails ingestWorkflow;
 
     @BeforeClass
     private void launchIngestion() {
         ingestWorkflow = temporalClient.launchIngest(
-            new IngestJobInput().setReportTableName(TABLE).setLogsRootPath("/data/postgres"),
+            new IngestJobInput().setReportTableName(TABLE).setLogsRootPath(POSTGRES_LOGS_ROOT),
             true
         );
     }
@@ -423,7 +428,7 @@ public class TestStatusDatabase extends BaseTest {
      * The {@value #TABLE_FILE_STATUSES} table is expected to have multiple "failed" log rows
      * for that day from retries.
      */
-    @Test
+    @Test(groups = "slow")
     public void testIngestImproperLogPath() {
         final String date = "20150101";
         final String improperLog = "/data/postgres/" + date + ".log";
@@ -455,7 +460,7 @@ public class TestStatusDatabase extends BaseTest {
      * The log used here lives outside {@code /data/postgres} so the shared
      * {@link #launchIngestion() @BeforeClass} ingestion does not touch it.
      */
-    @Test
+    @Test(groups = "slow")
     public void testStatusDbHl7OutputPathFailureRetry() {
         final String date = "20260522";
         final String logPath = "/data/duplicate-key/" + date + ".log";
