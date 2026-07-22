@@ -102,7 +102,11 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: hl7log-extractor
-    helm_chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7log-extractor'
+    # Pull the published OCI chart from GHCR (ADR 0030/0031). Dev/CI override:
+    # hl7log_extractor_chart_path points helm at a local chart dir, in which case
+    # no --version is passed (helm rejects --version with a local path).
+    helm_chart_ref: '{{ hl7log_extractor_chart_path | default(hl7log_extractor_chart_oci_ref) }}'
+    helm_chart_version: '{{ hl7log_extractor_chart_version if hl7log_extractor_chart_path is not defined else omit }}'
     helm_chart_namespace: '{{ extractor_namespace }}'
     helm_chart_create_namespace: false
     helm_chart_values: "{{ lookup('template', 'hl7log-extractor.values.yaml.j2') | from_yaml }}"
