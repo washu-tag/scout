@@ -31,10 +31,17 @@
         state: directory
         mode: '0700'
 
+    # get_url/uri use Python's ssl (_ssl.c), which on EL9 openssl-libs 3.5.5-5.el9_8
+    # (RHEL-178642 asn1_d2i_read_bio change) fails with "[ASN1: NOT_ENOUGH_DATA]".
+    # curl uses libcurl and is unaffected. See rpm-software-management/librepo#380.
     - name: Download K3s installation script
-      ansible.builtin.get_url:
-        url: https://get.k3s.io
-        dest: /root/bin/get.k3s.io.sh
+      ansible.builtin.command:
+        cmd: curl -fsSL --retry 3 --connect-timeout 30 --max-time 120 -o /root/bin/get.k3s.io.sh https://get.k3s.io
+      changed_when: true
+
+    - name: Ensure K3s installation script is executable
+      ansible.builtin.file:
+        path: /root/bin/get.k3s.io.sh
         mode: '0755'
 
     - name: Install python kubernetes library
