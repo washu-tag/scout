@@ -97,3 +97,13 @@ checkstyle {
     toolVersion vCheckstyle
     configFile = file('../../linting_java_checkstyle.xml')
 }
+
+// Warm the full test runtime classpath (Spark4 + delta + hadoop-aws + temporal)
+// into GRADLE_USER_HOME at CI setup time so the in-cluster test Job can run
+// `test --offline` with no Maven Central / dcm4che / nrgxnat fetches. See the
+// deploy-and-test "Warm Gradle cache" step and tests-job.yaml.
+tasks.register('resolveTestDeps') {
+    doLast {
+        configurations.testRuntimeClasspath.resolve()
+    }
+}

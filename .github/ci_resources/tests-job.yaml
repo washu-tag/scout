@@ -19,13 +19,26 @@ spec:
           image: sapmachine:21
           command: ['/bin/sh', '-c']
           args:
-            - cd /app/tests && ./gradlew clean test
+            # Deps are pre-warmed into GRADLE_USER_HOME by the deploy-and-test
+            # "Warm Gradle cache" step, so run --offline (no Maven Central /
+            # dcm4che / nrgxnat fetches). No `clean`: the /app/tests mount is a
+            # fresh runner checkout with no prior build output.
+            - cd /app/tests && ./gradlew test --offline
+          env:
+            - name: GRADLE_USER_HOME
+              value: /gradle-cache
           volumeMounts:
             - name: test-files
               mountPath: /app/tests
+            - name: gradle-cache
+              mountPath: /gradle-cache
 
       volumes:
         - name: test-files
           hostPath:
             path: WORK_DIR/tests/ingest
+            type: Directory
+        - name: gradle-cache
+          hostPath:
+            path: /mnt/scout-gradle-cache
             type: Directory

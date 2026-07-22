@@ -385,6 +385,24 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
+      - name: 'Set up Java for Gradle cache warming'
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: ${{ ENV.JAVA_DIST }}
+          java-version: ${{ ENV.JAVA_VERSION }}
+          cache: 'gradle'
+      - name: 'Warm Gradle cache for ingest tests'
+        shell: bash
+        # Resolve ingest test deps (Spark4 graph + Gradle dist) on the runner,
+        # cached across runs by setup-java, then hand a world-writable copy to the
+        # in-cluster test Job so it runs --offline. Removes the ~5 min cold download
+        # that otherwise ran inside the timed "Run tests" step.
+        run: |
+          (cd tests/ingest && ./gradlew --no-daemon --console=plain testClasses resolveTestDeps)
+          sudo mkdir -p /mnt/scout-gradle-cache
+          sudo cp -a "${HOME}/.gradle/." /mnt/scout-gradle-cache/
+          sudo chmod -R a+rwX /mnt/scout-gradle-cache
+          rm -rf tests/ingest/build tests/ingest/.gradle  # pod mount stays a clean checkout
       - name: 'Run tests'
         shell: bash
         run: |
