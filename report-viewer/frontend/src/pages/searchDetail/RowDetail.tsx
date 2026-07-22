@@ -7,14 +7,14 @@ import { paginationBtn } from './styles';
 
 export function RowDetail(props: {
   row: Record<string, unknown>;
-  idColumn: string;
   highlightTerms: string[];
   highlightDiagnosis: string[];
 }) {
-  const reportId = String(props.row[props.idColumn] ?? '');
+  // Fetch by the row's unique report id (the search's id_column may be a non-unique key).
+  const reportId = String(props.row['primary_report_identifier'] ?? '');
   const reportQ = useQuery({
-    queryKey: ['report', props.idColumn, reportId],
-    queryFn: () => getReport(reportId, props.idColumn),
+    queryKey: ['report', reportId],
+    queryFn: () => getReport(reportId, 'primary_report_identifier'),
     enabled: !!reportId,
     staleTime: 5 * 60_000,
   });

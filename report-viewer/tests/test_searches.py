@@ -182,9 +182,9 @@ _SAMPLE_ROW = {
 }
 
 
-def test_from_file_epic_mrn_routes_through_resolved_column_and_view(
-    client, auth_headers, fake_trino
-):
+def test_from_file_epic_mrn_uses_reports_latest_raw(client, auth_headers, fake_trino):
+    # CSV uploads default to reports_latest and match the RAW epic_mrn column
+    # (not the epic view's resolved_epic_mrn) - consistent with the chat default.
     fake_trino(["id"], [{"id": "EPIC1"}, {"id": "EPIC2"}])
     fake_trino(_SAMPLE_COLS, [_SAMPLE_ROW])
     fake_trino(["n"], [{"n": 27}])
@@ -206,9 +206,9 @@ def test_from_file_epic_mrn_routes_through_resolved_column_and_view(
     assert body["unmatched_count"] == 0
 
     meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
-    assert "reports_latest_epic_view" in meta["sql"]
-    assert 'contains(?, "resolved_epic_mrn")' in meta["sql"]
-    assert 'contains(?, "epic_mrn")' not in meta["sql"]
+    assert "reports_latest_epic_view" not in meta["sql"]
+    assert 'contains(?, "epic_mrn")' in meta["sql"]
+    assert "resolved_epic_mrn" not in meta["sql"]
 
 
 def test_from_file_infers_column_from_header_alias(client, auth_headers, fake_trino):
@@ -291,7 +291,10 @@ def test_from_file_custom_sql_substitutes_cohort(client, auth_headers, fake_trin
 
     meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
     assert "{{cohort}}" not in meta["sql"]
-    assert 'contains(?, "resolved_epic_mrn")' in meta["sql"]
+    # The injected predicate matches the RAW id column even when the caller's
+    # custom SQL targets an epic view (literal match, no resolved mapping).
+    assert 'contains(?, "epic_mrn")' in meta["sql"]
+    assert "resolved_epic_mrn" not in meta["sql"]
     assert "modality = 'CT'" in meta["sql"]
 
 

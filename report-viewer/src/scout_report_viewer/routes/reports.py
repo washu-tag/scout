@@ -13,17 +13,20 @@ from .. import metrics, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
 from ..csv_upload import (
+    DEFAULT_FROM_FILE_TABLE,
     UNMATCHED_SAMPLE_CAP,
     assert_cohort_placeholder,
     dedup_ids,
     guard_upload_size,
     parse_csv_ids,
-    resolve_sql_column,
     substitute_cohort,
 )
 from ..models import (
+    DEFAULT_READ_REPORTS_TABLE,
+    EPIC_VIEW_TABLES,
     INPUT_ID_COLUMNS,
     PATIENT_ID_COLUMNS,
+    READ_REPORTS_TABLES,
     QueryFromFileResponse,
     QueryRequest,
     QueryResponse,
@@ -83,14 +86,14 @@ async def query_from_file(
     ids, resolved_id_column, column_inferred = parse_csv_ids(raw, id_column)
     cleaned = dedup_ids(ids)
 
-    sql_column = resolve_sql_column(resolved_id_column)
+    sql_column = resolved_id_column
     if not sql_column.replace("_", "").isalnum():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"unsafe id_column: {sql_column!r}",
         )
     col_q = f'"{sql_column}"'
-    view = f"{settings.trino_catalog}.{settings.trino_schema}.reports_latest_epic_view"
+    view = f"{settings.trino_catalog}.{settings.trino_schema}.{DEFAULT_FROM_FILE_TABLE}"
 
     matched: set[str] = set()
     validate_sql = (
@@ -161,22 +164,36 @@ async def read_reports(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"id_column must be one of {list(INPUT_ID_COLUMNS)}, got {body.id_column!r}",
         )
-    if not body.id_column.replace("_", "").isalnum():
+    table_name = body.table or DEFAULT_READ_REPORTS_TABLE
+    if table_name not in READ_REPORTS_TABLES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"unsafe id_column: {body.id_column!r}",
+            detail=f"table must be one of {list(READ_REPORTS_TABLES)}, got {table_name!r}",
         )
-    base = f"{settings.trino_catalog}.{settings.trino_schema}."
-    table = base + "reports_latest_epic_view"
+    is_epic_view = table_name in EPIC_VIEW_TABLES
     if body.id_column in PATIENT_ID_COLUMNS:
-        column = PATIENT_ID_COLUMNS[body.id_column]
+        if is_epic_view:
+            column = PATIENT_ID_COLUMNS[body.id_column]
+        elif body.id_column == "scout_patient_id":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "scout_patient_id lookups require an epic-view table "
+                    "(reports_curated_epic_view or reports_latest_epic_view)"
+                ),
+            )
+        else:
+            column = body.id_column
     else:
         column = body.id_column
+    base = f"{settings.trino_catalog}.{settings.trino_schema}."
+    table = base + table_name
     # contains(?, col) - the driver doesn't expand list params into IN.
     sql = f'SELECT * FROM {table} WHERE contains(?, "{column}")'
     try:
         with metrics.time_trino("read_reports"):
-            # safe: column from PATIENT_ID_COLUMNS or INPUT_ID_COLUMNS allowlist, IDs bind via ?
+            # safe: table from READ_REPORTS_TABLES allowlist, column from
+            # PATIENT_ID_COLUMNS or INPUT_ID_COLUMNS allowlist, IDs bind via ?
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             columns, rows = await trino_client.execute(
                 sql, user=user.sub, params=[[str(i) for i in body.ids]]

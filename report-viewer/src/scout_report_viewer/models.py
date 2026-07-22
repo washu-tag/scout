@@ -55,14 +55,29 @@ SORT_FILTER_COLUMNS: dict[str, Literal["text", "multi", "range"]] = {
     "patient_age": "range",
 }
 
-# Patient-scoped IDs go through reports_latest_epic_view; epic_mrn / mpi
-# transparently match the resolved_* columns so reports missing the raw
-# value still come back when the same patient appears elsewhere.
+# Patient-scoped id_column -> its resolved column on an epic-view table. On
+# non-epic tables epic_mrn / mpi match the raw columns instead; scout_patient_id
+# exists only on the epic views.
 PATIENT_ID_COLUMNS: dict[str, str] = {
     "epic_mrn": "resolved_epic_mrn",
     "mpi": "resolved_mpi",
     "scout_patient_id": "scout_patient_id",
 }
+
+# Tables /reports/read may target; renders default to reports_curated, epic
+# views are opt-in for resolved cross-version patient identity.
+READ_REPORTS_TABLES: tuple[str, ...] = (
+    "reports_curated",
+    "reports_curated_epic_view",
+    "reports_latest",
+    "reports_latest_epic_view",
+)
+DEFAULT_READ_REPORTS_TABLE = "reports_curated"
+
+# The *_epic_view subset (carry resolved_* / scout_patient_id).
+EPIC_VIEW_TABLES: frozenset[str] = frozenset(
+    {"reports_curated_epic_view", "reports_latest_epic_view"}
+)
 
 
 class CreateSearchRequest(BaseModel):
@@ -158,6 +173,16 @@ class ReadReportsRequest(BaseModel):
     id_column: str = Field(
         default="primary_report_identifier",
         description="Column to match `ids` against.",
+    )
+    table: str | None = Field(
+        default=None,
+        description=(
+            "Table to read from. One of reports_curated (default), "
+            "reports_curated_epic_view, reports_latest, "
+            "reports_latest_epic_view. Epic views resolve patient identity "
+            "across report versions but omit inconsistent-patient reports; "
+            "scout_patient_id lookups require an epic-view table."
+        ),
     )
 
 

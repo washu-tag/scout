@@ -36,7 +36,7 @@ const COLUMNS_CONFIG: Array<{
   mono?: boolean;
   kind?: 'date';
 }> = [
-  { field: 'epic_mrn', title: 'MRN', width: 80, mono: true },
+  { field: 'epic_mrn', title: 'Epic MRN', width: 90, mono: true },
   { field: 'mpi', title: 'MPI', width: 80, mono: true, defaultHidden: true },
   { field: 'accession_number', title: 'Accession', width: 85, mono: true },
   { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
@@ -322,7 +322,6 @@ export default function SearchDetailPage() {
                               <div style={{ padding: '0.75rem 1rem' }}>
                                 <RowDetail
                                   row={row.original}
-                                  idColumn={meta.data?.id_column ?? 'primary_report_identifier'}
                                   highlightTerms={[
                                     ...(meta.data?.match_terms ?? []),
                                     ...(appliedFilters.service_name

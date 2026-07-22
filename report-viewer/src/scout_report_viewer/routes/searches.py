@@ -41,12 +41,12 @@ from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
 from ..csv_upload import (
+    DEFAULT_FROM_FILE_TABLE,
     UNMATCHED_SAMPLE_CAP,
     assert_cohort_placeholder,
     dedup_ids,
     guard_upload_size,
     parse_csv_ids,
-    resolve_sql_column,
     substitute_cohort,
 )
 from ..ids import new_search_id
@@ -93,10 +93,6 @@ def _quote_ident(name: str) -> str:
 
 def _qualified_reports() -> str:
     return f"{settings.trino_catalog}.{settings.trino_schema}.reports_latest"
-
-
-def _qualified_reports_epic_view() -> str:
-    return f"{settings.trino_catalog}.{settings.trino_schema}.reports_latest_epic_view"
 
 
 def _view_url(search_id: str) -> str:
@@ -304,12 +300,12 @@ async def create_search(
     )
 
 
+# Default projection when a CSV upload has no custom SQL.
 _DEFAULT_FROM_FILE_SQL = (
-    "SELECT primary_report_identifier, accession_number, "
-    "resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, "
+    "SELECT primary_report_identifier, accession_number, epic_mrn, mpi, "
     "sending_facility, modality, service_name, "
     "message_dt, patient_age, sex "
-    "FROM reports_latest_epic_view "
+    "FROM reports_latest "
     "WHERE {{cohort}}"
 )
 
@@ -337,10 +333,10 @@ async def create_search_from_file(
     If `sql` is provided it must include `{{cohort}}` exactly once; the
     backend substitutes a `contains(?, col)` predicate and stores the ID
     list separately so every read binds it as a param. When omitted, a
-    default projection over reports_latest_epic_view is used.
-
-    Patient-scoped inputs are translated through PATIENT_ID_COLUMNS so
-    `epic_mrn` filters on `resolved_epic_mrn`."""
+    default projection over reports_latest is used (consistent with the
+    chat cohort default), matching the raw id columns. A user wanting report
+    history or resolved cross-version patient IDs passes explicit SQL over
+    reports_curated / an epic view."""
     try:
         raw = await file.read()
     finally:
@@ -351,9 +347,10 @@ async def create_search_from_file(
     ids, resolved_id_column, column_inferred = parse_csv_ids(raw, id_column)
     cleaned = dedup_ids(ids)
 
-    sql_column = resolve_sql_column(resolved_id_column)
-    view = _qualified_reports_epic_view()
-    col_q = _quote_ident(sql_column)
+    # Existence check against the default table; a custom-sql upload may target
+    # another table, so this validates existence, not an exact table match.
+    view = f"{settings.trino_catalog}.{settings.trino_schema}.{DEFAULT_FROM_FILE_TABLE}"
+    col_q = _quote_ident(resolved_id_column)
 
     matched: set[str] = set()
     CHUNK = 5000
@@ -387,7 +384,7 @@ async def create_search_from_file(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
                 f"none of the {len(cleaned)} submitted IDs matched "
-                f"{resolved_id_column} in reports_latest_epic_view"
+                f"{resolved_id_column} in {DEFAULT_FROM_FILE_TABLE}"
             ),
         )
 
