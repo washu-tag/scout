@@ -97,6 +97,12 @@ spark.hadoop.hive.metastore.uris {{ required "sparkDefaults.hiveMetastoreUri is 
 spark.sql.warehouse.dir {{ required "sparkDefaults.warehouseDir is required when sparkDefaults is enabled" $s.warehouseDir }}
 spark.sql.shuffle.partitions {{ $s.shufflePartitions }}
 spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
+# Local mode (single JVM): spark.driver.memory is the live heap and
+# spark.executor.memory is inert; set both from the one value (as the on-prem
+# spark_memory did) so there's no misleading driver/executor split.
 spark.executor.memory {{ .Values.spark.executor.memory }}
 spark.driver.memory {{ .Values.spark.executor.memory }}
+{{- range $k, $v := $s.extraConf }}
+{{ $k }} {{ $v }}
+{{- end }}
 {{- end }}
