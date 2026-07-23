@@ -165,6 +165,40 @@
             X-Powered-By: ''
             Server: ''
 
+# Same-origin framing: for services whose own UI frames itself in an iframe
+# (e.g. XNAT). Identical to security-headers but allows same-origin framing —
+# frame-ancestors 'self' + X-Frame-Options SAMEORIGIN instead of 'none'/DENY.
+- name: Apply same-origin security headers middleware
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: security-headers-sameorigin
+        namespace: '{{ traefik_namespace }}'
+      spec:
+        headers:
+          stsSeconds: 31536000
+          stsIncludeSubdomains: true
+          frameDeny: false
+          customFrameOptionsValue: SAMEORIGIN
+          contentTypeNosniff: true
+          contentSecurityPolicy: >-
+            default-src 'self';
+            script-src 'self' 'unsafe-inline' 'unsafe-eval';
+            style-src 'self' 'unsafe-inline';
+            img-src 'self' data: blob:;
+            font-src 'self' data:;
+            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            frame-ancestors 'self'
+          customResponseHeaders:
+            Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
+            Cross-Origin-Opener-Policy: 'same-origin'
+            X-Powered-By: ''
+            Server: ''
+
 - name: Create redirect-to-launchpad Middleware
   kubernetes.core.k8s:
     state: present

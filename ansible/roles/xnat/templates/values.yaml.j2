@@ -72,12 +72,15 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: traefik
     # oauth2-proxy ForwardAuth (edge approval gate) + error redirect + the
-    # Scout-wide security-headers middleware. The openid plugin's /openid-login
-    # is an app-level callback behind this middleware, not an open path.
+    # same-origin security-headers variant. The openid plugin's /openid-login is
+    # an app-level callback behind this middleware, not an open path.
+    # NB: XNAT's own UI frames same-origin pages, so it uses the -sameorigin
+    # headers (frame-ancestors 'self') rather than the global 'none'/DENY, which
+    # would trip "violates frame-ancestors 'none'" in the browser.
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd,
-      kube-system-security-headers@kubernetescrd
+      kube-system-security-headers-sameorigin@kubernetescrd
   hosts:
     - host: xnat.{{ server_hostname }}
       paths:
