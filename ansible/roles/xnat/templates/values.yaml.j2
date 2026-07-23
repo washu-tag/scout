@@ -8,6 +8,10 @@ replicaCount: 1
    The DockerServer (backend=kubernetes) is registered post-deploy by the role's
    tasks/configure_cs.yaml. #}
 containerService: {{ xnat_container_service | bool | string | lower }}
+{# The chart binds the CS ServiceAccount (a ClusterRoleBinding) and references PVs
+   by this namespace; its default is empty, which renders an invalid binding
+   (subjects[0].namespace required). Set it to the release namespace, per the IaC lane. #}
+namespace: {{ xnat_namespace }}
 
 image:
   repository: {{ xnat_image_repository }}

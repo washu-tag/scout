@@ -136,12 +136,14 @@ which doesn't exist in the pod. Set `xnat_container_service: true` to run it on 
    REST API (a `GET` check makes re-runs a no-op). This is what stops the
    docker-socket lookup.
 
-> **On-prem storage caveat:** actually *running* CS containers needs the
-> `xnat-archive` / `xnat-build` PVCs to be **ReadWriteMany** — the launched Job
-> pods co-mount them with the XNAT pod. With `ReadWriteOnce` local-path storage the
-> backend is configured (no more docker.sock) but container runs fail on volume
-> mount. Use an RWX storage class (NFS/etc.) for CS execution. Pin CS Jobs to a
-> nodepool with `xnat_cs_swarm_constraints` / `xnat_cs_kubernetes_tolerations`.
+> **Storage / scheduling:** CS Job pods co-mount the `xnat-archive` / `xnat-build`
+> PVCs with XNAT. With `ReadWriteOnce` local-path this works without a nodeSelector —
+> the PVs' node affinity auto-schedules the Jobs onto XNAT's node, and RWO allows
+> multiple pods on one node — but it confines all CS work to that single node (GPU
+> CS jobs can't reach a separate GPU node). Only if CS Jobs must spread across nodes
+> (or run on a different node than XNAT) do you need **ReadWriteMany** archive/build
+> (NFS/beegfs), plus `xnat_cs_swarm_constraints` / `xnat_cs_kubernetes_tolerations`
+> to place them.
 
 ## Mail
 

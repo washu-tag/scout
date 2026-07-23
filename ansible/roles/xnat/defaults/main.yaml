@@ -97,10 +97,12 @@ xnat_dev_bucket: xnat-dev # MinIO bucket holding the staged dev artifacts
 #   * a post-deploy step (tasks/configure_cs.yaml) idempotently registers a
 #     DockerServer with backend=kubernetes, so CS uses Jobs instead of a local
 #     Docker socket (/var/run/docker.sock, which does not exist in the pod).
-# NOTE (on-prem): actually *running* CS containers needs the archive/build PVCs
-# to be ReadWriteMany — the launched Job pods co-mount them with the XNAT pod.
-# With ReadWriteOnce local-path storage the backend is configured (no docker.sock)
-# but container runs fail on volume mount; use an RWX class (NFS/etc.) for execution.
+# NOTE (storage): CS Job pods co-mount the archive/build PVCs with XNAT. With RWO
+# local-path this still works — the PVs' node affinity auto-schedules the Jobs onto
+# XNAT's node, and RWO permits multiple pods on one node — at the cost of confining
+# all CS work to that single node (so GPU CS jobs can't reach a separate GPU node).
+# Use RWX archive/build (NFS/beegfs) only if CS Jobs must spread across nodes or run
+# on a node other than XNAT's.
 xnat_container_service: false
 # CS Job scheduling (empty = any node). Set to pin CS workloads to a
 # labelled/tainted nodepool (e.g. workload.type==cs), matching your cluster.
