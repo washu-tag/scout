@@ -89,3 +89,20 @@ xnat_extra_config: {}
 xnat_dev_war: '' # path to a local ROOT.war (empty = feature off)
 xnat_dev_plugins: [] # local plugin .jar paths (replace vs add: set xnat_plugins accordingly)
 xnat_dev_bucket: xnat-dev # MinIO bucket holding the staged dev artifacts
+
+# --- Container service (optional; requires the container-service plugin) ----
+# When true, enables XNAT's container-service on a Kubernetes backend:
+#   * chart containerService=true provisions the CS Roles/RoleBindings and
+#     mounts the SA token, so CS can launch containers as k8s Jobs; and
+#   * a post-deploy step (tasks/configure_cs.yaml) idempotently registers a
+#     DockerServer with backend=kubernetes, so CS uses Jobs instead of a local
+#     Docker socket (/var/run/docker.sock, which does not exist in the pod).
+# NOTE (on-prem): actually *running* CS containers needs the archive/build PVCs
+# to be ReadWriteMany — the launched Job pods co-mount them with the XNAT pod.
+# With ReadWriteOnce local-path storage the backend is configured (no docker.sock)
+# but container runs fail on volume mount; use an RWX class (NFS/etc.) for execution.
+xnat_container_service: false
+# CS Job scheduling (empty = any node). Set to pin CS workloads to a
+# labelled/tainted nodepool (e.g. workload.type==cs), matching your cluster.
+xnat_cs_swarm_constraints: []
+xnat_cs_kubernetes_tolerations: []

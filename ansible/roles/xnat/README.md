@@ -123,6 +123,26 @@ base image whose JDK matches the WAR (override `xnat_image_tag` via `-e` — it'
 pinned above inventory). Full guide:
 [`docs/internal/xnat-develop-testing.md`](../../../docs/internal/xnat-develop-testing.md).
 
+## Container service
+
+XNAT's container-service defaults to a local Docker socket (`/var/run/docker.sock`),
+which doesn't exist in the pod. Set `xnat_container_service: true` to run it on a
+**Kubernetes backend** instead. That does two things:
+
+1. **Chart** `containerService: true` — provisions the CS `Role`/`RoleBinding`s and
+   mounts the ServiceAccount token, so CS can launch containers as k8s Jobs.
+2. **Post-deploy** (`tasks/configure_cs.yaml`, run by `make install-xnat`) —
+   idempotently registers a `DockerServer` with `backend: kubernetes` via XNAT's
+   REST API (a `GET` check makes re-runs a no-op). This is what stops the
+   docker-socket lookup.
+
+> **On-prem storage caveat:** actually *running* CS containers needs the
+> `xnat-archive` / `xnat-build` PVCs to be **ReadWriteMany** — the launched Job
+> pods co-mount them with the XNAT pod. With `ReadWriteOnce` local-path storage the
+> backend is configured (no more docker.sock) but container runs fail on volume
+> mount. Use an RWX storage class (NFS/etc.) for CS execution. Pin CS Jobs to a
+> nodepool with `xnat_cs_swarm_constraints` / `xnat_cs_kubernetes_tolerations`.
+
 ## Mail
 
 XNAT routes outbound mail through Scout's shared relay (MailHog in dev,

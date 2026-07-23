@@ -109,3 +109,9 @@
     helm_chart_create_namespace: false
     helm_chart_values: '{{ xnat_helm_chart_values }}'
     helm_chart_timeout: '{{ xnat_helm_timeout }}'
+
+# Point container-service at the Kubernetes backend (not the local Docker
+# socket). Post-deploy + idempotent; no-op unless CS is enabled.
+- name: Configure the container-service Kubernetes backend
+  ansible.builtin.include_tasks: configure_cs.yaml
+  when: xnat_container_service | bool

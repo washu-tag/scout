@@ -4,6 +4,11 @@
    are generated from xnat_plugins_all. #}
 replicaCount: 1
 
+{# Container-service on a Kubernetes backend: provisions the CS RBAC + SA token.
+   The DockerServer (backend=kubernetes) is registered post-deploy by the role's
+   tasks/configure_cs.yaml. #}
+containerService: {{ xnat_container_service | bool | string | lower }}
+
 image:
   repository: {{ xnat_image_repository }}
   tag: '{{ xnat_image_tag }}'
