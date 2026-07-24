@@ -145,6 +145,14 @@ which doesn't exist in the pod. Set `xnat_container_service: true` to run it on 
 > (NFS/beegfs), plus `xnat_cs_swarm_constraints` / `xnat_cs_kubernetes_tolerations`
 > to place them.
 
+## Multiple replicas
+
+`replicaCount` is 1. If you scale up, the role has already patched a **Traefik
+sticky-session cookie** onto the XNAT Service (deploy.yaml) — without it, the
+session-based login bounces between pods and you get kicked back to the launchpad.
+A real multi-replica deployment also needs **RWX** `archive`/`build` storage (see
+the Container service note); on RWO local-path all replicas pin to one node.
+
 ## Mail
 
 XNAT routes outbound mail through Scout's shared relay (MailHog in dev,
