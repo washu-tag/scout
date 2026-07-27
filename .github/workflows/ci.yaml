@@ -43,6 +43,7 @@ jobs:
       dcm4chee-chart: ${{ steps.filter.outputs.dcm4chee-chart }}
       hive-metastore-chart: ${{ steps.filter.outputs.hive-metastore-chart }}
       hl7-listener-chart: ${{ steps.filter.outputs.hl7-listener-chart }}
+      hl7log-extractor-chart: ${{ steps.filter.outputs.hl7log-extractor-chart }}
       keycloak-config-cli-chart: ${{ steps.filter.outputs.keycloak-config-cli-chart }}
       launchpad-chart: ${{ steps.filter.outputs.launchpad-chart }}
       open-webui-bootstrap-chart: ${{ steps.filter.outputs.open-webui-bootstrap-chart }}
@@ -89,6 +90,8 @@ jobs:
               - 'helm/hive-metastore/**'
             hl7-listener-chart:
               - 'helm/hl7-listener/**'
+            hl7log-extractor-chart:
+              - 'helm/extractor/hl7log-extractor/**'
             keycloak-config-cli-chart:
               - 'helm/keycloak-config-cli/**'
             launchpad-chart:
@@ -912,6 +915,9 @@ jobs:
           - chart-name: hl7-listener
             chart-dir: helm/hl7-listener
             changed: hl7-listener-chart
+          - chart-name: hl7log-extractor
+            chart-dir: helm/extractor/hl7log-extractor
+            changed: hl7log-extractor-chart
           - chart-name: keycloak-config-cli
             chart-dir: helm/keycloak-config-cli
             changed: keycloak-config-cli-chart

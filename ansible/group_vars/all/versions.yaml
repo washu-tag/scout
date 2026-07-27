@@ -188,3 +188,9 @@ data_generator_chart_version: 1.0.0
 # bumped by hand when the extractor is repointed to the OCI chart; the GitOps lane
 # owns the real version via its OCIRepository (ADR 0031).
 hl7_transformer_chart_version: 0.0.0
+# hl7log-extractor Helm chart, built and published to GHCR by this repo's own CI
+# (ADR 0030 phase 0). Not Renovate-tracked (self-built, like hl7-transformer
+# above). On-prem Ansible pin only, bumped by hand when the extractor is
+# repointed to the OCI chart; the GitOps lane owns the real version via its
+# OCIRepository (ADR 0031).
+hl7log_extractor_chart_version: 0.0.0
