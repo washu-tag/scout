@@ -22,6 +22,16 @@ xnat_plugin_installer_image_tag: latest
 xnat_plugin_installer_image: '{{ xnat_plugin_installer_image_repository }}:{{ xnat_plugin_installer_image_tag }}'
 xnat_plugin_installer_image_pull_policy: IfNotPresent
 
+# --- Replicas --------------------------------------------------------------
+# StatefulSet replica count. Default 1 (single-node posture). >1 is for
+# multi-node testing: the chart's home-init designates pod-0 as the primary
+# node (only it runs singleton scheduled tasks), the role adds a Traefik sticky
+# cookie for login affinity, and you'll want xnat_dev_activemq: true so replicas
+# share one message queue. A genuine multi-node deployment also needs RWX
+# archive/build storage (see below) — on RWO local-path all replicas pin to one
+# node.
+xnat_replica_count: 1
+
 # --- Storage --------------------------------------------------------------
 # Empty storage class = cluster default (dynamic provisioning per ADR 0004).
 xnat_storage_class: ''

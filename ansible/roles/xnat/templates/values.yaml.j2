@@ -2,7 +2,7 @@
    All Secrets are created by the role and referenced here by name. Dynamic
    blocks (initContainers / plugins / authplugins / extraConfig / extraVolumes)
    are generated from xnat_plugins_all. #}
-replicaCount: 1
+replicaCount: {{ xnat_replica_count | int }}
 
 {# Container-service on a Kubernetes backend: provisions the CS RBAC + SA token.
    The DockerServer (backend=kubernetes) is registered post-deploy by the role's
