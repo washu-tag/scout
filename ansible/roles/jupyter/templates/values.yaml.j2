@@ -255,6 +255,19 @@ singleuser:
               ln -sfn /opt/scout/samples /home/$NB_USER/Scout
               chown -h $NB_USER:$NB_GID /home/$NB_USER/Scout
             fi
+
+            # #496: surface branding into ~/.jupyter/custom via symlink instead
+            # of mounting there. A subPath mount under ~/.jupyter makes kubelet
+            # create the dir as root on first spawn, blocking ~/.jupyter/lab and
+            # 500-ing every settings/workspace save. Creating it here (as
+            # $NB_USER) keeps it user-owned. Same pattern as ~/Scout above.
+            mkdir -p /home/$NB_USER/.jupyter/custom
+            for asset in custom.css scout.png; do
+              if [ -f /opt/scout/branding/$asset ]; then
+                ln -sfn /opt/scout/branding/$asset /home/$NB_USER/.jupyter/custom/$asset
+                chown -h $NB_USER:$NB_GID /home/$NB_USER/.jupyter/custom/$asset
+              fi
+            done
   extraEnv:
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
     # Combined CA bundle (system CAs + staging CA) — built by staging-ca-setup init container.
@@ -373,12 +386,14 @@ singleuser:
     extraVolumeMounts:
       jupyterlab-custom-css:
         name: jupyterlab-custom-css
-        mountPath: /home/jovyan/.jupyter/custom/custom.css
+        mountPath: /opt/scout/branding/custom.css
         subPath: custom.css
+        readOnly: true
       jupyterlab-scout-logo:
         name: jupyterlab-scout-logo
-        mountPath: /home/jovyan/.jupyter/custom/scout.png
+        mountPath: /opt/scout/branding/scout.png
         subPath: scout.png
+        readOnly: true
       scout-samples:
         name: scout-samples
         mountPath: /opt/scout/samples
