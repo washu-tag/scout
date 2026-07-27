@@ -1,0 +1,40 @@
+{{- if .Values.faviconPublicRoute.enabled -}}
+{{- $host := .Values.faviconPublicRoute.host -}}
+{{- if and (not $host) .Values.ingress.hosts -}}
+{{- $host = (first .Values.ingress.hosts).host -}}
+{{- end -}}
+# Public (unauthenticated) route for /favicon.ico.
+#
+# The launchpad sits behind the oauth2-proxy ForwardAuth gate, which 401s ->
+# redirects /favicon.ico for logged-out visitors, so a new user's browser tab
+# shows no icon (issue #557). This route serves ONLY the favicon, dropping the
+# oauth2-proxy auth/error middlewares while keeping security-headers.
+#
+# Safety: the match is an EXACT path on a specific host, and the backend maps
+# that single path to a static, public asset. Do NOT switch Path() to a prefix
+# or the host to a wildcard -- either would widen the auth-free surface. The
+# priority only ensures this router wins over the launchpad PathPrefix(`/`)
+# router for /favicon.ico; every other path still hits the auth-gated route.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "launchpad.fullname" . }}-favicon-public
+  labels:
+    {{- include "launchpad.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - {{ .Values.faviconPublicRoute.entryPoint }}
+  routes:
+    - match: Host(`{{ $host }}`) && Path(`/favicon.ico`)
+      kind: Rule
+      priority: {{ .Values.faviconPublicRoute.priority }}
+      middlewares:
+        - name: {{ .Values.faviconPublicRoute.securityHeadersMiddleware.name }}
+          namespace: {{ .Values.faviconPublicRoute.securityHeadersMiddleware.namespace }}
+      services:
+        - name: {{ include "launchpad.fullname" . }}
+          port: {{ .Values.service.port }}
+  # Empty block = terminate TLS with Traefik's default certificate, matching the
+  # launchpad Ingress (which runs with ingress.tls unset).
+  tls: {}
+{{- end }}
