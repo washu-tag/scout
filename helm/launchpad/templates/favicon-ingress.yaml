@@ -1,0 +1,49 @@
+{{- if .Values.faviconPublicRoute.enabled -}}
+{{- $host := .Values.faviconPublicRoute.host -}}
+{{- if and (not $host) .Values.ingress.hosts -}}
+{{- $host = (first .Values.ingress.hosts).host -}}
+{{- end -}}
+# Public (unauthenticated) route for /favicon.ico.
+#
+# The launchpad sits behind the oauth2-proxy ForwardAuth gate, which 401s
+# /favicon.ico for logged-out visitors, so a new user's browser tab shows no
+# icon (issue #557). This Ingress serves ONLY the favicon, dropping the
+# oauth2-proxy auth/error middlewares while keeping security-headers.
+#
+# Implemented as an annotated Ingress rather than a Traefik IngressRoute on
+# purpose: Scout's shared middlewares live in kube-system, and Traefik's CRD
+# provider blocks cross-namespace middleware references
+# (allowCrossNamespace=false by default), so an IngressRoute in this namespace
+# cannot reference kube-system/security-headers. The Ingress router.middlewares
+# annotation is NOT subject to that restriction -- the launchpad Ingress already
+# references the same kube-system-* middlewares cross-namespace.
+#
+# Safety: pathType Exact + a specific host means this auth-free router only ever
+# serves the single static /favicon.ico asset; every other path still hits the
+# auth-gated launchpad router. The priority annotation only makes this router
+# win over the launchpad PathPrefix(`/`) router for that one path. Do NOT change
+# the pathType to Prefix or the host to a wildcard.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "launchpad.fullname" . }}-favicon-public
+  labels:
+    {{- include "launchpad.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.priority: {{ .Values.faviconPublicRoute.priority | quote }}
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      {{ .Values.faviconPublicRoute.securityHeadersMiddleware.namespace }}-{{ .Values.faviconPublicRoute.securityHeadersMiddleware.name }}@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /favicon.ico
+            pathType: Exact
+            backend:
+              service:
+                name: {{ include "launchpad.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+{{- end }}

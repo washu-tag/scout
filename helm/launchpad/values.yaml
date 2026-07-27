@@ -85,15 +85,16 @@ ingress:
 # Public (unauthenticated) route for /favicon.ico. The launchpad is behind the
 # oauth2-proxy ForwardAuth gate, which blocks /favicon.ico for logged-out
 # visitors so their browser tab shows no icon (issue #557). When enabled, an
-# exact-path Traefik IngressRoute serves just the favicon with security-headers
-# but WITHOUT the auth middleware. Keep the match exact and host-scoped.
+# exact-path annotated Ingress serves just the favicon with security-headers but
+# WITHOUT the auth middleware. Keep the match exact and host-scoped.
 faviconPublicRoute:
   enabled: false
-  entryPoint: websecure
   # Host to match. Empty falls back to the first ingress host.
   host: ''
   # Must outrank the launchpad PathPrefix(`/`) router.
   priority: 1000
+  # Cross-namespace ref is fine from an Ingress annotation (unlike an
+  # IngressRoute); this is the same middleware the launchpad Ingress uses.
   securityHeadersMiddleware:
     name: security-headers
     namespace: kube-system
