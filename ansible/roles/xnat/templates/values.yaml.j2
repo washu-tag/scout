@@ -150,6 +150,10 @@ plugins:
 {% endif %}
 {% endfor %}
 {% endfor %}
+{# Dev-only: point XNAT at the standalone broker deployed by tasks/dev_activemq.yaml. #}
+{% if xnat_dev_activemq | bool %}
+{% set _ = extra.update({'spring.activemq.broker-url': 'tcp://xnat-activemq:61616', 'spring.activemq.user': xnat_dev_activemq_user, 'spring.activemq.password': xnat_dev_activemq_password}) %}
+{% endif %}
 {% if extra %}
 extraConfig:
 {% for k, v in extra.items() %}

@@ -86,6 +86,14 @@
   ansible.builtin.include_tasks: dev_stage.yaml
   when: (xnat_dev_war | length > 0) or (xnat_dev_plugins | length > 0)
 
+# Deploy a standalone ActiveMQ broker so multi-replica XNAT shares one message
+# queue (spring.activemq.* is wired in values.yaml.j2). Dev/test only — no-op
+# unless xnat_dev_activemq is true. Runs before the chart so the broker is up
+# when XNAT boots.
+- name: Deploy the dev ActiveMQ broker
+  ansible.builtin.include_tasks: dev_activemq.yaml
+  when: xnat_dev_activemq | bool
+
 # no_log: the rendered values contain xnat_postgres_password — a parse failure
 # (or -vvv) would otherwise print the whole document including the secret.
 - name: Parse Helm values

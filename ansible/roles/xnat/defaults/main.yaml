@@ -110,3 +110,19 @@ xnat_container_service: false
 # labelled/tainted nodepool (e.g. workload.type==cs), matching your cluster.
 xnat_cs_swarm_constraints: []
 xnat_cs_kubernetes_tolerations: []
+
+# --- Dev: external ActiveMQ broker (dev/test only) ------------------------
+# XNAT runs an embedded (per-JVM) broker by default, so multi-replica pods each
+# hold their OWN message queue and don't coordinate cluster events. Set true to
+# deploy a standalone ActiveMQ Artemis broker (tasks/dev_activemq.yaml) and point
+# every replica at it via spring.activemq.* (values.yaml.j2 -> xnat-conf.properties),
+# so cluster events fan out over one shared queue — useful for multi-node
+# race/replay testing. Not for prod: a single ephemeral broker, no HA or
+# persistence (and true multi-node also needs RWX archive/build storage, per the
+# container-service note above).
+xnat_dev_activemq: false
+xnat_dev_activemq_image: apache/activemq-artemis:latest
+xnat_dev_activemq_user: xnat
+# Broker credential — a dev throwaway on synthetic clusters (not PHI); override
+# in inventory if you like.
+xnat_dev_activemq_password: xnatactivemq

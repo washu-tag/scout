@@ -153,6 +153,12 @@ session-based login bounces between pods and you get kicked back to the launchpa
 A real multi-replica deployment also needs **RWX** `archive`/`build` storage (see
 the Container service note); on RWO local-path all replicas pin to one node.
 
+For multi-node **message/event** testing, set `xnat_dev_activemq: true` — the role
+deploys a standalone ActiveMQ Artemis broker and points every replica at it via
+`spring.activemq.*`, so cluster events share one queue instead of each pod's
+embedded broker. Dev/test only (one ephemeral broker, no HA/persistence). See the
+runbook (`docs/internal/xnat-develop-testing.md`) for how to inspect delivery.
+
 ## Mail
 
 XNAT routes outbound mail through Scout's shared relay (MailHog in dev,

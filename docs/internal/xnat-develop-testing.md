@@ -152,6 +152,38 @@ kubectl --context <ctx> -n xnat rollout restart statefulset/xnat
 (Or upload directly with `mc`/`kubectl cp` if you prefer a tighter loop; the init
 containers just read `s3://xnat-dev/ROOT.war` and `s3://xnat-dev/plugins/`.)
 
+## Multi-node testing (external ActiveMQ)
+
+XNAT's per-JVM embedded broker means that if you bump `replicaCount`, each pod
+holds its own message queue and cluster events (cache invalidations, the site
+anon-script reload, etc.) don't coordinate across nodes. Set
+`xnat_dev_activemq: true` in inventory: the role deploys a standalone ActiveMQ
+Artemis broker (`xnat-activemq`) and points every replica at it via
+`spring.activemq.*`, so the whole cluster shares one queue.
+
+> The role also patches a Traefik sticky-session cookie automatically (so
+> multi-replica login doesn't bounce between pods). A genuine multi-node run
+> additionally needs RWX `archive`/`build` storage — see the role README.
+
+Confirm a broadcast is actually delivered (once per node, no redelivery) from the
+broker's own counters. XNAT's cluster events ride the `dist-events` MULTICAST
+address, one subscription per node:
+
+```bash
+POD=$(kubectl --context <ctx> -n xnat get pod \
+  -l app.kubernetes.io/name=xnat-activemq -o jsonpath='{.items[0].metadata.name}')
+kubectl --context <ctx> -n xnat exec "$POD" -- \
+  /var/lib/artemis-instance/bin/artemis queue stat \
+  --user xnat --password xnatactivemq --maxRows 500 --maxColumnSize 1000
+```
+
+In the `dist-events` rows, `MESSAGES ADDED == MESSAGES ACKED` with
+`MESSAGE COUNT`, `DELIVERING`, and `DLQ` all 0 means every broadcast was delivered
+and consumed exactly once — no broker-level redelivery. To attribute a specific
+event: snapshot the counts, trigger it once (e.g. save the site anonymization
+script), and re-read — the subscriptions for that event should each climb by
+exactly 1 per node (a jump of 2+ on one subscription = that node got it twice).
+
 ## Teardown / revert
 
 - **Back to the released image + SSO:** delete the `xnat_dev_*` (and any
