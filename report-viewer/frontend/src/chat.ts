@@ -23,7 +23,7 @@ export function submitChatPrompt(text: string): void {
   window.parent.postMessage({ type: 'input:prompt', text }, _chatOrigin);
 }
 
-export function applyFilterToChat(searchId: string, filters: FilterState): void {
+export function buildFilterPrompt(searchId: string, filters: FilterState): string | null {
   const clauses: string[] = [];
   if (filters.patient_age) {
     const { min, max } = filters.patient_age;
@@ -55,12 +55,10 @@ export function applyFilterToChat(searchId: string, filters: FilterState): void 
   if (filters.sending_facility) {
     clauses.push(`sending_facility contains "${filters.sending_facility}"`);
   }
-  if (clauses.length === 0) return;
-  submitChatPrompt(`Refine search ${searchId}. Filter rows where ${clauses.join(', ')}.`);
+  if (clauses.length === 0) return null;
+  return `Refine search ${searchId}. Filter rows where ${clauses.join(', ')}.`;
 }
 
-export function discussInChat(sourceFile: string): void {
-  submitChatPrompt(
-    `Read the report at \`${sourceFile}\`. Walk me through the findings, impression, and key diagnoses.`,
-  );
+export function buildDiscussPrompt(sourceFile: string): string {
+  return `Read the report at \`${sourceFile}\`. Walk me through the findings, impression, and key diagnoses.`;
 }

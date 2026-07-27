@@ -11,3 +11,9 @@ vulnerabilities:
   # jackson-databind bundled by Keycloak
   - id: CVE-2026-54512 # jackson-databind
   - id: CVE-2026-54513 # jackson-databind
+  # postgresql JDBC driver bundled by Keycloak (the driver Scout actually uses).
+  # CVE-2026-54291 is a SCRAM channel-binding downgrade that only bites when the
+  # client sets channelBinding=require over a MITM'd TLS link; Scout's Keycloak DB
+  # connection doesn't. Fixed in pgjdbc 42.7.12, which Keycloak 26.6.4 doesn't
+  # bundle yet; drop this once a newer Keycloak base ships the fixed driver.
+  - id: CVE-2026-54291 # org.postgresql:postgresql 42.7.11

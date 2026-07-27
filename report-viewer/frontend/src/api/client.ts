@@ -183,6 +183,15 @@ export async function getReport(reportId: string, idColumn: string): Promise<Rep
   return row as unknown as ReportDetail;
 }
 
+export interface SearchModalitiesResponse {
+  search_id: string;
+  modalities: string[];
+}
+
+export function getSearchModalities(searchId: string): Promise<SearchModalitiesResponse> {
+  return api<SearchModalitiesResponse>(`/api/searches/${encodeURIComponent(searchId)}/modalities`);
+}
+
 // Serializes the sort + filter view state shared by the /rows and /csv
 // endpoints into query params. Callers add their own page/limit/columns.
 export function buildViewQuery(view: {
