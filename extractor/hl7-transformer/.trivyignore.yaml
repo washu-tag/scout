@@ -25,6 +25,15 @@ vulnerabilities:
   - id: CVE-2026-47691 # netty-resolver-dns
   - id: CVE-2026-48748 # netty-codec-http3
   - id: CVE-2026-50010 # netty-handler
+  - id: CVE-2026-56816 # netty-codec-http3 4.2.7 (HTTP3 transport never started by the worker)
+  # Newer netty 4.2.7 CVEs in the Spark-bundled jars (also shaded into the
+  # connect-repl client the worker never loads). Our own added netty (in the AWS
+  # SDK bundle jar) is bumped to 4.1.136 in the Dockerfile; these entries cover
+  # only Spark's un-patchable 4.2.7 copies.
+  - id: CVE-2026-55831 # netty-codec-http 4.2.7 (Spark-bundled)
+  - id: CVE-2026-55833 # netty-codec-http 4.2.7 (Spark-bundled)
+  - id: CVE-2026-56745 # netty-codec-http 4.2.7 (Spark-bundled)
+  - id: CVE-2026-59901 # netty-codec / netty-codec-compression 4.2.7 (Spark-bundled)
   # derby backs Spark's embedded metastore, which Scout doesn't use (remote
   # HMS); the advisory's 10.16.1.2 was never published to Maven Central
   - id: CVE-2022-46337 # derby 10.16.1.1
@@ -38,6 +47,7 @@ vulnerabilities:
   # Shaded inside hadoop-client-runtime; hadoop 3.4.3 (latest) still ships
   # jackson2 2.12.7, so there is no upstream fix to move to yet
   - id: CVE-2025-52999 # jackson-core 2.12.7 (shaded in hadoop-client-runtime)
+  - id: GHSA-r7wm-3cxj-wff9 # jackson-core 2.12.7 (shaded in hadoop-client-runtime, same as above)
   # jackson-databind bundled by the Apache Spark engine base image (2.19/2.20)
   # and shaded in hadoop-client-runtime (2.12.7.1); no rebuild of the Spark
   # 4.1.x engine line with a fixed jackson exists yet (Spark engine version —
@@ -47,6 +57,7 @@ vulnerabilities:
   # jetty-http shaded inside hadoop-client-runtime and spark-core; the fix
   # exists only in jetty 12, which neither upstream has moved to
   - id: CVE-2026-2332 # jetty-http (shaded in hadoop-client-runtime, spark-core)
+  - id: CVE-2026-10050 # jetty-security 11.0.26 (shaded in spark-core; fix only in jetty 12)
   # libthrift fix is a major bump (0.16 → 0.23) coupled to Spark's hive
   # thrift client
   - id: CVE-2026-43869 # libthrift 0.16.0
@@ -55,3 +66,8 @@ vulnerabilities:
   # suppressed by package name in .trivyignore.rego — its advisory IDs churn
   # (the GHSA aliases flipped to CVE-2026-56740/56741), so per-ID entries here
   # kept going stale.
+  # quinn-proto QUIC crate vendored inside the temporalio wheel's compiled Rust
+  # bridge (site-packages/temporalio/bridge) — not a Python dep we can override,
+  # and the QUIC path is unused (the SDK talks gRPC/HTTP2 to the frontend). The
+  # in-range temporalio still bundles 0.11.14; drop when a rebuilt wheel ships 0.11.15.
+  - id: GHSA-4w2j-m93h-cj5j # quinn-proto 0.11.14 (vendored in temporalio wheel)
