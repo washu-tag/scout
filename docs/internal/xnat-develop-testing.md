@@ -214,6 +214,14 @@ exactly 1 per node (a jump of 2+ on one subscription = that node got it twice).
   upload `ROOT/` to `s3://xnat-dev/ROOT/`, and change `develop-war` to
   `mc mirror` it to `/webapps/ROOT/`. Serves the exploded dir directly (no
   autoDeploy) and keeps the edit workstation-side — no in-cluster `unzip`.
+- **Console logging on the combined build.** The 1.9.3.7 "combined" WAR reads
+  `XNAT_LOG_CONSOLE=plain` to log to stdout, so you can skip the logback surgery
+  above and set it on the pod:
+  `kubectl -n xnat set env statefulset/xnat XNAT_LOG_CONSOLE=plain` (rolls the
+  pods). It reverts on the next `make install-xnat` — the chart has no arbitrary-
+  env hook, so this stays a manual step. A chart `extraEnv` passthrough (we own
+  the chart) would make it inventory-driven, but that's a chart release for a
+  dev-only knob.
 - **Plugin logs on stdout.** A raw plugin JAR logs to a rolling file; the
   `develop-plugins` `mc mirror` does not run Scout's normal logback-to-stdout
   rewrite. Rewrite it before upload, or read the file via `kubectl exec`.
