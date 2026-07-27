@@ -6,6 +6,8 @@ on:
 
 jobs:
   status:
+    # Skip fork PRs: they get a read-only token and no secrets, so this job would fail.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     permissions: {}
     uses: washu-tag/.github/.github/workflows/pr-status.yaml@main
     secrets:

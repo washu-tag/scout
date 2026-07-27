@@ -1,5 +1,5 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
-import type { FilterState } from '../../api/client';
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { activeFilterCount, type FilterState } from '../../api/client';
 import { Modal } from '../../Modal';
 import { paginationBtn } from './styles';
 
@@ -24,13 +24,23 @@ const MODALITY_OPTIONS = [
 export function FiltersModal(props: {
   initial: FilterState;
   availableColumns: string[];
+  modalityOptions?: string[];
+  modalitiesError?: boolean;
   onApply: (next: FilterState) => void;
   onRefineInChat: (next: FilterState) => void;
   onClose: () => void;
 }) {
   const [staged, setStaged] = useState<FilterState>(props.initial);
+  const [needFilters, setNeedFilters] = useState(false);
   const available = new Set(props.availableColumns);
   const has = (col: string) => available.has(col);
+
+  // Full list until the cohort's modalities load; union with the selection so a checked value can't vanish.
+  const modalityChoices = useMemo<string[]>(() => {
+    const base =
+      props.modalitiesError || !props.modalityOptions ? MODALITY_OPTIONS : props.modalityOptions;
+    return Array.from(new Set([...base, ...(staged.modality ?? [])])).sort();
+  }, [props.modalityOptions, props.modalitiesError, staged.modality]);
 
   const setAgeBound = (which: 'min' | 'max', value: string) =>
     setStaged((s) => ({
@@ -62,9 +72,10 @@ export function FiltersModal(props: {
       minWidth={420}
       maxWidth={560}
       maxHeight="calc(100vh - 40px)"
+      showClose
     >
       <div style={{ fontSize: '0.85rem' }}>
-        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Filter rows</h3>
+        <h3 style={{ margin: '0 2rem 0.75rem 0', fontSize: '1rem' }}>Filter rows</h3>
 
         {has('patient_age') && (
           <FieldRow label="Age">
@@ -88,10 +99,10 @@ export function FiltersModal(props: {
           </FieldRow>
         )}
 
-        {has('modality') && (
+        {has('modality') && modalityChoices.length > 0 && (
           <FieldRow label="Modality">
             <CheckboxRow
-              options={MODALITY_OPTIONS as readonly string[]}
+              options={modalityChoices}
               selected={staged.modality ?? []}
               onToggle={(v) => toggleEnum('modality', v)}
             />
@@ -146,38 +157,43 @@ export function FiltersModal(props: {
           </FieldRow>
         )}
 
-        <div
-          style={{
-            marginTop: '1rem',
-            paddingTop: '0.75rem',
-            borderTop: '1px solid var(--rv-border)',
-            display: 'flex',
-            gap: '0.5rem',
-            alignItems: 'center',
-          }}
-        >
-          <button type="button" onClick={() => setStaged({})} style={paginationBtn}>
-            Reset
-          </button>
-          <span style={{ flex: 1 }} />
-          <button type="button" onClick={props.onClose} style={paginationBtn}>
-            Cancel
-          </button>
-          <button type="button" onClick={() => props.onRefineInChat(staged)} style={paginationBtn}>
-            Filter via Chat
-          </button>
-          <button
-            type="button"
-            onClick={() => props.onApply(staged)}
-            style={{
-              ...paginationBtn,
-              background: 'var(--rv-accent)',
-              color: '#fff',
-              borderColor: 'var(--rv-accent)',
-            }}
-          >
-            Apply
-          </button>
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--rv-danger)', margin: '0 0 0.5rem' }}>
+            {needFilters && activeFilterCount(staged) === 0
+              ? 'Select at least one filter first.'
+              : ' '}
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button type="button" onClick={() => setStaged({})} style={paginationBtn}>
+              Reset
+            </button>
+            <span style={{ flex: 1 }} />
+            <button type="button" onClick={props.onClose} style={paginationBtn}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (activeFilterCount(staged) === 0) setNeedFilters(true);
+                else props.onRefineInChat(staged);
+              }}
+              style={paginationBtn}
+            >
+              Filter in Chat
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onApply(staged)}
+              style={{
+                ...paginationBtn,
+                background: 'var(--rv-accent)',
+                color: '#fff',
+                borderColor: 'var(--rv-accent)',
+              }}
+            >
+              Apply
+            </button>
+          </div>
         </div>
       </div>
     </Modal>

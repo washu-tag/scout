@@ -16,11 +16,13 @@ import {
   csvUrl,
   friendlyError,
   getSearch,
+  getSearchModalities,
   getSearchRows,
   type FilterState,
 } from '../api/client';
 import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
-import { applyFilterToChat } from '../chat';
+import { buildFilterPrompt } from '../chat';
+import { useChatPrompt } from '../ChatPrompt';
 import { RowDetail } from './searchDetail/RowDetail';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
@@ -54,6 +56,7 @@ const columnHelper = createColumnHelper<Row>();
 
 export default function SearchDetailPage() {
   const { searchId = '' } = useParams<{ searchId: string }>();
+  const requestPrompt = useChatPrompt();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(100);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -85,6 +88,14 @@ export default function SearchDetailPage() {
     enabled: !!searchId,
     // Keep previous page visible during refetch so debounced filter inputs don't lose focus.
     placeholderData: keepPreviousData,
+  });
+
+  // Distinct modalities across the whole cohort (not the filtered page) for the filter dialog.
+  const modalitiesQ = useQuery({
+    queryKey: ['search', searchId, 'modalities'],
+    queryFn: () => getSearchModalities(searchId),
+    enabled: !!searchId,
+    staleTime: Infinity,
   });
 
   // Expansion is keyed by row index; clear on data change so page-2 row 0
@@ -560,16 +571,22 @@ export default function SearchDetailPage() {
         <FiltersModal
           initial={appliedFilters}
           availableColumns={available}
+          modalityOptions={modalitiesQ.data?.modalities}
+          modalitiesError={modalitiesQ.isError}
           onApply={(next) => {
             setAppliedFilters(next);
             setPage(1);
             setFiltersModalOpen(false);
           }}
           onRefineInChat={(next) => {
-            setAppliedFilters(next);
-            setPage(1);
-            applyFilterToChat(searchId, next);
-            setFiltersModalOpen(false);
+            requestPrompt(buildFilterPrompt(searchId, next), {
+              title: 'Filter in Chat?',
+              onConfirm: () => {
+                setAppliedFilters(next);
+                setPage(1);
+                setFiltersModalOpen(false);
+              },
+            });
           }}
           onClose={() => setFiltersModalOpen(false)}
         />
