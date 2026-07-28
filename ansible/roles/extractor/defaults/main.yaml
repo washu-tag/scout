@@ -1,11 +1,12 @@
 ---
 # Default values for Extractor deployment
 
-# hl7-transformer Helm chart, published to GHCR by CI (ADR 0030/0031 phase 0).
-# Pulled by helm from the OCI ref pinned to hl7_transformer_chart_version
-# (group_vars/all/versions.yaml). Dev/CI override: set hl7_transformer_chart_path
+# Extractor Helm charts, published to GHCR by this repo's CI (ADR 0030/0031 phase 0).
+# Pulled by helm from the OCI ref pinned to the matching *_chart_version
+# (group_vars/all/versions.yaml). Dev/CI override: set the matching *_chart_path
 # to a local chart dir, in which case no --version is passed.
 hl7_transformer_chart_oci_ref: oci://ghcr.io/washu-tag/charts/hl7-transformer
+hl7log_extractor_chart_oci_ref: oci://ghcr.io/washu-tag/charts/hl7log-extractor
 
 hl7log_extractor_timezone: '{{ timezone }}'
 

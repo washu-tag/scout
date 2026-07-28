@@ -240,3 +240,12 @@ class AllRowsResponse(BaseModel):
     rows: list[dict[str, Any]]
     total: int
     truncated: bool
+
+
+class ModalitiesResponse(BaseModel):
+    """Distinct `modality` values present in a search's cohort, for the
+    viewer's Modality filter. Empty when none are present or the saved SQL
+    doesn't project `modality`."""
+
+    search_id: str
+    modalities: list[str]

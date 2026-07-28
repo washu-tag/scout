@@ -1,20 +1,22 @@
 import { Fragment, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { friendlyError, getReport } from '../../api/client';
-import { discussInChat } from '../../chat';
+import { buildDiscussPrompt } from '../../chat';
+import { useChatPrompt } from '../../ChatPrompt';
 import { fmtDate } from './format';
 import { paginationBtn } from './styles';
 
 export function RowDetail(props: {
   row: Record<string, unknown>;
+  idColumn: string;
   highlightTerms: string[];
   highlightDiagnosis: string[];
 }) {
-  // Fetch by the row's unique report id (the search's id_column may be a non-unique key).
-  const reportId = String(props.row['primary_report_identifier'] ?? '');
+  const requestPrompt = useChatPrompt();
+  const reportId = String(props.row[props.idColumn] ?? '');
   const reportQ = useQuery({
-    queryKey: ['report', reportId],
-    queryFn: () => getReport(reportId, 'primary_report_identifier'),
+    queryKey: ['report', props.idColumn, reportId],
+    queryFn: () => getReport(reportId, props.idColumn),
     enabled: !!reportId,
     staleTime: 5 * 60_000,
   });
@@ -257,7 +259,13 @@ export function RowDetail(props: {
                 {sourceFile}
               </span>
             </div>
-            <button type="button" onClick={() => discussInChat(sourceFile)} style={paginationBtn}>
+            <button
+              type="button"
+              onClick={() =>
+                requestPrompt(buildDiscussPrompt(sourceFile), { title: 'Discuss in Chat?' })
+              }
+              style={paginationBtn}
+            >
               Discuss in Chat
             </button>
           </div>

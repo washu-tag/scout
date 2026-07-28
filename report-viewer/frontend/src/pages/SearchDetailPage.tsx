@@ -24,7 +24,8 @@ import {
   type FilterState,
 } from '../api/client';
 import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
-import { applyFilterToChat } from '../chat';
+import { buildFilterPrompt } from '../chat';
+import { useChatPrompt } from '../ChatPrompt';
 import { RowDetail } from './searchDetail/RowDetail';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
@@ -40,7 +41,7 @@ const COLUMNS_CONFIG: Array<{
   mono?: boolean;
   kind?: 'date';
 }> = [
-  { field: 'epic_mrn', title: 'MRN', width: 90, mono: true },
+  { field: 'epic_mrn', title: 'MRN', width: 80, mono: true },
   { field: 'mpi', title: 'MPI', width: 80, mono: true, defaultHidden: true },
   { field: 'accession_number', title: 'Accession', width: 85, mono: true },
   { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
@@ -58,6 +59,7 @@ const columnHelper = createColumnHelper<Row>();
 
 export default function SearchDetailPage() {
   const { searchId = '' } = useParams<{ searchId: string }>();
+  const requestPrompt = useChatPrompt();
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 100 });
   const [sorting, setSorting] = useState<SortingState>([]);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({});
@@ -85,9 +87,8 @@ export default function SearchDetailPage() {
     enabled: !!searchId,
   });
 
-  // Expansion is keyed by row index; clear on data change so page-2 row 0
-  // doesn't inherit page-1's expanded card. Gate on rowsQ.data (not page)
-  // to avoid a mid-fetch collapse flash under keepPreviousData.
+  // Expansion is keyed by row id (primary_report_identifier); clear on a new
+  // cohort fetch so a fresh search doesn't inherit stale expansions.
   useEffect(() => {
     setExpanded({});
   }, [rowsQ.data]);
@@ -112,6 +113,17 @@ export default function SearchDetailPage() {
     [rowsQ.data],
   );
 
+  // Distinct modalities present in the loaded cohort, for the filter dialog -
+  // derived client-side from the full result set (no separate endpoint).
+  const modalityOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rowsQ.data?.rows ?? []) {
+      const v = r.modality;
+      if (v != null && v !== '') set.add(String(v));
+    }
+    return Array.from(set).sort();
+  }, [rowsQ.data]);
+
   const columns = useMemo(
     () =>
       COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
@@ -126,6 +138,7 @@ export default function SearchDetailPage() {
     [available],
   );
 
+  // Filter the full in-memory cohort; TanStack sorts + paginates the result.
   const data = useMemo(
     () => filterRows(rowsQ.data?.rows ?? [], appliedFilters),
     [rowsQ.data, appliedFiltersKey],
@@ -347,6 +360,7 @@ export default function SearchDetailPage() {
                               <div style={{ padding: '0.75rem 1rem' }}>
                                 <RowDetail
                                   row={row.original}
+                                  idColumn={meta.data?.id_column ?? 'primary_report_identifier'}
                                   highlightTerms={[
                                     ...(meta.data?.match_terms ?? []),
                                     ...(appliedFilters.service_name
@@ -582,14 +596,19 @@ export default function SearchDetailPage() {
         <FiltersModal
           initial={appliedFilters}
           availableColumns={available}
+          modalityOptions={modalityOptions}
           onApply={(next) => {
             setAppliedFilters(next);
             setFiltersModalOpen(false);
           }}
           onRefineInChat={(next) => {
-            setAppliedFilters(next);
-            applyFilterToChat(searchId, next);
-            setFiltersModalOpen(false);
+            requestPrompt(buildFilterPrompt(searchId, next), {
+              title: 'Filter in Chat?',
+              onConfirm: () => {
+                setAppliedFilters(next);
+                setFiltersModalOpen(false);
+              },
+            });
           }}
           onClose={() => setFiltersModalOpen(false)}
         />

@@ -23,3 +23,7 @@ vulnerabilities:
   # it needs a newer rattler build, and rattler is not exercised at notebook
   # runtime (package resolution only).
   - id: GHSA-36hh-v3qg-5jq4 # pyo3 0.25.1 -> 0.29.0 (compiled into rattler)
+  # quinn-proto QUIC crate compiled into the same rattler Rust extension
+  # (rattler.abi3.so). Fix (0.11.15) needs a rebuilt rattler; rattler runs only
+  # at package-resolution time, not notebook runtime, and the QUIC path is unused.
+  - id: GHSA-4w2j-m93h-cj5j # quinn-proto 0.11.14 -> 0.11.15 (compiled into rattler)
