@@ -19,8 +19,8 @@ import {
   downloadCsv,
   filterRows,
   friendlyError,
-  getAllRows,
   getSearch,
+  getSearchRows,
   type FilterState,
 } from '../api/client';
 import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
@@ -37,12 +37,29 @@ const COLUMNS_CONFIG: Array<{
   title: string;
   width: number;
   defaultHidden?: boolean;
+  hideIfEmpty?: boolean;
   align?: 'right' | 'center';
   mono?: boolean;
   kind?: 'date';
 }> = [
-  { field: 'epic_mrn', title: 'MRN', width: 80, mono: true },
+  { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true },
   { field: 'mpi', title: 'MPI', width: 80, mono: true, defaultHidden: true },
+  {
+    field: 'resolved_epic_mrn',
+    title: 'Resolved MRN',
+    width: 100,
+    mono: true,
+    defaultHidden: true,
+    hideIfEmpty: true,
+  },
+  {
+    field: 'resolved_mpi',
+    title: 'Resolved MPI',
+    width: 100,
+    mono: true,
+    defaultHidden: true,
+    hideIfEmpty: true,
+  },
   { field: 'accession_number', title: 'Accession', width: 85, mono: true },
   { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
   { field: 'modality', title: 'Modality', width: 60 },
@@ -82,8 +99,8 @@ export default function SearchDetailPage() {
 
   // One fetch of the whole cohort; sort/filter/paginate happen client-side.
   const rowsQ = useQuery({
-    queryKey: ['search', searchId, 'rows-all'],
-    queryFn: () => getAllRows(searchId),
+    queryKey: ['search', searchId, 'rows'],
+    queryFn: () => getSearchRows(searchId),
     enabled: !!searchId,
   });
 
@@ -124,21 +141,25 @@ export default function SearchDetailPage() {
     return Array.from(set).sort();
   }, [rowsQ.data]);
 
-  const columns = useMemo(
-    () =>
-      COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
-        columnHelper.accessor((row: Row) => row[c.field], {
-          id: c.field,
-          header: c.title,
-          size: c.width,
-          cell: (info) => (c.kind === 'date' ? fmtDate(info.getValue()) : fmtCell(info.getValue())),
-          meta: { align: c.align, mono: c.mono },
-        }),
-      ),
-    [available],
-  );
+  const columns = useMemo(() => {
+    const rows = rowsQ.data?.rows ?? [];
+    const hasValue = (field: string) => rows.some((r) => r[field] != null && r[field] !== '');
+    return COLUMNS_CONFIG.filter(
+      (c) => available.includes(c.field) && (!c.hideIfEmpty || hasValue(c.field)),
+    ).map((c) =>
+      columnHelper.accessor((row: Row) => row[c.field], {
+        id: c.field,
+        header: c.title,
+        size: c.width,
+        cell: (info) => (c.kind === 'date' ? fmtDate(info.getValue()) : fmtCell(info.getValue())),
+        meta: { align: c.align, mono: c.mono },
+      }),
+    );
+  }, [available, rowsQ.data]);
 
-  // Filter the full in-memory cohort; TanStack sorts + paginates the result.
+  // Filter the full in-memory cohort in fetch order (the order the search SQL
+  // returned) so the initial view preserves the LLM's ORDER BY; TanStack then
+  // sorts/paginates on demand.
   const data = useMemo(
     () => filterRows(rowsQ.data?.rows ?? [], appliedFilters),
     [rowsQ.data, appliedFiltersKey],
@@ -360,7 +381,6 @@ export default function SearchDetailPage() {
                               <div style={{ padding: '0.75rem 1rem' }}>
                                 <RowDetail
                                   row={row.original}
-                                  idColumn={meta.data?.id_column ?? 'primary_report_identifier'}
                                   highlightTerms={[
                                     ...(meta.data?.match_terms ?? []),
                                     ...(appliedFilters.service_name
@@ -545,13 +565,19 @@ export default function SearchDetailPage() {
               )}
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
+                  // Always include the unique id so exported rows stay identifiable
+                  // even if the user hid the id/accession columns.
+                  const cols = table.getVisibleLeafColumns().map((c) => c.id);
+                  if (!cols.includes('primary_report_identifier')) {
+                    cols.unshift('primary_report_identifier');
+                  }
                   downloadCsv(
                     `${searchId}.csv`,
-                    table.getVisibleLeafColumns().map((c) => c.id),
+                    cols,
                     table.getPrePaginationRowModel().rows.map((r) => r.original),
-                  )
-                }
+                  );
+                }}
                 style={paginationBtn}
                 title="Download the current filtered and sorted rows as CSV"
               >

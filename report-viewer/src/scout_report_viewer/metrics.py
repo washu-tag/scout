@@ -23,7 +23,7 @@ TRINO_QUERY_DURATION = Histogram(
     "scout_report_viewer_trino_query_duration_seconds",
     "Time spent in Trino per call from the report-viewer service.",
     ["op", "result"],
-    buckets=(0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0),
+    buckets=(0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, 600.0),
 )
 
 POSTGRES_OP_DURATION = Histogram(
@@ -36,7 +36,7 @@ POSTGRES_OP_DURATION = Histogram(
 # Log-ish buckets: most searches are hundreds of rows, a few are millions.
 SEARCH_SIZE = Histogram(
     "scout_report_viewer_search_size_rows",
-    "Row count of each search at create time (cached COUNT(*) of the saved SQL).",
+    "Row count of each search, from the COUNT(*) computed at create time.",
     buckets=(10, 100, 500, 1_000, 5_000, 10_000, 50_000, 100_000, 500_000, 1_000_000),
 )
 

@@ -1,18 +1,15 @@
 """HTTP routes for `/api/searches`.
 
 A search is a saved SQL query plus minimal metadata. Nothing about
-which rows match is stored. Every read wraps `sql` as a
-subquery and applies pagination/sort/filter at the Trino layer.
+which rows match is stored. Every read wraps `sql` and returns the full
+cohort; sort/filter/paginate happen client-side in the SPA.
 
 Endpoints:
-  POST /api/searches                            - save SQL, cache COUNT(*), return sample
+  POST /api/searches                            - save SQL, return sample + count
   POST /api/searches/from-file                  - upload CSV of IDs, save contains(?, col) SQL and bind the ID list on every read
   GET  /api/searches/{id}                       - metadata
-  GET  /api/searches/{id}/rows                  - paginated rows (wraps sql)
-  GET  /api/searches/{id}/rows/all              - full cohort, lean cols, for client-side browsing
+  GET  /api/searches/{id}/rows                  - full cohort (lean cols) for client-side browsing
   GET  /api/searches/{id}/accessions            - DISTINCT accession_number list
-  GET  /api/searches/{id}/modalities            - DISTINCT modality list
-  GET  /api/searches/{id}/csv                   - streaming CSV download
 
 Single-report reads go through POST /api/reports/read (see routes/reports.py).
 """
@@ -21,7 +18,6 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import date
 from typing import Any
 
 from fastapi import (
@@ -30,13 +26,10 @@ from fastapi import (
     File,
     Form,
     HTTPException,
-    Query,
-    Request,
     Response,
     UploadFile,
     status,
 )
-from fastapi.responses import StreamingResponse
 
 from .. import metrics, trino_client
 from ..store import SearchStore, get_store
@@ -55,12 +48,9 @@ from ..ids import new_search_id
 from ..logging_setup import scrub_for_log
 from ..models import (
     SEARCH_REQUIRED_COLUMNS,
-    SORT_FILTER_COLUMNS,
-    AllRowsResponse,
     CreateFromFileResponse,
     CreateSearchRequest,
     CreateSearchResponse,
-    ModalitiesResponse,
     RowsResponse,
     SearchMeta,
 )
@@ -123,8 +113,6 @@ def _wrap_sql(sql: str) -> str:
 def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
     return SearchMeta(
         id=r["id"],
-        id_column=r["id_column"],
-        count=r["count"],
         sql=r["sql"],
         owner_sub=r["owner_sub"],
         created_at=r["created_at"],
@@ -277,10 +265,8 @@ async def create_search(
     search_id = new_search_id()
     stored = await store.insert_search(
         search_id=search_id,
-        id_column=id_column,
         sql=sql,
         owner_sub=user.sub,
-        row_count=row_count,
         match_terms=body.match_terms or [],
         match_diagnoses=body.match_diagnoses or [],
         sql_explanation=body.sql_explanation or "",
@@ -288,13 +274,13 @@ async def create_search(
     )
 
     metrics.SEARCHES_CREATED.inc()
-    if stored["count"] is not None:
-        metrics.SEARCH_SIZE.observe(stored["count"])
+    if row_count is not None:
+        metrics.SEARCH_SIZE.observe(row_count)
     log.info(
         "search created",
         extra={
             "search_id": stored["id"],
-            "count": stored["count"],
+            "count": row_count,
             "id_column": id_column,
             "user_sub": user.sub,
         },
@@ -302,8 +288,8 @@ async def create_search(
 
     return CreateSearchResponse(
         id=stored["id"],
-        count=stored["count"],
-        id_column=stored["id_column"],
+        count=row_count,
+        id_column=id_column,
         view_url=_view_url(search_id),
         columns=[c for c in columns if c not in _drop_cols],
         sample=sample,
@@ -439,18 +425,16 @@ async def create_search_from_file(
     search_id = new_search_id()
     stored = await store.insert_search(
         search_id=search_id,
-        id_column=resolved_id_column,
         sql=saved_sql,
         owner_sub=user.sub,
-        row_count=row_count,
         uploaded_ids=final_ids,
         sql_explanation=sql_explanation or "",
         owui_chat_id=owui_chat_id or "",
     )
 
     metrics.SEARCHES_CREATED.inc()
-    if stored["count"] is not None:
-        metrics.SEARCH_SIZE.observe(stored["count"])
+    if row_count is not None:
+        metrics.SEARCH_SIZE.observe(row_count)
     log.info(
         "search imported from file",
         extra={
@@ -467,9 +451,9 @@ async def create_search_from_file(
 
     return CreateFromFileResponse(
         id=stored["id"],
-        id_column=stored["id_column"],
+        id_column=resolved_id_column,
         column_inferred=column_inferred,
-        count=stored["count"],
+        count=row_count,
         columns=columns,
         sample=sample_rows,
         unmatched=unmatched[:UNMATCHED_SAMPLE_CAP],
@@ -489,8 +473,6 @@ async def get_search_meta(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return SearchMeta(
         id=ds["id"],
-        id_column=ds["id_column"],
-        count=ds["count"],
         sql=ds["sql"],
         owner_sub=ds["owner_sub"],
         created_at=ds["created_at"],
@@ -516,150 +498,7 @@ async def delete_search(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-_SORTABLE_COLUMNS: frozenset[str] = frozenset(SORT_FILTER_COLUMNS)
-
-
-def _parse_sort(sort: str | None) -> tuple[str, str] | None:
-    if not sort:
-        return None
-    parts = sort.split(":", 1)
-    col = parts[0]
-    direction = parts[1].lower() if len(parts) > 1 else "asc"
-    if col not in _SORTABLE_COLUMNS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"sort column {col!r} not allowed; one of {sorted(_SORTABLE_COLUMNS)}",
-        )
-    if direction not in ("asc", "desc"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"sort direction {direction!r} must be 'asc' or 'desc'",
-        )
-    return col, direction.upper()
-
-
-# Columns that accept a `.min` / `.max` suffix; everything else single-value.
-_RANGE_FILTER_COLUMNS: frozenset[str] = frozenset(
-    c for c, kind in SORT_FILTER_COLUMNS.items() if kind == "range"
-)
-# Columns whose repeated `filter.<col>=…` query params collapse into IN (…).
-_MULTI_VALUE_COLUMNS: frozenset[str] = frozenset(
-    c for c, kind in SORT_FILTER_COLUMNS.items() if kind == "multi"
-)
-
-
-def _parse_filters(request: Request) -> list[tuple[str, list[str]]]:
-    grouped: dict[str, list[str]] = {}
-    for key, val in request.query_params.multi_items():
-        if not key.startswith("filter."):
-            continue
-        spec = key[len("filter.") :]
-        col, _, suffix = spec.partition(".")
-        if col not in _SORTABLE_COLUMNS:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"filter column {col!r} not allowed; one of {sorted(_SORTABLE_COLUMNS)}",
-            )
-        if suffix:
-            if col not in _RANGE_FILTER_COLUMNS or suffix not in ("min", "max"):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=(
-                        f"filter suffix {suffix!r} not allowed on column "
-                        f"{col!r} (range filters: {sorted(_RANGE_FILTER_COLUMNS)})"
-                    ),
-                )
-        if val:
-            grouped.setdefault(spec, []).append(val)
-    return list(grouped.items())
-
-
-def _like_escape(value: str) -> str:
-    return value.replace("!", "!!").replace("%", "!%").replace("_", "!_")
-
-
-def _filter_clause(col: str, values: list[str], *, alias: str = "") -> tuple[str, list]:
-    """Return (sql_fragment, params) for one filter spec. Identifier
-    is interpolated via _quote_ident; every value is bound via `?`."""
-    prefix = f"{alias}." if alias else ""
-    if "." in col:
-        base, _, bound = col.partition(".")
-        qcol = f"{prefix}{_quote_ident(base)}"
-        value = values[0]
-        if base == "patient_age":
-            try:
-                n = int(value)
-            except ValueError:
-                return "FALSE", []
-            op = ">=" if bound == "min" else "<="
-            return f"{qcol} {op} ?", [n]
-        if base == "message_dt":
-            try:
-                date.fromisoformat(value)
-            except ValueError:
-                return "FALSE", []
-            op = ">=" if bound == "min" else "<="
-            return f"CAST({qcol} AS DATE) {op} CAST(? AS DATE)", [value]
-        return "FALSE", []
-    qcol = f"{prefix}{_quote_ident(col)}"
-    if col in _MULTI_VALUE_COLUMNS:
-        if not values:
-            return "FALSE", []
-        placeholders = ", ".join(["?"] * len(values))
-        return f"{qcol} IN ({placeholders})", list(values)
-    value = values[0]
-    if col == "patient_age":
-        try:
-            n = int(value)
-        except ValueError:
-            return "FALSE", []
-        return f"{qcol} = ?", [n]
-    pattern = "%" + _like_escape(value) + "%"
-    if col == "message_dt":
-        return f"CAST({qcol} AS varchar) LIKE ? ESCAPE '!'", [pattern]
-    return f"LOWER({qcol}) LIKE LOWER(?) ESCAPE '!'", [pattern]
-
-
-def _is_column_not_found(exc: Exception) -> bool:
-    return getattr(exc, "error_name", None) == "COLUMN_NOT_FOUND"
-
-
-def _build_where_and_order(
-    filters: list[tuple[str, list[str]]],
-    sort_spec: tuple[str, str] | None,
-    *,
-    alias: str = "s",
-) -> tuple[str, str, list]:
-    """Shared WHERE + ORDER BY builder for the /rows and /csv views so both
-    apply identical filter and sort semantics. Returns (where_sql, order_sql,
-    filter_params). ORDER BY always tie-breaks on primary_report_identifier so
-    the order is stable."""
-    where_parts: list[str] = []
-    filter_params: list = []
-    for fcol, fvals in filters:
-        clause, p = _filter_clause(fcol, fvals, alias=alias)
-        where_parts.append(clause)
-        filter_params.extend(p)
-    where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
-    tiebreak = f"{alias}.primary_report_identifier"
-    if sort_spec:
-        scol, sdir = sort_spec
-        order_sql = (
-            f" ORDER BY {alias}.{_quote_ident(scol)} {sdir} NULLS LAST, {tiebreak}"
-        )
-    else:
-        order_sql = f" ORDER BY {tiebreak}"
-    return where_sql, order_sql, filter_params
-
-
 def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
-    """400 when the sort/filter column isn't in this search's projection; 502 otherwise."""
-    if _is_column_not_found(exc):
-        log.info("rows %s query rejected: unprojected sort/filter column", stage)
-        return HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="sort or filter column is not available for this search",
-        )
     log.exception("trino %s query failed", stage)
     return HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
@@ -670,88 +509,9 @@ def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
 @router.get("/{search_id}/rows", response_model=RowsResponse)
 async def get_search_rows(
     search_id: str,
-    request: Request,
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=100, ge=1, le=1000),
-    sort: str | None = Query(default=None, description="col:dir, e.g. message_dt:desc"),
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> RowsResponse:
-    """Paginated search rows. Wraps the saved sql as a
-    subquery: `SELECT s.* FROM (<sql>) s [WHERE ...] [ORDER BY ...]
-    OFFSET N LIMIT M`. Each page re-runs Trino - rows are never cached.
-
-    Server-side filter values are ANDed and applied to whitelisted
-    columns; sort accepts the same whitelist."""
-    ds = await store.get_search(search_id, owner_sub=user.sub)
-    if ds is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    cached_total = ds["count"]
-    source_sql = ds["sql"]
-    uploaded_ids = ds.get("uploaded_ids")
-    base_params: list = [uploaded_ids] if uploaded_ids else []
-
-    offset = (page - 1) * limit
-    sort_spec = _parse_sort(sort)
-    filters = _parse_filters(request)
-    where_sql, order_sql, filter_params = _build_where_and_order(filters, sort_spec)
-
-    rows_sql = (
-        f"SELECT s.* FROM ({source_sql}) s"
-        f"{where_sql}"
-        f"{order_sql} "
-        f"OFFSET {offset} LIMIT {limit}"
-    )
-
-    # Recompute when filtered or the cached count is NULL; else reuse it.
-    if filters or cached_total is None:
-        count_sql = f"SELECT COUNT(*) AS n FROM ({source_sql}) s{where_sql}"
-        try:
-            with metrics.time_trino("rows_count_query"):
-                # safe: source_sql is persisted validated SQL, filter values bind via ?
-                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-                _, count_rows = await trino_client.execute(
-                    count_sql,
-                    user=user.sub,
-                    params=(base_params + filter_params) or None,
-                )
-            sql_total = int(count_rows[0]["n"]) if count_rows else 0
-        except Exception as exc:
-            raise _rows_query_error(exc, "count")
-        # Best-effort backfill; a failed write just costs one more recompute.
-        if not filters:
-            try:
-                await store.update_row_count(search_id, user.sub, sql_total)
-            except Exception:
-                log.warning("row_count backfill failed", exc_info=True)
-    else:
-        sql_total = cached_total
-
-    try:
-        with metrics.time_trino("rows_query"):
-            columns, rows = await trino_client.execute(
-                rows_sql, user=user.sub, params=(base_params + filter_params) or None
-            )
-    except Exception as exc:
-        raise _rows_query_error(exc, "rows")
-
-    return RowsResponse(
-        id=search_id,
-        page=page,
-        limit=limit,
-        total=sql_total,
-        columns=columns,
-        rows=rows,
-    )
-
-
-@router.get("/{search_id}/rows/all", response_model=AllRowsResponse)
-async def get_search_rows_all(
-    search_id: str,
-    user: User = Depends(get_current_user),
-    store: SearchStore = Depends(get_store),
-) -> AllRowsResponse:
     """The full cohort in one response, for client-side browsing.
 
     Runs the saved sql once and returns every matched row (up to
@@ -770,7 +530,7 @@ async def get_search_rows_all(
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
     all_sql = f"SELECT s.* FROM ({source_sql}) s LIMIT {cap + 1}"
     try:
-        with metrics.time_trino("rows_all_query"):
+        with metrics.time_trino("rows_query"):
             # safe: source_sql is persisted validated SQL; ids bind via ?
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             columns, rows = await trino_client.execute(
@@ -779,15 +539,14 @@ async def get_search_rows_all(
                 params=[uploaded_ids] if uploaded_ids else None,
             )
     except Exception as exc:
-        raise _rows_query_error(exc, "rows_all")
+        raise _rows_query_error(exc, "rows")
 
     truncated = len(rows) > cap
     if truncated:
         rows = rows[:cap]
     lean_columns = [c for c in columns if c not in _HEAVY_COLS]
     lean_rows = [{k: v for k, v in r.items() if k not in _HEAVY_COLS} for r in rows]
-    metrics.SEARCH_SIZE.observe(len(lean_rows))
-    return AllRowsResponse(
+    return RowsResponse(
         id=search_id,
         columns=lean_columns,
         rows=lean_rows,
@@ -830,143 +589,6 @@ async def get_search_accessions(
             r["accession_number"] for r in rows if r.get("accession_number")
         ],
     }
-
-
-@router.get("/{search_id}/modalities", response_model=ModalitiesResponse)
-async def get_search_modalities(
-    search_id: str,
-    user: User = Depends(get_current_user),
-    store: SearchStore = Depends(get_store),
-) -> ModalitiesResponse:
-    """Distinct modalities in the cohort, for the viewer's Modality filter.
-    Empty list when the saved SQL doesn't project `modality`."""
-    ds = await store.get_search(search_id, owner_sub=user.sub)
-    if ds is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    uploaded_ids = ds.get("uploaded_ids")
-    sql = (
-        f"SELECT DISTINCT s.modality "
-        f"FROM ({ds['sql']}) s "
-        f"WHERE s.modality IS NOT NULL "
-        f"ORDER BY s.modality"
-    )
-    try:
-        with metrics.time_trino("modalities_query"):
-            # safe: source_sql is persisted validated SQL, IDs bind via ?; OPA is the AuthZ boundary
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            _cols, rows = await trino_client.execute(
-                sql, user=user.sub, params=[uploaded_ids] if uploaded_ids else None
-            )
-    except Exception as exc:
-        if _is_column_not_found(exc):
-            return ModalitiesResponse(search_id=search_id, modalities=[])
-        log.exception("trino modalities query failed")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"trino modalities query failed: {exc}",
-        )
-    return ModalitiesResponse(
-        search_id=search_id,
-        modalities=[r["modality"] for r in rows if r.get("modality")],
-    )
-
-
-_CSV_CHUNK = 500
-
-
-# Spreadsheet formula-injection prefixes.
-_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@")
-
-
-def _csv_quote(value: Any) -> str:
-    if value is None:
-        return ""
-    s = str(value)
-    if s and s[0] in _CSV_FORMULA_PREFIXES:
-        s = "'" + s
-    if any(c in s for c in (",", '"', "\n", "\r")):
-        return '"' + s.replace('"', '""') + '"'
-    return s
-
-
-def _parse_export_columns(columns: str | None) -> str:
-    """Build the SELECT projection for the CSV export from a comma-separated
-    `columns` list. Each field is validated/quoted via _quote_ident (SQL-injection
-    safe). primary_report_identifier is always included so exported rows stay
-    uniquely identifiable, even if the user hid it. Empty/absent -> `s.*`."""
-    if not columns:
-        return "s.*"
-    fields: list[str] = []
-    seen: set[str] = set()
-    for raw in columns.split(","):
-        name = raw.strip()
-        if not name or name in seen:
-            continue
-        seen.add(name)
-        fields.append(name)
-    if "primary_report_identifier" not in seen:
-        fields.append("primary_report_identifier")
-    return ", ".join(f"s.{_quote_ident(f)}" for f in fields)
-
-
-@router.get("/{search_id}/csv")
-async def export_search_csv(
-    search_id: str,
-    request: Request,
-    sort: str | None = Query(default=None, description="col:dir, e.g. message_dt:desc"),
-    columns: str | None = Query(
-        default=None, description="comma-separated fields to export; empty = all"
-    ),
-    user: User = Depends(get_current_user),
-    store: SearchStore = Depends(get_store),
-) -> StreamingResponse:
-    """Streaming CSV of a search. Mirrors the /rows view: the same whitelisted
-    filters and sort are applied, and `columns` restricts the projection to the
-    user's visible columns (plus primary_report_identifier)."""
-    ds = await store.get_search(search_id, owner_sub=user.sub)
-    if ds is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    sql = ds["sql"]
-    uploaded_ids = ds.get("uploaded_ids")
-    base_params: list = [uploaded_ids] if uploaded_ids else []
-
-    # Validate up front: a bad sort/filter/column 400s before streaming starts
-    # (a StreamingResponse can't change status mid-stream). An unprojected but
-    # otherwise-valid column still slips through to a mid-stream error.
-    sort_spec = _parse_sort(sort)
-    filters = _parse_filters(request)
-    projection = _parse_export_columns(columns)
-    where_sql, order_sql, filter_params = _build_where_and_order(filters, sort_spec)
-
-    async def gen():
-        params = (base_params + filter_params) or None
-        export_sql = f"SELECT {projection} FROM ({sql}) s{where_sql}{order_sql}"
-        header_written = False
-        try:
-            with metrics.time_trino("export_csv_query"):
-                async for columns, rows in trino_client.stream(
-                    export_sql, user=user.sub, params=params, chunk_size=_CSV_CHUNK
-                ):
-                    if not header_written:
-                        yield (",".join(columns) + "\n").encode()
-                        header_written = True
-                    for row in rows:
-                        yield (
-                            ",".join(_csv_quote(row.get(c)) for c in columns) + "\n"
-                        ).encode()
-        except Exception:
-            log.exception("trino export query failed")
-            yield b"# ERROR: query failed mid-export; file is incomplete\n"
-            return
-
-    return StreamingResponse(
-        gen(),
-        media_type="text/csv",
-        headers={
-            "Content-Disposition": f'attachment; filename="{search_id}.csv"',
-            "Cache-Control": "no-store",
-        },
-    )
 
 
 def _extract_excerpt(

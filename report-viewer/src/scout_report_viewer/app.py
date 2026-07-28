@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # The /rows/all payload is a whole cohort (up to tens of thousands of lean
+    # The /rows payload is a whole cohort (up to tens of thousands of lean
     # rows); tabular JSON compresses ~5-10x, so gzip it for the SPA fetch.
     app.add_middleware(GZipMiddleware, minimum_size=1024)
 

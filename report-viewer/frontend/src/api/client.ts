@@ -62,8 +62,6 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 export interface SearchMeta {
   id: string;
-  id_column: string;
-  count: number | null;
   sql: string;
   owner_sub: string;
   created_at: string;
@@ -87,15 +85,6 @@ export function getConfig(): Promise<AppConfig> {
 
 export interface RowsResponse {
   id: string;
-  page: number;
-  limit: number;
-  total: number;
-  columns: string[];
-  rows: Array<Record<string, unknown>>;
-}
-
-export interface AllRowsResponse {
-  id: string;
   columns: string[];
   rows: Array<Record<string, unknown>>;
   total: number;
@@ -104,13 +93,6 @@ export interface AllRowsResponse {
 
 export function getSearch(searchId: string): Promise<SearchMeta> {
   return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
-}
-
-export interface RowsParams {
-  page: number;
-  limit: number;
-  sort?: { col: string; dir: 'asc' | 'desc' } | null;
-  filters?: FilterState;
 }
 
 export interface FilterState {
@@ -191,59 +173,14 @@ export async function getReport(reportId: string, idColumn: string): Promise<Rep
   return row as unknown as ReportDetail;
 }
 
-export interface SearchModalitiesResponse {
-  search_id: string;
-  modalities: string[];
+// The whole cohort in one request (lean columns, capped server-side); the SPA
+// sorts/filters/paginates it client-side. Report text loads per-row on expand.
+export function getSearchRows(searchId: string): Promise<RowsResponse> {
+  return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows`);
 }
 
-export function getSearchModalities(searchId: string): Promise<SearchModalitiesResponse> {
-  return api<SearchModalitiesResponse>(`/api/searches/${encodeURIComponent(searchId)}/modalities`);
-}
-
-// Serializes the sort + filter view state shared by the /rows and /csv
-// endpoints into query params. Callers add their own page/limit/columns.
-export function buildViewQuery(view: {
-  sort?: { col: string; dir: 'asc' | 'desc' } | null;
-  filters?: FilterState;
-}): URLSearchParams {
-  const qs = new URLSearchParams();
-  if (view.sort) {
-    qs.set('sort', `${view.sort.col}:${view.sort.dir}`);
-  }
-  const f = view.filters;
-  if (f) {
-    if (f.patient_age?.min) qs.set('filter.patient_age.min', f.patient_age.min);
-    if (f.patient_age?.max) qs.set('filter.patient_age.max', f.patient_age.max);
-    if (f.message_dt?.min) qs.set('filter.message_dt.min', f.message_dt.min);
-    if (f.message_dt?.max) qs.set('filter.message_dt.max', f.message_dt.max);
-    for (const v of f.sex ?? []) qs.append('filter.sex', v);
-    for (const v of f.modality ?? []) qs.append('filter.modality', v);
-    if (f.service_name) qs.set('filter.service_name', f.service_name);
-    if (f.epic_mrn) qs.set('filter.epic_mrn', f.epic_mrn);
-    if (f.accession_number) qs.set('filter.accession_number', f.accession_number);
-    if (f.sending_facility) qs.set('filter.sending_facility', f.sending_facility);
-  }
-  return qs;
-}
-
-export function getSearchRows(searchId: string, params: RowsParams): Promise<RowsResponse> {
-  const qs = buildViewQuery({ sort: params.sort, filters: params.filters });
-  qs.set('page', String(params.page));
-  qs.set('limit', String(params.limit));
-  return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows?${qs.toString()}`);
-}
-
-// The whole cohort in one request (lean columns, capped server-side). The SPA
-// holds it in memory and does sort/filter/paginate client-side, so browsing is
-// instant after this single (slow) fetch. Report text loads per-row on expand.
-export function getAllRows(searchId: string): Promise<AllRowsResponse> {
-  return api<AllRowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows/all`);
-}
-
-// Client-side equivalent of the server's whitelisted row filters, applied to
-// the in-memory cohort. Mirrors SORT_FILTER_COLUMNS semantics: text =
-// case-insensitive substring, multi = membership, range = inclusive. `message_dt`
-// compares on the date portion (YYYY-MM-DD) to match the date-input filters.
+// Filters the in-memory cohort: text = case-insensitive substring, multi =
+// membership, range = inclusive (message_dt compared on its YYYY-MM-DD prefix).
 export function filterRows(
   rows: Array<Record<string, unknown>>,
   f: FilterState,
@@ -270,8 +207,10 @@ export function filterRows(
     if (sexSet && !sexSet.has(String(r.sex))) return false;
     if (modSet && !modSet.has(String(r.modality))) return false;
     if (ageMin !== null || ageMax !== null) {
-      const a = Number(r.patient_age);
-      if (Number.isNaN(a)) return false;
+      const raw = r.patient_age;
+      if (raw == null || raw === '') return false;
+      const a = Number(raw);
+      if (!Number.isFinite(a)) return false;
       if (ageMin !== null && a < ageMin) return false;
       if (ageMax !== null && a > ageMax) return false;
     }
@@ -315,23 +254,4 @@ export function downloadCsv(
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-}
-
-// Download URL for the CSV export. Mirrors the current view: same sort/filters
-// as the table, and `columns` restricts the export to the visible columns
-// (primary_report_identifier is always appended server-side).
-export function csvUrl(
-  searchId: string,
-  view: {
-    sort?: { col: string; dir: 'asc' | 'desc' } | null;
-    filters?: FilterState;
-    columns?: string[];
-  },
-): string {
-  const qs = buildViewQuery({ sort: view.sort, filters: view.filters });
-  if (view.columns && view.columns.length > 0) {
-    qs.set('columns', view.columns.join(','));
-  }
-  const suffix = qs.toString();
-  return `/api/searches/${encodeURIComponent(searchId)}/csv${suffix ? `?${suffix}` : ''}`;
 }

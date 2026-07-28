@@ -31,7 +31,7 @@ Splitting the surface this way keeps the intent explicit for the LLM: cohort bui
 
 ### Just-in-time cohort evaluation
 
-A search is a saved SQL query plus minimal metadata. Nothing about which rows match is stored. Every read wraps the saved `sql` as a subquery and applies pagination, sort, and filter at the Trino layer. The `searches` table holds `id`, `owner_sub`, `id_column`, `sql`, `sql_explanation`, `match_terms`, `match_diagnoses`, `row_count` (cached at create time via one `SELECT COUNT(*)`), `owui_chat_id`, and `created_at`. Schema migrations use [yoyo](https://ollycope.com/software/yoyo/), a standalone Python migration tool; `db.py` applies the versioned SQL files in `migrations/` on startup. Query refinement is not tracked with a `parent_id` column. When a user narrows a cohort, the LLM is instructed to re-emit full SQL for the new search and the old search is unchanged. We evaluate just-in-time rather than persisting each search's result set (the matched row IDs). That would mean storing IDs for every search and every refinement of it, deciding whether they live in Postgres or the Delta Lake, and adding the joins and bookkeeping to work with them. Re-running the saved SQL avoids that data management for now. 
+A search is a saved SQL query plus minimal metadata. Nothing about which rows match is stored. On each view the SPA fetches the whole cohort in one request (`GET /api/searches/{id}/rows`): the saved `sql` wrapped as a subquery, capped at `max_cohort_rows`, with report-body columns stripped server-side so they never reach the browser. Sort, filter, pagination, and CSV export all run client-side over that in-memory result set, so browsing a cohort costs one Trino scan per view rather than one per interaction. The `searches` table holds `id`, `owner_sub`, `sql`, `sql_explanation`, `match_terms`, `match_diagnoses`, `uploaded_ids`, `owui_chat_id`, and `created_at`. A row count is computed once at create time (`SELECT COUNT(*)`) and returned to the LLM in the create response. Schema migrations use [yoyo](https://ollycope.com/software/yoyo/), a standalone Python migration tool; `db.py` applies the versioned SQL files in `migrations/` on startup. Query refinement is not tracked with a `parent_id` column. When a user narrows a cohort, the LLM is instructed to re-emit full SQL for the new search and the old search is unchanged. We evaluate just-in-time rather than persisting each search's result set (the matched row IDs). That would mean storing IDs for every search and every refinement of it, deciding whether they live in Postgres or the Delta Lake, and adding the joins and bookkeeping to work with them. Re-running the saved SQL avoids that data management for now.
 
 ### Required projections
 
@@ -106,7 +106,7 @@ Prometheus scrapes `/metrics` via `prometheus-fastapi-instrumentator`, plus doma
 ## Consequences
 
 - Report-viewer is required for the chat experience. With the MCP tool gone it is the only path from Open WebUI to Trino, so there is no flag to disable it.
-- Every `/rows` page and CSV export costs a Trino scan of the saved SQL, so cohort browsing latency tracks Trino query performance directly.
+- The viewer fetches the full cohort once per view (`GET /rows`), then sorts/filters/paginates/exports client-side; only that initial fetch (and the create-time `COUNT`) hit Trino. Cohorts larger than `max_cohort_rows` are truncated in the viewer.
 - Results are live, not a snapshot. Each read re-runs the saved SQL, so newly ingested or updated reports can make a cohort differ from what the chat described when it was built.
 - Refinement has no cross-cohort SQL dependency. The LLM must keep original conditions intact when adding a filter; the system prompt enforces this with examples.
 - The OWUI iframe experience depends on the sandbox flags being seeded at signup. If the webhook is unreachable or the DB URL is unset, new users will hit a broken iframe.
@@ -119,6 +119,7 @@ Prometheus scrapes `/metrics` via `prometheus-fastapi-instrumentator`, plus doma
 | Render cohort rows as chat markdown | Rejected: no browse, sort, filter, or export affordances, and cohort rows still land in the LLM's context |
 | OWUI Rich UI / Artifacts panel | Rejected: data handling inside the OWUI container drove pod restarts and high CPU and memory usage, and OWUI's follow-up-suggestion and chat-title LLM calls still pulled iframe content into the model's context |
 | Materialize cohort rows into a Delta side-table | Rejected: dual-write path adds real complexity, and every row of every saved search would need to be materialized and stored |
+| Server-side pagination, sort, and filter (re-query Trino per interaction) | Rejected: each page, sort, or filter re-ran the saved SQL over the multi-million-row lake, so every interaction cost a full Trino scan — seconds to minutes on large cohorts. The viewer instead fetches the lean cohort once (capped at `max_cohort_rows`) and does sort/filter/paginate client-side, trading one up-front fetch for instant interaction thereafter |
 
 ## Future work
 

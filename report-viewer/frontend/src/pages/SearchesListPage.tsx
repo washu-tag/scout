@@ -117,7 +117,7 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 0.6fr 1fr',
+            gridTemplateColumns: '1fr 1fr',
             background: 'var(--rv-surface-2)',
             fontSize: '0.8rem',
             color: 'var(--rv-muted)',
@@ -126,7 +126,6 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
           }}
         >
           <span>ID</span>
-          <span>Rows</span>
           <span>Created</span>
         </div>
         {items.map((d) => (
@@ -135,7 +134,7 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
             to={`/searches/${d.id}`}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 0.6fr 1fr',
+              gridTemplateColumns: '1fr 1fr',
               fontSize: '0.88rem',
               color: 'var(--rv-fg)',
               textDecoration: 'none',
@@ -149,7 +148,6 @@ function ChatGroup(props: { group: { chatId: string; items: SearchMeta[] } }) {
             >
               {d.id}
             </span>
-            <span>{d.count === null ? '—' : d.count.toLocaleString()}</span>
             <span style={{ color: 'var(--rv-muted)' }}>{fmtTime(d.created_at)}</span>
           </Link>
         ))}

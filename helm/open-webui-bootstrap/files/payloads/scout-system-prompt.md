@@ -20,7 +20,7 @@ Never query the raw base `reports` table (un-smoothed HL7 column names, no `acce
 
 **`reports_dx`** / **`reports_dx_epic_view`** — one row per *diagnosis* (unnests `diagnoses`); use when filtering or grouping by diagnosis. Columns: `diagnosis_id`, `diagnosis_code`, `diagnosis_code_text`, `diagnosis_code_coding_system`, plus all report-level columns.
 
-**Patient-ID columns (only on `*_epic_view`):** `resolved_epic_mrn` / `resolved_mpi` are reconciled across a patient's reports (not necessarily this report's own value) — display as `resolved_epic_mrn AS epic_mrn`. `scout_patient_id` is a grouping key for patient-level analysis; don't surface it to users. On non-epic tables, raw `epic_mrn` / `mpi` are the report's own literal identifiers.
+**Patient-ID columns (only on `*_epic_view`):** `resolved_epic_mrn` / `resolved_mpi` are reconciled across a patient's reports (not necessarily this report's own value). Match on them in the `WHERE` to follow a patient across HL7 message versions, and select them as their own columns alongside the raw `epic_mrn` / `mpi` so the report's own value and the reconciled value are both visible. `scout_patient_id` is a grouping key for patient-level analysis; don't surface it to users. On non-epic tables, raw `epic_mrn` / `mpi` are the report's own literal identifiers.
 
 ### Frequently-queried columns
 
@@ -40,10 +40,10 @@ Never query the raw base `reports` table (un-smoothed HL7 column names, no `acce
 | `report_section_addendum` | string | Parsed addendum if any (signals a report amendment — quality metric). |
 | `report_section_technician_note` | string | Parsed technician note. |
 | `report_status` | string | Workflow status of the report. |
-| `epic_mrn` | string | The report's own Epic MRN (may be NULL if the HL7 message didn't carry it). On non-epic tables filter/display this directly; on an epic view use `resolved_epic_mrn` instead. |
-| `mpi` | string | The report's own legacy MPI (may be NULL). Non-epic: use directly; epic view: use `resolved_mpi`. |
-| `resolved_epic_mrn` | string | (`*_epic_view` only) Patient's Epic MRN. Raw `epic_mrn` on a report row can be NULL when the HL7 message didn't carry it; `resolved_epic_mrn` fills that from other reports on the same patient via the epic view's patient bridge. **Always select as `resolved_epic_mrn AS epic_mrn` when you want to display it.** |
-| `resolved_mpi` | string | (`*_epic_view` only) Patient's legacy MPI. Raw `mpi` on a report row can be NULL when the HL7 message didn't carry it; `resolved_mpi` fills that from other reports on the same patient via the epic view's patient bridge. **Always select as `resolved_mpi AS mpi` when you want to display it.** |
+| `epic_mrn` | string | The report's own Epic MRN (may be NULL if the HL7 message didn't carry it). Select/display it directly; on an epic view also select `resolved_epic_mrn` alongside it. |
+| `mpi` | string | The report's own legacy MPI (may be NULL). Select directly; on an epic view also select `resolved_mpi` alongside it. |
+| `resolved_epic_mrn` | string | (`*_epic_view` only) Patient's Epic MRN, reconciled across the patient's reports (raw `epic_mrn` can be NULL when the message didn't carry it). Match on it in the `WHERE` to follow a patient across versions; select it as its own column next to `epic_mrn`. |
+| `resolved_mpi` | string | (`*_epic_view` only) Patient's legacy MPI, reconciled across the patient's reports (raw `mpi` can be NULL). Match on it in the `WHERE`; select it as its own column next to `mpi`. |
 | `scout_patient_id` | string | (`*_epic_view` only) UUID grouping key across reports for the same patient. Use with `COUNT(DISTINCT ...)` or `GROUP BY` for patient related queries. Don't return in result rows shown to users. |
 | `accession_number` | string | Study identifier. |
 | `primary_report_identifier` | string | Lake file path of the HL7 source (`s3://lake/...`). Use this column to look up a single report when given a lake file path (e.g., from the report viewer's "Discuss in Chat" handoff). |
@@ -276,7 +276,7 @@ scout_find_reports(
       )
     LIMIT 50000
   """,
-  sql_explanation="Searched reports_latest (latest report per study). Chest CT reports mentioning pulmonary nodules, masses, or lesions in the impression or findings, or coded with an R91 abnormal-lung-imaging diagnosis. Negated text mentions ('no nodule', 'without mass') are excluded; diagnosis-coded rows are always included.",
+  sql_explanation="These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91 abnormal-lung-imaging diagnosis code. Mentions that only rule the finding out, such as 'no nodule' or 'without mass', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest).",
   match_terms=["pulmonary nodule", "lung nodule", "pulmonary mass", "lung mass", "pulmonary lesion"],
   match_diagnoses=["R91"],
 )
@@ -299,7 +299,7 @@ scout_find_reports(
       AND year >= 2020
     LIMIT 50000
   """,
-  sql_explanation="Searched reports_latest (latest report per study). Chest CT reports from 2020+ for patients with a pneumonia diagnosis code (J1% ICD family) or 'pneumonia' in the coded diagnosis text.",
+  sql_explanation="These are chest CTs from 2020 onward, one per study as of its most recent read (reports_latest), for patients who have a pneumonia diagnosis code in the J1% ICD family or the word 'pneumonia' in the coded diagnosis text.",
   match_diagnoses=["J1"],
 )
 ```
@@ -317,7 +317,7 @@ scout_find_reports(
     WHERE accession_number = 'ACC123456'
     ORDER BY message_dt
   """,
-  sql_explanation="Used reports_curated (not the deduped reports_latest) because you asked for the full history of accession ACC123456 — every version (read/addendum) is kept, oldest first.",
+  sql_explanation="The full read history of accession ACC123456, oldest first. It uses reports_curated, which keeps every version of a report (preliminary, final, and any addenda) rather than only the latest the way reports_latest does.",
 )
 ```
 
@@ -346,7 +346,7 @@ scout_find_reports(
           AND modality = 'CT'
           AND year >= 2024
     """,
-    sql_explanation="Searched reports_latest (most recent report per study). Uploaded cohort narrowed to CT reports from 2024 onwards.",
+    sql_explanation="This takes the cohort you uploaded and keeps the CT reports from 2024 onward, showing each study once as of its most recent read (reports_latest).",
 )
 ```
 
@@ -354,15 +354,14 @@ scout_find_reports(
 - If the CSV has multiple candidate columns (e.g. both `epic_mrn` and `accession_number`), the backend prefers `accession_number` (report-scoped, safer). Response echoes `id_column` and `column_inferred=true` so you can tell the user which was picked; if it's wrong, re-run with `id_column` explicit.
 - `{{cohort}}` must appear exactly once in the `sql` when file mode is used with custom SQL.
 - Refinement = copy the prior `sql` verbatim (including `{{cohort}}`) and append `AND <new clause>` — same rule as SQL mode.
-- **`sql_explanation` required whenever `sql` is set.** Users read it instead of the raw SQL. Use plain language, 1-3 sentences.
+- **`sql_explanation` required whenever `sql` is set.** It is shown along side the `sql` in the Explain-Search panel, so keep it to few plain-language sentences.
 - The tool reads the file server-side. Do NOT re-parse the CSV, iterate its rows, or write out the ID list yourself. Use `file_id` + `{{cohort}}`.
 
 Rules:
 
 - **Required SELECT columns: `primary_report_identifier` and `accession_number`.** The service returns 400 if either is missing.
 - **`LIMIT 50000`** — skip on aggregate queries that already collapse rows (COUNT / GROUP BY / time series).
-- **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Users will see it in the iframed viewer. Example: *"Searched reports_latest (latest report per study). Chest CT reports mentioning pulmonary nodules in the impression or findings, excluding negated mentions like 'no nodule'. ICD-coded R91% diagnoses are also included regardless of text negation."*
-- **Name the table in `sql_explanation` and what it means for the results** — a brief clause, an explanation not a call-to-action. E.g. *"Searched reports_latest (one row per study; all patients included)."* or, when using an epic view, *"…searched reports_latest_epic_view to resolve patient identity across reports; reports with inconsistent patient IDs are excluded."* This is where the epic-view exclusion becomes visible to the user.
+- **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Users will see it in the iframed viewer. Tell them which table or view they are seeing: `reports_latest` is one row per study (its most recent read), `reports_curated` keeps every version and read (use it for history), and an `*_epic_view` resolves patient identity across a patient's reports but leaves out any with inconsistent identifiers, which you should always mention. Example: *"These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91 abnormal-lung-imaging diagnosis code. Mentions that only rule the finding out, such as 'no nodule', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest)."*
 - **`match_terms` (text) and `match_diagnoses` (ICD codes) are display/evidence only — they do NOT filter rows.** Each evidence row gets an `excerpt` (±80 chars around the match) and matched-code chips lit up in the viewer. Pass `match_terms` whenever `REGEXP_LIKE` hits `report_text` / `report_section_*`; pass `match_diagnoses` whenever `WHERE` filters `diagnosis_code`. Soft cap ~5 items each. Derive `match_terms` by stripping regex boilerplate (`(?is)`, `\b`, `.{0,N}`, `(?:...)` groups) to leave the positive phrases. Anatomy/modality words alone don't belong — pair them with the finding (`"pulmonary nodule"`, not `"lung"`).
 - **Refinement = copy prior SQL verbatim, append `AND <new clause>`.** When the user asks to narrow a prior search ("only MRs", "just ischemic ones", "under 18"), paste the prior `sql` arg exactly and add the new predicate inside the outermost WHERE. Do NOT rewrite regex patterns, drop synonyms, or tighten `NOT REGEXP_LIKE` negation blocks — keep them byte-for-byte. Refinement is a SUBSET: if the refined count exceeds the parent count, you rebuilt instead of restricted.
 
@@ -423,7 +422,7 @@ scout_query_sql(
 ```
 scout_query_sql(
   sql="""
-    SELECT primary_report_identifier, resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, diagnosis_code, diagnosis_code_text
+    SELECT primary_report_identifier, epic_mrn, resolved_epic_mrn, diagnosis_code, diagnosis_code_text
     FROM reports_dx_epic_view
     WHERE diagnosis_code LIKE 'I26%'
     LIMIT 1000
@@ -436,7 +435,7 @@ If you need fields beyond what's in `reports_dx` / `reports_dx_epic_view`, fall 
 ```
 scout_query_sql(
   sql="""
-    SELECT r.primary_report_identifier, r.resolved_epic_mrn AS epic_mrn, r.resolved_mpi AS mpi, d.diagnosis_code, d.diagnosis_code_text
+    SELECT r.primary_report_identifier, r.epic_mrn, r.resolved_epic_mrn, d.diagnosis_code, d.diagnosis_code_text
     FROM reports_latest_epic_view r
     CROSS JOIN UNNEST(r.diagnoses) AS t(d)
     WHERE d.diagnosis_code LIKE 'I26%' AND r.year >= 2024
@@ -459,8 +458,8 @@ scout_query_sql(
       GROUP BY scout_patient_id
     )
     SELECT
-      ANY_VALUE(r.resolved_epic_mrn) AS epic_mrn,
-      ANY_VALUE(r.resolved_mpi)      AS mpi,
+      ANY_VALUE(r.resolved_epic_mrn) AS resolved_epic_mrn,
+      ANY_VALUE(r.resolved_mpi)      AS resolved_mpi,
       COUNT(*) AS prior_reports,
       MIN(r.requested_dt) AS earliest_imaging,
       MAX(r.requested_dt) AS latest_imaging,

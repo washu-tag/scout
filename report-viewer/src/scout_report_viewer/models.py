@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -40,20 +40,6 @@ SEARCH_REQUIRED_COLUMNS: tuple[str, ...] = (
     "primary_report_identifier",
     "accession_number",
 )
-
-# Columns the viewer can sort and filter on if present in the result set.
-# searches.py derives its allowlist and filter-type sets from this.
-SORT_FILTER_COLUMNS: dict[str, Literal["text", "multi", "range"]] = {
-    "accession_number": "text",
-    "epic_mrn": "text",
-    "mpi": "text",
-    "sending_facility": "text",
-    "service_name": "text",
-    "modality": "multi",
-    "sex": "multi",
-    "message_dt": "range",
-    "patient_age": "range",
-}
 
 # Patient-scoped id_column -> its resolved column on an epic-view table. On
 # non-epic tables epic_mrn / mpi match the raw columns instead; scout_patient_id
@@ -205,8 +191,6 @@ class CreateSearchResponse(BaseModel):
 
 class SearchMeta(BaseModel):
     id: str
-    id_column: str
-    count: int | None
     sql: str
     owner_sub: str
     created_at: datetime
@@ -222,15 +206,6 @@ class SearchMeta(BaseModel):
 
 
 class RowsResponse(BaseModel):
-    id: str
-    page: int
-    limit: int
-    total: int
-    columns: list[str]
-    rows: list[dict[str, Any]]
-
-
-class AllRowsResponse(BaseModel):
     """The full cohort in one response for client-side sort/filter/paginate.
     Lean columns only (report bodies dropped; fetched per-row via
     /reports/read). `truncated` is true when the cohort exceeded the cap."""
@@ -240,12 +215,3 @@ class AllRowsResponse(BaseModel):
     rows: list[dict[str, Any]]
     total: int
     truncated: bool
-
-
-class ModalitiesResponse(BaseModel):
-    """Distinct `modality` values present in a search's cohort, for the
-    viewer's Modality filter. Empty when none are present or the saved SQL
-    doesn't project `modality`."""
-
-    search_id: str
-    modalities: list[str]
