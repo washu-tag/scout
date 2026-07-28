@@ -9,6 +9,15 @@ on:
       - 'ci-**'
       - 'demo**'
 
+# Cancel a PR's superseded runs so a new push doesn't sit behind a stale ~35m
+# pipeline (and free the runners it was holding). Keyed on head_ref, which is
+# set only for pull_request events; push events (main / ci-** / demo**) fall
+# back to a unique run_id group and are never cancelled, so an in-flight
+# publish / publish-charts on main is never killed mid-release.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   JAVA_DIST: 'zulu'
   JAVA_VERSION: '21'
