@@ -72,7 +72,7 @@ configurations.all {
 		def g = details.requested.group
 		def n = details.requested.name
 		if (g == 'io.netty' && n.startsWith('netty') && !n.contains('tcnative')) {
-			details.useVersion '4.1.135.Final' // CVE-2026-44249/-45416/-50010/-42583/-42584/-42587
+			details.useVersion '4.1.136.Final' // CVE-2026-44249/-45416/-50010/-42583/-42584/-42587 + -55831/-55833/-56745/-59901
 			details.because 'Trivy CRITICAL/HIGH'
 		} else if (g == 'com.fasterxml.jackson.core' && (n == 'jackson-databind' || n == 'jackson-core')) {
 			details.useVersion '2.21.4' // CVE-2026-54512/-54513 (jackson-annotations has no 2.21.4 release)
