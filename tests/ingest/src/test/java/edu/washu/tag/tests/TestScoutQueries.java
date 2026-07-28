@@ -115,7 +115,7 @@ public class TestScoutQueries extends BaseTest {
         queryAndValidate(testQuery, curatedTable(baseTableName));
     }
 
-    @Test
+    @Test(groups = "slow")
     public void testCurationMerges() {
         final String tableName = newTable();
         final String curatedTable = curatedTable(tableName);

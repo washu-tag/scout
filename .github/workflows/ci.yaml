@@ -805,7 +805,7 @@ jobs:
             done
           done
   publish:
-    if: github.ref_name == 'main' && github.event_name != 'schedule' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    if: github.ref_name == 'main' && github.event_name == 'push' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -887,7 +887,7 @@ jobs:
   # Publish changed Helm charts as versioned OCI artifacts (ADR 0030/0031 phase 0),
   # gated like the image `publish` job. Vertical slice: hl7-transformer only.
   publish-charts:
-    if: github.ref_name == 'main' && github.event_name != 'schedule' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    if: github.ref_name == 'main' && github.event_name == 'push' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -923,7 +923,7 @@ jobs:
           helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
   publish-demo:
-    if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    if: github.event_name == 'push' && startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
