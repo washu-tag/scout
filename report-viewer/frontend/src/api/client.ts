@@ -94,6 +94,14 @@ export interface RowsResponse {
   rows: Array<Record<string, unknown>>;
 }
 
+export interface AllRowsResponse {
+  id: string;
+  columns: string[];
+  rows: Array<Record<string, unknown>>;
+  total: number;
+  truncated: boolean;
+}
+
 export function getSearch(searchId: string): Promise<SearchMeta> {
   return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
 }
@@ -214,6 +222,90 @@ export function getSearchRows(searchId: string, params: RowsParams): Promise<Row
   qs.set('page', String(params.page));
   qs.set('limit', String(params.limit));
   return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows?${qs.toString()}`);
+}
+
+// The whole cohort in one request (lean columns, capped server-side). The SPA
+// holds it in memory and does sort/filter/paginate client-side, so browsing is
+// instant after this single (slow) fetch. Report text loads per-row on expand.
+export function getAllRows(searchId: string): Promise<AllRowsResponse> {
+  return api<AllRowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows/all`);
+}
+
+// Client-side equivalent of the server's whitelisted row filters, applied to
+// the in-memory cohort. Mirrors SORT_FILTER_COLUMNS semantics: text =
+// case-insensitive substring, multi = membership, range = inclusive. `message_dt`
+// compares on the date portion (YYYY-MM-DD) to match the date-input filters.
+export function filterRows(
+  rows: Array<Record<string, unknown>>,
+  f: FilterState,
+): Array<Record<string, unknown>> {
+  const svc = f.service_name?.trim().toLowerCase() || null;
+  const mrn = f.epic_mrn?.trim().toLowerCase() || null;
+  const acc = f.accession_number?.trim().toLowerCase() || null;
+  const fac = f.sending_facility?.trim().toLowerCase() || null;
+  const sexSet = f.sex && f.sex.length ? new Set(f.sex) : null;
+  const modSet = f.modality && f.modality.length ? new Set(f.modality) : null;
+  const ageMin = f.patient_age?.min ? Number(f.patient_age.min) : null;
+  const ageMax = f.patient_age?.max ? Number(f.patient_age.max) : null;
+  const dtMin = f.message_dt?.min || null;
+  const dtMax = f.message_dt?.max || null;
+  const has = (v: unknown, q: string) =>
+    String(v ?? '')
+      .toLowerCase()
+      .includes(q);
+  return rows.filter((r) => {
+    if (svc && !has(r.service_name, svc)) return false;
+    if (mrn && !has(r.epic_mrn, mrn)) return false;
+    if (acc && !has(r.accession_number, acc)) return false;
+    if (fac && !has(r.sending_facility, fac)) return false;
+    if (sexSet && !sexSet.has(String(r.sex))) return false;
+    if (modSet && !modSet.has(String(r.modality))) return false;
+    if (ageMin !== null || ageMax !== null) {
+      const a = Number(r.patient_age);
+      if (Number.isNaN(a)) return false;
+      if (ageMin !== null && a < ageMin) return false;
+      if (ageMax !== null && a > ageMax) return false;
+    }
+    if (dtMin || dtMax) {
+      const d = String(r.message_dt ?? '').slice(0, 10);
+      if (dtMin && d < dtMin) return false;
+      if (dtMax && d > dtMax) return false;
+    }
+    return true;
+  });
+}
+
+// CSV cell with a spreadsheet formula-injection guard (mirrors the server
+// export): wrap in quotes, escape embedded quotes, and prefix a leading
+// =/+/-/@ or control char with a single quote so it isn't evaluated.
+function csvCell(v: unknown): string {
+  let s = v == null ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+export function rowsToCsv(columns: string[], rows: Array<Record<string, unknown>>): string {
+  const header = columns.map(csvCell).join(',');
+  const body = rows.map((r) => columns.map((c) => csvCell(r[c])).join(',')).join('\r\n');
+  return body ? `${header}\r\n${body}` : header;
+}
+
+// Builds and downloads the CSV entirely client-side from the in-memory rows -
+// no server round-trip. Caller passes the current filtered+sorted set.
+export function downloadCsv(
+  filename: string,
+  columns: string[],
+  rows: Array<Record<string, unknown>>,
+): void {
+  const blob = new Blob([rowsToCsv(columns, rows)], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 // Download URL for the CSV export. Mirrors the current view: same sort/filters

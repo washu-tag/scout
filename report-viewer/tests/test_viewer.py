@@ -1,6 +1,8 @@
-"""Tests for /accessions and /csv."""
+"""Tests for /accessions, /csv, and /rows/all."""
 
 from __future__ import annotations
+
+from scout_report_viewer.config import settings
 
 
 _SQL = "SELECT primary_report_identifier, accession_number FROM reports_latest"
@@ -76,6 +78,50 @@ def test_export_csv_empty_search_returns_header_only(client, auth_headers, fake_
     assert r.status_code == 200
     lines = r.text.strip().splitlines()
     assert lines == ["primary_report_identifier,accession_number"]
+
+
+def test_rows_all_strips_report_bodies(client, auth_headers, fake_trino):
+    dsid = _make_search(client, auth_headers, fake_trino)
+    # The saved SQL happens to project report bodies; they must not reach the grid.
+    fake_trino(
+        [
+            "primary_report_identifier",
+            "accession_number",
+            "report_text",
+            "report_section_impression",
+        ],
+        [
+            {
+                "primary_report_identifier": "s3://bucket/1",
+                "accession_number": "ACC1",
+                "report_text": "a very long report body",
+                "report_section_impression": "impression",
+            },
+        ],
+    )
+    r = client.get(f"/api/searches/{dsid}/rows/all", headers=auth_headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["columns"] == ["primary_report_identifier", "accession_number"]
+    assert body["rows"] == [
+        {"primary_report_identifier": "s3://bucket/1", "accession_number": "ACC1"}
+    ]
+    assert body["total"] == 1
+    assert body["truncated"] is False
+
+
+def test_rows_all_truncates_at_cap(client, auth_headers, fake_trino, monkeypatch):
+    dsid = _make_search(client, auth_headers, fake_trino)
+    monkeypatch.setattr(settings, "max_cohort_rows", 3, raising=False)
+    # The endpoint fetches cap+1 (=4) to detect overflow; return 4 rows.
+    fake_trino(_SAMPLE_COLS, _sample_rows(4))
+    r = client.get(f"/api/searches/{dsid}/rows/all", headers=auth_headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["truncated"] is True
+    assert body["total"] == 3
+    assert len(body["rows"]) == 3
+    assert "LIMIT 4" in fake_trino.calls[-1][0]
 
 
 def _make_search(client, auth_headers, fake_trino) -> str:

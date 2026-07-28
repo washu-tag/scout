@@ -228,3 +228,15 @@ class RowsResponse(BaseModel):
     total: int
     columns: list[str]
     rows: list[dict[str, Any]]
+
+
+class AllRowsResponse(BaseModel):
+    """The full cohort in one response for client-side sort/filter/paginate.
+    Lean columns only (report bodies dropped; fetched per-row via
+    /reports/read). `truncated` is true when the cohort exceeded the cap."""
+
+    id: str
+    columns: list[str]
+    rows: list[dict[str, Any]]
+    total: int
+    truncated: bool

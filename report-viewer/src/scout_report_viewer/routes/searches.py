@@ -9,6 +9,7 @@ Endpoints:
   POST /api/searches/from-file                  - upload CSV of IDs, save contains(?, col) SQL and bind the ID list on every read
   GET  /api/searches/{id}                       - metadata
   GET  /api/searches/{id}/rows                  - paginated rows (wraps sql)
+  GET  /api/searches/{id}/rows/all              - full cohort, lean cols, for client-side browsing
   GET  /api/searches/{id}/accessions            - DISTINCT accession_number list
   GET  /api/searches/{id}/csv                   - streaming CSV download
 
@@ -54,6 +55,7 @@ from ..logging_setup import scrub_for_log
 from ..models import (
     SEARCH_REQUIRED_COLUMNS,
     SORT_FILTER_COLUMNS,
+    AllRowsResponse,
     CreateFromFileResponse,
     CreateSearchRequest,
     CreateSearchResponse,
@@ -67,6 +69,18 @@ router = APIRouter(prefix="/api/searches", tags=["searches"])
 
 
 _LLM_SAMPLE_ROWS = 10
+
+# Report-body columns never sent to the grid: too large for 50k-row payloads,
+# and the SPA fetches them per-row via /reports/read on expand. Shared by the
+# create-sample response and the full-cohort fetch.
+_HEAVY_COLS: frozenset[str] = frozenset(
+    {
+        "report_text",
+        "report_section_findings",
+        "report_section_impression",
+        "report_section_addendum",
+    }
+)
 
 
 def _assert_required_projections(columns: list[str]) -> None:
@@ -224,12 +238,7 @@ async def create_search(
             if d and d.strip():
                 dx_prefixes.append(d.strip().rstrip("%").lower())
 
-    _drop_cols = {
-        "report_text",
-        "report_section_findings",
-        "report_section_impression",
-        "report_section_addendum",
-    }
+    _drop_cols = _HEAVY_COLS
     sample: list[dict[str, Any]] = []
     evidence: list[dict[str, Any]] = []
     for r in sample_rows:
@@ -728,6 +737,56 @@ async def get_search_rows(
         total=sql_total,
         columns=columns,
         rows=rows,
+    )
+
+
+@router.get("/{search_id}/rows/all", response_model=AllRowsResponse)
+async def get_search_rows_all(
+    search_id: str,
+    user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
+) -> AllRowsResponse:
+    """The full cohort in one response, for client-side browsing.
+
+    Runs the saved sql once and returns every matched row (up to
+    settings.max_cohort_rows), with report-body columns stripped - the SPA
+    holds the set in memory and does sort/filter/paginate client-side, and
+    fetches report text per-row via /reports/read on expand. A cohort larger
+    than the cap is truncated with `truncated=true`. One Trino scan; no
+    sort/filter/pagination params."""
+    ds = await store.get_search(search_id, owner_sub=user.sub)
+    if ds is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    source_sql = ds["sql"]
+    uploaded_ids = ds.get("uploaded_ids")
+    cap = settings.max_cohort_rows
+    # Fetch cap+1 so we can flag truncation without a separate COUNT.
+    all_sql = f"SELECT s.* FROM ({source_sql}) s LIMIT {cap + 1}"
+    try:
+        with metrics.time_trino("rows_all_query"):
+            # safe: source_sql is persisted validated SQL; ids bind via ?
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            columns, rows = await trino_client.execute(
+                all_sql,
+                user=user.sub,
+                params=[uploaded_ids] if uploaded_ids else None,
+            )
+    except Exception as exc:
+        raise _rows_query_error(exc, "rows_all")
+
+    truncated = len(rows) > cap
+    if truncated:
+        rows = rows[:cap]
+    lean_columns = [c for c in columns if c not in _HEAVY_COLS]
+    lean_rows = [{k: v for k, v in r.items() if k not in _HEAVY_COLS} for r in rows]
+    metrics.SEARCH_SIZE.observe(len(lean_rows))
+    return AllRowsResponse(
+        id=search_id,
+        columns=lean_columns,
+        rows=lean_rows,
+        total=len(lean_rows),
+        truncated=truncated,
     )
 
 
