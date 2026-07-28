@@ -49,3 +49,8 @@
             paths:
               - path: /
                 pathType: Prefix
+      # Serve /favicon.ico unauthenticated so logged-out visitors get the
+      # browser-tab icon (issue #557); everything else stays behind oauth2-proxy.
+      faviconPublicRoute:
+        enabled: true
+        host: '{{ server_hostname }}'

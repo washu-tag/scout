@@ -1,0 +1,73 @@
+{{- /*
+Public (unauthenticated) route for /favicon.ico (issue #557).
+
+The launchpad sits behind the oauth2-proxy ForwardAuth gate, which 401s
+/favicon.ico for logged-out visitors, so a new user's browser tab shows no
+icon. This Ingress serves ONLY the favicon, dropping the oauth2-proxy
+auth/error middlewares while keeping security-headers.
+
+Annotated Ingress, not a Traefik IngressRoute, on purpose: Scout's shared
+middlewares live in kube-system and Traefik's CRD provider blocks
+cross-namespace middleware references (allowCrossNamespace=false by default).
+The Ingress router.middlewares annotation is not subject to that restriction --
+the launchpad Ingress references the same kube-system-* middlewares this way.
+
+apiVersion / ingressClassName / backend shape are version-gated to match the
+chart's main ingress.yaml.
+
+SAFETY: the auth-free scoping relies on pathType: Exact (k8s >= 1.18) plus a
+specific host, so this router only ever serves the single static /favicon.ico
+asset -- every other path still hits the auth-gated launchpad router. Do NOT
+change pathType to Prefix or the host to a wildcard. On k8s < 1.18 the exact
+match can't be expressed, so this route assumes the >= 1.19 clusters Scout
+targets.
+*/ -}}
+{{- if .Values.faviconPublicRoute.enabled -}}
+{{- $fullName := include "launchpad.fullname" . -}}
+{{- $svcPort := .Values.service.port -}}
+{{- $host := .Values.faviconPublicRoute.host -}}
+{{- if and (not $host) .Values.ingress.hosts -}}
+{{- $host = (first .Values.ingress.hosts).host -}}
+{{- end -}}
+{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1
+{{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-favicon-public
+  labels:
+    {{- include "launchpad.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.priority: {{ .Values.faviconPublicRoute.priority | quote }}
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      {{ .Values.faviconPublicRoute.securityHeadersMiddleware.namespace }}-{{ .Values.faviconPublicRoute.securityHeadersMiddleware.name }}@kubernetescrd
+    {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+    {{- end }}
+spec:
+  {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /favicon.ico
+            {{- if semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion }}
+            pathType: Exact
+            {{- end }}
+            backend:
+              {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
+              {{- else }}
+              serviceName: {{ $fullName }}
+              servicePort: {{ $svcPort }}
+              {{- end }}
+{{- end }}
