@@ -1,0 +1,41 @@
+name: Release Please (shadow)
+
+# SHADOW MODE (Phase 1, ADR 0030). release-please opens and maintains ONE release
+# PR showing the version + CHANGELOG it computes from Conventional Commit history
+# since the last v* tag. It is for VALIDATION ONLY during the shadow period:
+#
+#   DO NOT MERGE the release PR. The manual-dispatch release.yaml stays the
+#   authoritative release path until the Phase 1 cutover (a follow-up PR rewires
+#   release.yaml to fire on the release-PR merge and retires the manual input).
+#
+# If the PR were merged it would create only a git tag + GitHub Release (changelog);
+# it does NOT publish images or charts (that is ci.yaml / release.yaml), so a stray
+# merge is low-harm and reversible by deleting the tag + release.
+#
+# Accuracy depends on squash-only merges (each main commit subject is then a
+# Conventional-Commit PR title, enforced by pr-title-lint); enable squash-only +
+# require-linear-history before trusting the computed version.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      # Reuse the RELEASE_APP GitHub App (same as release.yaml) so the release PR is
+      # app-authored and can trigger CI + the PR-title lint.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app_token
+        with:
+          client-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app_token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
