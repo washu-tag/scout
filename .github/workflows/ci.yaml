@@ -8,11 +8,6 @@ on:
       - main
       - 'ci-**'
       - 'demo**'
-  # Nightly full ingest suite: PRs run the fast gate (-PprGate), this runs the
-  # complete suite (full /data/postgres volume + the "slow" multi-ingest tests).
-  schedule:
-    - cron: '0 7 * * *'
-  workflow_dispatch:
 
 # Cancel a PR's superseded runs so a new push doesn't sit behind a stale ~35m
 # pipeline (and free the runners it was holding). Keyed on head_ref, which is
@@ -455,16 +450,9 @@ jobs:
           rm -rf tests/ingest/build tests/ingest/.gradle  # pod mount stays a clean checkout
       - name: 'Run tests'
         shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
         run: |
-          # PRs run the fast gate (-PprGate: prune the postgres ingest to the
-          # asserted dates + skip the multi-ingest "slow" tests). Nightly schedule,
-          # workflow_dispatch, and main/demo pushes run the full suite.
-          if [ "$EVENT_NAME" = "pull_request" ]; then GRADLE_ARGS="-PprGate"; else GRADLE_ARGS=""; fi
           cp .github/ci_resources/test_config_template.json tests/ingest/src/test/resources/config/local.json
           sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
-          sed -i "s:GRADLE_EXTRA_ARGS:${GRADLE_ARGS}:" .github/ci_resources/tests-job.yaml
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=1800s job/ci-tests -n scout-extractor &
           completion_pid=$!
@@ -850,7 +838,7 @@ jobs:
             done
           done
   publish:
-    if: github.ref_name == 'main' && github.event_name == 'push' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -932,7 +920,7 @@ jobs:
   # Publish changed Helm charts as versioned OCI artifacts (ADR 0030/0031 phase 0),
   # gated like the image `publish` job. Vertical slice: hl7-transformer only.
   publish-charts:
-    if: github.ref_name == 'main' && github.event_name == 'push' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1004,7 +992,7 @@ jobs:
           helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
   publish-demo:
-    if: github.event_name == 'push' && startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read

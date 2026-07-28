@@ -82,7 +82,7 @@ public class TestScoutQueries extends BaseTest {
         runTest(queryId);
     }
 
-    @Test(groups = "slow")
+    @Test
     public void testRepeatIngest() {
         ingest();
         runTest("all"); // make sure no rows in the whole dataset have been duplicated
@@ -97,7 +97,7 @@ public class TestScoutQueries extends BaseTest {
         runTest("report_sections");
     }
 
-    @Test(groups = "slow")
+    @Test
     public void testProcessedPatientIdIngestion() {
         final String baseTableName = newTable("testProcessedPatientIdIngestion");
         ingest(
@@ -115,7 +115,7 @@ public class TestScoutQueries extends BaseTest {
         queryAndValidate(testQuery, curatedTable(baseTableName));
     }
 
-    @Test(groups = "slow")
+    @Test
     public void testCurationMerges() {
         final String tableName = newTable();
         final String curatedTable = curatedTable(tableName);
@@ -218,7 +218,7 @@ public class TestScoutQueries extends BaseTest {
         ));
     }
 
-    @Test(groups = "slow")
+    @Test
     public void testLongitudinalPatientIds() {
         final String baseTableName = newTable();
         final String mappingTableName = baseTableName + "_report_patient_mapping";
