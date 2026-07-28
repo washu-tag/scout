@@ -64,11 +64,10 @@ Each plugin entry:
     # (a `-xpl.jar` is packaging `jar` + classifier `xpl`, hence `...:jar:xpl`).
     coordinates: org.example:my-xnat-plugin:1.2.3:jar:xpl
     # repo_url is OPTIONAL -- omit it for artifacts on Maven Central. Set it only
-    # when the artifact lives elsewhere (e.g. the openid plugin in jfrog). When
-    # set, the deploy mounts a settings.xml pointing Maven at it; air-gapped
-    # deploys mirror ALL resolution through the Nexus group regardless.
+    # when the artifact lives elsewhere (e.g. the openid plugin in jfrog). It is
+    # passed through as the chart's plugins.<name>.mavenUrl; air-gapped deploys
+    # mirror ALL resolution through the Nexus group regardless.
     repo_url: https://repo.example.org/releases/
-  skip_logback_rewrite: false   # default false
   config:                       # optional; one or more property files
     - mechanism: authplugins    # authplugins | file | extraConfig
       # authplugins: provider, entry (-> Secret xnat-plugin-<entry>), properties{}
@@ -94,11 +93,11 @@ are assumed pre-built to log to stdout.
 ### Air-gapped notes
 
 - **coordinates** (Pattern D) is the air-gap-correct path: jars resolve through
-  the Nexus maven proxy (`maven_proxy_url`), no egress. The role mounts a
-  generated `settings.xml` that mirrors all Maven resolution through the Nexus
-  group, plus the staging CA (per ADR-0016) so the installer trusts Nexus's
-  self-signed HTTPS. The installer image carries no repo/air-gapped knowledge —
-  it just uses the `settings.xml` and CA when mounted (see ADR 0027).
+  the Nexus maven proxy (`maven_proxy_url`), no egress. The role passes that URL
+  as the chart's `plugins.<name>.mavenUrl` and names the staging CA Secret via
+  `pluginInstaller.caCertSecret` (per ADR-0016) so the fetch trusts Nexus's
+  self-signed HTTPS. Release versions only — a `-SNAPSHOT` coordinate is rejected
+  at render time, since resolving one needs `maven-metadata.xml`.
 - **url** needs egress, so on air-gapped clusters it fails fast — use
   coordinates, image, or file instead (re-hosting url jars via Nexus is a
   possible future enhancement; see ADR 0027).

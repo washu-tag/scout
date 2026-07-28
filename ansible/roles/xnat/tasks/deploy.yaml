@@ -73,7 +73,7 @@
       future enhancement — see ADR 0027.)
     quiet: true
 
-- name: Configure Maven proxy trust (settings.xml + staging CA)
+- name: Configure Maven proxy trust (repository URL + staging CA)
   ansible.builtin.include_tasks: proxy_trust.yaml
 
 - name: Create Kubernetes Secrets

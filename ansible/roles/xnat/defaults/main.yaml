@@ -17,10 +17,6 @@ xnat_helm_release_name: xnat
 xnat_image_repository: xnatworks/xnat-web
 
 # --- Plugin installer image (built by Scout CI, pulled through Harbor) -----
-xnat_plugin_installer_image_repository: ghcr.io/washu-tag/xnat-plugin-installer
-xnat_plugin_installer_image_tag: latest
-xnat_plugin_installer_image: '{{ xnat_plugin_installer_image_repository }}:{{ xnat_plugin_installer_image_tag }}'
-xnat_plugin_installer_image_pull_policy: IfNotPresent
 
 # --- Replicas --------------------------------------------------------------
 # StatefulSet replica count. Default 1 (single-node posture). >1 is for

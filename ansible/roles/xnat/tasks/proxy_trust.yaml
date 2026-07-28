@@ -1,30 +1,11 @@
 ---
-# Maven proxy trust for coordinate-resolved plugins.
+# Repository trust for coordinate-resolved plugins.
 #
-# The plugin-installer image is generic: it resolves coordinates with Maven and
-# only knows about a repo if the deploy hands it a settings.xml (and a CA if the
-# repo is HTTPS with a self-signed cert). All the "which repo / air-gapped"
-# decisions live here, so the image stays a dumb Maven runner.
-#
-# Two independent triggers:
-#   * a coordinates plugin declares source.repo_url (artifact not on Central), or
-#   * air-gapped (no egress -> mirror everything through the Nexus group).
-# The staging CA is needed only when air-gapped against the self-signed Nexus.
-
-- name: Adopt the shared coordinate repo-URL lists for the settings.xml template
-  ansible.builtin.set_fact:
-    # Computed once in scout_common (also consumed by the Nexus role); the
-    # settings.xml template reads these facts. _xnat_snapshot_repo_urls is the
-    # subset whose plugins opted into snapshots (settings.xml enables snapshots
-    # for those repos only).
-    _xnat_coordinate_repo_urls: '{{ xnat_coordinate_repo_urls | default([]) }}'
-    _xnat_snapshot_repo_urls: '{{ xnat_snapshot_repo_urls | default([]) }}'
-
-- name: Decide whether a Maven settings.xml is needed
-  ansible.builtin.set_fact:
-    _xnat_maven_settings_needed: >-
-      {{ (air_gapped | default(false) | bool)
-         or (_xnat_coordinate_repo_urls | length > 0) }}
+# The chart resolves each coordinate to a URL and hands it to a stock curl init
+# container, so the repository reaches the deploy as a plain value
+# (plugins.<name>.mavenUrl in templates/values.yaml.j2) rather than a mounted
+# settings.xml. What remains here is the air-gapped preflight and, air-gapped
+# against the self-signed Nexus, the CA the installer trusts.
 
 # Air-gapped preflight: every coordinate plugin must resolve through the Nexus
 # group NOW. Catches the common slip of adding a plugin (with a new repo_url) and
@@ -68,20 +49,15 @@
   ansible.builtin.set_fact:
     _xnat_needs_staging_cert: '{{ _staging_ca_needed }}'
 
-- name: Set staging CA pod path
-  ansible.builtin.set_fact:
-    _xnat_staging_ca_path: /mnt/staging-ca/ca.crt
-  when: _xnat_needs_staging_cert | bool
+# The chart mounts the CA itself (pluginInstaller.caCertSecret), so the role only
+# has to create the Secret above and flag that it exists.
 
-- name: Render and create the Maven settings.xml ConfigMap
+# Nothing mounts the xnat-maven-settings ConfigMap now that coordinates resolve to
+# a URL. Removed so a redeploy onto an existing cluster does not leave a stale one.
+- name: Remove the obsolete Maven settings.xml ConfigMap
   kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: xnat-maven-settings
-        namespace: '{{ xnat_namespace }}'
-      data:
-        settings.xml: "{{ lookup('template', 'settings.xml.j2') }}"
-  when: _xnat_maven_settings_needed | bool
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    name: xnat-maven-settings
+    namespace: '{{ xnat_namespace }}'
