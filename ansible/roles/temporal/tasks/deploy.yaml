@@ -40,6 +40,45 @@
   register: temporal_schema
   changed_when: false
 
+# Idempotent Temporal setup (namespace retention, issue #432) via a small
+# Scout-owned chart of Helm-hook Jobs (temporal-bootstrap), mirroring the
+# scout-dashboards model. kubernetes.core.helm won't upgrade a local chart on
+# file-only edits (it keys on chart version + values, not rendered templates),
+# so hash the chart files and pass the digest as a value to force the upgrade,
+# which re-runs the hooks.
+- name: Hash temporal-bootstrap chart files (drives redeploy on file edits)
+  ansible.builtin.find:
+    paths: '{{ temporal_bootstrap_helm_chart_ref }}'
+    file_type: file
+    recurse: true
+    get_checksum: true
+  register: _temporal_bootstrap_files
+  delegate_to: localhost
+
+- name: Compute temporal-bootstrap config checksum
+  ansible.builtin.set_fact:
+    temporal_bootstrap_config_checksum: "{{ _temporal_bootstrap_files.files | map(attribute='checksum') | sort | join('') | hash('sha1') }}"
+
+- name: Deploy temporal-bootstrap chart
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: temporal-bootstrap
+    helm_chart_ref: '{{ temporal_bootstrap_helm_chart_ref }}'
+    helm_chart_namespace: '{{ scout_extractor_namespace }}'
+    helm_chart_values:
+      # Changes when any chart file changes so the helm module runs the upgrade
+      # (see note above); not consumed by the chart templates.
+      configChecksum: '{{ temporal_bootstrap_config_checksum }}'
+      image:
+        repository: '{{ temporal_admin_tools_image_repository }}'
+        tag: '{{ temporal_admin_tools_image_tag }}'
+      temporalAddress: 'temporal-internal-frontend.{{ scout_extractor_namespace }}:7236'
+      namespace:
+        name: default
+        retention: '{{ temporal_default_namespace_retention }}'
+
 # Set up scheduled tasks
 - name: Construct cron schedule
   when: scheduled_ingest_cron is undefined and scheduled_ingest_hour is defined
