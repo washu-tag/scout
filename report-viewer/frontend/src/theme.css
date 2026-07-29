@@ -1,4 +1,18 @@
 /* Dark mode follows the browser; no in-app toggle. */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+/* Shells own their own internal scrolling; the body itself never scrolls.
+   This kills the ~16px of UA-margin overflow that let the whole iframe
+   document drift under fixed modal overlays. */
+body {
+  overflow: hidden;
+}
+
 :root {
   color-scheme: light dark;
   --rv-bg: #fafafa;
