@@ -67,8 +67,7 @@ def maven_artifact_path(coordinates):
     fields = coordinates.split(":")
     # groupId, artifactId and version must all be non-empty: an empty one used to
     # yield a plausible-looking but wrong path (":b:1" -> "/b/1/b-1.jar"), which
-    # surfaced only as a confusing 404 from the air-gapped preflight. The
-    # installer's coordinate_path applies the same rule.
+    # surfaced only as a confusing 404 from the air-gapped preflight.
     if len(fields) < 3 or not all(fields[:3]):
         raise ValueError(
             "maven_artifact_path: expected groupId:artifactId:version[:packaging[:classifier]], "
