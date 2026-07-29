@@ -651,7 +651,8 @@
           "https://xnat.{{ server_hostname }}"
         ],
         "attributes": {
-          "pkce.code.challenge.method": "S256"
+          "pkce.code.challenge.method": "S256",
+          "post.logout.redirect.uris": "https://xnat.{{ server_hostname }}/*"
         },
         "protocolMappers": [
           {
