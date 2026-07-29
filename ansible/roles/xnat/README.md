@@ -32,8 +32,9 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
    includes the first-boot `xnat-prefs-init`, per-plugin config Secrets, and any
    Pattern-A jar Secrets.
 3. **Values** (`templates/values.yaml.j2`): templated from inventory, including
-   the generated `initContainers` / `plugins` / `authplugins` / `extraConfig` /
-   `extraVolumes` blocks derived from `xnat_plugins_all`.
+   the generated `plugins` / `authplugins` / `extraConfig` / `extraVolumes` blocks
+   derived from `xnat_plugins_all`. The role writes no `initContainers` of its
+   own — the chart renders one per plugin from the `plugins` map.
 4. **Helm install** via the shared `deploy_helm_chart` wrapper, with a 20-minute
    `--wait` to cover Hibernate's first-boot DDL.
 
@@ -80,15 +81,18 @@ Each plugin entry:
         some.key: value
 ```
 
-### Plugin delivery & logback rewrite
+### Plugin delivery
 
-For `file` / `url` / `coordinates` sources, the role generates an init container
-running the Scout **xnat-plugin-installer** image
-(`docker/xnat-plugin-installer/`). It acquires the jar, **rewrites the plugin's
-bundled logback config to log to stdout** (XNAT plugins ship a
-RollingFileAppender; Kubernetes wants stdout), and copies it into the shared
-`home-plugins` volume. `image` sources use the chart's native `plugins:` map and
-are assumed pre-built to log to stdout.
+Every source type goes into the chart's native `plugins:` map, and the chart
+renders the init container: a stock curl image for `url` / `coordinates` / `file`
+(it resolves the coordinate to a URL at render time, so the exact artifact is
+visible in `helm template`), and the plugin's own image for `image`. Jars are
+installed exactly as published — nothing is unpacked or repackaged.
+
+Because nothing rewrites the plugins' bundled logback configs any more, plugin
+logs reach `kubectl logs` only if XNAT itself is told to log to the console: set
+`XNAT_LOG_CONSOLE=plain` on the container (chart value `logConsole`). Without it,
+plugin logs go to files under `$XNAT_HOME/logs` where nothing collects them.
 
 ### Air-gapped notes
 
@@ -98,9 +102,11 @@ are assumed pre-built to log to stdout.
   `pluginInstaller.caCertSecret` (per ADR-0016) so the fetch trusts Nexus's
   self-signed HTTPS. Release versions only — a `-SNAPSHOT` coordinate is rejected
   at render time, since resolving one needs `maven-metadata.xml`.
-- **url** needs egress, so on air-gapped clusters it fails fast — use
-  coordinates, image, or file instead (re-hosting url jars via Nexus is a
-  possible future enhancement; see ADR 0027).
+- **url** needs egress today, so on air-gapped clusters use coordinates, image or
+  file instead. The chart can rewrite url plugins onto a mirror
+  (`pluginRepository.baseUrl` replaces a matching prefix, e.g. `https://github.com`),
+  but Scout's Nexus defines Maven repositories only — a `raw` proxy of the upstream
+  host would have to be added to the nexus role first. See ADR 0027.
 - **image** pulls through Harbor like every other Scout image.
 
 ## Testing an unreleased WAR / plugins
@@ -115,9 +121,12 @@ xnat_dev_plugins:                            # optional
 ```
 
 `make install-xnat` then stages them into MinIO (a throwaway pod copies them in
-and uploads them) and the chart runs `develop-war` / `develop-plugins` init
-containers that pull them into the pod at start-up; a `kubectl rollout restart`
-picks up a re-staged build with no redeploy. Requires in-cluster MinIO and a
+and uploads them) and the chart's `dev-war` / `dev-plugins` init containers pull
+them into the pod at start-up, using its S3 support pointed at MinIO; a
+`kubectl rollout restart` picks up a re-staged build with no redeploy. A
+side-loaded plugin overrides a declared one of the same filename — `dev-plugins`
+runs after the per-plugin installs — so a local build of a plugin already in
+`xnat_plugins` wins without editing that list. Requires in-cluster MinIO and a
 base image whose JDK matches the WAR (override `xnat_image_tag` via `-e` — it's
 pinned above inventory). Full guide:
 [`docs/internal/xnat-develop-testing.md`](../../../docs/internal/xnat-develop-testing.md).

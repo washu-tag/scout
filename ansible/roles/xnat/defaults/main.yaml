@@ -97,6 +97,10 @@ xnat_extra_config: {}
 xnat_dev_war: '' # path to a local ROOT.war (empty = feature off)
 xnat_dev_plugins: [] # local plugin .jar paths (replace vs add: set xnat_plugins accordingly)
 xnat_dev_bucket: xnat-dev # MinIO bucket holding the staged dev artifacts
+# The chart pulls the staged artifacts with the AWS CLI (S3-compatible, pointed at
+# MinIO via endpointUrl), replacing the mc client the role used to run in its own
+# init containers.
+xnat_dev_awscli_image: public.ecr.aws/aws-cli/aws-cli:latest
 
 # --- Container service (optional; requires the container-service plugin) ----
 # When true, enables XNAT's container-service on a Kubernetes backend:

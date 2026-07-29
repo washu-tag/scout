@@ -180,6 +180,28 @@ pluginInstaller:
 {% if _xnat_needs_staging_cert | default(false) | bool %}
   caCertSecret: staging-ca-cert
 {% endif %}
+{# --- Dev/test side-load (xnat_dev_war / xnat_dev_plugins): the chart pulls both
+     from the staging bucket, so there are no hand-rolled init containers left.
+     Artifacts are staged to MinIO by tasks/dev_stage.yaml; the chart's S3 support
+     reaches it via endpointUrl + the xnat-dev-minio Secret, whose keys are
+     S3_USER / S3_PASS rather than the AWS names. --#}
+{% if (xnat_dev_war | length) or (xnat_dev_plugins | length) %}
+  s3:
+    image: '{{ xnat_dev_awscli_image }}'
+    endpointUrl: '{{ s3_endpoint }}'
+    existingSecret: xnat-dev-minio
+    secretKeys:
+      accessKeyId: S3_USER
+      secretAccessKey: S3_PASS
+{% endif %}
+{% if xnat_dev_plugins | length %}
+{#- devPlugins rather than pluginInstaller.s3.syncPrefix: the chart renders it
+    after the plugins: map, so a locally built jar overrides a declared plugin of
+    the same name. syncPrefix runs first and is for installing a release set. #}
+devPlugins:
+  enabled: true
+  s3Uri: 's3://{{ xnat_dev_bucket }}/plugins/'
+{% endif %}
 
 {# --- extraConfig: merged from all extraConfig blocks + base xnat_extra_config --#}
 {% set extra = {} %}
@@ -218,10 +240,6 @@ extraVolumes:
       secretName: xnat-plugin-{{ p.name }}-cfg-{{ c.dest | basename | regex_replace('[^A-Za-z0-9]', '-') | lower }}
 {% endfor %}
 {% endfor %}
-{% if xnat_dev_war | length %}
-  - name: webapps
-    emptyDir: {}
-{% endif %}
 
 extraVolumeMounts:
   - name: prefs-init
@@ -235,68 +253,10 @@ extraVolumeMounts:
     readOnly: true
 {% endfor %}
 {% endfor %}
-{% if xnat_dev_war | length %}
-  - name: webapps
-    mountPath: /usr/local/tomcat/webapps
-{% endif %}
 
-{# --- initContainers: dev-only side-load. Plugins are installed by the chart
-     from the plugins: map above, so nothing plugin-related is hand-rolled here;
-     the key is emitted only when a side-load is actually configured. --#}
-{% if (xnat_dev_war | length) or (xnat_dev_plugins | length) %}
-initContainers:
-{# --- developWar side-load (dev/test): pull an unreleased WAR / plugins from
-     MinIO, staged by tasks/dev_stage.yaml. mc reads creds from the
-     xnat-dev-minio Secret ($S3_USER/$S3_PASS) and writes its config under /tmp.
-     Gated on xnat_dev_war / xnat_dev_plugins. --#}
 {% if xnat_dev_war | length %}
-  - name: develop-war
-    image: {{ minio_client_image }}:{{ minio_client_image_tag }}
-    imagePullPolicy: IfNotPresent
-    command: ['/bin/sh', '-c']
-    args:
-      - 'mc alias set scout {{ s3_endpoint }} "$S3_USER" "$S3_PASS" && mc cp scout/{{ xnat_dev_bucket }}/ROOT.war /webapps/ROOT.war'
-    env:
-      - name: HOME
-        value: /tmp
-    envFrom:
-      - secretRef:
-          name: xnat-dev-minio
-    securityContext:
-      runAsNonRoot: true
-      runAsUser: 1000
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop: ['ALL']
-      seccompProfile:
-        type: RuntimeDefault
-    volumeMounts:
-      - name: webapps
-        mountPath: /webapps
-{% endif %}
-{% if xnat_dev_plugins | length %}
-  - name: develop-plugins
-    image: {{ minio_client_image }}:{{ minio_client_image_tag }}
-    imagePullPolicy: IfNotPresent
-    command: ['/bin/sh', '-c']
-    args:
-      - 'mc alias set scout {{ s3_endpoint }} "$S3_USER" "$S3_PASS" && mc mirror --overwrite scout/{{ xnat_dev_bucket }}/plugins/ /data/xnat/home/plugins/'
-    env:
-      - name: HOME
-        value: /tmp
-    envFrom:
-      - secretRef:
-          name: xnat-dev-minio
-    securityContext:
-      runAsNonRoot: true
-      runAsUser: 1000
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop: ['ALL']
-      seccompProfile:
-        type: RuntimeDefault
-    volumeMounts:
-      - name: home-plugins
-        mountPath: /data/xnat/home/plugins
-{% endif %}
+devWar:
+  enabled: true
+  source: s3
+  s3Uri: 's3://{{ xnat_dev_bucket }}/ROOT.war'
 {% endif %}
