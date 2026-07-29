@@ -16,8 +16,6 @@ xnat_helm_release_name: xnat
 # appVersion (1.9.2.1) is unchanged.
 xnat_image_repository: xnatworks/xnat-web
 
-# --- Plugin installer image (built by Scout CI, pulled through Harbor) -----
-
 # --- Replicas --------------------------------------------------------------
 # StatefulSet replica count. Default 1 (single-node posture). >1 is for
 # multi-node testing: the chart's home-init designates pod-0 as the primary
