@@ -156,9 +156,8 @@ plugins:
     target: {{ p.target }}
 {% if p.source.type == 'coordinates' %}
     coordinates: '{{ p.source.coordinates }}'
-    {#- Air-gapped, every coordinate mirrors through the Nexus group; otherwise
-        each plugin resolves from its own repo_url (or Central). Set per plugin
-        rather than once, so plugins published to different repositories work. #}
+    # Air-gapped: resolve through the Nexus group; otherwise the plugin's own
+    # repo_url (or Maven Central). Set per plugin so plugins in different repos work.
     mavenUrl: '{{ maven_proxy_url if (air_gapped | bool) else (p.source.repo_url | default("https://repo1.maven.org/maven2/", true)) }}'
 {% elif p.source.type == 'url' %}
     url: '{{ p.source.url }}'
