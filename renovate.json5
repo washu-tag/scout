@@ -2,6 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
 
+  // Emit Conventional-Commit PR titles (chore(deps): ...) so Renovate PRs pass
+  // the PR Title Lint check. config:recommended leaves this "auto"; pin it on.
+  "semanticCommits": "enabled",
+
   // Don't auto-merge — test automation isn't robust enough
   "automerge": false,
 
