@@ -153,7 +153,8 @@ def _header_matches(header: list[str], id_column: str) -> bool:
 
 
 def _header_index(header: list[str], id_column: str) -> int | None:
-    aliases = FILE_UPLOAD_HEADER_ALIASES[id_column]
+    # Columns without an alias entry match only their own literal name.
+    aliases = FILE_UPLOAD_HEADER_ALIASES.get(id_column, (id_column,))
     for i, h in enumerate(header):
         if any(a in h for a in aliases):
             return i

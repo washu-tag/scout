@@ -14,17 +14,18 @@ INPUT_ID_COLUMNS: tuple[str, ...] = (
     "primary_report_identifier",
     "accession_number",
     "epic_mrn",
-    "mpi",
+    "patient_mpi",
     "scout_patient_id",
 )
 
-# The columns an uploaded CSV can key on. Order is preference: when a
-# CSV header matches multiple, inference picks the first match, which
-# means report-scoped (accession) wins over patient-scoped (mrn/mpi).
+# The columns an uploaded CSV can key on. Order is preference: inference picks
+# the first whose header matches, so report-scoped (primary_report_identifier,
+# accession) wins over patient-scoped (mrn/patient_mpi).
 FILE_UPLOAD_ID_COLUMNS: tuple[str, ...] = (
+    "primary_report_identifier",
     "accession_number",
     "epic_mrn",
-    "mpi",
+    "patient_mpi",
 )
 
 # Header aliases for CSV column inference. Substring match on lowercased
@@ -32,7 +33,7 @@ FILE_UPLOAD_ID_COLUMNS: tuple[str, ...] = (
 FILE_UPLOAD_HEADER_ALIASES: dict[str, tuple[str, ...]] = {
     "epic_mrn": ("epic_mrn", "epicmrn", "mrn", "patient_mrn", "patient_id"),
     "accession_number": ("accession_number", "accession", "acc_num"),
-    "mpi": ("mpi", "empi"),
+    "patient_mpi": ("patient_mpi", "mpi", "empi"),
 }
 
 # Every saved /searches SQL must project these in its outer SELECT.
@@ -40,15 +41,6 @@ SEARCH_REQUIRED_COLUMNS: tuple[str, ...] = (
     "primary_report_identifier",
     "accession_number",
 )
-
-# Patient-scoped id_column -> its resolved column on an epic-view table. On
-# non-epic tables epic_mrn / mpi match the raw columns instead; scout_patient_id
-# exists only on the epic views.
-PATIENT_ID_COLUMNS: dict[str, str] = {
-    "epic_mrn": "resolved_epic_mrn",
-    "mpi": "resolved_mpi",
-    "scout_patient_id": "scout_patient_id",
-}
 
 # Tables /reports/read may target; renders default to reports_curated, epic
 # views are opt-in for resolved cross-version patient identity.
@@ -146,8 +138,6 @@ class QueryFromFileResponse(BaseModel):
     rows: list[dict[str, Any]]
     id_column: str
     column_inferred: bool
-    unmatched: list[str]
-    unmatched_count: int
 
 
 class ReadReportsRequest(BaseModel):
@@ -165,9 +155,7 @@ class ReadReportsRequest(BaseModel):
         description=(
             "Table to read from. One of reports_curated (default), "
             "reports_curated_epic_view, reports_latest, "
-            "reports_latest_epic_view. Epic views resolve patient identity "
-            "across report versions but omit inconsistent-patient reports; "
-            "scout_patient_id lookups require an epic-view table."
+            "reports_latest_epic_view."
         ),
     )
 

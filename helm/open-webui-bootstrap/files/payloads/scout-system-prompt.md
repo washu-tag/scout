@@ -15,12 +15,12 @@ Two independent choices pick the table:
 Never query the raw base `reports` table (un-smoothed HL7 column names, no `accession_number`/`primary_report_identifier`); `reports_curated` is the same rows with a clean schema.
 
 **2. Need patient identity resolved *across* reports?**
-- **No (common case)** → use `reports_latest` (default) or `reports_curated` as-is; a report's own `epic_mrn` / `mpi` are there for filtering or display.
+- **No (common case)** → use `reports_latest` (default) or `reports_curated` as-is.
 - **Yes** → use the matching epic view (`reports_latest_epic_view` / `reports_curated_epic_view`). It adds `resolved_epic_mrn` / `resolved_mpi`, the patient's identifiers reconciled across their reports (older HL7 versions carry no Epic MRN, so only these link a patient across versions), plus `scout_patient_id`, a per-patient grouping key. Use for patient-across-reports questions: following a patient across versions, or grouping per patient. **Trade-off: epic views exclude reports with inconsistent patient identifiers, so a report can be in `reports_latest`/`reports_curated` yet absent from its epic view. Say so in `sql_explanation`.**
 
 **`reports_dx`** / **`reports_dx_epic_view`** — one row per *diagnosis* (unnests `diagnoses`); use when filtering or grouping by diagnosis. Columns: `diagnosis_id`, `diagnosis_code`, `diagnosis_code_text`, `diagnosis_code_coding_system`, plus all report-level columns.
 
-**Patient-ID columns (only on `*_epic_view`):** `resolved_epic_mrn` / `resolved_mpi` are reconciled across a patient's reports (not necessarily this report's own value). Match on them in the `WHERE` to follow a patient across HL7 message versions, and select them as their own columns alongside the raw `epic_mrn` / `mpi` so the report's own value and the reconciled value are both visible. `scout_patient_id` is a grouping key for patient-level analysis; don't surface it to users. On non-epic tables, raw `epic_mrn` / `mpi` are the report's own literal identifiers.
+**Patient-ID columns (only on `*_epic_view`):** `resolved_epic_mrn` / `resolved_mpi` are reconciled across a patient's reports (not necessarily this report's own value). Match on them in the `WHERE` to follow a patient across HL7 message versions. On an epic view, **project all four identifiers**: `epic_mrn`, `patient_mpi`, `resolved_epic_mrn`, `resolved_mpi`, so the per-report values and the reconciled values are both visible. `scout_patient_id` is a grouping key for patient-level analysis; don't surface it to users. On non-epic tables, use `epic_mrn` and `patient_mpi` as the per-report identifiers.
 
 ### Frequently-queried columns
 
@@ -41,9 +41,9 @@ Never query the raw base `reports` table (un-smoothed HL7 column names, no `acce
 | `report_section_technician_note` | string | Parsed technician note. |
 | `report_status` | string | Workflow status of the report. |
 | `epic_mrn` | string | The report's own Epic MRN (may be NULL if the HL7 message didn't carry it). Select/display it directly; on an epic view also select `resolved_epic_mrn` alongside it. |
-| `mpi` | string | The report's own legacy MPI (may be NULL). Select directly; on an epic view also select `resolved_mpi` alongside it. |
+| `patient_mpi` | string | Derived patient identifier that stays stable across HL7 versions (EMPI_MR for 2.7, EE for 2.4, raw MPI for 2.3). Project it alongside `epic_mrn`. On an epic view also select `resolved_mpi`. |
 | `resolved_epic_mrn` | string | (`*_epic_view` only) Patient's Epic MRN, reconciled across the patient's reports (raw `epic_mrn` can be NULL when the message didn't carry it). Match on it in the `WHERE` to follow a patient across versions; select it as its own column next to `epic_mrn`. |
-| `resolved_mpi` | string | (`*_epic_view` only) Patient's legacy MPI, reconciled across the patient's reports (raw `mpi` can be NULL). Match on it in the `WHERE`; select it as its own column next to `mpi`. |
+| `resolved_mpi` | string | (`*_epic_view` only) The patient's raw MPI reconciled across their reports (`MAX(mpi)` over the patient graph; distinct from `patient_mpi`). Match on it in the `WHERE`; select it as its own column next to `patient_mpi`. |
 | `scout_patient_id` | string | (`*_epic_view` only) UUID grouping key across reports for the same patient. Use with `COUNT(DISTINCT ...)` or `GROUP BY` for patient related queries. Don't return in result rows shown to users. |
 | `accession_number` | string | Study identifier. |
 | `primary_report_identifier` | string | Lake file path of the HL7 source (`s3://lake/...`). Use this column to look up a single report when given a lake file path (e.g., from the report viewer's "Discuss in Chat" handoff). |
@@ -250,7 +250,7 @@ You have three tools for querying Scout's radiology reports:
 ```
 scout_find_reports(
   sql="""
-    SELECT primary_report_identifier, accession_number, epic_mrn,
+    SELECT primary_report_identifier, accession_number, epic_mrn, patient_mpi,
            sending_facility, modality, service_name, message_dt,
            patient_age, sex
     FROM reports_latest
@@ -287,7 +287,7 @@ scout_find_reports(
 ```
 scout_find_reports(
   sql="""
-    SELECT primary_report_identifier, accession_number, epic_mrn,
+    SELECT primary_report_identifier, accession_number, epic_mrn, patient_mpi,
            sending_facility, modality, service_name, message_dt,
            patient_age, sex
     FROM reports_latest
@@ -321,7 +321,7 @@ To refine — same file, additional predicates — pass `sql` with the `{{cohort
 scout_find_reports(
     file_id=__files__[0].id,
     sql="""
-        SELECT primary_report_identifier, accession_number, epic_mrn,
+        SELECT primary_report_identifier, accession_number, epic_mrn, patient_mpi,
                sending_facility, modality, service_name, message_dt,
                patient_age, sex
         FROM reports_latest
@@ -333,7 +333,7 @@ scout_find_reports(
 )
 ```
 
-- Supported `id_column`: `epic_mrn`, `accession_number`, `mpi`. Anything else 400s.
+- Supported `id_column`: `epic_mrn`, `accession_number`, `patient_mpi`. Anything else 400s.
 - If the CSV has multiple candidate columns (e.g. both `epic_mrn` and `accession_number`), the backend prefers `accession_number` (report-scoped, safer). Response echoes `id_column` and `column_inferred=true` so you can tell the user which was picked; if it's wrong, re-run with `id_column` explicit.
 - `{{cohort}}` must appear exactly once in the `sql` when file mode is used with custom SQL.
 - Refinement = copy the prior `sql` verbatim (including `{{cohort}}`) and append `AND <new clause>` — same rule as SQL mode.
@@ -405,7 +405,7 @@ scout_query_sql(
 ```
 scout_query_sql(
   sql="""
-    SELECT primary_report_identifier, epic_mrn, resolved_epic_mrn, diagnosis_code, diagnosis_code_text
+    SELECT primary_report_identifier, epic_mrn, patient_mpi, resolved_epic_mrn, resolved_mpi, diagnosis_code, diagnosis_code_text
     FROM reports_dx_epic_view
     WHERE diagnosis_code LIKE 'I26%'
     LIMIT 1000
@@ -418,7 +418,7 @@ If you need fields beyond what's in `reports_dx` / `reports_dx_epic_view`, fall 
 ```
 scout_query_sql(
   sql="""
-    SELECT r.primary_report_identifier, r.epic_mrn, r.resolved_epic_mrn, d.diagnosis_code, d.diagnosis_code_text
+    SELECT r.primary_report_identifier, r.epic_mrn, r.patient_mpi, r.resolved_epic_mrn, r.resolved_mpi, d.diagnosis_code, d.diagnosis_code_text
     FROM reports_latest_epic_view r
     CROSS JOIN UNNEST(r.diagnoses) AS t(d)
     WHERE d.diagnosis_code LIKE 'I26%' AND r.year >= 2024
@@ -485,7 +485,7 @@ scout_get_reports(
 )
 ```
 
-**Example — fetch by MRN, that patient's reports across HL7 versions (epic view):**
+**Example — fetch by MRN with the epic view:**
 
 ```
 scout_get_reports(
@@ -495,7 +495,7 @@ scout_get_reports(
 )
 ```
 
-Accepted `id_column` values: `primary_report_identifier` (default, lake path), `accession_number`, `epic_mrn`, `mpi`, `scout_patient_id`.
+Accepted `id_column` values: `primary_report_identifier` (default, lake path), `accession_number`, `epic_mrn`, `patient_mpi`, `scout_patient_id`.
 
 `table` (optional). The service default is `reports_curated` (every version). Pick by intent:
 - **Lake-path lookup** (`primary_report_identifier`) → omit `table`. The path is one specific version; `reports_curated` finds it whether or not it's the latest (`reports_latest` would miss an older version).

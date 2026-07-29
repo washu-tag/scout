@@ -84,7 +84,8 @@ class Tools:
               FROM reports_latest
               WHERE modality = 'CT'
         * File mode: pass `file_id` (uploaded CSV) and optionally
-          `id_column` (one of `epic_mrn`, `accession_number`, `mpi`).
+          `id_column` (one of `primary_report_identifier`,
+          `accession_number`, `epic_mrn`, `patient_mpi`).
           When omitted, the backend infers the column from the header.
           Passing `sql` in file mode is optional: when set, it must
           include `{{cohort}}` exactly once and the backend substitutes
@@ -366,7 +367,7 @@ class Tools:
         :param id_column: Report-scoped (1 row each):
             `primary_report_identifier` (default), `accession_number`.
             Patient-scoped (all reports for that patient):
-            `epic_mrn`, `mpi`, `scout_patient_id`.
+            `epic_mrn`, `patient_mpi`, `scout_patient_id`.
         :param table: Optional source table. Default `reports_curated`
             (all report versions, all patients). Pass an epic view
             (`reports_curated_epic_view` / `reports_latest_epic_view`)

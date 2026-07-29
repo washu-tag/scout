@@ -102,6 +102,7 @@ export interface FilterState {
   modality?: string[];
   service_name?: string;
   epic_mrn?: string;
+  patient_mpi?: string;
   accession_number?: string;
   sending_facility?: string;
 }
@@ -114,6 +115,7 @@ export function activeFilterCount(f: FilterState): number {
   if (f.modality && f.modality.length > 0) n++;
   if (f.service_name && f.service_name.length > 0) n++;
   if (f.epic_mrn && f.epic_mrn.length > 0) n++;
+  if (f.patient_mpi && f.patient_mpi.length > 0) n++;
   if (f.accession_number && f.accession_number.length > 0) n++;
   if (f.sending_facility && f.sending_facility.length > 0) n++;
   return n;
@@ -187,6 +189,7 @@ export function filterRows(
 ): Array<Record<string, unknown>> {
   const svc = f.service_name?.trim().toLowerCase() || null;
   const mrn = f.epic_mrn?.trim().toLowerCase() || null;
+  const pmpi = f.patient_mpi?.trim().toLowerCase() || null;
   const acc = f.accession_number?.trim().toLowerCase() || null;
   const fac = f.sending_facility?.trim().toLowerCase() || null;
   const sexSet = f.sex && f.sex.length ? new Set(f.sex) : null;
@@ -202,6 +205,7 @@ export function filterRows(
   return rows.filter((r) => {
     if (svc && !has(r.service_name, svc)) return false;
     if (mrn && !has(r.epic_mrn, mrn)) return false;
+    if (pmpi && !has(r.patient_mpi, pmpi)) return false;
     if (acc && !has(r.accession_number, acc)) return false;
     if (fac && !has(r.sending_facility, fac)) return false;
     if (sexSet && !sexSet.has(String(r.sex))) return false;
@@ -215,7 +219,9 @@ export function filterRows(
       if (ageMax !== null && a > ageMax) return false;
     }
     if (dtMin || dtMax) {
-      const d = String(r.message_dt ?? '').slice(0, 10);
+      const raw = r.message_dt;
+      if (raw == null || raw === '') return false; // no date can't match a range
+      const d = String(raw).slice(0, 10);
       if (dtMin && d < dtMin) return false;
       if (dtMax && d > dtMax) return false;
     }

@@ -78,11 +78,10 @@ def test_read_scout_patient_id_non_epic_400(auth_headers, fake_trino):
     assert fake_trino.calls == []
 
 
-def test_from_file_validates_against_latest_not_epic(auth_headers, fake_trino):
-    # CSV id-existence validation runs against reports_latest, not a hardcoded
-    # epic view, so an accession absent from the epic view isn't false "unmatched".
-    fake_trino(["id"], [{"id": "ACC1"}])  # validation
-    fake_trino(["n"], [{"n": 1}])  # query
+def test_query_from_file_no_validation_binds_all_ids(auth_headers, fake_trino):
+    # Custom SQL targets an unknown table, so there's no separate id-existence
+    # validation: one query call, all submitted IDs bound.
+    fake_trino(["n"], [{"n": 1}])
     with TestClient(create_app()) as client:
         r = client.post(
             "/api/reports/query/from-file",
@@ -94,6 +93,7 @@ def test_from_file_validates_against_latest_not_epic(auth_headers, fake_trino):
             headers=auth_headers,
         )
     assert r.status_code == 200, r.text
-    validate_sql, _ = fake_trino.calls[0]
-    assert "reports_latest" in validate_sql
-    assert "reports_latest_epic_view" not in validate_sql
+    assert len(fake_trino.calls) == 1
+    query_sql, params = fake_trino.calls[0]
+    assert 'contains(?, "accession_number")' in query_sql
+    assert params == [["ACC1"]]

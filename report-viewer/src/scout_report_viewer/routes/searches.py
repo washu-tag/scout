@@ -98,7 +98,7 @@ def _quote_ident(name: str) -> str:
 
 
 def _qualified_reports() -> str:
-    return f"{settings.trino_catalog}.{settings.trino_schema}.reports_latest"
+    return f"{settings.trino_catalog}.{settings.trino_schema}.reports_curated"
 
 
 def _view_url(search_id: str) -> str:
@@ -147,7 +147,7 @@ async def create_search(
     """Save a SQL query as a search. No row materialization - runs one
     `SELECT COUNT(*)` to cache the count, fetches a small sample for
     the LLM, and (if match_terms or match_diagnoses is set) one
-    additional small query against reports_latest to populate per-row
+    additional small query against reports_curated to populate per-row
     evidence (excerpt + matched_diagnoses).
 
     Refinement: when the LLM wants to narrow a search, it writes a new
@@ -182,7 +182,7 @@ async def create_search(
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             _cols, count_rows = await trino_client.execute(count_sql, user=user.sub)
         row_count = int(count_rows[0]["n"]) if count_rows else 0
-    except Exception as exc:
+    except Exception:
         log.exception("trino count query failed")
         # NULL (unknown), not 0, so reads can tell a failed count from empty.
         row_count = None
@@ -299,7 +299,7 @@ async def create_search(
 
 # Default projection when a CSV upload has no custom SQL.
 _DEFAULT_FROM_FILE_SQL = (
-    "SELECT primary_report_identifier, accession_number, epic_mrn, mpi, "
+    "SELECT primary_report_identifier, accession_number, epic_mrn, patient_mpi, "
     "sending_facility, modality, service_name, "
     "message_dt, patient_age, sex "
     "FROM reports_latest "
@@ -344,46 +344,47 @@ async def create_search_from_file(
     ids, resolved_id_column, column_inferred = parse_csv_ids(raw, id_column)
     cleaned = dedup_ids(ids)
 
-    # Existence check against the default table; a custom-sql upload may target
-    # another table, so this validates existence, not an exact table match.
-    view = f"{settings.trino_catalog}.{settings.trino_schema}.{DEFAULT_FROM_FILE_TABLE}"
     col_q = _quote_ident(resolved_id_column)
 
-    matched: set[str] = set()
-    CHUNK = 5000
-    validate_sql = (
-        f"SELECT DISTINCT {col_q} AS id FROM {view} WHERE contains(?, {col_q})"
-    )
-    for start in range(0, len(cleaned), CHUNK):
-        chunk = cleaned[start : start + CHUNK]
-        try:
-            with metrics.time_trino("from_file_validate"):
-                # safe: identifier from _quote_ident allowlist, IDs bind via ?
-                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-                _cols, rows = await trino_client.execute(
-                    validate_sql, user=user.sub, params=[chunk]
-                )
-        except Exception as exc:
-            log.exception("trino id-list validation failed")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"trino validation failed: {exc}",
-            )
-        for r in rows:
-            v = r.get("id")
-            if v is not None:
-                matched.add(str(v))
-
-    final_ids = [i for i in cleaned if i in matched]
-    unmatched = [i for i in cleaned if i not in matched]
-    if not final_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                f"none of the {len(cleaned)} submitted IDs matched "
-                f"{resolved_id_column} in {DEFAULT_FROM_FILE_TABLE}"
-            ),
+    # All IDs are bound at read time; validate only on the default path, where
+    # the table is known, to report unmatched. Custom SQL targets an unknown
+    # table, so skip validation rather than check the wrong one.
+    unmatched: list[str] = []
+    if not sql:
+        view = f"{settings.trino_catalog}.{settings.trino_schema}.{DEFAULT_FROM_FILE_TABLE}"
+        matched: set[str] = set()
+        CHUNK = 5000
+        validate_sql = (
+            f"SELECT DISTINCT {col_q} AS id FROM {view} WHERE contains(?, {col_q})"
         )
+        for start in range(0, len(cleaned), CHUNK):
+            chunk = cleaned[start : start + CHUNK]
+            try:
+                with metrics.time_trino("from_file_validate"):
+                    # safe: identifier from _quote_ident allowlist, IDs bind via ?
+                    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                    _cols, rows = await trino_client.execute(
+                        validate_sql, user=user.sub, params=[chunk]
+                    )
+            except Exception as exc:
+                log.exception("trino id-list validation failed")
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail=f"trino validation failed: {exc}",
+                )
+            for r in rows:
+                v = r.get("id")
+                if v is not None:
+                    matched.add(str(v))
+        unmatched = [i for i in cleaned if i not in matched]
+        if len(unmatched) == len(cleaned):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"none of the {len(cleaned)} submitted IDs matched "
+                    f"{resolved_id_column} in {DEFAULT_FROM_FILE_TABLE}"
+                ),
+            )
 
     predicate = f"contains(?, {col_q})"
     template = _wrap_sql(sql) if sql else _DEFAULT_FROM_FILE_SQL
@@ -395,7 +396,7 @@ async def create_search_from_file(
             # safe: saved_sql uses contains(?, col); IDs bind at execute
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             columns, sample_rows = await trino_client.execute(
-                sample_sql, user=user.sub, params=[final_ids]
+                sample_sql, user=user.sub, params=[cleaned]
             )
     except Exception as exc:
         log.exception("trino from-file sample failed")
@@ -415,7 +416,7 @@ async def create_search_from_file(
             # safe: saved_sql uses contains(?, col); IDs bind at execute
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             _cols, count_rows = await trino_client.execute(
-                count_sql, user=user.sub, params=[final_ids]
+                count_sql, user=user.sub, params=[cleaned]
             )
         row_count = int(count_rows[0]["n"]) if count_rows else 0
     except Exception:
@@ -427,7 +428,7 @@ async def create_search_from_file(
         search_id=search_id,
         sql=saved_sql,
         owner_sub=user.sub,
-        uploaded_ids=final_ids,
+        uploaded_ids=cleaned,
         sql_explanation=sql_explanation or "",
         owui_chat_id=owui_chat_id or "",
     )
@@ -442,8 +443,9 @@ async def create_search_from_file(
             "id_column": scrub_for_log(resolved_id_column),
             "column_inferred": column_inferred,
             "unique_ids": len(cleaned),
-            "matched_ids": len(final_ids),
-            "unmatched_ids": len(unmatched),
+            # custom SQL targets an unknown table, so nothing is validated
+            "matched_ids": (len(cleaned) - len(unmatched)) if not sql else None,
+            "unmatched_ids": len(unmatched) if not sql else None,
             "report_count": row_count,
             "custom_sql": bool(sql),
         },
@@ -544,6 +546,7 @@ async def get_search_rows(
     truncated = len(rows) > cap
     if truncated:
         rows = rows[:cap]
+    metrics.RESULT_ROWS.labels(op="rows_query").observe(len(rows))
     lean_columns = [c for c in columns if c not in _HEAVY_COLS]
     lean_rows = [{k: v for k, v in r.items() if k not in _HEAVY_COLS} for r in rows]
     return RowsResponse(

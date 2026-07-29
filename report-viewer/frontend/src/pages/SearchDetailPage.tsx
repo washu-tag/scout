@@ -37,28 +37,25 @@ const COLUMNS_CONFIG: Array<{
   title: string;
   width: number;
   defaultHidden?: boolean;
-  hideIfEmpty?: boolean;
   align?: 'right' | 'center';
   mono?: boolean;
   kind?: 'date';
 }> = [
   { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true },
-  { field: 'mpi', title: 'MPI', width: 80, mono: true, defaultHidden: true },
   {
     field: 'resolved_epic_mrn',
     title: 'Resolved MRN',
     width: 100,
     mono: true,
     defaultHidden: true,
-    hideIfEmpty: true,
   },
+  { field: 'patient_mpi', title: 'Patient MPI', width: 90, mono: true, defaultHidden: true },
   {
     field: 'resolved_mpi',
     title: 'Resolved MPI',
     width: 100,
     mono: true,
     defaultHidden: true,
-    hideIfEmpty: true,
   },
   { field: 'accession_number', title: 'Accession', width: 85, mono: true },
   { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
@@ -141,21 +138,19 @@ export default function SearchDetailPage() {
     return Array.from(set).sort();
   }, [rowsQ.data]);
 
-  const columns = useMemo(() => {
-    const rows = rowsQ.data?.rows ?? [];
-    const hasValue = (field: string) => rows.some((r) => r[field] != null && r[field] !== '');
-    return COLUMNS_CONFIG.filter(
-      (c) => available.includes(c.field) && (!c.hideIfEmpty || hasValue(c.field)),
-    ).map((c) =>
-      columnHelper.accessor((row: Row) => row[c.field], {
-        id: c.field,
-        header: c.title,
-        size: c.width,
-        cell: (info) => (c.kind === 'date' ? fmtDate(info.getValue()) : fmtCell(info.getValue())),
-        meta: { align: c.align, mono: c.mono },
-      }),
-    );
-  }, [available, rowsQ.data]);
+  const columns = useMemo(
+    () =>
+      COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
+        columnHelper.accessor((row: Row) => row[c.field], {
+          id: c.field,
+          header: c.title,
+          size: c.width,
+          cell: (info) => (c.kind === 'date' ? fmtDate(info.getValue()) : fmtCell(info.getValue())),
+          meta: { align: c.align, mono: c.mono },
+        }),
+      ),
+    [available],
+  );
 
   // Filter the full in-memory cohort in fetch order (the order the search SQL
   // returned) so the initial view preserves the LLM's ORDER BY; TanStack then

@@ -246,8 +246,7 @@ def test_from_file_multiple_candidates_prefers_accession(
 
 
 def test_from_file_custom_sql_substitutes_cohort(client, auth_headers, fake_trino):
-    fake_trino(["id"], [{"id": "EPIC1"}])
-    # sample query runs before count when custom sql is passed
+    # Custom SQL skips id validation, so the first call is the sample query.
     fake_trino(
         ["primary_report_identifier", "accession_number"],
         [{"primary_report_identifier": "r1", "accession_number": "A1"}],
@@ -296,7 +295,6 @@ def test_from_file_missing_cohort_placeholder_is_400(client, auth_headers, fake_
 def test_query_from_file_returns_rows_and_substitutes_cohort(
     client, auth_headers, fake_trino
 ):
-    fake_trino(["id"], [{"id": "EPIC1"}])
     fake_trino(
         ["modality", "n"],
         [{"modality": "CT", "n": 5}, {"modality": "MR", "n": 3}],
@@ -320,4 +318,3 @@ def test_query_from_file_returns_rows_and_substitutes_cohort(
         {"modality": "CT", "n": 5},
         {"modality": "MR", "n": 3},
     ]
-    assert body["unmatched"] == []

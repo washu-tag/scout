@@ -43,7 +43,7 @@ export function FiltersModal(props: {
       return { ...s, [col]: next.length > 0 ? next : undefined };
     });
   const setStringField = (
-    col: 'service_name' | 'epic_mrn' | 'accession_number' | 'sending_facility',
+    col: 'service_name' | 'epic_mrn' | 'patient_mpi' | 'accession_number' | 'sending_facility',
     value: string,
   ) => setStaged((s) => ({ ...s, [col]: value || undefined }));
 
@@ -117,6 +117,15 @@ export function FiltersModal(props: {
             <TextInput
               value={staged.epic_mrn ?? ''}
               onChange={(v) => setStringField('epic_mrn', v)}
+            />
+          </FieldRow>
+        )}
+
+        {has('patient_mpi') && (
+          <FieldRow label="Patient MPI">
+            <TextInput
+              value={staged.patient_mpi ?? ''}
+              onChange={(v) => setStringField('patient_mpi', v)}
             />
           </FieldRow>
         )}

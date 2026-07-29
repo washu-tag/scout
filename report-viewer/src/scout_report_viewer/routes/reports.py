@@ -13,8 +13,6 @@ from .. import metrics, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
 from ..csv_upload import (
-    DEFAULT_FROM_FILE_TABLE,
-    UNMATCHED_SAMPLE_CAP,
     assert_cohort_placeholder,
     dedup_ids,
     guard_upload_size,
@@ -25,7 +23,6 @@ from ..models import (
     DEFAULT_READ_REPORTS_TABLE,
     EPIC_VIEW_TABLES,
     INPUT_ID_COLUMNS,
-    PATIENT_ID_COLUMNS,
     READ_REPORTS_TABLES,
     QueryFromFileResponse,
     QueryRequest,
@@ -59,6 +56,7 @@ async def query_reports(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}",
         )
+    metrics.RESULT_ROWS.labels(op="query_reports").observe(len(rows))
     return QueryResponse(columns=columns, rows=rows)
 
 
@@ -93,31 +91,8 @@ async def query_from_file(
             detail=f"unsafe id_column: {sql_column!r}",
         )
     col_q = f'"{sql_column}"'
-    view = f"{settings.trino_catalog}.{settings.trino_schema}.{DEFAULT_FROM_FILE_TABLE}"
 
-    matched: set[str] = set()
-    validate_sql = (
-        f"SELECT DISTINCT {col_q} AS id FROM {view} WHERE contains(?, {col_q})"
-    )
-    try:
-        with metrics.time_trino("query_from_file_validate"):
-            # safe: sql_column allowlisted (isalnum + underscore), IDs bind via ?
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            _cols, vrows = await trino_client.execute(
-                validate_sql, user=user.sub, params=[cleaned]
-            )
-    except Exception as exc:
-        log.exception("trino id-list validation failed")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"trino validation failed: {exc}",
-        )
-    for r in vrows:
-        v = r.get("id")
-        if v is not None:
-            matched.add(str(v))
-    unmatched = [i for i in cleaned if i not in matched]
-
+    # All IDs are bound; the custom SQL's own predicate decides what matches.
     predicate = f"contains(?, {col_q})"
     query_sql = substitute_cohort(sql, predicate)
     try:
@@ -135,13 +110,12 @@ async def query_from_file(
             ),
         )
 
+    metrics.RESULT_ROWS.labels(op="query_from_file").observe(len(rows))
     return QueryFromFileResponse(
         columns=columns,
         rows=rows,
         id_column=resolved_id_column,
         column_inferred=column_inferred,
-        unmatched=unmatched[:UNMATCHED_SAMPLE_CAP],
-        unmatched_count=len(unmatched),
     )
 
 
@@ -171,21 +145,17 @@ async def read_reports(
             detail=f"table must be one of {list(READ_REPORTS_TABLES)}, got {table_name!r}",
         )
     is_epic_view = table_name in EPIC_VIEW_TABLES
-    if body.id_column in PATIENT_ID_COLUMNS:
-        if is_epic_view:
-            column = PATIENT_ID_COLUMNS[body.id_column]
-        elif body.id_column == "scout_patient_id":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    "scout_patient_id lookups require an epic-view table "
-                    "(reports_curated_epic_view or reports_latest_epic_view)"
-                ),
-            )
-        else:
-            column = body.id_column
-    else:
-        column = body.id_column
+    # scout_patient_id exists only on epic views; guard for a clean 400 instead
+    # of a Trino "column not found".
+    if body.id_column == "scout_patient_id" and not is_epic_view:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "scout_patient_id lookups require an epic-view table "
+                "(reports_curated_epic_view or reports_latest_epic_view)"
+            ),
+        )
+    column = body.id_column
     base = f"{settings.trino_catalog}.{settings.trino_schema}."
     table = base + table_name
     # contains(?, col) - the driver doesn't expand list params into IN.
@@ -193,7 +163,7 @@ async def read_reports(
     try:
         with metrics.time_trino("read_reports"):
             # safe: table from READ_REPORTS_TABLES allowlist, column from
-            # PATIENT_ID_COLUMNS or INPUT_ID_COLUMNS allowlist, IDs bind via ?
+            # INPUT_ID_COLUMNS allowlist, IDs bind via ?
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             columns, rows = await trino_client.execute(
                 sql, user=user.sub, params=[[str(i) for i in body.ids]]
@@ -204,4 +174,5 @@ async def read_reports(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}",
         )
+    metrics.RESULT_ROWS.labels(op="read_reports").observe(len(rows))
     return ReadReportsResponse(columns=columns, rows=rows)
