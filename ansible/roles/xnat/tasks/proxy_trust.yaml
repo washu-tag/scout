@@ -12,7 +12,7 @@
 # running the XNAT deploy without re-running install-staging, so the scout-maven
 # group doesn't yet proxy the plugin's repo. We HEAD the artifact via
 # maven_proxy_url — the same path the init container uses — so this also catches
-# an unreachable upstream or a release/snapshot policy mismatch.
+# an unreachable upstream.
 - name: Preflight - coordinate plugins resolve through the Nexus group (air-gapped)
   when: air_gapped | default(false) | bool
   block:
@@ -34,8 +34,6 @@
           scout-maven group. Ensure the plugin is declared in `xnat_plugins` in
           all.vars, then re-run `make install-staging` (which rebuilds the Nexus
           Maven proxies from the plugin list) before re-running the XNAT deploy.
-          If the artifact is a -SNAPSHOT, the plugin's repo also needs
-          `source.snapshots: true` (proxies are release-only by default).
 
 # Staging cert trust (per ADR-0016)
 - name: Create the staging CA Secret for the installer

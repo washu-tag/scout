@@ -322,8 +322,6 @@ enable_xnat: false
 #     #              artifacts not on Central (e.g. XNAT plugins published to jfrog).
 #     #              NOTE: release versions only -- the chart rejects a -SNAPSHOT
 #     #              coordinate (resolving one needs maven-metadata.xml); use type: url.
-#     #              snapshots: bool (default false) - makes this repo_url's Nexus proxy
-#     #              versionPolicy MIXED when air-gapped.
 #     # image:       repository, tag                       (chart-native plugins: map)
 #   config: list of property files, each:
 #     mechanism: authplugins | file | extraConfig
@@ -382,17 +380,6 @@ xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'
 xnat_coordinate_repo_urls: >-
   {{ xnat_plugins_all
      | selectattr('source.type', 'equalto', 'coordinates')
-     | map(attribute='source.repo_url', default='')
-     | reject('equalto', '') | unique | list }}
-
-# Subset of the above whose plugins opted into snapshots (source.snapshots true).
-# The Nexus role sets their proxy versionPolicy to MIXED. Same lazy-projection rationale as
-# above (touches only source.*, never config).
-xnat_snapshot_repo_urls: >-
-  {{ xnat_plugins_all
-     | selectattr('source.type', 'equalto', 'coordinates')
-     | selectattr('source.snapshots', 'defined')
-     | selectattr('source.snapshots')
      | map(attribute='source.repo_url', default='')
      | reject('equalto', '') | unique | list }}
 
