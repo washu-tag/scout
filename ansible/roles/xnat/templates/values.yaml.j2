@@ -113,6 +113,12 @@ probes:
 # then rolls the pod on the same helm upgrade. Computed in create_secrets.yaml.
 podAnnotations:
   checksum/scout-secrets: '{{ _xnat_secrets_checksum }}'
+{% if _xnat_dev_artifacts_checksum | default('') %}
+  # Re-staging xnat_dev_war / xnat_dev_plugins changes this hash, so the helm
+  # upgrade rolls the StatefulSet and the home-plugins emptyDir re-syncs the new
+  # artifacts (fingerprint computed in tasks/dev_stage.yaml).
+  checksum/dev-artifacts: '{{ _xnat_dev_artifacts_checksum }}'
+{% endif %}
 
 {# --- Auth-provider plugins: the chart mounts Secret xnat-plugin-<entry>
      (key <provider>-provider-properties) at config/auth/<provider>-provider.properties --#}

@@ -53,6 +53,16 @@
       loop_control:
         label: '{{ item.item }}'
 
+    # home-plugins is an emptyDir populated from the bucket at pod start, so a
+    # re-stage has no effect until the pods restart. Fingerprint the staged set
+    # (reusing the checksums the stat above already computed) into a podAnnotation
+    # (values.yaml.j2) so `make install-xnat` re-rolls the StatefulSet on any
+    # artifact content/version change — no manual `kubectl rollout restart`.
+    - name: Fingerprint the staged artifacts (rolls the pods on re-stage)
+      ansible.builtin.set_fact:
+        _xnat_dev_artifacts_checksum: >-
+          {{ _xnat_dev_stat.results | map(attribute='stat.checksum') | join(',') | hash('sha256') }}
+
     # Consumed by the staging pod here AND the runtime develop-* init containers
     # (values.yaml.j2). no_log: carries the MinIO credentials.
     - name: Create the MinIO credential Secret
@@ -157,6 +167,10 @@
         # One exec does alias + bucket + all uploads. Creds come from the
         # container's env ($S3_USER/$S3_PASS), never the command string; `set -e`
         # fails fast.
+        # Purge the plugins/ prefix before re-uploading. The pod's home-plugins is
+        # an emptyDir that mirrors this prefix, so a re-stage with a changed plugin
+        # version would otherwise leave BOTH jars and XNAT aborts at startup on the
+        # duplicate plugin bean (IllegalStateException: Duplicate key <plugin>).
         - name: Upload the staged artifacts to MinIO
           kubernetes.core.k8s_exec:
             namespace: '{{ xnat_namespace }}'
@@ -166,6 +180,7 @@
               /bin/sh -c 'set -e;
               mc alias set scout {{ s3_endpoint }} "$S3_USER" "$S3_PASS";
               mc mb --ignore-existing scout/{{ xnat_dev_bucket }};
+              mc rm --recursive --force scout/{{ xnat_dev_bucket }}/plugins/ || true;
               {% if xnat_dev_war | length %}mc cp /work/ROOT.war scout/{{ xnat_dev_bucket }}/ROOT.war;{% endif %}
               {% for p in xnat_dev_plugins %}mc cp /work/{{ p | basename }} scout/{{ xnat_dev_bucket }}/plugins/{{ p | basename }};{% endfor %}'
       always:
