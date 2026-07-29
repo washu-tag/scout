@@ -133,9 +133,14 @@ authplugins: {}
      The chart renders one init container per entry and resolves coordinate/url
      artifacts to a final URL at template time, so nothing here hand-rolls an
      init container or mounts a Maven settings.xml. --#}
-{% if xnat_plugins_all %}
+{# Config-only entries (source.type: none, e.g. the openid SSO config) contribute
+   only an authplugins entry + a provider-properties Secret (rendered above and in
+   create_secrets) — they must NOT become chart plugins: entries. The chart has no
+   'none' source, so it would treat one as a fetch and fail. #}
+{% set _installable = xnat_plugins_all | rejectattr('source.type', 'equalto', 'none') | list %}
+{% if _installable %}
 plugins:
-{% for p in xnat_plugins_all %}
+{% for p in _installable %}
   {{ p.name }}:
 {% if p.source.type == 'image' %}
     repository: {{ p.source.repository }}
