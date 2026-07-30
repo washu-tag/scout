@@ -34,12 +34,15 @@ RUN venv/bin/python3 -m pip install --no-cache .
 # Copy the current directory contents into the container at /app
 COPY --chown=spark . /app
 
-# Install the applicationp
+# Install the application, then trim the runtime image. The pyspark wheel bundles
+# a full duplicate of the Spark jars (runtime uses SPARK_HOME's copy), and pip is
+# unused at runtime; its vendored msgpack/setuptools are the only fixable CVEs the
+# scanner still flags in our layers. Dropping both keeps the image and scan clean.
 RUN venv/bin/python3 -m pip install . \
-    # The pyspark wheel ships its own full copy of the Spark jars; the runtime
-    # resolves jars from SPARK_HOME (that's where the Delta/S3A jars above
-    # live), so the duplicate copy is dead weight and CVE-scan noise.
-    && rm -rf venv/lib/python3.10/site-packages/pyspark/jars
+    && rm -rf venv/lib/python3.10/site-packages/pyspark/jars \
+              venv/lib/python3.10/site-packages/pip \
+              venv/lib/python3.10/site-packages/pip-*.dist-info \
+              venv/bin/pip venv/bin/pip3 venv/bin/pip3.10
 
 # Define environment variable
 ENV PYTHONUNBUFFERED=1
