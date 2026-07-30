@@ -637,6 +637,12 @@ k3s_cluster:
         cpu: 2
         memory: 8Gi
 
+    # Temporal workflow-history retention for the `default` namespace. Accepts
+    # the Temporal CLI duration form ("3d", "30d", "90d", ...). Default is 3d;
+    # raise on dev so workflows survive time away, or on prod for longer audit
+    # windows. Modern Temporal has no max-retention cap (only a ~24h minimum).
+    # temporal_default_namespace_retention: 3d
+
     #---------------------------------------------------------------------------
     # Superset
     #---------------------------------------------------------------------------
