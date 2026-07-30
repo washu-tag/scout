@@ -23,14 +23,20 @@ image**:
    by `kubectl cp`; the `mc` image doesn't) and an **mc** container; the files
    are `kubectl cp`'d into busybox and `mc`-uploaded to the `xnat_dev_bucket`
    (`xnat-dev` by default), then the pod is torn down.
-3. The chart mounts two generated init containers (`templates/values.yaml.j2`):
-   - **`develop-war`** — an `emptyDir` shadows `/usr/local/tomcat/webapps`, and
-     this container pulls `ROOT.war` into it. Tomcat auto-explodes and serves it.
-   - **`develop-plugins`** — `mc mirror`s the staged jars into the shared
-     `home-plugins` volume.
+3. The role sets the chart's `devWar` / `devPlugins` values
+   (`templates/values.yaml.j2`), and the chart renders two init containers that
+   pull with the AWS CLI (`pluginInstaller.s3` settings pointed at MinIO):
+   - **`dev-war`** — an `emptyDir` shadows `/usr/local/tomcat/webapps`, and this
+     container `aws s3 cp`s `ROOT.war` into it. Tomcat auto-explodes and serves
+     it.
+   - **`dev-plugins`** — `aws s3 cp --recursive`s the staged jars into the
+     shared `home-plugins` volume. It renders *after* the per-plugin installs,
+     so a side-loaded jar overrides a declared plugin of the same filename.
 
 Because the init containers re-pull on every start, re-staging a new build +
-`kubectl rollout restart` is enough to re-test — no full redeploy.
+`kubectl rollout restart` is enough to re-test — no full redeploy. (A re-run of
+`make install-xnat` after re-staging also re-rolls the StatefulSet by itself:
+the role writes a checksum of the staged artifacts into `podAnnotations`.)
 
 ## Choosing the base image
 
@@ -128,9 +134,9 @@ installs XNAT with the side-load init containers.
 ```bash
 kubectl --context <ctx> -n xnat get pods
 
-# init containers should Complete: develop-war, develop-plugins, then home-init
-kubectl --context <ctx> -n xnat logs xnat-0 -c develop-war
-kubectl --context <ctx> -n xnat logs xnat-0 -c develop-plugins
+# init containers should Complete: dev-war, dev-plugins, then home-init
+kubectl --context <ctx> -n xnat logs xnat-0 -c dev-war
+kubectl --context <ctx> -n xnat logs xnat-0 -c dev-plugins
 
 # main container: watch the WAR deploy + Tomcat come up
 kubectl --context <ctx> -n xnat logs xnat-0 -c xnat -f
@@ -197,35 +203,27 @@ exactly 1 per node (a jump of 2+ on one subscription = that node got it twice).
 ## Notes
 
 - **Air-gapped.** Air-gap-safe: artifacts come from in-cluster MinIO, and all
-  images (`busybox`, `quay.io/minio/mc`, `ghcr.io/nrgxnat/xnat-web`) pull through
-  the Harbor mirror. No registry push, no `url`-source plugins.
+  images (`busybox` + `quay.io/minio/mc` in the staging pod, the
+  `public.ecr.aws/aws-cli/aws-cli` runtime puller, `ghcr.io/nrgxnat/xnat-web`)
+  pull through the Harbor mirror. No registry push, no `url`-source plugins.
 - **First-run caveat.** The staging step uses `kubernetes.core.k8s_cp` (a
   `kubectl cp` under the hood) for the ~200 MB WAR. If it struggles with the file
   size on your cluster, upload the WAR once by hand
   (`kubectl -n scout-data port-forward svc/minio 9000:80` + `mc cp … s3://xnat-dev/ROOT.war`)
   and the init containers will still pick it up.
-- **If the WAR doesn't deploy, or you want app logs on stdout.** `develop-war`
-  drops `ROOT.war` and relies on Tomcat's `autoDeploy`/`unpackWARs` (on by
-  default) to explode it, and the WAR logs to a rolling file inside the
-  container. If the site never comes up (autoDeploy disabled) or you want XNAT's
-  logs in `kubectl logs`, explode + patch logback on your workstation and stage
-  the exploded tree: `unzip ROOT.war -d ROOT/`, optionally
-  `sed -i 's/RollingFileAppender/ConsoleAppender/' ROOT/WEB-INF/classes/logback.xml`,
-  upload `ROOT/` to `s3://xnat-dev/ROOT/`, and change `develop-war` to
-  `mc mirror` it to `/webapps/ROOT/`. Serves the exploded dir directly (no
-  autoDeploy) and keeps the edit workstation-side — no in-cluster `unzip`.
-- **Console logging on the combined build.** The 1.9.3.7 "combined" WAR reads
-  `XNAT_LOG_CONSOLE=plain` to log to stdout, so you can skip the logback surgery
-  above and set it on the pod:
-  `kubectl -n xnat set env statefulset/xnat XNAT_LOG_CONSOLE=plain` (rolls the
-  pods). It reverts on the next `make install-xnat` — the chart has no arbitrary-
-  env hook, so this stays a manual step. A chart `extraEnv` passthrough (we own
-  the chart) would make it inventory-driven, but that's a chart release for a
-  dev-only knob.
-- **Plugin logs on stdout.** A raw plugin JAR logs to a rolling file; the
-  `develop-plugins` `mc mirror` does not run Scout's normal logback-to-stdout
-  rewrite. Rewrite it before upload, or read the file via `kubectl exec`.
+- **If the WAR doesn't deploy.** `dev-war` drops `ROOT.war` and relies on
+  Tomcat's `autoDeploy`/`unpackWARs` (on by default) to explode it. If the site
+  never comes up with autoDeploy disabled, an exploded-tree side-load would need
+  a chart `devWar` change (the init containers are chart-rendered now — there is
+  no role-owned container to point at a directory).
+- **Logs on stdout.** The chart sets `XNAT_LOG_CONSOLE` via its `logConsole`
+  value (default `plain`), which redirects XNAT core *and plugin* logging to
+  stdout on builds that support it (1.9.3.7 "combined" and later; XNAT-8782).
+  Nothing rewrites logback configs anymore — on an older WAR/plugin that
+  doesn't honor the variable, logs stay in rolling files under
+  `$XNAT_HOME/logs` (read via `kubectl exec`). Other env can be injected via
+  the chart's `extraEnv` passthrough.
 - **GitOps lane.** On the Flux/EKS clusters the same seam is reached through the
-  HelmRelease `values` (`extraVolumes` / `initContainers`), with S3 via the pod's
-  IRSA role instead of the `mc`/MinIO steps here. The WAR-shadow technique is
-  identical.
+  HelmRelease `values` (the chart's `devWar` / `devPlugins` blocks), with S3 via
+  the pod's IRSA role instead of the `mc`/MinIO steps here. The WAR-shadow
+  technique is identical.
