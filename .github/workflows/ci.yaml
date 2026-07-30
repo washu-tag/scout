@@ -877,46 +877,55 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7log-extractor
+          version: ${{ needs.changes.outputs.version }}
       - name: 'Push Image - hl7-transformer'
         if: needs.changes.outputs.hl7-transformer == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
+          version: ${{ needs.changes.outputs.version }}
       - name: 'Push Image - hl7-listener'
         if: needs.changes.outputs.hl7-listener == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-listener
+          version: ${{ needs.changes.outputs.version }}
       - name: 'Push Image - scout-notebook'
         if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: scout-notebook
+          version: ${{ needs.changes.outputs.version }}
       - name: 'Push Image - launchpad'
         if: needs.changes.outputs.launchpad == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: launchpad
+          version: ${{ needs.changes.outputs.version }}
       - name: 'Push Image - superset'
         if: needs.changes.outputs.superset == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: superset
+          version: ${{ needs.changes.outputs.version }}
       - name: 'Push Image - keycloak'
         if: needs.changes.outputs.keycloak == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
+          version: ${{ needs.changes.outputs.version }}
       - name: 'Push Image - report-viewer'
         if: needs.changes.outputs.report-viewer == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: report-viewer
+          version: ${{ needs.changes.outputs.version }}
       - name: 'Push Image - xnat-plugin-installer'
         if: needs.changes.outputs.xnat-plugin-installer == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: xnat-plugin-installer
+          version: ${{ needs.changes.outputs.version }}
   # Publish changed Helm charts as versioned OCI artifacts (ADR 0030/0031 phase 0),
   # gated like the image `publish` job. Vertical slice: hl7-transformer only.
   publish-charts:
