@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '4.0.6'
+	id 'org.springframework.boot' version '4.0.7'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'checkstyle'
 }
@@ -44,11 +44,6 @@ ext['netty.version'] = '4.2.16.Final'
 // (tools.jackson, jackson-bom).
 ext['jackson-2-bom.version'] = '2.21.4'
 ext['jackson-bom.version'] = '3.1.4'
-
-// TODO: Remove once Spring Boot 4 manages spring-framework >= 7.0.8.
-// Overrides the Spring Boot BOM's pinned 7.0.7 to address CVE-2026-41842
-// (spring-webflux) and CVE-2026-41850 (spring-expression), both HIGH.
-ext['spring-framework.version'] = '7.0.8'
 
 // TODO: Remove once Temporal ships a release that brings opentelemetry >= 1.62.0.
 // Pins the io.opentelemetry:* family (transitively from temporal-sdk) to 1.62.0
