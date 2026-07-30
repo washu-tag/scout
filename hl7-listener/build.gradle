@@ -80,6 +80,9 @@ configurations.all {
 		} else if (g == 'org.apache.tomcat.embed') {
 			details.useVersion '10.1.55' // CVE-2026-41293/-43512/-43515 (CRITICAL) + -34483/-41284/-42498/-43513
 			details.because 'Trivy CRITICAL/HIGH'
+		} else if (g == 'org.springframework' && n.startsWith('spring')) {
+			details.useVersion '6.2.19' // CVE-2026-41842/-41845/-41850 (spring-webmvc, spring-expression)
+			details.because 'Trivy HIGH'
 		}
 	}
 }
