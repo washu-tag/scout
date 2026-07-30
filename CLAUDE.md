@@ -489,6 +489,57 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 - **JupyterHub**: https://jupyterhub.readthedocs.io/
 - **PySpark**: https://spark.apache.org/docs/latest/api/python/
 
+## CI, Versioning, and Release Conventions
+
+Operative rules for changes touching CI, releases, or published artifacts. Design
+and rationale live in ADR 0030 (versioning + artifact publishing) and ADR 0031
+(Flux deployment base); this section is the working contract.
+
+### Commits and PRs
+- PR titles must be [Conventional Commits](https://www.conventionalcommits.org/)
+  (`feat`, `fix`, `chore`, `ci`, `docs`, `refactor`, `test`, `perf`, `build`,
+  `revert`; a trailing `!` marks a breaking change). The `PR Title Lint` check
+  enforces this on every PR. Prefer `fix(scope):` / `feat(scope):` over a bare
+  custom type.
+- Merges to `main` are squash-merges (ADR 0030): the squashed commit subject is
+  the PR title, that title is what release automation reads for the version bump
+  and changelog, and the linear history it yields is required by the build-lane
+  run-number ordering. Do not merge-commit or rebase-merge `main`.
+- Renovate and Dependabot are configured to emit `chore(deps):` titles so their
+  PRs satisfy the lint.
+
+### Versioning and releases (ADR 0030)
+- Build lane `0.YYYYMMDD.<run>`: minted once per run in the `changes` job. Each
+  merge rebuilds only what changed and records the whole platform, pinned by
+  `name:tag@digest`, in a signed build manifest. The manifest tooling and its
+  schema (the wire contract) live in `tooling/manifest/`.
+- Release lane `X.Y.Z`: version + changelog computed from Conventional-Commit
+  titles by release-please (`fix` -> patch, `feat` -> minor, `!` -> major). Do
+  not hand-type release versions.
+- `Chart.yaml` / `VERSION` / `pyproject.toml` version fields are placeholders
+  stamped at publish time; do not bump them by hand for a release.
+
+### Artifacts
+- Charts and images publish to `oci://ghcr.io/washu-tag/...` only when they
+  change (the `changes` job's path filters decide); publishing unchanged content
+  needlessly rolls pods.
+- Never enable registry auto-pruning (delete-untagged / older-than-N): content is
+  pinned by digest under possibly-old tags, so pruning would reap live content.
+  Only prune digests that no manifest references.
+
+### CI structure
+- The `changes` job's `dorny/paths-filter` block is the single path -> component
+  map. Adding an image or chart means adding its filter + output there (and, for
+  a new image, an entry in the `&image-matrix` anchor and a
+  `<subproject>/.trivyignore.yaml`). See "Add a new CI-built image/service" below.
+- `scan-images` fails a non-allow-failure image on any fixable HIGH/CRITICAL CVE
+  left after its per-image `.trivyignore.yaml` / `.trivyignore.rego`. Bump the
+  dependency where we own it; suppress-with-documented-reason only what an
+  upstream base image bundles.
+- Superseded PR runs auto-cancel (workflow `concurrency`); `publish` /
+  `publish-charts` run only on push to `main`. CI helper code lives in
+  `.github/scripts/` and `tooling/`; reusable steps in `.github/actions/`.
+
 ## Architecture Decision Records (ADRs)
 
 ADRs in `docs/internal/adr/` document significant architectural decisions. Consult these when working in relevant areas:
