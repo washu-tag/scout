@@ -128,7 +128,11 @@ def carry_section(
     out: list[Artifact] = []
     for name in all_names:
         if name in fresh_by:
-            out.append(replace(fresh_by[name], changedThisBuild=True, producedByBuild=build_version))
+            out.append(
+                replace(
+                    fresh_by[name], changedThisBuild=True, producedByBuild=build_version
+                )
+            )
         elif name in prev_by:
             out.append(replace(prev_by[name], changedThisBuild=False))
         else:
@@ -163,8 +167,12 @@ def assemble(
         version=version,
         sourceCommit=source_commit,
         rebuildScope=rebuild_scope,
-        images=carry_section(prev_images, fresh_images, all_image_names, build_version=version),
-        charts=carry_section(prev_charts, fresh_charts, all_chart_names, build_version=version),
+        images=carry_section(
+            prev_images, fresh_images, all_image_names, build_version=version
+        ),
+        charts=carry_section(
+            prev_charts, fresh_charts, all_chart_names, build_version=version
+        ),
         predecessor=predecessor,
         kind=kind,
     )

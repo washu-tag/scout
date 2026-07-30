@@ -56,7 +56,12 @@ def test_carry_section_changed_vs_carried():
         img("b", D2, "0.20260728.5", True),
     ]
     fresh = [img("a", D3, "0.20260730.1", False)]  # 'a' rebuilt this run
-    out = {x.name: x for x in carry_section(previous, fresh, ["a", "b"], build_version="0.20260730.1")}
+    out = {
+        x.name: x
+        for x in carry_section(
+            previous, fresh, ["a", "b"], build_version="0.20260730.1"
+        )
+    }
 
     # 'a' changed this build: fresh digest, stamped changed + producedByBuild=this build
     assert out["a"].digest == D3
@@ -71,7 +76,12 @@ def test_carry_section_changed_vs_carried():
 def test_carry_section_fails_closed_on_missing_predecessor_entry():
     # 'b' did not change this build but is absent from the predecessor -> must rebuild.
     with pytest.raises(ValueError, match="absent from the predecessor"):
-        carry_section([img("a", D1, "0.20260729.9", True)], [], ["a", "b"], build_version="0.20260730.1")
+        carry_section(
+            [img("a", D1, "0.20260729.9", True)],
+            [],
+            ["a", "b"],
+            build_version="0.20260730.1",
+        )
 
 
 def test_assemble_carries_predecessor_and_bootstraps():
