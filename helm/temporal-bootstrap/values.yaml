@@ -22,8 +22,8 @@ temporalAddress: ''
 namespace:
   name: default
   # Workflow-history retention. Accepts the Temporal CLI duration form
-  # ("3d", "30d", ...). Whole days only; retention above 30d also requires
-  # raising system.maxRetentionDays or Temporal rejects it.
+  # ("3d", "30d", "90d", ...). Modern Temporal has no max-retention cap; the
+  # only bound is the minimum (system.namespaceMinRetentionGlobal/Local, ~24h).
   retention: 3d
 
 # describe-retry attempts (x2s each) while waiting for the namespace to be
