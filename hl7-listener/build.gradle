@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.14'
+	id 'org.springframework.boot' version '3.5.16'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -66,7 +66,8 @@ dependencies {
 // are pinned by the camel-spring-boot-dependencies / Spring Boot BOMs; resolutionStrategy
 // runs after BOM resolution, so it overrides those pins unconditionally. All are patch-level
 // bumps within the same minor line. Drop each entry once the managing BOM ships the fix.
-// (spring-boot itself, CVE-2026-40973, is handled by the 3.5.14 plugin bump above.)
+// (spring-boot + spring-framework, incl. CVE-2026-40973 and the spring-webmvc/-expression
+// CVE-2026-41842/-41845/-41850, are handled by the 3.5.16 plugin bump above.)
 configurations.all {
 	resolutionStrategy.eachDependency { details ->
 		def g = details.requested.group
