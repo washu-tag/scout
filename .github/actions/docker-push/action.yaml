@@ -51,10 +51,12 @@ runs:
         repo="${loaded_ref%:*}"
         build_ref="${repo}:${VERSION}"
         docker tag "${loaded_ref}" "${build_ref}"
-        push_out="$(docker push "${build_ref}")"
-        digest="$(printf '%s\n' "${push_out}" | sed -n 's/.*digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' | head -1)"
-        if [ -z "${digest}" ]; then
-          echo "::error::could not parse pushed digest for ${build_ref}"
+        docker push "${build_ref}"
+        # Read the authoritative content digest back from the registry as structured
+        # JSON (a stable contract), rather than parsing docker push's human output.
+        digest="$(docker buildx imagetools inspect "${build_ref}" --format '{{json .Manifest}}' | jq -r '.digest')"
+        if [ "${digest#sha256:}" = "${digest}" ]; then
+          echo "::error::could not resolve pushed digest for ${build_ref}"
           exit 1
         fi
         echo "digest=${digest}" >> "$GITHUB_OUTPUT"
