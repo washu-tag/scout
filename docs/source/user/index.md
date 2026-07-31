@@ -6,6 +6,7 @@ can see.
 
 ```{toctree}
 :maxdepth: 1
+quickstart
 authentication
 chat
 tips

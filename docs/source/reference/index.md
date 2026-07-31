@@ -6,6 +6,6 @@ backend architecture, and supporting database schemas.
 ```{toctree}
 :maxdepth: 1
 dataschema
-services
+architecture
 ingest_status_db
 ```

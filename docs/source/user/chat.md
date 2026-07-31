@@ -275,5 +275,5 @@ If you see tool errors, contact your administrator.
 ## Additional Resources
 
 - **[Data Schema](../reference/dataschema.md)**: Available fields and their meanings
-- **[Services Overview](../reference/services.md)**: Analytics, Notebooks, and other Scout services
+- **[Scout interfaces](../user/quickstart.md)**: Analytics, Notebooks, and other Scout services
 - **[Tips & Tricks](tips.md)**: General Scout usage tips

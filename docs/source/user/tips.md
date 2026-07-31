@@ -147,6 +147,6 @@ model.load_state_dict(torch.load('/home/jovyan/models/checkpoint.pth'))
 
 ### Getting Help
 
-- **Documentation**: Review the [data schema](../reference/dataschema.md), [services](../reference/services.md), and [ingestion](../operate/ingest.md) docs
+- **Documentation**: Review the [data schema](../reference/dataschema.md), [architecture](../reference/architecture.md), and [ingestion](../operate/ingest.md) docs
 - **Issue Tracking**: Report bugs or request features on [GitHub](https://github.com/washu-tag/scout/issues)
 - **Admin Tools**: Contact your Scout administrator for access to Monitor, Orchestrator, or User Management interfaces
