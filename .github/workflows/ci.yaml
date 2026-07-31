@@ -260,7 +260,10 @@ jobs:
           python-version: '3.12'
       - name: Install Molecule and dependencies
         run: |
-          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests
+          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests jsonschema
+      - name: 'Unit tests: build manifest'
+        shell: bash
+        run: cd tooling/manifest && pytest -v
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
