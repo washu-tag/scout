@@ -32,8 +32,8 @@ temporal_default_namespace_retention: 3d
 # Currently enforces the namespace retention above; future one-off setup can be
 # added as additional hook Jobs in the chart.
 temporal_bootstrap_helm_chart_ref: '{{ scout_repo_dir }}/helm/temporal-bootstrap'
-temporal_admin_tools_image_repository: temporalio/admin-tools
-temporal_admin_tools_image_tag: latest
+# temporal_admin_tools_image_{repository,tag} are pinned in
+# group_vars/all/versions.yaml (renovate-tracked), not here.
 
 # OIDC configuration
 temporal_oidc_enabled: true

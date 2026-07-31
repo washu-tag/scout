@@ -57,6 +57,13 @@ minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
 temporal_version: ~1.2.0
+# temporalio/admin-tools image for the temporal-bootstrap chart's setup Jobs.
+# Track the Temporal server version (chart 1.2.0 -> appVersion 1.31.0, per
+# `helm show chart temporal/temporal --version '~1.2.0'`), not the helm chart
+# version above.
+temporal_admin_tools_image_repository: temporalio/admin-tools
+# renovate: datasource=docker depName=temporalio/admin-tools
+temporal_admin_tools_image_tag: 1.31.0
 
 # Real-Time HL7 Ingestion - Strimzi Kafka (MLLP listener → Kafka → batcher → MinIO).
 # The listener/batcher application image is built in CI (see hl7-listener/), not pinned here.
