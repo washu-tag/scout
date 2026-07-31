@@ -10,4 +10,5 @@ inventory
 air-gapped
 ingest
 data_authorization
+monitoring
 ```

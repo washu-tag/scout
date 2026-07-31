@@ -148,7 +148,7 @@ The Lake service provides the data storage foundation for Scout using a medallio
 
 **Access:** Administrators can access Grafana through the Scout Launchpad Admin Tools section.
 
-**Learn more:** See [Tips & Tricks](../user/tips.md) for guidance on using Grafana dashboards effectively.
+**Learn more:** See [Monitoring](../operate/monitoring.md) for guidance on using Grafana dashboards effectively.
 
 ### User Management
 
