@@ -34,6 +34,13 @@ vulnerabilities:
   - id: CVE-2026-55833 # netty-codec-http 4.2.7 (Spark-bundled)
   - id: CVE-2026-56745 # netty-codec-http 4.2.7 (Spark-bundled)
   - id: CVE-2026-59901 # netty-codec / netty-codec-compression 4.2.7 (Spark-bundled)
+  # HTTP/2 decompression refcount leak (direct-memory DoS). Only reachable via
+  # DelegatingDecompressorFrameListener, i.e. an HTTP/2 server/client doing
+  # content decompression — Spark uses netty for its own RPC/block transfer, and
+  # netty-codec-http2 is only on the classpath for the connect/gRPC path the
+  # headless worker never starts. Fixed in 4.2.16, and Spark 4.1.2 (the newest
+  # tag) still ships 4.2.7, so there's nothing to adopt.
+  - id: CVE-2026-56819 # netty-codec-http2 4.2.7 (Spark-bundled)
   # derby backs Spark's embedded metastore, which Scout doesn't use (remote
   # HMS); the advisory's 10.16.1.2 was never published to Maven Central
   - id: CVE-2022-46337 # derby 10.16.1.1

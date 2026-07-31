@@ -25,6 +25,12 @@ vulnerabilities:
   - id: CVE-2026-55851 # io.netty:netty-codec-haproxy 4.1.135.Final
   - id: CVE-2026-56745 # io.netty:netty-codec-http 4.1.135.Final
   - id: CVE-2026-59901 # io.netty:netty-codec 4.1.135.Final
+  # HTTP/2 decompression refcount leak (direct-memory DoS), reachable only when the
+  # HTTP/2 server decompresses *request* bodies. Quarkus leaves that off
+  # (quarkus.http.enable-decompression defaults to false) and Scout doesn't set it.
+  # Same 4.1.136 fix as the entries above: Keycloak 26.6.4 and 26.7.0 both build on
+  # Quarkus 3.33.2.1, whose BOM pins netty 4.1.135, so a Keycloak bump won't clear it.
+  - id: CVE-2026-56819 # io.netty:netty-codec-http2 4.1.135.Final
   # jackson-core shaded into the upstream keycloak-admin-cli jar (/opt/keycloak/bin/client),
   # companion to the jackson-databind entries above; fixed in 2.21.4, not bundled yet.
   - id: GHSA-r7wm-3cxj-wff9 # com.fasterxml.jackson.core:jackson-core 2.21.2 (keycloak-admin-cli)
