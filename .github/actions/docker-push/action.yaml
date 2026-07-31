@@ -1,9 +1,23 @@
 name: 'Docker push'
-description: 'Downloads docker image and pushes to ghcr'
+description: >-
+  Loads the built image tar and pushes it to ghcr at the derived tag. When a
+  build-lane version is given, also publishes an immutable 0.YYYYMMDD.<run> tag
+  and records the pushed digest for the ADR 0030 build manifest.
 inputs:
   image-name:
     description: 'Name for docker image'
     required: true
+  version:
+    description: >-
+      Build-lane version (0.YYYYMMDD.<run>) to publish alongside the derived
+      tag. Leave empty (e.g. demo publishes) to push only the derived tag and
+      record no digest.
+    required: false
+    default: ''
+outputs:
+  digest:
+    description: 'Registry digest (sha256:...) of the pushed image; empty when no build-lane version was given.'
+    value: ${{ steps.push.outputs.digest }}
 runs:
   using: 'composite'
   steps:
@@ -13,11 +27,50 @@ runs:
         name: ${{ inputs.image-name }}
         path: ${{ runner.temp }}
     - name: Push image
+      id: push
       shell: bash
       env:
         IMAGE_NAME: ${{ inputs.image-name }}
+        VERSION: ${{ inputs.version }}
       run: |
-        docker push "$(docker load --input "${RUNNER_TEMP}/${IMAGE_NAME}.tar" | sed -e 's/.*: //g')"
+        set -euo pipefail
+        # docker load prints "Loaded image: <ref>"; that ref carries the derived
+        # tag baked into the tar by docker-build-cache. Push it (existing behavior).
+        loaded_ref="$(docker load --input "${RUNNER_TEMP}/${IMAGE_NAME}.tar" | sed -e 's/.*: //g')"
+        docker push "${loaded_ref}"
+
+        # No build-lane version (e.g. demo publish): derived tag only, done.
+        if [ -z "${VERSION}" ]; then
+          echo "digest=" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # Also publish the immutable build-lane tag so the build manifest can pin
+        # this image by name:tag@digest. It aliases the same image, so the registry
+        # returns the same content digest.
+        repo="${loaded_ref%:*}"
+        build_ref="${repo}:${VERSION}"
+        docker tag "${loaded_ref}" "${build_ref}"
+        docker push "${build_ref}"
+        # Read the authoritative content digest back from the registry as structured
+        # JSON (a stable contract), rather than parsing docker push's human output.
+        digest="$(docker buildx imagetools inspect "${build_ref}" --format '{{json .Manifest}}' | jq -r '.digest')"
+        if [ "${digest#sha256:}" = "${digest}" ]; then
+          echo "::error::could not resolve pushed digest for ${build_ref}"
+          exit 1
+        fi
+        echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+
+        # Record "<name> <repo>:<version>@<digest>" for the build-manifest job.
+        mkdir -p "${RUNNER_TEMP}/image-digests"
+        printf '%s %s@%s\n' "${IMAGE_NAME}" "${build_ref}" "${digest}" \
+          > "${RUNNER_TEMP}/image-digests/${IMAGE_NAME}.txt"
+    - name: Upload image digest
+      if: inputs.version != ''
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: image-digest-${{ inputs.image-name }}
+        path: ${{ runner.temp }}/image-digests/${{ inputs.image-name }}.txt
     - name: Cleanup temp image tar
       shell: bash
       env:
