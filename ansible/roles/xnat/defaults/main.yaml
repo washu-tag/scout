@@ -11,10 +11,15 @@ xnat_chart_oci_ref: oci://ghcr.io/nrgxnat/charts/xnat
 xnat_helm_release_name: xnat
 
 # --- XNAT image -----------------------------------------------------------
+# GHCR only — Scout does not pull the legacy Docker Hub `xnatworks/xnat-web`
+# images (root-USER; see ADR 0026). `ghcr.io/nrgxnat/xnat` is the monorepo
+# publishing lane that supersedes `ghcr.io/nrgxnat/xnat-web`; its images run as
+# USER 1000:1000 and own their baked tree group-writable, so they need no
+# securityContext relaxation and the chart's hardened default applies as-is.
 # xnat_image_tag is pinned in group_vars/all/versions.yaml (Renovate-monitored,
-# per ADR 0015) and selects the image via image.tag override; the chart's
-# appVersion (1.9.2.1) is unchanged.
-xnat_image_repository: xnatworks/xnat-web
+# per ADR 0015) and overrides image.tag: the chart's appVersion (1.9.3.7) is a
+# 1.9 image, and Scout's plugin set is built against 1.10.
+xnat_image_repository: ghcr.io/nrgxnat/xnat
 
 # --- Replicas --------------------------------------------------------------
 # StatefulSet replica count. Default 1 (single-node posture). >1 is for

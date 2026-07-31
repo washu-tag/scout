@@ -1,6 +1,6 @@
 # xnat role
 
-Deploys [XNAT](https://www.xnat.org/) (`xnatworks/xnat-web`) into Scout with one
+Deploys [XNAT](https://www.xnat.org/) (`ghcr.io/nrgxnat/xnat`) into Scout with one
 or more plugins, behind oauth2-proxy, using the off-the-shelf
 `xnat-openid-auth-plugin` for Keycloak SSO. Optional and **disabled by default**
 (`enable_xnat: false`).

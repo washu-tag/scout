@@ -1,4 +1,4 @@
-{# Helm values for the upstream xnatworks/xnat-web chart, templated from inventory.
+{# Helm values for the upstream NrgXnat xnat chart, templated from inventory.
    All Secrets are created by the role and referenced here by name. Dynamic
    blocks (initContainers / plugins / authplugins / extraConfig / extraVolumes)
    are generated from xnat_plugins_all. #}
@@ -16,21 +16,6 @@ namespace: {{ xnat_namespace }}
 image:
   repository: {{ xnat_image_repository }}
   tag: '{{ xnat_image_tag }}'
-
-# WORKAROUND (NrgXnat/xnat#5): PR NrgXnat/helm-charts#19 hardened the container
-# securityContext with `capabilities: drop: [ALL]`, which removes CAP_DAC_OVERRIDE.
-# The xnatworks/xnat-web image needs it: it runs as a non-root UID (1000 = the
-# image's `tomcat` user) that does not own its entrypoint
-# (/usr/local/bin/entrypoint.sh, mode 0744 root:root), so DAC_OVERRIDE is what
-# lets it exec the entrypoint. With all caps dropped the container can't start
-# ("exec /usr/local/bin/entrypoint.sh: permission denied"). Keep the chart's
-# drop-ALL hardening but add back only DAC_OVERRIDE; runAsUser 1000 itself is
-# fine (tomcat owns the data dirs). Once NrgXnat/xnat#5 is fixed (image works
-# with caps dropped), drop this block.
-securityContext:
-  capabilities:
-    drop: ['ALL']
-    add: ['DAC_OVERRIDE']
 
 # The Scout plugin-installer init containers run as non-root UID 1000 (see their
 # per-container securityContext below). fsGroup makes the shared home-plugins

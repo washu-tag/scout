@@ -11,8 +11,9 @@
 ## Context
 
 XNAT (the imaging informatics platform — repo
-<https://github.com/nrgxnat/xnat>; historically published as `xnatworks/xnat-web`
-on Docker Hub, migrating to a GHCR-hosted image `ghcr.io/nrgxnat/xnat`) is being
+<https://github.com/nrgxnat/xnat>; formerly published as `xnatworks/xnat-web` on
+Docker Hub, now published to GHCR — `ghcr.io/nrgxnat/xnat` for the monorepo lane
+that supersedes `ghcr.io/nrgxnat/xnat-web`; Scout pulls GHCR only, see §10) is being
 added to Scout as an **optional** service for
 storing and working with DICOM imaging studies. It is deployed via Ansible on
 top of the upstream Helm chart — published as an OCI artifact
@@ -197,6 +198,36 @@ block in `prefs-init.ini`, rather than running a per-XNAT mail server. This
 reuses existing Scout mail infrastructure instead of standing up another SMTP
 path. The chart's bundled Postfix subchart is left disabled
 (`mail.enabled: false`), so no per-XNAT mail server runs.
+
+### 10. Image source: GHCR only, non-root
+
+Scout pulls the XNAT image from GHCR only — `ghcr.io/nrgxnat/xnat`
+(`xnat_image_repository`), the monorepo publishing lane that supersedes
+`ghcr.io/nrgxnat/xnat-web`. The legacy Docker Hub `xnatworks/xnat-web` images are
+**not** used.
+
+The reason is more than registry hygiene: the Docker Hub images are built
+`USER 0` and bake `/data/xnat/home` root-owned, whereas the GHCR images are built
+`USER 1000:1000` with that tree chowned to `1000:1000` and group-writable
+(`chmod -R g=u`), matching the chart's hardened `runAsUser: 1000` /
+`fsGroup: 1000` default. Against a root-USER image, the chart's `home-init` could
+not write the rendered `xnat-conf.properties` into the image's own config
+directory, so XNAT silently fell back to the image's baked default — which points
+at a database host that does not exist in the release namespace. Tomcat still
+bound `:8080`, so the pod passed its probes and served 404 with a dead webapp
+context. A `capabilities: add: ['DAC_OVERRIDE']` workaround was tried and removed:
+`capabilities.add` is inert for a non-root uid (Kubernetes populates only the
+bounding set; effective caps for a non-root process require ambient caps, which
+Kubernetes does not expose). The chart-side half of this was fixed separately by
+having `home-init` write into the mounted `xnat-home` volume — which it creates as
+the runtime uid — instead of the image's directory, and by running under `set -e`
+so a failed config write fails the pod instead of booting a misconfigured XNAT.
+
+Consequence for pinning: `xnat_image_tag` must override the chart's `image.tag`,
+because the chart's `appVersion` (1.9.3.7) is a 1.9 image while Scout's plugin set
+is built against 1.10. The current pin, `1.10.1-SNAPSHOT`, is the only 1.10 tag
+published to GHCR; it is a temporary pre-release pin that Renovate cannot monitor
+and should be repointed at a 1.10 release tag once one exists.
 
 ## Consequences
 
