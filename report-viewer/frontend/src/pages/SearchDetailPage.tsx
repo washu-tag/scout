@@ -1,22 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   getExpandedRowModel,
+  getSortedRowModel,
+  getPaginationRowModel,
   useReactTable,
   type SortingState,
   type ExpandedState,
   type VisibilityState,
+  type PaginationState,
 } from '@tanstack/react-table';
 import {
   activeFilterCount,
-  csvUrl,
+  downloadCsv,
+  filterRows,
   friendlyError,
   getSearch,
-  getSearchModalities,
   getSearchRows,
   type FilterState,
 } from '../api/client';
@@ -38,8 +41,22 @@ const COLUMNS_CONFIG: Array<{
   mono?: boolean;
   kind?: 'date';
 }> = [
-  { field: 'epic_mrn', title: 'MRN', width: 80, mono: true },
-  { field: 'mpi', title: 'MPI', width: 80, mono: true, defaultHidden: true },
+  { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true },
+  {
+    field: 'resolved_epic_mrn',
+    title: 'Resolved MRN',
+    width: 100,
+    mono: true,
+    defaultHidden: true,
+  },
+  { field: 'patient_mpi', title: 'Patient MPI', width: 90, mono: true, defaultHidden: true },
+  {
+    field: 'resolved_mpi',
+    title: 'Resolved MPI',
+    width: 100,
+    mono: true,
+    defaultHidden: true,
+  },
   { field: 'accession_number', title: 'Accession', width: 85, mono: true },
   { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
   { field: 'modality', title: 'Modality', width: 60 },
@@ -57,8 +74,7 @@ const columnHelper = createColumnHelper<Row>();
 export default function SearchDetailPage() {
   const { searchId = '' } = useParams<{ searchId: string }>();
   const requestPrompt = useChatPrompt();
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(100);
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 100 });
   const [sorting, setSorting] = useState<SortingState>([]);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({});
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
@@ -78,29 +94,15 @@ export default function SearchDetailPage() {
     enabled: !!searchId,
   });
 
-  const sortParam = sorting[0]
-    ? { col: sorting[0].id, dir: (sorting[0].desc ? 'desc' : 'asc') as 'asc' | 'desc' }
-    : null;
+  // One fetch of the whole cohort; sort/filter/paginate happen client-side.
   const rowsQ = useQuery({
-    queryKey: ['search', searchId, 'rows', page, limit, sortParam, appliedFiltersKey],
-    queryFn: () =>
-      getSearchRows(searchId, { page, limit, sort: sortParam, filters: appliedFilters }),
+    queryKey: ['search', searchId, 'rows'],
+    queryFn: () => getSearchRows(searchId),
     enabled: !!searchId,
-    // Keep previous page visible during refetch so debounced filter inputs don't lose focus.
-    placeholderData: keepPreviousData,
   });
 
-  // Distinct modalities across the whole cohort (not the filtered page) for the filter dialog.
-  const modalitiesQ = useQuery({
-    queryKey: ['search', searchId, 'modalities'],
-    queryFn: () => getSearchModalities(searchId),
-    enabled: !!searchId,
-    staleTime: Infinity,
-  });
-
-  // Expansion is keyed by row index; clear on data change so page-2 row 0
-  // doesn't inherit page-1's expanded card. Gate on rowsQ.data (not page)
-  // to avoid a mid-fetch collapse flash under keepPreviousData.
+  // Expansion is keyed by row id (primary_report_identifier); clear on a new
+  // cohort fetch so a fresh search doesn't inherit stale expansions.
   useEffect(() => {
     setExpanded({});
   }, [rowsQ.data]);
@@ -120,13 +122,21 @@ export default function SearchDetailPage() {
     };
   }, [colPickerOpen]);
 
-  const total = rowsQ.data?.total ?? meta.data?.count ?? 0;
-  const lastPage = Math.max(1, Math.ceil(total / limit));
-
   const available = useMemo<string[]>(
     () => rowsQ.data?.columns ?? (rowsQ.data?.rows?.[0] ? Object.keys(rowsQ.data.rows[0]) : []),
     [rowsQ.data],
   );
+
+  // Distinct modalities present in the loaded cohort, for the filter dialog -
+  // derived client-side from the full result set (no separate endpoint).
+  const modalityOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rowsQ.data?.rows ?? []) {
+      const v = r.modality;
+      if (v != null && v !== '') set.add(String(v));
+    }
+    return Array.from(set).sort();
+  }, [rowsQ.data]);
 
   const columns = useMemo(
     () =>
@@ -142,25 +152,41 @@ export default function SearchDetailPage() {
     [available],
   );
 
-  const data = rowsQ.data?.rows ?? [];
+  // Filter the full in-memory cohort in fetch order (the order the search SQL
+  // returned) so the initial view preserves the LLM's ORDER BY; TanStack then
+  // sorts/paginates on demand.
+  const data = useMemo(
+    () => filterRows(rowsQ.data?.rows ?? [], appliedFilters),
+    [rowsQ.data, appliedFiltersKey],
+  );
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, expanded, columnVisibility },
+    state: { sorting, expanded, columnVisibility, pagination },
     onSortingChange: (updater) => {
       setSorting(updater);
-      setPage(1);
+      setPagination((p) => ({ ...p, pageIndex: 0 }));
     },
     onExpandedChange: setExpanded,
     onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: setPagination,
+    // Stable id so an expanded row tracks the right report across
+    // client-side sort/filter/paginate.
+    getRowId: (row: Row, index) =>
+      row.primary_report_identifier != null ? String(row.primary_report_identifier) : String(index),
     getRowCanExpand: () => true,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
-    manualSorting: true,
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     columnResizeMode: 'onChange',
     defaultColumn: { minSize: 40 },
   });
+
+  const total = data.length;
+  const lastPage = table.getPageCount() || 1;
+  const pageIndex = table.getState().pagination.pageIndex;
 
   return (
     <div
@@ -210,6 +236,23 @@ export default function SearchDetailPage() {
               minHeight: 0,
             }}
           >
+            {rowsQ.data.truncated && (
+              <div
+                style={{
+                  flex: '0 0 auto',
+                  marginBottom: '0.4rem',
+                  padding: '0.35rem 0.6rem',
+                  fontSize: '0.78rem',
+                  color: 'var(--rv-muted)',
+                  background: 'var(--rv-surface-2)',
+                  border: '1px solid var(--rv-border)',
+                  borderRadius: 4,
+                }}
+              >
+                Showing the first {rowsQ.data.total.toLocaleString()} rows. Refine your search to
+                narrow the cohort.
+              </div>
+            )}
             <div
               style={{
                 overflowX: 'auto',
@@ -333,7 +376,6 @@ export default function SearchDetailPage() {
                               <div style={{ padding: '0.75rem 1rem' }}>
                                 <RowDetail
                                   row={row.original}
-                                  idColumn={meta.data?.id_column ?? 'primary_report_identifier'}
                                   highlightTerms={[
                                     ...(meta.data?.match_terms ?? []),
                                     ...(appliedFilters.service_name
@@ -377,19 +419,19 @@ export default function SearchDetailPage() {
             >
               <button
                 type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
                 style={paginationBtn}
               >
                 Prev
               </button>
               <span style={{ whiteSpace: 'nowrap' }}>
-                {page} / {lastPage}
+                {pageIndex + 1} / {lastPage}
               </span>
               <button
                 type="button"
-                onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
-                disabled={page >= lastPage}
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
                 style={paginationBtn}
               >
                 Next
@@ -400,11 +442,8 @@ export default function SearchDetailPage() {
                 Per page:
               </span>
               <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
+                value={pagination.pageSize}
+                onChange={(e) => table.setPageSize(Number(e.target.value))}
                 style={{ fontSize: '0.85rem' }}
               >
                 <option value={50}>50</option>
@@ -519,19 +558,26 @@ export default function SearchDetailPage() {
                   Explain Search
                 </button>
               )}
-              <a
-                href={csvUrl(searchId, {
-                  sort: sortParam,
-                  filters: appliedFilters,
-                  columns: table.getVisibleLeafColumns().map((c) => c.id),
-                })}
-                style={{
-                  ...paginationBtn,
-                  textDecoration: 'none',
+              <button
+                type="button"
+                onClick={() => {
+                  // Always include the unique id so exported rows stay identifiable
+                  // even if the user hid the id/accession columns.
+                  const cols = table.getVisibleLeafColumns().map((c) => c.id);
+                  if (!cols.includes('primary_report_identifier')) {
+                    cols.unshift('primary_report_identifier');
+                  }
+                  downloadCsv(
+                    `${searchId}.csv`,
+                    cols,
+                    table.getPrePaginationRowModel().rows.map((r) => r.original),
+                  );
                 }}
+                style={paginationBtn}
+                title="Download the current filtered and sorted rows as CSV"
               >
                 Download CSV
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -571,11 +617,9 @@ export default function SearchDetailPage() {
         <FiltersModal
           initial={appliedFilters}
           availableColumns={available}
-          modalityOptions={modalitiesQ.data?.modalities}
-          modalitiesError={modalitiesQ.isError}
+          modalityOptions={modalityOptions}
           onApply={(next) => {
             setAppliedFilters(next);
-            setPage(1);
             setFiltersModalOpen(false);
           }}
           onRefineInChat={(next) => {
@@ -583,7 +627,6 @@ export default function SearchDetailPage() {
               title: 'Filter in Chat?',
               onConfirm: () => {
                 setAppliedFilters(next);
-                setPage(1);
                 setFiltersModalOpen(false);
               },
             });

@@ -62,8 +62,6 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 export interface SearchMeta {
   id: string;
-  id_column: string;
-  count: number | null;
   sql: string;
   owner_sub: string;
   created_at: string;
@@ -87,22 +85,14 @@ export function getConfig(): Promise<AppConfig> {
 
 export interface RowsResponse {
   id: string;
-  page: number;
-  limit: number;
-  total: number;
   columns: string[];
   rows: Array<Record<string, unknown>>;
+  total: number;
+  truncated: boolean;
 }
 
 export function getSearch(searchId: string): Promise<SearchMeta> {
   return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
-}
-
-export interface RowsParams {
-  page: number;
-  limit: number;
-  sort?: { col: string; dir: 'asc' | 'desc' } | null;
-  filters?: FilterState;
 }
 
 export interface FilterState {
@@ -112,6 +102,7 @@ export interface FilterState {
   modality?: string[];
   service_name?: string;
   epic_mrn?: string;
+  patient_mpi?: string;
   accession_number?: string;
   sending_facility?: string;
 }
@@ -124,6 +115,7 @@ export function activeFilterCount(f: FilterState): number {
   if (f.modality && f.modality.length > 0) n++;
   if (f.service_name && f.service_name.length > 0) n++;
   if (f.epic_mrn && f.epic_mrn.length > 0) n++;
+  if (f.patient_mpi && f.patient_mpi.length > 0) n++;
   if (f.accession_number && f.accession_number.length > 0) n++;
   if (f.sending_facility && f.sending_facility.length > 0) n++;
   return n;
@@ -183,63 +175,89 @@ export async function getReport(reportId: string, idColumn: string): Promise<Rep
   return row as unknown as ReportDetail;
 }
 
-export interface SearchModalitiesResponse {
-  search_id: string;
-  modalities: string[];
+// The whole cohort in one request (lean columns, capped server-side); the SPA
+// sorts/filters/paginates it client-side. Report text loads per-row on expand.
+export function getSearchRows(searchId: string): Promise<RowsResponse> {
+  return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows`);
 }
 
-export function getSearchModalities(searchId: string): Promise<SearchModalitiesResponse> {
-  return api<SearchModalitiesResponse>(`/api/searches/${encodeURIComponent(searchId)}/modalities`);
+// Filters the in-memory cohort: text = case-insensitive substring, multi =
+// membership, range = inclusive (message_dt compared on its YYYY-MM-DD prefix).
+export function filterRows(
+  rows: Array<Record<string, unknown>>,
+  f: FilterState,
+): Array<Record<string, unknown>> {
+  const svc = f.service_name?.trim().toLowerCase() || null;
+  const mrn = f.epic_mrn?.trim().toLowerCase() || null;
+  const pmpi = f.patient_mpi?.trim().toLowerCase() || null;
+  const acc = f.accession_number?.trim().toLowerCase() || null;
+  const fac = f.sending_facility?.trim().toLowerCase() || null;
+  const sexSet = f.sex && f.sex.length ? new Set(f.sex) : null;
+  const modSet = f.modality && f.modality.length ? new Set(f.modality) : null;
+  const ageMin = f.patient_age?.min ? Number(f.patient_age.min) : null;
+  const ageMax = f.patient_age?.max ? Number(f.patient_age.max) : null;
+  const dtMin = f.message_dt?.min || null;
+  const dtMax = f.message_dt?.max || null;
+  const has = (v: unknown, q: string) =>
+    String(v ?? '')
+      .toLowerCase()
+      .includes(q);
+  return rows.filter((r) => {
+    if (svc && !has(r.service_name, svc)) return false;
+    if (mrn && !has(r.epic_mrn, mrn)) return false;
+    if (pmpi && !has(r.patient_mpi, pmpi)) return false;
+    if (acc && !has(r.accession_number, acc)) return false;
+    if (fac && !has(r.sending_facility, fac)) return false;
+    if (sexSet && !sexSet.has(String(r.sex))) return false;
+    if (modSet && !modSet.has(String(r.modality))) return false;
+    if (ageMin !== null || ageMax !== null) {
+      const raw = r.patient_age;
+      if (raw == null || raw === '') return false;
+      const a = Number(raw);
+      if (!Number.isFinite(a)) return false;
+      if (ageMin !== null && a < ageMin) return false;
+      if (ageMax !== null && a > ageMax) return false;
+    }
+    if (dtMin || dtMax) {
+      const raw = r.message_dt;
+      if (raw == null || raw === '') return false; // no date can't match a range
+      const d = String(raw).slice(0, 10);
+      if (dtMin && d < dtMin) return false;
+      if (dtMax && d > dtMax) return false;
+    }
+    return true;
+  });
 }
 
-// Serializes the sort + filter view state shared by the /rows and /csv
-// endpoints into query params. Callers add their own page/limit/columns.
-export function buildViewQuery(view: {
-  sort?: { col: string; dir: 'asc' | 'desc' } | null;
-  filters?: FilterState;
-}): URLSearchParams {
-  const qs = new URLSearchParams();
-  if (view.sort) {
-    qs.set('sort', `${view.sort.col}:${view.sort.dir}`);
-  }
-  const f = view.filters;
-  if (f) {
-    if (f.patient_age?.min) qs.set('filter.patient_age.min', f.patient_age.min);
-    if (f.patient_age?.max) qs.set('filter.patient_age.max', f.patient_age.max);
-    if (f.message_dt?.min) qs.set('filter.message_dt.min', f.message_dt.min);
-    if (f.message_dt?.max) qs.set('filter.message_dt.max', f.message_dt.max);
-    for (const v of f.sex ?? []) qs.append('filter.sex', v);
-    for (const v of f.modality ?? []) qs.append('filter.modality', v);
-    if (f.service_name) qs.set('filter.service_name', f.service_name);
-    if (f.epic_mrn) qs.set('filter.epic_mrn', f.epic_mrn);
-    if (f.accession_number) qs.set('filter.accession_number', f.accession_number);
-    if (f.sending_facility) qs.set('filter.sending_facility', f.sending_facility);
-  }
-  return qs;
+// CSV cell with a spreadsheet formula-injection guard (mirrors the server
+// export): wrap in quotes, escape embedded quotes, and prefix a leading
+// =/+/-/@ or control char with a single quote so it isn't evaluated.
+function csvCell(v: unknown): string {
+  let s = v == null ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
 }
 
-export function getSearchRows(searchId: string, params: RowsParams): Promise<RowsResponse> {
-  const qs = buildViewQuery({ sort: params.sort, filters: params.filters });
-  qs.set('page', String(params.page));
-  qs.set('limit', String(params.limit));
-  return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows?${qs.toString()}`);
+export function rowsToCsv(columns: string[], rows: Array<Record<string, unknown>>): string {
+  const header = columns.map(csvCell).join(',');
+  const body = rows.map((r) => columns.map((c) => csvCell(r[c])).join(',')).join('\r\n');
+  return body ? `${header}\r\n${body}` : header;
 }
 
-// Download URL for the CSV export. Mirrors the current view: same sort/filters
-// as the table, and `columns` restricts the export to the visible columns
-// (primary_report_identifier is always appended server-side).
-export function csvUrl(
-  searchId: string,
-  view: {
-    sort?: { col: string; dir: 'asc' | 'desc' } | null;
-    filters?: FilterState;
-    columns?: string[];
-  },
-): string {
-  const qs = buildViewQuery({ sort: view.sort, filters: view.filters });
-  if (view.columns && view.columns.length > 0) {
-    qs.set('columns', view.columns.join(','));
-  }
-  const suffix = qs.toString();
-  return `/api/searches/${encodeURIComponent(searchId)}/csv${suffix ? `?${suffix}` : ''}`;
+// Builds and downloads the CSV entirely client-side from the in-memory rows -
+// no server round-trip. Caller passes the current filtered+sorted set.
+export function downloadCsv(
+  filename: string,
+  columns: string[],
+  rows: Array<Record<string, unknown>>,
+): void {
+  const blob = new Blob([rowsToCsv(columns, rows)], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

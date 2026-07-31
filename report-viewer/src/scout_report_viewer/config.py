@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     # Rendered into GET /api/config; empty disables cross-frame messaging.
     chat_origin: str = ""
 
+    # Max rows returned by the full-cohort fetch (GET /rows). The SPA holds
+    # these in memory and does sort/filter/paginate client-side. A larger cohort
+    # is truncated and the SPA shows a "showing first N" banner.
+    max_cohort_rows: int = 50000
+
     @model_validator(mode="after")
     def _issuer_required_with_jwks(self) -> "Settings":
         if self.oidc_jwks_url and not self.oidc_issuer:
