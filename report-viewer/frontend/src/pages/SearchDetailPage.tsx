@@ -107,6 +107,19 @@ export default function SearchDetailPage() {
     setExpanded({});
   }, [rowsQ.data]);
 
+  // Reveal the hidden patient_mpi column for legacy cohorts whose only
+  // identifier is the mpi (rows with an mpi but no epic_mrn).
+  const autoMpiSearchRef = useRef<string | null>(null);
+  useEffect(() => {
+    const rows = rowsQ.data?.rows;
+    if (!rows || autoMpiSearchRef.current === searchId) return;
+    autoMpiSearchRef.current = searchId;
+    const blank = (v: unknown) => v == null || v === '';
+    if (rows.some((r) => blank(r.epic_mrn) && !blank(r.patient_mpi))) {
+      setColumnVisibility((v) => ({ ...v, patient_mpi: true }));
+    }
+  }, [rowsQ.data, searchId]);
+
   useEffect(() => {
     if (!colPickerOpen) return;
     const onEvent = (e: MouseEvent | KeyboardEvent) => {

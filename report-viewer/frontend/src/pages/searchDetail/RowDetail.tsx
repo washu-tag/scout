@@ -116,6 +116,9 @@ export function RowDetail(props: {
           {props.row.resolved_epic_mrn ? (
             <CardField label="Resolved MRN" value={fmt(props.row.resolved_epic_mrn)} mono />
           ) : null}
+          {props.row.patient_mpi ? (
+            <CardField label="Patient MPI" value={fmt(props.row.patient_mpi)} mono />
+          ) : null}
           {props.row.resolved_mpi ? (
             <CardField label="Resolved MPI" value={fmt(props.row.resolved_mpi)} mono />
           ) : null}
