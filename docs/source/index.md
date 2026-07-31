@@ -38,34 +38,19 @@ Selecting **Notebooks** from the Launchpad launches JupyterHub with notebooks th
 
 ![Scout Quickstart Notebook](images/ScoutQuickstartNotebook.png)
 
-## Next Steps
+## Documentation
 
-* **[Data Schema](dataschema.md)**: Understand the structure of report data in the data lake and the mapping of HL7 fields to table columns
+Scout's documentation is organized by audience:
 
-* **[Services](services.md)**: Learn about the services that make up Scout, including user-facing tools (Analytics, Notebooks, Chat) and backend infrastructure (Temporal, Delta Lake, MinIO, monitoring)
-
-* **[Chat Guide](chat.md)**: Explore the AI-powered chat interface for natural language queries (if enabled in your deployment)
-
-* **[Authentication](authentication.md)**: Learn about Scout's single sign-on authentication and user approval process
-
-* **[Data Authorization](data_authorization.md)**: Per-user row filtering and column masking — how Scout decides what data each user can see, and how administrators configure it
-
-* **[Report Ingestion](ingest.md)**: Understand how HL7 reports are ingested and processed into the data lake
-
-* **[Tips & Tricks](tips.md)**: Discover helpful hints for using Scout services effectively
-
-* **[Technical Documentation](technical/index.md)**: Deep dive into technical aspects of the Scout system
+* **[Using Scout](user/index.md)** — explore and analyze data: logging in, Analytics, Chat, Notebooks, and understanding what data you can see.
+* **[Operating Scout](operate/index.md)** — deploy and run Scout: the Ansible inventory, air-gapped installation, report ingestion, and per-user data-authorization configuration.
+* **[Reference](reference/index.md)** — the report data schema, backend architecture, and supporting database schemas.
 
 * **Report Issues**: Submit issues on [GitHub](https://github.com/washu-tag/scout/issues)
 
 ```{toctree}
 :hidden:
-services
-dataschema
-chat
-ingest
-tips
-authentication
-data_authorization
-technical/index
+user/index
+operate/index
+reference/index
 ```
