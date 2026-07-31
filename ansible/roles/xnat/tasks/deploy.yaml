@@ -73,11 +73,26 @@
       future enhancement — see ADR 0027.)
     quiet: true
 
-- name: Configure Maven proxy trust (settings.xml + staging CA)
+- name: Configure Maven proxy trust (repository URL + staging CA)
   ansible.builtin.include_tasks: proxy_trust.yaml
 
 - name: Create Kubernetes Secrets
   ansible.builtin.include_tasks: create_secrets.yaml
+
+# Stage a locally-built WAR / plugin jars into MinIO; the chart's developWar
+# init containers (values.yaml.j2) pull them at pod start. Dev/test only —
+# no-op unless xnat_dev_war / xnat_dev_plugins is set.
+- name: Stage dev WAR / plugins for side-loading
+  ansible.builtin.include_tasks: dev_stage.yaml
+  when: (xnat_dev_war | length > 0) or (xnat_dev_plugins | length > 0)
+
+# Deploy a standalone ActiveMQ broker so multi-replica XNAT shares one message
+# queue (spring.activemq.* is wired in values.yaml.j2). Dev/test only — no-op
+# unless xnat_dev_activemq is true. Runs before the chart so the broker is up
+# when XNAT boots.
+- name: Deploy the dev ActiveMQ broker
+  ansible.builtin.include_tasks: dev_activemq.yaml
+  when: xnat_dev_activemq | bool
 
 # no_log: the rendered values contain xnat_postgres_password — a parse failure
 # (or -vvv) would otherwise print the whole document including the secret.
@@ -102,3 +117,30 @@
     helm_chart_create_namespace: false
     helm_chart_values: '{{ xnat_helm_chart_values }}'
     helm_chart_timeout: '{{ xnat_helm_timeout }}'
+
+# XNAT is session-based and Traefik load-balances across pod endpoints, so with
+# >1 replica the login/openid handshake bounces between pods (no shared session
+# store; the chart's Service sessionAffinity keys on Traefik's IP, not the
+# browser) -> XNAT 401 -> Scout's oauth2-proxy-error edge rewrites it to login ->
+# launchpad. A Traefik sticky cookie pins each browser to one replica. Patched
+# on post-deploy: the chart has no Service-annotations hook, and this is
+# Traefik-specific (Scout's edge), not the ingress-agnostic chart's concern.
+# Harmless at replicaCount 1; required for >1 (which also needs RWX archive/build).
+- name: Enable Traefik sticky sessions on the XNAT Service
+  kubernetes.core.k8s:
+    state: patched
+    api_version: v1
+    kind: Service
+    namespace: '{{ xnat_namespace }}'
+    name: '{{ xnat_helm_release_name }}'
+    definition:
+      metadata:
+        annotations:
+          traefik.ingress.kubernetes.io/service.sticky.cookie: 'true'
+          traefik.ingress.kubernetes.io/service.sticky.cookie.name: xnat_lb
+
+# Point container-service at the Kubernetes backend (not the local Docker
+# socket). Post-deploy + idempotent; no-op unless CS is enabled.
+- name: Configure the container-service Kubernetes backend
+  ansible.builtin.include_tasks: configure_cs.yaml
+  when: xnat_container_service | bool

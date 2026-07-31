@@ -1,6 +1,6 @@
 ---
 # Main entry point for the xnat role.
-# Deploys XNAT (xnatworks/xnat-web) + plugins behind oauth2-proxy, with the
+# Deploys XNAT (ghcr.io/nrgxnat/xnat) + plugins behind oauth2-proxy, with the
 # off-the-shelf xnat-openid-auth-plugin for Keycloak SSO.
 
 - name: Include deployment tasks

@@ -47,7 +47,6 @@ jobs:
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
       report-viewer: ${{ steps.filter.outputs.report-viewer }}
-      xnat-plugin-installer: ${{ steps.filter.outputs.xnat-plugin-installer }}
       hl7-transformer-chart: ${{ steps.filter.outputs.hl7-transformer-chart }}
       dcm4chee-chart: ${{ steps.filter.outputs.dcm4chee-chart }}
       hive-metastore-chart: ${{ steps.filter.outputs.hive-metastore-chart }}
@@ -89,8 +88,6 @@ jobs:
               - 'keycloak/**'
             report-viewer:
               - 'report-viewer/**'
-            xnat-plugin-installer:
-              - 'docker/xnat-plugin-installer/**'
             hl7-transformer-chart:
               - 'helm/extractor/hl7-transformer/**'
             dcm4chee-chart:
@@ -171,9 +168,6 @@ jobs:
             allow-failure: true
           - image-name: keycloak
             subproject: keycloak
-          - image-name: xnat-plugin-installer
-            subproject: docker/xnat-plugin-installer
-            allow-failure: true
           - image-name: report-viewer
             subproject: report-viewer
     steps:
@@ -923,12 +917,6 @@ jobs:
         with:
           image-name: report-viewer
           version: ${{ needs.changes.outputs.version }}
-      - name: 'Push Image - xnat-plugin-installer'
-        if: needs.changes.outputs.xnat-plugin-installer == 'true'
-        uses: ./.github/actions/docker-push
-        with:
-          image-name: xnat-plugin-installer
-          version: ${{ needs.changes.outputs.version }}
   # Publish changed Helm charts as versioned OCI artifacts (ADR 0030/0031 phase 0),
   # gated like the image `publish` job. Vertical slice: hl7-transformer only.
   publish-charts:
@@ -1078,8 +1066,3 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: report-viewer
-      - name: 'Push Image - xnat-plugin-installer'
-        if: needs.changes.outputs.xnat-plugin-installer == 'true'
-        uses: ./.github/actions/docker-push
-        with:
-          image-name: xnat-plugin-installer

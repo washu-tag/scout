@@ -1,0 +1,6 @@
+{# container-service DockerServer, Kubernetes backend. POSTed to
+   /xapi/docker/server by tasks/configure_cs.yaml. Split archive/build PVCs match
+   the chart's volume naming ({release}-archive / {release}-build).
+   pull-images-on-xnat-init=false disables the startup image-pull task that
+   otherwise fails against the (absent) local Docker socket. #}
+{"name":"local","backend":"kubernetes","host":"","cert-path":"","path-translation-xnat-prefix":"","path-translation-docker-prefix":"","pull-images-on-xnat-init":false,"container-user":"","auto-cleanup":false,"swarm-constraints":{{ xnat_cs_swarm_constraints | to_json }},"kubernetes-tolerations":{{ xnat_cs_kubernetes_tolerations | to_json }},"max-concurrent-finalizing-jobs":"","status-email-enabled":false,"gpu-vendor":"nvidia","pvc_type":"split","archive-pvc-name":"{{ xnat_helm_release_name }}-archive","build-pvc-name":"{{ xnat_helm_release_name }}-build","archive-path-translation":"","build-path-translation":"","combined-pvc-name":"","combined-path-translation":""}

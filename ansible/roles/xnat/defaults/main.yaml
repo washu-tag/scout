@@ -11,16 +11,25 @@ xnat_chart_oci_ref: oci://ghcr.io/nrgxnat/charts/xnat
 xnat_helm_release_name: xnat
 
 # --- XNAT image -----------------------------------------------------------
+# GHCR only — Scout does not pull the legacy Docker Hub `xnatworks/xnat-web`
+# images (root-USER; see ADR 0026). `ghcr.io/nrgxnat/xnat` is the monorepo
+# publishing lane that supersedes `ghcr.io/nrgxnat/xnat-web`; its images run as
+# USER 1000:1000 and own their baked tree group-writable, so they need no
+# securityContext relaxation and the chart's hardened default applies as-is.
 # xnat_image_tag is pinned in group_vars/all/versions.yaml (Renovate-monitored,
-# per ADR 0015) and selects the image via image.tag override; the chart's
-# appVersion (1.9.2.1) is unchanged.
-xnat_image_repository: xnatworks/xnat-web
+# per ADR 0015) and overrides image.tag: the chart's appVersion (1.9.3.7) is a
+# 1.9 image, and Scout's plugin set is built against 1.10.
+xnat_image_repository: ghcr.io/nrgxnat/xnat
 
-# --- Plugin installer image (built by Scout CI, pulled through Harbor) -----
-xnat_plugin_installer_image_repository: ghcr.io/washu-tag/xnat-plugin-installer
-xnat_plugin_installer_image_tag: latest
-xnat_plugin_installer_image: '{{ xnat_plugin_installer_image_repository }}:{{ xnat_plugin_installer_image_tag }}'
-xnat_plugin_installer_image_pull_policy: IfNotPresent
+# --- Replicas --------------------------------------------------------------
+# StatefulSet replica count. Default 1 (single-node posture). >1 is for
+# multi-node testing: the chart's home-init designates pod-0 as the primary
+# node (only it runs singleton scheduled tasks), the role adds a Traefik sticky
+# cookie for login affinity, and you'll want xnat_dev_activemq: true so replicas
+# share one message queue. A genuine multi-node deployment also needs RWX
+# archive/build storage (see below) — on RWO local-path all replicas pin to one
+# node.
+xnat_replica_count: 1
 
 # --- Storage --------------------------------------------------------------
 # Empty storage class = cluster default (dynamic provisioning per ADR 0004).
@@ -34,7 +43,8 @@ xnat_volume_sizes:
   prearchive: 5Gi
 
 # --- First-boot site config (prefs-init.ini) ------------------------------
-xnat_site_id: scout-xnat
+# siteId prefixes XNAT-generated IDs, so it must be alphanumeric (no hyphens).
+xnat_site_id: XNAT
 # Password set on the built-in `admin` account at first boot (via the [system]
 # defaultAdminPassword seed), replacing XNAT's default admin:admin. REQUIRED when
 # enable_xnat is true — set in inventory (vault-encrypted).
@@ -76,3 +86,58 @@ xnat_extra_config: {}
 # scout_common/defaults (shared with the staging Nexus role, which derives its
 # Maven proxy members from them). Operators add plugins via `xnat_plugins` in
 # all.vars. See scout_common/defaults/main.yaml for the per-plugin shape.
+
+# --- Dev: side-load an unreleased WAR / plugins (dev/test only) ------------
+# Local paths on the Ansible control node. When either is set, `make install-xnat`
+# stages the artifact(s) into MinIO (a throwaway pod: a busybox sidecar receives
+# them via `kubectl cp`, the mc container uploads them) and the chart runs
+# developWar init containers that re-pull them into the pod on every start — so a
+# `kubectl rollout restart` picks up a re-staged build with no redeploy. Requires
+# in-cluster MinIO (on-prem clusters, not aws_deployment) and a base image whose
+# JDK matches the WAR (override xnat_image_tag via -e; it's pinned above
+# inventory). See docs/internal/xnat-develop-testing.md.
+xnat_dev_war: '' # path to a local ROOT.war (empty = feature off)
+xnat_dev_plugins: [] # local plugin .jar paths (replace vs add: set xnat_plugins accordingly)
+xnat_dev_bucket: xnat-dev # MinIO bucket holding the staged dev artifacts
+# The chart pulls the staged artifacts with the AWS CLI (S3-compatible, pointed at
+# MinIO via endpointUrl), replacing the mc client the role used to run in its own
+# init containers. The chart's own default is public.ecr.aws/aws-cli/aws-cli, but
+# that registry isn't in Scout's air-gapped Harbor proxy set (harbor_proxies) —
+# docker.io is — so default to Docker Hub's mirror of the same tool, and on-prem
+# air-gapped clusters work without a per-inventory override.
+xnat_dev_awscli_image: amazon/aws-cli:latest
+
+# --- Container service (optional; requires the container-service plugin) ----
+# When true, enables XNAT's container-service on a Kubernetes backend:
+#   * chart containerService=true provisions the CS Roles/RoleBindings and
+#     mounts the SA token, so CS can launch containers as k8s Jobs; and
+#   * a post-deploy step (tasks/configure_cs.yaml) idempotently registers a
+#     DockerServer with backend=kubernetes, so CS uses Jobs instead of a local
+#     Docker socket (/var/run/docker.sock, which does not exist in the pod).
+# NOTE (storage): CS Job pods co-mount the archive/build PVCs with XNAT. With RWO
+# local-path this still works — the PVs' node affinity auto-schedules the Jobs onto
+# XNAT's node, and RWO permits multiple pods on one node — at the cost of confining
+# all CS work to that single node (so GPU CS jobs can't reach a separate GPU node).
+# Use RWX archive/build (NFS/beegfs) only if CS Jobs must spread across nodes or run
+# on a node other than XNAT's.
+xnat_container_service: false
+# CS Job scheduling (empty = any node). Set to pin CS workloads to a
+# labelled/tainted nodepool (e.g. workload.type==cs), matching your cluster.
+xnat_cs_swarm_constraints: []
+xnat_cs_kubernetes_tolerations: []
+
+# --- Dev: external ActiveMQ broker (dev/test only) ------------------------
+# XNAT runs an embedded (per-JVM) broker by default, so multi-replica pods each
+# hold their OWN message queue and don't coordinate cluster events. Set true to
+# deploy a standalone ActiveMQ Artemis broker (tasks/dev_activemq.yaml) and point
+# every replica at it via spring.activemq.* (values.yaml.j2 -> xnat-conf.properties),
+# so cluster events fan out over one shared queue — useful for multi-node
+# race/replay testing. Not for prod: a single ephemeral broker, no HA or
+# persistence (and true multi-node also needs RWX archive/build storage, per the
+# container-service note above).
+xnat_dev_activemq: false
+xnat_dev_activemq_image: apache/activemq-artemis:latest
+xnat_dev_activemq_user: xnat
+# Broker credential — a dev throwaway on synthetic clusters (not PHI); override
+# in inventory if you like.
+xnat_dev_activemq_password: xnatactivemq

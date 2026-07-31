@@ -996,8 +996,12 @@ xnat_namespace: xnat
 # XNAT Helm chart version to deploy from GHCR (default: 2.0.0)
 xnat_chart_version: 2.0.0
 
-# xnatworks/xnat-web image tag (default: 1.10.0)
-xnat_image_tag: '1.10.0'
+# ghcr.io/nrgxnat/xnat image tag (default: 1.10.1-SNAPSHOT)
+xnat_image_tag: '1.10.1-SNAPSHOT'
+
+# XNAT image repository. GHCR only; the Docker Hub xnatworks/xnat-web images
+# are no longer used (default: ghcr.io/nrgxnat/xnat)
+xnat_image_repository: ghcr.io/nrgxnat/xnat
 
 # Outbound mail relay (defaults to in-cluster MailHog; point at your org relay for prod)
 xnat_smtp_host: mailhog-service.mailhog

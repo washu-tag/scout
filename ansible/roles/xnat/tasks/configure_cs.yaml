@@ -1,0 +1,54 @@
+---
+# Idempotently register a container-service DockerServer with the Kubernetes
+# backend, so CS launches k8s Jobs instead of using a local Docker socket
+# (/var/run/docker.sock, absent in-pod). Included after the Helm deploy when
+# xnat_container_service is true — the ansible analogue of the legacy
+# roles/configure_xnat / IaC configure-xnat Job. Runs against XNAT's REST API
+# from inside the pod: idempotent via a GET check, the JSON is base64'd in to
+# avoid shell quoting, and the admin creds are no_log'd.
+
+- name: Wait for the XNAT REST API to answer
+  kubernetes.core.k8s_exec:
+    namespace: '{{ xnat_namespace }}'
+    pod: '{{ xnat_helm_release_name }}-0'
+    container: xnat
+    command: >-
+      sh -c "curl -s -o /dev/null -w '%{http_code}' --max-time 10
+      http://localhost:8080/xapi/siteConfig/buildInfo"
+  register: _xnat_cs_api
+  changed_when: false
+  retries: 45
+  delay: 20
+  until: (_xnat_cs_api.stdout | default('')) == '200'
+
+- name: Read the current container-service backend
+  no_log: true
+  kubernetes.core.k8s_exec:
+    namespace: '{{ xnat_namespace }}'
+    pod: '{{ xnat_helm_release_name }}-0'
+    container: xnat
+    command: >-
+      sh -c "curl -s -u 'admin:{{ xnat_admin_password }}'
+      http://localhost:8080/xapi/docker/server"
+  register: _xnat_cs_current
+  changed_when: false
+
+# Skip when a kubernetes-backend server is already registered (the only place
+# "kubernetes" appears in the DockerServer response), making re-runs a no-op.
+- name: Register the Kubernetes-backend DockerServer
+  when: "'kubernetes' not in (_xnat_cs_current.stdout | default(''))"
+  no_log: true
+  vars:
+    _cs_b64: "{{ lookup('template', 'cs-config.json.j2') | b64encode }}"
+  kubernetes.core.k8s_exec:
+    namespace: '{{ xnat_namespace }}'
+    pod: '{{ xnat_helm_release_name }}-0'
+    container: xnat
+    command: >-
+      sh -c "echo {{ _cs_b64 }} | base64 -d > /tmp/cs-config.json &&
+      curl -s -o /dev/null -w '%{http_code}' -u 'admin:{{ xnat_admin_password }}'
+      -X POST -H 'content-type: application/json' --data @/tmp/cs-config.json
+      http://localhost:8080/xapi/docker/server"
+  register: _xnat_cs_post
+  changed_when: (_xnat_cs_post.stdout | default('')) in ['200', '201']
+  failed_when: (_xnat_cs_post.stdout | default('')) not in ['200', '201']

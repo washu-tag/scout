@@ -169,15 +169,22 @@ orthanc_image: jodogne/orthanc-plugins
 orthanc_version: latest
 
 # Medical Imaging - XNAT (optional; enable_xnat)
-# renovate: datasource=docker depName=xnatworks/xnat-web
-xnat_image_tag: 1.10.0
+# GHCR monorepo lane (ghcr.io/nrgxnat/xnat, set in the xnat role defaults); the
+# Docker Hub xnatworks/xnat-web images are no longer pulled.
+# TEMPORARY PIN: 1.10.1-SNAPSHOT is the only 1.10 tag published to GHCR. The
+# chart's own appVersion (1.9.3.7) is a 1.9 image, and Scout's plugins are built
+# against 1.10 (iq-plugin-...-xnat1.10, openid 1.6.0), so 1.9 is not an option.
+# Repin to a 1.10 release tag once one is published — Renovate cannot bump a
+# -SNAPSHOT, so this pin is effectively unmonitored until then.
+# renovate: datasource=docker depName=ghcr.io/nrgxnat/xnat
+xnat_image_tag: 1.10.1-SNAPSHOT
 # The openid SSO plugin, published only to the NrgXnat Artifactory; consumed by
 # the coordinates entry in ansible/roles/xnat/defaults/main.yaml.
 # renovate: datasource=maven registryUrl=https://nrgxnat.jfrog.io/nrgxnat/libs-release depName=au.edu.qcif.xnat.openid:openid-auth-plugin
 xnat_openid_plugin_version: 1.5.0
-# XNAT Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
+# XNAT Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/charts/xnat
-xnat_chart_version: 2.0.0
+xnat_chart_version: 3.0.0
 
 # data-generator Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
 # renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator
