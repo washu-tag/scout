@@ -137,7 +137,14 @@ ADR 0012). Its Traefik ingress applies, in order:
 - `oauth2-proxy-error` and `oauth2-proxy-auth` middlewares — the oauth2-proxy
   `ForwardAuth` approval gate that requires the user to be an approved
   `scout-user` before any request reaches XNAT; and
-- the Scout-wide `security-headers` middleware.
+- the `security-headers-sameorigin` middleware — a cluster-level variant of the
+  Scout-wide `security-headers` middleware (ADR 0012) that relaxes only the
+  framing directives (`frame-ancestors 'self'` / `X-Frame-Options: SAMEORIGIN`
+  instead of `'none'`/`DENY`). XNAT's own UI and plugin dashboards (e.g. iframe
+  panels) frame same-origin pages, which the global headers would block; and
+  because stacked CSP middlewares only *tighten* (browsers enforce the
+  intersection), an additive middleware can't relax framing — the ingress has
+  to reference a replacement variant instead of the global one.
 
 Behind that gate, the `xnat-openid-auth-plugin` runs its own OIDC
 authorization-code flow against a confidential `xnat` Keycloak client (client
