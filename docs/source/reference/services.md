@@ -2,7 +2,7 @@
 
 Scout consists of several services that work together to process medical imaging data into a data lake and provide user interfaces for accessing and analyzing the data.
 
-![Scout Framework](images/ScoutFramework.png)
+![Scout Framework](../images/ScoutFramework.png)
 
 **Current version:** Scout currently ingests HL7 radiology reports. Future versions will incorporate DICOM metadata, pathology reports, and extracted features in concert with XNAT.
 
@@ -10,11 +10,11 @@ Scout consists of several services that work together to process medical imaging
 
 Scout is a modern, distributed data platform deployed on Kubernetes.
 
-![Scout Architecture](images/ScoutArchitecture.png)
+![Scout Architecture](../images/ScoutArchitecture.png)
 
 ## User Services
 
-Scout provides three primary user-facing services for data exploration and analysis. These are accessible from the Scout Launchpad after [authentication](authentication.md).
+Scout provides three primary user-facing services for data exploration and analysis. These are accessible from the Scout Launchpad after [authentication](../user/authentication.md).
 
 (analytics)=
 ### Analytics
@@ -49,7 +49,7 @@ The Chat service is configured with:
 - "What are the most common diagnoses in chest X-rays?"
 - "Show me the age distribution of patients with MRI reports"
 
-**Note:** The Chat service is optional and may not be enabled in all Scout deployments. For detailed information about using the Chat interface, see the [Chat documentation](chat.md).
+**Note:** The Chat service is optional and may not be enabled in all Scout deployments. For detailed information about using the Chat interface, see the [Chat documentation](../user/chat.md).
 
 (notebooks)=
 ### Notebooks
@@ -90,7 +90,7 @@ The following services support Scout's data processing, storage, and monitoring 
 
 **Access:** Administrators can monitor workflows and view execution details through the Temporal Web UI.
 
-**Learn more:** See [Report Ingestion](ingest.md) for details on launching and monitoring ingestion workflows.
+**Learn more:** See [Report Ingestion](../operate/ingest.md) for details on launching and monitoring ingestion workflows.
 
 (extractor_ref)=
 ### Extractor
@@ -148,7 +148,7 @@ The Lake service provides the data storage foundation for Scout using a medallio
 
 **Access:** Administrators can access Grafana through the Scout Launchpad Admin Tools section.
 
-**Learn more:** See [Tips & Tricks](tips.md) for guidance on using Grafana dashboards effectively.
+**Learn more:** See [Tips & Tricks](../user/tips.md) for guidance on using Grafana dashboards effectively.
 
 ### User Management
 
@@ -162,4 +162,4 @@ The Lake service provides the data storage foundation for Scout using a medallio
 
 **Access:** Administrators can manage users, roles, and authentication settings through the Keycloak admin console.
 
-**Learn more:** See [Authentication](authentication.md) for details on the user login and approval process.
+**Learn more:** See [Authentication](../user/authentication.md) for details on the user login and approval process.

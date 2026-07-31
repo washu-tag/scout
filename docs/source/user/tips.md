@@ -22,7 +22,7 @@ This page provides helpful tips for using Scout services effectively.
 ### Getting Better Results
 
 - **Be specific**: Include details like modality, date ranges, or specific fields in your questions
-- **Use Scout terminology**: Reference field names from the [data schema](dataschema.md) for more accurate queries
+- **Use Scout terminology**: Reference field names from the [data schema](../reference/dataschema.md) for more accurate queries
 - **Check the SQL**: Expand the "View Result from scout-db" section to verify the AI generated the correct query
 - **Iterate**: Ask follow-up questions to refine results
 
@@ -85,7 +85,7 @@ Use these for targeted text analysis instead of parsing `report_text`.
 
 Jupyter notebook servers automatically shut down after a configurable period of runtime (2 days by default). You'll see the specific timeout for your deployment displayed in a notification banner when you start your server:
 
-![Jupyter Server Timeout Notification](images/JupyterServerTimeoutNotification.png)
+![Jupyter Server Timeout Notification](../images/JupyterServerTimeoutNotification.png)
 
 Your notebook files and home directory (`/home/jovyan/`) persist, but in-memory variables are lost. To avoid potentially losing any important work, save notebooks frequently (Ctrl+S / Cmd+S) and save large DataFrames and intermediate results to disk.
 
@@ -185,6 +185,6 @@ This is especially useful for debugging issues that span multiple components.
 
 ### Getting Help
 
-- **Documentation**: Review the [data schema](dataschema.md), [services](services.md), and [ingestion](ingest.md) docs
+- **Documentation**: Review the [data schema](../reference/dataschema.md), [services](../reference/services.md), and [ingestion](../operate/ingest.md) docs
 - **Issue Tracking**: Report bugs or request features on [GitHub](https://github.com/washu-tag/scout/issues)
 - **Admin Tools**: Contact your Scout administrator for access to Monitor, Orchestrator, or User Management interfaces

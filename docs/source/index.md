@@ -10,7 +10,7 @@ The first release of Scout is focused on HL7 radiology reports. Future versions 
 
 ### Scout Launchpad
 
-After [authentication](authentication.md), your initial landing page is the Scout Launchpad. From here, you can access all Scout services, including Analytics, Notebooks, Chat (if enabled), and this documentation site.
+After [authentication](user/authentication.md), your initial landing page is the Scout Launchpad. From here, you can access all Scout services, including Analytics, Notebooks, Chat (if enabled), and this documentation site.
 
 ![Scout Launchpad](images/ScoutLaunchpad.png)
 
@@ -26,7 +26,7 @@ Selecting **Analytics** from the Launchpad takes you to Apache Superset, a power
 
 #### Scout Chat
 
-Selecting **Chat** from the Launchpad provides an AI-powered interface for natural language querying of radiology reports. Ask questions in plain English and receive data-driven answers powered by large language models with direct access to the Scout Delta Lake. Learn more in the [Chat documentation](chat.md).
+Selecting **Chat** from the Launchpad provides an AI-powered interface for natural language querying of radiology reports. Ask questions in plain English and receive data-driven answers powered by large language models with direct access to the Scout Delta Lake. Learn more in the [Chat documentation](user/chat.md).
 
 **Note:** The Chat service is optional and may not be available in all Scout deployments.
 

@@ -6,7 +6,7 @@ Scout Chat provides an AI-powered interface for natural language querying of the
 Chat is optional and may not be enabled in all deployments. If you don't see Chat on the Launchpad, contact your administrator.
 ```
 
-![Scout Launchpad](images/ScoutLaunchpadWithChat.png)
+![Scout Launchpad](../images/ScoutLaunchpadWithChat.png)
 
 **Current version:** Scout Chat queries HL7 radiology report data. Future versions will support DICOM metadata, pathology reports, and extracted features.
 
@@ -22,11 +22,11 @@ Scout Chat is powered by [Open WebUI](https://docs.openwebui.com/) with [Ollama]
 
 ## Getting Started
 
-1. Navigate to the [Scout Launchpad](index.md)
+1. Navigate to the [Scout Launchpad](../index.md)
 2. Click the **Chat** card
 3. Type your question in plain English
 
-![Scout Chat](images/ScoutChat.png)
+![Scout Chat](../images/ScoutChat.png)
 
 4. Press Enter to submit
 5. The AI queries the database and provides an answer
@@ -69,7 +69,7 @@ For cohort searches (`scout_find_reports`), click **Explain Search** in the resu
 
 For other tool calls, expand the tool-call block in the reply.
 
-![Scout Query](images/ScoutQuery.png)
+![Scout Query](../images/ScoutQuery.png)
 
 This is useful for:
 
@@ -111,7 +111,7 @@ The LLM re-emits fresh SQL as a **new** saved search. The original stays intact 
 
 ### Use Scout Terminology
 
-The AI understands the Scout [data schema](dataschema.md). Reference field names when relevant:
+The AI understands the Scout [data schema](../reference/dataschema.md). Reference field names when relevant:
 
 - **Modality**: CT, MRI, X-ray, US, NM, PET, etc.
 - **Report sections**: impression, findings, addendum, technician note
@@ -274,6 +274,6 @@ If you see tool errors, contact your administrator.
 
 ## Additional Resources
 
-- **[Data Schema](dataschema.md)**: Available fields and their meanings
-- **[Services Overview](services.md)**: Analytics, Notebooks, and other Scout services
+- **[Data Schema](../reference/dataschema.md)**: Available fields and their meanings
+- **[Services Overview](../reference/services.md)**: Analytics, Notebooks, and other Scout services
 - **[Tips & Tricks](tips.md)**: General Scout usage tips
