@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "build-lane version, e.g. 0.YYYYMMDD.<run>"
+        description: 'build-lane version, e.g. 0.YYYYMMDD.<run>'
         required: true
 
 permissions:
@@ -30,14 +30,21 @@ env:
 jobs:
   publish-haul:
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install hauler
-        run: curl -sfL https://get.hauler.dev | HAULER_VERSION="${HAULER_VERSION}" bash
         env:
-          HAULER_VERSION: "1.2.4" # TODO: pin to the adopted version
+          HAULER_VERSION: '1.2.4' # TODO: pin + verify a checksum
+        # Download the binary (not curl | bash) so a hijacked installer can't run
+        # arbitrary code with the job's registry credentials.
+        run: |
+          curl -fsSL -o /tmp/hauler.tar.gz \
+            "https://github.com/hauler-dev/hauler/releases/download/v${HAULER_VERSION}/hauler_${HAULER_VERSION}_linux_amd64.tar.gz"
+          tar -xzf /tmp/hauler.tar.gz -C /usr/local/bin hauler
 
       - name: Install cosign
         uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2 (TODO: reconfirm pin)
@@ -70,14 +77,16 @@ jobs:
       - name: Public key for sync-time verification
         # TODO (precondition a): source cosign.pub from a secret once Scout images
         # and charts are cosign-signed at publish. Until then, sync without --key.
-        run: printf '%s' "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
+        env:
+          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
+        run: printf '%s' "${COSIGN_PUBLIC_KEY}" > cosign.pub
 
       - name: Sync + bundle the haul
         run: |
           # --key verifies each artifact's signature as it is pulled (needs signed
           # upstream). Drop --key until precondition a holds.
           hauler store sync -f haul.yaml --key cosign.pub
-          hauler store save -f "scout-${{ inputs.version }}.tar.zst"
+          hauler store save -f "scout-${VERSION}.tar.zst"
 
       - name: Publish + sign the haul
         env:
@@ -85,6 +94,6 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
           # Push the bundle as the versioned platform record, then move :main last.
-          hauler store copy "${HAUL_REF}:${{ inputs.version }}"
-          cosign sign --key env://COSIGN_PRIVATE_KEY --yes "${HAUL_REF}:${{ inputs.version }}"
+          hauler store copy "${HAUL_REF}:${VERSION}"
+          cosign sign --key env://COSIGN_PRIVATE_KEY --yes "${HAUL_REF}:${VERSION}"
           # TODO: after verify, retag/point ${HAUL_REF}:main at this version (ordering guard).
