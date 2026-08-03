@@ -1,11 +1,7 @@
 FROM quay.io/jupyter/scipy-notebook:python-3.13.14
 
-# Platform packages + Jupyter extensions via mamba. Everything else
-# (torch, transformers, scikit-learn, etc.) is user-installed via the
-# package proxy. gitpython, jupyterlab, setuptools, and msgpack-python are
-# pinned above the scipy-notebook base to clear Trivy HIGH findings; drop each
-# pin once a newer base ships the fix (Trivy will re-flag if a pin is dropped
-# too early).
+# Platform packages + Jupyter extensions. gitpython/jupyterlab pinned above the
+# base to clear Trivy HIGH findings; drop when the base ships the fix.
 RUN mamba install -y -n base \
     trino-python-client \
     voila \
@@ -15,11 +11,13 @@ RUN mamba install -y -n base \
     nb_conda_kernels \
     'gitpython>=3.1.57' \
     'jupyterlab>=4.6.2' \
-    'setuptools>=78.1.1' \
-    'msgpack-python>=1.2.1' \
     && mamba clean -afy \
     && fix-permissions "${CONDA_DIR}" \
     && fix-permissions "/home/${NB_USER}"
+
+# pip-managed in the base, so mamba can't bump them. Pinned for Trivy HIGH
+# findings; drop when the base ships the fix.
+RUN pip install --no-cache-dir --upgrade 'setuptools>=78.1.1' 'msgpack>=1.2.1'
 
 # Scout SDK (scout.query, scout.connect, scout.current_user). Installed
 # system-wide so it's importable from every kernel without per-user setup.
