@@ -1,0 +1,90 @@
+# DRAFT (ADR 0033) - Hauler build-lane bundle + air-gap transport.
+#
+# NOT wired into the pipeline. `on: workflow_dispatch` means it never runs
+# automatically; it shows the intended shape for review. The final home is a JOB
+# in ci.yaml (so it shares run_number and `needs: [publish, publish-charts]` for
+# the fresh digests), not a standalone workflow.
+#
+# Blocked on, and marked TODO below:
+#   - ADR 0033 acceptance;
+#   - a keyed cosign signing key (precondition a; ADR 0031 Layer-0);
+#   - chart digest capture in publish-charts + enabling charts in components.txt;
+#   - the carry-tag vs predecessor-haul open sub-decision (see build_haul.py).
+name: publish-haul (DRAFT)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "build-lane version, e.g. 0.YYYYMMDD.<run>"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  HAUL_REF: oci://ghcr.io/washu-tag/manifests/scout
+
+jobs:
+  publish-haul:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install hauler
+        run: curl -sfL https://get.hauler.dev | HAULER_VERSION="${HAULER_VERSION}" bash
+        env:
+          HAULER_VERSION: "1.2.4" # TODO: pin to the adopted version
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2 (TODO: reconfirm pin)
+
+      - name: Login to GHCR
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # In the ci.yaml job this is `needs: publish` + a plain download-artifact of
+      # the image-digest-<name> artifacts docker-push already uploads (PR1). Here
+      # (standalone draft) it is illustrative.
+      - name: Download fresh image digests
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: image-digest-*
+          path: digests
+          merge-multiple: true
+
+      - name: Render the Hauler manifest
+        run: |
+          python3 tooling/manifest/build_haul.py \
+            --digests-dir digests \
+            --components tooling/manifest/components.txt \
+            --name scout > haul.yaml
+          echo "--- haul.yaml ---"; cat haul.yaml
+
+      - name: Public key for sync-time verification
+        # TODO (precondition a): source cosign.pub from a secret once Scout images
+        # and charts are cosign-signed at publish. Until then, sync without --key.
+        run: printf '%s' "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
+
+      - name: Sync + bundle the haul
+        run: |
+          # --key verifies each artifact's signature as it is pulled (needs signed
+          # upstream). Drop --key until precondition a holds.
+          hauler store sync -f haul.yaml --key cosign.pub
+          hauler store save -f "scout-${{ inputs.version }}.tar.zst"
+
+      - name: Publish + sign the haul
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }} # TODO: create (ADR 0031 Layer-0)
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          # Push the bundle as the versioned platform record, then move :main last.
+          hauler store copy "${HAUL_REF}:${{ inputs.version }}"
+          cosign sign --key env://COSIGN_PRIVATE_KEY --yes "${HAUL_REF}:${{ inputs.version }}"
+          # TODO: after verify, retag/point ${HAUL_REF}:main at this version (ordering guard).

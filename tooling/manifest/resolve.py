@@ -14,6 +14,8 @@ Dependency-free (stdlib only) so it runs on a CI runner with no install step.
 
 from __future__ import annotations
 
+import json
+import urllib.request
 from typing import Callable, Optional
 
 # A component's identity for the manifest: its published (tag, digest).
@@ -56,3 +58,42 @@ def resolve_refs(
         td = fresh[repo] if repo in fresh else carry(repo)
         refs.append(_pin(repo, td))
     return refs
+
+
+_ACCEPT = ", ".join(
+    (
+        "application/vnd.oci.image.index.v1+json",
+        "application/vnd.docker.distribution.manifest.list.v2+json",
+        "application/vnd.oci.image.manifest.v1+json",
+        "application/vnd.docker.distribution.manifest.v2+json",
+    )
+)
+
+
+def ghcr_digest(
+    repo: str,
+    tag: str,
+    *,
+    token: Optional[str] = None,
+    opener: Callable = urllib.request.urlopen,
+) -> Optional[str]:
+    """Resolve the current content digest of a ghcr `repo:tag` (a carry source).
+
+    ``repo`` is ``ghcr.io/<path>``; returns the registry's ``Docker-Content-Digest``
+    (``sha256:...``) or None if absent. ``token`` overrides the anonymous pull
+    token (CI passes a GITHUB_TOKEN-derived bearer); ``opener`` is injectable for
+    tests. This is the I/O boundary; the assembly in ``resolve_refs`` stays pure.
+    """
+    host, _, path = repo.partition("/")
+    if host != "ghcr.io" or not path:
+        raise ValueError(f"ghcr_digest expects a ghcr.io/<path> repo, got {repo!r}")
+    if token is None:
+        with opener(f"https://ghcr.io/token?scope=repository:{path}:pull") as r:
+            token = json.load(r).get("token", "")
+    req = urllib.request.Request(
+        f"https://ghcr.io/v2/{path}/manifests/{tag}",
+        method="HEAD",
+        headers={"Authorization": f"Bearer {token}", "Accept": _ACCEPT},
+    )
+    with opener(req) as r:
+        return r.headers.get("Docker-Content-Digest")
