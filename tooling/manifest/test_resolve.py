@@ -73,6 +73,14 @@ def test_duplicate_components_rejected():
         resolve_refs(["a", "a"], fresh={"a": ("t", D1)}, carry=_no_carry)
 
 
+def test_fresh_repo_not_in_components_fails_closed():
+    # a rebuilt image absent from components.txt would be silently dropped
+    fresh = {c: ("0.20260803.1", D1) for c in COMPS}
+    fresh["ghcr.io/washu-tag/newcomer"] = ("0.20260803.1", D2)
+    with pytest.raises(ValueError, match="not in components"):
+        resolve_refs(COMPS, fresh=fresh, carry=_no_carry)
+
+
 def test_resolver_output_feeds_the_renderer():
     from haul import render_images
 

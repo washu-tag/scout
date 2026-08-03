@@ -43,13 +43,22 @@ def resolve_refs(
     component ``carry(repo)`` supplies the carried (tag, digest); it is called
     only for components not in ``fresh``. Fail closed: a missing component
     (``carry`` returns None), an empty tag, or a non-``sha256:`` digest raises,
-    so the manifest can never bundle an unpinned or absent component.
+    so the manifest can never bundle an unpinned or absent component. A fresh
+    digest for a repo not in ``components`` also raises: it means a rebuilt
+    component would be silently dropped from the haul (the matrix and
+    ``components.txt`` have drifted).
     """
     if not components:
         raise ValueError("resolve_refs requires at least one component")
     if len(set(components)) != len(components):
         dupes = sorted({c for c in components if components.count(c) > 1})
         raise ValueError(f"duplicate components: {dupes}")
+    stray = set(fresh) - set(components)
+    if stray:
+        raise ValueError(
+            f"fresh digests for repos not in components (add them or drop the "
+            f"build): {sorted(stray)}"
+        )
 
     refs: list[str] = []
     for repo in components:

@@ -88,12 +88,28 @@ jobs:
           hauler store sync -f haul.yaml --key cosign.pub
           hauler store save -f "scout-${VERSION}.tar.zst"
 
-      - name: Publish + sign the haul
+      - name: Install oras
+        env:
+          ORAS_VERSION: '1.2.0' # TODO: pin + verify a checksum
+        # Binary download (not curl | bash), same posture as the hauler step.
+        run: |
+          curl -fsSL -o /tmp/oras.tar.gz \
+            "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+          tar -xzf /tmp/oras.tar.gz -C /usr/local/bin oras
+
+      - name: Publish + sign the haul bundle
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }} # TODO: create (ADR 0031 Layer-0)
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
-          # Push the bundle as the versioned platform record, then move :main last.
-          hauler store copy "${HAUL_REF}:${VERSION}"
-          cosign sign --key env://COSIGN_PRIVATE_KEY --yes "${HAUL_REF}:${VERSION}"
-          # TODO: after verify, retag/point ${HAUL_REF}:main at this version (ordering guard).
+          # The signed .tar.zst IS the transport artifact (ADR 0033). Publish it as
+          # the versioned OCI record with oras. `hauler store copy` would re-push the
+          # store CONTENTS to a registry, not this bundle, so it is the enclave-side
+          # op (`store load` + `store copy registry://<harbor> --plain-http`), not
+          # this one.
+          ref="${HAUL_REF#oci://}:${VERSION}"
+          oras push "${ref}" \
+            --artifact-type application/vnd.hauler.bundle.v1+zstd \
+            "scout-${VERSION}.tar.zst:application/zstd"
+          cosign sign --key env://COSIGN_PRIVATE_KEY --yes "${ref}"
+          # TODO: after verify, retag ${HAUL_REF}:main -> this version (ordering guard).

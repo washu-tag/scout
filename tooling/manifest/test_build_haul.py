@@ -1,5 +1,7 @@
 """Offline tests for the build_haul CLI glue. No network."""
 
+from urllib.error import HTTPError
+
 import pytest
 
 from build_haul import ghcr_digest, main, parse_fresh
@@ -70,3 +72,30 @@ def test_ghcr_digest_parses_content_digest_header():
 def test_ghcr_digest_rejects_non_ghcr_repo():
     with pytest.raises(ValueError, match="ghcr.io/<path>"):
         ghcr_digest("docker.io/library/alpine", "latest", opener=lambda *a: None)
+
+
+def _carry_only(tmp_path):
+    # empty digests dir -> nothing fresh -> every component is carried
+    dd = tmp_path / "digests"
+    dd.mkdir()
+    comps = tmp_path / "components.txt"
+    comps.write_text("ghcr.io/washu-tag/hl7-listener\n")
+    return ["--digests-dir", str(dd), "--components", str(comps)]
+
+
+def test_carry_missing_tag_404_fails_closed(tmp_path, monkeypatch):
+    def boom(repo, tag, **_):
+        raise HTTPError("https://ghcr.io/v2/...", 404, "Not Found", None, None)
+
+    monkeypatch.setattr("build_haul.ghcr_digest", boom)
+    with pytest.raises(ValueError, match="neither rebuilt nor carried"):
+        main(_carry_only(tmp_path))
+
+
+def test_carry_registry_error_is_contextual(tmp_path, monkeypatch):
+    def boom(repo, tag, **_):
+        raise HTTPError("https://ghcr.io/v2/...", 500, "Server Error", None, None)
+
+    monkeypatch.setattr("build_haul.ghcr_digest", boom)
+    with pytest.raises(RuntimeError, match="registry error carrying"):
+        main(_carry_only(tmp_path))

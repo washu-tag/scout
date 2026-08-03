@@ -20,6 +20,7 @@ import sys
 import urllib.request
 from pathlib import Path
 from typing import Callable, Optional
+from urllib.error import HTTPError
 
 from haul import render_images
 from resolve import resolve_refs
@@ -106,7 +107,17 @@ def main(argv=None) -> None:
     fresh = parse_fresh(args.digests_dir)
 
     def carry(repo: str):
-        digest = ghcr_digest(repo, args.carry_tag)
+        # A missing carry tag (404) becomes None so resolve_refs fails closed with
+        # a clear "neither rebuilt nor carried" naming the repo; any other registry
+        # error is surfaced with context instead of a raw urllib traceback.
+        try:
+            digest = ghcr_digest(repo, args.carry_tag)
+        except HTTPError as e:
+            if e.code == 404:
+                return None
+            raise RuntimeError(
+                f"registry error carrying {repo}:{args.carry_tag}: {e}"
+            ) from e
         return (args.carry_tag, digest) if digest else None
 
     refs = resolve_refs(components, fresh=fresh, carry=carry)
