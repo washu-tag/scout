@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.gzip import GZipMiddleware
 
 from . import logging_setup, metrics
 from .config import settings
@@ -58,6 +59,10 @@ def create_app() -> FastAPI:
         description="Surfaces saved searches over Scout reports for the chat iframe.",
         lifespan=lifespan,
     )
+
+    # The /rows payload is a whole cohort (up to tens of thousands of lean
+    # rows); tabular JSON compresses ~5-10x, so gzip it for the SPA fetch.
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
 
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, str]:

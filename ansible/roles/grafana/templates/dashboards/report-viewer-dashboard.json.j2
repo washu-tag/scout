@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "Scout report-viewer: HTTP traffic and latency per endpoint, Trino / Postgres timings per op, and domain counters for searches.",
+  "description": "Scout report-viewer: HTTP traffic and latency per endpoint, Trino / Postgres timings per op, search counters, and result-row volume per read op.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -36,7 +36,7 @@
           "unit": "reqps"
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 1 },
       "id": 101,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -63,7 +63,7 @@
           "max": 1
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 1 },
       "id": 102,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -88,7 +88,7 @@
           "unit": "s"
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 1 },
       "id": 103,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -113,7 +113,7 @@
           "unit": "s"
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 1 },
       "id": 104,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -138,7 +138,7 @@
           "unit": "s"
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
       "id": 105,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -163,7 +163,7 @@
           "unit": "short"
         }
       },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
       "id": 106,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "pluginVersion": "11",
@@ -191,7 +191,7 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "mode": "normal" } },
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never", "spanNulls": true, "stacking": { "mode": "normal" } },
           "unit": "reqps"
         }
       },
@@ -208,7 +208,7 @@
           "refId": "A"
         }
       ],
-      "title": "Requests / sec by endpoint + status",
+      "title": "HTTP req/s by endpoint + status",
       "type": "timeseries"
     },
     {
@@ -216,7 +216,7 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "spanNulls": true },
           "unit": "s"
         }
       },
@@ -229,18 +229,18 @@
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"report-viewer\"}[5m])))",
-          "legendFormat": "p50 {{handler}}",
+          "legendFormat": "{{handler}} p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"report-viewer\"}[5m])))",
-          "legendFormat": "p95 {{handler}}",
+          "legendFormat": "{{handler}} p95",
           "refId": "B"
         }
       ],
-      "title": "p50 / p95 latency by endpoint",
+      "title": "HTTP p50 / p95 latency by endpoint",
       "type": "timeseries"
     },
     {
@@ -256,11 +256,11 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "spanNulls": true },
           "unit": "s"
         }
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 16 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 16 },
       "id": 301,
       "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "pluginVersion": "11",
@@ -269,18 +269,18 @@
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum by (le, op) (rate(scout_report_viewer_trino_query_duration_seconds_bucket{result=\"ok\"}[5m])))",
-          "legendFormat": "p50 {{op}}",
+          "legendFormat": "{{op}} p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum by (le, op) (rate(scout_report_viewer_trino_query_duration_seconds_bucket{result=\"ok\"}[5m])))",
-          "legendFormat": "p95 {{op}}",
+          "legendFormat": "{{op}} p95",
           "refId": "B"
         }
       ],
-      "title": "Trino p50 / p95 by op",
+      "title": "Trino p50 / p95 latency by op",
       "type": "timeseries"
     },
     {
@@ -288,7 +288,7 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never" },
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never", "spanNulls": true },
           "unit": "reqps"
         },
         "overrides": [
@@ -301,7 +301,7 @@
           }
         ]
       },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 16 },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 16 },
       "id": 302,
       "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "pluginVersion": "11",
@@ -321,7 +321,7 @@
           "refId": "B"
         }
       ],
-      "title": "Trino ops / sec (with error overlay)",
+      "title": "Trino ops/s by op (error overlay)",
       "type": "timeseries"
     },
     {
@@ -337,11 +337,11 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "spanNulls": true },
           "unit": "s"
         }
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 26 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 26 },
       "id": 401,
       "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "pluginVersion": "11",
@@ -350,18 +350,18 @@
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum by (le, op) (rate(scout_report_viewer_postgres_op_duration_seconds_bucket{result=\"ok\"}[5m])))",
-          "legendFormat": "p50 {{op}}",
+          "legendFormat": "{{op}} p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum by (le, op) (rate(scout_report_viewer_postgres_op_duration_seconds_bucket{result=\"ok\"}[5m])))",
-          "legendFormat": "p95 {{op}}",
+          "legendFormat": "{{op}} p95",
           "refId": "B"
         }
       ],
-      "title": "Postgres p50 / p95 by op",
+      "title": "Postgres p50 / p95 latency by op",
       "type": "timeseries"
     },
     {
@@ -369,7 +369,7 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never" },
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never", "spanNulls": true },
           "unit": "reqps"
         },
         "overrides": [
@@ -382,7 +382,7 @@
           }
         ]
       },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 26 },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 26 },
       "id": 402,
       "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "pluginVersion": "11",
@@ -402,7 +402,7 @@
           "refId": "B"
         }
       ],
-      "title": "Postgres ops / sec (with error overlay)",
+      "title": "Postgres ops/s by op (error overlay)",
       "type": "timeseries"
     },
     {
@@ -410,7 +410,7 @@
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
       "id": 500,
       "panels": [],
-      "title": "Searches",
+      "title": "Searches & result volume",
       "type": "row"
     },
     {
@@ -443,7 +443,7 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "spanNulls": true },
           "unit": "short"
         }
       },
@@ -467,8 +467,91 @@
           "refId": "B"
         }
       ],
-      "title": "Search size p50 / p95 (rows per search)",
+      "title": "Saved-search size at create (p50 / p95)",
       "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "spanNulls": true },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 45 },
+      "id": 503,
+      "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "pluginVersion": "11",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum by (le, op) (rate(scout_report_viewer_result_rows_bucket[15m])))",
+          "legendFormat": "{{op}} p50",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le, op) (rate(scout_report_viewer_result_rows_bucket[15m])))",
+          "legendFormat": "{{op}} p95",
+          "refId": "B"
+        }
+      ],
+      "title": "Rows / fetch p50 / p95 by op",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never", "spanNulls": true },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 45 },
+      "id": 504,
+      "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "pluginVersion": "11",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
+          "expr": "sum by (op) (rate(scout_report_viewer_result_rows_sum[5m]))",
+          "legendFormat": "{{op}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Rows served / sec by op",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 505,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "11",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
+          "expr": "sum(increase(scout_report_viewer_result_rows_sum[$__range]))",
+          "legendFormat": "rows served",
+          "refId": "A"
+        }
+      ],
+      "title": "Rows served in timerange",
+      "type": "stat"
     }
   ],
   "preload": false,

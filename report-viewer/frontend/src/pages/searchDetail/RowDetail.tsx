@@ -8,15 +8,14 @@ import { paginationBtn } from './styles';
 
 export function RowDetail(props: {
   row: Record<string, unknown>;
-  idColumn: string;
   highlightTerms: string[];
   highlightDiagnosis: string[];
 }) {
   const requestPrompt = useChatPrompt();
-  const reportId = String(props.row[props.idColumn] ?? '');
+  const reportId = String(props.row['primary_report_identifier'] ?? '');
   const reportQ = useQuery({
-    queryKey: ['report', props.idColumn, reportId],
-    queryFn: () => getReport(reportId, props.idColumn),
+    queryKey: ['report', reportId],
+    queryFn: () => getReport(reportId, 'primary_report_identifier'),
     enabled: !!reportId,
     staleTime: 5 * 60_000,
   });
@@ -111,7 +110,18 @@ export function RowDetail(props: {
         }}
       >
         <CardRow>
-          <CardField label="MRN" value={fmt(meta.resolved_epic_mrn)} mono />
+          <CardField label="Epic MRN" value={fmt(meta.epic_mrn)} mono />
+          {/* Resolved identity comes from the epic-view search row, not the
+              curated report fetch; shown only when the cohort carried it. */}
+          {props.row.resolved_epic_mrn ? (
+            <CardField label="Resolved MRN" value={fmt(props.row.resolved_epic_mrn)} mono />
+          ) : null}
+          {props.row.patient_mpi ? (
+            <CardField label="Patient MPI" value={fmt(props.row.patient_mpi)} mono />
+          ) : null}
+          {props.row.resolved_mpi ? (
+            <CardField label="Resolved MPI" value={fmt(props.row.resolved_mpi)} mono />
+          ) : null}
           <CardField label="Accession" value={fmt(meta.accession_number)} mono />
           <CardField label="Age" value={fmt(meta.patient_age)} />
           <CardField label="Sex" value={fmt(meta.sex)} />

@@ -81,26 +81,6 @@ def test_create_search_empty_result_is_201(client, auth_headers, fake_trino):
     assert body["columns"] == _sample_columns()
 
 
-def test_null_count_self_heals_on_rows(client, auth_headers, fake_trino):
-    # No count response queued, so the count query raises and count is NULL.
-    fake_trino(_sample_columns(), _sample_rows())
-    created = client.post(
-        "/api/searches", json={"sql": _SQL_HAPPY}, headers=auth_headers
-    ).json()
-    assert created["count"] is None
-
-    # Unfiltered /rows recomputes and backfills.
-    fake_trino(["n"], [{"n": 3}])
-    fake_trino(_sample_columns(), _sample_rows())
-    rows = client.get(
-        f"/api/searches/{created['id']}/rows", headers=auth_headers
-    ).json()
-    assert rows["total"] == 3
-
-    meta = client.get(f"/api/searches/{created['id']}", headers=auth_headers).json()
-    assert meta["count"] == 3
-
-
 def test_create_search_missing_primary_report_identifier_is_400(
     client, auth_headers, fake_trino
 ):
@@ -182,9 +162,9 @@ _SAMPLE_ROW = {
 }
 
 
-def test_from_file_epic_mrn_routes_through_resolved_column_and_view(
-    client, auth_headers, fake_trino
-):
+def test_from_file_epic_mrn_uses_reports_latest_raw(client, auth_headers, fake_trino):
+    # CSV uploads default to reports_latest and match the RAW epic_mrn column
+    # (not the epic view's resolved_epic_mrn) - consistent with the chat default.
     fake_trino(["id"], [{"id": "EPIC1"}, {"id": "EPIC2"}])
     fake_trino(_SAMPLE_COLS, [_SAMPLE_ROW])
     fake_trino(["n"], [{"n": 27}])
@@ -206,9 +186,9 @@ def test_from_file_epic_mrn_routes_through_resolved_column_and_view(
     assert body["unmatched_count"] == 0
 
     meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
-    assert "reports_latest_epic_view" in meta["sql"]
-    assert 'contains(?, "resolved_epic_mrn")' in meta["sql"]
-    assert 'contains(?, "epic_mrn")' not in meta["sql"]
+    assert "reports_latest_epic_view" not in meta["sql"]
+    assert 'contains(?, "epic_mrn")' in meta["sql"]
+    assert "resolved_epic_mrn" not in meta["sql"]
 
 
 def test_from_file_infers_column_from_header_alias(client, auth_headers, fake_trino):
@@ -266,8 +246,7 @@ def test_from_file_multiple_candidates_prefers_accession(
 
 
 def test_from_file_custom_sql_substitutes_cohort(client, auth_headers, fake_trino):
-    fake_trino(["id"], [{"id": "EPIC1"}])
-    # sample query runs before count when custom sql is passed
+    # Custom SQL skips id validation, so the first call is the sample query.
     fake_trino(
         ["primary_report_identifier", "accession_number"],
         [{"primary_report_identifier": "r1", "accession_number": "A1"}],
@@ -291,7 +270,10 @@ def test_from_file_custom_sql_substitutes_cohort(client, auth_headers, fake_trin
 
     meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
     assert "{{cohort}}" not in meta["sql"]
-    assert 'contains(?, "resolved_epic_mrn")' in meta["sql"]
+    # The injected predicate matches the RAW id column even when the caller's
+    # custom SQL targets an epic view (literal match, no resolved mapping).
+    assert 'contains(?, "epic_mrn")' in meta["sql"]
+    assert "resolved_epic_mrn" not in meta["sql"]
     assert "modality = 'CT'" in meta["sql"]
 
 
@@ -313,7 +295,6 @@ def test_from_file_missing_cohort_placeholder_is_400(client, auth_headers, fake_
 def test_query_from_file_returns_rows_and_substitutes_cohort(
     client, auth_headers, fake_trino
 ):
-    fake_trino(["id"], [{"id": "EPIC1"}])
     fake_trino(
         ["modality", "n"],
         [{"modality": "CT", "n": 5}, {"modality": "MR", "n": 3}],
@@ -337,4 +318,3 @@ def test_query_from_file_returns_rows_and_substitutes_cohort(
         {"modality": "CT", "n": 5},
         {"modality": "MR", "n": 3},
     ]
-    assert body["unmatched"] == []

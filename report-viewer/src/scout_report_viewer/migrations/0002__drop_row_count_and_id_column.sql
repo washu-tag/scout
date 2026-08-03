@@ -1,0 +1,2 @@
+ALTER TABLE searches DROP COLUMN IF EXISTS row_count;
+ALTER TABLE searches DROP COLUMN IF EXISTS id_column;

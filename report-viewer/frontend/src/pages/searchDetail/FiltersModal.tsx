@@ -4,28 +4,11 @@ import { Modal } from '../../Modal';
 import { paginationBtn } from './styles';
 
 const SEX_OPTIONS = ['M', 'F', 'U'] as const;
-const MODALITY_OPTIONS = [
-  '3D',
-  'CT',
-  'CTA',
-  'DXA',
-  'ECH',
-  'FL',
-  'IR',
-  'MG',
-  'MR',
-  'MRA',
-  'NM',
-  'PET',
-  'US',
-  'XR',
-] as const;
 
 export function FiltersModal(props: {
   initial: FilterState;
   availableColumns: string[];
   modalityOptions?: string[];
-  modalitiesError?: boolean;
   onApply: (next: FilterState) => void;
   onRefineInChat: (next: FilterState) => void;
   onClose: () => void;
@@ -35,12 +18,11 @@ export function FiltersModal(props: {
   const available = new Set(props.availableColumns);
   const has = (col: string) => available.has(col);
 
-  // Full list until the cohort's modalities load; union with the selection so a checked value can't vanish.
+  // Modalities present in the cohort; union with the selection so a checked value can't vanish.
   const modalityChoices = useMemo<string[]>(() => {
-    const base =
-      props.modalitiesError || !props.modalityOptions ? MODALITY_OPTIONS : props.modalityOptions;
+    const base = props.modalityOptions ?? [];
     return Array.from(new Set([...base, ...(staged.modality ?? [])])).sort();
-  }, [props.modalityOptions, props.modalitiesError, staged.modality]);
+  }, [props.modalityOptions, staged.modality]);
 
   const setAgeBound = (which: 'min' | 'max', value: string) =>
     setStaged((s) => ({
@@ -61,7 +43,7 @@ export function FiltersModal(props: {
       return { ...s, [col]: next.length > 0 ? next : undefined };
     });
   const setStringField = (
-    col: 'service_name' | 'epic_mrn' | 'accession_number' | 'sending_facility',
+    col: 'service_name' | 'epic_mrn' | 'patient_mpi' | 'accession_number' | 'sending_facility',
     value: string,
   ) => setStaged((s) => ({ ...s, [col]: value || undefined }));
 
@@ -131,10 +113,19 @@ export function FiltersModal(props: {
         )}
 
         {has('epic_mrn') && (
-          <FieldRow label="MRN">
+          <FieldRow label="Epic MRN">
             <TextInput
               value={staged.epic_mrn ?? ''}
               onChange={(v) => setStringField('epic_mrn', v)}
+            />
+          </FieldRow>
+        )}
+
+        {has('patient_mpi') && (
+          <FieldRow label="Patient MPI">
+            <TextInput
+              value={staged.patient_mpi ?? ''}
+              onChange={(v) => setStringField('patient_mpi', v)}
             />
           </FieldRow>
         )}

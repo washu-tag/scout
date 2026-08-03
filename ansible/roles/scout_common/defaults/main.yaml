@@ -316,17 +316,13 @@ enable_xnat: false
 #     # url:         url: https://...
 #     # coordinates: coordinates: <Maven -Dartifact coord>  groupId:artifactId:version[:packaging[:classifier]]
 #     #              repo_url: <repo the artifact lives in>  (OPTIONAL; omit for Maven Central)
-#     #              When set, the deploy mounts a settings.xml pointing Maven at it; when
-#     #              air-gapped, all resolution is mirrored through the Nexus group instead
+#     #              Passed to the chart as plugins.<name>.mavenUrl; air-gapped, all
+#     #              resolution mirrors through the Nexus group instead
 #     #              (maven_proxy_url), regardless of repo_url. So set repo_url only for
 #     #              artifacts not on Central (e.g. XNAT plugins published to jfrog).
-#     #              snapshots: bool (default false) - opt this repo_url into -SNAPSHOT
-#     #              resolution. Default is release-only; setting it true enables snapshots
-#     #              for that repo in settings.xml AND (air-gapped) makes its Nexus proxy
-#     #              versionPolicy MIXED. Maven Central never hosts snapshots, so this only
-#     #              applies to repos you name via repo_url.
+#     #              NOTE: release versions only -- the chart rejects a -SNAPSHOT
+#     #              coordinate (resolving one needs maven-metadata.xml); use type: url.
 #     # image:       repository, tag                       (chart-native plugins: map)
-#   skip_logback_rewrite: bool (default false)
 #   config: list of property files, each:
 #     mechanism: authplugins | file | extraConfig
 #     # authplugins: provider, entry (-> Secret xnat-plugin-<entry>), properties{}
@@ -344,7 +340,6 @@ xnat_plugins_default:
       # Published only to the NrgXnat Artifactory (never on Maven Central), so the
       # repo must be named. Air-gapped deploys resolve via the Nexus group instead.
       repo_url: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
-    skip_logback_rewrite: false
     config:
       - mechanism: authplugins
         provider: openid
@@ -378,25 +373,13 @@ xnat_plugins_default:
 xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'
 
 # Distinct repo URLs for coordinate-resolved plugins. Consumed by the xnat role
-# (settings.xml) and the Nexus role (proxy members, air-gapped). Projects ONLY
+# (plugins.<name>.mavenUrl) and the Nexus role (proxy members, air-gapped). Projects ONLY
 # source.repo_url, so resolving it on the staging host never templates the
 # plugins' config blocks (which carry prod-only secret refs like the keycloak
 # client secret) — this relies on Ansible's lazy attribute templating.
 xnat_coordinate_repo_urls: >-
   {{ xnat_plugins_all
      | selectattr('source.type', 'equalto', 'coordinates')
-     | map(attribute='source.repo_url', default='')
-     | reject('equalto', '') | unique | list }}
-
-# Subset of the above whose plugins opted into snapshots (source.snapshots true).
-# The xnat role enables snapshots for these repos in settings.xml; the Nexus role
-# sets their proxy versionPolicy to MIXED. Same lazy-projection rationale as
-# above (touches only source.*, never config).
-xnat_snapshot_repo_urls: >-
-  {{ xnat_plugins_all
-     | selectattr('source.type', 'equalto', 'coordinates')
-     | selectattr('source.snapshots', 'defined')
-     | selectattr('source.snapshots')
      | map(attribute='source.repo_url', default='')
      | reject('equalto', '') | unique | list }}
 
@@ -474,8 +457,8 @@ yum_proxy_base_url: >-
      if package_proxy_mode == 'nexus'
      else '' }}
 # Maven proxy URL for the Nexus scout-maven group (a MIXED group that includes the
-# maven-central proxy). Consumed by the xnat role (rendered as a mirror in its
-# settings.xml). Empty when not proxying, like the other *_proxy_url values.
+# maven-central proxy). Consumed by the xnat role as each coordinate plugin's
+# mavenUrl when air-gapped. Empty when not proxying, like the other *_proxy_url values.
 maven_proxy_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository/scout-maven')
      if package_proxy_mode == 'nexus'

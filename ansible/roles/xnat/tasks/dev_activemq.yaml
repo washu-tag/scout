@@ -1,0 +1,74 @@
+---
+# Deploy a standalone ActiveMQ Artemis broker for multi-node XNAT testing.
+# Dev/test only (gated by xnat_dev_activemq in deploy.yaml). Every replica is
+# pointed at this broker via spring.activemq.* (values.yaml.j2), so cluster
+# events share one queue instead of each pod's embedded broker. A single
+# ephemeral broker — no HA, no persistence. Runs before the chart so the broker
+# is up when XNAT boots (XNAT's JMS client would retry regardless).
+
+- name: Deploy the dev ActiveMQ broker
+  kubernetes.core.k8s:
+    state: present
+    wait: true
+    wait_condition:
+      type: Available
+      status: 'True'
+    wait_timeout: 180
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: xnat-activemq
+        namespace: '{{ xnat_namespace }}'
+        labels:
+          app.kubernetes.io/name: xnat-activemq
+          app.kubernetes.io/part-of: xnat
+          app.kubernetes.io/component: dev-activemq
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: xnat-activemq
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/name: xnat-activemq
+          spec:
+            containers:
+              - name: activemq
+                image: '{{ xnat_dev_activemq_image }}'
+                imagePullPolicy: IfNotPresent
+                env:
+                  - name: ARTEMIS_USER
+                    value: '{{ xnat_dev_activemq_user }}'
+                  - name: ARTEMIS_PASSWORD
+                    value: '{{ xnat_dev_activemq_password }}'
+                ports:
+                  - { containerPort: 61616, name: openwire }
+                  - { containerPort: 8161, name: console }
+                readinessProbe:
+                  tcpSocket: { port: 61616 }
+                  initialDelaySeconds: 5
+                  periodSeconds: 5
+                resources:
+                  requests: { cpu: 100m, memory: 512Mi }
+                  limits: { memory: 1Gi }
+
+- name: Expose the dev ActiveMQ broker
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: xnat-activemq
+        namespace: '{{ xnat_namespace }}'
+        labels:
+          app.kubernetes.io/name: xnat-activemq
+          app.kubernetes.io/part-of: xnat
+          app.kubernetes.io/component: dev-activemq
+      spec:
+        selector:
+          app.kubernetes.io/name: xnat-activemq
+        ports:
+          - { name: openwire, port: 61616, targetPort: 61616 }

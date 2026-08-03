@@ -644,7 +644,8 @@
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_xnat_client_secret }}",
         "redirectUris": [
-          "https://xnat.{{ server_hostname }}/openid-login"
+          "https://xnat.{{ server_hostname }}/openid-login",
+          "{{ oauth2_proxy_signout_url }}"
         ],
         "webOrigins": [
           "https://xnat.{{ server_hostname }}"

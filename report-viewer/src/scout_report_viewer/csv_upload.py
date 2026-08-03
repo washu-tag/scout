@@ -19,7 +19,6 @@ from fastapi import HTTPException, status
 from .models import (
     FILE_UPLOAD_HEADER_ALIASES,
     FILE_UPLOAD_ID_COLUMNS,
-    PATIENT_ID_COLUMNS,
 )
 
 
@@ -27,6 +26,10 @@ MAX_UPLOAD_BYTES = 32 * 1024 * 1024
 MAX_UPLOAD_IDS = 10_000
 UNMATCHED_SAMPLE_CAP = 20
 COHORT_PLACEHOLDER = "{{cohort}}"
+
+# CSV uploads default here and match the raw id columns; history / resolved
+# patient IDs need explicit SQL over reports_curated / an epic view.
+DEFAULT_FROM_FILE_TABLE = "reports_latest"
 
 
 def guard_upload_size(raw: bytes) -> None:
@@ -117,13 +120,6 @@ def dedup_ids(ids: list[str]) -> list[str]:
     return cleaned
 
 
-def resolve_sql_column(id_column: str) -> str:
-    """Translate a user-facing id_column (epic_mrn) to the view column
-    the WHERE clause should filter on (resolved_epic_mrn). Report-scoped
-    columns pass through unchanged."""
-    return PATIENT_ID_COLUMNS.get(id_column, id_column)
-
-
 def assert_cohort_placeholder(sql: str) -> None:
     """Raise 400 unless `{{cohort}}` appears in `sql` exactly once."""
     count = sql.count(COHORT_PLACEHOLDER)
@@ -157,7 +153,8 @@ def _header_matches(header: list[str], id_column: str) -> bool:
 
 
 def _header_index(header: list[str], id_column: str) -> int | None:
-    aliases = FILE_UPLOAD_HEADER_ALIASES[id_column]
+    # Columns without an alias entry match only their own literal name.
+    aliases = FILE_UPLOAD_HEADER_ALIASES.get(id_column, (id_column,))
     for i, h in enumerate(header):
         if any(a in h for a in aliases):
             return i

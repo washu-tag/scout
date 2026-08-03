@@ -16,7 +16,7 @@ function EmbeddedShell() {
         color: 'var(--rv-fg)',
         background: 'var(--rv-surface)',
         padding: '0.5rem',
-        height: '100vh',
+        height: '100%',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
@@ -34,7 +34,7 @@ function FullShell() {
       style={{
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
         color: 'var(--rv-fg)',
-        height: '100vh',
+        height: '100%',
         background: 'var(--rv-bg)',
         display: 'flex',
         flexDirection: 'column',

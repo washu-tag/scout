@@ -79,12 +79,13 @@ class Tools:
           project `primary_report_identifier` and `accession_number`.
           Example:
               SELECT primary_report_identifier, accession_number,
-                     resolved_epic_mrn AS epic_mrn, modality,
-                     service_name, message_dt, patient_age, sex
-              FROM reports_latest_epic_view
+                     epic_mrn, modality, service_name, message_dt,
+                     patient_age, sex
+              FROM reports_latest
               WHERE modality = 'CT'
         * File mode: pass `file_id` (uploaded CSV) and optionally
-          `id_column` (one of `epic_mrn`, `accession_number`, `mpi`).
+          `id_column` (one of `primary_report_identifier`,
+          `accession_number`, `epic_mrn`, `patient_mpi`).
           When omitted, the backend infers the column from the header.
           Passing `sql` in file mode is optional: when set, it must
           include `{{cohort}}` exactly once and the backend substitutes
@@ -176,10 +177,11 @@ class Tools:
 
         No search is persisted; no iframe is rendered.
 
-        :param sql: Trino SQL against `delta.default.reports_latest`
-            or `_epic_view`. When `file_id` is set, include
-            `{{cohort}}` exactly once and the backend substitutes the
-            CSV cohort predicate.
+        :param sql: Trino SQL. Default to `reports_latest`
+            (`reports_curated` for report history); use an `_epic_view`
+            only for patient-across-reports questions. When `file_id`
+            is set, include `{{cohort}}` exactly once and the backend
+            substitutes the CSV cohort predicate.
         :param file_id: Optional. OWUI file id for a cohort CSV.
         :param id_column: Optional (file mode only).
         :return: Markdown table of rows for direct inclusion in your
@@ -355,6 +357,7 @@ class Tools:
         self,
         ids: list[str],
         id_column: str = "primary_report_identifier",
+        table: Optional[str] = None,
         __oauth_token__: Any = None,
     ) -> Any:
         """Fetch full report content (text, sections, diagnoses,
@@ -364,16 +367,25 @@ class Tools:
         :param id_column: Report-scoped (1 row each):
             `primary_report_identifier` (default), `accession_number`.
             Patient-scoped (all reports for that patient):
-            `epic_mrn`, `mpi`, `scout_patient_id`.
+            `epic_mrn`, `patient_mpi`, `scout_patient_id`.
+        :param table: Optional source table. Default `reports_curated`
+            (all report versions, all patients). Pass an epic view
+            (`reports_curated_epic_view` / `reports_latest_epic_view`)
+            to resolve patient identity across HL7 versions; required
+            for `id_column=scout_patient_id`. Epic views omit reports
+            with an inconsistent patient graph.
         """
         if not ids:
             return "Error: ids must be a non-empty list."
         if len(ids) > _MAX_GET_IDS:
             return f"Error: at most {_MAX_GET_IDS} ids per call."
+        payload: dict[str, Any] = {"ids": ids, "id_column": id_column}
+        if table:
+            payload["table"] = table
         try:
             result = await self._post(
                 "/api/reports/read",
-                {"ids": ids, "id_column": id_column},
+                payload,
                 oauth=__oauth_token__,
             )
         except ReportViewerServiceError as exc:

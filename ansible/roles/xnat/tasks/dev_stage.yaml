@@ -1,0 +1,195 @@
+---
+# Dev/test only: stage a locally-built WAR / plugin jars into MinIO so the
+# chart's developWar init containers (templates/values.yaml.j2) can pull them at
+# pod start. Included from deploy.yaml only when xnat_dev_war or xnat_dev_plugins
+# is set. See docs/internal/xnat-develop-testing.md.
+#
+# Transfer path: `kubectl cp` the local artifacts into a busybox sidecar (the mc
+# image has no `tar`, which kubectl cp requires in the target container), then
+# the mc container uploads them to the xnat_dev_bucket from the shared volume.
+# Staged objects persist in MinIO, so re-staging + `kubectl rollout restart` is
+# enough to test a new build (no full redeploy).
+#
+# Delegation mirrors deploy_helm_chart: air-gapped runs everything on the Ansible
+# control node (localhost) with local_kubeconfig_yaml — which is both where the
+# operator's local xnat_dev_war / xnat_dev_plugins live and the host with cluster
+# API access. Otherwise it runs on the cluster node, so the artifacts must be
+# present there.
+
+- name: Stage unreleased XNAT artifacts into MinIO
+  vars:
+    _dev_use_localhost: '{{ air_gapped | default(false) | bool }}'
+    _dev_kubeconfig: '{{ local_kubeconfig_yaml if _dev_use_localhost else kubeconfig_yaml }}'
+  delegate_to: '{{ "localhost" if _dev_use_localhost else inventory_hostname }}'
+  environment:
+    KUBECONFIG: '{{ _dev_kubeconfig }}'
+    K8S_AUTH_KUBECONFIG: '{{ _dev_kubeconfig }}'
+  block:
+    - name: Assert an in-cluster S3 endpoint is configured
+      ansible.builtin.assert:
+        that: s3_endpoint | default('') | length > 0
+        fail_msg: >
+          xnat_dev_war / xnat_dev_plugins stage into in-cluster MinIO, but
+          s3_endpoint is empty (aws_deployment uses managed S3 with no in-cluster
+          endpoint). This dev side-load path targets on-prem / dev clusters only.
+        quiet: true
+
+    - name: Confirm the dev artifacts exist
+      ansible.builtin.stat:
+        path: '{{ item }}'
+      register: _xnat_dev_stat
+      loop: '{{ ([xnat_dev_war] if xnat_dev_war | length else []) + xnat_dev_plugins }}'
+      loop_control:
+        label: '{{ item }}'
+
+    - name: Fail if any dev artifact is missing
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: >
+          XNAT dev artifact not found: {{ item.item }} (looked on
+          {{ 'the Ansible control node' if _dev_use_localhost else inventory_hostname }}).
+        quiet: true
+      loop: '{{ _xnat_dev_stat.results }}'
+      loop_control:
+        label: '{{ item.item }}'
+
+    # home-plugins is an emptyDir populated from the bucket at pod start, so a
+    # re-stage has no effect until the pods restart. Fingerprint the staged set
+    # (reusing the checksums the stat above already computed) into a podAnnotation
+    # (values.yaml.j2) so `make install-xnat` re-rolls the StatefulSet on any
+    # artifact content/version change — no manual `kubectl rollout restart`.
+    - name: Fingerprint the staged artifacts (rolls the pods on re-stage)
+      ansible.builtin.set_fact:
+        _xnat_dev_artifacts_checksum: >-
+          {{ _xnat_dev_stat.results | map(attribute='stat.checksum') | join(',') | hash('sha256') }}
+
+    # Consumed by the staging pod here AND the runtime develop-* init containers
+    # (values.yaml.j2). no_log: carries the MinIO credentials.
+    - name: Create the MinIO credential Secret
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: xnat-dev-minio
+            namespace: '{{ xnat_namespace }}'
+          type: Opaque
+          stringData:
+            S3_USER: '{{ s3_username }}'
+            S3_PASS: '{{ s3_password }}'
+
+    - name: Stage the artifacts through a throwaway pod
+      block:
+        - name: Create the staging pod (busybox xfer + mc uploader)
+          kubernetes.core.k8s:
+            state: present
+            wait: true
+            wait_condition:
+              type: Ready
+              status: 'True'
+            wait_timeout: 180
+            definition:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: xnat-dev-stage
+                namespace: '{{ xnat_namespace }}'
+                labels:
+                  app.kubernetes.io/name: xnat-dev-stage
+              spec:
+                restartPolicy: Never
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 1000
+                  fsGroup: 1000
+                  seccompProfile:
+                    type: RuntimeDefault
+                containers:
+                  # kubectl cp target: busybox ships `tar` (the mc image does not).
+                  - name: xfer
+                    image: busybox:1.36
+                    command: ['sh', '-c', 'sleep 1800']
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop: ['ALL']
+                    volumeMounts:
+                      - name: work
+                        mountPath: /work
+                  # Uploader: mc reads creds from env, writes its config under /tmp.
+                  - name: mc
+                    image: '{{ minio_client_image }}:{{ minio_client_image_tag }}'
+                    command: ['/bin/sh', '-c', 'sleep 1800']
+                    env:
+                      - name: HOME
+                        value: /tmp
+                    envFrom:
+                      - secretRef:
+                          name: xnat-dev-minio
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop: ['ALL']
+                    volumeMounts:
+                      - name: work
+                        mountPath: /work
+                volumes:
+                  - name: work
+                    emptyDir: {}
+
+        - name: Copy the WAR into the staging pod
+          when: xnat_dev_war | length > 0
+          kubernetes.core.k8s_cp:
+            namespace: '{{ xnat_namespace }}'
+            pod: xnat-dev-stage
+            container: xfer
+            state: to_pod
+            local_path: '{{ xnat_dev_war }}'
+            remote_path: /work/ROOT.war
+            no_preserve: true
+
+        - name: Copy the plugin jars into the staging pod
+          when: xnat_dev_plugins | length > 0
+          kubernetes.core.k8s_cp:
+            namespace: '{{ xnat_namespace }}'
+            pod: xnat-dev-stage
+            container: xfer
+            state: to_pod
+            local_path: '{{ item }}'
+            remote_path: '/work/{{ item | basename }}'
+            no_preserve: true
+          loop: '{{ xnat_dev_plugins }}'
+          loop_control:
+            label: '{{ item | basename }}'
+
+        # One exec does alias + bucket + all uploads. Creds come from the
+        # container's env ($S3_USER/$S3_PASS), never the command string; `set -e`
+        # fails fast.
+        # Purge the plugins/ prefix before re-uploading. The pod's home-plugins is
+        # an emptyDir that mirrors this prefix, so a re-stage with a changed plugin
+        # version would otherwise leave BOTH jars and XNAT aborts at startup on the
+        # duplicate plugin bean (IllegalStateException: Duplicate key <plugin>).
+        - name: Upload the staged artifacts to MinIO
+          kubernetes.core.k8s_exec:
+            namespace: '{{ xnat_namespace }}'
+            pod: xnat-dev-stage
+            container: mc
+            command: >-
+              /bin/sh -c 'set -e;
+              mc alias set scout {{ s3_endpoint }} "$S3_USER" "$S3_PASS";
+              mc mb --ignore-existing scout/{{ xnat_dev_bucket }};
+              mc rm --recursive --force scout/{{ xnat_dev_bucket }}/plugins/ || true;
+              {% if xnat_dev_war | length %}mc cp /work/ROOT.war scout/{{ xnat_dev_bucket }}/ROOT.war;{% endif %}
+              {% for p in xnat_dev_plugins %}mc cp /work/{{ p | basename }} scout/{{ xnat_dev_bucket }}/plugins/{{ p | basename }};{% endfor %}'
+      always:
+        - name: Tear down the staging pod
+          kubernetes.core.k8s:
+            state: absent
+            api_version: v1
+            kind: Pod
+            namespace: '{{ xnat_namespace }}'
+            name: xnat-dev-stage
+            wait: true
+            wait_timeout: 120

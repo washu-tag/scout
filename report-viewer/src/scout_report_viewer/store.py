@@ -24,10 +24,8 @@ class SearchStore:
         self,
         *,
         search_id: str,
-        id_column: str,
         sql: str,
         owner_sub: str,
-        row_count: int | None,
         match_terms: list[str] | None = None,
         match_diagnoses: list[str] | None = None,
         sql_explanation: str | None = None,
@@ -40,23 +38,21 @@ class SearchStore:
                     await cur.execute(
                         """
                         INSERT INTO searches
-                          (id, id_column, sql, sql_explanation,
-                           match_terms, match_diagnoses, row_count,
+                          (id, sql, sql_explanation,
+                           match_terms, match_diagnoses,
                            uploaded_ids, owner_sub, owui_chat_id)
                         VALUES
-                          (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id, id_column, sql, sql_explanation,
-                                  match_terms, match_diagnoses, row_count,
+                          (%s, %s, %s, %s, %s, %s, %s, %s)
+                        RETURNING id, sql, sql_explanation,
+                                  match_terms, match_diagnoses,
                                   uploaded_ids, owner_sub, owui_chat_id, created_at
                         """,
                         (
                             search_id,
-                            id_column,
                             sql,
                             sql_explanation or "",
                             match_terms or [],
                             match_diagnoses or [],
-                            row_count,
                             uploaded_ids,
                             owner_sub,
                             owui_chat_id or "",
@@ -75,8 +71,8 @@ class SearchStore:
                 async with conn.cursor() as cur:
                     await cur.execute(
                         """
-                        SELECT id, id_column, sql, sql_explanation,
-                               match_terms, match_diagnoses, row_count,
+                        SELECT id, sql, sql_explanation,
+                               match_terms, match_diagnoses,
                                uploaded_ids, owner_sub, owui_chat_id, created_at
                         FROM searches
                         WHERE id = %s
@@ -102,20 +98,6 @@ class SearchStore:
                 await conn.commit()
         return deleted > 0
 
-    async def update_row_count(
-        self, search_id: str, owner_sub: str, count: int
-    ) -> None:
-        """Backfill a cached count that failed at create time."""
-        with metrics.time_postgres("update_row_count"):
-            async with self._pool.connection() as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute(
-                        "UPDATE searches SET row_count = %s "
-                        "WHERE id = %s AND owner_sub = %s",
-                        (count, search_id, owner_sub),
-                    )
-                await conn.commit()
-
     async def list_searches(
         self, owner_sub: str, *, limit: int = 200
     ) -> list[dict[str, Any]]:
@@ -125,8 +107,8 @@ class SearchStore:
                 async with conn.cursor() as cur:
                     await cur.execute(
                         """
-                        SELECT id, id_column, sql, sql_explanation,
-                               match_terms, match_diagnoses, row_count,
+                        SELECT id, sql, sql_explanation,
+                               match_terms, match_diagnoses,
                                uploaded_ids, owner_sub, owui_chat_id, created_at
                         FROM searches
                         WHERE owner_sub = %s
@@ -146,12 +128,10 @@ def get_store(pool: AsyncConnectionPool = Depends(get_pool)) -> SearchStore:
 def _row_to_dict(row: tuple) -> dict[str, Any]:
     (
         id_,
-        id_column,
         sql,
         sql_explanation,
         match_terms,
         match_diagnoses,
-        row_count,
         uploaded_ids,
         owner_sub,
         owui_chat_id,
@@ -159,12 +139,10 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
     ) = row
     return {
         "id": id_,
-        "id_column": id_column,
         "sql": sql,
         "sql_explanation": sql_explanation or "",
         "match_terms": match_terms or [],
         "match_diagnoses": match_diagnoses or [],
-        "count": row_count,
         "uploaded_ids": uploaded_ids,
         "owner_sub": owner_sub,
         "owui_chat_id": owui_chat_id or "",
