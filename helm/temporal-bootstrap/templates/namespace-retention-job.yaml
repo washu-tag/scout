@@ -1,0 +1,84 @@
+{{- /*
+Enforce the workflow-history retention on Temporal's default namespace
+(issue #432).
+
+The temporal chart's namespace-setup job is create-only (`describe || create`),
+so it never updates retention on an already-existing namespace. This hook Job
+runs `temporal operator namespace update` on every install/upgrade, so
+retention converges on both fresh and existing clusters. It's idempotent, so
+re-running is harmless.
+
+Runs as a post-install/post-upgrade hook with before-hook-creation delete, so
+it re-executes on every `helm upgrade` -- the same reconciling pattern as
+scout-dashboards' import Job, and it carries over verbatim to a Flux HelmRelease
+(ADR 0031) with no rewrite.
+*/ -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "temporal-bootstrap.fullname" . }}-namespace-retention
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "temporal-bootstrap.labels" . | nindent 4 }}
+    app.kubernetes.io/component: namespace-retention
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+    "helm.sh/hook-weight": "5"
+spec:
+  ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
+  backoffLimit: {{ .Values.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "temporal-bootstrap.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: namespace-retention
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: set-retention
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: {{ required "temporal-bootstrap: temporalAddress is required" .Values.temporalAddress | quote }}
+            - name: HOME
+              value: /tmp
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              # Wait for the namespace to exist (the temporal chart's create job
+              # is create-only and may lag on a fresh install), then enforce the
+              # configured retention.
+              i=0
+              until temporal operator namespace describe -n {{ .Values.namespace.name | quote }} >/dev/null 2>&1; do
+                i=$((i + 1))
+                if [ "$i" -ge {{ .Values.waitRetries }} ]; then
+                  echo "namespace {{ .Values.namespace.name }} did not appear after $((i * 2))s" >&2
+                  exit 1
+                fi
+                sleep 2
+              done
+              temporal operator namespace update \
+                -n {{ .Values.namespace.name | quote }} \
+                --retention {{ .Values.namespace.retention | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

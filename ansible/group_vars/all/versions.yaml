@@ -57,6 +57,9 @@ minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
 temporal_version: ~1.2.0
+# NOTE: the temporalio/admin-tools image tag is NOT pinned here. It's derived at
+# deploy time from this chart's appVersion (see roles/temporal/tasks/deploy.yaml)
+# so the `temporal` CLI always matches the installed server.
 
 # Real-Time HL7 Ingestion - Strimzi Kafka (MLLP listener → Kafka → batcher → MinIO).
 # The listener/batcher application image is built in CI (see hl7-listener/), not pinned here.
