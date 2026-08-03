@@ -42,17 +42,19 @@ unchanged.
   at its build-lane version/digest), then `hauler store sync -f <manifest>
   --key cosign.pub` pulls and verifies every artifact into a local OCI store and
   `hauler store save` collapses it into one `scout-0.YYYYMMDD.<run>.tar.zst`.
-  That signed tarball is the versioned, relocatable "what is Scout at this
-  version" record ADR 0030 §1 asks for.
+  That haul is the versioned, relocatable "what is Scout at this version" record
+  ADR 0030 §1 asks for; it carries each artifact with its own keyed cosign
+  signature (not one signature over the archive, see the open sub-decision).
 - **Air-gap transport is `hauler store copy`, on the ADR 0031 staging
   reconciler.** The reconciler runs `hauler store load` on the sneakernetted
   tarball then `hauler store copy registry://harbor.<site>` to push every image
   and chart into Harbor **preserving the original sha256 digests byte for byte**.
   The cluster is untouched: containerd resolves `ghcr.io/...@digest` image refs
   through the Harbor mirror, Flux `OCIRepository`/`chartRef` fetch charts and the
-  config artifact by the same digests, and cosign `.spec.verify` checks the
-  per-artifact keyed signatures fully offline (`--use-tlog-verify=false`, no
-  Rekor/Fulcio reachability).
+  config artifact by the same digests, and cosign `.spec.verify` (keyed, via a
+  public-key `secretRef`) checks the per-artifact signatures fully offline, with
+  no Rekor/Fulcio reachability. (`--use-tlog-verify` is Hauler's own sync-time
+  flag, defaulting off; it is unrelated to Flux's in-cluster verification.)
 - **Redeploy-only-on-change still comes from Flux + stable digests**, exactly as
   ADR 0030/0031 intend: an unchanged component keeps its prior digest, so nothing
   restarts it. Hauler is pure digest-preserving transport, not a reconciler; it
@@ -61,6 +63,14 @@ unchanged.
   transparency log, so signing uses a managed key (matches Phase 2 open decision
   2). The key lifecycle (generation, escrow, rotation) is the ADR 0031 Layer-0
   item this makes concrete.
+- **Preconditions for the verify chain.** Two enablements must be in place, both
+  one-time: (a) images and charts are cosign-signed with the managed key **at
+  publish to ghcr**, so `store sync --key` can verify them and their signatures
+  ride along in the haul (unsigned upstream means nothing to verify or carry);
+  and (b) the enclave Harbor supports OCI 1.1 referrers and `hauler store copy`
+  carries the signature objects with their subject digests, so Flux
+  `.spec.verify` can find them after relocation. Confirm both before the air-gap
+  phase.
 
 ### The one open sub-decision
 
