@@ -38,8 +38,11 @@ unchanged.
 - **The record is a Hauler haul, not hand-rolled JSON.** CI resolves the digest
   set for the build (changed components rebuilt; unchanged resolved live at
   their current stable-tag digest), renders a Hauler content manifest
-  (`kind: Images` for the images, `kind: Charts` for the OCI charts, each pinned
-  at its build-lane version/digest), then `hauler store sync -f <manifest>
+  under `kind: Images` for both the images and the OCI charts, each pinned by
+  digest (OCI charts ride as `kind: Images` so they copy verbatim; `kind: Charts`
+  re-packages them under a `hauler/<name>` path with a new digest, which would
+  break the chart digest and path Flux pins, POC-confirmed), then
+  `hauler store sync -f <manifest>
   --key cosign.pub` pulls and verifies every artifact into a local OCI store and
   `hauler store save` collapses it into one `scout-0.YYYYMMDD.<run>.tar.zst`.
   That haul is the versioned, relocatable "what is Scout at this version" record
@@ -111,22 +114,33 @@ not need.
 
 ## Validation
 
-A throwaway POC exercised the full round trip against the real published Scout
-images and confirmed the digest-preserving transport the deploy model depends on:
+Throwaway POCs against real published artifacts confirmed the mechanics the
+deploy model depends on:
 
-- Rendered a Hauler `kind: Images` manifest for `hl7-listener` and
-  `hl7log-extractor`; `hauler store sync` pulled both (497.6 MB, `linux/amd64`)
-  into a local store.
-- `hauler store save` produced one 315 MB `scout.tar.zst`; `hauler store load`
-  restored it into a fresh store (the enclave side of the gap).
-- `hauler store copy registry://<reg> --plain-http` pushed both into a private
-  registry, preserving the repository path (`washu-tag/hl7-listener`, only the
-  host changes) and the digest: `hl7-listener` was `sha256:2b7b4c3a...3a4a` on
-  ghcr and **byte-for-byte identical** in the destination registry after the
-  tarball round trip, confirmed both by Hauler's push output and an independent
-  registry v2 `Docker-Content-Digest` check.
+- **Digest-preserving transport (images).** A `kind: Images` manifest for
+  `hl7-listener` + `hl7log-extractor` -> `hauler store sync` (497.6 MB) ->
+  `store save` (one 315 MB `.tar.zst`) -> `store load` into a fresh store ->
+  `store copy` into a private registry. The `hl7-listener` digest
+  (`sha256:2b7b4c3a...3a4a`) was **byte-for-byte identical** on ghcr and in the
+  destination after the round trip, and the repo path was preserved (only the
+  host changes), confirmed by Hauler's push log and an independent registry v2
+  `Docker-Content-Digest` check.
+- **OCI charts.** Bundled as `kind: Images`, the podinfo OCI chart copied
+  verbatim: digest (`sha256:455d6a04...`) and path preserved, exactly like an
+  image. `kind: Charts` instead re-packaged it under `hauler/podinfo` with a new
+  digest, which is why the design lists charts under `kind: Images`.
+- **Signature relocation.** `hauler store sync` carries cosign material by
+  default, and `store copy` pushed the cosign **OCI 1.1 referrers** by digest
+  into the destination (visible in the copy log as `@sha256:...` pushes; they are
+  referrers, not legacy `.sig` tags, so a plain tag list does not show them).
+  This is precondition (b), and it holds wherever the destination registry
+  supports OCI 1.1 referrers.
+- **Keyed offline verification.** `cosign sign --key` then
+  `cosign verify --key --insecure-ignore-tlog` succeeded against the relocated
+  artifact with no Sigstore reachability (cosign v3; the legacy
+  `--tlog-upload=false` flag is gone, dropping it is the only change).
 
-Because the digest is identical on both sides of the gap, the `ghcr.io/...@digest`
+Because digests are identical on both sides of the gap, the `ghcr.io/...@digest`
 references Flux and containerd resolve against Harbor point at the same content,
 so pods restart only when a component actually changed, exactly as ADR 0030/0031
 intend.
