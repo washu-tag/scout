@@ -26,17 +26,16 @@ def _slug(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
-def xnat_maven_proxy(
-    repo_url, snapshot_repo_urls=None, blob_store_name="default", max_name_len=60
-):
+def xnat_maven_proxy(repo_url, blob_store_name="default", max_name_len=60):
     """Build a Nexus Maven proxy-repo definition from a plugin repo URL.
 
     The name is ``<host>-<path>`` slugified. If that exceeds max_name_len it is
     truncated and suffixed with a short hash of the full URL to keep names
     unique and stable.
 
-    versionPolicy is MIXED when repo_url is in snapshot_repo_urls (a plugin
-    opted that repo into snapshots), else RELEASE (the default — release-only).
+    Always release-only: the chart resolves coordinates at render time (no
+    network) and rejects a ``-SNAPSHOT`` coordinate, so no coordinate plugin can
+    be a snapshot and the proxy never needs a MIXED version policy.
     """
     if not repo_url:
         raise ValueError("xnat_maven_proxy: empty repo_url")
@@ -47,12 +46,11 @@ def xnat_maven_proxy(
         digest = hashlib.md5(repo_url.encode("utf-8")).hexdigest()[:8]
         base = base[: max_name_len - 9].rstrip("-") + "-" + digest
 
-    version_policy = "MIXED" if repo_url in (snapshot_repo_urls or []) else "RELEASE"
     return {
         "name": base,
         "remoteUrl": repo_url,
         "blobStoreName": blob_store_name,
-        "versionPolicy": version_policy,
+        "versionPolicy": "RELEASE",
     }
 
 
@@ -65,7 +63,10 @@ def maven_artifact_path(coordinates):
       -> au/edu/qcif/xnat/openid/openid-auth-plugin/1.5.0/openid-auth-plugin-1.5.0-xpl.jar
     """
     fields = coordinates.split(":")
-    if len(fields) < 3:
+    # groupId, artifactId and version must all be non-empty: an empty one used to
+    # yield a plausible-looking but wrong path (":b:1" -> "/b/1/b-1.jar"), which
+    # surfaced only as a confusing 404 from the air-gapped preflight.
+    if len(fields) < 3 or not all(fields[:3]):
         raise ValueError(
             "maven_artifact_path: expected groupId:artifactId:version[:packaging[:classifier]], "
             "got %r" % coordinates

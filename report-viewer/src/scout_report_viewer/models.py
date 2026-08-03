@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -14,17 +14,18 @@ INPUT_ID_COLUMNS: tuple[str, ...] = (
     "primary_report_identifier",
     "accession_number",
     "epic_mrn",
-    "mpi",
+    "patient_mpi",
     "scout_patient_id",
 )
 
-# The columns an uploaded CSV can key on. Order is preference: when a
-# CSV header matches multiple, inference picks the first match, which
-# means report-scoped (accession) wins over patient-scoped (mrn/mpi).
+# The columns an uploaded CSV can key on. Order is preference: inference picks
+# the first whose header matches, so report-scoped (primary_report_identifier,
+# accession) wins over patient-scoped (mrn/patient_mpi).
 FILE_UPLOAD_ID_COLUMNS: tuple[str, ...] = (
+    "primary_report_identifier",
     "accession_number",
     "epic_mrn",
-    "mpi",
+    "patient_mpi",
 )
 
 # Header aliases for CSV column inference. Substring match on lowercased
@@ -32,7 +33,7 @@ FILE_UPLOAD_ID_COLUMNS: tuple[str, ...] = (
 FILE_UPLOAD_HEADER_ALIASES: dict[str, tuple[str, ...]] = {
     "epic_mrn": ("epic_mrn", "epicmrn", "mrn", "patient_mrn", "patient_id"),
     "accession_number": ("accession_number", "accession", "acc_num"),
-    "mpi": ("mpi", "empi"),
+    "patient_mpi": ("patient_mpi", "mpi", "empi"),
 }
 
 # Every saved /searches SQL must project these in its outer SELECT.
@@ -41,28 +42,20 @@ SEARCH_REQUIRED_COLUMNS: tuple[str, ...] = (
     "accession_number",
 )
 
-# Columns the viewer can sort and filter on if present in the result set.
-# searches.py derives its allowlist and filter-type sets from this.
-SORT_FILTER_COLUMNS: dict[str, Literal["text", "multi", "range"]] = {
-    "accession_number": "text",
-    "epic_mrn": "text",
-    "mpi": "text",
-    "sending_facility": "text",
-    "service_name": "text",
-    "modality": "multi",
-    "sex": "multi",
-    "message_dt": "range",
-    "patient_age": "range",
-}
+# Tables /reports/read may target; renders default to reports_curated, epic
+# views are opt-in for resolved cross-version patient identity.
+READ_REPORTS_TABLES: tuple[str, ...] = (
+    "reports_curated",
+    "reports_curated_epic_view",
+    "reports_latest",
+    "reports_latest_epic_view",
+)
+DEFAULT_READ_REPORTS_TABLE = "reports_curated"
 
-# Patient-scoped IDs go through reports_latest_epic_view; epic_mrn / mpi
-# transparently match the resolved_* columns so reports missing the raw
-# value still come back when the same patient appears elsewhere.
-PATIENT_ID_COLUMNS: dict[str, str] = {
-    "epic_mrn": "resolved_epic_mrn",
-    "mpi": "resolved_mpi",
-    "scout_patient_id": "scout_patient_id",
-}
+# The *_epic_view subset (carry resolved_* / scout_patient_id).
+EPIC_VIEW_TABLES: frozenset[str] = frozenset(
+    {"reports_curated_epic_view", "reports_latest_epic_view"}
+)
 
 
 class CreateSearchRequest(BaseModel):
@@ -145,8 +138,6 @@ class QueryFromFileResponse(BaseModel):
     rows: list[dict[str, Any]]
     id_column: str
     column_inferred: bool
-    unmatched: list[str]
-    unmatched_count: int
 
 
 class ReadReportsRequest(BaseModel):
@@ -158,6 +149,14 @@ class ReadReportsRequest(BaseModel):
     id_column: str = Field(
         default="primary_report_identifier",
         description="Column to match `ids` against.",
+    )
+    table: str | None = Field(
+        default=None,
+        description=(
+            "Table to read from. One of reports_curated (default), "
+            "reports_curated_epic_view, reports_latest, "
+            "reports_latest_epic_view."
+        ),
     )
 
 
@@ -180,8 +179,6 @@ class CreateSearchResponse(BaseModel):
 
 class SearchMeta(BaseModel):
     id: str
-    id_column: str
-    count: int | None
     sql: str
     owner_sub: str
     created_at: datetime
@@ -197,18 +194,12 @@ class SearchMeta(BaseModel):
 
 
 class RowsResponse(BaseModel):
+    """The full cohort in one response for client-side sort/filter/paginate.
+    Lean columns only (report bodies dropped; fetched per-row via
+    /reports/read). `truncated` is true when the cohort exceeded the cap."""
+
     id: str
-    page: int
-    limit: int
-    total: int
     columns: list[str]
     rows: list[dict[str, Any]]
-
-
-class ModalitiesResponse(BaseModel):
-    """Distinct `modality` values present in a search's cohort, for the
-    viewer's Modality filter. Empty when none are present or the saved SQL
-    doesn't project `modality`."""
-
-    search_id: str
-    modalities: list[str]
+    total: int
+    truncated: bool

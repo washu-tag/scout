@@ -1,8 +1,14 @@
 # ADR 0027: XNAT Plugin Delivery
 
 **Date**: 2026-06-10
-**Status**: Proposed
+**Status**: Superseded (2026-07-28)
 **Decision Owner**: TAG Team
+
+> **Superseded:** the multi-source installer and the Logback rewrite this ADR
+> describes have migrated into the XNAT Helm chart itself — the chart now installs
+> plugins natively (url / coordinates / file / s3 / image) and routes console
+> logging via `loggingConfig`, so Scout's `xnat-plugin-installer` image is removed.
+> This is the upstream migration the note below anticipated.
 
 > **Note:** This describes the plugin-delivery mechanism Scout ships for the
 > optional XNAT feature (`enable_xnat`, see ADR 0026). Much of it — the

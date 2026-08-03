@@ -1,6 +1,6 @@
 # xnat role
 
-Deploys [XNAT](https://www.xnat.org/) (`xnatworks/xnat-web`) into Scout with one
+Deploys [XNAT](https://www.xnat.org/) (`ghcr.io/nrgxnat/xnat`) into Scout with one
 or more plugins, behind oauth2-proxy, using the off-the-shelf
 `xnat-openid-auth-plugin` for Keycloak SSO. Optional and **disabled by default**
 (`enable_xnat: false`).
@@ -32,8 +32,9 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
    includes the first-boot `xnat-prefs-init`, per-plugin config Secrets, and any
    Pattern-A jar Secrets.
 3. **Values** (`templates/values.yaml.j2`): templated from inventory, including
-   the generated `initContainers` / `plugins` / `authplugins` / `extraConfig` /
-   `extraVolumes` blocks derived from `xnat_plugins_all`.
+   the generated `plugins` / `authplugins` / `extraConfig` / `extraVolumes` blocks
+   derived from `xnat_plugins_all`. The role writes no `initContainers` of its
+   own — the chart renders one per plugin from the `plugins` map.
 4. **Helm install** via the shared `deploy_helm_chart` wrapper, with a 20-minute
    `--wait` to cover Hibernate's first-boot DDL.
 
@@ -64,11 +65,10 @@ Each plugin entry:
     # (a `-xpl.jar` is packaging `jar` + classifier `xpl`, hence `...:jar:xpl`).
     coordinates: org.example:my-xnat-plugin:1.2.3:jar:xpl
     # repo_url is OPTIONAL -- omit it for artifacts on Maven Central. Set it only
-    # when the artifact lives elsewhere (e.g. the openid plugin in jfrog). When
-    # set, the deploy mounts a settings.xml pointing Maven at it; air-gapped
-    # deploys mirror ALL resolution through the Nexus group regardless.
+    # when the artifact lives elsewhere (e.g. the openid plugin in jfrog). It is
+    # passed through as the chart's plugins.<name>.mavenUrl; air-gapped deploys
+    # mirror ALL resolution through the Nexus group regardless.
     repo_url: https://repo.example.org/releases/
-  skip_logback_rewrite: false   # default false
   config:                       # optional; one or more property files
     - mechanism: authplugins    # authplugins | file | extraConfig
       # authplugins: provider, entry (-> Secret xnat-plugin-<entry>), properties{}
@@ -81,28 +81,91 @@ Each plugin entry:
         some.key: value
 ```
 
-### Plugin delivery & logback rewrite
+### Plugin delivery
 
-For `file` / `url` / `coordinates` sources, the role generates an init container
-running the Scout **xnat-plugin-installer** image
-(`docker/xnat-plugin-installer/`). It acquires the jar, **rewrites the plugin's
-bundled logback config to log to stdout** (XNAT plugins ship a
-RollingFileAppender; Kubernetes wants stdout), and copies it into the shared
-`home-plugins` volume. `image` sources use the chart's native `plugins:` map and
-are assumed pre-built to log to stdout.
+Every source type goes into the chart's native `plugins:` map, and the chart
+renders the init container: a stock curl image for `url` / `coordinates` / `file`
+(it resolves the coordinate to a URL at render time, so the exact artifact is
+visible in `helm template`), and the plugin's own image for `image`. Jars are
+installed exactly as published — nothing is unpacked or repackaged.
+
+Because nothing rewrites the plugins' bundled logback configs any more, plugin
+logs reach `kubectl logs` only if XNAT itself is told to log to the console: set
+`XNAT_LOG_CONSOLE=plain` on the container (chart value `logConsole`). Without it,
+plugin logs go to files under `$XNAT_HOME/logs` where nothing collects them.
 
 ### Air-gapped notes
 
 - **coordinates** (Pattern D) is the air-gap-correct path: jars resolve through
-  the Nexus maven proxy (`maven_proxy_url`), no egress. The role mounts a
-  generated `settings.xml` that mirrors all Maven resolution through the Nexus
-  group, plus the staging CA (per ADR-0016) so the installer trusts Nexus's
-  self-signed HTTPS. The installer image carries no repo/air-gapped knowledge —
-  it just uses the `settings.xml` and CA when mounted (see ADR 0027).
-- **url** needs egress, so on air-gapped clusters it fails fast — use
-  coordinates, image, or file instead (re-hosting url jars via Nexus is a
-  possible future enhancement; see ADR 0027).
+  the Nexus maven proxy (`maven_proxy_url`), no egress. The role passes that URL
+  as the chart's `plugins.<name>.mavenUrl` and names the staging CA Secret via
+  `pluginInstaller.caCertSecret` (per ADR-0016) so the fetch trusts Nexus's
+  self-signed HTTPS. Release versions only — a `-SNAPSHOT` coordinate is rejected
+  at render time, since resolving one needs `maven-metadata.xml`.
+- **url** needs egress today, so on air-gapped clusters use coordinates, image or
+  file instead. The chart can rewrite url plugins onto a mirror
+  (`pluginRepository.baseUrl` replaces a matching prefix, e.g. `https://github.com`),
+  but Scout's Nexus defines Maven repositories only — a `raw` proxy of the upstream
+  host would have to be added to the nexus role first. See ADR 0027.
 - **image** pulls through Harbor like every other Scout image.
+
+## Testing an unreleased WAR / plugins
+
+To test an unreleased XNAT WAR or plugin build against a dev cluster without
+publishing a custom image, set local paths in inventory:
+
+```yaml
+xnat_dev_war: /path/to/xnat-web-<ver>.war   # optional
+xnat_dev_plugins:                            # optional
+  - /path/to/<plugin>.jar
+```
+
+`make install-xnat` then stages them into MinIO (a throwaway pod copies them in
+and uploads them) and the chart's `dev-war` / `dev-plugins` init containers pull
+them into the pod at start-up, using its S3 support pointed at MinIO; a
+`kubectl rollout restart` picks up a re-staged build with no redeploy. A
+side-loaded plugin overrides a declared one of the same filename — `dev-plugins`
+runs after the per-plugin installs — so a local build of a plugin already in
+`xnat_plugins` wins without editing that list. Requires in-cluster MinIO and a
+base image whose JDK matches the WAR (override `xnat_image_tag` via `-e` — it's
+pinned above inventory). Full guide:
+[`docs/internal/xnat-develop-testing.md`](../../../docs/internal/xnat-develop-testing.md).
+
+## Container service
+
+XNAT's container-service defaults to a local Docker socket (`/var/run/docker.sock`),
+which doesn't exist in the pod. Set `xnat_container_service: true` to run it on a
+**Kubernetes backend** instead. That does two things:
+
+1. **Chart** `containerService: true` — provisions the CS `Role`/`RoleBinding`s and
+   mounts the ServiceAccount token, so CS can launch containers as k8s Jobs.
+2. **Post-deploy** (`tasks/configure_cs.yaml`, run by `make install-xnat`) —
+   idempotently registers a `DockerServer` with `backend: kubernetes` via XNAT's
+   REST API (a `GET` check makes re-runs a no-op). This is what stops the
+   docker-socket lookup.
+
+> **Storage / scheduling:** CS Job pods co-mount the `xnat-archive` / `xnat-build`
+> PVCs with XNAT. With `ReadWriteOnce` local-path this works without a nodeSelector —
+> the PVs' node affinity auto-schedules the Jobs onto XNAT's node, and RWO allows
+> multiple pods on one node — but it confines all CS work to that single node (GPU
+> CS jobs can't reach a separate GPU node). Only if CS Jobs must spread across nodes
+> (or run on a different node than XNAT) do you need **ReadWriteMany** archive/build
+> (NFS/beegfs), plus `xnat_cs_swarm_constraints` / `xnat_cs_kubernetes_tolerations`
+> to place them.
+
+## Multiple replicas
+
+`replicaCount` is 1. If you scale up, the role has already patched a **Traefik
+sticky-session cookie** onto the XNAT Service (deploy.yaml) — without it, the
+session-based login bounces between pods and you get kicked back to the launchpad.
+A real multi-replica deployment also needs **RWX** `archive`/`build` storage (see
+the Container service note); on RWO local-path all replicas pin to one node.
+
+For multi-node **message/event** testing, set `xnat_dev_activemq: true` — the role
+deploys a standalone ActiveMQ Artemis broker and points every replica at it via
+`spring.activemq.*`, so cluster events share one queue instead of each pod's
+embedded broker. Dev/test only (one ephemeral broker, no HA/persistence). See the
+runbook (`docs/internal/xnat-develop-testing.md`) for how to inspect delivery.
 
 ## Mail
 
