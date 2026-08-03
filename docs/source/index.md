@@ -56,7 +56,7 @@ Selecting **Notebooks** from the Launchpad launches JupyterHub with notebooks th
 
 * **[Technical Documentation](technical/index.md)**: Deep dive into technical aspects of the Scout system
 
-* **Report Issues**: Submit issues via [Jira](https://xnat.atlassian.net/jira/software/projects/SCOUT/summary)
+* **Report Issues**: Submit issues on [GitHub](https://github.com/washu-tag/scout/issues)
 
 ```{toctree}
 :hidden:

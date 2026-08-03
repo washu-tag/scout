@@ -2,277 +2,136 @@
 
 ## Overview
 
-Scout is a distributed data analytics platform designed for intelligent, intuitive exploration of HL7 radiology reports. It processes large volumes of HL7 messages into a Delta Lake using a medallion architecture (bronze → silver), making them accessible through interactive analytics and notebooks.
+Scout is a distributed data analytics platform for exploring HL7 radiology reports. It
+processes HL7 messages into a Delta Lake using a medallion architecture (bronze → silver)
+and exposes them through SQL, dashboards, notebooks, and chat.
 
-**Official Documentation**: https://washu-scout.readthedocs.io/en/latest/
+User-facing docs: https://washu-scout.readthedocs.io/en/latest/ (source in `docs/source/`).
+Developer docs: `docs/internal/`. Issues and planning: GitHub issues and projects on
+`washu-tag/scout` (templates in `.github/ISSUE_TEMPLATE/`).
 
 ## Architecture
 
-Scout is a microservices platform deployed on Kubernetes (K3s) with the following key components:
+Microservices on Kubernetes (K3s), deployed by Ansible + Helm, fronted by Traefik.
 
-### User Services
-- **Analytics**: Apache Superset for no-code visualizations and SQL queries (powered by Trino)
-- **Notebooks**: JupyterHub; notebooks query Trino via the bundled `scout` SDK (no Spark in the image) for programmatic data analysis
-- **Launchpad**: Web-based landing page to access all Scout services
-- **Chat** (optional): Open WebUI with Ollama for AI-powered natural language querying
-
-### Data Layer (Lake)
-- **MinIO**: S3-compatible object storage (data persistence)
-- **Hive Metastore**: Catalog metadata management
-- **Delta Lake**: Lakehouse format for ACID transactions and versioning
-- **Trino**: Distributed SQL query engine connecting analytics to the lake
-
-### Processing Pipeline
-- **Orchestrator**: Temporal workflow engine for coordinating data ingestion
-- **Extractor Services**:
-  - `hl7log-extractor`: Splits HL7 log files, uploads messages to MinIO (bronze layer)
-  - `hl7-transformer`: Parses HL7, transforms to structured data, writes to Delta Lake (silver layer)
-
-### Infrastructure
-- **Databases**: PostgreSQL (apps), Cassandra (Temporal persistence), Elasticsearch (Temporal visibility), Redis (caching & websockets)
-- **Monitoring**: Prometheus (metrics), Loki (logs), Grafana (dashboards & visualization)
-- **Ingress**: Traefik (load balancing and routing)
-- **GPU Support** (optional): NVIDIA GPU Operator for accelerated workloads
-
-### Data Flow
 ```
-HL7 Log Files → Orchestrator (Temporal)
-                     ↓
-            hl7log-extractor → MinIO (Bronze: Raw HL7)
-                     ↓
-            hl7-transformer → Delta Lake (Silver: Structured)
-                     ↓
-                  Trino ← Superset & JupyterHub (Query & Analysis)
+HL7 log files → hl7log-extractor (Temporal workflow) → MinIO bronze (raw HL7)
+                                                     → hl7-transformer → Delta Lake silver
+                                                     → Trino → Superset / JupyterHub / report-viewer
 ```
+
+- **Lake**: MinIO (S3-compatible storage), Hive Metastore (catalog), Delta Lake (table
+  format), Trino (query engine, the only read path for user-facing clients)
+- **Ingest**: Temporal orchestrates; `hl7log-extractor` splits log files into messages,
+  `hl7-transformer` (PySpark) parses and writes Delta. An opt-in real-time MLLP listener
+  path exists in observer mode (ADR 0028)
+- **User services**: Superset (analytics), JupyterHub (notebooks, query via the `scout`
+  SDK — no Spark in the image), launchpad (landing page + user admin), Open WebUI + Ollama
+  and report-viewer (chat, optional), XNAT (imaging, optional)
+- **AuthN/AuthZ**: Keycloak + oauth2-proxy at the ingress; Trino authorization via OPA
+  (ADRs 0003, 0020–0025)
+- **Infrastructure**: PostgreSQL (CloudNativePG), Cassandra (K8ssandra) and Elasticsearch
+  (ECK) for Temporal, Valkey (cache/websockets), Prometheus + Loki + Grafana, optional
+  NVIDIA GPU operator
+
+Services are reachable under `external_url` via Traefik (launchpad at `/`, others at
+`/superset`, `/jupyter`, `/grafana`, `/temporal`, …) and in-cluster at
+`<service>.<namespace>.svc.cluster.local`.
 
 ## Project Structure
 
 ```
-scout/
-├── ansible/                    # Deployment automation
-│   ├── playbooks/             # Service deployment orchestration
-│   │   ├── main.yaml          # Full deployment workflow
-│   │   ├── k3s.yaml           # Kubernetes setup
-│   │   ├── lake.yaml          # MinIO + Hive + Delta Lake
-│   │   ├── trino.yaml         # OPA + Trino
-│   │   ├── superset.yaml      # Superset
-│   │   ├── orchestrator.yaml  # Temporal + Cassandra + Elasticsearch
-│   │   ├── extractor.yaml     # HL7 processors
-│   │   ├── jupyter.yaml       # JupyterHub
-│   │   ├── monitor.yaml       # Prometheus + Loki + Grafana
-│   │   ├── launchpad.yaml     # Landing page
-│   │   └── chatbot.yaml       # Open WebUI + Ollama
-│   ├── roles/                 # Ansible roles (one per component)
-│   │   ├── scout_common/      # Shared defaults, tasks, filters
-│   │   ├── minio/
-│   │   ├── hive/
-│   │   ├── trino/
-│   │   ├── superset/
-│   │   ├── cassandra/
-│   │   ├── elasticsearch/
-│   │   ├── temporal/
-│   │   ├── extractor/
-│   │   ├── jupyter/
-│   │   ├── open-webui/
-│   │   ├── postgres/
-│   │   ├── prometheus/
-│   │   ├── loki/
-│   │   ├── grafana/
-│   │   ├── launchpad/
-│   │   ├── xnat/              # XNAT imaging platform + plugins (optional)
-│   │   └── gpu-operator/
-│   ├── filter_plugins/        # Custom Jinja2 filters (jvm_memory_to_k8s, etc.)
-│   ├── group_vars/all/        # Centralized version management
-│   ├── inventory.yaml         # Deployment configuration (user-created from example)
-│   └── Makefile               # Deployment targets
-├── docs/                      # Sphinx documentation
-│   ├── source/                # User-facing documentation
-│   │   ├── index.md           # Overview & quickstart
-│   │   ├── services.md        # Architecture & services
-│   │   ├── dataschema.md      # Delta Lake table schema
-│   │   ├── ingest.md          # Ingestion workflow
-│   │   └── tips.md            # Usage tips
-│   └── internal/              # Developer documentation
-├── launchpad/                 # React landing page (TypeScript/Node.js)
-├── extractor/                 # HL7 processing services
-│   ├── hl7log-extractor/      # Splits logs, uploads HL7 (TypeScript/Node.js)
-│   └── hl7-transformer/       # Transforms HL7 to Delta (Python/PySpark)
-│       └── pyproject.toml     # Package: hl7scout
-├── orchestrator/              # Temporal workflows (TypeScript/Node.js)
-├── helm/                      # Helm chart configurations
-└── tests/                     # Integration and unit tests
-    ├── auth/                  # Playwright auth tests (TypeScript/Node.js)
-    └── ingest/                # HL7 ingestion integration tests (Java/Gradle)
+ansible/              # Deployment: playbooks/ (one per component), roles/, filter_plugins/
+                      #   scout_common/     shared defaults, tasks, filters
+                      #   group_vars/all/versions.yaml   all pinned component versions
+                      #   inventory.yaml    site config (created from inventory.example.yaml)
+helm/                 # Chart configurations and Scout-authored charts
+extractor/
+  hl7log-extractor/   # Java/Gradle: Temporal workflow + activities, log → bronze
+  hl7-transformer/    # Python/PySpark package `hl7scout`: HL7 → Delta silver
+hl7-listener/         # Java/Gradle: Camel MLLP listener + Kafka batcher (ADR 0028)
+report-viewer/        # Python FastAPI + React frontend/ (ADR 0029)
+launchpad/            # Next.js: landing page + /admin/users console (ADR 0025)
+sdk/python/           # The `scout` SDK used by notebooks and Voila
+keycloak/             # Keycloak image + event-listener/ SPI (OPA bundles, scout-users API)
+policy/trino/         # OPA Rego policy for Trino authorization
+analytics/notebooks/  # Notebooks shipped to JupyterHub
+tooling/              # CI tooling (manifest/ = build-manifest schema + reader/writer)
+docs/                 # source/ = user docs, internal/ = developer docs + adr/
+tests/                # ingest/ auth/ data-authorization/ network/ (see docs/internal/integration_tests.md)
+orchestrator/         # Docs only: how to launch workflows from the Temporal CLI
 ```
 
-## Key Technologies
-
-- **Container Orchestration**: Kubernetes (K3s lightweight distribution)
-- **Data Lake**: Delta Lake on MinIO (S3-compatible object storage)
-- **Metadata Catalog**: Apache Hive Metastore
-- **Query Engine**: Trino (distributed SQL)
-- **Analytics UI**: Apache Superset
-- **Notebooks**: JupyterHub (notebooks query Trino via the `scout` SDK)
-- **Workflow Orchestration**: Temporal
-- **Databases**: PostgreSQL (CloudNativePG operator), Cassandra (K8ssandra), Elasticsearch (ECK)
-- **Monitoring**: Prometheus, Loki, Grafana
-- **Deployment**: Ansible, Helm
-- **Languages**: Python (transformers), TypeScript (orchestrator, extractors, launchpad), Ansible (deployment)
+Note the workflow code lives in `extractor/hl7log-extractor`, not `orchestrator/`.
 
 ## Data Schema
 
-The Delta Lake silver layer contains a `reports` table with HL7 radiology report data:
+The silver layer's `reports` table holds one row per HL7 radiology report, partitioned by
+`year` (derived from `message_dt`), with patient identifiers, order/service fields,
+personnel, full `report_text`, parsed report sections, and arrays of `patient_ids` and
+`diagnoses`. Derivative tables and the `_epic_view` family are built on top of it.
 
-### Core Fields
-- **Metadata**: `source_file`, `updated`, `content_hash` (internal re-ingest dedup hash), `message_control_id`, `sending_facility`, `version_id`, `message_dt`
-- **Patient Info**: `mpi`, `birth_date`, `sex`, `race`, `ethnic_group`, `zip_or_postal_code`, `country`
-- **Patient IDs**: `patient_ids` (array of structs), `epic_mrn`, and dynamically-created ID columns per assigning authority
-- **Orders**: `orc_2_placer_order_number`, `obr_2_placer_order_number`, `orc_3_filler_order_number`, `obr_3_filler_order_number`
-- **Service**: `service_identifier`, `service_name`, `service_coding_system`, `diagnostic_service_id`, `modality` (derived)
-- **Timing**: `requested_dt`, `observation_dt`, `observation_end_dt`, `results_report_status_change_dt`
-- **Personnel**: `principal_result_interpreter`, `assistant_result_interpreter`, `technician` (arrays)
-- **Report Content**: `report_text` (full), `report_status`, `study_instance_uid`
-- **Parsed Sections**: `report_section_addendum`, `report_section_findings`, `report_section_impression`, `report_section_technician_note`
-- **Diagnoses**: `diagnoses` (array of structs with `diagnosis_code`, `diagnosis_code_text`, `diagnosis_code_coding_system`)
-- **Partitioning**: `year` (derived from `message_dt`)
-
-See `docs/source/dataschema.md` for complete schema documentation and HL7 field mappings.
+`docs/source/dataschema.md` is the authoritative column list and HL7 field mapping — read
+it rather than guessing at column names. Patient-identifier handling has its own note in
+`docs/internal/patient_ids.md`. Two columns are internal: `updated` (last content change)
+and `content_hash` (re-ingest dedup, ADR 0032).
 
 ## Development Workflow
 
-### Prerequisites
-- **Deployment**: Ansible 2.14+, SSH access to target nodes
-- **Python Services**: Python 3.10+, PySpark 4.1.1
-- **TypeScript Services**: Node.js/npm
-- **Cluster Access**: kubectl configured for K3s cluster
-- **Optional**: Docker (local containerization)
+### Deployment
 
-### Deployment Commands
+Everything deploys from `ansible/` via `make`: `make all` for the whole platform, or one
+`make install-<component>` target per logical component (see `ansible/Makefile` for the
+list). Roles are idempotent and safe to re-run. Dry-run a change with
+`ANSIBLE_CMD="--check --diff" make install-<component>`.
 
-All deployment is done via Ansible from the `ansible/` directory:
-
-```bash
-# Full deployment
-make all                      # Deploy entire Scout platform
-
-# Infrastructure
-make install-k3s              # K3s + Traefik + GPU operator (if configured)
-make install-postgres         # PostgreSQL (CloudNativePG)
-
-# Data layer
-make install-lake             # MinIO + Hive Metastore
-
-# Analytics
-make install-trino            # OPA + Trino
-make install-superset         # Superset
-
-# Processing
-make install-orchestrator     # Temporal + Cassandra + Elasticsearch
-make install-extractor        # HL7 extractors and transformers
-
-# User services
-make install-jupyter          # JupyterHub (notebooks query Trino via the scout SDK)
-make install-launchpad        # Landing page web UI
-make install-chat             # Open WebUI + Ollama (optional)
-make install-xnat             # XNAT imaging platform + plugins (optional)
-
-# Monitoring
-make install-monitor          # Prometheus + Loki + Grafana
-
-# Development/testing services
-make install-orthanc          # Orthanc PACS server
-make install-dcm4chee         # DCM4CHEE PACS server
-make install-mailhog          # Email testing
-```
+Prerequisites: Ansible 2.14+, SSH to the target nodes, kubectl pointed at the cluster.
+ADR 0031 replaces these targets with Flux at the GitOps cutover.
 
 ### Configuration
 
-1. **Create inventory**: `cp ansible/inventory.example.yaml ansible/inventory.yaml`
-2. **Configure**: Edit `inventory.yaml` for your environment:
-   - Hosts (server, workers, GPU nodes, staging)
-   - Storage paths (MinIO, PostgreSQL, Cassandra, Ollama, Open WebUI, etc.)
-   - Secrets (use Ansible Vault for passwords/tokens)
-   - Resources (CPU, memory, storage allocations)
-   - Feature flags (e.g., `enable_chat` for optional Chat service)
-   - Namespaces (optional overrides)
-3. **Deploy**: Run `make all` or individual `make install-*` targets
+1. `cp ansible/inventory.example.yaml ansible/inventory.yaml`
+2. Edit `inventory.yaml`: hosts, storage paths, secrets (Ansible Vault), resource
+   allocations, feature flags, namespace overrides. **Site-specific config belongs here,
+   not in role defaults.**
+3. `make all` or an individual `make install-*`.
+
+Precedence, lowest to highest: role defaults → `roles/scout_common/defaults/main.yaml` →
+`inventory.yaml` → `group_vars/all/versions.yaml` → `-e` extra vars. Note the
+non-obvious one: **versions in `group_vars` outrank `inventory.yaml`**, so test a
+different version with `-e`, and change pinned versions in `versions.yaml`.
+
+Verify with `ansible-inventory -i inventory.yaml --list` (or `--host <hostname>`).
 
 ### Feature Flags
 
-Scout supports optional features that can be enabled via feature flags in `inventory.yaml`:
+Optional components are off by default and enabled in `inventory.yaml`. Each requires
+storage paths and vault secrets; the deploy asserts the required secrets are non-empty,
+and the role README is the authoritative list.
 
-- **`enable_chat`**: Enable AI-powered chat interface (Open WebUI + Ollama)
-  - Default: `false` (disabled)
-  - Set to `true` in inventory to enable
-  - Requires storage paths: `ollama_dir`, `open_webui_dir`
-  - Requires secrets: `open_webui_postgres_password`, `open_webui_secret_key`, `open_webui_redis_password`, `keycloak_open_webui_client_secret`
-  - Features: Keycloak OAuth authentication, Trino MCP tool for natural language SQL queries, Redis-based websocket coordination
-  - Recommended: GPU node for optimal performance
-  - Post-deployment configuration required (see `ansible/roles/open-webui/README.md`)
-
-- **`enable_xnat`**: Enable the XNAT imaging platform (`ghcr.io/nrgxnat/xnat`) with plugins
-  - Default: `false` (disabled)
-  - When false, NOTHING XNAT is created — no namespace/deploy, and the Keycloak realm omits the `xnat` client + `xnat-access` role
-  - Requires secrets: `keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_admin_password` (the deploy asserts all three and fails if any is empty)
-  - `xnat_admin_password` seeds the `admin` account at first boot via `prefs-init.ini`'s `[system] defaultAdminPassword`, so the default `admin:admin` never survives a fresh deploy; it's a first-boot seed only — rotate afterward through the admin UI. Use a strong, vault-encrypted value.
-  - First boot is non-interactive: a templated `prefs-init.ini` (mounted from the `xnat-prefs-init` Secret) carries `initialized=true`, site URL, SSO-only `enabledProviders=['keycloak']`, SMTP, and the admin password — no setup wizard. Day-2 preference changes go through the UI/API, not this file.
-  - Single-node posture: `replicaCount: 1`, Redis/ActiveMQ off, PVCs via `xnat_storage_class` (empty → cluster default `local-path`, node-pinned), PostgreSQL via CloudNativePG, mail via Scout's shared relay
-  - Features: oauth2-proxy edge gate (the only enforced AuthZ layer) + the off-the-shelf `xnat-openid-auth-plugin` for Keycloak SSO; `xnat-access` is provisioned but unenforced (the 1.5.0 plugin can't consume the role). Plugins installed from coordinates/url/image/file via the chart's native plugin installer; plugins are additive over the role default via `xnat_plugins`
-  - Caveat: toggling back to `false` deletes the `xnat` Keycloak client, orphaning provisioned XNAT users (and as shipped, `false` skips the play — an already-deployed XNAT keeps running until manually removed)
-  - See `ansible/roles/xnat/README.md`, and ADRs 0026 (deployment posture/lifecycle) and 0027 (plugin delivery)
-
-### Variable Precedence
-
-Configuration hierarchy (lowest to highest precedence):
-1. **Role defaults** (`roles/*/defaults/main.yaml`) - Component-specific defaults
-2. **Common defaults** (`roles/scout_common/defaults/main.yaml`) - Shared Scout defaults
-3. **Inventory vars** (`inventory.yaml`) - **Your customizations go here**
-4. **Group vars** (`group_vars/all/versions.yaml`) - Version management (higher than inventory)
-5. **Extra vars** (`-e` flag) - Highest precedence
-
-**Key point**: You can override most defaults in `inventory.yaml`, but component versions in `group_vars/all/versions.yaml` take precedence (use `-e` flag to override for testing).
+- `enable_chat` — Open WebUI + Ollama. GPU node recommended; needs post-deployment setup
+  (`ansible/roles/open-webui/README.md`).
+- `enable_xnat` — XNAT imaging platform (`ansible/roles/xnat/README.md`, ADR 0026). When
+  false, nothing XNAT is created, including its Keycloak client — so toggling back to
+  false orphans provisioned XNAT users.
 
 ### Local Development
 
-Each service directory has its own development setup:
-- **launchpad/**: React app (`npm install`, `npm start`)
-- **orchestrator/**: Temporal workflows (`npm install`, deploy to cluster)
-- **extractor/hl7log-extractor/**: TypeScript service
-- **extractor/hl7-transformer/**: Python package `hl7scout` (PySpark)
+- Java/Gradle (`extractor/hl7log-extractor`, `hl7-listener`): `./gradlew build`
+- Python (`extractor/hl7-transformer`, `report-viewer`, `sdk/python`): `pytest`
+- `launchpad`: `npm install && npm run dev`
 
-## Ingestion Workflow
+Pre-commit hooks are documented in `docs/internal/precommit.md`; Ansible role tests use
+Molecule (`docs/internal/molecule_ansible_testing.md`).
 
-HL7 reports are ingested via Temporal workflows:
+## Ingestion
 
-### Workflow Steps
-1. **Submit** workflow to Temporal (via CLI, UI, or SDK)
-2. **Extract**: `hl7log-extractor` activity splits log files into individual HL7 messages, uploads to MinIO (bronze)
-3. **Transform**: `hl7-transformer` activity parses HL7, applies transformations, writes to Delta Lake (silver)
-4. **Query**: Data immediately available via Trino in Superset and JupyterHub
+`IngestHl7LogWorkflow` (Temporal, task queue `ingest-hl7-log`) finds log files, splits and
+uploads messages to bronze, then transforms them into the silver `reports` table. Omitted
+input parameters fall back to Ansible inventory defaults; the input model is
+`extractor/hl7log-extractor/.../model/IngestHl7LogWorkflowInput.java`, and
+`docs/source/ingest.md` documents the workflow for operators.
 
-### Workflow Input Parameters
-
-```json
-{
-  "date": "YYYYMMDD",                         // Optional: filter logs by date
-  "logPaths": ["path/to/file.log"],           // Optional: specific log files
-  "logsRootPath": "/data/hl7",                // Root path to search for logs
-  "scratchSpaceRootPath": "/tmp/scout",       // Temp files during processing
-  "hl7OutputPath": "s3://bucket/hl7",         // Bronze layer S3 path
-  "reportTableName": "reports",               // Delta Lake table name
-  "splitAndUploadTimeout": 120,               // Activity timeout (minutes)
-  "splitAndUploadHeartbeatTimeout": 10,       // Heartbeat timeout (minutes)
-  "splitAndUploadConcurrency": 4,             // Concurrent log processing
-  "deltaIngestTimeout": 120,                  // Base-ingest activity timeout (minutes)
-  "deriveDeltaTablesTimeout": 120             // Derivative-table activity timeout (minutes)
-}
-```
-
-Omitted parameters default to Ansible inventory variables.
-
-### Launching Workflows
-
-**Via Temporal CLI (admintools container):**
 ```bash
 kubectl exec -n temporal -i deployment/temporal-admintools -- temporal workflow start \
   --task-queue ingest-hl7-log \
@@ -280,375 +139,172 @@ kubectl exec -n temporal -i deployment/temporal-admintools -- temporal workflow 
   --input '{"logsRootPath": "/data/hl7", "reportTableName": "reports"}'
 ```
 
-**Via Temporal UI:**
-1. Access Temporal Web UI
-2. Click "Start Workflow"
-3. Fill form:
-   - Workflow ID: Random UUID
-   - Task Queue: `ingest-hl7-log`
-   - Workflow Type: `IngestHl7LogWorkflow`
-   - Input > Data: JSON parameters above
-   - Input > Encoding: `json/plain`
+Re-ingesting unchanged content is a no-op by design (ADR 0032).
 
-See `docs/source/ingest.md` for detailed ingestion documentation.
+## Querying the Lake
 
-## Monitoring & Observability
+Everything user-facing reads through Trino (`delta.default.reports`), so per-user row
+filters and column masks always apply. From notebooks or Python:
 
-Scout includes comprehensive monitoring via Grafana:
-
-### Pre-configured Dashboards
-- **Kubernetes**: Cluster health, node metrics, pod status
-- **Temporal**: Workflow execution, activity metrics, task queues
-- **MinIO**: Storage usage, API performance
-- **Databases**: PostgreSQL, Cassandra performance
-- **HL7 Ingest**: Extractor status, ingestion rates, errors
-- **Applications**: Trino, Superset, JupyterHub metrics
-
-### Accessing Grafana
-Grafana is accessible within the cluster via the Kubernetes service. Access methods depend on your deployment:
-- **Ingress**: If configured with `external_url` in inventory, access via your domain
-- **Internal**: From within the cluster network
-
-### Usage Tips (from docs/source/tips.md)
-- **Dashboards**: Located in Grafana under **Dashboards > Scout**
-- **Logs**: Access via **Drilldown > Logs** section
-- **Time Ranges**: Adjust time range to focus on specific periods
-- **Legend Filtering**: Click legend entries to isolate specific metrics/logs
-- **Variables**: Use dashboard variables (namespace, node, etc.) for filtering
-- **Correlating Logs**: Select "Include" for multiple services, click "Show Logs"
-- **Disk Usage**: Use **Node Exporter** dashboard (PV/PVC metrics may not work on-prem)
-- **Saving Changes**: Provisioned dashboards can't be edited directly; save as new dashboard, export JSON, commit to repo
-
-### Log Aggregation
-- All service logs collected by Loki
-- Searchable and filterable in Grafana Explore
-- Structured logging with contextual metadata
-- Drilldown from metrics to related logs
-
-## Accessing Services
-
-Scout services are accessible within the Kubernetes cluster. Access methods:
-
-### Via Ingress (Production)
-If configured with `external_url` in `inventory.yaml` and DNS/TLS setup:
-- **Launchpad** (landing page): `https://<external_url>/`
-- **Superset**: Via Launchpad or `https://<external_url>/superset`
-- **JupyterHub**: Via Launchpad or `https://<external_url>/jupyter`
-- **Grafana**: Via Launchpad or `https://<external_url>/grafana`
-- **Temporal UI**: Via Launchpad or `https://<external_url>/temporal`
-
-### From Within Cluster
-Services communicate via Kubernetes service names:
-- `superset.<namespace>.svc.cluster.local`
-- `grafana.<namespace>.svc.cluster.local`
-- etc.
-
-## Common Tasks
-
-### Query Reports in Superset
-1. Navigate to Scout Analytics (Superset)
-2. Use **SQL Lab** with Trino connection
-3. Query table: `delta.default.reports`
-4. Example: `SELECT * FROM delta.default.reports WHERE modality = 'CT' LIMIT 100`
-5. Create visualizations and dashboards from query results
-
-### Analyze Data in JupyterHub
-1. Access Scout Notebooks (JupyterHub)
-2. Open provided quickstart: `Scout/Quickstart.ipynb`
-3. Query the lake through Trino with the bundled `scout` SDK (the notebook image
-   has no Spark — every read goes through Trino as the logged-in user, so
-   per-user row filters and column masks apply; see ADR 0022):
-   ```python
-   import scout
-   df = scout.query("SELECT * FROM reports WHERE modality = :m", params={"m": "MRI"})
-   ```
-   `scout.query()` returns a pandas DataFrame; `scout.connect()` gives a DB-API
-   connection for streaming/large results.
-4. Export results: `df.to_csv("results.csv")`
-
-### Monitor Ingestion
-1. Access Grafana
-2. Navigate to **Dashboards > Scout > HL7 Ingest Dashboard**
-3. Check Temporal UI for workflow execution details
-4. View logs in **Grafana > Explore > Loki**
-
-### Troubleshoot Issues
-```bash
-# Check pod status across all namespaces
-kubectl get pods -A
-
-# View logs for specific pod
-kubectl logs -n <namespace> <pod-name>
-
-# Check recent logs with follow
-kubectl logs -n temporal <temporal-worker-pod> -f
-
-# Describe pod for events
-kubectl describe pod -n <namespace> <pod-name>
-
-# Verify Ansible configuration
-ansible-inventory -i inventory.yaml --list
-ansible-inventory -i inventory.yaml --host <hostname>
-
-# Re-run deployment with check mode (dry run)
-ANSIBLE_CMD="--check --diff" make install-<component>
-
-# Re-deploy specific component
-make install-trino
+```python
+import scout
+df = scout.query("SELECT * FROM reports WHERE modality = :m", params={"m": "MRI"})
 ```
+
+`scout.query()` returns a pandas DataFrame; `scout.connect()` returns a Trino DB-API
+connection for streaming large results. Gotchas worth knowing before writing SQL:
+
+- Filter array-of-struct columns with `any_match()`:
+  `WHERE any_match(diagnoses, x -> x.diagnosis_code = 'J18.9')`.
+- To match a column against a list parameter use `contains(:vals, col)`, **not** `IN` —
+  the SQLAlchemy dialect does not expand list params into `IN` clauses.
+- Filter on `year` where possible; it is the partition column.
+
+## Monitoring
+
+Grafana holds the dashboards (under **Dashboards > Scout**), Prometheus the metrics, Loki
+the logs from every service. Provisioned dashboards live in
+`ansible/roles/grafana/templates/dashboards/` — edit in the UI, then export the JSON into
+that directory (`docs/internal/grafana-dashboards-and-alerts.md`). Workflow-level ingest
+detail is in the Temporal UI.
+
+## Troubleshooting
+
+```bash
+kubectl get pods -A                          # what's unhealthy
+kubectl logs -n <namespace> <pod> [-f]       # service logs (also in Loki)
+kubectl describe pod -n <namespace> <pod>    # events, scheduling failures
+```
+
+Then: Grafana dashboards for metrics, Grafana > Explore > Loki for aggregated logs, the
+Temporal UI for workflow execution detail.
 
 ## Testing
 
-### Integration Tests
-
-#### Ingest Tests
-Located in `tests/ingest/` - test end-to-end ingestion workflows with Temporal
-
-#### Auth Tests
-Located in `tests/auth/` - Playwright browser-based authorization tests for OAuth2 Proxy + Keycloak
-
-### Unit Tests
-- **Python** (hl7-transformer): `pytest` in `extractor/hl7-transformer/`
-
-### Ansible Role Testing
-- **Molecule**: Test Ansible roles in isolation
-- See `docs/internal/molecule_ansible_testing.md`
+- Python unit tests: `pytest` in `extractor/hl7-transformer`, `report-viewer`, `sdk/python`
+- Java: `./gradlew test` in `extractor/hl7log-extractor`, `hl7-listener`
+- Integration/e2e under `tests/`: `ingest/` (Gradle, end-to-end Temporal ingestion),
+  `auth/` (Playwright, oauth2-proxy + Keycloak), `data-authorization/` (in-cluster Job,
+  the Keycloak → OPA → Trino AuthZ pipeline), `network/` (NetworkPolicy checks). See
+  `docs/internal/integration_tests.md`.
 
 ## Air-Gapped Deployment
 
-Scout supports deployment in air-gapped (offline) environments:
-
-### Architecture
-1. **Staging node**: Internet-connected K3s cluster with Harbor registry proxy
-2. **Production cluster**: Air-gapped K3s that pulls images from Harbor
-3. **Registry mirrors**: Harbor caches container images from upstream registries
-
-### Setup
-1. Define `staging` group in `inventory.yaml`
-2. Set `air_gapped: true` in inventory
-3. Deploy staging: `make install-staging` (or `ansible-playbook playbooks/staging.yaml`)
-4. Deploy Scout: `make all` (automatically uses Harbor mirrors)
-
-See `ansible/README.md` and `docs/internal/air-gapped-helm-remote-deployment-adr.md` for details.
+Set `air_gapped: true` and define a `staging` group in `inventory.yaml`; deploy the
+staging node (`make install-staging`), then `make all`. The staging node runs Harbor as a
+pull-through image proxy, Nexus for packages (conda/PyPI/Maven/RPM), and Squid for
+allowlisted outbound OAuth. See `ansible/README.md`,
+`docs/internal/staging-node-architecture.md`, and ADRs 0001, 0002, 0007, 0016–0018.
 
 ## Custom Ansible Filter Plugins
 
-Scout includes custom Jinja2 filters for complex transformations:
+In `ansible/filter_plugins/` — see `ansible/README.md` for the full set and tests.
 
-### `jvm_memory_to_k8s`
-Converts JVM heap sizes (decimal) to Kubernetes memory (binary) with optional multiplier:
-```yaml
-memory: "{{ cassandra_max_heap | jvm_memory_to_k8s }}"      # "2G" → "2Gi"
-memory: "{{ cassandra_max_heap | jvm_memory_to_k8s(2) }}"   # "2G" → "4Gi" (2x for limits)
-```
-Used by: Cassandra, Elasticsearch, Trino, HL7 Transformer
-
-### `multiply_memory`
-Multiplies memory values while preserving decimal units (for non-K8s configs):
-```yaml
-memory: "{{ jupyter_spark_memory | multiply_memory(2) }}"   # "8G" → "16G"
-```
-Used by: JupyterHub (requires decimal, not K8s binary format)
-
-See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
-
-## Tips & Best Practices
-
-### Query Performance
-- Use Trino's columnar format advantages (Delta Lake)
-- Filter on partitioned columns (`year`) for better performance
-- Use parsed report sections for targeted text analysis
-
-### Querying from Notebooks (scout SDK)
-- Use `scout.query(sql, params=...)` with `:name` bind params; it returns a pandas DataFrame. `scout.connect()` returns a Trino DB-API connection for streaming.
-- Filter array-of-struct columns with `any_match()`: `WHERE any_match(diagnoses, x -> x.diagnosis_code = 'J18.9')`. For matching a scalar column against a list param, prefer `contains(:vals, col)` over `IN` — the SQLAlchemy dialect doesn't expand list params into `IN` clauses.
-- Use the `patient_ids` array or convenience columns like `epic_mrn`.
-
-### Monitoring
-- Adjust time ranges to match data availability
-- Click legend entries to filter/isolate metrics
-- Use dashboard variables for targeted analysis
-- Correlate logs across services for debugging
-
-### Development
-- Test Ansible changes with `--check --diff` before applying
-- Component versions managed in `group_vars/all/versions.yaml`
-- Override defaults in `inventory.yaml`, not role defaults
-- Use `-e` flag to test different versions
-
-## Additional Resources
-
-- **Main Documentation**: https://washu-scout.readthedocs.io/en/latest/
-- **Issue Tracker**: https://xnat.atlassian.net/jira/software/projects/SCOUT/summary
-- **Ansible Docs**: https://docs.ansible.com/
-- **K3s**: https://docs.k3s.io/
-- **Temporal**: https://docs.temporal.io/
-- **Delta Lake**: https://delta.io/
-- **Trino SQL**: https://trino.io/docs/current/language.html
-- **Apache Superset**: https://superset.apache.org/docs/
-- **JupyterHub**: https://jupyterhub.readthedocs.io/
-- **PySpark**: https://spark.apache.org/docs/latest/api/python/
+- `jvm_memory_to_k8s` — JVM decimal heap size → K8s binary, optional multiplier:
+  `"{{ cassandra_max_heap | jvm_memory_to_k8s(2) }}"` turns `2G` into `4Gi`
+- `multiply_memory` — scales a value while keeping decimal units (for configs that must
+  not be binary)
 
 ## CI, Versioning, and Release Conventions
 
-Operative rules for changes touching CI, releases, or published artifacts. Design
-and rationale live in ADR 0030 (versioning + artifact publishing) and ADR 0031
-(Flux deployment base); this section is the working contract.
+Working rules for changes that touch CI, releases, or published artifacts. The design and
+rationale are in ADRs 0030 and 0031.
 
-### Commits and PRs
-- PR titles must be [Conventional Commits](https://www.conventionalcommits.org/)
-  (`feat`, `fix`, `chore`, `ci`, `docs`, `refactor`, `test`, `perf`, `build`,
-  `revert`; a trailing `!` marks a breaking change). The `PR Title Lint` check
-  enforces this on every PR. Prefer `fix(scope):` / `feat(scope):` over a bare
-  custom type.
-- Merges to `main` are squash-merges (ADR 0030): the squashed commit subject is
-  the PR title, that title is what release automation reads for the version bump
-  and changelog, and the linear history it yields is required by the build-lane
-  run-number ordering. Do not merge-commit or rebase-merge `main`.
-- Renovate and Dependabot are configured to emit `chore(deps):` titles so their
-  PRs satisfy the lint.
-
-### Versioning and releases (ADR 0030)
-- Build lane `0.YYYYMMDD.<run>`: minted once per run in the `changes` job. Each
-  merge rebuilds only what changed and records the whole platform, pinned by
-  `name:tag@digest`, in a signed build manifest. The manifest tooling and its
-  schema (the wire contract) live in `tooling/manifest/`.
-- Release lane `X.Y.Z`: version + changelog computed from Conventional-Commit
-  titles by release-please (`fix` -> patch, `feat` -> minor, `!` -> major). Do
-  not hand-type release versions.
-- `Chart.yaml` / `VERSION` / `pyproject.toml` version fields are placeholders
-  stamped at publish time; do not bump them by hand for a release.
-
-### Artifacts
-- Charts and images publish to `oci://ghcr.io/washu-tag/...` only when they
-  change (the `changes` job's path filters decide); publishing unchanged content
-  needlessly rolls pods.
-- Never enable registry auto-pruning (delete-untagged / older-than-N): content is
+- **PR titles must be Conventional Commits** (`feat`, `fix`, `chore`, `ci`, `docs`,
+  `refactor`, `test`, `perf`, `build`, `revert`; trailing `!` = breaking). The
+  `PR Title Lint` check enforces it, and release automation reads the title for the
+  version bump and changelog. Prefer `fix(scope):` over a bare custom type.
+- **`main` takes squash merges only.** Release automation and the build lane's
+  run-number ordering both depend on the linear history.
+- **Do not hand-edit version fields.** `Chart.yaml`, `VERSION`, and `pyproject.toml`
+  versions are placeholders stamped at publish time; release versions come from
+  release-please, not from you.
+- **Never enable registry auto-pruning** (delete-untagged, older-than-N). Content is
   pinned by digest under possibly-old tags, so pruning would reap live content.
-  Only prune digests that no manifest references.
+- **The `changes` job in `.github/workflows/ci.yaml` is the single path → component map.**
+  Adding an image or chart means adding its `dorny/paths-filter` entry and output there
+  (plus, for a new image, an `&image-matrix` entry and a `<subproject>/.trivyignore.yaml`).
+- **`scan-images` blocks on fixable HIGH/CRITICAL CVEs** left after a per-image
+  `.trivyignore.yaml`. Fix the dependency where we own it; suppress with a documented
+  reason only what an upstream base image bundles.
 
-### CI structure
-- The `changes` job's `dorny/paths-filter` block is the single path -> component
-  map. Adding an image or chart means adding its filter + output there (and, for
-  a new image, an entry in the `&image-matrix` anchor and a
-  `<subproject>/.trivyignore.yaml`). See "Add a new CI-built image/service" below.
-- `scan-images` fails a non-allow-failure image on any fixable HIGH/CRITICAL CVE
-  left after its per-image `.trivyignore.yaml` / `.trivyignore.rego`. Bump the
-  dependency where we own it; suppress-with-documented-reason only what an
-  upstream base image bundles.
-- Superseded PR runs auto-cancel (workflow `concurrency`); `publish` /
-  `publish-charts` run only on push to `main`. CI helper code lives in
-  `.github/scripts/` and `tooling/`; reusable steps in `.github/actions/`.
+CI helper code lives in `.github/scripts/` and `tooling/`; reusable steps in
+`.github/actions/`. Release mechanics and the full per-release checklist are in
+`docs/internal/versions-and-releases.md`.
 
 ## Architecture Decision Records (ADRs)
 
-ADRs in `docs/internal/adr/` document significant architectural decisions. Consult these when working in relevant areas:
+ADRs live in `docs/internal/adr/` and are authoritative for the areas they cover. The
+list below is for routing only — it tells you which file to open, not what it says. Read
+the ADR itself before changing anything it covers.
 
-- **ADR 0001: Helm Deployment for Air-Gapped Environments** — Uses remote Helm deployment via kubeconfig rather than OCI registry caching or local template rendering. Consult when modifying air-gapped deployment patterns or Helm chart installations.
+- **0001** air-gapped Helm — installs go out over kubeconfig, not an OCI cache or local render
+- **0002** air-gapped K3s — images via Harbor pull-through (SELinux RPM part superseded by 0017)
+- **0003** oauth2-proxy — gates at ingress; services keep their own Keycloak clients. Read when adding a protected service
+- **0004** storage provisioning — dynamic provisioning + storage classes, optional multidisk (Jupyter parts superseded by 0006)
+- **0005** MinIO credentials — why static keys, not STS (S3A can't use a custom STS endpoint)
+- **0006** Jupyter placement — pinned to GPU nodes, local storage only (SQLite locking breaks on NFS)
+- **0007** jump node — Ansible control node kept separate from the staging node in air-gapped deployments
+- **0008** Ollama models — pre-staged to NFS from staging, mounted read-only in prod
+- **0009** Open WebUI CSP — Traefik middleware against LLM-driven browser exfiltration
+- **0010** Open WebUI link filter — sanitizes external URLs mid-stream, covering what CSP can't
+- **0011** layered deployment — three layers + service-mode vars (`postgres_mode`, `redis_mode`, …). Read when adding a service
+- **0012** security hardening — global Traefik security-headers middleware; responses to scan findings
+- **0013** Valkey — standalone Valkey is `redis_mode: standalone`, the default
+- **0014** OWUI summarization filter — **superseded** by native context compaction; historical only
+- **0015** dependency CVE monitoring — Renovate watches `versions.yaml` (new entries need a `# renovate:` annotation), Dependabot watches app deps
+- **0016** staging cert — the staging self-signed cert is trusted explicitly, not skipped
+- **0017** package proxy — Nexus proxies conda/PyPI/Maven/RPM via per-format `*_proxy_url` vars
+- **0018** Squid — domain-allowlisted forward proxy so air-gapped Keycloak can reach external IdPs
+- **0019** `trino-rw` — a write-capable Trino that exists only for transformer view DDL; user-facing Trino stays read-only
+- **0020** Trino AuthZ — OPA + Keycloak attributes; a new restriction dimension is one `trino_attribute_filters` edit. Policy: `policy/trino/main.rego`
+- **0021** OPA user data — a Keycloak SPI publishes user-attribute bundles to MinIO; OPA pulls them into `data.users`
+- **0022** Trino auth — JWT on Trino; Jupyter passes the user's token through, other clients impersonate via `X-Trino-User`. Read before touching any client's Trino auth
+- **0023** view security — the `_epic_view` family is SECURITY DEFINER; OPA carves out view owners and hidden tables
+- **0024** SDK token refresh — how short-lived bearers stay valid in notebooks. Read when debugging notebook 401s / `JWT expired`
+- **0025** user admin — administration lives in the launchpad `/admin/users` console over a `scout-users` Keycloak SPI resource
+- **0026** XNAT posture — what `enable_xnat` creates: secrets, non-interactive first boot, SSO-only login, storage/DB/mail, destructive disable
+- **0027** XNAT plugins — **superseded**: plugins install chart-natively; the `xnat-plugin-installer` image is gone
+- **0028** HL7 listener — Camel MLLP listener + Kafka batcher, **observer mode only**; nothing downstream consumes `hl7-raw` yet
+- **0029** report-viewer — FastAPI + React cohort browser for chat; replaced Open WebUI's MCP Trino tool
+- **0030** versioning — build lane `0.YYYYMMDD.<run>` + signed build manifest, release lane `X.Y.Z` from PR titles. Working rules are in the CI section above
+- **0031** GitOps — Flux consumes `deploy/`, Ansible shrinks to bootstrap. Read before changing any component's deployment
+- **0032** re-ingest gate — `content_hash` makes an unchanged re-ingest a no-op. Read before touching the base merge or OBX ordering
 
-- **ADR 0002: K3s Air-Gapped Deployment Strategy** — K3s installation in air-gapped environments uses Harbor pull-through proxy for images. The original Kubernetes Job pattern for downloading SELinux RPMs (section 2) has been superseded by ADR 0017's Nexus yum proxy approach. Consult when modifying k3s installation or the `air_gapped` feature flag behavior.
+For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
+is `docs/internal/gitops-implementation-plan.md`.
 
-- **ADR 0003: OAuth2 Proxy as Authentication Middleware** — Implements hybrid authentication: OAuth2 Proxy enforces user approval at the ingress layer, while services maintain their own Keycloak OAuth clients for authorization. Consult when modifying authentication flows, adding new protected services, or working with the user approval workflow.
+**When you add an ADR, add exactly one line here**: the decision in a clause, plus the
+trigger that should send a reader to the file. This is a routing table, not a set of
+summaries — an agent decides from this line whether to open the ADR, and gets every
+detail from the ADR. Do not restate config keys, variable names, thresholds, or
+rationale; duplicated detail goes stale silently and crowds out the rest of this file. If
+a line is growing past one sentence, that is a sign the ADR should be read instead.
 
-- **ADR 0004: Storage Provisioning Approach** — Migrated from static hostPath PVs to dynamic provisioning with platform-native storage classes. Supports optional multi-disk configurations via `onprem_local_path_multidisk_storage_classes`. Consult when modifying storage configuration or adding persistent services. Note: Jupyter-specific sections superseded by ADR 0006.
+## Common Modification Patterns
 
-- **ADR 0005: MinIO STS Authentication Decision** — Documents why Scout uses static access keys for MinIO instead of STS authentication—Hadoop S3A connector cannot use custom STS endpoints for WebIdentity tokens. Consult when considering credential management changes for S3-compatible storage.
-
-- **ADR 0006: Jupyter Node Pinning and Storage Approach** — Jupyter pods are pinned to GPU nodes (when available) and use local storage instead of NFS because SQLite file locking fails on network filesystems. Consult when modifying JupyterHub storage or scheduling configuration.
-
-- **ADR 0007: Jump Node Architecture** — Separates the Ansible control node (jump node) from the staging node in air-gapped deployments for security—only the jump node has both internet access and production cluster credentials. Consult when modifying air-gapped deployment architecture or firewall requirements.
-
-- **ADR 0008: Ollama Model Distribution in Air-Gapped Environments** — Pre-stages Ollama models to shared NFS storage from the staging cluster; production mounts NFS read-only. Consult when modifying the Chat feature deployment or model management in air-gapped environments.
-
-- **ADR 0009: Open WebUI Content Security Policy** — Implements CSP via Traefik middleware to prevent LLM-generated external resource URLs from exfiltrating data through the user's browser. Consult when modifying Open WebUI security or Traefik middleware configuration.
-
-- **ADR 0010: Open WebUI Link Exfiltration Filter** — Implements an Open WebUI filter function to sanitize external URLs in LLM responses during streaming, preventing link-based data exfiltration that CSP cannot block. Consult when modifying Open WebUI security or filter function configuration.
-
-- **ADR 0011: Deployment Portability via Layered Architecture** — Introduces a three-layer model (Infrastructure, Platform Services, Applications) and service-mode variables (examples: `postgres_mode`, `object_storage_mode`, `redis_mode`) for cross-platform deployment. Consult when adding new services, modifying deployment patterns, or supporting new platforms.
-
-- **ADR 0012: Security Scan Response and Hardening** — Consolidates findings from Tenable Nessus and OWASP ZAP scans, implementing a global Traefik security headers middleware (HSTS, CSP, X-Frame-Options, etc.) to address the majority of findings. Consult when modifying security headers, Traefik middleware configuration, or evaluating future scan results.
-
-- **ADR 0013: Redis Enterprise to Valkey Migration** — Replaces Redis Enterprise Cluster (commercial license) with a single standalone Valkey instance (BSD-3, Linux Foundation). All Scout Redis usage is ephemeral (sessions, cache, pub/sub), so no data migration is needed. Valkey is a Redis OSS 7.2.4 fork with full RESP protocol compatibility — no application code changes required. Implements `redis_mode: standalone` as the new default per ADR 0011. Consult when modifying Redis/Valkey configuration, caching infrastructure, or the `redis_mode` service-mode variable.
-
-- **ADR 0014: Temporary Open WebUI Context Summarization Filter** (Superseded) — Installed a filter to summarize long conversations approaching the context-window limit. Removed in favor of OWUI's native automatic context compaction added in OWUI 0.10.0.
-
-- **ADR 0015: Dependency CVE Monitoring via Renovate and Dependabot** — Uses self-hosted Renovate (custom regex manager) and Dependabot to monitor dependencies for known CVEs only — not routine version updates. Renovate covers `versions.yaml` (Helm charts, Docker images, GitHub releases); Dependabot covers application dependencies (npm, pip, gradle, Dockerfile base images) via GitHub UI settings, plus GitHub Actions version updates via `dependabot.yml`. Consult when adding new dependencies to `versions.yaml` (add `# renovate:` annotation) or configuring Dependabot (GitHub UI: **Settings > Security > Advanced Security**).
-
-- **ADR 0016: Staging Node Certificate Distribution** — Distributes the staging node's self-signed TLS certificate to the production cluster via Ansible, replacing `insecure_skip_verify: true` with explicit CA trust. For containerd/K3s, the cert is placed on host nodes and referenced via `ca_file` in `registries.yaml`. For future containerized services, the cert is mounted from a Kubernetes Secret. Consult when adding services that contact the staging node or modifying air-gapped TLS configuration.
-
-- **ADR 0017: Air-Gapped Package Proxy** — Deploys Sonatype Nexus CE on the staging node alongside Harbor to serve as a pull-through proxy for conda, PyPI, Maven, and RPM packages. Enables Jupyter users to install packages on demand, simplifies RPM installation to standard `dnf` commands, and allows the Jupyter image to be slimmed by removing baked-in packages. Uses per-format proxy URL variables (`conda_proxy_url`, `pip_proxy_url`, etc.) following the service-mode pattern from ADR 0011, with staging cert trust per ADR 0016. Consult when modifying package proxy configuration, Jupyter notebook image contents, RPM installation tasks, or air-gapped package management.
-
-- **ADR 0018: Squid Forward Proxy for Air-Gapped Authentication** — Installs Squid forward proxy as a system package on the staging node with a strict domain allowlist, enabling Keycloak on air-gapped production clusters to reach external IdP OAuth endpoints (Microsoft, GitHub). Uses Keycloak's `spi-connections-http-client-default-proxy-mappings` SPI, configured conditionally when `air_gapped: true` and an external IdP is present. Consult when modifying air-gapped authentication, adding external IdP providers, or extending outbound access from air-gapped clusters.
-
-- **ADR 0019: Read-Write Trino Instance for Transformer-Issued View DDL** — Adds a second Trino deployment (`trino-rw` in `scout-extractor`) that can write metastore objects, used exclusively by the hl7-transformer for `CREATE OR REPLACE VIEW` DDL. Spark-created views aren't readable by Trino's Delta connector (different metastore-row format), so the transformer issues view DDL through Trino directly. NetworkPolicy restricts ingress to the transformer pod + Prometheus; the user-facing `trino-analytics` remains read-only. Consult when modifying view-creation flow, adding new Trino-readable views, or working with the transformer's metastore interactions.
-
-- **ADR 0020: Trino Authorization via OPA with Keycloak Attributes** — Picks OPA (via Trino's in-tree `opa` access-control plugin) as the policy engine and an attribute-driven model (Keycloak User Profile entries; ships `allowed_facilities` + `redact_select_identifiers` by default, with more row-filter dimensions added as one-line inventory edits via `trino_attribute_filters`) over groups. Policy data shape is generic and inventory-driven: `data.attribute_filters` maps each Keycloak attribute to a `{column, optional tables_override}`, `data.filtered_tables` is the shared list every dimension applies to, `data.masked_columns` lists PHI columns. Adding a restriction dimension is one inventory edit (the keycloak role renders user-profile attributes from `trino_attribute_filters`; the opa role consumes the same map). One non-attribute gate: `user_enabled` requires both `enabled: true` AND membership in `scout-user` or `scout-admin` — the approved-group set is hardcoded in `policy/trino/main.rego` because the same group names are hardcoded in the Keycloak realm template. This catches federated users who landed in Keycloak via upstream OIDC before going through Scout's approval flow. `delta.security=READ_ONLY` is retained at the connector as defense in depth. Consult when modifying the OPA policy (`policy/trino/main.rego`), adding AuthZ dimensions, changing the approval-group set, or reasoning about why OPA was picked over Ranger / file-based / GroupProvider.
-
-- **ADR 0021: OPA User Attribute Distribution via MinIO Bundles** — Defines how per-user attributes reach OPA. A Keycloak SPI listener (`OpaUserBundlePublisherProvider` in `keycloak/event-listener/`) maintains an in-memory user-attribute snapshot, debounces admin events into S3 PUTs of a tar.gz bundle to a dedicated MinIO bucket (`opa-bundles`), and OPA's native bundle plugin pulls every 5–10s and atomically swaps the `data.users` subtree. The Rego policy reads `data.users[user]` directly — no `http.send`, no admin-token client. Per-user payload carries `enabled` + `groups` (synthesized from `UserModel.isEnabled()` / `getGroupsStream()`) plus the User Profile attribute map verbatim. The listener handles both `USER` and `GROUP_MEMBERSHIP` admin events so add/remove from `scout-user` propagates. Consult when modifying the bundle publisher, OPA's bundle plugin config, or the rego's user-attribute lookup path.
-
-- **ADR 0022: Trino Authentication and Identity Propagation** — Picks `http-server.authentication.type=JWT` on Trino's HTTPS listener and the per-client identity-propagation patterns: JupyterHub uses JWT pass-through via `auth_state` (kernel runs as the user, no impersonation); Superset, Voila, and report-viewer each authenticate as a dedicated Keycloak service principal (`superset_svc`, `voila_svc`, `report_viewer_svc`) and impersonate the end user via `X-Trino-User`. Open WebUI never calls Trino directly; its tool runtime POSTs to report-viewer, which carries the trust boundary. Service-principal access tokens issued at 14400s (~4h). Notebook image excludes Spark — every read goes through Trino. Consult when modifying identity propagation in any client role (jupyter, superset, voila, report_viewer, trino), touching the `trino-audience` Keycloak client scope, or rotating service-principal secrets.
-
-- **ADR 0023: Trino View Security Model** — The `_epic_view` family is created `SECURITY DEFINER` so the view owner's underlying-table reads bypass row filters and column masks (which would otherwise clamp to zero rows / NULL out window-function results). The OPA policy carves out three pieces: `data.view_owner_principals` (members bypass row-filter and column-mask evaluation), `data.hidden_tables` (denied for direct SELECT and hidden from `SHOW TABLES`, e.g. `reports_report_patient_mapping`), and a `CreateViewWithSelectFromColumns` allow rule that lets the view owner join through `hidden_tables` while invoker queries against the same tables fail. Column masks are type-aware (varchar→`'[REDACTED]'`, other→bare `NULL`). Consult when adding views over `reports_report_patient_mapping` (or similar facility-less join targets), touching `trino_view_owner_principals` / `trino_hidden_tables`, or reasoning about why the policy looks like it's exempting things from its own AuthZ.
-
-- **ADR 0024: Token Refresh for SDK Trino Access** — Keeps the short-lived bearer (ADR 0022) valid for notebook/playbook code without OAuth in user code, via four layers: (1) custodian-side proactive rotation — Voila re-mints `voila_svc`; Jupyter relies on an oauthenticator `refresh_user_hook` (`eagerTokenRefresh`) that rotates at token half-life because stock oauthenticator only re-validates a live token without rotating; (2) SDK proactive re-fetch in the last ⅕ of the token's lifetime (`_REFRESH_BEFORE_EXPIRY_FRACTION`; lifetime = `exp − iat`, fixed-60s fallback if no `iat`) via a per-request dynamic bearer (one long-lived SQLAlchemy engine survives rotation, no `engine.dispose()`); (3) SDK reactive — `query()` retries once on Trino 401 (bearer rejected), dropping the cached bearer first; 403 (authz denial) is not retried; `connect()` doesn't wrap caller-driven execution; (4) per-kernel `threading.Lock` single-flight. Everything is a fraction of the lifespan (hook rotates at ½, SDK refreshes at ⅕, gate `auth_refresh_age = keycloak_access_token_lifespan // 5` ≤ ½−⅕ = 3⁄10), so it's scale-invariant — no floor, no per-value tuning. `keycloak_access_token_lifespan` drives both the realm `accessTokenLifespan` and the Hub gate so they can't drift. Consult when touching the SDK's `_query.py`/`_identity.py` refresh logic, the Jupyter `eagerTokenRefresh` hook / `auth_refresh_age`, or debugging Trino `JWT expired`/401 from notebooks.
-
-- **ADR 0025: In-App User Administration and Launchpad Token Pass-Through** — Moves user administration out of the Keycloak master console into a `scout-admin`-gated console in the launchpad (`/admin/users`, Next.js), backed by a `scout-users` Keycloak REST resource (a `RealmResourceProvider` in the event-listener SPI). The API approves pending users, edits data-access attributes, promotes/demotes `scout-admin`, and offboards (full revocation of both groups). Authorization is a live `scout-admin` group check plus an `aud=scout-users-api` requirement — no standing admin credential. The attribute schema is **discovered at request time** from User Profile entries annotated `scoutAuthz=true` (rendered from `trino_attribute_filters`), so adding an AuthZ dimension stays the one-line inventory edit ADR 0020 promised. Server-side guardrails (mutation-tested, package-private predicates): no self-offboard, attribute-key allowlist, all-or-nothing validation. Every SPI mutation explicitly emits a Keycloak `AdminEvent` because direct model edits (`joinGroup`/`setAttribute`) fire none — without it OPA (ADR 0021) and the approval/offboard emails wouldn't see SPI-driven changes. Auth uses ADR 0022's same-realm JWT pass-through (next-auth is the fresh-token custodian; a server-side `/api/users/[...path]` route mints a fresh access token per request and forwards it as Bearer) — no token exchange, no `X-Trino-User`. The launchpad client is `fullScopeAllowed=false` (tokens carry only its client roles, not realm-admin); the session cookie holds only the refresh token + `username`/`isAdmin` (JWE/httpOnly/secure), the access token never cached. Consult when modifying the launchpad admin console, the `scout-users` SPI/RealmResource, the discovered attribute schema, SPI admin-event emission, or the launchpad↔Keycloak token pass-through.
-
-- **ADR 0026: XNAT Deployment Posture and Lifecycle** (Proposed) — Opt-in single-node XNAT behind `enable_xnat` (default `false`), image `ghcr.io/nrgxnat/xnat`. Covers image source and tag pinning, the required secrets, non-interactive first boot via `prefs-init.ini`, SSO-only login and where AuthZ is actually enforced, storage/DB/mail posture, and the destructive disable path. Consult before changing the xnat role, `enable_xnat`, the XNAT image or tag, first-boot/prefs config, or XNAT's auth/storage/DB posture.
-
-- **ADR 0027: XNAT Plugin Delivery** (Superseded) — **Superseded: plugins now install via the chart natively (url/coordinates/file/s3/image) with console logging via `loggingConfig`; Scout's `xnat-plugin-installer` image is removed.** Originally installed XNAT plugins through a Scout-built `xnat-plugin-installer` init container that acquires each JAR from one of four source types — Secret-mounted JAR, URL download, image-baked (chart-native `plugins:`), or Maven/Gradle coordinates (`groupId:artifactId:version[:packaging[:classifier]]`; the openid plugin is `...:jar:xpl`) — and rewrites each plugin's bundled Logback config from a rolling **file** appender to a **console** appender so logs hit stdout/Loki (replacing the XNAT team's per-plugin image practice). The Secret/URL/coordinate patterns flow through the rewrite; image-baked bypasses it. The required `xnat-openid-auth-plugin` is a role default and operator lists are **additive** (`xnat_plugins_all = xnat_plugins_default + xnat_plugins`), so SSO can't be dropped. The installer image is a generic Maven runner with no repo/air-gap knowledge baked in: it consumes a mounted `settings.xml` and CA only if present. Repo policy lives in the role from two triggers — a per-plugin `repo_url` (set only for non-Central artifacts; openid is NrgXnat Artifactory `libs-release` only) and air-gapped mode (mirror `*` through the Nexus `scout-maven` group, extending ADR 0017; staging CA per ADR 0016 imported into the JVM truststore). Air-gapped URL-pattern plugins fail fast with guidance to use coordinates/image/file (Nexus raw-repo restaging deferred — no consumer). Consult when modifying the xnat-plugin-installer, the plugin source patterns, the Logback rewrite, `xnat_plugins`/`xnat_plugins_default`, or coordinate resolution / air-gapped Maven config.
-
-- **ADR 0028: Real-Time HL7 Listener Architecture** (Accepted — observer mode) — Adds an opt-in, event-driven HL7 ingest path alongside the log-file pipeline. An **Apache Camel on Spring Boot** MLLP listener (port 2575) receives `ORU^R01`/ADT messages from the hospital interface engine, HAPI-parses and keys each by message control ID, writes it to the `hl7-messages` **Kafka** topic (Strimzi, single-broker KRaft, RF1, 3 partitions, 2-day + `retention.bytes`-capped retention), and ACKs only after a durable write so backpressure propagates upstream (the engine stops sending at a 10k backlog). A second Camel route, the **batcher**, consumes `hl7-messages` with Camel's batching consumer (`batching=true`, one O(n) zip pass), uploads each ZIP to the Bronze `hl7-raw` bucket, publishes the object key to `hl7-batches`, and commits Kafka offsets **per-partition** only after the durable write (at-least-once). Listener and batcher share one CI-built GHCR image (`hl7-listener`), each Deployment selecting its route via `camel.main.routes-include-pattern`; deployed by `helm/hl7-listener` + `ansible/roles/hl7-listener` (`make install-hl7-listener`), pull-only via the Harbor mirror in air-gapped mode. **Camel K was rejected** — its in-cluster image build needs Maven access and registry **push** credentials (a prod→staging Harbor push, supply-chain concern) that a CI-built pull-only image removes. **Scope is observer/collect-only**: `hl7-raw` is physically separate from the file-based Bronze (`s3://lake/hl7`) and Delta Silver, nothing downstream consumes it, and the `hl7-transformer` is **not** wired — the log-file → Temporal → transformer path remains the active, unchanged ingest. Purpose: observe the live feed (message mix/volume/timing/edge cases) to de-risk the eventual cutover. Transformer trigger (Temporal vs Spark Structured Streaming), report-update de-dup (P→F→C), ADT/patient-merge tables, per-message status tracking, and HA are all **deferred to the cutover**. Consult when modifying the hl7-listener/batcher routes, Kafka/Strimzi config, the `hl7-raw` Bronze bucket, or planning the real-time ingest cutover.
-
-- **ADR 0029: Report Viewer Service for Chat** — A FastAPI + React SPA microservice in `scout-analytics` that gives Open WebUI chat a browse/sort/filter/export surface for large cohorts, keeping the rows out of the LLM context. It exposes three LLM-facing OWUI tools over REST (`scout_find_reports` saves a search; `scout_get_reports` and `scout_query_sql` are transient), stores searches as SQL plus metadata, re-evaluates them against Trino on each read, and renders results in an iframe. Auth follows ADR 0022: inbound via the oauth2-proxy identity header (SPA/iframe) or a validated Keycloak Bearer (OWUI tool runtime); outbound as `report_viewer_svc` impersonating the user via `X-Trino-User`. A new-user webhook seeds the OWUI iframe-sandbox flags through a least-privilege Postgres role. Supersedes Open WebUI's Trino-access parts of ADR 0019, 0020, and 0022: the MCP Trino tool and `openwebui_mcp_svc` are gone, and Trino runs JWT-only. Consult when modifying the report-viewer service, its tools/endpoints, the iframe or CSV export, its Trino auth, or the new-user webhook.
-
-- **ADR 0030: Two-Lane Versioning and Artifact Publishing** (Proposed) — Two version lanes. **Build lane** `0.YYYYMMDD.<run>`: every merge that changes deployable source rebuilds only what changed and records everything else at its existing digest in a signed **build manifest** (`manifests/scout:<version>`) — the authoritative platform set; deployments consume `name:tag@digest` references stamped from it (into ADR 0031's config artifact), so pods restart only when content changed; docs-only merges publish nothing (path-based skip against the last manifest's source commit; CI/build-tooling changes rebuild everything; a weekly full rebuild bounds path→image misclassification); Trivy scans block releases, alert-only on builds. **Release lane** `X.Y.Z`: version + changelog computed from Conventional Commit PR titles by an accumulating release PR (`fix:`→patch, `feat:`→minor, `!`→major; highest wins), human-timed; releases rebuild from the release-PR commit with publish-time stamping; a release manifest publishes and is attached to the GitHub Release (registry backup required; build-lane history loss accepted). Charts publish to `oci://ghcr.io/washu-tag/charts/<name>` when changed: `version` = the build tag, `appVersion` = the primary image's producing build read from the manifest; Scout-image charts default their image tag to `.Chart.AppVersion`; third-party-wrapping charts keep explicit refs; Scout images under upstream charts are stamped in the config artifact. The commit type is the **operator contract** (`!` = operator action required; PR-title lint + upgrade-notes lint; squash-only merges — also required by the pipeline's linear-history ordering guard). Consumers lane-filter every policy: build `filterTags '^0\.\d{8}\.\d+$'`, release SemVer `>=1.0.0`, release-candidate patterns opt-in; never an unfiltered range. `latest`, VERSION files, `derive-version`, and the demo-branch flow retire at ADR 0031 cutover; in-tree version fields stay inert placeholders. **Deferred with mechanics specified** (the ADR's "Deferred work" section): promotion (a release re-labels the newest build manifest ancestral to the release PR's merge base — digests unchanged, charts repackaged), hotfix `release/X.Y` branches (`X.Y.Z-rc.<run>`), and registry pruning (keep manifest-referenced digests; until needed, keep everything). Consult when touching CI publish/tagging, chart publishing, release automation, or GitOps consumption policies.
-
-- **ADR 0031: GitOps Deployment Base; Ansible Reduced to Bootstrap** (Proposed) — Scout ships a Flux-consumable `deploy/` base (Kustomize base per component; HelmReleases pin ADR 0030's OCI charts, never git-branch sources; playbook ordering becomes a Flux `Kustomization` dependency graph with `dependsOn` + CEL health checks; feature flags are Kustomize Components carrying everything their flag created incl. Keycloak client config; one-off ops are dependent idempotent Jobs, initial DB creation in CNPG `postInitApplicationSQL`), published as a **deployment-config OCI artifact** with chart/image references stamped from the build manifest at publish (`name:tag@digest`; placeholders in git); a cluster's single pin is its `OCIRepository` tag. **Upgrades are PRs to a per-site config repo** (pin + cluster-vars + enabled components + SOPS secrets): Renovate proposes the bump with the changelog attached (pin a minimum Renovate version for `OCIRepository` support), a human merges, `git revert` rolls back declarative state (`!` releases ship backout notes; stateful changes follow expand/contract); no parallel imperative upgrade path. **Secrets: SOPS-in-git default from cutover** (age keys; recipients = cluster key + ops key; cluster key generated at bootstrap with a recovery copy escrowed in the Ansible vault; rotation = a PR; dev clusters prove it first), ESO on cloud, Ansible/vault materialization only where governance bans secrets in git (only there two owners persist: Flux owns config, Ansible owns secret material). Derived config moves into charts (`_helpers.tpl` from `domain` + ADR 0011 service modes; spark-defaults first, phase 0); remaining scalars live in one `cluster-vars` ConfigMap via `postBuild.substituteFrom` with `StrictPostBuildSubstitutions` mandated plus a required-vars file validated in site-repo CI before pin bumps merge; structured maps (e.g. `trino_attribute_filters`) flow via `valuesFrom` — one key in one ConfigMap keeps ADR 0020's one-edit promise; the Keycloak realm decomposes into keycloak-config-cli fragments owned by their components. **Emergency changes**: `flux suspend` + hand-patch is cluster-local; commit the fix before resume; alert on prolonged suspension. **Air-gapped (all current gaps are soft)**: the cluster watches one signed **site-config artifact** that a small staging reconciler packages from the connected-side site repo (validate required vars → package → sign → push; tagged with the site-repo commit plus a `current` pointer); everything else pulls lazily through the Harbor proxy cache — a miss degrades to today's lazy fetch, never a broken upgrade; the release manifest doubles as optional cache warm-up + audit record; hard-gap transport deferred until a committed requirement (prefer `oras copy`; flux-mirror/Hauler candidates; Zarf rejected). Ansible shrinks to Layer 0: nodes/K3s/registries/CA/GPU/staging services + Flux install + key generation/escrow + one-time site-repo seeding; `make install-<service>` targets removed at cutover. Flux over Argo (SOPS, OCI sources, footprint, `dependsOn`; re-verify Argo's OCI support if revisited). Migration: phases 0–5 in `docs/internal/gitops-implementation-plan.md` — (0) publish changed charts + chart-owned config, (1) release automation, (2) build pipeline/manifest, (3) base + config artifact + CI via Flux with the matrix expanded to optional components (~+50% compute; GPU stays dev-cluster-proven), (4) site repos + SOPS + dev cutovers, (5) on-prem cutover with a one-time Helm/ownership adoption pass. Consult when adding/changing a component's deployment, feature flags, secrets plumbing, upgrade/release flow, or anything under `deploy/`. **Orientation docs**: `docs/internal/adr/0030-0031-tldr.md` (one-page summary) and `docs/internal/gitops-implementation-plan.md` (phases, deferred triggers, verify-at-implementation items).
-
-- **ADR 0032: Content-Hash Re-Ingest Gate for the Base Report Merge** (Proposed) — Makes an unchanged HL7 re-ingest a true no-op instead of a full row rewrite + CDF batch + derivative cascade (issue #482). Each `reports` row gets a `content_hash` (SHA-256 over the JSON of all extracted columns except `updated`/`content_hash`, with sorted column names and pinned `to_json` options so it's invariant to timezone/Spark defaults/the per-batch pivoted patient-ID columns; MapType never hashed). The base merge (`merge_report_df_into_table` in `deltalake.py`) anti-joins incoming rows against existing `(source_file, year, content_hash)` — pruned to the batch's year partitions — and if nothing survives, issues **no commit at all** (no CDF → quiet derivative cascade); a conditional matched-update (`NOT (t.content_hash <=> s.content_hash)`) is a race/retry safety belt that also makes the ingest activity idempotent under Temporal retries. `content_hash` is confined to the base table (dropped at the shared CDF entry filter so it never evolves derivative schemas under `autoMerge`). Pre-existing tables auto-migrate via metadata-only `ALTER TABLE ADD COLUMNS`; legacy NULL-hash rows backfill once (null-safe compare). `updated` semantics narrow from "last re-process" to "last content change". The gate depends on a determinism fix: OBX assembly moved off order-nondeterministic `collect_list`/`F.first` to position-sorted structs so identical input always hashes identically. Consult when touching the base merge / anti-join, the `content_hash` derivation (`sparkutils.py`), the CDF entry filter, or OBX/report-section ordering. Avoid prolonged mixed transformer versions (an old image NULLs `content_hash` on rows it updates — degraded, not broken).
-
-## Key Concepts for AI Assistants
-
-### Architecture Understanding
-- **Medallion architecture**: Bronze (raw HL7) → Silver (structured Delta Lake) → Query layer (Trino)
-- **Orchestration**: Temporal coordinates workflows; activities run in worker pods
-- **Separation of concerns**: Extractor splits logs, transformer structures data, Trino queries
-- **Object storage**: MinIO provides S3-compatible storage for Delta Lake
-
-### Configuration Management
-- **Centralized defaults**: `roles/scout_common/defaults/main.yaml` defines Scout-wide settings
-- **Version control**: `group_vars/all/versions.yaml` pins all component versions
-- **User overrides**: `inventory.yaml` is where deployment-specific config lives
-- **Secrets**: Use Ansible Vault for sensitive values
-
-### Deployment Patterns
-- **Idempotent**: Ansible roles can be re-run safely
-- **Component isolation**: Each `make install-*` target deploys one logical component
-- **Helm-based**: Most services deployed via Helm charts (managed by Ansible)
-- **Operator-managed**: PostgreSQL (CloudNativePG), Cassandra (K8ssandra), Elasticsearch (ECK)
-
-### Common Modification Patterns
-- **Add HL7 field**: Update `extractor/hl7-transformer/` parser, update `docs/source/dataschema.md`, and update the "Tables & Columns Reference" section in `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md` so the Scout Explorer model sees the new field (OWUI's RAG auto-injection is bypassed under native function-calling, so schema docs are inlined into the prompt instead of attached as knowledge)
-- **Modify workflow**: Edit TypeScript in `orchestrator/`, redeploy extractor role
-- **Adjust resources**: Override in `inventory.yaml` (JVM heap, CPU, memory, storage)
-- **Add a Grafana dashboard**: Create in Grafana UI, export JSON to `ansible/roles/grafana/files/dashboards/`
-- **Add a Superset dashboard, chart, or dataset**: Export the asset YAML from Superset and drop it into `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`. New bundles also need their name added to `scout_dashboard_bundles` in inventory. See `helm/scout-dashboards/README.md` for the bundle layout and how to host site-specific dashboards.
-- **Update dependency versions**: Edit `ansible/group_vars/all/versions.yaml`, redeploy component
-- **Add a new CI-built image/service**: Wiring it into `.github/workflows/ci.yaml` (changes filter, `build-and-upload` matrix, `publish`/`publish-demo`) only covers the `latest` tag on `main`. You MUST also wire the **release path**, or a tagged release ships the image frozen at `latest`: add its entries to `.github/scripts/update-versions.sh` (image-tag ansible var + `build.gradle`/`VERSION` + chart `version`/`appVersion`), the `IMAGES=` list in `.github/workflows/release.yaml`, and the tables in `docs/internal/versions-and-releases.md`.
-- **Release new Scout version**: See `docs/internal/versions-and-releases.md` for complete checklist of files to update
-- **Configure namespaces**: Override namespace variables in `inventory.yaml`
-- **Enable optional features**: Set feature flags in `inventory.yaml` (e.g., `enable_chat: true`), configure required paths and secrets, complete post-deployment setup per role README
-- **Add Ansible tasks with kubernetes.core**: See `docs/internal/ansible_roles.md` for kubeconfig configuration conventions (cluster vs jump node execution)
-
-### Debugging Strategy
-1. Check pod status: `kubectl get pods -n <namespace>`
-2. View logs: `kubectl logs -n <namespace> <pod>`
-3. Check Grafana dashboards for metrics
-4. View aggregated logs in Grafana > Explore > Loki
-5. Check Temporal UI for workflow execution details
-6. Verify config: `ansible-inventory -i inventory.yaml --list`
+- **Add an HL7 field** — parser in `extractor/hl7-transformer/`, then
+  `docs/source/dataschema.md`, then the "Tables & Columns Reference" in
+  `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md` (schema docs are
+  inlined into that prompt because native function-calling bypasses OWUI's RAG
+  injection, so a new field is invisible to chat until it is added there).
+- **Change the ingest workflow** — Java in `extractor/hl7log-extractor/`, then
+  `make install-extractor`.
+- **Adjust resources (heap, CPU, memory, storage)** — override in `inventory.yaml`.
+- **Add a Superset dashboard, chart, or dataset** — export the asset YAML into
+  `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`; a new
+  bundle also needs its name in `scout_dashboard_bundles` in inventory. See
+  `helm/scout-dashboards/README.md`.
+- **Update a dependency version** — `ansible/group_vars/all/versions.yaml`, with a
+  `# renovate:` annotation so CVE monitoring picks it up (ADR 0015), then redeploy.
+- **Add a CI-built image or service** — wiring `.github/workflows/ci.yaml` only covers
+  `main`. The release path must be wired too (`.github/scripts/update-versions.sh`, the
+  `IMAGES=` list in `.github/workflows/release.yaml`, and the tables in
+  `docs/internal/versions-and-releases.md`), or a tagged release ships the image frozen
+  at its last `main` build.
+- **Write Ansible tasks using `kubernetes.core`** — follow the kubeconfig conventions in
+  `docs/internal/ansible_roles.md` (they differ for cluster vs jump-node execution).
 
 ## License
 
-See the main Scout repository for license information.
+See `LICENSE`.
