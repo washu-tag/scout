@@ -12,7 +12,7 @@ fullnameOverride: ''
 # overrides it with the temporal chart's appVersion at deploy time.
 image:
   repository: temporalio/admin-tools
-  tag: "1.31.0"
+  tag: '1.31.0'
   pullPolicy: IfNotPresent
 
 # Temporal frontend the CLI talks to. The *internal* frontend bypasses the OIDC
