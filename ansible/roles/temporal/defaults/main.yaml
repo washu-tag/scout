@@ -21,11 +21,11 @@ scheduled_ingest_hour: 6 # Alternatively, full schedule can be specified with sc
 
 # Temporal namespace configuration
 # Workflow-history retention for the `default` namespace (issue #432). Accepts
-# the Temporal CLI duration form ("3d", "30d", "90d", ...). 3d preserves the
-# chart's prior default. Bump on dev for durability, or on prod for audit;
-# modern Temporal (chart ~1.2.x) has no max-retention cap -- the only bound is
-# the minimum (system.namespaceMinRetentionGlobal/Local, ~24h).
-temporal_default_namespace_retention: 3d
+# the Temporal CLI duration form ("3d", "30d", "90d", ...). Lower on dev if you
+# don't need the history, or raise on prod for longer audit windows; modern
+# Temporal (chart ~1.2.x) has no max-retention cap -- the only bound is the
+# minimum (system.namespaceMinRetentionGlobal/Local, ~24h).
+temporal_default_namespace_retention: 30d
 
 # temporal-bootstrap chart: idempotent Temporal setup applied via Helm-hook
 # Jobs, deployed as a separate release (mirrors the scout-dashboards model).
