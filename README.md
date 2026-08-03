@@ -5,7 +5,7 @@ A distributed data analytics platform for intelligent, intuitive exploration of 
 ## Quick Links
 
 - **Documentation**: https://washu-scout.readthedocs.io/en/latest/
-- **Issue Tracker**: https://xnat.atlassian.net/jira/software/projects/SCOUT/summary
+- **Issue Tracker**: https://github.com/washu-tag/scout/issues
 - **AI Assistant Guide**: See [CLAUDE.md](CLAUDE.md) for comprehensive codebase documentation
 
 ## Key Features

@@ -186,5 +186,5 @@ This is especially useful for debugging issues that span multiple components.
 ### Getting Help
 
 - **Documentation**: Review the [data schema](dataschema.md), [services](services.md), and [ingestion](ingest.md) docs
-- **Issue Tracking**: Report bugs or request features via [Jira](https://xnat.atlassian.net/jira/software/projects/SCOUT/summary)
+- **Issue Tracking**: Report bugs or request features on [GitHub](https://github.com/washu-tag/scout/issues)
 - **Admin Tools**: Contact your Scout administrator for access to Monitor, Orchestrator, or User Management interfaces
