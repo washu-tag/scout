@@ -7,7 +7,8 @@ processes HL7 messages into a Delta Lake using a medallion architecture (bronze 
 and exposes them through SQL, dashboards, notebooks, and chat.
 
 User-facing docs: https://washu-scout.readthedocs.io/en/latest/ (source in `docs/source/`).
-Developer docs: `docs/internal/`. Issues: https://xnat.atlassian.net/jira/software/projects/SCOUT/summary
+Developer docs: `docs/internal/`. Issues and planning: GitHub issues and projects on
+`washu-tag/scout` (templates in `.github/ISSUE_TEMPLATE/`).
 
 ## Architecture
 
