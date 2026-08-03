@@ -971,6 +971,13 @@ jobs:
             changed: voila-chart
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Login to GHCR (for the imagetools digest read-back)
+        if: needs.changes.outputs[matrix.changed] == 'true'
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: 'Publish chart - ${{ matrix.chart-name }}'
         if: needs.changes.outputs[matrix.changed] == 'true'
         shell: bash
@@ -991,6 +998,24 @@ jobs:
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
           helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
+          # Record the pushed chart by digest for the build-lane haul (ADR 0033),
+          # read back from the registry via a stable --format contract (matching
+          # docker-push); imagetools resolves OCI charts too.
+          ref="${REGISTRY}/washu-tag/charts/${CHART_NAME}:${VERSION}"
+          digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"
+          if [ "${digest#sha256:}" = "${digest}" ]; then
+            echo "::error::could not resolve pushed digest for ${CHART_NAME}"
+            exit 1
+          fi
+          mkdir -p "${RUNNER_TEMP}/chart-digests"
+          printf '%s %s@%s\n' "${CHART_NAME}" "${ref}" "${digest}" \
+            > "${RUNNER_TEMP}/chart-digests/${CHART_NAME}.txt"
+      - name: 'Upload chart digest - ${{ matrix.chart-name }}'
+        if: needs.changes.outputs[matrix.changed] == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: chart-digest-${{ matrix.chart-name }}
+          path: ${{ runner.temp }}/chart-digests/${{ matrix.chart-name }}.txt
   publish-demo:
     if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
