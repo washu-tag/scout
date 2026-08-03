@@ -1,0 +1,8 @@
+temporal-bootstrap installed.
+
+Idempotent Temporal setup runs as Helm post-install/post-upgrade hook Jobs:
+  - namespace "{{ .Values.namespace.name }}" retention -> {{ .Values.namespace.retention }}
+
+Inspect the most recent hook Job:
+  kubectl -n {{ .Release.Namespace }} get jobs -l app.kubernetes.io/name={{ include "temporal-bootstrap.name" . }}
+  kubectl -n {{ .Release.Namespace }} logs -l app.kubernetes.io/component=namespace-retention --tail=20

@@ -19,5 +19,23 @@ temporal_resources_default:
 # Scheduled workflow configuration
 scheduled_ingest_hour: 6 # Alternatively, full schedule can be specified with scheduled_ingest_cron
 
+# Temporal namespace configuration
+# Workflow-history retention for the `default` namespace (issue #432). Accepts
+# the Temporal CLI duration form ("3d", "30d", "90d", ...). Lower on dev if you
+# don't need the history, or raise on prod for longer audit windows; modern
+# Temporal (chart ~1.2.x) has no max-retention cap -- the only bound is the
+# minimum (system.namespaceMinRetentionGlobal/Local, ~24h).
+temporal_default_namespace_retention: 30d
+
+# temporal-bootstrap chart: idempotent Temporal setup applied via Helm-hook
+# Jobs, deployed as a separate release (mirrors the scout-dashboards model).
+# Currently enforces the namespace retention above; future one-off setup can be
+# added as additional hook Jobs in the chart.
+temporal_bootstrap_helm_chart_ref: '{{ scout_repo_dir }}/helm/temporal-bootstrap'
+temporal_admin_tools_image_repository: temporalio/admin-tools
+# temporal_admin_tools_image_tag is derived at deploy time from the temporal
+# chart's appVersion (see deploy.yaml) so it always matches the installed
+# Temporal server; there is no separate tag to maintain.
+
 # OIDC configuration
 temporal_oidc_enabled: true

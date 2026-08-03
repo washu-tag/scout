@@ -27,3 +27,11 @@ vulnerabilities:
   # (rattler.abi3.so). Fix (0.11.15) needs a rebuilt rattler; rattler runs only
   # at package-resolution time, not notebook runtime, and the QUIC path is unused.
   - id: GHSA-4w2j-m93h-cj5j # quinn-proto 0.11.14 -> 0.11.15 (compiled into rattler)
+  # setuptools + msgpack flagged from pip's bundled install-time deps
+  # (site-packages/pip/_vendor/vendor.txt), surfaced only on a fresh full
+  # rebuild. pip is required for the JupyterLab UX (users pip-install in
+  # notebooks), so it cannot be dropped, and the vendored copies are not
+  # independently bumpable (the real top-level msgpack is already 1.2.1). Not
+  # runtime app deps. Drop when a pip release re-vendors the fixes.
+  - id: CVE-2025-47273 # setuptools 70.3.0 (vendored in pip)
+  - id: GHSA-6v7p-g79w-8964 # msgpack 1.1.2 (vendored in pip)
