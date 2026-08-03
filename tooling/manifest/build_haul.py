@@ -15,11 +15,53 @@ is agnostic to the choice, so only ``carry`` below changes.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+import urllib.request
 from pathlib import Path
+from typing import Callable, Optional
 
 from haul import render_images
-from resolve import ghcr_digest, resolve_refs
+from resolve import resolve_refs
+
+_ACCEPT = ", ".join(
+    (
+        "application/vnd.oci.image.index.v1+json",
+        "application/vnd.docker.distribution.manifest.list.v2+json",
+        "application/vnd.oci.image.manifest.v1+json",
+        "application/vnd.docker.distribution.manifest.v2+json",
+    )
+)
+
+
+def ghcr_digest(
+    repo: str,
+    tag: str,
+    *,
+    token: Optional[str] = None,
+    opener: Callable = urllib.request.urlopen,
+) -> Optional[str]:
+    """Resolve the current content digest of a ghcr `repo:tag` (the carry source).
+
+    ``repo`` is ``ghcr.io/<path>``; returns the registry's ``Docker-Content-Digest``
+    (``sha256:...``) or None if absent. ``opener`` is injectable for tests. Keeping
+    this live-inspect I/O here (the glue layer) leaves resolve.py a pure assembler.
+    ``token`` is unused today (anonymous per-repo pulls); wire a GITHUB_TOKEN-derived
+    bearer through when authed pulls of private packages are needed.
+    """
+    host, _, path = repo.partition("/")
+    if host != "ghcr.io" or not path:
+        raise ValueError(f"ghcr_digest expects a ghcr.io/<path> repo, got {repo!r}")
+    if token is None:
+        with opener(f"https://ghcr.io/token?scope=repository:{path}:pull") as r:
+            token = json.load(r).get("token", "")
+    req = urllib.request.Request(
+        f"https://ghcr.io/v2/{path}/manifests/{tag}",
+        method="HEAD",
+        headers={"Authorization": f"Bearer {token}", "Accept": _ACCEPT},
+    )
+    with opener(req) as r:
+        return r.headers.get("Docker-Content-Digest")
 
 
 def parse_fresh(digests_dir: str) -> dict:
@@ -35,7 +77,7 @@ def parse_fresh(digests_dir: str) -> dict:
         if not line:
             continue
         _, _, ref = line.partition(" ")
-        ref = ref.strip() or line
+        ref = ref.strip()
         repo, _, rest = ref.partition(":")
         tag, _, digest = rest.partition("@")
         if not (repo and tag and digest.startswith("sha256:")):

@@ -2,7 +2,7 @@
 
 import pytest
 
-from build_haul import main, parse_fresh
+from build_haul import ghcr_digest, main, parse_fresh
 
 D1 = "sha256:" + "1" * 64
 D2 = "sha256:" + "2" * 64
@@ -41,3 +41,32 @@ def test_main_renders_manifest_all_fresh(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "kind: Images" in out
     assert f"ghcr.io/washu-tag/hl7-listener:0.20260803.1@{D1}" in out
+
+
+class _FakeResp:
+    def __init__(self, body=b"", headers=None):
+        self._body = body
+        self.headers = headers or {}
+
+    def read(self):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_ghcr_digest_parses_content_digest_header():
+    def opener(req):
+        if isinstance(req, str):  # token endpoint
+            return _FakeResp(body=b'{"token":"T"}')
+        return _FakeResp(headers={"Docker-Content-Digest": D1})  # manifest HEAD
+
+    assert ghcr_digest("ghcr.io/washu-tag/hl7-listener", "latest", opener=opener) == D1
+
+
+def test_ghcr_digest_rejects_non_ghcr_repo():
+    with pytest.raises(ValueError, match="ghcr.io/<path>"):
+        ghcr_digest("docker.io/library/alpine", "latest", opener=lambda *a: None)

@@ -5,7 +5,7 @@
 # NOTE: consolidating this with the ci.yaml &image-matrix and publish-charts
 # matrix into ONE source of truth is an open decision (Phase 2 decision 5).
 
-# --- images (the &image-matrix, 9) ---
+# --- images (the &image-matrix, 8) ---
 ghcr.io/washu-tag/hl7log-extractor
 ghcr.io/washu-tag/hl7-transformer
 ghcr.io/washu-tag/hl7-listener
@@ -14,7 +14,6 @@ ghcr.io/washu-tag/launchpad
 ghcr.io/washu-tag/superset
 ghcr.io/washu-tag/keycloak
 ghcr.io/washu-tag/report-viewer
-ghcr.io/washu-tag/xnat-plugin-installer
 
 # --- charts (13): repo = ghcr.io/washu-tag/charts/<Chart.yaml name> ---
 # TODO: enable once publish-charts captures chart digests and the chart-name

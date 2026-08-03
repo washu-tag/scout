@@ -80,36 +80,3 @@ def test_resolver_output_feeds_the_renderer():
     manifest = render_images(resolve_refs(COMPS, fresh=fresh, carry=_no_carry))
     assert "kind: Images" in manifest
     assert f"@{D1}" in manifest and f"@{D2}" in manifest
-
-
-class _FakeResp:
-    def __init__(self, body=b"", headers=None):
-        self._body = body
-        self.headers = headers or {}
-
-    def read(self):
-        return self._body
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *a):
-        return False
-
-
-def test_ghcr_digest_parses_content_digest_header():
-    from resolve import ghcr_digest
-
-    def opener(req):
-        if isinstance(req, str):  # token endpoint
-            return _FakeResp(body=b'{"token":"T"}')
-        return _FakeResp(headers={"Docker-Content-Digest": D1})  # manifest HEAD
-
-    assert ghcr_digest("ghcr.io/washu-tag/hl7-listener", "latest", opener=opener) == D1
-
-
-def test_ghcr_digest_rejects_non_ghcr_repo():
-    from resolve import ghcr_digest
-
-    with pytest.raises(ValueError, match="ghcr.io/<path>"):
-        ghcr_digest("docker.io/library/alpine", "latest", opener=lambda *a: None)
