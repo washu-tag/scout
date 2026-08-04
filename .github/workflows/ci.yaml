@@ -68,8 +68,14 @@ jobs:
         id: filter
         with:
           filters: |
+            # Only ci.yaml (this build/scan/push workflow) and the composite
+            # actions it calls affect image contents. Sibling workflows (codeql,
+            # security, lint, release-please, renovate, ...) must NOT force a full
+            # rebuild+rescan of every image, or an unrelated CI edit surfaces the
+            # newest fixable CVE on all images. ci.yaml calls no reusable workflows,
+            # so this pair is complete.
             ci:
-              - '.github/workflows/**'
+              - '.github/workflows/ci.yaml'
               - '.github/actions/**'
             hl7log-extractor:
               - 'extractor/hl7log-extractor/**'
