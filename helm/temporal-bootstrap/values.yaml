@@ -1,0 +1,45 @@
+# temporal-bootstrap: one-off, idempotent Temporal setup applied as Helm hook
+# Jobs (post-install,post-upgrade), mirroring the scout-dashboards import model.
+# Today it enforces the default namespace's workflow-history retention
+# (issue #432); future Temporal setup (e.g. the scheduled-ingest schedule,
+# currently a bespoke Ansible Job) can be added as additional hook Jobs here.
+
+nameOverride: ''
+fullnameOverride: ''
+
+# admin-tools image providing the `temporal` CLI. The tag should match the
+# Temporal server version. This is only the standalone default; Scout's Ansible
+# overrides it with the temporal chart's appVersion at deploy time.
+image:
+  repository: temporalio/admin-tools
+  tag: '1.31.0'
+  pullPolicy: IfNotPresent
+
+# Temporal frontend the CLI talks to. The *internal* frontend bypasses the OIDC
+# authz on the public frontend, matching Scout's other in-cluster setup Jobs.
+# Required — the deploying role sets this to the in-namespace FQDN.
+temporalAddress: ''
+
+namespace:
+  name: default
+  # Workflow-history retention. Accepts the Temporal CLI duration form
+  # ("3d", "30d", "90d", ...). Modern Temporal has no max-retention cap; the
+  # only bound is the minimum (system.namespaceMinRetentionGlobal/Local, ~24h).
+  retention: 30d
+
+# describe-retry attempts (x2s each) while waiting for the namespace to be
+# created on a fresh install (the temporal chart's create job is create-only
+# and may lag). 30 * 2s = up to ~60s.
+waitRetries: 30
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# How long to keep the completed hook Job around.
+ttlSecondsAfterFinished: 3600
+backoffLimit: 5
