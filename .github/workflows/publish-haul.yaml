@@ -67,6 +67,10 @@ jobs:
           merge-multiple: true
 
       - name: Render the Hauler manifest
+        env:
+          # Authenticated carry of unchanged components so private (first-push)
+          # chart/image packages resolve; build_haul reads this from the env.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           python3 tooling/manifest/build_haul.py \
             --digests-dir digests \

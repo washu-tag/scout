@@ -15,7 +15,9 @@ is agnostic to the choice, so only ``carry`` below changes.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
+import os
 import sys
 import urllib.request
 from pathlib import Path
@@ -39,7 +41,7 @@ def ghcr_digest(
     repo: str,
     tag: str,
     *,
-    token: Optional[str] = None,
+    github_token: Optional[str] = None,
     opener: Callable = urllib.request.urlopen,
 ) -> Optional[str]:
     """Resolve the current content digest of a ghcr `repo:tag` (the carry source).
@@ -47,19 +49,24 @@ def ghcr_digest(
     ``repo`` is ``ghcr.io/<path>``; returns the registry's ``Docker-Content-Digest``
     (``sha256:...``) or None if absent. ``opener`` is injectable for tests. Keeping
     this live-inspect I/O here (the glue layer) leaves resolve.py a pure assembler.
-    ``token`` is unused today (anonymous per-repo pulls); wire a GITHUB_TOKEN-derived
-    bearer through when authed pulls of private packages are needed.
+
+    With ``github_token`` (a GITHUB_TOKEN or read:packages PAT) the lookup is
+    authenticated, so first-push *private* chart/image packages are readable; GHCR
+    accepts the base64-encoded token as the bearer directly. Without it the lookup
+    is anonymous via the public scope-token endpoint (public packages only).
     """
     host, _, path = repo.partition("/")
     if host != "ghcr.io" or not path:
         raise ValueError(f"ghcr_digest expects a ghcr.io/<path> repo, got {repo!r}")
-    if token is None:
+    if github_token:
+        bearer = base64.b64encode(github_token.encode()).decode()
+    else:
         with opener(f"https://ghcr.io/token?scope=repository:{path}:pull") as r:
-            token = json.load(r).get("token", "")
+            bearer = json.load(r).get("token", "")
     req = urllib.request.Request(
         f"https://ghcr.io/v2/{path}/manifests/{tag}",
         method="HEAD",
-        headers={"Authorization": f"Bearer {token}", "Accept": _ACCEPT},
+        headers={"Authorization": f"Bearer {bearer}", "Accept": _ACCEPT},
     )
     with opener(req) as r:
         return r.headers.get("Docker-Content-Digest")
@@ -105,13 +112,17 @@ def main(argv=None) -> None:
         if ln.strip() and not ln.lstrip().startswith("#")
     ]
     fresh = parse_fresh(args.digests_dir)
+    # Authenticated carry when a token is present (private first-push packages,
+    # e.g. not-yet-public charts); anonymous otherwise. The workflow passes it
+    # as GITHUB_TOKEN on the render step.
+    gh_token = os.environ.get("GITHUB_TOKEN") or None
 
     def carry(repo: str):
         # A missing carry tag (404) becomes None so resolve_refs fails closed with
         # a clear "neither rebuilt nor carried" naming the repo; any other registry
         # error is surfaced with context instead of a raw urllib traceback.
         try:
-            digest = ghcr_digest(repo, args.carry_tag)
+            digest = ghcr_digest(repo, args.carry_tag, github_token=gh_token)
         except HTTPError as e:
             if e.code == 404:
                 return None

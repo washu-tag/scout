@@ -74,6 +74,28 @@ def test_ghcr_digest_rejects_non_ghcr_repo():
         ghcr_digest("docker.io/library/alpine", "latest", opener=lambda *a: None)
 
 
+def test_ghcr_digest_authed_uses_base64_bearer_and_skips_token_endpoint():
+    import base64
+
+    seen = []
+
+    def opener(req):
+        seen.append(req)
+        assert not isinstance(req, str), "authed path must not hit the token endpoint"
+        return _FakeResp(headers={"Docker-Content-Digest": D1})
+
+    got = ghcr_digest(
+        "ghcr.io/washu-tag/charts/orthanc",
+        "latest",
+        github_token="ghs_secret",
+        opener=opener,
+    )
+    assert got == D1
+    assert len(seen) == 1  # single HEAD, no separate anonymous token fetch
+    expected = "Bearer " + base64.b64encode(b"ghs_secret").decode()
+    assert seen[0].headers["Authorization"] == expected
+
+
 def _carry_only(tmp_path):
     # empty digests dir -> nothing fresh -> every component is carried
     dd = tmp_path / "digests"
