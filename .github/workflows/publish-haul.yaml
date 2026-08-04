@@ -38,7 +38,7 @@ jobs:
 
       - name: Install hauler
         env:
-          HAULER_VERSION: '1.2.4' # TODO: pin + verify a checksum
+          HAULER_VERSION: '2.0.2' # store sync/save/copy validated on 2.x; TODO: verify a checksum
         # Download the binary (not curl | bash) so a hijacked installer can't run
         # arbitrary code with the job's registry credentials.
         run: |
@@ -111,5 +111,10 @@ jobs:
           oras push "${ref}" \
             --artifact-type application/vnd.hauler.bundle.v1+zstd \
             "scout-${VERSION}.tar.zst:application/zstd"
-          cosign sign --key env://COSIGN_PRIVATE_KEY --yes "${ref}"
+          # Keyed sign, no transparency log: cosign v3.1.2 defaults
+          # --use-signing-config=true, which conflicts with the tlog opt-out, so
+          # both flags are needed. Keeps private image digests out of public Rekor;
+          # the enclave verifies with `cosign verify --key --insecure-ignore-tlog`.
+          cosign sign --key env://COSIGN_PRIVATE_KEY \
+            --use-signing-config=false --tlog-upload=false --yes "${ref}"
           # TODO: after verify, retag ${HAUL_REF}:main -> this version (ordering guard).
