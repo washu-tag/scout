@@ -2,67 +2,43 @@
 """Build the Hauler content manifest for a Scout build (ADR 0033).
 
 Reads the fresh push digests the docker-push action captured (one file per
-rebuilt component, format ``<name> <ref>@<digest>``), carries every other
-component at its current registry digest, and renders the ``kind: Images``
-manifest that ``hauler store sync`` consumes.
+rebuilt component, format ``<name> <ref>@<digest>``), carries every unchanged
+component at the digest it had in the previous build's haul manifest, and
+renders the ``kind: Images`` manifest that ``hauler store sync`` consumes.
 
-Carry policy (OPEN sub-decision, ADR 0033): this carries an unchanged component
-at its ``--carry-tag`` (default ``latest``) via a live registry inspect. The
-alternative is to read the predecessor haul's recorded tag+digest; ``resolve_refs``
-is agnostic to the choice, so only ``carry`` below changes.
+Carry policy (ADR 0033, resolved by prove-out): carry from the PREDECESSOR haul,
+not a live tag lookup. A fixed carry tag is impossible because vendored-upstream
+images have no ``:latest`` (superset, keycloak) and superset has no build-lane
+tag either; the last published haul records every component's digest, so it is
+the tag-agnostic carry source. The workflow oras-pulls it to ``--predecessor``.
+The first build has no predecessor, so it must be a full rebuild (every
+component fresh); after that each build carries the unchanged rest.
+
+Dependency-free (stdlib only) so it runs on a CI runner with no install step.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-import urllib.request
 from pathlib import Path
-from typing import Callable, Optional
-from urllib.error import HTTPError
+from typing import Optional
 
 from haul import render_images
 from resolve import resolve_refs
 
-_ACCEPT = ", ".join(
-    (
-        "application/vnd.oci.image.index.v1+json",
-        "application/vnd.docker.distribution.manifest.list.v2+json",
-        "application/vnd.oci.image.manifest.v1+json",
-        "application/vnd.docker.distribution.manifest.v2+json",
-    )
-)
 
+def _split_ref(ref: str) -> Optional[tuple]:
+    """``(repo, (tag, digest))`` for a digest-pinned ``repo:tag@digest``, else None.
 
-def ghcr_digest(
-    repo: str,
-    tag: str,
-    *,
-    token: Optional[str] = None,
-    opener: Callable = urllib.request.urlopen,
-) -> Optional[str]:
-    """Resolve the current content digest of a ghcr `repo:tag` (the carry source).
-
-    ``repo`` is ``ghcr.io/<path>``; returns the registry's ``Docker-Content-Digest``
-    (``sha256:...``) or None if absent. ``opener`` is injectable for tests. Keeping
-    this live-inspect I/O here (the glue layer) leaves resolve.py a pure assembler.
-    ``token`` is unused today (anonymous per-repo pulls); wire a GITHUB_TOKEN-derived
-    bearer through when authed pulls of private packages are needed.
+    Repos never contain ``:`` (registry host is ``ghcr.io``, no port), so the
+    first ``:`` ends the repo and ``@`` splits tag from digest.
     """
-    host, _, path = repo.partition("/")
-    if host != "ghcr.io" or not path:
-        raise ValueError(f"ghcr_digest expects a ghcr.io/<path> repo, got {repo!r}")
-    if token is None:
-        with opener(f"https://ghcr.io/token?scope=repository:{path}:pull") as r:
-            token = json.load(r).get("token", "")
-    req = urllib.request.Request(
-        f"https://ghcr.io/v2/{path}/manifests/{tag}",
-        method="HEAD",
-        headers={"Authorization": f"Bearer {token}", "Accept": _ACCEPT},
-    )
-    with opener(req) as r:
-        return r.headers.get("Docker-Content-Digest")
+    repo, _, rest = ref.partition(":")
+    tag, _, digest = rest.partition("@")
+    if repo and tag and digest.startswith("sha256:"):
+        return repo, (tag, digest)
+    return None
 
 
 def parse_fresh(digests_dir: str) -> dict:
@@ -78,13 +54,38 @@ def parse_fresh(digests_dir: str) -> dict:
         if not line:
             continue
         _, _, ref = line.partition(" ")
-        ref = ref.strip()
-        repo, _, rest = ref.partition(":")
-        tag, _, digest = rest.partition("@")
-        if not (repo and tag and digest.startswith("sha256:")):
+        parsed = _split_ref(ref.strip())
+        if parsed is None:
             raise ValueError(f"unparseable digest line in {f}: {line!r}")
-        fresh[repo] = (tag, digest)
+        repo, td = parsed
+        fresh[repo] = td
     return fresh
+
+
+def parse_predecessor(path: str) -> dict:
+    """Map ``repo -> (tag, digest)`` from the previous build's haul manifest.
+
+    ``path`` points at the ``kind: Images`` YAML ``render_images`` emits (the
+    workflow oras-pulls it). A missing or empty file (the first build, no
+    predecessor) yields ``{}``.
+    """
+    if not path:
+        return {}
+    p = Path(path)
+    if not p.exists() or not p.read_text().strip():
+        return {}
+    out: dict = {}
+    for line in p.read_text().splitlines():
+        s = line.strip()
+        if not s.startswith("- name:"):
+            continue
+        ref = s.split(":", 1)[1].strip()
+        parsed = _split_ref(ref)
+        if parsed is None:
+            raise ValueError(f"unparseable predecessor ref: {ref!r}")
+        repo, td = parsed
+        out[repo] = td
+    return out
 
 
 def main(argv=None) -> None:
@@ -94,7 +95,9 @@ def main(argv=None) -> None:
     )
     ap.add_argument("--components", required=True, help="file with one repo per line")
     ap.add_argument(
-        "--carry-tag", default="latest", help="tag to carry unchanged components at"
+        "--predecessor",
+        default="",
+        help="previous build's haul manifest (carry source; empty on the first build)",
     )
     ap.add_argument("--name", default="scout")
     args = ap.parse_args(argv)
@@ -105,20 +108,14 @@ def main(argv=None) -> None:
         if ln.strip() and not ln.lstrip().startswith("#")
     ]
     fresh = parse_fresh(args.digests_dir)
+    carried = parse_predecessor(args.predecessor)
 
     def carry(repo: str):
-        # A missing carry tag (404) becomes None so resolve_refs fails closed with
-        # a clear "neither rebuilt nor carried" naming the repo; any other registry
-        # error is surfaced with context instead of a raw urllib traceback.
-        try:
-            digest = ghcr_digest(repo, args.carry_tag)
-        except HTTPError as e:
-            if e.code == 404:
-                return None
-            raise RuntimeError(
-                f"registry error carrying {repo}:{args.carry_tag}: {e}"
-            ) from e
-        return (args.carry_tag, digest) if digest else None
+        # Carry the digest from the predecessor haul. None -> resolve_refs fails
+        # closed with "neither rebuilt nor carried", so a component absent from
+        # both a fresh push and the last haul (e.g. a brand-new one) blocks the
+        # build until it has been published once.
+        return carried.get(repo)
 
     refs = resolve_refs(components, fresh=fresh, carry=carry)
     sys.stdout.write(render_images(refs, name=args.name))
