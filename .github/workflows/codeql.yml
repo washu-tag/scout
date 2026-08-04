@@ -14,8 +14,13 @@ name: 'CodeQL Advanced'
 on:
   push:
     branches: ['main']
+    # Docs-only changes have no code to analyze; skipping avoids wasted runs and
+    # the transient java-kotlin extraction flake they can hit. The weekly
+    # schedule below still does a full-repo scan.
+    paths-ignore: ['**/*.md', 'docs/**']
   pull_request:
     branches: ['main']
+    paths-ignore: ['**/*.md', 'docs/**']
   schedule:
     - cron: '36 1 * * 2'
 
