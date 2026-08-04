@@ -59,6 +59,7 @@ jobs:
       report-viewer-chart: ${{ steps.filter.outputs.report-viewer-chart }}
       scout-dashboards-chart: ${{ steps.filter.outputs.scout-dashboards-chart }}
       scout-opa-chart: ${{ steps.filter.outputs.scout-opa-chart }}
+      temporal-bootstrap-chart: ${{ steps.filter.outputs.temporal-bootstrap-chart }}
       voila-chart: ${{ steps.filter.outputs.voila-chart }}
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -112,6 +113,8 @@ jobs:
               - 'helm/scout-dashboards/**'
             scout-opa-chart:
               - 'helm/scout-opa/**'
+            temporal-bootstrap-chart:
+              - 'helm/temporal-bootstrap/**'
             voila-chart:
               - 'helm/voila/**'
       - name: 'Mint build version'
@@ -966,6 +969,9 @@ jobs:
           - chart-name: scout-opa
             chart-dir: helm/scout-opa
             changed: scout-opa-chart
+          - chart-name: temporal-bootstrap
+            chart-dir: helm/temporal-bootstrap
+            changed: temporal-bootstrap-chart
           - chart-name: voila
             chart-dir: helm/voila
             changed: voila-chart
