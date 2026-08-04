@@ -270,6 +270,7 @@ the ADR itself before changing anything it covers.
 - **0030** versioning — build lane `0.YYYYMMDD.<run>` + signed build manifest, release lane `X.Y.Z` from PR titles. Working rules are in the CI section above
 - **0031** GitOps — Flux consumes `deploy/`, Ansible shrinks to bootstrap. Read before changing any component's deployment
 - **0032** re-ingest gate — `content_hash` makes an unchanged re-ingest a no-op. Read before touching the base merge or OBX ordering
+- **0033** Hauler build lane — the build manifest is a signed Hauler haul. Read before changing build-lane bundling or air-gap transport
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.
