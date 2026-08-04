@@ -125,9 +125,11 @@ deploy model depends on:
   destination after the round trip, and the repo path was preserved (only the
   host changes), confirmed by Hauler's push log and an independent registry v2
   `Docker-Content-Digest` check.
-- **OCI charts.** Bundled as `kind: Images`, the podinfo OCI chart copied
-  verbatim: digest (`sha256:455d6a04...`) and path preserved, exactly like an
-  image. `kind: Charts` instead re-packaged it under `hauler/podinfo` with a new
+- **OCI charts.** Bundled as `kind: Images`, the real `hl7-transformer` OCI
+  chart copied verbatim: digest (`sha256:63a61a3b...1314f6`) and path
+  (`.../charts/hl7-transformer`) preserved, and it stayed a valid Helm artifact
+  in the destination (config media type `application/vnd.cncf.helm.config.v1+json`).
+  `kind: Charts` instead re-packages a chart under `hauler/<name>` with a new
   digest, which is why the design lists charts under `kind: Images`.
 - **Signature relocation.** `hauler store sync` carries cosign material by
   default, and `store copy` pushed the cosign **OCI 1.1 referrers** by digest
@@ -135,15 +137,20 @@ deploy model depends on:
   referrers, not legacy `.sig` tags, so a plain tag list does not show them).
   This is precondition (b), and it holds wherever the destination registry
   supports OCI 1.1 referrers.
-- **Keyed offline verification.** `cosign sign --key` then
-  `cosign verify --key --insecure-ignore-tlog` succeeded against the relocated
-  artifact with no Sigstore reachability (cosign v3; the legacy
-  `--tlog-upload=false` flag is gone, dropping it is the only change).
+- **Keyed offline verification.** `cosign sign --key ... --use-signing-config=false
+  --tlog-upload=false` then `cosign verify --key --insecure-ignore-tlog` succeeded
+  against the relocated chart and image with no Sigstore reachability; a wrong key
+  was rejected. On cosign v3.1.2 `--use-signing-config` defaults true and conflicts
+  with the tlog opt-out, so both flags are needed to sign offline (`--tlog-upload`
+  is deprecated in favor of a `--signing-config` carrying no transparency-log
+  services).
 
-Because digests are identical on both sides of the gap, the `ghcr.io/...@digest`
-references Flux and containerd resolve against Harbor point at the same content,
-so pods restart only when a component actually changed, exactly as ADR 0030/0031
-intend.
+`store copy` lands every artifact by digest only (tags do not relocate), so
+enclave references must be digest-pinned, which the build manifest already
+guarantees. Because digests are identical on both sides of the gap, the
+`ghcr.io/...@digest` references Flux and containerd resolve against Harbor point
+at the same content, so pods restart only when a component actually changed,
+exactly as ADR 0030/0031 intend.
 
 ## Relationship to ADRs 0030 and 0031
 
