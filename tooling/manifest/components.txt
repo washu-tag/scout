@@ -1,0 +1,33 @@
+# Scout platform components pinned into the build-lane haul (ADR 0033).
+# One OCI repo per line; blank lines and # comments are ignored. build_haul.py
+# resolves each to repo:tag@digest (fresh if rebuilt this run, else carried).
+#
+# NOTE: consolidating this with the ci.yaml &image-matrix and publish-charts
+# matrix into ONE source of truth is an open decision (Phase 2 decision 5).
+
+# --- images (the &image-matrix, 8) ---
+ghcr.io/washu-tag/hl7log-extractor
+ghcr.io/washu-tag/hl7-transformer
+ghcr.io/washu-tag/hl7-listener
+ghcr.io/washu-tag/scout-notebook
+ghcr.io/washu-tag/launchpad
+ghcr.io/washu-tag/superset
+ghcr.io/washu-tag/keycloak
+ghcr.io/washu-tag/report-viewer
+
+# --- charts (13): repo = ghcr.io/washu-tag/charts/<Chart.yaml name> ---
+# TODO: enable once publish-charts captures chart digests and the chart-name
+# map is confirmed (the changes-filter key is not always the Chart.yaml name).
+# ghcr.io/washu-tag/charts/hl7-transformer
+# ghcr.io/washu-tag/charts/dcm4chee
+# ghcr.io/washu-tag/charts/hive-metastore
+# ghcr.io/washu-tag/charts/hl7-listener
+# ghcr.io/washu-tag/charts/hl7log-extractor
+# ghcr.io/washu-tag/charts/keycloak-config-cli
+# ghcr.io/washu-tag/charts/launchpad
+# ghcr.io/washu-tag/charts/open-webui-bootstrap
+# ghcr.io/washu-tag/charts/orthanc
+# ghcr.io/washu-tag/charts/report-viewer
+# ghcr.io/washu-tag/charts/scout-dashboards
+# ghcr.io/washu-tag/charts/scout-opa
+# ghcr.io/washu-tag/charts/voila
