@@ -1,4 +1,4 @@
-# Monitoring (Grafana)
+# Monitoring
 
 Scout ships pre-configured [Grafana](https://grafana.com/) dashboards and log
 aggregation so operators can track platform health and troubleshoot issues.

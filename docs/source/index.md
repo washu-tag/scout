@@ -10,8 +10,6 @@ New to Scout? Start with the **[Quickstart](user/quickstart.md)**.
 
 ## Documentation
 
-Scout's documentation is organized by audience:
-
 * **[Using Scout](user/index.md)** — explore and analyze data: logging in, Analytics, Chat, Notebooks, and understanding what data you can see.
 * **[Operating Scout](operate/index.md)** — deploy and run Scout: the Ansible inventory, air-gapped installation, report ingestion, and per-user data-authorization configuration.
 * **[Reference](reference/index.md)** — the report data schema, backend architecture, and supporting database schemas.
