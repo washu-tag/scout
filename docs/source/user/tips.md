@@ -23,12 +23,12 @@ This page provides helpful tips for using Scout services effectively.
 
 - **Be specific**: Include details like modality, date ranges, or specific fields in your questions
 - **Use Scout terminology**: Reference field names from the [data schema](../reference/dataschema.md) for more accurate queries
-- **Check the SQL**: Expand the "View Result from scout-db" section to verify the AI generated the correct query
+- **Check the SQL**: Click **Explain Search** in the report viewer to verify the AI generated the correct query
 - **Iterate**: Ask follow-up questions to refine results
 
 ### When to Use Chat vs. Analytics vs. Notebooks
 
-- **Use Chat for**: Quick exploratory questions, ad-hoc analysis, learning about the data
+- **Use Chat for**: Quick exploratory questions, ad-hoc analysis, learning about the data, building and exporting a cohort
 - **Use Analytics for**: Creating visualizations, building dashboards, sharing results with others
 - **Use Notebooks for**: Complex transformations, statistical analysis, machine learning, custom exports
 
@@ -142,7 +142,7 @@ model.load_state_dict(torch.load('/home/jovyan/models/checkpoint.pth'))
 ### Exporting Data
 
 - **From Analytics**: Click Export in query results (CSV, Excel, etc.)
-- **From Chat**: Copy data from chat responses, or use the SQL query in Analytics/Notebooks for larger exports
+- **From Chat**: Use **Download CSV** in the report viewer for cohort searches, or take the SQL to Analytics/Notebooks
 - **From Notebooks**: Use `df.to_csv()`, `df.to_parquet()`, or other pandas export methods on the result of `pd.read_sql(...)`
 
 ### Getting Help
