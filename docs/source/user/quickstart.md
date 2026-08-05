@@ -29,15 +29,15 @@ or run direct queries in [SQL Lab](https://superset.apache.org/docs/using-supers
 
 ## Chat
 
-Selecting **Chat** opens an AI-powered interface for natural-language querying of
+Selecting **Chat** opens an AI-powered interface for natural language querying of
 report data. Ask questions in plain English and get data-driven answers from
 large language models with direct access to the Scout Delta Lake; cohort
-searches render inline as a sortable, filterable, CSV-exportable table.
+searches render inline as a sortable, filterable, CSV-exportable table. Learn
+more in the [Chat guide](chat.md).
 
 ![Scout Chat](../images/ScoutQuery.png)
 
-**Note:** Chat is optional and may not be enabled in all deployments. See the
-[Chat guide](chat.md) for details.
+**Note:** Chat is optional and may not be enabled in all deployments.
 
 (notebooks)=
 ## Notebooks
