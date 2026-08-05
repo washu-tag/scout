@@ -1190,8 +1190,14 @@ jobs:
             "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
           tar -xzf /tmp/oras.tar.gz -C /usr/local/bin oras
       - name: Download this run's fresh image digests
+        # No continue-on-error: a failed/partial download must fail the job (which
+        # is job-level continue-on-error, so non-blocking) rather than be swallowed.
+        # If it were swallowed, a just-rebuilt image would be missing from `fresh`
+        # and silently carried from the predecessor at its STALE digest, producing
+        # a valid-looking manifest that omits this run's new image. A pattern that
+        # matches zero artifacts (no images changed) still succeeds, so the
+        # legitimate carry-everything case is unaffected.
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        continue-on-error: true
         with:
           pattern: image-digest-*
           path: digests
