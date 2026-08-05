@@ -1,0 +1,116 @@
+# One-time bootstrap for the build-lane haul (ADR 0033, roadmap step 5b-2).
+#
+# The steady-state publish-haul job (in ci.yaml) carries unchanged components
+# from the previous haul, but the FIRST haul has no predecessor, and the publish
+# job only pushes CHANGED images, so no normal run ever has all 8 fresh. This
+# dispatch resolves every image's current digest, signs it, and builds + publishes
+# the first full haul so subsequent builds have a predecessor to carry from.
+#
+# Run once (again only to re-seed from scratch). Dispatch after the predecessor-
+# carry + haul-job PR is merged (it provides build_haul --predecessor).
+#
+# The sync/save/publish tail duplicates the publish-haul job; if that grows, lift
+# it into a `.github/actions/publish-haul` composite used by both.
+name: Bootstrap build-lane haul
+
+on:
+  workflow_dispatch:
+    inputs:
+      superset_tag:
+        description: 'superset has no :latest; seed from this release tag'
+        default: '5.0.0'
+      keycloak_tag:
+        description: 'keycloak has no :latest; seed from this release tag'
+        default: '26.6.3'
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
+  BUNDLE_REPO: ghcr.io/washu-tag/manifests/scout
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Login to GHCR
+        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Install hauler and oras
+        env:
+          HAULER_VERSION: '2.0.2'
+          ORAS_VERSION: '1.2.0'
+        # Binary downloads (not curl | bash), same posture as ci.yaml.
+        run: |
+          curl -fsSL -o /tmp/hauler.tar.gz \
+            "https://github.com/hauler-dev/hauler/releases/download/v${HAULER_VERSION}/hauler_${HAULER_VERSION}_linux_amd64.tar.gz"
+          tar -xzf /tmp/hauler.tar.gz -C /usr/local/bin hauler
+          curl -fsSL -o /tmp/oras.tar.gz \
+            "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+          tar -xzf /tmp/oras.tar.gz -C /usr/local/bin oras
+      - name: Resolve current image digests, sign, and record as fresh
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          SUPERSET_TAG: ${{ inputs.superset_tag }}
+          KEYCLOAK_TAG: ${{ inputs.keycloak_tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p digests
+          # Scout-built images have :latest; the two vendored-upstream images do
+          # not, so seed them from a release tag (dispatch inputs). Pin by @digest;
+          # the tag is only a label (hauler copies by digest).
+          for name in hl7log-extractor hl7-transformer hl7-listener scout-notebook \
+                      launchpad report-viewer superset keycloak; do
+            case "${name}" in
+              superset) src="${SUPERSET_TAG}" ;;
+              keycloak) src="${KEYCLOAK_TAG}" ;;
+              *) src="latest" ;;
+            esac
+            repo="${REGISTRY}/washu-tag/${name}"
+            digest="$(docker buildx imagetools inspect "${repo}:${src}" --format '{{json .Manifest}}' | jq -r '.digest')"
+            if [ "${digest#sha256:}" = "${digest}" ]; then
+              echo "::error::could not resolve a digest for ${repo}:${src}"
+              exit 1
+            fi
+            cosign sign --key env://COSIGN_PRIVATE_KEY \
+              --use-signing-config=false --tlog-upload=false --yes "${repo}@${digest}"
+            printf '%s %s@%s\n' "${name}" "${repo}:${src}" "${digest}" > "digests/${name}.txt"
+            echo "seeded ${repo}:${src}@${digest}"
+          done
+      - name: Build and publish the first haul (no predecessor)
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          VERSION="0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
+          python3 tooling/manifest/build_haul.py \
+            --digests-dir digests \
+            --components tooling/manifest/components.txt \
+            --predecessor "" \
+            --name scout > haul.yaml
+          echo "--- haul.yaml ---"; cat haul.yaml
+          hauler store sync -f haul.yaml
+          hauler store save -f "scout-${VERSION}.tar.zst"
+          # Push both immutable :version artifacts and sign the bundle, then advance
+          # the :main pointers last (ordering guard: a partial failure leaves :main).
+          oras push "${MANIFEST_REPO}:${VERSION}" haul.yaml:application/yaml
+          oras push "${BUNDLE_REPO}:${VERSION}" \
+            --artifact-type application/vnd.hauler.bundle.v1+zstd \
+            "scout-${VERSION}.tar.zst:application/zstd"
+          cosign sign --key env://COSIGN_PRIVATE_KEY \
+            --use-signing-config=false --tlog-upload=false --yes "${BUNDLE_REPO}:${VERSION}"
+          oras tag "${MANIFEST_REPO}:${VERSION}" main
+          oras tag "${BUNDLE_REPO}:${VERSION}" main
