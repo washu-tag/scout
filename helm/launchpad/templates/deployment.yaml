@@ -74,7 +74,7 @@ spec:
             # directory second. Earlier directories outrank later ones for
             # group definitions.
             - name: LAUNCHPAD_CATALOG_DIRS
-              value: /app/config/catalog
+              value: {{ if .Values.catalog.discovery.enabled }}/app/config/catalog:/app/config/discovered{{ else }}/app/config/catalog{{ end }}
             {{- if .Values.scoutEnv }}
             - name: SCOUT_ENV
               value: {{ .Values.scoutEnv | quote }}
@@ -96,13 +96,56 @@ spec:
             - name: catalog
               mountPath: /app/config/catalog
               readOnly: true
+            {{- if .Values.catalog.discovery.enabled }}
+            - name: discovered
+              mountPath: /app/config/discovered
+              readOnly: true
+            {{- end }}
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+        {{- if .Values.catalog.discovery.enabled }}
+        # kiwigrid/k8s-sidecar — the same image the Grafana chart embeds —
+        # materializes labelled catalog ConfigMaps into the shared emptyDir
+        # (ADR 0034). UNIQUE_FILENAMES because every chart plausibly names its
+        # data key apps.yaml; the default WATCH method recycles itself on a
+        # short server timeout, which is upstream's guard against silent watch
+        # death.
+        - name: catalog-sidecar
+          image: '{{ .Values.catalog.discovery.image.repository }}:{{ .Values.catalog.discovery.image.tag }}'
+          imagePullPolicy: {{ .Values.catalog.discovery.image.pullPolicy }}
+          env:
+            - name: LABEL
+              value: {{ .Values.catalog.discovery.label | quote }}
+            - name: LABEL_VALUE
+              value: {{ .Values.catalog.discovery.labelValue | quote }}
+            - name: FOLDER
+              value: /app/config/discovered
+            - name: NAMESPACE
+              value: {{ .Values.catalog.discovery.namespace | quote }}
+            - name: RESOURCE
+              value: configmap
+            - name: UNIQUE_FILENAMES
+              value: 'true'
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+          resources:
+            {{- toYaml .Values.catalog.discovery.resources | nindent 12 }}
+          volumeMounts:
+            - name: discovered
+              mountPath: /app/config/discovered
+        {{- end }}
       volumes:
         - name: catalog
           configMap:
             name: {{ include "launchpad.fullname" . }}-catalog
+        {{- if .Values.catalog.discovery.enabled }}
+        - name: discovered
+          emptyDir: {}
+        {{- end }}
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

@@ -19,6 +19,11 @@
     helm_chart_values:
       enableChat: '{{ enable_chat }}'
       enablePlaybooks: '{{ enable_playbooks }}'
+      catalog:
+        discovery:
+          image:
+            repository: '{{ k8s_sidecar_image }}'
+            tag: '{{ k8s_sidecar_image_tag }}'
       scoutEnv: '{{ scout_env }}'
       deployerName: '{{ deployer_name }}'
       docsUrl: '{{ scout_docs_url }}'

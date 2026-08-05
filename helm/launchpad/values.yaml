@@ -14,6 +14,29 @@ enablePlaybooks: false
 # that have cut over to cloud object storage set this false.
 enableMinio: true
 
+# Runtime catalog discovery (ADR 0034): a kiwigrid/k8s-sidecar container
+# watches ConfigMaps labelled `<label>: "<labelValue>"` and materializes their
+# data keys into a shared emptyDir the app reads alongside the mounted core
+# catalog. Requires the chart's ClusterRole (templates/rbac.yaml): the pod's
+# ServiceAccount gains cluster-wide ConfigMap read.
+catalog:
+  discovery:
+    enabled: true
+    label: scout.washu.edu/launchpad-apps
+    labelValue: '1'
+    # ALL, or a comma-separated namespace list for a tighter posture.
+    namespace: ALL
+    image:
+      repository: quay.io/kiwigrid/k8s-sidecar
+      tag: 2.10.1
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+
 # Environment label shown next to the Scout brand (e.g. "synthetic", "production").
 # Empty string falls back to "local" in the UI.
 scoutEnv: ''
