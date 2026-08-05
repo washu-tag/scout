@@ -15,9 +15,23 @@ ghcr.io/washu-tag/superset
 ghcr.io/washu-tag/keycloak
 ghcr.io/washu-tag/report-viewer
 
-# --- charts (13): repo = ghcr.io/washu-tag/charts/<Chart.yaml name> ---
-# TODO: enable once publish-charts captures chart digests and the chart-name
-# map is confirmed (the changes-filter key is not always the Chart.yaml name).
+# --- charts (14): repo = ghcr.io/washu-tag/charts/<name> ---
+# Map CONFIRMED: <name> is the Chart.yaml name == chart dir basename ==
+# publish-charts matrix chart-name for all 14; the dorny changes-filter key is
+# that name plus a "-chart" suffix. (Phase 2 decision 5 = fold these three lists
+# into one source of truth.)
+#
+# STILL COMMENTED. Chart digest capture (PR #588) is done, but two preconditions
+# remain before a chart can be carried into the haul:
+#   1. It must have been published at least once. publish-charts is changed-only,
+#      so a chart whose files have not changed since the job went live is absent
+#      from the registry and build_haul carry() (a live ghcr lookup) fails closed
+#      on it. Today only hl7-transformer, launchpad, open-webui-bootstrap, and
+#      temporal-bootstrap exist in ghcr.io/washu-tag/charts; full coverage needs
+#      a one-time publish-all (or waiting for each chart to change).
+#   2. First-push ghcr packages are private by default; carrying a private chart
+#      needs a GITHUB_TOKEN bearer wired into build_haul.ghcr_digest (anonymous
+#      today).
 # ghcr.io/washu-tag/charts/hl7-transformer
 # ghcr.io/washu-tag/charts/dcm4chee
 # ghcr.io/washu-tag/charts/hive-metastore
@@ -30,4 +44,5 @@ ghcr.io/washu-tag/report-viewer
 # ghcr.io/washu-tag/charts/report-viewer
 # ghcr.io/washu-tag/charts/scout-dashboards
 # ghcr.io/washu-tag/charts/scout-opa
+# ghcr.io/washu-tag/charts/temporal-bootstrap
 # ghcr.io/washu-tag/charts/voila
