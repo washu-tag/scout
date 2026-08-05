@@ -6,7 +6,11 @@ Scout is a data exploration and clinical insights platform designed to help user
 
 The first release of Scout is focused on HL7 radiology reports. Future versions will incorporate DICOM, pathology reports, and extracted features.
 
-New to Scout? Start with the **[Quickstart](user/quickstart.md)**.
+```{admonition} New to Scout?
+:class: tip
+Start with the **[Quickstart](user/quickstart.md)** — a few-minute tour of
+Analytics, Chat, and Notebooks.
+```
 
 ## Documentation
 
