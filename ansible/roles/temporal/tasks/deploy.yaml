@@ -154,3 +154,26 @@
             volumes:
               - name: tmp
                 emptyDir: {}
+
+# The Orchestrator chip ships with Temporal (ADR 0034). The /auth/sso path is
+# load-bearing: the Temporal UI runs its own OIDC login behind the edge gate,
+# and a link to the bare subdomain lands on an unauthenticated UI.
+- name: Publish launchpad catalog entry
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: launchpad_catalog
+  vars:
+    catalog_configmap_name: temporal-launchpad
+    catalog_namespace: '{{ scout_extractor_namespace }}'
+    catalog_document:
+      apiVersion: scout.washu.edu/v1alpha1
+      chips:
+        - id: orchestrator
+          title: Orchestrator
+          description: Ingestion and characterization workflows
+          icon: temporal
+          tone: cyan
+          link: { subdomain: temporal, path: /auth/sso }
+          group: admin
+          weight: 30
+          audience: admin

@@ -3,8 +3,11 @@
 # exists before the app starts, so the floor when discovery is broken is
 # "core page, optional chips stale or missing" — never an empty page.
 #
-# This is deliberately the same schema every other component ships in its own
-# labelled ConfigMap; the launchpad dogfoods the contract it publishes.
+# Only what the launchpad itself owns lives here: the core and admin section
+# definitions, the chips that point at platform-wide services (Analytics,
+# Notebooks), and the launchpad's own Users console. Every other chip ships
+# with its owning component as a labelled ConfigMap in that component's
+# namespace — the same schema, discovered by the sidecar.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,13 +27,6 @@ data:
         footerLink:
           text: New to Scout? Check out our documentation
           url: {{ .Values.docsUrl | default "https://washu-scout.readthedocs.io/en/latest" | quote }}
-      - id: playbooks
-        title: Playbooks
-        description: Pluggable workflows and dashboards
-        icon: book-open
-        weight: 20
-        layout: rows
-        width: half
       - id: admin
         title: Admin Tools
         description: Infrastructure and user management
@@ -40,15 +36,6 @@ data:
         width: half
         audience: admin
     chips:
-      - id: chat
-        title: Chat
-        description: AI-powered assistance for Q & A style data queries
-        icon: chat
-        tone: emerald
-        link: { subdomain: chat }
-        group: core
-        weight: 10
-        enabled: {{ .Values.enableChat }}
       - id: analytics
         title: Analytics
         description: Visual dashboards, business intelligence, and SQL queries
@@ -65,42 +52,6 @@ data:
         link: { subdomain: jupyter }
         group: core
         weight: 30
-      - id: playbook-cohort
-        title: Research Cohorting
-        description: Build and manage patient cohorts for research studies
-        icon: user-group
-        tone: violet
-        link: { subdomain: playbooks, path: /voila/render/cohort/Cohort.ipynb }
-        group: playbooks
-        weight: 10
-        enabled: {{ .Values.enablePlaybooks }}
-      - id: playbook-rads
-        title: RADS Dashboard
-        description: Explore LI-RADS and BI-RADS reporting trends over time
-        icon: chart
-        tone: rose
-        link: { subdomain: playbooks, path: /voila/render/rads/RADS.ipynb }
-        group: playbooks
-        weight: 20
-        enabled: {{ .Values.enablePlaybooks }}
-      - id: playbook-followup-detection
-        title: Clinical Follow-up Monitoring
-        description: Review algorithmically-detected follow-up recommendations
-        icon: sparkles
-        tone: cyan
-        link: { subdomain: playbooks, path: /voila/render/followup-detection/FollowUpDetection.ipynb }
-        group: playbooks
-        weight: 30
-        enabled: {{ .Values.enablePlaybooks }}
-      - id: playbook-quality-metrics
-        title: Quality Metrics
-        description: Turnaround times, report completeness, and reporting trends
-        icon: clipboard-check
-        tone: emerald
-        link: { subdomain: playbooks, path: /voila/render/quality-metrics/QualityMetrics.ipynb }
-        group: playbooks
-        weight: 40
-        enabled: {{ .Values.enablePlaybooks }}
       - id: admin-users
         title: Users
         description: Approve requests and manage user access
@@ -109,32 +60,4 @@ data:
         link: { path: /admin/users }
         group: admin
         weight: 10
-        audience: admin
-      - id: lake
-        title: Lake
-        description: Medical data lake storage
-        icon: minio
-        tone: red
-        link: { subdomain: minio }
-        group: admin
-        weight: 20
-        audience: admin
-        enabled: {{ .Values.enableMinio }}
-      - id: orchestrator
-        title: Orchestrator
-        description: Ingestion and characterization workflows
-        icon: temporal
-        tone: cyan
-        link: { subdomain: temporal, path: /auth/sso }
-        group: admin
-        weight: 30
-        audience: admin
-      - id: monitor
-        title: Monitor
-        description: Metrics, logs, and dashboards
-        icon: grafana
-        tone: orange
-        link: { subdomain: grafana }
-        group: admin
-        weight: 40
         audience: admin

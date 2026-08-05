@@ -4,15 +4,11 @@
 
 replicaCount: 1
 
-# Feature flags. These gate chips inside the chart-rendered catalog document
-# (templates/configmap-catalog.yaml, ADR 0034) — they are no longer env vars
-# read by the app.
-enableChat: false
-enablePlaybooks: false
-# Show the MinIO "Lake" chip in the launchpad. Default true so deployments
-# still running an in-cluster MinIO continue to surface the console; sites
-# that have cut over to cloud object storage set this false.
-enableMinio: true
+# There are no feature flags here. The chart's catalog document
+# (templates/configmap-catalog.yaml) carries only what the launchpad itself
+# owns; every other chip — Chat, Playbooks, Lake, Orchestrator, Monitor, and
+# anything a site adds — ships with its owning component as a labelled
+# ConfigMap and appears exactly when that component is installed (ADR 0034).
 
 # Runtime catalog discovery (ADR 0034): a kiwigrid/k8s-sidecar container
 # watches ConfigMaps labelled `<label>: "<labelValue>"` and materializes their

@@ -17,8 +17,6 @@
     helm_chart_values_files:
       - '{{ scout_repo_dir }}/helm/launchpad/values.yaml'
     helm_chart_values:
-      enableChat: '{{ enable_chat }}'
-      enablePlaybooks: '{{ enable_playbooks }}'
       catalog:
         discovery:
           image:

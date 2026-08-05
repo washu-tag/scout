@@ -309,3 +309,25 @@
   retries: '{{ minio_bootstrap_wait_retries | default(30) }}'
   delay: '{{ minio_bootstrap_wait_delay | default(10) }}'
   changed_when: false
+
+# The Lake chip ships with MinIO (ADR 0034): sites that run object storage
+# elsewhere never run this role and never get the chip.
+- name: Publish launchpad catalog entry
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: launchpad_catalog
+  vars:
+    catalog_configmap_name: minio-launchpad
+    catalog_namespace: '{{ minio_tenant_namespace }}'
+    catalog_document:
+      apiVersion: scout.washu.edu/v1alpha1
+      chips:
+        - id: lake
+          title: Lake
+          description: Medical data lake storage
+          icon: minio
+          tone: red
+          link: { subdomain: minio }
+          group: admin
+          weight: 20
+          audience: admin
