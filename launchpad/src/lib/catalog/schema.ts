@@ -1,8 +1,8 @@
 import { parseDocument } from 'yaml';
 import { z } from 'zod';
-import { DEFAULT_GROUP_ICON, DEFAULT_ICON, isIconName } from './icons';
+import { DEFAULT_GROUP_ICON, DEFAULT_ICON, ICON_NAMES } from './icons';
 import { DEFAULT_TONE, TONE_NAMES } from './tones';
-import type { Audience, Catalog, Chip, Diagnostic, Group, GroupLayout, GroupWidth } from './types';
+import type { Catalog, Chip, Diagnostic, Group, GroupLayout } from './types';
 
 export const CATALOG_API_VERSION = 'scout.washu.edu/v1alpha1';
 
@@ -13,16 +13,6 @@ export const ICON_DATA_MAX_CHARS = 16 * 1024;
 // DNS-label shape, shared by ids, group refs, and link subdomains.
 const ID_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const ICON_DATA_RE = /^data:image\/(?:png|jpeg|svg\+xml);base64,[A-Za-z0-9+/]+={0,2}$/;
-
-function isHttpUrl(value: string): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(value);
-  } catch {
-    return false;
-  }
-  return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-}
 
 // The structural shape shared by ZodError and the error object zod v4 hands
 // to .catch() callbacks.
@@ -36,90 +26,105 @@ function firstMessage(error: IssueBearer): string {
   return error.issues[0]?.message ?? 'invalid value';
 }
 
-// Presentation fields degrade per-field: omitted → default silently, invalid →
-// default with a diagnostic. Identity and destination fields have no fallback;
-// their failure rejects the whole chip/group (the graded budget of ADR 0034).
+// ---------------------------------------------------------------------------
+// Base field schemas: the authoring contract, strict, with no fallbacks.
+// Both the lenient parsing schemas (below) and the published JSON Schema
+// derive from these, so the law and the parser cannot disagree.
+// ---------------------------------------------------------------------------
+
+const idSchema = z.string().regex(ID_RE, 'must be a lowercase dns-label-style slug');
+const titleSchema = z.string().trim().min(1, 'title is required and must be a non-empty string');
 const audienceSchema = z.enum(['user', 'admin']);
+const httpUrlSchema = z.url({ protocol: /^https?$/, error: 'must be an absolute http(s) URL' });
+
+const linkSchema = z
+  .object({
+    subdomain: idSchema.optional(),
+    path: z.string().startsWith('/', 'path must start with /').optional(),
+    url: httpUrlSchema.optional(),
+  })
+  .refine(
+    (link) => (link.url ? !link.subdomain && !link.path : Boolean(link.subdomain || link.path)),
+    'link must be exactly one destination: subdomain (with optional path suffix), path, or url',
+  );
+
+const chipBase = {
+  id: idSchema,
+  title: titleSchema,
+  description: z.string().trim(),
+  icon: z.enum(ICON_NAMES as [string, ...string[]], { error: 'unknown icon name' }),
+  iconData: z
+    .string()
+    .regex(ICON_DATA_RE, 'iconData must be a base64 png/jpeg/svg+xml data URI')
+    .max(ICON_DATA_MAX_CHARS, `iconData must be at most ${ICON_DATA_MAX_CHARS} characters`),
+  tone: z.enum(TONE_NAMES),
+  link: linkSchema,
+  newTab: z.boolean(),
+  group: idSchema,
+  weight: z.number(),
+  audience: audienceSchema,
+  enabled: z.boolean(),
+};
+
+const groupBase = {
+  id: idSchema,
+  title: titleSchema,
+  description: z.string().trim(),
+  icon: z.enum(ICON_NAMES as [string, ...string[]], { error: 'unknown icon name' }),
+  weight: z.number(),
+  layout: z.enum(['cards', 'rows', 'tiles']),
+  maxColumns: z.number().int().min(1).max(4),
+  width: z.enum(['full', 'half']),
+  audience: audienceSchema,
+  footerLink: z.object({
+    text: z.string().trim().min(1).max(TITLE_MAX),
+    url: z
+      .string()
+      .refine(
+        (v) => v.startsWith('/') || httpUrlSchema.safeParse(v).success,
+        'must be an http(s) URL or a path',
+      ),
+  }),
+};
+
+// ---------------------------------------------------------------------------
+// Lenient parsing schemas: presentation fields degrade per-field — omitted →
+// default silently, invalid → default with a diagnostic. Identity and
+// destination fields have no fallback; their failure rejects the whole
+// chip/group (the graded budget of ADR 0034).
+// ---------------------------------------------------------------------------
+
+// Wrap a base field schema so that an omitted value defaults silently and an
+// invalid one falls back with a diagnostic. The `as never` satisfies zod's
+// NoUndefined parameter types; none of our fallbacks are undefined.
+function caughtWith(diag: FieldDiag) {
+  return <T extends z.ZodType>(field: string, base: T, fallback: z.output<T>) => {
+    const value = fallback as never;
+    return base.default(value).catch((ctx) => {
+      diag(field, ctx.error);
+      return value;
+    });
+  };
+}
 
 function makeChipSchema(diag: FieldDiag) {
+  const caught = caughtWith(diag);
   return z.object({
-    id: z.string().regex(ID_RE, 'id must be a lowercase dns-label-style slug'),
-    title: z.string().trim().min(1, 'title is required and must be a non-empty string'),
-    description: z
-      .string()
-      .trim()
-      .default('')
-      .catch((ctx) => {
-        diag('description', ctx.error);
-        return '';
-      }),
-    icon: z
-      .string()
-      .refine(isIconName, 'unknown icon name')
-      .default(DEFAULT_ICON)
-      .catch((ctx) => {
-        diag('icon', ctx.error);
-        return DEFAULT_ICON;
-      }),
-    iconData: z
-      .string()
-      .regex(ICON_DATA_RE, 'iconData must be a base64 png/jpeg/svg+xml data URI')
-      .max(ICON_DATA_MAX_CHARS, `iconData must be at most ${ICON_DATA_MAX_CHARS} characters`)
-      .optional()
-      .catch((ctx) => {
-        diag('iconData', ctx.error);
-        return undefined;
-      }),
-    tone: z
-      .enum(TONE_NAMES)
-      .default(DEFAULT_TONE)
-      .catch((ctx) => {
-        diag('tone', ctx.error);
-        return DEFAULT_TONE;
-      }),
-    link: z
-      .object({
-        subdomain: z.string().regex(ID_RE, 'subdomain must be a dns label').optional(),
-        path: z.string().startsWith('/', 'path must start with /').optional(),
-        url: z.string().refine(isHttpUrl, 'url must be an absolute http(s) URL').optional(),
-      })
-      .refine(
-        (link) => (link.url ? !link.subdomain && !link.path : Boolean(link.subdomain || link.path)),
-        'link must be exactly one destination: subdomain (with optional path suffix), path, or url',
-      ),
-    newTab: z
-      .boolean()
-      .default(true)
-      .catch((ctx) => {
-        diag('newTab', ctx.error);
-        return true;
-      }),
-    group: z
-      .string()
-      .regex(ID_RE, 'group must reference a dns-label-style group id')
-      .default('more')
-      .catch((ctx) => {
-        diag('group', ctx.error);
-        return 'more';
-      }),
-    weight: z
-      .number()
-      .default(100)
-      .catch((ctx) => {
-        diag('weight', ctx.error);
-        return 100;
-      }),
-    audience: audienceSchema.default('user').catch((ctx) => {
-      diag('audience', ctx.error);
-      return 'user' as Audience;
+    id: chipBase.id,
+    title: chipBase.title,
+    description: caught('description', chipBase.description, ''),
+    icon: caught('icon', chipBase.icon, DEFAULT_ICON),
+    iconData: chipBase.iconData.optional().catch((ctx) => {
+      diag('iconData', ctx.error);
+      return undefined;
     }),
-    enabled: z
-      .boolean()
-      .default(true)
-      .catch((ctx) => {
-        diag('enabled', ctx.error);
-        return true;
-      }),
+    tone: caught('tone', chipBase.tone, DEFAULT_TONE),
+    link: chipBase.link,
+    newTab: caught('newTab', chipBase.newTab, true),
+    group: caught('group', chipBase.group, 'more'),
+    weight: caught('weight', chipBase.weight, 100),
+    audience: caught('audience', chipBase.audience, 'user'),
+    enabled: caught('enabled', chipBase.enabled, true),
   });
 }
 
@@ -139,72 +144,24 @@ const CHIP_KEYS = [
 ];
 
 function makeGroupSchema(diag: FieldDiag) {
+  const caught = caughtWith(diag);
   return z.object({
-    id: z.string().regex(ID_RE, 'id must be a lowercase dns-label-style slug'),
-    title: z.string().trim().min(1, 'title is required and must be a non-empty string'),
-    description: z
-      .string()
-      .trim()
-      .default('')
-      .catch((ctx) => {
-        diag('description', ctx.error);
-        return '';
-      }),
-    icon: z
-      .string()
-      .refine(isIconName, 'unknown icon name')
-      .default(DEFAULT_GROUP_ICON)
-      .catch((ctx) => {
-        diag('icon', ctx.error);
-        return DEFAULT_GROUP_ICON;
-      }),
-    weight: z
-      .number()
-      .default(100)
-      .catch((ctx) => {
-        diag('weight', ctx.error);
-        return 100;
-      }),
-    layout: z
-      .enum(['cards', 'rows', 'tiles'])
-      .default('cards')
-      .catch((ctx) => {
-        diag('layout', ctx.error);
-        return 'cards' as GroupLayout;
-      }),
-    maxColumns: z
-      .number()
-      .int()
-      .min(1)
-      .max(4)
-      .optional()
-      .catch((ctx) => {
-        diag('maxColumns', ctx.error);
-        return undefined;
-      }),
-    width: z
-      .enum(['full', 'half'])
-      .default('full')
-      .catch((ctx) => {
-        diag('width', ctx.error);
-        return 'full' as GroupWidth;
-      }),
-    audience: audienceSchema.default('user').catch((ctx) => {
-      diag('audience', ctx.error);
-      return 'user' as Audience;
+    id: groupBase.id,
+    title: groupBase.title,
+    description: caught('description', groupBase.description, ''),
+    icon: caught('icon', groupBase.icon, DEFAULT_GROUP_ICON),
+    weight: caught('weight', groupBase.weight, 100),
+    layout: caught('layout', groupBase.layout, 'cards'),
+    maxColumns: groupBase.maxColumns.optional().catch((ctx) => {
+      diag('maxColumns', ctx.error);
+      return undefined;
     }),
-    footerLink: z
-      .object({
-        text: z.string().trim().min(1).max(TITLE_MAX),
-        url: z
-          .string()
-          .refine((v) => isHttpUrl(v) || v.startsWith('/'), 'must be an http(s) URL or a path'),
-      })
-      .optional()
-      .catch((ctx) => {
-        diag('footerLink', ctx.error);
-        return undefined;
-      }),
+    width: caught('width', groupBase.width, 'full'),
+    audience: caught('audience', groupBase.audience, 'user'),
+    footerLink: groupBase.footerLink.optional().catch((ctx) => {
+      diag('footerLink', ctx.error);
+      return undefined;
+    }),
   });
 }
 
@@ -228,6 +185,75 @@ const envelopeSchema = z.object({
 });
 
 const ENVELOPE_KEYS = ['apiVersion', 'chips', 'groups'];
+
+// ---------------------------------------------------------------------------
+// Publication: the authoring-side JSON Schema shipped with the docs. Built
+// from the strict base fields (not the lenient wrappers — a .catch() schema
+// accepts anything on input, which would publish no law at all). Defaults are
+// annotated; a drift test compares the committed file against this output.
+// ---------------------------------------------------------------------------
+
+export function publicationSchema() {
+  return z
+    .object({
+      apiVersion: z
+        .literal(CATALOG_API_VERSION)
+        .describe('Catalog schema version. Documents with any other value are skipped.'),
+      chips: z
+        .array(
+          z.object({
+            id: chipBase.id,
+            title: chipBase.title.describe(`Chip heading, at most ${TITLE_MAX} characters`),
+            description: chipBase.description
+              .max(DESCRIPTION_MAX)
+              .default('')
+              .describe('One line about the destination'),
+            icon: chipBase.icon.default(DEFAULT_ICON),
+            iconData: chipBase.iconData
+              .optional()
+              .describe('Embedded image data URI; wins over icon'),
+            tone: chipBase.tone.default(DEFAULT_TONE),
+            link: chipBase.link.describe(
+              'Exactly one destination: subdomain (with optional path suffix), path, or url',
+            ),
+            newTab: chipBase.newTab.default(true),
+            group: chipBase.group.default('more'),
+            weight: chipBase.weight.default(100).describe('Lower renders first'),
+            audience: chipBase.audience.default('user'),
+            enabled: chipBase.enabled.default(true),
+          }),
+        )
+        .default([]),
+      groups: z
+        .array(
+          z.object({
+            id: groupBase.id,
+            title: groupBase.title.describe(`Section heading, at most ${TITLE_MAX} characters`),
+            description: groupBase.description.max(DESCRIPTION_MAX).default(''),
+            icon: groupBase.icon.default(DEFAULT_GROUP_ICON),
+            weight: groupBase.weight.default(100).describe('Section order on the page'),
+            layout: groupBase.layout.default('cards'),
+            maxColumns: groupBase.maxColumns
+              .optional()
+              .describe('Defaults by layout: cards 3, tiles 2, rows 1'),
+            width: groupBase.width.default('full'),
+            audience: groupBase.audience.default('user'),
+            footerLink: groupBase.footerLink.optional(),
+          }),
+        )
+        .default([])
+        .describe('Define a group only when introducing a new section'),
+    })
+    .describe('Scout launchpad catalog document (ADR 0034)');
+}
+
+export function catalogJsonSchema(): unknown {
+  return z.toJSONSchema(publicationSchema(), { io: 'input', target: 'draft-2020-12' });
+}
+
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -270,7 +296,7 @@ function truncate(
 }
 
 // Validate one already-parsed catalog document (the YAML text path and the
-// chart-templated builtin document both land here). Never throws: everything
+// chart-templated core document both land here). Never throws: everything
 // that goes wrong becomes a diagnostic, and everything valid comes back.
 export function validateDocument(input: unknown, source: string, sourceRank = 0): Catalog {
   const diagnostics: Diagnostic[] = [];

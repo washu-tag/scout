@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "cd .. && pre-commit run eslint --all-files",
-    "test": "vitest run"
+    "test": "vitest run",
+    "schema": "tsx scripts/generate-schema.ts",
+    "docs-assets": "tsx scripts/generate-doc-assets.ts"
   },
   "dependencies": {
     "next": "^16.2.12",
@@ -27,6 +29,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.2.2",
     "tailwindcss": "^4",
+    "tsx": "^4.23.8",
     "typescript": "^6",
     "vitest": "^4.1.10"
   },

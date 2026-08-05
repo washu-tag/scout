@@ -31,6 +31,10 @@ intersphinx_mapping = {
 }
 intersphinx_disabled_domains = ["std"]
 
+# GitHub-style auto-generated anchors for h1–h3, so pages can cross-reference
+# their own sections with plain #kebab-case links.
+myst_heading_anchors = 3
+
 templates_path = ["_templates"]
 
 html_title = "Scout Documentation"
