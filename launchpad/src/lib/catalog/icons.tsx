@@ -1,0 +1,119 @@
+import type { IconType } from 'react-icons';
+import {
+  HiChartBar,
+  HiClipboardCheck,
+  HiCog,
+  HiCube,
+  HiOutlineAcademicCap,
+  HiOutlineArchive,
+  HiOutlineBeaker,
+  HiOutlineBell,
+  HiOutlineBookOpen,
+  HiOutlineCalendar,
+  HiOutlineChartBar,
+  HiOutlineChat,
+  HiOutlineClock,
+  HiOutlineCloud,
+  HiOutlineCollection,
+  HiOutlineDatabase,
+  HiOutlineDocumentText,
+  HiOutlineDownload,
+  HiOutlineExternalLink,
+  HiOutlineEye,
+  HiOutlineFilm,
+  HiOutlineFolder,
+  HiOutlineGlobe,
+  HiOutlineHeart,
+  HiOutlineKey,
+  HiOutlineLightningBolt,
+  HiOutlineLink,
+  HiOutlineMail,
+  HiOutlinePhotograph,
+  HiOutlinePuzzle,
+  HiOutlineSearch,
+  HiOutlineServer,
+  HiOutlineShieldCheck,
+  HiOutlineTable,
+  HiOutlineTerminal,
+  HiOutlineUpload,
+  HiOutlineViewGrid,
+  HiSparkles,
+  HiUserGroup,
+} from 'react-icons/hi';
+import {
+  SiDocker,
+  SiGithub,
+  SiGrafana,
+  SiJupyter,
+  SiKubernetes,
+  SiMinio,
+  SiPostgresql,
+  SiPython,
+  SiTemporal,
+} from 'react-icons/si';
+
+// The curated icon registry (ADR 0034). Deliberately a hand-written map: a
+// dynamic lookup over whole react-icons sets would defeat tree-shaking and put
+// megabytes of icon modules in the bundle. Chip authors needing a logo this
+// registry lacks embed it as an `iconData` data URI instead.
+export const ICONS: Record<string, IconType> = {
+  // Generic (Heroicons)
+  'academic-cap': HiOutlineAcademicCap,
+  app: HiOutlineViewGrid,
+  archive: HiOutlineArchive,
+  beaker: HiOutlineBeaker,
+  bell: HiOutlineBell,
+  'book-open': HiOutlineBookOpen,
+  calendar: HiOutlineCalendar,
+  chart: HiChartBar,
+  'chart-bar': HiOutlineChartBar,
+  chat: HiOutlineChat,
+  'clipboard-check': HiClipboardCheck,
+  clock: HiOutlineClock,
+  cloud: HiOutlineCloud,
+  cog: HiCog,
+  collection: HiOutlineCollection,
+  cube: HiCube,
+  database: HiOutlineDatabase,
+  'document-text': HiOutlineDocumentText,
+  download: HiOutlineDownload,
+  'external-link': HiOutlineExternalLink,
+  eye: HiOutlineEye,
+  film: HiOutlineFilm,
+  folder: HiOutlineFolder,
+  globe: HiOutlineGlobe,
+  heart: HiOutlineHeart,
+  key: HiOutlineKey,
+  'lightning-bolt': HiOutlineLightningBolt,
+  link: HiOutlineLink,
+  mail: HiOutlineMail,
+  photograph: HiOutlinePhotograph,
+  puzzle: HiOutlinePuzzle,
+  search: HiOutlineSearch,
+  server: HiOutlineServer,
+  'shield-check': HiOutlineShieldCheck,
+  sparkles: HiSparkles,
+  table: HiOutlineTable,
+  terminal: HiOutlineTerminal,
+  upload: HiOutlineUpload,
+  'user-group': HiUserGroup,
+  // Brand marks (Simple Icons)
+  docker: SiDocker,
+  github: SiGithub,
+  grafana: SiGrafana,
+  jupyter: SiJupyter,
+  kubernetes: SiKubernetes,
+  minio: SiMinio,
+  postgresql: SiPostgresql,
+  python: SiPython,
+  temporal: SiTemporal,
+};
+
+export const ICON_NAMES = Object.keys(ICONS).sort();
+
+export const DEFAULT_ICON = 'app';
+export const DEFAULT_GROUP_ICON = 'folder';
+
+export function isIconName(value: string): boolean {
+  return value in ICONS;
+}

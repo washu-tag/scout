@@ -6,14 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "cd .. && pre-commit run eslint --all-files"
+    "lint": "cd .. && pre-commit run eslint --all-files",
+    "test": "vitest run"
   },
   "dependencies": {
     "next": "^16.2.12",
     "next-auth": "^4.24.12",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -24,7 +27,8 @@
     "eslint": "^9",
     "eslint-config-next": "^16.2.2",
     "tailwindcss": "^4",
-    "typescript": "^6"
+    "typescript": "^6",
+    "vitest": "^4.1.10"
   },
   "//overrides": "postcss pinned to >=8.5.10 to patch GHSA-qx2v-qp2m-jg93 (XSS in CSS stringify); the fix only lives on next canary as of 16.3.0-canary.6. sharp pinned to >=0.35.3 to patch GHSA-f88m-g3jw-g9cj (HIGH libvips CVEs); next optionally depends on sharp ^0.34.5, which has no fix, so we force the 0.35.x line. Remove each once a stable next release ships the fix.",
   "overrides": {

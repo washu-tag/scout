@@ -1,0 +1,191 @@
+import { CATALOG_API_VERSION, validateDocument } from './schema';
+import type { Catalog } from './types';
+
+export interface BuiltinFlags {
+  enableChat: boolean;
+  enablePlaybooks: boolean;
+  enableMinio: boolean;
+  docsUrl: string;
+}
+
+// The classic launchpad page expressed as a catalog document. Used when no
+// catalog directories are configured (local dev, and deployments predating
+// the mounted-ConfigMap delivery). The chart-rendered ConfigMap carries this
+// same document; the flags here mirror its Helm-templated `enabled` fields.
+export function builtinDocument({
+  enableChat,
+  enablePlaybooks,
+  enableMinio,
+  docsUrl,
+}: BuiltinFlags): unknown {
+  return {
+    apiVersion: CATALOG_API_VERSION,
+    groups: [
+      {
+        id: 'core',
+        title: 'Core Services',
+        description: 'Essential tools for data exploration and analysis',
+        icon: 'cube',
+        weight: 10,
+        layout: 'cards',
+        footerLink: {
+          text: 'New to Scout? Check out our documentation',
+          url: docsUrl,
+        },
+      },
+      {
+        id: 'playbooks',
+        title: 'Playbooks',
+        description: 'Pluggable workflows and dashboards',
+        icon: 'book-open',
+        weight: 20,
+        layout: 'rows',
+        width: 'half',
+      },
+      {
+        id: 'admin',
+        title: 'Admin Tools',
+        description: 'Infrastructure and user management',
+        icon: 'cog',
+        weight: 30,
+        layout: 'tiles',
+        width: 'half',
+        audience: 'admin',
+      },
+    ],
+    chips: [
+      {
+        id: 'chat',
+        title: 'Chat',
+        description: 'AI-powered assistance for Q & A style data queries',
+        icon: 'chat',
+        tone: 'emerald',
+        link: { subdomain: 'chat' },
+        group: 'core',
+        weight: 10,
+        enabled: enableChat,
+      },
+      {
+        id: 'analytics',
+        title: 'Analytics',
+        description: 'Visual dashboards, business intelligence, and SQL queries',
+        icon: 'chart-bar',
+        tone: 'amber',
+        link: { subdomain: 'superset' },
+        group: 'core',
+        weight: 20,
+      },
+      {
+        id: 'notebooks',
+        title: 'Notebooks',
+        description: 'Interactive data analysis and coding with Jupyter',
+        icon: 'python',
+        tone: 'indigo',
+        link: { subdomain: 'jupyter' },
+        group: 'core',
+        weight: 30,
+      },
+      {
+        id: 'playbook-cohort',
+        title: 'Research Cohorting',
+        description: 'Build and manage patient cohorts for research studies',
+        icon: 'user-group',
+        tone: 'violet',
+        link: { subdomain: 'playbooks', path: '/voila/render/cohort/Cohort.ipynb' },
+        group: 'playbooks',
+        weight: 10,
+        enabled: enablePlaybooks,
+      },
+      {
+        id: 'playbook-rads',
+        title: 'RADS Dashboard',
+        description: 'Explore LI-RADS and BI-RADS reporting trends over time',
+        icon: 'chart',
+        tone: 'rose',
+        link: { subdomain: 'playbooks', path: '/voila/render/rads/RADS.ipynb' },
+        group: 'playbooks',
+        weight: 20,
+        enabled: enablePlaybooks,
+      },
+      {
+        id: 'playbook-followup-detection',
+        title: 'Clinical Follow-up Monitoring',
+        description: 'Review algorithmically-detected follow-up recommendations',
+        icon: 'sparkles',
+        tone: 'cyan',
+        link: {
+          subdomain: 'playbooks',
+          path: '/voila/render/followup-detection/FollowUpDetection.ipynb',
+        },
+        group: 'playbooks',
+        weight: 30,
+        enabled: enablePlaybooks,
+      },
+      {
+        id: 'playbook-quality-metrics',
+        title: 'Quality Metrics',
+        description: 'Turnaround times, report completeness, and reporting trends',
+        icon: 'clipboard-check',
+        tone: 'emerald',
+        link: {
+          subdomain: 'playbooks',
+          path: '/voila/render/quality-metrics/QualityMetrics.ipynb',
+        },
+        group: 'playbooks',
+        weight: 40,
+        enabled: enablePlaybooks,
+      },
+      {
+        id: 'admin-users',
+        title: 'Users',
+        description: 'Approve requests and manage user access',
+        icon: 'clipboard-check',
+        tone: 'indigo',
+        link: { path: '/admin/users' },
+        group: 'admin',
+        weight: 10,
+        audience: 'admin',
+      },
+      {
+        id: 'lake',
+        title: 'Lake',
+        description: 'Medical data lake storage',
+        icon: 'minio',
+        tone: 'red',
+        link: { subdomain: 'minio' },
+        group: 'admin',
+        weight: 20,
+        audience: 'admin',
+        enabled: enableMinio,
+      },
+      {
+        id: 'orchestrator',
+        title: 'Orchestrator',
+        description: 'Ingestion and characterization workflows',
+        icon: 'temporal',
+        tone: 'cyan',
+        link: { subdomain: 'temporal', path: '/auth/sso' },
+        group: 'admin',
+        weight: 30,
+        audience: 'admin',
+      },
+      {
+        id: 'monitor',
+        title: 'Monitor',
+        description: 'Metrics, logs, and dashboards',
+        icon: 'grafana',
+        tone: 'orange',
+        link: { subdomain: 'grafana' },
+        group: 'admin',
+        weight: 40,
+        audience: 'admin',
+      },
+    ],
+  };
+}
+
+export function builtinCatalog(flags: BuiltinFlags): Catalog {
+  // Dogfooding: the builtin document goes through the same validator as every
+  // discovered document.
+  return validateDocument(builtinDocument(flags), 'builtin');
+}
