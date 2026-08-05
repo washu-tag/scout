@@ -69,12 +69,12 @@ spec:
               value: {{ .Values.auth.oauth2ProxySignOutUrl | quote }}
             {{- end }}
             {{- end }}
-            - name: ENABLE_CHAT
-              value: {{ .Values.enableChat | quote }}
-            - name: ENABLE_PLAYBOOKS
-              value: {{ .Values.enablePlaybooks | quote }}
-            - name: ENABLE_MINIO
-              value: {{ .Values.enableMinio | quote }}
+            # Catalog directories (ADR 0034): the chart-rendered core catalog
+            # first (mounted, kubelet-guaranteed), the sidecar-discovered
+            # directory second. Earlier directories outrank later ones for
+            # group definitions.
+            - name: LAUNCHPAD_CATALOG_DIRS
+              value: /app/config/catalog
             {{- if .Values.scoutEnv }}
             - name: SCOUT_ENV
               value: {{ .Values.scoutEnv | quote }}
@@ -92,14 +92,20 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+            - name: catalog
+              mountPath: /app/config/catalog
+              readOnly: true
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
+            {{- end }}
       volumes:
+        - name: catalog
+          configMap:
+            name: {{ include "launchpad.fullname" . }}-catalog
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
