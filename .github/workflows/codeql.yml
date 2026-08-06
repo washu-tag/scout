@@ -12,15 +12,15 @@
 name: 'CodeQL Advanced'
 
 on:
+  # No paths-ignore here: CodeQL is a REQUIRED status check, and skipping a
+  # required check via paths-ignore leaves it permanently "Expected - waiting"
+  # and blocks the PR (a skipped required check never reports). That deadlocked
+  # docs-only PRs like #605. Keep CodeQL running on every PR; on a docs-only
+  # change it is a fast build-mode:none run that reports quickly.
   push:
     branches: ['main']
-    # Docs-only changes have no code to analyze; skipping avoids wasted runs and
-    # the transient java-kotlin extraction flake they can hit. The weekly
-    # schedule below still does a full-repo scan.
-    paths-ignore: ['**/*.md', 'docs/**']
   pull_request:
     branches: ['main']
-    paths-ignore: ['**/*.md', 'docs/**']
   schedule:
     - cron: '36 1 * * 2'
 
