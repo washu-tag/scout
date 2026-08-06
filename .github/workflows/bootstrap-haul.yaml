@@ -50,14 +50,20 @@ jobs:
       - name: Install hauler and oras
         env:
           HAULER_VERSION: '2.0.2'
+          HAULER_SHA256: 'd96ac67cac3c9e4fc2d24c8347fba956b2a165a2237318cc2564e44bbaabc4c3'
           ORAS_VERSION: '1.2.0'
-        # Binary downloads (not curl | bash), same posture as ci.yaml.
+          ORAS_SHA256: '5b3f1cbb86d869eee68120b9b45b9be983f3738442f87ee5f06b00edd0bab336'
+        # Binary downloads (not curl | bash), sha256-verified before extract so a
+        # tampered/hijacked release asset can't execute in the job. Bump the
+        # version and its checksum together (from the release's checksums.txt).
         run: |
           curl -fsSL -o /tmp/hauler.tar.gz \
             "https://github.com/hauler-dev/hauler/releases/download/v${HAULER_VERSION}/hauler_${HAULER_VERSION}_linux_amd64.tar.gz"
+          echo "${HAULER_SHA256}  /tmp/hauler.tar.gz" | sha256sum -c -
           tar -xzf /tmp/hauler.tar.gz -C /usr/local/bin hauler
           curl -fsSL -o /tmp/oras.tar.gz \
             "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+          echo "${ORAS_SHA256}  /tmp/oras.tar.gz" | sha256sum -c -
           tar -xzf /tmp/oras.tar.gz -C /usr/local/bin oras
       - name: Resolve current image digests, sign, and record as fresh
         env:
