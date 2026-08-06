@@ -179,7 +179,7 @@ For visualizations, copy the data to {ref}`Analytics <analytics>` and build char
 **Chat sharing is disabled.** Scout has turned off Open WebUI's share-link
 feature. Scout users are authorized to see different subsets of the report data,
 so a shared conversation could expose results to a recipient who is not
-authorized to see them — and we have not yet designed a solution for that. To
+authorized to see them. To
 share findings, see whether {ref}`Scout Analytics <analytics>` or
 {ref}`Scout Notebooks <notebooks>` fits your need; each applies the viewer's own
 data authorization.
