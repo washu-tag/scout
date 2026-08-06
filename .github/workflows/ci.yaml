@@ -1178,6 +1178,7 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Install hauler and oras
+        shell: bash # default shell is `bash -e` (no pipefail); be explicit
         env:
           HAULER_VERSION: '2.0.2'
           HAULER_SHA256: 'd96ac67cac3c9e4fc2d24c8347fba956b2a165a2237318cc2564e44bbaabc4c3'
