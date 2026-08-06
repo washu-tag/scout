@@ -12,11 +12,9 @@
 name: 'CodeQL Advanced'
 
 on:
-  # No paths-ignore here: CodeQL is a REQUIRED status check, and skipping a
-  # required check via paths-ignore leaves it permanently "Expected - waiting"
-  # and blocks the PR (a skipped required check never reports). That deadlocked
-  # docs-only PRs like #605. Keep CodeQL running on every PR; on a docs-only
-  # change it is a fast build-mode:none run that reports quickly.
+  # No paths-ignore: CodeQL is a required check, and a skipped required check
+  # never reports, so it blocks the PR forever (deadlocked docs-only #605).
+  # Keep it on every PR; docs-only is a fast build-mode:none run.
   push:
     branches: ['main']
   pull_request:
