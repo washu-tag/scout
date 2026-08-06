@@ -12,9 +12,6 @@
 name: 'CodeQL Advanced'
 
 on:
-  # No paths-ignore: CodeQL is a required check, and a skipped required check
-  # never reports, so it blocks the PR forever (deadlocked docs-only #605).
-  # Keep it on every PR; docs-only is a fast build-mode:none run.
   push:
     branches: ['main']
   pull_request:
