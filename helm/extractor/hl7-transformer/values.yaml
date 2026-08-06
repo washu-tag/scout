@@ -126,7 +126,7 @@ spark:
 sparkDefaults:
   enabled: false
   mode: on-prem
-  shufflePartitions: 200
+  shufflePartitions: 32
   hiveMetastoreUri: ''
   warehouseDir: ''
   s3Region: us-east-1
