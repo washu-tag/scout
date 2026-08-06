@@ -177,6 +177,27 @@
       ],
       "datasourceTemplate": "docker",
       "depNameTemplate": "quay.io/keycloak/keycloak"
+    },
+    // superset, like keycloak, is a vendored-upstream image with no :latest.
+    // helm/superset/VERSION drives the ghcr image tag (ghcr.io/washu-tag/superset
+    // :<this> via derive-version) and the Dockerfile FROM is the upstream base.
+    // Mirror the keycloak managers so both bump in one PR per apache/superset
+    // release. (The superset HELM CHART version is tracked separately in
+    // versions.yaml; this covers the image the build lane bundles.)
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["helm/superset/VERSION"],
+      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)\\s*$"],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "apache/superset"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["helm/superset/Dockerfile"],
+      "matchStrings": [
+        "FROM\\s+(?<depName>apache/superset):(?<currentValue>[\\d\\.]+)"
+      ],
+      "datasourceTemplate": "docker"
     }
   ]
 }
