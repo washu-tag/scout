@@ -1226,9 +1226,19 @@ jobs:
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
         run: |
           set -euo pipefail
-          hauler store sync -f haul.yaml
+          # Verify each component's cosign signature as it is pulled. hauler SKIPS
+          # an image it can't verify and still exits 0, so guard against a silently
+          # incomplete haul: fail if the sync log reports any verification miss.
+          # (Log strings are hauler 2.0.2's; recheck them when bumping hauler.)
+          printf '%s' "${COSIGN_PUBLIC_KEY}" > cosign.pub
+          hauler store sync -f haul.yaml --key cosign.pub 2>&1 | tee sync.log
+          if grep -qiE "signature verification failed|no signatures found" sync.log; then
+            echo "::error::a component failed cosign verification and was skipped; the haul would be incomplete"
+            exit 1
+          fi
           hauler store save -f "scout-${VERSION}.tar.zst"
           # Push both immutable :version artifacts and sign the bundle, THEN advance
           # the :main pointers last, so :main only moves after a complete, signed
