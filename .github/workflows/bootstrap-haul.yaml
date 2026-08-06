@@ -17,11 +17,11 @@ on:
   workflow_dispatch:
     inputs:
       superset_tag:
-        description: 'superset has no :latest; seed from this release tag'
-        default: '5.0.0'
+        description: 'Optional override for the superset seed tag; defaults to helm/superset/VERSION'
+        default: ''
       keycloak_tag:
-        description: 'keycloak has no :latest; seed from this release tag'
-        default: '26.6.3'
+        description: 'Optional override for the keycloak seed tag; defaults to keycloak/VERSION'
+        default: ''
 
 permissions:
   contents: read
@@ -69,19 +69,21 @@ jobs:
           set -euo pipefail
           mkdir -p digests
           # Scout-built images have :latest; the two vendored-upstream images do
-          # not, so seed them from a release tag (dispatch inputs). Pin by @digest;
-          # the tag is only a label (hauler copies by digest).
+          # not, so seed them from their VERSION file -- the same source
+          # derive-version tags the published image from, kept current by Renovate
+          # -- unless a dispatch override is given. Pin by @digest; the tag is only
+          # a label (hauler copies by digest).
           for name in hl7log-extractor hl7-transformer hl7-listener scout-notebook \
                       launchpad report-viewer superset keycloak; do
             case "${name}" in
-              superset) src="${SUPERSET_TAG}" ;;
-              keycloak) src="${KEYCLOAK_TAG}" ;;
+              superset) src="${SUPERSET_TAG:-$(cat helm/superset/VERSION)}" ;;
+              keycloak) src="${KEYCLOAK_TAG:-$(cat keycloak/VERSION)}" ;;
               *) src="latest" ;;
             esac
             repo="${REGISTRY}/washu-tag/${name}"
             digest="$(docker buildx imagetools inspect "${repo}:${src}" --format '{{json .Manifest}}' | jq -r '.digest')"
             if [ "${digest#sha256:}" = "${digest}" ]; then
-              echo "::error::could not resolve a digest for ${repo}:${src}"
+              echo "::error::${repo}:${src} is not published in ghcr. If VERSION is ahead of the last build, re-run with the *_tag override set to a currently-published tag."
               exit 1
             fi
             cosign sign --key env://COSIGN_PRIVATE_KEY \
