@@ -198,6 +198,19 @@
         "FROM\\s+(?<depName>apache/superset):(?<currentValue>[\\d\\.]+)"
       ],
       "datasourceTemplate": "docker"
+    },
+    // scout-dashboards deploys the superset image and pins it through its
+    // appVersion (the appVersion->image coupling), so track that appVersion
+    // against apache/superset too. Same depName as the two managers above, so
+    // Renovate groups all three into one PR per superset release, keeping the
+    // chart's pinned version in lockstep with the image it deploys. (No match
+    // until the appVersion is a real version rather than the "latest" default.)
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["helm/scout-dashboards/Chart.yaml"],
+      "matchStrings": ["appVersion:\\s*\"(?<currentValue>[\\d\\.]+)\""],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "apache/superset"
     }
   ]
 }
