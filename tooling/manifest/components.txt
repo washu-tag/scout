@@ -21,28 +21,23 @@ ghcr.io/washu-tag/report-viewer
 # that name plus a "-chart" suffix. (Phase 2 decision 5 = fold these three lists
 # into one source of truth.)
 #
-# STILL COMMENTED. Chart digest capture (PR #588) is done, but two preconditions
-# remain before a chart can be carried into the haul:
-#   1. It must have been published at least once. publish-charts is changed-only,
-#      so a chart whose files have not changed since the job went live is absent
-#      from the registry and build_haul carry() (a live ghcr lookup) fails closed
-#      on it. Today only hl7-transformer, launchpad, open-webui-bootstrap, and
-#      temporal-bootstrap exist in ghcr.io/washu-tag/charts; full coverage needs
-#      a one-time publish-all (or waiting for each chart to change).
-#   2. First-push ghcr packages are private by default; carrying a private chart
-#      needs a GITHUB_TOKEN bearer wired into build_haul.ghcr_digest (anonymous
-#      today).
-# ghcr.io/washu-tag/charts/hl7-transformer
-# ghcr.io/washu-tag/charts/dcm4chee
-# ghcr.io/washu-tag/charts/hive-metastore
-# ghcr.io/washu-tag/charts/hl7-listener
-# ghcr.io/washu-tag/charts/hl7log-extractor
-# ghcr.io/washu-tag/charts/keycloak-config-cli
-# ghcr.io/washu-tag/charts/launchpad
-# ghcr.io/washu-tag/charts/open-webui-bootstrap
-# ghcr.io/washu-tag/charts/orthanc
-# ghcr.io/washu-tag/charts/report-viewer
-# ghcr.io/washu-tag/charts/scout-dashboards
-# ghcr.io/washu-tag/charts/scout-opa
-# ghcr.io/washu-tag/charts/temporal-bootstrap
-# ghcr.io/washu-tag/charts/voila
+# Each chart must be published to ghcr at least once before it can be carried:
+# publish-charts is changed-only, so a never-published chart is absent from the
+# registry and resolve fails closed on it. The bootstrap workflow seeds all 14
+# fresh for the first haul. (carry reads the previous haul.yaml, not a live ghcr
+# lookup; hauler pulls each chart via the job's GHCR login, and downstream
+# consumers get the self-contained .tar.zst, so ghcr package visibility is moot.)
+ghcr.io/washu-tag/charts/hl7-transformer
+ghcr.io/washu-tag/charts/dcm4chee
+ghcr.io/washu-tag/charts/hive-metastore
+ghcr.io/washu-tag/charts/hl7-listener
+ghcr.io/washu-tag/charts/hl7log-extractor
+ghcr.io/washu-tag/charts/keycloak-config-cli
+ghcr.io/washu-tag/charts/launchpad
+ghcr.io/washu-tag/charts/open-webui-bootstrap
+ghcr.io/washu-tag/charts/orthanc
+ghcr.io/washu-tag/charts/report-viewer
+ghcr.io/washu-tag/charts/scout-dashboards
+ghcr.io/washu-tag/charts/scout-opa
+ghcr.io/washu-tag/charts/temporal-bootstrap
+ghcr.io/washu-tag/charts/voila
