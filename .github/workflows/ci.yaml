@@ -1236,14 +1236,14 @@ jobs:
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
         run: |
           set -euo pipefail
           # hauler 2.0.2 SKIPS an image it can't verify yet still exits 0, so an
           # exit-code or failure-string check fails OPEN. Fail CLOSED: require one
           # "signature verified" line per image in haul.yaml (dash-anchored count so
           # metadata.name isn't included). (Strings are 2.0.2's; recheck on bump.)
-          printf '%s' "${COSIGN_PUBLIC_KEY}" > cosign.pub
+          # Derive the public key from the signing key -- no separate COSIGN_PUBLIC_KEY secret.
+          cosign public-key --key env://COSIGN_PRIVATE_KEY > cosign.pub
           expected=$(grep -cE '^[[:space:]]*-[[:space:]]+name:' haul.yaml || true)
           hauler store sync -f haul.yaml --key cosign.pub 2>&1 | tee sync.log
           verified=$(grep -cF 'signature verified for image [' sync.log || true)
