@@ -1173,11 +1173,11 @@ jobs:
     # carry from it. continue-on-error so it never gates a release; it fails closed
     # (harmless) on partial builds until a one-time bootstrap seeds the first
     # predecessor. Sync verifies every component's cosign signature (--key) and
-    # fails closed if any image is unsigned or unverifiable.
-    if: github.ref_name == 'main' && needs.publish.result == 'success'
+    # fails closed if any component is unsigned or unverifiable.
+    if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
     runs-on: ubuntu-latest
     continue-on-error: true
-    needs: [changes, publish]
+    needs: [changes, publish, publish-charts]
     permissions:
       contents: read
       packages: write
@@ -1212,6 +1212,17 @@ jobs:
         with:
           pattern: image-digest-*
           path: digests
+          merge-multiple: true
+      - name: Download this run's fresh chart digests
+        # Charts go in a SEPARATE subdir: 5 chart names (hl7-transformer,
+        # hl7-listener, hl7log-extractor, launchpad, report-viewer) are also image
+        # names, so their digest files share a basename; a flat merge would clobber
+        # one. build_haul globs digests/**/* and skips dirs, so the subdir is read.
+        # Same no-continue-on-error invariant as the image digests above.
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: chart-digest-*
+          path: digests/charts
           merge-multiple: true
       - name: Render the haul manifest (carry from the predecessor)
         run: |
