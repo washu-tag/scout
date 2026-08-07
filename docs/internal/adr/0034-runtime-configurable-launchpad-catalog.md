@@ -6,33 +6,32 @@
 
 ## Context
 
-Every tile on the launchpad is a literal in a React component
-(`launchpad/src/app/HomeClient.tsx`): the core service cards, the playbooks list, the
-admin tools, the section markup around them, and the subdomain strings they link to.
-Presence is controlled by environment variables (`ENABLE_CHAT`, `ENABLE_PLAYBOOKS`,
-`ENABLE_MINIO`) threaded inventory → Ansible role → chart value → Deployment env →
-page — three layers of plumbing per boolean, which drifts: no `enable_minio` Ansible
-variable exists at all, so that flag is reachable only through the chart default.
+This is the first step towards architecting Scout for Pluggable Apps: components that
+live outside the Scout monorepo, can be customized and installed per site,
+and operate as first-class members of the Scout platform. There are several limitations
+in our current design that limit or prevent this. Over time we will be removing these
+barriers and building new systems to enable Pluggable Apps.
 
-Consequences of that shape:
+This step is about Launchpad. It is the "front door" of the Scout platform. When a user
+arrives at Scout, they land here before going off to their destination. If a newly 
+installed component wants any users to find it, it needs to show up here. But that is not
+currently possible. Why?
 
-- A newly installed service — an optional Scout component or a site-installed app —
-  cannot appear on the landing page without editing TSX, rebuilding the launchpad
-  image, and redeploying the platform's front door.
-- Every service's subdomain is hardcoded twice — in the service's own role/values and
-  again in the launchpad — with nothing linking the copies.
-- Site- or dev-local tiles require carrying a fork of the launchpad image.
+Currently every tile that shows up on the Launchpad is hard-coded. The code, which lives
+in the Scout monorepo, must be modified, committed, compiled, built into an image,
+published, and deployed for any changes to show up. If I'm a third-party Scout site admin
+who wants to add a component to the Launchpad, I have no hope other than forking the repo
+and making invasive changes.
 
-The platform already runs a working pattern for runtime content discovery: Grafana
-imports any ConfigMap labelled `grafana_dashboard: "1"` through its
-kiwigrid/k8s-sidecar containers, and a labelled ConfigMap becomes a dashboard within
-seconds of `kubectl apply`. Operators know the idiom.
+Some of the components are customizable, but only minimally in terms of their presence
+or absence. There are environmental variables to show things like chat (`ENABLE_CHAT`),
+and some of the groups will only appear for admins. But that does not allow anything new
+to show up, or anything to be removed that doesn't have an environment variable switch.
 
-Binding constraints from prior decisions: oauth2-proxy fronts every service and
-forwards only a username, so anything role-shaped must come from the launchpad's own
-session (ADR 0003); the CSP allows `img-src 'self' data: blob:` and no remote origins
-(ADR 0012); deployments may be air-gapped, so nothing may be fetched at render time;
-new dependency versions are pinned in `versions.yaml` under Renovate watch (ADR 0015).
+We have an example of a service already in Scout that does this kind of runtime discovery: 
+Grafana imports any ConfigMap labelled `grafana_dashboard: "1"` through its
+`kiwigrid/k8s-sidecar` containers. This means any `ConfigMap` so labeled becomes a dashboard 
+within seconds of creation.
 
 ## Decision
 
