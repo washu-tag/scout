@@ -16,7 +16,7 @@ Selecting **Analytics** opens [Apache Superset](https://superset.apache.org/), a
 data visualization and exploration tool. Your landing page is the Scout
 Dashboard, an overview of all report data. From there you can explore the data
 with the no-code [visualization builder](https://superset.apache.org/docs/using-superset/creating-your-first-dashboard)
-or run direct queries in [SQL Lab](https://superset.apache.org/docs/using-superset/using-sql-lab/)
+or run direct queries in [SQL Lab](https://superset.apache.org/user-docs/using-superset/exploring-data#sql-lab-tips)
 (see the [Trino SQL reference](https://trino.io/docs/current/language.html)).
 
 ![Scout Dashboard](../images/ScoutDashboard.png)

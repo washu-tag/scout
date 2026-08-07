@@ -155,7 +155,7 @@ For visualizations, copy results to {ref}`Analytics <analytics>`.
 - **Authentication required**: Keycloak authentication (same as other Scout services)
 - **Read-only access**: Chat cannot modify or delete data
 - **External content blocked**: Scout blocks loading images and resources from external websites
-- **Conversation privacy**: Chat history is stored on the server and associated with your user account. Other users cannot see your chats unless you share them.
+- **Conversation privacy**: Chat history is stored on the server and associated with your user account. Other users cannot see your chats.
 
 ```{note}
 **Admin visibility**: Scout administrators have the ability to view user chat histories for quality assurance and support. Avoid including sensitive personal information in your conversations.
@@ -175,56 +175,23 @@ For visualizations, copy the data to {ref}`Analytics <analytics>` and build char
 
 ## Chat Sharing
 
-You can share chat conversations with other authenticated Scout users via share links.
-
-```{warning}
-**PHI Risk**: Chat conversations may contain Protected Health Information (PHI) from query results. Before sharing or downloading chats, ensure you are complying with your institution's data governance policies and HIPAA requirements.
+```{note}
+**Chat sharing is disabled.** Scout has turned off Open WebUI's share-link
+feature. Scout users are authorized to see different subsets of the report data,
+so a shared conversation could expose results to a recipient who is not
+authorized to see them. To
+share findings, see whether {ref}`Scout Analytics <analytics>` or
+{ref}`Scout Notebooks <notebooks>` fits your need; each applies the viewer's own
+data authorization.
 ```
 
-### Creating a Share Link
-
-1. Open the chat you want to share
-2. Click the **three-dot menu** (⋮) on the chat
-3. Select **Share**
-4. Click **Copy Link** to generate a shareable URL
-
-The link creates a **snapshot** of the conversation at that moment. New messages added after sharing won't appear unless you update the link.
-
-### Who Can View Shared Chats
-
-Shared chats are **only accessible to authenticated users** on your Scout instance. Recipients must:
-
-- Have a Scout account
-- Be logged in to Scout Chat
-
-Unauthenticated users will be redirected to the login page.
-
-### Updating a Share Link
-
-If you add messages to a shared chat and want to include them:
-
-1. Open the chat and click the **three-dot menu**
-2. Select **Share**
-3. The share modal shows the previously shared snapshot
-4. Click **Update** to refresh the snapshot with new messages
-
-### Deleting a Share Link
-
-To revoke access to a shared chat:
-
-1. Open the chat and click the **three-dot menu**
-2. Select **Share**
-3. Click **Delete this link**
-
-Once deleted, the share link becomes invalid and viewers can no longer access the chat.
-
-### Downloading Chats
+## Downloading Chats
 
 ```{warning}
 **Do not download chats containing PHI** unless you have appropriate authorization and secure storage. Downloaded chat files may contain patient identifiers, diagnosis codes, and other sensitive information extracted from query results.
 ```
 
-Because of PHI concerns, we recommend using chat sharing instead of download when you can. If this is not suitable for your use case, consider whether {ref}`Scout Analytics <analytics>` or {ref}`Scout Notebooks <notebooks>` would meet your need.
+Because of these PHI concerns, consider whether {ref}`Scout Analytics <analytics>` or {ref}`Scout Notebooks <notebooks>` would meet your need instead.
 
 ## Limitations
 
