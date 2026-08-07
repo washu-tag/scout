@@ -81,6 +81,9 @@ configurations.all {
 		} else if (g == 'org.apache.tomcat.embed') {
 			details.useVersion '10.1.55' // CVE-2026-41293/-43512/-43515 (CRITICAL) + -34483/-41284/-42498/-43513
 			details.because 'Trivy CRITICAL/HIGH'
+		} else if (g == 'io.micrometer' && n.startsWith('micrometer') && !n.startsWith('micrometer-tracing')) {
+			details.useVersion '1.15.12' // CVE-2026-40983/-40984 (micrometer-core); bump the 1.15.x core modules in lockstep
+			details.because 'Trivy HIGH'
 		}
 	}
 }
