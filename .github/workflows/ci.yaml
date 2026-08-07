@@ -1151,8 +1151,8 @@ jobs:
     # a .tar.zst bundle, and publish the bundle + the manifest so the next run can
     # carry from it. continue-on-error so it never gates a release; it fails closed
     # (harmless) on partial builds until a one-time bootstrap seeds the first
-    # predecessor. Sync is unsigned for now; `--key` verification is a follow-up
-    # once every image is signed at publish.
+    # predecessor. Sync verifies every component's cosign signature (--key) and
+    # fails closed if any image is unsigned or unverifiable.
     if: github.ref_name == 'main' && needs.publish.result == 'success'
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -1196,6 +1196,16 @@ jobs:
             "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
           echo "${ORAS_SHA256}  /tmp/oras.tar.gz" | sha256sum -c -
           tar -xzf /tmp/oras.tar.gz -C /usr/local/bin oras
+      - name: Assert hauler's verification success string (guard canary)
+        # The sync step's fail-closed guard counts "signature verified for image ["
+        # log lines; if a hauler bump changed that wording the count would silently
+        # drop to zero and block every publish. Catch a wording change here, up front.
+        run: |
+          set -euo pipefail
+          if ! grep -aqF 'signature verified for image [' "$(command -v hauler)"; then
+            echo "::error::this hauler build lacks the 'signature verified for image [' success string; update the verified-line guard in the sync step to match this version"
+            exit 1
+          fi
       - name: Download this run's fresh image digests
         # No continue-on-error: a failed/partial download must fail the job (which
         # is job-level continue-on-error, so non-blocking) rather than be swallowed.
