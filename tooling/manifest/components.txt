@@ -23,10 +23,12 @@ ghcr.io/washu-tag/report-viewer
 #
 # Each chart must be published to ghcr at least once before it can be carried:
 # publish-charts is changed-only, so a never-published chart is absent from the
-# registry and resolve fails closed on it. The bootstrap workflow seeds all 14
-# fresh for the first haul. (carry reads the previous haul.yaml, not a live ghcr
-# lookup; hauler pulls each chart via the job's GHCR login, and downstream
-# consumers get the self-contained .tar.zst, so ghcr package visibility is moot.)
+# registry and resolve fails closed on it. Going live needs a one-time publish of
+# all 14 (a no-op touch of the chart dirs in one main run) so publish-haul folds
+# them in; each then carries until it changes. Bootstrap only seeds the 8 images,
+# not charts. (carry reads the previous haul.yaml, not a live ghcr lookup; hauler
+# pulls each chart via the job's GHCR login, and downstream consumers get the
+# self-contained .tar.zst, so ghcr package visibility is moot.)
 ghcr.io/washu-tag/charts/hl7-transformer
 ghcr.io/washu-tag/charts/dcm4chee
 ghcr.io/washu-tag/charts/hive-metastore
