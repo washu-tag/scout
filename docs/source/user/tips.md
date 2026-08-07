@@ -22,7 +22,7 @@ This page provides helpful tips for using Scout services effectively.
 ### Getting Better Results
 
 - **Be specific**: Include details like modality, date ranges, or specific fields in your questions
-- **Use Scout terminology**: Reference field names from the [data schema](dataschema.md) for more accurate queries
+- **Use Scout terminology**: Reference field names from the [data schema](../reference/dataschema.md) for more accurate queries
 - **Check the SQL**: Expand the "View Result from scout-db" section to verify the AI generated the correct query
 - **Iterate**: Ask follow-up questions to refine results
 
@@ -85,7 +85,7 @@ Use these for targeted text analysis instead of parsing `report_text`.
 
 Jupyter notebook servers automatically shut down after a configurable period of runtime (2 days by default). You'll see the specific timeout for your deployment displayed in a notification banner when you start your server:
 
-![Jupyter Server Timeout Notification](images/JupyterServerTimeoutNotification.png)
+![Jupyter Server Timeout Notification](../images/JupyterServerTimeoutNotification.png)
 
 Your notebook files and home directory (`/home/jovyan/`) persist, but in-memory variables are lost. To avoid potentially losing any important work, save notebooks frequently (Ctrl+S / Cmd+S) and save large DataFrames and intermediate results to disk.
 
@@ -125,44 +125,6 @@ torch.save(model.state_dict(), '/home/jovyan/models/checkpoint.pth')
 model.load_state_dict(torch.load('/home/jovyan/models/checkpoint.pth'))
 ```
 
-## Monitor (Grafana)
-
-### Viewing Dashboards and Logs
-
-- **Accessing Scout Dashboards**: Navigate to **Dashboards > Scout** in Grafana
-- **Accessing Service Logs**: Go to **Drilldown > Logs** section or use **Explore > Loki**
-- **Adjust Time Ranges**: Modify the time range to focus on specific periods. Services without activity during the selected time range will not appear
-- **Click on Legends**: Click legend entries to isolate specific metrics or log entry types (e.g., filter to only errors)
-
-### Dashboard Variables
-
-- Many dashboards include variables (namespace, node, pod, etc.) at the top
-- Use these to filter data for targeted analysis
-- Multiple selections are often supported
-
-### Correlating Logs Across Services
-
-To view logs from multiple services in a single view:
-1. In the Logs panel, select "Include" for each service you want to view
-2. Click "Show Logs"
-3. Search, filter, and identify patterns across services
-
-This is especially useful for debugging issues that span multiple components.
-
-### Disk Usage Monitoring
-
-- **Kubernetes PV/PVC Metrics**: May not work in on-premises deployments
-- **Alternative**: Use the **Node Exporter** dashboard to monitor disk usage for each node and mount point
-
-### Saving Dashboard Changes
-
-- **Provisioned dashboards** (in Dashboards > Scout) cannot be modified directly in Grafana
-- **To make changes**:
-  1. Save the dashboard as a new one with a different name
-  2. Make your modifications
-  3. Export the updated JSON
-  4. (Admins) Update the dashboard configuration in the Scout repository for future deployments
-
 ## General Tips
 
 ### Keyboard Shortcuts
@@ -185,6 +147,6 @@ This is especially useful for debugging issues that span multiple components.
 
 ### Getting Help
 
-- **Documentation**: Review the [data schema](dataschema.md), [services](services.md), and [ingestion](ingest.md) docs
+- **Documentation**: Review the [data schema](../reference/dataschema.md), [architecture](../reference/architecture.md), and [ingestion](../operate/ingest.md) docs
 - **Issue Tracking**: Report bugs or request features on [GitHub](https://github.com/washu-tag/scout/issues)
 - **Admin Tools**: Contact your Scout administrator for access to Monitor, Orchestrator, or User Management interfaces

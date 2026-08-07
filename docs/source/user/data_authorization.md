@@ -13,10 +13,10 @@ If you query a report table and see far fewer rows than expected, or see `[REDAC
 **What these controls cover.** Row filtering and column masking apply to **live queries** — the data a query returns is scoped to your permissions each time you run it. They do **not** retroactively scrub data that has already left Trino (a downloaded CSV, a saved notebook, a shared dataset, a cached chart). Column masking is limited to the identifier columns listed above, not the full report record. Treat any result set you export or hand to another user as unmasked report data.
 ```
 
-Administrators configure these per-user permissions in Keycloak. For the attribute model, a setup walkthrough, propagation timing, verification, and troubleshooting, see [Configuring Data Authorization](technical/data_authorization.md).
+Administrators configure these per-user permissions in Keycloak. For the attribute model, a setup walkthrough, propagation timing, verification, and troubleshooting, see [Configuring Data Authorization](../operate/data_authorization.md).
 
 ## See also
 
 * [Authentication](authentication.md) — how users log in
-* [Data Schema](dataschema.md) — the report tables that row filtering and column masking operate on
-* [Configuring Data Authorization](technical/data_authorization.md) — administrator setup and troubleshooting
+* [Data Schema](../reference/dataschema.md) — the report tables that row filtering and column masking operate on
+* [Configuring Data Authorization](../operate/data_authorization.md) — administrator setup and troubleshooting
