@@ -3,10 +3,12 @@
 # are hauled by @digest and synced WITHOUT our cosign --key (trust = immutable
 # digest + upstream provenance), separate from the --key-verified Scout components.
 #
-# Each line is "<repo> <version-var>": the tag is read at build time from
+# Each line is "<repo> <version-var>": the TAG is read at build time from
 # ansible/group_vars/all/versions.yaml (the Renovate-tracked, deploy-time source
-# of truth), NOT hardcoded here, so the haul can never drift from what Scout
-# actually deploys. See tooling/manifest/resolve_upstream.py.
+# of truth), NOT hardcoded here, so the hauled tag can't drift from the deployed
+# one. The repo half IS hardcoded here; for images whose repo is also a
+# versions.yaml var (keycloak_config_cli_image, orthanc_image), keep this in sync
+# if that var is ever repointed. See tooling/manifest/resolve_upstream.py.
 #
 # DEFERRED -- the tag is derived from an upstream Helm chart's appVersion at
 # deploy time (not pinned in versions.yaml), so it can't be sourced here yet:
