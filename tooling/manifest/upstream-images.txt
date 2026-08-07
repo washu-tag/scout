@@ -1,17 +1,21 @@
-# Third-party upstream images pulled by Scout's wrapper charts, pinned into the
+# Upstream third-party images pulled by Scout's wrapper charts, pinned into the
 # build-lane haul (ADR 0033). These live in registries we don't control, so they
 # are hauled by @digest and synced WITHOUT our cosign --key (trust = immutable
-# digest + upstream provenance), in a separate pass from the --key-verified Scout
-# components (images + charts). One repo:tag per line; blank lines and # ignored.
-# Keep each tag in lockstep with the chart values.yaml that pins it (Renovate
-# tracks both, so they update together and the haul matches what the chart runs).
+# digest + upstream provenance), separate from the --key-verified Scout components.
 #
-# DEFERRED -- not pinned in-repo, so not yet haulable. Pin the version in the
-# chart first, then add the ref here:
-#   - scout-opa       openpolicyagent/opa:latest      (floating tag, no version)
-#   - orthanc         image is consumer-supplied       (no default in the chart)
-#   - dcm4chee        dcm4che/{arc,db,ldap} versions are consumer-supplied
-docker.io/starburstdata/hive:3.1.3-e.14
-docker.io/temporalio/admin-tools:1.31.0
-docker.io/adorsys/keycloak-config-cli:v6.4.0-26-11.0.3
-ghcr.io/open-webui/open-webui:0.9.6
+# Each line is "<repo> <version-var>": the tag is read at build time from
+# ansible/group_vars/all/versions.yaml (the Renovate-tracked, deploy-time source
+# of truth), NOT hardcoded here, so the haul can never drift from what Scout
+# actually deploys. See tooling/manifest/resolve_upstream.py.
+#
+# DEFERRED -- the tag is derived from an upstream Helm chart's appVersion at
+# deploy time (not pinned in versions.yaml), so it can't be sourced here yet:
+#   - temporal-bootstrap    temporalio/admin-tools        (= temporal chart appVersion)
+#   - open-webui-bootstrap  ghcr.io/open-webui/open-webui (= open-webui chart appVersion)
+openpolicyagent/opa opa_image_tag
+starburstdata/hive hive_image_tag
+docker.io/adorsys/keycloak-config-cli keycloak_config_cli_image_tag
+dcm4che/dcm4chee-arc-psql dcm4chee_arc_version
+dcm4che/postgres-dcm4chee dcm4chee_db_version
+dcm4che/slapd-dcm4chee dcm4chee_ldap_version
+jodogne/orthanc-plugins orthanc_version
