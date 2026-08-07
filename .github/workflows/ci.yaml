@@ -1237,17 +1237,21 @@ jobs:
             --predecessor predecessor/haul.yaml \
             --name scout > haul.yaml
           echo "--- haul.yaml ---"; cat haul.yaml
-          # Third-party upstream images: resolve each pinned ref to @digest and
-          # render a separate manifest, hauled by digest and synced WITHOUT --key
-          # below (we can't sign images in registries we don't own; trust = the
-          # immutable digest). Re-resolved every run, so no predecessor carry.
+          # Third-party upstream images: resolve each pinned tag from versions.yaml
+          # (the deploy-time source of truth, via resolve_upstream.py), pin to
+          # @digest, and render a separate manifest -- synced WITHOUT --key below
+          # (we can't sign images in registries we don't own; trust = the immutable
+          # digest). Re-resolved every run, so no predecessor carry.
           : > upstream-refs.txt
+          python3 tooling/manifest/resolve_upstream.py \
+            tooling/manifest/upstream-images.txt \
+            ansible/group_vars/all/versions.yaml > upstream-tags.txt
           while read -r ref; do
-            case "$ref" in '' | \#*) continue ;; esac
+            [ -n "$ref" ] || continue
             d="$(docker buildx imagetools inspect "$ref" --format '{{json .Manifest}}' | jq -r '.digest')"
             [ "${d#sha256:}" != "$d" ] || { echo "::error::could not resolve a digest for ${ref}"; exit 1; }
             printf '%s@%s\n' "$ref" "$d" >> upstream-refs.txt
-          done < tooling/manifest/upstream-images.txt
+          done < upstream-tags.txt
           python3 -c 'import sys; sys.path.insert(0, "tooling/manifest"); from haul import render_images; refs=[l.strip() for l in open("upstream-refs.txt") if l.strip()]; sys.stdout.write(render_images(refs, name="scout-upstream"))' > haul-upstream.yaml
           echo "--- haul-upstream.yaml ---"; cat haul-upstream.yaml
       - name: Sync, bundle, sign, and publish the haul
