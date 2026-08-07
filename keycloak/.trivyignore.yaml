@@ -38,3 +38,8 @@ vulnerabilities:
   # Keycloak base ships the fixed RPMs yet, and 26.6.4 is the latest release.
   - id: CVE-2026-47063 # java-21-openjdk-headless 21.0.11 (base RPM)
   - id: CVE-2026-54369 # libacl 2.3.1-4.el9 (base RPM)
+  # micrometer-core bundled by the Keycloak/Quarkus distribution's metrics
+  # subsystem (not our event-listener provider jar). Fixed in 1.16.6, which
+  # Keycloak 26.6.4 (Quarkus BOM) doesn't bundle yet; drop when a newer base ships it.
+  - id: CVE-2026-40983 # io.micrometer:micrometer-core 1.16.3
+  - id: CVE-2026-40984 # io.micrometer:micrometer-core 1.16.3
