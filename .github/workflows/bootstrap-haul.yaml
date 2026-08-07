@@ -17,11 +17,11 @@ on:
   workflow_dispatch:
     inputs:
       superset_tag:
-        description: 'superset has no :latest; seed from this release tag'
-        default: '5.0.0'
+        description: 'Optional override for the superset seed tag; defaults to helm/superset/VERSION'
+        default: ''
       keycloak_tag:
-        description: 'keycloak has no :latest; seed from this release tag'
-        default: '26.6.3'
+        description: 'Optional override for the keycloak seed tag; defaults to keycloak/VERSION'
+        default: ''
 
 permissions:
   contents: read
@@ -48,16 +48,23 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Install hauler and oras
+        shell: bash # default shell is `bash -e` (no pipefail); be explicit
         env:
           HAULER_VERSION: '2.0.2'
+          HAULER_SHA256: 'd96ac67cac3c9e4fc2d24c8347fba956b2a165a2237318cc2564e44bbaabc4c3'
           ORAS_VERSION: '1.2.0'
-        # Binary downloads (not curl | bash), same posture as ci.yaml.
+          ORAS_SHA256: '5b3f1cbb86d869eee68120b9b45b9be983f3738442f87ee5f06b00edd0bab336'
+        # Binary downloads (not curl | bash), sha256-verified before extract so a
+        # tampered/hijacked release asset can't execute in the job. Bump the
+        # version and its checksum together (from the release's checksums.txt).
         run: |
           curl -fsSL -o /tmp/hauler.tar.gz \
             "https://github.com/hauler-dev/hauler/releases/download/v${HAULER_VERSION}/hauler_${HAULER_VERSION}_linux_amd64.tar.gz"
+          echo "${HAULER_SHA256}  /tmp/hauler.tar.gz" | sha256sum -c -
           tar -xzf /tmp/hauler.tar.gz -C /usr/local/bin hauler
           curl -fsSL -o /tmp/oras.tar.gz \
             "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+          echo "${ORAS_SHA256}  /tmp/oras.tar.gz" | sha256sum -c -
           tar -xzf /tmp/oras.tar.gz -C /usr/local/bin oras
       - name: Resolve current image digests, sign, and record as fresh
         env:
@@ -69,19 +76,21 @@ jobs:
           set -euo pipefail
           mkdir -p digests
           # Scout-built images have :latest; the two vendored-upstream images do
-          # not, so seed them from a release tag (dispatch inputs). Pin by @digest;
-          # the tag is only a label (hauler copies by digest).
+          # not, so seed them from their VERSION file -- the same source
+          # derive-version tags the published image from, kept current by Renovate
+          # -- unless a dispatch override is given. Pin by @digest; the tag is only
+          # a label (hauler copies by digest).
           for name in hl7log-extractor hl7-transformer hl7-listener scout-notebook \
                       launchpad report-viewer superset keycloak; do
             case "${name}" in
-              superset) src="${SUPERSET_TAG}" ;;
-              keycloak) src="${KEYCLOAK_TAG}" ;;
+              superset) src="${SUPERSET_TAG:-$(cat helm/superset/VERSION)}" ;;
+              keycloak) src="${KEYCLOAK_TAG:-$(cat keycloak/VERSION)}" ;;
               *) src="latest" ;;
             esac
             repo="${REGISTRY}/washu-tag/${name}"
             digest="$(docker buildx imagetools inspect "${repo}:${src}" --format '{{json .Manifest}}' | jq -r '.digest')"
             if [ "${digest#sha256:}" = "${digest}" ]; then
-              echo "::error::could not resolve a digest for ${repo}:${src}"
+              echo "::error::${repo}:${src} is not published in ghcr. If VERSION is ahead of the last build, re-run with the *_tag override set to a currently-published tag."
               exit 1
             fi
             cosign sign --key env://COSIGN_PRIVATE_KEY \
