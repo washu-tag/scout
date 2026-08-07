@@ -1,6 +1,6 @@
 # Configuring Data Authorization
 
-This page is for Scout administrators. The per-user row filtering and column masking described in [Data Authorization](../data_authorization.md) are configured as attributes on each user's Keycloak account.
+This page is for Scout administrators. The per-user row filtering and column masking described in [Data Authorization](../user/data_authorization.md) are configured as attributes on each user's Keycloak account.
 
 Scout's authorization model is **attribute-driven**, not group-driven. Permissions are stored as attributes on each user's Keycloak account; you set them once per user and they take effect for every Trino-backed surface — Analytics, Notebooks, Chat.
 
@@ -147,6 +147,6 @@ Useful when the transformer adds new derivative tables sharing a naming conventi
 
 ## See also
 
-* [Data Authorization](../data_authorization.md) — the end-user view of these restrictions
+* [Data Authorization](../user/data_authorization.md) — the end-user view of these restrictions
 * [Inventory](inventory.md) — Ansible configuration for per-deployment filter dimensions and view-only tables
-* [Data Schema](../dataschema.md) — column-level details of the report tables
+* [Data Schema](../reference/dataschema.md) — column-level details of the report tables

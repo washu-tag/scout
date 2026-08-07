@@ -20,6 +20,11 @@ extensions = [
     "myst_parser",
 ]
 
+# Enable the colon-fence directive syntax (:::{note} … :::) in addition to the
+# default backtick fence, so admonitions can be authored with ::: without the
+# fence clashing with the backtick code blocks they sit alongside.
+myst_enable_extensions = ["colon_fence"]
+
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),

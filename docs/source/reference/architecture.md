@@ -1,77 +1,16 @@
-# Services
+# Architecture
 
 Scout consists of several services that work together to process medical imaging data into a data lake and provide user interfaces for accessing and analyzing the data.
 
-![Scout Framework](images/ScoutFramework.png)
+![Scout Framework](../images/ScoutFramework.png)
 
 **Current version:** Scout currently ingests HL7 radiology reports. Future versions will incorporate DICOM metadata, pathology reports, and extracted features in concert with XNAT.
 
-## Architecture
+## Overview
 
 Scout is a modern, distributed data platform deployed on Kubernetes.
 
-![Scout Architecture](images/ScoutArchitecture.png)
-
-## User Services
-
-Scout provides three primary user-facing services for data exploration and analysis. These are accessible from the Scout Launchpad after [authentication](authentication.md).
-
-(analytics)=
-### Analytics
-
-[Apache Superset](https://superset.apache.org/) provides a user-friendly interface for exploring and visualizing data in the Scout data lake. Superset offers two main approaches:
-
-- **No-code visualization builder**: Create interactive charts, graphs, and dashboards without writing SQL
-- **SQL Lab**: An integrated SQL IDE for advanced queries and data exploration
-
-Under the hood, Superset queries the data lake using [Trino](https://trino.io/), a distributed SQL query engine that provides fast, efficient access to large datasets stored in Delta Lake.
-
-**Key Features:**
-- Pre-built Scout Dashboard with overview metrics
-- Interactive visualizations (charts, tables, pivot tables, etc.)
-- Direct SQL querying with autocomplete
-- Export results to CSV, Excel, or other formats
-- Share dashboards with other users
-
-**Learn more:** [Superset documentation](https://superset.apache.org/docs/intro)
-
-### Chat
-
-[Open WebUI](https://docs.openwebui.com/) with [Ollama](https://ollama.com/) provides an AI-powered chat interface for natural language querying of data in the Scout data lake. Ask questions in plain English and receive data-driven answers from large language models with direct access to the Delta Lake.
-
-The Chat service is configured with:
-- **Natural language SQL**: Automatically converts your questions into SQL queries
-- **Report-viewer tools**: Queries Trino through Scout's report-viewer service; cohort searches render inline as a sortable, filterable, CSV-exportable table
-- **Context-aware responses**: The AI understands the Scout data schema and can provide detailed analyses
-
-**Example queries** (for radiology reports in the current version):
-- "How many CT scans were performed in 2024?"
-- "What are the most common diagnoses in chest X-rays?"
-- "Show me the age distribution of patients with MRI reports"
-
-**Note:** The Chat service is optional and may not be enabled in all Scout deployments. For detailed information about using the Chat interface, see the [Chat documentation](chat.md).
-
-(notebooks)=
-### Notebooks
-
-[JupyterHub](https://jupyterhub.readthedocs.io/) provides an interface for power users to perform custom data analysis using Python code. Each user receives their own single-user [Jupyter notebook](https://jupyter.org/) environment with full access to data in the Scout data lake.
-
-**Key Features:**
-- SQL access to the data lake via [Trino](https://trino.io/), with results loaded as pandas DataFrames
-- Example `Scout/Quickstart.ipynb` notebook with sample queries and analysis code for radiology reports
-- Export results to CSV, JSON, Parquet, or other formats
-- Create custom visualizations and statistical analyses
-
-**Use cases:**
-- Complex data transformations and aggregations
-- Statistical analysis and machine learning
-- Custom report generation
-- Data quality checks and validation
-
-**Important:** Notebook servers automatically shut down after a period of time (default: 2 days, configurable by your
-deployment) to conserve resources. Your files in `/home/jovyan/` are preserved, but in-memory variables (DataFrames,
-models, etc.) are lost. Save your work regularly and checkpoint intermediate results. See {ref}`Tips & Tricks <notebooks_ref>`
-for checkpointing strategies.
+![Scout Architecture](../images/ScoutArchitecture.png)
 
 ## Backend Services
 
@@ -90,7 +29,7 @@ The following services support Scout's data processing, storage, and monitoring 
 
 **Access:** Administrators can monitor workflows and view execution details through the Temporal Web UI.
 
-**Learn more:** See [Report Ingestion](ingest.md) for details on launching and monitoring ingestion workflows.
+**Learn more:** See [Report Ingestion](../operate/ingest.md) for details on launching and monitoring ingestion workflows.
 
 (extractor_ref)=
 ### Extractor
@@ -148,7 +87,7 @@ The Lake service provides the data storage foundation for Scout using a medallio
 
 **Access:** Administrators can access Grafana through the Scout Launchpad Admin Tools section.
 
-**Learn more:** See [Tips & Tricks](tips.md) for guidance on using Grafana dashboards effectively.
+**Learn more:** See [Monitoring](../operate/monitoring.md) for guidance on using Grafana dashboards effectively.
 
 ### User Management
 
@@ -162,4 +101,4 @@ The Lake service provides the data storage foundation for Scout using a medallio
 
 **Access:** Administrators can manage users, roles, and authentication settings through the Keycloak admin console.
 
-**Learn more:** See [Authentication](authentication.md) for details on the user login and approval process.
+**Learn more:** See [Authentication](../user/authentication.md) for details on the user login and approval process.
