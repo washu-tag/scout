@@ -24,16 +24,14 @@ runs:
       id: check-registry
       shell: bash
       env:
-        GH_TOKEN: ${{ github.token }}
         VERSION: ${{ steps.derive-version.outputs.version }}
         IMAGE_NAME: ${{ inputs.image-name }}
+      # An ambiguous registry answer exits non-zero rather than reporting a
+      # "false" nobody can trust -- a wrong "false" here rebuilds the image and,
+      # in ci.yaml's publish job, pushes it over the tag that is already there.
       run: |
-        # Query GitHub Container Registry API
-        if gh api "/orgs/washu-tag/packages/container/${IMAGE_NAME}/versions" \
-           --jq '.[] | select(.metadata.container.tags[]? == "'"${VERSION}"'")' 2>/dev/null | grep -q .; then
-          echo "exists=true" >> $GITHUB_OUTPUT
-          echo "Image ${IMAGE_NAME}:${VERSION} exists in registry"
-        else
-          echo "exists=false" >> $GITHUB_OUTPUT
-          echo "Image ${IMAGE_NAME}:${VERSION} does not exist in registry"
-        fi
+        set -euo pipefail
+        exists="$(bash "${GITHUB_WORKSPACE}/.github/scripts/ghcr-tag-published.sh" \
+          "${IMAGE_NAME}" "${VERSION}")"
+        echo "exists=${exists}" >> "$GITHUB_OUTPUT"
+        echo "Image ${IMAGE_NAME}:${VERSION} exists=${exists}"

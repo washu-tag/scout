@@ -30,6 +30,13 @@ permissions:
   attestations: write
   id-token: write
 
+env:
+  # The images update-versions.sh stamps, i.e. the ones a release retags. superset
+  # and keycloak are built from a vendored upstream and keep their upstream version,
+  # so they are published but never carry X.Y.Z.
+  SCOUT_VERSIONED_IMAGES: 'hl7log-extractor hl7-transformer hl7-listener scout-notebook launchpad report-viewer'
+  UPSTREAM_VERSIONED_IMAGES: 'superset keycloak'
+
 jobs:
   validate:
     name: Validate
@@ -323,7 +330,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
         run: |
-          IMAGES="hl7log-extractor hl7-transformer hl7-listener scout-notebook launchpad superset keycloak report-viewer"
+          IMAGES="${SCOUT_VERSIONED_IMAGES} ${UPSTREAM_VERSIONED_IMAGES}"
           for IMAGE in $IMAGES; do
             echo "=== Publishing $IMAGE ==="
             gh run download "$RUN_ID" --repo "${{ github.repository }}" -n "$IMAGE" -D "${{ runner.temp }}/$IMAGE"
@@ -343,6 +350,33 @@ jobs:
       && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
       && needs.validate.outputs.release_exists != 'true'
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify the release images were published
+        env:
+          VERSION: ${{ inputs.version }}
+        # wait-for-build only proves CI went green, not that it published
+        # anything. On main the images come from ci.yaml's publish job, which
+        # pushes an image only when that image needed pushing -- so a release
+        # fixed forward on a later commit can go green having published nothing.
+        # That is how v4.1.0 got a tag and a release with no 4.1.0 images. Assert
+        # the tags exist before minting a release that claims them.
+        run: |
+          set -euo pipefail
+          missing=()
+          for image in ${SCOUT_VERSIONED_IMAGES}; do
+            published="$(bash .github/scripts/ghcr-tag-published.sh "${image}" "${VERSION}")"
+            echo "${image}:${VERSION} published=${published}"
+            [ "${published}" = 'true' ] || missing+=("${image}")
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::not published at ${VERSION}: ${missing[*]}"
+            echo "::error::refusing to create release v${VERSION}. The version bump commit is preserved, so re-run the release once the images publish."
+            exit 1
+          fi
+          echo "::notice::all ${VERSION} images are published"
+
       - name: Generate token from GitHub App
         id: app_token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
