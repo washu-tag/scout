@@ -21,6 +21,14 @@
 #
 # Removal is deletion: uninstalling a component should delete its catalog
 # ConfigMap (charts that template the ConfigMap themselves get this for free).
+#
+# Known regression, accepted for now (2026-08): this task only ever creates.
+# A component's playbook end_plays when its feature flag is off, so flipping
+# a flag from true back to false leaves the chip ConfigMap — and its tile —
+# in place, where the pre-catalog ENABLE_* env vars used to hide it. In
+# practice components are not disabled once deployed, and the GitOps
+# migration (ADR 0031) moves publication into charts, where uninstall
+# deletes the ConfigMap.
 - name: Publish launchpad catalog ConfigMap {{ catalog_configmap_name }}
   kubernetes.core.k8s:
     state: present
