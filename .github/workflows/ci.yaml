@@ -294,10 +294,17 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: report-viewer/frontend/package-lock.json
+          cache-dependency-path: |
+            report-viewer/frontend/package-lock.json
+            launchpad/package-lock.json
       - name: 'Frontend build: report-viewer SPA'
         shell: bash
         run: cd report-viewer/frontend && npm ci && npm run build
+      # Includes the drift guards: the committed JSON Schema vs the zod
+      # source, and the docs icon/tone galleries vs the icon/tone registries.
+      - name: 'Unit tests: launchpad'
+        shell: bash
+        run: cd launchpad && npm ci && npm test
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v
