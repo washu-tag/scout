@@ -39,10 +39,7 @@ section — `more` is the default group, defined by the launchpad's own catalog.
 
 Ship it however you deploy: a template in your Helm chart (so uninstalling the chart
 removes the chip), a Flux-reconciled manifest, or — for Scout-internal roles — the
-`scout_common` `launchpad_catalog` task. The schema comment on the first line gives you
-editor validation and completion; the same
-[JSON Schema](launchpad-catalog.v1alpha1.schema.json) is what the launchpad's validator
-enforces, generated from the same source.
+`scout_common` `launchpad_catalog` task.
 
 ## The document
 
@@ -170,9 +167,7 @@ see is exactly what renders:
 <!-- generated:icons:end -->
 
 Need a logo the registry lacks? Embed it as `iconData` (a base64 image data URI, 16 KiB
-max) — or open a PR adding a name to
-`launchpad/src/lib/catalog/icons.tsx`. The published JSON Schema always carries the
-authoritative name list as the `icon` enum.
+max) — or open a PR adding a name to `launchpad/src/lib/catalog/icons.tsx`.
 
 Tones are named bundles of coordinated light- and dark-mode styling defined in
 `launchpad/src/lib/catalog/tones.ts` over the
@@ -230,7 +225,5 @@ responsibility.
 
 ## Reference
 
-- Machine-readable schema: [launchpad-catalog.v1alpha1.schema.json](launchpad-catalog.v1alpha1.schema.json)
-  (generated from the validator's own definitions — they cannot disagree).
 - Design and rationale: ADR 0034 in the Scout repository
   (`docs/internal/adr/0034-runtime-configurable-launchpad-catalog.md`).

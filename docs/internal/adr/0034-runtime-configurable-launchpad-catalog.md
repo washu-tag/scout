@@ -248,9 +248,9 @@ contract, exercised by many owners from day one.
   the front door. Mitigations: strict destination/icon validation, text-only
   rendering, per-chip degradation, admin-visible diagnostics. The residual
   namespace-trust question is accepted for now and revisited if tenancy tightens.
-- The authoring contract is published two ways from one source: a docs page for
-  humans, and a JSON Schema generated from the same zod definitions (authoring-side
-  `io: 'input'` form) for editors and agents — they cannot disagree.
+- The authoring contract is the docs page plus the zod validator itself; the page's
+  icon and tone galleries are generated from the launchpad's own registries, so what
+  the docs show and what the page renders cannot disagree.
 - The launchpad gains test infrastructure (the catalog module is pure functions over
   fixtures) and loses the client-side URL-resolution skeleton: links resolve
   server-side from the request host, so first paint gets faster, and role filtering

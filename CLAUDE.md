@@ -295,8 +295,8 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
 - **Adjust resources (heap, CPU, memory, storage)** — override in `inventory.yaml`.
 - **Add a launchpad tile (chip)** — never edit launchpad code; ship a ConfigMap
   labelled `scout.washu.edu/launchpad-apps: "1"` with the owning component (chart
-  template, or `scout_common`'s `launchpad_catalog` task for Ansible roles). Schema
-  and authoring guide: `docs/source/customize/launchpad-chips.md` (ADR 0034).
+  template, or `scout_common`'s `launchpad_catalog` task for Ansible roles).
+  Authoring guide: `docs/source/customize/launchpad-chips.md` (ADR 0034).
 - **Add a Superset dashboard, chart, or dataset** — export the asset YAML into
   `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`; a new
   bundle also needs its name in `scout_dashboard_bundles` in inventory. See

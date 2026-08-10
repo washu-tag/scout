@@ -300,8 +300,8 @@ jobs:
       - name: 'Frontend build: report-viewer SPA'
         shell: bash
         run: cd report-viewer/frontend && npm ci && npm run build
-      # Includes the drift guards: the committed JSON Schema vs the zod
-      # source, and the docs icon/tone galleries vs the icon/tone registries.
+      # Includes the drift guard: the docs icon/tone galleries vs the
+      # icon/tone registries.
       - name: 'Unit tests: launchpad'
         shell: bash
         run: cd launchpad && npm ci && npm test

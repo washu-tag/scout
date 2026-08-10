@@ -36,10 +36,9 @@ function firstMessage(error: IssueBearer): string {
 
 // ---------------------------------------------------------------------------
 // Base field schemas: the authoring contract, strict, with no fallbacks.
-// Both the lenient parsing schemas (below) and the published JSON Schema
-// derive from these, the known-key lists are derived from the same tables,
-// and the fallback values are single-sourced — so the law, the parser, and
-// the documentation cannot disagree.
+// The lenient parsing schemas (below) derive from these, the known-key lists
+// come from the same tables, and the fallback values are single-sourced — so
+// each field and each default is stated exactly once.
 // ---------------------------------------------------------------------------
 
 const idSchema = z.string().regex(ID_RE, 'must be a lowercase dns-label-style slug');
@@ -108,9 +107,8 @@ const CHIP_KEYS = Object.keys(chipBase);
 const GROUP_KEYS = Object.keys(groupBase);
 const LINK_KEYS = Object.keys(linkShape);
 
-// Fallback values, shared by the lenient parser and the published JSON
-// Schema so the documented default and the applied default are the same
-// value.
+// Fallback values for the lenient parser, in one table so each default is
+// stated exactly once (the authoring guide's field tables document these).
 const CHIP_FALLBACKS = {
   description: '',
   icon: DEFAULT_ICON,
@@ -217,78 +215,6 @@ const envelopeSchema = z.object({
 });
 
 const ENVELOPE_KEYS = Object.keys(envelopeSchema.shape);
-
-// ---------------------------------------------------------------------------
-// Publication: the authoring-side JSON Schema shipped with the docs. Built
-// from the strict base fields (not the lenient wrappers — a .catch() schema
-// accepts anything on input, which would publish no law at all). Defaults
-// are annotated from the shared fallbacks; a drift test compares the
-// committed file against this output.
-// ---------------------------------------------------------------------------
-
-const publicationSchemaValue = z
-  .object({
-    apiVersion: z
-      .literal(CATALOG_API_VERSION)
-      .describe('Catalog schema version. Documents with any other value are skipped.'),
-    chips: z
-      .array(
-        z.object({
-          id: chipBase.id,
-          title: chipBase.title.describe(`Chip heading, at most ${TITLE_MAX} characters`),
-          description: chipBase.description
-            .max(DESCRIPTION_MAX)
-            .default(CHIP_FALLBACKS.description)
-            .describe('One line about the destination'),
-          icon: chipBase.icon.default(CHIP_FALLBACKS.icon),
-          iconData: chipBase.iconData
-            .optional()
-            .describe('Embedded image data URI; wins over icon'),
-          tone: chipBase.tone.default(CHIP_FALLBACKS.tone),
-          link: chipBase.link.describe(
-            'Exactly one destination: subdomain (with optional path suffix), path, or url',
-          ),
-          newTab: chipBase.newTab.default(CHIP_FALLBACKS.newTab),
-          group: chipBase.group.default(CHIP_FALLBACKS.group),
-          weight: chipBase.weight.default(CHIP_FALLBACKS.weight).describe('Lower renders first'),
-          audience: chipBase.audience.default(CHIP_FALLBACKS.audience),
-          enabled: chipBase.enabled.default(CHIP_FALLBACKS.enabled),
-        }),
-      )
-      .default([]),
-    groups: z
-      .array(
-        z.object({
-          id: groupBase.id,
-          title: groupBase.title.describe(`Section heading, at most ${TITLE_MAX} characters`),
-          description: groupBase.description
-            .max(DESCRIPTION_MAX)
-            .default(GROUP_FALLBACKS.description),
-          icon: groupBase.icon.default(GROUP_FALLBACKS.icon),
-          weight: groupBase.weight
-            .default(GROUP_FALLBACKS.weight)
-            .describe('Section order on the page'),
-          layout: groupBase.layout.default(GROUP_FALLBACKS.layout),
-          maxColumns: groupBase.maxColumns
-            .optional()
-            .describe('Defaults by layout: cards 3, tiles 2, rows 1'),
-          width: groupBase.width.default(GROUP_FALLBACKS.width),
-          audience: groupBase.audience.default(GROUP_FALLBACKS.audience),
-          footerLink: groupBase.footerLink.optional(),
-        }),
-      )
-      .default([])
-      .describe('Define a group only when introducing a new section'),
-  })
-  .describe('Scout launchpad catalog document (ADR 0034)');
-
-export function publicationSchema() {
-  return publicationSchemaValue;
-}
-
-export function catalogJsonSchema(): unknown {
-  return z.toJSONSchema(publicationSchemaValue, { io: 'input', target: 'draft-2020-12' });
-}
 
 // ---------------------------------------------------------------------------
 // Validation

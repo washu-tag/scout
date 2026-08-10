@@ -8,7 +8,6 @@
     "start": "next start",
     "lint": "cd .. && pre-commit run eslint --all-files",
     "test": "vitest run",
-    "schema": "tsx scripts/generate-schema.ts",
     "docs-assets": "tsx scripts/generate-doc-assets.ts"
   },
   "dependencies": {
