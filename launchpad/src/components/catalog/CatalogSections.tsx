@@ -200,11 +200,15 @@ const DiagnosticsPanel = ({ model }: { model: RenderModel }) => {
   );
 };
 
-// Renders one error boundary per section, so a renderer bug costs a section,
-// not the page. With validation upstream this should never trigger; it exists
-// for the day it does.
-class SectionBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
-  constructor(props: { children: React.ReactNode }) {
+// Renders one error boundary per group, so a renderer bug costs a single
+// section — and says so in place, rather than leaving a silent gap. With
+// validation upstream this should never trigger; it exists for the day it
+// does.
+class SectionBoundary extends React.Component<
+  { title: string; children: React.ReactNode },
+  { failed: boolean }
+> {
+  constructor(props: { title: string; children: React.ReactNode }) {
     super(props);
     this.state = { failed: false };
   }
@@ -218,7 +222,16 @@ class SectionBoundary extends React.Component<{ children: React.ReactNode }, { f
   }
 
   render() {
-    if (this.state.failed) return null;
+    if (this.state.failed) {
+      return (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm text-center">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-light">
+            The “{this.props.title}” section failed to render. Details are in the browser
+            console and the launchpad logs.
+          </p>
+        </div>
+      );
+    }
     return this.props.children;
   }
 }
@@ -239,19 +252,21 @@ export default function CatalogSections({ model }: { model: RenderModel }) {
 
   return (
     <div className="space-y-6">
-      {model.rows.map((row) => (
-        <SectionBoundary key={row.groups.map((group) => group.id).join('+')}>
-          {row.groups.length === 2 ? (
-            <div className="grid gap-6 md:grid-cols-2">
-              {row.groups.map((group) => (
-                <GroupPanel key={group.id} group={group} fillHeight />
-              ))}
-            </div>
-          ) : (
+      {model.rows.map((row) =>
+        row.groups.length === 2 ? (
+          <div key={row.groups[0].id} className="grid gap-6 md:grid-cols-2">
+            {row.groups.map((group) => (
+              <SectionBoundary key={group.id} title={group.title}>
+                <GroupPanel group={group} fillHeight />
+              </SectionBoundary>
+            ))}
+          </div>
+        ) : (
+          <SectionBoundary key={row.groups[0].id} title={row.groups[0].title}>
             <GroupPanel group={row.groups[0]} fillHeight={false} />
-          )}
-        </SectionBoundary>
-      ))}
+          </SectionBoundary>
+        ),
+      )}
       <DiagnosticsPanel model={model} />
     </div>
   );
