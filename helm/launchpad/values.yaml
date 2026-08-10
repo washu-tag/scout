@@ -11,7 +11,7 @@ replicaCount: 1
 # ConfigMap and appears exactly when that component is installed (ADR 0034).
 
 # Runtime catalog discovery (ADR 0034): a kiwigrid/k8s-sidecar container
-# watches ConfigMaps labelled `scout.washu.edu/launchpad-apps: "1"` and
+# watches ConfigMaps labelled `launchpad.scout.xnat.org/catalog: "true"` and
 # materializes their data keys into a shared emptyDir the app reads alongside
 # the mounted core catalog. The label is part of the catalog contract — fixed
 # in the deployment template, the scout_common publisher task, and the user

@@ -2,7 +2,7 @@
 # Publish a launchpad catalog ConfigMap (ADR 0034).
 #
 # The launchpad's discovery sidecar imports any ConfigMap labelled
-# `scout.washu.edu/launchpad-apps: "1"` from any namespace; each data key
+# `launchpad.scout.xnat.org/catalog: "true"` from any namespace; each data key
 # holds one catalog document. Components that own a chip publish it next to
 # themselves so presence on the landing page follows installation.
 #
@@ -16,7 +16,8 @@
 #       catalog_configmap_name: my-service-launchpad
 #       catalog_namespace: '{{ my_service_namespace }}'
 #       catalog_document:
-#         apiVersion: scout.washu.edu/v1alpha1
+#         apiVersion: launchpad.scout.xnat.org/v1alpha1
+#         kind: Catalog
 #         chips: [...]
 #
 # Removal is deletion: uninstalling a component should delete its catalog
@@ -39,6 +40,6 @@
         name: '{{ catalog_configmap_name }}'
         namespace: '{{ catalog_namespace }}'
         labels:
-          scout.washu.edu/launchpad-apps: '1'
+          launchpad.scout.xnat.org/catalog: 'true'
       data:
         apps.yaml: '{{ catalog_document | to_nice_yaml(indent=2) }}'

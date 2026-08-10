@@ -8,7 +8,7 @@ catalog that fills the page (ADR 0034):
   `/app/config/catalog`. The direct mount is the availability floor: the kubelet
   guarantees it exists, so the core page renders even when discovery is broken.
 - **A kiwigrid/k8s-sidecar container** (`catalog.discovery.*` values) — watches
-  ConfigMaps labelled `scout.washu.edu/launchpad-apps: "1"` across namespaces and
+  ConfigMaps labelled `launchpad.scout.xnat.org/catalog: "true"` across namespaces and
   materializes their data keys into an emptyDir at `/app/config/discovered`. This is
   how every other component's chips arrive; nothing else on the page is configured
   here.

@@ -184,7 +184,8 @@
     catalog_configmap_name: open-webui-launchpad
     catalog_namespace: '{{ chatbot_namespace }}'
     catalog_document:
-      apiVersion: scout.washu.edu/v1alpha1
+      apiVersion: launchpad.scout.xnat.org/v1alpha1
+      kind: Catalog
       chips:
         - id: chat
           title: Chat

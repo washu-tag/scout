@@ -16,7 +16,8 @@ metadata:
     {{- include "launchpad.labels" . | nindent 4 }}
 data:
   core.yaml: |
-    apiVersion: scout.washu.edu/v1alpha1
+    apiVersion: launchpad.scout.xnat.org/v1alpha1
+    kind: Catalog
     groups:
       - id: core
         title: Core Services

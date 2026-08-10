@@ -126,9 +126,9 @@ spec:
             # launchpad_catalog task and the authoring docs. Changing it is
             # an API migration, not a configuration.
             - name: LABEL
-              value: scout.washu.edu/launchpad-apps
+              value: launchpad.scout.xnat.org/catalog
             - name: LABEL_VALUE
-              value: '1'
+              value: 'true'
             - name: FOLDER
               value: /app/config/discovered
             - name: NAMESPACE

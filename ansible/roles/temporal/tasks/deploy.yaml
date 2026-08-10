@@ -166,7 +166,8 @@
     catalog_configmap_name: temporal-launchpad
     catalog_namespace: '{{ scout_extractor_namespace }}'
     catalog_document:
-      apiVersion: scout.washu.edu/v1alpha1
+      apiVersion: launchpad.scout.xnat.org/v1alpha1
+      kind: Catalog
       chips:
         - id: orchestrator
           title: Orchestrator

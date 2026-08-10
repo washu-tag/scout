@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { CATALOG_API_VERSION, parseCatalogText, validateDocument } from './schema';
+import { CATALOG_API_VERSION, CATALOG_KIND, parseCatalogText, validateDocument } from './schema';
 
 const SOURCE = 'test/apps.yaml';
 
 function doc(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return { apiVersion: CATALOG_API_VERSION, chips: [], groups: [], ...overrides };
+  return {
+    apiVersion: CATALOG_API_VERSION,
+    kind: CATALOG_KIND,
+    chips: [],
+    groups: [],
+    ...overrides,
+  };
 }
 
 function chip(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -112,9 +118,18 @@ describe('validateDocument', () => {
   });
 
   it('skips a whole document with an unknown apiVersion', () => {
-    const result = validateDocument({ apiVersion: 'scout.washu.edu/v2', chips: [chip()] }, SOURCE);
+    const result = validateDocument(
+      doc({ apiVersion: 'launchpad.scout.xnat.org/v2', chips: [chip()] }),
+      SOURCE,
+    );
     expect(result.chips).toHaveLength(0);
-    expect(result.diagnostics[0].message).toContain('unknown apiVersion');
+    expect(result.diagnostics[0].message).toContain('unknown document type');
+  });
+
+  it('skips a whole document with an unknown kind', () => {
+    const result = validateDocument(doc({ kind: 'Chip', chips: [chip()] }), SOURCE);
+    expect(result.chips).toHaveLength(0);
+    expect(result.diagnostics[0].message).toContain('unknown document type');
   });
 
   it('warns on unknown fields without dropping the chip', () => {
@@ -203,6 +218,7 @@ describe('parseCatalogText', () => {
   it('parses a valid YAML document', () => {
     const text = [
       `apiVersion: ${CATALOG_API_VERSION}`,
+      `kind: ${CATALOG_KIND}`,
       'chips:',
       '  - id: demo',
       '    title: Demo',
@@ -224,10 +240,12 @@ describe('parseCatalogText', () => {
   it('parses every document in a multi-document key', () => {
     const text = [
       `apiVersion: ${CATALOG_API_VERSION}`,
+      `kind: ${CATALOG_KIND}`,
       'chips:',
       '  - { id: one, title: One, link: { path: /one } }',
       '---',
       `apiVersion: ${CATALOG_API_VERSION}`,
+      `kind: ${CATALOG_KIND}`,
       'chips:',
       '  - { id: two, title: Two, link: { path: /two } }',
     ].join('\n');
@@ -242,6 +260,7 @@ describe('parseCatalogText', () => {
   it('a syntax error in one document of a multi-document key costs only that document', () => {
     const text = [
       `apiVersion: ${CATALOG_API_VERSION}`,
+      `kind: ${CATALOG_KIND}`,
       'chips:',
       '  - { id: one, title: One, link: { path: /one } }',
       '---',

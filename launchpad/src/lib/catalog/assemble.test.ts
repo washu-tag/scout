@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { assemble, resolveHref, type Origin } from './assemble';
-import { CATALOG_API_VERSION, validateDocument } from './schema';
+import { CATALOG_API_VERSION, CATALOG_KIND, validateDocument } from './schema';
 import type { Catalog } from './types';
 
 const ORIGIN: Origin = { protocol: 'https', host: 'scout.example.edu' };
 
 function catalogFrom(document: Record<string, unknown>, source = 'test/apps.yaml'): Catalog {
-  return validateDocument({ apiVersion: CATALOG_API_VERSION, ...document }, source);
+  return validateDocument(
+    { apiVersion: CATALOG_API_VERSION, kind: CATALOG_KIND, ...document },
+    source,
+  );
 }
 
 function merged(...catalogs: Catalog[]): Catalog {
@@ -174,6 +177,7 @@ describe('assemble mechanics', () => {
     const mounted = validateDocument(
       {
         apiVersion: CATALOG_API_VERSION,
+        kind: CATALOG_KIND,
         groups: [{ id: 'imaging', title: 'Imaging (core)', weight: 15 }],
       },
       'catalog/core.yaml',
@@ -182,6 +186,7 @@ describe('assemble mechanics', () => {
     const discovered = validateDocument(
       {
         apiVersion: CATALOG_API_VERSION,
+        kind: CATALOG_KIND,
         groups: [{ id: 'imaging', title: 'Imaging (plugin)', weight: 5 }],
         chips: [{ id: 'xnat', title: 'XNAT', link: { subdomain: 'xnat' }, group: 'imaging' }],
       },
@@ -197,6 +202,7 @@ describe('assemble mechanics', () => {
     const mounted = validateDocument(
       {
         apiVersion: CATALOG_API_VERSION,
+        kind: CATALOG_KIND,
         groups: [{ id: 'g', title: 'G' }],
         chips: [{ id: 'docs', title: 'Docs A', link: { path: '/a' }, group: 'g' }],
       },
@@ -206,6 +212,7 @@ describe('assemble mechanics', () => {
     const discovered = validateDocument(
       {
         apiVersion: CATALOG_API_VERSION,
+        kind: CATALOG_KIND,
         chips: [{ id: 'docs', title: 'Docs B', link: { path: '/b' }, group: 'g' }],
       },
       'discovered/other.yaml',

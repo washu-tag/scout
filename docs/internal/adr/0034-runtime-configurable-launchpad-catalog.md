@@ -43,8 +43,9 @@ orphaning teardown ADR 0026 documents for imperative registration).
 
 ### The contract: a labelled ConfigMap
 
-Any ConfigMap, in any namespace, labelled **`scout.washu.edu/launchpad-apps: "1"`**.
-Each data key holds one YAML catalog document:
+Any ConfigMap, in any namespace, labelled
+**`launchpad.scout.xnat.org/catalog: "true"`**. Each data key holds one YAML catalog
+document:
 
 ```yaml
 apiVersion: v1
@@ -53,10 +54,11 @@ metadata:
   name: my-service-launchpad # convention: <component>-launchpad
   namespace: my-service
   labels:
-    scout.washu.edu/launchpad-apps: '1'
+    launchpad.scout.xnat.org/catalog: 'true'
 data:
   apps.yaml: | # any number of keys; each is an independent document
-    apiVersion: scout.washu.edu/v1alpha1
+    apiVersion: launchpad.scout.xnat.org/v1alpha1
+    kind: Catalog
     chips:
       - id: my-service
         title: My Service
@@ -68,11 +70,18 @@ data:
     groups: []   # define a group only when introducing a new section
 ```
 
-Documents are versioned by their own `apiVersion` (the Kubernetes/Backstage envelope
-pattern): an unknown version skips the document with a diagnostic; unknown *fields*
-within a known version are ignored with a diagnostic, so an old launchpad renders a
-newer chip's basics. The payload is deliberately CRD-shaped: if the contract ever
-graduates to a CRD with admission-time validation, re-homing the document into a CR
+Documents identify themselves the way a Kubernetes object does, by the pair
+(`apiVersion`, `kind`): a group/version names the API surface, `kind` names the type
+within it. The group is scoped to the launchpad rather than to Scout as a whole, so this
+schema versions on its own schedule — anything else Scout publishes gets its own group
+(`<area>.scout.xnat.org`) and bumps independently, instead of dragging every consumer
+through a lockstep version. Within the group, a version moves only for a breaking
+change: new optional fields are additive and stay `v1alpha1`.
+
+Either half of the pair not matching skips the document with a diagnostic; unknown
+*fields* within a known version are ignored with a diagnostic, so an old launchpad
+renders a newer chip's basics. The payload is deliberately CRD-shaped: if the contract
+ever graduates to a CRD with admission-time validation, re-homing the document into a CR
 spec is a packaging change, not a schema change.
 
 ### Chip schema (`v1alpha1`)

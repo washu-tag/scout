@@ -1,7 +1,8 @@
 # Local-dev fixture standing in for the per-service catalog ConfigMaps the
 # Ansible roles publish (open-webui, voila, minio, temporal, grafana), so
 # `npm run dev` renders a page comparable to a full deployment.
-apiVersion: scout.washu.edu/v1alpha1
+apiVersion: launchpad.scout.xnat.org/v1alpha1
+kind: Catalog
 groups:
   - id: playbooks
     title: Playbooks

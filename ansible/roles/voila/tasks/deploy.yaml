@@ -95,7 +95,8 @@
     catalog_configmap_name: voila-launchpad
     catalog_namespace: '{{ voila_namespace }}'
     catalog_document:
-      apiVersion: scout.washu.edu/v1alpha1
+      apiVersion: launchpad.scout.xnat.org/v1alpha1
+      kind: Catalog
       groups:
         - id: playbooks
           title: Playbooks

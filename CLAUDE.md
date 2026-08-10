@@ -271,7 +271,7 @@ the ADR itself before changing anything it covers.
 - **0031** GitOps — Flux consumes `deploy/`, Ansible shrinks to bootstrap. Read before changing any component's deployment
 - **0032** re-ingest gate — `content_hash` makes an unchanged re-ingest a no-op. Read before touching the base merge or OBX ordering
 - **0033** Hauler build lane — the build manifest is a signed Hauler haul. Read before changing build-lane bundling or air-gap transport
-- **0034** launchpad catalog — chips/groups come from ConfigMaps labelled `scout.washu.edu/launchpad-apps`, discovered at runtime. Read before adding a service tile or touching launchpad rendering
+- **0034** launchpad catalog — chips/groups come from ConfigMaps labelled `launchpad.scout.xnat.org/catalog`, discovered at runtime. Read before adding a service tile or touching launchpad rendering
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.
@@ -294,7 +294,7 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   `make install-extractor`.
 - **Adjust resources (heap, CPU, memory, storage)** — override in `inventory.yaml`.
 - **Add a launchpad tile (chip)** — never edit launchpad code; ship a ConfigMap
-  labelled `scout.washu.edu/launchpad-apps: "1"` with the owning component (chart
+  labelled `launchpad.scout.xnat.org/catalog: "true"` with the owning component (chart
   template, or `scout_common`'s `launchpad_catalog` task for Ansible roles).
   Authoring guide: `docs/source/customize/launchpad-chips.md` (ADR 0034).
 - **Add a Superset dashboard, chart, or dataset** — export the asset YAML into

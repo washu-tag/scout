@@ -3,13 +3,14 @@ import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { catalogDirs, loadCatalog, resetCatalogSnapshotForTests } from './load';
-import { CATALOG_API_VERSION } from './schema';
+import { CATALOG_API_VERSION, CATALOG_KIND } from './schema';
 
 let savedDirs: string | undefined;
 
 function chipYaml(id: string, title = id): string {
   return [
     `apiVersion: ${CATALOG_API_VERSION}`,
+    `kind: ${CATALOG_KIND}`,
     'chips:',
     `  - id: ${id}`,
     `    title: ${title}`,
@@ -77,14 +78,19 @@ describe('loadCatalog', () => {
     await fs.mkdir(discovered);
     await fs.writeFile(
       path.join(mounted, 'core.yaml'),
-      [`apiVersion: ${CATALOG_API_VERSION}`, 'groups:', '  - { id: g, title: Mounted }', ''].join(
-        '\n',
-      ),
+      [
+        `apiVersion: ${CATALOG_API_VERSION}`,
+        `kind: ${CATALOG_KIND}`,
+        'groups:',
+        '  - { id: g, title: Mounted }',
+        '',
+      ].join('\n'),
     );
     await fs.writeFile(
       path.join(discovered, 'plugin.yaml'),
       [
         `apiVersion: ${CATALOG_API_VERSION}`,
+        `kind: ${CATALOG_KIND}`,
         'groups:',
         '  - { id: g, title: Discovered, weight: 1 }',
         '',

@@ -241,7 +241,8 @@
     catalog_configmap_name: grafana-launchpad
     catalog_namespace: '{{ grafana_namespace }}'
     catalog_document:
-      apiVersion: scout.washu.edu/v1alpha1
+      apiVersion: launchpad.scout.xnat.org/v1alpha1
+      kind: Catalog
       chips:
         - id: monitor
           title: Monitor

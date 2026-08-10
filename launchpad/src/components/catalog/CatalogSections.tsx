@@ -226,8 +226,8 @@ class SectionBoundary extends React.Component<
       return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm text-center">
           <p className="text-sm text-slate-500 dark:text-slate-400 font-light">
-            The “{this.props.title}” section failed to render. Details are in the browser
-            console and the launchpad logs.
+            The “{this.props.title}” section failed to render. Details are in the browser console
+            and the launchpad logs.
           </p>
         </div>
       );

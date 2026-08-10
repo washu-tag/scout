@@ -2,9 +2,9 @@
 
 The launchpad renders its tiles ("chips") and sections ("groups") from catalog documents
 it discovers at runtime. To put a service on the page, publish a ConfigMap — in your
-service's own namespace — labelled `scout.washu.edu/launchpad-apps: "1"`. The launchpad
-imports it within seconds. No launchpad configuration, rebuild, or restart is involved,
-and deleting the ConfigMap removes the chip.
+service's own namespace — labelled `launchpad.scout.xnat.org/catalog: "true"`. The
+launchpad imports it within seconds. No launchpad configuration, rebuild, or restart is
+involved, and deleting the ConfigMap removes the chip.
 
 This works the same for Scout's own components, for site-installed services, and for
 anything else running in the cluster: presence on the landing page follows
@@ -19,10 +19,11 @@ metadata:
   name: my-service-launchpad # convention: <component>-launchpad
   namespace: my-service
   labels:
-    scout.washu.edu/launchpad-apps: '1'
+    launchpad.scout.xnat.org/catalog: 'true'
 data:
   apps.yaml: |
-    apiVersion: scout.washu.edu/v1alpha1
+    apiVersion: launchpad.scout.xnat.org/v1alpha1
+    kind: Catalog
     chips:
       - id: my-service
         title: My Service
@@ -46,13 +47,14 @@ removes the chip), a Flux-reconciled manifest, or — for Scout-internal roles �
 Each `data` key in the ConfigMap holds one YAML **catalog document**:
 
 ```yaml
-apiVersion: scout.washu.edu/v1alpha1 # required, exactly this value
+apiVersion: launchpad.scout.xnat.org/v1alpha1 # required, exactly these two values
+kind: Catalog
 chips: [] # tiles
 groups: [] # section definitions (only when introducing a section)
 ```
 
-A document with any other `apiVersion` is skipped. Unknown fields inside a known
-version are ignored (with a logged warning), so a newer document still renders its
+A document with any other `apiVersion` or `kind` is skipped. Unknown fields inside a
+known version are ignored (with a logged warning), so a newer document still renders its
 basics on an older launchpad.
 
 ## Chip fields
@@ -200,10 +202,10 @@ The launchpad never lets one bad document break the page — it renders everythi
 and reports the rest. Checks, in the order problems actually occur:
 
 1. **No label, no chip.** The ConfigMap must carry
-   `scout.washu.edu/launchpad-apps: "1"` exactly.
+   `launchpad.scout.xnat.org/catalog: "true"` exactly.
 2. **YAML syntax error** — the whole document is skipped and the diagnostic includes
    line and column.
-3. **Wrong `apiVersion`** — the document is skipped.
+3. **Wrong `apiVersion` or `kind`** — the document is skipped.
 4. **Chip missing `id`/`title`/valid `link`, or with an invalid `audience` or
    `enabled`** — that chip is skipped.
 5. **Bad optional presentation field** (unknown icon or tone, overlong text) — the

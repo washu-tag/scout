@@ -1,7 +1,8 @@
 # Local-dev fixture mirroring the chart's mounted core catalog
 # (helm/launchpad/templates/configmap-catalog.yaml). Loaded via
 # LAUNCHPAD_CATALOG_DIRS=./fixtures/catalog — see .env.example.
-apiVersion: scout.washu.edu/v1alpha1
+apiVersion: launchpad.scout.xnat.org/v1alpha1
+kind: Catalog
 groups:
   - id: core
     title: Core Services

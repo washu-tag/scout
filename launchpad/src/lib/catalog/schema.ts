@@ -4,7 +4,13 @@ import { DEFAULT_GROUP_ICON, DEFAULT_ICON, ICON_NAMES } from './icons';
 import { DEFAULT_TONE, TONE_NAMES } from './tones';
 import type { Catalog, Chip, Diagnostic, Group, GroupLayout } from './types';
 
-export const CATALOG_API_VERSION = 'scout.washu.edu/v1alpha1';
+// The document envelope, shaped like a Kubernetes object: the API group names
+// the launchpad specifically, so this schema versions independently of
+// anything else Scout publishes, and `kind` carries the type identity. The
+// version moves only for a breaking change — new optional fields are additive
+// and stay v1alpha1.
+export const CATALOG_API_VERSION = 'launchpad.scout.xnat.org/v1alpha1';
+export const CATALOG_KIND = 'Catalog';
 
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 200;
@@ -210,6 +216,7 @@ const documentList = z.preprocess((value) => value ?? [], z.array(z.unknown()));
 
 const envelopeSchema = z.object({
   apiVersion: z.string({ error: 'apiVersion is required' }),
+  kind: z.string({ error: 'kind is required' }),
   chips: documentList,
   groups: documentList,
 });
@@ -281,10 +288,13 @@ export function validateDocument(input: unknown, source: string, sourceRank = 0)
     });
     return { chips, groups, diagnostics };
   }
-  if (envelope.data.apiVersion !== CATALOG_API_VERSION) {
+  const { apiVersion, kind } = envelope.data;
+  if (apiVersion !== CATALOG_API_VERSION || kind !== CATALOG_KIND) {
     diagnostics.push({
       source,
-      message: `unknown apiVersion "${envelope.data.apiVersion}" (expected ${CATALOG_API_VERSION}); document skipped`,
+      message:
+        `unknown document type "${apiVersion} ${kind}" ` +
+        `(expected "${CATALOG_API_VERSION} ${CATALOG_KIND}"); document skipped`,
     });
     return { chips, groups, diagnostics };
   }
