@@ -3,11 +3,11 @@
 # exists before the app starts, so the floor when discovery is broken is
 # "core page, optional chips stale or missing" — never an empty page.
 #
-# Only what the launchpad itself owns lives here: the core and admin section
-# definitions, the chips that point at platform-wide services (Analytics,
-# Notebooks), and the launchpad's own Users console. Every other chip ships
-# with its owning component as a labelled ConfigMap in that component's
-# namespace — the same schema, discovered by the sidecar.
+# Only what the launchpad itself owns lives here: the core, admin, and
+# default (more) section definitions, the chips that point at platform-wide
+# services (Analytics, Notebooks), and the launchpad's own Users console.
+# Every other chip ships with its owning component as a labelled ConfigMap in
+# that component's namespace — the same schema, discovered by the sidecar.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -35,6 +35,14 @@ data:
         layout: tiles
         width: half
         audience: admin
+      # The default section: chips that omit `group` land here (the schema
+      # defaults group to "more"). Defined so the documented default path
+      # renders a real section instead of a synthesized one with a
+      # diagnostic. Hidden automatically while it has no chips.
+      - id: more
+        title: More
+        weight: 40
+        layout: cards
     chips:
       - id: analytics
         title: Analytics

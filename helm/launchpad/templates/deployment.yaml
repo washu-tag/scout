@@ -112,6 +112,12 @@ spec:
         # short server timeout, which is upstream's guard against silent watch
         # death.
         - name: catalog-sidecar
+          # Same hardening as the app container: the sidecar is the one
+          # holding cluster-wide ConfigMap read, and a pod-security
+          # "restricted" namespace rejects the whole pod if one container
+          # skips the context.
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: '{{ .Values.catalog.discovery.image.repository }}:{{ .Values.catalog.discovery.image.tag }}'
           imagePullPolicy: {{ .Values.catalog.discovery.image.pullPolicy }}
           env:
@@ -144,7 +150,8 @@ spec:
             name: {{ include "launchpad.fullname" . }}-catalog
         {{- if .Values.catalog.discovery.enabled }}
         - name: discovered
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: {{ .Values.catalog.discovery.sizeLimit }}
         {{- end }}
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
