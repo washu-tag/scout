@@ -355,6 +355,7 @@ jobs:
 
       - name: Verify the release images were published
         env:
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         # wait-for-build only proves CI went green, not that it published
         # anything. On main the images come from ci.yaml's publish job, which

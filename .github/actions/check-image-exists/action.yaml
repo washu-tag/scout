@@ -24,6 +24,7 @@ runs:
       id: check-registry
       shell: bash
       env:
+        GH_TOKEN: ${{ github.token }}
         VERSION: ${{ steps.derive-version.outputs.version }}
         IMAGE_NAME: ${{ inputs.image-name }}
       # An ambiguous registry answer exits non-zero rather than reporting a

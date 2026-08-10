@@ -152,6 +152,9 @@ jobs:
     needs: changes
     permissions:
       contents: read
+      # check-image-exists reads ghcr to see whether the derived tag is already
+      # published; packages default to private, so that read has to be authenticated.
+      packages: read
       attestations: write
       id-token: write
     strategy:
