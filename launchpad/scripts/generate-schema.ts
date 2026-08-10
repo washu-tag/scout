@@ -7,7 +7,7 @@ import { catalogJsonSchema } from '../src/lib/catalog/schema';
 
 const target = resolve(
   import.meta.dirname,
-  '../../docs/source/technical/launchpad-catalog.v1alpha1.schema.json',
+  '../../docs/source/customize/launchpad-catalog.v1alpha1.schema.json',
 );
 
 mkdirSync(dirname(target), { recursive: true });

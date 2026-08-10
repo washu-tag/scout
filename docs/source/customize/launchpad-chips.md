@@ -13,7 +13,6 @@ installation.
 ## The 30-second version
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/washu-tag/scout/main/docs/source/technical/launchpad-catalog.v1alpha1.schema.json
 apiVersion: v1
 kind: ConfigMap
 metadata:

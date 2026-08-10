@@ -6,7 +6,7 @@ import { catalogJsonSchema } from './schema';
 // validator runs (ADR 0034) — this test is the drift guard. If it fails, run
 // `npm run schema` and commit the result.
 const PUBLISHED = new URL(
-  '../../../../docs/source/technical/launchpad-catalog.v1alpha1.schema.json',
+  '../../../../docs/source/customize/launchpad-catalog.v1alpha1.schema.json',
   import.meta.url,
 );
 

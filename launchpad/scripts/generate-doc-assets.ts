@@ -1,5 +1,5 @@
 // Generates the icon and tone galleries for the chip authoring guide
-// (docs/source/technical/launchpad-chips.md, ADR 0034): one SVG per icon
+// (docs/source/customize/launchpad-chips.md, ADR 0034): one SVG per icon
 // rendered from the app's own registry, one swatch per tone from the app's
 // own class bundles, and markdown tables spliced between generated-content
 // markers in the page — so the docs show exactly what the launchpad renders.
@@ -16,9 +16,9 @@ import { TONES, type Tone, type ToneName } from '../src/lib/catalog/tones';
 const DOCS_SOURCE = resolve(import.meta.dirname, '../../docs/source');
 export const ICONS_DIR = join(DOCS_SOURCE, 'images/launchpad/icons');
 export const TONES_DIR = join(DOCS_SOURCE, 'images/launchpad/tones');
-export const PAGE_PATH = join(DOCS_SOURCE, 'technical/launchpad-chips.md');
+export const PAGE_PATH = join(DOCS_SOURCE, 'customize/launchpad-chips.md');
 
-// Image paths as referenced from the page (docs/source/technical/).
+// Image paths as referenced from the page (docs/source/customize/).
 const ICONS_REL = '../images/launchpad/icons';
 const TONES_REL = '../images/launchpad/tones';
 

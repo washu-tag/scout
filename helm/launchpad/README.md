@@ -23,7 +23,7 @@ revalidating on a ~10 s cadence — catalog changes propagate without a pod rest
 
 To put a service on the page, do not edit this chart: ship a labelled ConfigMap with
 that service. Authoring guide and schema:
-`docs/source/technical/launchpad-chips.md`.
+`docs/source/customize/launchpad-chips.md`.
 
 Everything else (`auth.*`, ingress, favicon route, image, probes) is conventional and
 documented inline in `values.yaml`.

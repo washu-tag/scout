@@ -11,5 +11,4 @@ air-gapped
 ingest
 data_authorization
 monitoring
-launchpad-chips
 ```
