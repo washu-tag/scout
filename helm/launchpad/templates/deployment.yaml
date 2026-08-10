@@ -121,10 +121,14 @@ spec:
           image: '{{ .Values.catalog.discovery.image.repository }}:{{ .Values.catalog.discovery.image.tag }}'
           imagePullPolicy: {{ .Values.catalog.discovery.image.pullPolicy }}
           env:
+            # The discovery label is the publisher/sidecar contract (ADR
+            # 0034) — the same fixed string appears in the scout_common
+            # launchpad_catalog task and the authoring docs. Changing it is
+            # an API migration, not a configuration.
             - name: LABEL
-              value: {{ .Values.catalog.discovery.label | quote }}
+              value: scout.washu.edu/launchpad-apps
             - name: LABEL_VALUE
-              value: {{ .Values.catalog.discovery.labelValue | quote }}
+              value: '1'
             - name: FOLDER
               value: /app/config/discovered
             - name: NAMESPACE
