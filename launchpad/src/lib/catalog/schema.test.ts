@@ -156,6 +156,47 @@ describe('validateDocument', () => {
     expect(result.groups[0].footerLink).toBeUndefined();
     expect(result.diagnostics[0].message).toContain('invalid footerLink');
   });
+
+  it('rejects a chip whose enabled or audience is invalid (visibility fails closed)', () => {
+    for (const overrides of [{ enabled: 'no' }, { enabled: 0 }, { audience: 'adminstrator' }]) {
+      const result = validateDocument(doc({ chips: [chip(overrides)] }), SOURCE);
+      expect(result.chips, JSON.stringify(overrides)).toHaveLength(0);
+      expect(result.diagnostics[0].message).toContain('chip skipped');
+    }
+  });
+
+  it('rejects protocol-relative link paths', () => {
+    for (const link of [
+      { path: '//evil.example.com/login' },
+      { path: '/\\evil.example.com' },
+      { subdomain: 'demo', path: '//x' },
+    ]) {
+      const result = validateDocument(doc({ chips: [chip({ link })] }), SOURCE);
+      expect(result.chips, JSON.stringify(link)).toHaveLength(0);
+      expect(result.diagnostics[0].message).toContain('chip skipped');
+    }
+  });
+
+  it('drops a protocol-relative footerLink url but keeps the group', () => {
+    const result = validateDocument(
+      doc({
+        groups: [{ id: 'a', title: 'A', footerLink: { text: 'Docs', url: '//evil.example.com' } }],
+      }),
+      SOURCE,
+    );
+    expect(result.groups).toHaveLength(1);
+    expect(result.groups[0].footerLink).toBeUndefined();
+    expect(result.diagnostics[0].message).toContain('invalid footerLink');
+  });
+
+  it('treats a present-but-empty chips or groups key as an empty list', () => {
+    const result = validateDocument(
+      doc({ chips: null, groups: [{ id: 'a', title: 'A' }] }),
+      SOURCE,
+    );
+    expect(result.diagnostics).toEqual([]);
+    expect(result.groups).toHaveLength(1);
+  });
 });
 
 describe('parseCatalogText', () => {
