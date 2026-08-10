@@ -83,6 +83,10 @@
 
 # The Playbooks section — group and rows — ships with Voilà (ADR 0034): the
 # section exists exactly when playbooks are deployed.
+# NOTE: Actual playbooks are discovered at deploy time. This catalog entry
+# hard-codes the specific playbooks that exist now.
+# When we enhance playbook discoverability and pluggability (as in looking
+# beyond the folder of local files) we should modify this somehow.
 - name: Publish launchpad catalog entry
   ansible.builtin.include_role:
     name: scout_common
