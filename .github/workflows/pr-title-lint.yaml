@@ -22,3 +22,40 @@ jobs:
       - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  upgrade-notes:
+    # A breaking change (a `!` marker in the PR title, or a `BREAKING CHANGE:`
+    # footer in the body) must document the operator upgrade path, so the
+    # "Backward compatibility" section of the PR description must be filled in
+    # (ADR 0030). This gates section PRESENCE, not correctness: a behavioral
+    # break that adds no variable is caught by review, not here. Reads the title
+    # and body from the event payload, so no checkout and no repo write.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require upgrade notes for breaking changes
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python3 <<'PYEOF'
+          import os, re, sys
+          title = (os.environ.get("PR_TITLE") or "").strip()
+          body = os.environ.get("PR_BODY") or ""
+          breaking = (
+              re.match(r"^[a-z]+(\([^)]*\))?!:", title, re.I) is not None
+              or re.search(r"^BREAKING[ -]CHANGE:", body, re.M) is not None
+          )
+          if not breaking:
+              print("No breaking-change marker; upgrade notes not required.")
+              sys.exit(0)
+          # Grab the "Backward compatibility" section: everything until the next
+          # heading or a BREAKING CHANGE footer (so a trailing footer isn't absorbed).
+          m = re.search(r"^#{2,4}\s*Backward compatibility\s*$(.*?)(?=^#{1,4}\s|^BREAKING[ -]CHANGE:|\Z)", body, re.M | re.S)
+          section = re.sub(r"<!--.*?-->", "", m.group(1) if m else "", flags=re.S).strip()
+          if not section:
+              print("::error::This PR is marked breaking (a \"!\" in the title or a "
+                    "BREAKING CHANGE footer) but the 'Backward compatibility' section of "
+                    "the description is empty. Document the operator upgrade path there.")
+              sys.exit(1)
+          print("Breaking change with upgrade notes present.")
+          PYEOF

@@ -37,7 +37,7 @@ For all other change types, the developer should attempt to provide as much deta
 <!-- Did you consider any edge cases around input data (e.g., DICOM type 2 elements are required to be present but may be empty)? Are you gracefully handling errors from "bad data," e.g., non-conforming DICOM? -->
 
 ### Backward compatibility
-<!-- Any changes to the data model, APIs, dependencies? -->
+<!-- Any changes to the data model, APIs, dependencies? For a breaking change (a "!" in the PR title, or a "BREAKING CHANGE:" footer), CI requires this section to be filled in with the operator upgrade path. -->
 
 ## Testing
 <!-- Detail the testing you have performed to ensure that these changes function as intended. Include information about the test automation you've added, as well as the manual testing you've performed. Be sure to reference areas of impact, above. -->
