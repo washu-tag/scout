@@ -1,12 +1,11 @@
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { catalogDirs, loadCatalog, resetCatalogSnapshotForTests } from './load';
 import { CATALOG_API_VERSION } from './schema';
 
-const ENV_KEYS = ['LAUNCHPAD_CATALOG_DIRS', 'ENABLE_CHAT', 'ENABLE_PLAYBOOKS', 'ENABLE_MINIO'];
-const savedEnv: Record<string, string | undefined> = {};
+let savedDirs: string | undefined;
 
 function chipYaml(id: string, title = id): string {
   return [
@@ -22,19 +21,15 @@ function chipYaml(id: string, title = id): string {
 let tmpDir: string;
 
 beforeEach(async () => {
-  for (const key of ENV_KEYS) {
-    savedEnv[key] = process.env[key];
-    delete process.env[key];
-  }
+  savedDirs = process.env.LAUNCHPAD_CATALOG_DIRS;
+  delete process.env.LAUNCHPAD_CATALOG_DIRS;
   resetCatalogSnapshotForTests();
   tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'launchpad-catalog-'));
 });
 
 afterEach(async () => {
-  for (const key of ENV_KEYS) {
-    if (savedEnv[key] === undefined) delete process.env[key];
-    else process.env[key] = savedEnv[key];
-  }
+  if (savedDirs === undefined) delete process.env.LAUNCHPAD_CATALOG_DIRS;
+  else process.env.LAUNCHPAD_CATALOG_DIRS = savedDirs;
   await fs.rm(tmpDir, { recursive: true, force: true });
 });
 
@@ -46,14 +41,12 @@ describe('catalogDirs', () => {
 });
 
 describe('loadCatalog', () => {
-  it('falls back to the builtin document when no directories are configured', async () => {
+  it('returns an empty catalog with a diagnostic when no directories are configured', async () => {
     const catalog = await loadCatalog();
-    const ids = catalog.chips.map((chip) => chip.id);
-    expect(ids).toContain('analytics');
-    expect(ids).toContain('notebooks');
-    // Env flags gate the builtin exactly as the deployment used to.
-    expect(catalog.chips.find((chip) => chip.id === 'chat')?.enabled).toBe(false);
-    expect(catalog.chips.find((chip) => chip.id === 'lake')?.enabled).toBe(true);
+    expect(catalog.chips).toEqual([]);
+    expect(catalog.groups).toEqual([]);
+    expect(catalog.diagnostics).toHaveLength(1);
+    expect(catalog.diagnostics[0].message).toContain('LAUNCHPAD_CATALOG_DIRS');
   });
 
   it('reads YAML documents from the configured directories', async () => {
@@ -69,11 +62,12 @@ describe('loadCatalog', () => {
     expect(messages).toContain('not a .yaml/.yml key');
   });
 
-  it('ignores directories that do not exist', async () => {
+  it('loads what it can and reports an unreadable directory', async () => {
     await fs.writeFile(path.join(tmpDir, 'good.yaml'), chipYaml('alpha'));
     process.env.LAUNCHPAD_CATALOG_DIRS = `${path.join(tmpDir, 'absent')}:${tmpDir}`;
     const catalog = await loadCatalog();
     expect(catalog.chips.map((chip) => chip.id)).toEqual(['alpha']);
+    expect(catalog.diagnostics.some((d) => d.message.includes('not readable'))).toBe(true);
   });
 
   it('ranks earlier directories above later ones for group definitions', async () => {
@@ -118,5 +112,19 @@ describe('loadCatalog', () => {
     // Past the TTL the signature differs (size changed), so it rebuilds.
     const afterTtl = await loadCatalog(t0 + 60_000);
     expect(afterTtl.chips.map((chip) => chip.id)).toEqual(['beta']);
+  });
+
+  it('shares one scan among concurrent requests (single-flight)', async () => {
+    await fs.writeFile(path.join(tmpDir, 'apps.yaml'), chipYaml('alpha'));
+    process.env.LAUNCHPAD_CATALOG_DIRS = tmpDir;
+    const readdir = vi.spyOn(fs, 'readdir');
+    try {
+      const [a, b, c] = await Promise.all([loadCatalog(), loadCatalog(), loadCatalog()]);
+      expect(a).toBe(b);
+      expect(b).toBe(c);
+      expect(readdir).toHaveBeenCalledTimes(1);
+    } finally {
+      readdir.mockRestore();
+    }
   });
 });
