@@ -1,4 +1,4 @@
-import { parseDocument } from 'yaml';
+import { parseAllDocuments } from 'yaml';
 import { z } from 'zod';
 import { DEFAULT_GROUP_ICON, DEFAULT_ICON, ICON_NAMES } from './icons';
 import { DEFAULT_TONE, TONE_NAMES } from './tones';
@@ -480,22 +480,30 @@ export function defaultColumns(layout: GroupLayout): number {
   }
 }
 
-// Parse one catalog document from YAML text. Parse errors cost this document
-// only; the eemeli parser collects every error with line/column positions so
-// the diagnostic can say where.
+// Parse the catalog documents in one YAML text — a ConfigMap data key may
+// hold several, separated by `---`. Parse errors cost only the document that
+// carries them; the eemeli parser collects every error with line/column
+// positions so the diagnostic can say where.
 export function parseCatalogText(text: string, source: string, sourceRank = 0): Catalog {
-  const doc = parseDocument(text, { prettyErrors: true });
-  if (doc.errors.length > 0) {
-    return {
-      chips: [],
-      groups: [],
-      diagnostics: doc.errors.map((err) => ({
-        source,
-        message: `YAML parse error: ${err.message.split('\n')[0]}${
-          err.linePos ? ` (line ${err.linePos[0].line}, col ${err.linePos[0].col})` : ''
-        }`,
-      })),
-    };
-  }
-  return validateDocument(doc.toJS(), source, sourceRank);
+  const documents = parseAllDocuments(text, { prettyErrors: true });
+  const catalog: Catalog = { chips: [], groups: [], diagnostics: [] };
+  documents.forEach((doc, index) => {
+    const docSource = documents.length > 1 ? `${source} (document ${index + 1})` : source;
+    if (doc.errors.length > 0) {
+      catalog.diagnostics.push(
+        ...doc.errors.map((err) => ({
+          source: docSource,
+          message: `YAML parse error: ${err.message.split('\n')[0]}${
+            err.linePos ? ` (line ${err.linePos[0].line}, col ${err.linePos[0].col})` : ''
+          }`,
+        })),
+      );
+      return;
+    }
+    const parsed = validateDocument(doc.toJS(), docSource, sourceRank);
+    catalog.chips.push(...parsed.chips);
+    catalog.groups.push(...parsed.groups);
+    catalog.diagnostics.push(...parsed.diagnostics);
+  });
+  return catalog;
 }

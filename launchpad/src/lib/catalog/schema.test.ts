@@ -220,4 +220,35 @@ describe('parseCatalogText', () => {
     expect(result.diagnostics[0].message).toContain('YAML parse error');
     expect(result.diagnostics[0].message).toMatch(/line \d+/);
   });
+
+  it('parses every document in a multi-document key', () => {
+    const text = [
+      `apiVersion: ${CATALOG_API_VERSION}`,
+      'chips:',
+      '  - { id: one, title: One, link: { path: /one } }',
+      '---',
+      `apiVersion: ${CATALOG_API_VERSION}`,
+      'chips:',
+      '  - { id: two, title: Two, link: { path: /two } }',
+    ].join('\n');
+    const result = parseCatalogText(text, SOURCE);
+    expect(result.chips.map((c) => c.id)).toEqual(['one', 'two']);
+    expect(result.chips.map((c) => c.source)).toEqual([
+      `${SOURCE} (document 1)`,
+      `${SOURCE} (document 2)`,
+    ]);
+  });
+
+  it('a syntax error in one document of a multi-document key costs only that document', () => {
+    const text = [
+      `apiVersion: ${CATALOG_API_VERSION}`,
+      'chips:',
+      '  - { id: one, title: One, link: { path: /one } }',
+      '---',
+      'chips: [unclosed',
+    ].join('\n');
+    const result = parseCatalogText(text, SOURCE);
+    expect(result.chips.map((c) => c.id)).toEqual(['one']);
+    expect(result.diagnostics.some((d) => d.message.includes('YAML parse error'))).toBe(true);
+  });
 });
