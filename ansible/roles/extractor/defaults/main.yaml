@@ -48,7 +48,10 @@ hl7logs_root_dir: /data
 # Modality mapping file (source file on control machine)
 # Default points to the reference mapping shipped with Scout
 # Override in inventory.yaml to use a custom mapping file
-modality_map_source_file: '{{ scout_repo_dir }}/extractor/hl7-transformer/modality_mapping_codes.csv'
+# Optional custom modality-map override. Empty by default: the hl7-transformer
+# chart ships and mounts its own default map (files/modality_mapping_codes.csv).
+# Set this to a CSV path on the Ansible controller only to override it.
+modality_map_source_file: ''
 
 # S3 paths
 hl7_path: 's3://{{ lake_bucket }}/hl7'
