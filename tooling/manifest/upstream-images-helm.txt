@@ -1,0 +1,20 @@
+# Upstream wrapper-chart images whose TAG is an upstream Helm chart's appVersion,
+# resolved at build time via `helm show chart --repo <url> --version <range>`
+# (not a tag var in versions.yaml). Same air-gap rationale + no-key sync as
+# upstream-images.txt; they just need a helm lookup, so they can't be sourced by
+# resolve_upstream.py and live here instead. See resolve_upstream_helm.py.
+#
+# versions.yaml pins the CHART version (a semver range); the image tag is that
+# chart's resolved appVersion, matching what Scout deploys:
+#   - temporalio/admin-tools -> Temporal chart appVersion (roles/temporal/tasks/deploy.yaml)
+#   - ghcr.io/open-webui/open-webui -> OWUI chart appVersion (the chart's single
+#     source of truth for its image tag; the running Pod, and so the bootstrap
+#     Job, inherit it -- roles/open-webui/tasks/configure_admin.yaml)
+#
+# The image-repo half IS hardcoded (admin-tools is a companion image, not the
+# chart's own image, so it can't be derived from chart values); keep it in sync if
+# an upstream ever repoints.
+#
+# Format: <image-repo> <helm-repo-url> <chart-name> <chart-version-var>
+temporalio/admin-tools https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ temporal temporal_version
+ghcr.io/open-webui/open-webui https://helm.openwebui.com/ open-webui open_webui_helm_chart_version

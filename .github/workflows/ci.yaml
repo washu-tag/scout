@@ -1246,6 +1246,22 @@ jobs:
           python3 tooling/manifest/resolve_upstream.py \
             tooling/manifest/upstream-images.txt \
             ansible/group_vars/all/versions.yaml > upstream-tags.txt
+          # Two wrapper-chart images take their tag from an upstream chart's
+          # appVersion (helm lookup, not a versions.yaml tag var -- see
+          # upstream-images-helm.txt). Resolve the chart version here, then the
+          # appVersion with `helm show`, and append to the same tag list so they
+          # flow through the digest + no-key sync below, exactly as Scout resolves
+          # them at deploy time. helm is preinstalled on the runner.
+          python3 tooling/manifest/resolve_upstream_helm.py \
+            tooling/manifest/upstream-images-helm.txt \
+            ansible/group_vars/all/versions.yaml > upstream-helm-map.txt
+          while read -r repo url chart ver; do
+            [ -n "$repo" ] || continue
+            appver="$(helm show chart "$chart" --repo "$url" --version "$ver" \
+              | awk '/^appVersion:/ {gsub(/"/,"",$2); print $2}')"
+            [ -n "$appver" ] || { echo "::error::could not resolve appVersion for chart ${chart} ${ver}"; exit 1; }
+            printf '%s:%s\n' "$repo" "$appver" >> upstream-tags.txt
+          done < upstream-helm-map.txt
           while read -r ref; do
             [ -n "$ref" ] || continue
             d="$(docker buildx imagetools inspect "$ref" --format '{{json .Manifest}}' | jq -r '.digest')"

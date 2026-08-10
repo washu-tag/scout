@@ -10,10 +10,9 @@
 # versions.yaml var (keycloak_config_cli_image, orthanc_image), keep this in sync
 # if that var is ever repointed. See tooling/manifest/resolve_upstream.py.
 #
-# DEFERRED -- the tag is derived from an upstream Helm chart's appVersion at
-# deploy time (not pinned in versions.yaml), so it can't be sourced here yet:
-#   - temporal-bootstrap    temporalio/admin-tools        (= temporal chart appVersion)
-#   - open-webui-bootstrap  ghcr.io/open-webui/open-webui (= open-webui chart appVersion)
+# Images whose tag is an upstream Helm chart's appVersion (temporalio/admin-tools,
+# ghcr.io/open-webui/open-webui) can't be sourced here -- they need a helm lookup;
+# see upstream-images-helm.txt + resolve_upstream_helm.py.
 openpolicyagent/opa opa_image_tag
 starburstdata/hive hive_image_tag
 docker.io/adorsys/keycloak-config-cli keycloak_config_cli_image_tag
