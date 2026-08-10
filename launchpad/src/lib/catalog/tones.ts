@@ -82,7 +82,3 @@ export type ToneName = keyof typeof TONES;
 export const TONE_NAMES = Object.keys(TONES) as [ToneName, ...ToneName[]];
 
 export const DEFAULT_TONE: ToneName = 'indigo';
-
-export function isToneName(value: string): value is ToneName {
-  return value in TONES;
-}

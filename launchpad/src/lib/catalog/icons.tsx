@@ -113,7 +113,3 @@ export const ICON_NAMES = Object.keys(ICONS).sort();
 
 export const DEFAULT_ICON = 'app';
 export const DEFAULT_GROUP_ICON = 'folder';
-
-export function isIconName(value: string): boolean {
-  return value in ICONS;
-}
