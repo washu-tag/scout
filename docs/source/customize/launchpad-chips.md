@@ -33,9 +33,9 @@ data:
         group: more
 ```
 
-`kubectl apply` that and a "My Service" card appears on the launchpad (in a synthesized
-"More" section, since the `more` group isn't otherwise defined — see
-[groups](#defining-a-group-section) to control the section).
+`kubectl apply` that and a "My Service" card appears on the launchpad, in the **More**
+section — `more` is the default group, defined by the launchpad's own catalog. See
+[groups](#defining-a-group-section) to put the chip in a section of your own.
 
 Ship it however you deploy: a template in your Helm chart (so uninstalling the chart
 removes the chip), a Flux-reconciled manifest, or — for Scout-internal roles — the
@@ -78,7 +78,8 @@ basics on an older launchpad.
 Invalid values in the optional presentation fields fall back to their defaults (the
 chip still renders, and the problem is reported — see
 [troubleshooting](#troubleshooting)). A chip without a valid `id`, `title`, and `link`
-is skipped entirely.
+is skipped entirely — and so is a chip with an invalid `audience` or `enabled`:
+visibility fails closed, because a typo there must not widen who sees the chip.
 
 ### Links
 
@@ -95,7 +96,9 @@ You state a subdomain, never a hostname — the launchpad resolves it against th
 the browser is already on. Path suffixes matter for services with their own login
 bootstrap (Temporal's `/auth/sso` is the canonical example: the bare subdomain lands on
 an unauthenticated UI). Only `http(s)` URLs, rooted paths, and DNS-label subdomains
-validate; anything else (e.g. `javascript:`) rejects the whole chip.
+validate; anything else (e.g. `javascript:`) rejects the whole chip. A rooted path
+means exactly one leading slash — protocol-relative `//host` values, which the browser
+would resolve off-site, are rejected too.
 
 ## Defining a group (section)
 
@@ -206,9 +209,10 @@ and reports the rest. Checks, in the order problems actually occur:
 2. **YAML syntax error** — the whole document is skipped and the diagnostic includes
    line and column.
 3. **Wrong `apiVersion`** — the document is skipped.
-4. **Chip missing `id`/`title`/valid `link`** — that chip is skipped.
-5. **Bad optional field** (unknown icon or tone, overlong text) — the chip renders
-   with defaults and the coercion is reported.
+4. **Chip missing `id`/`title`/valid `link`, or with an invalid `audience` or
+   `enabled`** — that chip is skipped.
+5. **Bad optional presentation field** (unknown icon or tone, overlong text) — the
+   chip renders with defaults and the coercion is reported.
 
 Where diagnostics appear, most convenient first:
 
