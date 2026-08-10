@@ -1,0 +1,80 @@
+# Local-dev fixture standing in for the per-service catalog ConfigMaps the
+# Ansible roles publish (open-webui, voila, minio, temporal, grafana), so
+# `npm run dev` renders a page comparable to a full deployment.
+apiVersion: scout.washu.edu/v1alpha1
+groups:
+  - id: playbooks
+    title: Playbooks
+    description: Pluggable workflows and dashboards
+    icon: book-open
+    weight: 20
+    layout: rows
+    width: half
+chips:
+  - id: chat
+    title: Chat
+    description: AI-powered assistance for Q & A style data queries
+    icon: chat
+    tone: emerald
+    link: { subdomain: chat }
+    group: core
+    weight: 10
+  - id: playbook-cohort
+    title: Research Cohorting
+    description: Build and manage patient cohorts for research studies
+    icon: user-group
+    tone: violet
+    link: { subdomain: playbooks, path: /voila/render/cohort/Cohort.ipynb }
+    group: playbooks
+    weight: 10
+  - id: playbook-rads
+    title: RADS Dashboard
+    description: Explore LI-RADS and BI-RADS reporting trends over time
+    icon: chart
+    tone: rose
+    link: { subdomain: playbooks, path: /voila/render/rads/RADS.ipynb }
+    group: playbooks
+    weight: 20
+  - id: playbook-followup-detection
+    title: Clinical Follow-up Monitoring
+    description: Review algorithmically-detected follow-up recommendations
+    icon: sparkles
+    tone: cyan
+    link: { subdomain: playbooks, path: /voila/render/followup-detection/FollowUpDetection.ipynb }
+    group: playbooks
+    weight: 30
+  - id: playbook-quality-metrics
+    title: Quality Metrics
+    description: Turnaround times, report completeness, and reporting trends
+    icon: clipboard-check
+    tone: emerald
+    link: { subdomain: playbooks, path: /voila/render/quality-metrics/QualityMetrics.ipynb }
+    group: playbooks
+    weight: 40
+  - id: lake
+    title: Lake
+    description: Medical data lake storage
+    icon: minio
+    tone: red
+    link: { subdomain: minio }
+    group: admin
+    weight: 20
+    audience: admin
+  - id: orchestrator
+    title: Orchestrator
+    description: Ingestion and characterization workflows
+    icon: temporal
+    tone: cyan
+    link: { subdomain: temporal, path: /auth/sso }
+    group: admin
+    weight: 30
+    audience: admin
+  - id: monitor
+    title: Monitor
+    description: Metrics, logs, and dashboards
+    icon: grafana
+    tone: orange
+    link: { subdomain: grafana }
+    group: admin
+    weight: 40
+    audience: admin

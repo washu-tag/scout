@@ -1,22 +1,112 @@
 import { describe, expect, it } from 'vitest';
 import { assemble, resolveHref, type Origin } from './assemble';
-import { builtinCatalog } from './builtin';
-import { validateDocument } from './schema';
-import { CATALOG_API_VERSION } from './schema';
+import { CATALOG_API_VERSION, validateDocument } from './schema';
 import type { Catalog } from './types';
 
 const ORIGIN: Origin = { protocol: 'https', host: 'scout.example.edu' };
 
-const ALL_FLAGS = {
-  enableChat: true,
-  enablePlaybooks: true,
-  enableMinio: true,
-  docsUrl: 'https://docs.example.edu',
-};
-
 function catalogFrom(document: Record<string, unknown>, source = 'test/apps.yaml'): Catalog {
   return validateDocument({ apiVersion: CATALOG_API_VERSION, ...document }, source);
 }
+
+function merged(...catalogs: Catalog[]): Catalog {
+  return {
+    chips: catalogs.flatMap((c) => c.chips),
+    groups: catalogs.flatMap((c) => c.groups),
+    diagnostics: catalogs.flatMap((c) => c.diagnostics),
+  };
+}
+
+// The classic launchpad page as one catalog document — what the chart's core
+// catalog plus the per-service documents add up to in a full deployment.
+const CLASSIC = {
+  groups: [
+    {
+      id: 'core',
+      title: 'Core Services',
+      icon: 'cube',
+      weight: 10,
+      layout: 'cards',
+      footerLink: {
+        text: 'New to Scout? Check out our documentation',
+        url: 'https://docs.example.edu',
+      },
+    },
+    {
+      id: 'playbooks',
+      title: 'Playbooks',
+      icon: 'book-open',
+      weight: 20,
+      layout: 'rows',
+      width: 'half',
+    },
+    {
+      id: 'admin',
+      title: 'Admin Tools',
+      icon: 'cog',
+      weight: 30,
+      layout: 'tiles',
+      width: 'half',
+      audience: 'admin',
+    },
+  ],
+  chips: [
+    { id: 'chat', title: 'Chat', link: { subdomain: 'chat' }, group: 'core', weight: 10 },
+    {
+      id: 'analytics',
+      title: 'Analytics',
+      link: { subdomain: 'superset' },
+      group: 'core',
+      weight: 20,
+    },
+    {
+      id: 'notebooks',
+      title: 'Notebooks',
+      link: { subdomain: 'jupyter' },
+      group: 'core',
+      weight: 30,
+    },
+    {
+      id: 'playbook-cohort',
+      title: 'Research Cohorting',
+      link: { subdomain: 'playbooks', path: '/voila/render/cohort/Cohort.ipynb' },
+      group: 'playbooks',
+      weight: 10,
+    },
+    {
+      id: 'admin-users',
+      title: 'Users',
+      link: { path: '/admin/users' },
+      group: 'admin',
+      weight: 10,
+      audience: 'admin',
+    },
+    {
+      id: 'lake',
+      title: 'Lake',
+      link: { subdomain: 'minio' },
+      group: 'admin',
+      weight: 20,
+      audience: 'admin',
+    },
+    {
+      id: 'orchestrator',
+      title: 'Orchestrator',
+      link: { subdomain: 'temporal', path: '/auth/sso' },
+      group: 'admin',
+      weight: 30,
+      audience: 'admin',
+    },
+    {
+      id: 'monitor',
+      title: 'Monitor',
+      link: { subdomain: 'grafana' },
+      group: 'admin',
+      weight: 40,
+      audience: 'admin',
+    },
+  ],
+};
 
 describe('resolveHref', () => {
   it('resolves the three destination shapes', () => {
@@ -33,9 +123,9 @@ describe('resolveHref', () => {
   });
 });
 
-describe('assemble on the builtin catalog', () => {
-  it('reproduces the classic page for an admin with every flag on', () => {
-    const model = assemble(builtinCatalog(ALL_FLAGS), { origin: ORIGIN, isAdmin: true });
+describe('assemble on the classic page', () => {
+  it('reproduces the classic layout for an admin', () => {
+    const model = assemble(catalogFrom(CLASSIC), { origin: ORIGIN, isAdmin: true });
     expect(model.rows.map((row) => row.groups.map((group) => group.id))).toEqual([
       ['core'],
       ['playbooks', 'admin'],
@@ -44,6 +134,7 @@ describe('assemble on the builtin catalog', () => {
     expect(core.chips.map((chip) => chip.id)).toEqual(['chat', 'analytics', 'notebooks']);
     expect(core.columns).toBe(3);
     expect(core.footerLink?.url).toBe('https://docs.example.edu');
+    expect(core.chips[0].source).toBe('test/apps.yaml');
     const admin = model.rows[1].groups[1];
     expect(admin.layout).toBe('tiles');
     expect(admin.chips.map((chip) => chip.id)).toEqual([
@@ -56,30 +147,12 @@ describe('assemble on the builtin catalog', () => {
   });
 
   it('renders playbooks full-width for a non-admin (unpaired half)', () => {
-    const model = assemble(builtinCatalog(ALL_FLAGS), { origin: ORIGIN, isAdmin: false });
+    const model = assemble(catalogFrom(CLASSIC), { origin: ORIGIN, isAdmin: false });
     expect(model.rows.map((row) => row.groups.map((group) => group.id))).toEqual([
       ['core'],
       ['playbooks'],
     ]);
     expect(model.diagnostics).toEqual([]);
-  });
-
-  it('drops the chat column when chat is disabled', () => {
-    const model = assemble(builtinCatalog({ ...ALL_FLAGS, enableChat: false }), {
-      origin: ORIGIN,
-      isAdmin: false,
-    });
-    const core = model.rows[0].groups[0];
-    expect(core.chips.map((chip) => chip.id)).toEqual(['analytics', 'notebooks']);
-    expect(core.columns).toBe(2);
-  });
-
-  it('hides the playbooks section entirely when disabled', () => {
-    const model = assemble(builtinCatalog({ ...ALL_FLAGS, enablePlaybooks: false }), {
-      origin: ORIGIN,
-      isAdmin: false,
-    });
-    expect(model.rows.map((row) => row.groups.map((group) => group.id))).toEqual([['core']]);
   });
 });
 
@@ -115,14 +188,35 @@ describe('assemble mechanics', () => {
       'discovered/plugin.yaml',
       1,
     );
-    const catalog: Catalog = {
-      chips: [...mounted.chips, ...discovered.chips],
-      groups: [...mounted.groups, ...discovered.groups],
-      diagnostics: [...mounted.diagnostics, ...discovered.diagnostics],
-    };
-    const model = assemble(catalog, { origin: ORIGIN, isAdmin: true });
+    const model = assemble(merged(mounted, discovered), { origin: ORIGIN, isAdmin: true });
     expect(model.rows[0].groups[0].title).toBe('Imaging (core)');
     expect(model.diagnostics.some((d) => d.message.includes('already defined'))).toBe(true);
+  });
+
+  it('renders same-id chips from different sources side by side (ids are per-source)', () => {
+    const mounted = validateDocument(
+      {
+        apiVersion: CATALOG_API_VERSION,
+        groups: [{ id: 'g', title: 'G' }],
+        chips: [{ id: 'docs', title: 'Docs A', link: { path: '/a' }, group: 'g' }],
+      },
+      'catalog/core.yaml',
+      0,
+    );
+    const discovered = validateDocument(
+      {
+        apiVersion: CATALOG_API_VERSION,
+        chips: [{ id: 'docs', title: 'Docs B', link: { path: '/b' }, group: 'g' }],
+      },
+      'discovered/other.yaml',
+      1,
+    );
+    const model = assemble(merged(mounted, discovered), { origin: ORIGIN, isAdmin: false });
+    const chips = model.rows[0].groups[0].chips;
+    expect(chips.map((chip) => `${chip.source}:${chip.id}`)).toEqual([
+      'catalog/core.yaml:docs',
+      'discovered/other.yaml:docs',
+    ]);
   });
 
   it('filters disabled chips, admin chips, and then empty groups', () => {

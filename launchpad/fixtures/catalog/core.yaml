@@ -1,0 +1,53 @@
+# Local-dev fixture mirroring the chart's mounted core catalog
+# (helm/launchpad/templates/configmap-catalog.yaml). Loaded via
+# LAUNCHPAD_CATALOG_DIRS=./fixtures/catalog — see .env.example.
+apiVersion: scout.washu.edu/v1alpha1
+groups:
+  - id: core
+    title: Core Services
+    description: Essential tools for data exploration and analysis
+    icon: cube
+    weight: 10
+    layout: cards
+    footerLink:
+      text: New to Scout? Check out our documentation
+      url: https://washu-scout.readthedocs.io/en/latest
+  - id: admin
+    title: Admin Tools
+    description: Infrastructure and user management
+    icon: cog
+    weight: 30
+    layout: tiles
+    width: half
+    audience: admin
+  # The default section: chips that omit `group` land here.
+  - id: more
+    title: More
+    weight: 40
+    layout: cards
+chips:
+  - id: analytics
+    title: Analytics
+    description: Visual dashboards, business intelligence, and SQL queries
+    icon: chart-bar
+    tone: amber
+    link: { subdomain: superset }
+    group: core
+    weight: 20
+  - id: notebooks
+    title: Notebooks
+    description: Interactive data analysis and coding with Jupyter
+    icon: python
+    tone: indigo
+    link: { subdomain: jupyter }
+    group: core
+    weight: 30
+  - id: admin-users
+    title: Users
+    description: Approve requests and manage user access
+    icon: clipboard-check
+    tone: indigo
+    link: { path: /admin/users }
+    group: admin
+    weight: 10
+    audience: admin
