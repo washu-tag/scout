@@ -407,7 +407,14 @@ jobs:
     # Only reset after a successful release. If the release was skipped (e.g., build
     # failed) or failed (e.g., gh release create error), we preserve the version bump
     # commit so a re-run can reuse it.
-    if: ${{ !inputs.dry_run && !inputs.skip_dev_reset && always() && !cancelled() && needs.release.result == 'success' && needs.validate.outputs.reset_exists != 'true' }}
+    #
+    # Deliberately does NOT consult validate's reset_exists. That is computed before
+    # version-bump runs, so on a re-release of an already-released version it reports
+    # the PREVIOUS cycle's reset and skips this one -- which is how v4.1.0's re-release
+    # left main stamped at 4.1.0. version-bump still needs the flag (it is what tells
+    # it to create a fresh bump); this job does not, because "Commit and push" below
+    # already no-ops when the files are at dev versions.
+    if: ${{ !inputs.dry_run && !inputs.skip_dev_reset && always() && !cancelled() && needs.release.result == 'success' }}
     steps:
       - name: Generate token from GitHub App
         id: app_token
