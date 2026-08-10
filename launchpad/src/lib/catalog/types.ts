@@ -68,6 +68,9 @@ export interface Catalog {
 // The client-serializable render model: names instead of components, hrefs
 // instead of link descriptors, already audience-filtered and laid out.
 export interface RenderChip {
+  // Which document supplied the chip. Chip ids are unique only within their
+  // source document, so render keys pair source with id.
+  source: string;
   id: string;
   title: string;
   description: string;

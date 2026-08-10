@@ -69,8 +69,10 @@ const ChipCard = ({ chip }: { chip: RenderChip }) => {
   );
 };
 
-// Compact row with a trailing arrow — the Playbooks idiom.
-const ChipRow = ({ chip }: { chip: RenderChip }) => {
+// Compact chip: the rows idiom (Playbooks) carries a trailing arrow, the
+// tiles idiom (Admin Tools) does not. One component so their chrome cannot
+// drift apart.
+const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
   const tone = TONES[chip.tone];
   return (
     <a
@@ -93,35 +95,11 @@ const ChipRow = ({ chip }: { chip: RenderChip }) => {
           {chip.description}
         </p>
       </div>
-      <HiArrowRight
-        className={`text-base ${tone.cta} group-hover:translate-x-1 transition-transform duration-200 flex-shrink-0`}
-      />
-    </a>
-  );
-};
-
-// Compact tile without the arrow — the Admin Tools idiom.
-const ChipTile = ({ chip }: { chip: RenderChip }) => {
-  const tone = TONES[chip.tone];
-  return (
-    <a
-      href={chip.href}
-      {...linkTarget(chip)}
-      className={`group flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 no-underline ${tone.hoverBorder} ${tone.hoverShadow}`}
-    >
-      <div
-        className={`w-10 h-10 rounded-lg border flex items-center justify-center flex-shrink-0 ${tone.iconBg}`}
-      >
-        <ChipIcon chip={chip} className={`text-xl ${tone.icon}`} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
-          {chip.title}
-        </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug font-light">
-          {chip.description}
-        </p>
-      </div>
+      {arrow && (
+        <HiArrowRight
+          className={`text-base ${tone.cta} group-hover:translate-x-1 transition-transform duration-200 flex-shrink-0`}
+        />
+      )}
     </a>
   );
 };
@@ -153,21 +131,21 @@ const GroupPanel = ({ group, fillHeight }: { group: RenderGroup; fillHeight: boo
       {group.layout === 'cards' && (
         <div className={`grid grid-cols-1 gap-8 ${CARD_COLS[group.columns] ?? ''}`}>
           {group.chips.map((chip) => (
-            <ChipCard key={chip.id} chip={chip} />
+            <ChipCard key={`${chip.source}:${chip.id}`} chip={chip} />
           ))}
         </div>
       )}
       {group.layout === 'rows' && (
         <div className="space-y-3">
           {group.chips.map((chip) => (
-            <ChipRow key={chip.id} chip={chip} />
+            <ChipCompact key={`${chip.source}:${chip.id}`} chip={chip} arrow />
           ))}
         </div>
       )}
       {group.layout === 'tiles' && (
         <div className={`grid gap-3 flex-1 ${TILE_COLS[group.columns] ?? 'grid-cols-2'}`}>
           {group.chips.map((chip) => (
-            <ChipTile key={chip.id} chip={chip} />
+            <ChipCompact key={`${chip.source}:${chip.id}`} chip={chip} arrow={false} />
           ))}
         </div>
       )}

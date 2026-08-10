@@ -116,6 +116,7 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
         width: group.width,
         footerLink: group.footerLink,
         chips: chips.map((chip) => ({
+          source: chip.source,
           id: chip.id,
           title: chip.title,
           description: chip.description,
