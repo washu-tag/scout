@@ -118,3 +118,15 @@
     helm_chart_namespace: '{{ extractor_namespace }}'
     helm_chart_create_namespace: false
     helm_chart_values: "{{ lookup('template', 'hl7-transformer.values.yaml.j2') | from_yaml }}"
+
+# One-time cleanup: the modality map used to be a hand-created ConfigMap named
+# `modality-mapping`; the chart now owns it as <release>-hl7-transformer-modality-mapping.
+# Remove the orphan so an upgrade self-cleans instead of leaving a stale, unmounted
+# ConfigMap behind. Idempotent (absent), so it is safe on every run.
+- name: Remove the pre-chart modality-mapping ConfigMap (now chart-owned)
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    name: modality-mapping
+    namespace: '{{ extractor_namespace }}'

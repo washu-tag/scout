@@ -45,9 +45,6 @@ hl7log_extractor_jvm_heap_max_ram_percentage: 60
 # Container paths
 hl7logs_root_dir: /data
 
-# Modality mapping file (source file on control machine)
-# Default points to the reference mapping shipped with Scout
-# Override in inventory.yaml to use a custom mapping file
 # Optional custom modality-map override. Empty by default: the hl7-transformer
 # chart ships and mounts its own default map (files/modality_mapping_codes.csv).
 # Set this to a CSV path on the Ansible controller only to override it.

@@ -1,4 +1,3 @@
-{{- if .Values.modalityMapping.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,4 +7,3 @@ metadata:
 data:
   modality_mapping_codes.csv: |-
     {{- (.Values.modalityMapping.data | default (.Files.Get "files/modality_mapping_codes.csv")) | nindent 4 }}
-{{- end }}

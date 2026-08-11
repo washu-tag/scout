@@ -818,9 +818,9 @@ See [Ollama model library](https://ollama.com/library) for available models.
 
 #### HL7 Extractor
 
-Scout ships with a default modality mapping file (`extractor/hl7-transformer/modality_mapping_codes.csv`) that is used to derive the `modality` column in the Delta Lake table. During deployment, this file is read and stored as a Kubernetes ConfigMap, which is then mounted into the hl7-transformer container at `/config/modality_mapping_codes.csv`.
+The hl7-transformer chart bundles a default modality mapping file (`helm/extractor/hl7-transformer/files/modality_mapping_codes.csv`) used to derive the `modality` column in the Delta Lake table. The chart mounts it as a Kubernetes ConfigMap into the hl7-transformer container at `/config/modality_mapping_codes.csv`, so a map change ships as a chart version bump.
 
-The default mapping is based on WashU's exam codes. Sites using custom extractors would typically customize this file as part of their implementation. Sites using the standard extractor can override the mapping by setting `modality_map_source_file` in `inventory.yaml` to point to a custom CSV file.
+The default mapping is based on WashU's exam codes. Sites using custom extractors would typically customize this file as part of their implementation. Sites using the standard extractor can override the mapping by setting `modality_map_source_file` in `inventory.yaml` to a custom CSV file on the Ansible controller, which Ansible passes to the chart as an override.
 
 As stated in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#how-pods-with-resource-limits-are-run),
 "The memory request is mainly used during (Kubernetes) Pod scheduling", so we recommend setting it to a small but viable value where the extractor could run

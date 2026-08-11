@@ -111,15 +111,13 @@ tolerations: []
 affinity: {}
 
 # Chart-owned modality-code -> modality mapping (ADR 0031). The chart bundles the
-# default map at files/modality_mapping_codes.csv and mounts it at
+# default map at files/modality_mapping_codes.csv and always mounts it at
 # /config/modality_mapping_codes.csv, where the transformer reads it (the
-# MODALITY_MAP_PATH constant). Enabled by default because the transformer needs
-# the map; a bare install works from the bundled default. To use a custom map,
-# set `data` to the full CSV (overrides the bundled default), or disable this and
-# mount your own. A map update ships as a chart version bump (no hand-copied
-# ConfigMap), which is the point of chart-ownership.
+# MODALITY_MAP_PATH constant); the transformer requires the map, so unlike the
+# optional sparkDefaults there is no enable toggle. To use a custom map, set
+# `data` to the full CSV (overrides the bundled default). A map update ships as a
+# chart version bump (no hand-copied ConfigMap), which is the point of ownership.
 modalityMapping:
-  enabled: true
   data: ''
 
 spark:

@@ -13,10 +13,17 @@ spec:
       {{- include "hl7-transformer.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        # Roll the pod when mounted config content changes. The maps are subPath
+        # mounts, which do NOT hot-reload, so without this a data-only change
+        # (same chart version) would leave the pod on the stale map.
+        checksum/modality-mapping: {{ include (print $.Template.BasePath "/modality-mapping-configmap.yaml") . | sha256sum }}
+        {{- if .Values.sparkDefaults.enabled }}
+        checksum/spark-defaults: {{ include (print $.Template.BasePath "/spark-defaults-configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "hl7-transformer.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
@@ -58,23 +65,19 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- if or .Values.volumeMounts .Values.sparkDefaults.enabled .Values.modalityMapping.enabled }}
           volumeMounts:
+            - name: modality-mapping
+              mountPath: /config/modality_mapping_codes.csv
+              subPath: modality_mapping_codes.csv
+              readOnly: true
             {{- if .Values.sparkDefaults.enabled }}
             - name: spark-defaults
               mountPath: /opt/spark/conf/spark-defaults.conf
               subPath: spark-defaults.conf
             {{- end }}
-            {{- if .Values.modalityMapping.enabled }}
-            - name: modality-mapping
-              mountPath: /config/modality_mapping_codes.csv
-              subPath: modality_mapping_codes.csv
-              readOnly: true
-            {{- end }}
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-          {{- end }}
           env:
             {{- with .Values.env }}
               {{- toYaml . | nindent 12 }}
@@ -86,22 +89,18 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
 
-      {{- if or .Values.volumes .Values.sparkDefaults.enabled .Values.modalityMapping.enabled }}
       volumes:
+        - name: modality-mapping
+          configMap:
+            name: {{ include "hl7-transformer.fullname" . }}-modality-mapping
         {{- if .Values.sparkDefaults.enabled }}
         - name: spark-defaults
           configMap:
             name: {{ include "hl7-transformer.fullname" . }}-spark-defaults
         {{- end }}
-        {{- if .Values.modalityMapping.enabled }}
-        - name: modality-mapping
-          configMap:
-            name: {{ include "hl7-transformer.fullname" . }}-modality-mapping
-        {{- end }}
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
