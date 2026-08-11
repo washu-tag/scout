@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hl7-transformer.fullname" . }}-modality-mapping
+  labels:
+    {{- include "hl7-transformer.labels" . | nindent 4 }}
+data:
+  modality_mapping_codes.csv: |-
+    {{- (.Values.modalityMapping.data | default (.Files.Get "files/modality_mapping_codes.csv")) | nindent 4 }}
