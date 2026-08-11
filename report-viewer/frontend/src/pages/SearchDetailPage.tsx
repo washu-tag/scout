@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -30,6 +30,7 @@ import { RowDetail } from './searchDetail/RowDetail';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { fmtCell, fmtDate } from './searchDetail/format';
+import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, paginationBtn } from './searchDetail/styles';
 
 const COLUMNS_CONFIG: Array<{
@@ -150,6 +151,20 @@ export default function SearchDetailPage() {
     }
     return Array.from(set).sort();
   }, [rowsQ.data]);
+
+  // The profile row sticks below the header, so it needs the header's rendered
+  // height rather than a guess at padding plus line-height.
+  const headerRowRef = useRef<HTMLTableRowElement | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(28);
+  useLayoutEffect(() => {
+    const h = headerRowRef.current?.offsetHeight;
+    if (h && h !== headerHeight) setHeaderHeight(h);
+  }, [headerHeight]);
+
+  const dateFields = useMemo(
+    () => new Set(COLUMNS_CONFIG.filter((c) => c.kind === 'date').map((c) => c.field)),
+    [],
+  );
 
   const columns = useMemo(
     () =>
@@ -287,8 +302,8 @@ export default function SearchDetailPage() {
                 }}
               >
                 <thead>
-                  {table.getHeaderGroups().map((hg) => (
-                    <tr key={hg.id}>
+                  {table.getHeaderGroups().map((hg, hgIndex) => (
+                    <tr key={hg.id} ref={hgIndex === 0 ? headerRowRef : undefined}>
                       {hg.headers.map((header) => {
                         const colMeta = header.column.columnDef.meta as
                           | { align?: 'right' | 'center' }
@@ -344,6 +359,12 @@ export default function SearchDetailPage() {
                       })}
                     </tr>
                   ))}
+                  <ColumnProfileRow
+                    columns={table.getVisibleLeafColumns()}
+                    rows={data}
+                    dateFields={dateFields}
+                    stickyTop={headerHeight}
+                  />
                 </thead>
                 <tbody>
                   {table.getRowModel().rows.map((row) => {
