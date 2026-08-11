@@ -112,14 +112,12 @@ function ProfileCell({ profile }: { profile: Profile }) {
   if (profile.kind === 'none') return null;
 
   if (profile.kind === 'identifier') {
-    // "unique", not "patients": these columns count distinct identifier values,
-    // and the four patient identifiers disagree, so naming them patients would
-    // assert several patient counts for one cohort.
+    // "unique", not "patients": the four patient identifiers disagree with each
+    // other, so "patients" would claim several patient counts for one cohort.
     return (
-      <>
-        <Chip text={num(profile.distinct)} />
-        <div style={labelStyle}>unique</div>
-      </>
+      <div style={{ textAlign: 'center' }}>
+        <Chip text={`${num(profile.distinct)} unique`} />
+      </div>
     );
   }
 
