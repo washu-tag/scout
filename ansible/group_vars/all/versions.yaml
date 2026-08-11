@@ -56,10 +56,13 @@ minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
 
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
-temporal_version: ~1.2.0
-# NOTE: the temporalio/admin-tools image tag is NOT pinned here. It's derived at
-# deploy time from this chart's appVersion (see roles/temporal/tasks/deploy.yaml)
-# so the `temporal` CLI always matches the installed server.
+temporal_version: 1.2.0
+# admin-tools provides the `temporal` CLI; its tag must equal the Temporal server
+# version (this chart's appVersion) so the CLI matches the running server. Pinned
+# exactly for provenance; Renovate bumps it with the chart above (grouped in
+# renovate.json5).
+# renovate: datasource=docker depName=temporalio/admin-tools
+temporal_admin_tools_image_tag: 1.31.0
 
 # Real-Time HL7 Ingestion - Strimzi Kafka (MLLP listener → Kafka → batcher → MinIO).
 # The listener/batcher application image is built in CI (see hl7-listener/), not pinned here.
@@ -110,13 +113,15 @@ grafana_helm_chart_version: ~10.4.0
 jupyter_helm_chart_version: ~4.3.5
 
 # AI & ML
-# The OWUI chart's appVersion is the single source of truth for the OWUI image
-# tag — Scout doesn't override it. The open-webui-bootstrap Job discovers the
-# running Pod's image at deploy time (see configure_admin.yaml) so it stays
-# in lockstep with the chart's appVersion without a separate pin.
-
+# The OWUI chart's appVersion is the source of truth for the deployed OWUI image
+# tag (Scout doesn't override it); the open-webui-bootstrap Job discovers the
+# running Pod's image at deploy time (see configure_admin.yaml) for ORM/bcrypt
+# lockstep. open_webui_image_tag below pins that same version for the build-lane
+# haul; Renovate bumps it with the chart (grouped in renovate.json5).
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
-open_webui_helm_chart_version: ~15.2.0
+open_webui_helm_chart_version: 15.2.1
+# renovate: datasource=docker depName=ghcr.io/open-webui/open-webui
+open_webui_image_tag: 0.11.0
 # renovate: datasource=docker depName=ollama/ollama
 ollama_image_tag: 0.24.0
 

@@ -59,25 +59,6 @@
   ansible.builtin.set_fact:
     temporal_bootstrap_config_checksum: "{{ _temporal_bootstrap_files.files | map(attribute='checksum') | sort | join('') | hash('sha1') }}"
 
-# Pin the admin-tools image to the Temporal chart's appVersion so the `temporal`
-# CLI always matches the installed server (e.g. chart 1.2.0 -> appVersion
-# 1.31.0), rather than a hand-maintained tag that can drift out of step.
-- name: Resolve admin-tools image tag from the Temporal chart appVersion
-  ansible.builtin.shell:
-    cmd: >-
-      helm show chart temporal
-      --repo https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
-      --version '{{ temporal_version }}'
-      | awk '/^appVersion:/ {gsub(/"/,"",$2); print $2}'
-  register: _temporal_chart_appversion
-  changed_when: false
-  failed_when: (_temporal_chart_appversion.stdout | trim | length) == 0
-  delegate_to: localhost
-
-- name: Pin admin-tools image tag to the Temporal server version
-  ansible.builtin.set_fact:
-    temporal_admin_tools_image_tag: '{{ _temporal_chart_appversion.stdout | trim }}'
-
 - name: Deploy temporal-bootstrap chart
   ansible.builtin.include_role:
     name: scout_common

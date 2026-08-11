@@ -123,6 +123,20 @@
         "**SPI compatibility reminder:** Validate the custom SPIs in `keycloak/event-listener/` still compile and the integration tests pass against the new Keycloak version. The eventsListener and required-action SPIs are marked internal (KC-SERVICES0047) and have had compatibility breaks at major-version boundaries. Affected providers: `opa-user-bundle-publisher` (ADR 0021), `user-approval-email`, `ScoutTermsRequiredAction`.",
         "**Version-coupling reminder:** When the Keycloak server bumps, `keycloak_config_cli_image_tag` should also bump to a tag whose Keycloak-compat suffix matches. E.g. server `26.7.0` → cli tag `*-26.7.0`. Adorsys publishes tags at https://hub.docker.com/r/adorsys/keycloak-config-cli/tags — pick the highest cli version with a matching Keycloak-compat tail. If no matching cli tag exists yet, hold the server bump until one is published; otherwise realm imports may fail on schema-mismatch."
       ]
+    },
+    {
+      "matchDepNames": ["temporal", "temporalio/admin-tools"],
+      "groupName": "Temporal chart + admin-tools",
+      "prBodyNotes": [
+        "**Version-coupling reminder:** `temporal_admin_tools_image_tag` must equal the Temporal chart's appVersion (the server version) so the bundled `temporal` CLI matches the running server. When the temporal chart bumps, confirm admin-tools lands on the same server version (check the chart's appVersion for the new chart version)."
+      ]
+    },
+    {
+      "matchDepNames": ["open-webui", "ghcr.io/open-webui/open-webui"],
+      "groupName": "Open WebUI chart + image",
+      "prBodyNotes": [
+        "**Version-coupling reminder:** `open_webui_image_tag` must equal the Open WebUI chart's appVersion (the deployed server), which the open-webui-bootstrap Job reuses for ORM/bcrypt lockstep. When the chart bumps, set the image tag to the chart's new appVersion."
+      ]
     }
   ],
 
