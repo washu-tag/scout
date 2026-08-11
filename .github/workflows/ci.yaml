@@ -152,6 +152,9 @@ jobs:
     needs: changes
     permissions:
       contents: read
+      # check-image-exists reads ghcr to see whether the derived tag is already
+      # published; packages default to private, so that read has to be authenticated.
+      packages: read
       attestations: write
       id-token: write
     strategy:
@@ -878,50 +881,106 @@ jobs:
 
           echo "Disk space after cleanup:"
           df -h
+      # Publish when the paths changed OR the derived tag is absent from the
+      # registry. build-and-upload already builds on both signals; gating the
+      # push on the paths-filter alone silently discarded the second kind, which
+      # is how v4.1.0 shipped with no 4.1.0 image tags -- its CI had to be fixed
+      # forward on a commit touching only two images, so the rest were built at
+      # 4.1.0, scanned, and dropped. Deliberately NOT gated on `ci`: that
+      # rebuilds everything to re-scan, and publishing there would overwrite
+      # already-published upstream tags (superset, keycloak) with rebuilt bits.
+      - name: 'Check published - hl7log-extractor'
+        id: published-hl7log-extractor
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: extractor/hl7log-extractor
+          image-name: hl7log-extractor
       - name: 'Push Image - hl7log-extractor'
-        if: needs.changes.outputs.hl7log-extractor == 'true'
+        if: needs.changes.outputs.hl7log-extractor == 'true' || steps.published-hl7log-extractor.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7log-extractor
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - hl7-transformer'
+        id: published-hl7-transformer
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: extractor/hl7-transformer
+          image-name: hl7-transformer
       - name: 'Push Image - hl7-transformer'
-        if: needs.changes.outputs.hl7-transformer == 'true'
+        if: needs.changes.outputs.hl7-transformer == 'true' || steps.published-hl7-transformer.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - hl7-listener'
+        id: published-hl7-listener
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: hl7-listener
+          image-name: hl7-listener
       - name: 'Push Image - hl7-listener'
-        if: needs.changes.outputs.hl7-listener == 'true'
+        if: needs.changes.outputs.hl7-listener == 'true' || steps.published-hl7-listener.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-listener
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - scout-notebook'
+        id: published-scout-notebook
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: helm/scout-notebook
+          image-name: scout-notebook
       - name: 'Push Image - scout-notebook'
-        if: needs.changes.outputs.scout-notebook == 'true'
+        if: needs.changes.outputs.scout-notebook == 'true' || steps.published-scout-notebook.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: scout-notebook
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - launchpad'
+        id: published-launchpad
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: launchpad
+          image-name: launchpad
       - name: 'Push Image - launchpad'
-        if: needs.changes.outputs.launchpad == 'true'
+        if: needs.changes.outputs.launchpad == 'true' || steps.published-launchpad.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: launchpad
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - superset'
+        id: published-superset
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: helm/superset
+          image-name: superset
       - name: 'Push Image - superset'
-        if: needs.changes.outputs.superset == 'true'
+        if: needs.changes.outputs.superset == 'true' || steps.published-superset.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: superset
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - keycloak'
+        id: published-keycloak
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: keycloak
+          image-name: keycloak
       - name: 'Push Image - keycloak'
-        if: needs.changes.outputs.keycloak == 'true'
+        if: needs.changes.outputs.keycloak == 'true' || steps.published-keycloak.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - report-viewer'
+        id: published-report-viewer
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: report-viewer
+          image-name: report-viewer
       - name: 'Push Image - report-viewer'
-        if: needs.changes.outputs.report-viewer == 'true'
+        if: needs.changes.outputs.report-viewer == 'true' || steps.published-report-viewer.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: report-viewer
@@ -1145,18 +1204,46 @@ jobs:
         with:
           image-name: report-viewer
 
+  haul-guard-canary:
+    # publish-haul's sync step fails closed by counting hauler's "signature
+    # verified for image [" log lines; a hauler bump that changed that wording
+    # would silently zero the count and block every publish. Assert the string is
+    # still in the pinned binary here, on every PR, so a bump fails RED up front
+    # instead of surfacing later as a cryptic 0/N-verified on a main build. Runs
+    # unconditionally (cheap) so it always reports and is safe to mark required.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/install-hauler-oras
+      - name: Assert the verification success string is present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! grep -aqF 'signature verified for image [' "$(command -v hauler)"; then
+            echo "::error::this hauler build lacks the 'signature verified for image [' success string; update the verified-line guard in publish-haul's sync step to match this version"
+            exit 1
+          fi
   publish-haul:
     # Build-lane haul (ADR 0033): after images publish, render the manifest from
     # this run's fresh digests plus the previous build's haul (carry), sync it into
     # a .tar.zst bundle, and publish the bundle + the manifest so the next run can
     # carry from it. continue-on-error so it never gates a release; it fails closed
     # (harmless) on partial builds until a one-time bootstrap seeds the first
-    # predecessor. Sync is unsigned for now; `--key` verification is a follow-up
-    # once every image is signed at publish.
-    if: github.ref_name == 'main' && needs.publish.result == 'success'
+    # predecessor. Sync verifies every component's cosign signature (--key) and
+    # fails closed if any component is unsigned or unverifiable.
+    # PAUSED until the build-lane haul project is finalized. Chart carry needs a
+    # one-time publish-all seed of the 14 charts (see components.txt); until that
+    # lands this job fails on every main run. continue-on-error keeps it non-gating,
+    # but it still leaves a red X on the run, so it is turned off while the whole
+    # GitOps build-lane is still in progress rather than run half-built. Re-enable
+    # (after the seed) by restoring the condition:
+    #   github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
+    if: false
     runs-on: ubuntu-latest
     continue-on-error: true
-    needs: [changes, publish]
+    needs: [changes, publish, publish-charts]
     permissions:
       contents: read
       packages: write
@@ -1178,24 +1265,7 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Install hauler and oras
-        shell: bash # default shell is `bash -e` (no pipefail); be explicit
-        env:
-          HAULER_VERSION: '2.0.2'
-          HAULER_SHA256: 'd96ac67cac3c9e4fc2d24c8347fba956b2a165a2237318cc2564e44bbaabc4c3'
-          ORAS_VERSION: '1.2.0'
-          ORAS_SHA256: '5b3f1cbb86d869eee68120b9b45b9be983f3738442f87ee5f06b00edd0bab336'
-        # Binary downloads (not curl | bash), sha256-verified before extract so a
-        # tampered/hijacked release asset can't execute in the job. Bump the
-        # version and its checksum together (from the release's checksums.txt).
-        run: |
-          curl -fsSL -o /tmp/hauler.tar.gz \
-            "https://github.com/hauler-dev/hauler/releases/download/v${HAULER_VERSION}/hauler_${HAULER_VERSION}_linux_amd64.tar.gz"
-          echo "${HAULER_SHA256}  /tmp/hauler.tar.gz" | sha256sum -c -
-          tar -xzf /tmp/hauler.tar.gz -C /usr/local/bin hauler
-          curl -fsSL -o /tmp/oras.tar.gz \
-            "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
-          echo "${ORAS_SHA256}  /tmp/oras.tar.gz" | sha256sum -c -
-          tar -xzf /tmp/oras.tar.gz -C /usr/local/bin oras
+        uses: ./.github/actions/install-hauler-oras
       - name: Download this run's fresh image digests
         # No continue-on-error: a failed/partial download must fail the job (which
         # is job-level continue-on-error, so non-blocking) rather than be swallowed.
@@ -1208,6 +1278,17 @@ jobs:
         with:
           pattern: image-digest-*
           path: digests
+          merge-multiple: true
+      - name: Download this run's fresh chart digests
+        # Charts go in a SEPARATE subdir: 5 chart names (hl7-transformer,
+        # hl7-listener, hl7log-extractor, launchpad, report-viewer) are also image
+        # names, so their digest files share a basename; a flat merge would clobber
+        # one. build_haul globs digests/**/* and skips dirs, so the subdir is read.
+        # Same no-continue-on-error invariant as the image digests above.
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: chart-digest-*
+          path: digests/charts
           merge-multiple: true
       - name: Render the haul manifest (carry from the predecessor)
         run: |
@@ -1222,18 +1303,51 @@ jobs:
             --predecessor predecessor/haul.yaml \
             --name scout > haul.yaml
           echo "--- haul.yaml ---"; cat haul.yaml
+          # Third-party upstream images: resolve each pinned tag from versions.yaml
+          # (the deploy-time source of truth, via resolve_upstream.py), pin to
+          # @digest, and render a separate manifest -- synced WITHOUT --key below
+          # (we can't sign images in registries we don't own; trust = the immutable
+          # digest). Re-resolved every run, so no predecessor carry.
+          : > upstream-refs.txt
+          python3 tooling/manifest/resolve_upstream.py \
+            tooling/manifest/upstream-images.txt \
+            ansible/group_vars/all/versions.yaml > upstream-tags.txt
+          while read -r ref; do
+            [ -n "$ref" ] || continue
+            d="$(docker buildx imagetools inspect "$ref" --format '{{json .Manifest}}' | jq -r '.digest')"
+            [ "${d#sha256:}" != "$d" ] || { echo "::error::could not resolve a digest for ${ref}"; exit 1; }
+            printf '%s@%s\n' "$ref" "$d" >> upstream-refs.txt
+          done < upstream-tags.txt
+          python3 -c 'import sys; sys.path.insert(0, "tooling/manifest"); from haul import render_images; refs=[l.strip() for l in open("upstream-refs.txt") if l.strip()]; sys.stdout.write(render_images(refs, name="scout-upstream"))' > haul-upstream.yaml
+          echo "--- haul-upstream.yaml ---"; cat haul-upstream.yaml
       - name: Sync, bundle, sign, and publish the haul
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
           set -euo pipefail
-          hauler store sync -f haul.yaml
+          # hauler 2.0.2 SKIPS an image it can't verify yet still exits 0, so an
+          # exit-code or failure-string check fails OPEN. Fail CLOSED: require one
+          # "signature verified" line per image in haul.yaml (dash-anchored count so
+          # metadata.name isn't included). (Strings are 2.0.2's; recheck on bump.)
+          # Derive the public key from the signing key -- no separate COSIGN_PUBLIC_KEY secret.
+          cosign public-key --key env://COSIGN_PRIVATE_KEY > cosign.pub
+          expected=$(grep -cE '^[[:space:]]*-[[:space:]]+name:' haul.yaml || true)
+          hauler store sync -f haul.yaml --key cosign.pub 2>&1 | tee sync.log
+          verified=$(grep -cF 'signature verified for image [' sync.log || true)
+          if [ "$expected" -lt 1 ] || [ "$verified" -ne "$expected" ]; then
+            echo "::error::cosign verification incomplete: ${verified}/${expected} components verified; the haul would be missing unverified images"
+            exit 1
+          fi
+          # Third-party upstream images: sync WITHOUT --key (trusted by digest, not
+          # our signature) into the same store so the saved bundle is complete.
+          hauler store sync -f haul-upstream.yaml
           hauler store save -f "scout-${VERSION}.tar.zst"
           # Push both immutable :version artifacts and sign the bundle, THEN advance
           # the :main pointers last, so :main only moves after a complete, signed
           # publish (ordering guard: a partial failure leaves the old predecessor).
-          oras push "${MANIFEST_REPO}:${VERSION}" haul.yaml:application/yaml
+          oras push "${MANIFEST_REPO}:${VERSION}" \
+            haul.yaml:application/yaml haul-upstream.yaml:application/yaml
           oras push "${BUNDLE_REPO}:${VERSION}" \
             --artifact-type application/vnd.hauler.bundle.v1+zstd \
             "scout-${VERSION}.tar.zst:application/zstd"

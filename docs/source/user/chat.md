@@ -6,7 +6,7 @@ Scout Chat provides an AI-powered interface for natural language querying of the
 Chat is optional and may not be enabled in all deployments. If you don't see Chat on the Launchpad, contact your administrator.
 ```
 
-![Scout Launchpad](images/ScoutLaunchpadWithChat.png)
+![Scout Launchpad](../images/ScoutLaunchpadWithChat.png)
 
 **Current version:** Scout Chat queries HL7 radiology report data. Future versions will support DICOM metadata, pathology reports, and extracted features.
 
@@ -22,11 +22,11 @@ Scout Chat is powered by [Open WebUI](https://docs.openwebui.com/) with [Ollama]
 
 ## Getting Started
 
-1. Navigate to the [Scout Launchpad](index.md)
+1. Navigate to the [Scout Launchpad](../index.md)
 2. Click the **Chat** card
 3. Type your question in plain English
 
-![Scout Chat](images/ScoutChat.png)
+![Scout Chat](../images/ScoutChat.png)
 
 4. Press Enter to submit
 5. The AI queries the database and provides an answer
@@ -58,18 +58,54 @@ When you ask a question, Scout Chat:
 
 1. **Interprets** your question in its "Thinking" mode
 2. **Calls a tool** to fetch data. Three tools are available:
-   - `scout_find_reports` for cohort building. Saves the search and renders a browsable table above the reply.
+   - `scout_find_reports` for cohort building.
    - `scout_get_reports` for looking up specific reports.
    - `scout_query_sql` for aggregate analytics like counts, distributions, and groupings.
 3. **Analyzes** the returned data and provides a natural language answer
 
+A cohort search (`scout_find_reports`) renders the report viewer, an interactive table above the reply. Aggregate questions are answered in the reply itself, without the viewer.
+
+### Working with Search Results
+
+The report viewer fetches the whole cohort each time you open a chat, which can take a while for a complex query. Once it has loaded, sorting, paging, and filtering all happen in your browser and are fast.
+
+![Report viewer embedded in chat](../images/ScoutReportViewer.png)
+
+Click a column header to sort. The bottom toolbar handles paging, column visibility, filtering and other options.
+
+- **Explain Search** shows what the search matched, which table it read, and the SQL.
+- **Download CSV** exports your current filters, sort order, and visible columns, not the whole original search.
+- **Give the table more room** with the four-arrow icon at the right end of the toolbar. Click it again to shrink back.
+
+### Filtering and Refining
+
+There are two ways to narrow a cohort. **Filters** hides rows from the set already loaded, and clearing them brings the rows back. Going through chat instead produces fresh SQL and a **new** saved search, leaving the original intact to compare or return to.
+
+The filter dialog offers age and date ranges, sex, the modalities present in your results, and contains-matches on service, Epic MRN, Patient MPI, accession, and facility. Only fields your search returned appear.
+
+![Filter rows dialog](../images/ScoutReportViewerFilters.png)
+
+**Apply** filters the rows in front of you. **Filter in Chat** hands the staged filters to the model to run as a new search, and **Discuss in Chat** on an expanded row does the same but for a single report.
+
+Or you can type a follow-up yourself:
+
+```
+User: Filter to just CT angiography studies
+```
+
+### Reading a Report
+
+Click a row to expand it. You get the report text alongside patient and study metadata, timestamps, diagnosis codes, and the lake path of the source HL7 file. Terms and diagnosis codes the model matched on are highlighted; the highlights are informational, the SQL is what selected the rows.
+
+![Expanded report row](../images/ScoutReportViewerRow.png)
+
 ### Viewing the SQL Query
 
-For cohort searches (`scout_find_reports`), click **Explain Search** in the results table to see the SQL alongside the model's plain-English description of what it filtered on.
+For cohort searches, click **Explain Search** in the report viewer. The panel describes what the search matched, names the table it read, and shows the SQL.
 
 For other tool calls, expand the tool-call block in the reply.
 
-![Scout Query](images/ScoutQuery.png)
+![What this search matches](../images/ScoutReportViewerExplainSearch.png)
 
 This is useful for:
 
@@ -77,28 +113,6 @@ This is useful for:
 - Learning SQL syntax for use in {ref}`Analytics <analytics>` SQL Lab
 - Debugging unexpected results
 - Adapting queries for {ref}`Notebooks <notebooks>`
-
-## Working with Search Results
-
-When the LLM calls `scout_find_reports`, an interactive table renders above its reply.
-
-- **Sort** by clicking a column header.
-- **Filter** with the **Filters** button to narrow by MRN, accession, facility, or the model's match terms.
-- **Expand a row** to see the full report text and metadata.
-- **Explain Search** shows the SQL alongside the model's plain-English description of what it filtered on.
-- **Export CSV** downloads the full search result, not just the current page.
-
-Searches are saved. You can reopen a past search from the **Searches** list at the top of the viewer, and share the URL with other Scout users.
-
-### Refining a Cohort
-
-To narrow or broaden a search, ask a follow-up in the chat:
-
-```
-User: Filter to just CT angiography studies
-```
-
-The LLM re-emits fresh SQL as a **new** saved search. The original stays intact so you can compare or return to it.
 
 ## Tips for Effective Queries
 
@@ -111,7 +125,7 @@ The LLM re-emits fresh SQL as a **new** saved search. The original stays intact 
 
 ### Use Scout Terminology
 
-The AI understands the Scout [data schema](dataschema.md). Reference field names when relevant:
+The AI understands the Scout [data schema](../reference/dataschema.md). Reference field names when relevant:
 
 - **Modality**: CT, MRI, X-ray, US, NM, PET, etc.
 - **Report sections**: impression, findings, addendum, technician note
@@ -148,14 +162,12 @@ Give me a table of report counts by modality, sorted highest to lowest
 List the top 10 diagnosis codes with their counts
 ```
 
-For visualizations, copy results to {ref}`Analytics <analytics>`.
-
 ## Data Privacy and Security
 
 - **Authentication required**: Keycloak authentication (same as other Scout services)
 - **Read-only access**: Chat cannot modify or delete data
 - **External content blocked**: Scout blocks loading images and resources from external websites
-- **Conversation privacy**: Chat history is stored on the server and associated with your user account. Other users cannot see your chats unless you share them.
+- **Conversation privacy**: Chat history is stored on the server and associated with your user account. Other users cannot see your chats.
 
 ```{note}
 **Admin visibility**: Scout administrators have the ability to view user chat histories for quality assurance and support. Avoid including sensitive personal information in your conversations.
@@ -175,56 +187,23 @@ For visualizations, copy the data to {ref}`Analytics <analytics>` and build char
 
 ## Chat Sharing
 
-You can share chat conversations with other authenticated Scout users via share links.
-
-```{warning}
-**PHI Risk**: Chat conversations may contain Protected Health Information (PHI) from query results. Before sharing or downloading chats, ensure you are complying with your institution's data governance policies and HIPAA requirements.
+```{note}
+**Chat sharing is disabled.** Scout has turned off Open WebUI's share-link
+feature. Scout users are authorized to see different subsets of the report data,
+so a shared conversation could expose results to a recipient who is not
+authorized to see them. To
+share findings, see whether {ref}`Scout Analytics <analytics>` or
+{ref}`Scout Notebooks <notebooks>` fits your need; each applies the viewer's own
+data authorization.
 ```
 
-### Creating a Share Link
-
-1. Open the chat you want to share
-2. Click the **three-dot menu** (⋮) on the chat
-3. Select **Share**
-4. Click **Copy Link** to generate a shareable URL
-
-The link creates a **snapshot** of the conversation at that moment. New messages added after sharing won't appear unless you update the link.
-
-### Who Can View Shared Chats
-
-Shared chats are **only accessible to authenticated users** on your Scout instance. Recipients must:
-
-- Have a Scout account
-- Be logged in to Scout Chat
-
-Unauthenticated users will be redirected to the login page.
-
-### Updating a Share Link
-
-If you add messages to a shared chat and want to include them:
-
-1. Open the chat and click the **three-dot menu**
-2. Select **Share**
-3. The share modal shows the previously shared snapshot
-4. Click **Update** to refresh the snapshot with new messages
-
-### Deleting a Share Link
-
-To revoke access to a shared chat:
-
-1. Open the chat and click the **three-dot menu**
-2. Select **Share**
-3. Click **Delete this link**
-
-Once deleted, the share link becomes invalid and viewers can no longer access the chat.
-
-### Downloading Chats
+## Downloading Chats
 
 ```{warning}
 **Do not download chats containing PHI** unless you have appropriate authorization and secure storage. Downloaded chat files may contain patient identifiers, diagnosis codes, and other sensitive information extracted from query results.
 ```
 
-Because of PHI concerns, we recommend using chat sharing instead of download when you can. If this is not suitable for your use case, consider whether {ref}`Scout Analytics <analytics>` or {ref}`Scout Notebooks <notebooks>` would meet your need.
+Because of these PHI concerns, consider whether {ref}`Scout Analytics <analytics>` or {ref}`Scout Notebooks <notebooks>` would meet your need instead.
 
 ## Limitations
 
@@ -246,7 +225,7 @@ For advanced analysis, consider:
 
 ### Model Limitations
 
-The AI may occasionally misinterpret questions or generate incorrect queries. Use **Explain Search** on the results table (or expand the tool-call block for non-cohort tools) to review the SQL and verify it matches your intent.
+The AI may occasionally misinterpret questions or generate incorrect queries. Use **Explain Search** in the report viewer or expand the tool-call block to review the SQL and verify it matches your intent.
 
 ## Troubleshooting
 
@@ -261,9 +240,13 @@ If Chat doesn't appear on the Launchpad, the service may not be enabled in your 
 3. **Log out and back in** — Refreshes your session
 4. **Contact admin** — If issues persist
 
+### Authentication Issues
+
+If Chat rejects you, or the report viewer fails with an authorization error, sign out from inside Scout Chat itself, using your user menu in Open WebUI rather than the Launchpad, and log back in. Chat holds its own session.
+
 ### Unexpected Results
 
-1. Click **Explain Search** on the results table (or expand the tool-call block for non-cohort tools) to review the SQL
+1. Click **Explain Search** in the report viewer or expand the tool-call block to review the SQL
 2. Verify your question was specific and unambiguous
 3. Check if the data contains what you expect
 4. Rephrase with more specific criteria
@@ -274,6 +257,6 @@ If you see tool errors, contact your administrator.
 
 ## Additional Resources
 
-- **[Data Schema](dataschema.md)**: Available fields and their meanings
-- **[Services Overview](services.md)**: Analytics, Notebooks, and other Scout services
+- **[Data Schema](../reference/dataschema.md)**: Available fields and their meanings
+- **[Scout interfaces](quickstart.md)**: Analytics, Notebooks, and other Scout services
 - **[Tips & Tricks](tips.md)**: General Scout usage tips
