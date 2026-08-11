@@ -17,22 +17,22 @@ helm_diff_plugin_version: 'v3.15.10'
 
 # Databases & Data Storage - Elasticsearch
 # renovate: datasource=helm registryUrl=https://helm.elastic.co depName=eck-operator
-eck_operator_version: ~3.2.0
+eck_operator_version: 3.2.0
 # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
 elasticsearch_version: 9.2.3
 
 # Databases & Data Storage - Cassandra
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
-cert_manager_version: ~v1.20.3
+cert_manager_version: v1.20.3
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
-cass_operator_version: ~0.66.0
+cass_operator_version: 0.66.0
 # cassandra_server_version is managed by K8ssandra cass-operator, which pulls k8ssandra/cass-management-api
 # renovate: datasource=docker depName=k8ssandra/cass-management-api extractVersion=^(?<version>\d+\.\d+\.\d+)-ubi$
 cassandra_server_version: 5.0.8
 
 # Databases & Data Storage - PostgreSQL
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/ depName=cloudnative-pg
-cnpg_version: ~0.28.3
+cnpg_version: 0.28.3
 
 # Databases & Data Storage - Valkey
 # renovate: datasource=helm registryUrl=https://valkey-io.github.io/valkey-helm/ depName=valkey
@@ -40,7 +40,7 @@ valkey_chart_version: 0.9.4
 
 # OAuth2 Proxy
 # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
-oauth2_proxy_chart_version: ~10.6.2
+oauth2_proxy_chart_version: 10.6.2
 
 # Keycloak Config CLI
 keycloak_config_cli_image: docker.io/adorsys/keycloak-config-cli
@@ -49,7 +49,7 @@ keycloak_config_cli_image_tag: 6.5.1-26.5.5
 
 # Databases & Data Storage - MinIO
 # renovate: datasource=helm registryUrl=https://operator.min.io depName=operator
-minio_version: ~7.1.1
+minio_version: 7.1.1
 minio_client_image: quay.io/minio/mc
 # renovate: datasource=docker depName=quay.io/minio/mc
 minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
@@ -74,7 +74,7 @@ kafka_version: 4.3.1
 
 # Analytics & Query Engines - Trino
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
-trino_helm_chart_version: ~1.42.2
+trino_helm_chart_version: 1.42.2
 # renovate: datasource=docker depName=bitnamilegacy/jmx-exporter
 trino_jmx_exporter_version: 1.0.1
 
@@ -106,11 +106,11 @@ superset_statsd_exporter_tag: v0.29.0
 
 # Data Visualization & BI - Grafana
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=grafana
-grafana_helm_chart_version: ~10.4.0
+grafana_helm_chart_version: 10.4.3
 
 # Notebooks & Interactive Computing
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/ depName=jupyterhub
-jupyter_helm_chart_version: ~4.3.5
+jupyter_helm_chart_version: 4.3.5
 
 # AI & ML
 # The OWUI chart's appVersion is the source of truth for the deployed OWUI image
@@ -131,13 +131,13 @@ prometheus_helm_chart_version: ~27.52.0
 
 # Monitoring & Observability - Loki & Alloy
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=loki
-loki_helm_chart_version: ~6.49.0
+loki_helm_chart_version: 6.49.0
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=alloy
-alloy_helm_chart_version: ~1.8.2
+alloy_helm_chart_version: 1.8.2
 
 # Container Registry
 # renovate: datasource=helm registryUrl=https://helm.goharbor.io depName=harbor
-harbor_version: ~1.19.1
+harbor_version: 1.19.2
 
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
@@ -145,7 +145,7 @@ nexus_helm_chart_version: 5.22.0
 
 # GPU Support
 # renovate: datasource=helm registryUrl=https://nvidia.github.io/gpu-operator depName=gpu-operator
-gpu_operator_version: ~25.10.1
+gpu_operator_version: v25.10.1
 
 # Medical Imaging - DCM4CHEE
 # dcm4che-tools tracks the dcm4che toolkit (used only by the populate Job's storescu), not the
