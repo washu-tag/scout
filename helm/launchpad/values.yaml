@@ -4,12 +4,6 @@
 
 replicaCount: 1
 
-# There are no feature flags here. The chart's catalog document
-# (templates/configmap-catalog.yaml) carries only what the launchpad itself
-# owns; every other chip — Chat, Playbooks, Lake, Orchestrator, Monitor, and
-# anything a site adds — ships with its owning component as a labelled
-# ConfigMap and appears exactly when that component is installed (ADR 0034).
-
 # Runtime catalog discovery (ADR 0034): a kiwigrid/k8s-sidecar container
 # watches ConfigMaps labelled `launchpad.scout.xnat.org/catalog: "true"` and
 # materializes their data keys into a shared emptyDir the app reads alongside
@@ -36,9 +30,6 @@ catalog:
         memory: 32Mi
       limits:
         memory: 128Mi
-    # Cap on the discovered-catalog emptyDir, so a runaway or hostile flood
-    # of labelled ConfigMaps cannot balloon node storage. Catalog documents
-    # are a few KiB each; 10Mi is roomy.
     sizeLimit: 10Mi
 
 # Environment label shown next to the Scout brand (e.g. "synthetic", "production").

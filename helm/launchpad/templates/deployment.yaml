@@ -69,10 +69,6 @@ spec:
               value: {{ .Values.auth.oauth2ProxySignOutUrl | quote }}
             {{- end }}
             {{- end }}
-            # Catalog directories (ADR 0034): the chart-rendered core catalog
-            # first (mounted, kubelet-guaranteed), the sidecar-discovered
-            # directory second. Earlier directories outrank later ones for
-            # group definitions.
             - name: LAUNCHPAD_CATALOG_DIRS
               value: {{ if .Values.catalog.discovery.enabled }}/app/config/catalog:/app/config/discovered{{ else }}/app/config/catalog{{ end }}
             {{- if .Values.scoutEnv }}
@@ -105,17 +101,7 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
         {{- if .Values.catalog.discovery.enabled }}
-        # kiwigrid/k8s-sidecar — the same image the Grafana chart embeds —
-        # materializes labelled catalog ConfigMaps into the shared emptyDir
-        # (ADR 0034). UNIQUE_FILENAMES because every chart plausibly names its
-        # data key apps.yaml; the default WATCH method recycles itself on a
-        # short server timeout, which is upstream's guard against silent watch
-        # death.
         - name: catalog-sidecar
-          # Same hardening as the app container: the sidecar is the one
-          # holding cluster-wide ConfigMap read, and a pod-security
-          # "restricted" namespace rejects the whole pod if one container
-          # skips the context.
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: '{{ .Values.catalog.discovery.image.repository }}:{{ .Values.catalog.discovery.image.tag }}'
