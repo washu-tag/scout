@@ -157,9 +157,17 @@ export default function SearchDetailPage() {
   const headerRowRef = useRef<HTMLTableRowElement | null>(null);
   const [headerHeight, setHeaderHeight] = useState(28);
   useLayoutEffect(() => {
-    const h = headerRowRef.current?.offsetHeight;
-    if (h && h !== headerHeight) setHeaderHeight(h);
-  }, [headerHeight]);
+    const el = headerRowRef.current;
+    if (!el) return;
+    // Floored fractional height: offsetHeight rounds up on a 27.33px header and
+    // the extra pixel becomes a slit that rows scroll through. Erring low
+    // overlaps the header instead, which is invisible.
+    const measure = () => setHeaderHeight(Math.floor(el.getBoundingClientRect().height));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const dateFields = useMemo(
     () => new Set(COLUMNS_CONFIG.filter((c) => c.kind === 'date').map((c) => c.field)),

@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useMemo } from 'react';
 import type { Column } from '@tanstack/react-table';
 import { profileColumn, type Profile, type Segment } from './columnStats';
 
@@ -42,94 +41,12 @@ function Label({ name, value }: { name: string; value: string }) {
   );
 }
 
-type Tip = { lines: string[]; left: number; top: number };
-type ShowTip = (lines: string[], target: HTMLElement) => void;
-
-const TIP_W = 200;
-const TIP_LINE_H = 17;
-const TIP_CHROME = 14;
-const EDGE = 4;
-
-function useTip(): [Tip | null, ShowTip, () => void] {
-  const [tip, setTip] = useState<Tip | null>(null);
-  const show: ShowTip = (lines, target) => {
-    const r = target.getBoundingClientRect();
-    const h = lines.length * TIP_LINE_H + TIP_CHROME;
-    const below = r.bottom + EDGE;
-    setTip({
-      lines,
-      left: Math.max(EDGE, Math.min(r.left, window.innerWidth - TIP_W - EDGE)),
-      top: below + h > window.innerHeight - EDGE ? Math.max(EDGE, r.top - h - EDGE) : below,
-    });
-  };
-  return [tip, show, () => setTip(null)];
-}
-
-/**
- * Portalled to the body: the sticky cells set a z-index and so open their own
- * stacking contexts, which would otherwise paint over the tip.
- */
-function TipLayer({ tip }: { tip: Tip }) {
-  return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        left: tip.left,
-        top: tip.top,
-        maxWidth: TIP_W,
-        padding: '0.3rem 0.45rem',
-        background: 'var(--rv-surface)',
-        border: '1px solid var(--rv-border)',
-        borderRadius: 4,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
-        fontSize: '0.7rem',
-        fontWeight: 400,
-        lineHeight: 1.4,
-        color: 'var(--rv-fg)',
-        whiteSpace: 'nowrap',
-        pointerEvents: 'none',
-        zIndex: 30,
-      }}
-    >
-      {tip.lines.map((line, i) => (
-        <div key={i} style={i === 0 ? { color: 'var(--rv-muted)' } : undefined}>
-          {line}
-        </div>
-      ))}
-    </div>,
-    document.body,
-  );
-}
-
-function Bars({
-  buckets,
-  bucketLabels,
-  max,
-  heading,
-  onShow,
-  onHide,
-}: {
-  buckets: number[];
-  bucketLabels: string[];
-  max: number;
-  heading: string;
-  onShow: ShowTip;
-  onHide: () => void;
-}) {
+function Bars({ buckets, max }: { buckets: number[]; max: number }) {
   return (
-    <div
-      style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: BAR_H, width: '100%' }}
-      onMouseLeave={onHide}
-    >
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: BAR_H, width: '100%' }}>
       {buckets.map((count, i) => (
         <div
           key={i}
-          onMouseEnter={(e) =>
-            onShow(
-              [heading, bucketLabels[i], `${num(count)} ${count === 1 ? 'row' : 'rows'}`],
-              e.currentTarget,
-            )
-          }
           style={{
             flex: 1,
             height: `${max === 0 ? 0 : Math.max(count === 0 ? 1 : 8, (count / max) * 100)}%`,
@@ -183,17 +100,7 @@ function Chip({ text }: { text: string }) {
   );
 }
 
-function ProfileCell({
-  profile,
-  heading,
-  onShow,
-  onHide,
-}: {
-  profile: Profile;
-  heading: string;
-  onShow: ShowTip;
-  onHide: () => void;
-}) {
+function ProfileCell({ profile }: { profile: Profile }) {
   if (profile.kind === 'none') return null;
 
   if (profile.kind === 'identifier') {
@@ -220,38 +127,24 @@ function ProfileCell({
   }
 
   if (profile.kind === 'numeric') {
-    const { buckets, bucketLabels, max, min, hi, median, nonNull, total } = profile;
-    if (total < SMALL_N) return <RangeLabel low={num(min)} high={num(hi)} />;
-    const head = `${heading} · median ${num(median)} · ${num(nonNull)} of ${num(total)} set`;
+    const { buckets, max, min, hi, total } = profile;
+    const range = <RangeLabel low={num(min)} high={num(hi)} />;
+    if (total < SMALL_N) return range;
     return (
       <>
-        <Bars
-          buckets={buckets}
-          bucketLabels={bucketLabels}
-          max={max}
-          heading={head}
-          onShow={onShow}
-          onHide={onHide}
-        />
-        <RangeLabel low={num(min)} high={num(hi)} />
+        <Bars buckets={buckets} max={max} />
+        {range}
       </>
     );
   }
 
-  const { buckets, bucketLabels, max, first, last, nonNull, total } = profile;
-  if (total < SMALL_N) return <RangeLabel low={first.slice(0, 4)} high={last.slice(0, 4)} />;
-  const head = `${heading} · ${num(nonNull)} of ${num(total)} set`;
+  const { buckets, max, first, last, total } = profile;
+  const range = <RangeLabel low={first.slice(0, 4)} high={last.slice(0, 4)} />;
+  if (total < SMALL_N) return range;
   return (
     <>
-      <Bars
-        buckets={buckets}
-        bucketLabels={bucketLabels}
-        max={max}
-        heading={head}
-        onShow={onShow}
-        onHide={onHide}
-      />
-      <RangeLabel low={first.slice(0, 4)} high={last.slice(0, 4)} />
+      <Bars buckets={buckets} max={max} />
+      {range}
     </>
   );
 }
@@ -267,8 +160,6 @@ export function ColumnProfileRow({
   dateFields: ReadonlySet<string>;
   stickyTop: number;
 }) {
-  const [tip, showTip, hideTip] = useTip();
-
   // getVisibleLeafColumns() is a new array every render, so a useMemo on it
   // would recompute every sort and page click. Cache per column instead.
   const cache = useMemo(() => new Map<string, Profile>(), [rows, dateFields]);
@@ -285,9 +176,8 @@ export function ColumnProfileRow({
 
   return (
     <tr>
-      {columns.map((col, i) => {
+      {columns.map((col) => {
         const profile = profileFor(col);
-        const heading = String(col.columnDef.header ?? col.id);
         return (
           <td
             key={col.id}
@@ -302,10 +192,8 @@ export function ColumnProfileRow({
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <ProfileCell profile={profile} heading={heading} onShow={showTip} onHide={hideTip} />
+              <ProfileCell profile={profile} />
             </div>
-            {/* A <tr> takes only cells, so the single layer lives in the first. */}
-            {i === 0 && tip && <TipLayer tip={tip} />}
           </td>
         );
       })}

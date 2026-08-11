@@ -8,12 +8,9 @@ export type Profile =
   | {
       kind: 'numeric';
       buckets: number[];
-      bucketLabels: string[];
       max: number;
       min: number;
       hi: number;
-      median: number;
-      nonNull: number;
       total: number;
     }
   | {
@@ -27,14 +24,12 @@ export type Profile =
   | {
       kind: 'temporal';
       buckets: number[];
-      bucketLabels: string[];
       max: number;
       first: string;
       last: string;
-      nonNull: number;
       total: number;
     }
-  | { kind: 'identifier'; distinct: number; nonNull: number; total: number }
+  | { kind: 'identifier'; distinct: number }
   | { kind: 'none' };
 
 function bucketize(values: number[], min: number, max: number, count: number): number[] {
@@ -47,27 +42,6 @@ function bucketize(values: number[], min: number, max: number, count: number): n
   return buckets;
 }
 
-function median(sorted: number[]): number {
-  if (sorted.length === 0) return 0;
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-function bucketEdgeLabels(
-  lo: number,
-  hi: number,
-  count: number,
-  fmt: (n: number) => string,
-): string[] {
-  const step = (hi - lo) / count;
-  return Array.from({ length: count }, (_, i) => {
-    if (step === 0) return fmt(lo);
-    const from = fmt(lo + step * i);
-    const to = fmt(i === count - 1 ? hi : lo + step * (i + 1));
-    return from === to ? from : `${from} to ${to}`;
-  });
-}
-
 function numericProfile(values: unknown[], total: number, bucketCount: number): Profile {
   const nums = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
   if (nums.length === 0) return { kind: 'none' };
@@ -75,17 +49,12 @@ function numericProfile(values: unknown[], total: number, bucketCount: number): 
   const min = sorted[0];
   const hi = sorted[sorted.length - 1];
   const buckets = bucketize(nums, min, hi, bucketCount);
-  const step = (hi - min) / bucketCount;
-  const fmt = (n: number) => (step >= 1 ? String(Math.round(n)) : n.toFixed(1));
   return {
     kind: 'numeric',
     buckets,
-    bucketLabels: bucketEdgeLabels(min, hi, bucketCount, fmt),
     max: Math.max(...buckets),
     min,
     hi,
-    median: median(sorted),
-    nonNull: nums.length,
     total,
   };
 }
@@ -144,18 +113,16 @@ function temporalProfile(values: unknown[], total: number, bucketCount: number):
   return {
     kind: 'temporal',
     buckets,
-    bucketLabels: bucketEdgeLabels(first, last, bucketCount, asDate),
     max: Math.max(...buckets),
     first: asDate(first),
     last: asDate(last),
-    nonNull: times.length,
     total,
   };
 }
 
-function identifierProfile(values: unknown[], total: number): Profile {
+function identifierProfile(values: unknown[]): Profile {
   const distinct = new Set(values.map((v) => String(v)));
-  return { kind: 'identifier', distinct: distinct.size, nonNull: values.length, total };
+  return { kind: 'identifier', distinct: distinct.size };
 }
 
 export function profileColumn(
@@ -172,5 +139,5 @@ export function profileColumn(
   if (present.length === 0) return { kind: 'none' };
   if (kind === 'numeric') return numericProfile(present, rows.length, bucketCount);
   if (kind === 'temporal') return temporalProfile(present, rows.length, bucketCount);
-  return identifierProfile(present, rows.length);
+  return identifierProfile(present);
 }
