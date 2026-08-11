@@ -300,7 +300,8 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   `# renovate:` annotation so CVE monitoring picks it up (ADR 0015), then redeploy.
 - **Add a CI-built image or service** — wiring `.github/workflows/ci.yaml` only covers
   `main`. The release path must be wired too (`.github/scripts/update-versions.sh`, the
-  `IMAGES=` list in `.github/workflows/release.yaml`, and the tables in
+  `SCOUT_VERSIONED_IMAGES` / `UPSTREAM_VERSIONED_IMAGES` lists in
+  `.github/workflows/release.yaml`, and the tables in
   `docs/internal/versions-and-releases.md`), or a tagged release ships the image frozen
   at its last `main` build.
 - **Write Ansible tasks using `kubernetes.core`** — follow the kubeconfig conventions in

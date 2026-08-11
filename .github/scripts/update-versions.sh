@@ -194,6 +194,16 @@ update_file "helm/open-webui-bootstrap/Chart.yaml" \
     "\\1 $HELM_VERSION" \
     "open-webui-bootstrap chart version"
 
+update_file "helm/scout-opa/Chart.yaml" \
+    "^(version:) .+$" \
+    "\\1 $HELM_VERSION" \
+    "scout-opa chart version"
+
+update_file "helm/temporal-bootstrap/Chart.yaml" \
+    "^(version:) .+$" \
+    "\\1 $HELM_VERSION" \
+    "temporal-bootstrap chart version"
+
 echo ""
 echo "Helm values.yaml files (image.tag)..."
 update_file "helm/launchpad/values.yaml" \
