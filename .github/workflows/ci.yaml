@@ -152,6 +152,9 @@ jobs:
     needs: changes
     permissions:
       contents: read
+      # check-image-exists reads ghcr to see whether the derived tag is already
+      # published; packages default to private, so that read has to be authenticated.
+      packages: read
       attestations: write
       id-token: write
     strategy:
@@ -878,50 +881,106 @@ jobs:
 
           echo "Disk space after cleanup:"
           df -h
+      # Publish when the paths changed OR the derived tag is absent from the
+      # registry. build-and-upload already builds on both signals; gating the
+      # push on the paths-filter alone silently discarded the second kind, which
+      # is how v4.1.0 shipped with no 4.1.0 image tags -- its CI had to be fixed
+      # forward on a commit touching only two images, so the rest were built at
+      # 4.1.0, scanned, and dropped. Deliberately NOT gated on `ci`: that
+      # rebuilds everything to re-scan, and publishing there would overwrite
+      # already-published upstream tags (superset, keycloak) with rebuilt bits.
+      - name: 'Check published - hl7log-extractor'
+        id: published-hl7log-extractor
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: extractor/hl7log-extractor
+          image-name: hl7log-extractor
       - name: 'Push Image - hl7log-extractor'
-        if: needs.changes.outputs.hl7log-extractor == 'true'
+        if: needs.changes.outputs.hl7log-extractor == 'true' || steps.published-hl7log-extractor.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7log-extractor
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - hl7-transformer'
+        id: published-hl7-transformer
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: extractor/hl7-transformer
+          image-name: hl7-transformer
       - name: 'Push Image - hl7-transformer'
-        if: needs.changes.outputs.hl7-transformer == 'true'
+        if: needs.changes.outputs.hl7-transformer == 'true' || steps.published-hl7-transformer.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - hl7-listener'
+        id: published-hl7-listener
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: hl7-listener
+          image-name: hl7-listener
       - name: 'Push Image - hl7-listener'
-        if: needs.changes.outputs.hl7-listener == 'true'
+        if: needs.changes.outputs.hl7-listener == 'true' || steps.published-hl7-listener.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-listener
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - scout-notebook'
+        id: published-scout-notebook
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: helm/scout-notebook
+          image-name: scout-notebook
       - name: 'Push Image - scout-notebook'
-        if: needs.changes.outputs.scout-notebook == 'true'
+        if: needs.changes.outputs.scout-notebook == 'true' || steps.published-scout-notebook.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: scout-notebook
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - launchpad'
+        id: published-launchpad
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: launchpad
+          image-name: launchpad
       - name: 'Push Image - launchpad'
-        if: needs.changes.outputs.launchpad == 'true'
+        if: needs.changes.outputs.launchpad == 'true' || steps.published-launchpad.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: launchpad
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - superset'
+        id: published-superset
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: helm/superset
+          image-name: superset
       - name: 'Push Image - superset'
-        if: needs.changes.outputs.superset == 'true'
+        if: needs.changes.outputs.superset == 'true' || steps.published-superset.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: superset
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - keycloak'
+        id: published-keycloak
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: keycloak
+          image-name: keycloak
       - name: 'Push Image - keycloak'
-        if: needs.changes.outputs.keycloak == 'true'
+        if: needs.changes.outputs.keycloak == 'true' || steps.published-keycloak.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - report-viewer'
+        id: published-report-viewer
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: report-viewer
+          image-name: report-viewer
       - name: 'Push Image - report-viewer'
-        if: needs.changes.outputs.report-viewer == 'true'
+        if: needs.changes.outputs.report-viewer == 'true' || steps.published-report-viewer.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: report-viewer
@@ -1174,7 +1233,14 @@ jobs:
     # (harmless) on partial builds until a one-time bootstrap seeds the first
     # predecessor. Sync verifies every component's cosign signature (--key) and
     # fails closed if any component is unsigned or unverifiable.
-    if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
+    # PAUSED until the build-lane haul project is finalized. Chart carry needs a
+    # one-time publish-all seed of the 14 charts (see components.txt); until that
+    # lands this job fails on every main run. continue-on-error keeps it non-gating,
+    # but it still leaves a red X on the run, so it is turned off while the whole
+    # GitOps build-lane is still in progress rather than run half-built. Re-enable
+    # (after the seed) by restoring the condition:
+    #   github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
+    if: false
     runs-on: ubuntu-latest
     continue-on-error: true
     needs: [changes, publish, publish-charts]
