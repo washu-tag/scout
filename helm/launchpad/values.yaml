@@ -27,7 +27,7 @@ catalog:
       repository: quay.io/kiwigrid/k8s-sidecar
       # Placeholder, matching the app image convention: Ansible injects the
       # pinned, Renovate-monitored version from group_vars/all/versions.yaml
-      # (k8s_sidecar_image_tag, ADR 0015).
+      # (launchpad_sidecar_image_tag, ADR 0015).
       tag: latest
       pullPolicy: IfNotPresent
     resources:

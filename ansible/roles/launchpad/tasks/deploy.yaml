@@ -20,8 +20,8 @@
       catalog:
         discovery:
           image:
-            repository: '{{ k8s_sidecar_image }}'
-            tag: '{{ k8s_sidecar_image_tag }}'
+            repository: '{{ launchpad_sidecar_image }}'
+            tag: '{{ launchpad_sidecar_image_tag }}'
       scoutEnv: '{{ scout_env }}'
       deployerName: '{{ deployer_name }}'
       docsUrl: '{{ scout_docs_url }}'
