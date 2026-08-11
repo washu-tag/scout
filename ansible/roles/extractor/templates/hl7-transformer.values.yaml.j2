@@ -68,9 +68,6 @@ volumes:
     hostPath:
       path: '{{ extractor_data_dir }}'
 {% endif %}
-  - name: modality-mapping
-    configMap:
-      name: modality-mapping
 volumeMounts:
   - name: data
     mountPath: /data
@@ -78,10 +75,6 @@ volumeMounts:
 {% if not aws_deployment %}
     mountPropagation: HostToContainer
 {% endif %}
-  - name: modality-mapping
-    mountPath: /config/modality_mapping_codes.csv
-    subPath: modality_mapping_codes.csv
-    readOnly: true
 ports:
   - containerPort: 8000
 readinessProbe:
@@ -110,3 +103,11 @@ sparkDefaults:
   warehouseDir: "{{ delta_lake_path }}"
   s3Region: "{{ s3_region | default('us-east-1') }}"
   s3Endpoint: "{{ s3_endpoint }}"
+{% if modality_map_source_file %}
+# Custom modality-map override: pass the full CSV so the chart renders it instead
+# of its bundled default (files/modality_mapping_codes.csv). Unset by default, so
+# a normal deploy uses the chart-owned map.
+modalityMapping:
+  data: |-
+{{ lookup('file', modality_map_source_file) | indent(4, true) }}
+{% endif %}
