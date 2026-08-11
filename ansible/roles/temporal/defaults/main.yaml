@@ -33,9 +33,9 @@ temporal_default_namespace_retention: 30d
 # added as additional hook Jobs in the chart.
 temporal_bootstrap_helm_chart_ref: '{{ scout_repo_dir }}/helm/temporal-bootstrap'
 temporal_admin_tools_image_repository: temporalio/admin-tools
-# temporal_admin_tools_image_tag is derived at deploy time from the temporal
-# chart's appVersion (see deploy.yaml) so it always matches the installed
-# Temporal server; there is no separate tag to maintain.
+# temporal_admin_tools_image_tag is pinned in group_vars/all/versions.yaml (kept
+# equal to the Temporal chart's appVersion / server version via Renovate) so the
+# bundled `temporal` CLI matches the installed server.
 
 # OIDC configuration
 temporal_oidc_enabled: true
