@@ -1,0 +1,53 @@
+# postgres in the Flux DAG: operator (L1) then the Cluster (L2a), split so the
+# Cluster CR never reconciles before the CNPG CRDs exist; health-gated edge.
+# Both consume the published config artifact (OCIRepository scout-config) and the
+# cluster-vars ConfigMap for ${...} substitutions.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: postgres-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/postgres/operator
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: cnpg-cloudnative-pg
+      namespace: "${cnpg_operator_namespace}"
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: postgres-cluster
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/postgres/cluster
+  prune: true
+  wait: true
+  timeout: 10m
+  dependsOn:
+    - name: postgres-operator
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  healthCheckExprs:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      current: status.conditions.exists(e, e.type == 'Ready' && e.status == 'True')
+      failed: status.conditions.exists(e, e.type == 'Ready' && e.status == 'False')

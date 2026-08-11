@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "${postgres_cluster_namespace}"
+---
+# Shared CNPG cluster (all app DBs live here). Per-app DB/role creation moves from
+# the Ansible psql Jobs into CNPG managed roles + bootstrap.initdb as each consuming
+# component is converted (plan); scaffolded here with the base cluster only.
+# superuser-secret is seeded by CI/site (fixed name), not committed.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: "${postgres_cluster_name}"
+  namespace: "${postgres_cluster_namespace}"
+spec:
+  instances: 1
+  storage:
+    storageClass: "${postgres_storage_class}"
+    size: "${postgres_storage_size}"
+  enableSuperuserAccess: true
+  superuserSecret:
+    name: superuser-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "${postgres_cluster_name}-metrics"
+  namespace: "${postgres_cluster_namespace}"
+spec:
+  selector:
+    cnpg.io/cluster: "${postgres_cluster_name}"
+  ports:
+    - name: metrics
+      port: 9187
+      targetPort: metrics
