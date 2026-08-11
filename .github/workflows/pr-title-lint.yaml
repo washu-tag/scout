@@ -48,9 +48,11 @@ jobs:
           if not breaking:
               print("No breaking-change marker; upgrade notes not required.")
               sys.exit(0)
-          # Grab the "Backward compatibility" section: everything until the next
-          # heading or a BREAKING CHANGE footer (so a trailing footer isn't absorbed).
-          m = re.search(r"^#{2,4}\s*Backward compatibility\s*$(.*?)(?=^#{1,4}\s|^BREAKING[ -]CHANGE:|\Z)", body, re.M | re.S)
+          # Grab the "Backward compatibility" section: everything under the heading
+          # up to the next heading of ANY level (#+, so a ##### subheading bounds it
+          # too). A BREAKING CHANGE footer under the heading counts as content, since
+          # a footer is itself the operator upgrade path.
+          m = re.search(r"^#+\s*Backward compatibility\s*$(.*?)(?=^#+\s|\Z)", body, re.M | re.S)
           section = re.sub(r"<!--.*?-->", "", m.group(1) if m else "", flags=re.S).strip()
           if not section:
               print("::error::This PR is marked breaking (a \"!\" in the title or a "
