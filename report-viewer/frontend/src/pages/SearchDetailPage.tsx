@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -154,19 +154,19 @@ export default function SearchDetailPage() {
 
   // The profile row sticks below the header, so it needs the header's rendered
   // height rather than a guess at padding plus line-height.
-  const headerRowRef = useRef<HTMLTableRowElement | null>(null);
+  // Callback ref, not an effect: the table only renders once the rows arrive, so
+  // an effect keyed on mount finds no header to measure. The height is floored
+  // because a fractional header plus a rounded-up offset leaves a slit that rows
+  // scroll through, and erring low overlaps instead, which is invisible.
   const [headerHeight, setHeaderHeight] = useState(28);
-  useLayoutEffect(() => {
-    const el = headerRowRef.current;
+  const headerObserver = useRef<ResizeObserver | null>(null);
+  const headerRowRef = useCallback((el: HTMLTableRowElement | null) => {
+    headerObserver.current?.disconnect();
     if (!el) return;
-    // Floored fractional height: offsetHeight rounds up on a 27.33px header and
-    // the extra pixel becomes a slit that rows scroll through. Erring low
-    // overlaps the header instead, which is invisible.
     const measure = () => setHeaderHeight(Math.floor(el.getBoundingClientRect().height));
     measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
+    headerObserver.current = new ResizeObserver(measure);
+    headerObserver.current.observe(el);
   }, []);
 
   const dateFields = useMemo(

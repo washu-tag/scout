@@ -33,7 +33,15 @@ const pct = (n: number) => `${n < 1 && n > 0 ? '<1' : Math.round(n)}%`;
 function Label({ name, value }: { name: string; value: string }) {
   return (
     <div style={{ ...labelStyle, display: 'flex', gap: 4 }}>
-      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <span
+        style={{
+          flex: 1,
+          minWidth: 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
         {name}
       </span>
       <span style={{ flexShrink: 0 }}>{value}</span>
@@ -104,7 +112,15 @@ function ProfileCell({ profile }: { profile: Profile }) {
   if (profile.kind === 'none') return null;
 
   if (profile.kind === 'identifier') {
-    return <Chip text={`${num(profile.distinct)} uniq`} />;
+    // "unique", not "patients": these columns count distinct identifier values,
+    // and the four patient identifiers disagree, so naming them patients would
+    // assert several patient counts for one cohort.
+    return (
+      <>
+        <Chip text={num(profile.distinct)} />
+        <div style={labelStyle}>unique</div>
+      </>
+    );
   }
 
   if (profile.kind === 'categorical') {
