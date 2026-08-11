@@ -1233,7 +1233,14 @@ jobs:
     # (harmless) on partial builds until a one-time bootstrap seeds the first
     # predecessor. Sync verifies every component's cosign signature (--key) and
     # fails closed if any component is unsigned or unverifiable.
-    if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
+    # PAUSED until the build-lane haul project is finalized. Chart carry needs a
+    # one-time publish-all seed of the 14 charts (see components.txt); until that
+    # lands this job fails on every main run. continue-on-error keeps it non-gating,
+    # but it still leaves a red X on the run, so it is turned off while the whole
+    # GitOps build-lane is still in progress rather than run half-built. Re-enable
+    # (after the seed) by restoring the condition:
+    #   github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
+    if: false
     runs-on: ubuntu-latest
     continue-on-error: true
     needs: [changes, publish, publish-charts]
