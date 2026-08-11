@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "cd .. && pre-commit run eslint --all-files",
-    "test": "vitest run",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "docs-assets": "tsx scripts/generate-doc-assets.ts"
   },
   "dependencies": {
@@ -29,8 +29,7 @@
     "eslint-config-next": "^16.2.2",
     "tailwindcss": "^4",
     "tsx": "^4.23.8",
-    "typescript": "^6",
-    "vitest": "^4.1.10"
+    "typescript": "^6"
   },
   "//overrides": "postcss pinned to >=8.5.10 to patch GHSA-qx2v-qp2m-jg93 (XSS in CSS stringify); the fix only lives on next canary as of 16.3.0-canary.6. sharp pinned to >=0.35.3 to patch GHSA-f88m-g3jw-g9cj (HIGH libvips CVEs); next optionally depends on sharp ^0.34.5, which has no fix, so we force the 0.35.x line. Remove each once a stable next release ships the fix.",
   "overrides": {

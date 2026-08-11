@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { assemble, resolveHref, type Origin } from './assemble';
 import { CATALOG_API_VERSION, CATALOG_KIND, validateDocument } from './schema';
 import type { Catalog } from './types';
@@ -113,14 +114,17 @@ const CLASSIC = {
 
 describe('resolveHref', () => {
   it('resolves the three destination shapes', () => {
-    expect(resolveHref({ subdomain: 'superset' }, ORIGIN)).toBe(
+    assert.strictEqual(
+      resolveHref({ subdomain: 'superset' }, ORIGIN),
       'https://superset.scout.example.edu',
     );
-    expect(resolveHref({ subdomain: 'temporal', path: '/auth/sso' }, ORIGIN)).toBe(
+    assert.strictEqual(
+      resolveHref({ subdomain: 'temporal', path: '/auth/sso' }, ORIGIN),
       'https://temporal.scout.example.edu/auth/sso',
     );
-    expect(resolveHref({ path: '/admin/users' }, ORIGIN)).toBe('/admin/users');
-    expect(resolveHref({ url: 'https://docs.example.edu' }, ORIGIN)).toBe(
+    assert.strictEqual(resolveHref({ path: '/admin/users' }, ORIGIN), '/admin/users');
+    assert.strictEqual(
+      resolveHref({ url: 'https://docs.example.edu' }, ORIGIN),
       'https://docs.example.edu',
     );
   });
@@ -129,33 +133,34 @@ describe('resolveHref', () => {
 describe('assemble on the classic page', () => {
   it('reproduces the classic layout for an admin', () => {
     const model = assemble(catalogFrom(CLASSIC), { origin: ORIGIN, isAdmin: true });
-    expect(model.rows.map((row) => row.groups.map((group) => group.id))).toEqual([
-      ['core'],
-      ['playbooks', 'admin'],
-    ]);
+    assert.deepStrictEqual(
+      model.rows.map((row) => row.groups.map((group) => group.id)),
+      [['core'], ['playbooks', 'admin']],
+    );
     const core = model.rows[0].groups[0];
-    expect(core.chips.map((chip) => chip.id)).toEqual(['chat', 'analytics', 'notebooks']);
-    expect(core.columns).toBe(3);
-    expect(core.footerLink?.url).toBe('https://docs.example.edu');
-    expect(core.chips[0].source).toBe('test/apps.yaml');
+    assert.deepStrictEqual(
+      core.chips.map((chip) => chip.id),
+      ['chat', 'analytics', 'notebooks'],
+    );
+    assert.strictEqual(core.columns, 3);
+    assert.strictEqual(core.footerLink?.url, 'https://docs.example.edu');
+    assert.strictEqual(core.chips[0].source, 'test/apps.yaml');
     const admin = model.rows[1].groups[1];
-    expect(admin.layout).toBe('tiles');
-    expect(admin.chips.map((chip) => chip.id)).toEqual([
-      'admin-users',
-      'lake',
-      'orchestrator',
-      'monitor',
-    ]);
-    expect(admin.chips[2].href).toBe('https://temporal.scout.example.edu/auth/sso');
+    assert.strictEqual(admin.layout, 'tiles');
+    assert.deepStrictEqual(
+      admin.chips.map((chip) => chip.id),
+      ['admin-users', 'lake', 'orchestrator', 'monitor'],
+    );
+    assert.strictEqual(admin.chips[2].href, 'https://temporal.scout.example.edu/auth/sso');
   });
 
   it('renders playbooks full-width for a non-admin (unpaired half)', () => {
     const model = assemble(catalogFrom(CLASSIC), { origin: ORIGIN, isAdmin: false });
-    expect(model.rows.map((row) => row.groups.map((group) => group.id))).toEqual([
-      ['core'],
-      ['playbooks'],
-    ]);
-    expect(model.diagnostics).toEqual([]);
+    assert.deepStrictEqual(
+      model.rows.map((row) => row.groups.map((group) => group.id)),
+      [['core'], ['playbooks']],
+    );
+    assert.deepStrictEqual(model.diagnostics, []);
   });
 });
 
@@ -165,12 +170,15 @@ describe('assemble mechanics', () => {
       chips: [{ id: 'xnat', title: 'XNAT', link: { subdomain: 'xnat' }, group: 'imaging' }],
     });
     const model = assemble(catalog, { origin: ORIGIN, isAdmin: true });
-    expect(model.rows).toHaveLength(1);
+    assert.strictEqual(model.rows.length, 1);
     const group = model.rows[0].groups[0];
-    expect(group.id).toBe('imaging');
-    expect(group.title).toBe('Imaging');
-    expect(group.layout).toBe('cards');
-    expect(model.diagnostics.some((d) => d.message.includes('synthesized'))).toBe(true);
+    assert.strictEqual(group.id, 'imaging');
+    assert.strictEqual(group.title, 'Imaging');
+    assert.strictEqual(group.layout, 'cards');
+    assert.ok(
+      model.diagnostics.some((d) => d.message.includes('synthesized')),
+      'expected a synthesized-group diagnostic',
+    );
   });
 
   it('lets the lower source rank win a group id collision', () => {
@@ -194,8 +202,11 @@ describe('assemble mechanics', () => {
       1,
     );
     const model = assemble(merged(mounted, discovered), { origin: ORIGIN, isAdmin: true });
-    expect(model.rows[0].groups[0].title).toBe('Imaging (core)');
-    expect(model.diagnostics.some((d) => d.message.includes('already defined'))).toBe(true);
+    assert.strictEqual(model.rows[0].groups[0].title, 'Imaging (core)');
+    assert.ok(
+      model.diagnostics.some((d) => d.message.includes('already defined')),
+      'expected an already-defined diagnostic',
+    );
   });
 
   it('renders same-id chips from different sources side by side (ids are per-source)', () => {
@@ -220,10 +231,10 @@ describe('assemble mechanics', () => {
     );
     const model = assemble(merged(mounted, discovered), { origin: ORIGIN, isAdmin: false });
     const chips = model.rows[0].groups[0].chips;
-    expect(chips.map((chip) => `${chip.source}:${chip.id}`)).toEqual([
-      'catalog/core.yaml:docs',
-      'discovered/other.yaml:docs',
-    ]);
+    assert.deepStrictEqual(
+      chips.map((chip) => `${chip.source}:${chip.id}`),
+      ['catalog/core.yaml:docs', 'discovered/other.yaml:docs'],
+    );
   });
 
   it('filters disabled chips, admin chips, and then empty groups', () => {
@@ -235,9 +246,12 @@ describe('assemble mechanics', () => {
       ],
     });
     const userModel = assemble(catalog, { origin: ORIGIN, isAdmin: false });
-    expect(userModel.rows).toHaveLength(0);
+    assert.strictEqual(userModel.rows.length, 0);
     const adminModel = assemble(catalog, { origin: ORIGIN, isAdmin: true });
-    expect(adminModel.rows[0].groups[0].chips.map((chip) => chip.id)).toEqual(['a']);
+    assert.deepStrictEqual(
+      adminModel.rows[0].groups[0].chips.map((chip) => chip.id),
+      ['a'],
+    );
   });
 
   it('orders groups and chips by weight, then title, then id', () => {
@@ -254,8 +268,14 @@ describe('assemble mechanics', () => {
       ],
     });
     const model = assemble(catalog, { origin: ORIGIN, isAdmin: false });
-    expect(model.rows.map((row) => row.groups[0].id)).toEqual(['earlier', 'later']);
-    expect(model.rows[0].groups[0].chips.map((chip) => chip.id)).toEqual(['first', 'a', 'z']);
+    assert.deepStrictEqual(
+      model.rows.map((row) => row.groups[0].id),
+      ['earlier', 'later'],
+    );
+    assert.deepStrictEqual(
+      model.rows[0].groups[0].chips.map((chip) => chip.id),
+      ['first', 'a', 'z'],
+    );
   });
 
   it('caps columns at the visible chip count', () => {
@@ -267,16 +287,17 @@ describe('assemble mechanics', () => {
       ],
     });
     const model = assemble(catalog, { origin: ORIGIN, isAdmin: false });
-    expect(model.rows[0].groups[0].columns).toBe(2);
+    assert.strictEqual(model.rows[0].groups[0].columns, 2);
   });
 
   it('withholds diagnostics from non-admins', () => {
     const catalog = catalogFrom({
       chips: [{ id: 'bad', title: '', link: { path: '/x' } }],
     });
-    expect(assemble(catalog, { origin: ORIGIN, isAdmin: false }).diagnostics).toEqual([]);
-    expect(assemble(catalog, { origin: ORIGIN, isAdmin: true }).diagnostics.length).toBeGreaterThan(
-      0,
+    assert.deepStrictEqual(assemble(catalog, { origin: ORIGIN, isAdmin: false }).diagnostics, []);
+    assert.ok(
+      assemble(catalog, { origin: ORIGIN, isAdmin: true }).diagnostics.length > 0,
+      'an admin should see the skipped-chip diagnostic',
     );
   });
 });

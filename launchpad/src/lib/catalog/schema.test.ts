@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { CATALOG_API_VERSION, CATALOG_KIND, parseCatalogText, validateDocument } from './schema';
 
 const SOURCE = 'test/apps.yaml';
@@ -20,10 +21,10 @@ function chip(overrides: Record<string, unknown> = {}): Record<string, unknown> 
 describe('validateDocument', () => {
   it('applies defaults to a minimal chip', () => {
     const result = validateDocument(doc({ chips: [chip()] }), SOURCE);
-    expect(result.diagnostics).toEqual([]);
-    expect(result.chips).toHaveLength(1);
+    assert.deepStrictEqual(result.diagnostics, []);
+    assert.strictEqual(result.chips.length, 1);
     const parsed = result.chips[0];
-    expect(parsed).toMatchObject({
+    assert.partialDeepStrictEqual(parsed, {
       id: 'demo',
       title: 'Demo',
       description: '',
@@ -43,10 +44,13 @@ describe('validateDocument', () => {
       doc({ chips: [chip({ id: 'bad', title: '' }), chip({ id: 'good' })] }),
       SOURCE,
     );
-    expect(result.chips.map((c) => c.id)).toEqual(['good']);
-    expect(result.diagnostics).toHaveLength(1);
-    expect(result.diagnostics[0]).toMatchObject({ subject: 'bad' });
-    expect(result.diagnostics[0].message).toContain('chip skipped');
+    assert.deepStrictEqual(
+      result.chips.map((c) => c.id),
+      ['good'],
+    );
+    assert.strictEqual(result.diagnostics.length, 1);
+    assert.partialDeepStrictEqual(result.diagnostics[0], { subject: 'bad' });
+    assert.match(result.diagnostics[0].message, /chip skipped/);
   });
 
   it('falls back per-field on bad presentation values, with diagnostics', () => {
@@ -54,12 +58,21 @@ describe('validateDocument', () => {
       doc({ chips: [chip({ icon: 'not-an-icon', tone: 'mauve', weight: 'heavy' })] }),
       SOURCE,
     );
-    expect(result.chips).toHaveLength(1);
-    expect(result.chips[0]).toMatchObject({ icon: 'app', tone: 'indigo', weight: 100 });
+    assert.strictEqual(result.chips.length, 1);
+    assert.partialDeepStrictEqual(result.chips[0], { icon: 'app', tone: 'indigo', weight: 100 });
     const fields = result.diagnostics.map((d) => d.message);
-    expect(fields.some((m) => m.includes('invalid icon'))).toBe(true);
-    expect(fields.some((m) => m.includes('invalid tone'))).toBe(true);
-    expect(fields.some((m) => m.includes('invalid weight'))).toBe(true);
+    assert.ok(
+      fields.some((m) => m.includes('invalid icon')),
+      `no invalid-icon diagnostic in ${fields.join(' | ')}`,
+    );
+    assert.ok(
+      fields.some((m) => m.includes('invalid tone')),
+      `no invalid-tone diagnostic in ${fields.join(' | ')}`,
+    );
+    assert.ok(
+      fields.some((m) => m.includes('invalid weight')),
+      `no invalid-weight diagnostic in ${fields.join(' | ')}`,
+    );
   });
 
   it('rejects non-http(s) destinations outright', () => {
@@ -69,8 +82,8 @@ describe('validateDocument', () => {
       { url: 'ftp://example.com' },
     ]) {
       const result = validateDocument(doc({ chips: [chip({ link })] }), SOURCE);
-      expect(result.chips).toHaveLength(0);
-      expect(result.diagnostics[0].message).toContain('chip skipped');
+      assert.strictEqual(result.chips.length, 0, JSON.stringify(link));
+      assert.match(result.diagnostics[0].message, /chip skipped/);
     }
   });
 
@@ -83,11 +96,11 @@ describe('validateDocument', () => {
     ];
     for (const link of shapes) {
       const result = validateDocument(doc({ chips: [chip({ link })] }), SOURCE);
-      expect(result.chips, JSON.stringify(link)).toHaveLength(1);
+      assert.strictEqual(result.chips.length, 1, JSON.stringify(link));
     }
     for (const link of [{}, { url: 'https://example.com', subdomain: 'demo' }]) {
       const result = validateDocument(doc({ chips: [chip({ link })] }), SOURCE);
-      expect(result.chips, JSON.stringify(link)).toHaveLength(0);
+      assert.strictEqual(result.chips.length, 0, JSON.stringify(link));
     }
   });
 
@@ -96,15 +109,15 @@ describe('validateDocument', () => {
       doc({ chips: [chip({ iconData: 'data:text/html;base64,AAAA' })] }),
       SOURCE,
     );
-    expect(result.chips).toHaveLength(1);
-    expect(result.chips[0].iconData).toBeUndefined();
-    expect(result.diagnostics[0].message).toContain('invalid iconData');
+    assert.strictEqual(result.chips.length, 1);
+    assert.strictEqual(result.chips[0].iconData, undefined);
+    assert.match(result.diagnostics[0].message, /invalid iconData/);
   });
 
   it('accepts a valid image data URI', () => {
     const iconData = 'data:image/png;base64,iVBORw0KGgo=';
     const result = validateDocument(doc({ chips: [chip({ iconData })] }), SOURCE);
-    expect(result.chips[0].iconData).toBe(iconData);
+    assert.strictEqual(result.chips[0].iconData, iconData);
   });
 
   it('truncates overlong titles and descriptions with diagnostics', () => {
@@ -112,9 +125,9 @@ describe('validateDocument', () => {
       doc({ chips: [chip({ title: 'x'.repeat(61), description: 'y'.repeat(201) })] }),
       SOURCE,
     );
-    expect(result.chips[0].title).toHaveLength(60);
-    expect(result.chips[0].description).toHaveLength(200);
-    expect(result.diagnostics.map((d) => d.message).join(' ')).toContain('truncated');
+    assert.strictEqual(result.chips[0].title.length, 60);
+    assert.strictEqual(result.chips[0].description.length, 200);
+    assert.match(result.diagnostics.map((d) => d.message).join(' '), /truncated/);
   });
 
   it('skips a whole document with an unknown apiVersion', () => {
@@ -122,20 +135,20 @@ describe('validateDocument', () => {
       doc({ apiVersion: 'launchpad.scout.xnat.org/v2', chips: [chip()] }),
       SOURCE,
     );
-    expect(result.chips).toHaveLength(0);
-    expect(result.diagnostics[0].message).toContain('unknown document type');
+    assert.strictEqual(result.chips.length, 0);
+    assert.match(result.diagnostics[0].message, /unknown document type/);
   });
 
   it('skips a whole document with an unknown kind', () => {
     const result = validateDocument(doc({ kind: 'Chip', chips: [chip()] }), SOURCE);
-    expect(result.chips).toHaveLength(0);
-    expect(result.diagnostics[0].message).toContain('unknown document type');
+    assert.strictEqual(result.chips.length, 0);
+    assert.match(result.diagnostics[0].message, /unknown document type/);
   });
 
   it('warns on unknown fields without dropping the chip', () => {
     const result = validateDocument(doc({ chips: [chip({ bogus: true })] }), SOURCE);
-    expect(result.chips).toHaveLength(1);
-    expect(result.diagnostics[0].message).toContain('unknown field "bogus"');
+    assert.strictEqual(result.chips.length, 1);
+    assert.match(result.diagnostics[0].message, /unknown field "bogus"/);
   });
 
   it('rejects the later of two chips with the same id in one document', () => {
@@ -143,9 +156,9 @@ describe('validateDocument', () => {
       doc({ chips: [chip({ title: 'First' }), chip({ title: 'Second' })] }),
       SOURCE,
     );
-    expect(result.chips).toHaveLength(1);
-    expect(result.chips[0].title).toBe('First');
-    expect(result.diagnostics[0].message).toContain('duplicate chip id');
+    assert.strictEqual(result.chips.length, 1);
+    assert.strictEqual(result.chips[0].title, 'First');
+    assert.match(result.diagnostics[0].message, /duplicate chip id/);
   });
 
   it('defaults group maxColumns by layout', () => {
@@ -159,7 +172,10 @@ describe('validateDocument', () => {
       }),
       SOURCE,
     );
-    expect(result.groups.map((g) => g.maxColumns)).toEqual([3, 2, 1]);
+    assert.deepStrictEqual(
+      result.groups.map((g) => g.maxColumns),
+      [3, 2, 1],
+    );
   });
 
   it('drops an invalid footerLink but keeps the group', () => {
@@ -167,16 +183,16 @@ describe('validateDocument', () => {
       doc({ groups: [{ id: 'a', title: 'A', footerLink: { text: 'Docs', url: 'javascript:x' } }] }),
       SOURCE,
     );
-    expect(result.groups).toHaveLength(1);
-    expect(result.groups[0].footerLink).toBeUndefined();
-    expect(result.diagnostics[0].message).toContain('invalid footerLink');
+    assert.strictEqual(result.groups.length, 1);
+    assert.strictEqual(result.groups[0].footerLink, undefined);
+    assert.match(result.diagnostics[0].message, /invalid footerLink/);
   });
 
   it('rejects a chip whose enabled or audience is invalid (visibility fails closed)', () => {
     for (const overrides of [{ enabled: 'no' }, { enabled: 0 }, { audience: 'adminstrator' }]) {
       const result = validateDocument(doc({ chips: [chip(overrides)] }), SOURCE);
-      expect(result.chips, JSON.stringify(overrides)).toHaveLength(0);
-      expect(result.diagnostics[0].message).toContain('chip skipped');
+      assert.strictEqual(result.chips.length, 0, JSON.stringify(overrides));
+      assert.match(result.diagnostics[0].message, /chip skipped/);
     }
   });
 
@@ -187,8 +203,8 @@ describe('validateDocument', () => {
       { subdomain: 'demo', path: '//x' },
     ]) {
       const result = validateDocument(doc({ chips: [chip({ link })] }), SOURCE);
-      expect(result.chips, JSON.stringify(link)).toHaveLength(0);
-      expect(result.diagnostics[0].message).toContain('chip skipped');
+      assert.strictEqual(result.chips.length, 0, JSON.stringify(link));
+      assert.match(result.diagnostics[0].message, /chip skipped/);
     }
   });
 
@@ -199,9 +215,9 @@ describe('validateDocument', () => {
       }),
       SOURCE,
     );
-    expect(result.groups).toHaveLength(1);
-    expect(result.groups[0].footerLink).toBeUndefined();
-    expect(result.diagnostics[0].message).toContain('invalid footerLink');
+    assert.strictEqual(result.groups.length, 1);
+    assert.strictEqual(result.groups[0].footerLink, undefined);
+    assert.match(result.diagnostics[0].message, /invalid footerLink/);
   });
 
   it('treats a present-but-empty chips or groups key as an empty list', () => {
@@ -209,8 +225,8 @@ describe('validateDocument', () => {
       doc({ chips: null, groups: [{ id: 'a', title: 'A' }] }),
       SOURCE,
     );
-    expect(result.diagnostics).toEqual([]);
-    expect(result.groups).toHaveLength(1);
+    assert.deepStrictEqual(result.diagnostics, []);
+    assert.strictEqual(result.groups.length, 1);
   });
 });
 
@@ -225,16 +241,16 @@ describe('parseCatalogText', () => {
       '    link: { subdomain: demo, path: /start }',
     ].join('\n');
     const result = parseCatalogText(text, SOURCE);
-    expect(result.chips).toHaveLength(1);
-    expect(result.chips[0].link).toEqual({ subdomain: 'demo', path: '/start' });
+    assert.strictEqual(result.chips.length, 1);
+    assert.deepStrictEqual(result.chips[0].link, { subdomain: 'demo', path: '/start' });
   });
 
   it('reports YAML syntax errors with positions and loses only that document', () => {
     const result = parseCatalogText('chips: [unclosed', SOURCE);
-    expect(result.chips).toHaveLength(0);
-    expect(result.diagnostics.length).toBeGreaterThan(0);
-    expect(result.diagnostics[0].message).toContain('YAML parse error');
-    expect(result.diagnostics[0].message).toMatch(/line \d+/);
+    assert.strictEqual(result.chips.length, 0);
+    assert.ok(result.diagnostics.length > 0, 'expected at least one diagnostic');
+    assert.match(result.diagnostics[0].message, /YAML parse error/);
+    assert.match(result.diagnostics[0].message, /line \d+/);
   });
 
   it('parses every document in a multi-document key', () => {
@@ -250,11 +266,14 @@ describe('parseCatalogText', () => {
       '  - { id: two, title: Two, link: { path: /two } }',
     ].join('\n');
     const result = parseCatalogText(text, SOURCE);
-    expect(result.chips.map((c) => c.id)).toEqual(['one', 'two']);
-    expect(result.chips.map((c) => c.source)).toEqual([
-      `${SOURCE} (document 1)`,
-      `${SOURCE} (document 2)`,
-    ]);
+    assert.deepStrictEqual(
+      result.chips.map((c) => c.id),
+      ['one', 'two'],
+    );
+    assert.deepStrictEqual(
+      result.chips.map((c) => c.source),
+      [`${SOURCE} (document 1)`, `${SOURCE} (document 2)`],
+    );
   });
 
   it('a syntax error in one document of a multi-document key costs only that document', () => {
@@ -267,7 +286,13 @@ describe('parseCatalogText', () => {
       'chips: [unclosed',
     ].join('\n');
     const result = parseCatalogText(text, SOURCE);
-    expect(result.chips.map((c) => c.id)).toEqual(['one']);
-    expect(result.diagnostics.some((d) => d.message.includes('YAML parse error'))).toBe(true);
+    assert.deepStrictEqual(
+      result.chips.map((c) => c.id),
+      ['one'],
+    );
+    assert.ok(
+      result.diagnostics.some((d) => d.message.includes('YAML parse error')),
+      'expected a YAML parse error diagnostic',
+    );
   });
 });
