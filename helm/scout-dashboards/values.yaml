@@ -2,7 +2,9 @@
 # Python deps and superset CLI.
 image:
   repository: ghcr.io/washu-tag/superset
-  tag: 5.0.0
+  # Empty -> defaults to .Chart.AppVersion (the superset image version), so the
+  # chart and the image it deploys move together. Set to pin a different tag.
+  tag: ''
   pullPolicy: IfNotPresent
 
 # Trino connection details that get baked into the Scout Data Lake database YAML.
