@@ -70,7 +70,7 @@ spec:
             {{- end }}
             {{- end }}
             - name: LAUNCHPAD_CATALOG_DIRS
-              value: {{ if .Values.catalog.discovery.enabled }}/app/config/catalog:/app/config/discovered{{ else }}/app/config/catalog{{ end }}
+              value: "/app/config/catalog{{ if .Values.catalog.discovery.enabled }}:/app/config/discovered{{ end }}"
             {{- if .Values.scoutEnv }}
             - name: SCOUT_ENV
               value: {{ .Values.scoutEnv | quote }}
