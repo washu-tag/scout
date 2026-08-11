@@ -126,8 +126,11 @@ open_webui_image_tag: 0.11.0
 ollama_image_tag: 0.24.0
 
 # Monitoring & Observability - Prometheus
-# renovate: datasource=helm registryUrl=https://prometheus-community.github.io/helm-charts depName=kube-prometheus-stack
-prometheus_helm_chart_version: ~27.52.0
+# The deployed chart is prometheus-community/prometheus (roles/prometheus:
+# prometheus_helm_chart_name=prometheus), NOT kube-prometheus-stack -- the old
+# depName tracked the wrong chart, so Renovate was stuck. Now tracks prometheus.
+# renovate: datasource=helm registryUrl=https://prometheus-community.github.io/helm-charts depName=prometheus
+prometheus_helm_chart_version: 27.52.0
 
 # Monitoring & Observability - Loki & Alloy
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=loki
