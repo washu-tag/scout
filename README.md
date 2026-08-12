@@ -7,6 +7,7 @@ Scout processes large volumes of HL7 messages into a Delta Lake, making them acc
 
 - **Documentation**: https://washu-scout.readthedocs.io/en/latest/
 - **Issue Tracker**: https://github.com/washu-tag/scout/issues
+- **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or PR
 - **AI Assistant Guide**: See [CLAUDE.md](CLAUDE.md) for comprehensive codebase documentation
 
 ## Key Features

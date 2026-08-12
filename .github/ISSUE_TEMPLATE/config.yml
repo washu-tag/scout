@@ -1,1 +1,5 @@
 blank_issues_enabled: true
+contact_links:
+  - name: Contributing guide
+    url: https://github.com/washu-tag/scout/blob/main/CONTRIBUTING.md
+    about: How to propose a change, get approval on the approach, and open a PR.

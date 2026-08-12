@@ -1,34 +1,13 @@
 ## Description
+<!-- Provide a summary explanation of your changes from product/user and technical/developer perspectives. More detail belongs in your updates to the user and technical docs. -->
 
-### Product
-<!-- Provide a summary explanation of your changes from a product/user perspective. More details should be found in your updates to the user docs. -->
-
-### Technical
-<!-- Provide a summary explanation of your changes from a technical perspective. More details should be found in your updates to the technical docs. -->
-
-## Type of change
-- [ ] Work behind a feature flag
-- [ ] New feature
-- [ ] Improvement
-- [ ] Bug fix
-- [ ] Refactor (code improvement with no functional changes)
-- [ ] Documentation update
-- [ ] Test update
-
-<!-- 
-If this pull request is for work that is behind a feature flag, or for documentation or test updates, most of the details below are not required; The level of attention to each is left to the discretion of the developer.
-For all other change types, the developer should attempt to provide as much detail as is reasonable.
--->
+<!-- Link related work: "Closes #123" (auto-closes on merge, so only if this PR fully resolves it), "Related to #123", or the merge order if this is a stacked PR. -->
 
 ## Impact
+<!-- Answer the sections that apply and remove the rest. The level of attention to each is left to the discretion of the developer. -->
 
-### Security 
-
-##### Authorization
-<!-- Do your changes add or modify user roles? Do they impact the data users are able to see, or the actions they are able to take? Could a user modify a REST API path and see data they aren't supposed to see? Were you mindful of least privilege? -->
-
-##### Appsec
-<!-- Did you review your changes with application security in mind? See the [OWASP list](https://github.com/0xRadi/OWASP-Web-Checklist). -->
+### Application Security, Authentication, & Authorization
+<!-- Did you review your changes with application security in mind? See the [OWASP list](https://github.com/0xRadi/OWASP-Web-Checklist). Do your changes add or modify user roles? Do they impact the data users are able to see, or the actions they are able to take? Could a user modify a REST API path and see data they aren't supposed to see? Were you mindful of least privilege? -->
 
 ### Performance
 <!-- At what scale do we expect this to operate? How have you verified that it can do so? -->
@@ -37,18 +16,10 @@ For all other change types, the developer should attempt to provide as much deta
 <!-- Did you consider any edge cases around input data (e.g., DICOM type 2 elements are required to be present but may be empty)? Are you gracefully handling errors from "bad data," e.g., non-conforming DICOM? -->
 
 ### Backward compatibility
-<!-- Any changes to the data model, APIs, dependencies? -->
+<!-- Any changes to the data model, APIs, dependencies? Does anything break at upgrade? -->
 
 ## Testing
-<!-- Detail the testing you have performed to ensure that these changes function as intended. Include information about the test automation you've added, as well as the manual testing you've performed. Be sure to reference areas of impact, above. -->
+<!-- Detail the testing you have performed to ensure that these changes function as intended. Include information about the test automation you've added, as well as the manual testing you've performed. A model writing tests is not the same as you confirming it works. Be sure to reference areas of impact, above. Include screenshots, commands and output, row counts before and after, log statements, etc. -->
 
 ## Note for reviewers
 <!-- Any additional information or direction for reviewers. -->
-
-## Checklist
-- [ ] My code adheres to the coding and style guidelines of the project (and I've run `pre-commit run --all-files`)
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have added or updated user documentation, if appropriate
-- [ ] I have added or updated technical documentation, including an architectural decision record, if appropriate
-- [ ] I have added unit tests, if appropriate
-- [ ] I have added end-to-end tests, if appropriate
