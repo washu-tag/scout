@@ -42,8 +42,8 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write # create the boundary tag
-  actions: write # dispatch release.yaml (workflow_dispatch via GITHUB_TOKEN is allowed to trigger a run)
+  contents: read # checkout (the boundary tag is written with the app token)
+  actions: write # dispatch release.yaml (workflow_dispatch via GITHUB_TOKEN triggers a run)
 
 jobs:
   dispatch:
@@ -53,9 +53,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Create the boundary tag + dispatch release.yaml
+      # App token so the boundary tag has the SAME writer as release.yaml's tag move
+      # (single identity, one bypass to configure if v* tags ever get a ruleset).
+      - name: Generate token from GitHub App
+        id: app_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Create the boundary tag
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           set -euo pipefail
           VERSION="$(jq -r '."."' .release-please-manifest.json)"
@@ -63,6 +72,7 @@ jobs:
             echo "::error::manifest version '${VERSION}' is not X.Y.Z; not releasing"
             exit 1
           fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
             echo "::notice::tag v${VERSION} already exists; leaving it in place"
           else
@@ -70,5 +80,10 @@ jobs:
             gh api -X POST "repos/${GITHUB_REPOSITORY}/git/refs" \
               -f ref="refs/tags/v${VERSION}" -f sha="${GITHUB_SHA}"
           fi
+
+      - name: Dispatch release.yaml
+        env:
+          GH_TOKEN: ${{ github.token }} # workflow_dispatch via GITHUB_TOKEN triggers a run
+        run: |
           echo "::notice::dispatching release.yaml for v${VERSION}"
           gh workflow run release.yaml --ref main -f version="${VERSION}"

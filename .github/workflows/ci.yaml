@@ -8,6 +8,12 @@ on:
       - main
       - 'ci-**'
       - 'demo**'
+    # Skip the release-please PR merge (manifest/CHANGELOG/version.txt only): it publishes
+    # nothing and would race version-bump's publish-charts. Push trigger only, so PR checks stand.
+    paths-ignore:
+      - .release-please-manifest.json
+      - CHANGELOG.md
+      - version.txt
 
 # Cancel a PR's superseded runs so a new push doesn't sit behind a stale ~35m
 # pipeline (and free the runners it was holding). Keyed on head_ref, which is
