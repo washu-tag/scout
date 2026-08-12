@@ -20,7 +20,8 @@ Open an issue and get agreement on the approach before writing a substantial cha
 templates in [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/). Review the
 [PR template](.github/pull_request_template.md) and use it to frame the conversation. Its questions
 about authorization, appsec, performance, data correctness, and compatibility are the ones worth
-settling before coding anything.
+settling before coding anything. Depending on the scope of the change, you may be asked to write the 
+design up as an ADR first and open it as its own PR for review.
 
 Substantial changes include:
 
