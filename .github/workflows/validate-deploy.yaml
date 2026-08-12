@@ -1,0 +1,80 @@
+name: Validate deploy base
+
+# Structural checks for the GitOps deployment base (deploy/, ADR 0031, Phase 3):
+# every Kustomize base must render, the Flux Kustomizations must parse, and the
+# dependency graph must stay acyclic with no dangling dependsOn refs. Keeps the
+# scaffold correct while it grows toward the deploy-and-test switch. No cluster,
+# no deploy -- purely static.
+on:
+  pull_request:
+    paths:
+      - deploy/**
+      - .github/workflows/validate-deploy.yaml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install kustomize
+        run: |
+          set -euo pipefail
+          VER=5.5.0
+          curl -sSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${VER}/kustomize_v${VER}_linux_amd64.tar.gz" \
+            | sudo tar xz -C /usr/local/bin kustomize
+          kustomize version
+
+      - name: Render every base
+        run: |
+          set -euo pipefail
+          fail=0
+          while read -r d; do
+            if kustomize build "$d" >/dev/null; then
+              echo "  ok   $d"
+            else
+              echo "::error file=$d::kustomize build failed for $d"; fail=1
+            fi
+          done < <(find deploy/base -name kustomization.yaml -exec dirname {} \; | sort)
+          exit $fail
+
+      - name: Parse Flux Kustomizations + check the DAG
+        run: |
+          python3 - <<'PY'
+          import yaml, glob, sys, collections
+          nodes = {}; edges = []
+          for f in sorted(glob.glob("deploy/flux/*.yaml")):
+              try:
+                  docs = list(yaml.safe_load_all(open(f)))
+              except Exception as e:
+                  print(f"::error file={f}::YAML parse failed: {e}"); sys.exit(1)
+              for d in docs:
+                  if not d:
+                      continue
+                  nodes[d["metadata"]["name"]] = f
+                  for dep in d.get("spec", {}).get("dependsOn", []):
+                      edges.append((d["metadata"]["name"], dep["name"]))
+          rc = 0
+          missing = sorted({b for _, b in edges if b not in nodes})
+          if missing:
+              print(f"::error::dependsOn references a Kustomization that does not exist: {missing}"); rc = 1
+          # topological sort for cycle detection
+          g = collections.defaultdict(list); indeg = collections.Counter()
+          for a, b in edges:
+              g[b].append(a); indeg[a] += 1
+          q = [n for n in nodes if indeg[n] == 0]; seen = 0
+          while q:
+              x = q.pop(); seen += 1
+              for y in g[x]:
+                  indeg[y] -= 1
+                  if indeg[y] == 0:
+                      q.append(y)
+          if seen != len(nodes):
+              print(f"::error::the Flux dependsOn graph has a cycle ({seen}/{len(nodes)} sortable)"); rc = 1
+          if rc == 0:
+              print(f"{len(nodes)} Kustomizations, {len(edges)} edges: acyclic, no dangling refs")
+          sys.exit(rc)
+          PY

@@ -1,0 +1,55 @@
+# Required cluster-vars (Phase 3, ADR 0031). A site/CI must provide every key
+# below in the `cluster-vars` ConfigMap that the Flux Kustomizations reference via
+# postBuild.substituteFrom. The kustomize-controller runs with
+# StrictPostBuildSubstitutions, so a missing key fails the build (never renders
+# empty). Auto-derived from the ${...} vars used across deploy/; keep in sync when
+# bases add or drop a substitution. Site-repo CI (Phase 4) and the staging
+# reconciler (Phase 5) validate a site's values against this list.
+cassandra_cluster_name
+cassandra_datacenter_name
+cassandra_storage_class
+cassandra_storage_size
+cnpg_operator_namespace
+delta_lake_path
+eck_operator_namespace
+elasticsearch_cluster_name
+elasticsearch_storage_class
+elasticsearch_storage_size
+extractor_data_dir
+hive_metastore_endpoint
+hive_namespace
+hl7_path
+hl7_raw_bucket
+ingest_postgres_table_name
+lake_bucket
+loki_admin_bucket
+loki_chunks_bucket
+loki_ruler_bucket
+minio_operator_namespace
+minio_storage_class
+minio_storage_size
+minio_tenant_name
+minio_tenant_namespace
+opa_bundle_object_key
+opa_bundles_bucket
+postgres_cluster_name
+postgres_cluster_namespace
+postgres_storage_class
+postgres_storage_size
+postgres_user
+report_delta_table_name
+s3_endpoint
+s3_lake_reader
+s3_lake_writer
+s3_loki_writer
+s3_opa_bundle_reader
+s3_opa_bundle_writer
+s3_region
+scout_extractor_namespace
+scratch_bucket
+scratch_path
+server_hostname
+timezone
+trino_rw_endpoint_host
+trino_rw_endpoint_port
+trino_user
