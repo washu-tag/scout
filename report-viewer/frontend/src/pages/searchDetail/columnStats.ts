@@ -112,12 +112,10 @@ function temporalProfile(values: unknown[], widthAllows: number): Profile {
   const count = bucketsFor(times.length, last > first, widthAllows);
   const buckets = bucketize(times, first, last, count);
   const asDate = (n: number) => new Date(n).toISOString().slice(0, 10);
-  // Year and month only: a full date does not fit the label slot.
-  const asMonth = (n: number) => new Date(n).toISOString().slice(0, 7);
   return {
     kind: 'temporal',
     buckets,
-    bucketLabels: bucketEdgeLabels(first, last, count, asMonth),
+    bucketLabels: bucketStartLabels(first, last, count),
     max: Math.max(...buckets),
     first: asDate(first),
     last: asDate(last),
@@ -147,6 +145,18 @@ function bucketEdgeLabels(
     const to = fmt(i === count - 1 ? hi : lo + step * (i + 1));
     return from === to ? from : `${from}-${to}`;
   });
+}
+
+// Bucket starts only: "2021-03-2021-09" does not fit the label slot. The
+// granularity comes from the bucket width rather than the whole span, otherwise
+// adjacent buckets inside one year or one day format to the same string.
+function bucketStartLabels(lo: number, hi: number, count: number): string[] {
+  const step = (hi - lo) / count;
+  const days = step / 86_400_000;
+  const [from, to] = days < 1 ? [11, 16] : days < 45 ? [0, 10] : days < 300 ? [0, 7] : [0, 4];
+  return Array.from({ length: count }, (_, i) =>
+    new Date(lo + step * i).toISOString().slice(from, to),
+  );
 }
 
 function bucketsFor(n: number, spread: boolean, widthAllows: number): number {
