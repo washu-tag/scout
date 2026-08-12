@@ -1,0 +1,62 @@
+name: Seed charts
+
+# One-time manual publish of ALL charts to the OCI registry so the build-lane haul
+# can carry every chart by digest. The per-merge publish-charts job is changed-only,
+# so never-changed charts stay unpublished and the haul's fail-closed carry rejects
+# them; run this once at go-live. ADR 0030 keeps routine builds to changed charts
+# only (chart versions land in helm.sh/chart pod labels), hence a manual seed rather
+# than a changes.ci force-all.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  seed:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - { name: hl7-transformer, dir: helm/extractor/hl7-transformer }
+          - { name: dcm4chee, dir: helm/dcm4chee }
+          - { name: hive-metastore, dir: helm/hive-metastore }
+          - { name: hl7-listener, dir: helm/hl7-listener }
+          - { name: hl7log-extractor, dir: helm/extractor/hl7log-extractor }
+          - { name: keycloak-config-cli, dir: helm/keycloak-config-cli }
+          - { name: launchpad, dir: helm/launchpad }
+          - { name: open-webui-bootstrap, dir: helm/open-webui-bootstrap }
+          - { name: orthanc, dir: helm/orthanc }
+          - { name: report-viewer, dir: helm/report-viewer }
+          - { name: scout-dashboards, dir: helm/scout-dashboards }
+          - { name: scout-opa, dir: helm/scout-opa }
+          - { name: temporal-bootstrap, dir: helm/temporal-bootstrap }
+          - { name: voila, dir: helm/voila }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Package, push, and sign ${{ matrix.chart.name }}
+        env:
+          CHART_DIR: ${{ matrix.chart.dir }}
+          CHART_NAME: ${{ matrix.chart.name }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          VERSION="0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
+          printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
+          helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
+          helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
+          ref="${REGISTRY}/washu-tag/charts/${CHART_NAME}:${VERSION}"
+          digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"
+          [ "${digest#sha256:}" != "${digest}" ] || { echo "::error::no digest for ${CHART_NAME}"; exit 1; }
+          cosign sign --key env://COSIGN_PRIVATE_KEY --use-signing-config=false \
+            --tlog-upload=false --yes "${REGISTRY}/washu-tag/charts/${CHART_NAME}@${digest}"
