@@ -78,31 +78,36 @@ function Bars({
   onHover: (i: number | null) => void;
 }) {
   return (
-    <div
-      style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: BAR_H, width: '100%' }}
-      onMouseLeave={() => onHover(null)}
-    >
-      {buckets.map((count, i) => (
-        // Full-height transparent column so a one-row bucket is still a target,
-        // and so the pointer can sit well above the readout below.
-        <div
-          key={i}
-          onMouseEnter={() => onHover(i)}
-          style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'flex-end' }}
-        >
+    <>
+      <div
+        style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: BAR_H, width: '100%' }}
+      >
+        {buckets.map((count, i) => (
           <div
+            key={i}
             style={{
               opacity: hovered === null || hovered === i ? 1 : 0.45,
-              width: '100%',
+              flex: 1,
               height: `${max === 0 ? 0 : Math.max(count === 0 ? 1 : 8, (count / max) * 100)}%`,
               minHeight: 1,
               background: count === 0 ? EMPTY_FILL : RAMP[0],
               borderRadius: '2px 2px 0 0',
             }}
           />
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+      {/* Hit columns absolutely over the whole cell, so the dead space above a
+          short bar is a target too. The cell is taller than this content
+          whenever a neighbouring column carries more label lines. */}
+      <div
+        style={{ position: 'absolute', inset: 0, display: 'flex', gap: 1 }}
+        onMouseLeave={() => onHover(null)}
+      >
+        {buckets.map((_, i) => (
+          <div key={i} style={{ flex: 1 }} onMouseEnter={() => onHover(i)} />
+        ))}
+      </div>
+    </>
   );
 }
 
