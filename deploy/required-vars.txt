@@ -2,9 +2,10 @@
 # below in the `cluster-vars` ConfigMap that the Flux Kustomizations reference via
 # postBuild.substituteFrom. The kustomize-controller runs with
 # StrictPostBuildSubstitutions, so a missing key fails the build (never renders
-# empty). Auto-derived from the ${...} vars used across deploy/; keep in sync when
-# bases add or drop a substitution. Site-repo CI (Phase 4) and the staging
-# reconciler (Phase 5) validate a site's values against this list.
+# empty). Auto-derived from the ${...} vars used across deploy/ and enforced by
+# validate-deploy.yaml; regenerate with the snippet in that workflow when bases add
+# or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler
+# (Phase 5) validate a site's values against this list.
 cassandra_cluster_name
 cassandra_datacenter_name
 cassandra_storage_class
@@ -17,10 +18,15 @@ elasticsearch_storage_class
 elasticsearch_storage_size
 extractor_data_dir
 hive_metastore_endpoint
+hive_metastore_endpoint_readonly
 hive_namespace
 hl7_path
 hl7_raw_bucket
 ingest_postgres_table_name
+keycloak_internal_url
+keycloak_namespace
+keycloak_realm_name
+keycloak_realm_url
 lake_bucket
 loki_admin_bucket
 loki_chunks_bucket
@@ -30,6 +36,9 @@ minio_storage_class
 minio_storage_size
 minio_tenant_name
 minio_tenant_namespace
+oauth2_proxy_namespace
+oauth2_proxy_subdomain
+oauth_provider_name
 opa_bundle_object_key
 opa_bundles_bucket
 postgres_cluster_name
@@ -37,6 +46,7 @@ postgres_cluster_namespace
 postgres_storage_class
 postgres_storage_size
 postgres_user
+prometheus_namespace
 report_delta_table_name
 s3_endpoint
 s3_lake_reader
@@ -45,11 +55,17 @@ s3_loki_writer
 s3_opa_bundle_reader
 s3_opa_bundle_writer
 s3_region
+scout_analytics_namespace
+scout_docs_url
 scout_extractor_namespace
 scratch_bucket
 scratch_path
 server_hostname
 timezone
+trino_https_port
 trino_rw_endpoint_host
 trino_rw_endpoint_port
 trino_user
+valkey_namespace
+valkey_storage_class
+valkey_storage_size

@@ -41,6 +41,24 @@ jobs:
           done < <(find deploy/base -name kustomization.yaml -exec dirname {} \; | sort)
           exit $fail
 
+      - name: required-vars covers every substitution
+        run: |
+          set -euo pipefail
+          # kustomize build leaves ${...} literal (no postBuild subst), so an
+          # incomplete required-vars.txt renders green but fails
+          # StrictPostBuildSubstitutions at deploy. Assert the contract lists every
+          # var the bases actually use. Regenerate required-vars.txt with:
+          #   grep -rhoE '\$\{[a-z0-9_]+\}' deploy/base deploy/flux | tr -d '${}' | sort -u
+          used=$(grep -rhoE '\$\{[a-z0-9_]+\}' deploy/base deploy/flux | tr -d '${}' | sort -u)
+          declared=$(grep -vE '^\s*#|^\s*$' deploy/required-vars.txt | sort -u)
+          missing=$(comm -23 <(echo "$used") <(echo "$declared") || true)
+          if [ -n "$missing" ]; then
+            echo "::error::these ${...} vars are used in deploy/ but absent from required-vars.txt:"
+            echo "$missing" | sed 's/^/  /'
+            exit 1
+          fi
+          echo "required-vars.txt covers all $(echo "$used" | wc -l | tr -d ' ') substitution vars"
+
       - name: Parse Flux Kustomizations + check the DAG
         run: |
           python3 - <<'PY'

@@ -35,11 +35,20 @@ feature Components (chat/voila/xnat/data-generator/gpu).
 
 Pre-deploy fixes (deferred; all gated on the build lane being live, which is where
 Scout-chart versions get stamped):
-1. **Shared sources**: several `prune: true` Kustomizations co-declare the same
-   `scout-charts` (and upstream) `HelmRepository` in a shared namespace (e.g.
-   scout-analytics: opa, superset, trino) and would fight over it. Extract the
-   `HelmRepository` declarations into a per-namespace `sources` base owned by one
-   Kustomization.
+1. **Per-namespace foundation base**: several `prune: true` Kustomizations
+   co-declare the same `Namespace` *and* the same `scout-charts` / upstream
+   `HelmRepository` in a shared namespace. This is wider than it looks: Ansible's
+   per-component namespace vars (`hive_namespace`, `extractor_namespace`,
+   `trino_namespace`, ...) alias down to a handful of real namespaces
+   (scout-extractor, scout-analytics, ...), so once `cluster-vars` maps them
+   faithfully many more bases resolve to the same `Namespace` than a
+   pre-substitution scan shows. Two Kustomizations owning one `Namespace` means a
+   prune in either cascades-deletes it (and everything in it) out from under the
+   other. Fix: a `base/<namespace>/foundation/` per real namespace that declares
+   the `Namespace` + shared `HelmRepository`s once, owned by one foundational
+   Kustomization every component in that namespace `dependsOn`; component bases set
+   `namespace:` and drop those objects. Needs the Ansible namespace-default map to
+   collapse the aliased vars correctly.
 2. **Config-artifact publish job** stamps the Scout charts' `0.0.0` placeholders
    with real published versions (from the haul).
 3. **`deploy-and-test` switch** to deploy the ingest slice via Flux (ingest suite

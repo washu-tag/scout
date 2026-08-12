@@ -44,7 +44,7 @@ spec:
 ---
 # StatsD-exporter mapping for the sidecar (chart-free side object, mirrors the
 # Ansible role's superset-statsd-mapping ConfigMap). The $1/$2/$3 regex refs are
-# digit-prefixed so Flux's ${var} substitution leaves them untouched.
+# digit-led, so Flux postBuild substitution (letter-led tokens only) leaves them alone.
 apiVersion: v1
 kind: ConfigMap
 metadata:
