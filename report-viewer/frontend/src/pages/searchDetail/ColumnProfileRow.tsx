@@ -17,8 +17,6 @@ const BAR_H = 15;
 const GAP = 2;
 // One bucket per ~6px so bars never go sub-pixel.
 const PX_PER_BUCKET = 6;
-// Below this, percentages mislead and a distribution is noise.
-const SMALL_N = 20;
 
 const labelStyle: React.CSSProperties = {
   fontSize: '0.6rem',
@@ -122,43 +120,38 @@ function ProfileCell({ profile }: { profile: Profile }) {
   }
 
   if (profile.kind === 'categorical') {
-    const { segments, other, empty, distinct, total } = profile;
+    const { segments, other, empty, distinct } = profile;
     const rolledUp = distinct - segments.length;
     const parts = [
       ...segments.map((s, i) => ({ ...s, fill: RAMP[Math.min(i, RAMP.length - 1)] })),
       ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: RAMP[2] }] : []),
       ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
     ].filter((p) => p.count > 0);
-    const small = total < SMALL_N;
     return (
       <>
         <StackedBar parts={parts} />
         {parts.map((p) => (
-          <Label key={p.label} name={p.label} value={small ? num(p.count) : pct(p.pct)} />
+          <Label key={p.label} name={p.label} value={pct(p.pct)} />
         ))}
       </>
     );
   }
 
   if (profile.kind === 'numeric') {
-    const { buckets, max, min, hi, total } = profile;
-    const range = <RangeLabel low={num(min)} high={num(hi)} />;
-    if (total < SMALL_N) return range;
+    const { buckets, max, min, hi } = profile;
     return (
       <>
         <Bars buckets={buckets} max={max} />
-        {range}
+        <RangeLabel low={num(min)} high={num(hi)} />
       </>
     );
   }
 
-  const { buckets, max, first, last, total } = profile;
-  const range = <RangeLabel low={first.slice(0, 4)} high={last.slice(0, 4)} />;
-  if (total < SMALL_N) return range;
+  const { buckets, max, first, last } = profile;
   return (
     <>
       <Bars buckets={buckets} max={max} />
-      {range}
+      <RangeLabel low={first.slice(0, 4)} high={last.slice(0, 4)} />
     </>
   );
 }

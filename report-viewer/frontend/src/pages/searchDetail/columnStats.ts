@@ -11,7 +11,6 @@ export type Profile =
       max: number;
       min: number;
       hi: number;
-      total: number;
     }
   | {
       kind: 'categorical';
@@ -19,7 +18,6 @@ export type Profile =
       other: Segment | null;
       empty: Segment | null;
       distinct: number;
-      total: number;
     }
   | {
       kind: 'temporal';
@@ -27,7 +25,6 @@ export type Profile =
       max: number;
       first: string;
       last: string;
-      total: number;
     }
   | { kind: 'identifier'; distinct: number }
   | { kind: 'none' };
@@ -42,20 +39,19 @@ function bucketize(values: number[], min: number, max: number, count: number): n
   return buckets;
 }
 
-function numericProfile(values: unknown[], total: number, bucketCount: number): Profile {
+function numericProfile(values: unknown[], widthAllows: number): Profile {
   const nums = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
   if (nums.length === 0) return { kind: 'none' };
   const sorted = [...nums].sort((a, b) => a - b);
   const min = sorted[0];
   const hi = sorted[sorted.length - 1];
-  const buckets = bucketize(nums, min, hi, bucketCount);
+  const buckets = bucketize(nums, min, hi, bucketsFor(nums.length, hi > min, widthAllows));
   return {
     kind: 'numeric',
     buckets,
     max: Math.max(...buckets),
     min,
     hi,
-    total,
   };
 }
 
@@ -94,11 +90,10 @@ function categoricalProfile(rows: Row[], field: string): Profile {
     other: otherCount > 0 ? { label: 'other', count: otherCount, pct: pct(otherCount) } : null,
     empty: empty > 0 ? { label: 'empty', count: empty, pct: pct(empty) } : null,
     distinct: counts.size,
-    total,
   };
 }
 
-function temporalProfile(values: unknown[], total: number, bucketCount: number): Profile {
+function temporalProfile(values: unknown[], widthAllows: number): Profile {
   const times: number[] = [];
   for (const v of values) {
     const t = typeof v === 'string' || typeof v === 'number' ? new Date(v).getTime() : NaN;
@@ -108,7 +103,12 @@ function temporalProfile(values: unknown[], total: number, bucketCount: number):
   times.sort((a, b) => a - b);
   const first = times[0];
   const last = times[times.length - 1];
-  const buckets = bucketize(times, first, last, bucketCount);
+  const buckets = bucketize(
+    times,
+    first,
+    last,
+    bucketsFor(times.length, last > first, widthAllows),
+  );
   const asDate = (n: number) => new Date(n).toISOString().slice(0, 10);
   return {
     kind: 'temporal',
@@ -116,13 +116,21 @@ function temporalProfile(values: unknown[], total: number, bucketCount: number):
     max: Math.max(...buckets),
     first: asDate(first),
     last: asDate(last),
-    total,
   };
 }
 
 function identifierProfile(values: unknown[]): Profile {
   const distinct = new Set(values.map((v) => String(v)));
   return { kind: 'identifier', distinct: distinct.size };
+}
+
+// Square-root binning capped by what the column width can show. No floor: one
+// value gets one bucket, so the bar fills the cell instead of sitting at the
+// left as if it were a low reading. No spread means one bucket for the same
+// reason.
+function bucketsFor(n: number, spread: boolean, widthAllows: number): number {
+  if (!spread) return 1;
+  return Math.max(1, Math.min(widthAllows, Math.ceil(Math.sqrt(n))));
 }
 
 export function profileColumn(
@@ -137,7 +145,7 @@ export function profileColumn(
 
   const present = rows.map((r) => r[field]).filter((v) => v != null && v !== '');
   if (present.length === 0) return { kind: 'none' };
-  if (kind === 'numeric') return numericProfile(present, rows.length, bucketCount);
-  if (kind === 'temporal') return temporalProfile(present, rows.length, bucketCount);
+  if (kind === 'numeric') return numericProfile(present, bucketCount);
+  if (kind === 'temporal') return temporalProfile(present, bucketCount);
   return identifierProfile(present);
 }
