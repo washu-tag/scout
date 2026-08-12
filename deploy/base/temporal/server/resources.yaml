@@ -1,0 +1,94 @@
+# Temporal server (the ingest-slice orchestrator). Persistence is external, so
+# this layer dependsOn the two datastores: Cassandra holds the default store,
+# Elasticsearch the visibility store. Both live in ${scout_extractor_namespace},
+# which the datastore components create -- this base does not declare the shared
+# Namespace (avoids co-ownership/prune conflicts with cassandra/elasticsearch).
+#
+# Frontend JWT authz + the web-UI ingress/OIDC that the Ansible role renders are
+# deliberately omitted: they are Keycloak-realm decomposition + site-edge
+# auth-overlay work (a separate workstream, per the gitops plan), which is also
+# why Keycloak is not a dependsOn of this layer. Datastore creds are referenced
+# by fixed name only (existingSecret); values are never in git.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: temporal
+  namespace: "${scout_extractor_namespace}"
+spec:
+  interval: 1h
+  url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: temporal
+  namespace: "${scout_extractor_namespace}"
+spec:
+  interval: 30m
+  # Mirrors the Ansible helm timeout: the chart's schema-setup Jobs (Cassandra
+  # keyspace + Elasticsearch visibility index) run at install and take a while.
+  timeout: 15m
+  # Version pinned in versions.yaml (temporal_version), Renovate-tracked; stamped
+  # into the config artifact at publish. Literal here until the stamping job lands.
+  chart:
+    spec:
+      chart: temporal
+      version: "1.2.0"
+      sourceRef:
+        kind: HelmRepository
+        name: temporal
+        namespace: "${scout_extractor_namespace}"
+  values:
+    # k3s/air-gapped: no docker-in-schema-job, no bundled Elasticsearch (we bring
+    # our own ECK cluster as the visibility store).
+    shims:
+      dockerize: false
+      elasticsearchTool: false
+    server:
+      replicaCount: 1
+      # Dev defaults (CI-friendly); applied to all server roles. Overlays tune.
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          cpu: 2
+          memory: 2Gi
+      # Internal frontend bypasses public-frontend authz; the temporal-bootstrap
+      # Job and in-cluster workers talk to it.
+      internal-frontend:
+        enabled: true
+      config:
+        namespaces:
+          create: true
+        persistence:
+          defaultStore: default
+          visibilityStore: visibility
+          datastores:
+            default:
+              cassandra:
+                hosts: "${cassandra_cluster_name}-${cassandra_datacenter_name}-service.${scout_extractor_namespace}"
+                port: 9042
+                keyspace: temporal
+                user: user
+                # Superuser secret created by cass-operator (fixed name).
+                existingSecret: "${cassandra_cluster_name}-superuser"
+                secretKey: password
+                replicationFactor: 1
+                consistency:
+                  default:
+                    consistency: local_quorum
+                    serialConsistency: local_serial
+            visibility:
+              elasticsearch:
+                version: v7  # All ES versions (7/8/9) use the v7 template format
+                url:
+                  scheme: http  # TLS disabled on Elasticsearch for simplicity
+                  host: "${elasticsearch_cluster_name}-es-http.${scout_extractor_namespace}:9200"
+                username: elastic
+                # elastic-user secret created by ECK (fixed name).
+                existingSecret: "${elasticsearch_cluster_name}-es-elastic-user"
+                secretKey: elastic
+                logLevel: error
+                indices:
+                  visibility: temporal_visibility_v1

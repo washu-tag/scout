@@ -1,0 +1,400 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "${minio_tenant_namespace}"
+---
+# Same upstream repo as the operator base; declared again here so the tenant
+# HelmRelease has an in-namespace source.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: minio-operator
+  namespace: "${minio_tenant_namespace}"
+spec:
+  interval: 1h
+  url: https://operator.min.io
+---
+# MinIO Tenant (minio-operator/tenant chart). The root/OIDC creds live in the
+# configSecret `minio-scout-env-configuration` (fixed name, seeded by CI/site,
+# not committed); the per-user CONSOLE_* secrets referenced under tenant.users
+# are likewise seeded by fixed name. Release name mirrors the Ansible role,
+# which names it after the tenant namespace.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: "${minio_tenant_namespace}"
+  namespace: "${minio_tenant_namespace}"
+spec:
+  interval: 30m
+  # Version pinned in versions.yaml (minio_version), Renovate-tracked; stamped into
+  # the config artifact at publish. Literal here until the stamping job lands.
+  chart:
+    spec:
+      chart: tenant
+      version: "7.1.1"
+      sourceRef:
+        kind: HelmRepository
+        name: minio-operator
+        namespace: "${minio_tenant_namespace}"
+  values:
+    tenant:
+      name: "${minio_tenant_name}"
+      configSecret:
+        name: minio-scout-env-configuration
+        existingSecret: true
+      env:
+        - name: MINIO_BROWSER_REDIRECT_URL
+          value: "https://minio.${server_hostname}"
+        - name: MINIO_PROMETHEUS_AUTH_TYPE
+          value: public
+        - name: MINIO_SCANNER_SPEED
+          value: slowest
+      pools:
+        - servers: 1
+          name: pool-0
+          volumesPerServer: 1
+          size: "${minio_storage_size}"
+          storageClassName: "${minio_storage_class}"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 1Gi
+            limits:
+              cpu: 2
+              memory: 2Gi
+          tolerations:
+            # Ensure MinIO pods can run on control plane nodes
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: PreferNoSchedule
+            # Allows the MinIO pool to include the GPU node when it is
+            # listed as a MinIO host.
+            - key: nvidia.com/gpu
+              value: present
+              effect: NoSchedule
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      v1.min.io/tenant: "${minio_tenant_name}"
+                  topologyKey: kubernetes.io/hostname
+      metrics:
+        enabled: true
+        port: 9000
+        protocol: http
+      certificate:
+        requestAutoCert: false
+      # tenant.buckets/users are honored on first install only; the bootstrap
+      # Job below reconciles them idempotently on every run.
+      buckets:
+        - name: "${loki_chunks_bucket}"
+        - name: "${loki_ruler_bucket}"
+        - name: "${loki_admin_bucket}"
+        - name: "${lake_bucket}"
+        - name: "${hl7_raw_bucket}"
+        - name: "${scratch_bucket}"
+        # Versioned so a corrupt OPA bundle PUT can roll back to a prior
+        # object version (ADR 0021); other buckets stay unversioned.
+        - name: "${opa_bundles_bucket}"
+          versioned: true
+      users:
+        - name: "${s3_lake_reader}-creds"
+        - name: "${s3_lake_writer}-creds"
+        - name: "${s3_loki_writer}-creds"
+        - name: "${s3_opa_bundle_writer}-creds"
+        - name: "${s3_opa_bundle_reader}-creds"
+    ingress:
+      console:
+        enabled: true
+        ingressClassName: traefik
+        host: "minio.${server_hostname}"
+        path: /
+        pathType: Prefix
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: >-
+            kube-system-oauth2-proxy-error@kubernetescrd,
+            kube-system-oauth2-proxy-auth@kubernetescrd,
+            kube-system-security-headers@kubernetescrd
+---
+# IAM policy documents, projected into the bootstrap Job at /policies/<name>.json.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: policy-lake-r
+  namespace: "${minio_tenant_namespace}"
+data:
+  lake-r.json: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": ["s3:GetObject", "s3:GetBucketLocation", "s3:ListBucket"],
+          "Resource": ["arn:aws:s3:::${lake_bucket}", "arn:aws:s3:::${lake_bucket}/*"]
+        }
+      ]
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: policy-lake-rw
+  namespace: "${minio_tenant_namespace}"
+data:
+  lake-rw.json: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": ["s3:*"],
+          "Resource": ["arn:aws:s3:::${lake_bucket}", "arn:aws:s3:::${lake_bucket}/*", "arn:aws:s3:::${scratch_bucket}", "arn:aws:s3:::${scratch_bucket}/*", "arn:aws:s3:::${hl7_raw_bucket}", "arn:aws:s3:::${hl7_raw_bucket}/*"]
+        }
+      ]
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: policy-loki-rw
+  namespace: "${minio_tenant_namespace}"
+data:
+  loki-rw.json: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": ["s3:*"],
+          "Resource": ["arn:aws:s3:::${loki_chunks_bucket}", "arn:aws:s3:::${loki_chunks_bucket}/*", "arn:aws:s3:::${loki_ruler_bucket}", "arn:aws:s3:::${loki_ruler_bucket}/*", "arn:aws:s3:::${loki_admin_bucket}", "arn:aws:s3:::${loki_admin_bucket}/*"]
+        }
+      ]
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: policy-opa-bundle-w
+  namespace: "${minio_tenant_namespace}"
+data:
+  opa-bundle-w.json: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": ["s3:PutObject", "s3:GetBucketLocation"],
+          "Resource": ["arn:aws:s3:::${opa_bundles_bucket}/${opa_bundle_object_key}"]
+        }
+      ]
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: policy-opa-bundle-r
+  namespace: "${minio_tenant_namespace}"
+data:
+  opa-bundle-r.json: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": ["s3:GetObject", "s3:GetBucketLocation", "s3:ListBucket"],
+          "Resource": ["arn:aws:s3:::${opa_bundles_bucket}", "arn:aws:s3:::${opa_bundles_bucket}/scout/*"]
+        }
+      ]
+    }
+---
+# Reconciles MinIO IAM (users + buckets + policies) on every run — the operator
+# honors tenant.users/buckets on first install only. Immutable Job fields change
+# with the config, so Flux is told to recreate rather than patch (the Ansible
+# role forced recreation via an md5 annotation + replace).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bootstrap-minio-iam
+  namespace: "${minio_tenant_namespace}"
+  labels:
+    app: minio-bootstrap
+  annotations:
+    kustomize.toolkit.fluxcd.io/force: "Enabled"
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: minio-bootstrap
+    spec:
+      restartPolicy: Never
+      serviceAccountName: "${minio_tenant_name}-sa"
+      containers:
+        - name: mc
+          # Image pinned in versions.yaml (minio_client_image[_tag]); stamped at
+          # config-artifact publish. Literal here until the stamping job lands.
+          image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: HOME
+              value: /tmp
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -euo pipefail
+              # Root creds + region/OIDC config, seeded by the site.
+              . /rootcreds/config.env
+
+              # GitOps has no external readiness gate — the Ansible role waited
+              # on the pool StatefulSet before creating this Job. Poll the tenant
+              # endpoint until it answers, then configure IAM.
+              until mc alias set local http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000 \
+                "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure >/dev/null 2>&1 && \
+                mc ready local >/dev/null 2>&1; do
+                echo "Waiting for MinIO tenant to become ready..."
+                sleep 5
+              done
+
+              # tenant.users reconcile only honors the list on first install, so
+              # ensure each user exists before attaching policies. mc admin user
+              # add is idempotent (re-runs on an existing user succeed quietly).
+              echo "Ensuring user ${s3_lake_reader} exists..."
+              mc admin user add local '${s3_lake_reader}' "$(cat /usercreds/${s3_lake_reader}/CONSOLE_SECRET_KEY)"
+              echo "Ensuring user ${s3_lake_writer} exists..."
+              mc admin user add local '${s3_lake_writer}' "$(cat /usercreds/${s3_lake_writer}/CONSOLE_SECRET_KEY)"
+              echo "Ensuring user ${s3_loki_writer} exists..."
+              mc admin user add local '${s3_loki_writer}' "$(cat /usercreds/${s3_loki_writer}/CONSOLE_SECRET_KEY)"
+              echo "Ensuring user ${s3_opa_bundle_writer} exists..."
+              mc admin user add local '${s3_opa_bundle_writer}' "$(cat /usercreds/${s3_opa_bundle_writer}/CONSOLE_SECRET_KEY)"
+              echo "Ensuring user ${s3_opa_bundle_reader} exists..."
+              mc admin user add local '${s3_opa_bundle_reader}' "$(cat /usercreds/${s3_opa_bundle_reader}/CONSOLE_SECRET_KEY)"
+
+              # Ensure buckets exist (same reason: tenant.buckets is honored on
+              # first install only). mc mb --ignore-existing is idempotent.
+              echo "Ensuring bucket ${loki_chunks_bucket} exists..."
+              mc mb --ignore-existing local/${loki_chunks_bucket}
+              echo "Ensuring bucket ${loki_ruler_bucket} exists..."
+              mc mb --ignore-existing local/${loki_ruler_bucket}
+              echo "Ensuring bucket ${loki_admin_bucket} exists..."
+              mc mb --ignore-existing local/${loki_admin_bucket}
+              echo "Ensuring bucket ${lake_bucket} exists..."
+              mc mb --ignore-existing local/${lake_bucket}
+              echo "Ensuring bucket ${hl7_raw_bucket} exists..."
+              mc mb --ignore-existing local/${hl7_raw_bucket}
+              echo "Ensuring bucket ${scratch_bucket} exists..."
+              mc mb --ignore-existing local/${scratch_bucket}
+              echo "Ensuring bucket ${opa_bundles_bucket} exists..."
+              mc mb --ignore-existing local/${opa_bundles_bucket}
+              echo "  Enabling versioning on ${opa_bundles_bucket}..."
+              mc version enable local/${opa_bundles_bucket}
+
+              # Create/refresh each policy and attach it to its user. The
+              # consoleAdmin detach is tolerant: users created via the operator's
+              # tenant.users path inherit consoleAdmin and we strip it; users
+              # created via mc admin user add never had it, so the detach is a
+              # no-op there and must not fail the script.
+              echo "Creating policy lake-r..."
+              mc admin policy create local lake-r /policies/lake-r.json || \
+                mc admin policy update local lake-r /policies/lake-r.json
+              mc admin policy attach local lake-r --user ${s3_lake_reader}
+              mc admin policy detach local consoleAdmin --user ${s3_lake_reader} 2>/dev/null || \
+                echo "  consoleAdmin not attached to ${s3_lake_reader}; skipping detach"
+              echo "Creating policy lake-rw..."
+              mc admin policy create local lake-rw /policies/lake-rw.json || \
+                mc admin policy update local lake-rw /policies/lake-rw.json
+              mc admin policy attach local lake-rw --user ${s3_lake_writer}
+              mc admin policy detach local consoleAdmin --user ${s3_lake_writer} 2>/dev/null || \
+                echo "  consoleAdmin not attached to ${s3_lake_writer}; skipping detach"
+              echo "Creating policy loki-rw..."
+              mc admin policy create local loki-rw /policies/loki-rw.json || \
+                mc admin policy update local loki-rw /policies/loki-rw.json
+              mc admin policy attach local loki-rw --user ${s3_loki_writer}
+              mc admin policy detach local consoleAdmin --user ${s3_loki_writer} 2>/dev/null || \
+                echo "  consoleAdmin not attached to ${s3_loki_writer}; skipping detach"
+              echo "Creating policy opa-bundle-w..."
+              mc admin policy create local opa-bundle-w /policies/opa-bundle-w.json || \
+                mc admin policy update local opa-bundle-w /policies/opa-bundle-w.json
+              mc admin policy attach local opa-bundle-w --user ${s3_opa_bundle_writer}
+              mc admin policy detach local consoleAdmin --user ${s3_opa_bundle_writer} 2>/dev/null || \
+                echo "  consoleAdmin not attached to ${s3_opa_bundle_writer}; skipping detach"
+              echo "Creating policy opa-bundle-r..."
+              mc admin policy create local opa-bundle-r /policies/opa-bundle-r.json || \
+                mc admin policy update local opa-bundle-r /policies/opa-bundle-r.json
+              mc admin policy attach local opa-bundle-r --user ${s3_opa_bundle_reader}
+              mc admin policy detach local consoleAdmin --user ${s3_opa_bundle_reader} 2>/dev/null || \
+                echo "  consoleAdmin not attached to ${s3_opa_bundle_reader}; skipping detach"
+
+              echo "MinIO IAM setup completed successfully"
+          volumeMounts:
+            - name: policies
+              mountPath: /policies
+              readOnly: true
+            - name: rootcreds
+              mountPath: /rootcreds
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: usercreds-lake-reader
+              mountPath: /usercreds/${s3_lake_reader}
+              readOnly: true
+            - name: usercreds-lake-writer
+              mountPath: /usercreds/${s3_lake_writer}
+              readOnly: true
+            - name: usercreds-loki-writer
+              mountPath: /usercreds/${s3_loki_writer}
+              readOnly: true
+            - name: usercreds-opa-bundle-writer
+              mountPath: /usercreds/${s3_opa_bundle_writer}
+              readOnly: true
+            - name: usercreds-opa-bundle-reader
+              mountPath: /usercreds/${s3_opa_bundle_reader}
+              readOnly: true
+      volumes:
+        - name: policies
+          projected:
+            defaultMode: 420
+            sources:
+              - configMap:
+                  name: policy-lake-r
+              - configMap:
+                  name: policy-lake-rw
+              - configMap:
+                  name: policy-loki-rw
+              - configMap:
+                  name: policy-opa-bundle-w
+              - configMap:
+                  name: policy-opa-bundle-r
+        - name: rootcreds
+          secret:
+            secretName: minio-scout-env-configuration
+            items:
+              - key: config.env
+                path: config.env
+        - name: tmp
+          emptyDir: {}
+        - name: usercreds-lake-reader
+          secret:
+            secretName: "${s3_lake_reader}-creds"
+        - name: usercreds-lake-writer
+          secret:
+            secretName: "${s3_lake_writer}-creds"
+        - name: usercreds-loki-writer
+          secret:
+            secretName: "${s3_loki_writer}-creds"
+        - name: usercreds-opa-bundle-writer
+          secret:
+            secretName: "${s3_opa_bundle_writer}-creds"
+        - name: usercreds-opa-bundle-reader
+          secret:
+            secretName: "${s3_opa_bundle_reader}-creds"

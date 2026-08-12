@@ -1,0 +1,259 @@
+# Extractor: the HL7-log ingest workers (ADR 0030/0031). Two Scout-owned OCI
+# charts pulled from ghcr.io/washu-tag/charts:
+#   - hl7log-extractor : Java/Temporal worker that splits daily HL7 log files and
+#                        uploads them to the lake, then triggers ingest.
+#   - hl7-transformer  : Spark/Python worker that parses HL7 -> Delta Lake.
+# Both land in scout-extractor alongside Temporal (temporal-internal-frontend),
+# which is why they dependsOn temporal-bootstrap; they also need the CNPG ingest
+# DB (postgres-cluster) and the MinIO lake (minio-tenant).
+#
+# Fixed-name refs, seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git:
+#   - postgres-secret (Secret): DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD for the
+#     ingest DB; consumed by the transformer (envFrom) and the extractor
+#     (SPRING_DATASOURCE_PASSWORD via secretKeyRef).
+#   - s3-secret (Secret): AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY (lake writer).
+#   - s3-env (ConfigMap): AWS_ENDPOINT_URL/AWS_ALLOW_HTTP/AWS_REGION.
+# The ingest DB + role are created against the shared CNPG cluster (postgres-cluster),
+# not here.
+#
+# The modality-mapping map is chart-owned (hl7-transformer files/modality_mapping_codes.csv);
+# no modality ConfigMap is created. On-prem rendering: MinIO S3 (path-style), HL7 logs
+# mounted from the node at ${extractor_data_dir}.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "${scout_extractor_namespace}"
+---
+# Scout-owned charts live in one GHCR OCI registry path; both HelmReleases below
+# reference this source by chart name.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: scout-charts
+  namespace: "${scout_extractor_namespace}"
+spec:
+  type: oci
+  interval: 1h
+  url: oci://ghcr.io/washu-tag/charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hl7log-extractor
+  namespace: "${scout_extractor_namespace}"
+spec:
+  interval: 30m
+  # Chart pinned in versions.yaml (hl7log_extractor_chart_version); this repo's CI
+  # publishes it and the GitOps lane owns the real version via its OCIRepository
+  # (ADR 0030/0031). Literal placeholder here until the stamping job lands.
+  chart:
+    spec:
+      chart: hl7log-extractor
+      version: "0.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: "${scout_extractor_namespace}"
+  values:
+    # Image repository/tag are build-lane-stamped at config-artifact publish;
+    # literal placeholder in git (matches the chart's own default).
+    image:
+      repository: ghcr.io/washu-tag/hl7log-extractor
+      tag: latest
+    service:
+      type: ClusterIP
+      port: 8080
+    envFrom:
+      - secretRef:
+          name: s3-secret
+      - configMapRef:
+          name: s3-env
+    env:
+      - name: TZ
+        value: "${timezone}"
+      - name: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=60 -XX:+UseContainerSupport"
+      # Datasource password comes from the fixed-name postgres-secret; Spring's
+      # env override beats application.yaml so no credential is inlined below.
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: postgres-secret
+            key: DB_PASSWORD
+    resources:
+      requests:
+        cpu: 100m
+        memory: 1Gi
+      limits:
+        cpu: 2
+        memory: 2Gi
+    # HL7 log files are mounted from the node (on-prem); readOnly + HostToContainer
+    # so newly-rotated logs on the host become visible to the worker.
+    volumes:
+      - name: data
+        hostPath:
+          path: "${extractor_data_dir}"
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
+        mountPropagation: HostToContainer
+    livenessProbe:
+      httpGet:
+        path: /actuator/health/liveness
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /actuator/health/readiness
+        port: 8080
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    config:
+      application:
+        management:
+          metrics:
+            tags:
+              namespace: "${scout_extractor_namespace}"
+        s3:
+          endpoint: "${s3_endpoint}"
+          region: "${s3_region}"
+          path-style-access: true
+        spring:
+          datasource:
+            url: "jdbc:postgresql://${postgres_cluster_name}-rw.${postgres_cluster_namespace}:5432/${ingest_postgres_table_name}"
+            username: "${postgres_user}"
+          temporal:
+            connection:
+              target: "temporal-internal-frontend.${scout_extractor_namespace}:7236"
+        scout:
+          workflowArgDefaults:
+            ingestHl7Log:
+              logsRootPath: /data
+              scratchSpaceRootPath: "${scratch_path}"
+              hl7OutputPath: "${hl7_path}"
+              splitAndUploadTimeout: 480
+              splitAndUploadHeartbeatTimeout: 30
+              splitAndUploadConcurrency: 150
+            ingestHl7ToDeltaLake:
+              deltaIngestTimeout: 480
+              deriveDeltaTablesTimeout: 480
+              reportTableName: "${report_delta_table_name}"
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hl7-transformer
+  namespace: "${scout_extractor_namespace}"
+spec:
+  interval: 30m
+  # Chart pinned in versions.yaml (hl7_transformer_chart_version); this repo's CI
+  # publishes it and the GitOps lane owns the real version via its OCIRepository
+  # (ADR 0030/0031). Literal placeholder here until the stamping job lands.
+  chart:
+    spec:
+      chart: hl7-transformer
+      version: "0.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: "${scout_extractor_namespace}"
+  values:
+    # Image repository/tag are build-lane-stamped at config-artifact publish;
+    # literal placeholder in git (matches the chart's own default).
+    image:
+      repository: ghcr.io/washu-tag/hl7-transformer
+      tag: latest
+    initContainers:
+      # Guard the Temporal-before-DNS startup race: block until the frontend
+      # resolves, using the app image (same glibc resolver as the main process).
+      # imagePullPolicy is explicit because init containers specified via values
+      # otherwise default to Always for a :latest tag, which breaks air-gapped/k3s
+      # nodes that have the image loaded locally but no registry to pull from.
+      - name: wait-for-temporal-dns
+        image: ghcr.io/washu-tag/hl7-transformer:latest
+        imagePullPolicy: IfNotPresent
+        command:
+          - python3
+          - -c
+          - |
+            import socket, time
+            while True:
+                try:
+                    socket.gethostbyname('temporal-internal-frontend')
+                    break
+                except OSError:
+                    print('waiting for dns...', flush=True)
+                    time.sleep(2)
+    envFrom:
+      - secretRef:
+          name: s3-secret
+      - configMapRef:
+          name: s3-env
+      - secretRef:
+          name: postgres-secret
+    env:
+      - name: TEMPORAL_ADDRESS
+        value: "temporal-internal-frontend.${scout_extractor_namespace}:7236"
+      - name: TEMPORAL_NAMESPACE
+        value: default
+      - name: REPORT_DELTA_TABLE_NAME
+        value: "${report_delta_table_name}"
+      - name: TRINO_HOST
+        value: "${trino_rw_endpoint_host}"
+      - name: TRINO_PORT
+        value: "${trino_rw_endpoint_port}"
+      - name: TRINO_USER
+        value: "${trino_user}"
+      - name: TRINO_CATALOG
+        value: delta
+      - name: TRINO_SCHEME
+        value: http
+      - name: TRINO_VIEW_ENABLED
+        value: "true"
+    # Memory: requests = spark_memory (1G -> 1Gi), limits = 4x for Spark off-heap.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 1Gi
+      limits:
+        cpu: 4
+        memory: 4Gi
+    volumes:
+      - name: data
+        hostPath:
+          path: "${extractor_data_dir}"
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
+        mountPropagation: HostToContainer
+    ports:
+      - containerPort: 8000
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: 8000
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 30
+    spark:
+      executor:
+        memory: "1G"
+    # Chart-owned spark-defaults.conf (ADR 0031). on-prem mode = MinIO + path-style;
+    # S3 creds come from the s3-secret envFrom, never from this block. The
+    # modality-mapping map is left to the chart's bundled default (no override).
+    sparkDefaults:
+      enabled: true
+      mode: on-prem
+      shufflePartitions: 200
+      hiveMetastoreUri: "${hive_metastore_endpoint}"
+      warehouseDir: "${delta_lake_path}"
+      s3Region: "${s3_region}"
+      s3Endpoint: "${s3_endpoint}"

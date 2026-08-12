@@ -1,0 +1,49 @@
+# temporal-bootstrap: idempotent Temporal setup applied as Helm-hook Jobs
+# (post-install/post-upgrade), mirroring the scout-dashboards import model. Today
+# it enforces the `default` namespace's workflow-history retention (issue #432);
+# the chart's create-only namespace job never updates retention on its own.
+# Talks to the *internal* frontend to bypass the public-frontend authz.
+# dependsOn temporal-server (needs the frontend reachable). Scout-owned OCI chart.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: scout-charts
+  namespace: "${scout_extractor_namespace}"
+spec:
+  type: oci
+  interval: 1h
+  url: oci://ghcr.io/washu-tag/charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: temporal-bootstrap
+  namespace: "${scout_extractor_namespace}"
+spec:
+  interval: 30m
+  # Scout-owned, CI-built chart (ADR 0030); not in versions.yaml and not
+  # Renovate-tracked (watching a chart we publish here would self-reference).
+  # Placeholder version in git; the concrete version is stamped from the
+  # build-lane haul at config-artifact publish.
+  chart:
+    spec:
+      chart: temporal-bootstrap
+      version: "0.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: "${scout_extractor_namespace}"
+  values:
+    image:
+      repository: temporalio/admin-tools
+      # Pinned in versions.yaml (temporal_admin_tools_image_tag); kept equal to
+      # the Temporal server version via Renovate so the bundled `temporal` CLI
+      # matches the running server.
+      tag: "1.31.0"
+    # Internal frontend gRPC endpoint (no OIDC authz) -- matches Scout's other
+    # in-cluster setup Jobs.
+    temporalAddress: "temporal-internal-frontend.${scout_extractor_namespace}:7236"
+    namespace:
+      name: default
+      # Workflow-history retention (Temporal CLI duration form); overlays tune.
+      retention: 30d

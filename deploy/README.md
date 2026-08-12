@@ -25,6 +25,8 @@ until CI switches `deploy-and-test` to deploy from it. See
   values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git.
 
 ## Status
-Reference component **postgres** (operator + Cluster) done. Next: minio, hive,
-cassandra, elasticsearch, temporal, extractor; then the config-artifact publish
-job and the `deploy-and-test` switch (the ingest suite is the gate).
+**Ingest vertical slice bases + DAG done**: postgres, minio, cassandra,
+elasticsearch, hive, temporal, extractor (13 Flux `Kustomization`s, acyclic,
+operator/CR splits with health-gated edges). Next: the config-artifact publish
+job (stamp refs from the haul + emit the `cluster-vars` ConfigMap + `required-vars`)
+and the `deploy-and-test` switch (the ingest suite is the gate).

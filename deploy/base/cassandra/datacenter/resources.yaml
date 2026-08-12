@@ -1,0 +1,47 @@
+# Single-node Cassandra datacenter (CassandraDatacenter CR) in the shared
+# ${scout_extractor_namespace}. cass-operator and this CR share that namespace
+# (the operator base creates it), so it is not re-declared here — unlike
+# elasticsearch, whose operator sits in a separate namespace. serverVersion is
+# pinned in versions.yaml (cassandra_server_version); literal until the stamping
+# job lands.
+apiVersion: cassandra.datastax.com/v1beta1
+kind: CassandraDatacenter
+metadata:
+  name: "${cassandra_datacenter_name}"
+  namespace: "${scout_extractor_namespace}"
+spec:
+  clusterName: "${cassandra_cluster_name}"
+  serverType: cassandra
+  serverVersion: "5.0.8"
+  size: 1
+  storageConfig:
+    cassandraDataVolumeClaimSpec:
+      storageClassName: "${cassandra_storage_class}"
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: "${cassandra_storage_size}"
+  racks:
+    - name: r1
+  # Memory: requests = max_heap (2Gi), limits = 2x (4Gi) for off-heap + OS cache.
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  # K8ssandra adds a Vector system-logger sidecar; its chart-default 128M limit
+  # OOMKills, so raise it (mirrors cassandra_system_logger_resources_default).
+  systemLoggerResources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+  config:
+    jvm-server-options:
+      initial_heap_size: "1G"
+      max_heap_size: "2G"

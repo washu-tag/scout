@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "${scout_extractor_namespace}"
+---
+# Single-node Elasticsearch managed by ECK. TLS on the HTTP layer is disabled for
+# simpler internal access. Heap is fixed via ES_JAVA_OPTS (Xms == Xmx); pod memory
+# tracks it per Elastic guidelines (heap <= 50% of pod memory): requests = 2x heap
+# (1Gi), limits = 8x heap (4Gi) to allow burst.
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: "${elasticsearch_cluster_name}"
+  namespace: "${scout_extractor_namespace}"
+spec:
+  version: "9.2.3"
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+  nodeSets:
+    - name: default
+      count: 1
+      config:
+        node.store.allow_mmap: false
+      podTemplate:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+          containers:
+            - name: elasticsearch
+              securityContext:
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                seccompProfile:
+                  type: RuntimeDefault
+              env:
+                - name: ES_JAVA_OPTS
+                  value: "-Xms512M -Xmx512M"
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "1Gi"
+                limits:
+                  cpu: "2"
+                  memory: "4Gi"
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: "${elasticsearch_storage_class}"
+            resources:
+              requests:
+                storage: "${elasticsearch_storage_size}"
