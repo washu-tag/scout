@@ -141,7 +141,7 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
-      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -152,6 +152,9 @@ jobs:
     needs: changes
     permissions:
       contents: read
+      # check-image-exists reads ghcr to see whether the derived tag is already
+      # published; packages default to private, so that read has to be authenticated.
+      packages: read
       attestations: write
       id-token: write
     strategy:
@@ -200,7 +203,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -220,7 +223,7 @@ jobs:
       # Spark 4.1.x runs on Java 17 or 21; use the repo default JAVA_VERSION (21) like
       # every other Java job. Spark/Delta versions are read from the package's
       # pyproject.toml, so this job pins no versions.
-      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -401,7 +404,7 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -437,7 +440,7 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
       - name: 'Set up Java for Gradle cache warming'
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -604,7 +607,7 @@ jobs:
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -856,7 +859,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -878,50 +881,106 @@ jobs:
 
           echo "Disk space after cleanup:"
           df -h
+      # Publish when the paths changed OR the derived tag is absent from the
+      # registry. build-and-upload already builds on both signals; gating the
+      # push on the paths-filter alone silently discarded the second kind, which
+      # is how v4.1.0 shipped with no 4.1.0 image tags -- its CI had to be fixed
+      # forward on a commit touching only two images, so the rest were built at
+      # 4.1.0, scanned, and dropped. Deliberately NOT gated on `ci`: that
+      # rebuilds everything to re-scan, and publishing there would overwrite
+      # already-published upstream tags (superset, keycloak) with rebuilt bits.
+      - name: 'Check published - hl7log-extractor'
+        id: published-hl7log-extractor
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: extractor/hl7log-extractor
+          image-name: hl7log-extractor
       - name: 'Push Image - hl7log-extractor'
-        if: needs.changes.outputs.hl7log-extractor == 'true'
+        if: needs.changes.outputs.hl7log-extractor == 'true' || steps.published-hl7log-extractor.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7log-extractor
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - hl7-transformer'
+        id: published-hl7-transformer
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: extractor/hl7-transformer
+          image-name: hl7-transformer
       - name: 'Push Image - hl7-transformer'
-        if: needs.changes.outputs.hl7-transformer == 'true'
+        if: needs.changes.outputs.hl7-transformer == 'true' || steps.published-hl7-transformer.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - hl7-listener'
+        id: published-hl7-listener
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: hl7-listener
+          image-name: hl7-listener
       - name: 'Push Image - hl7-listener'
-        if: needs.changes.outputs.hl7-listener == 'true'
+        if: needs.changes.outputs.hl7-listener == 'true' || steps.published-hl7-listener.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-listener
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - scout-notebook'
+        id: published-scout-notebook
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: helm/scout-notebook
+          image-name: scout-notebook
       - name: 'Push Image - scout-notebook'
-        if: needs.changes.outputs.scout-notebook == 'true'
+        if: needs.changes.outputs.scout-notebook == 'true' || steps.published-scout-notebook.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: scout-notebook
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - launchpad'
+        id: published-launchpad
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: launchpad
+          image-name: launchpad
       - name: 'Push Image - launchpad'
-        if: needs.changes.outputs.launchpad == 'true'
+        if: needs.changes.outputs.launchpad == 'true' || steps.published-launchpad.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: launchpad
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - superset'
+        id: published-superset
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: helm/superset
+          image-name: superset
       - name: 'Push Image - superset'
-        if: needs.changes.outputs.superset == 'true'
+        if: needs.changes.outputs.superset == 'true' || steps.published-superset.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: superset
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - keycloak'
+        id: published-keycloak
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: keycloak
+          image-name: keycloak
       - name: 'Push Image - keycloak'
-        if: needs.changes.outputs.keycloak == 'true'
+        if: needs.changes.outputs.keycloak == 'true' || steps.published-keycloak.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - report-viewer'
+        id: published-report-viewer
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: report-viewer
+          image-name: report-viewer
       - name: 'Push Image - report-viewer'
-        if: needs.changes.outputs.report-viewer == 'true'
+        if: needs.changes.outputs.report-viewer == 'true' || steps.published-report-viewer.outputs.exists == 'false'
         uses: ./.github/actions/docker-push
         with:
           image-name: report-viewer
@@ -1008,7 +1067,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Login to GHCR (for the imagetools digest read-back)
         if: needs.changes.outputs[matrix.changed] == 'true'
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1082,7 +1141,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -1174,7 +1233,14 @@ jobs:
     # (harmless) on partial builds until a one-time bootstrap seeds the first
     # predecessor. Sync verifies every component's cosign signature (--key) and
     # fails closed if any component is unsigned or unverifiable.
-    if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
+    # PAUSED until the build-lane haul project is finalized. Chart carry needs a
+    # one-time publish-all seed of the 14 charts (see components.txt); until that
+    # lands this job fails on every main run. continue-on-error keeps it non-gating,
+    # but it still leaves a red X on the run, so it is turned off while the whole
+    # GitOps build-lane is still in progress rather than run half-built. Re-enable
+    # (after the seed) by restoring the condition:
+    #   github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
+    if: false
     runs-on: ubuntu-latest
     continue-on-error: true
     needs: [changes, publish, publish-charts]
@@ -1191,7 +1257,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Login to GHCR
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
