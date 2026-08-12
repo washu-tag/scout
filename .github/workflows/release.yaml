@@ -413,7 +413,7 @@ jobs:
           # between them ("Update to version X.Y.Z") is not a Conventional Commit, so
           # moving the tag forward does not disturb release-please's next-cycle scoping.
           if gh api "repos/${REPO}/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
-            gh api -X PATCH "repos/${REPO}/git/refs/tags/v${VERSION}" -F sha="${COMMIT_SHA}" -F force=true
+            gh api -X PATCH "repos/${REPO}/git/refs/tags/v${VERSION}" -f sha="${COMMIT_SHA}" -F force=true
           else
             gh api -X POST "repos/${REPO}/git/refs" -f ref="refs/tags/v${VERSION}" -f sha="${COMMIT_SHA}"
           fi
@@ -512,15 +512,21 @@ jobs:
           VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          git pull origin "${REF_NAME}"
-          # update-versions.sh dev is idempotent: no diff when already at dev
-          # placeholders, a diff (the stamped files) when it is not.
-          bash .github/scripts/update-versions.sh dev
-          if git diff --quiet; then
-            echo "${REF_NAME} is at dev versions."
-          else
-            echo "::error::Release v${VERSION} succeeded but ${REF_NAME} is still STAMPED (reset-dev did not complete). A dev deploy would pull v${VERSION} instead of latest. Re-dispatch will NOT help (v${VERSION} is already released); reset manually:"
-            echo "::error::  git checkout ${REF_NAME} && bash .github/scripts/update-versions.sh dev && git commit -am 'Reset to dev versions' && git push"
-            git --no-pager diff --stat
-            exit 1
-          fi
+          set -euo pipefail
+          # This runs right after reset-dev pushed, so a stale read could fail a
+          # release that actually succeeded. Re-fetch a few times before believing
+          # main is stamped. update-versions.sh dev is a no-op diff when already at dev.
+          for attempt in 1 2 3; do
+            git fetch origin "${REF_NAME}"
+            git reset --hard "origin/${REF_NAME}"
+            bash .github/scripts/update-versions.sh dev
+            if git diff --quiet; then
+              echo "${REF_NAME} is at dev versions."
+              exit 0
+            fi
+            [ "${attempt}" -lt 3 ] && sleep 5
+          done
+          echo "::error::Release v${VERSION} succeeded but ${REF_NAME} is still STAMPED (reset-dev did not complete). A dev deploy would pull v${VERSION} instead of latest. Re-dispatch will NOT help (v${VERSION} is already released); reset manually:"
+          echo "::error::  git checkout ${REF_NAME} && bash .github/scripts/update-versions.sh dev && git commit -am 'Reset to dev versions' && git push"
+          git --no-pager diff --stat
+          exit 1

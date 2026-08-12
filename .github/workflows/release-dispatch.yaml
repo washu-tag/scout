@@ -23,12 +23,10 @@ name: Release Dispatch
 #     existing bump commit).
 #   - Abandoned release: the boundary tag v<version> persists, so release-please treats
 #     the version as released and the next PR proposes the NEXT number (the number is
-#     burned) while a CHANGELOG entry for it stays on main. To RECLAIM the number
-#     instead: delete tag v<version> and its Release FIRST, then revert the release-PR
-#     merge (drops the manifest + CHANGELOG bump); release-please then re-proposes it.
-#     Note the revert changes the manifest, so it re-triggers this workflow; deleting
-#     the tag+Release first lets that run complete cleanly instead of failing at
-#     release.yaml's validate on an already-released version.
+#     burned) while a CHANGELOG entry for it stays on main. Reverting the release PR
+#     re-triggers this workflow with the PRIOR manifest version, which validate rejects
+#     as already-released -- harmless (nothing gets stamped), but not a clean reclaim;
+#     renumbering past a burned version is manual.
 #   - A feature PR merged to main DURING a release is built into the release images
 #     (release.yaml builds current HEAD by design, to fold in fix-forward commits) but
 #     is not in the tag/notes. Avoid merging to main while a release is in flight; a
