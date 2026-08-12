@@ -1,7 +1,5 @@
 ## Description
-<!-- Provide a summary explanation of your changes from product/user and technical/developer perspectives. More detail belongs in your updates to the user and technical docs. -->
-
-<!-- Link related work: "Closes #123" (auto-closes on merge, so only if this PR fully resolves it), "Related to #123", or the merge order if this is a stacked PR. -->
+<!-- Summarize your changes from product/user and technical/developer perspectives, in your own words. If you use AI to help draft this, review and edit it before you post. More detail belongs in your updates to the user and technical docs. Link related work: "Closes #123" (auto-closes on merge, so only if this PR fully resolves it), "Related to #123", or the merge order if this is a stacked PR. -->
 
 ## Impact
 <!-- Answer the sections that apply and remove the rest. The level of attention to each is left to the discretion of the developer. -->
