@@ -13,7 +13,7 @@ const RAMP = [
 ];
 const EMPTY_FILL = 'var(--rv-border)';
 
-const BAR_H = 15;
+const BAR_H = 18;
 const GAP = 2;
 // One bucket per ~6px so bars never go sub-pixel.
 const PX_PER_BUCKET = 6;
