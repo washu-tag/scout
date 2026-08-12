@@ -87,7 +87,25 @@ def partition(versions, keep_n):
             delete.add(vid)  # orphaned by deleting its bundle -> clean it up
         else:
             keep.add(vid)  # subject unknown/absent: conservative keep
+    delete -= keep  # keep always wins if a version lands in both sets
+    assert keep.isdisjoint(delete)
     return keep, delete
+
+
+def versions_from_api(data):
+    """Map a GHCR `GET .../versions` JSON list to partition() input dicts. GHCR
+    container versions carry the full sha256:<hex> digest in `name` and the tags
+    under metadata.container.tags."""
+    return [
+        {
+            "id": v["id"],
+            "created_at": v.get("created_at", ""),
+            "digest": v.get("name", ""),
+            "tags": ((v.get("metadata") or {}).get("container") or {}).get("tags")
+            or [],
+        }
+        for v in data
+    ]
 
 
 def _main():
@@ -109,17 +127,7 @@ def _main():
         if args.versions_json == "-"
         else open(args.versions_json).read()
     )
-    data = json.loads(raw)
-    versions = [
-        {
-            "id": v["id"],
-            "created_at": v.get("created_at", ""),
-            "digest": v.get("name", ""),  # GHCR container version `name` == its digest
-            "tags": ((v.get("metadata") or {}).get("container") or {}).get("tags")
-            or [],
-        }
-        for v in data
-    ]
+    versions = versions_from_api(json.loads(raw))
     keep, delete = partition(versions, args.keep)
 
     by_id = {v["id"]: v for v in versions}

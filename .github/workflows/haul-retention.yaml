@@ -73,24 +73,36 @@ jobs:
               cat err.txt
               exit 1
             fi
-            printf '%s' "${raw}" | jq -s 'add' \
-              | python3 tooling/manifest/retention.py --keep "${KEEP_N}" - >delete-ids.txt 2>plan.txt
+            # Surface retention.py's plan/error even on failure -- set -e would
+            # otherwise abort before the summary line and hide the reason (e.g. the
+            # keep_n>=1 guard).
+            if ! printf '%s' "${raw}" | jq -s 'add' \
+                | python3 tooling/manifest/retention.py --keep "${KEEP_N}" - >delete-ids.txt 2>plan.txt; then
+              echo "::error::retention.py failed for ${pkg}:"; cat plan.txt
+              sed 's/^/    /' plan.txt >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
             sed 's/^/    /' plan.txt >> "$GITHUB_STEP_SUMMARY"
             count="$(grep -c . delete-ids.txt || true)"
             if [ "${DELETE_FOR_REAL}" = "true" ]; then
-              # Non-fatal per id: a single stuck version (e.g. transient 403) must not
-              # abort the run and block the other package. retention.py recomputes from
-              # live state each run, so a skipped delete just retries next time.
+              # Per-id tolerance so one stuck version doesn't block the rest, but track
+              # the counts: every delete failing (with deletes attempted) is systemic --
+              # usually a permissions gap dry-run can't exercise -- so fail loud.
+              deleted=0; failed=0
               while read -r id; do
                 [ -n "${id}" ] || continue
                 if gh api -X DELETE "/orgs/${ORG}/packages/container/${enc}/versions/${id}"; then
-                  echo "  deleted version ${id}"
+                  deleted=$((deleted + 1))
                 else
+                  failed=$((failed + 1))
                   echo "::warning::could not delete version ${id} of ${pkg} (will retry next run)"
-                  echo "    WARN: could not delete ${id}" >> "$GITHUB_STEP_SUMMARY"
                 fi
               done <delete-ids.txt
-              echo "  processed ${count} version(s) for deletion" >> "$GITHUB_STEP_SUMMARY"
+              echo "  deleted ${deleted}, failed ${failed} of ${count}" >> "$GITHUB_STEP_SUMMARY"
+              if [ "${count}" -gt 0 ] && [ "${deleted}" -eq 0 ]; then
+                echo "::error::all ${count} deletions failed for ${pkg} (permissions?)"
+                exit 1
+              fi
             else
               echo "  DRY RUN: would delete ${count} version(s) -- enable with HAUL_RETENTION_ENABLED=true (schedule) or dispatch with dry_run=false" >> "$GITHUB_STEP_SUMMARY"
             fi

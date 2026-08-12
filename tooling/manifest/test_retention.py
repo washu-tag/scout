@@ -2,7 +2,7 @@
 
 import pytest
 
-from retention import partition
+from retention import partition, versions_from_api
 
 H = {c: c * 64 for c in "abcdef"}  # 64-hex digests keyed by a letter
 
@@ -99,3 +99,39 @@ def test_empty():
 def test_keep_n_must_be_positive():
     with pytest.raises(ValueError):
         partition([], keep_n=0)
+
+
+def test_versions_from_api_shape_and_partition():
+    # Real `GET .../versions` shape: digest in `name`, tags under metadata.container.
+    api = [
+        {
+            "id": 10,
+            "created_at": "2026-08-01T00:00:00Z",
+            "name": "sha256:" + H["a"],
+            "metadata": {"container": {"tags": ["0.20260801.1"]}},
+        },
+        {
+            "id": 11,
+            "created_at": "2026-08-03T00:00:00Z",
+            "name": "sha256:" + H["b"],
+            "metadata": {"container": {"tags": ["0.20260803.1", "main"]}},
+        },
+        {
+            "id": 12,
+            "created_at": "2026-08-01T00:01:00Z",
+            "name": "sha256:" + H["c"],
+            "metadata": {"container": {"tags": ["sha256-" + H["a"] + ".sig"]}},
+        },
+        {
+            "id": 13,
+            "created_at": "2026-08-03T00:02:00Z",
+            "name": "sha256:" + H["d"],
+            "metadata": {},
+        },  # untagged / no container metadata
+    ]
+    versions = versions_from_api(api)
+    assert versions[0]["digest"] == "sha256:" + H["a"]
+    assert versions[1]["tags"] == ["0.20260803.1", "main"]
+    assert versions[3]["tags"] == []
+    keep, delete = partition(versions, keep_n=1)
+    assert keep == {11, 13} and delete == {10, 12}
