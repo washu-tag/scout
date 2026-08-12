@@ -4,8 +4,8 @@ name: Haul retention
 # accumulate unbounded. Scoped HARD to the two manifests/* packages via a literal
 # allowlist below; it never enumerates packages, so it cannot reach the
 # digest-pinned image/chart packages that Flux consumers reference. Keeps :main +
-# the newest N versioned hauls (+ their cosign signatures) for rollback -- policy
-# is tooling/manifest/retention.py (unit-tested offline).
+# hauls younger than keep_days (min_keep newest regardless of age) + their cosign
+# signatures -- policy is tooling/manifest/retention.py (unit-tested offline).
 #
 # SAFE BY DEFAULT: a manual run only PREVIEWS the plan (dry_run=true). The weekly
 # schedule deletes for real only once the repo variable HAUL_RETENTION_ENABLED is
@@ -16,10 +16,14 @@ on:
     - cron: '17 8 * * 1' # Mondays 08:17 UTC
   workflow_dispatch:
     inputs:
-      keep_n:
-        description: 'Versioned hauls to retain per package (for rollback)'
+      keep_days:
+        description: 'Retain hauls younger than this many days (per package)'
         type: number
-        default: 10
+        default: 30
+      min_keep:
+        description: 'Always retain at least this many newest hauls'
+        type: number
+        default: 5
       dry_run:
         description: 'Preview only; do not delete'
         type: boolean
@@ -48,9 +52,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Schedule has no inputs -> 10. On dispatch, pass the operator value through
-          # verbatim (don't `|| 10`: keep_n=0 is falsy and would silently become 10,
-          # masking retention.py's keep_n>=1 guard -- let it fail loudly instead).
-          KEEP_N: ${{ github.event_name == 'schedule' && 10 || inputs.keep_n }}
+          # verbatim (don't coerce: retention.py's guards reject 0 / negatives loudly).
+          KEEP_DAYS: ${{ github.event_name == 'schedule' && 30 || inputs.keep_days }}
+          MIN_KEEP: ${{ github.event_name == 'schedule' && 5 || inputs.min_keep }}
           # Delete for real ONLY on an explicit dispatch with dry_run=false, or a
           # scheduled run once HAUL_RETENTION_ENABLED is set. Otherwise preview.
           DELETE_FOR_REAL: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run == false) || (github.event_name == 'schedule' && vars.HAUL_RETENTION_ENABLED == 'true') }}
@@ -74,10 +78,9 @@ jobs:
               exit 1
             fi
             # Surface retention.py's plan/error even on failure -- set -e would
-            # otherwise abort before the summary line and hide the reason (e.g. the
-            # keep_n>=1 guard).
+            # otherwise abort before the summary line and hide the reason (e.g. a guard).
             if ! printf '%s' "${raw}" | jq -s 'add' \
-                | python3 tooling/manifest/retention.py --keep "${KEEP_N}" - >delete-ids.txt 2>plan.txt; then
+                | python3 tooling/manifest/retention.py --keep-days "${KEEP_DAYS}" --min-keep "${MIN_KEEP}" - >delete-ids.txt 2>plan.txt; then
               echo "::error::retention.py failed for ${pkg}:"; cat plan.txt
               sed 's/^/    /' plan.txt >> "$GITHUB_STEP_SUMMARY"
               exit 1
