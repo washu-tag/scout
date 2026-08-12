@@ -1,0 +1,76 @@
+name: Release Dispatch
+
+# Bridges release-please (LIVE) to the release lane. When a release-please PR is
+# merged, its squashed commit bumps .release-please-manifest.json on main -- the
+# ONLY push that touches that file -- so the path filter below is an exact "a
+# release was just approved" signal. On that signal this workflow:
+#
+#   1. Creates the boundary tag v<version> on the merge commit. release-please runs
+#      with skip-github-release, so it never tags; without a tag it would, during
+#      release.yaml's long build, see a manifest version ahead of the last tag and
+#      bootstrap a spurious next-version PR from repo start. The pre-created tag is
+#      the marker that keeps release-please's changelog scoping correct.
+#   2. Dispatches release.yaml, which stays the single authoritative lane: stamp
+#      versions -> wait for the build -> verify images published -> create the GitHub
+#      Release ON THIS TAG -> reset to dev. The Release is minted LAST, after image
+#      verification, so a failed build never yields a Release (only the boundary tag,
+#      which is retryable via a manual re-dispatch and which release.yaml tolerates).
+#
+# Recovery + known limitations:
+#   - Failed release (main left stamped): release.yaml's verify-dev-reset job fails
+#     LOUD. Retry the SAME version with:  gh workflow run release.yaml --ref main
+#     -f version=X.Y.Z  (validate tolerates the boundary tag; version-bump reuses the
+#     existing bump commit).
+#   - Abandoned release: the boundary tag v<version> persists, so release-please treats
+#     the version as released and the next PR proposes the NEXT number (the number is
+#     burned) while a CHANGELOG entry for it stays on main. To RECLAIM the number
+#     instead: delete tag v<version> and its Release FIRST, then revert the release-PR
+#     merge (drops the manifest + CHANGELOG bump); release-please then re-proposes it.
+#     Note the revert changes the manifest, so it re-triggers this workflow; deleting
+#     the tag+Release first lets that run complete cleanly instead of failing at
+#     release.yaml's validate on an already-released version.
+#   - A feature PR merged to main DURING a release is built into the release images
+#     (release.yaml builds current HEAD by design, to fold in fix-forward commits) but
+#     is not in the tag/notes. Avoid merging to main while a release is in flight; a
+#     release-in-progress lock on main is a possible future hardening.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .release-please-manifest.json
+
+concurrency:
+  group: release-dispatch
+  cancel-in-progress: false
+
+permissions:
+  contents: write # create the boundary tag
+  actions: write # dispatch release.yaml (workflow_dispatch via GITHUB_TOKEN is allowed to trigger a run)
+
+jobs:
+  dispatch:
+    name: Tag + dispatch release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create the boundary tag + dispatch release.yaml
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="$(jq -r '."."' .release-please-manifest.json)"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::manifest version '${VERSION}' is not X.Y.Z; not releasing"
+            exit 1
+          fi
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "::notice::tag v${VERSION} already exists; leaving it in place"
+          else
+            echo "::notice::creating boundary tag v${VERSION} at ${GITHUB_SHA}"
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f ref="refs/tags/v${VERSION}" -f sha="${GITHUB_SHA}"
+          fi
+          echo "::notice::dispatching release.yaml for v${VERSION}"
+          gh workflow run release.yaml --ref main -f version="${VERSION}"

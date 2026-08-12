@@ -69,15 +69,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if tag already exists
+      - name: Check the version is not already released
         env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
           VERSION: ${{ inputs.version }}
         run: |
-          if git tag -l "v${VERSION}" | grep -q .; then
-            echo "::error::Tag v${VERSION} already exists"
+          tag_exists=false; release_exists=false
+          git tag -l "v${VERSION}" | grep -q . && tag_exists=true
+          gh release view "v${VERSION}" >/dev/null 2>&1 && release_exists=true
+          # A tag WITHOUT a release is expected and fine: release-dispatch.yaml
+          # pre-creates the boundary tag v<version> on the merge commit so release-please
+          # can scope its changelog during the build; the GitHub Release is minted last,
+          # after image verification. It also covers resuming a release whose tag exists
+          # but whose release step had not run. Only a tag AND a release together mean
+          # the version is truly already published.
+          if [ "$tag_exists" = true ] && [ "$release_exists" = true ]; then
+            echo "::error::v${VERSION} is already released (tag and release both exist)"
             exit 1
           fi
-          echo "Tag v${VERSION} does not exist"
+          echo "v${VERSION}: tag_exists=${tag_exists} release_exists=${release_exists} (proceeding)"
 
       - name: Check for existing commits
         id: check_commits
@@ -385,18 +395,32 @@ jobs:
           client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
-      - name: Create GitHub release
+      - name: Anchor the tag to the built commit + create the release
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
           VERSION: ${{ inputs.version }}
           REPO: ${{ github.repository }}
           COMMIT_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
         run: |
+          set -euo pipefail
+          # release-dispatch.yaml pre-creates the boundary tag v${VERSION} at the
+          # release-PR merge commit so release-please can scope its changelog during
+          # the build. Now that the built + image-verified commit exists, point the tag
+          # at it so `git checkout v${VERSION}` reproduces the released source (parity
+          # with the manual-dispatch path, where the tag does not pre-exist and we
+          # create it). gh then anchors the Release to that tag, so no --target needed.
+          # The built commit is a descendant of the merge commit and the only commit
+          # between them ("Update to version X.Y.Z") is not a Conventional Commit, so
+          # moving the tag forward does not disturb release-please's next-cycle scoping.
+          if gh api "repos/${REPO}/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/${REPO}/git/refs/tags/v${VERSION}" -F sha="${COMMIT_SHA}" -F force=true
+          else
+            gh api -X POST "repos/${REPO}/git/refs" -f ref="refs/tags/v${VERSION}" -f sha="${COMMIT_SHA}"
+          fi
           gh release create "v${VERSION}" \
             --repo "${REPO}" \
             --title "Scout v${VERSION}" \
-            --generate-notes \
-            --target "${COMMIT_SHA}"
+            --generate-notes
 
           echo "::notice::Created release v${VERSION}"
 
@@ -463,4 +487,40 @@ jobs:
             git commit -m "Reset to dev versions"
             git push origin "${REF_NAME}"
             echo "::notice::Reset to dev versions complete"
+          fi
+
+  verify-dev-reset:
+    name: Verify main returned to dev
+    runs-on: ubuntu-latest
+    needs: [validate, version-bump, wait-for-build, publish, release, reset-dev]
+    # Runs ONLY when the release SUCCEEDED (so tag + Release exist): main must then be
+    # back at dev placeholders. If it is not, reset-dev flaked (an npm hiccup, or a push
+    # rejected by a concurrent merge) and main is silently stamped, so a dev deploy would
+    # pull the pinned version instead of `latest`. Fail LOUD -- but the recovery here is a
+    # MANUAL reset, NOT a re-dispatch (validate blocks re-dispatch once the version is
+    # released). When the release did NOT succeed, the run is already red and the version
+    # bump is intentionally kept for a re-dispatch retry, so this check stays out of the way.
+    if: ${{ !inputs.dry_run && !inputs.skip_dev_reset && always() && !cancelled() && needs.release.result == 'success' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Assert VERSION files are back at dev placeholders
+        env:
+          VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          git pull origin "${REF_NAME}"
+          # update-versions.sh dev is idempotent: no diff when already at dev
+          # placeholders, a diff (the stamped files) when it is not.
+          bash .github/scripts/update-versions.sh dev
+          if git diff --quiet; then
+            echo "${REF_NAME} is at dev versions."
+          else
+            echo "::error::Release v${VERSION} succeeded but ${REF_NAME} is still STAMPED (reset-dev did not complete). A dev deploy would pull v${VERSION} instead of latest. Re-dispatch will NOT help (v${VERSION} is already released); reset manually:"
+            echo "::error::  git checkout ${REF_NAME} && bash .github/scripts/update-versions.sh dev && git commit -am 'Reset to dev versions' && git push"
+            git --no-pager diff --stat
+            exit 1
           fi
