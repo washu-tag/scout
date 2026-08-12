@@ -315,7 +315,9 @@ jobs:
         # evaluate under in production keeps test/prod aligned.
         run: |
           OPA_VERSION=$(yq '.opa_image_tag' ansible/group_vars/all/versions.yaml)
-          curl -fsSL -o /tmp/opa "https://openpolicyagent.org/downloads/v${OPA_VERSION}/opa_linux_amd64_static"
+          # openpolicyagent.org/downloads proxies to this asset but has been 502ing; fetch it directly.
+          curl -fsSL --retry 3 --retry-all-errors -o /tmp/opa \
+            "https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_linux_amd64_static"
           chmod +x /tmp/opa
           sudo mv /tmp/opa /usr/local/bin/opa
           opa version
