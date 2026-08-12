@@ -532,3 +532,61 @@ jobs:
           echo "::error::  git checkout ${REF_NAME} && bash .github/scripts/update-versions.sh dev && git commit -am 'Reset to dev versions' && git push"
           git --no-pager diff --stat
           exit 1
+
+  publish-charts:
+    name: Publish charts at the release version
+    runs-on: ubuntu-latest
+    needs: [validate, version-bump, release]
+    # ADR 0030: a release publishes all charts at X.Y.Z (not just the build-lane
+    # 0.YYYYMMDD.run). Packaged from the stamped commit so Chart.yaml is at X.Y.Z.
+    if: >-
+      !inputs.dry_run && always() && !cancelled()
+      && needs.release.result == 'success'
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - { name: hl7-transformer, dir: helm/extractor/hl7-transformer }
+          - { name: dcm4chee, dir: helm/dcm4chee }
+          - { name: hive-metastore, dir: helm/hive-metastore }
+          - { name: hl7-listener, dir: helm/hl7-listener }
+          - { name: hl7log-extractor, dir: helm/extractor/hl7log-extractor }
+          - { name: keycloak-config-cli, dir: helm/keycloak-config-cli }
+          - { name: launchpad, dir: helm/launchpad }
+          - { name: open-webui-bootstrap, dir: helm/open-webui-bootstrap }
+          - { name: orthanc, dir: helm/orthanc }
+          - { name: report-viewer, dir: helm/report-viewer }
+          - { name: scout-dashboards, dir: helm/scout-dashboards }
+          - { name: scout-opa, dir: helm/scout-opa }
+          - { name: temporal-bootstrap, dir: helm/temporal-bootstrap }
+          - { name: voila, dir: helm/voila }
+    steps:
+      - name: Checkout the stamped commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.version-bump.outputs.commit_sha || needs.validate.outputs.version_bump_sha }}
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Package, push, and sign ${{ matrix.chart.name }} at v${{ inputs.version }}
+        env:
+          CHART_DIR: ${{ matrix.chart.dir }}
+          CHART_NAME: ${{ matrix.chart.name }}
+          VERSION: ${{ inputs.version }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
+          helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
+          helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
+          ref="${REGISTRY}/washu-tag/charts/${CHART_NAME}:${VERSION}"
+          digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"
+          [ "${digest#sha256:}" != "${digest}" ] || { echo "::error::no digest for ${CHART_NAME}"; exit 1; }
+          cosign sign --key env://COSIGN_PRIVATE_KEY --use-signing-config=false \
+            --tlog-upload=false --yes "${REGISTRY}/washu-tag/charts/${CHART_NAME}@${digest}"
