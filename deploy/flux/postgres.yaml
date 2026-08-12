@@ -20,11 +20,9 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
-  healthChecks:
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: cnpg-cloudnative-pg
-      namespace: "${cnpg_operator_namespace}"
+  # No healthChecks block: Flux ignores it when wait:true (wait already health-checks
+  # everything reconciled), and it hardcoded a guessed Deployment fullname. The CR
+  # gates below use healthCheckExprs, the pattern the other operators follow.
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

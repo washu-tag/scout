@@ -222,7 +222,8 @@ metadata:
   annotations:
     kustomize.toolkit.fluxcd.io/force: "Enabled"
 spec:
-  ttlSecondsAfterFinished: 600
+  # No TTL: the TTL controller would delete the finished Job and Flux would re-apply
+  # + re-run it every interval (a reconcile loop). Flux owns the completed Job.
   backoffLimit: 3
   template:
     metadata:
@@ -260,7 +261,7 @@ spec:
               # on the pool StatefulSet before creating this Job. Poll the tenant
               # endpoint until it answers, then configure IAM.
               until mc alias set local http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000 \
-                "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure >/dev/null 2>&1 && \
+                "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" --insecure >/dev/null 2>&1 && \
                 mc ready local >/dev/null 2>&1; do
                 echo "Waiting for MinIO tenant to become ready..."
                 sleep 5

@@ -53,9 +53,13 @@ kind: Job
 metadata:
   name: keycloak-db-init
   namespace: "${keycloak_namespace}"
+  annotations:
+    # Immutable Job fields change when this SQL changes; force lets Flux recreate the
+    # Job instead of erroring. No TTL: the TTL controller would delete the finished
+    # Job and Flux would re-apply + re-run it every interval (a reconcile loop).
+    kustomize.toolkit.fluxcd.io/force: "Enabled"
 spec:
   backoffLimit: 3
-  ttlSecondsAfterFinished: 300
   template:
     metadata:
       labels:
@@ -105,18 +109,13 @@ spec:
             - |
               # keycloak owner role + keycloak database (connect to the maintenance
               # DB; CREATE DATABASE cannot run inside a transaction, hence \gexec).
-              psql --no-psqlrc -v ON_ERROR_STOP=1 -v kc_pw="$KC_DB_PW" \
+              psql --no-psqlrc -v ON_ERROR_STOP=1 -v kc_pw="$$KC_DB_PW" \
                 --dbname postgres <<'SQL'
-              DO $do$
-              BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'keycloak') THEN
-                  CREATE USER keycloak WITH PASSWORD :'kc_pw';
-                END IF;
-              END;
-              $do$ LANGUAGE plpgsql;
-
+              SELECT format('CREATE USER keycloak WITH PASSWORD %L', :'kc_pw')
+              WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'keycloak')
+              \gexec
               SELECT 'CREATE DATABASE keycloak OWNER keycloak'
-              WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'keycloak');
+              WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'keycloak')
               \gexec
               SQL
           volumeMounts:

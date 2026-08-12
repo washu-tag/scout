@@ -117,9 +117,13 @@ kind: Job
 metadata:
   name: superset-db-init
   namespace: "${scout_analytics_namespace}"
+  annotations:
+    # Immutable Job fields change when this SQL changes; force lets Flux recreate the
+    # Job instead of erroring. No TTL: the TTL controller would delete the finished
+    # Job and Flux would re-apply + re-run it every interval (a reconcile loop).
+    kustomize.toolkit.fluxcd.io/force: "Enabled"
 spec:
   backoffLimit: 3
-  ttlSecondsAfterFinished: 300
   template:
     metadata:
       labels:
@@ -171,18 +175,13 @@ spec:
             - |
               # superset owner role + superset database (connect to the maintenance
               # DB; CREATE DATABASE cannot run in a transaction, hence \gexec).
-              psql --no-psqlrc -v ON_ERROR_STOP=1 -v superset_pw="$SUPERSET_PW" \
+              psql --no-psqlrc -v ON_ERROR_STOP=1 -v superset_pw="$$SUPERSET_PW" \
                 --dbname postgres <<'SQL'
-              DO $do$
-              BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'superset') THEN
-                  CREATE USER superset WITH PASSWORD :'superset_pw';
-                END IF;
-              END;
-              $do$ LANGUAGE plpgsql;
-
+              SELECT format('CREATE USER superset WITH PASSWORD %L', :'superset_pw')
+              WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'superset')
+              \gexec
               SELECT 'CREATE DATABASE superset OWNER superset'
-              WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'superset');
+              WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'superset')
               \gexec
               SQL
           volumeMounts:

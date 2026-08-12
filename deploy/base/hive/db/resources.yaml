@@ -12,8 +12,15 @@ metadata:
 # so readonly works even though this Job runs before the metastore (unlike the
 # Ansible order). On-prem CNPG superuser is a real superuser, so the aws_deployment
 # `GRANT hive TO CURRENT_USER` dance is not needed and is omitted.
+#
+# CREATE USER runs as plain SQL guarded by a `SELECT ... WHERE NOT EXISTS \gexec`
+# (idempotent) so psql's :'..' actually interpolates the password -- inside a DO
+# block it does not, and the literal `:'hive_pw'` reaches the server as a syntax
+# error. The runtime credential env refs are $$-escaped so Flux's envsubst leaves
+# them for the shell instead of trying to substitute them as site vars.
+#
 # Secrets are referenced by fixed name only (seeded by CI/site, never in git):
-#   superuser-secret            — CNPG basic-auth (username/password), also seeded here
+#   superuser-secret            — CNPG basic-auth (username/password)
 #   hive-metastore-secret       — HIVE_METASTORE_PASSWORD = hive owner password
 #   hive-metastore-readonly-secret — HIVE_METASTORE_PASSWORD = hive_readonly password
 apiVersion: batch/v1
@@ -21,9 +28,12 @@ kind: Job
 metadata:
   name: hive-db-init
   namespace: "${hive_namespace}"
+  annotations:
+    # Immutable Job fields (spec.template) change when this SQL changes; force lets
+    # Flux recreate the Job instead of erroring on the immutable-field update.
+    kustomize.toolkit.fluxcd.io/force: "Enabled"
 spec:
   backoffLimit: 3
-  ttlSecondsAfterFinished: 300
   template:
     metadata:
       labels:
@@ -78,33 +88,23 @@ spec:
             - |
               # 1) hive owner role + hive database (connect to the maintenance DB;
               #    CREATE DATABASE cannot run inside a transaction, hence \gexec).
-              psql --no-psqlrc -v ON_ERROR_STOP=1 -v hive_pw="$HIVE_PW" \
+              psql --no-psqlrc -v ON_ERROR_STOP=1 -v hive_pw="$$HIVE_PW" \
                 --dbname postgres <<'SQL'
-              DO $do$
-              BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hive') THEN
-                  CREATE USER hive WITH PASSWORD :'hive_pw';
-                END IF;
-              END;
-              $do$ LANGUAGE plpgsql;
-
+              SELECT format('CREATE USER hive WITH PASSWORD %L', :'hive_pw')
+              WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hive')
+              \gexec
               SELECT 'CREATE DATABASE hive OWNER hive'
-              WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'hive');
+              WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'hive')
               \gexec
               SQL
 
               # 2) SELECT-only hive_readonly role + grants (connect to the hive DB).
               #    Delta Lake keeps its own txn log, so no lock-table access needed.
-              psql --no-psqlrc -v ON_ERROR_STOP=1 -v hive_ro_pw="$HIVE_RO_PW" \
+              psql --no-psqlrc -v ON_ERROR_STOP=1 -v hive_ro_pw="$$HIVE_RO_PW" \
                 --dbname hive <<'SQL'
-              DO $do$
-              BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hive_readonly') THEN
-                  CREATE USER hive_readonly WITH PASSWORD :'hive_ro_pw';
-                END IF;
-              END;
-              $do$ LANGUAGE plpgsql;
-
+              SELECT format('CREATE USER hive_readonly WITH PASSWORD %L', :'hive_ro_pw')
+              WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hive_readonly')
+              \gexec
               GRANT CONNECT ON DATABASE hive TO hive_readonly;
               GRANT USAGE ON SCHEMA public TO hive_readonly;
               GRANT SELECT ON ALL TABLES IN SCHEMA public TO hive_readonly;

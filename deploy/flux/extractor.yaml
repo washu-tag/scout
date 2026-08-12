@@ -24,4 +24,8 @@ spec:
   dependsOn:
     - name: postgres-cluster
     - name: minio-tenant
+    # hl7-transformer values hardwire the metastore URI + TRINO_HOST, and Ansible runs
+    # Install Lake + Install Trino before Install Extractor, so wait for both.
+    - name: hive-metastore
+    - name: trino-rw
     - name: temporal-bootstrap
