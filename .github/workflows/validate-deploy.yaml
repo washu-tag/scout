@@ -43,27 +43,44 @@ jobs:
 
       - name: required-vars covers every substitution
         run: |
-          set -euo pipefail
-          # kustomize build leaves ${...} literal (no postBuild subst), so an
-          # incomplete required-vars.txt renders green but fails
-          # StrictPostBuildSubstitutions at deploy. Assert the contract lists every
-          # var the bases actually use. Regenerate required-vars.txt with:
-          #   grep -rhoE '\$\{[a-z0-9_]+\}' deploy/base deploy/flux | tr -d '${}' | sort -u
-          used=$(grep -rhoE '\$\{[a-z0-9_]+\}' deploy/base deploy/flux | tr -d '${}' | sort -u)
-          declared=$(grep -vE '^\s*#|^\s*$' deploy/required-vars.txt | sort -u)
-          missing=$(comm -23 <(echo "$used") <(echo "$declared") || true)
-          if [ -n "$missing" ]; then
-            echo "::error::these ${...} vars are used in deploy/ but absent from required-vars.txt:"
-            echo "$missing" | sed 's/^/  /'
-            exit 1
-          fi
-          echo "required-vars.txt covers all $(echo "$used" | wc -l | tr -d ' ') substitution vars"
+          python3 - <<'PY'
+          import re, glob, subprocess, sys
+          # kustomize-controller runs drone/envsubst over the BUILT output, which
+          # substitutes ${NAME} AND unbraced $NAME (any case), with $$ the literal-$
+          # escape. So the substitution surface is the rendered bases + the flux/ files,
+          # not just braced-lowercase tokens in source. Assert required-vars.txt lists
+          # every envsubst target; otherwise it renders green here but fails
+          # StrictPostBuildSubstitutions (or substitutes empty) at deploy -- which is how
+          # unbraced runtime shell vars like $HIVE_PW / $MINIO_ROOT_USER slipped through.
+          blob = ""
+          dirs = subprocess.run(
+              ["bash", "-c", "find deploy/base -name kustomization.yaml -exec dirname {} \\;"],
+              capture_output=True, text=True).stdout.split()
+          for d in sorted(dirs):
+              blob += subprocess.run(["kustomize", "build", d],
+                                     capture_output=True, text=True).stdout + "\n"
+          for f in glob.glob("deploy/flux/*.yaml"):
+              blob += open(f).read() + "\n"
+          blob = blob.replace("$$", "\x00")  # drop escaped literals before matching
+          used = set(re.findall(r'\$\{([A-Za-z_][A-Za-z0-9_]*)[:}]', blob))  # ${NAME} / ${NAME:-def}
+          used |= set(re.findall(r'\$([A-Za-z_][A-Za-z0-9_]*)', blob))       # unbraced $NAME
+          declared = {l.strip() for l in open("deploy/required-vars.txt")
+                      if l.strip() and not l.lstrip().startswith("#")}
+          missing = sorted(used - declared)
+          if missing:
+              print("::error::envsubst targets used in deploy/ but not in required-vars.txt.")
+              print("::error::Add them as site vars, or $$-escape runtime shell vars so Flux leaves them literal:")
+              for m in missing:
+                  print("  " + m)
+              sys.exit(1)
+          print(f"required-vars.txt covers all {len(used)} envsubst targets")
+          PY
 
       - name: Parse Flux Kustomizations + check the DAG
         run: |
           python3 - <<'PY'
           import yaml, glob, sys, collections
-          nodes = {}; edges = []
+          nodes = {}; edges = []; names = collections.Counter()
           for f in sorted(glob.glob("deploy/flux/*.yaml")):
               try:
                   docs = list(yaml.safe_load_all(open(f)))
@@ -72,14 +89,22 @@ jobs:
               for d in docs:
                   if not d:
                       continue
-                  nodes[d["metadata"]["name"]] = f
+                  name = d["metadata"]["name"]
+                  names[name] += 1          # count before insert so collisions are caught
+                  nodes[name] = f
                   for dep in d.get("spec", {}).get("dependsOn", []):
-                      edges.append((d["metadata"]["name"], dep["name"]))
+                      edges.append((name, dep["name"]))
           rc = 0
+          dups = sorted(n for n, c in names.items() if c > 1)
+          if dups:
+              print(f"::error::duplicate Kustomization metadata.name across files (they collide in "
+                    f"flux-system and prune each other): {dups}"); rc = 1
           missing = sorted({b for _, b in edges if b not in nodes})
           if missing:
               print(f"::error::dependsOn references a Kustomization that does not exist: {missing}"); rc = 1
-          # topological sort for cycle detection
+          # Drop dangling edges before the sort so a missing target reports as a dangling
+          # ref (above), not a phantom cycle that sends you chasing a cycle that isn't there.
+          edges = [(a, b) for a, b in edges if b in nodes]
           g = collections.defaultdict(list); indeg = collections.Counter()
           for a, b in edges:
               g[b].append(a); indeg[a] += 1
@@ -93,6 +118,6 @@ jobs:
           if seen != len(nodes):
               print(f"::error::the Flux dependsOn graph has a cycle ({seen}/{len(nodes)} sortable)"); rc = 1
           if rc == 0:
-              print(f"{len(nodes)} Kustomizations, {len(edges)} edges: acyclic, no dangling refs")
+              print(f"{len(nodes)} Kustomizations, {len(edges)} edges: acyclic, no dup names, no dangling refs")
           sys.exit(rc)
           PY
