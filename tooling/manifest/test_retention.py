@@ -1,4 +1,5 @@
 """Offline tests for the haul retention policy (tooling/manifest/retention.py)."""
+
 import pytest
 
 from retention import partition
@@ -7,7 +8,12 @@ H = {c: c * 64 for c in "abcdef"}  # 64-hex digests keyed by a letter
 
 
 def _v(vid, created, tags, digest_letter):
-    return {"id": vid, "created_at": created, "tags": tags, "digest": "sha256:" + H[digest_letter]}
+    return {
+        "id": vid,
+        "created_at": created,
+        "tags": tags,
+        "digest": "sha256:" + H[digest_letter],
+    }
 
 
 def _artifact(vid, created, version_tag, digest_letter, main=False):
@@ -43,10 +49,18 @@ def test_main_is_kept_even_when_older_than_keep_n():
 
 def test_signature_follows_its_bundle():
     versions = [
-        _artifact(1, "2026-08-01T00:00:00Z", "0.20260801.1", "a"),          # old bundle -> delete
-        _sig(2, "2026-08-01T00:01:00Z", subject_letter="a", own_letter="d"),  # its sig -> delete
-        _artifact(3, "2026-08-03T00:00:00Z", "0.20260803.1", "b", main=True),  # kept bundle
-        _sig(4, "2026-08-03T00:01:00Z", subject_letter="b", own_letter="e"),  # its sig -> keep
+        _artifact(
+            1, "2026-08-01T00:00:00Z", "0.20260801.1", "a"
+        ),  # old bundle -> delete
+        _sig(
+            2, "2026-08-01T00:01:00Z", subject_letter="a", own_letter="d"
+        ),  # its sig -> delete
+        _artifact(
+            3, "2026-08-03T00:00:00Z", "0.20260803.1", "b", main=True
+        ),  # kept bundle
+        _sig(
+            4, "2026-08-03T00:01:00Z", subject_letter="b", own_letter="e"
+        ),  # its sig -> keep
     ]
     keep, delete = partition(versions, keep_n=1)
     assert keep == {3, 4} and delete == {1, 2}
@@ -55,8 +69,15 @@ def test_signature_follows_its_bundle():
 def test_untagged_and_orphan_sig_are_kept_conservatively():
     versions = [
         _artifact(1, "2026-08-03T00:00:00Z", "0.20260803.1", "a", main=True),
-        {"id": 2, "created_at": "2026-08-03T00:02:00Z", "tags": [], "digest": "sha256:" + H["b"]},  # untagged
-        _sig(3, "2026-08-01T00:00:00Z", subject_letter="f", own_letter="c"),  # subject absent -> orphan
+        {
+            "id": 2,
+            "created_at": "2026-08-03T00:02:00Z",
+            "tags": [],
+            "digest": "sha256:" + H["b"],
+        },  # untagged
+        _sig(
+            3, "2026-08-01T00:00:00Z", subject_letter="f", own_letter="c"
+        ),  # subject absent -> orphan
     ]
     keep, delete = partition(versions, keep_n=1)
     assert keep == {1, 2, 3} and delete == set()

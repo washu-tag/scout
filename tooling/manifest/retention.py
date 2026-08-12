@@ -96,27 +96,41 @@ def _main():
     import sys
 
     ap = argparse.ArgumentParser(description="Compute haul package retention plan.")
-    ap.add_argument("--keep", type=int, default=10, help="version-tagged hauls to retain")
-    ap.add_argument("versions_json", help="file of `GET .../versions` JSON, or - for stdin")
+    ap.add_argument(
+        "--keep", type=int, default=10, help="version-tagged hauls to retain"
+    )
+    ap.add_argument(
+        "versions_json", help="file of `GET .../versions` JSON, or - for stdin"
+    )
     args = ap.parse_args()
 
-    raw = sys.stdin.read() if args.versions_json == "-" else open(args.versions_json).read()
+    raw = (
+        sys.stdin.read()
+        if args.versions_json == "-"
+        else open(args.versions_json).read()
+    )
     data = json.loads(raw)
     versions = [
         {
             "id": v["id"],
             "created_at": v.get("created_at", ""),
             "digest": v.get("name", ""),  # GHCR container version `name` == its digest
-            "tags": ((v.get("metadata") or {}).get("container") or {}).get("tags") or [],
+            "tags": ((v.get("metadata") or {}).get("container") or {}).get("tags")
+            or [],
         }
         for v in data
     ]
     keep, delete = partition(versions, args.keep)
 
     by_id = {v["id"]: v for v in versions}
-    print(f"total={len(versions)} keep={len(keep)} delete={len(delete)} (keep_n={args.keep})", file=sys.stderr)
+    print(
+        f"total={len(versions)} keep={len(keep)} delete={len(delete)} (keep_n={args.keep})",
+        file=sys.stderr,
+    )
     for vid in sorted(delete):
-        print(f"  DELETE {vid} tags={by_id[vid]['tags'] or '(untagged)'}", file=sys.stderr)
+        print(
+            f"  DELETE {vid} tags={by_id[vid]['tags'] or '(untagged)'}", file=sys.stderr
+        )
     # stdout = machine-readable delete ids, one per line, for the workflow to act on
     for vid in sorted(delete):
         print(vid)
