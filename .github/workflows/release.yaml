@@ -243,15 +243,17 @@ jobs:
       - name: Determine target commit
         id: target
         env:
-          REF_NAME: ${{ github.ref_name }}
+          # Pin the release to the version-bump (stamped) commit, not current HEAD, so a
+          # feature merged mid-release can't be swept into the images or past the tag (it
+          # would ship in X.Y.Z but land in no changelog). To fold a fix into a failed
+          # release: reset + re-dispatch, so version-bump re-stamps the fixed HEAD.
+          BUMP_SHA: ${{ needs.version-bump.outputs.commit_sha || needs.validate.outputs.version_bump_sha }}
         run: |
-          # The release should include everything on main at this point — not just
-          # the version bump commit, but also any fixes pushed after it (e.g., if a
-          # previous release attempt failed and we pushed a fix before re-running).
-          git pull origin "${REF_NAME}"
-          HEAD_SHA=$(git rev-parse HEAD)
-          echo "Waiting for build on commit: $HEAD_SHA"
-          echo "sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          if [ -z "${BUMP_SHA}" ]; then
+            echo "::error::no version-bump commit to pin the release to"; exit 1
+          fi
+          echo "Pinning release build to ${BUMP_SHA}"
+          echo "sha=${BUMP_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Wait for CI workflow
         id: wait
