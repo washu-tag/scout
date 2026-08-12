@@ -1,0 +1,176 @@
+# Trino RW (admin) -- a small read-write Trino used only by the hl7-transformer
+# for view DDL (and by Voila for bounded reviewer-annotation writes). Lives in
+# ${scout_extractor_namespace} next to the transformer. Differences from the
+# user-facing Trino: writes are allowed (no delta.security=READ_ONLY), it uses
+# the writable Hive metastore, it has no JWT/OPA/TLS (ingress is fenced by the
+# chart's NetworkPolicy instead), and a single small worker (DDL workload only).
+#
+# Unlike the read-only Trino (whose namespace is owned by its OPA dependsOn),
+# none of this component's deps (minio-tenant, hive-metastore) create
+# scout-extractor, so this base declares the Namespace -- mirroring the RW
+# Ansible role's "ensure namespace" task and the cassandra/elasticsearch/
+# extractor bases that co-declare it (identical objects, Flux SSA merges).
+#
+# Secrets by fixed name only (seeded by CI/site in Phase 3, ESO in Phase 4;
+# NEVER in git):
+#   - trino-rw-s3 (Secret): S3_ACCESS_KEY / S3_SECRET_KEY (lake writer), read by
+#     the Delta catalog via Trino's $${ENV:VAR} syntax (escaped so Flux's
+#     postBuild substitution emits it literally rather than failing on an
+#     undefined braced var under StrictPostBuildSubstitutions).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "${scout_extractor_namespace}"
+---
+# Upstream Trino chart source, declared in-namespace so the HelmRelease below has
+# a local source (same repo the read-only Trino base declares in its namespace).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: trino
+  namespace: "${scout_extractor_namespace}"
+spec:
+  interval: 1h
+  url: https://trinodb.github.io/charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: trino-rw
+  namespace: "${scout_extractor_namespace}"
+spec:
+  interval: 30m
+  # Upstream chart pinned in versions.yaml (trino_helm_chart_version ~1.42.2),
+  # Renovate-tracked; stamped into the config artifact at publish. Literal here
+  # until the stamping job lands (matches the read-only Trino base).
+  chart:
+    spec:
+      chart: trino
+      version: "1.42.2"
+      sourceRef:
+        kind: HelmRepository
+        name: trino
+        namespace: "${scout_extractor_namespace}"
+  values:
+    # Make resource names match the release name exactly. Without this the chart's
+    # fullname helper yields "<release>-trino" (it only dedupes when release name
+    # equals chart name). The extractor consumes this as trino-rw.<namespace>.
+    fullnameOverride: trino-rw
+    # Fixed-name S3 secret -> container env; the catalog reads it via $${ENV:VAR}.
+    envFrom:
+      - secretRef:
+          name: trino-rw-s3
+    server:
+      workers: 1
+      config:
+        query:
+          # workers x worker_heap x per-node fraction = 1 x 1G x 0.3.
+          maxMemory: "0.3GB"
+    # JMX exporter for Prometheus (parity with the user-facing Trino).
+    jmx:
+      enabled: true
+      registryPort: 9080
+      serverPort: 9081
+      exporter:
+        enabled: true
+        image: bitnamilegacy/jmx-exporter:1.0.1
+        pullPolicy: IfNotPresent
+        port: 5556
+        configProperties: |
+          hostPort: localhost:9080
+          startDelaySeconds: 30
+          ssl: false
+          lowercaseOutputName: false
+    coordinator:
+      jvm:
+        maxHeapSize: 512M
+      config:
+        memory:
+          heapHeadroomPerNode: ""
+        query:
+          maxMemoryPerNode: "153.6MB"
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          cpu: 500m
+          memory: 2Gi
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5556"
+        prometheus.io/path: "/metrics"
+    worker:
+      jvm:
+        maxHeapSize: 1G
+      config:
+        memory:
+          heapHeadroomPerNode: ""
+        query:
+          maxMemoryPerNode: "0.3GB"
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1Gi
+        limits:
+          cpu: 500m
+          memory: 4Gi
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5556"
+        prometheus.io/path: "/metrics"
+    # Writable Delta catalog over the writable Hive metastore. On-prem: MinIO S3,
+    # path-style, creds from the trino-rw-s3 envFrom via $${ENV:...}.
+    catalogs:
+      delta: |
+        connector.name=delta_lake
+        hive.metastore.uri=${hive_metastore_endpoint}
+        fs.native-s3.enabled=true
+        s3.region=${s3_region}
+        s3.aws-access-key=$${ENV:S3_ACCESS_KEY}
+        s3.aws-secret-key=$${ENV:S3_SECRET_KEY}
+        s3.endpoint=${s3_endpoint}
+        s3.path-style-access=true
+    # Fence ingress to trino-rw. The chart auto-allows Trino-pod-to-Trino-pod when
+    # networkPolicy is enabled, so we only declare the external allowances:
+    #   - hl7-transformer pods in the extractor namespace (8080, view DDL)
+    #   - Voila pods in the analytics namespace (8080, bounded annotation writes
+    #     back to default.reports_followup -- trino-analytics is read-only)
+    #   - Prometheus server in the monitoring namespace (5556, JMX scrape)
+    # The Prometheus rule assumes the prometheus-community chart's labels
+    # (server pod: app.kubernetes.io/component=server); kube-prometheus-stack
+    # uses a different value and scrapes would silently break -- re-check then.
+    networkPolicy:
+      enabled: true
+      ingress:
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: "${scout_extractor_namespace}"
+              podSelector:
+                matchLabels:
+                  app.kubernetes.io/name: hl7-transformer
+          ports:
+            - port: 8080
+              protocol: TCP
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: "${scout_analytics_namespace}"
+              podSelector:
+                matchLabels:
+                  app.kubernetes.io/name: voila
+          ports:
+            - port: 8080
+              protocol: TCP
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: "${prometheus_namespace}"
+              podSelector:
+                matchLabels:
+                  app.kubernetes.io/name: prometheus
+                  app.kubernetes.io/component: server
+          ports:
+            - port: 5556
+              protocol: TCP

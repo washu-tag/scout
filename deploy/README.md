@@ -25,8 +25,22 @@ until CI switches `deploy-and-test` to deploy from it. See
   values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git.
 
 ## Status
-**Ingest vertical slice bases + DAG done**: postgres, minio, cassandra,
-elasticsearch, hive, temporal, extractor (13 Flux `Kustomization`s, acyclic,
-operator/CR splits with health-gated edges). Next: the config-artifact publish
-job (stamp refs from the haul + emit the `cluster-vars` ConfigMap + `required-vars`)
-and the `deploy-and-test` switch (the ingest suite is the gate).
+**Bases + DAG done for the ingest slice + the auth/analytics layer** (22 Flux
+`Kustomization`s, acyclic): postgres, minio, cassandra, elasticsearch, hive,
+temporal, extractor, valkey, keycloak (+ realm), oauth2-proxy, opa, trino (ro+rw),
+superset (+ dashboards).
+
+Remaining components: jupyter, report-viewer, monitoring, launchpad, and the
+feature Components (chat/voila/xnat/data-generator/gpu).
+
+Pre-deploy fixes (deferred; all gated on the build lane being live, which is where
+Scout-chart versions get stamped):
+1. **Shared sources**: several `prune: true` Kustomizations co-declare the same
+   `scout-charts` (and upstream) `HelmRepository` in a shared namespace (e.g.
+   scout-analytics: opa, superset, trino) and would fight over it. Extract the
+   `HelmRepository` declarations into a per-namespace `sources` base owned by one
+   Kustomization.
+2. **Config-artifact publish job** stamps the Scout charts' `0.0.0` placeholders
+   with real published versions (from the haul).
+3. **`deploy-and-test` switch** to deploy the ingest slice via Flux (ingest suite
+   = gate).

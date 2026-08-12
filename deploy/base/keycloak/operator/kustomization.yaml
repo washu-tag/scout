@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Places the upstream operator's namespaced resources (SA/Role/RoleBinding/
+# Deployment/Service from kubernetes.yml, which carry no namespace) into
+# ${keycloak_namespace}; the CRDs are cluster-scoped and left untouched. Flux's
+# postBuild substitution then replaces ${keycloak_namespace} in the built output.
+namespace: "${keycloak_namespace}"
+resources:
+  - resources.yaml
+  # Pinned to keycloak_version (26.6.4) from group_vars/all/versions.yaml,
+  # Renovate-tracked; stamped into the config artifact at publish. Literal here
+  # until the stamping job lands. See the air-gapped vendoring note in resources.yaml.
+  - https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.6.4/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
+  - https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.6.4/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml
+  - https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.6.4/kubernetes/kubernetes.yml

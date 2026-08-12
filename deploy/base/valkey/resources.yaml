@@ -1,0 +1,93 @@
+# Valkey: the shared standalone cache/queue backing store (ADR 0031). A single
+# Valkey instance from the upstream valkey/valkey chart, consumed by
+# oauth2-proxy (session store), Superset, and open-webui (redis://). Layer 2,
+# no deps: it declares its own Namespace so it stands up without waiting on any
+# other component. It lands in ${valkey_namespace} (resolves to scout-core),
+# co-located with the CNPG cluster and the rest of scout-core. Uses the
+# valkey-specific namespace var -- the same var the Ansible role and every
+# consumer (superset, oauth2-proxy, open-webui, prometheus) reference --
+# matching the extractor base, which declares its own ${scout_extractor_namespace}.
+#
+# Auth: ACL-enabled, keyed off the fixed-name `valkey-auth` Secret (keys
+# `password` for the default ACL user + `password-file` for the metrics
+# exporter). Seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git.
+# Persistence: AOF (appendonly, everysec) on a PVC per the Ansible role.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "${valkey_namespace}"
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: valkey
+  namespace: "${valkey_namespace}"
+spec:
+  interval: 1h
+  url: https://valkey-io.github.io/valkey-helm/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: valkey
+  namespace: "${valkey_namespace}"
+spec:
+  interval: 30m
+  # Version pinned in versions.yaml (valkey_chart_version), Renovate-tracked;
+  # stamped into the config artifact at publish. Literal here until the stamping
+  # job lands.
+  chart:
+    spec:
+      chart: valkey
+      version: "0.9.4"
+      sourceRef:
+        kind: HelmRepository
+        name: valkey
+        namespace: "${valkey_namespace}"
+  values:
+    auth:
+      enabled: true
+      # Fixed-name Secret; password + password-file keys seeded by CI/site, not
+      # committed. The ACL string below plus this password grant the default user
+      # full access (see the Ansible role / valkey.io/topics/acl).
+      usersExistingSecret: valkey-auth
+      aclUsers:
+        default:
+          permissions: "allkeys allchannels allcommands"
+          passwordKey: password
+    service:
+      type: ClusterIP
+      port: 6379
+    dataStorage:
+      enabled: true
+      requestedSize: "${valkey_storage_size}"
+      className: "${valkey_storage_class}"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 1
+        memory: 2Gi
+    # AOF persistence (durable-ish cache); mirrors valkey_persistence_enabled.
+    valkeyConfig: |
+      appendonly yes
+      appendfsync everysec
+    metrics:
+      enabled: true
+      exporter:
+        # The exporter authenticates via the same fixed-name valkey-auth Secret;
+        # the chart mounts it as the `valkey-auth-exporter` volume, from which the
+        # exporter reads the password-file key.
+        extraExporterSecrets:
+          - name: valkey-auth
+        extraVolumeMounts:
+          - name: valkey-auth-exporter
+            mountPath: /valkey-auth
+            readOnly: true
+        args:
+          - "--redis.password-file=/valkey-auth/password-file"
+      # Scout scrapes valkey-metrics via static Prometheus config, not a
+      # ServiceMonitor (mirrors the Ansible role).
+      serviceMonitor:
+        enabled: false

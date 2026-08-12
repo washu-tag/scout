@@ -1,0 +1,732 @@
+# Superset server (Scout Analytics BI, ADR 0030/0031). The upstream apache/superset
+# chart, plus the Scout-owned side objects the Ansible role creates around it:
+# the metadata-DB bootstrap Job, the StatsD-exporter Service + mapping, and the
+# statsd/branding/OAuth wiring folded into the chart's superset_config.py.
+#
+# Namespace ${scout_analytics_namespace} (scout-analytics) is declared here. The
+# opa base is the other scout-analytics resident and declares this Namespace via
+# the same ${scout_analytics_namespace} var, so the two declarations are identical
+# (mirrors minio-tenant + hive-db co-declaring scout-data). The trino/keycloak
+# dependsOn edges gate readiness, not namespace creation.
+#
+# Secret handling (never in git): the chart's own env Secret is disabled
+# (secretEnv.create=false) so BOTH the server and the scout-dashboards import Job
+# consume ONE externally-seeded, fixed-name Secret `superset-env` via envFrom.
+# CI/site (Phase 3) or ESO (Phase 4) seeds it; it carries the full runtime env the
+# chart's superset_config.py reads with os.getenv:
+#   connection: DB_HOST/DB_PORT/DB_USER/DB_PASS/DB_NAME,
+#               REDIS_HOST/REDIS_PORT/REDIS_USER/REDIS_PROTO/REDIS_DB/REDIS_CELERY_DB/REDIS_PASSWORD
+#   secrets:    SUPERSET_SECRET_KEY, KEYCLOAK_SUPERSET_CLIENT_SECRET (user OAuth),
+#               KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET (Trino svc token)
+#   svc config: KEYCLOAK_TOKEN_URL, KEYCLOAK_SUPERSET_SVC_CLIENT_ID, TRINO_CA_CERT
+# Other fixed-name refs (seeded by CI/site, never in git):
+#   superuser-secret        -- CNPG basic-auth (username/password); used by the DB Job
+#   superset-valkey-auth    -- REDIS_PASSWORD; read by the dashboards import Job
+#   trino-tls               -- cert-manager CA bundle for the user-facing Trino's TLS
+#                              listener; mounted so DB_CONNECTION_MUTATOR can verify it
+#   scout-logo (ConfigMap)  -- binary Scout logo/favicon branding assets (like the
+#                              extractor's s3-env, a fixed-name CM seeded by CI/site,
+#                              not embedded in git)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "${scout_analytics_namespace}"
+---
+# Upstream apache/superset chart (normal HelmRepository).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: superset
+  namespace: "${scout_analytics_namespace}"
+spec:
+  interval: 1h
+  url: https://apache.github.io/superset
+---
+# StatsD-exporter mapping for the sidecar (chart-free side object, mirrors the
+# Ansible role's superset-statsd-mapping ConfigMap). The $1/$2/$3 regex refs are
+# digit-prefixed so Flux's ${var} substitution leaves them untouched.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: superset-statsd-mapping
+  namespace: "${scout_analytics_namespace}"
+data:
+  statsd_mapping.yaml: |
+    mappings:
+      # ----------------------------------------------------------------------
+      # REST API timings
+      # Pattern: superset.<XRestApi>.<method>.time
+      # ----------------------------------------------------------------------
+      - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.time"
+        match_type: regex
+        name: 'superset_api_request_duration_ms'
+        labels:
+          api: '$1'
+          method: '$2'
+        observer_type: histogram
+        histogram_options:
+          buckets: [10, 50, 100, 250, 500, 1000, 2500]
+
+      # ----------------------------------------------------------------------
+      # REST API counters
+      # Pattern: superset.<XRestApi>.<method>.<status>
+      # ----------------------------------------------------------------------
+      - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.(\\w+)"
+        match_type: regex
+        name: 'superset_api_requests_total'
+        labels:
+          api: '$1'
+          method: '$2'
+          status: '$3'
+
+      # ----------------------------------------------------------------------
+      # Drop everything else
+      # ----------------------------------------------------------------------
+      - match: '.'
+        match_type: regex
+        action: drop
+        name: 'dropped'
+---
+# Prometheus scrape target for the statsd-exporter sidecar (port 9102).
+apiVersion: v1
+kind: Service
+metadata:
+  name: superset-statsd-metrics
+  namespace: "${scout_analytics_namespace}"
+  labels:
+    app: superset
+    component: statsd-exporter
+spec:
+  type: ClusterIP
+  selector:
+    app: superset
+  ports:
+    - name: metrics
+      port: 9102
+      targetPort: 9102
+      protocol: TCP
+---
+# Bootstraps the Superset metadata DB in the shared CNPG cluster, replacing the
+# Ansible role's create_db_with_owner psql Job. Runs in ${scout_analytics_namespace} and
+# connects over the network to the -rw endpoint in ${postgres_cluster_namespace};
+# creates the `superset` owner role (password = DB_PASS from superset-env, the same
+# value the chart connects with) + the `superset` database. On-prem CNPG superuser
+# is a real superuser, so the aws_deployment GRANT/REVOKE dance is omitted.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: superset-db-init
+  namespace: "${scout_analytics_namespace}"
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: superset-db-init
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: postgres:16
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: HOME
+              value: /tmp
+            - name: PGHOST
+              value: "${postgres_cluster_name}-rw.${postgres_cluster_namespace}"
+            - name: PGPORT
+              value: "5432"
+            - name: PGSSLMODE
+              value: require
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: superuser-secret
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: superuser-secret
+                  key: password
+            # superset owner password; same key the chart reads for DB_PASS so the
+            # role it creates and the URI the app connects with stay in lockstep.
+            - name: SUPERSET_PW
+              valueFrom:
+                secretKeyRef:
+                  name: superset-env
+                  key: DB_PASS
+          command:
+            - sh
+            - -ec
+            - |
+              # superset owner role + superset database (connect to the maintenance
+              # DB; CREATE DATABASE cannot run in a transaction, hence \gexec).
+              psql --no-psqlrc -v ON_ERROR_STOP=1 -v superset_pw="$SUPERSET_PW" \
+                --dbname postgres <<'SQL'
+              DO $do$
+              BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'superset') THEN
+                  CREATE USER superset WITH PASSWORD :'superset_pw';
+                END IF;
+              END;
+              $do$ LANGUAGE plpgsql;
+
+              SELECT 'CREATE DATABASE superset OWNER superset'
+              WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'superset');
+              \gexec
+              SQL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  # Release name is `superset` so the chart fullname is `superset`; that fixes the
+  # env/config Secret names (superset-env / superset-config) the dashboards import
+  # Job consumes by fixed name.
+  name: superset
+  namespace: "${scout_analytics_namespace}"
+spec:
+  interval: 30m
+  # Mirrors the Ansible helm timeout: the chart's init Job (db upgrade + admin
+  # bootstrap) runs at install and takes a while.
+  timeout: 15m
+  # Version pinned in versions.yaml (superset_helm_chart_version), Renovate-tracked;
+  # stamped into the config artifact at publish. Literal here until stamping lands.
+  chart:
+    spec:
+      chart: superset
+      version: "0.15.5"
+      sourceRef:
+        kind: HelmRepository
+        name: superset
+        namespace: "${scout_analytics_namespace}"
+  values:
+    # Scout's custom Superset image (build-lane-stamped at publish; literal here).
+    image:
+      repository: ghcr.io/washu-tag/superset
+      tag: "5.0.0"
+    # Disable the chart's generated env Secret so both the server and the
+    # dashboards import Job read the externally-seeded, fixed-name `superset-env`
+    # (see header). envFromSecret defaults to `<fullname>-env` = `superset-env`.
+    secretEnv:
+      create: false
+    # Embedded Redis off -- the centralized Valkey instance backs cache + Celery.
+    redis:
+      enabled: false
+    # No bundled Postgres; metadata DB is the shared CNPG cluster (see DB Job).
+    postgresql:
+      enabled: false
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      annotations:
+        traefik.ingress.kubernetes.io/router.middlewares: >-
+          kube-system-oauth2-proxy-error@kubernetescrd,
+          kube-system-oauth2-proxy-auth@kubernetescrd,
+          kube-system-security-headers@kubernetescrd
+      path: /
+      hosts:
+        - "superset.${server_hostname}"
+    supersetNode:
+      connections:
+        # The actual connection values arrive at runtime from `superset-env`
+        # (the chart's superset_config.py reads them with os.getenv); db_type
+        # defaults to postgresql. The one value needed at render time is a
+        # non-empty redis_password, so the chart templates the password INTO the
+        # Redis URLs -- the real REDIS_PASSWORD comes from superset-env at
+        # runtime and this placeholder value itself is never used.
+        redis_password: "placeholder"
+      resources:
+        requests:
+          cpu: 250m
+          memory: 1Gi
+        limits:
+          cpu: 2
+          memory: 2Gi
+      extraContainers:
+        - name: statsd-exporter
+          # Pinned in versions.yaml (superset_statsd_exporter_tag).
+          image: prom/statsd-exporter:v0.29.0
+          args:
+            - --statsd.listen-udp=:9125
+            - --statsd.listen-tcp=
+            - --web.listen-address=:9102
+            - --statsd.mapping-config=/etc/statsd-exporter/statsd_mapping.yaml
+          ports:
+            - name: statsd-udp
+              containerPort: 9125
+              protocol: UDP
+            - name: metrics
+              containerPort: 9102
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: statsd-mapping
+              mountPath: /etc/statsd-exporter
+              readOnly: true
+    init:
+      # Override the chart's default admin display name so the local fallback admin
+      # shows as "Scout Admin". Only applied on first install (init Job creates the
+      # admin row if absent); OAuth via Keycloak is the real login path. Password is
+      # left to the chart default -- a real credential can't be sourced from a
+      # Secret through the render-time initscript, so it is not set here.
+      adminUser:
+        firstname: Scout
+        lastname: Admin
+        email: admin@scout.local
+    configOverrides:
+      branding: |
+        APP_NAME = "Scout Analytics"
+        APP_ICON = "/static/assets/images/scout.png"
+        APP_ICON_WIDTH = 200
+        LOGO_TARGET_PATH = "https://${server_hostname}"
+        LOGO_TOOLTIP = "Scout Launchpad"
+        FAVICONS = [{"href": "/static/assets/images/favicon.ico"}]
+      custom_routing: |
+        from flask import redirect, url_for
+        from flask_appbuilder import expose, IndexView
+
+        from superset.superset_typing import FlaskResponse
+
+        class SupersetIndexView(IndexView):
+            @expose("/")
+            def index(self) -> FlaskResponse:
+                return redirect(url_for("Superset.dashboard", dashboard_id_or_slug="scout"))
+
+        FAB_INDEX_VIEW = f"{SupersetIndexView.__module__}.{SupersetIndexView.__name__}"
+      sql_alchemy: |
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_size": 30,
+            "max_overflow": 30,
+            "pool_timeout": 60,
+        }
+      enable_oauth: |
+        from flask_appbuilder.security.manager import AUTH_OAUTH
+        from flask_appbuilder.security.views import AuthOAuthView, expose
+        from superset.security import SupersetSecurityManager
+        from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
+        from superset.exceptions import SupersetSecurityException
+        from flask import g, redirect, session
+        import logging
+        OAUTH_PROVIDERS = OPENID_PROVIDERS = [
+            {
+                "name": "keycloak",
+                "icon": "fa-key",
+                "token_key": "access_token",
+                "remote_app": {
+                    "client_id": "superset",
+                    # Confidential-client secret sourced from the env (superset-env),
+                    # never inlined into config committed to git.
+                    "client_secret": os.environ.get("KEYCLOAK_SUPERSET_CLIENT_SECRET"),
+                    "client_kwargs": {"scope": "openid microprofile-jwt"},
+                    "api_base_url": "https://keycloak.${server_hostname}/realms/scout/protocol/",
+                    "access_token_url": "https://keycloak.${server_hostname}/realms/scout/protocol/openid-connect/token",
+                    "authorize_url": "https://keycloak.${server_hostname}/realms/scout/protocol/openid-connect/auth",
+                    "jwks_uri": "https://keycloak.${server_hostname}/realms/scout/protocol/openid-connect/certs",
+                    "request_token_url": None
+                },
+            }
+        ]
+        AUTH_ROLES_MAPPING = {
+            "superset_admin": ["Admin"],
+            "superset_alpha": ["Alpha"],
+            "superset_gamma": ["Gamma"],
+            "superset_sql_lab": ["sql_lab"]
+        }
+        AUTH_TYPE = AUTH_OAUTH
+        AUTH_USER_REGISTRATION = True
+        AUTH_USER_REGISTRATION_ROLE = 'Alpha'
+        AUTH_ROLES_SYNC_AT_LOGIN = True
+        class KeycloakOAuthView(AuthOAuthView):
+            """
+            Custom Auth View to handle Keycloak login and logout redirection
+            """
+            @expose("/login/")
+            def login(self, provider="keycloak"):
+                # Hacky workaround to remove stale 'Access is Denied' error messages from session.
+                # When an unauthenticated user tries to access a protected page, Superset queues an 'Access is Denied' popup message.
+                # With OAuth, the user is redirected to an external login page, so the error is not shown immediately.
+                # After successful login, the old error message is displayed, which is confusing since the user now has access.
+                flashes = session.get('_flashes', [])
+                logging.debug(f"Flashes before cleanup: {flashes}")
+                session['_flashes'] = [f for f in flashes if f != ('danger', 'Access is Denied')]
+                logging.debug(f"Flashes after cleanup: {session.get('_flashes', [])}")
+                return super().login(provider=provider)
+            @expose('/logout/', methods=['GET', 'POST'])
+            def logout(self):
+                super().logout()
+                return redirect('https://auth.${server_hostname}/oauth2/sign_out')
+        class KeycloakSecurityManager(SupersetSecurityManager):
+            """
+            Create a new SecurityManager that uses the KeycloakOAuthView and Keycloak role mapping
+            """
+            def __init__(self, appbuilder):
+                super(KeycloakSecurityManager, self).__init__(appbuilder)
+                app = self.appbuilder.get_app
+                app.config.setdefault("AUTH_ROLES_MAPPING", AUTH_ROLES_MAPPING)
+                app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
+                self.authoauthview = KeycloakOAuthView
+            def raise_for_access(self, **kwargs) -> None:
+                # The base check only confirms the caller can use the (shared) Trino
+                # database, not that they ran the query, so any signed-in user could
+                # download another user's SQL Lab results via its guessable id.
+                # Require query ownership unless the caller has all_query_access.
+                super().raise_for_access(**kwargs)
+                query = kwargs.get("query")
+                if (
+                    query is not None
+                    and not self.can_access("all_query_access", "all_query_access")
+                    and query.user_id != g.user.id
+                ):
+                    raise SupersetSecurityException(
+                        SupersetError(
+                            error_type=SupersetErrorType.QUERY_SECURITY_ACCESS_ERROR,
+                            message="You do not have access to this query.",
+                            level=ErrorLevel.ERROR,
+                        )
+                    )
+        CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
+      proxy_configuration: |
+        PREFERRED_URL_SCHEME = "https"
+        ENABLE_PROXY_FIX = True
+      feature_flags: |
+        # Key cached chart/dashboard results by user so a broad-access user's
+        # cached copy is never served to a narrower-access viewer (refs #502).
+        FEATURE_FLAGS = {
+            "CACHE_QUERY_BY_USER": True,
+        }
+      prometheus_metrics: |
+        """
+        Superset database metrics for Prometheus.
+
+        Provides connection pool metrics for Superset's metadata database.
+
+        Metrics exposed:
+        - superset_db_pool_size: Configured pool size
+        - superset_db_pool_max_overflow: Configured max overflow connections
+        - superset_db_pool_checked_in: Available connections in pool
+        - superset_db_pool_checked_out: Connections currently in use
+        - superset_db_pool_overflow: Overflow connections in use (always >= 0)
+        """
+
+        import logging
+        import threading
+
+        from flask import Flask
+        from prometheus_client import Gauge, make_wsgi_app
+        from sqlalchemy import event
+        from sqlalchemy.pool import Pool
+        from werkzeug.middleware.dispatcher import DispatcherMiddleware
+
+        logger = logging.getLogger(__name__)
+
+        # Connection pool metrics (Gauges)
+        db_pool_size = Gauge(
+            "superset_db_pool_size",
+            "Database connection pool size (configured)",
+        )
+        db_pool_max_overflow = Gauge(
+            "superset_db_pool_max_overflow",
+            "Maximum overflow connections (configured)",
+        )
+        db_pool_checked_in = Gauge(
+            "superset_db_pool_checked_in",
+            "Checked in (available) connections",
+        )
+        db_pool_checked_out = Gauge(
+            "superset_db_pool_checked_out",
+            "Checked out (in use) connections",
+        )
+        db_pool_overflow = Gauge(
+            "superset_db_pool_overflow",
+            "Overflow connections currently in use",
+        )
+
+
+        def _update_pool_metrics(pool) -> None:
+            """Update all pool metrics for a given pool."""
+            try:
+                pool_size = pool.size()
+                max_overflow = getattr(pool, "_max_overflow", 0)
+                checked_in = pool.checkedin()
+                checked_out = pool.checkedout()
+                overflow_in_use = max(0, checked_out - pool_size)
+
+                db_pool_size.set(pool_size)
+                db_pool_max_overflow.set(max_overflow)
+                db_pool_checked_in.set(checked_in)
+                db_pool_checked_out.set(checked_out)
+                db_pool_overflow.set(overflow_in_use)
+            except Exception as e:
+                logger.debug(f"Error updating pool metrics: {e}")
+
+
+        @event.listens_for(Pool, "connect")
+        def on_pool_connect(dbapi_conn, connection_record):
+            """Called when a new DBAPI connection is created."""
+            try:
+                pool = getattr(connection_record, "_pool", None)
+                if pool is None:
+                    from superset import db
+
+                    pool = db.engine.pool
+
+                if pool:
+                    _update_pool_metrics(pool)
+            except Exception as e:
+                logger.debug(f"Error in on_pool_connect: {e}")
+
+
+        @event.listens_for(Pool, "checkout")
+        def on_pool_checkout(dbapi_conn, connection_record, connection_proxy):
+            """Called when a connection is retrieved from the pool."""
+            try:
+                pool = getattr(connection_record, "_pool", None)
+                if pool is None:
+                    from superset import db
+
+                    pool = db.engine.pool
+
+                if pool:
+                    _update_pool_metrics(pool)
+            except Exception as e:
+                logger.debug(f"Error in on_pool_checkout: {e}")
+
+
+        @event.listens_for(Pool, "checkin")
+        def on_pool_checkin(dbapi_conn, connection_record):
+            """Called when a connection is returned to the pool."""
+            try:
+                pool = getattr(connection_record, "_pool", None)
+                if pool is None:
+                    from superset import db
+
+                    pool = db.engine.pool
+
+                if pool:
+                    _update_pool_metrics(pool)
+            except Exception as e:
+                logger.debug(f"Error in on_pool_checkin: {e}")
+
+
+        def _periodic_pool_update(interval: int = 15) -> None:
+            """
+            Periodically update pool metrics for Superset's main database.
+
+            This ensures metrics are fresh even if no pool events occur.
+            """
+            while True:
+                try:
+                    from superset import db
+
+                    pool = db.engine.pool
+                    _update_pool_metrics(pool)
+                except Exception as e:
+                    logger.debug(f"Error in periodic pool update: {e}")
+
+                threading.Event().wait(interval)
+
+
+        def setup_metrics(app: Flask) -> Flask:
+            """
+            Configure Prometheus metrics endpoint and start background tasks.
+
+            This function is called by Superset via FLASK_APP_MUTATOR.
+            """
+            metrics_thread = threading.Thread(
+                target=_periodic_pool_update, args=(15,), daemon=True, name="superset-metrics"
+            )
+            metrics_thread.start()
+            logger.info("Started Superset metrics collection thread")
+
+            app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
+
+            return app
+
+
+        FLASK_APP_MUTATOR = setup_metrics
+      trino_auth: |
+        """Superset DB_CONNECTION_MUTATOR for Trino with per-user impersonation.
+
+        Pattern: Superset connects to Trino as the `superset_svc` Keycloak service
+        principal (client_credentials grant), and impersonates the logged-in
+        Superset user via the X-Trino-User HTTP header. Trino's OPA policy
+        permits superset_svc to impersonate any user; the actual data-access
+        decision uses the impersonated user's Keycloak attributes
+        (allowed_facilities, redact_select_identifiers).
+
+        Token caching: a single service-principal token is reused across all
+        connections until ~80% of its lifetime has elapsed, then refreshed. The
+        cache is process-local -- each Superset worker mints its own token.
+        """
+
+        import os
+        import time
+        import threading
+        import requests
+        from flask import has_request_context
+        from trino.auth import JWTAuthentication
+
+        _TOKEN_CACHE: dict = {"access_token": None, "expires_at": 0.0}
+        _TOKEN_LOCK = threading.Lock()
+        _REFRESH_BEFORE_EXPIRY_SECONDS = 60
+
+
+        def _mint_token() -> str:
+            """Fetch a fresh client_credentials token from Keycloak."""
+            response = requests.post(
+                os.environ["KEYCLOAK_TOKEN_URL"],
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": os.environ["KEYCLOAK_SUPERSET_SVC_CLIENT_ID"],
+                    "client_secret": os.environ["KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET"],
+                },
+                timeout=10,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            _TOKEN_CACHE["access_token"] = payload["access_token"]
+            _TOKEN_CACHE["expires_at"] = (
+                time.time() + payload["expires_in"] - _REFRESH_BEFORE_EXPIRY_SECONDS
+            )
+            return _TOKEN_CACHE["access_token"]
+
+
+        def _get_token() -> str:
+            """Return a cached token if still valid, else refresh."""
+            with _TOKEN_LOCK:
+                if _TOKEN_CACHE["access_token"] and time.time() < _TOKEN_CACHE["expires_at"]:
+                    return _TOKEN_CACHE["access_token"]
+                return _mint_token()
+
+
+        def _in_celery_task() -> bool:
+            """True when executing inside a Celery worker task.
+
+            Async SQL Lab, Alerts & Reports, and cache warm-up run queries in a
+            Celery worker with no Flask request context, but under override_user()
+            (see superset/sql_lab.py get_sql_results), so `username` here is the real
+            querying user and the connection should still impersonate.
+
+            Detected via Celery's task-local stack: `current_task` is a Proxy over
+            _task_stack.top, which is None outside a task -- so the `.request`
+            attribute access raises and we return False. Inside a task it resolves to
+            the running task whose `request.id` is set. (`current_task is None` is NOT
+            usable: the Proxy is never `is None`.)
+            """
+            try:
+                from celery import current_task
+
+                return current_task.request.id is not None
+            except Exception:
+                return False
+
+
+        def DB_CONNECTION_MUTATOR(
+            uri, params, username, security_manager, source
+        ):  # noqa: N802
+            """Inject service-principal JWT + user impersonation into Trino connections.
+
+            Called by Superset on every database connection open. The second
+            argument is `params` -- the kwargs dict passed to
+            `sqlalchemy.create_engine(...)`. DB-API connection args go in
+            `params["connect_args"]`, not at the top level (SQLAlchemy raises
+            TypeError on unrecognized top-level kwargs).
+
+            For non-Trino backends this is a no-op. For Trino we set:
+              - connect_args["auth"]: JWTAuthentication(<service token>) -- the
+                trino-python-client wires this into the http session's auth
+                attribute and adds Authorization: Bearer to every request.
+              - connect_args["http_scheme"]: "https" -- explicit so URL construction
+                targets the HTTPS listener (the URL query param sometimes drops).
+              - connect_args["verify"]: path to the Trino CA bundle (the trino
+                client passes this through to requests for cert verification).
+              - connect_args["user"]: the Superset logged-in user; trino-python-
+                client sends it as X-Trino-User. OPA verifies superset_svc is
+                allowed to impersonate, then evaluates all subsequent operations
+                as the impersonated user.
+            """
+            if uri.get_backend_name() != "trino":
+                return uri, params
+            connect_args = params.setdefault("connect_args", {})
+            connect_args["auth"] = JWTAuthentication(_get_token())
+            connect_args.setdefault("http_scheme", "https")
+            connect_args.setdefault("verify", os.environ.get("TRINO_CA_CERT", True))
+            # Set X-Trino-User to impersonate the end user in any *real-user* context:
+            #   - a Flask request (Superset UI, sync SQL Lab, API, dashboard render)
+            #   - a Celery task (async SQL Lab, Alerts & Reports, cache warm-up) --
+            #     these run under override_user(), so `username` is the real querying
+            #     user even though there's no request context.
+            #
+            # The one context we deliberately skip is the bare import CLI -- the
+            # scout-dashboards-import Job's `superset import-dashboards -u admin`,
+            # which is neither a request nor a Celery task. Its `username` is the
+            # Superset bootstrap admin, which doesn't exist in OPA's data.users;
+            # skipping impersonation lets the connection fall through to the JWT's
+            # own principal (Trino user-mapping strips `service-account-` to leave
+            # `superset_svc`, which OPA's is_system_identity rule allows) so the
+            # import's SHOW CATALOGS / SHOW TABLES dataset validation works.
+            #
+            # Gating on request-context alone would wrongly skip the Celery paths and
+            # clamp every async query to zero rows; gating on username alone can't
+            # tell the bootstrap admin apart from a real user named "admin".
+            if username and (has_request_context() or _in_celery_task()):
+                connect_args["user"] = username
+            return uri, params
+      statsd_logging: |
+        from superset.stats_logger import StatsdStatsLogger
+        STATS_LOGGER = StatsdStatsLogger(
+            host='localhost',
+            port=9125,
+            prefix='superset'
+        )
+    extraVolumes:
+      - name: scout-logo
+        configMap:
+          name: scout-logo
+          defaultMode: 0644
+      - name: statsd-mapping
+        configMap:
+          name: superset-statsd-mapping
+      # CA cert from the same Secret cert-manager populates for the user-facing
+      # Trino's TLS listener. DB_CONNECTION_MUTATOR passes /etc/trino-ca/ca.crt as
+      # the http_session.verify so Trino's self-signed cert is trusted.
+      - name: trino-ca
+        secret:
+          secretName: trino-tls
+          items:
+            - key: ca.crt
+              path: ca.crt
+    extraVolumeMounts:
+      - name: scout-logo
+        mountPath: /app/superset/static/assets/images/scout.png
+        subPath: scout.png
+        readOnly: true
+      - name: scout-logo
+        mountPath: /app/superset/static/assets/images/favicon.ico
+        subPath: favicon.ico
+        readOnly: true
+      - name: trino-ca
+        mountPath: /etc/trino-ca
+        readOnly: true

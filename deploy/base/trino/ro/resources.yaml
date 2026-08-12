@@ -1,0 +1,243 @@
+# Trino (user-facing, read-only) -- the analytics query engine. Clients hit the
+# JWT-authenticated HTTPS listener (8443); Trino validates tokens against
+# Keycloak's JWKS (ADR 0022 auth), OPA is the system access controller
+# (ADR 0020 authz), and the Delta catalog reads the lake through the *read-only*
+# Hive metastore. Lives in ${scout_analytics_namespace} alongside OPA; the OPA
+# component (a dependsOn, deployed first into the same namespace) owns the
+# Namespace object, so this base does not declare it -- avoids co-ownership /
+# prune conflicts, mirroring how the temporal base defers to its datastores.
+#
+# TLS: Trino terminates HTTPS itself, so the coordinator needs a keystore. The
+# cert-manager Certificate below issues trino-tls (PKCS12) from the Scout
+# internal CA ClusterIssuer. cert-manager AND the ClusterIssuer are Layer-0
+# (installed by Ansible outside this DAG) -- referenced by name, never installed
+# here. The chart mounts trino-tls at /etc/trino/tls on every pod.
+#
+# Secrets by fixed name only (seeded by CI/site in Phase 3, ESO in Phase 4;
+# NEVER in git):
+#   - trino-authz-env (Secret): KEYSTORE_PASSWORD (keystore password -- shared
+#     with the Certificate passwordSecretRef) + INTERNAL_SHARED_SECRET
+#     (worker<->coordinator internal-comm). Injected via envFrom.
+#   - trino-s3 (Secret): S3_ACCESS_KEY / S3_SECRET_KEY for the Delta connector.
+#   - trino-tls (Secret): the keystore the Certificate produces.
+# Trino reads those secrets from container env via its $${ENV:VAR} config syntax
+# (written with a doubled $ so Flux's postBuild substitution emits a literal env
+# reference; a single-$ braced token would be treated as an undefined variable
+# and fail the build under StrictPostBuildSubstitutions).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: trino
+  namespace: "${scout_analytics_namespace}"
+spec:
+  interval: 1h
+  url: https://trinodb.github.io/charts
+---
+# cert-manager Certificate -> trino-tls (PKCS12 keystore for the HTTPS listener).
+# Issued by the Layer-0 Scout internal CA ClusterIssuer; the keystore password
+# is read from the fixed-name trino-authz-env Secret (the same KEYSTORE_PASSWORD
+# Trino reads via envFrom). cert-manager CRDs are Layer-0 -- not installed here.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: trino-tls
+  namespace: "${scout_analytics_namespace}"
+spec:
+  secretName: trino-tls
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  commonName: "trino.${scout_analytics_namespace}.svc.cluster.local"
+  # Cover every name a client might use to reach the coordinator in-cluster: the
+  # chart's Service is `trino` (short name); the rest are the FQDN variants the
+  # Kubernetes resolver produces.
+  dnsNames:
+    - trino
+    - "trino.${scout_analytics_namespace}"
+    - "trino.${scout_analytics_namespace}.svc"
+    - "trino.${scout_analytics_namespace}.svc.cluster.local"
+    - trino-coordinator
+    - "trino-coordinator.${scout_analytics_namespace}"
+    - "trino-coordinator.${scout_analytics_namespace}.svc"
+    - "trino-coordinator.${scout_analytics_namespace}.svc.cluster.local"
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  keystores:
+    pkcs12:
+      create: true
+      passwordSecretRef:
+        name: trino-authz-env
+        key: KEYSTORE_PASSWORD
+  issuerRef:
+    name: scout-internal-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: trino
+  namespace: "${scout_analytics_namespace}"
+spec:
+  interval: 30m
+  # Upstream chart pinned in versions.yaml (trino_helm_chart_version ~1.42.2),
+  # Renovate-tracked; stamped into the config artifact at publish. Literal here
+  # until the stamping job lands (matches the other upstream-chart bases).
+  chart:
+    spec:
+      chart: trino
+      version: "1.42.2"
+      sourceRef:
+        kind: HelmRepository
+        name: trino
+        namespace: "${scout_analytics_namespace}"
+  values:
+    # JWT auth over HTTPS terminated by Trino itself (ADR 0022), OPA access
+    # control (ADR 0020), internal-communication shared secret.
+    server:
+      workers: 2
+      config:
+        query:
+          # Cluster-wide max = workers x worker_heap x per-node fraction
+          # = 2 x 2G x 0.3.
+          maxMemory: "1.2GB"
+        # JWT-only: user JWTs from Jupyter, service-principal JWTs from
+        # Superset/Voila/report-viewer.
+        authenticationType: JWT
+        https:
+          enabled: true
+          port: 8443
+          keystore:
+            path: /etc/trino/tls/keystore.p12
+      # Coordinator-only: JWT + keystore-password keys aren't recognized by
+      # workers (they serve no auth/HTTPS), so the chart writes these only to the
+      # coordinator's config.properties.
+      coordinatorExtraConfig: |
+        http-server.authentication.jwt.key-file=${keycloak_internal_url}/realms/${keycloak_realm_name}/protocol/openid-connect/certs
+        http-server.authentication.jwt.required-audience=trino
+        http-server.authentication.jwt.principal-field=preferred_username
+        http-server.authentication.jwt.user-mapping.pattern=(?:service-account-)?(.+)
+        http-server.https.keystore.key=$${ENV:KEYSTORE_PASSWORD}
+    # Common to coordinator + worker: the shared secret authenticates
+    # worker->coordinator internal-comm and must be set on both.
+    additionalConfigProperties:
+      - internal-communication.shared-secret=$${ENV:INTERNAL_SHARED_SECRET}
+    # OPA system access controller. The chart writes this to a separate
+    # access-control.properties file; putting it in additionalConfigProperties
+    # would land it in config.properties and Trino would reject the keys.
+    accessControl:
+      type: properties
+      properties: |
+        access-control.name=opa
+        opa.policy.uri=http://opa-trino.${scout_analytics_namespace}:8181/v1/data/trino/allow
+        opa.policy.row-filters-uri=http://opa-trino.${scout_analytics_namespace}:8181/v1/data/trino/rowFilters
+        opa.policy.batch-column-masking-uri=http://opa-trino.${scout_analytics_namespace}:8181/v1/data/trino/batchColumnMasks
+    # TLS bundle mounted on every pod; workers don't read keystore.p12 (internal
+    # comm runs over HTTP) but the mount is harmless and keeps the values simple.
+    secretMounts:
+      - name: trino-tls
+        secretName: trino-tls
+        path: /etc/trino/tls
+    # Fixed-name secrets -> container env; Trino reads them via $${ENV:VAR} in
+    # the properties above and the catalog below.
+    envFrom:
+      - secretRef:
+          name: trino-s3
+      - secretRef:
+          name: trino-authz-env
+    # JMX exporter for Prometheus. trino_jmx_exporter_version in versions.yaml
+    # (1.0.1). bitnamilegacy image: the chart needs Bitnami's command structure
+    # (sscaling is incompatible); upstream Bitnami moved to a paid registry.
+    jmx:
+      enabled: true
+      registryPort: 9080
+      serverPort: 9081
+      exporter:
+        enabled: true
+        image: bitnamilegacy/jmx-exporter:1.0.1
+        pullPolicy: IfNotPresent
+        port: 5556
+        configProperties: |
+          hostPort: localhost:9080
+          startDelaySeconds: 30
+          ssl: false
+          lowercaseOutputName: false
+    # Coordinator: JVM heap = 1G, pod memory limit = 4x heap for off-heap.
+    coordinator:
+      jvm:
+        maxHeapSize: 1G
+      config:
+        memory:
+          heapHeadroomPerNode: "" # chart/Trino default: 30% of maxHeapSize
+        query:
+          maxMemoryPerNode: "0.3GB"
+      resources:
+        requests:
+          cpu: 250m
+          memory: 1Gi
+        limits:
+          cpu: 1
+          memory: 4Gi
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5556"
+        prometheus.io/path: "/metrics"
+    # Worker: JVM heap = 2G, pod memory limit = 4x heap for off-heap.
+    worker:
+      jvm:
+        maxHeapSize: 2G
+      config:
+        memory:
+          heapHeadroomPerNode: ""
+        query:
+          maxMemoryPerNode: "0.6GB"
+      resources:
+        requests:
+          cpu: 250m
+          memory: 2Gi
+        limits:
+          cpu: 2
+          memory: 8Gi
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5556"
+        prometheus.io/path: "/metrics"
+    # Restrict the HTTP listener (8080) to Trino-internal traffic: the chart
+    # auto-allows Trino-pod-to-Trino-pod when networkPolicy is enabled, so we only
+    # declare the external allowances -- 8443 (JWT HTTPS) from the analytics
+    # namespace and 5556 (JMX) from Prometheus. 8080 is deliberately absent, so a
+    # pod outside the auto-allow set can't reach plain HTTP with a stolen JWT.
+    networkPolicy:
+      enabled: true
+      ingress:
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: "${scout_analytics_namespace}"
+          ports:
+            - port: 8443
+              protocol: TCP
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: "${prometheus_namespace}"
+              podSelector:
+                matchLabels:
+                  app.kubernetes.io/name: prometheus
+                  app.kubernetes.io/component: server
+          ports:
+            - port: 5556
+              protocol: TCP
+    # Read-only Delta catalog over the read-only Hive metastore. On-prem: MinIO
+    # S3, path-style, creds from the trino-s3 envFrom via $${ENV:...}.
+    catalogs:
+      delta: |
+        connector.name=delta_lake
+        hive.metastore.uri=${hive_metastore_endpoint_readonly}
+        delta.security=READ_ONLY
+        fs.native-s3.enabled=true
+        s3.region=${s3_region}
+        s3.aws-access-key=$${ENV:S3_ACCESS_KEY}
+        s3.aws-secret-key=$${ENV:S3_SECRET_KEY}
+        s3.endpoint=${s3_endpoint}
+        s3.path-style-access=true

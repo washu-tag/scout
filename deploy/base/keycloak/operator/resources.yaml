@@ -1,0 +1,28 @@
+# Keycloak Operator + CRDs (Phase 3, ADR 0031). Mirrors roles/keycloak deploy.yaml,
+# which applies three raw upstream manifests from keycloak-k8s-resources at the
+# pinned keycloak_version (group_vars/all/versions.yaml, Renovate-tracked):
+#   keycloaks.k8s.keycloak.org-v1.yml          — Keycloak CRD
+#   keycloakrealmimports.k8s.keycloak.org-v1.yml — KeycloakRealmImport CRD
+#   kubernetes.yml                              — the operator (SA/Role/RoleBinding/
+#                                                 Deployment/Service, namespace-less;
+#                                                 the role applies it with -n)
+# Those URLs are referenced directly from kustomization.yaml `resources:` (the
+# faithful mirror of the role). NOTE: a kustomize-controller in a truly air-gapped
+# cluster cannot fetch raw.githubusercontent.com — unlike the Ansible control node,
+# which has egress. Before go-live these three manifests must be vendored into this
+# base (or mirrored to an in-cluster git/OCI source) and this file's Namespace kept.
+# Left as URLs here to match the role and defer the vendoring decision.
+#
+# This file declares only the Namespace; the operator's namespaced resources are
+# placed into it by the kustomization's `namespace:` transformer (the upstream
+# kubernetes.yml is namespace-less by design). The CRDs are cluster-scoped and the
+# transformer leaves them untouched.
+#
+# The operator's air-gapped image-pull-policy override (KC_OPERATOR_KEYCLOAK_IMAGE_
+# PULL_POLICY, keyed off keycloak_image_pull_policy in the role) is deliberately
+# omitted: it is conditional/site-specific, so a site overlay patches the
+# keycloak-operator Deployment rather than baking it into the base.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "${keycloak_namespace}"

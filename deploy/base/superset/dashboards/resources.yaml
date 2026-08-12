@@ -1,0 +1,74 @@
+# Scout dashboards import (ADR 0030/0031). The Scout-owned OCI chart
+# `scout-dashboards` renders the dashboard/dataset/chart bundles into a ConfigMap
+# and runs a Helm-hook import Job that loads them into the running Superset via its
+# CLI, mirroring the Ansible role's second Helm release.
+#
+# The import Job reuses the apache/superset release's own artifacts by fixed name:
+# it envFroms `superset-env` (DB connection + secret key + Keycloak svc token env),
+# mounts `superset-config` (the rendered superset_config.py with DB_CONNECTION_MUTATOR),
+# reads REDIS_PASSWORD from `superset-valkey-auth`, and mounts `trino-tls` so the
+# import's dataset validation can verify the user-facing Trino's self-signed cert.
+# All are created/seeded by the superset-server layer + CI/site, which is why this
+# layer dependsOn superset-server. The shared Namespace ${scout_analytics_namespace}
+# is owned by superset-server (not redeclared here).
+#
+# Chart source: the scout-charts OCI HelmRepository lives in
+# ${scout_analytics_namespace} and is ALSO declared by the opa base (same name,
+# same namespace, same spec). Two Flux Kustomizations co-owning one HelmRepository
+# is a known churn risk (prune contention / "source not found" flapping); dedupe to
+# a single owner at the flux-Kustomization layer (one base declares it, others
+# dependsOn that base). Declared here so this base is reconcilable in isolation.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: scout-charts
+  namespace: "${scout_analytics_namespace}"
+spec:
+  type: oci
+  interval: 1h
+  url: oci://ghcr.io/washu-tag/charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: scout-dashboards
+  namespace: "${scout_analytics_namespace}"
+spec:
+  interval: 30m
+  # Mirrors the Ansible helm timeout: the import Job validates every dataset
+  # against Trino and can take a while.
+  timeout: 15m
+  # Scout-owned, CI-built chart (ADR 0030); not in versions.yaml and not
+  # Renovate-tracked (watching a chart we publish here would self-reference).
+  # Placeholder version in git; the concrete version is stamped from the
+  # build-lane haul at config-artifact publish.
+  chart:
+    spec:
+      chart: scout-dashboards
+      version: "0.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: "${scout_analytics_namespace}"
+  values:
+    # Import image = the Superset image so it carries the same superset CLI + deps
+    # (build-lane-stamped at publish; literal here, matches the server layer).
+    image:
+      repository: ghcr.io/washu-tag/superset
+      tag: "5.0.0"
+    # AuthZ-enabled Trino: the user-facing HTTPS listener (8443) in the analytics
+    # namespace. DB_CONNECTION_MUTATOR (from the mounted superset-config) adds the
+    # JWT + CA verify on top; scheme https selects that listener.
+    trino:
+      user: "${trino_user}"
+      namespace: "${scout_analytics_namespace}"
+      port: "${trino_https_port}"
+      scheme: https
+    supersetRelease:
+      # cert-manager-issued Trino TLS bundle; the import Job mounts its ca.crt so
+      # DB_CONNECTION_MUTATOR can verify Trino's self-signed cert during dataset
+      # validation. Fixed name (seeded by CI/site), never in git.
+      trinoCaSecret: trino-tls
+    # bundles.enabled is left to the chart default (core + patients), which matches
+    # the Ansible scout_dashboard_bundles default; a site overlay tunes it (a list,
+    # so it is not a scalar cluster-var).
