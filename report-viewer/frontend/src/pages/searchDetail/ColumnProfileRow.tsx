@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Column } from '@tanstack/react-table';
 import { profileColumn, type Profile, type Segment } from './columnStats';
 
@@ -28,9 +28,28 @@ const labelStyle: React.CSSProperties = {
 const num = (n: number) => n.toLocaleString();
 const pct = (n: number) => `${n < 1 && n > 0 ? '<1' : Math.round(n)}%`;
 
-function Label({ name, value }: { name: string; value: string }) {
+function Label({
+  name,
+  value,
+  strong,
+  onHover,
+}: {
+  name: string;
+  value: string;
+  strong?: boolean;
+  onHover?: (on: boolean) => void;
+}) {
   return (
-    <div style={{ ...labelStyle, display: 'flex', gap: 4 }}>
+    <div
+      onMouseEnter={onHover && (() => onHover(true))}
+      onMouseLeave={onHover && (() => onHover(false))}
+      style={{
+        ...labelStyle,
+        display: 'flex',
+        gap: 4,
+        ...(strong ? { color: 'var(--rv-fg)', fontWeight: 600 } : null),
+      }}
+    >
       <span
         style={{
           flex: 1,
@@ -47,13 +66,28 @@ function Label({ name, value }: { name: string; value: string }) {
   );
 }
 
-function Bars({ buckets, max }: { buckets: number[]; max: number }) {
+function Bars({
+  buckets,
+  max,
+  hovered,
+  onHover,
+}: {
+  buckets: number[];
+  max: number;
+  hovered: number | null;
+  onHover: (i: number | null) => void;
+}) {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: BAR_H, width: '100%' }}>
+    <div
+      style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: BAR_H, width: '100%' }}
+      onMouseLeave={() => onHover(null)}
+    >
       {buckets.map((count, i) => (
         <div
           key={i}
+          onMouseEnter={() => onHover(i)}
           style={{
+            opacity: hovered === null || hovered === i ? 1 : 0.45,
             flex: 1,
             height: `${max === 0 ? 0 : Math.max(count === 0 ? 1 : 8, (count / max) * 100)}%`,
             minHeight: 1,
@@ -66,16 +100,80 @@ function Bars({ buckets, max }: { buckets: number[]; max: number }) {
   );
 }
 
-function StackedBar({ parts }: { parts: Array<Segment & { fill: string }> }) {
+function StackedBar({
+  parts,
+  hovered,
+  onHover,
+}: {
+  parts: Array<Segment & { fill: string }>;
+  hovered: number | null;
+  onHover: (i: number | null) => void;
+}) {
   return (
-    <div style={{ display: 'flex', gap: GAP, height: BAR_H, width: '100%', alignItems: 'stretch' }}>
-      {parts.map((p) => (
+    <div
+      style={{ display: 'flex', gap: GAP, height: BAR_H, width: '100%', alignItems: 'stretch' }}
+      onMouseLeave={() => onHover(null)}
+    >
+      {parts.map((p, i) => (
         <div
           key={p.label}
-          style={{ flex: `${Math.max(p.pct, 1.5)} 0 0`, background: p.fill, borderRadius: 2 }}
+          onMouseEnter={() => onHover(i)}
+          style={{
+            flex: `${Math.max(p.pct, 1.5)} 0 0`,
+            background: p.fill,
+            borderRadius: 2,
+            // A ring rather than a brighter fill, which would read as a
+            // different rank on a single-hue ramp. It also makes a 1.5% sliver
+            // findable when its label is hovered.
+            boxShadow: i === hovered ? 'inset 0 0 0 1px var(--rv-fg)' : undefined,
+          }}
         />
       ))}
     </div>
+  );
+}
+
+function Categorical({ parts }: { parts: Array<Segment & { fill: string }> }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  return (
+    <>
+      <StackedBar parts={parts} hovered={hovered} onHover={setHovered} />
+      {parts.map((p, i) => (
+        <Label
+          key={p.label}
+          name={p.label}
+          value={pct(p.pct)}
+          strong={i === hovered}
+          onHover={(on) => setHovered(on ? i : null)}
+        />
+      ))}
+    </>
+  );
+}
+
+function Histogram({
+  buckets,
+  bucketLabels,
+  max,
+  low,
+  high,
+}: {
+  buckets: number[];
+  bucketLabels: string[];
+  max: number;
+  low: string;
+  high: string;
+}) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  return (
+    <>
+      <Bars buckets={buckets} max={max} hovered={hovered} onHover={setHovered} />
+      {hovered === null ? (
+        <RangeLabel low={low} high={high} />
+      ) : (
+        <Label name={bucketLabels[hovered]} value={num(buckets[hovered])} strong />
+      )}
+    </>
   );
 }
 
@@ -127,32 +225,31 @@ function ProfileCell({ profile }: { profile: Profile }) {
       ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: RAMP[2] }] : []),
       ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
     ].filter((p) => p.count > 0);
-    return (
-      <>
-        <StackedBar parts={parts} />
-        {parts.map((p) => (
-          <Label key={p.label} name={p.label} value={pct(p.pct)} />
-        ))}
-      </>
-    );
+    return <Categorical parts={parts} />;
   }
 
   if (profile.kind === 'numeric') {
-    const { buckets, max, min, hi } = profile;
+    const { buckets, bucketLabels, max, min, hi } = profile;
     return (
-      <>
-        <Bars buckets={buckets} max={max} />
-        <RangeLabel low={num(min)} high={num(hi)} />
-      </>
+      <Histogram
+        buckets={buckets}
+        bucketLabels={bucketLabels}
+        max={max}
+        low={num(min)}
+        high={num(hi)}
+      />
     );
   }
 
-  const { buckets, max, first, last } = profile;
+  const { buckets, bucketLabels, max, first, last } = profile;
   return (
-    <>
-      <Bars buckets={buckets} max={max} />
-      <RangeLabel low={first.slice(0, 4)} high={last.slice(0, 4)} />
-    </>
+    <Histogram
+      buckets={buckets}
+      bucketLabels={bucketLabels}
+      max={max}
+      low={first.slice(0, 4)}
+      high={last.slice(0, 4)}
+    />
   );
 }
 

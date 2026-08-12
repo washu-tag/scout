@@ -8,6 +8,7 @@ export type Profile =
   | {
       kind: 'numeric';
       buckets: number[];
+      bucketLabels: string[];
       max: number;
       min: number;
       hi: number;
@@ -22,6 +23,7 @@ export type Profile =
   | {
       kind: 'temporal';
       buckets: number[];
+      bucketLabels: string[];
       max: number;
       first: string;
       last: string;
@@ -45,10 +47,14 @@ function numericProfile(values: unknown[], widthAllows: number): Profile {
   const sorted = [...nums].sort((a, b) => a - b);
   const min = sorted[0];
   const hi = sorted[sorted.length - 1];
-  const buckets = bucketize(nums, min, hi, bucketsFor(nums.length, hi > min, widthAllows));
+  const count = bucketsFor(nums.length, hi > min, widthAllows);
+  const step = (hi - min) / count;
+  const fmt = (n: number) => (step >= 1 ? String(Math.round(n)) : n.toFixed(1));
+  const buckets = bucketize(nums, min, hi, count);
   return {
     kind: 'numeric',
     buckets,
+    bucketLabels: bucketEdgeLabels(min, hi, count, fmt),
     max: Math.max(...buckets),
     min,
     hi,
@@ -103,16 +109,15 @@ function temporalProfile(values: unknown[], widthAllows: number): Profile {
   times.sort((a, b) => a - b);
   const first = times[0];
   const last = times[times.length - 1];
-  const buckets = bucketize(
-    times,
-    first,
-    last,
-    bucketsFor(times.length, last > first, widthAllows),
-  );
+  const count = bucketsFor(times.length, last > first, widthAllows);
+  const buckets = bucketize(times, first, last, count);
   const asDate = (n: number) => new Date(n).toISOString().slice(0, 10);
+  // Year and month only: a full date does not fit the label slot.
+  const asMonth = (n: number) => new Date(n).toISOString().slice(0, 7);
   return {
     kind: 'temporal',
     buckets,
+    bucketLabels: bucketEdgeLabels(first, last, count, asMonth),
     max: Math.max(...buckets),
     first: asDate(first),
     last: asDate(last),
@@ -128,6 +133,22 @@ function identifierProfile(values: unknown[]): Profile {
 // value gets one bucket, so the bar fills the cell instead of sitting at the
 // left as if it were a low reading. No spread means one bucket for the same
 // reason.
+// Edge labels matching bucketize's split, for the in-cell hover readout.
+function bucketEdgeLabels(
+  lo: number,
+  hi: number,
+  count: number,
+  fmt: (n: number) => string,
+): string[] {
+  const step = (hi - lo) / count;
+  return Array.from({ length: count }, (_, i) => {
+    if (step === 0) return fmt(lo);
+    const from = fmt(lo + step * i);
+    const to = fmt(i === count - 1 ? hi : lo + step * (i + 1));
+    return from === to ? from : `${from}-${to}`;
+  });
+}
+
 function bucketsFor(n: number, spread: boolean, widthAllows: number): number {
   if (!spread) return 1;
   return Math.max(1, Math.min(widthAllows, Math.ceil(Math.sqrt(n))));
