@@ -334,15 +334,15 @@ spec:
                 "icon": "fa-key",
                 "token_key": "access_token",
                 "remote_app": {
-                    "client_id": "superset",
+                    "client_id": "${keycloak_superset_client_id}",
                     # Confidential-client secret sourced from the env (superset-env),
                     # never inlined into config committed to git.
                     "client_secret": os.environ.get("KEYCLOAK_SUPERSET_CLIENT_SECRET"),
                     "client_kwargs": {"scope": "openid microprofile-jwt"},
-                    "api_base_url": "https://keycloak.${server_hostname}/realms/scout/protocol/",
-                    "access_token_url": "https://keycloak.${server_hostname}/realms/scout/protocol/openid-connect/token",
-                    "authorize_url": "https://keycloak.${server_hostname}/realms/scout/protocol/openid-connect/auth",
-                    "jwks_uri": "https://keycloak.${server_hostname}/realms/scout/protocol/openid-connect/certs",
+                    "api_base_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/",
+                    "access_token_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/token",
+                    "authorize_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/auth",
+                    "jwks_uri": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/certs",
                     "request_token_url": None
                 },
             }
@@ -375,7 +375,7 @@ spec:
             @expose('/logout/', methods=['GET', 'POST'])
             def logout(self):
                 super().logout()
-                return redirect('https://auth.${server_hostname}/oauth2/sign_out')
+                return redirect('https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/sign_out')
         class KeycloakSecurityManager(SupersetSecurityManager):
             """
             Create a new SecurityManager that uses the KeycloakOAuthView and Keycloak role mapping

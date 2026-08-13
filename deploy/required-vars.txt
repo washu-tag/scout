@@ -50,10 +50,12 @@ hl7log_extractor_resources_requests_memory
 hl7log_extractor_timeout
 hl7logs_root_dir
 ingest_postgres_table_name
+keycloak_bootstrap_admin_user
 keycloak_internal_url
 keycloak_namespace
 keycloak_realm_name
 keycloak_realm_url
+keycloak_superset_client_id
 lake_bucket
 loki_admin_bucket
 loki_chunks_bucket

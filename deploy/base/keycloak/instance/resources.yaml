@@ -263,5 +263,5 @@ spec:
     env:
       # Merged over the chart defaults (IMPORT_PATH=/config/ is preserved).
       KEYCLOAK_URL: "http://keycloak-service.${keycloak_namespace}:8080/"
-      KEYCLOAK_USER: admin
+      KEYCLOAK_USER: "${keycloak_bootstrap_admin_user}"
     existingSecret: keycloak-admin-secret

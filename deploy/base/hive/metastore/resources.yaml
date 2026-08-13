@@ -76,7 +76,7 @@ spec:
       - name: S3_ENDPOINT
         value: "${s3_endpoint}"
       - name: S3_ACCESS_KEY
-        value: lake-writer
+        value: "${s3_lake_writer}"
       - name: REGION
         value: "${s3_region}"
       - name: HIVE_METASTORE_USERS_IN_ADMIN_ROLE
@@ -174,7 +174,7 @@ spec:
       - name: S3_ENDPOINT
         value: "${s3_endpoint}"
       - name: S3_ACCESS_KEY
-        value: lake-reader
+        value: "${s3_lake_reader}"
       - name: REGION
         value: "${s3_region}"
       - name: HIVE_METASTORE_USERS_IN_ADMIN_ROLE
