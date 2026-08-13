@@ -21,4 +21,4 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: valkey
-    - name: keycloak-instance
+    - name: keycloak-realm

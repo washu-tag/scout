@@ -1,56 +1,16 @@
-# Keycloak instance (Phase 3, ADR 0031). Mirrors roles/keycloak deploy.yaml +
-# configure.yaml: the Keycloak CR (operator-managed), its Postgres DB in the shared
-# CNPG cluster, the site Ingress, and the realm import via keycloak-config-cli.
-# dependsOn keycloak-operator (needs the Keycloak CRD) + postgres-cluster (the DB
-# init connects to the shared cluster). The Namespace is owned by
-# scout-core-foundation, so it is NOT re-declared here (avoids prune/co-ownership
-# conflict); every resource sets namespace: "${keycloak_namespace}" explicitly.
-#
-# Secrets are referenced by FIXED NAME only (seeded by CI/site in Phase 3, SOPS/ESO
-# in Phase 4, NEVER in git). The Ansible role created these from vault vars; here
-# they are pre-seeded:
-#   superuser-secret     — CNPG basic-auth (username/password); used by the DB-init Job.
-#   keycloak-db-secret   — username/password for the `keycloak` DB owner; the CR's
-#                          db creds AND the password the DB-init Job stamps; its
-#                          username MUST be `keycloak` (the Job hardcodes that role/db).
-#   keycloak-admin-secret— username/password for the bootstrap admin (bootstrapAdmin
-#                          + keycloak-config-cli's KEYCLOAK_PASSWORD).
-#   keycloak-config      — the realm import; key scout-realm.json (base64 of the
-#                          rendered scout-realm.json.j2). Currently ONE realm; the
-#                          staged base+feature-fragment decomposition (splitting the
-#                          monolithic realm into a base realm plus per-feature
-#                          overlays) is a later refinement, not attempted here.
-#   opa-bundle-writer    — access-key/secret-key for the OpaUserBundlePublisher SPI
-#                          inside the Keycloak pod (ADR 0021); the cross-namespace
-#                          mirror of the ${s3_opa_bundle_writer} MinIO service account,
-#                          referenced by the CR's additionalOptions secret refs so no
-#                          credential lands in the CR as plaintext.
-#
-# The keycloak-config-cli chart is a Scout-owned OCI chart (helm/keycloak-config-cli),
-# pulled from the same scout-charts OCI HelmRepository as the extractor/temporal-
-# bootstrap bases (declared below, in this namespace).
+# Keycloak instance (Phase 3, ADR 0031): the operator-managed Keycloak CR + its site
+# Ingress. The realm import is a separate base (keycloak/realm) so the DAG gates it on
+# Keycloak Ready. Namespace owned by scout-core-foundation (not re-declared here).
+# Fixed-name Secrets (seeded by CI/site, SOPS/ESO in Phase 4, never in git):
+#   keycloak-db-secret    — keycloak DB owner creds (the CR's db creds).
+#   keycloak-admin-secret — bootstrap admin (bootstrapAdmin).
+#   opa-bundle-writer     — access/secret-key for the OpaUserBundlePublisher SPI (ADR
+#                           0021), via CR secret refs so no credential lands as plaintext.
 ---
-# scout-charts OCI source for the keycloak-config-cli HelmRelease below.
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: scout-charts
-  namespace: '${keycloak_namespace}'
-spec:
-  type: oci
-  interval: 1h
-  url: oci://ghcr.io/washu-tag/charts
----
-# The operator-managed Keycloak instance. Image is ghcr.io/washu-tag/keycloak (the
-# Scout build with the OpaUserBundlePublisher SPI) tagged with keycloak_version
-# (26.6.4) from group_vars/all/versions.yaml (Renovate-tracked there); this Scout
-# image IS stamped from the build-lane haul at config-artifact publish, literal
-# here until then.
-# additionalOptions mirror the role's _keycloak_base_options: metrics/event-metrics
-# + the ADR 0021 OpaUserBundlePublisher config (the operator maps additionalOptions
-# name=foo-bar to env KC_FOO_BAR, which the SPI factory reads). The air-gapped IdP
-# proxy-mappings option (_keycloak_proxy_options) is site-specific and left to an
-# overlay. Credential options use `secret` refs so they stay in opa-bundle-writer.
+# Scout keycloak image (OpaUserBundlePublisher SPI build), tag = keycloak_version from
+# versions.yaml (Renovate-tracked there); this Scout image IS stamped from the haul at
+# config-artifact publish, literal here until then. additionalOptions mirror the role's
+# _keycloak_base_options (the operator maps name=foo-bar to env KC_FOO_BAR).
 apiVersion: k8s.keycloak.org/v2beta1
 kind: Keycloak
 metadata:
@@ -90,8 +50,7 @@ spec:
       value: 'realm,idp,clientId'
     - name: spi-events-listener-jboss-logging-success-level
       value: info
-    # Hacky way to get an env variable into the Keycloak pod until the operator
-    # supports it natively; the OpaUserBundlePublisher SPI reads these (ADR 0021).
+    # Hacky env-into-pod path until the operator supports it; the SPI reads these (ADR 0021).
     - name: scout-url
       value: '${server_hostname}'
     - name: opa-bundle-s3-endpoint
@@ -113,9 +72,8 @@ spec:
         name: opa-bundle-writer
         key: secret-key
 ---
-# The operator wants a subdomain and does not support a path-based ingress, so the
-# role renders a host Ingress (traefik on the on-prem k3s edge) pointing at the
-# operator-created keycloak-service. Mirrors the role's keycloak-ingress.
+# Host Ingress (traefik k3s edge) -> operator-created keycloak-service; the operator
+# needs a subdomain and has no path-based ingress. Mirrors the role's keycloak-ingress.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -134,60 +92,3 @@ spec:
                   name: http
             path: /
             pathType: Prefix
----
-# Realm import via keycloak-config-cli (Scout OCI chart). Imports the realm from the
-# fixed-name keycloak-config Secret (existingConfigSecret, mounted at /config) using
-# the bootstrap admin creds from keycloak-admin-secret (existingSecret ->
-# KEYCLOAK_PASSWORD; existingSecretKey defaults to `password`). The chart runs as a
-# Helm post-install/upgrade/rollback hook Job (chart-default annotations), so it
-# re-runs on every HelmRelease upgrade. config-hash preserves the role's
-# realm-change trigger: the realm content lives in the Secret (not in these values),
-# so a realm-only change would not otherwise re-run the import — CI stamps the realm
-# Secret's sha256 here at config-artifact publish (mirroring the role's truncated
-# sha256), which changes the Job spec and fires the hook.
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: keycloak-config-cli
-  namespace: '${keycloak_namespace}'
-spec:
-  interval: 30m
-  timeout: 5m
-  # The realm import runs as a post-install/upgrade hook Job. On first boot Keycloak
-  # is not Ready yet, so the import fails; retry (instead of waiting a full 30m
-  # interval) until the CR is up and the import converges.
-  install:
-    remediation:
-      retries: 3
-  upgrade:
-    remediation:
-      retries: 3
-  # Scout-owned, CI-built OCI chart (ADR 0030); not in versions.yaml and not
-  # Renovate-tracked (watching a chart we publish here would self-reference).
-  # Placeholder version in git; the concrete version is stamped from the build-lane
-  # haul at config-artifact publish. Same pattern as the extractor/temporal-bootstrap bases.
-  chart:
-    spec:
-      chart: keycloak-config-cli
-      version: '0.0.0'
-      sourceRef:
-        kind: HelmRepository
-        name: scout-charts
-        namespace: '${keycloak_namespace}'
-  values:
-    # Upstream config-cli image, pinned in versions.yaml (keycloak_config_cli_image
-    # [_tag], Renovate-tracked); overrides the chart's own default tag.
-    image:
-      repository: docker.io/adorsys/keycloak-config-cli
-      tag: 6.5.1-26.5.5
-    existingConfigSecret: keycloak-config
-    annotations:
-      # Merges with the chart's Helm-hook annotations. Placeholder in git; CI stamps
-      # the realm Secret's truncated sha256 at config-artifact publish so a realm
-      # change re-runs the import (mirrors the role's config-hash).
-      config-hash: '0'
-    env:
-      # Merged over the chart defaults (IMPORT_PATH=/config/ is preserved).
-      KEYCLOAK_URL: 'http://keycloak-service.${keycloak_namespace}:8080/'
-      KEYCLOAK_USER: '${keycloak_bootstrap_admin_user}'
-    existingSecret: keycloak-admin-secret
