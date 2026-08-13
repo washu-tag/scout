@@ -6,13 +6,31 @@ import trino
 from pyspark.sql.streaming import StreamingQuery
 from temporalio import activity
 
-from pyspark.sql import SparkSession
+from pyspark.sql import DataFrame, SparkSession
 
 from .curatedtable import curated_table
 from .diagnosistable import diagnosis_table
 from .latesttable import latest_table
 from .mappingtable import mapping_table
 from .derivativetable import DerivativeTable
+
+
+# Rate limit for every change-data-feed read in the derivative cascade, as a
+# Spark conf so a site can tune it through the chart's spark-defaults without a
+# code change. Delta's default admission is maxFilesPerTrigger=1000 with no byte
+# ceiling, so an unbounded stream hands the whole accumulated backlog to one
+# cached micro-batch -- the shape that OOM-killed the preprod worker.
+#
+# This bounds the backlog, not the batch: a Delta commit is the floor of what
+# admission can split, because any commit whose MERGE matched existing rows
+# materializes _change_data files and is then admitted whole whatever the cap
+# says. So the effective guarantee is "at most one ingest per micro-batch".
+# Sizing follows from that -- set it below the smallest ingest commit and the
+# guarantee holds; going lower buys nothing on a table whose ingests write a
+# single file each (repartitionBeforeWrite collapses a single-year ingest to one
+# file, which is the steady state for `reports`).
+DERIVE_MAX_BYTES_CONF = "spark.scout.derive.maxBytesPerTrigger"
+DEFAULT_DERIVE_MAX_BYTES = "4m"
 
 
 def define_derivative_tables(report_table_name: str) -> dict[str, DerivativeTable]:
@@ -25,6 +43,21 @@ def define_derivative_tables(report_table_name: str) -> dict[str, DerivativeTabl
             diagnosis_table(report_table_name),
         ]
     }
+
+
+def read_change_feed(spark: SparkSession, source_table: str) -> DataFrame:
+    """Rate-limited change-data-feed stream over default.<source_table>.
+
+    Every level of the cascade goes through here: bounding only the base stream
+    would push the oversized batch one level down into curated -> latest/mapping.
+    """
+    max_bytes = spark.conf.get(DERIVE_MAX_BYTES_CONF, DEFAULT_DERIVE_MAX_BYTES)
+    return (
+        spark.readStream.format("delta")
+        .option("readChangeFeed", "true")
+        .option("maxBytesPerTrigger", max_bytes)
+        .table(f"default.{source_table}")
+    )
 
 
 def perform_table_operations(
@@ -48,11 +81,7 @@ def perform_table_operations(
 
     warehouse_dir = spark.conf.get("spark.sql.warehouse.dir")
 
-    full_table = (
-        spark.readStream.format("delta")
-        .option("readChangeFeed", "true")
-        .table(f"default.{source_table}")
-    )
+    full_table = read_change_feed(spark, source_table)
 
     perform_derivative_operation_with_heartbeat(
         full_table.writeStream.foreachBatch(streaming_function)
