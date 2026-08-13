@@ -295,4 +295,21 @@ describe('parseCatalogText', () => {
       'expected a YAML parse error diagnostic',
     );
   });
+
+  it('ignores an empty document left by a trailing separator', () => {
+    const text = [
+      `apiVersion: ${CATALOG_API_VERSION}`,
+      `kind: ${CATALOG_KIND}`,
+      'chips:',
+      '  - { id: one, title: One, link: { path: /one } }',
+      '---',
+      '',
+    ].join('\n');
+    const result = parseCatalogText(text, SOURCE);
+    assert.deepStrictEqual(
+      result.chips.map((c) => c.id),
+      ['one'],
+    );
+    assert.deepStrictEqual(result.diagnostics, []);
+  });
 });

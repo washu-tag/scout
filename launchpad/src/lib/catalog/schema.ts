@@ -436,7 +436,9 @@ export function parseCatalogText(text: string, source: string, sourceRank = 0): 
       );
       return;
     }
-    const parsed = validateDocument(doc.toJS(), docSource, sourceRank);
+    const value = doc.toJS();
+    if (value === null || value === undefined) return;
+    const parsed = validateDocument(value, docSource, sourceRank);
     catalog.chips.push(...parsed.chips);
     catalog.groups.push(...parsed.groups);
     catalog.diagnostics.push(...parsed.diagnostics);
