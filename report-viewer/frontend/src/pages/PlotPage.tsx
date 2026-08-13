@@ -2,17 +2,28 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { friendlyError, getPlot } from '../api/client';
-import { HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
+import { setHeight as setIframeHeight } from '../iframeHeight';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { paginationBtn } from './searchDetail/styles';
 import { chartTheme } from './chartTheme';
 
-// A chart needs less room than a cohort table, so it starts shorter than
-// HEIGHT_COMPACT and grows to the shared expanded height on request.
-const HEIGHT_CHART = 400;
-const CHROME = 92; // toolbar + padding + borders, subtracted to size the plot
+// The chart sizes itself to its content and the iframe follows, rather than
+// the content being squeezed into a fixed box. Two bars should not get the
+// same height as twenty diagnoses.
+const MIN_HEIGHT = 320; // a two-bar chart should not be a sliver
+const CHROME = 60; // toolbar row + holder padding + borders
+const BAND = 22; // pixels per category on a discrete axis
+const CONTINUOUS_HEIGHT = 300; // scatter/line: nothing to count, so pick one
 
 const CONTINUOUS = new Set(['quantitative', 'temporal']);
+
+type Enc = Record<string, { type?: string } | undefined>;
+
+const COMPOSITE = ['layer', 'facet', 'hconcat', 'vconcat', 'concat', 'repeat'];
+
+function isComposite(spec: Record<string, unknown>) {
+  return COMPOSITE.some((k) => k in spec);
+}
 
 /**
  * Bind pan/zoom to the scales, but only where it means something. Vega-Lite
@@ -24,11 +35,9 @@ const CONTINUOUS = new Set(['quantitative', 'temporal']);
 function withInteractivity(spec: Record<string, unknown>) {
   // Single views only. In a layered or faceted spec a scale-bound param has
   // to live on the child unit, not the top level.
-  const composite = ['layer', 'facet', 'hconcat', 'vconcat', 'concat', 'repeat'];
-  if (composite.some((k) => k in spec)) return spec;
-  if (!('mark' in spec)) return spec;
+  if (isComposite(spec) || !('mark' in spec)) return spec;
 
-  const enc = spec.encoding as Record<string, { type?: string }> | undefined;
+  const enc = spec.encoding as Enc | undefined;
   if (!enc?.x?.type || !enc?.y?.type) return spec;
   if (!CONTINUOUS.has(enc.x.type) || !CONTINUOUS.has(enc.y.type)) return spec;
 
@@ -42,11 +51,28 @@ function withInteractivity(spec: Record<string, unknown>) {
   };
 }
 
+/**
+ * Height and autosize for one spec.
+ *
+ * A discrete y axis gets `step` sizing, one band per category, so ten
+ * modalities draw taller than three and nothing is crushed. Step sizing is
+ * content-driven, so height cannot also be `fit` - only the width is fitted to
+ * the container. Everything else takes a fixed height with a full `fit`, which
+ * keeps axes and titles inside the box instead of spilling past it.
+ */
+function sizing(spec: Record<string, unknown>) {
+  const enc = spec.encoding as Enc | undefined;
+  const yType = enc?.y?.type;
+  const stepped = !isComposite(spec) && !!yType && !CONTINUOUS.has(yType);
+  return stepped
+    ? { height: { step: BAND }, autosize: { type: 'fit-x', contains: 'padding' } }
+    : { height: CONTINUOUS_HEIGHT, autosize: { type: 'fit', contains: 'padding' } };
+}
+
 export default function PlotPage() {
   const { plotId = '' } = useParams<{ plotId: string }>();
   const holder = useRef<HTMLDivElement>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [dark, setDark] = useState(
     () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false,
@@ -58,10 +84,6 @@ export default function PlotPage() {
     enabled: !!plotId,
   });
 
-  useEffect(() => {
-    setIframeHeight(HEIGHT_CHART);
-  }, []);
-
   // Redraw on theme change: the config is merged at render, so an existing
   // chart follows the browser between light and dark.
   useEffect(() => {
@@ -72,22 +94,17 @@ export default function PlotPage() {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  const chartHeight = (expanded ? HEIGHT_EXPANDED : HEIGHT_CHART) - CHROME;
-
   const spec = useMemo(() => {
     if (!plot.data) return null;
+    const base = withInteractivity(plot.data.spec);
     return {
-      ...withInteractivity(plot.data.spec),
+      ...base,
       data: { values: plot.data.rows },
-      // fit-x only. Plain 'fit' with width:'container' sizes the plot to the
-      // full width and then hangs the legend off the side of it, which
-      // overflows the frame.
       width: 'container',
-      height: chartHeight,
-      autosize: { type: 'fit-x', contains: 'padding' },
+      ...sizing(base),
       config: chartTheme(dark),
     };
-  }, [plot.data, chartHeight, dark]);
+  }, [plot.data, dark]);
 
   useEffect(() => {
     const el = holder.current;
@@ -99,16 +116,25 @@ export default function PlotPage() {
     import('vega-embed')
       .then(({ default: embed }) =>
         embed(el, spec as never, {
-          // The action menu is Save as PNG/SVG and View Source. The editor
-          // link goes off-origin, which the CSP blocks anyway.
-          actions: { export: true, source: true, compiled: false, editor: false },
+          // Export only. `source` opens a blank window because OWUI's iframe
+          // sandbox blocks writing to it, and `editor` is off-origin so the
+          // CSP would block it too.
+          actions: { export: true, source: false, compiled: false, editor: false },
           renderer: 'svg',
           tooltip: { theme: dark ? 'dark' : 'light' },
         }),
       )
       .then((result) => {
-        if (cancelled) result.finalize();
-        else view = result;
+        if (cancelled) {
+          result.finalize();
+          return;
+        }
+        view = result;
+        // The drawing is done, so let the iframe take its actual size rather
+        // than the chart being squeezed into a guess.
+        const drawn = el.getBoundingClientRect().height;
+        const want = Math.ceil(drawn) + CHROME;
+        setIframeHeight(Math.max(MIN_HEIGHT, want));
       })
       .catch((err: unknown) => setRenderError(String(err)));
     return () => {
@@ -116,12 +142,6 @@ export default function PlotPage() {
       view?.finalize();
     };
   }, [spec, dark]);
-
-  const toggleSize = () => {
-    const next = !expanded;
-    setExpanded(next);
-    setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_CHART);
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
@@ -137,24 +157,23 @@ export default function PlotPage() {
       <div
         ref={holder}
         style={{
-          flex: '1 1 auto',
-          minHeight: 0,
+          // Height comes from the drawing, not the other way round. No cap and
+          // no overflow: a scrollbar inside an iframe is a trap, so the frame
+          // grows instead and the user scrolls the chat like any other page.
           padding: '0.5rem',
           background: 'var(--rv-surface)',
           border: '1px solid var(--rv-border)',
           borderRadius: 4,
         }}
       />
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          gap: '0.4rem',
-          padding: '0.35rem 0.1rem 0',
-        }}
-      >
-        {(plot.data?.sql_explanation || plot.data?.sql) && (
+      {(plot.data?.sql_explanation || plot.data?.sql) && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '0.35rem 0.1rem 0',
+          }}
+        >
           <button
             type="button"
             onClick={() => setSqlModalOpen(true)}
@@ -163,17 +182,8 @@ export default function PlotPage() {
           >
             Explain Chart
           </button>
-        )}
-        <button
-          type="button"
-          onClick={toggleSize}
-          style={paginationBtn}
-          title={expanded ? 'Shrink chart back to compact size' : 'Grow chart for more room'}
-          aria-label={expanded ? 'Contract chart' : 'Expand chart'}
-        >
-          {expanded ? 'Shrink' : 'Expand'}
-        </button>
-      </div>
+        </div>
+      )}
       {sqlModalOpen && plot.data && (
         <ExplainSqlModal
           title="What this chart shows"

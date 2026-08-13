@@ -32,39 +32,49 @@ const DARK_INK: Ink = {
   grid: '#333',
 };
 
-// Six hues drawn from the launchpad's chip tones (launchpad/src/lib/catalog/
-// tones.ts, ADR 0034) so charts speak the same color language as the rest of
-// Scout. Their Tailwind steps are picked per mode, not per brand: -600 sits in
-// the valid lightness band against both #fff and #242424, so orange, emerald
-// and cyan are mode-invariant, while indigo, violet and rose lighten to -500
-// on the dark surface.
+// Ten Tailwind hues, extending the launchpad's chip tones (launchpad/src/lib/
+// catalog/tones.ts, ADR 0034) so charts speak roughly the same color language
+// as the rest of Scout. Steps are picked per mode: -600 sits in the valid
+// lightness band on both #fff and #242424, so eight of the ten are
+// mode-invariant. Indigo and violet lighten to -500 on dark, where -600 falls
+// under 3:1 against the surface.
 //
-// Fixed slot order, never cycled. The ordering IS the colorblind-safety
-// mechanism, not decoration. Validated against both real surfaces: worst
-// adjacent CVD deltaE 10.1 in both modes, normal-vision 24.5 light / 21.1
-// dark, every slot >= 3:1 contrast. A 7th series is never a generated hue, it
-// folds into Other or the chart facets.
+// Ten because modality and service name routinely exceed that, and a wrapped
+// palette that repeats a hue is better than dropping categories. Vega-Lite
+// cycles past the tenth, so an 11th category WILL share a color with the
+// first. That is a known, accepted limit.
 //
-// Two of Flavin's nine tones are deliberately absent: amber collides with
-// orange and red collides with rose, and no ordering of all eight clears the
-// adjacency floors. Slate is chrome, not a series color. Re-run the dataviz
-// validator against #fff and #242424 before changing any of this.
+// Fixed slot order. The ordering IS the colorblind-safety mechanism, not
+// decoration. Validated against both real surfaces: normal-vision floor 28.8
+// and every slot >= 3:1 contrast in both modes. The weakest adjacent pair is
+// lime <-> rose at deltaE 6.3 under deuteranopia, inside the 6-8 warn band, so
+// those two lean on the legend and direct labels rather than hue alone.
+// Re-run the dataviz validator against #fff and #242424 before changing any of
+// this: reordering alone can drop a pair to deltaE 1.5.
 const CATEGORY_LIGHT = [
   '#4f46e5', // indigo-600
   '#ea580c', // orange-600
   '#059669', // emerald-600
-  '#7c3aed', // violet-600
+  '#c026d3', // fuchsia-600
   '#0891b2', // cyan-600
   '#e11d48', // rose-600
+  '#65a30d', // lime-600
+  '#7c3aed', // violet-600
+  '#d97706', // amber-600
+  '#0284c7', // sky-600
 ];
 
 const CATEGORY_DARK = [
-  '#6366f1', // indigo-500
+  '#6366f1', // indigo-500, lightened off -600 to clear 3:1 on the dark surface
   '#ea580c', // orange-600
   '#059669', // emerald-600
-  '#8b5cf6', // violet-500
+  '#c026d3', // fuchsia-600
   '#0891b2', // cyan-600
-  '#f43f5e', // rose-500
+  '#e11d48', // rose-600
+  '#65a30d', // lime-600
+  '#8b5cf6', // violet-500, lightened for the same reason as indigo
+  '#d97706', // amber-600
+  '#0284c7', // sky-600
 ];
 
 // Single hue, light to dark, for continuous magnitude. Indigo, matching the
@@ -117,7 +127,9 @@ function build(ink: Ink, category: string[], ramp: string[]) {
       // Always present for 2+ series so identity is never color alone.
       orient: 'top',
       direction: 'horizontal',
-      title: null,
+      titleColor: ink.fg,
+      titleFontSize: 11,
+      titleFontWeight: 600,
       labelColor: ink.fg,
       labelFontSize: 11,
       symbolType: 'square',
