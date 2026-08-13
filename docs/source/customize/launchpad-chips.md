@@ -36,7 +36,7 @@ data:
 
 `kubectl apply` that and a "My Service" card appears on the launchpad, in the **More**
 section — `more` is the default group, defined by the launchpad's own catalog. See
-[groups](#defining-a-group-section) to put the chip in a section of your own.
+[groups](#groups-defining-a-section) to put the chip in a section of your own.
 
 Ship it however you deploy: a template in your Helm chart (so uninstalling the chart
 removes the chip), a Flux-reconciled manifest, or — for Scout-internal roles — the
