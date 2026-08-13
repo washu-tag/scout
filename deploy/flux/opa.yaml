@@ -1,5 +1,5 @@
-# Flux Kustomizations for opa (Phase 3 DAG). Pulls config artifact (OCIRepository
-# scout-config) + cluster-vars for ${...} subst; dependsOn reproduces Ansible order.
+# Flux Kustomization for opa (Phase 3 DAG). config artifact (OCIRepository
+# scout-config) + cluster-vars ${...} subst; dependsOn reproduces Ansible order.
 
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

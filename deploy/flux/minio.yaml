@@ -1,7 +1,6 @@
-# Flux Kustomizations for minio (Phase 3 DAG). Each pulls the published config
-# artifact (OCIRepository scout-config) + cluster-vars for ${...} substitution.
-# dependsOn edges reproduce the Ansible deploy order; CRD-owning operators are
-# split so a CR never reconciles before its CRDs exist.
+# Flux Kustomizations for minio (Phase 3 DAG). Each pulls OCIRepository scout-config
+# + cluster-vars for ${...} substitution. dependsOn reproduces Ansible deploy order;
+# operator split from tenant so a CR never reconciles before its CRDs exist.
 
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

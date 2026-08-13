@@ -14,9 +14,8 @@ metadata:
   namespace: '${minio_operator_namespace}'
 spec:
   interval: 30m
-  # Version pinned in versions.yaml (minio_version) -- Renovate-tracked there, not in
-  # deploy/. Literal mirror (not stamped; the stamper covers only Scout charts/images);
-  # keep in lockstep with versions.yaml.
+  # Version pinned in versions.yaml (minio_version, Renovate-tracked). Literal mirror,
+  # not stamped (stamper covers only Scout charts/images); keep in lockstep.
   chart:
     spec:
       chart: operator

@@ -1,9 +1,8 @@
-# Per-namespace foundation (ADR 0031): the sole owner of the ${scout_analytics_namespace}
-# Namespace and the shared scout-charts HelmRepository. opa, superset, and trino-ro all
-# live in this namespace and pull the scout-dashboards/scout-opa charts from scout-charts;
-# co-declaring either resource across their prune:true Kustomizations makes them fight over
-# ownership (a delete of one prunes the shared resource out from under the others). Each
-# analytics component Kustomization instead dependsOn scout-analytics-foundation.
+# Per-namespace foundation (ADR 0031): sole owner of the ${scout_analytics_namespace}
+# Namespace and the shared scout-charts HelmRepository (opa, superset, trino-ro live here
+# and pull from scout-charts). Co-declaring either across their prune:true Kustomizations
+# makes them fight over ownership (a delete of one prunes it from the others), so each
+# dependsOn this foundation.
 apiVersion: v1
 kind: Namespace
 metadata:

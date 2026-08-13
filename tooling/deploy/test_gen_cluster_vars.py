@@ -119,8 +119,7 @@ def test_rendered_configmap_keys_match_required(values, required, tmp_path):
     text = out.read_text()
     assert "kind: ConfigMap" in text
     assert "name: cluster-vars" in text
-    # keys are the `  <name>: "..."` lines under data: (split on the standalone
-    # data: line, not the "data:" inside "metadata:")
+    # split on the standalone data: line, not the "data:" inside "metadata:"
     body = text.split("\ndata:\n", 1)[1]
     keys = set(re.findall(r"^  ([A-Za-z0-9_]+):", body, re.MULTILINE))
     assert keys == set(required)
@@ -129,8 +128,7 @@ def test_rendered_configmap_keys_match_required(values, required, tmp_path):
 def test_missing_input_fails_closed(values, required):
     """A site values file missing a required direct var must not render partial."""
     broken = dict(values)
-    del broken["server_hostname"]  # feeds keycloak_realm_url AND is itself required
-    # server_hostname is a derivation input for keycloak_realm_url -> KeyError.
+    del broken["server_hostname"]  # a keycloak_realm_url derivation input -> KeyError
     with pytest.raises(KeyError):
         build(broken, required)
 
@@ -138,7 +136,7 @@ def test_missing_input_fails_closed(values, required):
 def test_missing_direct_var_reported(values, required):
     """A required var that is neither derived nor in the input is reported missing."""
     broken = dict(values)
-    del broken["timezone"]  # a plain pass-through required var
+    del broken["timezone"]  # plain pass-through required var
     data = build(broken, required)
     missing, extra = check(data, required)
     assert "timezone" in missing

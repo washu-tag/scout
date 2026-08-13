@@ -1,8 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# Aggregator (the Flux target path). The scout-charts HelmRepository is declared
-# ONCE here (not in _base, which both overlays build — that would emit it twice
-# and create a second owner). Overlays render the write + readonly HelmReleases.
+# Flux target path. scout-charts HelmRepository declared ONCE here, not in _base
+# (both overlays build _base, which would emit it twice and create a second owner).
 resources:
   - helmrepository.yaml
   - overlays/write

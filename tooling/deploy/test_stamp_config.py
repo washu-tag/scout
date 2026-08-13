@@ -65,7 +65,7 @@ def test_every_placeholder_stamped_and_clean(haul, copy_deploy):
     assert len(ch_stamps) == 1
     assert ch_stamps[0].tag == ch
 
-    # Full stamp accounting: 7 charts + 4 values-image tags + 2 inline images + 1 hash.
+    # 7 charts + 4 values-image tags + 2 inline images + 1 hash
     assert len(stamps) == 14
 
 
@@ -93,7 +93,7 @@ def test_keycloak_and_superset_images_stamped(haul, copy_deploy):
     images, charts = haul
     stamps = stamp_tree(copy_deploy, images, charts, compute_config_hash(REALM))
 
-    # keycloak CR inline image keyed by repo identity, not the concrete 26.6.4 tag.
+    # keycloak CR inline image keyed by repo identity, not the concrete tag
     kc = [s for s in stamps if s.name == "keycloak"]
     assert [s.kind for s in kc] == ["image-inline"]
     assert kc[0].tag == images["keycloak"]
@@ -102,7 +102,7 @@ def test_keycloak_and_superset_images_stamped(haul, copy_deploy):
     ).read_text()
     assert "ghcr.io/washu-tag/keycloak:" + images["keycloak"] in kc_text
 
-    # superset appears in both server and dashboards; both keyed by repo identity.
+    # superset appears in both server and dashboards
     ss = [s for s in stamps if s.name == "superset"]
     assert len(ss) == 2
     assert all(s.kind == "image-values-tag" and s.tag == images["superset"] for s in ss)
@@ -122,7 +122,7 @@ def test_absent_component_fails_closed(haul, copy_deploy):
     """A placeholder whose chart is missing from the haul is a hard error."""
     images, charts = haul
     broken = dict(charts)
-    del broken["scout-opa"]  # opa base still has a version: '0.0.0' for scout-opa
+    del broken["scout-opa"]  # opa base still has a version: '0.0.0'
     with pytest.raises(StampError, match="scout-opa.*no haul component"):
         stamp_tree(copy_deploy, images, broken, compute_config_hash(REALM))
 
@@ -130,7 +130,7 @@ def test_absent_component_fails_closed(haul, copy_deploy):
 def test_absent_image_component_fails_closed(haul, copy_deploy):
     images, charts = haul
     broken = dict(images)
-    del broken["keycloak"]  # keycloak CR inline image can no longer resolve
+    del broken["keycloak"]  # keycloak CR inline image no longer resolves
     with pytest.raises(StampError, match="keycloak.*no haul component"):
         stamp_tree(copy_deploy, broken, charts, compute_config_hash(REALM))
 

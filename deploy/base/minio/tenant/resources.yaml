@@ -1,5 +1,4 @@
-# Same upstream repo as the operator base; declared again here so the tenant
-# HelmRelease has an in-namespace source.
+# Re-declared here so the tenant HelmRelease has an in-namespace source.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -9,11 +8,9 @@ spec:
   interval: 1h
   url: https://operator.min.io
 ---
-# MinIO Tenant (minio-operator/tenant chart). The root/OIDC creds live in the
-# configSecret `minio-scout-env-configuration` (fixed name, seeded by CI/site,
-# not committed); the per-user CONSOLE_* secrets referenced under tenant.users
-# are likewise seeded by fixed name. Release name mirrors the Ansible role,
-# which names it after the tenant namespace.
+# MinIO Tenant. Root/OIDC creds live in configSecret `minio-scout-env-configuration`
+# (fixed name, seeded by site, not committed); per-user CONSOLE_* secrets under
+# tenant.users likewise. Release name mirrors the Ansible role (= tenant namespace).
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -21,9 +18,8 @@ metadata:
   namespace: '${minio_tenant_namespace}'
 spec:
   interval: 30m
-  # Version pinned in versions.yaml (minio_version) -- Renovate-tracked there, not in
-  # deploy/. Literal mirror (not stamped; the stamper covers only Scout charts/images);
-  # keep in lockstep with versions.yaml.
+  # Version pinned in versions.yaml (minio_version, Renovate-tracked). Literal mirror,
+  # not stamped (stamper covers only Scout charts/images); keep in lockstep.
   chart:
     spec:
       chart: tenant
@@ -46,9 +42,8 @@ spec:
         - name: MINIO_SCANNER_SPEED
           value: slowest
       pools:
-        # Single-node on-prem: Ansible sets servers from the minio_hosts inventory
-        # group, which envsubst cannot compute, so the base pins 1 (multi-host on-prem
-        # needs an overlay).
+        # Base pins 1 (envsubst can't compute Ansible's minio_hosts count);
+        # multi-host on-prem needs an overlay.
         - servers: 1
           name: pool-0
           volumesPerServer: 1
@@ -61,12 +56,11 @@ spec:
               cpu: 2
               memory: 2Gi
           tolerations:
-            # Ensure MinIO pods can run on control plane nodes
+            # Allow scheduling onto control-plane nodes
             - key: node-role.kubernetes.io/control-plane
               operator: Exists
               effect: PreferNoSchedule
-            # Allows the MinIO pool to include the GPU node when it is
-            # listed as a MinIO host.
+            # Allow the GPU node when listed as a MinIO host
             - key: nvidia.com/gpu
               value: present
               effect: NoSchedule
@@ -83,8 +77,8 @@ spec:
         protocol: http
       certificate:
         requestAutoCert: false
-      # tenant.buckets/users are honored on first install only; the bootstrap
-      # Job below reconciles them idempotently on every run.
+      # tenant.buckets/users honored on first install only; the bootstrap
+      # Job reconciles them idempotently every run.
       buckets:
         - name: '${loki_chunks_bucket}'
         - name: '${loki_ruler_bucket}'
@@ -92,8 +86,7 @@ spec:
         - name: '${lake_bucket}'
         - name: '${hl7_raw_bucket}'
         - name: '${scratch_bucket}'
-        # Versioned so a corrupt OPA bundle PUT can roll back to a prior
-        # object version (ADR 0021); other buckets stay unversioned.
+        # Versioned so a corrupt OPA bundle PUT can roll back (ADR 0021).
         - name: '${opa_bundles_bucket}'
           versioned: true
       users:
@@ -110,8 +103,8 @@ spec:
         path: /
         pathType: Prefix
         annotations:
-          # oauth2-proxy pair tracks ${oauth2_proxy_namespace}; security-headers is
-          # traefik-owned (kube-system), created outside this base at node bootstrap.
+          # oauth2-proxy pair tracks ${oauth2_proxy_namespace}; kube-system
+          # security-headers is traefik-owned, created outside this base at node bootstrap.
           traefik.ingress.kubernetes.io/router.middlewares: >-
             ${oauth2_proxy_namespace}-oauth2-proxy-error@kubernetescrd,
             ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
@@ -208,10 +201,9 @@ data:
       ]
     }
 ---
-# Reconciles MinIO IAM (users + buckets + policies) on every run — the operator
-# honors tenant.users/buckets on first install only. Immutable Job fields change
-# with the config, so Flux is told to recreate rather than patch (the Ansible
-# role forced recreation via an md5 annotation + replace).
+# Reconciles MinIO IAM (users + buckets + policies) every run; operator honors
+# tenant.users/buckets on first install only. force=Enabled because immutable Job
+# fields change with config, so Flux must recreate rather than patch.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -222,8 +214,8 @@ metadata:
   annotations:
     kustomize.toolkit.fluxcd.io/force: 'Enabled'
 spec:
-  # No TTL: the TTL controller would delete the finished Job and Flux would re-apply
-  # + re-run it every interval (a reconcile loop). Flux owns the completed Job.
+  # No TTL: TTL controller would delete the finished Job, then Flux re-applies +
+  # re-runs it every interval (reconcile loop). Flux owns the completed Job.
   backoffLimit: 3
   template:
     metadata:
@@ -234,9 +226,8 @@ spec:
       serviceAccountName: '${minio_tenant_name}-sa'
       containers:
         - name: mc
-          # Image pinned in versions.yaml (minio_client_image[_tag]) -- Renovate-tracked
-          # there, not in deploy/. Literal mirror (upstream image, not stamped); keep in
-          # lockstep with versions.yaml.
+          # Pinned in versions.yaml (minio_client_image[_tag], Renovate-tracked). Literal
+          # mirror, upstream image not stamped; keep in lockstep.
           image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
           securityContext:
             runAsNonRoot: true
@@ -258,9 +249,8 @@ spec:
               # Root creds + region/OIDC config, seeded by the site.
               . /rootcreds/config.env
 
-              # GitOps has no external readiness gate — the Ansible role waited
-              # on the pool StatefulSet before creating this Job. Poll the tenant
-              # endpoint until it answers, then configure IAM.
+              # No external readiness gate under GitOps; poll the tenant endpoint
+              # until it answers, then configure IAM.
               until mc alias set local http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000 \
                 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" --insecure >/dev/null 2>&1 && \
                 mc ready local >/dev/null 2>&1; do
@@ -268,17 +258,16 @@ spec:
                 sleep 5
               done
 
-              # tenant.users reconcile only honors the list on first install, so
-              # ensure each user exists before attaching policies. mc admin user
-              # add is idempotent (re-runs on an existing user succeed quietly).
+              # Ensure each user exists before attaching policies (tenant.users
+              # first-install only). mc admin user add is idempotent.
               for u in '${s3_lake_reader}' '${s3_lake_writer}' '${s3_loki_writer}' \
                        '${s3_opa_bundle_writer}' '${s3_opa_bundle_reader}'; do
                 echo "Ensuring user $$u exists..."
                 mc admin user add local "$$u" "$(cat "/usercreds/$$u/CONSOLE_SECRET_KEY")"
               done
 
-              # Ensure buckets exist (same reason: tenant.buckets is honored on
-              # first install only). mc mb --ignore-existing is idempotent.
+              # Ensure buckets exist (tenant.buckets first-install only).
+              # mc mb --ignore-existing is idempotent.
               for b in ${loki_chunks_bucket} ${loki_ruler_bucket} ${loki_admin_bucket} \
                        ${lake_bucket} ${hl7_raw_bucket} ${scratch_bucket} ${opa_bundles_bucket}; do
                 echo "Ensuring bucket $$b exists..."
@@ -287,11 +276,10 @@ spec:
               echo "  Enabling versioning on ${opa_bundles_bucket}..."
               mc version enable local/${opa_bundles_bucket}
 
-              # Create/refresh each policy and attach it to its user. The
-              # consoleAdmin detach is tolerant: users created via the operator's
-              # tenant.users path inherit consoleAdmin and we strip it; users
-              # created via mc admin user add never had it, so the detach is a
-              # no-op there and must not fail the script.
+              # Create/refresh each policy and attach to its user. consoleAdmin
+              # detach is tolerant: operator tenant.users inherit consoleAdmin and
+              # we strip it; mc-created users never had it, so detach no-ops and
+              # must not fail the script.
               for pair in 'lake-r ${s3_lake_reader}' 'lake-rw ${s3_lake_writer}' \
                           'loki-rw ${s3_loki_writer}' 'opa-bundle-w ${s3_opa_bundle_writer}' \
                           'opa-bundle-r ${s3_opa_bundle_reader}'; do

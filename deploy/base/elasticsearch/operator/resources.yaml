@@ -14,9 +14,8 @@ metadata:
   namespace: '${eck_operator_namespace}'
 spec:
   interval: 30m
-  # Version pinned in versions.yaml (eck_operator_version) -- Renovate-tracked there,
-  # not in deploy/. Literal mirror (not stamped; the stamper covers only Scout
-  # charts/images); keep in lockstep with versions.yaml.
+  # Version pinned in versions.yaml (eck_operator_version), Renovate-tracked there.
+  # Literal mirror (not stamped); keep in lockstep with versions.yaml.
   chart:
     spec:
       chart: eck-operator
@@ -30,7 +29,6 @@ spec:
   upgrade:
     crds: CreateReplace
   values:
-    # Scope the operator's watch/RBAC to the namespace that holds the
-    # Elasticsearch CR (the cluster base creates it).
+    # Scope operator watch/RBAC to the namespace holding the Elasticsearch CR.
     managedNamespaces:
       - '${scout_extractor_namespace}'

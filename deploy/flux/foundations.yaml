@@ -1,7 +1,6 @@
-# Per-namespace foundation Kustomizations (Phase 3 DAG). Each is the SOLE owner of a
-# shared namespace's Namespace + scout-charts HelmRepository, so no component
-# Kustomization co-owns them (co-ownership across prune:true = pruning fights). Every
-# component in the namespace dependsOn its foundation.
+# Per-namespace foundation Kustomizations (Phase 3 DAG). Each is SOLE owner of a shared
+# namespace's Namespace + scout-charts HelmRepository (co-ownership across prune:true =
+# pruning fights); every component in the namespace dependsOn its foundation.
 
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

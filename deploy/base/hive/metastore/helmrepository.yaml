@@ -1,5 +1,4 @@
-# Scout-owned OCI chart (helm/hive-metastore, published to GHCR). Namespaced
-# HelmRepository of type oci; both metastore releases pull the same chart.
+# Scout-owned OCI chart (helm/hive-metastore, GHCR); both metastore releases share it.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:

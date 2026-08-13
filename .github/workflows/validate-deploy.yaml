@@ -1,10 +1,8 @@
 name: Validate deploy base
 
 # Structural checks for the GitOps deployment base (deploy/, ADR 0031, Phase 3):
-# every Kustomize base must render, the Flux Kustomizations must parse, and the
-# dependency graph must stay acyclic with no dangling dependsOn refs. Keeps the
-# scaffold correct while it grows toward the deploy-and-test switch. No cluster,
-# no deploy -- purely static.
+# every Kustomize base renders, Flux Kustomizations parse, and the dependsOn graph
+# stays acyclic with no dangling refs. Purely static -- no cluster, no deploy.
 on:
   pull_request:
     paths:
@@ -25,8 +23,8 @@ jobs:
         run: |
           set -euo pipefail
           VER=5.5.0
-          # Pinned SHA256 of kustomize_v${VER}_linux_amd64.tar.gz (release checksums.txt);
-          # verify before extracting so a corrupted/tampered download fails closed.
+          # Pinned SHA256 (release checksums.txt); verify before extract so a
+          # corrupted/tampered download fails closed.
           SHA=6703a3a70a0c47cf0b37694030b54f1175a9dfeb17b3818b623ed58b9dbc2a77
           curl -sSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${VER}/kustomize_v${VER}_linux_amd64.tar.gz" -o kustomize.tar.gz
           echo "${SHA}  kustomize.tar.gz" | sha256sum -c -
@@ -51,12 +49,12 @@ jobs:
         run: |
           python3 - <<'PY'
           import re, glob, subprocess, sys
-          # kustomize-controller runs drone/envsubst over the BUILT output, which
-          # substitutes ${NAME} AND unbraced $NAME (any case), with $$ the literal-$
-          # escape. So the substitution surface is the rendered bases + the flux/ files,
-          # not just braced-lowercase tokens in source. Assert required-vars.txt lists
-          # every envsubst target; otherwise it renders green here but fails
-          # StrictPostBuildSubstitutions (or substitutes empty) at deploy -- which is how
+          # kustomize-controller runs drone/envsubst over the BUILT output,
+          # substituting ${NAME} AND unbraced $NAME (any case), with $$ the literal-$
+          # escape. So the surface is the rendered bases + flux/ files, not just
+          # braced-lowercase source tokens. Assert required-vars.txt lists every
+          # envsubst target; else it's green here but fails
+          # StrictPostBuildSubstitutions (or substitutes empty) at deploy -- how
           # unbraced runtime shell vars like $HIVE_PW / $MINIO_ROOT_USER slipped through.
           blob = ""
           dirs = subprocess.run(
@@ -67,7 +65,7 @@ jobs:
                                      capture_output=True, text=True).stdout + "\n"
           for f in glob.glob("deploy/flux/*.yaml"):
               blob += open(f).read() + "\n"
-          blob = blob.replace("$$", "\x00")  # drop escaped literals before matching
+          blob = blob.replace("$$", "\x00")  # drop $$-escaped literals before matching
           used = set(re.findall(r'\$\{([A-Za-z0-9_]+)[:}]', blob))  # ${NAME} / ${NAME:-def}
           used |= set(re.findall(r'\$([A-Za-z0-9_]+)', blob))       # unbraced $NAME
           declared = {l.strip() for l in open("deploy/required-vars.txt")
@@ -85,12 +83,11 @@ jobs:
       - name: config-artifact tooling stamps + generates cleanly
         run: |
           set -euo pipefail
-          # Canary for the Phase-3b tooling (the config-artifact-publish job runs
-          # these on every main build). Both tools self-verify fail-closed:
-          # stamp_config asserts no 0.0.0/latest/config-hash placeholder survives,
-          # gen_cluster_vars asserts its key set == required-vars.txt. Then confirm
-          # the STAMPED bases still build (stamping is line-based -- catch a rewrite
-          # that broke YAML before it reaches a cluster).
+          # Canary for the Phase-3b tooling (config-artifact-publish runs these on
+          # every main build). Both self-verify fail-closed: stamp_config asserts no
+          # 0.0.0/latest/config-hash placeholder survives, gen_cluster_vars asserts
+          # key set == required-vars.txt. Then confirm the STAMPED bases still build
+          # (stamping is line-based -- catch a rewrite that broke YAML).
           rm -rf /tmp/stamped && cp -r deploy /tmp/stamped
           python3 tooling/deploy/stamp_config.py \
             --deploy-dir /tmp/stamped \
@@ -119,7 +116,7 @@ jobs:
                   if not d:
                       continue
                   name = d["metadata"]["name"]
-                  names[name] += 1          # count before insert so collisions are caught
+                  names[name] += 1          # count before insert to catch collisions
                   nodes[name] = f
                   for dep in d.get("spec", {}).get("dependsOn", []):
                       edges.append((name, dep["name"]))
@@ -131,8 +128,8 @@ jobs:
           missing = sorted({b for _, b in edges if b not in nodes})
           if missing:
               print(f"::error::dependsOn references a Kustomization that does not exist: {missing}"); rc = 1
-          # Drop dangling edges before the sort so a missing target reports as a dangling
-          # ref (above), not a phantom cycle that sends you chasing a cycle that isn't there.
+          # Drop dangling edges before the sort so a missing target reports as a
+          # dangling ref (above), not a phantom cycle.
           edges = [(a, b) for a, b in edges if b in nodes]
           g = collections.defaultdict(list); indeg = collections.Counter()
           for a, b in edges:

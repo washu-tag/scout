@@ -1,7 +1,6 @@
-# Single-node Elasticsearch managed by ECK. TLS on the HTTP layer is disabled for
-# simpler internal access. Heap is fixed via ES_JAVA_OPTS (Xms == Xmx); pod memory
-# tracks it per Elastic guidelines (heap <= 50% of pod memory): requests = 2x heap,
-# limits = 8x heap to allow burst.
+# Single-node Elasticsearch (ECK); HTTP TLS disabled for internal access. Heap fixed
+# via ES_JAVA_OPTS (Xms == Xmx); pod memory tracks it (heap <= 50%): requests = 2x
+# heap, limits = 8x heap for burst.
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:

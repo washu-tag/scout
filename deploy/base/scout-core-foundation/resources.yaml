@@ -1,10 +1,8 @@
-# Per-namespace foundation (ADR 0031): the sole owner of the ${scout_core_namespace}
-# Namespace. In Ansible postgres_cluster_namespace / keycloak_namespace / valkey_namespace
-# all resolve to scout_core_namespace, so postgres-cluster, keycloak, and valkey share one
-# namespace. Co-declaring that Namespace across their prune:true Kustomizations lets a
-# mistimed prune cascade-delete the whole namespace (and everything in it), so each
-# component dependsOn this foundation instead of declaring the Namespace itself. Unlike
-# scout-analytics/scout-extractor there is no shared HelmRepository here, only the Namespace.
+# Per-namespace foundation (ADR 0031): sole owner of the ${scout_core_namespace}
+# Namespace, shared by postgres-cluster, keycloak, and valkey (all resolve to
+# scout_core_namespace). Co-declaring it across their prune:true Kustomizations would
+# let a mistimed prune cascade-delete the namespace, so each dependsOn this foundation.
+# No shared HelmRepository here, only the Namespace.
 apiVersion: v1
 kind: Namespace
 metadata:

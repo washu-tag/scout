@@ -1,7 +1,6 @@
-# Flux Kustomizations for extractor (Phase 3 DAG). Each pulls the published config
-# artifact (OCIRepository scout-config) + cluster-vars for ${...} substitution.
-# dependsOn edges reproduce the Ansible deploy order; CRD-owning operators are
-# split so a CR never reconciles before its CRDs exist.
+# Flux Kustomizations for extractor (Phase 3 DAG). Pulls config artifact
+# (OCIRepository scout-config) + cluster-vars for ${...} substitution. dependsOn
+# reproduces Ansible deploy order; CRD-owning operators split from their CRs.
 
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -23,13 +22,11 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: scout-extractor-foundation
-    # The ingest DB + owner role are now provisioned declaratively on the shared
-    # CNPG cluster (postgres/cluster), whose health gate waits for the Database, so
-    # postgres-cluster replaces the old extractor-db-init edge.
+    # Ingest DB + owner role now provisioned on the shared CNPG cluster (its health
+    # gate waits for the Database); postgres-cluster replaces the old extractor-db-init edge.
     - name: postgres-cluster
     - name: minio-tenant
-    # hl7-transformer values hardwire the metastore URI + TRINO_HOST, and Ansible runs
-    # Install Lake + Install Trino before Install Extractor, so wait for both.
+    # hl7-transformer values hardwire the metastore URI + TRINO_HOST, so wait for both.
     - name: hive-metastore
     - name: trino-rw
     - name: temporal-bootstrap

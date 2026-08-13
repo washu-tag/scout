@@ -1,5 +1,4 @@
-# Default values for scout-opa.
-# Production values are rendered by ansible/roles/opa from scout inventory.
+# Default values for scout-opa. Production values rendered by ansible/roles/opa.
 
 replicaCount: 2
 
@@ -16,11 +15,9 @@ resources:
     cpu: 500m
     memory: 256Mi
 
-# Multi-line content rendered into the OPA policy ConfigMap. The
-# policy-hash annotation on the Deployment forces a rollout when any
-# of these change. An empty policy.rego falls back to the chart-owned
-# files/main.rego (the authoritative Trino policy, ADR 0020); the opa
-# Ansible role overrides it via lookup for byte-parity on the live path.
+# Rendered into the OPA policy ConfigMap; policy-hash annotation rolls the
+# Deployment on any change. Empty policy.rego falls back to chart-owned
+# files/main.rego (authoritative Trino policy, ADR 0020).
 policy:
   rego: ''
 data:
@@ -28,11 +25,9 @@ data:
 config:
   yaml: ''
 
-# Bundle-reader Secret is managed outside this chart (provisioned by
-# the opa Ansible role from MinIO credentials in scout_common). The
-# Deployment mounts the Secret via envFrom; credsHash is included in
-# the rolling-hash annotation so credential rotation triggers a pod
-# restart without re-reading the Secret values into the chart.
+# Bundle-reader Secret managed outside this chart; Deployment mounts it via
+# envFrom. credsHash feeds the rolling-hash so rotation rolls pods without
+# re-reading the Secret values into the chart.
 bundleReader:
   secretName: opa-bundle-reader
   credsHash: ''
@@ -40,9 +35,7 @@ bundleReader:
 service:
   port: 8181
 
-# Ingress NetworkPolicy admitting only the Trino coordinator (see
-# templates/networkpolicy.yaml). Default off so a bare `helm install` (e.g.
-# chart tests, where no Trino coordinator exists) stays reachable; the opa
-# Ansible role renders this enabled for Scout deployments.
+# Ingress NetworkPolicy admitting only the Trino coordinator. Default off so a
+# bare `helm install` (chart tests, no Trino coordinator) stays reachable.
 networkPolicy:
   enabled: false

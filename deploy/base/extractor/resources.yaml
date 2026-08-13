@@ -1,27 +1,11 @@
-# Extractor: the HL7-log ingest workers (ADR 0030/0031). Two Scout-owned OCI
-# charts pulled from ghcr.io/washu-tag/charts:
-#   - hl7log-extractor : Java/Temporal worker that splits daily HL7 log files and
-#                        uploads them to the lake, then triggers ingest.
-#   - hl7-transformer  : Spark/Python worker that parses HL7 -> Delta Lake.
-# Both land in scout-extractor alongside Temporal (temporal-internal-frontend),
-# which is why they dependsOn temporal-bootstrap; they also need the CNPG ingest
-# DB (postgres-cluster) and the MinIO lake (minio-tenant).
-#
-# Fixed-name refs, seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git:
-#   - postgres-secret (Secret): DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD for the
-#     ingest DB; consumed by the transformer (envFrom) and the extractor
-#     (SPRING_DATASOURCE_PASSWORD via secretKeyRef). extractor-db-init reads its
-#     DB_PASSWORD to set the ingest role's password.
-#   - s3-secret (Secret): AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY (lake writer).
-#   - superuser-secret (Secret): CNPG basic-auth (username/password) for extractor-db-init.
-# The s3-env ConfigMap (non-secret S3 endpoint config) and extractor-db-init Job
-# (ingest DB + owner role in the shared CNPG cluster, replacing the Ansible
-# scout_common create_db_with_owner) are defined below.
-#
-# The modality-mapping map is chart-owned (hl7-transformer files/modality_mapping_codes.csv);
-# no modality ConfigMap is created. On-prem rendering: MinIO S3 (path-style), HL7 logs
-# mounted from the node at ${extractor_data_dir}.
-# S3 connection env (non-secret) both workers envFrom; the creds ride the s3-secret.
+# Extractor: HL7-log ingest workers (ADR 0030/0031). Two Scout-owned OCI charts:
+# hl7log-extractor (Java/Temporal, splits+uploads logs then triggers ingest) and
+# hl7-transformer (Spark/Python, HL7 -> Delta Lake). dependsOn temporal-bootstrap
+# (share temporal-internal-frontend), postgres-cluster (ingest DB), minio-tenant.
+# Fixed-name secrets seeded by CI/site or SOPS/ESO, NEVER in git: postgres-secret
+# (ingest DB creds; transformer envFrom + extractor SPRING_DATASOURCE_PASSWORD),
+# s3-secret (lake writer AWS creds). Modality map is chart-owned (no ConfigMap).
+# S3 connection env below is non-secret; creds ride the s3-secret.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -39,9 +23,8 @@ metadata:
   namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
-  # Chart pinned in versions.yaml (hl7log_extractor_chart_version); this repo's CI
-  # publishes it and the GitOps lane owns the real version via its OCIRepository
-  # (ADR 0030/0031). Literal placeholder here until the stamping job lands.
+  # Pinned in versions.yaml (hl7log_extractor_chart_version); GitOps lane owns the
+  # real version via its OCIRepository (ADR 0030/0031). Placeholder until stamped.
   chart:
     spec:
       chart: hl7log-extractor
@@ -51,8 +34,7 @@ spec:
         name: scout-charts
         namespace: '${scout_extractor_namespace}'
   values:
-    # Image repository/tag are build-lane-stamped at config-artifact publish;
-    # literal placeholder in git (matches the chart's own default).
+    # Image repo/tag build-lane-stamped at config-artifact publish; placeholder here.
     image:
       repository: ghcr.io/washu-tag/hl7log-extractor
       tag: latest
@@ -69,8 +51,7 @@ spec:
         value: '${timezone}'
       - name: JAVA_TOOL_OPTIONS
         value: '-XX:MaxRAMPercentage=${hl7log_extractor_jvm_heap_max_ram_percentage} -XX:+UseContainerSupport'
-      # Datasource password comes from the fixed-name postgres-secret; Spring's
-      # env override beats application.yaml so no credential is inlined below.
+      # Datasource password from postgres-secret; env override beats application.yaml.
       - name: SPRING_DATASOURCE_PASSWORD
         valueFrom:
           secretKeyRef:
@@ -83,8 +64,7 @@ spec:
       limits:
         cpu: '${hl7log_extractor_resources_limits_cpu}'
         memory: '${hl7log_extractor_resources_limits_memory}'
-    # HL7 log files are mounted from the node (on-prem); readOnly + HostToContainer
-    # so newly-rotated logs on the host become visible to the worker.
+    # HL7 logs mounted from node (on-prem); HostToContainer surfaces rotated logs.
     volumes:
       - name: data
         hostPath:
@@ -144,9 +124,8 @@ metadata:
   namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
-  # Chart pinned in versions.yaml (hl7_transformer_chart_version); this repo's CI
-  # publishes it and the GitOps lane owns the real version via its OCIRepository
-  # (ADR 0030/0031). Literal placeholder here until the stamping job lands.
+  # Pinned in versions.yaml (hl7_transformer_chart_version); GitOps lane owns the
+  # real version via its OCIRepository (ADR 0030/0031). Placeholder until stamped.
   chart:
     spec:
       chart: hl7-transformer
@@ -156,19 +135,16 @@ spec:
         name: scout-charts
         namespace: '${scout_extractor_namespace}'
   values:
-    # Image repository/tag are build-lane-stamped at config-artifact publish;
-    # literal placeholder in git (matches the chart's own default).
+    # Image repo/tag build-lane-stamped at config-artifact publish; placeholder here.
     image:
       repository: ghcr.io/washu-tag/hl7-transformer
       tag: latest
     initContainers:
       # Guard the Temporal-before-DNS startup race: block until the frontend
-      # resolves, using the app image (same glibc resolver as the main process).
-      # imagePullPolicy is explicit because init containers specified via values
-      # otherwise default to Always for a :latest tag, which breaks air-gapped/k3s
-      # nodes that have the image loaded locally but no registry to pull from.
-      # This is a SECOND image literal (values.image is the main container's): keep
-      # the two in lockstep -- the config-artifact stamping job must rewrite both.
+      # resolves, using the app image (same glibc resolver). imagePullPolicy is
+      # explicit because values-specified init containers default to Always on a
+      # :latest tag, breaking air-gapped/k3s nodes with the image preloaded.
+      # SECOND image literal (values.image is the main container's): stamp both.
       - name: wait-for-temporal-dns
         image: ghcr.io/washu-tag/hl7-transformer:latest
         imagePullPolicy: IfNotPresent
@@ -244,9 +220,8 @@ spec:
     spark:
       executor:
         memory: '${hl7_transformer_spark_memory}'
-    # Chart-owned spark-defaults.conf (ADR 0031). on-prem mode = MinIO + path-style;
-    # S3 creds come from the s3-secret envFrom, never from this block. The
-    # modality-mapping map is left to the chart's bundled default (no override).
+    # Chart-owned spark-defaults.conf (ADR 0031). on-prem = MinIO + path-style;
+    # S3 creds ride the s3-secret envFrom, never this block. Modality map = chart default.
     sparkDefaults:
       enabled: true
       mode: on-prem

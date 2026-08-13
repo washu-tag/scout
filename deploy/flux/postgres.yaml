@@ -1,7 +1,6 @@
-# postgres in the Flux DAG: operator (L1) then the Cluster (L2a), split so the
-# Cluster CR never reconciles before the CNPG CRDs exist; health-gated edge.
-# Both consume the published config artifact (OCIRepository scout-config) and the
-# cluster-vars ConfigMap for ${...} substitutions.
+# postgres DAG: operator (L1) then Cluster (L2a), split so the Cluster CR never
+# reconciles before the CNPG CRDs exist. Both consume OCIRepository scout-config
+# and the cluster-vars ConfigMap for ${...} substitutions.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -22,9 +21,8 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: scout-operators-foundation
-  # No healthChecks block: Flux ignores it when wait:true (wait already health-checks
-  # everything reconciled), and it hardcoded a guessed Deployment fullname. The CR
-  # gates below use healthCheckExprs, the pattern the other operators follow.
+  # No healthChecks block: Flux ignores it under wait:true (wait already health-checks
+  # everything). CR gates below use healthCheckExprs, like the other operators.
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -47,20 +45,19 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
-  # `current` only, no `failed`: CNPG reports Cluster Ready=False and Database
-  # applied=false during NORMAL transients (cold initdb, single-instance restart,
-  # the owner-role-before-Database first-pass race). Flux evaluates failed before
-  # current and fail-fasts, so a `failed` expr keyed on those transients would abort
-  # the wait and, with no retryInterval, block every dependent for the 30m interval.
-  # Leaving transient states as in-progress lets the 10m timeout be the only failure
+  # `current` only, no `failed`: CNPG reports Ready=False / applied=false during
+  # NORMAL transients (cold initdb, single-instance restart, owner-role-before-
+  # Database first-pass race). Flux evaluates failed first and fail-fasts, so a
+  # `failed` expr keyed on those would abort the wait and (no retryInterval) block
+  # dependents for the full 30m interval. Let the 10m timeout be the only failure
   # path (CNPG's own Flux-example pattern).
   healthCheckExprs:
     - apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
       current: status.conditions.exists(e, e.type == 'Ready' && e.status == 'True')
-    # Gate on the Databases too (status.applied): CNPG reconciles managed.roles +
-    # Database CRs AFTER the Cluster reports Ready, so without this a dependent (or
-    # the hive/db grant Job) could run before its DB/owner role exists.
+    # Gate on Databases too (status.applied): CNPG reconciles roles + Database CRs
+    # AFTER Cluster Ready, so without this a dependent (or the hive/db grant Job)
+    # could run before its DB/owner role exists.
     - apiVersion: postgresql.cnpg.io/v1
       kind: Database
       current: has(status.applied) && status.applied == true

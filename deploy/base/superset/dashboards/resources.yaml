@@ -1,17 +1,13 @@
-# Scout dashboards import (ADR 0030/0031). The Scout-owned OCI chart
-# `scout-dashboards` renders the dashboard/dataset/chart bundles into a ConfigMap
-# and runs a Helm-hook import Job that loads them into the running Superset via its
-# CLI, mirroring the Ansible role's second Helm release.
+# Scout dashboards import (ADR 0030/0031). Scout-owned OCI chart `scout-dashboards`
+# renders the bundles into a ConfigMap and runs a Helm-hook import Job that loads
+# them into the running Superset via its CLI.
 #
-# The import Job reuses the apache/superset release's own artifacts by fixed name:
-# it envFroms `superset-env` (DB connection + secret key + Keycloak svc token env),
-# mounts `superset-config` (the rendered superset_config.py with DB_CONNECTION_MUTATOR),
-# reads REDIS_PASSWORD from `superset-valkey-auth`, and mounts `trino-tls` so the
-# import's dataset validation can verify the user-facing Trino's self-signed cert.
-# All are created/seeded by the superset-server layer + CI/site, which is why this
-# layer dependsOn superset-server. The shared Namespace ${scout_analytics_namespace}
-# and the scout-charts OCI HelmRepository are owned by scout-analytics-foundation
-# (dependsOn it), so neither is redeclared here.
+# The Job reuses the superset-server layer's fixed-name artifacts (hence dependsOn
+# superset-server): envFrom `superset-env`, mounts `superset-config` (rendered
+# superset_config.py with DB_CONNECTION_MUTATOR), reads REDIS_PASSWORD from
+# `superset-valkey-auth`, mounts `trino-tls` to verify Trino's self-signed cert
+# during dataset validation. Namespace ${scout_analytics_namespace} + scout-charts
+# HelmRepository owned by scout-analytics-foundation (dependsOn), not redeclared.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -19,12 +15,10 @@ metadata:
   namespace: '${scout_analytics_namespace}'
 spec:
   interval: 30m
-  # Mirrors the Ansible helm timeout: the import Job validates every dataset
-  # against Trino and can take a while.
+  # Import Job validates every dataset against Trino and can take a while.
   timeout: 15m
-  # Scout-owned, CI-built chart (ADR 0030); not in versions.yaml and not
-  # Renovate-tracked (watching a chart we publish here would self-reference).
-  # Placeholder version in git; the concrete version is stamped from the
+  # Scout-owned, CI-built chart (ADR 0030); not in versions.yaml, not Renovate-tracked
+  # (self-reference). Placeholder version; concrete version stamped from the
   # build-lane haul at config-artifact publish.
   chart:
     spec:
@@ -35,24 +29,20 @@ spec:
         name: scout-charts
         namespace: '${scout_analytics_namespace}'
   values:
-    # Import image = the Superset image so it carries the same superset CLI + deps
-    # (build-lane-stamped at publish; literal here, matches the server layer).
+    # Superset image (same CLI + deps; build-lane-stamped, literal here, matches server).
     image:
       repository: ghcr.io/washu-tag/superset
       tag: '5.0.0'
-    # AuthZ-enabled Trino: the user-facing HTTPS listener (8443) in the analytics
-    # namespace. DB_CONNECTION_MUTATOR (from the mounted superset-config) adds the
-    # JWT + CA verify on top; scheme https selects that listener.
+    # AuthZ-enabled user-facing Trino HTTPS listener. DB_CONNECTION_MUTATOR (from
+    # mounted superset-config) adds JWT + CA verify; scheme https selects it.
     trino:
       user: '${trino_user}'
       namespace: '${scout_analytics_namespace}'
       port: '${trino_https_port}'
       scheme: https
     supersetRelease:
-      # cert-manager-issued Trino TLS bundle; the import Job mounts its ca.crt so
-      # DB_CONNECTION_MUTATOR can verify Trino's self-signed cert during dataset
-      # validation. Fixed name (seeded by CI/site), never in git.
+      # Trino TLS bundle; Job mounts its ca.crt so DB_CONNECTION_MUTATOR verifies
+      # Trino's self-signed cert during validation. Fixed name (CI/site), never in git.
       trinoCaSecret: trino-tls
-    # bundles.enabled is left to the chart default (core + patients), which matches
-    # the Ansible scout_dashboard_bundles default; a site overlay tunes it (a list,
-    # so it is not a scalar cluster-var).
+    # bundles.enabled left to chart default (core + patients); a site overlay tunes
+    # it (a list, not a scalar cluster-var).

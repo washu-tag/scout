@@ -1,26 +1,14 @@
-# OPA: the policy engine that enforces Scout's Trino access-control policy
-# (ADRs 0020/0021). Deployed from the Scout-owned OCI chart scout-opa
-# (ghcr.io/washu-tag/charts/scout-opa) as a Deployment + Service in the Trino
-# namespace (opa_namespace == trino_namespace, ADR 0020), so the coordinator ->
-# OPA decision path stays in-cluster and the chart's NetworkPolicy admits only
-# the Trino coordinator.
-#
-# Static AuthZ (the Rego policy + the inventory-rendered data document) is baked
-# into the release below. Per-user attributes are layered on at runtime by OPA's
-# bundle plugin (ADR 0021): the Keycloak SPI listener publishes a bundle to MinIO
-# and OPA polls it every 5-10s, atomically swapping the data.users subtree. That
-# is why this base dependsOn minio-tenant -- OPA reads its bundle from the MinIO
-# lake and the bundle-reader IAM user is provisioned by the minio-tenant bootstrap.
+# OPA: Trino access-control policy engine (ADRs 0020/0021), scout-opa OCI chart
+# as Deployment + Service in the Trino namespace (opa_namespace == trino_namespace).
+# Static AuthZ (Rego + inventory-rendered data doc) is baked in below; per-user
+# attributes come at runtime via the bundle plugin (ADR 0021) polling MinIO, hence
+# dependsOn minio-tenant (bundle + bundle-reader IAM user provisioned there).
 #
 # Fixed-name Secret, seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git:
 #   - opa-bundle-reader (Secret): AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY /
-#     AWS_REGION for the bundle pull. OPA's environment_credentials reads these
-#     env vars (AWS_REGION is required even against MinIO -- the SDK credential
-#     resolver fails closed without it). The access/secret pair are the same
-#     values the minio-tenant base seeds into the ${s3_opa_bundle_reader}-creds
-#     Secret in scout-data; mirrored here by fixed name so the cross-namespace
-#     dependency stays explicit. The chart mounts it via envFrom.
-# Release name mirrors the Ansible role's helm_chart_name (scout-opa).
+#     AWS_REGION (required even against MinIO -- credential resolver fails closed
+#     without it). Same values minio-tenant seeds into ${s3_opa_bundle_reader}-creds
+#     in scout-data; mirrored here by fixed name, mounted via envFrom.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -28,9 +16,8 @@ metadata:
   namespace: '${scout_analytics_namespace}'
 spec:
   interval: 30m
-  # Scout-owned OCI chart; this repo's CI publishes it and the GitOps lane owns the
-  # real version via its OCIRepository (ADR 0030/0031). Literal 0.0.0 placeholder
-  # here until the stamping job lands (same pattern as the extractor base).
+  # Scout-owned OCI chart; GitOps lane owns real version via OCIRepository
+  # (ADR 0030/0031). Literal 0.0.0 placeholder until the stamping job lands.
   chart:
     spec:
       chart: scout-opa
@@ -41,13 +28,11 @@ spec:
         namespace: '${scout_analytics_namespace}'
   values:
     replicaCount: 2
-    # Lock OPA's unauthenticated API down to the Trino coordinator (the chart
-    # renders a same-namespace NetworkPolicy; see helm/scout-opa/templates/networkpolicy.yaml).
+    # Same-namespace NetworkPolicy locks OPA's unauthenticated API to the Trino coordinator.
     networkPolicy:
       enabled: true
-    # Upstream OPA image, tag pinned in versions.yaml (opa_image_tag) -- Renovate-tracked
-    # there, not in deploy/. Literal mirror (upstream image, not stamped); keep in
-    # lockstep with versions.yaml.
+    # Tag pinned in versions.yaml (opa_image_tag), Renovate-tracked there. Literal
+    # mirror (upstream image, not stamped); keep in lockstep with versions.yaml.
     image:
       repository: openpolicyagent/opa
       tag: '1.16.2'
@@ -60,16 +45,13 @@ spec:
         cpu: 500m
         memory: 256Mi
     bundleReader:
-      # Fixed-name Secret (above); envFrom-mounted by the chart's Deployment.
-      # bundleReader.credsHash (the Ansible role's rollout trigger on credential
-      # rotation) is intentionally omitted: hashing secret values in git is not
-      # allowed, and rotation-triggered rollout is deferred to Phase 4 (ESO/Reloader).
+      # Fixed-name Secret (above), envFrom-mounted. credsHash rollout trigger
+      # omitted: no hashing secret values in git; rotation-rollout deferred to
+      # Phase 4 (ESO/Reloader).
       secretName: opa-bundle-reader
-    # Static data document, rendered by the opa Ansible role from inventory. Only
-    # ${report_delta_table_name} is a shared site scalar (a cluster-var, also used
-    # by the extractor base); the rest are the role's default policy config. The
-    # baseline_hidden_tables pair derives from ${report_delta_table_name} so a
-    # renamed report table can't leave the patient-mapping table unhidden.
+    # Static data document. Only ${report_delta_table_name} is a shared cluster-var;
+    # baseline_hidden_tables derives from it so a renamed report table can't leave
+    # the patient-mapping table unhidden.
     data:
       json: |
         {
@@ -87,12 +69,11 @@ spec:
           },
           "masked_columns": ["patient_name", "full_patient_name", "zip_or_postal_code"]
         }
-    # Bundle plugin config (ADR 0021). `services.minio` + `bundles.scout-users`
-    # wire the bundle plugin to the MinIO endpoint (headless `-hl` service so DNS
-    # resolves to all tenant pods); the resource is the bundle object the Keycloak
-    # SPI listener publishes. `persist: true` writes the last good bundle to the
-    # pod-local emptyDir so a restart during a MinIO outage doesn't drop OPA to
-    # deny-all. Polling 5-10s meets ADR 0020's real-time-offboarding requirement.
+    # Bundle plugin config (ADR 0021). Headless `-hl` MinIO service so DNS resolves
+    # to all tenant pods; resource is the bundle the Keycloak SPI listener publishes.
+    # `persist: true` keeps the last good bundle in pod-local emptyDir so a restart
+    # during a MinIO outage doesn't drop OPA to deny-all. 5-10s poll meets ADR 0020
+    # real-time-offboarding.
     config:
       yaml: |
         services:

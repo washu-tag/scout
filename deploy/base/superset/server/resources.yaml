@@ -1,31 +1,18 @@
-# Superset server (Scout Analytics BI, ADR 0030/0031). The upstream apache/superset
-# chart, plus the Scout-owned side objects the Ansible role creates around it:
-# the metadata-DB bootstrap Job, the StatsD-exporter Service + mapping, and the
-# statsd/branding/OAuth wiring folded into the chart's superset_config.py.
+# Superset server (Scout Analytics BI, ADR 0030/0031): upstream apache/superset
+# chart plus Scout-owned side objects (DB bootstrap Job, StatsD-exporter Svc +
+# mapping, statsd/branding/OAuth config). Namespace ${scout_analytics_namespace}
+# is owned by scout-analytics-foundation (dependsOn), not declared here.
 #
-# The ${scout_analytics_namespace} Namespace is owned solely by
-# scout-analytics-foundation (a dependsOn), not declared here. The trino/keycloak
-# dependsOn edges gate readiness, not namespace creation.
-#
-# Secret handling (never in git): the chart's own env Secret is disabled
-# (secretEnv.create=false) so BOTH the server and the scout-dashboards import Job
-# consume ONE externally-seeded, fixed-name Secret `superset-env` via envFrom.
-# CI/site (Phase 3) or ESO (Phase 4) seeds it; it carries the full runtime env the
-# chart's superset_config.py reads with os.getenv:
-#   connection: DB_HOST/DB_PORT/DB_USER/DB_PASS/DB_NAME,
-#               REDIS_HOST/REDIS_PORT/REDIS_USER/REDIS_PROTO/REDIS_DB/REDIS_CELERY_DB/REDIS_PASSWORD
-#   secrets:    SUPERSET_SECRET_KEY, KEYCLOAK_SUPERSET_CLIENT_SECRET (user OAuth),
-#               KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET (Trino svc token)
-#   svc config: KEYCLOAK_TOKEN_URL, KEYCLOAK_SUPERSET_SVC_CLIENT_ID, TRINO_CA_CERT
-# Other fixed-name refs (seeded by CI/site, never in git):
-#   superuser-secret        -- CNPG basic-auth (username/password); used by the DB Job
-#   superset-valkey-auth    -- REDIS_PASSWORD; read by the dashboards import Job
-#   trino-tls               -- cert-manager CA bundle for the user-facing Trino's TLS
-#                              listener; mounted so DB_CONNECTION_MUTATOR can verify it
-#   scout-logo (ConfigMap)  -- binary Scout logo/favicon branding assets (like the
-#                              extractor's s3-env, a fixed-name CM seeded by CI/site,
-#                              not embedded in git)
-# Upstream apache/superset chart (normal HelmRepository).
+# Secrets never in git. Chart env Secret disabled (secretEnv.create=false) so both
+# the server and the dashboards import Job read ONE externally-seeded fixed-name
+# `superset-env` via envFrom (CI/site Phase 3, ESO Phase 4). superset_config.py
+# os.getenv keys: DB_HOST/PORT/USER/PASS/NAME, REDIS_*, SUPERSET_SECRET_KEY,
+# KEYCLOAK_SUPERSET_CLIENT_SECRET (user OAuth), KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET
+# (Trino svc token), KEYCLOAK_TOKEN_URL, KEYCLOAK_SUPERSET_SVC_CLIENT_ID, TRINO_CA_CERT.
+# Other fixed-name refs (seeded by CI/site, never in git): superuser-secret (CNPG
+# basic-auth, used by DB Job); superset-valkey-auth (REDIS_PASSWORD, dashboards Job);
+# trino-tls (cert-manager CA for user-facing Trino TLS, verified by DB_CONNECTION_MUTATOR);
+# scout-logo ConfigMap (binary logo/favicon branding).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -35,13 +22,11 @@ spec:
   interval: 1h
   url: https://apache.github.io/superset
 ---
-# StatsD-exporter mapping for the sidecar. Single-sourced in spirit from
-# ansible/roles/superset/files/statsd_mapping.yaml (kept byte-identical modulo the
-# escaping below), but INLINE rather than a generated ConfigMap: its literal
-# $1/$2/$3 statsd_exporter backrefs need substitute:disabled while its
+# StatsD-exporter mapping for the sidecar. INLINE (not a generated ConfigMap):
+# its literal $1/$2/$3 statsd_exporter backrefs need substitute:disabled while
 # ${scout_analytics_namespace} needs substitution, and one Flux annotation can't do
-# both. The $$1/$$2/$$3 are $$-escaped so drone/envsubst leaves a literal $1/$2/$3
-# (a digit-led $N is otherwise a substitution target -- the nginx rewrite footgun).
+# both. $$1/$$2/$$3 are $$-escaped so envsubst leaves a literal $1/$2/$3
+# (a digit-led $N is otherwise a substitution target).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -50,10 +35,7 @@ metadata:
 data:
   statsd_mapping.yaml: |
     mappings:
-      # --------------------------------------------------------------------------
-      # REST API timings
-      # Pattern: superset.<XRestApi>.<method>.time
-      # --------------------------------------------------------------------------
+      # REST API timings: superset.<XRestApi>.<method>.time
       - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.time"
         match_type: regex
         name: 'superset_api_request_duration_ms'
@@ -64,10 +46,7 @@ data:
         histogram_options:
           buckets: [10, 50, 100, 250, 500, 1000, 2500]
 
-      # --------------------------------------------------------------------------
-      # REST API counters
-      # Pattern: superset.<XRestApi>.<method>.<status>
-      # --------------------------------------------------------------------------
+      # REST API counters: superset.<XRestApi>.<method>.<status>
       - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.(\\w+)"
         match_type: regex
         name: 'superset_api_requests_total'
@@ -76,9 +55,7 @@ data:
           method: '$$2'
           status: '$$3'
 
-      # --------------------------------------------------------------------------
       # Drop everything else
-      # --------------------------------------------------------------------------
       - match: '.'
         match_type: regex
         action: drop
@@ -106,19 +83,16 @@ spec:
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  # Release name is `superset` so the chart fullname is `superset`; that fixes the
-  # env/config Secret names (superset-env / superset-config) the dashboards import
-  # Job consumes by fixed name.
+  # Release name `superset` fixes chart fullname, so the fixed-name env/config
+  # Secrets (superset-env / superset-config) the dashboards import Job consumes.
   name: superset
   namespace: '${scout_analytics_namespace}'
 spec:
   interval: 30m
-  # Mirrors the Ansible helm timeout: the chart's init Job (db upgrade + admin
-  # bootstrap) runs at install and takes a while.
+  # Chart init Job (db upgrade + admin bootstrap) runs at install and takes a while.
   timeout: 15m
   # Version pinned in versions.yaml (superset_helm_chart_version) -- Renovate-tracked
-  # there, not in deploy/. Literal mirror (upstream chart, not stamped); keep in
-  # lockstep with versions.yaml.
+  # there, not deploy/. Literal mirror (upstream chart, not stamped); keep in lockstep.
   chart:
     spec:
       chart: superset
@@ -127,16 +101,12 @@ spec:
         kind: HelmRepository
         name: superset
         namespace: '${scout_analytics_namespace}'
-  # The two large configOverrides copies (trino_auth, prometheus_metrics) and the
-  # statsd mapping are single-sourced from files in this base via a
-  # configMapGenerator (kustomization.yaml); valuesFrom deep-sets the two leaves
-  # into configOverrides, merging with the inline keys below. Flux re-reconciles
-  # on ConfigMap content change, so a .py edit still rolls the release.
+  # configOverrides.trino_auth / prometheus_metrics single-sourced from files via
+  # configMapGenerator (kustomization.yaml); valuesFrom deep-sets them, merging with
+  # the inline keys below.
   valuesFrom:
-    # literal: true is REQUIRED with targetPath here. Without it Flux feeds
-    # `configOverrides.trino_auth=<the whole .py>` to Helm's strvals parser, which
-    # reads the file's commas/=/{}/[] as --set syntax and errors the reconcile;
-    # literal:true escapes them and merges the file verbatim.
+    # literal: true REQUIRED with targetPath: else Flux feeds the whole .py to Helm's
+    # strvals parser which reads commas/=/{}/[] as --set syntax and errors the reconcile.
     - kind: ConfigMap
       name: superset-config-overrides
       valuesKey: superset_trino_auth.py
@@ -148,19 +118,18 @@ spec:
       targetPath: configOverrides.prometheus_metrics
       literal: true
   values:
-    # Scout's custom Superset image (build-lane-stamped at publish; literal here).
+    # Scout custom image (build-lane-stamped at publish; literal here).
     image:
       repository: ghcr.io/washu-tag/superset
       tag: '5.0.0'
-    # Disable the chart's generated env Secret so both the server and the
-    # dashboards import Job read the externally-seeded, fixed-name `superset-env`
-    # (see header). envFromSecret defaults to `<fullname>-env` = `superset-env`.
+    # Disable chart env Secret so both server and dashboards Job read the
+    # externally-seeded fixed-name `superset-env` (see header).
     secretEnv:
       create: false
-    # Embedded Redis off -- the centralized Valkey instance backs cache + Celery.
+    # Embedded Redis off -- centralized Valkey backs cache + Celery.
     redis:
       enabled: false
-    # No bundled Postgres; metadata DB is the shared CNPG cluster (see DB Job).
+    # No bundled Postgres; metadata DB is the shared CNPG cluster.
     postgresql:
       enabled: false
     ingress:
@@ -168,7 +137,7 @@ spec:
       ingressClassName: traefik
       annotations:
         # oauth2-proxy pair tracks ${oauth2_proxy_namespace}; security-headers is
-        # traefik-owned (kube-system), created outside this base at node bootstrap.
+        # traefik-owned (kube-system), created outside this base.
         traefik.ingress.kubernetes.io/router.middlewares: >-
           ${oauth2_proxy_namespace}-oauth2-proxy-error@kubernetescrd,
           ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
@@ -178,12 +147,10 @@ spec:
         - 'superset.${server_hostname}'
     supersetNode:
       connections:
-        # The actual connection values arrive at runtime from `superset-env`
-        # (the chart's superset_config.py reads them with os.getenv); db_type
-        # defaults to postgresql. The one value needed at render time is a
-        # non-empty redis_password, so the chart templates the password INTO the
-        # Redis URLs -- the real REDIS_PASSWORD comes from superset-env at
-        # runtime and this placeholder value itself is never used.
+        # Connection values arrive at runtime from `superset-env` via os.getenv.
+        # redis_password just needs to be non-empty at render time (chart templates
+        # it into the Redis URLs); real REDIS_PASSWORD comes from superset-env, so
+        # this placeholder is never used.
         redis_password: 'placeholder'
       resources:
         requests:
@@ -220,11 +187,10 @@ spec:
               mountPath: /etc/statsd-exporter
               readOnly: true
     init:
-      # Override the chart's default admin display name so the local fallback admin
-      # shows as "Scout Admin". Only applied on first install (init Job creates the
-      # admin row if absent); OAuth via Keycloak is the real login path. Password is
-      # left to the chart default -- a real credential can't be sourced from a
-      # Secret through the render-time initscript, so it is not set here.
+      # Local fallback admin display name only. Applied on first install only (init
+      # Job creates the admin row if absent); OAuth via Keycloak is the real login.
+      # Password left to chart default -- can't source a Secret through the
+      # render-time initscript, so not set here.
       adminUser:
         firstname: Scout
         lastname: Admin
@@ -270,8 +236,7 @@ spec:
                 "token_key": "access_token",
                 "remote_app": {
                     "client_id": "${keycloak_superset_client_id}",
-                    # Confidential-client secret sourced from the env (superset-env),
-                    # never inlined into config committed to git.
+                    # Confidential-client secret from env (superset-env), never in git.
                     "client_secret": os.environ.get("KEYCLOAK_SUPERSET_CLIENT_SECRET"),
                     "client_kwargs": {"scope": "openid microprofile-jwt"},
                     "api_base_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/",
@@ -298,10 +263,9 @@ spec:
             """
             @expose("/login/")
             def login(self, provider="keycloak"):
-                # Hacky workaround to remove stale 'Access is Denied' error messages from session.
-                # When an unauthenticated user tries to access a protected page, Superset queues an 'Access is Denied' popup message.
-                # With OAuth, the user is redirected to an external login page, so the error is not shown immediately.
-                # After successful login, the old error message is displayed, which is confusing since the user now has access.
+                # Drop stale 'Access is Denied' flash queued pre-login: with OAuth the
+                # user is redirected out before it shows, then it surfaces post-login
+                # (confusing, since they now have access).
                 flashes = session.get('_flashes', [])
                 logging.debug(f"Flashes before cleanup: {flashes}")
                 session['_flashes'] = [f for f in flashes if f != ('danger', 'Access is Denied')]
@@ -322,10 +286,9 @@ spec:
                 app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
                 self.authoauthview = KeycloakOAuthView
             def raise_for_access(self, **kwargs) -> None:
-                # The base check only confirms the caller can use the (shared) Trino
-                # database, not that they ran the query, so any signed-in user could
-                # download another user's SQL Lab results via its guessable id.
-                # Require query ownership unless the caller has all_query_access.
+                # Base check only confirms shared-Trino access, not query ownership,
+                # so any user could download another's SQL Lab results via guessable
+                # id. Require ownership unless caller has all_query_access.
                 super().raise_for_access(**kwargs)
                 query = kwargs.get("query")
                 if (
@@ -345,8 +308,8 @@ spec:
         PREFERRED_URL_SCHEME = "https"
         ENABLE_PROXY_FIX = True
       feature_flags: |
-        # Key cached chart/dashboard results by user so a broad-access user's
-        # cached copy is never served to a narrower-access viewer (refs #502).
+        # Key cached results by user so a broad-access user's cache is never served
+        # to a narrower-access viewer (refs #502).
         FEATURE_FLAGS = {
             "CACHE_QUERY_BY_USER": True,
         }
@@ -365,9 +328,8 @@ spec:
       - name: statsd-mapping
         configMap:
           name: superset-statsd-mapping
-      # CA cert from the same Secret cert-manager populates for the user-facing
-      # Trino's TLS listener. DB_CONNECTION_MUTATOR passes /etc/trino-ca/ca.crt as
-      # the http_session.verify so Trino's self-signed cert is trusted.
+      # CA from the trino-tls Secret; DB_CONNECTION_MUTATOR passes /etc/trino-ca/ca.crt
+      # as http_session.verify to trust Trino's self-signed cert.
       - name: trino-ca
         secret:
           secretName: trino-tls

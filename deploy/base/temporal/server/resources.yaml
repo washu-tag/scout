@@ -1,14 +1,9 @@
-# Temporal server (the ingest-slice orchestrator). Persistence is external, so
-# this layer dependsOn the two datastores: Cassandra holds the default store,
-# Elasticsearch the visibility store. Both live in ${scout_extractor_namespace},
-# whose Namespace is owned by scout-extractor-foundation -- this base does not
-# declare it (avoids co-ownership/prune conflicts).
-#
-# Frontend JWT authz + the web-UI ingress/OIDC that the Ansible role renders are
-# deliberately omitted: they are Keycloak-realm decomposition + site-edge
-# auth-overlay work (a separate workstream, per the gitops plan), which is also
-# why Keycloak is not a dependsOn of this layer. Datastore creds are referenced
-# by fixed name only (existingSecret); values are never in git.
+# Temporal server (ingest-slice orchestrator). External persistence, so dependsOn
+# both datastores: Cassandra (default store), Elasticsearch (visibility store).
+# Namespace owned by scout-extractor-foundation, not declared here (avoids
+# co-ownership/prune conflicts). Frontend JWT authz + web-UI ingress/OIDC are
+# omitted (separate Keycloak-realm/auth-overlay workstream), which is why Keycloak
+# is not a dependsOn. Datastore creds referenced by fixed name (existingSecret).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -25,12 +20,11 @@ metadata:
   namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
-  # Mirrors the Ansible helm timeout: the chart's schema-setup Jobs (Cassandra
-  # keyspace + Elasticsearch visibility index) run at install and take a while.
+  # Mirrors Ansible helm timeout: chart's schema-setup Jobs (Cassandra keyspace +
+  # ES visibility index) run at install and take a while.
   timeout: 15m
-  # Version pinned in versions.yaml (temporal_version) -- Renovate-tracked there, not
-  # in deploy/. Literal mirror (not stamped; the stamper covers only Scout
-  # charts/images); keep in lockstep with versions.yaml.
+  # Pinned in versions.yaml (temporal_version), Renovate-tracked there. Literal
+  # mirror, not stamped (stamper covers only Scout charts); keep in lockstep.
   chart:
     spec:
       chart: temporal
@@ -40,14 +34,13 @@ spec:
         name: temporal
         namespace: '${scout_extractor_namespace}'
   values:
-    # k3s/air-gapped: no docker-in-schema-job, no bundled Elasticsearch (we bring
-    # our own ECK cluster as the visibility store).
+    # k3s/air-gapped: no docker-in-schema-job, no bundled ES (own ECK cluster).
     shims:
       dockerize: false
       elasticsearchTool: false
     server:
       replicaCount: 1
-      # Dev defaults (CI-friendly); applied to all server roles. Overlays tune.
+      # Dev defaults for all server roles; overlays tune.
       resources:
         requests:
           cpu: 100m
@@ -55,8 +48,7 @@ spec:
         limits:
           cpu: 2
           memory: 2Gi
-      # Internal frontend bypasses public-frontend authz; the temporal-bootstrap
-      # Job and in-cluster workers talk to it.
+      # Internal frontend bypasses public-frontend authz; bootstrap Job + workers use it.
       internal-frontend:
         enabled: true
       config:
@@ -72,7 +64,7 @@ spec:
                 port: 9042
                 keyspace: temporal
                 user: user
-                # Superuser secret created by cass-operator (fixed name).
+                # Superuser secret from cass-operator (fixed name).
                 existingSecret: '${cassandra_cluster_name}-superuser'
                 secretKey: password
                 replicationFactor: 1
@@ -87,7 +79,7 @@ spec:
                   scheme: http # TLS disabled on Elasticsearch for simplicity
                   host: '${elasticsearch_cluster_name}-es-http.${scout_extractor_namespace}:9200'
                 username: elastic
-                # elastic-user secret created by ECK (fixed name).
+                # elastic-user secret from ECK (fixed name).
                 existingSecret: '${elasticsearch_cluster_name}-es-elastic-user'
                 secretKey: elastic
                 logLevel: error

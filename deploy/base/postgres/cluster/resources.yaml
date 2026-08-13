@@ -1,18 +1,13 @@
-# Shared CNPG cluster (all app DBs live here). App roles + databases are
-# provisioned declaratively by CNPG (spec.managed.roles + kind: Database below),
-# replacing the per-component psql db-init Jobs. NOT bootstrap.initdb: that runs
-# once on an uninitialized cluster and bootstraps a single DB, so it can't cover
-# four DBs or an already-running cluster; Database CRs reconcile continuously.
-#
+# Shared CNPG cluster. Roles + databases provisioned declaratively via
+# spec.managed.roles + kind: Database below (not bootstrap.initdb, which only
+# covers one DB on an uninitialized cluster); Database CRs reconcile continuously.
 # Secrets (fixed names, seeded by CI/site, never committed):
-#   superuser-secret — CNPG basic-auth (username/password) for the operator.
-#   cnpg-role-*       — one kubernetes.io/basic-auth Secret per managed role, in
-#                       THIS namespace, password = the same value the app reads
-#                       from its own secret (e.g. cnpg-role-hive.password ==
-#                       hive-metastore-secret.HIVE_METASTORE_PASSWORD). CNPG
-#                       reconciles each role's password to its cnpg-role-* Secret,
-#                       so the two MUST be seeded from one source or the app login
-#                       breaks. ESO takes this over in Phase 4.
+#   superuser-secret — CNPG basic-auth for the operator.
+#   cnpg-role-*      — one basic-auth Secret per managed role in THIS namespace.
+#     CNPG drives each role's password FROM cnpg-role-*, so it MUST be seeded from
+#     the same source the app reads (cnpg-role-hive.password ==
+#     hive-metastore-secret.HIVE_METASTORE_PASSWORD) or app login breaks (password
+#     drift). ESO takes this over in Phase 4.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -33,8 +28,8 @@ spec:
   superuserSecret:
     name: superuser-secret
   postgresql:
-    # Only the memory/connection knobs vary per env (parameterized); the rest are a
-    # fixed profile, identical in the Ansible role defaults and the inventory prod example.
+    # Only memory/connection knobs vary per env; the rest are a fixed profile
+    # matching the Ansible role defaults.
     parameters:
       max_connections: '${postgres_max_connections}'
       shared_buffers: '${postgres_shared_buffers}'
@@ -53,10 +48,9 @@ spec:
       max_parallel_workers_per_gather: '2'
       max_parallel_workers: '4'
       max_parallel_maintenance_workers: '2'
-  # App login roles, reconciled continuously. Password comes from each role's
-  # cnpg-role-* basic-auth Secret (see header); the role name is the `name` field
-  # here, not the Secret's username key. hive_readonly owns no database; the
-  # hive/db grant Job wires its table privileges (managed.roles can't express those).
+  # App login roles. Password from each role's cnpg-role-* Secret (see header).
+  # hive_readonly owns no database; the hive/db grant Job wires its table
+  # privileges (managed.roles can't express those).
   managed:
     roles:
       - name: hive
@@ -98,13 +92,11 @@ spec:
       port: 9187
       targetPort: metrics
 ---
-# App databases, reconciled continuously (replacing the psql db-init Jobs).
-# databaseReclaimPolicy retain so a pruned/deleted Database CR never drops a
-# PHI-bearing database. Each owner role is provisioned above; the Database
-# reconciler retries until its owner exists, and postgres-cluster's health gate
-# (flux/postgres.yaml) blocks dependents until all four report status.applied.
-# Database CRs must live in the Cluster's namespace (spec.cluster is a
-# LocalObjectReference), so all four live here rather than in the app bases.
+# App databases. databaseReclaimPolicy: retain so a pruned/deleted Database CR
+# never drops a PHI-bearing database. Reconciler retries until its owner role
+# (above) exists; postgres-cluster's health gate (flux/postgres.yaml) blocks
+# dependents until all four report status.applied. Must live in the Cluster's
+# namespace (spec.cluster is a LocalObjectReference), not the app bases.
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:

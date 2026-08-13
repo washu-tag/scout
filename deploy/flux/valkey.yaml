@@ -1,4 +1,4 @@
-# Flux Kustomizations for valkey (Phase 3 DAG). Pulls config artifact (OCIRepository
+# Flux Kustomization for valkey (Phase 3 DAG). Pulls config artifact (OCIRepository
 # scout-config) + cluster-vars for ${...} subst; dependsOn reproduces Ansible order.
 
 apiVersion: kustomize.toolkit.fluxcd.io/v1

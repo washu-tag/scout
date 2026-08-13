@@ -2,33 +2,28 @@
 """Stamp the Phase 3 ``deploy/`` tree from a build-lane haul manifest (ADR 0031).
 
 The GitOps ``deploy/`` bases carry LITERAL placeholders in git so a plain
-``kustomize build`` renders and CI stays offline: Scout OCI charts pin
-``version: '0.0.0'``, Scout images carry ``tag: latest`` (or a concrete upstream
-tag), and the keycloak realm import carries ``config-hash: '0'``. At
-config-artifact publish, this tool rewrites a COPY of the tree, pinning every
-placeholder to the concrete tag recorded in that build's Hauler ``kind: Images``
-haul manifest (the same file ``tooling/manifest/haul.py`` renders).
+``kustomize build`` renders offline: charts pin ``version: '0.0.0'``, Scout images
+carry ``tag: latest``, the realm import carries ``config-hash: '0'``. At
+config-artifact publish this tool rewrites a COPY of the tree, pinning each
+placeholder to the concrete tag in that build's Hauler ``kind: Images`` manifest
+(same file ``tooling/manifest/haul.py`` renders).
 
-Rewrites (operate on ``--deploy-dir`` in place; that dir must be a COPY):
-  * HelmRelease ``.spec.chart.spec.version: '0.0.0'`` -> haul tag for
-    ``ghcr.io/washu-tag/charts/<chart>`` (chart from ``.spec.chart.spec.chart``).
-  * Scout image ``values.image`` (``repository: ghcr.io/washu-tag/<image>`` +
-    the following ``tag:``) -> the image's haul tag. Covers hl7log-extractor,
-    hl7-transformer, and both superset layers.
-  * Inline Scout image literals ``image: ghcr.io/washu-tag/<image>:<tag>`` -> the
-    image's haul tag. Covers the keycloak CR image AND the hl7-transformer
-    init-container image (the SECOND hl7-transformer literal -- both move in
-    lockstep).
-  * keycloak-config-cli ``config-hash: '0'`` -> the 8-char truncated sha256 of
-    the realm content (``--realm-file``), mirroring the Ansible keycloak role
-    (``roles/keycloak/tasks/configure.yaml``: ``hash('sha256') |
-    truncate(8, True, '')``). With no ``--realm-file`` the hash is of empty bytes
-    (a documented placeholder) and a warning is printed.
+Rewrites (``--deploy-dir`` in place; must be a COPY):
+  * HelmRelease ``version: '0.0.0'`` -> haul tag for the chart at
+    ``.spec.chart.spec.chart``.
+  * Scout ``values.image`` (washu ``repository:`` + following ``tag:``) -> haul
+    tag. Covers hl7log-extractor, hl7-transformer, both superset layers.
+  * Inline ``image: ghcr.io/washu-tag/<image>:<tag>`` -> haul tag. Covers the
+    keycloak CR image AND the hl7-transformer initContainer (the SECOND
+    hl7-transformer literal -- both move in lockstep).
+  * keycloak-config-cli ``config-hash: '0'`` -> 8-char truncated sha256 of the
+    ``--realm-file`` content, mirroring the Ansible keycloak role
+    (roles/keycloak/tasks/configure.yaml ``hash('sha256') | truncate(8,True,'')``).
+    With no ``--realm-file`` the hash is of empty bytes and a warning is printed.
 
-Fail closed: a placeholder whose component is absent from the haul is a hard
-error (``StampError``); and after stamping, ``verify_clean`` asserts no
-``version: '0.0.0'``, no ``ghcr.io/washu-tag`` image left at ``latest``/``0.0.0``,
-and no ``config-hash: '0'`` remain. Dependency-free (stdlib only).
+Fail closed: a placeholder absent from the haul is a hard error (``StampError``);
+after stamping ``verify_clean`` asserts no ``version: '0.0.0'``, no washu image at
+``latest``/``0.0.0``, no ``config-hash: '0'`` remain. Dependency-free (stdlib only).
 """
 
 from __future__ import annotations
@@ -51,7 +46,7 @@ class StampError(Exception):
     """A placeholder could not be resolved against the haul (fail closed)."""
 
 
-# --- haul parsing (self-contained; mirrors build_haul._split_ref) -------------
+# haul parsing (self-contained; mirrors build_haul._split_ref)
 
 
 def _split_ref(ref: str):
@@ -90,7 +85,7 @@ def parse_haul(path) -> tuple:
     return images, charts
 
 
-# --- line rewrite rules -------------------------------------------------------
+# line rewrite rules
 
 _RE_CHART = re.compile(r"^(\s*)chart:\s+(\S+)\s*$")
 _RE_VERSION0 = re.compile(r"^(\s*)version:\s*(['\"]?)0\.0\.0\2\s*$")
@@ -115,10 +110,10 @@ def stamp_lines(lines: list, images: dict, charts: dict, config_hash: str, rel: 
     """
     out = []
     stamps = []
-    pending_chart = None  # last `chart: <name>` seen (for the next version: 0.0.0)
-    pending_repo = None  # (name, indent) of a washu repository awaiting its tag:
+    pending_chart = None  # last `chart:` seen, for the next version: 0.0.0
+    pending_repo = None  # (name, indent) of a washu repo awaiting its tag:
     for n, line in enumerate(lines, 1):
-        # chart name capture (does not rewrite)
+        # chart name capture (no rewrite)
         m = _RE_CHART.match(line)
         if m:
             pending_chart = _strip_quotes(m.group(2))
@@ -157,7 +152,7 @@ def stamp_lines(lines: list, images: dict, charts: dict, config_hash: str, rel: 
             stamps.append(Stamp("image-inline", name, tag, rel, n))
             continue
 
-        # values.image repository capture (does not rewrite)
+        # values.image repository capture (no rewrite)
         m = _RE_REPO.match(line)
         if m:
             pending_repo = (m.group(2), m.group(1))
@@ -187,10 +182,9 @@ def stamp_lines(lines: list, images: dict, charts: dict, config_hash: str, rel: 
             )
             continue
 
-        # A chart name and a washu repository are each consumed by the very next
-        # line (version: '0.0.0' / tag:). Any other real key closes that window, so
-        # drop both pending captures -- otherwise a later unrelated version/tag
-        # (e.g. the docker.io keycloak-config-cli image's tag) could be mis-stamped.
+        # chart/repo captures are consumed by the very next line (version/tag). Any
+        # other real key closes the window, so drop both -- otherwise a later
+        # unrelated version/tag (e.g. docker.io keycloak-config-cli tag) mis-stamps.
         stripped = line.strip()
         if stripped and not stripped.startswith("#"):
             pending_chart = None
@@ -217,7 +211,7 @@ def stamp_tree(deploy_dir, images: dict, charts: dict, config_hash: str) -> list
     return stamps
 
 
-# --- fail-closed verification -------------------------------------------------
+# fail-closed verification
 
 _V_VERSION0 = re.compile(r"version:\s*['\"]?0\.0\.0")
 _V_IMG_BAD = re.compile(r"image:\s*ghcr\.io/washu-tag/[^:\s]+:(latest|0\.0\.0)\b")
@@ -242,7 +236,7 @@ def verify_clean(deploy_dir) -> list:
                 )
             if _V_CONFIG_HASH0.search(line):
                 problems.append("{}:{}: config-hash still 0".format(rel, n))
-            # washu values.image repo -> its tag must not be latest/0.0.0
+            # washu values.image tag must not be latest/0.0.0
             m = _RE_REPO.match(line)
             if m:
                 pending_repo = m.group(1)
