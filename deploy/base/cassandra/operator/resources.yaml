@@ -2,7 +2,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: k8ssandra
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
 spec:
   interval: 1h
   url: https://helm.k8ssandra.io/stable
@@ -11,7 +11,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: cass-operator
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
   # Version pinned in versions.yaml (cass_operator_version), Renovate-tracked;
@@ -20,11 +20,11 @@ spec:
   chart:
     spec:
       chart: cass-operator
-      version: "0.66.0"
+      version: '0.66.0'
       sourceRef:
         kind: HelmRepository
         name: k8ssandra
-        namespace: "${scout_extractor_namespace}"
+        namespace: '${scout_extractor_namespace}'
   install:
     crds: Create
   upgrade:

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: "${hive_namespace}"
+  name: '${hive_namespace}'
 ---
 # Bootstraps the Hive Metastore DB in the shared CNPG cluster, replacing the
 # Ansible psql Jobs (roles/hive create_db_with_owner + create_readonly_user).
@@ -27,11 +27,11 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: hive-db-init
-  namespace: "${hive_namespace}"
+  namespace: '${hive_namespace}'
   annotations:
     # Immutable Job fields (spec.template) change when this SQL changes; force lets
     # Flux recreate the Job instead of erroring on the immutable-field update.
-    kustomize.toolkit.fluxcd.io/force: "Enabled"
+    kustomize.toolkit.fluxcd.io/force: 'Enabled'
 spec:
   backoffLimit: 3
   template:
@@ -57,9 +57,9 @@ spec:
             - name: HOME
               value: /tmp
             - name: PGHOST
-              value: "${postgres_cluster_name}-rw.${postgres_cluster_namespace}"
+              value: '${postgres_cluster_name}-rw.${postgres_cluster_namespace}'
             - name: PGPORT
-              value: "5432"
+              value: '5432'
             - name: PGSSLMODE
               value: require
             - name: PGUSER

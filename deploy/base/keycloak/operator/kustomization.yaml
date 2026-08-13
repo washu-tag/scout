@@ -4,7 +4,7 @@ kind: Kustomization
 # Deployment/Service from kubernetes.yml, which carry no namespace) into
 # ${keycloak_namespace}; the CRDs are cluster-scoped and left untouched. Flux's
 # postBuild substitution then replaces ${keycloak_namespace} in the built output.
-namespace: "${keycloak_namespace}"
+namespace: '${keycloak_namespace}'
 resources:
   - resources.yaml
   # Vendored from keycloak-k8s-resources 26.6.4 (keycloak_version, Renovate-tracked):

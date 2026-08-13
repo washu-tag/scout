@@ -24,4 +24,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: "${keycloak_namespace}"
+  name: '${keycloak_namespace}'

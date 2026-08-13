@@ -34,7 +34,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: scout-charts
-  namespace: "${keycloak_namespace}"
+  namespace: '${keycloak_namespace}'
 spec:
   type: oci
   interval: 1h
@@ -52,12 +52,12 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: keycloak-db-init
-  namespace: "${keycloak_namespace}"
+  namespace: '${keycloak_namespace}'
   annotations:
     # Immutable Job fields change when this SQL changes; force lets Flux recreate the
     # Job instead of erroring. No TTL: the TTL controller would delete the finished
     # Job and Flux would re-apply + re-run it every interval (a reconcile loop).
-    kustomize.toolkit.fluxcd.io/force: "Enabled"
+    kustomize.toolkit.fluxcd.io/force: 'Enabled'
 spec:
   backoffLimit: 3
   template:
@@ -83,9 +83,9 @@ spec:
             - name: HOME
               value: /tmp
             - name: PGHOST
-              value: "${postgres_cluster_name}-rw.${postgres_cluster_namespace}"
+              value: '${postgres_cluster_name}-rw.${postgres_cluster_namespace}'
             - name: PGPORT
-              value: "5432"
+              value: '5432'
             - name: PGSSLMODE
               value: require
             - name: PGUSER
@@ -138,7 +138,7 @@ apiVersion: k8s.keycloak.org/v2beta1
 kind: Keycloak
 metadata:
   name: keycloak
-  namespace: "${keycloak_namespace}"
+  namespace: '${keycloak_namespace}'
 spec:
   instances: 1
   image: ghcr.io/washu-tag/keycloak:26.6.4
@@ -153,40 +153,40 @@ spec:
     passwordSecret:
       name: keycloak-db-secret
       key: password
-    host: "${postgres_cluster_name}-rw.${postgres_cluster_namespace}"
+    host: '${postgres_cluster_name}-rw.${postgres_cluster_namespace}'
     database: keycloak
     port: 5432
   http:
     httpEnabled: true
   hostname:
-    hostname: "keycloak.${server_hostname}"
+    hostname: 'keycloak.${server_hostname}'
   ingress:
     enabled: false
   proxy:
     headers: xforwarded
   additionalOptions:
     - name: metrics-enabled
-      value: "true"
+      value: 'true'
     - name: event-metrics-user-enabled
-      value: "true"
+      value: 'true'
     - name: event-metrics-user-tags
-      value: "realm,idp,clientId"
+      value: 'realm,idp,clientId'
     - name: spi-events-listener-jboss-logging-success-level
       value: info
     # Hacky way to get an env variable into the Keycloak pod until the operator
     # supports it natively; the OpaUserBundlePublisher SPI reads these (ADR 0021).
     - name: scout-url
-      value: "${server_hostname}"
+      value: '${server_hostname}'
     - name: opa-bundle-s3-endpoint
-      value: "http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000"
+      value: 'http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000'
     - name: opa-bundle-s3-bucket
-      value: "${opa_bundles_bucket}"
+      value: '${opa_bundles_bucket}'
     - name: opa-bundle-s3-object-key
-      value: "${opa_bundle_object_key}"
+      value: '${opa_bundle_object_key}'
     - name: opa-bundle-s3-region
-      value: "${s3_region}"
+      value: '${s3_region}'
     - name: opa-bundle-realm
-      value: "${keycloak_realm_name}"
+      value: '${keycloak_realm_name}'
     - name: opa-bundle-s3-access-key
       secret:
         name: opa-bundle-writer
@@ -203,11 +203,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: keycloak-ingress
-  namespace: "${keycloak_namespace}"
+  namespace: '${keycloak_namespace}'
 spec:
   ingressClassName: traefik
   rules:
-    - host: "keycloak.${server_hostname}"
+    - host: 'keycloak.${server_hostname}'
       http:
         paths:
           - backend:
@@ -232,7 +232,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: keycloak-config-cli
-  namespace: "${keycloak_namespace}"
+  namespace: '${keycloak_namespace}'
 spec:
   interval: 30m
   timeout: 5m
@@ -243,11 +243,11 @@ spec:
   chart:
     spec:
       chart: keycloak-config-cli
-      version: "0.0.0"
+      version: '0.0.0'
       sourceRef:
         kind: HelmRepository
         name: scout-charts
-        namespace: "${keycloak_namespace}"
+        namespace: '${keycloak_namespace}'
   values:
     # Upstream config-cli image, pinned in versions.yaml (keycloak_config_cli_image
     # [_tag], Renovate-tracked); overrides the chart's own default tag.
@@ -259,9 +259,9 @@ spec:
       # Merges with the chart's Helm-hook annotations. Placeholder in git; CI stamps
       # the realm Secret's truncated sha256 at config-artifact publish so a realm
       # change re-runs the import (mirrors the role's config-hash).
-      config-hash: "0"
+      config-hash: '0'
     env:
       # Merged over the chart defaults (IMPORT_PATH=/config/ is preserved).
-      KEYCLOAK_URL: "http://keycloak-service.${keycloak_namespace}:8080/"
-      KEYCLOAK_USER: "${keycloak_bootstrap_admin_user}"
+      KEYCLOAK_URL: 'http://keycloak-service.${keycloak_namespace}:8080/'
+      KEYCLOAK_USER: '${keycloak_bootstrap_admin_user}'
     existingSecret: keycloak-admin-secret

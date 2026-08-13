@@ -25,7 +25,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: scout-opa
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
 spec:
   interval: 30m
   # Scout-owned OCI chart; this repo's CI publishes it and the GitOps lane owns the
@@ -34,11 +34,11 @@ spec:
   chart:
     spec:
       chart: scout-opa
-      version: "0.0.0"
+      version: '0.0.0'
       sourceRef:
         kind: HelmRepository
         name: scout-charts
-        namespace: "${scout_analytics_namespace}"
+        namespace: '${scout_analytics_namespace}'
   values:
     replicaCount: 2
     # Lock OPA's unauthenticated API down to the Trino coordinator (the chart
@@ -49,7 +49,7 @@ spec:
     # stamped at config-artifact publish. Literal here until the stamping job lands.
     image:
       repository: openpolicyagent/opa
-      tag: "1.16.2"
+      tag: '1.16.2'
       pullPolicy: IfNotPresent
     resources:
       requests:

@@ -7,13 +7,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: "${scout_analytics_namespace}"
+  name: '${scout_analytics_namespace}'
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: scout-charts
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
 spec:
   type: oci
   interval: 1h

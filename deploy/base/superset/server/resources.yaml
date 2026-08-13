@@ -32,7 +32,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: superset
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
 spec:
   interval: 1h
   url: https://apache.github.io/superset
@@ -44,7 +44,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: superset-statsd-mapping
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
 data:
   statsd_mapping.yaml: |
     mappings:
@@ -87,7 +87,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: superset-statsd-metrics
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
   labels:
     app: superset
     component: statsd-exporter
@@ -111,12 +111,12 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: superset-db-init
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
   annotations:
     # Immutable Job fields change when this SQL changes; force lets Flux recreate the
     # Job instead of erroring. No TTL: the TTL controller would delete the finished
     # Job and Flux would re-apply + re-run it every interval (a reconcile loop).
-    kustomize.toolkit.fluxcd.io/force: "Enabled"
+    kustomize.toolkit.fluxcd.io/force: 'Enabled'
 spec:
   backoffLimit: 3
   template:
@@ -142,9 +142,9 @@ spec:
             - name: HOME
               value: /tmp
             - name: PGHOST
-              value: "${postgres_cluster_name}-rw.${postgres_cluster_namespace}"
+              value: '${postgres_cluster_name}-rw.${postgres_cluster_namespace}'
             - name: PGPORT
-              value: "5432"
+              value: '5432'
             - name: PGSSLMODE
               value: require
             - name: PGUSER
@@ -193,7 +193,7 @@ metadata:
   # env/config Secret names (superset-env / superset-config) the dashboards import
   # Job consumes by fixed name.
   name: superset
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
 spec:
   interval: 30m
   # Mirrors the Ansible helm timeout: the chart's init Job (db upgrade + admin
@@ -204,16 +204,16 @@ spec:
   chart:
     spec:
       chart: superset
-      version: "0.15.5"
+      version: '0.15.5'
       sourceRef:
         kind: HelmRepository
         name: superset
-        namespace: "${scout_analytics_namespace}"
+        namespace: '${scout_analytics_namespace}'
   values:
     # Scout's custom Superset image (build-lane-stamped at publish; literal here).
     image:
       repository: ghcr.io/washu-tag/superset
-      tag: "5.0.0"
+      tag: '5.0.0'
     # Disable the chart's generated env Secret so both the server and the
     # dashboards import Job read the externally-seeded, fixed-name `superset-env`
     # (see header). envFromSecret defaults to `<fullname>-env` = `superset-env`.
@@ -235,7 +235,7 @@ spec:
           kube-system-security-headers@kubernetescrd
       path: /
       hosts:
-        - "superset.${server_hostname}"
+        - 'superset.${server_hostname}'
     supersetNode:
       connections:
         # The actual connection values arrive at runtime from `superset-env`
@@ -244,7 +244,7 @@ spec:
         # non-empty redis_password, so the chart templates the password INTO the
         # Redis URLs -- the real REDIS_PASSWORD comes from superset-env at
         # runtime and this placeholder value itself is never used.
-        redis_password: "placeholder"
+        redis_password: 'placeholder'
       resources:
         requests:
           cpu: 250m

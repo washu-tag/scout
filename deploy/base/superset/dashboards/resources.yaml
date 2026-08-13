@@ -16,7 +16,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: scout-dashboards
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
 spec:
   interval: 30m
   # Mirrors the Ansible helm timeout: the import Job validates every dataset
@@ -29,24 +29,24 @@ spec:
   chart:
     spec:
       chart: scout-dashboards
-      version: "0.0.0"
+      version: '0.0.0'
       sourceRef:
         kind: HelmRepository
         name: scout-charts
-        namespace: "${scout_analytics_namespace}"
+        namespace: '${scout_analytics_namespace}'
   values:
     # Import image = the Superset image so it carries the same superset CLI + deps
     # (build-lane-stamped at publish; literal here, matches the server layer).
     image:
       repository: ghcr.io/washu-tag/superset
-      tag: "5.0.0"
+      tag: '5.0.0'
     # AuthZ-enabled Trino: the user-facing HTTPS listener (8443) in the analytics
     # namespace. DB_CONNECTION_MUTATOR (from the mounted superset-config) adds the
     # JWT + CA verify on top; scheme https selects that listener.
     trino:
-      user: "${trino_user}"
-      namespace: "${scout_analytics_namespace}"
-      port: "${trino_https_port}"
+      user: '${trino_user}'
+      namespace: '${scout_analytics_namespace}'
+      port: '${trino_https_port}'
       scheme: https
     supersetRelease:
       # cert-manager-issued Trino TLS bundle; the import Job mounts its ca.crt so

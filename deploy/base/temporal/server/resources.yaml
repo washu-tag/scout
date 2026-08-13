@@ -13,7 +13,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: temporal
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
 spec:
   interval: 1h
   url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
@@ -22,7 +22,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: temporal
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
   # Mirrors the Ansible helm timeout: the chart's schema-setup Jobs (Cassandra
@@ -33,11 +33,11 @@ spec:
   chart:
     spec:
       chart: temporal
-      version: "1.2.0"
+      version: '1.2.0'
       sourceRef:
         kind: HelmRepository
         name: temporal
-        namespace: "${scout_extractor_namespace}"
+        namespace: '${scout_extractor_namespace}'
   values:
     # k3s/air-gapped: no docker-in-schema-job, no bundled Elasticsearch (we bring
     # our own ECK cluster as the visibility store).
@@ -67,12 +67,12 @@ spec:
           datastores:
             default:
               cassandra:
-                hosts: "${cassandra_cluster_name}-${cassandra_datacenter_name}-service.${scout_extractor_namespace}"
+                hosts: '${cassandra_cluster_name}-${cassandra_datacenter_name}-service.${scout_extractor_namespace}'
                 port: 9042
                 keyspace: temporal
                 user: user
                 # Superuser secret created by cass-operator (fixed name).
-                existingSecret: "${cassandra_cluster_name}-superuser"
+                existingSecret: '${cassandra_cluster_name}-superuser'
                 secretKey: password
                 replicationFactor: 1
                 consistency:
@@ -81,13 +81,13 @@ spec:
                     serialConsistency: local_serial
             visibility:
               elasticsearch:
-                version: v7  # All ES versions (7/8/9) use the v7 template format
+                version: v7 # All ES versions (7/8/9) use the v7 template format
                 url:
-                  scheme: http  # TLS disabled on Elasticsearch for simplicity
-                  host: "${elasticsearch_cluster_name}-es-http.${scout_extractor_namespace}:9200"
+                  scheme: http # TLS disabled on Elasticsearch for simplicity
+                  host: '${elasticsearch_cluster_name}-es-http.${scout_extractor_namespace}:9200'
                 username: elastic
                 # elastic-user secret created by ECK (fixed name).
-                existingSecret: "${elasticsearch_cluster_name}-es-elastic-user"
+                existingSecret: '${elasticsearch_cluster_name}-es-elastic-user'
                 secretKey: elastic
                 logLevel: error
                 indices:

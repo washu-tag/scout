@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: "${postgres_cluster_namespace}"
+  name: '${postgres_cluster_namespace}'
 ---
 # Shared CNPG cluster (all app DBs live here). Per-app DB/role creation moves from
 # the Ansible psql Jobs into CNPG managed roles + bootstrap.initdb as each consuming
@@ -10,19 +10,19 @@ metadata:
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: "${postgres_cluster_name}"
-  namespace: "${postgres_cluster_namespace}"
+  name: '${postgres_cluster_name}'
+  namespace: '${postgres_cluster_namespace}'
 spec:
   instances: 1
   storage:
-    size: "${postgres_storage_size}"
+    size: '${postgres_storage_size}'
   resources:
     requests:
-      cpu: "${postgres_cpu_request}"
-      memory: "${postgres_memory_request}"
+      cpu: '${postgres_cpu_request}'
+      memory: '${postgres_memory_request}'
     limits:
-      cpu: "${postgres_cpu_limit}"
-      memory: "${postgres_memory_limit}"
+      cpu: '${postgres_cpu_limit}'
+      memory: '${postgres_memory_limit}'
   enableSuperuserAccess: true
   superuserSecret:
     name: superuser-secret
@@ -30,32 +30,32 @@ spec:
     # Only the memory/connection knobs vary per env (parameterized); the rest are a
     # fixed profile, identical in the Ansible role defaults and the inventory prod example.
     parameters:
-      max_connections: "${postgres_max_connections}"
-      shared_buffers: "${postgres_shared_buffers}"
-      effective_cache_size: "${postgres_effective_cache_size}"
-      maintenance_work_mem: "${postgres_maintenance_work_mem}"
-      checkpoint_completion_target: "0.9"
-      wal_buffers: "${postgres_wal_buffers}"
-      default_statistics_target: "${postgres_default_statistics_target}"
-      random_page_cost: "4"
-      effective_io_concurrency: "1"
-      work_mem: "${postgres_work_mem}"
-      huge_pages: "try"
-      min_wal_size: "${postgres_min_wal_size}"
-      max_wal_size: "${postgres_max_wal_size}"
-      max_worker_processes: "4"
-      max_parallel_workers_per_gather: "2"
-      max_parallel_workers: "4"
-      max_parallel_maintenance_workers: "2"
+      max_connections: '${postgres_max_connections}'
+      shared_buffers: '${postgres_shared_buffers}'
+      effective_cache_size: '${postgres_effective_cache_size}'
+      maintenance_work_mem: '${postgres_maintenance_work_mem}'
+      checkpoint_completion_target: '0.9'
+      wal_buffers: '${postgres_wal_buffers}'
+      default_statistics_target: '${postgres_default_statistics_target}'
+      random_page_cost: '4'
+      effective_io_concurrency: '1'
+      work_mem: '${postgres_work_mem}'
+      huge_pages: 'try'
+      min_wal_size: '${postgres_min_wal_size}'
+      max_wal_size: '${postgres_max_wal_size}'
+      max_worker_processes: '4'
+      max_parallel_workers_per_gather: '2'
+      max_parallel_workers: '4'
+      max_parallel_maintenance_workers: '2'
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: "${postgres_cluster_name}-metrics"
-  namespace: "${postgres_cluster_namespace}"
+  name: '${postgres_cluster_name}-metrics'
+  namespace: '${postgres_cluster_namespace}'
 spec:
   selector:
-    cnpg.io/cluster: "${postgres_cluster_name}"
+    cnpg.io/cluster: '${postgres_cluster_name}'
   ports:
     - name: metrics
       port: 9187

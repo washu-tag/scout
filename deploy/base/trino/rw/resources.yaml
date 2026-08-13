@@ -23,7 +23,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: trino
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
 spec:
   interval: 1h
   url: https://trinodb.github.io/charts
@@ -32,7 +32,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: trino-rw
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
   # Upstream chart pinned in versions.yaml (trino_helm_chart_version ~1.42.2),
@@ -41,11 +41,11 @@ spec:
   chart:
     spec:
       chart: trino
-      version: "1.42.2"
+      version: '1.42.2'
       sourceRef:
         kind: HelmRepository
         name: trino
-        namespace: "${scout_extractor_namespace}"
+        namespace: '${scout_extractor_namespace}'
   values:
     # Make resource names match the release name exactly. Without this the chart's
     # fullname helper yields "<release>-trino" (it only dedupes when release name
@@ -60,7 +60,7 @@ spec:
       config:
         query:
           # workers x worker_heap x per-node fraction = 1 x 1G x 0.3.
-          maxMemory: "0.3GB"
+          maxMemory: '0.3GB'
     # JMX exporter for Prometheus (parity with the user-facing Trino).
     jmx:
       enabled: true
@@ -81,9 +81,9 @@ spec:
         maxHeapSize: 512M
       config:
         memory:
-          heapHeadroomPerNode: ""
+          heapHeadroomPerNode: ''
         query:
-          maxMemoryPerNode: "153.6MB"
+          maxMemoryPerNode: '153.6MB'
       resources:
         requests:
           cpu: 100m
@@ -92,17 +92,17 @@ spec:
           cpu: 500m
           memory: 2Gi
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "5556"
-        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '5556'
+        prometheus.io/path: '/metrics'
     worker:
       jvm:
         maxHeapSize: 1G
       config:
         memory:
-          heapHeadroomPerNode: ""
+          heapHeadroomPerNode: ''
         query:
-          maxMemoryPerNode: "0.3GB"
+          maxMemoryPerNode: '0.3GB'
       resources:
         requests:
           cpu: 100m
@@ -111,9 +111,9 @@ spec:
           cpu: 500m
           memory: 4Gi
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "5556"
-        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '5556'
+        prometheus.io/path: '/metrics'
     # Writable Delta catalog over the writable Hive metastore. On-prem: MinIO S3,
     # path-style, creds from the trino-rw-s3 envFrom via $${ENV:...}.
     catalogs:
@@ -141,7 +141,7 @@ spec:
         - from:
             - namespaceSelector:
                 matchLabels:
-                  kubernetes.io/metadata.name: "${scout_extractor_namespace}"
+                  kubernetes.io/metadata.name: '${scout_extractor_namespace}'
               podSelector:
                 matchLabels:
                   app.kubernetes.io/name: hl7-transformer
@@ -151,7 +151,7 @@ spec:
         - from:
             - namespaceSelector:
                 matchLabels:
-                  kubernetes.io/metadata.name: "${scout_analytics_namespace}"
+                  kubernetes.io/metadata.name: '${scout_analytics_namespace}'
               podSelector:
                 matchLabels:
                   app.kubernetes.io/name: voila
@@ -161,7 +161,7 @@ spec:
         - from:
             - namespaceSelector:
                 matchLabels:
-                  kubernetes.io/metadata.name: "${prometheus_namespace}"
+                  kubernetes.io/metadata.name: '${prometheus_namespace}'
               podSelector:
                 matchLabels:
                   app.kubernetes.io/name: prometheus

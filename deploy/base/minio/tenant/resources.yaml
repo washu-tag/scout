@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: "${minio_tenant_namespace}"
+  name: '${minio_tenant_namespace}'
 ---
 # Same upstream repo as the operator base; declared again here so the tenant
 # HelmRelease has an in-namespace source.
@@ -9,7 +9,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: minio-operator
-  namespace: "${minio_tenant_namespace}"
+  namespace: '${minio_tenant_namespace}'
 spec:
   interval: 1h
   url: https://operator.min.io
@@ -22,8 +22,8 @@ spec:
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: "${minio_tenant_namespace}"
-  namespace: "${minio_tenant_namespace}"
+  name: '${minio_tenant_namespace}'
+  namespace: '${minio_tenant_namespace}'
 spec:
   interval: 30m
   # Version pinned in versions.yaml (minio_version), Renovate-tracked; stamped into
@@ -31,20 +31,20 @@ spec:
   chart:
     spec:
       chart: tenant
-      version: "7.1.1"
+      version: '7.1.1'
       sourceRef:
         kind: HelmRepository
         name: minio-operator
-        namespace: "${minio_tenant_namespace}"
+        namespace: '${minio_tenant_namespace}'
   values:
     tenant:
-      name: "${minio_tenant_name}"
+      name: '${minio_tenant_name}'
       configSecret:
         name: minio-scout-env-configuration
         existingSecret: true
       env:
         - name: MINIO_BROWSER_REDIRECT_URL
-          value: "https://minio.${server_hostname}"
+          value: 'https://minio.${server_hostname}'
         - name: MINIO_PROMETHEUS_AUTH_TYPE
           value: public
         - name: MINIO_SCANNER_SPEED
@@ -53,8 +53,8 @@ spec:
         - servers: 1
           name: pool-0
           volumesPerServer: 1
-          size: "${minio_storage_size}"
-          storageClassName: "${minio_storage_class}"
+          size: '${minio_storage_size}'
+          storageClassName: '${minio_storage_class}'
           resources:
             requests:
               cpu: 100m
@@ -77,7 +77,7 @@ spec:
               requiredDuringSchedulingIgnoredDuringExecution:
                 - labelSelector:
                     matchLabels:
-                      v1.min.io/tenant: "${minio_tenant_name}"
+                      v1.min.io/tenant: '${minio_tenant_name}'
                   topologyKey: kubernetes.io/hostname
       metrics:
         enabled: true
@@ -88,27 +88,27 @@ spec:
       # tenant.buckets/users are honored on first install only; the bootstrap
       # Job below reconciles them idempotently on every run.
       buckets:
-        - name: "${loki_chunks_bucket}"
-        - name: "${loki_ruler_bucket}"
-        - name: "${loki_admin_bucket}"
-        - name: "${lake_bucket}"
-        - name: "${hl7_raw_bucket}"
-        - name: "${scratch_bucket}"
+        - name: '${loki_chunks_bucket}'
+        - name: '${loki_ruler_bucket}'
+        - name: '${loki_admin_bucket}'
+        - name: '${lake_bucket}'
+        - name: '${hl7_raw_bucket}'
+        - name: '${scratch_bucket}'
         # Versioned so a corrupt OPA bundle PUT can roll back to a prior
         # object version (ADR 0021); other buckets stay unversioned.
-        - name: "${opa_bundles_bucket}"
+        - name: '${opa_bundles_bucket}'
           versioned: true
       users:
-        - name: "${s3_lake_reader}-creds"
-        - name: "${s3_lake_writer}-creds"
-        - name: "${s3_loki_writer}-creds"
-        - name: "${s3_opa_bundle_writer}-creds"
-        - name: "${s3_opa_bundle_reader}-creds"
+        - name: '${s3_lake_reader}-creds'
+        - name: '${s3_lake_writer}-creds'
+        - name: '${s3_loki_writer}-creds'
+        - name: '${s3_opa_bundle_writer}-creds'
+        - name: '${s3_opa_bundle_reader}-creds'
     ingress:
       console:
         enabled: true
         ingressClassName: traefik
-        host: "minio.${server_hostname}"
+        host: 'minio.${server_hostname}'
         path: /
         pathType: Prefix
         annotations:
@@ -122,7 +122,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: policy-lake-r
-  namespace: "${minio_tenant_namespace}"
+  namespace: '${minio_tenant_namespace}'
 data:
   lake-r.json: |
     {
@@ -140,7 +140,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: policy-lake-rw
-  namespace: "${minio_tenant_namespace}"
+  namespace: '${minio_tenant_namespace}'
 data:
   lake-rw.json: |
     {
@@ -158,7 +158,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: policy-loki-rw
-  namespace: "${minio_tenant_namespace}"
+  namespace: '${minio_tenant_namespace}'
 data:
   loki-rw.json: |
     {
@@ -176,7 +176,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: policy-opa-bundle-w
-  namespace: "${minio_tenant_namespace}"
+  namespace: '${minio_tenant_namespace}'
 data:
   opa-bundle-w.json: |
     {
@@ -194,7 +194,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: policy-opa-bundle-r
-  namespace: "${minio_tenant_namespace}"
+  namespace: '${minio_tenant_namespace}'
 data:
   opa-bundle-r.json: |
     {
@@ -216,11 +216,11 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: bootstrap-minio-iam
-  namespace: "${minio_tenant_namespace}"
+  namespace: '${minio_tenant_namespace}'
   labels:
     app: minio-bootstrap
   annotations:
-    kustomize.toolkit.fluxcd.io/force: "Enabled"
+    kustomize.toolkit.fluxcd.io/force: 'Enabled'
 spec:
   # No TTL: the TTL controller would delete the finished Job and Flux would re-apply
   # + re-run it every interval (a reconcile loop). Flux owns the completed Job.
@@ -231,7 +231,7 @@ spec:
         app: minio-bootstrap
     spec:
       restartPolicy: Never
-      serviceAccountName: "${minio_tenant_name}-sa"
+      serviceAccountName: '${minio_tenant_name}-sa'
       containers:
         - name: mc
           # Image pinned in versions.yaml (minio_client_image[_tag]); stamped at
@@ -250,7 +250,7 @@ spec:
           env:
             - name: HOME
               value: /tmp
-          command: ["/bin/sh", "-c"]
+          command: ['/bin/sh', '-c']
           args:
             - |
               set -euo pipefail
@@ -353,16 +353,16 @@ spec:
           emptyDir: {}
         - name: usercreds-lake-reader
           secret:
-            secretName: "${s3_lake_reader}-creds"
+            secretName: '${s3_lake_reader}-creds'
         - name: usercreds-lake-writer
           secret:
-            secretName: "${s3_lake_writer}-creds"
+            secretName: '${s3_lake_writer}-creds'
         - name: usercreds-loki-writer
           secret:
-            secretName: "${s3_loki_writer}-creds"
+            secretName: '${s3_loki_writer}-creds'
         - name: usercreds-opa-bundle-writer
           secret:
-            secretName: "${s3_opa_bundle_writer}-creds"
+            secretName: '${s3_opa_bundle_writer}-creds'
         - name: usercreds-opa-bundle-reader
           secret:
-            secretName: "${s3_opa_bundle_reader}-creds"
+            secretName: '${s3_opa_bundle_reader}-creds'

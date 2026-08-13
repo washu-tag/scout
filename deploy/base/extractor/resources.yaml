@@ -26,11 +26,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: s3-env
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
 data:
-  AWS_ENDPOINT_URL: "${s3_endpoint}"
-  AWS_ALLOW_HTTP: "true"
-  AWS_REGION: "${s3_region}"
+  AWS_ENDPOINT_URL: '${s3_endpoint}'
+  AWS_ALLOW_HTTP: 'true'
+  AWS_REGION: '${s3_region}'
 ---
 # Ingest DB + owner role in the shared CNPG cluster, replacing the Ansible
 # scout_common create_db_with_owner. Connects over the network to the -rw endpoint
@@ -43,9 +43,9 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: extractor-db-init
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
   annotations:
-    kustomize.toolkit.fluxcd.io/force: "Enabled"
+    kustomize.toolkit.fluxcd.io/force: 'Enabled'
 spec:
   backoffLimit: 3
   template:
@@ -71,9 +71,9 @@ spec:
             - name: HOME
               value: /tmp
             - name: PGHOST
-              value: "${postgres_cluster_name}-rw.${postgres_cluster_namespace}"
+              value: '${postgres_cluster_name}-rw.${postgres_cluster_namespace}'
             - name: PGPORT
-              value: "5432"
+              value: '5432'
             - name: PGSSLMODE
               value: require
             - name: PGUSER
@@ -115,7 +115,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: hl7log-extractor
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
   # Chart pinned in versions.yaml (hl7log_extractor_chart_version); this repo's CI
@@ -124,11 +124,11 @@ spec:
   chart:
     spec:
       chart: hl7log-extractor
-      version: "0.0.0"
+      version: '0.0.0'
       sourceRef:
         kind: HelmRepository
         name: scout-charts
-        namespace: "${scout_extractor_namespace}"
+        namespace: '${scout_extractor_namespace}'
   values:
     # Image repository/tag are build-lane-stamped at config-artifact publish;
     # literal placeholder in git (matches the chart's own default).
@@ -145,9 +145,9 @@ spec:
           name: s3-env
     env:
       - name: TZ
-        value: "${timezone}"
+        value: '${timezone}'
       - name: JAVA_TOOL_OPTIONS
-        value: "-XX:MaxRAMPercentage=${hl7log_extractor_jvm_heap_max_ram_percentage} -XX:+UseContainerSupport"
+        value: '-XX:MaxRAMPercentage=${hl7log_extractor_jvm_heap_max_ram_percentage} -XX:+UseContainerSupport'
       # Datasource password comes from the fixed-name postgres-secret; Spring's
       # env override beats application.yaml so no credential is inlined below.
       - name: SPRING_DATASOURCE_PASSWORD
@@ -157,17 +157,17 @@ spec:
             key: DB_PASSWORD
     resources:
       requests:
-        cpu: "${hl7log_extractor_resources_requests_cpu}"
-        memory: "${hl7log_extractor_resources_requests_memory}"
+        cpu: '${hl7log_extractor_resources_requests_cpu}'
+        memory: '${hl7log_extractor_resources_requests_memory}'
       limits:
-        cpu: "${hl7log_extractor_resources_limits_cpu}"
-        memory: "${hl7log_extractor_resources_limits_memory}"
+        cpu: '${hl7log_extractor_resources_limits_cpu}'
+        memory: '${hl7log_extractor_resources_limits_memory}'
     # HL7 log files are mounted from the node (on-prem); readOnly + HostToContainer
     # so newly-rotated logs on the host become visible to the worker.
     volumes:
       - name: data
         hostPath:
-          path: "${extractor_data_dir}"
+          path: '${extractor_data_dir}'
     volumeMounts:
       - name: data
         mountPath: /data
@@ -190,37 +190,37 @@ spec:
         management:
           metrics:
             tags:
-              namespace: "${scout_extractor_namespace}"
+              namespace: '${scout_extractor_namespace}'
         s3:
-          endpoint: "${s3_endpoint}"
-          region: "${s3_region}"
+          endpoint: '${s3_endpoint}'
+          region: '${s3_region}'
           path-style-access: true
         spring:
           datasource:
-            url: "jdbc:postgresql://${postgres_cluster_name}-rw.${postgres_cluster_namespace}:${db_port}/${ingest_postgres_table_name}"
-            username: "${postgres_user}"
+            url: 'jdbc:postgresql://${postgres_cluster_name}-rw.${postgres_cluster_namespace}:${db_port}/${ingest_postgres_table_name}'
+            username: '${postgres_user}'
           temporal:
             connection:
-              target: "temporal-internal-frontend.${scout_extractor_namespace}:7236"
+              target: 'temporal-internal-frontend.${scout_extractor_namespace}:7236'
         scout:
           workflowArgDefaults:
             ingestHl7Log:
               logsRootPath: ${hl7logs_root_dir}
-              scratchSpaceRootPath: "${scratch_path}"
-              hl7OutputPath: "${hl7_path}"
+              scratchSpaceRootPath: '${scratch_path}'
+              hl7OutputPath: '${hl7_path}'
               splitAndUploadTimeout: ${hl7log_extractor_timeout}
               splitAndUploadHeartbeatTimeout: ${hl7log_extractor_heartbeat_timeout}
               splitAndUploadConcurrency: ${hl7log_extractor_concurrency}
             ingestHl7ToDeltaLake:
               deltaIngestTimeout: ${hl7_transformer_timeout}
               deriveDeltaTablesTimeout: ${hl7_transformer_derive_timeout}
-              reportTableName: "${report_delta_table_name}"
+              reportTableName: '${report_delta_table_name}'
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: hl7-transformer
-  namespace: "${scout_extractor_namespace}"
+  namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
   # Chart pinned in versions.yaml (hl7_transformer_chart_version); this repo's CI
@@ -229,11 +229,11 @@ spec:
   chart:
     spec:
       chart: hl7-transformer
-      version: "0.0.0"
+      version: '0.0.0'
       sourceRef:
         kind: HelmRepository
         name: scout-charts
-        namespace: "${scout_extractor_namespace}"
+        namespace: '${scout_extractor_namespace}'
   values:
     # Image repository/tag are build-lane-stamped at config-artifact publish;
     # literal placeholder in git (matches the chart's own default).
@@ -270,35 +270,35 @@ spec:
           name: postgres-secret
     env:
       - name: TEMPORAL_ADDRESS
-        value: "temporal-internal-frontend.${scout_extractor_namespace}:7236"
+        value: 'temporal-internal-frontend.${scout_extractor_namespace}:7236'
       - name: TEMPORAL_NAMESPACE
         value: default
       - name: REPORT_DELTA_TABLE_NAME
-        value: "${report_delta_table_name}"
+        value: '${report_delta_table_name}'
       - name: TRINO_HOST
-        value: "${trino_rw_endpoint_host}"
+        value: '${trino_rw_endpoint_host}'
       - name: TRINO_PORT
-        value: "${trino_rw_endpoint_port}"
+        value: '${trino_rw_endpoint_port}'
       - name: TRINO_USER
-        value: "${trino_user}"
+        value: '${trino_user}'
       - name: TRINO_CATALOG
         value: delta
       - name: TRINO_SCHEME
         value: http
       - name: TRINO_VIEW_ENABLED
-        value: "${trino_view_enabled}"
+        value: '${trino_view_enabled}'
     # Memory: requests = spark_memory (1G -> 1Gi), limits = 4x for Spark off-heap.
     resources:
       requests:
-        cpu: "${hl7_transformer_cpu_request}"
-        memory: "${hl7_transformer_memory_request}"
+        cpu: '${hl7_transformer_cpu_request}'
+        memory: '${hl7_transformer_memory_request}'
       limits:
-        cpu: "${hl7_transformer_cpu_limit}"
-        memory: "${hl7_transformer_memory_limit}"
+        cpu: '${hl7_transformer_cpu_limit}'
+        memory: '${hl7_transformer_memory_limit}'
     volumes:
       - name: data
         hostPath:
-          path: "${extractor_data_dir}"
+          path: '${extractor_data_dir}'
     volumeMounts:
       - name: data
         mountPath: /data
@@ -320,7 +320,7 @@ spec:
       periodSeconds: 30
     spark:
       executor:
-        memory: "${hl7_transformer_spark_memory}"
+        memory: '${hl7_transformer_spark_memory}'
     # Chart-owned spark-defaults.conf (ADR 0031). on-prem mode = MinIO + path-style;
     # S3 creds come from the s3-secret envFrom, never from this block. The
     # modality-mapping map is left to the chart's bundled default (no override).
@@ -328,7 +328,7 @@ spec:
       enabled: true
       mode: on-prem
       shufflePartitions: ${spark_sql_shuffle_partitions}
-      hiveMetastoreUri: "${hive_metastore_endpoint}"
-      warehouseDir: "${delta_lake_path}"
-      s3Region: "${s3_region}"
-      s3Endpoint: "${s3_endpoint}"
+      hiveMetastoreUri: '${hive_metastore_endpoint}'
+      warehouseDir: '${delta_lake_path}'
+      s3Region: '${s3_region}'
+      s3Endpoint: '${s3_endpoint}'

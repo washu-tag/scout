@@ -28,7 +28,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: trino
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
 spec:
   interval: 1h
   url: https://trinodb.github.io/charts
@@ -41,24 +41,24 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: trino-tls
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
 spec:
   secretName: trino-tls
   duration: 2160h # 90 days
   renewBefore: 360h # 15 days
-  commonName: "trino.${scout_analytics_namespace}.svc.cluster.local"
+  commonName: 'trino.${scout_analytics_namespace}.svc.cluster.local'
   # Cover every name a client might use to reach the coordinator in-cluster: the
   # chart's Service is `trino` (short name); the rest are the FQDN variants the
   # Kubernetes resolver produces.
   dnsNames:
     - trino
-    - "trino.${scout_analytics_namespace}"
-    - "trino.${scout_analytics_namespace}.svc"
-    - "trino.${scout_analytics_namespace}.svc.cluster.local"
+    - 'trino.${scout_analytics_namespace}'
+    - 'trino.${scout_analytics_namespace}.svc'
+    - 'trino.${scout_analytics_namespace}.svc.cluster.local'
     - trino-coordinator
-    - "trino-coordinator.${scout_analytics_namespace}"
-    - "trino-coordinator.${scout_analytics_namespace}.svc"
-    - "trino-coordinator.${scout_analytics_namespace}.svc.cluster.local"
+    - 'trino-coordinator.${scout_analytics_namespace}'
+    - 'trino-coordinator.${scout_analytics_namespace}.svc'
+    - 'trino-coordinator.${scout_analytics_namespace}.svc.cluster.local'
   privateKey:
     algorithm: RSA
     size: 2048
@@ -77,7 +77,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: trino
-  namespace: "${scout_analytics_namespace}"
+  namespace: '${scout_analytics_namespace}'
 spec:
   interval: 30m
   # Upstream chart pinned in versions.yaml (trino_helm_chart_version ~1.42.2),
@@ -86,11 +86,11 @@ spec:
   chart:
     spec:
       chart: trino
-      version: "1.42.2"
+      version: '1.42.2'
       sourceRef:
         kind: HelmRepository
         name: trino
-        namespace: "${scout_analytics_namespace}"
+        namespace: '${scout_analytics_namespace}'
   values:
     # JWT auth over HTTPS terminated by Trino itself (ADR 0022), OPA access
     # control (ADR 0020), internal-communication shared secret.
@@ -100,7 +100,7 @@ spec:
         query:
           # Cluster-wide max = workers x worker_heap x per-node fraction
           # = 2 x 2G x 0.3.
-          maxMemory: "1.2GB"
+          maxMemory: '1.2GB'
         # JWT-only: user JWTs from Jupyter, service-principal JWTs from
         # Superset/Voila/report-viewer.
         authenticationType: JWT
@@ -168,9 +168,9 @@ spec:
         maxHeapSize: 1G
       config:
         memory:
-          heapHeadroomPerNode: "" # chart/Trino default: 30% of maxHeapSize
+          heapHeadroomPerNode: '' # chart/Trino default: 30% of maxHeapSize
         query:
-          maxMemoryPerNode: "0.3GB"
+          maxMemoryPerNode: '0.3GB'
       resources:
         requests:
           cpu: 250m
@@ -179,18 +179,18 @@ spec:
           cpu: 1
           memory: 4Gi
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "5556"
-        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '5556'
+        prometheus.io/path: '/metrics'
     # Worker: JVM heap = 2G, pod memory limit = 4x heap for off-heap.
     worker:
       jvm:
         maxHeapSize: 2G
       config:
         memory:
-          heapHeadroomPerNode: ""
+          heapHeadroomPerNode: ''
         query:
-          maxMemoryPerNode: "0.6GB"
+          maxMemoryPerNode: '0.6GB'
       resources:
         requests:
           cpu: 250m
@@ -199,9 +199,9 @@ spec:
           cpu: 2
           memory: 8Gi
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "5556"
-        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '5556'
+        prometheus.io/path: '/metrics'
     # Restrict the HTTP listener (8080) to Trino-internal traffic: the chart
     # auto-allows Trino-pod-to-Trino-pod when networkPolicy is enabled, so we only
     # declare the external allowances -- 8443 (JWT HTTPS) from the analytics
@@ -213,14 +213,14 @@ spec:
         - from:
             - namespaceSelector:
                 matchLabels:
-                  kubernetes.io/metadata.name: "${scout_analytics_namespace}"
+                  kubernetes.io/metadata.name: '${scout_analytics_namespace}'
           ports:
             - port: 8443
               protocol: TCP
         - from:
             - namespaceSelector:
                 matchLabels:
-                  kubernetes.io/metadata.name: "${prometheus_namespace}"
+                  kubernetes.io/metadata.name: '${prometheus_namespace}'
               podSelector:
                 matchLabels:
                   app.kubernetes.io/name: prometheus
