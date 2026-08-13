@@ -36,6 +36,13 @@ _HEAVY_COLS: frozenset[str] = frozenset(
 )
 
 
+# The viewer owns how a chart looks, and merges its own config at render.
+# A model-supplied palette or size fights that, so drop them on the way in.
+_COSMETIC_KEYS: frozenset[str] = frozenset(
+    {"config", "background", "padding", "width", "height", "autosize"}
+)
+
+
 def _reject_foreign_urls(node: Any) -> None:
     """A `url` anywhere in the spec would make the renderer fetch off-origin."""
     if isinstance(node, dict):
@@ -94,7 +101,7 @@ async def create_plot(
     metrics.RESULT_ROWS.labels(op="plot_query").observe(len(rows))
 
     lean_columns = [c for c in columns if c not in _HEAVY_COLS]
-    spec = dict(body.vega_lite_spec)
+    spec = {k: v for k, v in body.vega_lite_spec.items() if k not in _COSMETIC_KEYS}
     spec["$schema"] = VEGA_LITE_SCHEMA
     spec.pop("data", None)
 

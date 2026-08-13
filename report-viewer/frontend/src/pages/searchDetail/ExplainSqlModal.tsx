@@ -7,6 +7,9 @@ export function ExplainSqlModal(props: {
   highlightTerms: string[];
   highlightDiagnosis: string[];
   onClose: () => void;
+  // Charts reuse this panel; searches keep the original wording.
+  title?: string;
+  emptyText?: string;
 }) {
   const terms = props.highlightTerms.filter((t) => t.trim().length > 0);
   const codes = props.highlightDiagnosis.filter((d) => d.trim().length > 0);
@@ -32,12 +35,14 @@ export function ExplainSqlModal(props: {
   return (
     <Modal onClose={props.onClose} minWidth={480} maxWidth={760} maxHeight="80vh" showClose>
       <div style={{ fontSize: '0.9rem' }}>
-        <h3 style={{ margin: '0 2rem 0.75rem 0', fontSize: '1rem' }}>What this search matches</h3>
+        <h3 style={{ margin: '0 2rem 0.75rem 0', fontSize: '1rem' }}>
+          {props.title ?? 'What this search matches'}
+        </h3>
         {props.explanation ? (
           <p style={{ margin: '0 0 1rem', lineHeight: 1.5 }}>{props.explanation}</p>
         ) : (
           <p style={{ margin: '0 0 1rem', color: 'var(--rv-muted)', fontStyle: 'italic' }}>
-            No plain-language explanation was attached to this search.
+            {props.emptyText ?? 'No plain-language explanation was attached to this search.'}
           </p>
         )}
         <div style={{ fontWeight: 600, marginBottom: '0.35rem', fontSize: '0.85rem' }}>SQL</div>
