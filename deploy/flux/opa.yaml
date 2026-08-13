@@ -20,4 +20,5 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
+    - name: scout-analytics-foundation
     - name: minio-tenant

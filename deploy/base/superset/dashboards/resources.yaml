@@ -10,24 +10,8 @@
 # import's dataset validation can verify the user-facing Trino's self-signed cert.
 # All are created/seeded by the superset-server layer + CI/site, which is why this
 # layer dependsOn superset-server. The shared Namespace ${scout_analytics_namespace}
-# is owned by superset-server (not redeclared here).
-#
-# Chart source: the scout-charts OCI HelmRepository lives in
-# ${scout_analytics_namespace} and is ALSO declared by the opa base (same name,
-# same namespace, same spec). Two Flux Kustomizations co-owning one HelmRepository
-# is a known churn risk (prune contention / "source not found" flapping); dedupe to
-# a single owner at the flux-Kustomization layer (one base declares it, others
-# dependsOn that base). Declared here so this base is reconcilable in isolation.
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: scout-charts
-  namespace: "${scout_analytics_namespace}"
-spec:
-  type: oci
-  interval: 1h
-  url: oci://ghcr.io/washu-tag/charts
----
+# and the scout-charts OCI HelmRepository are owned by scout-analytics-foundation
+# (dependsOn it), so neither is redeclared here.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:

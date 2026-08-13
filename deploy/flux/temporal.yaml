@@ -22,6 +22,7 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
+    - name: scout-extractor-foundation
     - name: cassandra-datacenter
     - name: elasticsearch-cluster
 ---
@@ -44,4 +45,5 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
+    - name: scout-extractor-foundation
     - name: temporal-server

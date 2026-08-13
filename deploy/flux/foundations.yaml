@@ -1,17 +1,19 @@
-# Flux Kustomizations for superset (Phase 3 DAG). Pulls config artifact (OCIRepository
-# scout-config) + cluster-vars for ${...} subst; dependsOn reproduces Ansible order.
+# Per-namespace foundation Kustomizations (Phase 3 DAG). Each is the SOLE owner of a
+# shared namespace's Namespace + scout-charts HelmRepository, so no component
+# Kustomization co-owns them (co-ownership across prune:true = pruning fights). Every
+# component in the namespace dependsOn its foundation.
 
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: superset-server
+  name: scout-analytics-foundation
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/superset/server
+  path: ./deploy/base/scout-analytics-foundation
   prune: true
   wait: true
-  timeout: 15m
+  timeout: 10m
   sourceRef:
     kind: OCIRepository
     name: scout-config
@@ -19,24 +21,18 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
-  dependsOn:
-    - name: scout-analytics-foundation
-    - name: postgres-cluster
-    - name: valkey
-    - name: trino-ro
-    - name: keycloak-instance
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: superset-dashboards
+  name: scout-extractor-foundation
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/superset/dashboards
+  path: ./deploy/base/scout-extractor-foundation
   prune: true
   wait: true
-  timeout: 15m
+  timeout: 10m
   sourceRef:
     kind: OCIRepository
     name: scout-config
@@ -44,6 +40,3 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
-  dependsOn:
-    - name: scout-analytics-foundation
-    - name: superset-server

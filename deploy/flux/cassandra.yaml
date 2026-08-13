@@ -21,6 +21,8 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
+  dependsOn:
+    - name: scout-extractor-foundation
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -41,6 +43,7 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
+    - name: scout-extractor-foundation
     - name: cassandra-operator
   healthCheckExprs:
     - apiVersion: cassandra.datastax.com/v1beta1

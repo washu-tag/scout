@@ -20,23 +20,6 @@
 #     values the minio-tenant base seeds into the ${s3_opa_bundle_reader}-creds
 #     Secret in scout-data; mirrored here by fixed name so the cross-namespace
 #     dependency stays explicit. The chart mounts it via envFrom.
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: "${scout_analytics_namespace}"
----
-# Scout-owned charts live in one GHCR OCI registry path; declared in-namespace so
-# the HelmRelease below has a local source (same repo the extractor base uses).
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: scout-charts
-  namespace: "${scout_analytics_namespace}"
-spec:
-  type: oci
-  interval: 1h
-  url: oci://ghcr.io/washu-tag/charts
----
 # Release name mirrors the Ansible role's helm_chart_name (scout-opa).
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease

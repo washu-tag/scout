@@ -21,11 +21,6 @@
 # The modality-mapping map is chart-owned (hl7-transformer files/modality_mapping_codes.csv);
 # no modality ConfigMap is created. On-prem rendering: MinIO S3 (path-style), HL7 logs
 # mounted from the node at ${extractor_data_dir}.
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: "${scout_extractor_namespace}"
----
 # S3 connection env (non-secret) both workers envFrom; the creds ride the s3-secret.
 apiVersion: v1
 kind: ConfigMap
@@ -115,18 +110,6 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
----
-# Scout-owned charts live in one GHCR OCI registry path; both HelmReleases below
-# reference this source by chart name.
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: scout-charts
-  namespace: "${scout_extractor_namespace}"
-spec:
-  type: oci
-  interval: 1h
-  url: oci://ghcr.io/washu-tag/charts
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease

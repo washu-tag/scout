@@ -27,11 +27,6 @@
 #   scout-logo (ConfigMap)  -- binary Scout logo/favicon branding assets (like the
 #                              extractor's s3-env, a fixed-name CM seeded by CI/site,
 #                              not embedded in git)
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: "${scout_analytics_namespace}"
----
 # Upstream apache/superset chart (normal HelmRepository).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository

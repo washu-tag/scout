@@ -41,6 +41,7 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
+    - name: scout-extractor-foundation
     - name: elasticsearch-operator
   healthCheckExprs:
     - apiVersion: elasticsearch.k8s.elastic.co/v1

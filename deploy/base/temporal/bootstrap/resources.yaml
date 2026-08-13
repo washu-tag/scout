@@ -4,16 +4,6 @@
 # the chart's create-only namespace job never updates retention on its own.
 # Talks to the *internal* frontend to bypass the public-frontend authz.
 # dependsOn temporal-server (needs the frontend reachable). Scout-owned OCI chart.
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: scout-charts
-  namespace: "${scout_extractor_namespace}"
-spec:
-  type: oci
-  interval: 1h
-  url: oci://ghcr.io/washu-tag/charts
----
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:

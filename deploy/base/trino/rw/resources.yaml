@@ -17,11 +17,6 @@
 #     the Delta catalog via Trino's $${ENV:VAR} syntax (escaped so Flux's
 #     postBuild substitution emits it literally rather than failing on an
 #     undefined braced var under StrictPostBuildSubstitutions).
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: "${scout_extractor_namespace}"
----
 # Upstream Trino chart source, declared in-namespace so the HelmRelease below has
 # a local source (same repo the read-only Trino base declares in its namespace).
 apiVersion: source.toolkit.fluxcd.io/v1
