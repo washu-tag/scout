@@ -137,6 +137,7 @@ sparkDefaults:
   enabled: false
   mode: on-prem
   shufflePartitions: 200
+  deriveMaxBytesPerTrigger: 2g
   hiveMetastoreUri: ''
   warehouseDir: ''
   s3Region: us-east-1

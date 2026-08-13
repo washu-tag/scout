@@ -704,6 +704,11 @@ k3s_cluster:
     # Override CPU if needed (defaults: 250m request, 4 limit):
     hl7_transformer_cpu_request: 2
     hl7_transformer_cpu_limit: 4
+    # Caps each derivative-cascade micro-batch so a backlog of ingest commits
+    # cannot coalesce into one oversized batch. Size it to admit your largest
+    # single ingest commit whole -- read numTargetBytesAdded from the base
+    # table's Delta history. Scale with hl7_transformer_spark_memory.
+    hl7_transformer_derive_max_bytes_per_trigger: 2g
 
     #---------------------------------------------------------------------------
     # Chatbot (Open WebUI)
