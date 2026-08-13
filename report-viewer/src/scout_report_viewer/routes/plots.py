@@ -104,6 +104,7 @@ async def create_plot(
         sql=body.sql,
         spec=spec,
         owner_sub=user.sub,
+        sql_explanation=body.sql_explanation,
         owui_chat_id=body.owui_chat_id,
     )
     return PlotResponse(
@@ -120,7 +121,8 @@ async def get_plot(
     user: User = Depends(get_current_user),
     store: PlotStore = Depends(get_plot_store),
 ) -> PlotDetail:
-    """Spec plus freshly-evaluated rows, for the SPA's chart route."""
+    """Spec, freshly-evaluated rows, and the SQL behind them, for the SPA's
+    chart route."""
     plot = await store.get_plot(plot_id, user.sub)
     if plot is None:
         raise HTTPException(
@@ -140,4 +142,10 @@ async def get_plot(
         {k: v for k, v in r.items() if k not in _HEAVY_COLS} for r in rows[:cap]
     ]
     metrics.RESULT_ROWS.labels(op="plot_rows").observe(len(lean_rows))
-    return PlotDetail(id=plot["id"], spec=plot["spec"], rows=lean_rows)
+    return PlotDetail(
+        id=plot["id"],
+        spec=plot["spec"],
+        rows=lean_rows,
+        sql=plot["sql"],
+        sql_explanation=plot["sql_explanation"],
+    )

@@ -211,6 +211,7 @@ class PlotRequest(BaseModel):
 
     sql: str
     vega_lite_spec: dict[str, Any]
+    sql_explanation: str = ""
     owui_chat_id: str = ""
 
 
@@ -224,8 +225,11 @@ class PlotResponse(BaseModel):
 
 
 class PlotDetail(BaseModel):
-    """Spec and rows for the SPA's chart route."""
+    """Spec and rows for the SPA's chart route, plus the SQL and its
+    explanation for the "What this chart shows" panel."""
 
     id: str
     spec: dict[str, Any]
     rows: list[dict[str, Any]]
+    sql: str
+    sql_explanation: str

@@ -17,12 +17,17 @@ BAR = {
 }
 
 
-def _create(client, auth_headers, spec=None, sql="SELECT modality, COUNT(*) n FROM t"):
-    return client.post(
-        "/api/plots",
-        json={"sql": sql, "vega_lite_spec": spec if spec is not None else BAR},
-        headers=auth_headers,
-    )
+def _create(
+    client,
+    auth_headers,
+    spec=None,
+    sql="SELECT modality, COUNT(*) n FROM t",
+    explanation=None,
+):
+    body = {"sql": sql, "vega_lite_spec": spec if spec is not None else BAR}
+    if explanation is not None:
+        body["sql_explanation"] = explanation
+    return client.post("/api/plots", json=body, headers=auth_headers)
 
 
 def test_create_returns_a_view_url_and_no_chart_payload(
@@ -73,3 +78,26 @@ def test_report_bodies_never_reach_the_browser(client, auth_headers, fake_trino)
     fake_trino(["modality", "report_text"], rows)
     detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
     assert detail["rows"] == [{"modality": "MR"}]
+
+
+def test_the_explanation_and_sql_come_back_for_the_explain_panel(
+    client, auth_headers, fake_trino
+):
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    plot_id = _create(
+        client, auth_headers, explanation="Scan counts by modality."
+    ).json()["id"]
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
+    assert detail["sql_explanation"] == "Scan counts by modality."
+    assert detail["sql"] == "SELECT modality, COUNT(*) n FROM t"
+
+
+def test_an_omitted_explanation_reads_back_as_empty_not_null(
+    client, auth_headers, fake_trino
+):
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    plot_id = _create(client, auth_headers).json()["id"]
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
+    assert detail["sql_explanation"] == ""

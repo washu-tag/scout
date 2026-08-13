@@ -538,12 +538,18 @@ scout_chart_sql(
       "y": {"field": "patients", "type": "quantitative", "title": "Patients"}
     }
   },
+  sql_explanation="Patients with an I63 ischemic-stroke diagnosis code, counted by decade of age. Each patient is counted once at their youngest recorded age. Patients whose reports carry inconsistent identifiers are left out, because this uses an epic view.",
 )
 ```
 
 Rules:
 - **One row per mark. Always aggregate in SQL** with `GROUP BY`, bucketing ages or
   dates yourself. Do not select raw values and bin in the spec.
+- **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Shown
+  along with the SQL behind the viewer's Explain-Chart button. Describe what the
+  chart shows, covering both which rows the SQL selects and what the chart does
+  with them, and name the table or view the same way you would for
+  `scout_find_reports`.
 - **Never write a `vega` code fence yourself and never restate the data.** The user
   is already looking at the chart; reply with a short interpretation only.
 - **Never reach for external chart services** — no QuickChart, no image APIs, no

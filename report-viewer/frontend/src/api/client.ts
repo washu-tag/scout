@@ -185,6 +185,8 @@ export type PlotDetail = {
   id: string;
   spec: Record<string, unknown>;
   rows: Array<Record<string, unknown>>;
+  sql: string;
+  sql_explanation: string;
 };
 
 export function getPlot(plotId: string): Promise<PlotDetail> {

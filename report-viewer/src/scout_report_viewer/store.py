@@ -136,6 +136,7 @@ class PlotStore:
         sql: str,
         spec: dict[str, Any],
         owner_sub: str,
+        sql_explanation: str | None = None,
         owui_chat_id: str | None = None,
     ) -> None:
         with metrics.time_postgres("insert_plot"):
@@ -143,10 +144,18 @@ class PlotStore:
                 async with conn.cursor() as cur:
                     await cur.execute(
                         """
-                        INSERT INTO plots (id, sql, spec, owner_sub, owui_chat_id)
-                        VALUES (%s, %s, %s, %s, %s)
+                        INSERT INTO plots
+                          (id, sql, sql_explanation, spec, owner_sub, owui_chat_id)
+                        VALUES (%s, %s, %s, %s, %s, %s)
                         """,
-                        (plot_id, sql, Jsonb(spec), owner_sub, owui_chat_id or ""),
+                        (
+                            plot_id,
+                            sql,
+                            sql_explanation or "",
+                            Jsonb(spec),
+                            owner_sub,
+                            owui_chat_id or "",
+                        ),
                     )
                 await conn.commit()
 
@@ -156,7 +165,8 @@ class PlotStore:
                 async with conn.cursor() as cur:
                     await cur.execute(
                         """
-                        SELECT id, sql, spec, owner_sub, owui_chat_id, created_at
+                        SELECT id, sql, sql_explanation, spec, owner_sub,
+                               owui_chat_id, created_at
                         FROM plots
                         WHERE id = %s AND owner_sub = %s
                         """,
@@ -165,10 +175,11 @@ class PlotStore:
                     row = await cur.fetchone()
         if row is None:
             return None
-        id_, sql, spec, owner, chat_id, created_at = row
+        id_, sql, explanation, spec, owner, chat_id, created_at = row
         return {
             "id": id_,
             "sql": sql,
+            "sql_explanation": explanation or "",
             "spec": spec,
             "owner_sub": owner,
             "owui_chat_id": chat_id or "",

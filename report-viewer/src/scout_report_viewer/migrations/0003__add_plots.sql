@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS plots (
   id                  TEXT PRIMARY KEY,
   sql                 TEXT NOT NULL,
+  sql_explanation     TEXT NOT NULL DEFAULT '',
   spec                JSONB NOT NULL,
   owner_sub           TEXT NOT NULL,
   owui_chat_id        TEXT NOT NULL DEFAULT '',

@@ -169,6 +169,7 @@ class Tools:
         self,
         sql: str,
         vega_lite_spec: dict,
+        sql_explanation: Optional[str] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
         __metadata__: Optional[dict] = None,
@@ -189,6 +190,11 @@ class Tools:
 
         :param sql: Trino SQL for the chart's rows, already aggregated.
         :param vega_lite_spec: Vega-Lite spec with no `data` key.
+        :param sql_explanation: One- to three-sentence plain-language
+            description of what the chart shows, covering both the rows the
+            SQL selects and what the chart does with them. Surfaced behind
+            the viewer's "Explain Chart" button so the user can sanity-check
+            the chart without reading raw SQL.
         :return: A one-line confirmation. The chart is rendered for the user
             as an iframe above your message; reply with interpretation only.
         """
@@ -199,6 +205,7 @@ class Tools:
                 {
                     "sql": sql,
                     "vega_lite_spec": vega_lite_spec,
+                    "sql_explanation": sql_explanation or "",
                     "owui_chat_id": _chat_id(__metadata__),
                 },
                 oauth=__oauth_token__,
