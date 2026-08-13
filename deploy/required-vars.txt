@@ -61,7 +61,6 @@ loki_admin_bucket
 loki_chunks_bucket
 loki_ruler_bucket
 minio_operator_namespace
-minio_storage_class
 minio_storage_size
 minio_tenant_name
 minio_tenant_namespace
@@ -110,5 +109,4 @@ trino_rw_endpoint_port
 trino_user
 trino_view_enabled
 valkey_namespace
-valkey_storage_class
 valkey_storage_size

@@ -61,7 +61,6 @@ spec:
     dataStorage:
       enabled: true
       requestedSize: '${valkey_storage_size}'
-      className: '${valkey_storage_class}'
     resources:
       requests:
         cpu: 100m

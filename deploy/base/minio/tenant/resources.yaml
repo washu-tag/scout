@@ -54,7 +54,6 @@ spec:
           name: pool-0
           volumesPerServer: 1
           size: '${minio_storage_size}'
-          storageClassName: '${minio_storage_class}'
           resources:
             requests:
               cpu: 100m
