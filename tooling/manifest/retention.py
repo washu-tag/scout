@@ -11,6 +11,9 @@ Policy is by AGE, not count, so the rollback window is a fixed time horizon
 regardless of build cadence (deliberately conservative -- deleting the wrong
 version breaks Flux consumers that pin by digest, so we under-prune):
   - KEEP any version tagged `main` (the pointer the next build carries from).
+  - KEEP any version tagged `X.Y.Z` (X >= 1): a release-lane haul (ADR 0030).
+    The build lane is `0.YYYYMMDD.<run>`, so the leading `0` never matches and
+    build hauls still age out; only real releases are pinned forever.
   - KEEP version-tagged artifacts younger than `keep_days`.
   - KEEP at least the `min_keep` newest artifacts regardless of age, so a quiet
     period never prunes the whole rollback set.
@@ -29,6 +32,17 @@ import re
 from datetime import datetime, timedelta, timezone
 
 _SIG_TAG = re.compile(r"^sha256-([0-9a-f]{64})\.sig$")
+# Release-lane tag X.Y.Z, X >= 1 (ADR 0030). The leading [1-9] is load-bearing:
+# the build lane is 0.YYYYMMDD.run, so a naive \d+\.\d+\.\d+ would also match a
+# build tag, keep every build haul forever, and quietly turn retention off.
+# (X.Y.Z-rc.<run> is ADR-0030 deferred work, so pre-release tags are not matched.)
+_RELEASE_TAG = re.compile(r"^[1-9]\d*\.\d+\.\d+$")
+
+
+def _is_pinned(tags):
+    """A version pinned against age-out: the carry pointer `main`, or a release
+    tag X.Y.Z. Build-lane 0.YYYYMMDD.run tags are not pinned and age out."""
+    return "main" in tags or any(_RELEASE_TAG.match(t) for t in tags)
 
 
 def _sig_subject(tags):
@@ -62,7 +76,7 @@ def partition(versions, keep_days, min_keep, now):
     cutoff = now - timedelta(days=keep_days)
 
     keep, delete = set(), set()
-    main_ids, artifacts, sigs = set(), [], []
+    pinned_ids, artifacts, sigs = set(), [], []
     digest_of = {}
 
     for v in versions:
@@ -72,8 +86,8 @@ def partition(versions, keep_days, min_keep, now):
         if not tags:
             keep.add(vid)  # untagged: conservative keep
             continue
-        if "main" in tags:
-            main_ids.add(vid)
+        if _is_pinned(tags):  # main pointer or a release tag: keep regardless of age
+            pinned_ids.add(vid)
             keep.add(vid)
         subject = _sig_subject(tags)
         if subject is not None:
@@ -85,7 +99,7 @@ def partition(versions, keep_days, min_keep, now):
     kept_digests = set()
     for i, v in enumerate(artifacts):
         young = _parse(v.get("created_at")) >= cutoff
-        if v["id"] in main_ids or i < min_keep or young:
+        if v["id"] in pinned_ids or i < min_keep or young:
             keep.add(v["id"])
             if v.get("digest"):
                 kept_digests.add(v["digest"])

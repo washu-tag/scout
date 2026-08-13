@@ -51,8 +51,9 @@ jobs:
       - name: Prune old haul package versions
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Schedule has no inputs -> 10. On dispatch, pass the operator value through
-          # verbatim (don't coerce: retention.py's guards reject 0 / negatives loudly).
+          # Schedule has no inputs -> keep_days=30, min_keep=5. On dispatch, pass the
+          # operator value through verbatim (don't coerce: retention.py's guards reject
+          # 0 / negatives loudly).
           KEEP_DAYS: ${{ github.event_name == 'schedule' && 30 || inputs.keep_days }}
           MIN_KEEP: ${{ github.event_name == 'schedule' && 5 || inputs.min_keep }}
           # Delete for real ONLY on an explicit dispatch with dry_run=false, or a

@@ -64,6 +64,31 @@ def test_main_kept_regardless_of_age():
     assert keep == {1, 2} and delete == set()
 
 
+def test_release_tag_kept_but_build_tag_ages_out():
+    # A release haul (X.Y.Z, X>=1) is pinned forever; a same-age build haul
+    # (leading-0) is not, so retention still bounds the build lane.
+    versions = [
+        _artifact(1, 300, "4.2.0", "a"),  # ancient release -> keep
+        _artifact(2, 300, "0.20260812.1234", "b"),  # ancient build -> delete
+        _artifact(3, 1, "0.20260815.5", "c", main=True),  # newest build, main
+    ]
+    keep, delete = partition(versions, keep_days=7, min_keep=1, now=NOW)
+    assert keep == {1, 3} and delete == {2}
+
+
+def test_release_signature_kept_with_its_bundle():
+    # id 5 is the newest, so min_keep=1 protects it (not the old build id 3).
+    versions = [
+        _artifact(1, 300, "4.2.0", "a"),  # ancient release bundle -> keep (pinned)
+        _sig(2, 300, subject_letter="a", own_letter="d"),  # its sig -> keep too
+        _artifact(3, 300, "0.20260812.1234", "b"),  # ancient build bundle -> delete
+        _sig(4, 300, subject_letter="b", own_letter="e"),  # its sig -> delete
+        _artifact(5, 1, "0.20260815.9", "c", main=True),  # newest build -> keep
+    ]
+    keep, delete = partition(versions, keep_days=7, min_keep=1, now=NOW)
+    assert keep == {1, 2, 5} and delete == {3, 4}
+
+
 def test_signature_follows_its_bundle():
     versions = [
         _artifact(1, 40, "0.a", "a"),  # old bundle -> delete
