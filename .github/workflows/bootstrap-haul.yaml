@@ -9,8 +9,8 @@
 # Run once (again only to re-seed from scratch). Dispatch after the predecessor-
 # carry + haul-job PR is merged (it provides build_haul --predecessor).
 #
-# The sync/save/publish tail duplicates the publish-haul job; if that grows, lift
-# it into a `.github/actions/publish-haul` composite used by both.
+# The sync/save/publish tail is the `.github/actions/publish-haul` composite,
+# shared with ci.yaml's publish-haul job and seed-charts.yaml.
 name: Bootstrap build-lane haul
 
 on:
@@ -81,28 +81,22 @@ jobs:
             printf '%s %s@%s\n' "${name}" "${repo}:${src}" "${digest}" > "digests/${name}.txt"
             echo "seeded ${repo}:${src}@${digest}"
           done
-      - name: Build and publish the first haul (no predecessor)
-        env:
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+      - name: Render the first haul manifest (no predecessor)
         run: |
           set -euo pipefail
-          VERSION="0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
+          echo "VERSION=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           python3 tooling/manifest/build_haul.py \
             --digests-dir digests \
             --components tooling/manifest/components.txt \
             --predecessor "" \
             --name scout > haul.yaml
           echo "--- haul.yaml ---"; cat haul.yaml
-          hauler store sync -f haul.yaml
-          hauler store save -f "scout-${VERSION}.tar.zst"
-          # Push both immutable :version artifacts and sign the bundle, then advance
-          # the :main pointers last (ordering guard: a partial failure leaves :main).
-          oras push "${MANIFEST_REPO}:${VERSION}" haul.yaml:application/yaml
-          oras push "${BUNDLE_REPO}:${VERSION}" \
-            --artifact-type application/vnd.hauler.bundle.v1+zstd \
-            "scout-${VERSION}.tar.zst:application/zstd"
-          cosign sign --key env://COSIGN_PRIVATE_KEY \
-            --use-signing-config=false --tlog-upload=false --yes "${BUNDLE_REPO}:${VERSION}"
-          oras tag "${MANIFEST_REPO}:${VERSION}" main
-          oras tag "${BUNDLE_REPO}:${VERSION}" main
+      - name: Publish the first haul
+        uses: ./.github/actions/publish-haul
+        with:
+          version: ${{ env.VERSION }}
+          core-manifest: haul.yaml
+          manifest-repo: ${{ env.MANIFEST_REPO }}
+          bundle-repo: ${{ env.BUNDLE_REPO }}
+          cosign-private-key: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          cosign-password: ${{ secrets.COSIGN_PASSWORD }}
