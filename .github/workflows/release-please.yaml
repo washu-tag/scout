@@ -1,23 +1,32 @@
-name: Release Please (shadow)
+name: Release Please
 
-# SHADOW MODE (Phase 1, ADR 0030). release-please opens and maintains ONE release
-# PR showing the version + CHANGELOG it computes from Conventional Commit history
-# since the last v* tag. It is for VALIDATION ONLY during the shadow period:
+# LIVE (Phase 1, ADR 0030). release-please opens and maintains ONE release PR
+# showing the version + CHANGELOG it computes from Conventional Commit history since
+# the last release. Merging that PR IS the release:
 #
-#   DO NOT MERGE the release PR. The manual-dispatch release.yaml stays the
-#   authoritative release path until the Phase 1 cutover (a follow-up PR rewires
-#   release.yaml to fire on the release-PR merge and retires the manual input).
-#
-# If the PR were merged it would create only a git tag + GitHub Release (changelog);
-# it does NOT publish images or charts (that is ci.yaml / release.yaml), so a stray
-# merge is low-harm and reversible by deleting the tag + release.
+#   - skip-github-release is set, so release-please only maintains the PR + bumps
+#     .release-please-manifest.json; it does NOT cut the tag / GitHub Release.
+#   - merging the PR lands the manifest bump on main, which trips release-dispatch.yaml
+#     (push filter on .release-please-manifest.json). That dispatches release.yaml with
+#     the merged version, and release.yaml remains the single lane that stamps versions,
+#     waits for the build, verifies images published, tags, creates the release, and
+#     resets to dev.
 #
 # Accuracy depends on squash-only merges (each main commit subject is then a
-# Conventional-Commit PR title, enforced by pr-title-lint); enable squash-only +
-# require-linear-history before trusting the computed version.
+# Conventional-Commit PR title, enforced by pr-title-lint) + require-linear-history.
+# Land those repo settings before relying on the computed version.
 on:
   push:
     branches: [main]
+    # Skip the release-PR merge commit itself: a squashed release PR touches ONLY
+    # these release-please-managed files. On that commit the manifest is briefly
+    # ahead of the last tag; release-dispatch.yaml creates the boundary tag, so by
+    # the time release-please next runs (a later real push) the tag exists and it
+    # scopes the next changelog correctly instead of bootstrapping from repo start.
+    paths-ignore:
+      - .release-please-manifest.json
+      - CHANGELOG.md
+      - version.txt
 
 permissions:
   contents: write
@@ -39,3 +48,7 @@ jobs:
           token: ${{ steps.app_token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # release.yaml owns the tag + GitHub Release (it stamps, waits for the
+          # build, and verifies images first). release-please only maintains the PR
+          # + manifest, so it must not double-cut the release on merge.
+          skip-github-release: true
