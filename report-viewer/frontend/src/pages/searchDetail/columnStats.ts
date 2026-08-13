@@ -54,7 +54,7 @@ function numericProfile(values: unknown[], widthAllows: number): Profile {
   return {
     kind: 'numeric',
     buckets,
-    bucketLabels: bucketStarts(min, hi, count, fmt),
+    bucketLabels: bucketRanges(min, hi, count, fmt),
     max: Math.max(...buckets),
     min,
     hi,
@@ -115,7 +115,7 @@ function temporalProfile(values: unknown[], widthAllows: number): Profile {
   return {
     kind: 'temporal',
     buckets,
-    bucketLabels: bucketStarts(first, last, count, dateFormat((last - first) / count)),
+    bucketLabels: bucketRanges(first, last, count, dateFormat((last - first) / count)),
     max: Math.max(...buckets),
     first: asDate(first),
     last: asDate(last),
@@ -131,10 +131,13 @@ function identifierProfile(values: unknown[]): Profile {
 // value gets one bucket, so the bar fills the cell instead of sitting at the
 // left as if it were a low reading. No spread means one bucket for the same
 // reason.
-// Bucket starts only: a from-to pair does not fit the label slot.
-function bucketStarts(lo: number, hi: number, count: number, fmt: (n: number) => string) {
+function bucketRanges(lo: number, hi: number, count: number, fmt: (n: number) => string) {
   const step = (hi - lo) / count;
-  return Array.from({ length: count }, (_, i) => fmt(lo + step * i));
+  return Array.from({ length: count }, (_, i) => {
+    const from = fmt(lo + step * i);
+    const to = fmt(i === count - 1 ? hi : lo + step * (i + 1));
+    return from === to ? from : `${from}-${to}`;
+  });
 }
 
 // Granularity from the bucket width, not the whole span, otherwise adjacent

@@ -178,11 +178,39 @@ function Histogram({
   const [hovered, setHovered] = useState<number | null>(null);
   return (
     <>
+      {/* Height reserved whether or not anything is hovered, so the row cannot
+          resize as the pointer crosses it. The count anchors by its nearest
+          edge rather than centring on the bucket: centring would overflow the
+          cell at both ends, and clamping there would leave most buckets sharing
+          one position. */}
+      <div
+        style={{
+          ...labelStyle,
+          position: 'relative',
+          height: '1.25em',
+          color: 'var(--rv-fg)',
+          fontWeight: 600,
+        }}
+      >
+        {hovered !== null && (
+          <span
+            style={{
+              position: 'absolute',
+              whiteSpace: 'nowrap',
+              ...(hovered < buckets.length / 2
+                ? { left: `${(hovered / buckets.length) * 100}%` }
+                : { right: `${((buckets.length - 1 - hovered) / buckets.length) * 100}%` }),
+            }}
+          >
+            {num(buckets[hovered])}
+          </span>
+        )}
+      </div>
       <Bars buckets={buckets} max={max} hovered={hovered} onHover={setHovered} />
       {hovered === null ? (
         <RangeLabel low={low} high={high} />
       ) : (
-        <Label name={bucketLabels[hovered]} value={num(buckets[hovered])} strong />
+        <div style={{ ...labelStyle, color: 'var(--rv-fg)' }}>{bucketLabels[hovered]}</div>
       )}
     </>
   );
