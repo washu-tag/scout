@@ -271,6 +271,47 @@ def test_an_update_bearing_commit_is_admitted_whole(runs):
     ), f"expected a pre/post pair per corrected report, got {batch}"
 
 
+def test_default_cap_is_sized_to_admit_a_multi_file_commit(spark, tmp_path):
+    """Guards the *sizing* of the shipped default, not a correctness invariant.
+
+    Splitting a commit across micro-batches is always safe; it is just wasted
+    work. The same worker, on the same heap, has already built and merged that
+    whole commit in the ingest activity, so splitting buys no headroom, and each
+    extra batch costs a full round of derivative MERGEs plus an OPTIMIZE. The
+    default was therefore chosen large enough to admit realistic commits whole.
+
+    `reports` is partitioned by year and repartitionBeforeWrite shards MERGE
+    output by partition column, so an ingest spanning N years writes ~N files --
+    the shape that a too-small cap would shred. Runs on the shipped default
+    rather than an override, so lowering that default far enough to fragment
+    real ingests fails here.
+    """
+    table = "reports_batch_multiyear"
+    assert _seed_commit(spark, table, SEED_COMMIT)
+    _derive(spark, table, tmp_path)  # establishes the streaming checkpoint
+
+    # One commit spanning four year partitions -> several files in one commit.
+    multi_year = []
+    for i, year in enumerate((2021, 2022, 2023, 2024)):
+        row = _row(f"s3://bucket/y{year}.hl7", f"ACCY{year}")
+        row["message_dt"] = row["message_dt"].replace(year=year)
+        row["requested_dt"] = row["observation_dt"] = row["message_dt"]
+        row["year"] = year
+        multi_year.append(tuple(row[f.name] for f in BASE_REPORTS_SCHEMA.fields))
+    df = spark.createDataFrame(multi_year, BASE_REPORTS_SCHEMA)
+    assert merge_report_df_into_table(spark, df, table)
+
+    with _record_batches() as seen:
+        _derive(spark, table, tmp_path)
+
+    curated = seen["curated"]
+    assert len(curated) == 1, (
+        "a multi-year (hence multi-file) commit must arrive as one micro-batch "
+        f"under the default cap; got {curated}"
+    )
+    assert curated[0]["rows"] == len(multi_year)
+
+
 def test_batching_does_not_change_derivative_contents(spark, runs):
     """Re-batching must be observationally equivalent: splitting the backlog into
     one micro-batch per commit produces the same curated/latest/dx state as

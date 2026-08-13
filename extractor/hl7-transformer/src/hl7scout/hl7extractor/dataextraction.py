@@ -21,16 +21,25 @@ from .derivativetable import DerivativeTable
 # ceiling, so an unbounded stream hands the whole accumulated backlog to one
 # cached micro-batch -- the shape that OOM-killed the preprod worker.
 #
-# This bounds the backlog, not the batch: a Delta commit is the floor of what
-# admission can split, because any commit whose MERGE matched existing rows
-# materializes _change_data files and is then admitted whole whatever the cap
-# says. So the effective guarantee is "at most one ingest per micro-batch".
-# Sizing follows from that -- set it below the smallest ingest commit and the
-# guarantee holds; going lower buys nothing on a table whose ingests write a
-# single file each (repartitionBeforeWrite collapses a single-year ingest to one
-# file, which is the steady state for `reports`).
+# This bounds coalescing, not the batch itself. Two floors admission cannot go
+# below, whatever the cap says:
+#   * a single file -- admission always takes at least one, and never splits one;
+#   * a commit carrying _change_data files (any MERGE that matched existing
+#     rows), which is admitted whole.
+#
+# Sizing, from 123 reconstructed prod ingest commits: median 15 MiB (daily
+# steady state), p95 2.9 GiB, max 3.4 GiB across 2 files, up to 8 files per
+# commit, largest single file ~1.9 GiB. Because admission keeps taking files
+# while budget remains, the worst batch is roughly (cap + one largest file).
+#
+# 2g therefore admits every observed commit whole -- the ingest activity already
+# built and merged a 3.4 GiB commit on this same worker and heap, so a derive
+# batch of that size is known-good and splitting one buys no headroom -- while
+# still capping a backlog of accumulated commits at ~2 GiB. Unbounded coalescing
+# of multi-GiB commits is what OOM-killed the preprod worker; Delta's default is
+# maxFilesPerTrigger=1000 with no byte ceiling at all.
 DERIVE_MAX_BYTES_CONF = "spark.scout.derive.maxBytesPerTrigger"
-DEFAULT_DERIVE_MAX_BYTES = "4m"
+DEFAULT_DERIVE_MAX_BYTES = "2g"
 
 
 def define_derivative_tables(report_table_name: str) -> dict[str, DerivativeTable]:
