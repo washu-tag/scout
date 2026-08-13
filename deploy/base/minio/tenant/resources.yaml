@@ -109,9 +109,11 @@ spec:
         path: /
         pathType: Prefix
         annotations:
+          # oauth2-proxy pair tracks ${oauth2_proxy_namespace}; security-headers is
+          # traefik-owned (kube-system), created outside this base at node bootstrap.
           traefik.ingress.kubernetes.io/router.middlewares: >-
-            kube-system-oauth2-proxy-error@kubernetescrd,
-            kube-system-oauth2-proxy-auth@kubernetescrd,
+            ${oauth2_proxy_namespace}-oauth2-proxy-error@kubernetescrd,
+            ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
             kube-system-security-headers@kubernetescrd
 ---
 # IAM policy documents, projected into the bootstrap Job at /policies/<name>.json.
