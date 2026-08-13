@@ -294,13 +294,7 @@ function ProfileCell({ profile }: { profile: Profile }) {
 
   const { buckets, bucketBounds, max, first, last } = profile;
   return (
-    <Histogram
-      buckets={buckets}
-      bucketBounds={bucketBounds}
-      max={max}
-      low={first.slice(0, 4)}
-      high={last.slice(0, 4)}
-    />
+    <Histogram buckets={buckets} bucketBounds={bucketBounds} max={max} low={first} high={last} />
   );
 }
 
