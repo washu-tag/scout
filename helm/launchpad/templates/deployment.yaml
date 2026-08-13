@@ -28,6 +28,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "launchpad.serviceAccountName" . }}
+      automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -133,6 +134,9 @@ spec:
           volumeMounts:
             - name: discovered
               mountPath: /app/config/discovered
+            - name: kube-api-access
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
         {{- end }}
       volumes:
         - name: catalog
@@ -142,6 +146,22 @@ spec:
         - name: discovered
           emptyDir:
             sizeLimit: {{ .Values.catalog.discovery.sizeLimit }}
+        - name: kube-api-access
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3607
+              - configMap:
+                  name: kube-root-ca.crt
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+              - downwardAPI:
+                  items:
+                    - path: namespace
+                      fieldRef:
+                        fieldPath: metadata.namespace
         {{- end }}
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}

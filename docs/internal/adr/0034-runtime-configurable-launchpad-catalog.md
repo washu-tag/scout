@@ -252,7 +252,9 @@ contract, exercised by many owners from day one.
 - New moving parts: one sidecar container (pinned + Renovate-watched, ADR 0015), zod
   and yaml as launchpad dependencies, and the repo's first explicitly-authored
   ClusterRole (ConfigMap get/list/watch, cluster-wide, attached to the launchpad pod's
-  ServiceAccount — shared by both containers, since ServiceAccounts are pod-scoped).
+  ServiceAccount). The token is projected only into the sidecar, so the app container
+  holds no API credentials; the cost is that the pod hand-rolls a volume the kubelet
+  would otherwise supply.
 - Any workload that can create a labelled ConfigMap in any namespace can put a chip on
   the front door. Mitigations: strict destination/icon validation, text-only
   rendering, per-chip degradation, admin-visible diagnostics. The residual
