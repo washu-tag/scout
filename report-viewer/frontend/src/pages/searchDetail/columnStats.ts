@@ -8,7 +8,7 @@ export type Profile =
   | {
       kind: 'numeric';
       buckets: number[];
-      bucketLabels: string[];
+      bucketBounds: Array<[string, string]>;
       max: number;
       min: number;
       hi: number;
@@ -23,7 +23,7 @@ export type Profile =
   | {
       kind: 'temporal';
       buckets: number[];
-      bucketLabels: string[];
+      bucketBounds: Array<[string, string]>;
       max: number;
       first: string;
       last: string;
@@ -54,7 +54,7 @@ function numericProfile(values: unknown[], widthAllows: number): Profile {
   return {
     kind: 'numeric',
     buckets,
-    bucketLabels: bucketRanges(min, hi, count, fmt),
+    bucketBounds: bucketBounds(min, hi, count, fmt),
     max: Math.max(...buckets),
     min,
     hi,
@@ -115,7 +115,7 @@ function temporalProfile(values: unknown[], widthAllows: number): Profile {
   return {
     kind: 'temporal',
     buckets,
-    bucketLabels: bucketRanges(first, last, count, dateFormat((last - first) / count)),
+    bucketBounds: bucketBounds(first, last, count, dateFormat((last - first) / count)),
     max: Math.max(...buckets),
     first: asDate(first),
     last: asDate(last),
@@ -131,13 +131,19 @@ function identifierProfile(values: unknown[]): Profile {
 // value gets one bucket, so the bar fills the cell instead of sitting at the
 // left as if it were a low reading. No spread means one bucket for the same
 // reason.
-function bucketRanges(lo: number, hi: number, count: number, fmt: (n: number) => string) {
+// Bounds as a pair, so the hover readout can pin them to the cell edges the way
+// the idle min and max line does.
+function bucketBounds(
+  lo: number,
+  hi: number,
+  count: number,
+  fmt: (n: number) => string,
+): Array<[string, string]> {
   const step = (hi - lo) / count;
-  return Array.from({ length: count }, (_, i) => {
-    const from = fmt(lo + step * i);
-    const to = fmt(i === count - 1 ? hi : lo + step * (i + 1));
-    return from === to ? from : `${from}-${to}`;
-  });
+  return Array.from({ length: count }, (_, i) => [
+    fmt(lo + step * i),
+    fmt(i === count - 1 ? hi : lo + step * (i + 1)),
+  ]);
 }
 
 // Granularity from the bucket width, not the whole span, otherwise adjacent

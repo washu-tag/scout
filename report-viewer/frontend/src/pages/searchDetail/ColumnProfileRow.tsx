@@ -164,13 +164,13 @@ function Categorical({ parts }: { parts: Array<Segment & { fill: string }> }) {
 
 function Histogram({
   buckets,
-  bucketLabels,
+  bucketBounds,
   max,
   low,
   high,
 }: {
   buckets: number[];
-  bucketLabels: string[];
+  bucketBounds: Array<[string, string]>;
   max: number;
   low: string;
   high: string;
@@ -210,15 +210,27 @@ function Histogram({
       {hovered === null ? (
         <RangeLabel low={low} high={high} />
       ) : (
-        <div style={{ ...labelStyle, color: 'var(--rv-fg)' }}>{bucketLabels[hovered]}</div>
+        <RangeLabel low={bucketBounds[hovered][0]} high={bucketBounds[hovered][1]} strong />
       )}
     </>
   );
 }
 
-function RangeLabel({ low, high }: { low: string; high: string }) {
-  if (low === high) return <div style={{ ...labelStyle, textAlign: 'center' }}>{low}</div>;
-  return <Label name={low} value={high} />;
+function RangeLabel({ low, high, strong }: { low: string; high: string; strong?: boolean }) {
+  if (low === high) {
+    return (
+      <div
+        style={{
+          ...labelStyle,
+          textAlign: 'center',
+          ...(strong ? { color: 'var(--rv-fg)', fontWeight: 600 } : null),
+        }}
+      >
+        {low}
+      </div>
+    );
+  }
+  return <Label name={low} value={high} strong={strong} />;
 }
 
 function Chip({ text }: { text: string }) {
@@ -268,11 +280,11 @@ function ProfileCell({ profile }: { profile: Profile }) {
   }
 
   if (profile.kind === 'numeric') {
-    const { buckets, bucketLabels, max, min, hi } = profile;
+    const { buckets, bucketBounds, max, min, hi } = profile;
     return (
       <Histogram
         buckets={buckets}
-        bucketLabels={bucketLabels}
+        bucketBounds={bucketBounds}
         max={max}
         low={num(min)}
         high={num(hi)}
@@ -280,11 +292,11 @@ function ProfileCell({ profile }: { profile: Profile }) {
     );
   }
 
-  const { buckets, bucketLabels, max, first, last } = profile;
+  const { buckets, bucketBounds, max, first, last } = profile;
   return (
     <Histogram
       buckets={buckets}
-      bucketLabels={bucketLabels}
+      bucketBounds={bucketBounds}
       max={max}
       low={first.slice(0, 4)}
       high={last.slice(0, 4)}
