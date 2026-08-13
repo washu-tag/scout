@@ -11,7 +11,11 @@ import { chartTheme } from './chartTheme';
 // the content being squeezed into a fixed box. Two bars should not get the
 // same height as twenty diagnoses.
 const MIN_HEIGHT = 320; // a two-bar chart should not be a sliver
-const CHROME = 60; // toolbar row + holder padding + borders
+// The explain panel is fixed to the iframe viewport at 80vh, so a short chart
+// would give it a letterbox. Grow the frame while it is open instead of
+// padding every small chart to suit a panel that is usually closed.
+const MODAL_HEIGHT = 520;
+const NON_CHART_PX = 50; // pixels the chart does not get: button row, padding, borders
 const BAND = 22; // pixels per category on a discrete axis
 const CONTINUOUS_HEIGHT = 300; // scatter/line: nothing to count, so pick one
 
@@ -72,6 +76,9 @@ function sizing(spec: Record<string, unknown>) {
 export default function PlotPage() {
   const { plotId = '' } = useParams<{ plotId: string }>();
   const holder = useRef<HTMLDivElement>(null);
+  // What the chart itself asked for, so the frame can be restored after the
+  // explain panel closes.
+  const naturalHeight = useRef(MIN_HEIGHT);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [dark, setDark] = useState(
@@ -93,6 +100,14 @@ export default function PlotPage() {
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, []);
+
+  // Give the explain panel room while it is open, then hand the frame back to
+  // the chart. Kept out of the render effect so opening it does not redraw.
+  useEffect(() => {
+    setIframeHeight(
+      sqlModalOpen ? Math.max(naturalHeight.current, MODAL_HEIGHT) : naturalHeight.current,
+    );
+  }, [sqlModalOpen]);
 
   const spec = useMemo(() => {
     if (!plot.data) return null;
@@ -133,8 +148,8 @@ export default function PlotPage() {
         // The drawing is done, so let the iframe take its actual size rather
         // than the chart being squeezed into a guess.
         const drawn = el.getBoundingClientRect().height;
-        const want = Math.ceil(drawn) + CHROME;
-        setIframeHeight(Math.max(MIN_HEIGHT, want));
+        naturalHeight.current = Math.max(MIN_HEIGHT, Math.ceil(drawn) + NON_CHART_PX);
+        setIframeHeight(naturalHeight.current);
       })
       .catch((err: unknown) => setRenderError(String(err)));
     return () => {
@@ -171,7 +186,7 @@ export default function PlotPage() {
           style={{
             display: 'flex',
             justifyContent: 'flex-end',
-            padding: '0.35rem 0.1rem 0',
+            padding: '0.3rem 0.1rem 0',
           }}
         >
           <button
