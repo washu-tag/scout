@@ -15,29 +15,8 @@ from .mappingtable import mapping_table
 from .derivativetable import DerivativeTable
 
 
-# Rate limit for every change-data-feed read in the derivative cascade, as a
-# Spark conf so a site can tune it through the chart's spark-defaults without a
-# code change. Delta's default admission is maxFilesPerTrigger=1000 with no byte
-# ceiling, so an unbounded stream hands the whole accumulated backlog to one
-# cached micro-batch -- the shape that OOM-killed the preprod worker.
-#
-# This bounds coalescing, not the batch itself. Two floors admission cannot go
-# below, whatever the cap says:
-#   * a single file -- admission always takes at least one, and never splits one;
-#   * a commit carrying _change_data files (any MERGE that matched existing
-#     rows), which is admitted whole.
-#
-# Sizing, from 123 reconstructed prod ingest commits: median 15 MiB (daily
-# steady state), p95 2.9 GiB, max 3.4 GiB across 2 files, up to 8 files per
-# commit, largest single file ~1.9 GiB. Because admission keeps taking files
-# while budget remains, the worst batch is roughly (cap + one largest file).
-#
-# 2g therefore admits every observed commit whole -- the ingest activity already
-# built and merged a 3.4 GiB commit on this same worker and heap, so a derive
-# batch of that size is known-good and splitting one buys no headroom -- while
-# still capping a backlog of accumulated commits at ~2 GiB. Unbounded coalescing
-# of multi-GiB commits is what OOM-killed the preprod worker; Delta's default is
-# maxFilesPerTrigger=1000 with no byte ceiling at all.
+# Rate limit for every change-data-feed read in the derivative cascade
+# Default size is roughly the largest measured single ingest commit
 DERIVE_MAX_BYTES_CONF = "spark.scout.derive.maxBytesPerTrigger"
 DEFAULT_DERIVE_MAX_BYTES = "2g"
 
@@ -74,12 +53,10 @@ def perform_table_operations(
 ):
     def streaming_function(batch_df, batch_id):
         cached_df = batch_df.cache()
-        # Log the source commit range alongside the row count: it is what makes
-        # the rate limit observable in Loki. A batch spanning >1 source version
-        # means the cap is too loose for this table's commit sizes, and a batch
-        # pinned to one version that is still huge means that single commit is
-        # the binding constraint (an update-bearing commit is admitted whole, so
-        # no cap can split it). Single pass over the already-cached batch.
+        # Log source commit range alongside row count so rate limit is observable.
+        # A batch spanning >1 source version means cap is too loose for table's commit sizes.
+        # A batch pinned to one version that is still huge means that single commit is
+        # the binding constraint.
         stats = cached_df.agg(
             F.count(F.lit(1)).alias("rows"),
             F.min("_commit_version").alias("first_version"),
