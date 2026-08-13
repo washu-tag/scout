@@ -6,7 +6,7 @@ import trino
 from pyspark.sql.streaming import StreamingQuery
 from temporalio import activity
 
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import DataFrame, SparkSession, functions as F
 
 from .curatedtable import curated_table
 from .diagnosistable import diagnosis_table
@@ -65,10 +65,24 @@ def perform_table_operations(
 ):
     def streaming_function(batch_df, batch_id):
         cached_df = batch_df.cache()
+        # Log the source commit range alongside the row count: it is what makes
+        # the rate limit observable in Loki. A batch spanning >1 source version
+        # means the cap is too loose for this table's commit sizes, and a batch
+        # pinned to one version that is still huge means that single commit is
+        # the binding constraint (an update-bearing commit is admitted whole, so
+        # no cap can split it). Single pass over the already-cached batch.
+        stats = cached_df.agg(
+            F.count(F.lit(1)).alias("rows"),
+            F.min("_commit_version").alias("first_version"),
+            F.max("_commit_version").alias("last_version"),
+        ).collect()[0]
         activity.logger.info(
-            "Processing batch (%d) for derivative tables with %d rows",
+            "Processing batch (%d) for derivative tables with %d rows "
+            "spanning source versions %s-%s",
             batch_id,
-            cached_df.count(),
+            stats["rows"],
+            stats["first_version"],
+            stats["last_version"],
         )
         try:
             for name, table in tables.items():
