@@ -23,6 +23,12 @@ hl7log_extractor_concurrency: 150
 # HL7 transformer activity timeouts (minutes): base ingest, and derivative-table derivation (#457).
 hl7_transformer_timeout: 480
 hl7_transformer_derive_timeout: 480
+# Rate limit for the derivative cascade's CDF reads. Bounds a backlog of
+# accumulated ingest commits to at most one ingest per Spark micro-batch.
+# Set below the smallest ingest commit (check numTargetBytesAdded in the
+# base table's Delta history); lower buys nothing once ingests write one
+# file each.
+hl7_transformer_derive_max_bytes_per_trigger: 4m
 # HL7 Transformer resources
 # Memory: requests = spark_memory, limits = 4x spark_memory to account for Spark overhead
 # Memory is computed in templates using jvm_memory_to_k8s filter (not computable here in defaults)

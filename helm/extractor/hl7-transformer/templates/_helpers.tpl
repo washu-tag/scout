@@ -96,6 +96,9 @@ spark.hadoop.fs.s3a.path.style.access {{ if $aws }}false{{ else }}true{{ end }}
 spark.hadoop.hive.metastore.uris {{ required "sparkDefaults.hiveMetastoreUri is required when sparkDefaults is enabled" $s.hiveMetastoreUri }}
 spark.sql.warehouse.dir {{ required "sparkDefaults.warehouseDir is required when sparkDefaults is enabled" $s.warehouseDir }}
 spark.sql.shuffle.partitions {{ $s.shufflePartitions }}
+# Bounds each derivative-cascade micro-batch to (at most) one ingest commit; see
+# hl7scout.hl7extractor.dataextraction.DERIVE_MAX_BYTES_CONF.
+spark.scout.derive.maxBytesPerTrigger {{ $s.deriveMaxBytesPerTrigger }}
 spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
 # Local mode (single JVM): spark.driver.memory is the live heap and
 # spark.executor.memory is inert; set both from the one value (as the on-prem

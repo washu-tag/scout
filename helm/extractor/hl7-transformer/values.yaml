@@ -137,6 +137,12 @@ sparkDefaults:
   enabled: false
   mode: on-prem
   shufflePartitions: 200
+  # Rate limit for the derivative cascade's change-data-feed reads. Bounds a
+  # backlog of accumulated ingest commits to (at most) one ingest per Spark
+  # micro-batch; without it Delta admits up to 1000 files with no byte ceiling
+  # and the whole backlog lands in one cached batch. Set below the smallest
+  # ingest commit; see dataextraction.DERIVE_MAX_BYTES_CONF.
+  deriveMaxBytesPerTrigger: 4m
   hiveMetastoreUri: ''
   warehouseDir: ''
   s3Region: us-east-1
