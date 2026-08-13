@@ -132,14 +132,20 @@ spec:
   # into configOverrides, merging with the inline keys below. Flux re-reconciles
   # on ConfigMap content change, so a .py edit still rolls the release.
   valuesFrom:
+    # literal: true is REQUIRED with targetPath here. Without it Flux feeds
+    # `configOverrides.trino_auth=<the whole .py>` to Helm's strvals parser, which
+    # reads the file's commas/=/{}/[] as --set syntax and errors the reconcile;
+    # literal:true escapes them and merges the file verbatim.
     - kind: ConfigMap
       name: superset-config-overrides
       valuesKey: superset_trino_auth.py
       targetPath: configOverrides.trino_auth
+      literal: true
     - kind: ConfigMap
       name: superset-config-overrides
       valuesKey: superset_metrics.py
       targetPath: configOverrides.prometheus_metrics
+      literal: true
   values:
     # Scout's custom Superset image (build-lane-stamped at publish; literal here).
     image:

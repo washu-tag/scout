@@ -47,16 +47,20 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
+  # `current` only, no `failed`: CNPG reports Cluster Ready=False and Database
+  # applied=false during NORMAL transients (cold initdb, single-instance restart,
+  # the owner-role-before-Database first-pass race). Flux evaluates failed before
+  # current and fail-fasts, so a `failed` expr keyed on those transients would abort
+  # the wait and, with no retryInterval, block every dependent for the 30m interval.
+  # Leaving transient states as in-progress lets the 10m timeout be the only failure
+  # path (CNPG's own Flux-example pattern).
   healthCheckExprs:
     - apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
       current: status.conditions.exists(e, e.type == 'Ready' && e.status == 'True')
-      failed: status.conditions.exists(e, e.type == 'Ready' && e.status == 'False')
-    # CNPG reconciles managed.roles + Database CRs AFTER the Cluster reports Ready,
-    # so gate on the Databases too (status.applied) — otherwise dependents (and the
-    # hive/db grant Job) could run before their DB/owner role exists. Database has
-    # no Ready condition; status.applied is its reconcile signal.
+    # Gate on the Databases too (status.applied): CNPG reconciles managed.roles +
+    # Database CRs AFTER the Cluster reports Ready, so without this a dependent (or
+    # the hive/db grant Job) could run before its DB/owner role exists.
     - apiVersion: postgresql.cnpg.io/v1
       kind: Database
       current: has(status.applied) && status.applied == true
-      failed: has(status.applied) && status.applied == false
