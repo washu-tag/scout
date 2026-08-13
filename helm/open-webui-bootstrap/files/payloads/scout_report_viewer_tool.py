@@ -165,6 +165,60 @@ class Tools:
 
         return self._render_search_summary(created)
 
+    async def scout_chart_sql(
+        self,
+        sql: str,
+        vega_lite_spec: dict,
+        __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
+        __oauth_token__: Any = None,
+        __metadata__: Optional[dict] = None,
+    ) -> str:
+        """Chart the result of a query and show it to the user. Use whenever
+        the user asks for a chart, plot, graph, distribution, trend,
+        histogram, or breakdown.
+
+        Write the SQL and the Vega-Lite spec together in this one call, and
+        **omit `data`** - the service runs the query and renders the chart
+        itself, so neither the spec nor the rows come back to you.
+
+        Always aggregate in the SQL so the query returns one row per mark -
+        `GROUP BY`, bucketing ages or dates yourself. Reference columns by
+        the names your SQL projects, e.g. `{"mark": "bar", "encoding":
+        {"x": {"field": "age_bracket", "type": "ordinal"},
+         "y": {"field": "patients", "type": "quantitative"}}}`.
+
+        :param sql: Trino SQL for the chart's rows, already aggregated.
+        :param vega_lite_spec: Vega-Lite spec with no `data` key.
+        :return: A one-line confirmation. The chart is rendered for the user
+            as an iframe above your message; reply with interpretation only.
+        """
+        await self._emit(__event_emitter__, "Building chart\u2026", done=False)
+        try:
+            plot = await self._post(
+                "/api/plots",
+                {
+                    "sql": sql,
+                    "vega_lite_spec": vega_lite_spec,
+                    "owui_chat_id": _chat_id(__metadata__),
+                },
+                oauth=__oauth_token__,
+            )
+        except ReportViewerServiceError as exc:
+            await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
+            return (
+                f"Error building chart: {exc}\n\n"
+                "Fix the SQL or the spec and call scout_chart_sql again."
+            )
+        n = plot.get("row_count", 0)
+        await self._emit(__event_emitter__, f"Chart ready ({n} rows)", done=True)
+        await self._emit_embed(__event_emitter__, plot["view_url"])
+        return (
+            f"Chart rendered for the user as an iframe above this message "
+            f"({n} data points over {', '.join(plot.get('columns') or [])}). "
+            "Do not restate the data, do not add a table, and do not write a "
+            "vega code fence. Reply with a short interpretation only."
+        )
+
     async def scout_query_sql(
         self,
         sql: str,

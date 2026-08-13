@@ -181,6 +181,16 @@ export function getSearchRows(searchId: string): Promise<RowsResponse> {
   return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows`);
 }
 
+export type PlotDetail = {
+  id: string;
+  spec: Record<string, unknown>;
+  rows: Array<Record<string, unknown>>;
+};
+
+export function getPlot(plotId: string): Promise<PlotDetail> {
+  return api<PlotDetail>(`/api/plots/${encodeURIComponent(plotId)}`);
+}
+
 // Filters the in-memory cohort: text = case-insensitive substring, multi =
 // membership, range = inclusive (message_dt compared on its YYYY-MM-DD prefix).
 export function filterRows(
