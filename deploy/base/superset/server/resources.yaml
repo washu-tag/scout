@@ -3,10 +3,8 @@
 # the metadata-DB bootstrap Job, the StatsD-exporter Service + mapping, and the
 # statsd/branding/OAuth wiring folded into the chart's superset_config.py.
 #
-# Namespace ${scout_analytics_namespace} (scout-analytics) is declared here. The
-# opa base is the other scout-analytics resident and declares this Namespace via
-# the same ${scout_analytics_namespace} var, so the two declarations are identical
-# (mirrors minio-tenant + hive-db co-declaring scout-data). The trino/keycloak
+# The ${scout_analytics_namespace} Namespace is owned solely by
+# scout-analytics-foundation (a dependsOn), not declared here. The trino/keycloak
 # dependsOn edges gate readiness, not namespace creation.
 #
 # Secret handling (never in git): the chart's own env Secret is disabled

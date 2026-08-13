@@ -167,6 +167,8 @@ spec:
       # imagePullPolicy is explicit because init containers specified via values
       # otherwise default to Always for a :latest tag, which breaks air-gapped/k3s
       # nodes that have the image loaded locally but no registry to pull from.
+      # This is a SECOND image literal (values.image is the main container's): keep
+      # the two in lockstep -- the config-artifact stamping job must rewrite both.
       - name: wait-for-temporal-dns
         image: ghcr.io/washu-tag/hl7-transformer:latest
         imagePullPolicy: IfNotPresent

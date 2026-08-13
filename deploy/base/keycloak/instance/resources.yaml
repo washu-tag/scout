@@ -2,16 +2,17 @@
 # configure.yaml: the Keycloak CR (operator-managed), its Postgres DB in the shared
 # CNPG cluster, the site Ingress, and the realm import via keycloak-config-cli.
 # dependsOn keycloak-operator (needs the Keycloak CRD) + postgres-cluster (the DB
-# init connects to the shared cluster). The Namespace is created by the operator
-# base, so it is NOT re-declared here (avoids prune/co-ownership conflict); every
-# resource sets namespace: "${keycloak_namespace}" explicitly.
+# init connects to the shared cluster). The Namespace is owned by
+# scout-core-foundation, so it is NOT re-declared here (avoids prune/co-ownership
+# conflict); every resource sets namespace: "${keycloak_namespace}" explicitly.
 #
 # Secrets are referenced by FIXED NAME only (seeded by CI/site in Phase 3, SOPS/ESO
 # in Phase 4, NEVER in git). The Ansible role created these from vault vars; here
 # they are pre-seeded:
 #   superuser-secret     — CNPG basic-auth (username/password); used by the DB-init Job.
 #   keycloak-db-secret   — username/password for the `keycloak` DB owner; the CR's
-#                          db creds AND the password the DB-init Job stamps on the role.
+#                          db creds AND the password the DB-init Job stamps; its
+#                          username MUST be `keycloak` (the Job hardcodes that role/db).
 #   keycloak-admin-secret— username/password for the bootstrap admin (bootstrapAdmin
 #                          + keycloak-config-cli's KEYCLOAK_PASSWORD).
 #   keycloak-config      — the realm import; key scout-realm.json (base64 of the

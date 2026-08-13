@@ -1,7 +1,7 @@
 # Single-node Cassandra datacenter (CassandraDatacenter CR) in the shared
-# ${scout_extractor_namespace}. cass-operator and this CR share that namespace
-# (the operator base creates it), so it is not re-declared here — unlike
-# elasticsearch, whose operator sits in a separate namespace. serverVersion is
+# ${scout_extractor_namespace}. cass-operator and this CR share that namespace,
+# owned by scout-extractor-foundation (both dependsOn it), so it is not re-declared
+# here. serverVersion is
 # pinned in versions.yaml (cassandra_server_version); literal until the stamping
 # job lands.
 apiVersion: cassandra.datastax.com/v1beta1

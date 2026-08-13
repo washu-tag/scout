@@ -2,10 +2,9 @@
 # JWT-authenticated HTTPS listener (8443); Trino validates tokens against
 # Keycloak's JWKS (ADR 0022 auth), OPA is the system access controller
 # (ADR 0020 authz), and the Delta catalog reads the lake through the *read-only*
-# Hive metastore. Lives in ${scout_analytics_namespace} alongside OPA; the OPA
-# component (a dependsOn, deployed first into the same namespace) owns the
-# Namespace object, so this base does not declare it -- avoids co-ownership /
-# prune conflicts, mirroring how the temporal base defers to its datastores.
+# Hive metastore. Lives in ${scout_analytics_namespace}; the Namespace is owned
+# solely by scout-analytics-foundation (a dependsOn), so this base does not declare
+# it -- avoids co-ownership / prune conflicts.
 #
 # TLS: Trino terminates HTTPS itself, so the coordinator needs a keystore. The
 # cert-manager Certificate below issues trino-tls (PKCS12) from the Scout

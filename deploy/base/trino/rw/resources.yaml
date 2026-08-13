@@ -5,11 +5,8 @@
 # the writable Hive metastore, it has no JWT/OPA/TLS (ingress is fenced by the
 # chart's NetworkPolicy instead), and a single small worker (DDL workload only).
 #
-# Unlike the read-only Trino (whose namespace is owned by its OPA dependsOn),
-# none of this component's deps (minio-tenant, hive-metastore) create
-# scout-extractor, so this base declares the Namespace -- mirroring the RW
-# Ansible role's "ensure namespace" task and the cassandra/elasticsearch/
-# extractor bases that co-declare it (identical objects, Flux SSA merges).
+# The ${scout_extractor_namespace} Namespace is owned solely by
+# scout-extractor-foundation (a dependsOn), so this base does not declare it.
 #
 # Secrets by fixed name only (seeded by CI/site in Phase 3, ESO in Phase 4;
 # NEVER in git):

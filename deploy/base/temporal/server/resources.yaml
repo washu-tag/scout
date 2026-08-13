@@ -1,8 +1,8 @@
 # Temporal server (the ingest-slice orchestrator). Persistence is external, so
 # this layer dependsOn the two datastores: Cassandra holds the default store,
 # Elasticsearch the visibility store. Both live in ${scout_extractor_namespace},
-# which the datastore components create -- this base does not declare the shared
-# Namespace (avoids co-ownership/prune conflicts with cassandra/elasticsearch).
+# whose Namespace is owned by scout-extractor-foundation -- this base does not
+# declare it (avoids co-ownership/prune conflicts).
 #
 # Frontend JWT authz + the web-UI ingress/OIDC that the Ansible role renders are
 # deliberately omitted: they are Keycloak-realm decomposition + site-edge

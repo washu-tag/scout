@@ -1,12 +1,11 @@
 # Valkey: the shared standalone cache/queue backing store (ADR 0031). A single
 # Valkey instance from the upstream valkey/valkey chart, consumed by
-# oauth2-proxy (session store), Superset, and open-webui (redis://). Layer 2,
-# no deps: it declares its own Namespace so it stands up without waiting on any
-# other component. It lands in ${valkey_namespace} (resolves to scout-core),
-# co-located with the CNPG cluster and the rest of scout-core. Uses the
-# valkey-specific namespace var -- the same var the Ansible role and every
-# consumer (superset, oauth2-proxy, open-webui, prometheus) reference --
-# matching the extractor base, which declares its own ${scout_extractor_namespace}.
+# oauth2-proxy (session store), Superset, and open-webui (redis://). It lands in
+# ${valkey_namespace} (resolves to scout-core), co-located with the CNPG cluster and
+# the rest of scout-core; the scout-core Namespace is owned solely by
+# scout-core-foundation (a dependsOn), and valkey uses the valkey-specific namespace
+# var -- the same var the Ansible role and every consumer (superset, oauth2-proxy,
+# open-webui, prometheus) reference -- for its own resources.
 #
 # Auth: ACL-enabled, keyed off the fixed-name `valkey-auth` Secret (keys
 # `password` for the default ACL user + `password-file` for the metrics

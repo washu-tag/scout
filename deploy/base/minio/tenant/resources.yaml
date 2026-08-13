@@ -45,6 +45,9 @@ spec:
         - name: MINIO_SCANNER_SPEED
           value: slowest
       pools:
+        # Single-node on-prem: Ansible sets servers from the minio_hosts inventory
+        # group, which envsubst cannot compute, so the base pins 1 (multi-host on-prem
+        # needs an overlay).
         - servers: 1
           name: pool-0
           volumesPerServer: 1
