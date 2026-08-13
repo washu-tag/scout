@@ -50,6 +50,8 @@ spec:
         port: 9083
       initialDelaySeconds: 5
       periodSeconds: 10
+    # Chart appends the empty cloud-provider env stubs (opt-in; see helm/hive-metastore).
+    cloudEnvStubs: true
     env:
       - name: HIVE_METASTORE_DRIVER
         value: org.postgresql.Driver
@@ -69,33 +71,6 @@ spec:
         value: '${s3_region}'
       - name: HIVE_METASTORE_USERS_IN_ADMIN_ROLE
         value: admin
-      # All of these empty values must be present (image entrypoint requirement).
-      - name: GOOGLE_CLOUD_KEY_FILE_PATH
-        value: ''
-      - name: AZURE_ADL_CLIENT_ID
-        value: ''
-      - name: AZURE_ADL_CREDENTIAL
-        value: ''
-      - name: AZURE_ADL_REFRESH_URL
-        value: ''
-      - name: AZURE_ABFS_STORAGE_ACCOUNT
-        value: ''
-      - name: AZURE_ABFS_ACCESS_KEY
-        value: ''
-      - name: AZURE_WASB_STORAGE_ACCOUNT
-        value: ''
-      - name: AZURE_ABFS_OAUTH
-        value: ''
-      - name: AZURE_ABFS_OAUTH_TOKEN_PROVIDER
-        value: ''
-      - name: AZURE_ABFS_OAUTH_CLIENT_ID
-        value: ''
-      - name: AZURE_ABFS_OAUTH_SECRET
-        value: ''
-      - name: AZURE_ABFS_OAUTH_ENDPOINT
-        value: ''
-      - name: AZURE_WASB_ACCESS_KEY
-        value: ''
     # S3_SECRET_KEY (+ HIVE_METASTORE_PASSWORD) sourced from the fixed-name secret;
     # seeded by CI/site (Phase 3) or ESO (Phase 4), never committed.
     envFrom:
