@@ -4,11 +4,14 @@ type Row = Record<string, unknown>;
 
 export type Segment = { label: string; count: number; pct: number };
 
+// An en dash, since a hyphen would run into the hyphens inside a date.
+const RANGE = ' – ';
+
 export type Profile =
   | {
       kind: 'numeric';
       buckets: number[];
-      bucketBounds: Array<[string, string]>;
+      bucketLabels: string[];
       max: number;
       min: number;
       hi: number;
@@ -23,7 +26,7 @@ export type Profile =
   | {
       kind: 'temporal';
       buckets: number[];
-      bucketBounds: Array<[string, string]>;
+      bucketLabels: string[];
       max: number;
       first: string;
       last: string;
@@ -31,14 +34,33 @@ export type Profile =
   | { kind: 'identifier'; distinct: number }
   | { kind: 'none' };
 
-function bucketize(values: number[], min: number, max: number, count: number): number[] {
-  const buckets = new Array<number>(count).fill(0);
-  const span = max - min;
+// Edges tile the axis, so the last one sits past the final value. Both profiles
+// snap their first edge to a round boundary, which means the edges can reach
+// outside the data; the idle line carries the true min and max instead.
+function buildEdges(first: number, last: number, next: (t: number) => number): number[] {
+  const edges = [first];
+  while (edges[edges.length - 1] <= last) edges.push(next(edges[edges.length - 1]));
+  return edges;
+}
+
+// Values must be sorted, so the edge index only ever moves forward.
+function countByEdges(values: number[], edges: number[]): number[] {
+  const buckets = new Array<number>(edges.length - 1).fill(0);
+  let i = 0;
   for (const v of values) {
-    const idx = span === 0 ? 0 : Math.min(count - 1, Math.floor(((v - min) / span) * count));
-    buckets[idx] += 1;
+    while (i + 1 < buckets.length && v >= edges[i + 1]) i += 1;
+    buckets[i] += 1;
   }
   return buckets;
+}
+
+// 1, 2, 5 or 10 times a power of ten: the smallest such step that keeps the
+// bucket count within target. Ages land on 5s and 10s, which read as age bands
+// rather than as wherever the youngest patient in the cohort happened to fall.
+function niceStep(span: number, target: number): number {
+  const rough = span / target;
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  return ([1, 2, 5].find((m) => rough <= m * magnitude) ?? 10) * magnitude;
 }
 
 function numericProfile(values: unknown[], widthAllows: number): Profile {
@@ -47,14 +69,27 @@ function numericProfile(values: unknown[], widthAllows: number): Profile {
   const sorted = [...nums].sort((a, b) => a - b);
   const min = sorted[0];
   const hi = sorted[sorted.length - 1];
-  const count = bucketsFor(nums.length, hi > min, widthAllows);
-  const step = (hi - min) / count;
-  const fmt = (n: number) => (step >= 1 ? String(Math.round(n)) : n.toFixed(1));
-  const buckets = bucketize(nums, min, hi, count);
+
+  const target = bucketsFor(nums.length, hi > min, widthAllows);
+  // An integer column gets an integer step, so a narrow age range bins in years
+  // rather than in halves of one.
+  const rough = hi > min ? niceStep(hi - min, target) : 1;
+  const step = sorted.every(Number.isInteger) ? Math.max(1, rough) : rough;
+  const edges = buildEdges(Math.floor(min / step) * step, hi, (v) => v + step);
+
+  // Round to the step, which both suits the granularity and clears the float
+  // noise that dividing by a fractional step leaves on the edges.
+  const decimals = Math.max(0, -Math.floor(Math.log10(step)));
+  const fmt = (n: number) => n.toFixed(decimals);
+  const buckets = countByEdges(sorted, edges);
   return {
     kind: 'numeric',
     buckets,
-    bucketBounds: bucketBounds(min, hi, count, fmt),
+    // One value is not a range.
+    bucketLabels:
+      hi > min
+        ? edges.slice(0, -1).map((e, i) => `${fmt(e)}${RANGE}${fmt(edges[i + 1])}`)
+        : [fmt(min)],
     max: Math.max(...buckets),
     min,
     hi,
@@ -99,16 +134,22 @@ function categoricalProfile(rows: Row[], field: string): Profile {
   };
 }
 
-// Time buckets are calendar intervals, not equal slices of the span. An equal
-// slice starting mid-March cannot be named, so it needs both bounds spelled out
-// and they do not fit the column; a whole month is named completely by
-// "2021-03". Same ladder-and-grain approach d3 and Vega-Lite take.
-type Grain = { slice: [number, number]; coarser: Grain | null };
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
-const G_YEAR: Grain = { slice: [0, 4], coarser: null };
-const G_MONTH: Grain = { slice: [0, 7], coarser: G_YEAR };
-const G_DATE: Grain = { slice: [0, 10], coarser: G_MONTH };
-const G_TIME: Grain = { slice: [11, 16], coarser: G_DATE };
+// Time buckets are calendar intervals, not equal slices of the span. An equal
+// slice starting mid-March has no name, while a whole month is named completely
+// by "2021-03". Same ladder-and-grain approach d3 and Vega-Lite take.
+//
+// `unit` is how much time one label at this grain accounts for, which is what
+// decides whether a bucket needs its end spelled out.
+type Grain = { slice: [number, number]; unit: number; coarser: Grain | null };
+
+const G_YEAR: Grain = { slice: [0, 4], unit: 365 * DAY, coarser: null };
+const G_MONTH: Grain = { slice: [0, 7], unit: 30 * DAY, coarser: G_YEAR };
+const G_DATE: Grain = { slice: [0, 10], unit: DAY, coarser: G_MONTH };
+const G_TIME: Grain = { slice: [11, 16], unit: MINUTE, coarser: G_DATE };
 
 const iso = (t: number, [from, to]: [number, number]) => new Date(t).toISOString().slice(from, to);
 
@@ -117,12 +158,23 @@ type Interval = {
   floor: (t: number) => number;
   next: (t: number) => number;
   grain: Grain;
+  // A label names the whole bucket only when the bucket is one unit of its
+  // grain. Anything wider gets a range, because only one label shows at a time:
+  // there is no run of ticks to read the spacing off, so "2025-09-25" on a week
+  // bucket reads as a single day.
+  oneUnit: boolean;
 };
 
 // Every fixed step divides a day evenly and the epoch is a UTC midnight, so
 // flooring against it lands on a real clock boundary.
 function stepInterval(ms: number, grain: Grain): Interval {
-  return { width: ms, floor: (t) => Math.floor(t / ms) * ms, next: (t) => t + ms, grain };
+  return {
+    width: ms,
+    floor: (t) => Math.floor(t / ms) * ms,
+    next: (t) => t + ms,
+    grain,
+    oneUnit: ms === grain.unit,
+  };
 }
 
 function monthInterval(months: number): Interval {
@@ -137,6 +189,7 @@ function monthInterval(months: number): Interval {
       return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months, 1);
     },
     grain: G_MONTH,
+    oneUnit: months === 1,
   };
 }
 
@@ -146,12 +199,9 @@ function yearInterval(years: number): Interval {
     floor: (t) => Date.UTC(Math.floor(new Date(t).getUTCFullYear() / years) * years, 0, 1),
     next: (t) => Date.UTC(new Date(t).getUTCFullYear() + years, 0, 1),
     grain: G_YEAR,
+    oneUnit: years === 1,
   };
 }
-
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
 
 const LADDER: Interval[] = [
   stepInterval(MINUTE, G_TIME),
@@ -194,27 +244,24 @@ function temporalProfile(values: unknown[], widthAllows: number): Profile {
   const first = times[0];
   const last = times[times.length - 1];
   const interval = pickInterval(first, last, bucketsFor(times.length, last > first, widthAllows));
-
-  const edges = [interval.floor(first)];
-  while (edges[edges.length - 1] <= last) edges.push(interval.next(edges[edges.length - 1]));
-
-  const buckets = new Array<number>(edges.length - 1).fill(0);
-  let i = 0;
-  for (const t of times) {
-    while (i + 1 < buckets.length && t >= edges[i + 1]) i += 1;
-    buckets[i] += 1;
-  }
+  const edges = buildEdges(interval.floor(first), last, interval.next);
+  const buckets = countByEdges(times, edges);
 
   // Bucket labels carry the fine detail, so the idle line carries one step of
   // coarser context instead of repeating it in every bucket. On a cohort inside
   // a single interval both ends match and it collapses to one label.
   const context = interval.grain.coarser ?? interval.grain;
+  const label = (t: number) => iso(t, interval.grain.slice);
   return {
     kind: 'temporal',
     buckets,
-    bucketBounds: edges
+    // The end is the last instant inside the bucket, not the next bucket's
+    // start, so consecutive labels do not appear to share a day.
+    bucketLabels: edges
       .slice(0, -1)
-      .map((e): [string, string] => [iso(e, interval.grain.slice), iso(e, interval.grain.slice)]),
+      .map((e, i) =>
+        interval.oneUnit ? label(e) : `${label(e)}${RANGE}${label(edges[i + 1] - 1)}`,
+      ),
     max: Math.max(...buckets),
     first: iso(first, context.slice),
     last: iso(last, context.slice),
@@ -224,21 +271,6 @@ function temporalProfile(values: unknown[], widthAllows: number): Profile {
 function identifierProfile(values: unknown[]): Profile {
   const distinct = new Set(values.map((v) => String(v)));
   return { kind: 'identifier', distinct: distinct.size };
-}
-
-// Bounds as a pair, so the hover readout can pin them to the cell edges the way
-// the idle min and max line does.
-function bucketBounds(
-  lo: number,
-  hi: number,
-  count: number,
-  fmt: (n: number) => string,
-): Array<[string, string]> {
-  const step = (hi - lo) / count;
-  return Array.from({ length: count }, (_, i) => [
-    fmt(lo + step * i),
-    fmt(i === count - 1 ? hi : lo + step * (i + 1)),
-  ]);
 }
 
 // Square-root binning capped by what the column width can show. No floor: one

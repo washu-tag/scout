@@ -164,13 +164,13 @@ function Categorical({ parts }: { parts: Array<Segment & { fill: string }> }) {
 
 function Histogram({
   buckets,
-  bucketBounds,
+  bucketLabels,
   max,
   low,
   high,
 }: {
   buckets: number[];
-  bucketBounds: Array<[string, string]>;
+  bucketLabels: string[];
   max: number;
   low: string;
   high: string;
@@ -210,27 +210,34 @@ function Histogram({
       {hovered === null ? (
         <RangeLabel low={low} high={high} />
       ) : (
-        <RangeLabel low={bucketBounds[hovered][0]} high={bucketBounds[hovered][1]} strong />
+        <CenterLabel text={bucketLabels[hovered]} strong />
       )}
     </>
   );
 }
 
-function RangeLabel({ low, high, strong }: { low: string; high: string; strong?: boolean }) {
-  if (low === high) {
-    return (
-      <div
-        style={{
-          ...labelStyle,
-          textAlign: 'center',
-          ...(strong ? { color: 'var(--rv-fg)', fontWeight: 600 } : null),
-        }}
-      >
-        {low}
-      </div>
-    );
-  }
-  return <Label name={low} value={high} strong={strong} />;
+function CenterLabel({ text, strong }: { text: string; strong?: boolean }) {
+  return (
+    <div
+      style={{
+        ...labelStyle,
+        textAlign: 'center',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        ...(strong ? { color: 'var(--rv-fg)', fontWeight: 600 } : null),
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
+// Pinning bounds to the cell edges says "this spans the whole cell", which is
+// true of the idle range and not of one hovered bucket.
+function RangeLabel({ low, high }: { low: string; high: string }) {
+  if (low === high) return <CenterLabel text={low} />;
+  return <Label name={low} value={high} />;
 }
 
 function Chip({ text }: { text: string }) {
@@ -280,11 +287,11 @@ function ProfileCell({ profile }: { profile: Profile }) {
   }
 
   if (profile.kind === 'numeric') {
-    const { buckets, bucketBounds, max, min, hi } = profile;
+    const { buckets, bucketLabels, max, min, hi } = profile;
     return (
       <Histogram
         buckets={buckets}
-        bucketBounds={bucketBounds}
+        bucketLabels={bucketLabels}
         max={max}
         low={num(min)}
         high={num(hi)}
@@ -292,9 +299,9 @@ function ProfileCell({ profile }: { profile: Profile }) {
     );
   }
 
-  const { buckets, bucketBounds, max, first, last } = profile;
+  const { buckets, bucketLabels, max, first, last } = profile;
   return (
-    <Histogram buckets={buckets} bucketBounds={bucketBounds} max={max} low={first} high={last} />
+    <Histogram buckets={buckets} bucketLabels={bucketLabels} max={max} low={first} high={last} />
   );
 }
 
