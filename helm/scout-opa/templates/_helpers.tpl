@@ -16,7 +16,10 @@ app: {{ include "scout-opa.fullname" . }}
 
 {{/* Hash of all content the Deployment must pick up via pod restart:
      policy file, static data document, bundle plugin config, and the
-     bundle-reader credentials hash supplied by the Ansible role. */}}
+     bundle-reader credentials hash supplied by the Ansible role. Hashes the
+     EFFECTIVE rego (chart file when no override) so an in-place edit to
+     files/main.rego still rolls pods at the fixed dev chart version. */}}
 {{- define "scout-opa.policyHash" -}}
-{{- printf "%s%s%s%s" .Values.policy.rego .Values.data.json .Values.config.yaml .Values.bundleReader.credsHash | sha256sum | trunc 8 -}}
+{{- $rego := .Values.policy.rego | default (.Files.Get "files/main.rego") -}}
+{{- printf "%s%s%s%s" $rego .Values.data.json .Values.config.yaml .Values.bundleReader.credsHash | sha256sum | trunc 8 -}}
 {{- end }}

@@ -18,7 +18,9 @@ resources:
 
 # Multi-line content rendered into the OPA policy ConfigMap. The
 # policy-hash annotation on the Deployment forces a rollout when any
-# of these change.
+# of these change. An empty policy.rego falls back to the chart-owned
+# files/main.rego (the authoritative Trino policy, ADR 0020); the opa
+# Ansible role overrides it via lookup for byte-parity on the live path.
 policy:
   rego: ''
 data:
