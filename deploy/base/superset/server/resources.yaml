@@ -35,11 +35,13 @@ spec:
   interval: 1h
   url: https://apache.github.io/superset
 ---
-# StatsD-exporter mapping for the sidecar (chart-free side object, mirrors the
-# Ansible role's superset-statsd-mapping ConfigMap). The $1/$2/$3 statsd_exporter
-# regex backreferences are $$-escaped: drone/envsubst treats a digit-led $N as a
-# variable (the nginx rewrite-target footgun), so an unescaped $1 would fail
-# StrictPostBuildSubstitutions; $$1 emits a literal $1 for statsd_exporter.
+# StatsD-exporter mapping for the sidecar. Single-sourced in spirit from
+# ansible/roles/superset/files/statsd_mapping.yaml (kept byte-identical modulo the
+# escaping below), but INLINE rather than a generated ConfigMap: its literal
+# $1/$2/$3 statsd_exporter backrefs need substitute:disabled while its
+# ${scout_analytics_namespace} needs substitution, and one Flux annotation can't do
+# both. The $$1/$$2/$$3 are $$-escaped so drone/envsubst leaves a literal $1/$2/$3
+# (a digit-led $N is otherwise a substitution target -- the nginx rewrite footgun).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -48,10 +50,10 @@ metadata:
 data:
   statsd_mapping.yaml: |
     mappings:
-      # ----------------------------------------------------------------------
+      # --------------------------------------------------------------------------
       # REST API timings
       # Pattern: superset.<XRestApi>.<method>.time
-      # ----------------------------------------------------------------------
+      # --------------------------------------------------------------------------
       - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.time"
         match_type: regex
         name: 'superset_api_request_duration_ms'
@@ -62,10 +64,10 @@ data:
         histogram_options:
           buckets: [10, 50, 100, 250, 500, 1000, 2500]
 
-      # ----------------------------------------------------------------------
+      # --------------------------------------------------------------------------
       # REST API counters
       # Pattern: superset.<XRestApi>.<method>.<status>
-      # ----------------------------------------------------------------------
+      # --------------------------------------------------------------------------
       - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.(\\w+)"
         match_type: regex
         name: 'superset_api_requests_total'
@@ -74,9 +76,9 @@ data:
           method: '$$2'
           status: '$$3'
 
-      # ----------------------------------------------------------------------
+      # --------------------------------------------------------------------------
       # Drop everything else
-      # ----------------------------------------------------------------------
+      # --------------------------------------------------------------------------
       - match: '.'
         match_type: regex
         action: drop
@@ -124,6 +126,20 @@ spec:
         kind: HelmRepository
         name: superset
         namespace: '${scout_analytics_namespace}'
+  # The two large configOverrides copies (trino_auth, prometheus_metrics) and the
+  # statsd mapping are single-sourced from files in this base via a
+  # configMapGenerator (kustomization.yaml); valuesFrom deep-sets the two leaves
+  # into configOverrides, merging with the inline keys below. Flux re-reconciles
+  # on ConfigMap content change, so a .py edit still rolls the release.
+  valuesFrom:
+    - kind: ConfigMap
+      name: superset-config-overrides
+      valuesKey: superset_trino_auth.py
+      targetPath: configOverrides.trino_auth
+    - kind: ConfigMap
+      name: superset-config-overrides
+      valuesKey: superset_metrics.py
+      targetPath: configOverrides.prometheus_metrics
   values:
     # Scout's custom Superset image (build-lane-stamped at publish; literal here).
     image:
@@ -327,284 +343,6 @@ spec:
         FEATURE_FLAGS = {
             "CACHE_QUERY_BY_USER": True,
         }
-      prometheus_metrics: |
-        """
-        Superset database metrics for Prometheus.
-
-        Provides connection pool metrics for Superset's metadata database.
-
-        Metrics exposed:
-        - superset_db_pool_size: Configured pool size
-        - superset_db_pool_max_overflow: Configured max overflow connections
-        - superset_db_pool_checked_in: Available connections in pool
-        - superset_db_pool_checked_out: Connections currently in use
-        - superset_db_pool_overflow: Overflow connections in use (always >= 0)
-        """
-
-        import logging
-        import threading
-
-        from flask import Flask
-        from prometheus_client import Gauge, make_wsgi_app
-        from sqlalchemy import event
-        from sqlalchemy.pool import Pool
-        from werkzeug.middleware.dispatcher import DispatcherMiddleware
-
-        logger = logging.getLogger(__name__)
-
-        # Connection pool metrics (Gauges)
-        db_pool_size = Gauge(
-            "superset_db_pool_size",
-            "Database connection pool size (configured)",
-        )
-        db_pool_max_overflow = Gauge(
-            "superset_db_pool_max_overflow",
-            "Maximum overflow connections (configured)",
-        )
-        db_pool_checked_in = Gauge(
-            "superset_db_pool_checked_in",
-            "Checked in (available) connections",
-        )
-        db_pool_checked_out = Gauge(
-            "superset_db_pool_checked_out",
-            "Checked out (in use) connections",
-        )
-        db_pool_overflow = Gauge(
-            "superset_db_pool_overflow",
-            "Overflow connections currently in use",
-        )
-
-
-        def _update_pool_metrics(pool) -> None:
-            """Update all pool metrics for a given pool."""
-            try:
-                pool_size = pool.size()
-                max_overflow = getattr(pool, "_max_overflow", 0)
-                checked_in = pool.checkedin()
-                checked_out = pool.checkedout()
-                overflow_in_use = max(0, checked_out - pool_size)
-
-                db_pool_size.set(pool_size)
-                db_pool_max_overflow.set(max_overflow)
-                db_pool_checked_in.set(checked_in)
-                db_pool_checked_out.set(checked_out)
-                db_pool_overflow.set(overflow_in_use)
-            except Exception as e:
-                logger.debug(f"Error updating pool metrics: {e}")
-
-
-        @event.listens_for(Pool, "connect")
-        def on_pool_connect(dbapi_conn, connection_record):
-            """Called when a new DBAPI connection is created."""
-            try:
-                pool = getattr(connection_record, "_pool", None)
-                if pool is None:
-                    from superset import db
-
-                    pool = db.engine.pool
-
-                if pool:
-                    _update_pool_metrics(pool)
-            except Exception as e:
-                logger.debug(f"Error in on_pool_connect: {e}")
-
-
-        @event.listens_for(Pool, "checkout")
-        def on_pool_checkout(dbapi_conn, connection_record, connection_proxy):
-            """Called when a connection is retrieved from the pool."""
-            try:
-                pool = getattr(connection_record, "_pool", None)
-                if pool is None:
-                    from superset import db
-
-                    pool = db.engine.pool
-
-                if pool:
-                    _update_pool_metrics(pool)
-            except Exception as e:
-                logger.debug(f"Error in on_pool_checkout: {e}")
-
-
-        @event.listens_for(Pool, "checkin")
-        def on_pool_checkin(dbapi_conn, connection_record):
-            """Called when a connection is returned to the pool."""
-            try:
-                pool = getattr(connection_record, "_pool", None)
-                if pool is None:
-                    from superset import db
-
-                    pool = db.engine.pool
-
-                if pool:
-                    _update_pool_metrics(pool)
-            except Exception as e:
-                logger.debug(f"Error in on_pool_checkin: {e}")
-
-
-        def _periodic_pool_update(interval: int = 15) -> None:
-            """
-            Periodically update pool metrics for Superset's main database.
-
-            This ensures metrics are fresh even if no pool events occur.
-            """
-            while True:
-                try:
-                    from superset import db
-
-                    pool = db.engine.pool
-                    _update_pool_metrics(pool)
-                except Exception as e:
-                    logger.debug(f"Error in periodic pool update: {e}")
-
-                threading.Event().wait(interval)
-
-
-        def setup_metrics(app: Flask) -> Flask:
-            """
-            Configure Prometheus metrics endpoint and start background tasks.
-
-            This function is called by Superset via FLASK_APP_MUTATOR.
-            """
-            metrics_thread = threading.Thread(
-                target=_periodic_pool_update, args=(15,), daemon=True, name="superset-metrics"
-            )
-            metrics_thread.start()
-            logger.info("Started Superset metrics collection thread")
-
-            app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
-
-            return app
-
-
-        FLASK_APP_MUTATOR = setup_metrics
-      trino_auth: |
-        """Superset DB_CONNECTION_MUTATOR for Trino with per-user impersonation.
-
-        Pattern: Superset connects to Trino as the `superset_svc` Keycloak service
-        principal (client_credentials grant), and impersonates the logged-in
-        Superset user via the X-Trino-User HTTP header. Trino's OPA policy
-        permits superset_svc to impersonate any user; the actual data-access
-        decision uses the impersonated user's Keycloak attributes
-        (allowed_facilities, redact_select_identifiers).
-
-        Token caching: a single service-principal token is reused across all
-        connections until ~80% of its lifetime has elapsed, then refreshed. The
-        cache is process-local -- each Superset worker mints its own token.
-        """
-
-        import os
-        import time
-        import threading
-        import requests
-        from flask import has_request_context
-        from trino.auth import JWTAuthentication
-
-        _TOKEN_CACHE: dict = {"access_token": None, "expires_at": 0.0}
-        _TOKEN_LOCK = threading.Lock()
-        _REFRESH_BEFORE_EXPIRY_SECONDS = 60
-
-
-        def _mint_token() -> str:
-            """Fetch a fresh client_credentials token from Keycloak."""
-            response = requests.post(
-                os.environ["KEYCLOAK_TOKEN_URL"],
-                data={
-                    "grant_type": "client_credentials",
-                    "client_id": os.environ["KEYCLOAK_SUPERSET_SVC_CLIENT_ID"],
-                    "client_secret": os.environ["KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET"],
-                },
-                timeout=10,
-            )
-            response.raise_for_status()
-            payload = response.json()
-            _TOKEN_CACHE["access_token"] = payload["access_token"]
-            _TOKEN_CACHE["expires_at"] = (
-                time.time() + payload["expires_in"] - _REFRESH_BEFORE_EXPIRY_SECONDS
-            )
-            return _TOKEN_CACHE["access_token"]
-
-
-        def _get_token() -> str:
-            """Return a cached token if still valid, else refresh."""
-            with _TOKEN_LOCK:
-                if _TOKEN_CACHE["access_token"] and time.time() < _TOKEN_CACHE["expires_at"]:
-                    return _TOKEN_CACHE["access_token"]
-                return _mint_token()
-
-
-        def _in_celery_task() -> bool:
-            """True when executing inside a Celery worker task.
-
-            Async SQL Lab, Alerts & Reports, and cache warm-up run queries in a
-            Celery worker with no Flask request context, but under override_user()
-            (see superset/sql_lab.py get_sql_results), so `username` here is the real
-            querying user and the connection should still impersonate.
-
-            Detected via Celery's task-local stack: `current_task` is a Proxy over
-            _task_stack.top, which is None outside a task -- so the `.request`
-            attribute access raises and we return False. Inside a task it resolves to
-            the running task whose `request.id` is set. (`current_task is None` is NOT
-            usable: the Proxy is never `is None`.)
-            """
-            try:
-                from celery import current_task
-
-                return current_task.request.id is not None
-            except Exception:
-                return False
-
-
-        def DB_CONNECTION_MUTATOR(
-            uri, params, username, security_manager, source
-        ):  # noqa: N802
-            """Inject service-principal JWT + user impersonation into Trino connections.
-
-            Called by Superset on every database connection open. The second
-            argument is `params` -- the kwargs dict passed to
-            `sqlalchemy.create_engine(...)`. DB-API connection args go in
-            `params["connect_args"]`, not at the top level (SQLAlchemy raises
-            TypeError on unrecognized top-level kwargs).
-
-            For non-Trino backends this is a no-op. For Trino we set:
-              - connect_args["auth"]: JWTAuthentication(<service token>) -- the
-                trino-python-client wires this into the http session's auth
-                attribute and adds Authorization: Bearer to every request.
-              - connect_args["http_scheme"]: "https" -- explicit so URL construction
-                targets the HTTPS listener (the URL query param sometimes drops).
-              - connect_args["verify"]: path to the Trino CA bundle (the trino
-                client passes this through to requests for cert verification).
-              - connect_args["user"]: the Superset logged-in user; trino-python-
-                client sends it as X-Trino-User. OPA verifies superset_svc is
-                allowed to impersonate, then evaluates all subsequent operations
-                as the impersonated user.
-            """
-            if uri.get_backend_name() != "trino":
-                return uri, params
-            connect_args = params.setdefault("connect_args", {})
-            connect_args["auth"] = JWTAuthentication(_get_token())
-            connect_args.setdefault("http_scheme", "https")
-            connect_args.setdefault("verify", os.environ.get("TRINO_CA_CERT", True))
-            # Set X-Trino-User to impersonate the end user in any *real-user* context:
-            #   - a Flask request (Superset UI, sync SQL Lab, API, dashboard render)
-            #   - a Celery task (async SQL Lab, Alerts & Reports, cache warm-up) --
-            #     these run under override_user(), so `username` is the real querying
-            #     user even though there's no request context.
-            #
-            # The one context we deliberately skip is the bare import CLI -- the
-            # scout-dashboards-import Job's `superset import-dashboards -u admin`,
-            # which is neither a request nor a Celery task. Its `username` is the
-            # Superset bootstrap admin, which doesn't exist in OPA's data.users;
-            # skipping impersonation lets the connection fall through to the JWT's
-            # own principal (Trino user-mapping strips `service-account-` to leave
-            # `superset_svc`, which OPA's is_system_identity rule allows) so the
-            # import's SHOW CATALOGS / SHOW TABLES dataset validation works.
-            #
-            # Gating on request-context alone would wrongly skip the Celery paths and
-            # clamp every async query to zero rows; gating on username alone can't
-            # tell the bootstrap admin apart from a real user named "admin".
-            if username and (has_request_context() or _in_celery_task()):
-                connect_args["user"] = username
-            return uri, params
       statsd_logging: |
         from superset.stats_logger import StatsdStatsLogger
         STATS_LOGGER = StatsdStatsLogger(
