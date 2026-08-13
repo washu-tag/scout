@@ -45,8 +45,9 @@ spec:
     # renders a same-namespace NetworkPolicy; see helm/scout-opa/templates/networkpolicy.yaml).
     networkPolicy:
       enabled: true
-    # Upstream OPA image, tag pinned in versions.yaml (opa_image_tag), Renovate-tracked;
-    # stamped at config-artifact publish. Literal here until the stamping job lands.
+    # Upstream OPA image, tag pinned in versions.yaml (opa_image_tag) -- Renovate-tracked
+    # there, not in deploy/. Literal mirror (upstream image, not stamped); keep in
+    # lockstep with versions.yaml.
     image:
       repository: openpolicyagent/opa
       tag: '1.16.2'

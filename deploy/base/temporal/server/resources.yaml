@@ -28,8 +28,9 @@ spec:
   # Mirrors the Ansible helm timeout: the chart's schema-setup Jobs (Cassandra
   # keyspace + Elasticsearch visibility index) run at install and take a while.
   timeout: 15m
-  # Version pinned in versions.yaml (temporal_version), Renovate-tracked; stamped
-  # into the config artifact at publish. Literal here until the stamping job lands.
+  # Version pinned in versions.yaml (temporal_version) -- Renovate-tracked there, not
+  # in deploy/. Literal mirror (not stamped; the stamper covers only Scout
+  # charts/images); keep in lockstep with versions.yaml.
   chart:
     spec:
       chart: temporal

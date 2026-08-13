@@ -27,9 +27,9 @@ metadata:
   namespace: '${valkey_namespace}'
 spec:
   interval: 30m
-  # Version pinned in versions.yaml (valkey_chart_version), Renovate-tracked;
-  # stamped into the config artifact at publish. Literal here until the stamping
-  # job lands.
+  # Version pinned in versions.yaml (valkey_chart_version) -- Renovate-tracked there,
+  # not in deploy/. Literal mirror (not stamped; the stamper covers only Scout
+  # charts/images); keep in lockstep with versions.yaml.
   chart:
     spec:
       chart: valkey

@@ -43,8 +43,9 @@ spec:
 ---
 # The operator-managed Keycloak instance. Image is ghcr.io/washu-tag/keycloak (the
 # Scout build with the OpaUserBundlePublisher SPI) tagged with keycloak_version
-# (26.6.4) from group_vars/all/versions.yaml, Renovate-tracked; stamped at
-# config-artifact publish, literal here until the stamping job lands.
+# (26.6.4) from group_vars/all/versions.yaml (Renovate-tracked there); this Scout
+# image IS stamped from the build-lane haul at config-artifact publish, literal
+# here until then.
 # additionalOptions mirror the role's _keycloak_base_options: metrics/event-metrics
 # + the ADR 0021 OpaUserBundlePublisher config (the operator maps additionalOptions
 # name=foo-bar to env KC_FOO_BAR, which the SPI factory reads). The air-gapped IdP

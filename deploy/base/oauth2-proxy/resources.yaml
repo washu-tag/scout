@@ -44,9 +44,9 @@ metadata:
   namespace: '${oauth2_proxy_namespace}'
 spec:
   interval: 30m
-  # Version pinned in versions.yaml (oauth2_proxy_chart_version, range ~10.6.2),
-  # Renovate-tracked; stamped into the config artifact at publish. Literal floor
-  # here until the stamping job lands.
+  # Version pinned in versions.yaml (oauth2_proxy_chart_version, range ~10.6.2) --
+  # Renovate-tracked there, not in deploy/. Literal mirror (not stamped; the stamper
+  # covers only Scout charts/images); keep in lockstep with versions.yaml.
   chart:
     spec:
       chart: oauth2-proxy

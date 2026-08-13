@@ -21,8 +21,9 @@ metadata:
   namespace: '${minio_tenant_namespace}'
 spec:
   interval: 30m
-  # Version pinned in versions.yaml (minio_version), Renovate-tracked; stamped into
-  # the config artifact at publish. Literal here until the stamping job lands.
+  # Version pinned in versions.yaml (minio_version) -- Renovate-tracked there, not in
+  # deploy/. Literal mirror (not stamped; the stamper covers only Scout charts/images);
+  # keep in lockstep with versions.yaml.
   chart:
     spec:
       chart: tenant
@@ -233,8 +234,9 @@ spec:
       serviceAccountName: '${minio_tenant_name}-sa'
       containers:
         - name: mc
-          # Image pinned in versions.yaml (minio_client_image[_tag]); stamped at
-          # config-artifact publish. Literal here until the stamping job lands.
+          # Image pinned in versions.yaml (minio_client_image[_tag]) -- Renovate-tracked
+          # there, not in deploy/. Literal mirror (upstream image, not stamped); keep in
+          # lockstep with versions.yaml.
           image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
           securityContext:
             runAsNonRoot: true
