@@ -52,12 +52,11 @@ body {
     --rv-danger: #ff6b6b;
     --rv-success: #3fbf6a;
 
-    /* Ordered the other way: on this background prominence comes from being
-       lighter, so rank 1 is the lightest step. The range runs wider than the
-       light steps because every one of them has to clear the background. */
-    --rv-profile-1: #cfe6fa;
+    /* Same darkest-first order as the light steps. The range runs wider here
+       because every step has to clear the background, not just the first. */
+    --rv-profile-1: #4a7ba4;
     --rv-profile-2: #77aed8;
-    --rv-profile-3: #4a7ba4;
+    --rv-profile-3: #cfe6fa;
     --rv-profile-other: #b0b0b0;
     --rv-profile-empty: #787878;
   }
