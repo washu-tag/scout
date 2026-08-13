@@ -290,10 +290,6 @@ jobs:
         env:
           REPORT_VIEWER_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/report_viewer_test
         run: cd report-viewer && pip install -e '.[dev]' && pytest -v
-      # 24 matches launchpad's runtime image (node:24-alpine) and is the
-      # oldest line whose built-in test runner has what the launchpad suite
-      # uses (glob test paths, assert.partialDeepStrictEqual). Node 20 went
-      # end-of-life in April 2026.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
@@ -304,8 +300,6 @@ jobs:
       - name: 'Frontend build: report-viewer SPA'
         shell: bash
         run: cd report-viewer/frontend && npm ci && npm run build
-      # Includes the drift guard: the docs icon/tone galleries vs the
-      # icon/tone registries.
       - name: 'Unit tests: launchpad'
         shell: bash
         run: cd launchpad && npm ci && npm test
