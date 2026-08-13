@@ -1,0 +1,209 @@
+{{define "sign_in.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign In | Scout</title>
+  <style>
+   * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #3467a5 0%, #254470 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+      text-align: center;
+      max-width: 450px;
+      width: 100%;
+    }
+
+    .logo {
+      margin-bottom: 30px;
+    }
+
+    .logo img,
+    .logo svg {
+      max-width: 250px;
+      height: auto;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #254470;
+      margin-bottom: 15px;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 24px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: white;
+      background-color: #254470;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background-color: #1e3b61;
+    }
+
+    .lock-icon {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      {{.LogoData}}
+    </div>
+
+    <h2>Welcome to Scout</h2>
+    <p>
+      If this is your first time logging in, your access request will be sent to an administrator for approval.
+      You'll receive an email once your account is approved.
+    </p>
+
+    <form method="GET" action="{{.ProxyPrefix}}/start">
+      <input type="hidden" name="rd" value="{{.Redirect}}" />
+      <button class="btn" type="submit">
+        <svg class="lock-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>
+        </svg>
+        {{.SignInMessage}}
+      </button>
+    </form>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // Get root domain passed in from Footer variable (because oauth2-proxy templates are limited)
+      function getRootDomain() {
+        const footer = "{{.Footer}}";
+        console.debug("Footer content / root domain:", footer);
+        return footer;
+      }
+
+      // Preserve hash fragments in redirect URL
+      function preserveHashFragment() {
+        if (!window.location.hash) return;
+
+        const rdInput = document.querySelector("input[name='rd']");
+        if (!rdInput) return;
+
+        // Remove any existing hash and append current one
+        const hashIndex = rdInput.value.indexOf('#');
+        if (hashIndex >= 0) {
+          rdInput.value = rdInput.value.substring(0, hashIndex);
+        }
+        rdInput.value += window.location.hash;
+      }
+
+      // Update form to use auth subdomain
+      function updateFormAction() {
+        const form = document.querySelector("form");
+        if (!form) {
+          console.error("Sign-in form not found");
+          return false;
+        }
+
+        const currentAction = form.getAttribute("action");
+        if (!currentAction) {
+          console.error("Form action attribute missing");
+          return false;
+        }
+
+        const rootDomain = getRootDomain();
+        const protocol = window.location.protocol;
+        const updatedAction = protocol + "//auth." + rootDomain + currentAction;
+
+        form.setAttribute("action", updatedAction);
+        console.debug("Form action updated:", updatedAction);
+        return true;
+      }
+
+      // Update redirect URL to include current origin
+      function updateRedirectUrl() {
+        const rdInput = document.querySelector("input[name='rd']");
+        if (!rdInput) {
+          console.error("Redirect input not found");
+          return false;
+        }
+
+        const currentValue = rdInput.value;
+
+        // If redirect is already an absolute URL, don't modify it
+        if (currentValue.startsWith('http://') || currentValue.startsWith('https://')) {
+          console.debug("Redirect is already absolute:", currentValue);
+          return true;
+        }
+
+        // Get the origin (removing auth subdomain if present for correct redirect)
+        let origin = window.location.origin;
+        const rootDomain = getRootDomain();
+
+        // If we're on auth subdomain, redirect to root domain instead
+        if (window.location.host.startsWith('auth.')) {
+          origin = window.location.protocol + '//' + rootDomain;
+        }
+
+        rdInput.value = origin + currentValue;
+        console.debug("Redirect URL updated:", rdInput.value);
+        return true;
+      }
+
+      // Initialize all adjustments
+      try {
+        preserveHashFragment();
+        const formOk = updateFormAction();
+        const redirectOk = updateRedirectUrl();
+
+        if (!formOk || !redirectOk) {
+          console.error("Sign-in page initialization incomplete");
+        }
+      } catch (error) {
+        console.error("Sign-in page initialization error:", error);
+      }
+    })();
+  </script>
+</body>
+</html>
+{{end}}

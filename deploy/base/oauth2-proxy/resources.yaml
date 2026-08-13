@@ -22,11 +22,12 @@
 #     the valkey-auth Secret over in ${valkey_namespace}.
 #   - oauth2-proxy-logo (Secret): logo.png -- the Scout sign-in logo (a Secret per
 #     the Ansible role; 158 KB binary, not inlined).
-# The sign-in/error HTML is component-owned static content, so it IS emitted inline
-# (oauth2-proxy-templates ConfigMap below); the one docs link is parameterized via
-# ${scout_docs_url}, mirroring the role's docs-URL rewrite. oauth2-proxy loads the
-# templates only at startup: unlike the Ansible role's files-hash podAnnotation, a
-# GitOps edit to the HTML needs a manual rollout (or a publish-stamped checksum).
+# The sign-in/error HTML is component-owned static content: the oauth2-proxy-templates
+# ConfigMap is generated (configMapGenerator) from error.html/sign_in.html in this dir,
+# byte-exact from the Ansible role's files/, with the one docs link in error.html
+# parameterized via ${scout_docs_url}. disableNameSuffixHash keeps the name stable for
+# the HelmRelease volume ref, so a GitOps edit to the HTML needs a manual rollout (or a
+# publish-stamped checksum), unlike the Ansible role's files-hash podAnnotation.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -35,17 +36,6 @@ metadata:
 spec:
   interval: 1h
   url: https://oauth2-proxy.github.io/manifests
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: oauth2-proxy-templates
-  namespace: "${oauth2_proxy_namespace}"
-data:
-  error.html: |
-    <<error.html: byte-exact copy of ansible/roles/oauth2-proxy/files/error.html, each line indented 4 spaces, with the single occurrence of 'https://washu-scout.readthedocs.io/en/latest' rewritten to '${scout_docs_url}'. Full 353-line content is on disk in the written file.>>
-  sign_in.html: |
-    <<sign_in.html: byte-exact copy of ansible/roles/oauth2-proxy/files/sign_in.html, each line indented 4 spaces (no rewrites). Full 209-line content is on disk in the written file.>>
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
