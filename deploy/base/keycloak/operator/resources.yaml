@@ -6,12 +6,11 @@
 #   kubernetes.yml                              — the operator (SA/Role/RoleBinding/
 #                                                 Deployment/Service, namespace-less;
 #                                                 the role applies it with -n)
-# Those URLs are referenced directly from kustomization.yaml `resources:` (the
-# faithful mirror of the role). NOTE: a kustomize-controller in a truly air-gapped
-# cluster cannot fetch raw.githubusercontent.com — unlike the Ansible control node,
-# which has egress. Before go-live these three manifests must be vendored into this
-# base (or mirrored to an in-cluster git/OCI source) and this file's Namespace kept.
-# Left as URLs here to match the role and defer the vendoring decision.
+# These three manifests are VENDORED into upstream/ and referenced from
+# kustomization.yaml `resources:` (not raw.githubusercontent URLs): a
+# kustomize-controller in an air-gapped cluster (and a network-restricted CI) cannot
+# fetch them, and an unpinned URL is a supply-chain risk. Refresh upstream/ in
+# lockstep with keycloak_version.
 #
 # This file declares only the Namespace; the operator's namespaced resources are
 # placed into it by the kustomization's `namespace:` transformer (the upstream

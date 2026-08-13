@@ -24,8 +24,13 @@ jobs:
         run: |
           set -euo pipefail
           VER=5.5.0
-          curl -sSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${VER}/kustomize_v${VER}_linux_amd64.tar.gz" \
-            | sudo tar xz -C /usr/local/bin kustomize
+          # Pinned SHA256 of kustomize_v${VER}_linux_amd64.tar.gz (release checksums.txt);
+          # verify before extracting so a corrupted/tampered download fails closed.
+          SHA=6703a3a70a0c47cf0b37694030b54f1175a9dfeb17b3818b623ed58b9dbc2a77
+          curl -sSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${VER}/kustomize_v${VER}_linux_amd64.tar.gz" -o kustomize.tar.gz
+          echo "${SHA}  kustomize.tar.gz" | sha256sum -c -
+          sudo tar xz -C /usr/local/bin -f kustomize.tar.gz kustomize
+          rm -f kustomize.tar.gz
           kustomize version
 
       - name: Render every base
