@@ -101,6 +101,17 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
     membership.set(chip.group, members);
   }
 
+  // A user chip in an admin group
+  for (const chip of catalog.chips) {
+    if (!chip.enabled || chip.audience !== 'user') continue;
+    if (groupDefs.get(chip.group)?.audience !== 'admin') continue;
+    diagnostics.push({
+      source: chip.source,
+      subject: chip.id,
+      message: `chip audience "user" is wider than group "${chip.group}" (audience "admin"); the chip renders for admins only`,
+    });
+  }
+
   const renderGroups: RenderGroup[] = [...groupDefs.values()]
     .filter((group) => audienceOk(group.audience) && (membership.get(group.id)?.length ?? 0) > 0)
     .sort(byWeightTitleId)

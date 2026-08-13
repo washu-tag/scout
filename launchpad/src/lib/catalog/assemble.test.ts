@@ -254,6 +254,21 @@ describe('assemble mechanics', () => {
     );
   });
 
+  it('reports a chip whose audience is wider than its group', () => {
+    const catalog = catalogFrom({
+      groups: [{ id: 'ops', title: 'Ops', audience: 'admin' }],
+      chips: [{ id: 'a', title: 'A', link: { path: '/a' }, group: 'ops' }],
+    });
+    // The admin sees the chip and the warning; the non-admin sees no section at
+    // all, which is exactly why the warning must not depend on the viewer.
+    const admin = assemble(catalog, { origin: ORIGIN, isAdmin: true });
+    assert.ok(
+      admin.diagnostics.some((d) => d.subject === 'a' && d.message.includes('wider than group')),
+      'expected an audience-mismatch diagnostic',
+    );
+    assert.strictEqual(assemble(catalog, { origin: ORIGIN, isAdmin: false }).rows.length, 0);
+  });
+
   it('orders groups and chips by weight, then title, then id', () => {
     const catalog = catalogFrom({
       groups: [
