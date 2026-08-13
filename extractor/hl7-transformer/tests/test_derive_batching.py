@@ -56,8 +56,8 @@ def _row(source_file, filler):
         "message_dt": message_dt,
         "requested_dt": message_dt,
         "observation_dt": message_dt,
-        "diagnoses": [("J18.9", "Pneumonia", "ICD10")],
-        "diagnoses_consolidated": "Pneumonia",
+        "diagnoses": [("J18.9", "Pneumonia, unspecified organism", "I10")],
+        "diagnoses_consolidated": "Pneumonia, unspecified organism",
         "year": message_dt.year,
     }
 
