@@ -10,11 +10,13 @@
 # Fixed-name refs, seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git:
 #   - postgres-secret (Secret): DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD for the
 #     ingest DB; consumed by the transformer (envFrom) and the extractor
-#     (SPRING_DATASOURCE_PASSWORD via secretKeyRef).
+#     (SPRING_DATASOURCE_PASSWORD via secretKeyRef). extractor-db-init reads its
+#     DB_PASSWORD to set the ingest role's password.
 #   - s3-secret (Secret): AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY (lake writer).
-#   - s3-env (ConfigMap): AWS_ENDPOINT_URL/AWS_ALLOW_HTTP/AWS_REGION.
-# The ingest DB + role are created against the shared CNPG cluster (postgres-cluster),
-# not here.
+#   - superuser-secret (Secret): CNPG basic-auth (username/password) for extractor-db-init.
+# The s3-env ConfigMap (non-secret S3 endpoint config) and extractor-db-init Job
+# (ingest DB + owner role in the shared CNPG cluster, replacing the Ansible
+# scout_common create_db_with_owner) are defined below.
 #
 # The modality-mapping map is chart-owned (hl7-transformer files/modality_mapping_codes.csv);
 # no modality ConfigMap is created. On-prem rendering: MinIO S3 (path-style), HL7 logs
@@ -23,6 +25,96 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: "${scout_extractor_namespace}"
+---
+# S3 connection env (non-secret) both workers envFrom; the creds ride the s3-secret.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s3-env
+  namespace: "${scout_extractor_namespace}"
+data:
+  AWS_ENDPOINT_URL: "${s3_endpoint}"
+  AWS_ALLOW_HTTP: "true"
+  AWS_REGION: "${s3_region}"
+---
+# Ingest DB + owner role in the shared CNPG cluster, replacing the Ansible
+# scout_common create_db_with_owner. Connects over the network to the -rw endpoint
+# in ${postgres_cluster_namespace} as the CNPG superuser. Idempotent: role/db are
+# guarded by SELECT ... WHERE NOT EXISTS \gexec so psql's :'..' interpolates the
+# password (a DO block would not); the runtime password env is $$-escaped so Flux's
+# envsubst leaves it for the shell. On-prem CNPG superuser is a real superuser, so the
+# aws_deployment GRANT/REVOKE dance is omitted.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: extractor-db-init
+  namespace: "${scout_extractor_namespace}"
+  annotations:
+    kustomize.toolkit.fluxcd.io/force: "Enabled"
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: extractor-db-init
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: postgres:16
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: HOME
+              value: /tmp
+            - name: PGHOST
+              value: "${postgres_cluster_name}-rw.${postgres_cluster_namespace}"
+            - name: PGPORT
+              value: "5432"
+            - name: PGSSLMODE
+              value: require
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: superuser-secret
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: superuser-secret
+                  key: password
+            - name: INGEST_PW
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: DB_PASSWORD
+          command:
+            - sh
+            - -ec
+            - |
+              psql --no-psqlrc -v ON_ERROR_STOP=1 -v ingest_pw="$$INGEST_PW" \
+                --dbname postgres <<'SQL'
+              SELECT format('CREATE USER %I WITH PASSWORD %L', '${postgres_user}', :'ingest_pw')
+              WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${postgres_user}')
+              \gexec
+              SELECT format('CREATE DATABASE %I OWNER %I', '${ingest_postgres_table_name}', '${postgres_user}')
+              WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '${ingest_postgres_table_name}')
+              \gexec
+              SQL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 # Scout-owned charts live in one GHCR OCI registry path; both HelmReleases below
 # reference this source by chart name.
