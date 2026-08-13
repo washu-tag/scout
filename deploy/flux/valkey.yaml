@@ -19,3 +19,5 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
+  dependsOn:
+    - name: scout-core-foundation

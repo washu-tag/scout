@@ -96,8 +96,11 @@ s3_opa_bundle_reader
 s3_opa_bundle_writer
 s3_region
 scout_analytics_namespace
+scout_core_namespace
+scout_data_namespace
 scout_docs_url
 scout_extractor_namespace
+scout_operators_namespace
 scratch_bucket
 scratch_path
 server_hostname

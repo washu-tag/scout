@@ -22,6 +22,7 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
+    - name: scout-data-foundation
     - name: postgres-cluster
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -43,5 +44,6 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
+    - name: scout-data-foundation
     - name: hive-db
     - name: minio-tenant

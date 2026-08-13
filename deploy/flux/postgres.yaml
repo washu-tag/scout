@@ -20,6 +20,8 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
+  dependsOn:
+    - name: scout-operators-foundation
   # No healthChecks block: Flux ignores it when wait:true (wait already health-checks
   # everything reconciled), and it hardcoded a guessed Deployment fullname. The CR
   # gates below use healthCheckExprs, the pattern the other operators follow.
@@ -36,6 +38,7 @@ spec:
   wait: true
   timeout: 10m
   dependsOn:
+    - name: scout-core-foundation
     - name: postgres-operator
   sourceRef:
     kind: OCIRepository

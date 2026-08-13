@@ -21,6 +21,8 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
+  dependsOn:
+    - name: scout-operators-foundation
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

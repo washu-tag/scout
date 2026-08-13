@@ -12,11 +12,6 @@
 # `password` for the default ACL user + `password-file` for the metrics
 # exporter). Seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git.
 # Persistence: AOF (appendonly, everysec) on a PVC per the Ansible role.
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: '${valkey_namespace}'
----
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:

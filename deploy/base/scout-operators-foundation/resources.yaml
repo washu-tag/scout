@@ -1,0 +1,10 @@
+# Per-namespace foundation (ADR 0031): the sole owner of the ${scout_operators_namespace}
+# Namespace. In Ansible cnpg_operator_namespace / minio_operator_namespace /
+# eck_operator_namespace resolve to scout_operators_namespace, so the CNPG, MinIO, and ECK
+# operators share one namespace. Co-declaring that Namespace across their prune:true
+# Kustomizations lets a mistimed prune cascade-delete the whole namespace (and the
+# operators in it), so each dependsOn this foundation instead.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: '${scout_operators_namespace}'

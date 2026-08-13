@@ -19,6 +19,8 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
+  dependsOn:
+    - name: scout-core-foundation
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -39,6 +41,7 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
+    - name: scout-core-foundation
     - name: keycloak-operator
     - name: postgres-cluster
   healthCheckExprs:

@@ -1,0 +1,9 @@
+# Per-namespace foundation (ADR 0031): the sole owner of the ${scout_data_namespace}
+# Namespace. In Ansible minio_tenant_namespace / hive_namespace resolve to
+# scout_data_namespace, so the MinIO tenant and Hive share one namespace. Co-declaring
+# that Namespace across their prune:true Kustomizations lets a mistimed prune
+# cascade-delete the whole namespace, so each dependsOn this foundation instead.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: '${scout_data_namespace}'

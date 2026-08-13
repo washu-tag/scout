@@ -1,17 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# Places the upstream operator's namespaced resources (SA/Role/RoleBinding/
-# Deployment/Service from kubernetes.yml, which carry no namespace) into
-# ${keycloak_namespace}; the CRDs are cluster-scoped and left untouched. Flux's
-# postBuild substitution then replaces ${keycloak_namespace} in the built output.
+# Keycloak Operator + CRDs (Phase 3, ADR 0031), vendored from keycloak-k8s-resources
+# 26.6.4 into upstream/ (raw.githubusercontent is unfetchable air-gapped + a supply-chain
+# risk; refresh in lockstep with keycloak_version). keycloaks/keycloakrealmimports are the
+# cluster-scoped CRDs; kubernetes.yml is the namespace-less upstream operator, placed into
+# ${keycloak_namespace} by the namespace transformer below (CRDs are cluster-scoped and
+# left untouched). The ${keycloak_namespace} Namespace is owned by scout-core-foundation.
 namespace: '${keycloak_namespace}'
 resources:
-  - resources.yaml
-  # Vendored from keycloak-k8s-resources 26.6.4 (keycloak_version, Renovate-tracked):
-  # raw.githubusercontent URLs are unfetchable from an air-gapped cluster and from a
-  # network-restricted CI, and an unpinned URL is a supply-chain risk. Refresh these
-  # in lockstep with keycloak_version. keycloaks/keycloakrealmimports are the
-  # cluster-scoped CRDs; kubernetes.yml is the namespaced operator.
   - upstream/keycloaks.k8s.keycloak.org-v1.yml
   - upstream/keycloakrealmimports.k8s.keycloak.org-v1.yml
   - upstream/kubernetes.yml
