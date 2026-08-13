@@ -5,8 +5,8 @@ metadata:
 ---
 # Single-node Elasticsearch managed by ECK. TLS on the HTTP layer is disabled for
 # simpler internal access. Heap is fixed via ES_JAVA_OPTS (Xms == Xmx); pod memory
-# tracks it per Elastic guidelines (heap <= 50% of pod memory): requests = 2x heap
-# (1Gi), limits = 8x heap (4Gi) to allow burst.
+# tracks it per Elastic guidelines (heap <= 50% of pod memory): requests = 2x heap,
+# limits = 8x heap to allow burst.
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
@@ -39,21 +39,20 @@ spec:
                   type: RuntimeDefault
               env:
                 - name: ES_JAVA_OPTS
-                  value: "-Xms512M -Xmx512M"
+                  value: "-Xms${elasticsearch_max_heap} -Xmx${elasticsearch_max_heap}"
               resources:
                 requests:
-                  cpu: "100m"
-                  memory: "1Gi"
+                  cpu: "${elasticsearch_cpu_request}"
+                  memory: "${elasticsearch_memory_request}"
                 limits:
-                  cpu: "2"
-                  memory: "4Gi"
+                  cpu: "${elasticsearch_cpu_limit}"
+                  memory: "${elasticsearch_memory_limit}"
       volumeClaimTemplates:
         - metadata:
             name: elasticsearch-data
           spec:
             accessModes:
               - ReadWriteOnce
-            storageClassName: "${elasticsearch_storage_class}"
             resources:
               requests:
                 storage: "${elasticsearch_storage_size}"

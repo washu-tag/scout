@@ -16,7 +16,6 @@ spec:
   size: 1
   storageConfig:
     cassandraDataVolumeClaimSpec:
-      storageClassName: "${cassandra_storage_class}"
       accessModes:
         - ReadWriteOnce
       resources:
@@ -24,24 +23,15 @@ spec:
           storage: "${cassandra_storage_size}"
   racks:
     - name: r1
-  # Memory: requests = max_heap (2Gi), limits = 2x (4Gi) for off-heap + OS cache.
   resources:
     requests:
-      cpu: "100m"
-      memory: "2Gi"
+      cpu: "${cassandra_cpu_request}"
+      memory: "${cassandra_memory_request}"
     limits:
-      cpu: "2"
-      memory: "4Gi"
-  # K8ssandra adds a Vector system-logger sidecar; its chart-default 128M limit
-  # OOMKills, so raise it (mirrors cassandra_system_logger_resources_default).
-  systemLoggerResources:
-    requests:
-      cpu: "100m"
-      memory: "128Mi"
-    limits:
-      cpu: "500m"
-      memory: "256Mi"
+      cpu: "${cassandra_cpu_limit}"
+      memory: "${cassandra_memory_limit}"
+  systemLoggerResources: ${cassandra_system_logger_resources}
   config:
     jvm-server-options:
-      initial_heap_size: "1G"
-      max_heap_size: "2G"
+      initial_heap_size: "${cassandra_init_heap}"
+      max_heap_size: "${cassandra_max_heap}"

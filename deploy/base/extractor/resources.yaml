@@ -72,7 +72,7 @@ spec:
       - name: TZ
         value: "${timezone}"
       - name: JAVA_TOOL_OPTIONS
-        value: "-XX:MaxRAMPercentage=60 -XX:+UseContainerSupport"
+        value: "-XX:MaxRAMPercentage=${hl7log_extractor_jvm_heap_max_ram_percentage} -XX:+UseContainerSupport"
       # Datasource password comes from the fixed-name postgres-secret; Spring's
       # env override beats application.yaml so no credential is inlined below.
       - name: SPRING_DATASOURCE_PASSWORD
@@ -82,11 +82,11 @@ spec:
             key: DB_PASSWORD
     resources:
       requests:
-        cpu: 100m
-        memory: 1Gi
+        cpu: "${hl7log_extractor_resources_requests_cpu}"
+        memory: "${hl7log_extractor_resources_requests_memory}"
       limits:
-        cpu: 2
-        memory: 2Gi
+        cpu: "${hl7log_extractor_resources_limits_cpu}"
+        memory: "${hl7log_extractor_resources_limits_memory}"
     # HL7 log files are mounted from the node (on-prem); readOnly + HostToContainer
     # so newly-rotated logs on the host become visible to the worker.
     volumes:
@@ -122,7 +122,7 @@ spec:
           path-style-access: true
         spring:
           datasource:
-            url: "jdbc:postgresql://${postgres_cluster_name}-rw.${postgres_cluster_namespace}:5432/${ingest_postgres_table_name}"
+            url: "jdbc:postgresql://${postgres_cluster_name}-rw.${postgres_cluster_namespace}:${db_port}/${ingest_postgres_table_name}"
             username: "${postgres_user}"
           temporal:
             connection:
@@ -130,15 +130,15 @@ spec:
         scout:
           workflowArgDefaults:
             ingestHl7Log:
-              logsRootPath: /data
+              logsRootPath: ${hl7logs_root_dir}
               scratchSpaceRootPath: "${scratch_path}"
               hl7OutputPath: "${hl7_path}"
-              splitAndUploadTimeout: 480
-              splitAndUploadHeartbeatTimeout: 30
-              splitAndUploadConcurrency: 150
+              splitAndUploadTimeout: ${hl7log_extractor_timeout}
+              splitAndUploadHeartbeatTimeout: ${hl7log_extractor_heartbeat_timeout}
+              splitAndUploadConcurrency: ${hl7log_extractor_concurrency}
             ingestHl7ToDeltaLake:
-              deltaIngestTimeout: 480
-              deriveDeltaTablesTimeout: 480
+              deltaIngestTimeout: ${hl7_transformer_timeout}
+              deriveDeltaTablesTimeout: ${hl7_transformer_derive_timeout}
               reportTableName: "${report_delta_table_name}"
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -211,15 +211,15 @@ spec:
       - name: TRINO_SCHEME
         value: http
       - name: TRINO_VIEW_ENABLED
-        value: "true"
+        value: "${trino_view_enabled}"
     # Memory: requests = spark_memory (1G -> 1Gi), limits = 4x for Spark off-heap.
     resources:
       requests:
-        cpu: 100m
-        memory: 1Gi
+        cpu: "${hl7_transformer_cpu_request}"
+        memory: "${hl7_transformer_memory_request}"
       limits:
-        cpu: 4
-        memory: 4Gi
+        cpu: "${hl7_transformer_cpu_limit}"
+        memory: "${hl7_transformer_memory_limit}"
     volumes:
       - name: data
         hostPath:
@@ -245,14 +245,14 @@ spec:
       periodSeconds: 30
     spark:
       executor:
-        memory: "1G"
+        memory: "${hl7_transformer_spark_memory}"
     # Chart-owned spark-defaults.conf (ADR 0031). on-prem mode = MinIO + path-style;
     # S3 creds come from the s3-secret envFrom, never from this block. The
     # modality-mapping map is left to the chart's bundled default (no override).
     sparkDefaults:
       enabled: true
       mode: on-prem
-      shufflePartitions: 200
+      shufflePartitions: ${spark_sql_shuffle_partitions}
       hiveMetastoreUri: "${hive_metastore_endpoint}"
       warehouseDir: "${delta_lake_path}"
       s3Region: "${s3_region}"
