@@ -4,14 +4,15 @@ import { profileColumn, type Profile, type Segment } from './columnStats';
 
 type Row = Record<string, unknown>;
 
-// Share order, not identity: one hue stepped light to dark, so a filter that
-// changes the ranking cannot repaint segments.
-const RAMP = [
-  'color-mix(in oklab, var(--rv-accent) 100%, var(--rv-surface))',
-  'color-mix(in oklab, var(--rv-accent) 55%, var(--rv-surface))',
-  'color-mix(in oklab, var(--rv-accent) 28%, var(--rv-surface))',
-];
-const EMPTY_FILL = 'var(--rv-border)';
+// Share order, not identity: one hue stepped by rank, so a filter that changes
+// the ranking cannot repaint segments. Steps are defined per theme in
+// theme.css, since the direction of "less prominent" flips with the background.
+const RAMP = ['var(--rv-profile-1)', 'var(--rv-profile-2)', 'var(--rv-profile-3)'];
+// Neither is a value in the column, so neither sits on the ramp. The rolled-up
+// tail is often the widest segment, which on the ramp made the largest region
+// the faintest.
+const OTHER_FILL = 'var(--rv-profile-other)';
+const EMPTY_FILL = 'var(--rv-profile-empty)';
 
 const BAR_H = 18;
 const GAP = 2;
@@ -280,7 +281,7 @@ function ProfileCell({ profile }: { profile: Profile }) {
     const rolledUp = distinct - segments.length;
     const parts = [
       ...segments.map((s, i) => ({ ...s, fill: RAMP[Math.min(i, RAMP.length - 1)] })),
-      ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: RAMP[2] }] : []),
+      ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: OTHER_FILL }] : []),
       ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
     ].filter((p) => p.count > 0);
     return <Categorical parts={parts} />;

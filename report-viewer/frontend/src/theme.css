@@ -25,6 +25,17 @@ body {
   --rv-accent: #4477aa;
   --rv-danger: #b00;
   --rv-success: #1a7a3a;
+
+  /* Column profile bars. Written out per theme rather than mixed from the
+     accent: mixing toward the surface steps toward the background, so on a dark
+     background the lowest rank lands on the background and disappears. Steps
+     run most to least prominent against --rv-surface-2, each at 3:1 or better.
+     `other` and `empty` leave the hue because they are aggregates, not values. */
+  --rv-profile-1: #35618b;
+  --rv-profile-2: #4477aa;
+  --rv-profile-3: #5e8db8;
+  --rv-profile-other: #6b6b6b;
+  --rv-profile-empty: #8e8e8e;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -39,6 +50,15 @@ body {
     --rv-accent: #5b9bd5;
     --rv-danger: #ff6b6b;
     --rv-success: #3fbf6a;
+
+    /* Lighter and less saturated than the light steps, per the usual dark-theme
+       guidance, and ordered the other way: on this background prominence comes
+       from being lighter, so rank 1 is the lightest step. */
+    --rv-profile-1: #9cc4e8;
+    --rv-profile-2: #6d9bc8;
+    --rv-profile-3: #5c86ab;
+    --rv-profile-other: #9a9a9a;
+    --rv-profile-empty: #7a7a7a;
   }
 }
 
