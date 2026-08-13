@@ -292,12 +292,17 @@ jobs:
         run: cd report-viewer && pip install -e '.[dev]' && pytest -v
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
-          cache-dependency-path: report-viewer/frontend/package-lock.json
+          cache-dependency-path: |
+            report-viewer/frontend/package-lock.json
+            launchpad/package-lock.json
       - name: 'Frontend build: report-viewer SPA'
         shell: bash
         run: cd report-viewer/frontend && npm ci && npm run build
+      - name: 'Unit tests: launchpad'
+        shell: bash
+        run: cd launchpad && npm ci && npm test
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v

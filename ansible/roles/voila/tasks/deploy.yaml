@@ -80,3 +80,62 @@
       - '{{ scout_repo_dir }}/helm/voila/values.yaml'
     helm_chart_values: '{{ voila_helm_chart_values }}'
     helm_chart_timeout: 15m
+
+# The Playbooks section — group and rows — ships with Voilà (ADR 0034): the
+# section exists exactly when playbooks are deployed.
+# NOTE: Actual playbooks are discovered at deploy time. This catalog entry
+# hard-codes the specific playbooks that exist now.
+# When we enhance playbook discoverability and pluggability (as in looking
+# beyond the folder of local files) we should modify this somehow.
+- name: Publish launchpad catalog entry
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: launchpad_catalog
+  vars:
+    catalog_configmap_name: voila-launchpad
+    catalog_namespace: '{{ voila_namespace }}'
+    catalog_document:
+      apiVersion: launchpad.scout.xnat.org/v1alpha1
+      kind: Catalog
+      groups:
+        - id: playbooks
+          title: Playbooks
+          description: Pluggable workflows and dashboards
+          icon: book-open
+          weight: 20
+          layout: rows
+          width: half
+      chips:
+        - id: playbook-cohort
+          title: Research Cohorting
+          description: Build and manage patient cohorts for research studies
+          icon: user-group
+          tone: violet
+          link: { subdomain: playbooks, path: /voila/render/cohort/Cohort.ipynb }
+          group: playbooks
+          weight: 10
+        - id: playbook-rads
+          title: RADS Dashboard
+          description: Explore LI-RADS and BI-RADS reporting trends over time
+          icon: chart
+          tone: rose
+          link: { subdomain: playbooks, path: /voila/render/rads/RADS.ipynb }
+          group: playbooks
+          weight: 20
+        - id: playbook-followup-detection
+          title: Clinical Follow-up Monitoring
+          description: Review algorithmically-detected follow-up recommendations
+          icon: sparkles
+          tone: cyan
+          link:
+            { subdomain: playbooks, path: /voila/render/followup-detection/FollowUpDetection.ipynb }
+          group: playbooks
+          weight: 30
+        - id: playbook-quality-metrics
+          title: Quality Metrics
+          description: Turnaround times, report completeness, and reporting trends
+          icon: clipboard-check
+          tone: emerald
+          link: { subdomain: playbooks, path: /voila/render/quality-metrics/QualityMetrics.ipynb }
+          group: playbooks
+          weight: 40

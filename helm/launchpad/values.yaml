@@ -4,13 +4,33 @@
 
 replicaCount: 1
 
-# Feature flags
-enableChat: false
-enablePlaybooks: false
-# Show the MinIO "Lake" card in the launchpad. Default true so deployments
-# still running an in-cluster MinIO continue to surface the console; sites
-# that have cut over to cloud object storage set this false.
-enableMinio: true
+# Runtime catalog discovery (ADR 0034): a kiwigrid/k8s-sidecar container
+# watches ConfigMaps labelled `launchpad.scout.xnat.org/catalog: "true"` and
+# materializes their data keys into a shared emptyDir the app reads alongside
+# the mounted core catalog. The label is part of the catalog contract — fixed
+# in the deployment template, the scout_common publisher task, and the user
+# docs together, deliberately not a value. Requires the chart's ClusterRole
+# (templates/rbac.yaml): the pod's ServiceAccount gains cluster-wide
+# ConfigMap read.
+catalog:
+  discovery:
+    enabled: true
+    # ALL, or a comma-separated namespace list for a tighter posture.
+    namespace: ALL
+    image:
+      repository: quay.io/kiwigrid/k8s-sidecar
+      # Placeholder, matching the app image convention: Ansible injects the
+      # pinned, Renovate-monitored version from group_vars/all/versions.yaml
+      # (launchpad_sidecar_image_tag, ADR 0015).
+      tag: latest
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+    sizeLimit: 10Mi
 
 # Environment label shown next to the Scout brand (e.g. "synthetic", "production").
 # Empty string falls back to "local" in the UI.
@@ -37,7 +57,7 @@ serviceAccount:
   # Specifies whether a service account should be created
   create: true
   # Automatically mount a ServiceAccount's API credentials?
-  automount: true
+  automount: false
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
