@@ -1,0 +1,9 @@
+{
+  "_comment": "FIXTURE ONLY -- a stand-in for the rendered scout realm import (the content of the keycloak-config Secret). stamp_config.py hashes this file's bytes with sha256 and truncates to 8 hex chars to stamp keycloak-config-cli's config-hash annotation, mirroring the Ansible keycloak role (configure.yaml: hash('sha256') | truncate(8, True, '')).",
+  "realm": "scout",
+  "enabled": true,
+  "clients": [
+    {"clientId": "superset"},
+    {"clientId": "oauth2-proxy"}
+  ]
+}

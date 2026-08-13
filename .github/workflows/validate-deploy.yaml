@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - deploy/**
+      - tooling/deploy/**
       - .github/workflows/validate-deploy.yaml
 
 permissions:
@@ -80,6 +81,29 @@ jobs:
               sys.exit(1)
           print(f"required-vars.txt covers all {len(used)} envsubst targets")
           PY
+
+      - name: config-artifact tooling stamps + generates cleanly
+        run: |
+          set -euo pipefail
+          # Canary for the Phase-3b tooling (the config-artifact-publish job runs
+          # these on every main build). Both tools self-verify fail-closed:
+          # stamp_config asserts no 0.0.0/latest/config-hash placeholder survives,
+          # gen_cluster_vars asserts its key set == required-vars.txt. Then confirm
+          # the STAMPED bases still build (stamping is line-based -- catch a rewrite
+          # that broke YAML before it reaches a cluster).
+          rm -rf /tmp/stamped && cp -r deploy /tmp/stamped
+          python3 tooling/deploy/stamp_config.py \
+            --deploy-dir /tmp/stamped \
+            --haul tooling/deploy/fixtures/haul.yaml \
+            --realm-file tooling/deploy/fixtures/realm.json
+          python3 tooling/deploy/gen_cluster_vars.py \
+            --values tooling/deploy/fixtures/cluster-vars.values.json \
+            --required-vars deploy/required-vars.txt >/tmp/cluster-vars.yaml
+          fail=0
+          while read -r d; do
+            kustomize build "$d" >/dev/null || { echo "::error file=$d::stamped base failed to build"; fail=1; }
+          done < <(find /tmp/stamped/base -name kustomization.yaml -exec dirname {} \; | sort)
+          exit $fail
 
       - name: Parse Flux Kustomizations + check the DAG
         run: |
