@@ -1,4 +1,4 @@
-# Put Your Service on the Scout Launchpad
+# Add a Chip to the Scout Launchpad
 
 The launchpad renders its tiles ("chips") and sections ("groups") from catalog documents
 it discovers at runtime. To put a service on the page, publish a ConfigMap — in your
@@ -10,7 +10,7 @@ This works the same for Scout's own components, for site-installed services, and
 anything else running in the cluster: presence on the landing page follows
 installation.
 
-## The 30-second version
+## A minimal example chip
 
 ```yaml
 apiVersion: v1
@@ -42,7 +42,7 @@ Ship it however you deploy: a template in your Helm chart (so uninstalling the c
 removes the chip), a Flux-reconciled manifest, or — for Scout-internal roles — the
 `scout_common` `launchpad_catalog` task.
 
-## The document
+## The Catalog document
 
 Each `data` key in the ConfigMap holds one YAML **catalog document**:
 
@@ -99,11 +99,11 @@ validate; anything else (e.g. `javascript:`) rejects the whole chip. A rooted pa
 means exactly one leading slash — protocol-relative `//host` values, which the browser
 would resolve off-site, are rejected too.
 
-## Defining a group (section)
+## Groups: Defining a section
 
-Chips reference a group id; groups render as the page's titled sections. Reference an
-undefined group and the launchpad synthesizes one from the id — fine for a first pass.
-Define the group when you want to control its header, position, and layout:
+Chips are grouped on the page into sections called Groups. A chip references a group id;
+if it references an undefined group the launchpad creates a new one with that id.
+But you can also explicitly define a group to control its header, position, and layout:
 
 ```yaml
 groups:

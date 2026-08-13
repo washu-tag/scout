@@ -16,7 +16,7 @@ Analytics, Chat, and Notebooks.
 
 * **[Using Scout](user/index.md)** — explore and analyze data: logging in, Analytics, Chat, Notebooks, and understanding what data you can see.
 * **[Operating Scout](operate/index.md)** — deploy and run Scout: the Ansible inventory, air-gapped installation, report ingestion, and per-user data-authorization configuration.
-* **[Customize Scout](customize/index.md)** — customize Scout: deploy your own playbooks and services into the Scout platform
+* **[Customize and Extend Scout](customize/index.md)** — deploy your own playbooks and services into the Scout platform
 * **[Reference](reference/index.md)** — the report data schema, backend architecture, and supporting database schemas.
 
 * **Report Issues**: Submit issues on [GitHub](https://github.com/washu-tag/scout/issues)
