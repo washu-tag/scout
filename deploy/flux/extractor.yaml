@@ -23,7 +23,9 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: scout-extractor-foundation
-    - name: extractor-db-init
+    # The ingest DB + owner role are now provisioned declaratively on the shared
+    # CNPG cluster (postgres/cluster), whose health gate waits for the Database, so
+    # postgres-cluster replaces the old extractor-db-init edge.
     - name: postgres-cluster
     - name: minio-tenant
     # hl7-transformer values hardwire the metastore URI + TRINO_HOST, and Ansible runs
@@ -31,25 +33,3 @@ spec:
     - name: hive-metastore
     - name: trino-rw
     - name: temporal-bootstrap
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: extractor-db-init
-  namespace: flux-system
-spec:
-  interval: 30m
-  path: ./deploy/base/extractor/db-init
-  prune: true
-  wait: true
-  timeout: 10m
-  sourceRef:
-    kind: OCIRepository
-    name: scout-config
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-vars
-  dependsOn:
-    - name: scout-extractor-foundation
-    - name: postgres-cluster

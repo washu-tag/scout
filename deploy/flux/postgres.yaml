@@ -52,3 +52,11 @@ spec:
       kind: Cluster
       current: status.conditions.exists(e, e.type == 'Ready' && e.status == 'True')
       failed: status.conditions.exists(e, e.type == 'Ready' && e.status == 'False')
+    # CNPG reconciles managed.roles + Database CRs AFTER the Cluster reports Ready,
+    # so gate on the Databases too (status.applied) — otherwise dependents (and the
+    # hive/db grant Job) could run before their DB/owner role exists. Database has
+    # no Ready condition; status.applied is its reconcile signal.
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Database
+      current: has(status.applied) && status.applied == true
+      failed: has(status.applied) && status.applied == false

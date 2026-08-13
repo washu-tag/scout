@@ -1,7 +1,18 @@
-# Shared CNPG cluster (all app DBs live here). Per-app DB/role creation moves from
-# the Ansible psql Jobs into CNPG managed roles + bootstrap.initdb as each consuming
-# component is converted (plan); scaffolded here with the base cluster only.
-# superuser-secret is seeded by CI/site (fixed name), not committed.
+# Shared CNPG cluster (all app DBs live here). App roles + databases are
+# provisioned declaratively by CNPG (spec.managed.roles + kind: Database below),
+# replacing the per-component psql db-init Jobs. NOT bootstrap.initdb: that runs
+# once on an uninitialized cluster and bootstraps a single DB, so it can't cover
+# four DBs or an already-running cluster; Database CRs reconcile continuously.
+#
+# Secrets (fixed names, seeded by CI/site, never committed):
+#   superuser-secret — CNPG basic-auth (username/password) for the operator.
+#   cnpg-role-*       — one kubernetes.io/basic-auth Secret per managed role, in
+#                       THIS namespace, password = the same value the app reads
+#                       from its own secret (e.g. cnpg-role-hive.password ==
+#                       hive-metastore-secret.HIVE_METASTORE_PASSWORD). CNPG
+#                       reconciles each role's password to its cnpg-role-* Secret,
+#                       so the two MUST be seeded from one source or the app login
+#                       breaks. ESO takes this over in Phase 4.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -42,6 +53,37 @@ spec:
       max_parallel_workers_per_gather: '2'
       max_parallel_workers: '4'
       max_parallel_maintenance_workers: '2'
+  # App login roles, reconciled continuously. Password comes from each role's
+  # cnpg-role-* basic-auth Secret (see header); the role name is the `name` field
+  # here, not the Secret's username key. hive_readonly owns no database; the
+  # hive/db grant Job wires its table privileges (managed.roles can't express those).
+  managed:
+    roles:
+      - name: hive
+        ensure: present
+        login: true
+        passwordSecret:
+          name: cnpg-role-hive
+      - name: hive_readonly
+        ensure: present
+        login: true
+        passwordSecret:
+          name: cnpg-role-hive-readonly
+      - name: keycloak
+        ensure: present
+        login: true
+        passwordSecret:
+          name: cnpg-role-keycloak
+      - name: superset
+        ensure: present
+        login: true
+        passwordSecret:
+          name: cnpg-role-superset
+      - name: '${postgres_user}'
+        ensure: present
+        login: true
+        passwordSecret:
+          name: cnpg-role-extractor
 ---
 apiVersion: v1
 kind: Service
@@ -55,3 +97,62 @@ spec:
     - name: metrics
       port: 9187
       targetPort: metrics
+---
+# App databases, reconciled continuously (replacing the psql db-init Jobs).
+# databaseReclaimPolicy retain so a pruned/deleted Database CR never drops a
+# PHI-bearing database. Each owner role is provisioned above; the Database
+# reconciler retries until its owner exists, and postgres-cluster's health gate
+# (flux/postgres.yaml) blocks dependents until all four report status.applied.
+# Database CRs must live in the Cluster's namespace (spec.cluster is a
+# LocalObjectReference), so all four live here rather than in the app bases.
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: hive
+  namespace: '${postgres_cluster_namespace}'
+spec:
+  cluster:
+    name: '${postgres_cluster_name}'
+  name: hive
+  owner: hive
+  ensure: present
+  databaseReclaimPolicy: retain
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: keycloak
+  namespace: '${postgres_cluster_namespace}'
+spec:
+  cluster:
+    name: '${postgres_cluster_name}'
+  name: keycloak
+  owner: keycloak
+  ensure: present
+  databaseReclaimPolicy: retain
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: superset
+  namespace: '${postgres_cluster_namespace}'
+spec:
+  cluster:
+    name: '${postgres_cluster_name}'
+  name: superset
+  owner: superset
+  ensure: present
+  databaseReclaimPolicy: retain
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: extractor-ingest
+  namespace: '${postgres_cluster_namespace}'
+spec:
+  cluster:
+    name: '${postgres_cluster_name}'
+  name: '${ingest_postgres_table_name}'
+  owner: '${postgres_user}'
+  ensure: present
+  databaseReclaimPolicy: retain
