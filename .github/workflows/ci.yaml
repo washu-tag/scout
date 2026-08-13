@@ -141,7 +141,7 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
-      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -203,7 +203,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -223,7 +223,7 @@ jobs:
       # Spark 4.1.x runs on Java 17 or 21; use the repo default JAVA_VERSION (21) like
       # every other Java job. Spark/Delta versions are read from the package's
       # pyproject.toml, so this job pins no versions.
-      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -315,7 +315,9 @@ jobs:
         # evaluate under in production keeps test/prod aligned.
         run: |
           OPA_VERSION=$(yq '.opa_image_tag' ansible/group_vars/all/versions.yaml)
-          curl -fsSL -o /tmp/opa "https://openpolicyagent.org/downloads/v${OPA_VERSION}/opa_linux_amd64_static"
+          # openpolicyagent.org/downloads proxies to this asset but has been 502ing; fetch it directly.
+          curl -fsSL --retry 3 --retry-all-errors -o /tmp/opa \
+            "https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_linux_amd64_static"
           chmod +x /tmp/opa
           sudo mv /tmp/opa /usr/local/bin/opa
           opa version
@@ -404,7 +406,7 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -440,7 +442,7 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
       - name: 'Set up Java for Gradle cache warming'
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -607,7 +609,7 @@ jobs:
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -859,7 +861,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -1067,7 +1069,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Login to GHCR (for the imagetools digest read-back)
         if: needs.changes.outputs[matrix.changed] == 'true'
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1141,7 +1143,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -1226,23 +1228,13 @@ jobs:
             exit 1
           fi
   publish-haul:
-    # Build-lane haul (ADR 0033): after images publish, render the manifest from
-    # this run's fresh digests plus the previous build's haul (carry), sync it into
-    # a .tar.zst bundle, and publish the bundle + the manifest so the next run can
-    # carry from it. continue-on-error so it never gates a release; it fails closed
-    # (harmless) on partial builds until a one-time bootstrap seeds the first
-    # predecessor. Sync verifies every component's cosign signature (--key) and
-    # fails closed if any component is unsigned or unverifiable.
-    # PAUSED until the build-lane haul project is finalized. Chart carry needs a
-    # one-time publish-all seed of the 14 charts (see components.txt); until that
-    # lands this job fails on every main run. continue-on-error keeps it non-gating,
-    # but it still leaves a red X on the run, so it is turned off while the whole
-    # GitOps build-lane is still in progress rather than run half-built. Re-enable
-    # (after the seed) by restoring the condition:
-    #   github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
-    if: false
+    # Build-lane haul (ADR 0033): render the manifest (fresh digests + carry), sync to a
+    # signed .tar.zst, publish the bundle + manifest. GATES the build (no continue-on-error):
+    # a broken/incomplete/unsigned air-gap haul must fail loud. Safe to merge only after
+    # seed-charts.yaml has published all 14 charts (publish-charts is changed-only) and the
+    # Docker Hub secret is seeded (the upstream pulls below are otherwise rate-limited).
+    if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
     runs-on: ubuntu-latest
-    continue-on-error: true
     needs: [changes, publish, publish-charts]
     permissions:
       contents: read
@@ -1251,24 +1243,33 @@ jobs:
       VERSION: ${{ needs.changes.outputs.version }}
       MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
       BUNDLE_REPO: ghcr.io/washu-tag/manifests/scout
+      DH_USER: ${{ secrets.DOCKERHUB_USERNAME }} # job-level so the login step's if can read it
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
       - name: Login to GHCR
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to Docker Hub # authenticated pulls for the upstream images (8 of the 9 are on docker.io)
+        # Skip cleanly when the secret is unset rather than hard-fail this now-gating job;
+        # without the login hauler falls back to anonymous (rate-limited) docker.io pulls.
+        if: ${{ env.DH_USER != '' }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Install hauler and oras
         uses: ./.github/actions/install-hauler-oras
       - name: Download this run's fresh image digests
-        # No continue-on-error: a failed/partial download must fail the job (which
-        # is job-level continue-on-error, so non-blocking) rather than be swallowed.
+        # A failed/partial download must fail the job (which now gates the build)
+        # rather than be swallowed.
         # If it were swallowed, a just-rebuilt image would be missing from `fresh`
         # and silently carried from the predecessor at its STALE digest, producing
         # a valid-looking manifest that omits this run's new image. A pattern that
@@ -1290,7 +1291,30 @@ jobs:
           pattern: chart-digest-*
           path: digests/charts
           merge-multiple: true
+      - name: Skip if the haul predecessor is not yet seeded
+        id: seeded
+        # publish-haul now gates the build, but a run before seed-charts.yaml has
+        # published the 14 charts (incl. the first main run after this lands) has an
+        # images-only predecessor, so build_haul would fail closed on the uncarried
+        # charts and red main. Detect that pre-seed state and skip (warn); a genuine
+        # drift (stray fresh digest, bad ref) still fails loudly in the render below.
+        run: |
+          set -euo pipefail
+          mkdir -p digests predecessor
+          oras pull "${MANIFEST_REPO}:main" -o predecessor \
+            || echo "no predecessor haul yet (needs a bootstrap)"
+          status="$(python3 tooling/manifest/build_haul.py --check \
+            --digests-dir digests \
+            --components tooling/manifest/components.txt \
+            --predecessor predecessor/haul.yaml --name scout)"
+          if [ "${status}" = ready ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::haul predecessor not fully seeded yet (run seed-charts once at go-live); skipping the haul publish this run"
+          fi
       - name: Render the haul manifest (carry from the predecessor)
+        if: steps.seeded.outputs.ready == 'true'
         run: |
           set -euo pipefail
           mkdir -p digests predecessor
@@ -1320,38 +1344,27 @@ jobs:
           done < upstream-tags.txt
           python3 -c 'import sys; sys.path.insert(0, "tooling/manifest"); from haul import render_images; refs=[l.strip() for l in open("upstream-refs.txt") if l.strip()]; sys.stdout.write(render_images(refs, name="scout-upstream"))' > haul-upstream.yaml
           echo "--- haul-upstream.yaml ---"; cat haul-upstream.yaml
-      - name: Sync, bundle, sign, and publish the haul
-        env:
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-        run: |
-          set -euo pipefail
-          # hauler 2.0.2 SKIPS an image it can't verify yet still exits 0, so an
-          # exit-code or failure-string check fails OPEN. Fail CLOSED: require one
-          # "signature verified" line per image in haul.yaml (dash-anchored count so
-          # metadata.name isn't included). (Strings are 2.0.2's; recheck on bump.)
-          # Derive the public key from the signing key -- no separate COSIGN_PUBLIC_KEY secret.
-          cosign public-key --key env://COSIGN_PRIVATE_KEY > cosign.pub
-          expected=$(grep -cE '^[[:space:]]*-[[:space:]]+name:' haul.yaml || true)
-          hauler store sync -f haul.yaml --key cosign.pub 2>&1 | tee sync.log
-          verified=$(grep -cF 'signature verified for image [' sync.log || true)
-          if [ "$expected" -lt 1 ] || [ "$verified" -ne "$expected" ]; then
-            echo "::error::cosign verification incomplete: ${verified}/${expected} components verified; the haul would be missing unverified images"
-            exit 1
-          fi
-          # Third-party upstream images: sync WITHOUT --key (trusted by digest, not
-          # our signature) into the same store so the saved bundle is complete.
-          hauler store sync -f haul-upstream.yaml
-          hauler store save -f "scout-${VERSION}.tar.zst"
-          # Push both immutable :version artifacts and sign the bundle, THEN advance
-          # the :main pointers last, so :main only moves after a complete, signed
-          # publish (ordering guard: a partial failure leaves the old predecessor).
-          oras push "${MANIFEST_REPO}:${VERSION}" \
-            haul.yaml:application/yaml haul-upstream.yaml:application/yaml
-          oras push "${BUNDLE_REPO}:${VERSION}" \
-            --artifact-type application/vnd.hauler.bundle.v1+zstd \
-            "scout-${VERSION}.tar.zst:application/zstd"
-          cosign sign --key env://COSIGN_PRIVATE_KEY \
-            --use-signing-config=false --tlog-upload=false --yes "${BUNDLE_REPO}:${VERSION}"
-          oras tag "${MANIFEST_REPO}:${VERSION}" main
-          oras tag "${BUNDLE_REPO}:${VERSION}" main
+      - name: Publish the haul
+        if: steps.seeded.outputs.ready == 'true'
+        uses: ./.github/actions/publish-haul
+        with:
+          version: ${{ env.VERSION }}
+          core-manifest: haul.yaml
+          upstream-manifest: haul-upstream.yaml
+          manifest-repo: ${{ env.MANIFEST_REPO }}
+          bundle-repo: ${{ env.BUNDLE_REPO }}
+          cosign-private-key: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          cosign-password: ${{ secrets.COSIGN_PASSWORD }}
+      - name: Surface the build version for the release lane
+        if: steps.seeded.outputs.ready == 'true'
+        # release.yaml's X.Y.Z->haul alias reads this from the CI run it waited on,
+        # to oras-tag THIS haul to the release version. Written only after the
+        # publish step above succeeded (:main advanced), so the alias can never
+        # point at a partial haul.
+        run: echo "${VERSION}" > haul-version.txt
+      - name: Upload the build version
+        if: steps.seeded.outputs.ready == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: haul-version
+          path: haul-version.txt

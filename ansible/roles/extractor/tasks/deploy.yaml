@@ -65,36 +65,29 @@
         AWS_ALLOW_HTTP: 'true'
         AWS_REGION: '{{ s3_region }}'
 
-- name: Check modality mapping file exists
+# The hl7-transformer chart now owns the modality-mapping ConfigMap and ships the
+# default map (helm/extractor/hl7-transformer/files/modality_mapping_codes.csv,
+# ADR 0031), so a map change reaches clusters as a chart bump instead of a
+# hand-created ConfigMap. Ansible only handles a custom override: when
+# modality_map_source_file is set it is validated here and passed to the chart as
+# modalityMapping.data (see hl7-transformer.values.yaml.j2).
+- name: Validate the custom modality mapping override exists
   ansible.builtin.stat:
     path: '{{ modality_map_source_file }}'
   register: modality_map_stat
   delegate_to: localhost
+  when: modality_map_source_file | length > 0
 
-- name: Fail with helpful message if modality map is missing
+- name: Fail if the custom modality mapping override is missing
   ansible.builtin.fail:
     msg: |
-      Modality mapping file not found at: {{ modality_map_source_file }}
+      Custom modality mapping file not found at: {{ modality_map_source_file }}
 
-      The default modality map should be at: {{ scout_repo_dir }}/extractor/hl7-transformer/modality_mapping_codes.csv
-
-      If you're using a custom mapping, ensure 'modality_map_source_file' in your inventory points to a valid file path on the Ansible controller.
-  when: not modality_map_stat.stat.exists
-
-- name: Create modality mapping ConfigMap
-  no_log: true
-  delegate_to: localhost
-  kubernetes.core.k8s:
-    state: present
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: modality-mapping
-        namespace: '{{ extractor_namespace }}'
-      data:
-        modality_mapping_codes.csv: '{{ lookup("file", modality_map_source_file) }}'
+      The chart ships a default map; set 'modality_map_source_file' only to
+      override it with a file path on the Ansible controller.
+  when:
+    - modality_map_source_file | length > 0
+    - not modality_map_stat.stat.exists
 
 - name: Deploy HL7Log Extractor
   ansible.builtin.include_role:

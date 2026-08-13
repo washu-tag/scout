@@ -1,0 +1,113 @@
+name: Haul retention
+
+# Prune old build-lane haul packages so the ~5GB-per-main-build bundles don't
+# accumulate unbounded. Scoped HARD to the two manifests/* packages via a literal
+# allowlist below; it never enumerates packages, so it cannot reach the
+# digest-pinned image/chart packages that Flux consumers reference. Keeps :main +
+# hauls younger than keep_days (min_keep newest regardless of age) + their cosign
+# signatures -- policy is tooling/manifest/retention.py (unit-tested offline).
+#
+# SAFE BY DEFAULT: a manual run only PREVIEWS the plan (dry_run=true). The weekly
+# schedule deletes for real only once the repo variable HAUL_RETENTION_ENABLED is
+# set to 'true', so the team validates the plan against the real registry before
+# any deletion happens.
+on:
+  schedule:
+    - cron: '17 8 * * 1' # Mondays 08:17 UTC
+  workflow_dispatch:
+    inputs:
+      keep_days:
+        description: 'Retain hauls younger than this many days (per package)'
+        type: number
+        default: 30
+      min_keep:
+        description: 'Always retain at least this many newest hauls'
+        type: number
+        default: 5
+      dry_run:
+        description: 'Preview only; do not delete'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read # checkout retention.py
+  packages: write # delete old package versions
+
+concurrency:
+  group: haul-retention
+  cancel-in-progress: false
+
+env:
+  ORG: washu-tag
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Prune old haul package versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Schedule has no inputs -> keep_days=30, min_keep=5. On dispatch, pass the
+          # operator value through verbatim (don't coerce: retention.py's guards reject
+          # 0 / negatives loudly).
+          KEEP_DAYS: ${{ github.event_name == 'schedule' && 30 || inputs.keep_days }}
+          MIN_KEEP: ${{ github.event_name == 'schedule' && 5 || inputs.min_keep }}
+          # Delete for real ONLY on an explicit dispatch with dry_run=false, or a
+          # scheduled run once HAUL_RETENTION_ENABLED is set. Otherwise preview.
+          DELETE_FOR_REAL: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run == false) || (github.event_name == 'schedule' && vars.HAUL_RETENTION_ENABLED == 'true') }}
+        run: |
+          set -euo pipefail
+          # Literal allowlist -- the ONLY packages this workflow may ever touch.
+          for pkg in "manifests/scout" "manifests/scout-manifest"; do
+            enc="${pkg//\//%2F}"
+            echo "## ${pkg}" >> "$GITHUB_STEP_SUMMARY"
+            if ! raw="$(gh api --paginate "/orgs/${ORG}/packages/container/${enc}/versions" 2>err.txt)"; then
+              # A 404 means the package doesn't exist yet (fine, skip). ANY other error
+              # (403/rate-limit/auth/5xx) must be LOUD, not silently treated as
+              # not-found -- otherwise a broken run reports success and the 5GB
+              # accumulation this job exists to bound keeps growing unnoticed.
+              if grep -q 'HTTP 404' err.txt; then
+                echo "  package does not exist yet; skipping" | tee -a "$GITHUB_STEP_SUMMARY"
+                continue
+              fi
+              echo "::error::failed to list versions for ${pkg}:"
+              cat err.txt
+              exit 1
+            fi
+            # Surface retention.py's plan/error even on failure -- set -e would
+            # otherwise abort before the summary line and hide the reason (e.g. a guard).
+            if ! printf '%s' "${raw}" | jq -s 'add' \
+                | python3 tooling/manifest/retention.py --keep-days "${KEEP_DAYS}" --min-keep "${MIN_KEEP}" - >delete-ids.txt 2>plan.txt; then
+              echo "::error::retention.py failed for ${pkg}:"; cat plan.txt
+              sed 's/^/    /' plan.txt >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            sed 's/^/    /' plan.txt >> "$GITHUB_STEP_SUMMARY"
+            count="$(grep -c . delete-ids.txt || true)"
+            if [ "${DELETE_FOR_REAL}" = "true" ]; then
+              # Per-id tolerance so one stuck version doesn't block the rest, but track
+              # the counts: every delete failing (with deletes attempted) is systemic --
+              # usually a permissions gap dry-run can't exercise -- so fail loud.
+              deleted=0; failed=0
+              while read -r id; do
+                [ -n "${id}" ] || continue
+                if gh api -X DELETE "/orgs/${ORG}/packages/container/${enc}/versions/${id}"; then
+                  deleted=$((deleted + 1))
+                else
+                  failed=$((failed + 1))
+                  echo "::warning::could not delete version ${id} of ${pkg} (will retry next run)"
+                fi
+              done <delete-ids.txt
+              echo "  deleted ${deleted}, failed ${failed} of ${count}" >> "$GITHUB_STEP_SUMMARY"
+              if [ "${count}" -gt 0 ] && [ "${deleted}" -eq 0 ]; then
+                echo "::error::all ${count} deletions failed for ${pkg} (permissions?)"
+                exit 1
+              fi
+            else
+              echo "  DRY RUN: would delete ${count} version(s) -- enable with HAUL_RETENTION_ENABLED=true (schedule) or dispatch with dry_run=false" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done

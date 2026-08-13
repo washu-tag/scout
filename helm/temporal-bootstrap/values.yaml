@@ -8,11 +8,12 @@ nameOverride: ''
 fullnameOverride: ''
 
 # admin-tools image providing the `temporal` CLI. The tag should match the
-# Temporal server version. This is only the standalone default; Scout's Ansible
-# overrides it with the temporal chart's appVersion at deploy time.
+# Temporal server version. Empty -> defaults to .Chart.AppVersion (the standalone
+# default); Scout's Ansible still overrides it with the temporal chart's
+# appVersion at deploy time.
 image:
   repository: temporalio/admin-tools
-  tag: '1.31.0'
+  tag: ''
   pullPolicy: IfNotPresent
 
 # Temporal frontend the CLI talks to. The *internal* frontend bypasses the OIDC
