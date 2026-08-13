@@ -79,9 +79,8 @@ metadata:
   namespace: '${scout_analytics_namespace}'
 spec:
   interval: 30m
-  # Upstream chart pinned in versions.yaml (trino_helm_chart_version ~1.42.2),
-  # Renovate-tracked; stamped into the config artifact at publish. Literal here
-  # until the stamping job lands (matches the other upstream-chart bases).
+  # Upstream chart pinned in versions.yaml (trino_helm_chart_version ~1.42.2,
+  # Renovate-tracked there). Literal mirror (not stamped); keep in lockstep.
   chart:
     spec:
       chart: trino
@@ -144,23 +143,6 @@ spec:
           name: trino-s3
       - secretRef:
           name: trino-authz-env
-    # JMX exporter for Prometheus. trino_jmx_exporter_version in versions.yaml
-    # (1.0.1). bitnamilegacy image: the chart needs Bitnami's command structure
-    # (sscaling is incompatible); upstream Bitnami moved to a paid registry.
-    jmx:
-      enabled: true
-      registryPort: 9080
-      serverPort: 9081
-      exporter:
-        enabled: true
-        image: bitnamilegacy/jmx-exporter:1.0.1
-        pullPolicy: IfNotPresent
-        port: 5556
-        configProperties: |
-          hostPort: localhost:9080
-          startDelaySeconds: 30
-          ssl: false
-          lowercaseOutputName: false
     # Coordinator: JVM heap = 1G, pod memory limit = 4x heap for off-heap.
     coordinator:
       jvm:
@@ -177,10 +159,6 @@ spec:
         limits:
           cpu: 1
           memory: 4Gi
-      annotations:
-        prometheus.io/scrape: 'true'
-        prometheus.io/port: '5556'
-        prometheus.io/path: '/metrics'
     # Worker: JVM heap = 2G, pod memory limit = 4x heap for off-heap.
     worker:
       jvm:
@@ -197,10 +175,6 @@ spec:
         limits:
           cpu: 2
           memory: 8Gi
-      annotations:
-        prometheus.io/scrape: 'true'
-        prometheus.io/port: '5556'
-        prometheus.io/path: '/metrics'
     # Restrict the HTTP listener (8080) to Trino-internal traffic: the chart
     # auto-allows Trino-pod-to-Trino-pod when networkPolicy is enabled, so we only
     # declare the external allowances -- 8443 (JWT HTTPS) from the analytics

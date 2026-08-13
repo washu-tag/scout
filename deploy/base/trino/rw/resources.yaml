@@ -32,9 +32,8 @@ metadata:
   namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
-  # Upstream chart pinned in versions.yaml (trino_helm_chart_version ~1.42.2),
-  # Renovate-tracked; stamped into the config artifact at publish. Literal here
-  # until the stamping job lands (matches the read-only Trino base).
+  # Upstream chart pinned in versions.yaml (trino_helm_chart_version ~1.42.2,
+  # Renovate-tracked there). Literal mirror (not stamped); keep in lockstep.
   chart:
     spec:
       chart: trino
@@ -58,21 +57,6 @@ spec:
         query:
           # workers x worker_heap x per-node fraction = 1 x 1G x 0.3.
           maxMemory: '0.3GB'
-    # JMX exporter for Prometheus (parity with the user-facing Trino).
-    jmx:
-      enabled: true
-      registryPort: 9080
-      serverPort: 9081
-      exporter:
-        enabled: true
-        image: bitnamilegacy/jmx-exporter:1.0.1
-        pullPolicy: IfNotPresent
-        port: 5556
-        configProperties: |
-          hostPort: localhost:9080
-          startDelaySeconds: 30
-          ssl: false
-          lowercaseOutputName: false
     coordinator:
       jvm:
         maxHeapSize: 512M
@@ -88,10 +72,6 @@ spec:
         limits:
           cpu: 500m
           memory: 2Gi
-      annotations:
-        prometheus.io/scrape: 'true'
-        prometheus.io/port: '5556'
-        prometheus.io/path: '/metrics'
     worker:
       jvm:
         maxHeapSize: 1G
@@ -107,10 +87,6 @@ spec:
         limits:
           cpu: 500m
           memory: 4Gi
-      annotations:
-        prometheus.io/scrape: 'true'
-        prometheus.io/port: '5556'
-        prometheus.io/path: '/metrics'
     # Writable Delta catalog over the writable Hive metastore. On-prem: MinIO S3,
     # path-style, creds from the trino-rw-s3 envFrom via $${ENV:...}.
     catalogs:

@@ -37,6 +37,7 @@ jobs:
           set -euo pipefail
           fail=0
           while read -r d; do
+            grep -qx 'kind: Component' "$d/kustomization.yaml" && continue  # components build via their consumers
             if kustomize build "$d" >/dev/null; then
               echo "  ok   $d"
             else
@@ -60,6 +61,7 @@ jobs:
           dirs = subprocess.run(
               ["bash", "-c", "find deploy/base -name kustomization.yaml -exec dirname {} \\;"],
               capture_output=True, text=True).stdout.split()
+          dirs = [d for d in dirs if "kind: Component" not in open(d + "/kustomization.yaml").read()]
           for d in sorted(dirs):
               blob += subprocess.run(["kustomize", "build", d],
                                      capture_output=True, text=True).stdout + "\n"
@@ -98,6 +100,7 @@ jobs:
             --required-vars deploy/required-vars.txt >/tmp/cluster-vars.yaml
           fail=0
           while read -r d; do
+            grep -qx 'kind: Component' "$d/kustomization.yaml" && continue
             kustomize build "$d" >/dev/null || { echo "::error file=$d::stamped base failed to build"; fail=1; }
           done < <(find /tmp/stamped/base -name kustomization.yaml -exec dirname {} \; | sort)
           exit $fail

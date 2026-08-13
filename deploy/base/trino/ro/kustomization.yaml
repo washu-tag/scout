@@ -2,3 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - resources.yaml
+# Shared JMX-exporter + Prometheus-scrape config (kept in one place so it can't
+# drift between trino-ro and trino-rw).
+components:
+  - ../_shared-metrics

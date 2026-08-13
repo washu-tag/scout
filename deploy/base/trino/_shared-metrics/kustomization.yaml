@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+# The byte-identical JMX-exporter + Prometheus-scrape config shared by trino-ro and
+# trino-rw, centralized so a change to the metrics wiring can't drift between them
+# (the ADR-0019 read-only/writable difference stays in each overlay). Applies to the
+# single HelmRelease in whichever base includes this component (ro's `trino` or rw's
+# `trino-rw`), so the target matches by kind only.
+patches:
+  - target:
+      kind: HelmRelease
+    patch: |-
+      - op: add
+        path: /spec/values/jmx
+        value:
+          enabled: true
+          registryPort: 9080
+          serverPort: 9081
+          exporter:
+            enabled: true
+            image: bitnamilegacy/jmx-exporter:1.0.1
+            pullPolicy: IfNotPresent
+            port: 5556
+            configProperties: |
+              hostPort: localhost:9080
+              startDelaySeconds: 30
+              ssl: false
+              lowercaseOutputName: false
+      - op: add
+        path: /spec/values/coordinator/annotations
+        value:
+          prometheus.io/scrape: 'true'
+          prometheus.io/port: '5556'
+          prometheus.io/path: '/metrics'
+      - op: add
+        path: /spec/values/worker/annotations
+        value:
+          prometheus.io/scrape: 'true'
+          prometheus.io/port: '5556'
+          prometheus.io/path: '/metrics'
