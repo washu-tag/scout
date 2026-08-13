@@ -124,3 +124,44 @@ def test_main_fails_closed_when_neither_fresh_nor_in_predecessor(tmp_path):
                 str(prev),
             ]
         )
+
+
+def test_check_ready_when_all_carryable(tmp_path, capsys):
+    dd, comps = _carry_setup(tmp_path)  # hl7-listener fresh
+    prev = tmp_path / "prev.yaml"
+    prev.write_text(
+        render_images([f"{KC}:26.6.3@{D2}"], name="scout")
+    )  # keycloak carried
+    main(
+        [
+            "--check",
+            "--digests-dir",
+            str(dd),
+            "--components",
+            str(comps),
+            "--predecessor",
+            str(prev),
+        ]
+    )
+    assert capsys.readouterr().out.strip() == "ready"
+
+
+def test_check_incomplete_does_not_raise(tmp_path, capsys):
+    # keycloak neither fresh nor in predecessor -> render would fail closed, but
+    # --check reports 'incomplete' and exits 0 so the workflow can skip, not red.
+    dd, comps = _carry_setup(tmp_path)
+    prev = tmp_path / "prev.yaml"
+    prev.write_text(render_images([f"{IMG}:0.old@{D2}"], name="scout"))  # no keycloak
+    main(
+        [
+            "--check",
+            "--digests-dir",
+            str(dd),
+            "--components",
+            str(comps),
+            "--predecessor",
+            str(prev),
+        ]
+    )
+    out = capsys.readouterr().out
+    assert out.strip() == "incomplete"
