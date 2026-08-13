@@ -33,21 +33,6 @@ def define_derivative_tables(report_table_name: str) -> dict[str, DerivativeTabl
     }
 
 
-def read_change_feed(spark: SparkSession, source_table: str) -> DataFrame:
-    """Rate-limited change-data-feed stream over default.<source_table>.
-
-    Every level of the cascade goes through here: bounding only the base stream
-    would push the oversized batch one level down into curated -> latest/mapping.
-    """
-    max_bytes = spark.conf.get(DERIVE_MAX_BYTES_CONF, DEFAULT_DERIVE_MAX_BYTES)
-    return (
-        spark.readStream.format("delta")
-        .option("readChangeFeed", "true")
-        .option("maxBytesPerTrigger", max_bytes)
-        .table(f"default.{source_table}")
-    )
-
-
 def perform_table_operations(
     spark: SparkSession, source_table: str, tables: dict[str, DerivativeTable]
 ):
@@ -81,7 +66,15 @@ def perform_table_operations(
 
     warehouse_dir = spark.conf.get("spark.sql.warehouse.dir")
 
-    full_table = read_change_feed(spark, source_table)
+    full_table = (
+        spark.readStream.format("delta")
+        .option("readChangeFeed", "true")
+        .option(
+            "maxBytesPerTrigger",
+            spark.conf.get(DERIVE_MAX_BYTES_CONF, DEFAULT_DERIVE_MAX_BYTES),
+        )
+        .table(f"default.{source_table}")
+    )
 
     perform_derivative_operation_with_heartbeat(
         full_table.writeStream.foreachBatch(streaming_function)
