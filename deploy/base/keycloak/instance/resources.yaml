@@ -236,6 +236,15 @@ metadata:
 spec:
   interval: 30m
   timeout: 5m
+  # The realm import runs as a post-install/upgrade hook Job. On first boot Keycloak
+  # is not Ready yet, so the import fails; retry (instead of waiting a full 30m
+  # interval) until the CR is up and the import converges.
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
   # Scout-owned, CI-built OCI chart (ADR 0030); not in versions.yaml and not
   # Renovate-tracked (watching a chart we publish here would self-reference).
   # Placeholder version in git; the concrete version is stamped from the build-lane

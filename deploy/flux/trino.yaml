@@ -47,6 +47,4 @@ spec:
   dependsOn:
     - name: minio-tenant
     - name: hive-metastore
-    - name: opa
-    - name: keycloak-instance
     - name: scout-extractor-foundation
