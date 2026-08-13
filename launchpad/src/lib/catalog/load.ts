@@ -191,7 +191,10 @@ async function refresh(dirs: string[], now: number): Promise<Catalog> {
     return catalog;
   } catch (err) {
     console.error('[catalog] rebuild failed; serving previous snapshot', err);
-    if (snapshot) return snapshot.catalog;
+    if (snapshot) {
+      snapshot.checkedAt = now;
+      return snapshot.catalog;
+    }
     return emptyWithError(err);
   }
 }
