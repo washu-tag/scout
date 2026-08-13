@@ -270,33 +270,19 @@ spec:
               # tenant.users reconcile only honors the list on first install, so
               # ensure each user exists before attaching policies. mc admin user
               # add is idempotent (re-runs on an existing user succeed quietly).
-              echo "Ensuring user ${s3_lake_reader} exists..."
-              mc admin user add local '${s3_lake_reader}' "$(cat /usercreds/${s3_lake_reader}/CONSOLE_SECRET_KEY)"
-              echo "Ensuring user ${s3_lake_writer} exists..."
-              mc admin user add local '${s3_lake_writer}' "$(cat /usercreds/${s3_lake_writer}/CONSOLE_SECRET_KEY)"
-              echo "Ensuring user ${s3_loki_writer} exists..."
-              mc admin user add local '${s3_loki_writer}' "$(cat /usercreds/${s3_loki_writer}/CONSOLE_SECRET_KEY)"
-              echo "Ensuring user ${s3_opa_bundle_writer} exists..."
-              mc admin user add local '${s3_opa_bundle_writer}' "$(cat /usercreds/${s3_opa_bundle_writer}/CONSOLE_SECRET_KEY)"
-              echo "Ensuring user ${s3_opa_bundle_reader} exists..."
-              mc admin user add local '${s3_opa_bundle_reader}' "$(cat /usercreds/${s3_opa_bundle_reader}/CONSOLE_SECRET_KEY)"
+              for u in '${s3_lake_reader}' '${s3_lake_writer}' '${s3_loki_writer}' \
+                       '${s3_opa_bundle_writer}' '${s3_opa_bundle_reader}'; do
+                echo "Ensuring user $$u exists..."
+                mc admin user add local "$$u" "$(cat "/usercreds/$$u/CONSOLE_SECRET_KEY")"
+              done
 
               # Ensure buckets exist (same reason: tenant.buckets is honored on
               # first install only). mc mb --ignore-existing is idempotent.
-              echo "Ensuring bucket ${loki_chunks_bucket} exists..."
-              mc mb --ignore-existing local/${loki_chunks_bucket}
-              echo "Ensuring bucket ${loki_ruler_bucket} exists..."
-              mc mb --ignore-existing local/${loki_ruler_bucket}
-              echo "Ensuring bucket ${loki_admin_bucket} exists..."
-              mc mb --ignore-existing local/${loki_admin_bucket}
-              echo "Ensuring bucket ${lake_bucket} exists..."
-              mc mb --ignore-existing local/${lake_bucket}
-              echo "Ensuring bucket ${hl7_raw_bucket} exists..."
-              mc mb --ignore-existing local/${hl7_raw_bucket}
-              echo "Ensuring bucket ${scratch_bucket} exists..."
-              mc mb --ignore-existing local/${scratch_bucket}
-              echo "Ensuring bucket ${opa_bundles_bucket} exists..."
-              mc mb --ignore-existing local/${opa_bundles_bucket}
+              for b in ${loki_chunks_bucket} ${loki_ruler_bucket} ${loki_admin_bucket} \
+                       ${lake_bucket} ${hl7_raw_bucket} ${scratch_bucket} ${opa_bundles_bucket}; do
+                echo "Ensuring bucket $$b exists..."
+                mc mb --ignore-existing "local/$$b"
+              done
               echo "  Enabling versioning on ${opa_bundles_bucket}..."
               mc version enable local/${opa_bundles_bucket}
 
@@ -305,36 +291,17 @@ spec:
               # tenant.users path inherit consoleAdmin and we strip it; users
               # created via mc admin user add never had it, so the detach is a
               # no-op there and must not fail the script.
-              echo "Creating policy lake-r..."
-              mc admin policy create local lake-r /policies/lake-r.json || \
-                mc admin policy update local lake-r /policies/lake-r.json
-              mc admin policy attach local lake-r --user ${s3_lake_reader}
-              mc admin policy detach local consoleAdmin --user ${s3_lake_reader} 2>/dev/null || \
-                echo "  consoleAdmin not attached to ${s3_lake_reader}; skipping detach"
-              echo "Creating policy lake-rw..."
-              mc admin policy create local lake-rw /policies/lake-rw.json || \
-                mc admin policy update local lake-rw /policies/lake-rw.json
-              mc admin policy attach local lake-rw --user ${s3_lake_writer}
-              mc admin policy detach local consoleAdmin --user ${s3_lake_writer} 2>/dev/null || \
-                echo "  consoleAdmin not attached to ${s3_lake_writer}; skipping detach"
-              echo "Creating policy loki-rw..."
-              mc admin policy create local loki-rw /policies/loki-rw.json || \
-                mc admin policy update local loki-rw /policies/loki-rw.json
-              mc admin policy attach local loki-rw --user ${s3_loki_writer}
-              mc admin policy detach local consoleAdmin --user ${s3_loki_writer} 2>/dev/null || \
-                echo "  consoleAdmin not attached to ${s3_loki_writer}; skipping detach"
-              echo "Creating policy opa-bundle-w..."
-              mc admin policy create local opa-bundle-w /policies/opa-bundle-w.json || \
-                mc admin policy update local opa-bundle-w /policies/opa-bundle-w.json
-              mc admin policy attach local opa-bundle-w --user ${s3_opa_bundle_writer}
-              mc admin policy detach local consoleAdmin --user ${s3_opa_bundle_writer} 2>/dev/null || \
-                echo "  consoleAdmin not attached to ${s3_opa_bundle_writer}; skipping detach"
-              echo "Creating policy opa-bundle-r..."
-              mc admin policy create local opa-bundle-r /policies/opa-bundle-r.json || \
-                mc admin policy update local opa-bundle-r /policies/opa-bundle-r.json
-              mc admin policy attach local opa-bundle-r --user ${s3_opa_bundle_reader}
-              mc admin policy detach local consoleAdmin --user ${s3_opa_bundle_reader} 2>/dev/null || \
-                echo "  consoleAdmin not attached to ${s3_opa_bundle_reader}; skipping detach"
+              for pair in 'lake-r ${s3_lake_reader}' 'lake-rw ${s3_lake_writer}' \
+                          'loki-rw ${s3_loki_writer}' 'opa-bundle-w ${s3_opa_bundle_writer}' \
+                          'opa-bundle-r ${s3_opa_bundle_reader}'; do
+                set -- $$pair; policy=$$1; user=$$2
+                echo "Creating policy $$policy..."
+                mc admin policy create local "$$policy" "/policies/$$policy.json" || \
+                  mc admin policy update local "$$policy" "/policies/$$policy.json"
+                mc admin policy attach local "$$policy" --user "$$user"
+                mc admin policy detach local consoleAdmin --user "$$user" 2>/dev/null || \
+                  echo "  consoleAdmin not attached to $$user; skipping detach"
+              done
 
               echo "MinIO IAM setup completed successfully"
           volumeMounts:
