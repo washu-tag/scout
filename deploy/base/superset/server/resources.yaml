@@ -38,8 +38,10 @@ spec:
   url: https://apache.github.io/superset
 ---
 # StatsD-exporter mapping for the sidecar (chart-free side object, mirrors the
-# Ansible role's superset-statsd-mapping ConfigMap). The $1/$2/$3 regex refs are
-# digit-led, so Flux postBuild substitution (letter-led tokens only) leaves them alone.
+# Ansible role's superset-statsd-mapping ConfigMap). The $1/$2/$3 statsd_exporter
+# regex backreferences are $$-escaped: drone/envsubst treats a digit-led $N as a
+# variable (the nginx rewrite-target footgun), so an unescaped $1 would fail
+# StrictPostBuildSubstitutions; $$1 emits a literal $1 for statsd_exporter.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -56,8 +58,8 @@ data:
         match_type: regex
         name: 'superset_api_request_duration_ms'
         labels:
-          api: '$1'
-          method: '$2'
+          api: '$$1'
+          method: '$$2'
         observer_type: histogram
         histogram_options:
           buckets: [10, 50, 100, 250, 500, 1000, 2500]
@@ -70,9 +72,9 @@ data:
         match_type: regex
         name: 'superset_api_requests_total'
         labels:
-          api: '$1'
-          method: '$2'
-          status: '$3'
+          api: '$$1'
+          method: '$$2'
+          status: '$$3'
 
       # ----------------------------------------------------------------------
       # Drop everything else
