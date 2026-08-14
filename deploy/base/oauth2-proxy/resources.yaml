@@ -5,7 +5,8 @@
 #     X-Auth-Request-Preferred-Username upstream (Voila -> X-Trino-User, ADR 0022).
 #   - oauth2-proxy-error (errors): 401 -> redirect to /oauth2/sign_in?rd={url}.
 # provider = keycloak-oidc (${keycloak_realm_url}); sessions in shared Valkey
-# (${valkey_namespace}), hence dependsOn valkey + keycloak-instance.
+# (${valkey_namespace}), hence dependsOn valkey + keycloak-realm (needs the OIDC
+# clients from the realm import, not just Keycloak up).
 #
 # Fixed-name refs, seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git:
 #   - oauth2-proxy (Secret): client-id / client-secret / cookie-secret (client-id
