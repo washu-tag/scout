@@ -1420,12 +1420,25 @@ jobs:
       CONFIG_REPO: ghcr.io/washu-tag/manifests/scout-config
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install k3s + Flux
+      - name: Install k3s + Flux (pinned, sha256-verified)
         run: |
           set -euo pipefail
-          curl -sfL https://get.k3s.io | sh -
+          # Download pinned binaries and verify sha256 before executing, so a hijacked
+          # or corrupted release asset can't run in the job (same shape as
+          # .github/actions/install-hauler-oras). No curl piped to a shell.
+          K3S_VERSION='v1.31.5+k3s1'
+          K3S_SHA256='399b87b432ce55013fa81adad572a8e4ecf56e0df97369cf02d4b8a41f039091'
+          curl -fsSL -o k3s "https://github.com/k3s-io/k3s/releases/download/${K3S_VERSION/+/%2B}/k3s"
+          echo "${K3S_SHA256}  k3s" | sha256sum -c -
+          sudo install -m 0755 k3s /usr/local/bin/k3s
+          sudo k3s server --write-kubeconfig-mode=644 &
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          curl -s https://fluxcd.io/install.sh | sudo bash
+          timeout 180 bash -c 'until k3s kubectl get nodes 2>/dev/null | grep -q " Ready"; do sleep 3; done'
+          FLUX_VERSION='2.4.0'
+          FLUX_SHA256='7b70b75af20e28fc30ee66cf5372ec8d51dd466fd2ee21aa42690984de70b09b'
+          curl -fsSL -o flux.tar.gz "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}/flux_${FLUX_VERSION}_linux_amd64.tar.gz"
+          echo "${FLUX_SHA256}  flux.tar.gz" | sha256sum -c -
+          tar -xzf flux.tar.gz flux && sudo install -m 0755 flux /usr/local/bin/flux
           flux install --components-extra=image-reflector-controller,image-automation-controller
       - name: Seed secrets + cluster-vars + the scout-config source
         run: |
