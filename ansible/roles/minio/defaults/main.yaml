@@ -42,9 +42,7 @@ minio_ingress_config:
         kube-system-oauth2-proxy-auth@kubernetescrd,
         kube-system-security-headers@kubernetescrd
 
-# Bucket definitions. Passed straight through to the Tenant CRD, so entries
-# carry only fields spec.buckets declares (name, region, objectLock) — Helm 4
-# applies server-side and rejects anything else outright.
+# Bucket definitions
 minio_buckets:
   - name: '{{ loki_chunks_bucket }}'
   - name: '{{ loki_ruler_bucket }}'
@@ -54,12 +52,7 @@ minio_buckets:
   - name: '{{ scratch_bucket }}'
   - name: '{{ opa_bundles_bucket }}'
 
-# Buckets to enable object versioning on, so a corrupt bundle PUT can be rolled
-# back to a prior object version. Per ADR 0021 — the OPA bundle is the only
-# bucket that needs versioning today; existing buckets stay unversioned to avoid
-# the storage overhead on large objects. Kept separate from minio_buckets
-# because versioning is not a Tenant field: the bootstrap Job applies it with
-# `mc version enable` once the tenant is up.
+# Buckets the bootstrap Job enables object versioning on (ADR 0021).
 minio_versioned_buckets:
   - '{{ opa_bundles_bucket }}'
 
