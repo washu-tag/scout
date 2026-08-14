@@ -9,6 +9,9 @@ on:
       - deploy/**
       - tooling/deploy/**
       - .github/workflows/validate-deploy.yaml
+      # OPA data-doc drift guard reads the Ansible source; re-run on those too.
+      - ansible/roles/opa/defaults/main.yaml
+      - ansible/roles/scout_common/defaults/main.yaml
 
 permissions:
   contents: read
@@ -104,6 +107,45 @@ jobs:
             kustomize build "$d" >/dev/null || { echo "::error file=$d::stamped base failed to build"; fail=1; }
           done < <(find /tmp/stamped/base -name kustomization.yaml -exec dirname {} \; | sort)
           exit $fail
+
+      - name: OPA data document matches the Ansible source
+        run: |
+          python3 - <<'PY'
+          import yaml, json, sys
+          # The OPA policy is single-sourced (.Files.Get), but the data document
+          # (attribute_filters etc.) is still a git literal in deploy/base/opa while
+          # the Keycloak half comes from the CI-seeded realm -- both derive from the
+          # same ansible trino_* vars (scout_common trino_attribute_filters is "one
+          # source for two roles"). Assert the deploy literal still matches the ansible
+          # source so a divergence fails RED here. (Full single-source across OPA +
+          # Keycloak is the config-artifact realm-generation follow-up.)
+          TOKEN = "__REPORT_TABLE__"
+          def norm(s):
+              return s.replace("${report_delta_table_name}", TOKEN).replace("{{ report_delta_table_name }}", TOKEN)
+          def canon(x):
+              return json.loads(norm(json.dumps(x)))
+          data_json = None
+          for d in yaml.safe_load_all(open("deploy/base/opa/resources.yaml")):
+              if d and d.get("kind") == "HelmRelease":
+                  data_json = d["spec"]["values"]["data"]["json"]
+          deploy = json.loads(norm(data_json))
+          opa = yaml.safe_load(open("ansible/roles/opa/defaults/main.yaml"))
+          common = yaml.safe_load(open("ansible/roles/scout_common/defaults/main.yaml"))
+          expected = {
+              "attribute_filters": canon(common["trino_attribute_filters"]),
+              "view_owner_principals": canon(opa["trino_view_owner_principals"]),
+              "masked_columns": canon(opa["trino_masked_columns"]),
+              "filtered_tables": canon(opa["trino_filtered_tables"]),
+              "hidden_tables": canon(opa["trino_hidden_tables"]),
+          }
+          mism = [(k, v, deploy.get(k)) for k, v in expected.items() if deploy.get(k) != v]
+          if mism:
+              print("::error::deploy/base/opa data document diverges from the Ansible trino_* source:")
+              for k, exp, got in mism:
+                  print(f"  {k}: ansible={exp} deploy={got}")
+              sys.exit(1)
+          print("OPA data document matches the Ansible trino_* source")
+          PY
 
       - name: Parse Flux Kustomizations + check the DAG
         run: |
