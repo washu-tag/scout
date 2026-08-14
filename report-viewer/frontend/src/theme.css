@@ -35,8 +35,8 @@ body {
   --rv-profile-1: #4477aa;
   --rv-profile-2: #7ba8d2;
   --rv-profile-3: #cfe3f5;
-  --rv-profile-other: #5c5c5c;
-  --rv-profile-empty: #a8a8a8;
+  --rv-profile-other: #808080;
+  --rv-profile-empty: #b4b4b4;
 }
 
 @media (prefers-color-scheme: dark) {
