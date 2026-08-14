@@ -20,6 +20,9 @@ if [[ "$VERSION" == "dev" ]]; then
     DOCKER_TAG="$DEV_DOCKER_TAG"
     HELM_VERSION="$DEV_HELM_VERSION"
     PYTHON_VERSION="$DEV_PYTHON_VERSION"
+    # A dev reset is idempotent: a file already at its dev value is expected (e.g. a
+    # component that was never stamped, or re-running the reset), so a no-op is fine.
+    ALLOW_NOOP=true
     echo "Resetting to dev versions..."
 else
     # Validate release version format
@@ -30,6 +33,9 @@ else
     DOCKER_TAG="$VERSION"
     HELM_VERSION="$VERSION"
     PYTHON_VERSION="$VERSION"
+    # During a real stamp a no-op means the pattern did not match (e.g. a renamed
+    # variable) and must fail loudly, so no-ops are NOT tolerated here.
+    ALLOW_NOOP=false
     echo "Updating version files to $VERSION..."
 fi
 
@@ -54,11 +60,17 @@ update_file() {
     # Using -i.bak creates a backup we can compare against to verify the change.
     sed -i.bak -E "s|$pattern|$replacement|" "$file"
 
-    # Fail if sed didn't change anything (pattern may not have matched)
+    # sed made no change. In a dev reset that just means the file is already at its
+    # dev value (tolerated, keeps the reset idempotent). During a stamp it means the
+    # pattern did not match, which must fail.
     if cmp -s "$file" "${file}.bak"; then
+        rm -f "${file}.bak"
+        if [[ "${ALLOW_NOOP:-false}" == "true" ]]; then
+            echo "  - $description: $file (already at target)"
+            return 0
+        fi
         echo "  ERROR: No changes made to $file for $description"
         echo "         Pattern may not have matched: $pattern"
-        rm -f "${file}.bak"
         exit 1
     fi
 

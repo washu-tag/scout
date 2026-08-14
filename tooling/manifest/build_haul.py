@@ -100,6 +100,13 @@ def main(argv=None) -> None:
         help="previous build's haul manifest (carry source; empty on the first build)",
     )
     ap.add_argument("--name", default="scout")
+    ap.add_argument(
+        "--check",
+        action="store_true",
+        help="print 'ready'/'incomplete' and exit 0 instead of rendering; a preflight "
+        "for whether every component is carryable yet (predecessor seeded), so the "
+        "workflow can SKIP (not fail closed) before the one-time chart seed has run",
+    )
     args = ap.parse_args(argv)
 
     components = [
@@ -116,6 +123,17 @@ def main(argv=None) -> None:
         # both a fresh push and the last haul (e.g. a brand-new one) blocks the
         # build until it has been published once.
         return carried.get(repo)
+
+    if args.check:
+        # Only the carryability question, distinct from render's other validations
+        # (a genuine drift still fails loudly there): are all components fresh or carried?
+        missing = [r for r in components if r not in fresh and carry(r) is None]
+        if missing:
+            sys.stderr.write("not yet carryable: " + " ".join(missing) + "\n")
+            print("incomplete")
+        else:
+            print("ready")
+        return
 
     refs = resolve_refs(components, fresh=fresh, carry=carry)
     sys.stdout.write(render_images(refs, name=args.name))

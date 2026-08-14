@@ -1,15 +1,10 @@
-# Centralized version management for Scout Ansible roles
-# This file is automatically loaded for all playbooks via group_vars/all
-# Monitored by Renovate for automated updates (see renovate.json5)
-# Format: Use semantic versioning with optional tilde prefix (~X.Y.Z) for flexible constraints
+# Centralized versions for Scout Ansible roles; auto-loaded via group_vars/all.
+# Renovate-monitored (see renovate.json5); pinned exactly for provenance.
 
-# k3s version - if not specified or empty, will use latest stable
-# Set to empty string or omit to auto-detect latest stable version
 # renovate: datasource=github-releases depName=k3s-io/k3s
 k3s_version: v1.36.2+k3s1
 
-# helm version - if not specified or empty, will use latest
-# Using Helm 3.x until Helm 4 plugin ecosystem matures (helm-diff compatibility)
+# Helm 3.x until Helm 4's plugin ecosystem matures (helm-diff compat).
 # renovate: datasource=github-releases depName=helm/helm
 helm_version: v3.19.2
 # renovate: datasource=github-releases depName=databus23/helm-diff
@@ -17,22 +12,22 @@ helm_diff_plugin_version: 'v3.15.10'
 
 # Databases & Data Storage - Elasticsearch
 # renovate: datasource=helm registryUrl=https://helm.elastic.co depName=eck-operator
-eck_operator_version: ~3.2.0
+eck_operator_version: 3.2.0
 # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
 elasticsearch_version: 9.2.3
 
 # Databases & Data Storage - Cassandra
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
-cert_manager_version: ~v1.20.3
+cert_manager_version: v1.20.3
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
-cass_operator_version: ~0.66.0
-# cassandra_server_version is managed by K8ssandra cass-operator, which pulls k8ssandra/cass-management-api
+cass_operator_version: 0.66.0
+# Managed by cass-operator (pulls k8ssandra/cass-management-api).
 # renovate: datasource=docker depName=k8ssandra/cass-management-api extractVersion=^(?<version>\d+\.\d+\.\d+)-ubi$
 cassandra_server_version: 5.0.8
 
 # Databases & Data Storage - PostgreSQL
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/ depName=cloudnative-pg
-cnpg_version: ~0.28.3
+cnpg_version: 0.28.3
 
 # Databases & Data Storage - Valkey
 # renovate: datasource=helm registryUrl=https://valkey-io.github.io/valkey-helm/ depName=valkey
@@ -40,7 +35,7 @@ valkey_chart_version: 0.9.4
 
 # OAuth2 Proxy
 # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
-oauth2_proxy_chart_version: ~10.6.2
+oauth2_proxy_chart_version: 10.6.2
 
 # Keycloak Config CLI
 keycloak_config_cli_image: docker.io/adorsys/keycloak-config-cli
@@ -49,7 +44,7 @@ keycloak_config_cli_image_tag: 6.5.1-26.5.5
 
 # Databases & Data Storage - MinIO
 # renovate: datasource=helm registryUrl=https://operator.min.io depName=operator
-minio_version: ~7.1.1
+minio_version: 7.1.1
 minio_client_image: quay.io/minio/mc
 # renovate: datasource=docker depName=quay.io/minio/mc
 minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
@@ -57,24 +52,22 @@ minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
 temporal_version: 1.2.0
-# admin-tools provides the `temporal` CLI; its tag must equal the Temporal server
-# version (this chart's appVersion) so the CLI matches the running server. Pinned
-# exactly for provenance; Renovate bumps it with the chart above (grouped in
-# renovate.json5).
+# admin-tools tag must equal the Temporal server version (this chart's appVersion)
+# so the `temporal` CLI matches; Renovate bumps the pair together (renovate.json5).
 # renovate: datasource=docker depName=temporalio/admin-tools
 temporal_admin_tools_image_tag: 1.31.0
 
-# Real-Time HL7 Ingestion - Strimzi Kafka (MLLP listener → Kafka → batcher → MinIO).
-# The listener/batcher application image is built in CI (see hl7-listener/), not pinned here.
+# Real-Time HL7 Ingestion - Strimzi Kafka (MLLP -> Kafka -> batcher -> MinIO).
+# The listener/batcher image is built in CI (hl7-listener/), not pinned here.
 # renovate: datasource=helm registryUrl=https://strimzi.io/charts/ depName=strimzi-kafka-operator
 strimzi_operator_version: 1.1.0
-# Kafka broker version deployed by Strimzi; must be within the operator's supported set
+# Kafka broker version deployed by Strimzi; must be in the operator's supported set.
 # renovate: datasource=docker depName=apache/kafka
 kafka_version: 4.3.1
 
 # Analytics & Query Engines - Trino
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
-trino_helm_chart_version: ~1.42.2
+trino_helm_chart_version: 1.42.2
 # renovate: datasource=docker depName=bitnamilegacy/jmx-exporter
 trino_jmx_exporter_version: 1.0.1
 
@@ -83,18 +76,13 @@ trino_jmx_exporter_version: 1.0.1
 opa_image_tag: 1.16.2
 
 # Identity Provider - Keycloak
-# Tracked here so Renovate's customManager picks up upstream releases.
-# A matching customManager entry in renovate.json5 also bumps
-# keycloak/VERSION (CI image-tag derivation) and keycloak/Dockerfile
-# (the FROM line for the upstream base) in the same PR so all three
-# stay in sync. See the packageRule in renovate.json5 for the SPI
-# compatibility reminder attached to those PRs.
+# Renovate customManager also bumps keycloak/VERSION + keycloak/Dockerfile FROM in
+# the same PR (with an SPI-compat reminder); see renovate.json5.
 # renovate: datasource=docker depName=quay.io/keycloak/keycloak
 keycloak_version: 26.6.4
 
 # Analytics & Query Engines - Hive
-# Regex versioning restricts updates to the plain multi-arch tags; loose
-# versioning ranked the arch-suffixed -x64/-arm64 variants above them.
+# regex versioning restricts to the plain multi-arch tags (loose ranked -x64/-arm64 above).
 # renovate: datasource=docker depName=starburstdata/hive versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?<compatibility>-e\.)(?<build>\d+)$
 hive_image_tag: 3.1.3-e.15
 
@@ -106,18 +94,21 @@ superset_statsd_exporter_tag: v0.29.0
 
 # Data Visualization & BI - Grafana
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=grafana
-grafana_helm_chart_version: ~10.4.0
+grafana_helm_chart_version: 10.4.3
+
+# Launchpad - catalog discovery sidecar (ADR 0034). The same image the
+# Grafana chart embeds for dashboard ConfigMap discovery.
+launchpad_sidecar_image: quay.io/kiwigrid/k8s-sidecar
+# renovate: datasource=docker depName=quay.io/kiwigrid/k8s-sidecar
+launchpad_sidecar_image_tag: 2.10.1
 
 # Notebooks & Interactive Computing
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/ depName=jupyterhub
-jupyter_helm_chart_version: ~4.3.5
+jupyter_helm_chart_version: 4.3.5
 
 # AI & ML
-# The OWUI chart's appVersion is the source of truth for the deployed OWUI image
-# tag (Scout doesn't override it); the open-webui-bootstrap Job discovers the
-# running Pod's image at deploy time (see configure_admin.yaml) for ORM/bcrypt
-# lockstep. open_webui_image_tag below pins that same version for the build-lane
-# haul; Renovate bumps it with the chart (grouped in renovate.json5).
+# OWUI image tag = the OWUI chart's appVersion (the bootstrap Job discovers the
+# running Pod); open_webui_image_tag pins it for the haul, Renovate bumps the pair.
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
 open_webui_helm_chart_version: 15.2.1
 # renovate: datasource=docker depName=ghcr.io/open-webui/open-webui
@@ -126,18 +117,20 @@ open_webui_image_tag: 0.11.0
 ollama_image_tag: 0.24.0
 
 # Monitoring & Observability - Prometheus
-# renovate: datasource=helm registryUrl=https://prometheus-community.github.io/helm-charts depName=kube-prometheus-stack
-prometheus_helm_chart_version: ~27.52.0
+# Deployed chart is prometheus-community/prometheus (NOT kube-prometheus-stack);
+# depName fixed so Renovate tracks the right chart.
+# renovate: datasource=helm registryUrl=https://prometheus-community.github.io/helm-charts depName=prometheus
+prometheus_helm_chart_version: 27.52.0
 
 # Monitoring & Observability - Loki & Alloy
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=loki
-loki_helm_chart_version: ~6.49.0
+loki_helm_chart_version: 6.49.0
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=alloy
-alloy_helm_chart_version: ~1.8.2
+alloy_helm_chart_version: 1.8.2
 
 # Container Registry
 # renovate: datasource=helm registryUrl=https://helm.goharbor.io depName=harbor
-harbor_version: ~1.19.1
+harbor_version: 1.19.2
 
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
@@ -145,25 +138,17 @@ nexus_helm_chart_version: 5.22.0
 
 # GPU Support
 # renovate: datasource=helm registryUrl=https://nvidia.github.io/gpu-operator depName=gpu-operator
-gpu_operator_version: ~25.10.1
+gpu_operator_version: v25.10.1
 
 # Medical Imaging - DCM4CHEE
-# dcm4che-tools tracks the dcm4che toolkit (used only by the populate Job's storescu), not the
-# dcm4chee-arc release family below — bump it independently.
+# dcm4che-tools = the toolkit (populate Job's storescu), separate from the arc family below.
 # renovate: datasource=docker depName=dcm4che/dcm4che-tools
 dcm4che_tools_version: 5.33.1
 
-# dcm4chee archive stack: arc, postgres, and slapd ship as one "family" (the number after the
-# dash on db/ldap; the minor on arc). They MUST stay on the same family — arc waits on and
-# expects a matching db/ldap — so each image is pinned to the current family (and postgres major)
-# by an `allowedVersions` packageRule in renovate.json5, which bounds Renovate's `loose`
-# versioning. allowedVersions CANNOT live in these `# renovate:` comments: the custom regex
-# manager has no allowedVersionsTemplate, and appending `allowedVersions=` breaks the matchString
-# (the trailing text fails the required newline anchor), silently dropping the image from tracking
-# altogether. This pinning prevents the kind of out-of-step jump PR #400 made: 2.6.10-35.0 was an
-# unpublished base/family combo that wedged the deploy. Current family: 35 (arc 5.35.x,
-# postgres 18.x-35, slapd 2.6.x-35.x). To move to a new family, bump all three values here AND
-# update all three allowedVersions regexes in renovate.json5 together in one change.
+# arc/db/ldap ship as one family (35: arc 5.35.x, db 18.x-35, slapd 2.6.x-35.x) and MUST stay
+# in step. Bounded by allowedVersions packageRules in renovate.json5 (they can't live here --
+# the regex manager has no allowedVersionsTemplate). New family = bump all 3 + their regexes
+# together. (A mismatched combo wedged the deploy in PR #400.)
 # renovate: datasource=docker depName=dcm4che/dcm4chee-arc-psql
 dcm4chee_arc_version: 5.35.0
 # renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose
@@ -172,40 +157,28 @@ dcm4chee_db_version: 18.3-35
 dcm4chee_ldap_version: 2.6.13-35.0
 
 # Medical Imaging - Orthanc
-# orthanc_version is set to "latest" (not a pinned version); not monitored by Renovate
+# "latest" (not pinned); not Renovate-monitored.
 orthanc_image: jodogne/orthanc-plugins
 orthanc_version: latest
 
 # Medical Imaging - XNAT (optional; enable_xnat)
-# GHCR monorepo lane (ghcr.io/nrgxnat/xnat, set in the xnat role defaults); the
-# Docker Hub xnatworks/xnat-web images are no longer pulled.
-# TEMPORARY PIN: 1.10.1-SNAPSHOT is the only 1.10 tag published to GHCR. The
-# chart's own appVersion (1.9.3.7) is a 1.9 image, and Scout's plugins are built
-# against 1.10 (iq-plugin-...-xnat1.10, openid 1.6.0), so 1.9 is not an option.
-# Repin to a 1.10 release tag once one is published — Renovate cannot bump a
-# -SNAPSHOT, so this pin is effectively unmonitored until then.
+# GHCR lane (ghcr.io/nrgxnat/xnat, set in the xnat role); Docker Hub xnat-web no longer pulled.
+# TEMPORARY PIN: 1.10.1-SNAPSHOT is the only 1.10 GHCR tag; the chart's appVersion (1.9.x) is too
+# old for Scout's 1.10 plugins. Repin to a 1.10 release when published (Renovate can't bump -SNAPSHOT).
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/xnat
 xnat_image_tag: 1.10.1-SNAPSHOT
-# The openid SSO plugin, published only to the NrgXnat Artifactory; consumed by
-# the coordinates entry in ansible/roles/xnat/defaults/main.yaml.
+# openid SSO plugin (NrgXnat Artifactory); consumed by roles/xnat/defaults coordinates.
 # renovate: datasource=maven registryUrl=https://nrgxnat.jfrog.io/nrgxnat/libs-release depName=au.edu.qcif.xnat.openid:openid-auth-plugin
 xnat_openid_plugin_version: 1.5.0
-# XNAT Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015).
+# XNAT Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/charts/xnat
 xnat_chart_version: 3.0.0
 
-# data-generator Helm chart, published as an OCI artifact on GHCR (Renovate-monitored, ADR 0015)
+# data-generator Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator
 data_generator_chart_version: 1.0.0
-# hl7-transformer Helm chart, built and published to GHCR by this repo's own CI
-# (ADR 0030 phase 0). Not Renovate-tracked, unlike the third-party charts above:
-# watching a chart we publish here would self-reference. On-prem Ansible pin only,
-# bumped by hand when the extractor is repointed to the OCI chart; the GitOps lane
-# owns the real version via its OCIRepository (ADR 0031).
+# Built + published by this repo's CI (ADR 0030 phase 0); NOT Renovate-tracked (self-ref).
+# On-prem Ansible pin only; the GitOps lane owns the real version (OCIRepository, ADR 0031).
 hl7_transformer_chart_version: 0.0.0
-# hl7log-extractor Helm chart, built and published to GHCR by this repo's own CI
-# (ADR 0030 phase 0). Not Renovate-tracked (self-built, like hl7-transformer
-# above). On-prem Ansible pin only, bumped by hand when the extractor is
-# repointed to the OCI chart; the GitOps lane owns the real version via its
-# OCIRepository (ADR 0031).
+# Same as hl7_transformer_chart_version above (self-built; ADR 0030/0031).
 hl7log_extractor_chart_version: 0.0.0

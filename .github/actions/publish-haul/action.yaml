@@ -1,0 +1,78 @@
+name: Publish haul
+description: >-
+  Sync a rendered Hauler manifest into a signed .tar.zst bundle and publish the
+  bundle + manifest to GHCR, advancing the :main pointers last (ADR 0033). The
+  core manifest is synced with cosign --key verification, fail-closed. Callers
+  render the manifest(s) and install hauler/oras/cosign + log in to GHCR first.
+inputs:
+  version:
+    description: Immutable version tag for the artifacts (e.g. 0.YYYYMMDD.run).
+    required: true
+  core-manifest:
+    description: Rendered kind:Images manifest of cosign-signed components.
+    required: false
+    default: haul.yaml
+  upstream-manifest:
+    description: >-
+      Optional manifest of third-party images synced WITHOUT --key (trusted by
+      immutable digest, not our signature). Empty string to skip.
+    required: false
+    default: ''
+  manifest-repo:
+    description: GHCR repo for the manifest artifact.
+    required: true
+  bundle-repo:
+    description: GHCR repo for the .tar.zst bundle artifact.
+    required: true
+  cosign-private-key:
+    description: cosign signing key (env:// material).
+    required: true
+  cosign-password:
+    description: cosign key password.
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        CORE_MANIFEST: ${{ inputs.core-manifest }}
+        UPSTREAM_MANIFEST: ${{ inputs.upstream-manifest }}
+        MANIFEST_REPO: ${{ inputs.manifest-repo }}
+        BUNDLE_REPO: ${{ inputs.bundle-repo }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosign-private-key }}
+        COSIGN_PASSWORD: ${{ inputs.cosign-password }}
+      run: |
+        set -euo pipefail
+        # hauler 2.0.2 SKIPS an image it can't verify yet still exits 0, so an
+        # exit-code or failure-string check fails OPEN. Fail CLOSED: require one
+        # "signature verified" line per image in the core manifest (dash-anchored
+        # count so metadata.name isn't included). (Strings are 2.0.2's; recheck on bump.)
+        # Derive the public key from the signing key -- no separate COSIGN_PUBLIC_KEY secret.
+        cosign public-key --key env://COSIGN_PRIVATE_KEY > cosign.pub
+        expected=$(grep -cE '^[[:space:]]*-[[:space:]]+name:' "${CORE_MANIFEST}" || true)
+        hauler store sync -f "${CORE_MANIFEST}" --key cosign.pub 2>&1 | tee sync.log
+        verified=$(grep -cF 'signature verified for image [' sync.log || true)
+        if [ "$expected" -lt 1 ] || [ "$verified" -ne "$expected" ]; then
+          echo "::error::cosign verification incomplete: ${verified}/${expected} components verified; the haul would be missing unverified images"
+          exit 1
+        fi
+        manifests="${CORE_MANIFEST}:application/yaml"
+        if [ -n "${UPSTREAM_MANIFEST}" ]; then
+          # Third-party upstream images: sync WITHOUT --key (trusted by digest, not
+          # our signature) into the same store so the saved bundle is complete.
+          hauler store sync -f "${UPSTREAM_MANIFEST}"
+          manifests="${manifests} ${UPSTREAM_MANIFEST}:application/yaml"
+        fi
+        hauler store save -f "scout-${VERSION}.tar.zst"
+        # Push both immutable :version artifacts and sign the bundle, THEN advance
+        # the :main pointers last, so :main only moves after a complete, signed
+        # publish (ordering guard: a partial failure leaves the old predecessor).
+        oras push "${MANIFEST_REPO}:${VERSION}" ${manifests}
+        oras push "${BUNDLE_REPO}:${VERSION}" \
+          --artifact-type application/vnd.hauler.bundle.v1+zstd \
+          "scout-${VERSION}.tar.zst:application/zstd"
+        cosign sign --key env://COSIGN_PRIVATE_KEY \
+          --use-signing-config=false --tlog-upload=false --yes "${BUNDLE_REPO}:${VERSION}"
+        oras tag "${MANIFEST_REPO}:${VERSION}" main
+        oras tag "${BUNDLE_REPO}:${VERSION}" main

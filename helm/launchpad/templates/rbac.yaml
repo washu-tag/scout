@@ -1,0 +1,36 @@
+{{- if .Values.catalog.discovery.enabled }}
+# The catalog sidecar watches labelled ConfigMaps across namespaces
+# (ADR 0034). ServiceAccounts are pod-scoped, so the deployment suppresses the
+# automatic token mount and projects the token into the sidecar alone; the app
+# container holds no API credentials. Authored here — rather than inherited
+# from an upstream chart's defaults, as Grafana's equivalent grant is — so the
+# cluster-wide read stays visible and reviewable.
+#
+# Cluster-scoped names carry the release namespace: without it, two launchpad
+# releases in one cluster would fight over a single ClusterRole/Binding.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "launchpad.fullname" . }}-catalog-reader-{{ .Release.Namespace }}
+  labels:
+    {{- include "launchpad.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ['']
+    resources: ['configmaps']
+    verbs: ['get', 'list', 'watch']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "launchpad.fullname" . }}-catalog-reader-{{ .Release.Namespace }}
+  labels:
+    {{- include "launchpad.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "launchpad.fullname" . }}-catalog-reader-{{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "launchpad.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
