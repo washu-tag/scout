@@ -1,0 +1,47 @@
+# Flux Kustomizations for hive (Phase 3 DAG). Each pulls scout-config (OCIRepository)
+# + cluster-vars for ${...} substitution. dependsOn reproduces Ansible deploy order.
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: hive-db
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/hive/db
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-data-foundation
+    - name: postgres-cluster
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: hive-metastore
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/hive/metastore
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-data-foundation
+    - name: hive-db
+    - name: minio-tenant

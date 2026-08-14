@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Readonly metastore for the user-facing Trino. Same chart + hive DB as write, but
+# connects as SELECT-only hive_readonly with lake-reader S3 creds. This patch IS the
+# entire write-vs-readonly difference.
+resources:
+  - ../../_base
+patches:
+  # env is an atomic list (schema-less HelmRelease), so patched by index; order fixed
+  # in _base: [2]=HIVE_METASTORE_USER, [6]=S3_ACCESS_KEY.
+  - target:
+      kind: HelmRelease
+      name: hive-metastore
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: hive-metastore-readonly
+      - op: replace
+        path: /spec/values/fullnameOverride
+        value: hive-metastore-readonly
+      - op: replace
+        path: /spec/values/env/2/value
+        value: hive_readonly
+      - op: replace
+        path: /spec/values/env/6/value
+        value: ${s3_lake_reader}
+      - op: replace
+        path: /spec/values/envFrom/0/secretRef/name
+        value: hive-metastore-readonly-secret

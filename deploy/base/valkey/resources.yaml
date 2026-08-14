@@ -1,0 +1,76 @@
+# Shared standalone Valkey cache/queue (ADR 0031), upstream valkey/valkey chart,
+# consumed by oauth2-proxy (session store), Superset, open-webui (redis://). Lands in
+# ${valkey_namespace} (resolves to scout-core, owned solely by scout-core-foundation
+# via dependsOn); uses the valkey_namespace var every consumer references.
+# Auth: ACL-enabled off the fixed-name `valkey-auth` Secret (`password` for the
+# default ACL user, `password-file` for the exporter). Seeded by CI/site (Phase 3)
+# or SOPS/ESO (Phase 4), NEVER in git. Persistence: AOF on a PVC per the Ansible role.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: valkey
+  namespace: '${valkey_namespace}'
+spec:
+  interval: 1h
+  url: https://valkey-io.github.io/valkey-helm/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: valkey
+  namespace: '${valkey_namespace}'
+spec:
+  interval: 30m
+  # Version pinned in versions.yaml (valkey_chart_version), Renovate-tracked there.
+  # Literal mirror (not stamped); keep in lockstep with versions.yaml.
+  chart:
+    spec:
+      chart: valkey
+      version: '0.9.4'
+      sourceRef:
+        kind: HelmRepository
+        name: valkey
+        namespace: '${valkey_namespace}'
+  values:
+    auth:
+      enabled: true
+      # Fixed-name valkey-auth Secret, seeded by CI/site, not committed. ACL below +
+      # this password grant the default user full access (valkey.io/topics/acl).
+      usersExistingSecret: valkey-auth
+      aclUsers:
+        default:
+          permissions: 'allkeys allchannels allcommands'
+          passwordKey: password
+    service:
+      type: ClusterIP
+      port: 6379
+    dataStorage:
+      enabled: true
+      requestedSize: '${valkey_storage_size}'
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 1
+        memory: 2Gi
+    # AOF persistence; mirrors valkey_persistence_enabled.
+    valkeyConfig: |
+      appendonly yes
+      appendfsync everysec
+    metrics:
+      enabled: true
+      exporter:
+        # Exporter authenticates via the same valkey-auth Secret, mounted as the
+        # valkey-auth-exporter volume; reads the password-file key.
+        extraExporterSecrets:
+          - name: valkey-auth
+        extraVolumeMounts:
+          - name: valkey-auth-exporter
+            mountPath: /valkey-auth
+            readOnly: true
+        args:
+          - '--redis.password-file=/valkey-auth/password-file'
+      # Scraped via static Prometheus config, not a ServiceMonitor (Ansible role).
+      serviceMonitor:
+        enabled: false

@@ -1,0 +1,99 @@
+# OPA: Trino access-control policy engine (ADRs 0020/0021), scout-opa OCI chart
+# as Deployment + Service in the Trino namespace (opa_namespace == trino_namespace).
+# Static AuthZ (Rego + inventory-rendered data doc) is baked in below; per-user
+# attributes come at runtime via the bundle plugin (ADR 0021) polling MinIO, hence
+# dependsOn minio-tenant (bundle + bundle-reader IAM user provisioned there).
+#
+# Fixed-name Secret, seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git:
+#   - opa-bundle-reader (Secret): AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY /
+#     AWS_REGION (required even against MinIO -- credential resolver fails closed
+#     without it). Same values minio-tenant seeds into ${s3_opa_bundle_reader}-creds
+#     in scout-data; mirrored here by fixed name, mounted via envFrom.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: scout-opa
+  namespace: '${scout_analytics_namespace}'
+spec:
+  interval: 30m
+  # Scout-owned OCI chart; GitOps lane owns real version via OCIRepository
+  # (ADR 0030/0031). Literal 0.0.0 placeholder until the stamping job lands.
+  chart:
+    spec:
+      chart: scout-opa
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${scout_analytics_namespace}'
+  values:
+    replicaCount: 2
+    # Same-namespace NetworkPolicy locks OPA's unauthenticated API to the Trino coordinator.
+    networkPolicy:
+      enabled: true
+    # Tag pinned in versions.yaml (opa_image_tag), Renovate-tracked there. Literal
+    # mirror (upstream image, not stamped); keep in lockstep with versions.yaml.
+    image:
+      repository: openpolicyagent/opa
+      tag: '1.16.2'
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+    bundleReader:
+      # Fixed-name Secret (above), envFrom-mounted. credsHash rollout trigger
+      # omitted: no hashing secret values in git; rotation-rollout deferred to
+      # Phase 4 (ESO/Reloader).
+      secretName: opa-bundle-reader
+    # Static data document. Only ${report_delta_table_name} is a shared cluster-var;
+    # baseline_hidden_tables derives from it so a renamed report table can't leave
+    # the patient-mapping table unhidden.
+    data:
+      json: |
+        {
+          "filtered_tables": [
+            { "catalog": "delta", "schema": "default", "table_prefix": "${report_delta_table_name}" }
+          ],
+          "baseline_hidden_tables": [
+            { "catalog": "delta", "schema": "default", "table": "${report_delta_table_name}_report_patient_mapping" },
+            { "catalog": "delta", "schema": "default", "table": "${report_delta_table_name}_report_patient_mapping_history" }
+          ],
+          "hidden_tables": [],
+          "view_owner_principals": ["trino"],
+          "attribute_filters": {
+            "allowed_facilities": { "column": "sending_facility" }
+          },
+          "masked_columns": ["patient_name", "full_patient_name", "zip_or_postal_code"]
+        }
+    # Bundle plugin config (ADR 0021). Headless `-hl` MinIO service so DNS resolves
+    # to all tenant pods; resource is the bundle the Keycloak SPI listener publishes.
+    # `persist: true` keeps the last good bundle in pod-local emptyDir so a restart
+    # during a MinIO outage doesn't drop OPA to deny-all. 5-10s poll meets ADR 0020
+    # real-time-offboarding.
+    config:
+      yaml: |
+        services:
+          minio:
+            url: http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000
+            credentials:
+              s3_signing:
+                environment_credentials: {}
+        bundles:
+          scout-users:
+            service: minio
+            resource: ${opa_bundles_bucket}/${opa_bundle_object_key}
+            polling:
+              min_delay_seconds: 5
+              max_delay_seconds: 10
+            persist: true
+        decision_logs:
+          console: true
+          reporting:
+            min_delay_seconds: 5
+            max_delay_seconds: 15
+        status:
+          console: true

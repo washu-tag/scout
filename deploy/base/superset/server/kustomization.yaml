@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# ${scout_analytics_namespace} resolved by Flux post-build substitution.
+namespace: '${scout_analytics_namespace}'
+resources:
+  - resources.yaml
+# Single-source the two config .py (ansible/roles/superset/files/* symlink to them);
+# HelmRelease valuesFrom deep-sets them into configOverrides. Both envsubst-clean.
+configMapGenerator:
+  - name: superset-config-overrides
+    files:
+      - superset_trino_auth.py
+      - superset_metrics.py
+generatorOptions:
+  # Fixed name: referenced in HelmRelease valuesFrom. Flux re-reconciles on content
+  # change, so a .py edit still rolls the release.
+  disableNameSuffixHash: true

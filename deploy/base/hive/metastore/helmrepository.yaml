@@ -1,0 +1,10 @@
+# Scout-owned OCI chart (helm/hive-metastore, GHCR); both metastore releases share it.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: scout-charts
+  namespace: '${hive_namespace}'
+spec:
+  type: oci
+  interval: 1h
+  url: oci://ghcr.io/washu-tag/charts

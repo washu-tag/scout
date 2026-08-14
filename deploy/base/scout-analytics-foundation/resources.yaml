@@ -1,0 +1,19 @@
+# Per-namespace foundation (ADR 0031): sole owner of the ${scout_analytics_namespace}
+# Namespace and the shared scout-charts HelmRepository (opa, superset, trino-ro live here
+# and pull from scout-charts). Co-declaring either across their prune:true Kustomizations
+# makes them fight over ownership (a delete of one prunes it from the others), so each
+# dependsOn this foundation.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: '${scout_analytics_namespace}'
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: scout-charts
+  namespace: '${scout_analytics_namespace}'
+spec:
+  type: oci
+  interval: 1h
+  url: oci://ghcr.io/washu-tag/charts

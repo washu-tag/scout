@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Keycloak Operator + CRDs (Phase 3, ADR 0031), vendored from keycloak-k8s-resources
+# 26.6.4 into upstream/ (raw.githubusercontent is unfetchable air-gapped + a supply-chain
+# risk; refresh in lockstep with keycloak_version). keycloaks/keycloakrealmimports are the
+# cluster-scoped CRDs; kubernetes.yml is the namespace-less upstream operator, placed into
+# ${keycloak_namespace} by the namespace transformer below (CRDs are cluster-scoped and
+# left untouched). The ${keycloak_namespace} Namespace is owned by scout-core-foundation.
+namespace: '${keycloak_namespace}'
+resources:
+  - upstream/keycloaks.k8s.keycloak.org-v1.yml
+  - upstream/keycloakrealmimports.k8s.keycloak.org-v1.yml
+  - upstream/kubernetes.yml

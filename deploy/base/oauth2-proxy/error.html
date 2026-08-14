@@ -1,0 +1,353 @@
+{{define "error.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{.StatusCode}} {{.Title}} | Scout</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #3467a5 0%, #254470 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    ol.reasons {
+      list-style: none;
+      counter-reset: reason;
+      padding: 0;
+      margin: 20px 0 28px;
+      text-align: left;
+    }
+
+    ol.reasons li {
+      counter-increment: reason;
+      position: relative;
+      padding: 14px 16px 14px 52px;
+      margin-bottom: 12px;
+      background: #f5f7fa;
+      border-radius: 10px;
+      color: #374151;
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+
+    ol.reasons li:last-child { margin-bottom: 0; }
+
+    ol.reasons li::before {
+      content: counter(reason);
+      position: absolute;
+      left: 14px;
+      top: 12px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #254470;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Only the lead-in strong (first child of the li) becomes its own block;
+       inline <strong> mid-sentence stays inline. */
+    ol.reasons li > strong:first-child {
+      color: #1e3b61;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    ol.reasons strong {
+      color: #1e3b61;
+    }
+
+.actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .actions .btn {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 12px 20px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #254470;
+      border: 1px solid #cbd5e1;
+    }
+
+    .btn-ghost:hover {
+      background: #f1f5f9;
+      color: #1e3b61;
+    }
+
+    .status-code {
+      font-size: 5rem;
+      font-weight: bold;
+      color: #1e3b61;
+      margin-bottom: 20px;
+      line-height: 1;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #254470;
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .link {
+      color: #254470;
+      text-decoration: underline;
+      font-weight: 500;
+    }
+
+    .link:hover {
+      color: #1e3b61;
+    }
+
+    .info-box {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      cursor: pointer;
+      background: #fafafa;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .info-header:hover {
+      background: #f0f0f0;
+    }
+
+    .info-title {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .info-toggle {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .info-content {
+      padding: 16px;
+      text-align: left;
+      display: none;
+      background: white;
+    }
+
+    .info-content.show {
+      display: block;
+    }
+
+    .info-content div {
+      margin-bottom: 10px;
+      color: #555;
+      word-wrap: break-word;
+    }
+
+    .info-content div:last-child {
+      margin-bottom: 0;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn-yellow {
+      background-color: #f2c04a;
+      color: white;
+    }
+
+    .btn-yellow:hover {
+      background-color: #e0b03a;
+    }
+
+    .btn-blue {
+      background-color: #254470;
+      color: white;
+    }
+
+    .btn-blue:hover {
+      background-color: #1e3b61;
+    }
+
+    footer {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      color: #eee;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    footer a {
+      color: #eee;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    {{ if eq .StatusCode 403 }}
+      <h1>Access Not Yet Granted</h1>
+      <p>Your Scout account isn&rsquo;t active yet. This can happen for two reasons:</p>
+      <ol class="reasons">
+        <li>
+          <strong>You haven&rsquo;t accepted the Scout Terms of Use.</strong>
+          When you sign in, you&rsquo;ll see a Scout Terms of Use page. Click
+          <strong>Continue</strong> to accept &mdash; declining or closing the
+          page will leave your access blocked.
+        </li>
+        <li>
+          <strong>You&rsquo;re waiting for administrator approval.</strong>
+          If you&rsquo;ve already accepted the Terms of Use, an administrator
+          is reviewing your request. You&rsquo;ll get an email when it&rsquo;s
+          approved.
+        </li>
+      </ol>
+      <div class="actions">
+        <a id="return-to-scout" href="/" class="btn btn-blue">Try signing in again</a>
+        <a href="${scout_docs_url}/" class="btn btn-ghost">Visit our documentation</a>
+      </div>
+    {{ else }}
+      <div class="status-code">{{.StatusCode}}</div>
+
+      {{ if or .Message .RequestID }}
+      <div class="info-box">
+        <div class="info-header" onclick="toggleInfo()">
+          <span class="info-title">More Info</span>
+          <span class="info-toggle" id="toggle-icon">▼</span>
+        </div>
+        <div class="info-content" id="info-content">
+          {{ if .Message }}
+          <div>{{.Message}}</div>
+          {{ end }}
+          {{ if .RequestID }}
+          <div>Request ID: {{.RequestID}}</div>
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+
+      {{ if .Redirect }}
+      <div class="button-row">
+        <form method="GET" action="{{.Redirect}}" style="flex: 1;">
+          <button type="submit" class="btn btn-yellow">Go back</button>
+        </form>
+        <form method="GET" action="{{.ProxyPrefix}}/sign_in" style="flex: 1;">
+          <input type="hidden" name="rd" value="{{.Redirect}}" />
+          <button type="submit" class="btn btn-blue">Sign in</button>
+        </form>
+      </div>
+      {{ end }}
+    {{ end }}
+  </div>
+
+  <script>
+    function toggleInfo() {
+      const content = document.getElementById('info-content');
+      const icon = document.getElementById('toggle-icon');
+      content.classList.toggle('show');
+      icon.textContent = content.classList.contains('show') ? '▲' : '▼';
+    }
+  </script>
+
+  <script>
+    // Update Return to Scout Link to use Launchpad root domain
+    (function() {
+      'use strict';
+
+      // Get root domain passed in from Footer variable (because oauth2-proxy templates are limited)
+      function getRootDomain() {
+        const footer = "{{.Footer}}";
+        console.debug("Footer content / root domain:", footer);
+        return footer;
+      }
+
+      // Update Return to Scout link
+      function updateReturnLink() {
+        const returnLink = document.getElementById("return-to-scout");
+        
+        if (!returnLink) {
+          console.error("Return to Scout link not found");
+          return false;
+        }
+
+        const rootDomain = getRootDomain();
+        const protocol = window.location.protocol;
+        const updatedHref = protocol + "//" + rootDomain + "/";
+
+        console.debug("Return to Scout link updated:", updatedHref);
+
+        returnLink.href = updatedHref;
+      }
+
+      updateReturnLink();
+    })();
+  </script>
+</body>
+</html>
+{{end}}

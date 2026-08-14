@@ -101,6 +101,11 @@ tolerations: []
 
 affinity: {}
 
+# Append the cloud-provider env stubs the image entrypoint requires (empty in the
+# on-prem/MinIO path) so callers don't restate them. Default false: a caller that
+# still lists the stubs in env (e.g. the Ansible role) must not double them.
+cloudEnvStubs: false
+
 env:
   - name: HIVE_METASTORE_DRIVER
     value: 'org.postgresql.Driver'
@@ -124,32 +129,6 @@ env:
     value: 'us-east-1'
   - name: HIVE_METASTORE_USERS_IN_ADMIN_ROLE
     value: 'admin'
-  - name: GOOGLE_CLOUD_KEY_FILE_PATH
-    value: ''
-  - name: AZURE_ADL_CLIENT_ID
-    value: ''
-  - name: AZURE_ADL_CREDENTIAL
-    value: ''
-  - name: AZURE_ADL_REFRESH_URL
-    value: ''
-  - name: AZURE_ABFS_STORAGE_ACCOUNT
-    value: ''
-  - name: AZURE_ABFS_ACCESS_KEY
-    value: ''
-  - name: AZURE_WASB_STORAGE_ACCOUNT
-    value: ''
-  - name: AZURE_ABFS_OAUTH
-    value: ''
-  - name: AZURE_ABFS_OAUTH_TOKEN_PROVIDER
-    value: ''
-  - name: AZURE_ABFS_OAUTH_CLIENT_ID
-    value: ''
-  - name: AZURE_ABFS_OAUTH_SECRET
-    value: ''
-  - name: AZURE_ABFS_OAUTH_ENDPOINT
-    value: ''
-  - name: AZURE_WASB_ACCESS_KEY
-    value: ''
 
 # Environment variables from secrets or configmaps
 # Use this to load sensitive data from Kubernetes secrets

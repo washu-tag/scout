@@ -1,0 +1,75 @@
+# Flux Kustomizations for keycloak (Phase 3 DAG). Pulls config artifact (OCIRepository
+# scout-config) + cluster-vars for ${...} subst; dependsOn reproduces Ansible order.
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: keycloak-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/keycloak/operator
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-core-foundation
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: keycloak-instance
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/keycloak/instance
+  prune: true
+  wait: true
+  timeout: 15m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-core-foundation
+    - name: keycloak-operator
+    - name: postgres-cluster
+  healthCheckExprs:
+    - apiVersion: k8s.keycloak.org/v2beta1
+      kind: Keycloak
+      current: status.conditions.exists(c, c.type == 'Ready' && c.status == 'True')
+---
+# Realm import, split from keycloak-instance so this dependsOn gates it on Keycloak
+# Ready (the instance's healthCheckExprs) -- the import runs only after the CR is up,
+# no first-boot race. oauth2-proxy/trino-ro/superset dependsOn this (they need the
+# realm's OIDC clients), not just keycloak-instance.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: keycloak-realm
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/keycloak/realm
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: keycloak-instance

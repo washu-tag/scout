@@ -1,0 +1,350 @@
+# Superset server (Scout Analytics BI, ADR 0030/0031): upstream apache/superset
+# chart plus Scout-owned side objects (DB bootstrap Job, StatsD-exporter Svc +
+# mapping, statsd/branding/OAuth config). Namespace ${scout_analytics_namespace}
+# is owned by scout-analytics-foundation (dependsOn), not declared here.
+#
+# Secrets never in git. Chart env Secret disabled (secretEnv.create=false) so both
+# the server and the dashboards import Job read ONE externally-seeded fixed-name
+# `superset-env` via envFrom (CI/site Phase 3, ESO Phase 4). superset_config.py
+# os.getenv keys: DB_HOST/PORT/USER/PASS/NAME, REDIS_*, SUPERSET_SECRET_KEY,
+# KEYCLOAK_SUPERSET_CLIENT_SECRET (user OAuth), KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET
+# (Trino svc token), KEYCLOAK_TOKEN_URL, KEYCLOAK_SUPERSET_SVC_CLIENT_ID, TRINO_CA_CERT.
+# Other fixed-name refs (seeded by CI/site, never in git): superuser-secret (CNPG
+# basic-auth, used by DB Job); superset-valkey-auth (REDIS_PASSWORD, dashboards Job);
+# trino-tls (cert-manager CA for user-facing Trino TLS, verified by DB_CONNECTION_MUTATOR);
+# scout-logo ConfigMap (binary logo/favicon branding).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: superset
+  namespace: '${scout_analytics_namespace}'
+spec:
+  interval: 1h
+  url: https://apache.github.io/superset
+---
+# StatsD-exporter mapping for the sidecar. INLINE (not a generated ConfigMap):
+# its literal $1/$2/$3 statsd_exporter backrefs need substitute:disabled while
+# ${scout_analytics_namespace} needs substitution, and one Flux annotation can't do
+# both. $$1/$$2/$$3 are $$-escaped so envsubst leaves a literal $1/$2/$3
+# (a digit-led $N is otherwise a substitution target).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: superset-statsd-mapping
+  namespace: '${scout_analytics_namespace}'
+data:
+  statsd_mapping.yaml: |
+    mappings:
+      # REST API timings: superset.<XRestApi>.<method>.time
+      - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.time"
+        match_type: regex
+        name: 'superset_api_request_duration_ms'
+        labels:
+          api: '$$1'
+          method: '$$2'
+        observer_type: histogram
+        histogram_options:
+          buckets: [10, 50, 100, 250, 500, 1000, 2500]
+
+      # REST API counters: superset.<XRestApi>.<method>.<status>
+      - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.(\\w+)"
+        match_type: regex
+        name: 'superset_api_requests_total'
+        labels:
+          api: '$$1'
+          method: '$$2'
+          status: '$$3'
+
+      # Drop everything else
+      - match: '.'
+        match_type: regex
+        action: drop
+        name: 'dropped'
+---
+# Prometheus scrape target for the statsd-exporter sidecar (port 9102).
+apiVersion: v1
+kind: Service
+metadata:
+  name: superset-statsd-metrics
+  namespace: '${scout_analytics_namespace}'
+  labels:
+    app: superset
+    component: statsd-exporter
+spec:
+  type: ClusterIP
+  selector:
+    app: superset
+  ports:
+    - name: metrics
+      port: 9102
+      targetPort: 9102
+      protocol: TCP
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  # Release name `superset` fixes chart fullname, so the fixed-name env/config
+  # Secrets (superset-env / superset-config) the dashboards import Job consumes.
+  name: superset
+  namespace: '${scout_analytics_namespace}'
+spec:
+  interval: 30m
+  # Chart init Job (db upgrade + admin bootstrap) runs at install and takes a while.
+  timeout: 15m
+  # Version pinned in versions.yaml (superset_helm_chart_version) -- Renovate-tracked
+  # there, not deploy/. Literal mirror (upstream chart, not stamped); keep in lockstep.
+  chart:
+    spec:
+      chart: superset
+      version: '0.15.5'
+      sourceRef:
+        kind: HelmRepository
+        name: superset
+        namespace: '${scout_analytics_namespace}'
+  # configOverrides.trino_auth / prometheus_metrics single-sourced from files via
+  # configMapGenerator (kustomization.yaml); valuesFrom deep-sets them, merging with
+  # the inline keys below.
+  valuesFrom:
+    # literal: true REQUIRED with targetPath: else Flux feeds the whole .py to Helm's
+    # strvals parser which reads commas/=/{}/[] as --set syntax and errors the reconcile.
+    - kind: ConfigMap
+      name: superset-config-overrides
+      valuesKey: superset_trino_auth.py
+      targetPath: configOverrides.trino_auth
+      literal: true
+    - kind: ConfigMap
+      name: superset-config-overrides
+      valuesKey: superset_metrics.py
+      targetPath: configOverrides.prometheus_metrics
+      literal: true
+  values:
+    # Scout custom image (build-lane-stamped at publish; literal here).
+    image:
+      repository: ghcr.io/washu-tag/superset
+      tag: '5.0.0'
+    # Disable chart env Secret so both server and dashboards Job read the
+    # externally-seeded fixed-name `superset-env` (see header).
+    secretEnv:
+      create: false
+    # Embedded Redis off -- centralized Valkey backs cache + Celery.
+    redis:
+      enabled: false
+    # No bundled Postgres; metadata DB is the shared CNPG cluster.
+    postgresql:
+      enabled: false
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      annotations:
+        # oauth2-proxy pair tracks ${oauth2_proxy_namespace}; security-headers is
+        # traefik-owned (kube-system), created outside this base.
+        traefik.ingress.kubernetes.io/router.middlewares: >-
+          ${oauth2_proxy_namespace}-oauth2-proxy-error@kubernetescrd,
+          ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
+          kube-system-security-headers@kubernetescrd
+      path: /
+      hosts:
+        - 'superset.${server_hostname}'
+    supersetNode:
+      connections:
+        # Connection values arrive at runtime from `superset-env` via os.getenv.
+        # redis_password just needs to be non-empty at render time (chart templates
+        # it into the Redis URLs); real REDIS_PASSWORD comes from superset-env, so
+        # this placeholder is never used.
+        redis_password: 'placeholder'
+      resources:
+        requests:
+          cpu: 250m
+          memory: 1Gi
+        limits:
+          cpu: 2
+          memory: 2Gi
+      extraContainers:
+        - name: statsd-exporter
+          # Pinned in versions.yaml (superset_statsd_exporter_tag).
+          image: prom/statsd-exporter:v0.29.0
+          args:
+            - --statsd.listen-udp=:9125
+            - --statsd.listen-tcp=
+            - --web.listen-address=:9102
+            - --statsd.mapping-config=/etc/statsd-exporter/statsd_mapping.yaml
+          ports:
+            - name: statsd-udp
+              containerPort: 9125
+              protocol: UDP
+            - name: metrics
+              containerPort: 9102
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: statsd-mapping
+              mountPath: /etc/statsd-exporter
+              readOnly: true
+    init:
+      # Local fallback admin display name only. Applied on first install only (init
+      # Job creates the admin row if absent); OAuth via Keycloak is the real login.
+      # Password left to chart default -- can't source a Secret through the
+      # render-time initscript, so not set here.
+      adminUser:
+        firstname: Scout
+        lastname: Admin
+        email: admin@scout.local
+    configOverrides:
+      branding: |
+        APP_NAME = "Scout Analytics"
+        APP_ICON = "/static/assets/images/scout.png"
+        APP_ICON_WIDTH = 200
+        LOGO_TARGET_PATH = "https://${server_hostname}"
+        LOGO_TOOLTIP = "Scout Launchpad"
+        FAVICONS = [{"href": "/static/assets/images/favicon.ico"}]
+      custom_routing: |
+        from flask import redirect, url_for
+        from flask_appbuilder import expose, IndexView
+
+        from superset.superset_typing import FlaskResponse
+
+        class SupersetIndexView(IndexView):
+            @expose("/")
+            def index(self) -> FlaskResponse:
+                return redirect(url_for("Superset.dashboard", dashboard_id_or_slug="scout"))
+
+        FAB_INDEX_VIEW = f"{SupersetIndexView.__module__}.{SupersetIndexView.__name__}"
+      sql_alchemy: |
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_size": 30,
+            "max_overflow": 30,
+            "pool_timeout": 60,
+        }
+      enable_oauth: |
+        from flask_appbuilder.security.manager import AUTH_OAUTH
+        from flask_appbuilder.security.views import AuthOAuthView, expose
+        from superset.security import SupersetSecurityManager
+        from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
+        from superset.exceptions import SupersetSecurityException
+        from flask import g, redirect, session
+        import logging
+        OAUTH_PROVIDERS = OPENID_PROVIDERS = [
+            {
+                "name": "keycloak",
+                "icon": "fa-key",
+                "token_key": "access_token",
+                "remote_app": {
+                    "client_id": "${keycloak_superset_client_id}",
+                    # Confidential-client secret from env (superset-env), never in git.
+                    "client_secret": os.environ.get("KEYCLOAK_SUPERSET_CLIENT_SECRET"),
+                    "client_kwargs": {"scope": "openid microprofile-jwt"},
+                    "api_base_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/",
+                    "access_token_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/token",
+                    "authorize_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/auth",
+                    "jwks_uri": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/certs",
+                    "request_token_url": None
+                },
+            }
+        ]
+        AUTH_ROLES_MAPPING = {
+            "superset_admin": ["Admin"],
+            "superset_alpha": ["Alpha"],
+            "superset_gamma": ["Gamma"],
+            "superset_sql_lab": ["sql_lab"]
+        }
+        AUTH_TYPE = AUTH_OAUTH
+        AUTH_USER_REGISTRATION = True
+        AUTH_USER_REGISTRATION_ROLE = 'Alpha'
+        AUTH_ROLES_SYNC_AT_LOGIN = True
+        class KeycloakOAuthView(AuthOAuthView):
+            """
+            Custom Auth View to handle Keycloak login and logout redirection
+            """
+            @expose("/login/")
+            def login(self, provider="keycloak"):
+                # Drop stale 'Access is Denied' flash queued pre-login: with OAuth the
+                # user is redirected out before it shows, then it surfaces post-login
+                # (confusing, since they now have access).
+                flashes = session.get('_flashes', [])
+                logging.debug(f"Flashes before cleanup: {flashes}")
+                session['_flashes'] = [f for f in flashes if f != ('danger', 'Access is Denied')]
+                logging.debug(f"Flashes after cleanup: {session.get('_flashes', [])}")
+                return super().login(provider=provider)
+            @expose('/logout/', methods=['GET', 'POST'])
+            def logout(self):
+                super().logout()
+                return redirect('https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/sign_out')
+        class KeycloakSecurityManager(SupersetSecurityManager):
+            """
+            Create a new SecurityManager that uses the KeycloakOAuthView and Keycloak role mapping
+            """
+            def __init__(self, appbuilder):
+                super(KeycloakSecurityManager, self).__init__(appbuilder)
+                app = self.appbuilder.get_app
+                app.config.setdefault("AUTH_ROLES_MAPPING", AUTH_ROLES_MAPPING)
+                app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
+                self.authoauthview = KeycloakOAuthView
+            def raise_for_access(self, **kwargs) -> None:
+                # Base check only confirms shared-Trino access, not query ownership,
+                # so any user could download another's SQL Lab results via guessable
+                # id. Require ownership unless caller has all_query_access.
+                super().raise_for_access(**kwargs)
+                query = kwargs.get("query")
+                if (
+                    query is not None
+                    and not self.can_access("all_query_access", "all_query_access")
+                    and query.user_id != g.user.id
+                ):
+                    raise SupersetSecurityException(
+                        SupersetError(
+                            error_type=SupersetErrorType.QUERY_SECURITY_ACCESS_ERROR,
+                            message="You do not have access to this query.",
+                            level=ErrorLevel.ERROR,
+                        )
+                    )
+        CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
+      proxy_configuration: |
+        PREFERRED_URL_SCHEME = "https"
+        ENABLE_PROXY_FIX = True
+      feature_flags: |
+        # Key cached results by user so a broad-access user's cache is never served
+        # to a narrower-access viewer (refs #502).
+        FEATURE_FLAGS = {
+            "CACHE_QUERY_BY_USER": True,
+        }
+      statsd_logging: |
+        from superset.stats_logger import StatsdStatsLogger
+        STATS_LOGGER = StatsdStatsLogger(
+            host='localhost',
+            port=9125,
+            prefix='superset'
+        )
+    extraVolumes:
+      - name: scout-logo
+        configMap:
+          name: scout-logo
+          defaultMode: 0644
+      - name: statsd-mapping
+        configMap:
+          name: superset-statsd-mapping
+      # CA from the trino-tls Secret; DB_CONNECTION_MUTATOR passes /etc/trino-ca/ca.crt
+      # as http_session.verify to trust Trino's self-signed cert.
+      - name: trino-ca
+        secret:
+          secretName: trino-tls
+          items:
+            - key: ca.crt
+              path: ca.crt
+    extraVolumeMounts:
+      - name: scout-logo
+        mountPath: /app/superset/static/assets/images/scout.png
+        subPath: scout.png
+        readOnly: true
+      - name: scout-logo
+        mountPath: /app/superset/static/assets/images/favicon.ico
+        subPath: favicon.ico
+        readOnly: true
+      - name: trino-ca
+        mountPath: /etc/trino-ca
+        readOnly: true

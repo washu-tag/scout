@@ -6,7 +6,7 @@ metadata:
     {{- include "scout-opa.labels" . | nindent 4 }}
 data:
   policy.rego: |
-{{ .Values.policy.rego | indent 4 }}
+{{ .Values.policy.rego | default (.Files.Get "files/main.rego") | indent 4 }}
   data.json: |
 {{ .Values.data.json | indent 4 }}
   config.yaml: |
