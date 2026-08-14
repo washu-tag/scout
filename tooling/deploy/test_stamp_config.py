@@ -206,5 +206,19 @@ def test_unparseable_yaml_fails_closed(tmp_path, haul):
         stamp_tree(tmp_path, images, charts, "0")
 
 
+def test_flow_mapping_fails_closed(tmp_path, haul):
+    """A flow mapping puts several values on the parent's line, so rewriting the
+    whole line would corrupt it -- fail closed, don't stamp (Kate #639)."""
+    images, charts = haul
+    base = tmp_path / "base" / "flow"
+    base.mkdir(parents=True)
+    original = "spec:\n  values:\n    image: { repository: ghcr.io/washu-tag/hl7-transformer, tag: latest }\n"
+    (base / "r.yaml").write_text(original)
+    with pytest.raises(StampError):
+        stamp_tree(tmp_path, images, charts, "0")
+    # left untouched, not corrupted into `image: '<tag>'`
+    assert (base / "r.yaml").read_text() == original
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

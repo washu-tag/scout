@@ -102,21 +102,34 @@ def parse_haul(path) -> tuple:
 
 # --- value-line rewrite -------------------------------------------------------
 
-# A scalar mapping entry: <indent><key>: <value>[  # comment]. Rewrites only the
-# value, preserving indent, key, and any trailing comment.
-# The key may be the first entry of a sequence item ("- image: ..."), so allow a
-# leading "- "; key order carries no YAML meaning and neither should this.
-_ENTRY = re.compile(r"^(\s*(?:- )?[\w.\-/]+:\s+)(.*?)(\s+#.*)?$")
+# A block scalar entry: <indent>[- ]<key>: <value>[  # comment]. Groups: 1 indent
+# (+ optional "- " for a sequence item's first key), 2 key, 3 ": ", 4 value, 5
+# comment. Capturing the key lets the caller assert the line really is a block entry
+# for the key it means to patch -- a flow mapping (image: { repository: x, tag: y })
+# puts several values on the parent's line, so rewriting the whole line would corrupt
+# it; that must fail closed, not stamp.
+_ENTRY = re.compile(r"^(\s*(?:- )?)([\w.\-/]+)(:\s+)(.*?)(\s+#.*)?$")
+
+# Maps a stamp kind to the YAML key its value node lives under, so the rewrite can
+# verify it's editing the right line.
+_KIND_KEY = {
+    "chart-version": "version",
+    "image-values-tag": "tag",
+    "config-hash": "config-hash",
+    "image-inline": "image",
+}
 
 
-def _rewrite_value(line: str, new_value: str, quote: bool) -> str:
+def _rewrite_value(line: str, new_value: str, quote: bool, key: str) -> str:
     m = _ENTRY.match(line)
-    if not m:
+    if not m or m.group(2) != key:
         raise StampError(
-            "unexpected value line, cannot stamp safely: {!r}".format(line)
+            "cannot safely stamp line (expected a block '{}:' entry): {!r}".format(
+                key, line
+            )
         )
     v = "'{}'".format(new_value) if quote else new_value
-    return m.group(1) + v + (m.group(3) or "")
+    return m.group(1) + m.group(2) + m.group(3) + v + (m.group(5) or "")
 
 
 def _inline_image_name(value: str):
@@ -157,10 +170,16 @@ def _find_patches(text: str, images: dict, charts: dict, config_hash: str, rel: 
 
     def add(node, new_value, quote, kind, name, tag):
         ln = node.start_mark.line
+        # Fail closed unless the value is a single-line scalar that owns its line; a
+        # multi-line value (block scalar) can't be rewritten as one line.
+        if node.start_mark.line != node.end_mark.line:
+            raise StampError(
+                "{}:{}: value spans multiple lines, cannot stamp".format(rel, ln + 1)
+            )
         patches.append(
             (
                 ln,
-                _rewrite_value(lines[ln], new_value, quote),
+                _rewrite_value(lines[ln], new_value, quote, _KIND_KEY[kind]),
                 Stamp(kind, name, tag, rel, ln + 1),
             )
         )
@@ -263,7 +282,17 @@ def stamp_tree(deploy_dir, images: dict, charts: dict, config_hash: str) -> list
         if not patches:
             continue
         lines = text.split("\n")
-        for line0, new_line, _ in patches:
+        seen = set()
+        for line0, new_line, st in patches:
+            # Two placeholders resolving to one line would silently keep only the
+            # last rewrite; that means the one-line assumption is broken -- fail closed.
+            if line0 in seen:
+                raise StampError(
+                    "{}:{}: two placeholders on one line, cannot stamp".format(
+                        st.file, line0 + 1
+                    )
+                )
+            seen.add(line0)
             lines[line0] = new_line
         path.write_text("\n".join(lines))
         stamps.extend(s for _, _, s in patches)
