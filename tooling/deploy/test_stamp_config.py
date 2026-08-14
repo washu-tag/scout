@@ -174,5 +174,37 @@ def test_verify_clean_catches_reordered_residual(tmp_path):
     assert any("latest" in p for p in problems)
 
 
+def test_sequence_first_key_inline_image(tmp_path, haul):
+    """An initContainer authored image-first (`- image:`) still stamps -- key/line
+    placement carries no meaning (round-3 review)."""
+    images, charts = haul
+    base = tmp_path / "base" / "z"
+    base.mkdir(parents=True)
+    (base / "r.yaml").write_text(
+        "spec:\n"
+        "  values:\n"
+        "    initContainers:\n"
+        "      - image: ghcr.io/washu-tag/hl7-transformer:latest\n"  # `- image:` first
+        "        name: wait\n"
+    )
+    stamps = stamp_tree(tmp_path, images, charts, "0")
+    assert any(s.kind == "image-inline" and s.name == "hl7-transformer" for s in stamps)
+    text = (base / "r.yaml").read_text()
+    assert "hl7-transformer:latest" not in text
+    assert "ghcr.io/washu-tag/hl7-transformer:" + images["hl7-transformer"] in text
+    assert verify_clean(tmp_path) == []
+
+
+def test_unparseable_yaml_fails_closed(tmp_path, haul):
+    """A file the parser rejects is a hard error, never a silent skip -- the gate
+    must fail closed (round-3 review)."""
+    images, charts = haul
+    base = tmp_path / "base" / "bad"
+    base.mkdir(parents=True)
+    (base / "r.yaml").write_text("note: scout: analytics\nversion: '0.0.0'\n")
+    with pytest.raises(StampError, match="not valid YAML"):
+        stamp_tree(tmp_path, images, charts, "0")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

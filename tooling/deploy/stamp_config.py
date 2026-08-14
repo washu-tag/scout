@@ -104,7 +104,9 @@ def parse_haul(path) -> tuple:
 
 # A scalar mapping entry: <indent><key>: <value>[  # comment]. Rewrites only the
 # value, preserving indent, key, and any trailing comment.
-_ENTRY = re.compile(r"^(\s*[\w.\-/]+:\s+)(.*?)(\s+#.*)?$")
+# The key may be the first entry of a sequence item ("- image: ..."), so allow a
+# leading "- "; key order carries no YAML meaning and neither should this.
+_ENTRY = re.compile(r"^(\s*(?:- )?[\w.\-/]+:\s+)(.*?)(\s+#.*)?$")
 
 
 def _rewrite_value(line: str, new_value: str, quote: bool) -> str:
@@ -146,8 +148,10 @@ def _find_patches(text: str, images: dict, charts: dict, config_hash: str, rel: 
     """
     try:
         docs = list(yaml.compose_all(text))
-    except yaml.YAMLError:
-        return []  # not YAML we can parse; nothing to stamp
+    except yaml.YAMLError as exc:
+        # Fail closed: a deploy file we can't parse can't be checked for
+        # placeholders, so refuse to publish rather than skip it silently.
+        raise StampError("{}: not valid YAML, cannot stamp: {}".format(rel, exc))
     lines = text.split("\n")
     patches: list = []
 
@@ -279,7 +283,9 @@ def verify_clean(deploy_dir) -> list:
         rel = str(path.relative_to(root))
         try:
             docs = list(yaml.compose_all(path.read_text()))
-        except yaml.YAMLError:
+        except yaml.YAMLError as exc:
+            # Fail closed: an unparseable file is a violation, not a skip.
+            problems.append("{}: not valid YAML, cannot verify: {}".format(rel, exc))
             continue
 
         def visit(node):
