@@ -30,9 +30,14 @@ import json
 import sys
 from pathlib import Path
 
-from jvm_memory import jvm_memory_to_k8s
+_REPO = Path(__file__).resolve().parents[2]
+# Import the pure jvm_memory_to_k8s from the Ansible filter plugin rather than porting
+# it: the plugin imports only `re` (FilterModule is just a wrapper class), so importing
+# the function pulls in no Ansible -- and both lanes stay one implementation.
+sys.path.insert(0, str(_REPO / "ansible" / "filter_plugins"))
+from jvm_memory import jvm_memory_to_k8s  # noqa: E402
 
-DEFAULT_REQUIRED = Path(__file__).resolve().parents[2] / "deploy" / "required-vars.txt"
+DEFAULT_REQUIRED = _REPO / "deploy" / "required-vars.txt"
 
 
 def load_required(path) -> list:
