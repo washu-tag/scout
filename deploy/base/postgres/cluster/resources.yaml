@@ -4,10 +4,12 @@
 # Secrets (fixed names, seeded by CI/site, never committed):
 #   superuser-secret — CNPG basic-auth for the operator.
 #   cnpg-role-*      — one basic-auth Secret per managed role in THIS namespace.
-#     CNPG drives each role's password FROM cnpg-role-*, so it MUST be seeded from
-#     the same source the app reads (cnpg-role-hive.password ==
-#     hive-metastore-secret.HIVE_METASTORE_PASSWORD) or app login breaks (password
-#     drift). ESO takes this over in Phase 4.
+#     Separate from the app secret because CNPG reads passwordSecret from the
+#     Cluster's namespace while each app reads its creds in its own namespace, so
+#     the password is carried twice (cnpg-role-hive.password ==
+#     hive-metastore-secret.HIVE_METASTORE_PASSWORD). Seed both from one source; a
+#     mismatch surfaces only as a role-login failure at runtime (no pre-runtime
+#     check). ESO collapses this to one source in Phase 4.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:

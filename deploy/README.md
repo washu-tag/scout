@@ -4,7 +4,7 @@ Kustomize bases + Flux `Kustomization`s that stand Scout up by *pulling* signed,
 digest-pinned artifacts instead of the Ansible push. WIP scaffold: the ingest
 vertical slice first (postgres -> lake -> orchestrator -> extractor), unconsumed
 until CI switches `deploy-and-test` to deploy from it. See
-`docs/internal/phase3-implementation-plan.md`.
+`docs/internal/gitops-implementation-plan.md` and ADRs 0030 / 0031.
 
 ## Layout
 - `base/<component>/{operator,cluster,...}/` — Kustomize bases (the k8s resources).
