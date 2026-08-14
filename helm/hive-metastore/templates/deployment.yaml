@@ -60,7 +60,17 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.env }}
+          {{- $env := .Values.env | default list -}}
+          {{- if .Values.cloudEnvStubs -}}
+          {{- /* Cloud-provider env the image entrypoint requires present but empty in
+                 the on-prem/MinIO path; opt-in so callers don't restate them (Helm
+                 replaces env wholesale). Default off, so a caller that still lists
+                 them in env isn't doubled. */ -}}
+          {{- range list "GOOGLE_CLOUD_KEY_FILE_PATH" "AZURE_ADL_CLIENT_ID" "AZURE_ADL_CREDENTIAL" "AZURE_ADL_REFRESH_URL" "AZURE_ABFS_STORAGE_ACCOUNT" "AZURE_ABFS_ACCESS_KEY" "AZURE_WASB_STORAGE_ACCOUNT" "AZURE_ABFS_OAUTH" "AZURE_ABFS_OAUTH_TOKEN_PROVIDER" "AZURE_ABFS_OAUTH_CLIENT_ID" "AZURE_ABFS_OAUTH_SECRET" "AZURE_ABFS_OAUTH_ENDPOINT" "AZURE_WASB_ACCESS_KEY" -}}
+          {{- $env = append $env (dict "name" . "value" "") -}}
+          {{- end -}}
+          {{- end }}
+          {{- with $env }}
           env:
             {{- toYaml . | nindent 12 }}
           {{- end }}

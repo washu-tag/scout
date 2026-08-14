@@ -1,0 +1,78 @@
+# Write metastore — serves Trino RW + data ingestion (Delta writes). Connects to
+# the hive DB as the `hive` owner over the -rw endpoint; S3 creds = lake-writer.
+# On-prem path (S3_PATH_STYLE_ACCESS=true, MinIO endpoint); the aws_deployment
+# IRSA ServiceAccount + WebIdentity HADOOP_OPTS branch is intentionally omitted.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hive-metastore
+  namespace: '${hive_namespace}'
+spec:
+  interval: 30m
+  # chart version stamped into the config artifact at publish (build-lane haul);
+  # placeholder here until the stamping job lands (matches postgres base).
+  chart:
+    spec:
+      chart: hive-metastore
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${hive_namespace}'
+  values:
+    replicaCount: 1
+    image:
+      repository: starburstdata/hive
+      pullPolicy: IfNotPresent
+      # hive_image_tag in versions.yaml (Renovate-tracked, regex-pinned to the
+      # plain multi-arch tags). Overrides the chart appVersion.
+      tag: '3.1.3-e.15'
+    fullnameOverride: hive-metastore
+    service:
+      type: ClusterIP
+      port: 9083
+    ingress:
+      enabled: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 1Gi
+      limits:
+        cpu: 2
+        memory: 2Gi
+    readinessProbe:
+      tcpSocket:
+        port: 9083
+      initialDelaySeconds: 5
+      periodSeconds: 5
+    livenessProbe:
+      tcpSocket:
+        port: 9083
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    # Chart appends the empty cloud-provider env stubs (opt-in; see helm/hive-metastore).
+    cloudEnvStubs: true
+    env:
+      - name: HIVE_METASTORE_DRIVER
+        value: org.postgresql.Driver
+      - name: HIVE_METASTORE_JDBC_URL
+        value: 'jdbc:postgresql://${postgres_cluster_name}-rw.${postgres_cluster_namespace}:5432/hive'
+      - name: HIVE_METASTORE_USER
+        value: hive
+      - name: HIVE_METASTORE_WAREHOUSE_DIR
+        value: '${delta_lake_path}'
+      - name: S3_PATH_STYLE_ACCESS
+        value: 'true'
+      - name: S3_ENDPOINT
+        value: '${s3_endpoint}'
+      - name: S3_ACCESS_KEY
+        value: '${s3_lake_writer}'
+      - name: REGION
+        value: '${s3_region}'
+      - name: HIVE_METASTORE_USERS_IN_ADMIN_ROLE
+        value: admin
+    # S3_SECRET_KEY (+ HIVE_METASTORE_PASSWORD) sourced from the fixed-name secret;
+    # seeded by CI/site (Phase 3) or ESO (Phase 4), never committed.
+    envFrom:
+      - secretRef:
+          name: hive-metastore-secret

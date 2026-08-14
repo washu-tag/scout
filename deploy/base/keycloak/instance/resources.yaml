@@ -1,0 +1,94 @@
+# Keycloak instance (Phase 3, ADR 0031): the operator-managed Keycloak CR + its site
+# Ingress. The realm import is a separate base (keycloak/realm) so the DAG gates it on
+# Keycloak Ready. Namespace owned by scout-core-foundation (not re-declared here).
+# Fixed-name Secrets (seeded by CI/site, SOPS/ESO in Phase 4, never in git):
+#   keycloak-db-secret    — keycloak DB owner creds (the CR's db creds).
+#   keycloak-admin-secret — bootstrap admin (bootstrapAdmin).
+#   opa-bundle-writer     — access/secret-key for the OpaUserBundlePublisher SPI (ADR
+#                           0021), via CR secret refs so no credential lands as plaintext.
+---
+# Scout keycloak image (OpaUserBundlePublisher SPI build), tag = keycloak_version from
+# versions.yaml (Renovate-tracked there); this Scout image IS stamped from the haul at
+# config-artifact publish, literal here until then. additionalOptions mirror the role's
+# _keycloak_base_options (the operator maps name=foo-bar to env KC_FOO_BAR).
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: '${keycloak_namespace}'
+spec:
+  instances: 1
+  image: ghcr.io/washu-tag/keycloak:26.6.4
+  bootstrapAdmin:
+    user:
+      secret: keycloak-admin-secret
+  db:
+    vendor: postgres
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+    host: '${postgres_cluster_name}-rw.${postgres_cluster_namespace}'
+    database: keycloak
+    port: 5432
+  http:
+    httpEnabled: true
+  hostname:
+    hostname: 'keycloak.${server_hostname}'
+  ingress:
+    enabled: false
+  proxy:
+    headers: xforwarded
+  additionalOptions:
+    - name: metrics-enabled
+      value: 'true'
+    - name: event-metrics-user-enabled
+      value: 'true'
+    - name: event-metrics-user-tags
+      value: 'realm,idp,clientId'
+    - name: spi-events-listener-jboss-logging-success-level
+      value: info
+    # Hacky env-into-pod path until the operator supports it; the SPI reads these (ADR 0021).
+    - name: scout-url
+      value: '${server_hostname}'
+    - name: opa-bundle-s3-endpoint
+      value: 'http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000'
+    - name: opa-bundle-s3-bucket
+      value: '${opa_bundles_bucket}'
+    - name: opa-bundle-s3-object-key
+      value: '${opa_bundle_object_key}'
+    - name: opa-bundle-s3-region
+      value: '${s3_region}'
+    - name: opa-bundle-realm
+      value: '${keycloak_realm_name}'
+    - name: opa-bundle-s3-access-key
+      secret:
+        name: opa-bundle-writer
+        key: access-key
+    - name: opa-bundle-s3-secret-key
+      secret:
+        name: opa-bundle-writer
+        key: secret-key
+---
+# Host Ingress (traefik k3s edge) -> operator-created keycloak-service; the operator
+# needs a subdomain and has no path-based ingress. Mirrors the role's keycloak-ingress.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-ingress
+  namespace: '${keycloak_namespace}'
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: 'keycloak.${server_hostname}'
+      http:
+        paths:
+          - backend:
+              service:
+                name: keycloak-service
+                port:
+                  name: http
+            path: /
+            pathType: Prefix

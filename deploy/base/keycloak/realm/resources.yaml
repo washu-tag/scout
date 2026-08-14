@@ -1,0 +1,59 @@
+# Keycloak realm import via keycloak-config-cli (Scout OCI chart). Split from the
+# instance base so keycloak-realm dependsOn keycloak-instance (health-gated on the
+# Keycloak CR Ready): the import runs only after Keycloak is up, no first-boot race.
+# Imports the rendered realm from the fixed-name keycloak-config Secret using the
+# keycloak-admin-secret admin creds. Namespace owned by scout-core-foundation.
+---
+# scout-charts OCI source for the config-cli HelmRelease.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: scout-charts
+  namespace: '${keycloak_namespace}'
+spec:
+  type: oci
+  interval: 1h
+  url: oci://ghcr.io/washu-tag/charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keycloak-config-cli
+  namespace: '${keycloak_namespace}'
+spec:
+  interval: 30m
+  timeout: 5m
+  # First-boot race is handled by the DAG gate (keycloak-realm dependsOn
+  # keycloak-instance, Ready-gated), so retries is just a fast retry for a transient
+  # post-Ready blip instead of waiting the 30m interval.
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  # Scout-owned OCI chart (ADR 0030); placeholder version stamped from the haul at
+  # config-artifact publish (self-reference, so not Renovate-tracked).
+  chart:
+    spec:
+      chart: keycloak-config-cli
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${keycloak_namespace}'
+  values:
+    # Upstream config-cli image, pinned in versions.yaml (keycloak_config_cli_image[_tag]).
+    image:
+      repository: docker.io/adorsys/keycloak-config-cli
+      tag: 6.5.1-26.5.5
+    existingConfigSecret: keycloak-config
+    annotations:
+      # config-hash: CI stamps the realm Secret's truncated sha256 at publish so a
+      # realm-only change re-runs the import (mirrors the role's config-hash).
+      config-hash: '0'
+    env:
+      # Merged over the chart defaults (IMPORT_PATH=/config/ preserved).
+      KEYCLOAK_URL: 'http://keycloak-service.${keycloak_namespace}:8080/'
+      KEYCLOAK_USER: '${keycloak_bootstrap_admin_user}'
+    existingSecret: keycloak-admin-secret

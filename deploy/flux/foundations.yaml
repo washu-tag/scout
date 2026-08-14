@@ -1,0 +1,98 @@
+# Per-namespace foundation Kustomizations (Phase 3 DAG). Each is SOLE owner of a shared
+# namespace's Namespace + scout-charts HelmRepository (co-ownership across prune:true =
+# pruning fights); every component in the namespace dependsOn its foundation.
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: scout-analytics-foundation
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/scout-analytics-foundation
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: scout-extractor-foundation
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/scout-extractor-foundation
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: scout-core-foundation
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/scout-core-foundation
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: scout-data-foundation
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/scout-data-foundation
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: scout-operators-foundation
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/scout-operators-foundation
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars

@@ -1,0 +1,48 @@
+# Flux Kustomizations for temporal (Phase 3 DAG). Pulls config artifact
+# (OCIRepository scout-config) + cluster-vars for ${...} substitution. dependsOn
+# reproduces Ansible deploy order; CRD-owning operators split from their CRs.
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: temporal-server
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/temporal/server
+  prune: true
+  wait: true
+  timeout: 15m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-extractor-foundation
+    - name: cassandra-datacenter
+    - name: elasticsearch-cluster
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: temporal-bootstrap
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./deploy/base/temporal/bootstrap
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-extractor-foundation
+    - name: temporal-server

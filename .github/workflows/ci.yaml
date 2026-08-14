@@ -15,11 +15,9 @@ on:
       - CHANGELOG.md
       - version.txt
 
-# Cancel a PR's superseded runs so a new push doesn't sit behind a stale ~35m
-# pipeline (and free the runners it was holding). Keyed on head_ref, which is
-# set only for pull_request events; push events (main / ci-** / demo**) fall
-# back to a unique run_id group and are never cancelled, so an in-flight
-# publish / publish-charts on main is never killed mid-release.
+# Cancel a PR's superseded runs. Keyed on head_ref (set only for pull_request);
+# push events (main / ci-** / demo**) fall back to a unique run_id group and are
+# never cancelled, so an in-flight publish on main isn't killed mid-release.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -28,13 +26,11 @@ env:
   JAVA_DIST: 'zulu'
   JAVA_VERSION: '21'
   REGISTRY: ghcr.io
-  # GitHub-hosted runners mount a large, near-empty scratch disk at /mnt (the
-  # Azure temp resource disk); the root fs is smaller and already half-full of
-  # preinstalled tooling. There is no built-in env var for this mount
-  # (RUNNER_TEMP / RUNNER_TOOL_CACHE both live on the root fs), so /mnt is
-  # named once here and templated into the CI inventory's k3s data-dir by the
-  # "Prepare inventory.yaml" steps — keeping k3s's image store + PVs off the
-  # root fs so large image pulls don't trigger DiskPressure eviction.
+  # /mnt is the runner's large scratch disk (Azure temp); the root fs is smaller
+  # and half-full of preinstalled tooling. No built-in env var points at it
+  # (RUNNER_TEMP / RUNNER_TOOL_CACHE are on root fs), so name it once and template
+  # it into the CI inventory's k3s data-dir -- keeps k3s's image store + PVs off
+  # root fs so large pulls don't trigger DiskPressure eviction.
   K3S_DATA_DIR: /mnt/k3s
 
 jobs:
@@ -74,12 +70,10 @@ jobs:
         id: filter
         with:
           filters: |
-            # Only ci.yaml (this build/scan/push workflow) and the composite
-            # actions it calls affect image contents. Sibling workflows (codeql,
-            # security, lint, release-please, renovate, ...) must NOT force a full
-            # rebuild+rescan of every image, or an unrelated CI edit surfaces the
-            # newest fixable CVE on all images. ci.yaml calls no reusable workflows,
-            # so this pair is complete.
+            # Only ci.yaml and the composite actions it calls affect image
+            # contents. Sibling workflows must NOT force a full rebuild+rescan, or
+            # an unrelated CI edit surfaces the newest fixable CVE on all images.
+            # ci.yaml calls no reusable workflows, so this pair is complete.
             ci:
               - '.github/workflows/ci.yaml'
               - '.github/actions/**'
@@ -132,10 +126,10 @@ jobs:
       - name: 'Mint build version'
         id: version
         shell: bash
-        # 0.YYYYMMDD.<run> is the ADR 0030 build lane. Computed once here (UTC)
-        # so every chart published in this run shares one version. run_number is
-        # scoped to this workflow file, so the chart-publish job must stay in
-        # ci.yaml; moving/renaming the workflow resets it and inverts tag order.
+        # 0.YYYYMMDD.<run> ADR 0030 build lane. Computed once (UTC) so every chart
+        # in this run shares one version. run_number is scoped to this workflow
+        # file, so chart-publish must stay in ci.yaml; moving/renaming it resets
+        # the counter and inverts tag order.
         run: echo "version=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
   lint:
     runs-on: ubuntu-latest
@@ -158,8 +152,7 @@ jobs:
     needs: changes
     permissions:
       contents: read
-      # check-image-exists reads ghcr to see whether the derived tag is already
-      # published; packages default to private, so that read has to be authenticated.
+      # check-image-exists reads ghcr for the derived tag; private packages need auth
       packages: read
       attestations: write
       id-token: write
@@ -175,9 +168,8 @@ jobs:
             subproject: hl7-listener
           - image-name: scout-notebook
             subproject: helm/scout-notebook
-            # Build from repo root so the Dockerfile can COPY sdk/python/
-            # into the image. The Dockerfile path is derived from
-            # `subproject` (see docker-build-cache action).
+            # build from repo root so the Dockerfile can COPY sdk/python/ (the
+            # Dockerfile path derives from `subproject`; see docker-build-cache)
             context: '.'
           - image-name: launchpad
             subproject: launchpad
@@ -233,10 +225,9 @@ jobs:
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
-      # Python is pinned to 3.10 to match the runtime image (spark:4.1.1-...-python3
-      # ships Python 3.10), so the tests exercise the interpreter that actually ships —
-      # matters for version-sensitive behavior like concurrent.futures TimeoutError,
-      # a distinct class before 3.11. Spark 4.1.x supports 3.10-3.13.
+      # Python pinned to 3.10 to match the runtime image (spark:4.1.1-...-python3),
+      # so tests hit the shipping interpreter -- matters for version-sensitive
+      # behavior like concurrent.futures TimeoutError (a distinct class before 3.11).
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.10'
@@ -244,9 +235,8 @@ jobs:
           cache-dependency-path: 'extractor/hl7-transformer/pyproject.toml'
       - name: 'Unit tests: hl7-transformer'
         shell: bash
-        # Same install path as the runtime image (Dockerfile) and local runs (see
-        # tests/conftest.py): deps resolve from pyproject.toml via pip. Spark/Delta are
-        # pinned in pyproject.toml so the tests and the image agree on them.
+        # Same install path as the runtime image and local runs: deps (incl.
+        # pinned Spark/Delta) resolve from pyproject.toml via pip.
         run: cd extractor/hl7-transformer && python -m pip install '.[test]' && python -m pytest tests/ -v
   ansible-and-python-tests:
     runs-on: ubuntu-latest
@@ -276,6 +266,9 @@ jobs:
       - name: 'Unit tests: build manifest'
         shell: bash
         run: cd tooling/manifest && pytest -v
+      - name: 'Unit tests: config-artifact tooling'
+        shell: bash
+        run: cd tooling/deploy && pytest -v
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
@@ -309,8 +302,8 @@ jobs:
       - name: 'Unit tests: scout SDK'
         shell: bash
         run: cd sdk/python && PYTHONPATH=src pytest tests/ -v
-      # Separate invocation: tests/conftest.py stubs trino/requests in
-      # sys.modules at collection time; the contract tests need the real ones.
+      # Separate invocation: conftest.py stubs trino/requests in sys.modules at
+      # collection; the contract tests need the real ones.
       - name: 'Contract tests: scout SDK vs trino-python-client'
         shell: bash
         run: cd sdk/python && pytest tests_contract/ -v
@@ -319,11 +312,9 @@ jobs:
         run: cd helm/voila && PYTHONPATH=files pytest tests/ -v
       - name: 'Install OPA'
         shell: bash
-        # Pinned to match the OPA image we deploy (opa_image_tag in
-        # group_vars/all/versions.yaml). Builtin behavior — especially
-        # `regex.match` and `http.send` semantics — can drift across
-        # OPA versions; testing against the same binary the policy will
-        # evaluate under in production keeps test/prod aligned.
+        # Pinned to the deployed OPA image (opa_image_tag in versions.yaml):
+        # builtin behavior (regex.match, http.send) drifts across versions, so
+        # test against the same binary prod evaluates under.
         run: |
           OPA_VERSION=$(yq '.opa_image_tag' ansible/group_vars/all/versions.yaml)
           # openpolicyagent.org/downloads proxies to this asset but has been 502ing; fetch it directly.
@@ -408,9 +399,8 @@ jobs:
         run: |
           /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
       - name: Install apache2-utils for htpasswd
-        # roles/trino/templates/password.db.j2 shells out to `htpasswd -bnBC 10`
-        # to bcrypt-hash the file-PASSWORD-authenticator entries. ubuntu-latest
-        # doesn't include it by default.
+        # roles/trino/templates/password.db.j2 shells out to `htpasswd -bnBC 10`;
+        # ubuntu-latest doesn't ship it.
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends apache2-utils
       - name: 'Install k3s'
         shell: bash
@@ -460,16 +450,16 @@ jobs:
           cache: 'gradle'
       - name: 'Warm Gradle cache for ingest tests'
         shell: bash
-        # Resolve ingest test deps (Spark4 graph + Gradle dist) on the runner,
-        # cached across runs by setup-java, then hand a world-writable copy to the
-        # in-cluster test Job so it runs --offline. Removes the ~5 min cold download
-        # that otherwise ran inside the timed "Run tests" step.
+        # Resolve ingest test deps (Spark4 graph + Gradle dist) on the runner
+        # (setup-java caches them), then hand a world-writable copy to the
+        # in-cluster test Job so it runs --offline. Removes the ~5 min cold
+        # download from the timed "Run tests" step.
         run: |
           (cd tests/ingest && ./gradlew --no-daemon --console=plain testClasses resolveTestDeps)
           sudo mkdir -p /mnt/scout-gradle-cache
           sudo cp -a "${HOME}/.gradle/." /mnt/scout-gradle-cache/
           sudo chmod -R a+rwX /mnt/scout-gradle-cache
-          rm -rf tests/ingest/build tests/ingest/.gradle  # pod mount stays a clean checkout
+          rm -rf tests/ingest/build tests/ingest/.gradle  # keep pod mount a clean checkout
       - name: 'Run tests'
         shell: bash
         run: |
@@ -502,36 +492,21 @@ jobs:
         if: always()
         run: |
           sudo -E kubectl -n scout-extractor logs deployment/hl7-transformer
-  # Smoke tests are split across two runners because the full Scout stack
-  # (chat + notebooks + monitoring + analytics) plus image pinning has run
-  # the GitHub-hosted ubuntu-24.04 runner (72 GB disk) into DiskPressure
-  # eviction during chatbot's ollama+open-webui pulls. Each side deploys
-  # only the services it tests, on its own 72 GB runner.
-  #
-  # Both sides install the common infra (k3s, traefik, postgres, valkey,
-  # auth, lake, trino, launchpad). Trino runs on both so jupyter/voila and
-  # chat/superset can each query against a real coordinator.
-  #
-  # Side-specific:
-  #   analytics  → superset, chatbot       (+ data-authz, trino-rw netpol)
-  #   notebooks  → voila, jupyter, monitor (+ full netpol incl. voila-ingress)
-  #
-  # Per-side test coverage:
-  #   - data-authz seed+run: analytics side only (needs superset + chatbot
-  #     for the full OPA → Trino-JWT → row-filter pipeline).
-  #   - auth-curl: both sides via tests/auth/auth-curl-tests.sh --include,
-  #     each filtered to the subdomains it actually deploys.
-  #   - NetworkPolicy: both sides via --include groups. Analytics runs
-  #     trino-rw only; notebooks add the voila-ingress group (it needs
-  #     the voila Service to resolve the target URL).
-  #
-  # Playbook names below assume PR #409 splits ansible/playbooks/analytics.yaml
-  # into trino.yaml (opa + trino) and superset.yaml. If naming lands
-  # differently, update matrix.playbooks below.
-  #
-  # `name:` is set explicitly to preserve smoke-test-analytics /
-  # smoke-test-notebooks as the GitHub check names — branch protection
-  # rules can stay configured against them.
+  # Split across two runners: the full Scout stack + image pinning ran the 72 GB
+  # runner into DiskPressure during chatbot's ollama+open-webui pulls, so each
+  # side deploys only what it tests. Both install common infra (k3s, traefik,
+  # postgres, valkey, auth, lake, trino, launchpad); trino on both so
+  # jupyter/voila and chat/superset each query a real coordinator.
+  #   analytics  -> superset, chatbot       (+ data-authz, trino-rw netpol)
+  #   notebooks  -> voila, jupyter, monitor (+ full netpol incl. voila-ingress)
+  # data-authz seed+run is analytics-only (needs superset+chatbot for the full
+  # OPA -> Trino-JWT -> row-filter pipeline). auth-curl + NetworkPolicy run on
+  # both, each --include-filtered to what it deploys (notebooks adds voila-ingress,
+  # which needs the voila Service to resolve its target URL).
+  # Playbook names assume PR #409 splits analytics.yaml into trino.yaml + superset.yaml;
+  # update matrix.playbooks if naming lands differently.
+  # `name:` is explicit so smoke-test-analytics / smoke-test-notebooks stay the
+  # GitHub check names branch protection is configured against.
   smoke-test:
     name: smoke-test-${{ matrix.side }}
     runs-on: ubuntu-latest
@@ -581,8 +556,8 @@ jobs:
           SUBDOMAINS: ${{ matrix.subdomains }}
           SAN_EXTRA: ${{ matrix.san_extra }}
         run: |
-          # Self-signed wildcard cert for *.scout.test (+ *.jupyter.scout.test
-          # on the notebook side for the per-user singleuser ingress).
+          # Self-signed wildcard cert for *.scout.test (+ *.jupyter.scout.test on
+          # the notebook side for the per-user singleuser ingress).
           mkdir -p /tmp/scout-ci-tls
           openssl req -x509 -newkey rsa:2048 -keyout /tmp/scout-ci-tls/key.pem \
             -out /tmp/scout-ci-tls/cert.pem -days 1 -nodes \
@@ -612,9 +587,8 @@ jobs:
       - name: Install Python dependencies for Ansible Kubernetes modules
         run: /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
       - name: Install apache2-utils for htpasswd
-        # roles/trino/templates/password.db.j2 shells out to `htpasswd -bnBC 10`
-        # to bcrypt-hash the file-PASSWORD-authenticator entries. ubuntu-latest
-        # doesn't include it by default.
+        # roles/trino/templates/password.db.j2 shells out to `htpasswd -bnBC 10`;
+        # ubuntu-latest doesn't ship it.
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends apache2-utils
       - name: 'Install k3s'
         shell: bash
@@ -625,8 +599,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Pre-import only the images each side deploys. Common: keycloak,
-      # launchpad. Per-side image pushes use matrix.side to gate.
+      # Pre-import only the images each side deploys (common: keycloak, launchpad;
+      # per-side pushes gate on matrix.side).
       - name: 'Push image to k3s - keycloak'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
@@ -649,12 +623,9 @@ jobs:
         with:
           subproject: report-viewer
           image-name: report-viewer
-      # hl7-transformer image is needed by the data-authorization seed
-      # Job (writes the synthetic test_reports Delta table via PySpark
-      # + Hive-Metastore-registered saveAsTable). The transformer
-      # itself isn't deployed in smoke-test (no extractor playbook),
-      # we just reuse the image as a vehicle for its Spark + Delta +
-      # s3a + Hive client.
+      # hl7-transformer image is the vehicle for the data-authz seed Job's Spark +
+      # Delta + s3a + Hive client (writes the synthetic test_reports Delta table);
+      # the transformer itself isn't deployed here (no extractor playbook).
       - name: 'Push image to k3s - hl7-transformer'
         if: matrix.side == 'analytics'
         uses: ./.github/actions/k3s-image-import-or-pull
@@ -706,25 +677,20 @@ jobs:
           fi
           echo "=== All pods ==="
           sudo -E kubectl get pods -A
-      # Trino connectivity check. Auth (PASSWORD,JWT) is now required so
-      # the trino CLI's default http://localhost:8080 listener returns 403
-      # ("Authentication over HTTP is not enabled"). Hit /v1/info on the
-      # HTTPS listener instead — it's the same endpoint the kubelet
-      # readiness probe uses, and it requires no auth, so this still
-      # catches "coordinator process started but HTTPS not listening"
-      # regressions. The data-authorization-tests Job below exercises
-      # the full authenticated query path with a real JWT.
+      # Auth (PASSWORD,JWT) is required, so the CLI's default http://localhost:8080
+      # returns 403. Hit /v1/info on the HTTPS listener (the kubelet readiness
+      # endpoint, no auth) to catch "coordinator up but HTTPS not listening". The
+      # data-authz Job below exercises the full authenticated query path with a JWT.
       - name: 'Trino connectivity check'
         if: matrix.side == 'analytics'
         shell: bash
         run: |
           sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- \
             curl -sk -f https://localhost:8443/v1/info
-      # Data authorization tests. Seeds a synthetic
-      # delta.default.test_reports table, then exercises the end-to-end
-      # AuthZ pipeline (Keycloak admin -> SPI listener -> MinIO bundle ->
-      # OPA pull -> Trino JWT auth + impersonation -> row filter +
-      # column mask). See tests/data-authorization/.
+      # Data authorization tests: seed a synthetic delta.default.test_reports table,
+      # then exercise the end-to-end AuthZ pipeline (Keycloak admin -> SPI listener
+      # -> MinIO bundle -> OPA pull -> Trino JWT auth + impersonation -> row filter
+      # + column mask). See tests/data-authorization/.
       - name: 'Derive hl7-transformer image version'
         if: matrix.side == 'analytics'
         id: hl7-transformer-version
@@ -735,20 +701,17 @@ jobs:
         if: matrix.side == 'analytics'
         shell: bash
         env:
-          # docker.io/local/... is the tag k3s-image-import-or-pull
-          # imports under for in-cluster use; production's
-          # ghcr.io/... ref isn't loaded into k3s here.
+          # docker.io/local/... is the in-cluster tag k3s-image-import-or-pull
+          # imports under; the production ghcr.io/... ref isn't loaded into k3s.
           IMAGE: docker.io/local/washu-tag/hl7-transformer:${{ steps.hl7-transformer-version.outputs.raw-version }}
         run: |
           set -euo pipefail
-          # lake_bucket differs between production ("lake") and CI
-          # ("ci-lake"); read the rendered inventory so the Delta
-          # warehouse path matches whichever bucket MinIO provisioned.
+          # lake_bucket differs prod ("lake") vs CI ("ci-lake"); read the rendered
+          # inventory so the Delta warehouse path matches the provisioned bucket.
           export WAREHOUSE_DIR="s3a://$(yq '.k3s_cluster.vars.lake_bucket' ansible/inventory.yaml)/delta"
 
-          # ConfigMap carries the script verbatim -- kubectl handles
-          # multi-line file content correctly, so no template
-          # substitution needed for seed.py.
+          # script in a ConfigMap verbatim (kubectl handles multi-line file
+          # content); no template substitution for seed.py.
           sudo -E kubectl create configmap data-authz-seed-script \
             -n scout-data \
             --from-file=seed.py=tests/data-authorization/seed/seed.py \
@@ -776,9 +739,8 @@ jobs:
           SUPERSET_SVC_SECRET=$(yq '.k3s_cluster.vars.keycloak_superset_svc_client_secret' ansible/inventory.yaml)
           REPORT_VIEWER_SVC_SECRET=$(yq '.k3s_cluster.vars.keycloak_report_viewer_svc_client_secret' ansible/inventory.yaml)
 
-          # Script in a ConfigMap (kubectl handles file content
-          # correctly), secrets in a Secret. The Job manifest
-          # references both by name -- no template substitution.
+          # script in a ConfigMap, secrets in a Secret; the Job references both by
+          # name -- no template substitution.
           sudo -E kubectl create configmap data-authz-test-script \
             -n scout-analytics \
             --from-file=run.sh=tests/data-authorization/authz-tests/run.sh \
@@ -800,9 +762,8 @@ jobs:
         shell: bash
         run: |
           sudo -E kubectl -n scout-analytics logs job/data-authz-tests --tail=500 || true
-      # Auth tests — verify OAuth2 Proxy blocks unauthenticated access
-      # for the subdomains this side deploys. Launchpad root is always
-      # included by the script.
+      # Verify OAuth2 Proxy blocks unauthenticated access for this side's
+      # subdomains (the script always includes launchpad root).
       - name: 'Auth curl tests'
         shell: bash
         env:
@@ -832,11 +793,11 @@ jobs:
           name: playwright-report-${{ matrix.side }}
           path: tests/auth/playwright-report/
           retention-days: 7
-      # NetworkPolicy tests. Analytics filters to trino-rw (voila isn't
-      # deployed there, so the Traefik→voila allow-path test would 000
-      # on a missing Service). Notebooks runs the full suite.
-      # TODO: extend with jupyter-singleuser egress tests once we settle
-      # on the singleuser pod-selector labels JupyterHub generates.
+      # Analytics filters to trino-rw (voila not deployed there, so the
+      # Traefik->voila allow-path test would 000 on a missing Service); notebooks
+      # runs the full suite.
+      # TODO: add jupyter-singleuser egress tests once the JupyterHub singleuser
+      # pod-selector labels are settled.
       - name: 'NetworkPolicy tests'
         shell: bash
         env:
@@ -894,14 +855,12 @@ jobs:
 
           echo "Disk space after cleanup:"
           df -h
-      # Publish when the paths changed OR the derived tag is absent from the
-      # registry. build-and-upload already builds on both signals; gating the
-      # push on the paths-filter alone silently discarded the second kind, which
-      # is how v4.1.0 shipped with no 4.1.0 image tags -- its CI had to be fixed
-      # forward on a commit touching only two images, so the rest were built at
-      # 4.1.0, scanned, and dropped. Deliberately NOT gated on `ci`: that
-      # rebuilds everything to re-scan, and publishing there would overwrite
-      # already-published upstream tags (superset, keycloak) with rebuilt bits.
+      # Publish when paths changed OR the derived tag is absent from the registry
+      # (build-and-upload builds on both). Gating the push on paths-filter alone
+      # dropped the second signal -- how v4.1.0 shipped with no 4.1.0 image tags.
+      # Deliberately NOT gated on `ci`: that rebuilds everything to re-scan, and
+      # publishing there would overwrite already-published upstream tags
+      # (superset, keycloak) with rebuilt bits.
       - name: 'Check published - hl7log-extractor'
         id: published-hl7log-extractor
         uses: ./.github/actions/check-image-exists
@@ -1001,12 +960,12 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Sign published build-lane images
-        # Sign every image docker-push recorded this run (each file holds
+        # Sign every image docker-push recorded this run (files hold
         # "<name> <repo>:<version>@<digest>") with the keyed cosign pair, so the
-        # build-lane haul can verify signatures at sync time (ADR 0033). The @digest
+        # build-lane haul verifies signatures at sync time (ADR 0033); the @digest
         # is what cosign signs. Keyed, no transparency log: cosign v3 defaults
-        # --use-signing-config=true, which conflicts with --tlog-upload=false, so both
-        # are needed; keeps private image digests off public Rekor.
+        # --use-signing-config=true which conflicts with --tlog-upload=false, so
+        # both flags are needed; keeps private image digests off public Rekor.
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
@@ -1022,7 +981,7 @@ jobs:
           done
           echo "signed ${signed} image(s)"
   # Publish changed Helm charts as versioned OCI artifacts (ADR 0030/0031 phase 0),
-  # gated like the image `publish` job. Vertical slice: hl7-transformer only.
+  # gated like the image `publish` job.
   publish-charts:
     if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
@@ -1088,11 +1047,11 @@ jobs:
       - name: 'Publish chart - ${{ matrix.chart-name }}'
         if: needs.changes.outputs[matrix.changed] == 'true'
         shell: bash
-        # helm is preinstalled on the runner (OCI push needs >= 3.8). Only the
-        # chart version is stamped (--version); Chart.yaml keeps its 0.0.0-dev /
-        # appVersion "latest" placeholders. appVersion-to-image coupling is phase
-        # 2, so the chart's default image tag stays :latest and phase-0 consumers
-        # pin image.tag for immutability. Token via stdin (never argv).
+        # helm preinstalled (OCI push needs >= 3.8). Only --version is stamped;
+        # Chart.yaml keeps its 0.0.0-dev / appVersion "latest" placeholders.
+        # appVersion-to-image coupling is phase 2, so the default image tag stays
+        # :latest and phase-0 consumers pin image.tag for immutability. Token via
+        # stdin (never argv).
         env:
           CHART_DIR: ${{ matrix.chart-dir }}
           CHART_NAME: ${{ matrix.chart-name }}
@@ -1106,8 +1065,8 @@ jobs:
           helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
           # Record the pushed chart by digest for the build-lane haul (ADR 0033),
-          # read back from the registry via a stable --format contract (matching
-          # docker-push); imagetools resolves OCI charts too.
+          # read back via a stable --format contract (matching docker-push;
+          # imagetools resolves OCI charts too).
           ref="${REGISTRY}/washu-tag/charts/${CHART_NAME}:${VERSION}"
           digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"
           if [ "${digest#sha256:}" = "${digest}" ]; then
@@ -1122,9 +1081,9 @@ jobs:
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: 'Sign chart - ${{ matrix.chart-name }}'
         if: needs.changes.outputs[matrix.changed] == 'true'
-        # Sign the pushed OCI chart by digest with the keyed cosign pair, matching
-        # the image signing in `publish`, so the build-lane haul verifies charts and
-        # images alike at sync time (ADR 0033). Keyed, no transparency log.
+        # Sign the pushed OCI chart by digest with the keyed cosign pair (matching
+        # `publish`), so the build-lane haul verifies charts and images alike at
+        # sync time (ADR 0033). Keyed, no transparency log.
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
@@ -1218,12 +1177,11 @@ jobs:
           image-name: report-viewer
 
   haul-guard-canary:
-    # publish-haul's sync step fails closed by counting hauler's "signature
-    # verified for image [" log lines; a hauler bump that changed that wording
-    # would silently zero the count and block every publish. Assert the string is
-    # still in the pinned binary here, on every PR, so a bump fails RED up front
-    # instead of surfacing later as a cryptic 0/N-verified on a main build. Runs
-    # unconditionally (cheap) so it always reports and is safe to mark required.
+    # publish-haul's sync fails closed by counting hauler's "signature verified for
+    # image [" log lines; a hauler bump that reworded that would zero the count and
+    # block every publish. Assert the string is in the pinned binary here on every
+    # PR, so a bump fails RED up front instead of as a cryptic 0/N on a main build.
+    # Runs unconditionally (cheap) so it always reports and is safe to mark required.
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1292,11 +1250,10 @@ jobs:
           path: digests
           merge-multiple: true
       - name: Download this run's fresh chart digests
-        # Charts go in a SEPARATE subdir: 5 chart names (hl7-transformer,
-        # hl7-listener, hl7log-extractor, launchpad, report-viewer) are also image
-        # names, so their digest files share a basename; a flat merge would clobber
-        # one. build_haul globs digests/**/* and skips dirs, so the subdir is read.
-        # Same no-continue-on-error invariant as the image digests above.
+        # SEPARATE subdir: 5 chart names (hl7-transformer, hl7-listener,
+        # hl7log-extractor, launchpad, report-viewer) collide with image names, so
+        # a flat merge would clobber their digest files. build_haul globs
+        # digests/**/* and skips dirs. Same no-continue-on-error invariant as above.
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: chart-digest-*
@@ -1329,7 +1286,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p digests predecessor
-          # Previous build's haul is the carry source; absent on the first build.
+          # Previous build's haul is the carry source; absent on first build.
           oras pull "${MANIFEST_REPO}:main" -o predecessor \
             || echo "no predecessor haul yet (first build must be a bootstrap)"
           python3 tooling/manifest/build_haul.py \
@@ -1339,10 +1296,9 @@ jobs:
             --name scout > haul.yaml
           echo "--- haul.yaml ---"; cat haul.yaml
           # Third-party upstream images: resolve each pinned tag from versions.yaml
-          # (the deploy-time source of truth, via resolve_upstream.py), pin to
-          # @digest, and render a separate manifest -- synced WITHOUT --key below
-          # (we can't sign images in registries we don't own; trust = the immutable
-          # digest). Re-resolved every run, so no predecessor carry.
+          # (via resolve_upstream.py), pin to @digest, render a separate manifest --
+          # synced WITHOUT --key below (can't sign registries we don't own; trust =
+          # the immutable digest). Re-resolved every run, so no predecessor carry.
           : > upstream-refs.txt
           python3 tooling/manifest/resolve_upstream.py \
             tooling/manifest/upstream-images.txt \
@@ -1379,3 +1335,134 @@ jobs:
         with:
           name: haul-version
           path: haul-version.txt
+  config-artifact-publish:
+    # Config artifact (ADR 0031): after the build-lane haul publishes, stamp a COPY
+    # of deploy/ to the concrete chart/image tags in that haul, then publish the
+    # stamped tree + required-vars.txt as the versioned scout-config OCI artifact a
+    # cluster's Flux OCIRepository pins. cluster-vars stays site-owned (ADR 0031
+    # 4/6): the artifact ships shared bases + the required-vars contract; each site
+    # generates its own cluster-vars via gen_cluster_vars.py. The stamp+generate
+    # logic runs on every PR in validate-deploy.yaml, so regressions fail RED there
+    # even while this job is paused.
+    # PAUSED until the build-lane haul is live (publish-haul re-enabled + 14-chart
+    # seed dispatched so MANIFEST_REPO:main exists). Re-enable by restoring:
+    #   github.ref_name == 'main' && needs.publish-haul.result == 'success'
+    if: false
+    runs-on: ubuntu-latest
+    needs: [changes, publish-haul]
+    permissions:
+      contents: read
+      packages: write
+    env:
+      VERSION: ${{ needs.changes.outputs.version }}
+      MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
+      CONFIG_REPO: ghcr.io/washu-tag/manifests/scout-config
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      # setup-python is a bare interpreter; stamp_config.py imports PyYAML.
+      - run: pip install pyyaml
+      - name: Login to GHCR
+        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Install hauler and oras
+        uses: ./.github/actions/install-hauler-oras
+      - name: Stamp deploy/ from the published haul
+        run: |
+          set -euo pipefail
+          mkdir -p haul
+          # The build lane's haul is the source of truth for concrete tags.
+          oras pull "${MANIFEST_REPO}:main" -o haul
+          cp -r deploy config-artifact
+          # config-hash must match the realm content the site seeds into the
+          # keycloak-config Secret; render + pass that realm once wired. Until then
+          # the fixture keeps the hash deterministic (import re-fires on a real
+          # realm change once wired).
+          python3 tooling/deploy/stamp_config.py \
+            --deploy-dir config-artifact \
+            --haul haul/haul.yaml \
+            --realm-file tooling/deploy/fixtures/realm.json
+      - name: Publish + sign the scout-config artifact
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # Stamped bases + the required-vars contract (ADR 0031 Appendix B).
+          tar -C config-artifact -czf scout-config.tar.gz base flux required-vars.txt
+          oras push "${CONFIG_REPO}:${VERSION}" scout-config.tar.gz:application/gzip
+          cosign sign --key env://COSIGN_PRIVATE_KEY \
+            --use-signing-config=false --tlog-upload=false --yes "${CONFIG_REPO}:${VERSION}"
+          # Advance :main last, so it only moves after a complete signed publish.
+          oras tag "${CONFIG_REPO}:${VERSION}" main
+
+  deploy-and-test-flux:
+    # The deploy switch (ADR 0031, Phase 3): stand up the ingest slice via Flux from
+    # the published scout-config artifact instead of the Ansible playbooks, then run
+    # the SAME tests/ingest suite -- the parallel proof the GitOps lane deploys what
+    # Ansible deploys. Ansible deploy-and-test stays the green gate until Phase-5
+    # cutover; this is additive.
+    # PAUSED until the config artifact is published (config-artifact-publish live)
+    # and the fixed-name Secrets + cnpg-role-* companions are seedable from CI
+    # secrets. Re-enable by restoring:
+    #   github.ref_name == 'main' && needs.config-artifact-publish.result == 'success'
+    if: false
+    runs-on: ubuntu-latest
+    needs: [config-artifact-publish]
+    permissions:
+      contents: read
+    env:
+      CONFIG_REPO: ghcr.io/washu-tag/manifests/scout-config
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install k3s + Flux (pinned, sha256-verified)
+        run: |
+          set -euo pipefail
+          # Download pinned binaries and verify sha256 before executing, so a hijacked
+          # or corrupted release asset can't run in the job (same shape as
+          # .github/actions/install-hauler-oras). No curl piped to a shell.
+          K3S_VERSION='v1.31.5+k3s1'
+          K3S_SHA256='399b87b432ce55013fa81adad572a8e4ecf56e0df97369cf02d4b8a41f039091'
+          curl -fsSL -o k3s "https://github.com/k3s-io/k3s/releases/download/${K3S_VERSION/+/%2B}/k3s"
+          echo "${K3S_SHA256}  k3s" | sha256sum -c -
+          sudo install -m 0755 k3s /usr/local/bin/k3s
+          sudo k3s server --write-kubeconfig-mode=644 &
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          timeout 180 bash -c 'until k3s kubectl get nodes 2>/dev/null | grep -q " Ready"; do sleep 3; done'
+          FLUX_VERSION='2.4.0'
+          FLUX_SHA256='7b70b75af20e28fc30ee66cf5372ec8d51dd466fd2ee21aa42690984de70b09b'
+          curl -fsSL -o flux.tar.gz "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}/flux_${FLUX_VERSION}_linux_amd64.tar.gz"
+          echo "${FLUX_SHA256}  flux.tar.gz" | sha256sum -c -
+          tar -xzf flux.tar.gz flux && sudo install -m 0755 flux /usr/local/bin/flux
+          flux install --components-extra=image-reflector-controller,image-automation-controller
+      - name: Seed secrets + cluster-vars + the scout-config source
+        run: |
+          set -euo pipefail
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          # Fixed-name Secrets the bases reference (superuser-secret, the five
+          # cnpg-role-* companions, s3/keycloak/superset/hive) are SOPS/ESO in
+          # production (Phase 4); seed from CI secrets here. Placeholder -- wire the
+          # concrete `kubectl create secret` calls when enabled.
+          # cluster-vars for postBuild substitution:
+          python3 tooling/deploy/gen_cluster_vars.py \
+            --values .github/ci_resources/cluster-vars.values.json \
+            --namespace flux-system --name cluster-vars | kubectl apply -f -
+          # Point Flux at the published config artifact.
+          flux create source oci scout-config \
+            --url="oci://${CONFIG_REPO}" --tag=main --interval=1m
+      - name: Reconcile the ingest slice + run tests/ingest
+        run: |
+          set -euo pipefail
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          # Apply the Flux Kustomizations, let the DAG converge, then run the SAME
+          # ingest suite Ansible deploy-and-test runs, against the Flux-reconciled
+          # slice. Fleshed out when the artifact + secret seed land.
+          kubectl apply -f config-artifact/flux/ || kubectl apply -f deploy/flux/
+          flux reconcile kustomization extractor --with-source --timeout=15m

@@ -1,0 +1,72 @@
+# Table/default-privilege grants for hive_readonly that CNPG managed.roles + the
+# Database CR can't express (roles + hive DB are provisioned by CNPG). ALTER DEFAULT
+# PRIVILEGES FOR ROLE hive covers tables schematool creates on first boot, so readonly
+# works though this runs before the metastore. Superuser-only; grants are idempotent.
+# backoffLimit gives margin if a grant lands before hive_readonly reconciles.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hive-db-init
+  namespace: '${hive_namespace}'
+  annotations:
+    # force: Flux recreates the immutable Job (spec.template) when this SQL changes.
+    kustomize.toolkit.fluxcd.io/force: 'Enabled'
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hive-db-init
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: postgres:16
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: HOME
+              value: /tmp
+            - name: PGHOST
+              value: '${postgres_cluster_name}-rw.${postgres_cluster_namespace}'
+            - name: PGPORT
+              value: '5432'
+            - name: PGSSLMODE
+              value: require
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: superuser-secret
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: superuser-secret
+                  key: password
+          command:
+            - sh
+            - -ec
+            - |
+              # SELECT-only; Delta Lake keeps its own txn log, no lock-table access needed.
+              psql --no-psqlrc -v ON_ERROR_STOP=1 --dbname hive <<'SQL'
+              GRANT CONNECT ON DATABASE hive TO hive_readonly;
+              GRANT USAGE ON SCHEMA public TO hive_readonly;
+              GRANT SELECT ON ALL TABLES IN SCHEMA public TO hive_readonly;
+              GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO hive_readonly;
+              ALTER DEFAULT PRIVILEGES FOR ROLE hive IN SCHEMA public GRANT SELECT ON TABLES TO hive_readonly;
+              ALTER DEFAULT PRIVILEGES FOR ROLE hive IN SCHEMA public GRANT SELECT ON SEQUENCES TO hive_readonly;
+              SQL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

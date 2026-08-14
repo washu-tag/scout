@@ -1,0 +1,19 @@
+# Per-namespace foundation (ADR 0031): sole owner of the ${scout_extractor_namespace}
+# Namespace and the shared scout-charts HelmRepository (cassandra, elasticsearch, extractor,
+# temporal, trino-rw live here; extractor + temporal-bootstrap pull from scout-charts).
+# Co-declaring either across their prune:true Kustomizations makes them fight over ownership
+# (a delete of one prunes it from the others), so each dependsOn this foundation.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: '${scout_extractor_namespace}'
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: scout-charts
+  namespace: '${scout_extractor_namespace}'
+spec:
+  type: oci
+  interval: 1h
+  url: oci://ghcr.io/washu-tag/charts

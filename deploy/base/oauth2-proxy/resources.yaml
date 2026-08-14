@@ -1,0 +1,137 @@
+# oauth2-proxy: cluster-wide OIDC auth edge (ADR 0031) in ${oauth2_proxy_namespace}
+# (kube-system, a built-in namespace this base does NOT create). Defines two Traefik
+# middlewares consumers chain (${oauth2_proxy_namespace}-oauth2-proxy-{auth,error}@kubernetescrd):
+#   - oauth2-proxy-auth (forwardAuth): /oauth2/auth 200 -> copies
+#     X-Auth-Request-Preferred-Username upstream (Voila -> X-Trino-User, ADR 0022).
+#   - oauth2-proxy-error (errors): 401 -> redirect to /oauth2/sign_in?rd={url}.
+# provider = keycloak-oidc (${keycloak_realm_url}); sessions in shared Valkey
+# (${valkey_namespace}), hence dependsOn valkey + keycloak-realm (needs the OIDC
+# clients from the realm import, not just Keycloak up).
+#
+# Fixed-name refs, seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git:
+#   - oauth2-proxy (Secret): client-id / client-secret / cookie-secret (client-id
+#     public but rides the same Secret).
+#   - oauth2-proxy-redis (Secret): redis-password -- copy of the Valkey password into
+#     THIS namespace; kube-system can't read valkey-auth in ${valkey_namespace}.
+#   - oauth2-proxy-logo (Secret): logo.png -- Scout sign-in logo (158 KB, not inlined).
+# oauth2-proxy-templates ConfigMap is configMapGenerator'd from error.html/sign_in.html
+# here, byte-exact from the Ansible role's files/, docs link parameterized via
+# ${scout_docs_url}. disableNameSuffixHash keeps the name stable for the HelmRelease
+# volume ref, so a GitOps HTML edit needs a manual rollout (no files-hash podAnnotation).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: oauth2-proxy
+  namespace: '${oauth2_proxy_namespace}'
+spec:
+  interval: 1h
+  url: https://oauth2-proxy.github.io/manifests
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: oauth2-proxy
+  namespace: '${oauth2_proxy_namespace}'
+spec:
+  interval: 30m
+  # Version pinned in versions.yaml (oauth2_proxy_chart_version, ~10.6.2),
+  # Renovate-tracked there. Literal mirror (not stamped); keep in lockstep.
+  chart:
+    spec:
+      chart: oauth2-proxy
+      version: '10.6.2'
+      sourceRef:
+        kind: HelmRepository
+        name: oauth2-proxy
+        namespace: '${oauth2_proxy_namespace}'
+  values:
+    config:
+      # client-id / client-secret / cookie-secret from this fixed-name Secret,
+      # injected as OAUTH2_PROXY_* env vars; nothing sensitive inlined.
+      existingSecret: oauth2-proxy
+      configFile: |
+        provider = "keycloak-oidc"
+        redirect_url = "https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/callback"
+        oidc_issuer_url = "${keycloak_realm_url}"
+        allowed_roles = "oauth2-proxy:oauth2-proxy-user"
+        cookie_expire = "8h"
+        skip_provider_button = false
+        email_domains = ['*']
+        reverse_proxy = true
+        real_client_ip_header = "X-Forwarded-For"
+        # Trusted reverse-proxy CIDR (K3s pod CIDR = Traefik pods); overlays tune.
+        trusted_proxy_ips = ["10.42.0.0/16"]
+        code_challenge_method = "S256"
+        custom_templates_dir = "/etc/oauth2-proxy/templates"
+        custom_sign_in_logo = "/var/www/static/logo/logo.png"
+        # No leading dot: browser already scopes to subdomains; a dot triggers spurious warnings.
+        cookie_domains = ["${server_hostname}"]
+        # Leading dot: subdomain glob for the post-auth redirect allowlist.
+        whitelist_domains = [".${server_hostname}"]
+        backend_logout_url = "${keycloak_realm_url}/protocol/openid-connect/logout?id_token_hint={id_token}&post_logout_redirect_uri=https://${server_hostname}"
+        banner = "Continue with ${oauth_provider_name}"
+        footer = "${server_hostname}" # passes the hostname to the sign_in template
+        upstreams = ["static://200"]
+        # Emit X-Auth-Request-Preferred-Username so forwardAuth forwards it upstream
+        # (Voila -> X-Trino-User, ADR 0022).
+        set_xauthrequest = true
+    # Redis-backed sessions in shared Valkey; password via fixed-name
+    # oauth2-proxy-redis Secret, standalone client to valkey.${valkey_namespace}.
+    sessionStorage:
+      type: redis
+      redis:
+        existingSecret: oauth2-proxy-redis
+        passwordKey: redis-password
+        clientType: standalone
+        standalone:
+          connectionUrl: 'redis://valkey.${valkey_namespace}:6379'
+    ingress:
+      enabled: true
+      className: traefik
+      path: /
+      hosts:
+        - '${oauth2_proxy_subdomain}.${server_hostname}'
+    # Custom sign-in/error templates + logo, mounted where configFile points
+    # (custom_templates_dir / custom_sign_in_logo).
+    extraVolumes:
+      - name: oauth2-proxy-templates
+        configMap:
+          name: oauth2-proxy-templates
+      - name: oauth2-proxy-logo
+        secret:
+          secretName: oauth2-proxy-logo
+    extraVolumeMounts:
+      - name: oauth2-proxy-templates
+        mountPath: /etc/oauth2-proxy/templates
+      - name: oauth2-proxy-logo
+        mountPath: /var/www/static/logo
+---
+# forwardAuth gate. authResponseHeaders copies preferred-username upstream
+# (Voila -> X-Trino-User, ADR 0022).
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: oauth2-proxy-auth
+  namespace: '${oauth2_proxy_namespace}'
+spec:
+  forwardAuth:
+    address: 'https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/auth'
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-Preferred-Username
+---
+# 401 -> sign-in redirect. {url} is a Traefik placeholder (single braces),
+# untouched by Flux ${...} substitution.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: oauth2-proxy-error
+  namespace: '${oauth2_proxy_namespace}'
+spec:
+  errors:
+    status:
+      - '401'
+    service:
+      name: oauth2-proxy
+      port: 80
+    query: '/oauth2/sign_in?rd={url}'
