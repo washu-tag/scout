@@ -135,5 +135,44 @@ def test_absent_image_component_fails_closed(haul, copy_deploy):
         stamp_tree(copy_deploy, broken, charts, compute_config_hash(REALM))
 
 
+def test_key_order_independent_stamp(tmp_path, haul):
+    """A values.image with `tag:` BEFORE `repository:` must still stamp (Kate #639):
+    key order carries no YAML meaning, so the stamper can't depend on it."""
+    images, charts = haul
+    base = tmp_path / "base" / "x"
+    base.mkdir(parents=True)
+    (base / "resources.yaml").write_text(
+        "spec:\n"
+        "  values:\n"
+        "    image:\n"
+        "      tag: latest\n"  # tag BEFORE repository -- the reordered case
+        "      repository: ghcr.io/washu-tag/hl7-transformer\n"
+    )
+    stamps = stamp_tree(tmp_path, images, charts, "0")
+    assert any(
+        s.kind == "image-values-tag" and s.name == "hl7-transformer" for s in stamps
+    )
+    text = (base / "resources.yaml").read_text()
+    assert "tag: latest" not in text
+    assert "tag: '" + images["hl7-transformer"] + "'" in text
+    assert verify_clean(tmp_path) == []
+
+
+def test_verify_clean_catches_reordered_residual(tmp_path):
+    """verify_clean must flag a washu :latest even when tag precedes repository,
+    so a stamp miss can never pass the fail-closed gate."""
+    base = tmp_path / "base" / "y"
+    base.mkdir(parents=True)
+    (base / "r.yaml").write_text(
+        "spec:\n"
+        "  values:\n"
+        "    image:\n"
+        "      tag: latest\n"
+        "      repository: ghcr.io/washu-tag/superset\n"
+    )
+    problems = verify_clean(tmp_path)
+    assert any("latest" in p for p in problems)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

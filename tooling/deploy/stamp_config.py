@@ -2,28 +2,40 @@
 """Stamp the Phase 3 ``deploy/`` tree from a build-lane haul manifest (ADR 0031).
 
 The GitOps ``deploy/`` bases carry LITERAL placeholders in git so a plain
-``kustomize build`` renders offline: charts pin ``version: '0.0.0'``, Scout images
-carry ``tag: latest``, the realm import carries ``config-hash: '0'``. At
-config-artifact publish this tool rewrites a COPY of the tree, pinning each
-placeholder to the concrete tag in that build's Hauler ``kind: Images`` manifest
-(same file ``tooling/manifest/haul.py`` renders).
+``kustomize build`` renders and CI stays offline: Scout OCI charts pin
+``version: '0.0.0'``, Scout images carry ``tag: latest`` (or a concrete upstream
+tag), and the keycloak realm import carries ``config-hash: '0'``. At
+config-artifact publish, this tool rewrites a COPY of the tree, pinning every
+placeholder to the concrete tag recorded in that build's Hauler ``kind: Images``
+haul manifest (the same file ``tooling/manifest/haul.py`` renders).
 
-Rewrites (``--deploy-dir`` in place; must be a COPY):
-  * HelmRelease ``version: '0.0.0'`` -> haul tag for the chart at
-    ``.spec.chart.spec.chart``.
-  * Scout ``values.image`` (washu ``repository:`` + following ``tag:``) -> haul
-    tag. Covers hl7log-extractor, hl7-transformer, both superset layers.
-  * Inline ``image: ghcr.io/washu-tag/<image>:<tag>`` -> haul tag. Covers the
-    keycloak CR image AND the hl7-transformer initContainer (the SECOND
-    hl7-transformer literal -- both move in lockstep).
-  * keycloak-config-cli ``config-hash: '0'`` -> 8-char truncated sha256 of the
-    ``--realm-file`` content, mirroring the Ansible keycloak role
-    (roles/keycloak/tasks/configure.yaml ``hash('sha256') | truncate(8,True,'')``).
-    With no ``--realm-file`` the hash is of empty bytes and a warning is printed.
+Rewrites (operate on ``--deploy-dir`` in place; that dir must be a COPY):
+  * HelmRelease ``.spec.chart.spec.version: '0.0.0'`` -> haul tag for
+    ``ghcr.io/washu-tag/charts/<chart>`` (chart from the sibling ``chart:`` key).
+  * Scout image ``values.image`` (``repository: ghcr.io/washu-tag/<image>`` +
+    sibling ``tag:``) -> the image's haul tag. Covers hl7log-extractor,
+    hl7-transformer, and both superset layers.
+  * Inline Scout image literals ``image: ghcr.io/washu-tag/<image>:<tag>`` -> the
+    image's haul tag. Covers the keycloak CR image AND the hl7-transformer
+    init-container image (both move in lockstep).
+  * keycloak-config-cli ``config-hash: '0'`` -> the 8-char truncated sha256 of the
+    realm content (``--realm-file``), mirroring the Ansible keycloak role
+    (``roles/keycloak/tasks/configure.yaml``: ``hash('sha256') |
+    truncate(8, True, '')``). With no ``--realm-file`` the hash is of empty bytes
+    (a documented placeholder) and a warning is printed.
 
-Fail closed: a placeholder absent from the haul is a hard error (``StampError``);
-after stamping ``verify_clean`` asserts no ``version: '0.0.0'``, no washu image at
-``latest``/``0.0.0``, no ``config-hash: '0'`` remain. Dependency-free (stdlib only).
+Images/charts are located by PARSING each doc (yaml node line numbers), not by
+matching adjacent lines, so a values block whose keys are reordered (``tag:``
+before ``repository:``) is still found -- key order carries no meaning in YAML, so
+neither the stamper nor the fail-closed verifier can depend on it. Only the value
+line is rewritten, so comments and formatting survive. PyYAML is the one non-stdlib
+dependency (already used by validate-deploy.yaml and present via ansible-core for
+the tests; this tool only runs in CI).
+
+Fail closed: a placeholder whose component is absent from the haul is a hard error
+(``StampError``); and after stamping, ``verify_clean`` re-parses and asserts no
+``version: '0.0.0'``, no ``ghcr.io/washu-tag`` image left at ``latest``/``0.0.0``,
+and no ``config-hash: '0'`` remain.
 """
 
 from __future__ import annotations
@@ -35,9 +47,12 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
+import yaml
+
 WASHU = "ghcr.io/washu-tag/"
 CHARTS_PREFIX = WASHU + "charts/"
 CONFIG_HASH_TRUNC = 8  # matches the Ansible keycloak role's truncate(8, True, "")
+_BAD_TAGS = ("latest", "0.0.0")
 
 Stamp = namedtuple("Stamp", "kind name tag file line")
 
@@ -46,7 +61,7 @@ class StampError(Exception):
     """A placeholder could not be resolved against the haul (fail closed)."""
 
 
-# haul parsing (self-contained; mirrors build_haul._split_ref)
+# --- haul parsing (self-contained; mirrors build_haul._split_ref) -------------
 
 
 def _split_ref(ref: str):
@@ -61,9 +76,9 @@ def _split_ref(ref: str):
 def parse_haul(path) -> tuple:
     """Parse a Hauler ``kind: Images`` manifest into (images, charts).
 
-    Each maps ``<name> -> tag`` where ``<name>`` is the final repo path segment.
-    Images are ``ghcr.io/washu-tag/<name>``; charts are
-    ``ghcr.io/washu-tag/charts/<name>``. Non-washu refs are ignored.
+    Each maps the final repo path segment -> tag. Images are
+    ``ghcr.io/washu-tag/<name>``; charts are ``ghcr.io/washu-tag/charts/<name>``.
+    Non-washu refs are ignored.
     """
     images: dict = {}
     charts: dict = {}
@@ -85,113 +100,150 @@ def parse_haul(path) -> tuple:
     return images, charts
 
 
-# line rewrite rules
+# --- value-line rewrite -------------------------------------------------------
 
-_RE_CHART = re.compile(r"^(\s*)chart:\s+(\S+)\s*$")
-_RE_VERSION0 = re.compile(r"^(\s*)version:\s*(['\"]?)0\.0\.0\2\s*$")
-_RE_IMAGE_INLINE = re.compile(
-    r"^(\s*)(-\s+)?image:\s*ghcr\.io/washu-tag/([^:\s/]+):(\S+)\s*$"
-)
-_RE_REPO = re.compile(r"^(\s*)repository:\s*ghcr\.io/washu-tag/([^:\s/]+)\s*$")
-_RE_TAG = re.compile(r"^(\s*)tag:\s*(['\"]?)([^'\"\s]+)\2\s*$")
-_RE_CONFIG_HASH0 = re.compile(r"^(\s*)config-hash:\s*(['\"]?)0\2\s*$")
+# A scalar mapping entry: <indent><key>: <value>[  # comment]. Rewrites only the
+# value, preserving indent, key, and any trailing comment.
+_ENTRY = re.compile(r"^(\s*[\w.\-/]+:\s+)(.*?)(\s+#.*)?$")
 
 
-def _strip_quotes(s: str) -> str:
-    if len(s) >= 2 and s[0] in "'\"" and s[-1] == s[0]:
-        return s[1:-1]
-    return s
+def _rewrite_value(line: str, new_value: str, quote: bool) -> str:
+    m = _ENTRY.match(line)
+    if not m:
+        raise StampError(
+            "unexpected value line, cannot stamp safely: {!r}".format(line)
+        )
+    v = "'{}'".format(new_value) if quote else new_value
+    return m.group(1) + v + (m.group(3) or "")
 
 
-def stamp_lines(lines: list, images: dict, charts: dict, config_hash: str, rel: str):
-    """Rewrite one file's lines in place. Returns (new_lines, [Stamp]).
+def _inline_image_name(value: str):
+    """``<name>`` for a ``ghcr.io/washu-tag/<name>:<tag>`` image literal, else None.
 
-    Raises StampError if a placeholder references a component absent from the haul.
+    Excludes chart refs (charts/...) and any ref with an extra path segment.
     """
-    out = []
-    stamps = []
-    pending_chart = None  # last `chart:` seen, for the next version: 0.0.0
-    pending_repo = None  # (name, indent) of a washu repo awaiting its tag:
-    for n, line in enumerate(lines, 1):
-        # chart name capture (no rewrite)
-        m = _RE_CHART.match(line)
-        if m:
-            pending_chart = _strip_quotes(m.group(2))
-            out.append(line)
-            continue
+    if not value.startswith(WASHU) or value.startswith(CHARTS_PREFIX):
+        return None
+    rest = value[len(WASHU) :]
+    if ":" not in rest:
+        return None
+    name = rest.split(":", 1)[0]
+    return name if "/" not in name else None
 
-        # HelmRelease chart version placeholder
-        m = _RE_VERSION0.match(line)
-        if m:
-            if pending_chart is None:
-                raise StampError(
-                    "{}:{}: version '0.0.0' with no preceding chart name".format(rel, n)
-                )
-            if pending_chart not in charts:
-                raise StampError(
-                    "{}:{}: chart '{}' has no haul component".format(
-                        rel, n, pending_chart
-                    )
-                )
-            tag = charts[pending_chart]
-            out.append("{}version: '{}'".format(m.group(1), tag))
-            stamps.append(Stamp("chart-version", pending_chart, tag, rel, n))
-            pending_chart = None
-            continue
 
-        # inline Scout image literal (keycloak CR, hl7-transformer initContainer)
-        m = _RE_IMAGE_INLINE.match(line)
-        if m:
-            indent, dash, name = m.group(1), m.group(2) or "", m.group(3)
-            if name not in images:
-                raise StampError(
-                    "{}:{}: image '{}' has no haul component".format(rel, n, name)
-                )
-            tag = images[name]
-            out.append("{}{}image: {}{}:{}".format(indent, dash, WASHU, name, tag))
-            stamps.append(Stamp("image-inline", name, tag, rel, n))
-            continue
+# --- parse-based placeholder discovery ----------------------------------------
 
-        # values.image repository capture (no rewrite)
-        m = _RE_REPO.match(line)
-        if m:
-            pending_repo = (m.group(2), m.group(1))
-            out.append(line)
-            continue
 
-        # values.image tag, only when it follows a washu repository at same indent
-        m = _RE_TAG.match(line)
-        if m and pending_repo is not None and m.group(1) == pending_repo[1]:
-            name = pending_repo[0]
-            if name not in images:
-                raise StampError(
-                    "{}:{}: image '{}' has no haul component".format(rel, n, name)
-                )
-            tag = images[name]
-            out.append("{}tag: '{}'".format(m.group(1), tag))
-            stamps.append(Stamp("image-values-tag", name, tag, rel, n))
-            pending_repo = None
-            continue
+def _scalar(node):
+    return node.value if isinstance(node, yaml.ScalarNode) else None
 
-        # config-hash placeholder
-        m = _RE_CONFIG_HASH0.match(line)
-        if m:
-            out.append("{}config-hash: '{}'".format(m.group(1), config_hash))
-            stamps.append(
-                Stamp("config-hash", "keycloak-config-cli", config_hash, rel, n)
+
+def _find_patches(text: str, images: dict, charts: dict, config_hash: str, rel: str):
+    """Parse ``text``; return [(line0, new_line, Stamp)] for every placeholder.
+
+    Order-independent (locates each value node by its line). Raises StampError if a
+    washu component referenced by a placeholder is absent from the haul.
+    """
+    try:
+        docs = list(yaml.compose_all(text))
+    except yaml.YAMLError:
+        return []  # not YAML we can parse; nothing to stamp
+    lines = text.split("\n")
+    patches: list = []
+
+    def add(node, new_value, quote, kind, name, tag):
+        ln = node.start_mark.line
+        patches.append(
+            (
+                ln,
+                _rewrite_value(lines[ln], new_value, quote),
+                Stamp(kind, name, tag, rel, ln + 1),
             )
-            continue
+        )
 
-        # chart/repo captures are consumed by the very next line (version/tag). Any
-        # other real key closes the window, so drop both -- otherwise a later
-        # unrelated version/tag (e.g. docker.io keycloak-config-cli tag) mis-stamps.
-        stripped = line.strip()
-        if stripped and not stripped.startswith("#"):
-            pending_chart = None
-            pending_repo = None
+    def visit(node):
+        if isinstance(node, yaml.MappingNode):
+            kv = {k.value: v for k, v in node.value if isinstance(k, yaml.ScalarNode)}
+            # Scout OCI chart version placeholder: {chart: <washu chart>, version: '0.0.0'}
+            if (
+                _scalar(kv.get("chart")) is not None
+                and _scalar(kv.get("version")) == "0.0.0"
+            ):
+                chart = kv["chart"].value
+                if chart not in charts:
+                    raise StampError(
+                        "{}:{}: chart '{}' has no haul component".format(
+                            rel, kv["version"].start_mark.line + 1, chart
+                        )
+                    )
+                add(
+                    kv["version"],
+                    charts[chart],
+                    True,
+                    "chart-version",
+                    chart,
+                    charts[chart],
+                )
+            # values.image: {repository: ghcr.io/washu-tag/<image>, tag: ...}
+            repo = _scalar(kv.get("repository"))
+            if (
+                repo
+                and repo.startswith(WASHU)
+                and not repo.startswith(CHARTS_PREFIX)
+                and "tag" in kv
+            ):
+                name = repo[len(WASHU) :]
+                if name not in images:
+                    raise StampError(
+                        "{}:{}: image '{}' has no haul component".format(
+                            rel, kv["tag"].start_mark.line + 1, name
+                        )
+                    )
+                add(
+                    kv["tag"],
+                    images[name],
+                    True,
+                    "image-values-tag",
+                    name,
+                    images[name],
+                )
+            # config-hash placeholder
+            if _scalar(kv.get("config-hash")) == "0":
+                add(
+                    kv["config-hash"],
+                    config_hash,
+                    True,
+                    "config-hash",
+                    "keycloak-config-cli",
+                    config_hash,
+                )
+            # inline Scout image literal
+            iname = _inline_image_name(_scalar(kv.get("image")) or "")
+            if iname is not None:
+                if iname not in images:
+                    raise StampError(
+                        "{}:{}: image '{}' has no haul component".format(
+                            rel, kv["image"].start_mark.line + 1, iname
+                        )
+                    )
+                add(
+                    kv["image"],
+                    "{}{}:{}".format(WASHU, iname, images[iname]),
+                    False,
+                    "image-inline",
+                    iname,
+                    images[iname],
+                )
+            for _, v in node.value:
+                visit(v)
+        elif isinstance(node, yaml.SequenceNode):
+            for item in node.value:
+                visit(item)
 
-        out.append(line)
-    return out, stamps
+    for d in docs:
+        if d is not None:
+            visit(d)
+    return patches
 
 
 def stamp_tree(deploy_dir, images: dict, charts: dict, config_hash: str) -> list:
@@ -203,53 +255,84 @@ def stamp_tree(deploy_dir, images: dict, charts: dict, config_hash: str) -> list
             continue
         rel = str(path.relative_to(root))
         text = path.read_text()
+        patches = _find_patches(text, images, charts, config_hash, rel)
+        if not patches:
+            continue
         lines = text.split("\n")
-        new_lines, file_stamps = stamp_lines(lines, images, charts, config_hash, rel)
-        if file_stamps:
-            path.write_text("\n".join(new_lines))
-            stamps.extend(file_stamps)
+        for line0, new_line, _ in patches:
+            lines[line0] = new_line
+        path.write_text("\n".join(lines))
+        stamps.extend(s for _, _, s in patches)
     return stamps
 
 
-# fail-closed verification
-
-_V_VERSION0 = re.compile(r"version:\s*['\"]?0\.0\.0")
-_V_IMG_BAD = re.compile(r"image:\s*ghcr\.io/washu-tag/[^:\s]+:(latest|0\.0\.0)\b")
-_V_CONFIG_HASH0 = re.compile(r"config-hash:\s*['\"]?0['\"]?\s*$")
+# --- fail-closed verification (parse-based, order-independent) ----------------
 
 
 def verify_clean(deploy_dir) -> list:
-    """Scan the stamped tree; return a list of any residual-placeholder violations."""
+    """Re-parse the stamped tree; return any residual-placeholder violations."""
     root = Path(deploy_dir)
     problems = []
     for path in sorted(root.rglob("*")):
         if path.suffix not in (".yaml", ".yml") or not path.is_file():
             continue
         rel = str(path.relative_to(root))
-        pending_repo = None
-        for n, line in enumerate(path.read_text().split("\n"), 1):
-            if _V_VERSION0.search(line):
-                problems.append("{}:{}: chart version still 0.0.0".format(rel, n))
-            if _V_IMG_BAD.search(line):
-                problems.append(
-                    "{}:{}: washu image left at latest/0.0.0".format(rel, n)
-                )
-            if _V_CONFIG_HASH0.search(line):
-                problems.append("{}:{}: config-hash still 0".format(rel, n))
-            # washu values.image tag must not be latest/0.0.0
-            m = _RE_REPO.match(line)
-            if m:
-                pending_repo = m.group(1)
-                continue
-            m = _RE_TAG.match(line)
-            if m and pending_repo is not None and m.group(1) == pending_repo:
-                if m.group(3) in ("latest", "0.0.0"):
+        try:
+            docs = list(yaml.compose_all(path.read_text()))
+        except yaml.YAMLError:
+            continue
+
+        def visit(node):
+            if isinstance(node, yaml.MappingNode):
+                kv = {
+                    k.value: v for k, v in node.value if isinstance(k, yaml.ScalarNode)
+                }
+                if (
+                    _scalar(kv.get("chart")) is not None
+                    and _scalar(kv.get("version")) == "0.0.0"
+                ):
                     problems.append(
-                        "{}:{}: washu values.image tag left at {}".format(
-                            rel, n, m.group(3)
+                        "{}:{}: chart version still 0.0.0".format(
+                            rel, kv["version"].start_mark.line + 1
                         )
                     )
-                pending_repo = None
+                repo = _scalar(kv.get("repository"))
+                if (
+                    repo
+                    and repo.startswith(WASHU)
+                    and not repo.startswith(CHARTS_PREFIX)
+                ):
+                    if _scalar(kv.get("tag")) in _BAD_TAGS:
+                        problems.append(
+                            "{}:{}: washu values.image tag still {}".format(
+                                rel, kv["tag"].start_mark.line + 1, kv["tag"].value
+                            )
+                        )
+                if _scalar(kv.get("config-hash")) == "0":
+                    problems.append(
+                        "{}:{}: config-hash still 0".format(
+                            rel, kv["config-hash"].start_mark.line + 1
+                        )
+                    )
+                iv = _scalar(kv.get("image")) or ""
+                if (
+                    _inline_image_name(iv) is not None
+                    and iv.rsplit(":", 1)[-1] in _BAD_TAGS
+                ):
+                    problems.append(
+                        "{}:{}: washu image left at {}".format(
+                            rel, kv["image"].start_mark.line + 1, iv.rsplit(":", 1)[-1]
+                        )
+                    )
+                for _, v in node.value:
+                    visit(v)
+            elif isinstance(node, yaml.SequenceNode):
+                for item in node.value:
+                    visit(item)
+
+        for d in docs:
+            if d is not None:
+                visit(d)
     return problems
 
 
