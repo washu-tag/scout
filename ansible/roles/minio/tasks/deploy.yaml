@@ -260,7 +260,7 @@
                     {% for b in minio_buckets %}
                     echo "Ensuring bucket {{ b.name }} exists..."
                     mc mb --ignore-existing local/{{ b.name }}
-                    {% if b.versioned | default(false) %}
+                    {% if b.name in minio_versioned_buckets %}
                     echo "  Enabling versioning on {{ b.name }}..."
                     mc version enable local/{{ b.name }}
                     {% endif %}
