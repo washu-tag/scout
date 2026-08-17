@@ -148,39 +148,79 @@ function StackedBar({
   );
 }
 
+// Bigger than the bar height: a stacked bar's own row tops out at BAR_H, but
+// the label lines below it are usually what sets the cell's real height, so a
+// pie this size fills space that is already there rather than growing the row.
+const PIE_SIZE = 32;
+
+function wedgePath(cx: number, cy: number, r: number, fromPct: number, toPct: number): string {
+  const angle = (pct: number) => (pct / 100) * 2 * Math.PI - Math.PI / 2;
+  const point = (a: number): [number, number] => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  const [x0, y0] = point(angle(fromPct));
+  const [x1, y1] = point(angle(toPct));
+  const large = toPct - fromPct > 50 ? 1 : 0;
+  return `M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} Z`;
+}
+
 // Slices are not padded up to a minimum the way bar segments are: in a pie the
 // area is the encoding, so inflating a sliver would misstate it. A slice too
 // small to see still has its label underneath.
+//
+// Hover rings a slice rather than dimming the others, matching StackedBar: the
+// palette steps sit close together by design, so a hovered slice fading toward
+// them was nearly invisible. Each wedge also gets a stroke in the cell
+// background color, the same gap every other segment in the row gets, drawn
+// this way because a conic-gradient has no notion of a border between stops.
 function Pie({
   parts,
   hovered,
+  onHover,
 }: {
   parts: Array<Segment & { fill: string }>;
   hovered: number | null;
+  onHover: (i: number | null) => void;
 }) {
+  const c = PIE_SIZE / 2;
+  const r = c - 1;
   let acc = 0;
-  const stops = parts.map((p, i) => {
+  const wedges = parts.map((p, i) => {
     const from = acc;
     // Rounding leaves a hairline of background at the end, so the last slice
     // closes the circle rather than carrying its own percentage.
     acc = i === parts.length - 1 ? 100 : acc + p.pct;
-    // Fade toward the background, the same way non-hovered histogram bars do.
-    // Mixing with transparent rather than a surface color keeps that working in
-    // both themes.
-    const fill =
-      hovered === null || hovered === i ? p.fill : `color-mix(in srgb, ${p.fill} 45%, transparent)`;
-    return `${fill} ${from}% ${acc}%`;
+    return { ...p, from, to: acc };
   });
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', height: BAR_H }}>
-      <div
-        style={{
-          width: BAR_H,
-          height: BAR_H,
-          borderRadius: '50%',
-          background: `conic-gradient(${stops.join(', ')})`,
-        }}
-      />
+    <div style={{ display: 'flex', justifyContent: 'center', height: PIE_SIZE }}>
+      <svg width={PIE_SIZE} height={PIE_SIZE} onMouseLeave={() => onHover(null)}>
+        {wedges.length === 1 ? (
+          <circle cx={c} cy={c} r={r} fill={wedges[0].fill} />
+        ) : (
+          wedges.map((w, i) => (
+            <path
+              key={w.label}
+              d={wedgePath(c, c, r, w.from, w.to)}
+              fill={w.fill}
+              stroke="var(--rv-surface-2)"
+              strokeWidth={1.5}
+              onMouseEnter={() => onHover(i)}
+            />
+          ))
+        )}
+        {hovered !== null && wedges.length > 1 && (
+          <path
+            // An SVG stroke centers on the path, so at r it would bleed half
+            // its width past the wedge's true edge. StackedBar's ring is an
+            // inset box-shadow, which stays inside by construction; drawing
+            // this arc a half-width in matches that.
+            d={wedgePath(c, c, r - 0.75, wedges[hovered].from, wedges[hovered].to)}
+            fill="none"
+            stroke="var(--rv-fg)"
+            strokeWidth={1.5}
+            pointerEvents="none"
+          />
+        )}
+      </svg>
     </div>
   );
 }
@@ -190,7 +230,7 @@ function Categorical({ parts, pie }: { parts: Array<Segment & { fill: string }>;
   return (
     <>
       {pie ? (
-        <Pie parts={parts} hovered={hovered} />
+        <Pie parts={parts} hovered={hovered} onHover={setHovered} />
       ) : (
         <StackedBar parts={parts} hovered={hovered} onHover={setHovered} />
       )}
