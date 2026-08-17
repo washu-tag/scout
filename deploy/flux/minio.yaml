@@ -9,7 +9,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/minio/operator
+  path: ./base/minio/operator
   prune: true
   wait: true
   timeout: 5m
@@ -30,7 +30,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/minio/tenant
+  path: ./base/minio/tenant
   prune: true
   wait: true
   timeout: 10m

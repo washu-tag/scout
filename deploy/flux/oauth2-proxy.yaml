@@ -8,7 +8,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/oauth2-proxy
+  path: ./base/oauth2-proxy
   prune: true
   wait: true
   timeout: 10m
