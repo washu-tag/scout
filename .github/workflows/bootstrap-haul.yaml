@@ -85,9 +85,15 @@ jobs:
         run: |
           set -euo pipefail
           echo "VERSION=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          # The OCI charts (in components.txt since #618) aren't published until
+          # seed-charts.yaml runs, so the first haul seeds ONLY the 8 images and has
+          # no predecessor to carry charts from. Render the images-only subset; the
+          # charts/ repos would else fail resolve_refs closed ("neither rebuilt nor
+          # carried"). seed-charts then carries these images and folds the charts in.
+          grep -v '/charts/' tooling/manifest/components.txt > images-only.txt
           python3 tooling/manifest/build_haul.py \
             --digests-dir digests \
-            --components tooling/manifest/components.txt \
+            --components images-only.txt \
             --predecessor "" \
             --name scout > haul.yaml
           echo "--- haul.yaml ---"; cat haul.yaml
