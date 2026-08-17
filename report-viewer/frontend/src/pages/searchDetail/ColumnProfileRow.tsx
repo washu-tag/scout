@@ -152,6 +152,8 @@ function StackedBar({
 // the label lines below it are usually what sets the cell's real height, so a
 // pie this size fills space that is already there rather than growing the row.
 const PIE_SIZE = 32;
+const GAP_STROKE = 1.5;
+const HOVER_STROKE = 1.5;
 
 function wedgePath(cx: number, cy: number, r: number, fromPct: number, toPct: number): string {
   const angle = (pct: number) => (pct / 100) * 2 * Math.PI - Math.PI / 2;
@@ -202,21 +204,28 @@ function Pie({
               d={wedgePath(c, c, r, w.from, w.to)}
               fill={w.fill}
               stroke="var(--rv-surface-2)"
-              strokeWidth={1.5}
+              strokeWidth={GAP_STROKE}
               onMouseEnter={() => onHover(i)}
             />
           ))
         )}
         {hovered !== null && wedges.length > 1 && (
           <path
-            // An SVG stroke centers on the path, so at r it would bleed half
-            // its width past the wedge's true edge. StackedBar's ring is an
-            // inset box-shadow, which stays inside by construction; drawing
-            // this arc a half-width in matches that.
-            d={wedgePath(c, c, r - 0.75, wedges[hovered].from, wedges[hovered].to)}
+            // The gap stroke above is centered on r, so solid fill only
+            // reaches to r - GAP_STROKE/2. Centering the highlight on r itself
+            // (a half-width in) lands it on top of that gap band instead of
+            // inside the color, which read as still hugging the edge. Moving
+            // it in by both half-widths clears the gap band entirely.
+            d={wedgePath(
+              c,
+              c,
+              r - (GAP_STROKE + HOVER_STROKE) / 2,
+              wedges[hovered].from,
+              wedges[hovered].to,
+            )}
             fill="none"
             stroke="var(--rv-fg)"
-            strokeWidth={1.5}
+            strokeWidth={HOVER_STROKE}
             pointerEvents="none"
           />
         )}
