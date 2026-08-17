@@ -16,6 +16,9 @@ const EMPTY_FILL = 'var(--rv-profile-empty)';
 
 const BAR_H = 18;
 const GAP = 2;
+// Sex reads better as a part of a whole than as a length. Keyed by name because
+// nothing about the values distinguishes it from any other short category list.
+const PIE_FIELD = 'sex';
 // One bucket per ~6px so bars never go sub-pixel.
 const PX_PER_BUCKET = 6;
 
@@ -145,11 +148,52 @@ function StackedBar({
   );
 }
 
-function Categorical({ parts }: { parts: Array<Segment & { fill: string }> }) {
+// Slices are not padded up to a minimum the way bar segments are: in a pie the
+// area is the encoding, so inflating a sliver would misstate it. A slice too
+// small to see still has its label underneath.
+function Pie({
+  parts,
+  hovered,
+}: {
+  parts: Array<Segment & { fill: string }>;
+  hovered: number | null;
+}) {
+  let acc = 0;
+  const stops = parts.map((p, i) => {
+    const from = acc;
+    // Rounding leaves a hairline of background at the end, so the last slice
+    // closes the circle rather than carrying its own percentage.
+    acc = i === parts.length - 1 ? 100 : acc + p.pct;
+    // Fade toward the background, the same way non-hovered histogram bars do.
+    // Mixing with transparent rather than a surface color keeps that working in
+    // both themes.
+    const fill =
+      hovered === null || hovered === i ? p.fill : `color-mix(in srgb, ${p.fill} 45%, transparent)`;
+    return `${fill} ${from}% ${acc}%`;
+  });
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', height: BAR_H }}>
+      <div
+        style={{
+          width: BAR_H,
+          height: BAR_H,
+          borderRadius: '50%',
+          background: `conic-gradient(${stops.join(', ')})`,
+        }}
+      />
+    </div>
+  );
+}
+
+function Categorical({ parts, pie }: { parts: Array<Segment & { fill: string }>; pie?: boolean }) {
   const [hovered, setHovered] = useState<number | null>(null);
   return (
     <>
-      <StackedBar parts={parts} hovered={hovered} onHover={setHovered} />
+      {pie ? (
+        <Pie parts={parts} hovered={hovered} />
+      ) : (
+        <StackedBar parts={parts} hovered={hovered} onHover={setHovered} />
+      )}
       {parts.map((p, i) => (
         <Label
           key={p.label}
@@ -263,7 +307,7 @@ function Chip({ text }: { text: string }) {
   );
 }
 
-function ProfileCell({ profile }: { profile: Profile }) {
+function ProfileCell({ profile, field }: { profile: Profile; field: string }) {
   if (profile.kind === 'none') return null;
 
   if (profile.kind === 'identifier') {
@@ -284,7 +328,7 @@ function ProfileCell({ profile }: { profile: Profile }) {
       ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: OTHER_FILL }] : []),
       ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
     ].filter((p) => p.count > 0);
-    return <Categorical parts={parts} />;
+    return <Categorical parts={parts} pie={field === PIE_FIELD} />;
   }
 
   if (profile.kind === 'numeric') {
@@ -349,7 +393,7 @@ export function ColumnProfileRow({
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <ProfileCell profile={profile} />
+              <ProfileCell profile={profile} field={col.id} />
             </div>
           </td>
         );
