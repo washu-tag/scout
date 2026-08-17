@@ -153,7 +153,10 @@ function StackedBar({
 // pie this size fills space that is already there rather than growing the row.
 const PIE_SIZE = 32;
 const GAP_STROKE = 1.5;
-const HOVER_STROKE = 1.5;
+// Thinner than the gap stroke and centered on the same boundary, so a sliver
+// of the gap color still shows on both sides of the highlight, on the spokes
+// as much as the arc. Matches the 1px ring on the stacked bar.
+const HOVER_STROKE = 1;
 
 function wedgePath(cx: number, cy: number, r: number, fromPct: number, toPct: number): string {
   const angle = (pct: number) => (pct / 100) * 2 * Math.PI - Math.PI / 2;
@@ -168,11 +171,12 @@ function wedgePath(cx: number, cy: number, r: number, fromPct: number, toPct: nu
 // area is the encoding, so inflating a sliver would misstate it. A slice too
 // small to see still has its label underneath.
 //
-// Hover rings a slice rather than dimming the others, matching StackedBar: the
-// palette steps sit close together by design, so a hovered slice fading toward
-// them was nearly invisible. Each wedge also gets a stroke in the cell
-// background color, the same gap every other segment in the row gets, drawn
-// this way because a conic-gradient has no notion of a border between stops.
+// Hover rings the whole slice, straight sides included, rather than dimming
+// the others: the palette steps sit close together by design, so a hovered
+// slice fading toward them was nearly invisible. Each wedge also gets a
+// stroke in the cell background color, the same gap every other segment in
+// the row gets, drawn this way because a conic-gradient has no notion of a
+// border between stops.
 function Pie({
   parts,
   hovered,
@@ -211,18 +215,7 @@ function Pie({
         )}
         {hovered !== null && wedges.length > 1 && (
           <path
-            // The gap stroke above is centered on r, so solid fill only
-            // reaches to r - GAP_STROKE/2. Centering the highlight on r itself
-            // (a half-width in) lands it on top of that gap band instead of
-            // inside the color, which read as still hugging the edge. Moving
-            // it in by both half-widths clears the gap band entirely.
-            d={wedgePath(
-              c,
-              c,
-              r - (GAP_STROKE + HOVER_STROKE) / 2,
-              wedges[hovered].from,
-              wedges[hovered].to,
-            )}
+            d={wedgePath(c, c, r, wedges[hovered].from, wedges[hovered].to)}
             fill="none"
             stroke="var(--rv-fg)"
             strokeWidth={HOVER_STROKE}
