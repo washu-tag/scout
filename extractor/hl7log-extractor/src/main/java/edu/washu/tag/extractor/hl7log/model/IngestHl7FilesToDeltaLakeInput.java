@@ -10,8 +10,7 @@ package edu.washu.tag.extractor.hl7log.model;
  * @param hl7RootPath Root path where HL7 files are located. This is used to find the HL7 files if
  *                    {@link IngestHl7FilesToDeltaLakeInput#hl7ManifestFilePath} is not provided.
  * @param reportTableName Name of the report table to be created in Delta Lake.
- * @param deltaIngestTimeout Timeout for the base-ingest (parse + merge) activity in minutes.
- * @param deriveDeltaTablesTimeout Timeout for the derivative-table activity (curated/latest/dx/mapping) in minutes.
+ * @param deltaIngestTimeout Timeout for the Delta Lake ingest operation in minutes.
  * @param createMapping Whether to derive the report-patient mapping table and the epic views that depend on it.
  *                      Null is treated as true.
  */
@@ -21,6 +20,5 @@ public record IngestHl7FilesToDeltaLakeInput(
     String hl7RootPath,
     String reportTableName,
     Integer deltaIngestTimeout,
-    Integer deriveDeltaTablesTimeout,
     Boolean createMapping
 ) {}
