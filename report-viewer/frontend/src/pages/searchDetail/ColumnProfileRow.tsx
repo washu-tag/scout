@@ -140,7 +140,7 @@ function StackedBar({
             // A ring rather than a brighter fill, which would read as a
             // different rank on a single-hue ramp. It also makes a 1.5% sliver
             // findable when its label is hovered.
-            boxShadow: i === hovered ? 'inset 0 0 0 1px var(--rv-fg)' : undefined,
+            boxShadow: i === hovered ? 'inset 0 0 0 2px var(--rv-fg)' : undefined,
           }}
         />
       ))}
@@ -156,7 +156,7 @@ const GAP_STROKE = 1.5;
 // Room for the hover halo to bulge past the true rim, so it never has to
 // share space with the gap stroke the way an inset ring did.
 const HALO_MARGIN = 3;
-const HALO_WIDTH = 3;
+const HALO_WIDTH = 2;
 const SVG_SIZE = PIE_SIZE + HALO_MARGIN * 2;
 
 function wedgePath(cx: number, cy: number, r: number, fromPct: number, toPct: number): string {
