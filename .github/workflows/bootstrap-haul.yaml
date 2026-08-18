@@ -66,15 +66,19 @@ jobs:
             case "${name}" in
               superset) src="${SUPERSET_TAG:-$(cat helm/superset/VERSION)}" ;;
               keycloak) src="${KEYCLOAK_TAG:-$(cat keycloak/VERSION)}" ;;
-              # newest build-lane tag; oras reuses the GHCR login + follows pagination
-              *) src="$(oras repo tags "${REGISTRY}/washu-tag/${name}" \
-                        | grep -E '^0\.[0-9]{8}\.[0-9]+$' | sort -V | tail -1 || true)"
-                 [ -n "${src}" ] || { echo "::error::no build-lane tag (0.YYYYMMDD.N) published for ${name}"; exit 1; } ;;
+              # newest build-lane tag (oras reuses the GHCR login + follows pagination).
+              # Separate the registry call from the filter so an oras/auth failure is
+              # not misreported as a missing tag.
+              *)
+                tags="$(oras repo tags "${REGISTRY}/washu-tag/${name}")" \
+                  || { echo "::error::oras repo tags failed for ${name} (registry/auth error, not a missing tag)"; exit 1; }
+                src="$(printf '%s\n' "${tags}" | grep -E '^0\.[0-9]{8}\.[0-9]+$' | sort -V | tail -1 || true)"
+                [ -n "${src}" ] || { echo "::error::no build-lane tag (0.YYYYMMDD.N) published for ${name}"; exit 1; } ;;
             esac
             repo="${REGISTRY}/washu-tag/${name}"
             digest="$(docker buildx imagetools inspect "${repo}:${src}" --format '{{json .Manifest}}' | jq -r '.digest')"
             if [ "${digest#sha256:}" = "${digest}" ]; then
-              echo "::error::${repo}:${src} is not published in ghcr. If VERSION is ahead of the last build, re-run with the *_tag override set to a currently-published tag."
+              echo "::error::${repo}:${src} not found in ghcr (tag vanished between listing and inspect, or VERSION ahead of last build). Re-run; superset/keycloak also take the *_tag override."
               exit 1
             fi
             cosign sign --key env://COSIGN_PRIVATE_KEY \
