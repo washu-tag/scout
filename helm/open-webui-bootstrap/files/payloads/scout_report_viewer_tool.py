@@ -24,10 +24,7 @@ log = logging.getLogger(__name__)
 _MAX_GET_IDS = 100
 _MD_CELL_MAX = 400
 _MAX_UPLOAD_BYTES = 32 * 1024 * 1024
-_SESSION_EXPIRED_MESSAGE = (
-    "Your Scout session has expired - sign out of Open WebUI, sign back in, "
-    "then regenerate this response to continue."
-)
+_SESSION_EXPIRED_MESSAGE = "Session expired - sign out of Open WebUI and back in, then regenerate this response."
 _VIEWER_NOTE = (
     "The sample table above is a subset of results; when the search "
     "used match_terms or match_diagnoses, an evidence table with "
