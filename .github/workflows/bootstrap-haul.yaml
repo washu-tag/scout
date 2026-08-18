@@ -58,12 +58,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p digests
-          # superset/keycloak are vendored-upstream: a real semver VERSION file
-          # (overridable per dispatch). The 6 Scout-built images are versioned
-          # "latest" in-repo, so seed the newest immutable build-lane tag instead
-          # (0.YYYYMMDD.N, what a real build publishes), never :latest -- stamp_config
-          # fail-closes on a residual :latest in the config artifact. Pin by @digest
-          # (hauler copies by digest; the tag is only a label).
+          # superset/keycloak have a real semver VERSION file (overridable). The 6
+          # Scout images are versioned "latest" in-repo, so seed the newest build-lane
+          # tag (0.YYYYMMDD.N), not :latest, or stamp_config fail-closes downstream.
           for name in hl7log-extractor hl7-transformer hl7-listener scout-notebook \
                       launchpad report-viewer superset keycloak; do
             case "${name}" in
