@@ -8,7 +8,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/postgres/operator
+  path: ./base/postgres/operator
   prune: true
   wait: true
   timeout: 5m
@@ -31,7 +31,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/postgres/cluster
+  path: ./base/postgres/cluster
   prune: true
   wait: true
   timeout: 10m

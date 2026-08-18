@@ -9,7 +9,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/scout-analytics-foundation
+  path: ./base/scout-analytics-foundation
   prune: true
   wait: true
   timeout: 10m
@@ -28,7 +28,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/scout-extractor-foundation
+  path: ./base/scout-extractor-foundation
   prune: true
   wait: true
   timeout: 10m
@@ -47,7 +47,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/scout-core-foundation
+  path: ./base/scout-core-foundation
   prune: true
   wait: true
   timeout: 10m
@@ -66,7 +66,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/scout-data-foundation
+  path: ./base/scout-data-foundation
   prune: true
   wait: true
   timeout: 10m
@@ -85,7 +85,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/scout-operators-foundation
+  path: ./base/scout-operators-foundation
   prune: true
   wait: true
   timeout: 10m

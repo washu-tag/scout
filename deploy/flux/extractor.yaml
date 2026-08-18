@@ -9,7 +9,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/extractor
+  path: ./base/extractor
   prune: true
   wait: true
   timeout: 15m

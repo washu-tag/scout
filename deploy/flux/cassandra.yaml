@@ -9,7 +9,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/cassandra/operator
+  path: ./base/cassandra/operator
   prune: true
   wait: true
   timeout: 5m
@@ -30,7 +30,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/cassandra/datacenter
+  path: ./base/cassandra/datacenter
   prune: true
   wait: true
   timeout: 20m

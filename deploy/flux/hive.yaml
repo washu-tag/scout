@@ -8,7 +8,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/hive/db
+  path: ./base/hive/db
   prune: true
   wait: true
   timeout: 10m
@@ -30,7 +30,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/hive/metastore
+  path: ./base/hive/metastore
   prune: true
   wait: true
   timeout: 10m

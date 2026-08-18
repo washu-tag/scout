@@ -9,7 +9,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/elasticsearch/operator
+  path: ./base/elasticsearch/operator
   prune: true
   wait: true
   timeout: 5m
@@ -30,7 +30,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/elasticsearch/cluster
+  path: ./base/elasticsearch/cluster
   prune: true
   wait: true
   timeout: 15m
