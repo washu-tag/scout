@@ -1344,9 +1344,8 @@ jobs:
     # generates its own cluster-vars via gen_cluster_vars.py. The stamp+generate
     # logic runs on every PR in validate-deploy.yaml, so regressions fail RED there
     # before this job publishes.
-    # Runs on main after the build-lane haul publishes this run. Requires
-    # scout-manifest:main to carry concrete image tags (the bootstrap concrete-tag
-    # seed), not :latest, or stamp_config fail-closes on the deploy/ base placeholders.
+    # Runs on main after publish-haul; needs the haul on concrete tags (bootstrap seed),
+    # not :latest, or stamp_config fail-closes.
     if: github.ref_name == 'main' && needs.publish-haul.result == 'success'
     runs-on: ubuntu-latest
     needs: [changes, publish-haul]
