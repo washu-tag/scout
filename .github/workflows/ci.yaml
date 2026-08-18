@@ -1343,11 +1343,10 @@ jobs:
     # 4/6): the artifact ships shared bases + the required-vars contract; each site
     # generates its own cluster-vars via gen_cluster_vars.py. The stamp+generate
     # logic runs on every PR in validate-deploy.yaml, so regressions fail RED there
-    # even while this job is paused.
-    # PAUSED until the build-lane haul is live (publish-haul re-enabled + 14-chart
-    # seed dispatched so MANIFEST_REPO:main exists). Re-enable by restoring:
-    #   github.ref_name == 'main' && needs.publish-haul.result == 'success'
-    if: false
+    # before this job publishes.
+    # Runs on main after publish-haul; needs the haul on concrete tags (bootstrap seed),
+    # not :latest, or stamp_config fail-closes.
+    if: github.ref_name == 'main' && needs.publish-haul.result == 'success'
     runs-on: ubuntu-latest
     needs: [changes, publish-haul]
     permissions:
