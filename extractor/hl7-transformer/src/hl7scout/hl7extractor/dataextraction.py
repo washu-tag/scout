@@ -6,19 +6,13 @@ import trino
 from pyspark.sql.streaming import StreamingQuery
 from temporalio import activity
 
-from pyspark.sql import DataFrame, SparkSession, functions as F
+from pyspark.sql import SparkSession
 
 from .curatedtable import curated_table
 from .diagnosistable import diagnosis_table
 from .latesttable import latest_table
 from .mappingtable import mapping_table
 from .derivativetable import DerivativeTable
-
-
-# Rate limit for every change-data-feed read in the derivative cascade
-# Default size is roughly the largest measured single ingest commit
-DERIVE_MAX_BYTES_CONF = "spark.scout.derive.maxBytesPerTrigger"
-DEFAULT_DERIVE_MAX_BYTES = "2g"
 
 
 def define_derivative_tables(report_table_name: str) -> dict[str, DerivativeTable]:
@@ -38,22 +32,10 @@ def perform_table_operations(
 ):
     def streaming_function(batch_df, batch_id):
         cached_df = batch_df.cache()
-        # Log source commit range alongside row count so rate limit is observable.
-        # A batch spanning >1 source version means cap is too loose for table's commit sizes.
-        # A batch pinned to one version that is still huge means that single commit is
-        # the binding constraint.
-        stats = cached_df.agg(
-            F.count(F.lit(1)).alias("rows"),
-            F.min("_commit_version").alias("first_version"),
-            F.max("_commit_version").alias("last_version"),
-        ).collect()[0]
         activity.logger.info(
-            "Processing batch (%d) for derivative tables with %d rows "
-            "spanning source versions %s-%s",
+            "Processing batch (%d) for derivative tables with %d rows",
             batch_id,
-            stats["rows"],
-            stats["first_version"],
-            stats["last_version"],
+            cached_df.count(),
         )
         try:
             for name, table in tables.items():
@@ -69,10 +51,6 @@ def perform_table_operations(
     full_table = (
         spark.readStream.format("delta")
         .option("readChangeFeed", "true")
-        .option(
-            "maxBytesPerTrigger",
-            spark.conf.get(DERIVE_MAX_BYTES_CONF, DEFAULT_DERIVE_MAX_BYTES),
-        )
         .table(f"default.{source_table}")
     )
 

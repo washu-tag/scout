@@ -151,7 +151,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 null,
                 input.reportTableName(),
                 input.deltaIngestTimeout(),
-                input.deriveDeltaTablesTimeout(),
                 input.createMapping()
             )
         );
@@ -176,7 +175,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     input.splitAndUploadConcurrency(),
                     input.reportTableName(),
                     input.deltaIngestTimeout(),
-                    input.deriveDeltaTablesTimeout(),
                     input.createMapping(),
                     nextContinued
                 )
