@@ -153,10 +153,11 @@ function StackedBar({
 // pie this size fills space that is already there rather than growing the row.
 const PIE_SIZE = 32;
 const GAP_STROKE = 1.5;
-// Thinner than the gap stroke and centered on the same boundary, so a sliver
-// of the gap color still shows on both sides of the highlight, on the spokes
-// as much as the arc. Matches the 1px ring on the stacked bar.
-const HOVER_STROKE = 1;
+// Room for the hover halo to bulge past the true rim, so it never has to
+// share space with the gap stroke the way an inset ring did.
+const HALO_MARGIN = 3;
+const HALO_WIDTH = 3;
+const SVG_SIZE = PIE_SIZE + HALO_MARGIN * 2;
 
 function wedgePath(cx: number, cy: number, r: number, fromPct: number, toPct: number): string {
   const angle = (pct: number) => (pct / 100) * 2 * Math.PI - Math.PI / 2;
@@ -167,16 +168,30 @@ function wedgePath(cx: number, cy: number, r: number, fromPct: number, toPct: nu
   return `M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} Z`;
 }
 
+// Just the curved boundary, no lines to center: the halo only ever traces the
+// hovered slice's arc, matching how Highcharts and Google Charts show a pie
+// hover state, and never touches the spokes.
+function arcPath(cx: number, cy: number, r: number, fromPct: number, toPct: number): string {
+  const angle = (pct: number) => (pct / 100) * 2 * Math.PI - Math.PI / 2;
+  const point = (a: number): [number, number] => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  const [x0, y0] = point(angle(fromPct));
+  const [x1, y1] = point(angle(toPct));
+  const large = toPct - fromPct > 50 ? 1 : 0;
+  return `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}`;
+}
+
 // Slices are not padded up to a minimum the way bar segments are: in a pie the
 // area is the encoding, so inflating a sliver would misstate it. A slice too
 // small to see still has its label underneath.
 //
-// Hover rings the whole slice, straight sides included, rather than dimming
-// the others: the palette steps sit close together by design, so a hovered
-// slice fading toward them was nearly invisible. Each wedge also gets a
-// stroke in the cell background color, the same gap every other segment in
-// the row gets, drawn this way because a conic-gradient has no notion of a
-// border between stops.
+// Each wedge gets a stroke in the cell background color for spacing between
+// slices, the same gap every other segment in the row gets, drawn this way
+// because a conic-gradient has no notion of a border between stops.
+//
+// Hover draws a halo just outside the true rim instead of an inset ring: an
+// inset ring competes with that same gap stroke for the same few pixels,
+// which is what kept producing either an overlap or a floating gap. Sitting
+// outside it entirely means there is nothing left to share space with.
 function Pie({
   parts,
   hovered,
@@ -186,8 +201,8 @@ function Pie({
   hovered: number | null;
   onHover: (i: number | null) => void;
 }) {
-  const c = PIE_SIZE / 2;
-  const r = c - 1;
+  const c = SVG_SIZE / 2;
+  const r = PIE_SIZE / 2 - 1;
   let acc = 0;
   const wedges = parts.map((p, i) => {
     const from = acc;
@@ -197,8 +212,8 @@ function Pie({
     return { ...p, from, to: acc };
   });
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', height: PIE_SIZE }}>
-      <svg width={PIE_SIZE} height={PIE_SIZE} onMouseLeave={() => onHover(null)}>
+    <div style={{ display: 'flex', justifyContent: 'center', height: SVG_SIZE }}>
+      <svg width={SVG_SIZE} height={SVG_SIZE} onMouseLeave={() => onHover(null)}>
         {wedges.length === 1 ? (
           <circle cx={c} cy={c} r={r} fill={wedges[0].fill} />
         ) : (
@@ -215,21 +230,13 @@ function Pie({
         )}
         {hovered !== null && wedges.length > 1 && (
           <path
-            // Centering this on r, same as the gap stroke, leaves solid color
-            // ending at r - GAP_STROKE/2 and the ring starting at
-            // r - HOVER_STROKE/2: a sliver of background between the two.
-            // Pulling in by both half-widths puts the ring flush against
-            // where the color actually ends, no floating gap before it.
-            d={wedgePath(
-              c,
-              c,
-              r - (GAP_STROKE + HOVER_STROKE) / 2,
-              wedges[hovered].from,
-              wedges[hovered].to,
-            )}
+            // Inner edge flush with the true rim, extending outward from
+            // there, so it touches the disc without overlapping the gap
+            // stroke inside it.
+            d={arcPath(c, c, r + HALO_WIDTH / 2, wedges[hovered].from, wedges[hovered].to)}
             fill="none"
             stroke="var(--rv-fg)"
-            strokeWidth={HOVER_STROKE}
+            strokeWidth={HALO_WIDTH}
             pointerEvents="none"
           />
         )}
