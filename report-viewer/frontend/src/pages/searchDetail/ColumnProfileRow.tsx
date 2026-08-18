@@ -383,12 +383,21 @@ function ProfileCell({ profile, field }: { profile: Profile; field: string }) {
   if (profile.kind === 'categorical') {
     const { segments, other, empty, distinct } = profile;
     const rolledUp = distinct - segments.length;
+    const isSex = field === PIE_FIELD;
+    // M is always the darkest blue and F the next step down, everywhere sex
+    // appears. Anything else just takes what's left; those don't need to be
+    // consistent with each other.
     const parts = [
-      ...segments.map((s, i) => ({ ...s, fill: RAMP[Math.min(i, RAMP.length - 1)] })),
+      ...segments.map((s, i) => ({
+        ...s,
+        fill: isSex
+          ? RAMP[s.label === 'M' ? 0 : s.label === 'F' ? 1 : 2]
+          : RAMP[Math.min(i, RAMP.length - 1)],
+      })),
       ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: OTHER_FILL }] : []),
       ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
     ].filter((p) => p.count > 0);
-    return <Categorical parts={parts} pie={field === PIE_FIELD} />;
+    return <Categorical parts={parts} pie={isSex} />;
   }
 
   if (profile.kind === 'numeric') {
