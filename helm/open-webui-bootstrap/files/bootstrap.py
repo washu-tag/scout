@@ -12,10 +12,10 @@ Phases:
 2. Signin or signup. Mint an admin JWT against OWUI's in-cluster Service.
    Falls through to /signup on a truly empty DB (gated by ENABLE_INITIAL_ADMIN_SIGNUP).
 3. PersistentConfig re-push. Tool servers (full overwrite); DEFAULT_MODELS
-   + TASK_MODEL (GET-merge-POST to preserve siblings). RAG template is not
-   pushed — Scout Explorer models use function_calling: native, which
-   bypasses OWUI's RAG auto-injection path entirely. Also force-disables
-   chat sharing (chat.share) platform-wide — see issue #506.
+   + TASK_MODEL + JWT_EXPIRES_IN (GET-merge-POST to preserve siblings). RAG
+   template is not pushed — Scout Explorer models use function_calling:
+   native, which bypasses OWUI's RAG auto-injection path entirely. Also
+   force-disables chat sharing (chat.share) platform-wide — see issue #506.
 4. Filter functions, then 5. event functions. Both seed via
    /api/v1/functions: idempotent GET-create-or-update, set valves, toggle.
 6. Prune functions not in the seeded set (config-authoritative).
@@ -33,7 +33,7 @@ Inputs (from env, set by the Job spec):
 
 Inputs (from /app/config/, mounted from a ConfigMap the chart renders):
   persistent_config.json — dict with tool_server_connections / default_model_id
-                           / task_model_id (any subset)
+                           / task_model_id / jwt_expires_in (any subset)
   filters.json           — list of filter-function specs; each entry's
                            `content_file` names a sibling file in /app/config/
                            whose contents are inlined as the filter `content`.
@@ -226,6 +226,17 @@ def push_persistent_config(token):
             token,
         )
         print(f'  task_model_id: {cfg["task_model_id"]}')
+
+    # Cap OWUI's session JWT to the Keycloak SSO lifetime.
+    if cfg.get("jwt_expires_in"):
+        get_merge_post(
+            "/api/v1/auths/admin/config",
+            "/api/v1/auths/admin/config",
+            "JWT_EXPIRES_IN",
+            cfg["jwt_expires_in"],
+            token,
+        )
+        print(f'  jwt_expires_in: {cfg["jwt_expires_in"]}')
 
     # Force chat sharing off (issue #506). An OWUI shared chat re-runs its
     # report-viewer search live under the *recipient's* identity, but searches

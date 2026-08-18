@@ -136,7 +136,7 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 **Event Functions** — installed and enabled on every deploy:
 - **Scout Iframe Defaults** — forces the report-viewer iframe-sandbox UI flags on for every user ([ADR 0029](../../../docs/internal/adr/0029-report-viewer.md)).
 
-**PersistentConfig** — re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`).
+**PersistentConfig** — re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`), `JWT_EXPIRES_IN` (capped to `keycloak_token_lifespan`).
 
 **Other** — Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`); native context compaction on (`ENABLE_CONTEXT_COMPACTION`, replacing the former context_summarization filter).
 

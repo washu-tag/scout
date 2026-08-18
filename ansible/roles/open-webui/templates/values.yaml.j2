@@ -257,6 +257,10 @@ extraEnvVars:
   - name: WEBUI_AUTH_SIGNOUT_REDIRECT_URL
     value: '{{ oauth2_proxy_signout_url }}'
 
+  # Cap OWUI's session JWT to the Keycloak SSO lifetime.
+  - name: JWT_EXPIRES_IN
+    value: '{{ keycloak_token_lifespan }}s'
+
   # ------------------------------------------------------------------
   # Seeded once at first launch (PersistentConfig); not expected to change.
   # Tool servers, RAG template, DEFAULT_MODELS, and TASK_MODEL — which DO

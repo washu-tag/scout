@@ -24,6 +24,9 @@ log = logging.getLogger(__name__)
 _MAX_GET_IDS = 100
 _MD_CELL_MAX = 400
 _MAX_UPLOAD_BYTES = 32 * 1024 * 1024
+_SESSION_EXPIRED_MESSAGE = (
+    "Your Scout session has expired — sign out of Open WebUI and back in to continue."
+)
 _VIEWER_NOTE = (
     "The sample table above is a subset of results; when the search "
     "used match_terms or match_diagnoses, an evidence table with "
@@ -140,8 +143,10 @@ class Tools:
         try:
             created = await self._post("/api/searches", payload, oauth=__oauth_token__)
         except ReportViewerServiceError as exc:
-            await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
-            return f"Error fetching reports: {exc}"
+            await self._emit(
+                __event_emitter__, self._error_text(exc, "Failed"), done=True
+            )
+            return self._error_text(exc, "Error fetching reports")
 
         count = created.get("count")
         if count == 0:
@@ -201,8 +206,10 @@ class Tools:
                 "/api/reports/query", {"sql": sql}, oauth=__oauth_token__
             )
         except ReportViewerServiceError as exc:
-            await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
-            return f"Error running query: {exc}"
+            await self._emit(
+                __event_emitter__, self._error_text(exc, "Failed"), done=True
+            )
+            return self._error_text(exc, "Error running query")
         n = len(agg.get("rows", []))
         await self._emit(__event_emitter__, f"Query complete ({n} rows)", done=True)
         return self._format_aggregate(agg)
@@ -304,8 +311,10 @@ class Tools:
                 oauth=__oauth_token__,
             )
         except ReportViewerServiceError as exc:
-            await self._emit(__event_emitter__, f"Import failed: {exc}", done=True)
-            return f"Error: {exc}"
+            await self._emit(
+                __event_emitter__, self._error_text(exc, "Import failed"), done=True
+            )
+            return self._error_text(exc, "Error")
         count = created.get("count")
         if count == 0:
             await self._emit(__event_emitter__, "No matching reports", done=True)
@@ -347,8 +356,10 @@ class Tools:
                 oauth=__oauth_token__,
             )
         except ReportViewerServiceError as exc:
-            await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
-            return f"Error running query: {exc}"
+            await self._emit(
+                __event_emitter__, self._error_text(exc, "Failed"), done=True
+            )
+            return self._error_text(exc, "Error running query")
         n = len(agg.get("rows", []))
         await self._emit(__event_emitter__, f"Query complete ({n} rows)", done=True)
         return self._format_aggregate(agg)
@@ -389,7 +400,7 @@ class Tools:
                 oauth=__oauth_token__,
             )
         except ReportViewerServiceError as exc:
-            return f"Error reading reports: {exc}"
+            return self._error_text(exc, "Error reading reports")
         return json.dumps(result, default=str, indent=2)
 
     @staticmethod
@@ -406,13 +417,17 @@ class Tools:
 
     async def _post(self, path: str, payload: dict, *, oauth: Any) -> dict:
         """POST `payload` as JSON to `report_viewer_internal_url + path`,
-        forwarding the caller's OWUI access token as Bearer if present.
-        Raises ReportViewerServiceError on any 4xx/5xx."""
+        forwarding the caller's OWUI access token as Bearer. Raises
+        SessionExpiredError if no token is available, or
+        ReportViewerServiceError on any 4xx/5xx from report-viewer."""
         url = f"{self.valves.report_viewer_internal_url.rstrip('/')}{path}"
-        headers = {"Content-Type": "application/json"}
         bearer = self._token_from_owui(oauth)
-        if bearer:
-            headers["Authorization"] = f"Bearer {bearer}"
+        if not bearer:
+            raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {bearer}",
+        }
         try:
             async with httpx.AsyncClient(
                 timeout=self.valves.request_timeout_seconds
@@ -433,10 +448,10 @@ class Tools:
         oauth: Any,
     ) -> dict:
         url = f"{self.valves.report_viewer_internal_url.rstrip('/')}{path}"
-        headers: dict[str, str] = {}
         bearer = self._token_from_owui(oauth)
-        if bearer:
-            headers["Authorization"] = f"Bearer {bearer}"
+        if not bearer:
+            raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
+        headers = {"Authorization": f"Bearer {bearer}"}
         try:
             async with httpx.AsyncClient(
                 timeout=self.valves.request_timeout_seconds
@@ -544,6 +559,12 @@ class Tools:
         return "\n".join(_md_table(cols, rows))
 
     @staticmethod
+    def _error_text(exc: ReportViewerServiceError, prefix: str) -> str:
+        """A SessionExpiredError message is already complete and
+        user-facing; other failures get the caller's context prefix."""
+        return str(exc) if isinstance(exc, SessionExpiredError) else f"{prefix}: {exc}"
+
+    @staticmethod
     async def _emit(
         emitter: Optional[Callable[[Any], Awaitable[None]]],
         text: str,
@@ -585,6 +606,11 @@ class Tools:
 
 class ReportViewerServiceError(RuntimeError):
     pass
+
+
+class SessionExpiredError(ReportViewerServiceError):
+    """No OWUI oauth token was available. The message is already
+    complete and user-facing, unlike other ReportViewerServiceErrors."""
 
 
 def _chat_id(meta: Any) -> str:
