@@ -215,7 +215,18 @@ function Pie({
         )}
         {hovered !== null && wedges.length > 1 && (
           <path
-            d={wedgePath(c, c, r, wedges[hovered].from, wedges[hovered].to)}
+            // Centering this on r, same as the gap stroke, leaves solid color
+            // ending at r - GAP_STROKE/2 and the ring starting at
+            // r - HOVER_STROKE/2: a sliver of background between the two.
+            // Pulling in by both half-widths puts the ring flush against
+            // where the color actually ends, no floating gap before it.
+            d={wedgePath(
+              c,
+              c,
+              r - (GAP_STROKE + HOVER_STROKE) / 2,
+              wedges[hovered].from,
+              wedges[hovered].to,
+            )}
             fill="none"
             stroke="var(--rv-fg)"
             strokeWidth={HOVER_STROKE}
