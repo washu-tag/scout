@@ -40,7 +40,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      ci: ${{ steps.filter.outputs.ci }}
+      image_build: ${{ steps.filter.outputs.image_build }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       hl7-listener: ${{ steps.filter.outputs.hl7-listener }}
@@ -70,13 +70,13 @@ jobs:
         id: filter
         with:
           filters: |
-            # Only ci.yaml and the composite actions it calls affect image
-            # contents. Sibling workflows must NOT force a full rebuild+rescan, or
-            # an unrelated CI edit surfaces the newest fixable CVE on all images.
-            # ci.yaml calls no reusable workflows, so this pair is complete.
-            ci:
-              - '.github/workflows/ci.yaml'
-              - '.github/actions/**'
+            # Only the build action and the shared ignore file change image
+            # contents, so only these force a full rebuild+rescan. Editing ci.yaml
+            # or the scan/import/publish/version actions no longer rebuilds every
+            # image (unchanged ones are pulled), so a CI edit won't surface a fresh CVE on all 9.
+            image_build:
+              - '.github/actions/docker-build-cache/**'
+              - '.dockerignore'
             hl7log-extractor:
               - 'extractor/hl7log-extractor/**'
               - 'linting_java_checkstyle.xml'
@@ -189,7 +189,7 @@ jobs:
           subproject: ${{ matrix.subproject }}
           image-name: ${{ matrix.image-name }}
       - name: 'Build/Cache Image - ${{ matrix.image-name }}'
-        if: needs.changes.outputs[matrix.image-name] == 'true' || steps.check-image.outputs.exists == 'false' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs[matrix.image-name] == 'true' || steps.check-image.outputs.exists == 'false' || needs.changes.outputs.image_build == 'true'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: ${{ matrix.subproject }}
