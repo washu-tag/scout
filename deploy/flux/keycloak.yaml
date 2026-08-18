@@ -8,7 +8,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/keycloak/operator
+  path: ./base/keycloak/operator
   prune: true
   wait: true
   timeout: 5m
@@ -29,7 +29,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/keycloak/instance
+  path: ./base/keycloak/instance
   prune: true
   wait: true
   timeout: 15m
@@ -60,7 +60,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/keycloak/realm
+  path: ./base/keycloak/realm
   prune: true
   wait: true
   timeout: 10m

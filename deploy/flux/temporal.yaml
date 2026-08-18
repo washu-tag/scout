@@ -9,7 +9,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/temporal/server
+  path: ./base/temporal/server
   prune: true
   wait: true
   timeout: 15m
@@ -32,7 +32,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./deploy/base/temporal/bootstrap
+  path: ./base/temporal/bootstrap
   prune: true
   wait: true
   timeout: 10m
