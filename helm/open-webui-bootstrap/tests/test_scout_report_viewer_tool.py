@@ -6,6 +6,7 @@ Run with:
 """
 
 import importlib.util
+import re
 from pathlib import Path
 
 import httpx
@@ -22,6 +23,7 @@ Tools = _mod.Tools
 ReportViewerServiceError = _mod.ReportViewerServiceError
 SessionExpiredError = _mod.SessionExpiredError
 _SESSION_EXPIRED_MESSAGE = _mod._SESSION_EXPIRED_MESSAGE
+_SESSION_EXPIRED_PATTERN = re.escape(_SESSION_EXPIRED_MESSAGE)
 
 
 def _tool_with_transport(handler, monkeypatch):
@@ -46,7 +48,7 @@ async def test_post_without_bearer_raises_and_skips_request(oauth, monkeypatch):
         return httpx.Response(200, json={})
 
     tool = _tool_with_transport(handler, monkeypatch)
-    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_MESSAGE):
+    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
         await tool._post("/api/searches", {"sql": "SELECT 1"}, oauth=oauth)
     assert not called
 
@@ -61,7 +63,7 @@ async def test_post_multipart_without_bearer_raises_and_skips_request(monkeypatc
         return httpx.Response(200, json={})
 
     tool = _tool_with_transport(handler, monkeypatch)
-    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_MESSAGE):
+    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
         await tool._post_multipart(
             "/api/reports/import",
             files={"file": ("x.csv", b"a,b")},
@@ -92,15 +94,32 @@ async def test_post_with_bearer_forwards_authorization_header(
 
 
 @pytest.mark.asyncio
-async def test_post_upstream_error_still_raised_with_bearer_present(monkeypatch):
+async def test_post_upstream_401_with_bearer_present_raises_session_expired(
+    monkeypatch,
+):
+    """This internal call never sets oauth2-proxy's trust header, so a 401
+    from report-viewer here can only mean the bearer itself was rejected
+    (e.g. a stale token OWUI hasn't refreshed yet) - same user action as a
+    missing bearer, so it gets the same friendly message."""
+
     def handler(request):
         return httpx.Response(401, json={"detail": "bearer token validation failed"})
 
     tool = _tool_with_transport(handler, monkeypatch)
-    with pytest.raises(
-        ReportViewerServiceError, match="bearer token validation failed"
-    ):
+    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
         await tool._post("/api/searches", {"sql": "SELECT 1"}, oauth="expired-token")
+
+
+@pytest.mark.asyncio
+async def test_post_upstream_non_401_error_still_raised_with_bearer_present(
+    monkeypatch,
+):
+    def handler(request):
+        return httpx.Response(500, json={"detail": "trino unavailable"})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    with pytest.raises(ReportViewerServiceError, match="trino unavailable"):
+        await tool._post("/api/searches", {"sql": "SELECT 1"}, oauth="valid-token")
 
 
 def test_error_text_omits_prefix_for_session_expired():

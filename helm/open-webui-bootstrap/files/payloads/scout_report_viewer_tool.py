@@ -25,7 +25,8 @@ _MAX_GET_IDS = 100
 _MD_CELL_MAX = 400
 _MAX_UPLOAD_BYTES = 32 * 1024 * 1024
 _SESSION_EXPIRED_MESSAGE = (
-    "Your Scout session has expired — sign out of Open WebUI and back in to continue."
+    "Your Scout session has expired - sign out of Open WebUI, sign back in, "
+    "then regenerate this response to continue."
 )
 _VIEWER_NOTE = (
     "The sample table above is a subset of results; when the search "
@@ -418,8 +419,9 @@ class Tools:
     async def _post(self, path: str, payload: dict, *, oauth: Any) -> dict:
         """POST `payload` as JSON to `report_viewer_internal_url + path`,
         forwarding the caller's OWUI access token as Bearer. Raises
-        SessionExpiredError if no token is available, or
-        ReportViewerServiceError on any 4xx/5xx from report-viewer."""
+        SessionExpiredError if no token is available or report-viewer 401s
+        it, or ReportViewerServiceError on any other 4xx/5xx from
+        report-viewer."""
         url = f"{self.valves.report_viewer_internal_url.rstrip('/')}{path}"
         bearer = self._token_from_owui(oauth)
         if not bearer:
@@ -435,6 +437,8 @@ class Tools:
                 r = await c.post(url, headers=headers, json=payload)
         except httpx.RequestError:
             raise ReportViewerServiceError("report-viewer is temporarily unavailable")
+        if r.status_code == 401:
+            raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
         if r.status_code >= 400:
             raise ReportViewerServiceError(_short_error(r))
         return r.json()
@@ -459,6 +463,8 @@ class Tools:
                 r = await c.post(url, headers=headers, files=files, data=data)
         except httpx.RequestError:
             raise ReportViewerServiceError("report-viewer is temporarily unavailable")
+        if r.status_code == 401:
+            raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
         if r.status_code >= 400:
             raise ReportViewerServiceError(_short_error(r))
         return r.json()
