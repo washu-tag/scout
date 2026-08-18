@@ -58,17 +58,21 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p digests
-          # Scout-built images have :latest; the two vendored-upstream images do
-          # not, so seed them from their VERSION file -- the same source
-          # derive-version tags the published image from, kept current by Renovate
-          # -- unless a dispatch override is given. Pin by @digest; the tag is only
-          # a label (hauler copies by digest).
+          # superset/keycloak are vendored-upstream: a real semver VERSION file
+          # (overridable per dispatch). The 6 Scout-built images are versioned
+          # "latest" in-repo, so seed the newest immutable build-lane tag instead
+          # (0.YYYYMMDD.N, what a real build publishes), never :latest -- stamp_config
+          # fail-closes on a residual :latest in the config artifact. Pin by @digest
+          # (hauler copies by digest; the tag is only a label).
           for name in hl7log-extractor hl7-transformer hl7-listener scout-notebook \
                       launchpad report-viewer superset keycloak; do
             case "${name}" in
               superset) src="${SUPERSET_TAG:-$(cat helm/superset/VERSION)}" ;;
               keycloak) src="${KEYCLOAK_TAG:-$(cat keycloak/VERSION)}" ;;
-              *) src="latest" ;;
+              # newest build-lane tag; oras reuses the GHCR login + follows pagination
+              *) src="$(oras repo tags "${REGISTRY}/washu-tag/${name}" \
+                        | grep -E '^0\.[0-9]{8}\.[0-9]+$' | sort -V | tail -1 || true)"
+                 [ -n "${src}" ] || { echo "::error::no build-lane tag (0.YYYYMMDD.N) published for ${name}"; exit 1; } ;;
             esac
             repo="${REGISTRY}/washu-tag/${name}"
             digest="$(docker buildx imagetools inspect "${repo}:${src}" --format '{{json .Manifest}}' | jq -r '.digest')"
