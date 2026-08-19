@@ -1,0 +1,2 @@
+# Only the sops-encrypted secrets.enc.yaml is committed; never the plaintext render.
+secrets.yaml

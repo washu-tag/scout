@@ -1,0 +1,16 @@
+# SOPS encryption policy. Air-gap-compatible secret provisioning (ADR 0031 §3
+# default): Secret manifests are committed SOPS-encrypted and decrypted in-cluster
+# by Flux's kustomize-controller with an age key, no external secret backend, so it
+# works offline (unlike ESO/AWS-SM, which needs a network path the on-prem clusters
+# do not have).
+#
+# Only the Secret values (data/stringData) are encrypted; names, namespaces, and
+# kinds stay readable so diffs and kustomize stay legible.
+#
+# Recipients: the cluster/CI age PUBLIC key. Generate with `age-keygen`, put the
+# public key here, and store the PRIVATE key as the GH Actions secret SOPS_AGE_KEY
+# (never commit it). Per-site repos (Phase 4) add their own cluster + ops keys.
+creation_rules:
+  - path_regex: \.github/ci_resources/flux-secrets/.*\.ya?ml$
+    encrypted_regex: '^(data|stringData)$'
+    age: age1REPLACE_WITH_CI_AGE_PUBLIC_KEY

@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# The ingest-slice fixed-name Secrets, committed SOPS-encrypted. Flux's
+# kustomize-controller decrypts secrets.enc.yaml in-cluster with the age key (see
+# the deploy-and-test-flux "Seed secrets" step and .sops.yaml). Regenerate with
+# gen-secrets.sh; see README.md.
+resources:
+  - secrets.enc.yaml

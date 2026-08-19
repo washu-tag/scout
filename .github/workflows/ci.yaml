@@ -1408,13 +1408,14 @@ jobs:
     # the SAME tests/ingest suite -- the parallel proof the GitOps lane deploys what
     # Ansible deploys. Ansible deploy-and-test stays the green gate until Phase-5
     # cutover; this is additive.
-    # STILL PAUSED, but two blockers are cleared: config-artifact-publish is live,
-    # and the "Seed secrets" step below now seeds every fixed-name Secret + the 5
-    # cnpg-role-* companions the ingest slice needs (from inventory.yaml), with
-    # cluster-vars from .github/ci_resources/cluster-vars.values.json. Remaining
-    # before flipping this on: the Reconcile step still needs the tests/ingest wiring
-    # (stage the log fixtures into the Flux slice + run the suite). Enabling now would
-    # run an incomplete job on the next main push. Re-enable by restoring:
+    # STILL PAUSED. Cleared: config-artifact-publish is live, and secret provisioning
+    # is wired the air-gap way (ADR 0031 §3) via SOPS-encrypted Secrets under
+    # .github/ci_resources/flux-secrets, decrypted in-cluster by Flux (see the
+    # "Seed secrets (SOPS)" step), with cluster-vars from cluster-vars.values.json.
+    # Remaining before flipping this on: (a) the one-time SOPS setup (age key ->
+    # SOPS_AGE_KEY GH secret + commit secrets.enc.yaml; see flux-secrets/README.md),
+    # and (b) the Reconcile step still needs the tests/ingest wiring. Enabling now
+    # would run an incomplete job on the next main push. Re-enable by restoring:
     #   github.ref_name == 'main' && needs.config-artifact-publish.result == 'success'
     if: false
     runs-on: ubuntu-latest
@@ -1445,70 +1446,36 @@ jobs:
           echo "${FLUX_SHA256}  flux.tar.gz" | sha256sum -c -
           tar -xzf flux.tar.gz flux && sudo install -m 0755 flux /usr/local/bin/flux
           flux install --components-extra=image-reflector-controller,image-automation-controller
-      - name: Seed secrets + cluster-vars + the scout-config source
+      - name: Seed secrets (SOPS) + cluster-vars + the scout-config source
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
           set -euo pipefail
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          # Fixed-name Secrets the ingest-slice bases reference (the extractor
-          # dependsOn closure). SOPS/ESO in production (Phase 4); in CI seed them as
-          # plain Secrets from inventory.yaml -- the same creds the Ansible lane uses.
-          # DO NOT seed cassandra/elasticsearch datastore secrets: cass-operator and
-          # ECK mint those; hand-creating collides with the operator.
-          INV=.github/ci_resources/inventory.yaml
-          v() { yq ".k3s_cluster.vars.$1" "$INV"; }
-          # Namespaces are owned by the *-foundation Kustomizations that reconcile
-          # later; pre-create idempotently so the secrets have somewhere to land.
+          # Air-gap-compatible secret provisioning (ADR 0031 §3 default): the ingest
+          # slice's fixed-name Secrets are committed SOPS-encrypted under
+          # .github/ci_resources/flux-secrets and decrypted in-cluster by Flux's
+          # kustomize-controller with the age key. No external backend, so this works
+          # offline and proves the on-prem path (ESO/AWS-SM cannot reach a backend from
+          # an air-gapped cluster). Cassandra/ES datastore secrets are operator-minted
+          # and deliberately excluded.
+          # The age private key (GH Actions secret) becomes the decryption secret.
+          kubectl create secret generic sops-age -n flux-system \
+            --from-literal=age.agekey="$SOPS_AGE_KEY"
+          # Namespaces the encrypted Secrets target (owned by *-foundation later).
           for ns in scout-core scout-data scout-extractor; do
             kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f -
           done
-          # scout-core: CNPG superuser + all 5 managed-role companions. username MUST
-          # equal managed.roles[].name; all 5 must exist or the postgres-cluster health
-          # gate hangs on the shared keycloak/superset Database CRs.
-          kubectl create secret generic superuser-secret -n scout-core --type=kubernetes.io/basic-auth \
-            --from-literal=username=postgres --from-literal=password="$(v postgres_superuser_password)"
-          kubectl create secret generic cnpg-role-extractor -n scout-core --type=kubernetes.io/basic-auth \
-            --from-literal=username="$(v postgres_user)" --from-literal=password="$(v postgres_password)"
-          kubectl create secret generic cnpg-role-hive -n scout-core --type=kubernetes.io/basic-auth \
-            --from-literal=username=hive --from-literal=password="$(v hive_postgres_password)"
-          kubectl create secret generic cnpg-role-hive-readonly -n scout-core --type=kubernetes.io/basic-auth \
-            --from-literal=username=hive_readonly --from-literal=password="$(v hive_readonly_postgres_password)"
-          kubectl create secret generic cnpg-role-keycloak -n scout-core --type=kubernetes.io/basic-auth \
-            --from-literal=username=keycloak --from-literal=password="$(v keycloak_postgres_password)"
-          kubectl create secret generic cnpg-role-superset -n scout-core --type=kubernetes.io/basic-auth \
-            --from-literal=username="$(v superset_postgres_user)" --from-literal=password="$(v superset_postgres_password)"
-          # scout-extractor: app-side DB + S3 creds (DB_PASSWORD must match cnpg-role-extractor).
-          kubectl create secret generic postgres-secret -n scout-extractor \
-            --from-literal=DB_HOST=postgresql-cluster-rw.scout-core --from-literal=DB_PORT=5432 \
-            --from-literal=DB_NAME=ingest --from-literal=DB_USER="$(v postgres_user)" \
-            --from-literal=DB_PASSWORD="$(v postgres_password)"
-          kubectl create secret generic s3-secret -n scout-extractor \
-            --from-literal=AWS_ACCESS_KEY_ID="$(v s3_lake_writer)" \
-            --from-literal=AWS_SECRET_ACCESS_KEY="$(v s3_lake_writer_secret)"
-          kubectl create secret generic trino-rw-s3 -n scout-extractor \
-            --from-literal=S3_ACCESS_KEY="$(v s3_lake_writer)" \
-            --from-literal=S3_SECRET_KEY="$(v s3_lake_writer_secret)"
-          # scout-data: hive metastore (write + readonly), MinIO root config, 5 tenant
-          # users. All 5 *-creds must exist: the tenant bootstrap Job hard-mounts them.
-          kubectl create secret generic hive-metastore-secret -n scout-data \
-            --from-literal=HIVE_METASTORE_PASSWORD="$(v hive_postgres_password)" \
-            --from-literal=S3_SECRET_KEY="$(v s3_lake_writer_secret)"
-          kubectl create secret generic hive-metastore-readonly-secret -n scout-data \
-            --from-literal=HIVE_METASTORE_PASSWORD="$(v hive_readonly_postgres_password)" \
-            --from-literal=S3_SECRET_KEY="$(v s3_lake_reader_secret)"
-          printf 'export MINIO_ROOT_USER=%s\nexport MINIO_ROOT_PASSWORD=%s\nexport MINIO_REGION_NAME=us-east-1\nexport MINIO_REGION=us-east-1\n' \
-            "$(v s3_username)" "$(v s3_password)" > /tmp/minio-config.env
-          kubectl create secret generic minio-scout-env-configuration -n scout-data \
-            --from-file=config.env=/tmp/minio-config.env
-          kubectl create secret generic lake-reader-creds -n scout-data \
-            --from-literal=CONSOLE_ACCESS_KEY="$(v s3_lake_reader)" --from-literal=CONSOLE_SECRET_KEY="$(v s3_lake_reader_secret)"
-          kubectl create secret generic lake-writer-creds -n scout-data \
-            --from-literal=CONSOLE_ACCESS_KEY="$(v s3_lake_writer)" --from-literal=CONSOLE_SECRET_KEY="$(v s3_lake_writer_secret)"
-          kubectl create secret generic loki-writer-creds -n scout-data \
-            --from-literal=CONSOLE_ACCESS_KEY="$(v s3_loki_writer)" --from-literal=CONSOLE_SECRET_KEY="$(v s3_loki_writer_secret)"
-          kubectl create secret generic opa-bundle-writer-creds -n scout-data \
-            --from-literal=CONSOLE_ACCESS_KEY=opa-bundle-writer --from-literal=CONSOLE_SECRET_KEY="$(v s3_opa_bundle_writer_secret)"
-          kubectl create secret generic opa-bundle-reader-creds -n scout-data \
-            --from-literal=CONSOLE_ACCESS_KEY=opa-bundle-reader --from-literal=CONSOLE_SECRET_KEY="$(v s3_opa_bundle_reader_secret)"
+          # A Flux source for the CI secret overlay + a Kustomization that decrypts it;
+          # reconcile it before the ingest slice so the fixed-name Secrets exist first.
+          flux create source git ci-secrets \
+            --url=https://github.com/washu-tag/scout --branch="${GITHUB_REF_NAME}" --interval=1m
+          flux create kustomization ci-secrets \
+            --source=GitRepository/ci-secrets \
+            --path=./.github/ci_resources/flux-secrets \
+            --prune=true --wait=true --interval=1m \
+            --decryption-provider=sops --decryption-secret=sops-age
+          flux reconcile kustomization ci-secrets --with-source
           # cluster-vars for postBuild substitution:
           python3 tooling/deploy/gen_cluster_vars.py \
             --values .github/ci_resources/cluster-vars.values.json \
