@@ -36,26 +36,58 @@ def create_exact_match_condition(df1: DataFrame, df2: DataFrame) -> Column:
     )
 
 
-def search_mappings_on_patient_id(
-    cases: List[MappingEntry], mpi: str = None, epic_mrn: str = None
-) -> List[MappingEntry]:
-    return [
-        mapping
-        for mapping in cases
-        if (mpi is not None and mpi == mapping.mpi)
-        or (epic_mrn is not None and epic_mrn == mapping.epic_mrn)
-    ]
+class _UnionFind:
+    """Disjoint-set over hashable vertices, with path compression. Iterative, so a
+    large connected component costs memory rather than a RecursionError."""
+
+    def __init__(self):
+        self._parent: dict = {}
+
+    def find(self, vertex):
+        root = self._parent.setdefault(vertex, vertex)
+        while self._parent[root] != root:
+            root = self._parent[root]
+        while self._parent[vertex] != root:
+            self._parent[vertex], vertex = root, self._parent[vertex]
+        return root
+
+    def union(self, left, right):
+        left_root, right_root = self.find(left), self.find(right)
+        if left_root != right_root:
+            self._parent[right_root] = left_root
 
 
-def search_existing_on_patient_id(
-    existing_mapping_df: DataFrame, mpi: str = None, epic_mrn: str = None
-):
-    search_condition = F.lit(False)
-    if mpi is not None:
-        search_condition = search_condition | (F.col("mpi") == mpi)
-    if epic_mrn is not None:
-        search_condition = search_condition | (F.col("epic_mrn") == epic_mrn)
-    return existing_mapping_df.filter(search_condition)
+def entry_vertices(entry: MappingEntry) -> List[tuple]:
+    """The graph vertices an entry touches. Each mapping row is an edge joining an
+    `mpi` vertex to an `epic_mrn` vertex; a patient is a connected component."""
+    vertices = []
+    if entry.mpi is not None:
+        vertices.append(("mpi", entry.mpi))
+    if entry.epic_mrn is not None:
+        vertices.append(("epic_mrn", entry.epic_mrn))
+    return vertices
+
+
+def group_entries_by_component(entries: List[MappingEntry]) -> List[List[MappingEntry]]:
+    """Partition entries into patient webs — the connected components of the graph
+    described above.
+
+    Component order, and entry order within a component, follow input order.
+    """
+    union_find = _UnionFind()
+    for entry in entries:
+        vertices = entry_vertices(entry)
+        for vertex in vertices[1:]:
+            union_find.union(vertices[0], vertex)
+
+    components: dict = {}
+    for index, entry in enumerate(entries):
+        vertices = entry_vertices(entry)
+        # An entry carrying neither identifier links to nothing, so it is its own
+        # component. Stage 4 input always has both, but existing rows may have neither.
+        key = union_find.find(vertices[0]) if vertices else ("_row", index)
+        components.setdefault(key, []).append(entry)
+    return list(components.values())
 
 
 class MappingTableExtractor:
@@ -416,6 +448,83 @@ class MappingTableExtractor:
             .withColumn("consistent", F.lit(True))
         )
 
+    def fetch_existing_matching_ids(self, mpis: set, epic_mrns: set) -> List:
+        """One round of the closure below: every mapping row carrying one of these
+        identifiers. Two broadcast semi-joins rather than one join on an OR condition,
+        which Spark would have to answer with a nested-loop join."""
+        matches = []
+        if mpis:
+            matches.append(
+                self.existing_mapping_df.join(
+                    F.broadcast(
+                        self.spark.createDataFrame([(v,) for v in mpis], "mpi string")
+                    ),
+                    on="mpi",
+                    how="left_semi",
+                )
+            )
+        if epic_mrns:
+            matches.append(
+                self.existing_mapping_df.join(
+                    F.broadcast(
+                        self.spark.createDataFrame(
+                            [(v,) for v in epic_mrns], "epic_mrn string"
+                        )
+                    ),
+                    on="epic_mrn",
+                    how="left_semi",
+                )
+            )
+        if not matches:
+            return []
+        combined_df = matches[0]
+        for match_df in matches[1:]:
+            combined_df = combined_df.unionByName(match_df)
+        return combined_df.collect()
+
+    def collect_existing_closure(
+        self, seed_entries: List[MappingEntry]
+    ) -> List[MappingEntry]:
+        """Every mapping-table row transitively reachable from the batch's identifiers.
+
+        Expands a frontier of not-yet-searched identifiers until it stops growing, one
+        Spark job per round. Real components are shallow, so this settles in two rounds
+        (the second reveals nothing new) unless identifiers genuinely chain — which only
+        happens in an inconsistent web.
+        """
+        known_mpis = {e.mpi for e in seed_entries if e.mpi is not None}
+        known_epic_mrns = {e.epic_mrn for e in seed_entries if e.epic_mrn is not None}
+        # Only not-yet-searched identifiers go into a round; `known_*` is what stops the
+        # frontier from re-expanding into ground already covered.
+        frontier_mpis, frontier_epic_mrns = set(known_mpis), set(known_epic_mrns)
+
+        found: dict = {}
+        rounds = 0
+        while frontier_mpis or frontier_epic_mrns:
+            rows = self.fetch_existing_matching_ids(frontier_mpis, frontier_epic_mrns)
+            rounds += 1
+            frontier_mpis, frontier_epic_mrns = set(), set()
+            for row in rows:
+                # The two semi-joins overlap when a row matches on both identifiers,
+                # and a row already fetched reveals nothing new.
+                if row["primary_report_identifier"] in found:
+                    continue
+                entry = MappingEntry.from_df_row(row, True)
+                found[entry.primary_report_identifier] = entry
+                if entry.mpi is not None and entry.mpi not in known_mpis:
+                    known_mpis.add(entry.mpi)
+                    frontier_mpis.add(entry.mpi)
+                if entry.epic_mrn is not None and entry.epic_mrn not in known_epic_mrns:
+                    known_epic_mrns.add(entry.epic_mrn)
+                    frontier_epic_mrns.add(entry.epic_mrn)
+
+        activity.logger.info(
+            "Stage 4 closure settled after %d rounds, pulling in %d existing mappings",
+            rounds,
+            len(found),
+        )
+        return list(found.values())
+
     def process_stage_4(self, df: DataFrame):
         """
         Current DataFrame status:
@@ -423,29 +532,33 @@ class MappingTableExtractor:
             * There are no exact matches of ID combinations between the incoming reports and the mapping table (or themselves)
             * Every report in the incoming batch must have a partial ID match to another report, either in the batch or already in the mapping table
             * Every report in the incoming batch has both a non-null `mpi` and `epic_mrn`
-        Goal: Recursive search to process all remaining reports
+        Goal: Resolve the patient web each remaining report belongs to.
+
+        The web is a connected component of the graph in which each mapping row is an
+        edge joining an `mpi` vertex to an `epic_mrn` vertex. We close over the mapping
+        table in a few Spark joins, then partition incoming and fetched rows into
+        components in Python. See `docs/internal/patient_ids.md` for the semantics.
         :param df: DataFrame of data to be processed
         """
         rows = df.collect()
         activity.logger.info("Stage 4 input count: %d", len(rows))
-        complex_cases = [MappingEntry.from_df_row(row) for row in rows]
+        incoming_cases = [MappingEntry.from_df_row(row) for row in rows]
+        if not incoming_cases:
+            return  # nothing to resolve, and nothing to merge
+
+        existing_cases = self.collect_existing_closure(incoming_cases)
+        patient_webs = group_entries_by_component(incoming_cases + existing_cases)
+        activity.logger.info(
+            "Resolving %d reports across %d patient webs",
+            len(incoming_cases),
+            len(patient_webs),
+        )
+
         bulk_updates = []
         history_table_updates = []
-        activity.logger.info(
-            "Performing recursive search to resolve IDs for %d reports",
-            len(complex_cases),
-        )
-        while len(complex_cases) > 0:
-            complex_case = complex_cases.pop()
-            known_mpis = []
-            known_mrns = []
-            patient_web = self.recursive_search_patient_web(
-                complex_cases,
-                known_mpis,
-                known_mrns,
-                [complex_case],
-                complex_case,
-            )
+        for patient_web in patient_webs:
+            known_mpis = {e.mpi for e in patient_web if e.mpi is not None}
+            known_mrns = {e.epic_mrn for e in patient_web if e.epic_mrn is not None}
             unique_ids = list(
                 dict.fromkeys(
                     entry.scout_patient_id
@@ -487,9 +600,6 @@ class MappingTableExtractor:
 
                             entry.scout_patient_id = generated_uuid
                             bulk_updates.append(entry)
-            activity.logger.info(
-                "Remaining reports for recursive search: %d", len(complex_cases)
-            )
         self.merge_to_dt(
             self.spark.createDataFrame(
                 [mapping.to_dict() for mapping in bulk_updates],
@@ -507,71 +617,6 @@ class MappingTableExtractor:
                 ),
                 f"{self.table_name}_history",
             )
-
-    def recursive_search_patient_web(
-        self,
-        new_mapping_search_space: List[MappingEntry],
-        known_mpis: List[str],
-        known_epic_mrns: List[str],
-        partial_search_results: List[MappingEntry],
-        current_case: MappingEntry,
-    ) -> List[MappingEntry]:
-        new_mpi_revealed = None
-        new_mrn_revealed = None
-        if current_case.mpi is not None and not (current_case.mpi in known_mpis):
-            new_mpi_revealed = current_case.mpi
-            known_mpis.append(new_mpi_revealed)
-        if current_case.epic_mrn is not None and not (
-            current_case.epic_mrn in known_epic_mrns
-        ):
-            new_mrn_revealed = current_case.epic_mrn
-            known_epic_mrns.append(new_mrn_revealed)
-        if new_mpi_revealed is None and new_mrn_revealed is None:
-            return partial_search_results
-        new_incoming_mapping_finds = search_mappings_on_patient_id(
-            new_mapping_search_space, new_mpi_revealed, new_mrn_revealed
-        )
-
-        partial_search_results.extend(new_incoming_mapping_finds)
-        new_mapping_search_space[:] = [
-            x for x in new_mapping_search_space if x not in new_incoming_mapping_finds
-        ]
-
-        for case in new_incoming_mapping_finds:
-            self.recursive_search_patient_web(
-                new_mapping_search_space,
-                known_mpis,
-                known_epic_mrns,
-                partial_search_results,
-                case,
-            )
-
-        new_existing_mapping_finds_df = search_existing_on_patient_id(
-            self.existing_mapping_df, new_mpi_revealed, new_mrn_revealed
-        ).cache()  # we're unpersisting early here
-        if new_existing_mapping_finds_df.count() > 0:
-            new_existing_mapping_finds = [
-                MappingEntry.from_df_row(row, True)
-                for row in new_existing_mapping_finds_df.collect()
-            ]
-            new_existing_mapping_finds = [
-                find
-                for find in new_existing_mapping_finds
-                if find not in partial_search_results
-            ]
-            partial_search_results.extend(new_existing_mapping_finds)
-            for case in new_existing_mapping_finds:
-                self.recursive_search_patient_web(
-                    new_mapping_search_space,
-                    known_mpis,
-                    known_epic_mrns,
-                    partial_search_results,
-                    case,
-                )
-
-        new_existing_mapping_finds_df.unpersist()
-
-        return partial_search_results
 
     def process_stage_5(self):
         """
