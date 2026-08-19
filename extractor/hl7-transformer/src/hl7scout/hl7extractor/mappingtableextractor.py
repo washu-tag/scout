@@ -117,6 +117,26 @@ class MappingTableExtractor:
         self.dataframes_to_unpersist.append(cached_df)
         return cached_df
 
+    def pin(self, df: DataFrame) -> DataFrame:
+        """Materialize a batch-sized frame and cut its lineage.
+
+        `cache()` is not enough here, because a cached frame is still a *plan* rooted in
+        the mapping table. So (a) any Delta write drops the cache and the next read
+        silently re-derives the whole chain — 13m26s in preprod, §3.2 of
+        docs/internal/derive-performance.md — and (b) every downstream plan carries a
+        copy of that chain, which is what makes the plan trees in this file grow until
+        the driver dies building strings out of them (§3.9).
+
+        `localCheckpoint(eager=True)` replaces the plan with a single materialized RDD:
+        no reference to the table, nothing to invalidate, nothing to reprint. Blocks live
+        in the executor's block manager (MEMORY_AND_DISK) and are dropped by
+        `postprocess`. Only ever use this on batch-sized frames, and only where the frame
+        outlives a write — Delta already does exactly this to its own MERGE sources here.
+        """
+        pinned_df = df.localCheckpoint(eager=True)
+        self.dataframes_to_unpersist.append(pinned_df)
+        return pinned_df
+
     def recache_existing_mapping(self):
         if self.existing_mapping_df is not None:
             self.existing_mapping_df.unpersist()
@@ -217,14 +237,21 @@ class MappingTableExtractor:
             )
         )
 
-        unique_ids_incoming_reports = self.cache(
+        # Stage 1's output, and the root of every plan stage 2 builds — pinned so that
+        # none of them carries the exact-match join and the ranking window underneath it.
+        unique_ids_incoming_reports = self.pin(
             remaining_reports_ranked.filter(F.col("_rank") == 1).drop("_rank")
         )
         duplicate_ids_incoming_reports = remaining_reports_ranked.filter(
             F.col("_rank") > 1
         ).drop("_rank")
 
-        self.deferred_reports_df = self.cache(
+        # Pinned: nothing reads this until stage 5, by which point up to three merges have
+        # gone into the mapping table and dropped the cache of anything still rooted in
+        # it — this frame is built from an exact-match join against the table. Cached, it
+        # would be re-derived there against a table that now contains this batch's own
+        # inserts, so rows would exact-match themselves into the deferred set.
+        self.deferred_reports_df = self.pin(
             exact_matches_df.unionByName(
                 duplicate_ids_incoming_reports
             ).dropDuplicates()
@@ -264,13 +291,13 @@ class MappingTableExtractor:
             how="left",
         )
 
-        partial_match_with_indicator_df = self.cache(
+        partial_match_with_indicator_df = self.pin(
             mpi_matches_df.unionByName(epic_mrn_matches_df)
             .groupBy("primary_report_identifier", "mpi", "epic_mrn")
             .agg(F.max("_contains_match").alias("_contains_match"))
-        )  # cache join once
+        )
 
-        partial_existing_mapping_match_df = self.cache(
+        partial_existing_mapping_match_df = self.pin(
             partial_match_with_indicator_df.filter(F.col("_contains_match")).drop(
                 "_contains_match"
             )
@@ -313,7 +340,9 @@ class MappingTableExtractor:
             "Calculated fully disjoint reports: %d", fully_disjoint_count
         )
 
-        incoming_reports_with_links_df = self.cache(
+        # Pinned for the same reason: counted again after the merge, and unioned into
+        # this stage's output, which stage 3 then reads.
+        incoming_reports_with_links_df = self.pin(
             filter_no_existing_mapping_df(
                 (F.col("mpi_count") > 1) | (F.col("epic_mrn_count") > 1)
             )
@@ -345,7 +374,9 @@ class MappingTableExtractor:
             incoming_reports_with_links_df.count(),
             partial_existing_mapping_match_df.count(),
         )
-        remaining_reports_df = self.cache(
+        # Stage 2's output, same reasoning one stage down: stages 3 and 4 read it, and
+        # neither should carry stage 2's counts and joins in its plan.
+        remaining_reports_df = self.pin(
             incoming_reports_with_links_df.unionByName(
                 partial_existing_mapping_match_df
             ).dropDuplicates()
@@ -368,13 +399,25 @@ class MappingTableExtractor:
             * For such reports with a partial match in the mapping table already, create a new row from our report, inheriting the `scout_patient_id` and `consistent` flag of the partial match
             * For such reports without a partial match, create a new consistent row in the mapping table
         Return remaining reports for further stages
+
+        **Both frames here are pinned, because both are read across a merge.** A Delta
+        write drops the cache of every frame whose plan references the table it wrote, so
+        the anti-join below — built after the first merge, from frames produced before it
+        — used to re-derive the whole stage-1/2 chain and re-read the corpus-sized mapping
+        table cold. Measured in preprod at 13m26s to resolve 18 rows. `pin()` is what
+        makes it read what it says it reads; see §3.2 of
+        docs/internal/derive-performance.md.
+
         :param df: DataFrame of data to be processed
         """
 
         exactly_one_id_specified_condition = (
             F.col("mpi").isNull() != F.col("epic_mrn").isNull()
         )
-        reports_with_single_id_df = self.cache(
+        # Pinned, not cached: this frame is read three times below — twice by the joins,
+        # once by the anti-join — and it is the root of every plan this stage builds, so
+        # cutting the stage-1/2 chain out of it here is what keeps those plans small.
+        reports_with_single_id_df = self.pin(
             df.filter(exactly_one_id_specified_condition)
         )
 
@@ -399,15 +442,19 @@ class MappingTableExtractor:
 
         single_id_reports_with_epic_mrn_match_df = process_single_id_reports("epic_mrn")
 
-        reports_with_partial_existing_match_df = self.cache(
+        # Pinned rather than cached because it has to survive the merge below — this is
+        # the frame whose post-merge re-derivation cost 13m26s — and because both the
+        # anti-join and the merge read it, and neither should inherit the two joins that
+        # produced it.
+        reports_with_partial_existing_match_df = self.pin(
             single_id_reports_with_mpi_match_df.unionByName(
                 single_id_reports_with_epic_mrn_match_df
             ).dropDuplicates(["primary_report_identifier"])
         )
 
-        # These two log lines bracket the existing actions — they add no Spark work — so
-        # that the gap between each pair times one phase. See §3.2 "Instrumenting stage
-        # 3" in docs/internal/derive-performance.md for what the gaps mean.
+        # These two log lines bracket the actions — each count is near-free, since `pin`
+        # already materialized the frame it counts — so the gap between each pair times
+        # one phase. See §3.2 in docs/internal/derive-performance.md for what they mean.
         partial_match_count = reports_with_partial_existing_match_df.count()
         activity.logger.info(
             "Stage 3 partial-match join resolved %d records", partial_match_count
@@ -419,7 +466,12 @@ class MappingTableExtractor:
                 partial_match_count,
             )
 
-        reports_with_no_existing_match_df = self.cache(
+        # The complement: single-id reports whose identifier matches nothing in the
+        # table, which therefore start a patient of their own. Both inputs are pinned, so
+        # this reads the pre-merge partial-match set — which is also the set that was
+        # counted and merged above. Cached, it would instead be re-derived against the
+        # just-written table, and the set excluded here need not have been the set merged.
+        reports_with_no_existing_match_df = self.pin(
             reports_with_single_id_df.join(
                 reports_with_partial_existing_match_df.select(
                     "primary_report_identifier"
@@ -434,11 +486,6 @@ class MappingTableExtractor:
                 F.lit(True).alias("consistent"),
             )
         )
-
-        # The suspect gap: this action's inputs are two already-cached batch-sized
-        # frames, so it should be near-instant. If it is not, the merge above
-        # invalidated the cache and this is silently recomputing both corpus-sized
-        # fan-out joins, re-reading the whole mapping table to do it.
         no_match_count = reports_with_no_existing_match_df.count()
         activity.logger.info(
             "Stage 3 no-match anti-join resolved %d records", no_match_count
@@ -455,6 +502,8 @@ class MappingTableExtractor:
 
         activity.logger.info("Stage 3 completed on mapping table derivation")
 
+        # `df` is pinned by stage 2, so stage 4's collect of this reads the batch rows
+        # rather than re-deriving stages 1 and 2 across the merges above.
         return (
             df.filter(~exactly_one_id_specified_condition)
             .withColumn("scout_patient_id", F.lit(None).cast(StringType()))
