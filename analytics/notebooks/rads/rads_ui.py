@@ -810,9 +810,9 @@ def create_time_comparison_panel(state):
     # Time period selector for comparison
     period_selector = widgets.Dropdown(
         options=[
-            ("Current Month vs Last Month", "month"),
-            ("Current Quarter vs Last Quarter", "quarter"),
-            ("This Year vs 5 Years Ago", "year"),
+            ("Latest Month vs Prior Month", "month"),
+            ("Latest Quarter vs Prior Quarter", "quarter"),
+            ("Latest Year vs 5 Years Earlier", "year"),
         ],
         value="month",
         description="Compare:",
@@ -913,15 +913,22 @@ def create_time_comparison_panel(state):
         full_df = state["full_df"]  # Use full dataset, not filtered
         period_value = period_selector.value
 
+        # Measure the periods from the newest report rather than from today, so
+        # "latest" is the latest period the data covers. The lake routinely lags
+        # real time, and anchoring on today then compares two empty months.
+        anchor = full_df["requested_dt"].max() if len(full_df) > 0 else None
+        if pd.isna(anchor):
+            anchor = None
+
         if period_value == "month":
-            start1, end1, label1 = get_time_period_filter("current_month")
-            start2, end2, label2 = get_time_period_filter("last_month")
+            start1, end1, label1 = get_time_period_filter("current_month", anchor)
+            start2, end2, label2 = get_time_period_filter("last_month", anchor)
         elif period_value == "quarter":
-            start1, end1, label1 = get_time_period_filter("current_quarter")
-            start2, end2, label2 = get_time_period_filter("last_quarter")
+            start1, end1, label1 = get_time_period_filter("current_quarter", anchor)
+            start2, end2, label2 = get_time_period_filter("last_quarter", anchor)
         elif period_value == "year":
-            start1, end1, label1 = get_time_period_filter("current_year")
-            start2, end2, label2 = get_time_period_filter("5_years_ago")
+            start1, end1, label1 = get_time_period_filter("current_year", anchor)
+            start2, end2, label2 = get_time_period_filter("5_years_ago", anchor)
         else:
             return
 
@@ -974,9 +981,9 @@ def create_time_comparison_panel(state):
             </div>
             """
 
-        # Periods are calendar periods relative to today, so a corpus that lags
-        # real time leaves the "current" side empty — which renders as an empty
-        # chart and reads as a broken panel. Name the range actually covered.
+        # The latest period always holds the anchor report, but the prior one can
+        # fall in a gap. An empty side renders as an empty chart and reads as a
+        # broken panel, so name the range the data actually covers.
         coverage_note = ""
         if (len(df1) == 0 or len(df2) == 0) and len(full_df) > 0:
             covered = (
@@ -987,8 +994,8 @@ def create_time_comparison_panel(state):
             <div style='background: #fef3c7; padding: 12px; border-radius: 4px;
                         border-left: 3px solid #f59e0b; margin-bottom: 16px;'>
                 <div style='font-size: 13px; color: #78350f;'>
-                    One of these periods has no reports. Periods are calendar periods
-                    relative to today; these {len(full_df):,} reports span
+                    One of these periods has no reports. Periods are measured from the
+                    newest report; these {len(full_df):,} reports span
                     <strong>{covered}</strong>.
                 </div>
             </div>

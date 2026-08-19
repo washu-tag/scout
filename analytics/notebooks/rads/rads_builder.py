@@ -475,18 +475,22 @@ def load_rads_data(config, status_output):
 # ============================================================================
 
 
-def get_time_period_filter(period_type):
+def get_time_period_filter(period_type, anchor=None):
     """
     Get date filter for predefined time periods.
 
     Args:
         period_type: 'current_month', 'last_month', 'current_quarter',
                      'last_quarter', 'current_year', '5_years_ago'
+        anchor: the date the periods are measured from. Defaults to today. The
+                dashboard passes the newest report date instead, so that
+                "current" means the latest period the data covers — anchoring on
+                today leaves every comparison empty whenever ingestion lags.
 
     Returns:
         tuple: (start_date, end_date, label)
     """
-    today = datetime.now()
+    today = anchor if anchor is not None else datetime.now()
 
     if period_type == "current_month":
         start = today.replace(day=1)
