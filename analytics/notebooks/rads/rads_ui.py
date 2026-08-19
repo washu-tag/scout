@@ -322,9 +322,7 @@ def create_statistics_panel(state):
         # Create patient_id column for unique patient identification
         df_copy = df.copy()
         df_copy["patient_id"] = df_copy.apply(
-            lambda row: (
-                row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"]
-            ),
+            lambda row: (row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"]),
             axis=1,
         )
         unique_patients = df_copy["patient_id"].nunique()
@@ -1078,7 +1076,7 @@ def create_demographics_charts(df):
     # Prepare data - count unique patients only
     df_copy = df.copy()
     df_copy["patient_id"] = df_copy.apply(
-        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"],
+        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"],
         axis=1,
     )
 
@@ -1560,7 +1558,7 @@ def create_patient_progression_panel(state):
                 original_df = df[
                     df.apply(
                         lambda r: (
-                            r["epic_mrn"] if pd.notna(r["epic_mrn"]) else r["empi_mr"]
+                            r["epic_mrn"] if pd.notna(r["epic_mrn"]) else r["mpi"]
                         )
                         == patient_id,
                         axis=1,
@@ -1609,9 +1607,9 @@ def create_patient_progression_panel(state):
                     )
 
                     # Get full report text and all RADS scores from original dataframe
-                    accession = row["obr_3_filler_order_number"]
+                    accession = row["accession_number"]
                     report_data = original_df[
-                        original_df["obr_3_filler_order_number"] == accession
+                        original_df["accession_number"] == accession
                     ]
 
                     if len(report_data) > 0:
@@ -1945,14 +1943,14 @@ def create_report_browser(state):
 
         # Render report
         patient_id = html.escape(
-            str(row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"])
+            str(row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"])
         )
         requested_dt = (
             row["requested_dt"].strftime("%Y-%m-%d")
             if pd.notna(row["requested_dt"])
             else "N/A"
         )
-        accession = html.escape(str(row.get("obr_3_filler_order_number", "Unknown")))
+        accession = html.escape(str(row.get("accession_number", "Unknown")))
         patient_age = html.escape(str(row.get("patient_age", "Unknown")))
         sex = html.escape(str(row.get("sex", "Unknown")))
         modality = html.escape(str(row.get("modality", "Unknown")))

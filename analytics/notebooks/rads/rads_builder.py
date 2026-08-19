@@ -345,7 +345,7 @@ def build_rads_query(config):
         criteria_summary.append("Report mentions PI-RADS")
 
     # Ensure we have patient ID
-    conditions.append("(epic_mrn IS NOT NULL OR empi_mr IS NOT NULL)")
+    conditions.append("(resolved_epic_mrn IS NOT NULL OR resolved_mpi IS NOT NULL)")
 
     # Build WHERE clause
     where_clause = " AND ".join(conditions) if conditions else "1=1"
@@ -362,9 +362,9 @@ def build_rads_query(config):
     # Build full query
     sql = f"""
     SELECT DISTINCT
-        obr_3_filler_order_number,
-        epic_mrn,
-        empi_mr,
+        accession_number,
+        resolved_epic_mrn AS epic_mrn,
+        resolved_mpi      AS mpi,
         patient_age,
         sex,
         race,
@@ -377,7 +377,7 @@ def build_rads_query(config):
         diagnoses,
         sending_facility,
         message_dt
-    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports
+    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports_latest_epic_view
     WHERE {where_clause}
     ORDER BY message_dt DESC
     {limit_clause}
@@ -590,9 +590,7 @@ def calculate_score_distribution(df, by_patients=False):
         # Create patient_id column
         df_copy = df.copy()
         df_copy["patient_id"] = df_copy.apply(
-            lambda row: (
-                row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"]
-            ),
+            lambda row: (row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"]),
             axis=1,
         )
 
@@ -689,7 +687,7 @@ def calculate_demographics_breakdown(df):
     # Create patient_id and get one row per patient (most recent report)
     df_copy = df.copy()
     df_copy["patient_id"] = df_copy.apply(
-        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"],
+        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"],
         axis=1,
     )
 
@@ -734,11 +732,11 @@ def calculate_patient_progression(df):
         return pd.DataFrame()
 
     # Group by patient
-    df_sorted = df.sort_values(["epic_mrn", "empi_mr", "requested_dt"])
+    df_sorted = df.sort_values(["epic_mrn", "mpi", "requested_dt"])
 
     # Get patients with multiple reports
     patient_id = df_sorted.apply(
-        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"],
+        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"],
         axis=1,
     )
 
@@ -796,7 +794,7 @@ def calculate_patient_progression(df):
     return progression_df[
         [
             "patient_id",
-            "obr_3_filler_order_number",
+            "accession_number",
             "requested_dt",
             "primary_rads_score",
             "previous_score",
@@ -825,9 +823,9 @@ def export_rads_data(df, include_report_text=False):
     # Build export dataframe
     export_df = df[
         [
-            "obr_3_filler_order_number",
+            "accession_number",
             "epic_mrn",
-            "empi_mr",
+            "mpi",
             "patient_age",
             "sex",
             "race",
