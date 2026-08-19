@@ -4,7 +4,6 @@ Scout RADS Dashboard - UI Components Module
 This module provides the interactive UI components for the RADS dashboard.
 """
 
-import os
 import re
 import html
 import pandas as pd
@@ -16,7 +15,6 @@ from io import BytesIO
 import base64
 
 from rads_builder import (
-    export_rads_data,
     patient_display_id,
     calculate_score_distribution,
     calculate_demographics_breakdown,
@@ -2104,127 +2102,3 @@ def create_report_browser(state):
     render_report()
 
     return nav_bar, report_output
-
-
-# ============================================================================
-# EXPORT CONTROLS
-# ============================================================================
-
-
-def create_export_controls(state):
-    """Create export controls."""
-    include_report_text_check = widgets.Checkbox(
-        value=False,
-        description="Include full report text",
-        style={"description_width": "initial"},
-    )
-
-    export_button = widgets.Button(
-        description="📝 Prepare RADS CSV",
-        button_style="info",
-        layout=widgets.Layout(width="auto"),
-    )
-
-    export_output = widgets.Output()
-
-    def on_export(b):
-        # Preparing a large export with report text serializes a big CSV in the
-        # kernel and can take a minute or more; disable the button and show a
-        # working state so it's clear something is happening.
-        export_button.disabled = True
-        export_button.description = "⏳ Preparing CSV…"
-        with export_output:
-            export_output.clear_output(wait=True)
-
-            try:
-                csv_string, filename = export_rads_data(
-                    state["df"], include_report_text_check.value
-                )
-
-                # Hand the CSV to the browser as a client-side Blob download
-                # instead of writing it to a shared server directory (a
-                # predictable /voila/files URL previously let other users fetch
-                # someone else's export). The CSV is base64-encoded into the page
-                # and reassembled into a Blob in the browser on click; a Blob (not
-                # a data: URI) has no URL length limit, so very large exports are
-                # held entirely in the user's browser memory.
-                csv_b64 = base64.b64encode(csv_string.encode("utf-8")).decode("ascii")
-                dl_id = f"rads-dl-{os.urandom(6).hex()}"
-
-                display(
-                    HTML(
-                        f"""
-                    <style>
-                        .download-link:hover {{
-                            background: rgba(255,255,255,0.3) !important;
-                        }}
-                    </style>
-                    <div style='background: {SUCCESS_GRADIENT}; padding: 16px; border-radius: 8px;
-                                color: white; margin-top: 12px; width: 100%; box-sizing: border-box;'>
-                        <div style='font-weight: 600; margin-bottom: 8px;'>✓ CSV ready — click below to download</div>
-                        <div style='font-size: 14px; opacity: 0.95; margin-bottom: 16px;'>
-                            Prepared {len(state['df'])} reports
-                        </div>
-                        <a href="#" id="{dl_id}"
-                           class='download-link'
-                           style='display: block; width: 100%; box-sizing: border-box;
-                                  background: rgba(255,255,255,0.2);
-                                  padding: 12px 16px; border-radius: 6px; color: white;
-                                  text-decoration: none; font-weight: bold; text-align: center;
-                                  font-size: 14px;
-                                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
-                            📥 Download {filename}
-                        </a>
-                    </div>
-                    <script>
-                    (function() {{
-                        setTimeout(function() {{
-                            var link = document.getElementById("{dl_id}");
-                            if (!link) return;
-                            link.addEventListener("click", function(e) {{
-                                e.preventDefault();
-                                var bytes = atob("{csv_b64}");
-                                var arr = new Uint8Array(bytes.length);
-                                for (var i = 0; i < bytes.length; i++) {{
-                                    arr[i] = bytes.charCodeAt(i);
-                                }}
-                                var blob = new Blob([arr], {{type: "text/csv"}});
-                                var url = URL.createObjectURL(blob);
-                                var a = document.createElement("a");
-                                a.href = url;
-                                a.download = "{filename}";
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                            }});
-                        }}, 100);
-                    }})();
-                    </script>
-                """
-                    )
-                )
-            except Exception as e:
-                display(
-                    HTML(
-                        f"""
-                    <div style='background: {RED_ERROR}; padding: 16px; border-radius: 8px;
-                                color: white; margin-top: 12px;'>
-                        <div style='font-weight: 600; margin-bottom: 8px;'>✗ CSV Preparation Failed</div>
-                        <div style='font-size: 14px; opacity: 0.95;'>Error: {str(e)}</div>
-                    </div>
-                """
-                    )
-                )
-            finally:
-                export_button.disabled = False
-                export_button.description = "📝 Prepare RADS CSV"
-
-    export_button.on_click(on_export)
-
-    container = widgets.HBox(
-        [include_report_text_check, export_button, export_output],
-        layout=widgets.Layout(gap="16px", align_items="center"),
-    )
-
-    return container
