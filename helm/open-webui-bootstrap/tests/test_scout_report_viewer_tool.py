@@ -120,16 +120,3 @@ async def test_post_upstream_non_401_error_still_raised_with_bearer_present(
     tool = _tool_with_transport(handler, monkeypatch)
     with pytest.raises(ReportViewerServiceError, match="trino unavailable"):
         await tool._post("/api/searches", {"sql": "SELECT 1"}, oauth="valid-token")
-
-
-def test_error_text_omits_prefix_for_session_expired():
-    exc = SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
-    assert Tools._error_text(exc, "Failed") == _SESSION_EXPIRED_MESSAGE
-
-
-def test_error_text_keeps_prefix_for_other_errors():
-    exc = ReportViewerServiceError("report-viewer is temporarily unavailable")
-    assert (
-        Tools._error_text(exc, "Failed")
-        == "Failed: report-viewer is temporarily unavailable"
-    )

@@ -612,8 +612,7 @@ class ReportViewerServiceError(RuntimeError):
 
 
 class SessionExpiredError(ReportViewerServiceError):
-    """No OWUI oauth token was available. The message is already
-    complete and user-facing, unlike other ReportViewerServiceErrors."""
+    """No usable OWUI token: either none was provided, or report-viewer rejected it."""
 
 
 def _chat_id(meta: Any) -> str:
