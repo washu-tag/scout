@@ -554,7 +554,12 @@ def filter_by_date_range(df, start_date, end_date):
         start_ts = start_ts.tz_localize("UTC")
         end_ts = end_ts.tz_localize("UTC")
 
-    mask = (df["requested_dt"] >= start_ts) & (df["requested_dt"] <= end_ts)
+    # end_date names a whole day, so take everything before the next midnight.
+    # Comparing against the bare timestamp would drop the end day's reports,
+    # which for a period ending "today" is every report so far today.
+    end_ts = end_ts.normalize() + pd.Timedelta(days=1)
+
+    mask = (df["requested_dt"] >= start_ts) & (df["requested_dt"] < end_ts)
     return df[mask]
 
 

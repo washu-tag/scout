@@ -974,9 +974,31 @@ def create_time_comparison_panel(state):
             </div>
             """
 
+        # Periods are calendar periods relative to today, so a corpus that lags
+        # real time leaves the "current" side empty — which renders as an empty
+        # chart and reads as a broken panel. Name the range actually covered.
+        coverage_note = ""
+        if (len(df1) == 0 or len(df2) == 0) and len(full_df) > 0:
+            covered = (
+                f"{full_df['requested_dt'].min():%Y-%m-%d} to "
+                f"{full_df['requested_dt'].max():%Y-%m-%d}"
+            )
+            coverage_note = f"""
+            <div style='background: #fef3c7; padding: 12px; border-radius: 4px;
+                        border-left: 3px solid #f59e0b; margin-bottom: 16px;'>
+                <div style='font-size: 13px; color: #78350f;'>
+                    One of these periods has no reports. Periods are calendar periods
+                    relative to today; these {len(full_df):,} reports span
+                    <strong>{covered}</strong>.
+                </div>
+            </div>
+            """
+
         comparison_html = f"""
         <div style='background: white; padding: 16px; border-radius: 6px; border: 1px solid #e5e7eb; margin-top: 16px;'>
             <h3 style='margin: 0 0 16px 0; font-size: 16px; color: {PURPLE_PRIMARY};'>Time Period Comparison</h3>
+
+            {coverage_note}
 
             <!-- Trend Chart -->
             <div style='margin-bottom: 24px;'>
@@ -996,7 +1018,7 @@ def create_time_comparison_panel(state):
     # Set up event handlers
     analysis_type.observe(on_analysis_type_change, names="value")
     granularity_selector.observe(lambda change: render_analysis(), names="value")
-    period_selector.observe(lambda change: on_period_comparison_change(), names="value")
+    period_selector.observe(lambda change: render_analysis(), names="value")
 
     # Initial setup
     update_controls()
