@@ -376,20 +376,29 @@ function ProfileCell({ profile, field }: { profile: Profile; field: string }) {
     const { segments, other, empty, distinct } = profile;
     const rolledUp = distinct - segments.length;
     const isSex = field === PIE_FIELD;
-    // M is always the darkest blue and F the next step down, everywhere sex
-    // appears. Anything else just takes what's left; those don't need to be
-    // consistent with each other.
-    const parts = [
-      ...segments.map((s, i) => ({
-        ...s,
-        fill: isSex
-          ? RAMP[s.label === 'M' ? 0 : s.label === 'F' ? 1 : 2]
-          : RAMP[Math.min(i, RAMP.length - 1)],
-      })),
-      ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: OTHER_FILL }] : []),
-      ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
-    ].filter((p) => p.count > 0);
-    return <Categorical parts={parts} pie={isSex} />;
+
+    let parts: Array<Segment & { fill: string }>;
+    if (isSex) {
+      const rest = segments.filter((s) => s.label !== 'M' && s.label !== 'F');
+      const otherCount = rest.reduce((sum, s) => sum + s.count, 0) + (other?.count ?? 0);
+      const otherPct = rest.reduce((sum, s) => sum + s.pct, 0) + (other?.pct ?? 0);
+      parts = [
+        ...segments
+          .filter((s) => s.label === 'M' || s.label === 'F')
+          .map((s) => ({ ...s, fill: RAMP[s.label === 'M' ? 0 : 1] })),
+        ...(otherCount > 0
+          ? [{ label: 'other', count: otherCount, pct: otherPct, fill: OTHER_FILL }]
+          : []),
+        ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
+      ];
+    } else {
+      parts = [
+        ...segments.map((s, i) => ({ ...s, fill: RAMP[Math.min(i, RAMP.length - 1)] })),
+        ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: OTHER_FILL }] : []),
+        ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
+      ];
+    }
+    return <Categorical parts={parts.filter((p) => p.count > 0)} pie={isSex} />;
   }
 
   if (profile.kind === 'numeric') {
