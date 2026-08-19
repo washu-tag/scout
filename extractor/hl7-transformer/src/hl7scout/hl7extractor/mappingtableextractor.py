@@ -405,7 +405,13 @@ class MappingTableExtractor:
             ).dropDuplicates(["primary_report_identifier"])
         )
 
+        # These two log lines bracket the existing actions — they add no Spark work — so
+        # that the gap between each pair times one phase. See §3.2 "Instrumenting stage
+        # 3" in docs/internal/derive-performance.md for what the gaps mean.
         partial_match_count = reports_with_partial_existing_match_df.count()
+        activity.logger.info(
+            "Stage 3 partial-match join resolved %d records", partial_match_count
+        )
         if partial_match_count > 0:
             self.merge_to_dt(reports_with_partial_existing_match_df)
             activity.logger.info(
@@ -429,7 +435,14 @@ class MappingTableExtractor:
             )
         )
 
+        # The suspect gap: this action's inputs are two already-cached batch-sized
+        # frames, so it should be near-instant. If it is not, the merge above
+        # invalidated the cache and this is silently recomputing both corpus-sized
+        # fan-out joins, re-reading the whole mapping table to do it.
         no_match_count = reports_with_no_existing_match_df.count()
+        activity.logger.info(
+            "Stage 3 no-match anti-join resolved %d records", no_match_count
+        )
         if no_match_count > 0:
             self.merge_to_dt(reports_with_no_existing_match_df)
             activity.logger.info(
@@ -556,6 +569,7 @@ class MappingTableExtractor:
 
         bulk_updates = []
         history_table_updates = []
+        inconsistent_webs = 0
         for patient_web in patient_webs:
             known_mpis = {e.mpi for e in patient_web if e.mpi is not None}
             known_mrns = {e.epic_mrn for e in patient_web if e.epic_mrn is not None}
@@ -570,9 +584,7 @@ class MappingTableExtractor:
                 unique_ids[0] if len(unique_ids) > 0 else str(uuid.uuid4())
             )  # take the only ID, generating a new one if none exist
             if (len(known_mpis) > 1) or (len(known_mrns) > 1):
-                activity.logger.info(
-                    "Inconsistent patient IDs found, marking all linked report mappings"
-                )
+                inconsistent_webs += 1
                 for entry in patient_web:
                     if entry.consistent or entry.scout_patient_id != generated_uuid:
                         history_entry = entry.prepare_history_copy()
@@ -600,6 +612,20 @@ class MappingTableExtractor:
 
                             entry.scout_patient_id = generated_uuid
                             bulk_updates.append(entry)
+
+        if inconsistent_webs:
+            # One summary, not one line per web: the per-web message carried no
+            # identifying detail (deliberately — identifiers in Loki would be PHI, see
+            # docs/internal/patient_ids.md), so N copies of it said nothing N did not.
+            # The count and the denominator are the part worth alerting on.
+            activity.logger.info(
+                "Inconsistent patient IDs found in %d of %d patient webs; every linked "
+                "report mapping marked consistent=false and its prior value copied to "
+                "%s_history",
+                inconsistent_webs,
+                len(patient_webs),
+                self.table_name,
+            )
         self.merge_to_dt(
             self.spark.createDataFrame(
                 [mapping.to_dict() for mapping in bulk_updates],
