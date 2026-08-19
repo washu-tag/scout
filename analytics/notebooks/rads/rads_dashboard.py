@@ -528,10 +528,7 @@ def _build_dashboard_ui(df, criteria_summary, config, container, status_output):
         }
 
         # Calculate summary stats
-        unique_patients = df.apply(
-            lambda row: (row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"]),
-            axis=1,
-        ).nunique()
+        unique_patients = df["scout_patient_id"].nunique()
 
         # Header
         header_widget = widgets.HTML(

@@ -35,10 +35,6 @@ RED_ERROR = "#F44336"
 TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
 TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
 
-# Export directory
-EXPORT_DIR = "/home/jovyan/rads_exports"
-os.makedirs(EXPORT_DIR, exist_ok=True)
-
 # RADS score categories
 LIRADS_SCORES = [
     "LR-1",
@@ -344,9 +340,6 @@ def build_rads_query(config):
         conditions.append("REGEXP_LIKE(report_text, '(?is)(PI-?RADS)')")
         criteria_summary.append("Report mentions PI-RADS")
 
-    # Ensure we have patient ID
-    conditions.append("(resolved_epic_mrn IS NOT NULL OR resolved_mpi IS NOT NULL)")
-
     # Build WHERE clause
     where_clause = " AND ".join(conditions) if conditions else "1=1"
 
@@ -363,6 +356,7 @@ def build_rads_query(config):
     sql = f"""
     SELECT DISTINCT
         accession_number,
+        scout_patient_id,
         resolved_epic_mrn AS epic_mrn,
         resolved_mpi      AS mpi,
         patient_age,
@@ -374,7 +368,6 @@ def build_rads_query(config):
         requested_dt,
         observation_dt,
         report_text,
-        diagnoses,
         sending_facility,
         message_dt
     FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports_latest_epic_view
@@ -570,6 +563,19 @@ def filter_by_date_range(df, start_date, end_date):
 # ============================================================================
 
 
+def patient_display_id(row):
+    """Label a patient for display: resolved EPIC MRN, else resolved MPI.
+
+    Grouping and counting key on scout_patient_id, which is stable for a patient
+    across HL7 versions. This is only what gets shown next to their reports, and
+    falls back to that ID for the patients who carry neither identifier.
+    """
+    for col in ("epic_mrn", "mpi"):
+        if pd.notna(row[col]):
+            return row[col]
+    return row["scout_patient_id"]
+
+
 def calculate_score_distribution(df, by_patients=False):
     """
     Calculate RADS score distribution counting ALL detected scores.
@@ -589,10 +595,7 @@ def calculate_score_distribution(df, by_patients=False):
     if by_patients:
         # Create patient_id column
         df_copy = df.copy()
-        df_copy["patient_id"] = df_copy.apply(
-            lambda row: (row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"]),
-            axis=1,
-        )
+        df_copy["patient_id"] = df_copy["scout_patient_id"]
 
         # Explode rads_scores to count all detected scores per patient
         # Create a row for each score in the rads_scores list
@@ -686,10 +689,7 @@ def calculate_demographics_breakdown(df):
 
     # Create patient_id and get one row per patient (most recent report)
     df_copy = df.copy()
-    df_copy["patient_id"] = df_copy.apply(
-        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"],
-        axis=1,
-    )
+    df_copy["patient_id"] = df_copy["scout_patient_id"]
 
     # For demographics, we take the most recent report per patient
     # This ensures we count each patient only once
@@ -732,15 +732,11 @@ def calculate_patient_progression(df):
         return pd.DataFrame()
 
     # Group by patient
-    df_sorted = df.sort_values(["epic_mrn", "mpi", "requested_dt"])
+    df_sorted = df.sort_values(["scout_patient_id", "requested_dt"])
 
     # Get patients with multiple reports
-    patient_id = df_sorted.apply(
-        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"],
-        axis=1,
-    )
-
-    df_sorted["patient_id"] = patient_id
+    df_sorted["patient_id"] = df_sorted["scout_patient_id"]
+    df_sorted["patient_display_id"] = df_sorted.apply(patient_display_id, axis=1)
 
     # Count reports per patient
     report_counts = df_sorted.groupby("patient_id").size()
@@ -794,6 +790,7 @@ def calculate_patient_progression(df):
     return progression_df[
         [
             "patient_id",
+            "patient_display_id",
             "accession_number",
             "requested_dt",
             "primary_rads_score",
@@ -818,12 +815,15 @@ def export_rads_data(df, include_report_text=False):
         include_report_text: Whether to include full report text
 
     Returns:
-        Path to exported file
+        (csv_string, filename) tuple. The CSV is built in memory and handed to
+        the browser as a client-side download (see rads_ui.create_export_controls)
+        rather than written to a shared server directory.
     """
     # Build export dataframe
     export_df = df[
         [
             "accession_number",
+            "scout_patient_id",
             "epic_mrn",
             "mpi",
             "patient_age",
@@ -848,12 +848,11 @@ def export_rads_data(df, include_report_text=False):
     if include_report_text:
         export_df["report_text"] = df["report_text"]
 
-    # Generate filename
+    # Generate filename and serialize to an in-memory CSV string. Passing no
+    # path to to_csv() returns the CSV as text so the caller can hand it to the
+    # browser as a Blob download; nothing is written to the server.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"rads_data_{timestamp}.csv"
-    filepath = os.path.join(EXPORT_DIR, filename)
+    csv_string = export_df.to_csv(index=False)
 
-    # Save
-    export_df.to_csv(filepath, index=False)
-
-    return filepath
+    return csv_string, filename

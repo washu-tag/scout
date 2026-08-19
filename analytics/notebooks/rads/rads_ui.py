@@ -4,6 +4,7 @@ Scout RADS Dashboard - UI Components Module
 This module provides the interactive UI components for the RADS dashboard.
 """
 
+import os
 import re
 import html
 import pandas as pd
@@ -16,6 +17,7 @@ import base64
 
 from rads_builder import (
     export_rads_data,
+    patient_display_id,
     calculate_score_distribution,
     calculate_demographics_breakdown,
     calculate_patient_progression,
@@ -321,10 +323,7 @@ def create_statistics_panel(state):
 
         # Create patient_id column for unique patient identification
         df_copy = df.copy()
-        df_copy["patient_id"] = df_copy.apply(
-            lambda row: (row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"]),
-            axis=1,
-        )
+        df_copy["patient_id"] = df_copy["scout_patient_id"]
         unique_patients = df_copy["patient_id"].nunique()
 
         # Get one row per patient (most recent report)
@@ -1075,10 +1074,7 @@ def create_demographics_charts(df):
 
     # Prepare data - count unique patients only
     df_copy = df.copy()
-    df_copy["patient_id"] = df_copy.apply(
-        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"],
-        axis=1,
-    )
+    df_copy["patient_id"] = df_copy["scout_patient_id"]
 
     # Get one row per patient (most recent report)
     df_patients = df_copy.sort_values("requested_dt", ascending=False).drop_duplicates(
@@ -1517,10 +1513,17 @@ def create_patient_progression_panel(state):
 
         # Get unique patients for dropdown
         patient_ids = sorted(progression_df["patient_id"].unique())
+        patient_labels = (
+            progression_df.drop_duplicates("patient_id")
+            .set_index("patient_id")["patient_display_id"]
+            .to_dict()
+        )
 
         # Patient selector
         patient_selector = widgets.Dropdown(
-            options=[(f"Patient: {pid}", pid) for pid in patient_ids],
+            options=[
+                (f"Patient: {patient_labels.get(pid, pid)}", pid) for pid in patient_ids
+            ],
             description="Select Patient:",
             layout=widgets.Layout(width="400px"),
             style={"description_width": "120px"},
@@ -1555,15 +1558,9 @@ def create_patient_progression_panel(state):
                 ].sort_values("requested_dt")
 
                 # Get original report data
-                original_df = df[
-                    df.apply(
-                        lambda r: (
-                            r["epic_mrn"] if pd.notna(r["epic_mrn"]) else r["mpi"]
-                        )
-                        == patient_id,
-                        axis=1,
-                    )
-                ].sort_values("requested_dt")
+                original_df = df[df["scout_patient_id"] == patient_id].sort_values(
+                    "requested_dt"
+                )
 
                 # Collect all unique scores this patient has had across all reports
                 all_patient_scores = set()
@@ -1821,7 +1818,7 @@ def create_patient_progression_panel(state):
 
                     <!-- Patient info -->
                     <div style='font-size: 15px; color: #374151; margin-bottom: 20px; font-weight: 500;'>
-                        Patient: {html.escape(str(patient_id))} | Age: {patient_age} | Sex: {patient_sex}
+                        Patient: {html.escape(str(patient_labels.get(patient_id, patient_id)))} | Age: {patient_age} | Sex: {patient_sex}
                         <div style='margin-top: 4px; font-size: 13px; color: #6b7280; font-weight: 400;'>
                             Total Reports: {total_reports} | Span: {months_span} months
                         </div>
@@ -1942,9 +1939,7 @@ def create_report_browser(state):
         next_btn.disabled = current_pos >= len(df) - 1
 
         # Render report
-        patient_id = html.escape(
-            str(row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"])
-        )
+        patient_id = html.escape(str(patient_display_id(row)))
         requested_dt = (
             row["requested_dt"].strftime("%Y-%m-%d")
             if pd.notna(row["requested_dt"])
@@ -2096,7 +2091,7 @@ def create_export_controls(state):
     )
 
     export_button = widgets.Button(
-        description="📥 Export RADS Data CSV",
+        description="📝 Prepare RADS CSV",
         button_style="info",
         layout=widgets.Layout(width="auto"),
     )
@@ -2104,26 +2099,79 @@ def create_export_controls(state):
     export_output = widgets.Output()
 
     def on_export(b):
+        # Preparing a large export with report text serializes a big CSV in the
+        # kernel and can take a minute or more; disable the button and show a
+        # working state so it's clear something is happening.
+        export_button.disabled = True
+        export_button.description = "⏳ Preparing CSV…"
         with export_output:
             export_output.clear_output(wait=True)
 
             try:
-                filepath = export_rads_data(
+                csv_string, filename = export_rads_data(
                     state["df"], include_report_text_check.value
                 )
+
+                # Hand the CSV to the browser as a client-side Blob download
+                # instead of writing it to a shared server directory (a
+                # predictable /voila/files URL previously let other users fetch
+                # someone else's export). The CSV is base64-encoded into the page
+                # and reassembled into a Blob in the browser on click; a Blob (not
+                # a data: URI) has no URL length limit, so very large exports are
+                # held entirely in the user's browser memory.
+                csv_b64 = base64.b64encode(csv_string.encode("utf-8")).decode("ascii")
+                dl_id = f"rads-dl-{os.urandom(6).hex()}"
 
                 display(
                     HTML(
                         f"""
+                    <style>
+                        .download-link:hover {{
+                            background: rgba(255,255,255,0.3) !important;
+                        }}
+                    </style>
                     <div style='background: {SUCCESS_GRADIENT}; padding: 16px; border-radius: 8px;
-                                color: white; margin-top: 12px;'>
-                        <div style='font-weight: 600; margin-bottom: 8px;'>✓ Export Successful</div>
-                        <div style='font-size: 14px; opacity: 0.95;'>
-                            Exported {len(state['df'])} reports<br>
-                            File: <code style='background: rgba(255,255,255,0.2); padding: 2px 6px;
-                                               border-radius: 4px;'>{filepath}</code>
+                                color: white; margin-top: 12px; width: 100%; box-sizing: border-box;'>
+                        <div style='font-weight: 600; margin-bottom: 8px;'>✓ CSV ready — click below to download</div>
+                        <div style='font-size: 14px; opacity: 0.95; margin-bottom: 16px;'>
+                            Prepared {len(state['df'])} reports
                         </div>
+                        <a href="#" id="{dl_id}"
+                           class='download-link'
+                           style='display: block; width: 100%; box-sizing: border-box;
+                                  background: rgba(255,255,255,0.2);
+                                  padding: 12px 16px; border-radius: 6px; color: white;
+                                  text-decoration: none; font-weight: bold; text-align: center;
+                                  font-size: 14px;
+                                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
+                            📥 Download {filename}
+                        </a>
                     </div>
+                    <script>
+                    (function() {{
+                        setTimeout(function() {{
+                            var link = document.getElementById("{dl_id}");
+                            if (!link) return;
+                            link.addEventListener("click", function(e) {{
+                                e.preventDefault();
+                                var bytes = atob("{csv_b64}");
+                                var arr = new Uint8Array(bytes.length);
+                                for (var i = 0; i < bytes.length; i++) {{
+                                    arr[i] = bytes.charCodeAt(i);
+                                }}
+                                var blob = new Blob([arr], {{type: "text/csv"}});
+                                var url = URL.createObjectURL(blob);
+                                var a = document.createElement("a");
+                                a.href = url;
+                                a.download = "{filename}";
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                            }});
+                        }}, 100);
+                    }})();
+                    </script>
                 """
                     )
                 )
@@ -2133,12 +2181,15 @@ def create_export_controls(state):
                         f"""
                     <div style='background: {RED_ERROR}; padding: 16px; border-radius: 8px;
                                 color: white; margin-top: 12px;'>
-                        <div style='font-weight: 600; margin-bottom: 8px;'>✗ Export Failed</div>
+                        <div style='font-weight: 600; margin-bottom: 8px;'>✗ CSV Preparation Failed</div>
                         <div style='font-size: 14px; opacity: 0.95;'>Error: {str(e)}</div>
                     </div>
                 """
                     )
                 )
+            finally:
+                export_button.disabled = False
+                export_button.description = "📝 Prepare RADS CSV"
 
     export_button.on_click(on_export)
 
