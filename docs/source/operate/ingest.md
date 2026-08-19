@@ -31,8 +31,7 @@ heartbeats internally and could coalesce or drop heartbeats if they are too freq
 ```{warning}
 `reportTableName` overrides the destination table for a single ingest and is intended for **non-production and testing** use. Per-user facility row-filtering (see [Data Authorization](../user/data_authorization.md)) only covers the deployment's standard report tables — those whose names derive from `report_delta_table_name`. A table ingested under a different name is **not** covered by the row filter, so any authorized user can read all of its rows regardless of their permitted facilities. In an environment with real data, ingest into the standard report table only: leave `reportTableName` unset here and set `report_delta_table_name` in `inventory.yaml` instead.
 ```
-- `deltaIngestTimeout`: timeout in minutes for the base-ingest activity that transforms the HL7 and merges it into the base Delta Lake table. Ansible equivalent: `hl7_transformer_timeout`
-- `deriveDeltaTablesTimeout`: timeout in minutes for the derivative-table activity that builds the curated/latest/dx/mapping tables (and epic views) from the base table's change data feed. Ansible equivalent: `hl7_transformer_derive_timeout`
+- `deltaIngestTimeout`: timeout in minutes for the activity and transforms the HL7 and uploads to the delta lake. Ansible equivalent: `hl7_transformer_timeout` 
 
 ## admintools container
 

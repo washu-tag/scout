@@ -1,0 +1,33 @@
+# temporal-bootstrap: idempotent Temporal setup as Helm-hook Jobs (post-install/
+# upgrade). Enforces the `default` namespace's workflow-history retention (#432);
+# the chart's create-only namespace job never updates retention. Talks to the
+# internal frontend (bypasses public-frontend authz). dependsOn temporal-server.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: temporal-bootstrap
+  namespace: '${scout_extractor_namespace}'
+spec:
+  interval: 30m
+  # Scout-owned CI-built chart (ADR 0030); not in versions.yaml, not
+  # Renovate-tracked (self-reference). Placeholder version, stamped at publish.
+  chart:
+    spec:
+      chart: temporal-bootstrap
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${scout_extractor_namespace}'
+  values:
+    image:
+      repository: temporalio/admin-tools
+      # Pinned in versions.yaml (temporal_admin_tools_image_tag); Renovate keeps
+      # it equal to the server version so the bundled `temporal` CLI matches.
+      tag: '1.31.0'
+    # Internal frontend gRPC endpoint (no OIDC authz).
+    temporalAddress: 'temporal-internal-frontend.${scout_extractor_namespace}:7236'
+    namespace:
+      name: default
+      # Workflow-history retention (CLI duration form); overlays tune.
+      retention: 30d

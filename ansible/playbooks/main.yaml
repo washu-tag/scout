@@ -29,6 +29,11 @@
 - name: Install Lake
   import_playbook: lake.yaml
 
+# Ahead of its consumers: report-viewer mounts the trino-tls Secret this
+# playbook's Certificate creates, and superset and jupyter read the same one.
+- name: Install Trino
+  import_playbook: trino.yaml
+
 - name: Install Chat
   import_playbook: chatbot.yaml
 
@@ -37,9 +42,6 @@
 
 - name: Install Voila
   import_playbook: voila.yaml
-
-- name: Install Trino
-  import_playbook: trino.yaml
 
 - name: Install Superset
   import_playbook: superset.yaml

@@ -260,7 +260,7 @@
                     {% for b in minio_buckets %}
                     echo "Ensuring bucket {{ b.name }} exists..."
                     mc mb --ignore-existing local/{{ b.name }}
-                    {% if b.versioned | default(false) %}
+                    {% if b.name in minio_versioned_buckets %}
                     echo "  Enabling versioning on {{ b.name }}..."
                     mc version enable local/{{ b.name }}
                     {% endif %}
@@ -309,3 +309,26 @@
   retries: '{{ minio_bootstrap_wait_retries | default(30) }}'
   delay: '{{ minio_bootstrap_wait_delay | default(10) }}'
   changed_when: false
+
+# The Lake chip ships with MinIO (ADR 0034): sites that run object storage
+# elsewhere never run this role and never get the chip.
+- name: Publish launchpad catalog entry
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: launchpad_catalog
+  vars:
+    catalog_configmap_name: minio-launchpad
+    catalog_namespace: '{{ minio_tenant_namespace }}'
+    catalog_document:
+      apiVersion: launchpad.scout.xnat.org/v1alpha1
+      kind: Catalog
+      chips:
+        - id: lake
+          title: Lake
+          description: Medical data lake storage
+          icon: minio
+          tone: red
+          link: { subdomain: minio }
+          group: admin
+          weight: 20
+          audience: admin

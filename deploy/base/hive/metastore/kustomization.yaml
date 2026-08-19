@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Flux target path. scout-charts HelmRepository declared ONCE here, not in _base
+# (both overlays build _base, which would emit it twice and create a second owner).
+resources:
+  - helmrepository.yaml
+  - overlays/write
+  - overlays/readonly

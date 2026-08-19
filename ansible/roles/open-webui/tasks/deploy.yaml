@@ -173,3 +173,25 @@
 - name: Bootstrap Open WebUI admin + push declarative config
   ansible.builtin.include_tasks: configure_admin.yaml
   when: open_webui_admin_setup_enabled | bool
+
+# Chat's launchpad chip ships with chat, not with the launchpad (ADR 0034):
+# the tile exists exactly when this role has run.
+- name: Publish launchpad catalog entry
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: launchpad_catalog
+  vars:
+    catalog_configmap_name: open-webui-launchpad
+    catalog_namespace: '{{ chatbot_namespace }}'
+    catalog_document:
+      apiVersion: launchpad.scout.xnat.org/v1alpha1
+      kind: Catalog
+      chips:
+        - id: chat
+          title: Chat
+          description: AI-powered assistance for Q & A style data queries
+          icon: chat
+          tone: emerald
+          link: { subdomain: chat }
+          group: core
+          weight: 10

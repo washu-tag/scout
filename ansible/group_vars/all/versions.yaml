@@ -96,6 +96,12 @@ superset_statsd_exporter_tag: v0.29.0
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=grafana
 grafana_helm_chart_version: 10.4.3
 
+# Launchpad - catalog discovery sidecar (ADR 0034). The same image the
+# Grafana chart embeds for dashboard ConfigMap discovery.
+launchpad_sidecar_image: quay.io/kiwigrid/k8s-sidecar
+# renovate: datasource=docker depName=quay.io/kiwigrid/k8s-sidecar
+launchpad_sidecar_image_tag: 2.10.1
+
 # Notebooks & Interactive Computing
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/ depName=jupyterhub
 jupyter_helm_chart_version: 4.3.5

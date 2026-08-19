@@ -1,0 +1,45 @@
+---
+# Publish a launchpad catalog ConfigMap (ADR 0034).
+#
+# The launchpad's discovery sidecar imports any ConfigMap labelled
+# `launchpad.scout.xnat.org/catalog: "true"` from any namespace; each data key
+# holds one catalog document. Components that own a chip publish it next to
+# themselves so presence on the landing page follows installation.
+#
+# Include with:
+#
+#   - name: Publish launchpad catalog entry
+#     ansible.builtin.include_role:
+#       name: scout_common
+#       tasks_from: launchpad_catalog
+#     vars:
+#       catalog_configmap_name: my-service-launchpad
+#       catalog_namespace: '{{ my_service_namespace }}'
+#       catalog_document:
+#         apiVersion: launchpad.scout.xnat.org/v1alpha1
+#         kind: Catalog
+#         chips: [...]
+#
+# Removal is deletion: uninstalling a component should delete its catalog
+# ConfigMap (charts that template the ConfigMap themselves get this for free).
+#
+# Known regression, accepted for now (2026-08): this task only ever creates.
+# A component's playbook end_plays when its feature flag is off, so flipping
+# a flag from true back to false leaves the chip ConfigMap — and its tile —
+# in place, where the pre-catalog ENABLE_* env vars used to hide it. In
+# practice components are not disabled once deployed, and the GitOps
+# migration (ADR 0031) moves publication into charts, where uninstall
+# deletes the ConfigMap.
+- name: Publish launchpad catalog ConfigMap {{ catalog_configmap_name }}
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: '{{ catalog_configmap_name }}'
+        namespace: '{{ catalog_namespace }}'
+        labels:
+          launchpad.scout.xnat.org/catalog: 'true'
+      data:
+        apps.yaml: '{{ catalog_document | to_nice_yaml(indent=2) }}'

@@ -28,6 +28,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "launchpad.serviceAccountName" . }}
+      automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -69,12 +70,8 @@ spec:
               value: {{ .Values.auth.oauth2ProxySignOutUrl | quote }}
             {{- end }}
             {{- end }}
-            - name: ENABLE_CHAT
-              value: {{ .Values.enableChat | quote }}
-            - name: ENABLE_PLAYBOOKS
-              value: {{ .Values.enablePlaybooks | quote }}
-            - name: ENABLE_MINIO
-              value: {{ .Values.enableMinio | quote }}
+            - name: LAUNCHPAD_CATALOG_DIRS
+              value: "/app/config/catalog{{ if .Values.catalog.discovery.enabled }}:/app/config/discovered{{ end }}"
             {{- if .Values.scoutEnv }}
             - name: SCOUT_ENV
               value: {{ .Values.scoutEnv | quote }}
@@ -92,14 +89,83 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+            - name: catalog
+              mountPath: /app/config/catalog
+              readOnly: true
+            {{- if .Values.catalog.discovery.enabled }}
+            - name: discovered
+              mountPath: /app/config/discovered
+              readOnly: true
+            {{- end }}
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
+            {{- end }}
+        {{- if .Values.catalog.discovery.enabled }}
+        - name: catalog-sidecar
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: '{{ .Values.catalog.discovery.image.repository }}:{{ .Values.catalog.discovery.image.tag }}'
+          imagePullPolicy: {{ .Values.catalog.discovery.image.pullPolicy }}
+          env:
+            # The discovery label is the publisher/sidecar contract (ADR
+            # 0034) — the same fixed string appears in the scout_common
+            # launchpad_catalog task and the authoring docs. Changing it is
+            # an API migration, not a configuration.
+            - name: LABEL
+              value: launchpad.scout.xnat.org/catalog
+            - name: LABEL_VALUE
+              value: 'true'
+            - name: FOLDER
+              value: /app/config/discovered
+            - name: NAMESPACE
+              value: {{ .Values.catalog.discovery.namespace | quote }}
+            - name: RESOURCE
+              value: configmap
+            - name: UNIQUE_FILENAMES
+              value: 'true'
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+          resources:
+            {{- toYaml .Values.catalog.discovery.resources | nindent 12 }}
+          volumeMounts:
+            - name: discovered
+              mountPath: /app/config/discovered
+            - name: kube-api-access
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
+        {{- end }}
       volumes:
+        - name: catalog
+          configMap:
+            name: {{ include "launchpad.fullname" . }}-catalog
+        {{- if .Values.catalog.discovery.enabled }}
+        - name: discovered
+          emptyDir:
+            sizeLimit: {{ .Values.catalog.discovery.sizeLimit }}
+        - name: kube-api-access
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3607
+              - configMap:
+                  name: kube-root-ca.crt
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+              - downwardAPI:
+                  items:
+                    - path: namespace
+                      fieldRef:
+                        fieldPath: metadata.namespace
+        {{- end }}
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

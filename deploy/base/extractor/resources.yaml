@@ -1,0 +1,232 @@
+# Extractor: HL7-log ingest workers (ADR 0030/0031). Two Scout-owned OCI charts:
+# hl7log-extractor (Java/Temporal, splits+uploads logs then triggers ingest) and
+# hl7-transformer (Spark/Python, HL7 -> Delta Lake). dependsOn temporal-bootstrap
+# (share temporal-internal-frontend), postgres-cluster (ingest DB), minio-tenant.
+# Fixed-name secrets seeded by CI/site or SOPS/ESO, NEVER in git: postgres-secret
+# (ingest DB creds; transformer envFrom + extractor SPRING_DATASOURCE_PASSWORD),
+# s3-secret (lake writer AWS creds). Modality map is chart-owned (no ConfigMap).
+# S3 connection env below is non-secret; creds ride the s3-secret.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s3-env
+  namespace: '${scout_extractor_namespace}'
+data:
+  AWS_ENDPOINT_URL: '${s3_endpoint}'
+  AWS_ALLOW_HTTP: 'true'
+  AWS_REGION: '${s3_region}'
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hl7log-extractor
+  namespace: '${scout_extractor_namespace}'
+spec:
+  interval: 30m
+  # Pinned in versions.yaml (hl7log_extractor_chart_version); GitOps lane owns the
+  # real version via its OCIRepository (ADR 0030/0031). Placeholder until stamped.
+  chart:
+    spec:
+      chart: hl7log-extractor
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${scout_extractor_namespace}'
+  values:
+    # Image repo/tag build-lane-stamped at config-artifact publish; placeholder here.
+    image:
+      repository: ghcr.io/washu-tag/hl7log-extractor
+      tag: latest
+    service:
+      type: ClusterIP
+      port: 8080
+    envFrom:
+      - secretRef:
+          name: s3-secret
+      - configMapRef:
+          name: s3-env
+    env:
+      - name: TZ
+        value: '${timezone}'
+      - name: JAVA_TOOL_OPTIONS
+        value: '-XX:MaxRAMPercentage=${hl7log_extractor_jvm_heap_max_ram_percentage} -XX:+UseContainerSupport'
+      # Datasource password from postgres-secret; env override beats application.yaml.
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: postgres-secret
+            key: DB_PASSWORD
+    resources:
+      requests:
+        cpu: '${hl7log_extractor_resources_requests_cpu}'
+        memory: '${hl7log_extractor_resources_requests_memory}'
+      limits:
+        cpu: '${hl7log_extractor_resources_limits_cpu}'
+        memory: '${hl7log_extractor_resources_limits_memory}'
+    # HL7 logs mounted from node (on-prem); HostToContainer surfaces rotated logs.
+    volumes:
+      - name: data
+        hostPath:
+          path: '${extractor_data_dir}'
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
+        mountPropagation: HostToContainer
+    livenessProbe:
+      httpGet:
+        path: /actuator/health/liveness
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /actuator/health/readiness
+        port: 8080
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    config:
+      application:
+        management:
+          metrics:
+            tags:
+              namespace: '${scout_extractor_namespace}'
+        s3:
+          endpoint: '${s3_endpoint}'
+          region: '${s3_region}'
+          path-style-access: true
+        spring:
+          datasource:
+            url: 'jdbc:postgresql://${postgres_cluster_name}-rw.${postgres_cluster_namespace}:${db_port}/${ingest_postgres_table_name}'
+            username: '${postgres_user}'
+          temporal:
+            connection:
+              target: 'temporal-internal-frontend.${scout_extractor_namespace}:7236'
+        scout:
+          workflowArgDefaults:
+            ingestHl7Log:
+              logsRootPath: ${hl7logs_root_dir}
+              scratchSpaceRootPath: '${scratch_path}'
+              hl7OutputPath: '${hl7_path}'
+              splitAndUploadTimeout: ${hl7log_extractor_timeout}
+              splitAndUploadHeartbeatTimeout: ${hl7log_extractor_heartbeat_timeout}
+              splitAndUploadConcurrency: ${hl7log_extractor_concurrency}
+            ingestHl7ToDeltaLake:
+              deltaIngestTimeout: ${hl7_transformer_timeout}
+              deriveDeltaTablesTimeout: ${hl7_transformer_derive_timeout}
+              reportTableName: '${report_delta_table_name}'
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hl7-transformer
+  namespace: '${scout_extractor_namespace}'
+spec:
+  interval: 30m
+  # Pinned in versions.yaml (hl7_transformer_chart_version); GitOps lane owns the
+  # real version via its OCIRepository (ADR 0030/0031). Placeholder until stamped.
+  chart:
+    spec:
+      chart: hl7-transformer
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${scout_extractor_namespace}'
+  values:
+    # Image repo/tag build-lane-stamped at config-artifact publish; placeholder here.
+    image:
+      repository: ghcr.io/washu-tag/hl7-transformer
+      tag: latest
+    initContainers:
+      # Guard the Temporal-before-DNS startup race: block until the frontend
+      # resolves, using the app image (same glibc resolver). imagePullPolicy is
+      # explicit because values-specified init containers default to Always on a
+      # :latest tag, breaking air-gapped/k3s nodes with the image preloaded.
+      # SECOND image literal (values.image is the main container's): stamp both.
+      - name: wait-for-temporal-dns
+        image: ghcr.io/washu-tag/hl7-transformer:latest
+        imagePullPolicy: IfNotPresent
+        command:
+          - python3
+          - -c
+          - |
+            import socket, time
+            while True:
+                try:
+                    socket.gethostbyname('temporal-internal-frontend')
+                    break
+                except OSError:
+                    print('waiting for dns...', flush=True)
+                    time.sleep(2)
+    envFrom:
+      - secretRef:
+          name: s3-secret
+      - configMapRef:
+          name: s3-env
+      - secretRef:
+          name: postgres-secret
+    env:
+      - name: TEMPORAL_ADDRESS
+        value: 'temporal-internal-frontend.${scout_extractor_namespace}:7236'
+      - name: TEMPORAL_NAMESPACE
+        value: default
+      - name: REPORT_DELTA_TABLE_NAME
+        value: '${report_delta_table_name}'
+      - name: TRINO_HOST
+        value: '${trino_rw_endpoint_host}'
+      - name: TRINO_PORT
+        value: '${trino_rw_endpoint_port}'
+      - name: TRINO_USER
+        value: '${trino_user}'
+      - name: TRINO_CATALOG
+        value: delta
+      - name: TRINO_SCHEME
+        value: http
+      - name: TRINO_VIEW_ENABLED
+        value: '${trino_view_enabled}'
+    # Memory: requests = spark_memory (1G -> 1Gi), limits = 4x for Spark off-heap.
+    resources:
+      requests:
+        cpu: '${hl7_transformer_cpu_request}'
+        memory: '${hl7_transformer_memory_request}'
+      limits:
+        cpu: '${hl7_transformer_cpu_limit}'
+        memory: '${hl7_transformer_memory_limit}'
+    volumes:
+      - name: data
+        hostPath:
+          path: '${extractor_data_dir}'
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
+        mountPropagation: HostToContainer
+    ports:
+      - containerPort: 8000
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: 8000
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 30
+    spark:
+      executor:
+        memory: '${hl7_transformer_spark_memory}'
+    # Chart-owned spark-defaults.conf (ADR 0031). on-prem = MinIO + path-style;
+    # S3 creds ride the s3-secret envFrom, never this block. Modality map = chart default.
+    sparkDefaults:
+      enabled: true
+      mode: on-prem
+      shufflePartitions: ${spark_sql_shuffle_partitions}
+      hiveMetastoreUri: '${hive_metastore_endpoint}'
+      warehouseDir: '${delta_lake_path}'
+      s3Region: '${s3_region}'
+      s3Endpoint: '${s3_endpoint}'

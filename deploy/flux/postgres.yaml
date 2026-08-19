@@ -1,0 +1,63 @@
+# postgres DAG: operator (L1) then Cluster (L2a), split so the Cluster CR never
+# reconciles before the CNPG CRDs exist. Both consume OCIRepository scout-config
+# and the cluster-vars ConfigMap for ${...} substitutions.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: postgres-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/postgres/operator
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-operators-foundation
+  # No healthChecks block: Flux ignores it under wait:true (wait already health-checks
+  # everything). CR gates below use healthCheckExprs, like the other operators.
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: postgres-cluster
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/postgres/cluster
+  prune: true
+  wait: true
+  timeout: 10m
+  dependsOn:
+    - name: scout-core-foundation
+    - name: postgres-operator
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  # `current` only, no `failed`: CNPG reports Ready=False / applied=false during
+  # NORMAL transients (cold initdb, single-instance restart, owner-role-before-
+  # Database first-pass race). Flux evaluates failed first and fail-fasts, so a
+  # `failed` expr keyed on those would abort the wait and (no retryInterval) block
+  # dependents for the full 30m interval. Let the 10m timeout be the only failure
+  # path (CNPG's own Flux-example pattern).
+  healthCheckExprs:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      current: status.conditions.exists(e, e.type == 'Ready' && e.status == 'True')
+    # Gate on Databases too (status.applied): CNPG reconciles roles + Database CRs
+    # AFTER Cluster Ready, so without this a dependent (or the hive/db grant Job)
+    # could run before its DB/owner role exists.
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Database
+      current: has(status.applied) && status.applied == true

@@ -50,12 +50,11 @@ minio_buckets:
   - name: '{{ lake_bucket }}'
   - name: '{{ hl7_raw_bucket }}'
   - name: '{{ scratch_bucket }}'
-  # Versioning enabled so a corrupt bundle PUT can be rolled back to a
-  # prior object version. Per ADR 0021 — the OPA bundle is the only
-  # bucket that needs versioning today; existing buckets stay
-  # unversioned to avoid the storage overhead on large objects.
   - name: '{{ opa_bundles_bucket }}'
-    versioned: true
+
+# Buckets the bootstrap Job enables object versioning on (ADR 0021).
+minio_versioned_buckets:
+  - '{{ opa_bundles_bucket }}'
 
 # S3 User credentials
 minio_users:

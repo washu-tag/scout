@@ -58,22 +58,27 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p digests
-          # Scout-built images have :latest; the two vendored-upstream images do
-          # not, so seed them from their VERSION file -- the same source
-          # derive-version tags the published image from, kept current by Renovate
-          # -- unless a dispatch override is given. Pin by @digest; the tag is only
-          # a label (hauler copies by digest).
+          # superset/keycloak have a real semver VERSION file (overridable). The 6
+          # Scout images are versioned "latest" in-repo, so seed the newest build-lane
+          # tag (0.YYYYMMDD.N), not :latest, or stamp_config fail-closes downstream.
           for name in hl7log-extractor hl7-transformer hl7-listener scout-notebook \
                       launchpad report-viewer superset keycloak; do
             case "${name}" in
               superset) src="${SUPERSET_TAG:-$(cat helm/superset/VERSION)}" ;;
               keycloak) src="${KEYCLOAK_TAG:-$(cat keycloak/VERSION)}" ;;
-              *) src="latest" ;;
+              # newest build-lane tag (oras reuses the GHCR login + follows pagination).
+              # Separate the registry call from the filter so an oras/auth failure is
+              # not misreported as a missing tag.
+              *)
+                tags="$(oras repo tags "${REGISTRY}/washu-tag/${name}")" \
+                  || { echo "::error::oras repo tags failed for ${name} (registry/auth error, not a missing tag)"; exit 1; }
+                src="$(printf '%s\n' "${tags}" | grep -E '^0\.[0-9]{8}\.[0-9]+$' | sort -V | tail -1 || true)"
+                [ -n "${src}" ] || { echo "::error::no build-lane tag (0.YYYYMMDD.N) published for ${name}"; exit 1; } ;;
             esac
             repo="${REGISTRY}/washu-tag/${name}"
             digest="$(docker buildx imagetools inspect "${repo}:${src}" --format '{{json .Manifest}}' | jq -r '.digest')"
             if [ "${digest#sha256:}" = "${digest}" ]; then
-              echo "::error::${repo}:${src} is not published in ghcr. If VERSION is ahead of the last build, re-run with the *_tag override set to a currently-published tag."
+              echo "::error::${repo}:${src} not found in ghcr (tag vanished between listing and inspect, or VERSION ahead of last build). Re-run; superset/keycloak also take the *_tag override."
               exit 1
             fi
             cosign sign --key env://COSIGN_PRIVATE_KEY \
@@ -85,9 +90,15 @@ jobs:
         run: |
           set -euo pipefail
           echo "VERSION=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          # The OCI charts (in components.txt since #618) aren't published until
+          # seed-charts.yaml runs, so the first haul seeds ONLY the 8 images and has
+          # no predecessor to carry charts from. Render the images-only subset; the
+          # charts/ repos would else fail resolve_refs closed ("neither rebuilt nor
+          # carried"). seed-charts then carries these images and folds the charts in.
+          grep -v '/charts/' tooling/manifest/components.txt > images-only.txt
           python3 tooling/manifest/build_haul.py \
             --digests-dir digests \
-            --components tooling/manifest/components.txt \
+            --components images-only.txt \
             --predecessor "" \
             --name scout > haul.yaml
           echo "--- haul.yaml ---"; cat haul.yaml

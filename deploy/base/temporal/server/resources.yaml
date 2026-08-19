@@ -1,0 +1,87 @@
+# Temporal server (ingest-slice orchestrator). External persistence, so dependsOn
+# both datastores: Cassandra (default store), Elasticsearch (visibility store).
+# Namespace owned by scout-extractor-foundation, not declared here (avoids
+# co-ownership/prune conflicts). Frontend JWT authz + web-UI ingress/OIDC are
+# omitted (separate Keycloak-realm/auth-overlay workstream), which is why Keycloak
+# is not a dependsOn. Datastore creds referenced by fixed name (existingSecret).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: temporal
+  namespace: '${scout_extractor_namespace}'
+spec:
+  interval: 1h
+  url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: temporal
+  namespace: '${scout_extractor_namespace}'
+spec:
+  interval: 30m
+  # Mirrors Ansible helm timeout: chart's schema-setup Jobs (Cassandra keyspace +
+  # ES visibility index) run at install and take a while.
+  timeout: 15m
+  # Pinned in versions.yaml (temporal_version), Renovate-tracked there. Literal
+  # mirror, not stamped (stamper covers only Scout charts); keep in lockstep.
+  chart:
+    spec:
+      chart: temporal
+      version: '1.2.0'
+      sourceRef:
+        kind: HelmRepository
+        name: temporal
+        namespace: '${scout_extractor_namespace}'
+  values:
+    # k3s/air-gapped: no docker-in-schema-job, no bundled ES (own ECK cluster).
+    shims:
+      dockerize: false
+      elasticsearchTool: false
+    server:
+      replicaCount: 1
+      # Dev defaults for all server roles; overlays tune.
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          cpu: 2
+          memory: 2Gi
+      # Internal frontend bypasses public-frontend authz; bootstrap Job + workers use it.
+      internal-frontend:
+        enabled: true
+      config:
+        namespaces:
+          create: true
+        persistence:
+          defaultStore: default
+          visibilityStore: visibility
+          datastores:
+            default:
+              cassandra:
+                hosts: '${cassandra_cluster_name}-${cassandra_datacenter_name}-service.${scout_extractor_namespace}'
+                port: 9042
+                keyspace: temporal
+                user: user
+                # Superuser secret from cass-operator (fixed name).
+                existingSecret: '${cassandra_cluster_name}-superuser'
+                secretKey: password
+                replicationFactor: 1
+                consistency:
+                  default:
+                    consistency: local_quorum
+                    serialConsistency: local_serial
+            visibility:
+              elasticsearch:
+                version: v7 # All ES versions (7/8/9) use the v7 template format
+                url:
+                  scheme: http # TLS disabled on Elasticsearch for simplicity
+                  host: '${elasticsearch_cluster_name}-es-http.${scout_extractor_namespace}:9200'
+                username: elastic
+                # elastic-user secret from ECK (fixed name).
+                existingSecret: '${elasticsearch_cluster_name}-es-elastic-user'
+                secretKey: elastic
+                logLevel: error
+                indices:
+                  visibility: temporal_visibility_v1

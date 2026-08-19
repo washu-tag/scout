@@ -1,0 +1,50 @@
+# Flux Kustomizations for trino (Phase 3 DAG). Pulls config artifact (OCIRepository
+# scout-config) + cluster-vars for ${...} subst; dependsOn reproduces Ansible order.
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: trino-ro
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/trino/ro
+  prune: true
+  wait: true
+  timeout: 15m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: minio-tenant
+    - name: hive-metastore
+    - name: opa
+    - name: keycloak-realm
+    - name: scout-analytics-foundation
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: trino-rw
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/trino/rw
+  prune: true
+  wait: true
+  timeout: 15m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: minio-tenant
+    - name: hive-metastore
+    - name: scout-extractor-foundation

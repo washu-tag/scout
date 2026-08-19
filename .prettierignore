@@ -3,3 +3,5 @@ helm/**/*.yaml
 report-viewer/**/static/assets/**
 report-viewer/**/dist/**
 report-viewer/**/build/**
+# Vendored upstream manifests (keycloak-config-cli CRDs + operator); keep byte-exact
+deploy/base/keycloak/operator/upstream/
