@@ -2,7 +2,7 @@ import logging
 from contextlib import contextmanager
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
@@ -92,7 +92,11 @@ def extract_people_from_obr_field(column: str) -> Column:
 
 
 @contextmanager
-def spark_activity_session(app_name: str, health_file: Optional[Path] = None):
+def spark_activity_session(
+    app_name: str,
+    health_file: Optional[Path] = None,
+    on_spark_failure: Optional[Callable[[], None]] = None,
+):
     """Yield a Hive-enabled Spark session for a Temporal activity, owning the full
     session lifecycle + error-handling contract shared by the ingest and derive
     activities:
@@ -110,11 +114,14 @@ def spark_activity_session(app_name: str, health_file: Optional[Path] = None):
           success, never a retryable failure;
         - else on a genuine Spark connectivity failure (``Py4JError`` /
           ``ConnectionError``): append the message to ``health_file`` (marking the pod
-          unhealthy so k8s restarts it) and re-raise;
+          unhealthy so k8s restarts it), invoke ``on_spark_failure``, and re-raise;
         - else (any other error, including a genuine ``TimeoutError``): re-raise so
           Temporal's retry policy fires;
 
     * always clear the cache and stop the session on the way out.
+
+    ``on_spark_failure`` gets called when the spark JVM is unreachable. The
+    callback runs on the activity's worker thread; it must not block.
     """
     spark = None
     try:
@@ -147,6 +154,11 @@ def spark_activity_session(app_name: str, health_file: Optional[Path] = None):
                 # Write the error message to the health file
                 with health_file.open("a") as f:
                     f.write(message + "\n")
+            if on_spark_failure is not None:
+                try:
+                    on_spark_failure()
+                except Exception:
+                    activity.logger.exception("Error reporting Spark failure to worker")
             raise
         # Anything else (including a real TimeoutError) is re-raised untouched so
         # Temporal's retry policy fires.
@@ -267,6 +279,7 @@ def import_hl7_files_to_deltalake(
     report_table_name: str,
     health_file: Path,
     create_mapping: bool = True,
+    on_spark_failure: Optional[Callable[[], None]] = None,
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
     activity_info = activity.info()
@@ -274,7 +287,7 @@ def import_hl7_files_to_deltalake(
     activity_id = activity_info.activity_id
     success_paths = []
     with tempfile.TemporaryDirectory() as temp_dir, spark_activity_session(
-        "IngestHL7ToDeltaLake", health_file
+        "IngestHL7ToDeltaLake", health_file, on_spark_failure
     ) as spark:
         activity.heartbeat()
         activity.logger.info("Reading HL7 manifest file %s", hl7_manifest_file_path)
