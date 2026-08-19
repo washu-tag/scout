@@ -216,7 +216,7 @@ function Pie({
             />
           ))
         )}
-        {hovered !== null && wedges.length > 1 && (
+        {hovered !== null && hovered < wedges.length && wedges.length > 1 && (
           <path
             // Inner edge flush with the true rim, extending outward from
             // there, so it touches the disc without overlapping the gap
@@ -235,19 +235,21 @@ function Pie({
 
 function Categorical({ parts, pie }: { parts: Array<Segment & { fill: string }>; pie?: boolean }) {
   const [hovered, setHovered] = useState<number | null>(null);
+  // parts can shrink out from under a stale hovered index
+  const valid = hovered !== null && hovered < parts.length ? hovered : null;
   return (
     <>
       {pie ? (
-        <Pie parts={parts} hovered={hovered} onHover={setHovered} />
+        <Pie parts={parts} hovered={valid} onHover={setHovered} />
       ) : (
-        <StackedBar parts={parts} hovered={hovered} onHover={setHovered} />
+        <StackedBar parts={parts} hovered={valid} onHover={setHovered} />
       )}
       {parts.map((p, i) => (
         <Label
           key={p.label}
           name={p.label}
           value={pct(p.pct)}
-          strong={i === hovered}
+          strong={i === valid}
           onHover={(on) => setHovered(on ? i : null)}
         />
       ))}
@@ -269,6 +271,8 @@ function Histogram({
   high: string;
 }) {
   const [hovered, setHovered] = useState<number | null>(null);
+  // buckets can shrink out from under a stale hovered index
+  const valid = hovered !== null && hovered < buckets.length ? hovered : null;
   return (
     <>
       {/* Height reserved whether or not anything is hovered, so the row cannot
@@ -285,25 +289,25 @@ function Histogram({
           fontWeight: 600,
         }}
       >
-        {hovered !== null && (
+        {valid !== null && (
           <span
             style={{
               position: 'absolute',
               whiteSpace: 'nowrap',
-              ...(hovered < buckets.length / 2
-                ? { left: `${(hovered / buckets.length) * 100}%` }
-                : { right: `${((buckets.length - 1 - hovered) / buckets.length) * 100}%` }),
+              ...(valid < buckets.length / 2
+                ? { left: `${(valid / buckets.length) * 100}%` }
+                : { right: `${((buckets.length - 1 - valid) / buckets.length) * 100}%` }),
             }}
           >
-            {num(buckets[hovered])}
+            {num(buckets[valid])}
           </span>
         )}
       </div>
-      <Bars buckets={buckets} max={max} hovered={hovered} onHover={setHovered} />
-      {hovered === null ? (
+      <Bars buckets={buckets} max={max} hovered={valid} onHover={setHovered} />
+      {valid === null ? (
         <RangeLabel low={low} high={high} />
       ) : (
-        <CenterLabel text={bucketLabels[hovered]} strong />
+        <CenterLabel text={bucketLabels[valid]} strong />
       )}
     </>
   );
