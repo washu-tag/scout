@@ -4,7 +4,7 @@ type Row = Record<string, unknown>;
 
 export type Segment = { label: string; count: number; pct: number };
 
-// An en dash, since a hyphen would run into the hyphens inside a date.
+// Range separator
 const RANGE = ' – ';
 
 export type Profile =
@@ -54,9 +54,8 @@ function countByEdges(values: number[], edges: number[]): number[] {
   return buckets;
 }
 
-// 1, 2, 5 or 10 times a power of ten: the smallest such step that keeps the
-// bucket count within target. Ages land on 5s and 10s, which read as age bands
-// rather than as wherever the youngest patient in the cohort happened to fall.
+// 1, 2, 5, or 10 times a power of ten: the smallest step that keeps the
+// bucket count within target, so ages land on round bands like 5s and 10s.
 function niceStep(span: number, target: number): number {
   const rough = span / target;
   const magnitude = 10 ** Math.floor(Math.log10(rough));
@@ -139,11 +138,11 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 // Time buckets are calendar intervals, not equal slices of the span. An equal
-// slice starting mid-March has no name, while a whole month is named completely
-// by "2021-03". Same ladder-and-grain approach d3 and Vega-Lite take.
+// slice starting mid-March has no name, while a whole month is named
+// completely by "2021-03".
 //
-// `unit` is how much time one label at this grain accounts for, which is what
-// decides whether a bucket needs its end spelled out.
+// `unit` is how much time one label at this grain covers, which decides
+// whether a bucket needs its end spelled out.
 type Grain = { slice: [number, number]; unit: number; coarser: Grain | null };
 
 const G_YEAR: Grain = { slice: [0, 4], unit: 365 * DAY, coarser: null };
@@ -158,10 +157,9 @@ type Interval = {
   floor: (t: number) => number;
   next: (t: number) => number;
   grain: Grain;
-  // A label names the whole bucket only when the bucket is one unit of its
-  // grain. Anything wider gets a range, because only one label shows at a time:
-  // there is no run of ticks to read the spacing off, so "2025-09-25" on a week
-  // bucket reads as a single day.
+  // A label names the whole bucket only when it spans one unit of its grain.
+  // Wider buckets get a range instead: only one label is ever visible, so
+  // "2025-09-25" on a week-wide bucket would read as a single day.
   oneUnit: boolean;
 };
 
@@ -222,11 +220,11 @@ const LADDER: Interval[] = [
   yearInterval(10),
 ];
 
-// A clock-time label only says which day it belongs to via the idle line, so
-// sub-day rungs are limited to cohorts that sit inside one day.
+// Sub-day rungs are limited to cohorts inside a single day, since a clock-time
+// label only says which day it belongs to via the idle line.
 //
 // Widths above a day are approximate, so the chosen rung can overshoot the
-// target by a bucket or two. Close enough for a bar count, and never unbounded.
+// target by a bucket or two, which is close enough for a bar count.
 function pickInterval(first: number, last: number, target: number): Interval {
   const withinOneDay = iso(first, G_DATE.slice) === iso(last, G_DATE.slice);
   const usable = LADDER.filter((iv) => withinOneDay || iv.grain !== G_TIME);
@@ -247,9 +245,9 @@ function temporalProfile(values: unknown[], widthAllows: number): Profile {
   const edges = buildEdges(interval.floor(first), last, interval.next);
   const buckets = countByEdges(times, edges);
 
-  // Bucket labels carry the fine detail, so the idle line carries one step of
-  // coarser context instead of repeating it in every bucket. On a cohort inside
-  // a single interval both ends match and it collapses to one label.
+  // The idle line carries one step of coarser context instead of repeating
+  // what the bucket labels already show. Inside a single interval, both ends
+  // match and it collapses to one label.
   const context = interval.grain.coarser ?? interval.grain;
   const label = (t: number) => iso(t, interval.grain.slice);
   return {
@@ -274,9 +272,8 @@ function identifierProfile(values: unknown[]): Profile {
 }
 
 // Square-root binning capped by what the column width can show. No floor: one
-// value gets one bucket, so the bar fills the cell instead of sitting at the
-// left as if it were a low reading. No spread means one bucket for the same
-// reason.
+// value gets one bucket so the bar fills the cell instead of reading as a low
+// value. No spread also collapses to one bucket.
 function bucketsFor(n: number, spread: boolean, widthAllows: number): number {
   if (!spread) return 1;
   return Math.max(1, Math.min(widthAllows, Math.ceil(Math.sqrt(n))));

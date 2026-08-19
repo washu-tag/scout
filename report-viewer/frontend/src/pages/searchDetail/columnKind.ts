@@ -34,8 +34,8 @@ function sampleValues(field: string, rows: Row[]): unknown[] {
 export function columnKind(field: string, rows: Row[], isDate = false): ColumnKind {
   const sample = sampleValues(field, rows);
 
-  // Arrays and structs have no scalar axis. Nothing projects one today, but a
-  // future projection would otherwise render as stringified objects.
+  // Arrays and structs have no scalar axis, so they render as none instead
+  // of stringified objects.
   if (sample.some((v) => typeof v === 'object')) return 'none';
 
   if (IDENTIFIER_FIELDS.has(field)) return 'identifier';

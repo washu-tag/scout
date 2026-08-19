@@ -4,20 +4,17 @@ import { profileColumn, type Profile, type Segment } from './columnStats';
 
 type Row = Record<string, unknown>;
 
-// Share order, not identity: one hue stepped by rank, so a filter that changes
-// the ranking cannot repaint segments. Steps are defined per theme in
-// theme.css, since the direction of "less prominent" flips with the background.
+// One hue stepped by rank, not identity, so a filter that reorders segments
+// doesn't repaint them. Steps live in theme.css since "more prominent" flips
+// direction between light and dark mode.
 const RAMP = ['var(--rv-profile-1)', 'var(--rv-profile-2)', 'var(--rv-profile-3)'];
-// Neither is a value in the column, so neither sits on the ramp. The rolled-up
-// tail is often the widest segment, which on the ramp made the largest region
-// the faintest.
+// Aggregates, not values, so neither sits on the ramp.
 const OTHER_FILL = 'var(--rv-profile-other)';
 const EMPTY_FILL = 'var(--rv-profile-empty)';
 
 const BAR_H = 18;
 const GAP = 2;
-// Sex reads better as a part of a whole than as a length. Keyed by name because
-// nothing about the values distinguishes it from any other short category list.
+// Sex reads better as a part of a whole than as a length.
 const PIE_FIELD = 'sex';
 // One bucket per ~6px so bars never go sub-pixel.
 const PX_PER_BUCKET = 6;
@@ -100,9 +97,8 @@ function Bars({
           />
         ))}
       </div>
-      {/* Hit columns absolutely over the whole cell, so the dead space above a
-          short bar is a target too. The cell is taller than this content
-          whenever a neighbouring column carries more label lines. */}
+      {/* Hit columns cover the whole cell, so the dead space above a short
+          bar is a target too. */}
       <div
         style={{ position: 'absolute', inset: 0, display: 'flex', gap: 1 }}
         onMouseLeave={() => onHover(null)}
@@ -138,8 +134,7 @@ function StackedBar({
             background: p.fill,
             borderRadius: 2,
             // A ring rather than a brighter fill, which would read as a
-            // different rank on a single-hue ramp. It also makes a 1.5% sliver
-            // findable when its label is hovered.
+            // different rank on a single-hue ramp.
             boxShadow: i === hovered ? 'inset 0 0 0 2px var(--rv-fg)' : undefined,
           }}
         />
@@ -148,13 +143,11 @@ function StackedBar({
   );
 }
 
-// Bigger than the bar height: a stacked bar's own row tops out at BAR_H, but
-// the label lines below it are usually what sets the cell's real height, so a
-// pie this size fills space that is already there rather than growing the row.
+// Bigger than the bar height: the label lines below usually set the cell's
+// real height, so a pie this size fills space that's already there.
 const PIE_SIZE = 32;
 const GAP_STROKE = 1.5;
-// Room for the hover halo to bulge past the true rim, so it never has to
-// share space with the gap stroke the way an inset ring did.
+// Room for the hover halo to bulge past the true rim.
 const HALO_MARGIN = 3;
 const HALO_WIDTH = 2;
 const SVG_SIZE = PIE_SIZE + HALO_MARGIN * 2;
@@ -168,9 +161,8 @@ function wedgePath(cx: number, cy: number, r: number, fromPct: number, toPct: nu
   return `M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} Z`;
 }
 
-// Just the curved boundary, no lines to center: the halo only ever traces the
-// hovered slice's arc, matching how Highcharts and Google Charts show a pie
-// hover state, and never touches the spokes.
+// Just the curved boundary, no lines to center, so the halo traces the arc
+// without drawing spokes toward the middle.
 function arcPath(cx: number, cy: number, r: number, fromPct: number, toPct: number): string {
   const angle = (pct: number) => (pct / 100) * 2 * Math.PI - Math.PI / 2;
   const point = (a: number): [number, number] => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
@@ -185,13 +177,9 @@ function arcPath(cx: number, cy: number, r: number, fromPct: number, toPct: numb
 // small to see still has its label underneath.
 //
 // Each wedge gets a stroke in the cell background color for spacing between
-// slices, the same gap every other segment in the row gets, drawn this way
-// because a conic-gradient has no notion of a border between stops.
-//
-// Hover draws a halo just outside the true rim instead of an inset ring: an
-// inset ring competes with that same gap stroke for the same few pixels,
-// which is what kept producing either an overlap or a floating gap. Sitting
-// outside it entirely means there is nothing left to share space with.
+// slices. Hover draws a separate halo just outside the true rim rather than
+// an inset ring, so it never competes with that gap stroke for the same
+// pixels.
 function Pie({
   parts,
   hovered,

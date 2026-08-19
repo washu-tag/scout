@@ -26,12 +26,7 @@ body {
   --rv-danger: #b00;
   --rv-success: #1a7a3a;
 
-  /* Column profile bars. Written out per theme rather than mixed from the
-     accent: mixing toward the surface steps toward the background, so on a dark
-     background the lowest rank lands on the background and disappears. Steps
-     run most to least prominent against --rv-surface-2, spaced so neighbours
-     stay apart from each other and not only from the background.
-     `other` and `empty` leave the hue because they are aggregates, not values. */
+  /* Column profile bars. */
   --rv-profile-1: #4477aa;
   --rv-profile-2: #7ba8d2;
   --rv-profile-3: #cfe3f5;
@@ -52,8 +47,7 @@ body {
     --rv-danger: #ff6b6b;
     --rv-success: #3fbf6a;
 
-    /* Same darkest-first order as the light steps. The range runs wider here
-       because every step has to clear the background, not just the first. */
+    /* Column profile bars dark. */
     --rv-profile-1: #4a7ba4;
     --rv-profile-2: #77aed8;
     --rv-profile-3: #cfe6fa;

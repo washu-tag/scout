@@ -152,12 +152,11 @@ export default function SearchDetailPage() {
     return Array.from(set).sort();
   }, [rowsQ.data]);
 
-  // The profile row sticks below the header, so it needs the header's rendered
-  // height rather than a guess at padding plus line-height.
-  // Callback ref, not an effect: the table only renders once the rows arrive, so
-  // an effect keyed on mount finds no header to measure. The height is floored
-  // because a fractional header plus a rounded-up offset leaves a slit that rows
-  // scroll through, and erring low overlaps instead, which is invisible.
+  // The profile row sticks below the header, so it needs the header's actual
+  // rendered height. A callback ref, not an effect, since the table only
+  // renders once rows arrive and an effect keyed on mount would find no
+  // header yet. Floored so a fractional height rounds down to a slight
+  // overlap rather than up to a visible gap.
   const [headerHeight, setHeaderHeight] = useState(28);
   const headerObserver = useRef<ResizeObserver | null>(null);
   const headerRowRef = useCallback((el: HTMLTableRowElement | null) => {
