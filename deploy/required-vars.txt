@@ -6,6 +6,8 @@
 # validate-deploy.yaml; regenerate with the snippet in that workflow when bases add
 # or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler
 # (Phase 5) validate a site's values against this list.
+acm_cert_arn
+alb_group_name
 cassandra_cluster_name
 cassandra_cpu_limit
 cassandra_cpu_request

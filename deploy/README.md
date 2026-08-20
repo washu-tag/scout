@@ -12,6 +12,10 @@ until CI switches `deploy-and-test` to deploy from it. See
   so a CR never dry-runs before its CRD exists.
 - `flux/<component>.yaml` — the Flux `Kustomization` CRs pointing at the bases and
   wiring the DAG (`dependsOn` + CEL `healthChecks`), reproducing the Ansible order.
+- `base/edge-{on-prem,aws}/` — the per-mode ingress/auth edge (ADR 0035): raw
+  manifests that can't ride a chart value, on-prem Traefik forwardAuth Middlewares
+  vs aws ALB-native-OIDC Ingresses. Not in the shared `flux/` DAG; a site reconciles
+  exactly one via a `scout-edge` Kustomization pointing at `./base/edge-${service_mode}`.
 
 ## Conventions
 - **Site scalars are `${var}` postBuild substitutions** from a `cluster-vars`

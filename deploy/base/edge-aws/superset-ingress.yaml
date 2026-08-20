@@ -1,0 +1,42 @@
+# Public ALB for Superset, gated by ALB-native OIDC against the Keycloak scout
+# realm. The ALB reuses the oauth2-proxy Keycloak client (via the alb-oidc-keycloak
+# Secret), so the realm's oauth2-proxy-user approval gate still applies -- ALB OIDC
+# just needs a successful token exchange, and the client is default-deny. Mirrors
+# adapt-dev apps/scout-core/ingress.yaml (scout-analytics). scheme via the `alb`
+# IngressClassParams. Superset also runs its own app-level Keycloak OAuth for RBAC.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: superset-alb
+  namespace: '${scout_analytics_namespace}'
+  annotations:
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: ${acm_cert_arn}
+    alb.ingress.kubernetes.io/group.name: ${alb_group_name}
+    alb.ingress.kubernetes.io/auth-type: oidc
+    alb.ingress.kubernetes.io/auth-on-unauthenticated-request: authenticate
+    alb.ingress.kubernetes.io/auth-scope: 'openid email profile'
+    alb.ingress.kubernetes.io/auth-session-timeout: '604800'
+    alb.ingress.kubernetes.io/auth-idp-oidc: |
+      {
+        "Issuer": "${keycloak_realm_url}",
+        "AuthorizationEndpoint": "${keycloak_realm_url}/protocol/openid-connect/auth",
+        "TokenEndpoint": "${keycloak_realm_url}/protocol/openid-connect/token",
+        "UserInfoEndpoint": "${keycloak_realm_url}/protocol/openid-connect/userinfo",
+        "SecretName": "alb-oidc-keycloak"
+      }
+spec:
+  ingressClassName: alb
+  rules:
+    - host: 'superset.${server_hostname}'
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: superset
+                port:
+                  number: 8088

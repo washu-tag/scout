@@ -1,6 +1,8 @@
 {
   "_comment": "Sample site values for gen_cluster_vars.py. Scalars mirror the Ansible role defaults (scout_common, cassandra, elasticsearch, extractor, postgres, minio, valkey, oauth2-proxy, keycloak); server_hostname and extractor_data_dir are site-specific placeholders. The four nested dicts mirror the nested Ansible defaults that get flattened into cluster-vars. Keys starting with a name that is NOT in required-vars.txt (hive_metastore_instance[_readonly], keycloak_subdomain, trino_rw_release_name, trino_rw_namespace, the *_default/postgres_parameters dicts) are derivation inputs only and are not emitted.",
 
+  "acm_cert_arn": "",
+  "alb_group_name": "",
   "cassandra_cluster_name": "cassandra-cluster",
   "cassandra_cpu_limit": "2",
   "cassandra_cpu_request": "100m",
