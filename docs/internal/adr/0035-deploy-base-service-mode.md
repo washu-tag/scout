@@ -1,8 +1,8 @@
 # ADR 0035: Cloud vs On-Prem Service Mode for the GitOps Deploy Base
 
 **Date**: 2026-08
-**Status**: Proposed. The storage/identity edge is implemented (branch
-`feat/deploy-service-mode`); the ingress edge remains to build.
+**Status**: Proposed. Both the storage/identity and ingress/auth edges are
+implemented on branch `feat/deploy-service-mode`.
 **Decision Owner**: TAG Team
 
 ## Context
@@ -51,12 +51,18 @@ other `${var}`. How each mode delta is expressed depends on its shape:
    inline. Applied to trino (ro + rw: catalog + `serviceAccount` + `envFrom`) and both
    extractor workers (`envFrom` + `volumes`/`volumeMounts` + the aws `serviceAccount`).
 
-3. **Structural / raw-manifest deltas: per-mode flux edge sets.** The one delta that is
-   neither a chart value nor a HelmRelease is the **auth/ingress edge**: raw Traefik
-   `Middleware` forwardAuth + the Keycloak `Ingress` (on-prem) vs ALB-OIDC ingress
-   annotations (cloud). A ConfigMap `valuesFrom` cannot reach raw manifests, so these live
-   in `flux/edge-on-prem/` vs `flux/edge-aws/` and a site reconciles exactly one. This
-   edge is scoped here but **not yet implemented**; the storage edge (1 + 2) is.
+3. **Structural / raw-manifest deltas: per-mode edge sets under `base/edge-{on-prem,aws}/`.**
+   The auth/ingress edge is raw manifests a ConfigMap `valuesFrom` cannot reach, so it
+   ships as two kustomize dirs a site selects between (a `scout-edge` Kustomization ->
+   `./base/edge-${service_mode}`), not in the shared `flux/` DAG. on-prem carries the
+   oauth2-proxy Traefik forwardAuth `Middleware`s, relocated out of `base/oauth2-proxy`
+   because they are Traefik CRDs an aws cluster has no controller for (the one required
+   base change; everything else on-prem is a standard Ingress that is simply inert in
+   aws). aws carries public ALB Ingresses with ALB-native OIDC, mirroring the live
+   adapt-dev pattern: the ALB reuses the same `oauth2-proxy` Keycloak client (via the
+   `alb-oidc-keycloak` Secret), so the realm's `oauth2-proxy-user` approval gate still
+   applies, and Keycloak is exposed un-gated (it is the OP) with its master-realm admin
+   paths blocked by an ALB fixed-response.
 
 **MinIO is not an edge.** Earlier framing had the in-cluster MinIO Tenant as on-prem-only,
 with the open question of how storage consumers' `dependsOn: minio-tenant` survives in
@@ -122,8 +128,14 @@ analytics apps) stays mode-agnostic; only the edge moves.
 - `minio-tenant` is mode-independent (resolved); opa + the Keycloak SPI writer are
   deliberately left on MinIO. Both are revisitable if an aws cluster ever needs to drop
   MinIO, gated on opa chart SA support + a bundle-reader role.
-- The **ingress edge remains**: raw Traefik vs ALB manifests via `flux/edge-{on-prem,aws}/`,
-  the one part of ADR 0011's mode not yet expressed in the base.
+- The **ingress edge is implemented** as `base/edge-{on-prem,aws}/`: on-prem Traefik
+  forwardAuth Middlewares vs aws ALB-native-OIDC Ingresses (Keycloak un-gated + an admin
+  fixed-response; Superset ALB-OIDC). Adds `acm_cert_arn` + `alb_group_name` to the
+  contract and `alb-oidc-keycloak` (the ALB's copy of the oauth2-proxy client creds) to
+  the site-seeded secrets; scheme comes from the `alb`/`alb-internal` IngressClassParams
+  (Layer-0, which override the per-ingress annotation on EKS Auto). Only Superset +
+  Keycloak are covered so far (the base's public components); jupyter, launchpad, and
+  monitoring follow as those components land in the base.
 
 ## Related
 
