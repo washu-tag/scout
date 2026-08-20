@@ -111,8 +111,6 @@ class MappingTableExtractor:
             self.process_stage_5()
             activity.logger.info("Mapping table derivation complete")
         finally:
-            # A mid-stage failure has to release the pins itself: the session-level
-            # `clearCache()` sweeps `cache()`d frames only, for the reason `unpin` gives.
             self.postprocess()
 
     def cache(self, df: DataFrame) -> DataFrame:
@@ -127,14 +125,7 @@ class MappingTableExtractor:
         return pinned_df
 
     def unpin(self, pinned_df: DataFrame) -> None:
-        """Release a pinned frame's blocks.
-
-        `DataFrame.unpersist()` cannot: it goes to the cache manager, which only knows
-        about `cache()`/`persist()` plans, while a local checkpoint's blocks belong to
-        the RDD underneath the frame. Reach that RDD through the bare `LogicalRDD` plan
-        `localCheckpoint` leaves behind. Only safe once nothing will read the frame
-        again — the blocks are the checkpoint, so it cannot be recomputed after this.
-        """
+        """Release a pinned frame's blocks."""
         plan = pinned_df._jdf.queryExecution().analyzed()
         plan_class = plan.getClass().getSimpleName()
         if plan_class != "LogicalRDD":
@@ -147,15 +138,7 @@ class MappingTableExtractor:
         plan.rdd().unpersist(False)
 
     def recache_existing_mapping(self):
-        """Reread the mapping table, pinned to the version this read observes.
-
-        Without `versionAsOf` the read is late-binding: a Delta write drops the cache of
-        every frame whose plan references the table it wrote, and the recompute then
-        resolves to post-merge state — so a frame's contents depend on when it happened
-        to be recomputed. Pinning holds each generation of derived frames to the
-        snapshot it was built against. Stages that must see an earlier stage's writes
-        call this again afterwards, which is what advances the version.
-        """
+        """Reread the mapping table, pinned to the version this read observes."""
         if self.existing_mapping_df is not None:
             self.existing_mapping_df.unpersist()
         version = (
