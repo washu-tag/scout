@@ -37,8 +37,7 @@ def create_exact_match_condition(df1: DataFrame, df2: DataFrame) -> Column:
 
 
 class _UnionFind:
-    """Disjoint-set over hashable vertices, with path compression. Iterative, so a
-    large connected component costs memory rather than a RecursionError."""
+    """Disjoint-set over hashable vertices, with path compression."""
 
     def __init__(self):
         self._parent: dict = {}
@@ -71,8 +70,6 @@ def entry_vertices(entry: MappingEntry) -> List[tuple]:
 def group_entries_by_component(entries: List[MappingEntry]) -> List[List[MappingEntry]]:
     """Partition entries into patient webs — the connected components of the graph
     described above.
-
-    Component order, and entry order within a component, follow input order.
     """
     union_find = _UnionFind()
     for entry in entries:
@@ -118,21 +115,7 @@ class MappingTableExtractor:
         return cached_df
 
     def pin(self, df: DataFrame) -> DataFrame:
-        """Materialize a batch-sized frame and cut its lineage.
-
-        `cache()` is not enough here, because a cached frame is still a *plan* rooted in
-        the mapping table. So (a) any Delta write drops the cache and the next read
-        silently re-derives the whole chain — 13m26s in preprod, §3.2 of
-        docs/internal/derive-performance.md — and (b) every downstream plan carries a
-        copy of that chain, which is what makes the plan trees in this file grow until
-        the driver dies building strings out of them (§3.9).
-
-        `localCheckpoint(eager=True)` replaces the plan with a single materialized RDD:
-        no reference to the table, nothing to invalidate, nothing to reprint. Blocks live
-        in the executor's block manager (MEMORY_AND_DISK) and are dropped by
-        `postprocess`. Only ever use this on batch-sized frames, and only where the frame
-        outlives a write — Delta already does exactly this to its own MERGE sources here.
-        """
+        """Materialize a batch-sized frame and cut its lineage."""
         pinned_df = df.localCheckpoint(eager=True)
         self.dataframes_to_unpersist.append(pinned_df)
         return pinned_df
@@ -237,8 +220,6 @@ class MappingTableExtractor:
             )
         )
 
-        # Stage 1's output, and the root of every plan stage 2 builds — pinned so that
-        # none of them carries the exact-match join and the ranking window underneath it.
         unique_ids_incoming_reports = self.pin(
             remaining_reports_ranked.filter(F.col("_rank") == 1).drop("_rank")
         )
@@ -246,11 +227,7 @@ class MappingTableExtractor:
             F.col("_rank") > 1
         ).drop("_rank")
 
-        # Pinned: nothing reads this until stage 5, by which point up to three merges have
-        # gone into the mapping table and dropped the cache of anything still rooted in
-        # it — this frame is built from an exact-match join against the table. Cached, it
-        # would be re-derived there against a table that now contains this batch's own
-        # inserts, so rows would exact-match themselves into the deferred set.
+        # Pinned: nothing reads this until stage 5
         self.deferred_reports_df = self.pin(
             exact_matches_df.unionByName(
                 duplicate_ids_incoming_reports
@@ -340,8 +317,6 @@ class MappingTableExtractor:
             "Calculated fully disjoint reports: %d", fully_disjoint_count
         )
 
-        # Pinned for the same reason: counted again after the merge, and unioned into
-        # this stage's output, which stage 3 then reads.
         incoming_reports_with_links_df = self.pin(
             filter_no_existing_mapping_df(
                 (F.col("mpi_count") > 1) | (F.col("epic_mrn_count") > 1)
@@ -374,8 +349,7 @@ class MappingTableExtractor:
             incoming_reports_with_links_df.count(),
             partial_existing_mapping_match_df.count(),
         )
-        # Stage 2's output, same reasoning one stage down: stages 3 and 4 read it, and
-        # neither should carry stage 2's counts and joins in its plan.
+        # Stage 2's output: stages 3 and 4 read it
         remaining_reports_df = self.pin(
             incoming_reports_with_links_df.unionByName(
                 partial_existing_mapping_match_df
@@ -400,13 +374,7 @@ class MappingTableExtractor:
             * For such reports without a partial match, create a new consistent row in the mapping table
         Return remaining reports for further stages
 
-        **Both frames here are pinned, because both are read across a merge.** A Delta
-        write drops the cache of every frame whose plan references the table it wrote, so
-        the anti-join below — built after the first merge, from frames produced before it
-        — used to re-derive the whole stage-1/2 chain and re-read the corpus-sized mapping
-        table cold. Measured in preprod at 13m26s to resolve 18 rows. `pin()` is what
-        makes it read what it says it reads; see §3.2 of
-        docs/internal/derive-performance.md.
+        Both frames here are pinned, because both are read across a merge.
 
         :param df: DataFrame of data to be processed
         """
@@ -414,9 +382,6 @@ class MappingTableExtractor:
         exactly_one_id_specified_condition = (
             F.col("mpi").isNull() != F.col("epic_mrn").isNull()
         )
-        # Pinned, not cached: this frame is read three times below — twice by the joins,
-        # once by the anti-join — and it is the root of every plan this stage builds, so
-        # cutting the stage-1/2 chain out of it here is what keeps those plans small.
         reports_with_single_id_df = self.pin(
             df.filter(exactly_one_id_specified_condition)
         )
@@ -442,19 +407,12 @@ class MappingTableExtractor:
 
         single_id_reports_with_epic_mrn_match_df = process_single_id_reports("epic_mrn")
 
-        # Pinned rather than cached because it has to survive the merge below — this is
-        # the frame whose post-merge re-derivation cost 13m26s — and because both the
-        # anti-join and the merge read it, and neither should inherit the two joins that
-        # produced it.
         reports_with_partial_existing_match_df = self.pin(
             single_id_reports_with_mpi_match_df.unionByName(
                 single_id_reports_with_epic_mrn_match_df
             ).dropDuplicates(["primary_report_identifier"])
         )
 
-        # These two log lines bracket the actions — each count is near-free, since `pin`
-        # already materialized the frame it counts — so the gap between each pair times
-        # one phase. See §3.2 in docs/internal/derive-performance.md for what they mean.
         partial_match_count = reports_with_partial_existing_match_df.count()
         activity.logger.info(
             "Stage 3 partial-match join resolved %d records", partial_match_count
@@ -466,11 +424,6 @@ class MappingTableExtractor:
                 partial_match_count,
             )
 
-        # The complement: single-id reports whose identifier matches nothing in the
-        # table, which therefore start a patient of their own. Both inputs are pinned, so
-        # this reads the pre-merge partial-match set — which is also the set that was
-        # counted and merged above. Cached, it would instead be re-derived against the
-        # just-written table, and the set excluded here need not have been the set merged.
         reports_with_no_existing_match_df = self.pin(
             reports_with_single_id_df.join(
                 reports_with_partial_existing_match_df.select(
@@ -502,8 +455,6 @@ class MappingTableExtractor:
 
         activity.logger.info("Stage 3 completed on mapping table derivation")
 
-        # `df` is pinned by stage 2, so stage 4's collect of this reads the batch rows
-        # rather than re-deriving stages 1 and 2 across the merges above.
         return (
             df.filter(~exactly_one_id_specified_condition)
             .withColumn("scout_patient_id", F.lit(None).cast(StringType()))
@@ -512,8 +463,7 @@ class MappingTableExtractor:
 
     def fetch_existing_matching_ids(self, mpis: set, epic_mrns: set) -> List:
         """One round of the closure below: every mapping row carrying one of these
-        identifiers. Two broadcast semi-joins rather than one join on an OR condition,
-        which Spark would have to answer with a nested-loop join."""
+        identifiers."""
         matches = []
         if mpis:
             matches.append(
@@ -556,8 +506,6 @@ class MappingTableExtractor:
         """
         known_mpis = {e.mpi for e in seed_entries if e.mpi is not None}
         known_epic_mrns = {e.epic_mrn for e in seed_entries if e.epic_mrn is not None}
-        # Only not-yet-searched identifiers go into a round; `known_*` is what stops the
-        # frontier from re-expanding into ground already covered.
         frontier_mpis, frontier_epic_mrns = set(known_mpis), set(known_epic_mrns)
 
         found: dict = {}
@@ -567,8 +515,6 @@ class MappingTableExtractor:
             rounds += 1
             frontier_mpis, frontier_epic_mrns = set(), set()
             for row in rows:
-                # The two semi-joins overlap when a row matches on both identifiers,
-                # and a row already fetched reveals nothing new.
                 if row["primary_report_identifier"] in found:
                     continue
                 entry = MappingEntry.from_df_row(row, True)
@@ -606,7 +552,7 @@ class MappingTableExtractor:
         activity.logger.info("Stage 4 input count: %d", len(rows))
         incoming_cases = [MappingEntry.from_df_row(row) for row in rows]
         if not incoming_cases:
-            return  # nothing to resolve, and nothing to merge
+            return
 
         existing_cases = self.collect_existing_closure(incoming_cases)
         patient_webs = group_entries_by_component(incoming_cases + existing_cases)
@@ -663,10 +609,6 @@ class MappingTableExtractor:
                             bulk_updates.append(entry)
 
         if inconsistent_webs:
-            # One summary, not one line per web: the per-web message carried no
-            # identifying detail (deliberately — identifiers in Loki would be PHI, see
-            # docs/internal/patient_ids.md), so N copies of it said nothing N did not.
-            # The count and the denominator are the part worth alerting on.
             activity.logger.info(
                 "Inconsistent patient IDs found in %d of %d patient webs; every linked "
                 "report mapping marked consistent=false and its prior value copied to "
