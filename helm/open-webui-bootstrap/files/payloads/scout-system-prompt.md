@@ -243,7 +243,7 @@ WHERE (
 ```
 
 Three other things to know:
-- **`[^.;:]*`** — match up to 40 chars between the negation phrase and the finding, **but stop at a sentence terminator** (`.`, `;`, `:`). This prevents "No mediastinal adenopathy. Pulmonary nodule present" (negation in sentence 1, finding in sentence 2) from being incorrectly excluded.
+- **`[^.;:]*`** — match **any** distance between the negation phrase and the finding, **but stop at a sentence terminator** (`.`, `;`, `:`). That boundary, not a character count, is what keeps it safe: it prevents "No mediastinal adenopathy. Pulmonary nodule present" (negation in sentence 1, finding in sentence 2) from being wrongly excluded. Do not reintroduce a counted window like `{0,40}` — list-style negation is everywhere in radiology and overruns any fixed number. "No intracranial mass, hemorrhage or ischemic infarct seen" puts 43 characters between cue and finding, so a 40-char window lets a plainly negative report into the cohort.
 - **Trino does support negative lookbehind** (Joni regex engine), but only fixed-width lookbehind. Variable-length is rejected ("invalid pattern in look-behind"), so you can't do `(?<!\b(no|without)\b\W{1,40})...`. The fixed-width `(?<![a-zA-Z])` form used above is fine.
 - **Negation phrases** to include: `(?<![a-zA-Z])no(?![a-zA-Z])`, `without`, `negative for`, `absence of`, `rule out` / `rules out` / `ruled out` (`(?:rules?|ruled) out`), `excludes`, `denies`.
 
