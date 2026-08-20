@@ -160,15 +160,23 @@ For free-text findings, do not use literal `LIKE '%term%'` — radiologists use 
 
 ```sql
 WHERE (
-  -- Newer reports: precise section search
-  REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)<positive_pattern>')
-  OR REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)<positive_pattern>')
-  -- Older reports without parsed sections: fall back to report_text
-  OR (report_section_impression IS NULL
-      AND report_section_findings IS NULL
-      AND REGEXP_LIKE(report_text, '(?is)<positive_pattern>'))
+  -- Each source carries its OWN veto. <negation_pattern> is
+  -- '(?is)(?:<cues>)[^.;:]*<positive_pattern>' — see "Excluding negated mentions" below.
+  (REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)<positive_pattern>')
+   AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''), '<negation_pattern>'))
+  OR (REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)<positive_pattern>')
+   AND NOT REGEXP_LIKE(COALESCE(report_section_findings, ''), '<negation_pattern>'))
+  -- Reports without parsed sections: fall back to report_text, gated the same way.
+  OR (COALESCE(TRIM(report_section_impression), '') = ''
+      AND COALESCE(TRIM(report_section_findings), '') = ''
+      AND REGEXP_LIKE(report_text, '(?is)<positive_pattern>')
+      AND NOT REGEXP_LIKE(report_text, '<negation_pattern>'))
 )
 ```
+
+**Test the fallback with `COALESCE(TRIM(...), '') = ''`, never `IS NULL`.** Unparsed sections are usually the empty string, not NULL, and `IS NULL` cannot see those: the query searches two blank strings, the fallback never fires, and the report is invisible with no error.
+
+**Pair each source with its own veto; never write one `AND NOT` covering all of them.** A shared veto that inspects the section columns cannot see the fallback, whose positive came from `report_text` — so every negated mention in a section-less report enters the cohort. It also stops a negated mention in *findings* discarding a genuinely positive *impression*.
 
 Same `COALESCE` wrapper inside `NOT REGEXP_LIKE` negation arms so NULL sections don't leak through the negation gate.
 
@@ -219,19 +227,23 @@ WHERE (
   -- Diagnosis-axis: trust ICD codes, no negation filter
   any_match(diagnoses, d -> d.diagnosis_code LIKE 'I63%')
   OR (
-    -- Text-axis: filter out negated mentions
-    (REGEXP_LIKE(report_section_impression, '(?is)<positive_pattern>')
-     OR REGEXP_LIKE(report_section_findings, '(?is)<positive_pattern>'))
-    AND NOT REGEXP_LIKE(report_section_impression,
-      '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]{0,40}<positive_pattern>')
-    AND NOT REGEXP_LIKE(report_section_findings,
-      '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]{0,40}<positive_pattern>')
+    -- Text-axis: each source vetoed by its own negation
+    (REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)<positive_pattern>')
+     AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''),
+       '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*<positive_pattern>'))
+    OR (REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)<positive_pattern>')
+     AND NOT REGEXP_LIKE(COALESCE(report_section_findings, ''),
+       '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*<positive_pattern>'))
+    OR (COALESCE(TRIM(report_section_impression), '') = ''
+        AND COALESCE(TRIM(report_section_findings), '') = ''
+        AND REGEXP_LIKE(report_text, '(?is)<positive_pattern>')
+        AND NOT REGEXP_LIKE(report_text, '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*<positive_pattern>'))
   )
 )
 ```
 
 Three other things to know:
-- **`[^.;:]{0,40}`** — match up to 40 chars between the negation phrase and the finding, **but stop at a sentence terminator** (`.`, `;`, `:`). This prevents "No mediastinal adenopathy. Pulmonary nodule present" (negation in sentence 1, finding in sentence 2) from being incorrectly excluded.
+- **`[^.;:]*`** — match up to 40 chars between the negation phrase and the finding, **but stop at a sentence terminator** (`.`, `;`, `:`). This prevents "No mediastinal adenopathy. Pulmonary nodule present" (negation in sentence 1, finding in sentence 2) from being incorrectly excluded.
 - **Trino does support negative lookbehind** (Joni regex engine), but only fixed-width lookbehind. Variable-length is rejected ("invalid pattern in look-behind"), so you can't do `(?<!\b(no|without)\b\W{1,40})...`. The fixed-width `(?<![a-zA-Z])` form used above is fine.
 - **Negation phrases** to include: `(?<![a-zA-Z])no(?![a-zA-Z])`, `without`, `negative for`, `absence of`, `rule out` / `rules out` / `ruled out` (`(?:rules?|ruled) out`), `excludes`, `denies`.
 
@@ -259,20 +271,16 @@ scout_find_reports(
       AND (
         -- Diagnosis-axis: ICD codes bypass text-side negation
         any_match(diagnoses, d -> d.diagnosis_code LIKE 'R91%')
-        OR (
-          -- Text-axis: COALESCE for NULL sections, report_text fallback for entirely-NULL rows
-          (
-            REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-            OR REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
-            OR REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-            OR REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
-            OR (report_section_impression IS NULL AND report_section_findings IS NULL
-                AND (REGEXP_LIKE(report_text, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-                     OR REGEXP_LIKE(report_text, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')))
-          )
-          AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-          AND NOT REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-        )
+        -- Text-axis: one alternation, reused verbatim in each veto, so both word
+        -- orders are excluded as well as matched and the fallback is gated too.
+        OR (REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
+            AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))'))
+        OR (REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
+            AND NOT REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))'))
+        OR (COALESCE(TRIM(report_section_impression), '') = ''
+            AND COALESCE(TRIM(report_section_findings), '') = ''
+            AND REGEXP_LIKE(report_text, '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
+            AND NOT REGEXP_LIKE(report_text, '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))'))
       )
     LIMIT 50000
   """,
@@ -569,4 +577,7 @@ Rules:
 - **Response depends on the tool.** After `scout_find_reports` the user sees the rows in the viewer, so don't restate the table or SQL; add pattern observations, refinements, and insights. After `scout_query_sql` the rows are only in your reply, so return a markdown table (or one `vega` chart, never both), then interpret. Never dump raw JSON.
 - **Fast path for templated queries:** when the ask closely matches a worked example above, use that query as your template and only deviate for the user's specifics; save fresh thinking for genuinely novel asks.
 - **Explore the data first if zero results:** scout distinct values / diagnosis codes and broaden criteria — e.g. `SELECT DISTINCT modality FROM reports_latest LIMIT 20`, or `SELECT diagnosis_code, diagnosis_code_text, COUNT(*) FROM reports_dx WHERE LOWER(diagnosis_code_text) LIKE '%keyword%' GROUP BY 1,2 ORDER BY 3 DESC LIMIT 10`.
+- **A condition is anatomical.** `modality` says which scanner, never which body part. Add a `service_name` predicate for any condition cohort, or a stroke query collects cardiac MR, where "infarction" means a heart attack.
+- **Counting needs the negation gate too.** The commonest way a term appears is a radiologist ruling it out, so a bare `REGEXP_LIKE` count inverts rather than merely blurs. Apply the gate, or label the number as mentions and say what share is negated.
+- **Filter `diagnosis_code`, not `diagnosis_code_text`.** Matching the label is text search in disguise: `LIKE '%infarct%'` pulls acute **myo**cardial infarctions into a stroke cohort. Scout labels to find codes, then filter on codes.
 - **Never fabricate data.** If the tools can't answer, say so.
