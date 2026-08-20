@@ -98,8 +98,7 @@ def spark_activity_session(
     on_spark_failure: Optional[Callable[[], None]] = None,
 ):
     """Yield a Hive-enabled Spark session for a Temporal activity, owning the full
-    session lifecycle + error-handling contract shared by the ingest and derive
-    activities:
+    session lifecycle + error-handling contract for the ingest activity:
 
     * create the session and heartbeat once it is up;
     * classify any failure by *cancellation state*, not exception type (issue #458). A
