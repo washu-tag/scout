@@ -1,0 +1,103 @@
+# Per-mode storage/identity for the extractor workers, merged into each
+# HelmRelease via valuesFrom (ADR 0035). service_mode picks one by name; both
+# ship, the unused one is inert. Each carries the FULL envFrom + volumes/
+# volumeMounts (Flux replaces lists) plus the aws IRSA ServiceAccount. Note: the
+# Ansible aws branch never wired IRSA for the extractor (lake writes would fail);
+# the aws edges add the lake-writer SA that the sibling roles already use.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hl7log-extractor-edge-on-prem
+  namespace: '${scout_extractor_namespace}'
+data:
+  # HL7 logs from the node (hostPath + HostToContainer); creds from s3-secret.
+  values.yaml: |
+    envFrom:
+      - secretRef:
+          name: s3-secret
+      - configMapRef:
+          name: s3-env
+    volumes:
+      - name: data
+        hostPath:
+          path: '${extractor_data_dir}'
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
+        mountPropagation: HostToContainer
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hl7log-extractor-edge-aws
+  namespace: '${scout_extractor_namespace}'
+data:
+  # IRSA lake-writer SA (SDK default chain -> WebIdentity); s3-secret dropped so
+  # static keys can't shadow the role. emptyDir /data (no node logs in aws).
+  values.yaml: |
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: '${lake_writer_role_arn}'
+    envFrom:
+      - configMapRef:
+          name: s3-env
+    volumes:
+      - name: data
+        emptyDir: {}
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hl7-transformer-edge-on-prem
+  namespace: '${scout_extractor_namespace}'
+data:
+  # HL7 logs from the node; creds from s3-secret; postgres-secret for the DB.
+  values.yaml: |
+    envFrom:
+      - secretRef:
+          name: s3-secret
+      - configMapRef:
+          name: s3-env
+      - secretRef:
+          name: postgres-secret
+    volumes:
+      - name: data
+        hostPath:
+          path: '${extractor_data_dir}'
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
+        mountPropagation: HostToContainer
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hl7-transformer-edge-aws
+  namespace: '${scout_extractor_namespace}'
+data:
+  # IRSA lake-writer SA -> Spark WebIdentity (sparkDefaults.mode=aws); s3-secret
+  # dropped, postgres-secret kept. emptyDir /data (no node logs in aws).
+  values.yaml: |
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: '${lake_writer_role_arn}'
+    envFrom:
+      - configMapRef:
+          name: s3-env
+      - secretRef:
+          name: postgres-secret
+    volumes:
+      - name: data
+        emptyDir: {}
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
