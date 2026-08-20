@@ -152,7 +152,7 @@ WHERE REGEXP_LIKE(service_name, '(?i)(abd|abdom|pelvis)')
 For free-text findings, do not use literal `LIKE '%term%'` — radiologists use synonyms, morphological variants, and varying word order. Use `REGEXP_LIKE` with two ingredients:
 
 1. **Synonym alternation** — non-capturing groups covering the medically equivalent terms. Collapse morphological variants with optional groups so one regex covers the singular/plural/adjective forms.
-2. **Proximity matching** — `[^.;:]{0,N}` between two concept groups (typical N: 30–60), **not** dotall `.{0,N}`. The excluded class still spans line wrapping, which is what dotall was for, but stops at a sentence terminator. Dotall lets the two concepts sit in different sentences, and the negation veto — which is clause-bounded, because a cue only governs its own clause — then cannot reconstruct that match to veto it. On this lake 103 nodule impressions matched only via dotall and **96% of them were negative reports** that no veto could remove. Generate one pattern per direction so word order doesn't matter.
+2. **Proximity matching** — `[^.;:]{0,N}` between two concept groups (typical N: 30–60), not dotall `.{0,N}`: it spans line wraps but stops at a sentence terminator, keeping every positive within reach of the clause-bounded veto. Put both word orders in **one** alternation — `(?:A[^.;:]{0,N}B|B[^.;:]{0,N}A)` — so the identical string goes into the veto; separate patterns per direction invite a veto that covers only one of them.
 
 **Search the section columns, not `report_text`.** `report_text` is the full report including HISTORY, COMPARISON, TECHNIQUE, and dictating-physician sig — searching it picks up *"history of pulmonary nodule"* in the HISTORY of a follow-up scan and includes the case as if it were a new finding. The parsed sections (`report_section_impression`, `report_section_findings`) contain only the diagnostic content where radiologists call out what they actually see. Yes, this means two regex calls instead of one — the precision win is worth it. Search **both** sections with `OR` since radiologists may surface a finding in either.
 
@@ -183,15 +183,12 @@ Same `COALESCE` wrapper inside `NOT REGEXP_LIKE` negation arms so NULL sections 
 ```sql
 -- "pulmonary nodule" — covers nodule(s), nodular, mass(es), lesion, in either word order
 WHERE (
-  REGEXP_LIKE(report_section_impression, '(?is)(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-  OR REGEXP_LIKE(report_section_impression, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung)')
-  OR REGEXP_LIKE(report_section_findings, '(?is)(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-  OR REGEXP_LIKE(report_section_findings, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung)')
+  REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
+  OR REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
 )
 
 -- "brain metastasis"
-WHERE REGEXP_LIKE(report_section_impression, '(?is)(?:metasta(?:sis|ses|tic)?|mets)[^.;:]{0,50}(?:brain|cerebr(?:al|um)|intracranial)')
-   OR REGEXP_LIKE(report_section_impression, '(?is)(?:brain|cerebr(?:al|um)|intracranial)[^.;:]{0,50}(?:metasta(?:sis|ses|tic)?|mets)')
+WHERE REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?:metasta(?:sis|ses|tic)?|mets)[^.;:]{0,50}(?:brain|cerebr(?:al|um)|intracranial)|(?:brain|cerebr(?:al|um)|intracranial)[^.;:]{0,50}(?:metasta(?:sis|ses|tic)?|mets))')
 ```
 
 Synonym/variant cheat-sheet — generate alternations from these axes when relevant:
