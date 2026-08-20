@@ -337,7 +337,7 @@ function RangeLabel({ low, high }: { low: string; high: string }) {
   return <Label name={low} value={high} />;
 }
 
-function Chip({ text }: { text: string }) {
+function Chip({ text, muted }: { text: string; muted?: boolean }) {
   return (
     <span
       style={{
@@ -348,7 +348,7 @@ function Chip({ text }: { text: string }) {
         background: 'var(--rv-surface)',
         border: '1px solid var(--rv-border)',
         fontSize: '0.7rem',
-        color: 'var(--rv-fg)',
+        color: muted ? 'var(--rv-muted)' : 'var(--rv-fg)',
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
@@ -360,7 +360,13 @@ function Chip({ text }: { text: string }) {
 }
 
 function ProfileCell({ profile, field }: { profile: Profile; field: string }) {
-  if (profile.kind === 'none') return null;
+  if (profile.kind === 'none') {
+    return (
+      <div style={{ textAlign: 'center' }}>
+        <Chip text="No data" muted />
+      </div>
+    );
+  }
 
   if (profile.kind === 'identifier') {
     // "unique", not "patients": the four patient identifiers disagree with each
@@ -454,7 +460,8 @@ export function ColumnProfileRow({
             key={col.id}
             style={{
               padding: '3px 0.45rem 4px',
-              verticalAlign: profile.kind === 'identifier' ? 'middle' : 'bottom',
+              verticalAlign:
+                profile.kind === 'identifier' || profile.kind === 'none' ? 'middle' : 'bottom',
               background: 'var(--rv-surface-2)',
               boxShadow: 'inset 0 -1px 0 var(--rv-border)',
               position: 'sticky',
