@@ -58,6 +58,7 @@ keycloak_realm_name
 keycloak_realm_url
 keycloak_superset_client_id
 lake_bucket
+lake_reader_role_arn
 lake_writer_role_arn
 loki_admin_bucket
 loki_chunks_bucket
@@ -107,6 +108,7 @@ scout_operators_namespace
 scratch_bucket
 scratch_path
 server_hostname
+service_mode
 spark_sql_shuffle_partitions
 timezone
 trino_https_port

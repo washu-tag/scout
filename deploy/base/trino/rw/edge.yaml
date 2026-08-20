@@ -1,0 +1,46 @@
+# Per-mode storage/identity for trino-rw, merged into the HelmRelease via
+# valuesFrom (ADR 0035). service_mode picks one by name; both ship, the unused
+# one is inert. trino-rw has no JWT/TLS, so on-prem needs only the trino-rw-s3
+# creds and aws needs no envFrom at all (credentials via IRSA).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-rw-edge-on-prem
+  namespace: '${scout_extractor_namespace}'
+data:
+  # MinIO: path-style + endpoint, creds from trino-rw-s3 via Trino's $${ENV:VAR}.
+  values.yaml: |
+    envFrom:
+      - secretRef:
+          name: trino-rw-s3
+    catalogs:
+      delta: |
+        connector.name=delta_lake
+        hive.metastore.uri=${hive_metastore_endpoint}
+        fs.native-s3.enabled=true
+        s3.region=${s3_region}
+        s3.aws-access-key=$${ENV:S3_ACCESS_KEY}
+        s3.aws-secret-key=$${ENV:S3_SECRET_KEY}
+        s3.endpoint=${s3_endpoint}
+        s3.path-style-access=${s3_path_style_access}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-rw-edge-aws
+  namespace: '${scout_extractor_namespace}'
+data:
+  # IRSA lake-writer SA + S3 default endpoint (no MinIO endpoint/keys); path-style
+  # off. No envFrom -- the Delta connector authenticates through the SA.
+  values.yaml: |
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: '${lake_writer_role_arn}'
+    catalogs:
+      delta: |
+        connector.name=delta_lake
+        hive.metastore.uri=${hive_metastore_endpoint}
+        fs.native-s3.enabled=true
+        s3.region=${s3_region}
+        s3.path-style-access=${s3_path_style_access}
