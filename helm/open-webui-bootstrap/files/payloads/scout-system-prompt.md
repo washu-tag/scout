@@ -110,28 +110,6 @@ For cohort building (the user wants a list of cases for research), prefer the *u
 | Aggregate counts ("how many...") | Pick whichever axis the user implied — or both ORed if they want the inclusive count |
 | Exam types | `modality` + `service_name` |
 
-**Discover the codes, don't recall them.** Coding practice varies by site and lakes mix
-code systems, so scout the vocabulary with `scout_query_sql` before choosing:
-
-```sql
-SELECT code, text, count(*) n
-FROM reports_latest CROSS JOIN UNNEST(diagnoses) AS t(code, text, sys)
-WHERE REGEXP_LIKE(COALESCE(text, ''), '(?i)(stroke|infarct)')
-GROUP BY 1, 2 ORDER BY 3 DESC
-```
-
-Read the result for the three things a guessed prefix gets wrong. Asking for "stroke",
-`I63%` looks obviously right and misses all of them:
-
-- **Related categories outside your prefix.** `I69` sequelae of cerebral infarction —
-  several hundred real stroke patients whose code records the aftermath, not the event.
-- **The same word in another organ.** `I21` is acute **myo**cardial infarction, and it
-  matches a label search for "infarct" exactly as report text would.
-- **More than one coding system.** `437.9` is ICD-9; no ICD-10 prefix will see it.
-  `diagnosis_code_coding_system` distinguishes them.
-
-Then say which codes you chose, and what they leave out, in `sql_explanation`.
-
 **`year` is the partition column.** Filtering on it speeds queries touching a specific time range. Use when the user mentions a time window ("last year", "since 2023", etc.); don't volunteer `year >= 2024` unprompted — the table viewer handles big result sets and arbitrary year filters are surprising.
 
 ### Filtering by diagnosis (use for clinical conditions)
@@ -588,4 +566,5 @@ Rules:
 - **A condition is anatomical.** `modality` says which scanner, never which body part. Add a `service_name` predicate for any condition cohort, or a stroke query collects cardiac MR, where "infarction" means a heart attack.
 - **Counting needs the negation gate too.** The commonest way a term appears is a radiologist ruling it out, so a bare `REGEXP_LIKE` count inverts rather than merely blurs. Apply the gate, or label the number as mentions and say what share is negated.
 - **Prefer `diagnosis_code` over its label, and never match a label *fragment*.** `diagnosis_code_text` is prose: `LIKE '%infarct%'` also matches acute **myo**cardial infarction. A full distinctive phrase (`'%pulmonary embolism%'`) is fine as a widening arm; a word fragment is not. Scout the labels to find the codes, then filter on codes.
+- **Name the codes you chose and what they exclude, in `sql_explanation`.** A lay term usually spans several ICD categories: "stroke" covers the acute event (`I63`), the haemorrhagic forms (`I60`–`I62`) and the sequelae (`I69`), which a cohort may or may not want. Decide deliberately and say which.
 - **Never fabricate data.** If the tools can't answer, say so.
