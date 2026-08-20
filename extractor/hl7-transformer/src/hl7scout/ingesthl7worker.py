@@ -72,11 +72,6 @@ async def run_worker(
             log.info("Starting worker. Waiting for activities...")
             shutdown_watcher = asyncio.create_task(shutdown_on_spark_failure())
             try:
-                # Deliberately not `async with worker`: a worker failure before it
-                # finishes starting (the namespace check in Worker._run()'s preamble)
-                # leaves __aexit__ awaiting a shutdown that can never complete, so
-                # this function would hang instead of writing the health file, and the
-                # pod would sit Ready with no worker in it. run() raises those errors.
                 await worker.run()
             finally:
                 shutdown_watcher.cancel()
@@ -133,8 +128,8 @@ async def main(argv=None) -> int:
 
     signal.signal(signal.SIGTERM, on_sigterm)
 
-    # Run the health check server and the temporal worker side by side. Whichever
-    # stops first ends the process, because neither is useful without the other.
+    # Run the health check server and the temporal worker side by side.
+    # Whichever stops first ends the process.
     spark_failure = asyncio.Event()
     health_server = health_check_server()
     health_task = asyncio.create_task(health_server.serve(), name="health server")
@@ -153,9 +148,6 @@ async def main(argv=None) -> int:
             (health_task, worker_task), return_when=asyncio.FIRST_COMPLETED
         )
         # Read every result so none goes unobserved, then re-raise the first failure.
-        # On SIGTERM that is the SigTermException raised out of serve(): uvicorn's
-        # capture_signals handles the signal itself, then restores our handler and
-        # re-raises it as serve() unwinds.
         errors = [error for task in done if (error := task.exception()) is not None]
         if errors:
             raise errors[0]
@@ -169,8 +161,6 @@ async def main(argv=None) -> int:
     if spark_failure.is_set():
         log.error("Exiting after Spark failure so the container restarts")
     else:
-        # Nothing raised, so one of the two simply returned. Either way there is
-        # nothing left running, so exit nonzero to get the container restarted.
         log.error("The worker or the health check server stopped unexpectedly")
     return 1
 
