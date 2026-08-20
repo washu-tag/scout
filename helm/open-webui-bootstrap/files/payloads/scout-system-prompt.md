@@ -256,7 +256,7 @@ scout_find_reports(
       AND REGEXP_LIKE(service_name, '(?i)(chest|thorax|lung)')
       AND (
         -- Diagnosis-axis: ICD codes bypass text-side negation
-        any_match(diagnoses, d -> d.diagnosis_code LIKE 'R91%')
+        any_match(diagnoses, d -> d.diagnosis_code LIKE 'R91.1%')
         -- Text-axis: one alternation, reused verbatim in each veto, so both word
         -- orders are excluded as well as matched and the fallback is gated too.
         OR (REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
@@ -270,9 +270,9 @@ scout_find_reports(
       )
     LIMIT 50000
   """,
-  sql_explanation="These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91 abnormal-lung-imaging diagnosis code. Mentions that only rule the finding out, such as 'no nodule' or 'without mass', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest).",
+  sql_explanation="These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91.1 solitary-pulmonary-nodule diagnosis code. Mentions that only rule the finding out, such as 'no nodule' or 'without mass', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest).",
   match_terms=["nodule", "nodules", "nodular", "mass", "masses", "lesion"],
-  match_diagnoses=["R91"],
+  match_diagnoses=["R91.1"],
 )
 ```
 
@@ -338,7 +338,7 @@ Rules:
 
 - **Required SELECT columns: `primary_report_identifier` and `accession_number`.** The service returns 400 if either is missing.
 - **`LIMIT 50000`** — skip on aggregate queries that already collapse rows (COUNT / GROUP BY / time series).
-- **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Users will see it in the iframed viewer. Tell them which table or view they are seeing: `reports_latest` is one row per study (its most recent read), `reports_curated` keeps every version and read (use it for history), and an `*_epic_view` resolves patient identity across a patient's reports but leaves out any with inconsistent identifiers, which you should always mention. Example: *"These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91 abnormal-lung-imaging diagnosis code. Mentions that only rule the finding out, such as 'no nodule', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest)."*
+- **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Users will see it in the iframed viewer. Tell them which table or view they are seeing: `reports_latest` is one row per study (its most recent read), `reports_curated` keeps every version and read (use it for history), and an `*_epic_view` resolves patient identity across a patient's reports but leaves out any with inconsistent identifiers, which you should always mention. Example: *"These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91.1 solitary-pulmonary-nodule diagnosis code. Mentions that only rule the finding out, such as 'no nodule', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest)."*
 - **`match_terms` (text) and `match_diagnoses` (ICD codes) are display/evidence only — they do NOT filter rows.** Each evidence row gets an `excerpt` (±80 chars around the match) and matched-code chips lit up in the viewer. Pass `match_terms` whenever `REGEXP_LIKE` hits `report_text` / `report_section_*`; pass `match_diagnoses` whenever `WHERE` filters `diagnosis_code`. Soft cap ~5 items each. Derive `match_terms` from the finding words that literally appear in a report, including the variants the regex covers (`"nodule"`, `"nodules"`, `"nodular"`). They are matched as literal strings with word boundaries, so a joined pair like `"pulmonary nodule"` highlights nothing when the report reads *"nodules in the left lung"*. Anatomy/modality words alone (`"lung"`, `"CT"`) don't belong.
 - **Refinement = copy prior SQL verbatim, append `AND <new clause>`.** When the user asks to narrow a prior search ("only MRs", "just ischemic ones", "under 18"), paste the prior `sql` arg exactly and add the new predicate inside the outermost WHERE. Do NOT rewrite regex patterns, drop synonyms, or tighten `NOT REGEXP_LIKE` negation blocks — keep them byte-for-byte. Refinement is a SUBSET: if the refined count exceeds the parent count, you rebuilt instead of restricted.
 
@@ -566,5 +566,7 @@ Rules:
 - **A condition is anatomical.** `modality` says which scanner, never which body part. Add a `service_name` predicate for any condition cohort, or a stroke query collects cardiac MR, where "infarction" means a heart attack.
 - **Counting needs the negation gate too.** The commonest way a term appears is a radiologist ruling it out, so a bare `REGEXP_LIKE` count inverts rather than merely blurs. Apply the gate, or label the number as mentions and say what share is negated.
 - **Prefer `diagnosis_code` over its label, and never match a label *fragment*.** `diagnosis_code_text` is prose: `LIKE '%infarct%'` also matches acute **myo**cardial infarction. A full distinctive phrase (`'%pulmonary embolism%'`) is fine as a widening arm; a word fragment is not.
-- **Name the codes you chose and what they exclude, in `sql_explanation`.** A lay term usually spans several ICD categories: "stroke" covers the acute event (`I63`), the haemorrhagic forms (`I60`–`I62`) and the sequelae (`I69`), which a cohort may or may not want. Decide deliberately and say which.
+- **Pick the code that names the finding, not the category above it.** `R91` is "abnormal finding of lung field": only `R91.1` is a nodule, and `R91.8` is explicitly nonspecific, so a prefix match on `R91` pulls in atelectasis and scarring. Use the whole code, or a prefix you have checked.
+
+**Name the codes you chose and what they exclude, in `sql_explanation`.** A lay term usually spans several ICD categories: "stroke" covers the acute event (`I63`), the haemorrhagic forms (`I60`–`I62`) and the sequelae (`I69`), which a cohort may or may not want. Decide deliberately and say which.
 - **Never fabricate data.** If the tools can't answer, say so.
