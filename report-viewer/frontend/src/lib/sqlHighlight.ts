@@ -73,6 +73,38 @@ function splitInlineFlags(pattern: string): { body: string; flags: string } {
  *  the report body, and highlighting its pattern marks stray words like "lung". */
 const TEXT_COLUMN = /report_text|report_section_/i;
 
+/** Reject anything that could backtrack catastrophically, before we compile it.
+ *
+ *  The patterns we generate never need unbounded repetition: proximity is
+ *  `[^.;:]{0,N}` and morphological variants are `(?:es?|ar)`. So a `*` or `+`
+ *  outside a character class means the pattern is either not ours or not safe to
+ *  run on the main thread, and either way the caller should fall back to the
+ *  literal terms. Bounding the counted quantifiers as well keeps the remaining
+ *  work polynomial with a small exponent rather than exponential.
+ */
+function isBacktrackSafe(body: string): boolean {
+  let inClass = false;
+  for (let i = 0; i < body.length; i++) {
+    const c = body[i];
+    if (c === '\\') {
+      i++;
+      continue;
+    }
+    if (c === '[') inClass = true;
+    else if (c === ']') inClass = false;
+    else if (!inClass && (c === '*' || c === '+')) return false;
+  }
+  const counted = body.match(/\{\d+(?:,\d*)?\}/g) ?? [];
+  if (counted.length > 12) return false;
+  for (const q of counted) {
+    const hi = /,(\d+)\}$/.exec(q)?.[1] ?? /\{(\d+)\}$/.exec(q)?.[1];
+    // An open-ended `{n,}` is unbounded repetition by another name.
+    if (hi === undefined) return false;
+    if (Number(hi) > 100) return false;
+  }
+  return true;
+}
+
 /** Every non-negated REGEXP_LIKE pattern applied to a rendered text column. */
 export function positivePatterns(sql: string): string[] {
   const out: string[] = [];
@@ -112,13 +144,16 @@ export function highlightRegexFromSql(sql: string | undefined | null): RegExp | 
   for (const p of positivePatterns(sql)) {
     if (p.length > 2000) continue; // runaway pattern; not worth compiling
     const { body, flags: f } = splitInlineFlags(p);
-    if (!body) continue;
+    if (!body || !isBacktrackSafe(body)) continue;
     bodies.push(decapture(body));
     for (const c of f) if (!flags.includes(c)) flags += c;
   }
   if (!bodies.length) return null;
   const unique = Array.from(new Set(bodies));
   try {
+    // safe: every branch passed isBacktrackSafe -- no unbounded repetition, counted
+    // quantifiers capped -- and a compile failure falls back to the literal terms
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
     const re = new RegExp(`(${unique.join('|')})`, flags.replace('m', '') + 'g');
     // A pattern matching the empty string would split every character.
     if (re.test('')) return null;
