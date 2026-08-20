@@ -1,8 +1,9 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useMemo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { friendlyError, getReport } from '../../api/client';
 import { buildDiscussPrompt } from '../../chat';
 import { useChatPrompt } from '../../ChatPrompt';
+import { highlightRegexFromSql } from '../../lib/sqlHighlight';
 import { fmtDate } from './format';
 import { paginationBtn } from './styles';
 
@@ -10,6 +11,9 @@ export function RowDetail(props: {
   row: Record<string, unknown>;
   highlightTerms: string[];
   highlightDiagnosis: string[];
+  /** The search's SQL. Its positive patterns highlight the span that actually
+   *  matched, which `highlightTerms` -- plain literals -- routinely cannot. */
+  sql?: string;
 }) {
   const requestPrompt = useChatPrompt();
   const reportId = String(props.row['primary_report_identifier'] ?? '');
@@ -29,6 +33,11 @@ export function RowDetail(props: {
   // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
   const highlightRe = escaped.length ? new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi') : null;
 
+  // Prefer the SQL's own patterns; fall back to the literal terms when the SQL has
+  // none we can reuse (no text predicate, or a construct JS regex cannot compile).
+  const spanRe = useMemo(() => highlightRegexFromSql(props.sql), [props.sql]);
+  const textRe = spanRe ?? highlightRe;
+
   // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
   const dxPrefixes = props.highlightDiagnosis
     .map((d) => d.trim().replace(/%+$/, '').toLowerCase())
@@ -36,8 +45,8 @@ export function RowDetail(props: {
 
   const applyTextHighlights = (text: string): ReactNode => {
     if (!text) return null;
-    if (!highlightRe) return text;
-    const parts = text.split(highlightRe);
+    if (!textRe) return text;
+    const parts = text.split(textRe);
     return parts.map((p, i) =>
       i % 2 === 1 ? (
         <mark key={i} style={{ background: '#fff3a3', color: '#222', padding: '0 1px' }}>

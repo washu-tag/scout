@@ -396,6 +396,7 @@ export default function SearchDetailPage() {
                                       : []),
                                   ]}
                                   highlightDiagnosis={meta.data?.match_diagnoses ?? []}
+                                  sql={meta.data?.sql}
                                 />
                               </div>
                             </td>
