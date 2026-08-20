@@ -94,6 +94,7 @@ class MappingTableExtractor:
         self.existing_mapping_df: Optional[DataFrame] = None
         self.deferred_reports_df: Optional[DataFrame] = None
         self.dataframes_to_unpersist: List[DataFrame] = []
+        self.pinned_dataframes: List[DataFrame] = []
 
     def extract(self, batch_df: DataFrame):
         filtered_df = filter_df_for_update_inserts(
@@ -117,8 +118,28 @@ class MappingTableExtractor:
     def pin(self, df: DataFrame) -> DataFrame:
         """Materialize a batch-sized frame and cut its lineage."""
         pinned_df = df.localCheckpoint(eager=True)
-        self.dataframes_to_unpersist.append(pinned_df)
+        self.pinned_dataframes.append(pinned_df)
         return pinned_df
+
+    def unpin(self, pinned_df: DataFrame) -> None:
+        """Release a pinned frame's blocks.
+
+        `DataFrame.unpersist()` cannot: it goes to the cache manager, which only knows
+        about `cache()`/`persist()` plans, while a local checkpoint's blocks belong to
+        the RDD underneath the frame. Reach that RDD through the bare `LogicalRDD` plan
+        `localCheckpoint` leaves behind. Only safe once nothing will read the frame
+        again — the blocks are the checkpoint, so it cannot be recomputed after this.
+        """
+        plan = pinned_df._jdf.queryExecution().analyzed()
+        plan_class = plan.getClass().getSimpleName()
+        if plan_class != "LogicalRDD":
+            activity.logger.warning(
+                "Pinned frame's plan is a %s, not a LogicalRDD; leaving its checkpoint "
+                "blocks for the JVM to reclaim",
+                plan_class,
+            )
+            return
+        plan.rdd().unpersist(False)
 
     def recache_existing_mapping(self):
         if self.existing_mapping_df is not None:
@@ -673,4 +694,6 @@ class MappingTableExtractor:
     def postprocess(self):
         for df in self.dataframes_to_unpersist:
             df.unpersist()
+        for pinned_df in self.pinned_dataframes:
+            self.unpin(pinned_df)
         activity.logger.info("Mapping table derivation complete")
