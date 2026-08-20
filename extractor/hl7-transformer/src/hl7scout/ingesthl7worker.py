@@ -61,15 +61,26 @@ async def run_worker(
                 graceful_shutdown_timeout=GRACEFUL_SHUTDOWN_TIMEOUT,
             )
 
-            log.info("Starting worker. Waiting for activities...")
-            # Runs the worker in the background; leaving the block shuts it down. A
-            # fatal worker error cancels this task and is re-raised on the way out.
-            async with worker:
+            async def shutdown_on_spark_failure() -> None:
                 await spark_failure.wait()
                 log.error(
                     "Spark is unreachable; shutting the worker down so it stops "
                     "taking activity tasks"
                 )
+                await worker.shutdown()
+
+            log.info("Starting worker. Waiting for activities...")
+            shutdown_watcher = asyncio.create_task(shutdown_on_spark_failure())
+            try:
+                # Deliberately not `async with worker`: a worker failure before it
+                # finishes starting (the namespace check in Worker._run()'s preamble)
+                # leaves __aexit__ awaiting a shutdown that can never complete, so
+                # this function would hang instead of writing the health file, and the
+                # pod would sit Ready with no worker in it. run() raises those errors.
+                await worker.run()
+            finally:
+                shutdown_watcher.cancel()
+                await asyncio.gather(shutdown_watcher, return_exceptions=True)
             log.info("Worker stopped")
     except Exception as e:
         try:
