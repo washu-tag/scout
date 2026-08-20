@@ -110,17 +110,27 @@ For cohort building (the user wants a list of cases for research), prefer the *u
 | Aggregate counts ("how many...") | Pick whichever axis the user implied — or both ORed if they want the inclusive count |
 | Exam types | `modality` + `service_name` |
 
-Common ICD-10 codes for radiology cohorts (use your medical knowledge to pick the right code prefixes for any condition the user asks about — these are illustrative, not exhaustive):
+**Discover the codes, don't recall them.** Coding practice varies by site and lakes mix
+code systems, so scout the vocabulary with `scout_query_sql` before choosing:
 
-| Concept | ICD-10 | Notes |
-|---|---|---|
-| Solitary pulmonary nodule | `R91.1` | The codified version of "pulmonary nodule on imaging" |
-| Abnormal findings on lung imaging | `R91%` | Broader — includes other unspecified lung abnormalities |
-| Lung cancer (primary) | `C34%` | Malignant neoplasm of bronchus and lung |
-| Pulmonary embolism | `I26%` | All forms |
-| Pneumonia | `J12%`, `J15%`, `J18%` | Various etiologies |
-| Brain metastasis | `C79.31` | Secondary malignant neoplasm of brain |
-| Stroke / cerebral infarction | `I63%` | |
+```sql
+SELECT code, text, count(*) n
+FROM reports_latest CROSS JOIN UNNEST(diagnoses) AS t(code, text, sys)
+WHERE REGEXP_LIKE(COALESCE(text, ''), '(?i)(stroke|infarct)')
+GROUP BY 1, 2 ORDER BY 3 DESC
+```
+
+Read the result for the three things a guessed prefix gets wrong. Asking for "stroke",
+`I63%` looks obviously right and misses all of them:
+
+- **Related categories outside your prefix.** `I69` sequelae of cerebral infarction —
+  several hundred real stroke patients whose code records the aftermath, not the event.
+- **The same word in another organ.** `I21` is acute **myo**cardial infarction, and it
+  matches a label search for "infarct" exactly as report text would.
+- **More than one coding system.** `437.9` is ICD-9; no ICD-10 prefix will see it.
+  `diagnosis_code_coding_system` distinguishes them.
+
+Then say which codes you chose, and what they leave out, in `sql_explanation`.
 
 **`year` is the partition column.** Filtering on it speeds queries touching a specific time range. Use when the user mentions a time window ("last year", "since 2023", etc.); don't volunteer `year >= 2024` unprompted — the table viewer handles big result sets and arbitrary year filters are surprising.
 
