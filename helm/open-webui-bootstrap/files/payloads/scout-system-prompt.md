@@ -181,7 +181,8 @@ WHERE (
 Same `COALESCE` wrapper inside `NOT REGEXP_LIKE` negation arms so NULL sections don't leak through the negation gate.
 
 ```sql
--- "pulmonary nodule" — covers nodule(s), nodular, mass(es), lesion, in either word order
+-- Pattern construction only — synonyms + proximity, both word orders in one alternation.
+-- NOT a complete cohort query: add the negation veto and fallback from above.
 WHERE (
   REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
   OR REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
@@ -576,5 +577,5 @@ Rules:
 - **Explore the data first if zero results:** scout distinct values / diagnosis codes and broaden criteria — e.g. `SELECT DISTINCT modality FROM reports_latest LIMIT 20`, or `SELECT diagnosis_code, diagnosis_code_text, COUNT(*) FROM reports_dx WHERE LOWER(diagnosis_code_text) LIKE '%keyword%' GROUP BY 1,2 ORDER BY 3 DESC LIMIT 10`.
 - **A condition is anatomical.** `modality` says which scanner, never which body part. Add a `service_name` predicate for any condition cohort, or a stroke query collects cardiac MR, where "infarction" means a heart attack.
 - **Counting needs the negation gate too.** The commonest way a term appears is a radiologist ruling it out, so a bare `REGEXP_LIKE` count inverts rather than merely blurs. Apply the gate, or label the number as mentions and say what share is negated.
-- **Filter `diagnosis_code`, not `diagnosis_code_text`.** Matching the label is text search in disguise: `LIKE '%infarct%'` pulls acute **myo**cardial infarctions into a stroke cohort. Scout labels to find codes, then filter on codes.
+- **Prefer `diagnosis_code` over its label, and never match a label *fragment*.** `diagnosis_code_text` is prose: `LIKE '%infarct%'` also matches acute **myo**cardial infarction. A full distinctive phrase (`'%pulmonary embolism%'`) is fine as a widening arm; a word fragment is not. Scout the labels to find the codes, then filter on codes.
 - **Never fabricate data.** If the tools can't answer, say so.
