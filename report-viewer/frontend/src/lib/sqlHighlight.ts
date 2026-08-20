@@ -136,11 +136,17 @@ export function positivePatterns(sql: string): string[] {
   return out;
 }
 
-/** One global regex with exactly one capture group, or null if nothing usable. */
-export function highlightRegexFromSql(sql: string | undefined | null): RegExp | null {
-  if (!sql) return null;
+/** Alternation branches safe to compile, plus the inline flags they asked for.
+ *  Returned as sources rather than a finished regex so the caller can union them
+ *  with its own literal terms -- a search may highlight both what the patterns
+ *  matched and a term it applied separately, and only one regex can drive split(). */
+export function highlightSourcesFromSql(sql: string | undefined | null): {
+  bodies: string[];
+  flags: string;
+} {
   const bodies: string[] = [];
   let flags = '';
+  if (!sql) return { bodies, flags };
   for (const p of positivePatterns(sql)) {
     if (p.length > 2000) continue; // runaway pattern; not worth compiling
     const { body, flags: f } = splitInlineFlags(p);
@@ -148,8 +154,13 @@ export function highlightRegexFromSql(sql: string | undefined | null): RegExp | 
     bodies.push(decapture(body));
     for (const c of f) if (!flags.includes(c)) flags += c;
   }
-  if (!bodies.length) return null;
-  const unique = Array.from(new Set(bodies));
+  return { bodies: Array.from(new Set(bodies)), flags };
+}
+
+/** One global regex with exactly one capture group, or null if nothing usable. */
+export function highlightRegexFromSql(sql: string | undefined | null): RegExp | null {
+  const { bodies: unique, flags } = highlightSourcesFromSql(sql);
+  if (!unique.length) return null;
   try {
     // safe: every branch passed isBacktrackSafe -- no unbounded repetition, counted
     // quantifiers capped -- and a compile failure falls back to the literal terms

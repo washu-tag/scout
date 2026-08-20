@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { friendlyError, getReport } from '../../api/client';
 import { buildDiscussPrompt } from '../../chat';
 import { useChatPrompt } from '../../ChatPrompt';
-import { highlightRegexFromSql } from '../../lib/sqlHighlight';
+import { highlightSourcesFromSql } from '../../lib/sqlHighlight';
 import { fmtDate } from './format';
 import { paginationBtn } from './styles';
 
@@ -33,10 +33,23 @@ export function RowDetail(props: {
   // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
   const highlightRe = escaped.length ? new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi') : null;
 
-  // Prefer the SQL's own patterns; fall back to the literal terms when the SQL has
-  // none we can reuse (no text predicate, or a construct JS regex cannot compile).
-  const spanRe = useMemo(() => highlightRegexFromSql(props.sql), [props.sql]);
-  const textRe = spanRe ?? highlightRe;
+  // Highlight the spans the SQL matched *and* the literal terms: the patterns catch
+  // synonyms and word orders the terms miss, while a term may come from a filter the
+  // SQL applied separately. One regex has to drive split(), so union the sources.
+  const textRe = useMemo(() => {
+    const { bodies, flags } = highlightSourcesFromSql(props.sql);
+    const branches = [...bodies, ...escaped.map((t) => `\\b${t}\\b`)];
+    if (!branches.length) return null;
+    try {
+      // safe: pattern branches passed isBacktrackSafe, term branches are escaped
+      // literals; on failure the panel simply renders unhighlighted text
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+      return new RegExp(`(${branches.join('|')})`, `${flags.replace('m', '')}gi`);
+    } catch {
+      return null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.sql, escaped.join('\u0000')]);
 
   // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
   const dxPrefixes = props.highlightDiagnosis
