@@ -9,6 +9,10 @@ export function ExplainSqlModal(props: {
   onClose: () => void;
 }) {
   const terms = props.highlightTerms.filter((t) => t.trim().length > 0);
+  // Gate the accuracy caveat on the SQL, not on match_terms: those are a model-supplied
+  // hint it can omit. A cohort built only from diagnosis codes reads a structured field
+  // and is exact, so the caveat would be untrue there.
+  const matchesText = /REGEXP_LIKE/i.test(props.sql);
   const codes = props.highlightDiagnosis.filter((d) => d.trim().length > 0);
   const [copied, setCopied] = useState(false);
   const onCopySql = () => {
@@ -38,6 +42,26 @@ export function ExplainSqlModal(props: {
         ) : (
           <p style={{ margin: '0 0 1rem', color: 'var(--rv-muted)', fontStyle: 'italic' }}>
             No plain-language explanation was attached to this search.
+          </p>
+        )}
+        {matchesText && (
+          <p
+            style={{
+              margin: '0 0 1rem',
+              padding: '0.5rem 0.7rem',
+              background: 'var(--rv-accent-soft)',
+              borderLeft: '3px solid var(--rv-accent)',
+              borderRadius: 3,
+              color: 'var(--rv-fg)',
+              fontSize: '0.78rem',
+              lineHeight: 1.45,
+            }}
+          >
+            <strong>Text matching is approximate.</strong> Rows were picked by matching words in the
+            report text, so an unusual phrasing can be missed and a mention meant to be ruled out
+            can slip through.{' '}
+            {terms.length > 0 &&
+              'Expand a few rows and check the highlighted text before relying on this.'}
           </p>
         )}
         <div style={{ fontWeight: 600, marginBottom: '0.35rem', fontSize: '0.85rem' }}>SQL</div>
