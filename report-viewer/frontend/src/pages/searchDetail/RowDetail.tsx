@@ -40,13 +40,17 @@ export function RowDetail(props: {
     const { bodies, flags } = highlightSourcesFromSql(props.sql);
     const branches = [...bodies, ...escaped.map((t) => `\\b${t}\\b`)];
     if (!branches.length) return null;
+    // Deduplicate: the SQL's inline flags already carry `i`, and repeating a flag
+    // is a constructor error, not a no-op.
+    const flagStr = Array.from(new Set([...flags.replace('m', ''), 'g', 'i'])).join('');
     try {
       // safe: pattern branches passed isBacktrackSafe, term branches are escaped
-      // literals; on failure the panel simply renders unhighlighted text
+      // literals
       // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
-      return new RegExp(`(${branches.join('|')})`, `${flags.replace('m', '')}gi`);
+      return new RegExp(`(${branches.join('|')})`, flagStr);
     } catch {
-      return null;
+      // Keep the terms working rather than losing every highlight on the row.
+      return highlightRe;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.sql, escaped.join('\u0000')]);
