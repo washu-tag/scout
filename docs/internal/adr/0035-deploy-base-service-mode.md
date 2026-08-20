@@ -78,9 +78,20 @@ extractor and analytics apps) stays mode-agnostic; only the edge moves.
 
 - One `scout-config` artifact ships both modes; a site is a `service_mode` value + one
   edge set. adapt-dev is the first `aws`-mode consumer.
-- Completing the `aws` branch across the S3-touching charts (hive, trino, extractor,
-  opa) and the ALB ingress edge is real, chart-by-chart work; this ADR scopes it, a
-  follow-up implements it.
+- Completing the `aws` branch is **real per-chart work, not a values toggle**: the
+  S3-touching charts (hive, trino, extractor, opa) hardcode MinIO/access-key S3 in
+  their values today (e.g. hive `S3_ENDPOINT`/`S3_ACCESS_KEY`/`S3_PATH_STYLE_ACCESS`),
+  with only a generic `serviceAccount.annotations` hook. `mode: aws` = an IRSA
+  ServiceAccount + WebIdentity credential path + virtual-host S3, dropping the
+  access-key env. Chart-by-chart; this ADR scopes it, a follow-up implements it.
+- **DAG dependency across modes (open implementation decision).** extractor, hive, opa,
+  and trino currently `dependsOn: minio-tenant`. Cloud mode ships no MinIO Tenant, so
+  these edges must not dangle. Two candidate resolutions, to settle at implementation:
+  (a) retain a `minio-tenant` Kustomization in both modes that renders empty in `aws`
+  mode (deploys nothing, becomes Ready immediately), so the shared `dependsOn` holds
+  unchanged and the whole storage difference rides `service_mode` in the chart values;
+  or (b) make the storage-readiness edge itself mode-specific. (a) keeps the DAG static
+  and is preferred, pending confirmation the tenant base can be made a clean no-op.
 - `service_mode` joins the `required-vars` contract; `validate-deploy` must render both
   modes so neither edge rots (only one is exercised on any given cluster).
 - The DAG stays mostly mode-agnostic, so future components are added once, not twice.
