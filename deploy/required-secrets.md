@@ -55,6 +55,12 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | --- | --- | --- |
 | `oauth2-proxy` | `client-id`, `client-secret`, `cookie-secret` | oauth2-proxy (cookie-secret generate-once) |
 | `oauth2-proxy-redis` | `redis-password` | oauth2-proxy session store (= valkey password) |
+| `oauth2-proxy-logo` | `logo.png` | oauth2-proxy sign-in page, **non-optional** volume mount |
+
+`oauth2-proxy-logo` is a static asset (the ~158 KB sign-in logo), not a credential: the
+base does not ship or generate it (unlike the `oauth2-proxy-templates` ConfigMap), so a
+site must provide it as a Secret (from CI or the site repo, not the secrets manager) or
+oauth2-proxy stays in `ContainerCreating` on the missing mount.
 
 ## Not site-provided (generated in-cluster, listed so they aren't double-provisioned)
 - `${cassandra_cluster_name}-superuser` — cass-operator
