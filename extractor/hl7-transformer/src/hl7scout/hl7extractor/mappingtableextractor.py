@@ -102,13 +102,18 @@ class MappingTableExtractor:
         )
         if filtered_df is None:
             return
-        processed_df = self.preprocess(filtered_df)
-        df = self.process_stage_1(processed_df)
-        df = self.process_stage_2(df)
-        df = self.process_stage_3(df)
-        self.process_stage_4(df)
-        self.process_stage_5()
-        self.postprocess()
+        try:
+            processed_df = self.preprocess(filtered_df)
+            df = self.process_stage_1(processed_df)
+            df = self.process_stage_2(df)
+            df = self.process_stage_3(df)
+            self.process_stage_4(df)
+            self.process_stage_5()
+            activity.logger.info("Mapping table derivation complete")
+        finally:
+            # A mid-stage failure has to release the pins itself: the session-level
+            # `clearCache()` sweeps `cache()`d frames only, for the reason `unpin` gives.
+            self.postprocess()
 
     def cache(self, df: DataFrame) -> DataFrame:
         cached_df = df.cache()
@@ -708,8 +713,24 @@ class MappingTableExtractor:
             self.merge_to_dt(dupes_to_add_df)
 
     def postprocess(self):
+        """Release everything this run materialized.
+
+        Runs on the failure path too, so it must not raise: `unpin`'s py4j call against
+        a torn-down JVM would replace the exception that got us here.
+        """
         for df in self.dataframes_to_unpersist:
-            df.unpersist()
+            try:
+                df.unpersist()
+            except Exception:
+                activity.logger.warning(
+                    "Could not unpersist a cached frame", exc_info=True
+                )
+        self.dataframes_to_unpersist.clear()
         for pinned_df in self.pinned_dataframes:
-            self.unpin(pinned_df)
-        activity.logger.info("Mapping table derivation complete")
+            try:
+                self.unpin(pinned_df)
+            except Exception:
+                activity.logger.warning(
+                    "Could not unpin a checkpointed frame", exc_info=True
+                )
+        self.pinned_dataframes.clear()
