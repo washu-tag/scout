@@ -133,28 +133,46 @@ async def main(argv=None) -> int:
 
     signal.signal(signal.SIGTERM, on_sigterm)
 
-    # Start the health check server, then run the temporal worker alongside it
+    # Run the health check server and the temporal worker side by side. Whichever
+    # stops first ends the process, because neither is useful without the other.
     spark_failure = asyncio.Event()
     health_server = health_check_server()
-    health_task = asyncio.create_task(health_server.serve())
-    try:
-        await run_worker(
+    health_task = asyncio.create_task(health_server.serve(), name="health server")
+    worker_task = asyncio.create_task(
+        run_worker(
             temporal_address,
             temporal_namespace,
             default_report_delta_table_name,
             HEALTH_TEMP_FILE,
             spark_failure,
+        ),
+        name="ingest worker",
+    )
+    try:
+        done, _ = await asyncio.wait(
+            (health_task, worker_task), return_when=asyncio.FIRST_COMPLETED
         )
+        # Read every result so none goes unobserved, then re-raise the first failure.
+        # On SIGTERM that is the SigTermException raised out of serve(): uvicorn's
+        # capture_signals handles the signal itself, then restores our handler and
+        # re-raises it as serve() unwinds.
+        errors = [error for task in done if (error := task.exception()) is not None]
+        if errors:
+            raise errors[0]
     finally:
         # serve() returns only once should_exit is set, so without this the process
         # would keep running with no worker in it.
         health_server.should_exit = True
-        await health_task
+        worker_task.cancel()
+        await asyncio.gather(health_task, worker_task, return_exceptions=True)
 
     if spark_failure.is_set():
         log.error("Exiting after Spark failure so the container restarts")
-        return 1
-    return 0
+    else:
+        # Nothing raised, so one of the two simply returned. Either way there is
+        # nothing left running, so exit nonzero to get the container restarted.
+        log.error("The worker or the health check server stopped unexpectedly")
+    return 1
 
 
 if __name__ == "__main__":
