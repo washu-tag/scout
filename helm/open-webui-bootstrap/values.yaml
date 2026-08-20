@@ -59,6 +59,8 @@ persistentConfig:
   tool_server_connections: []
   default_model_id: ''
   task_model_id: ''
+  # OWUI's session JWT lifetime, e.g. '28800s'. Empty = skip.
+  jwt_expires_in: ''
 
 # OWUI Functions (filter / pipe / action). Each entry mirrors the inventory
 # shape: id, name, description, source_file (a filename in files/payloads/),
