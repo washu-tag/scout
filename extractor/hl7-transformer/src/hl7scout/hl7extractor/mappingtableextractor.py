@@ -142,10 +142,26 @@ class MappingTableExtractor:
         plan.rdd().unpersist(False)
 
     def recache_existing_mapping(self):
+        """Reread the mapping table, pinned to the version this read observes.
+
+        Without `versionAsOf` the read is late-binding: a Delta write drops the cache of
+        every frame whose plan references the table it wrote, and the recompute then
+        resolves to post-merge state — so a frame's contents depend on when it happened
+        to be recomputed. Pinning holds each generation of derived frames to the
+        snapshot it was built against. Stages that must see an earlier stage's writes
+        call this again afterwards, which is what advances the version.
+        """
         if self.existing_mapping_df is not None:
             self.existing_mapping_df.unpersist()
-        self.existing_mapping_df = self.cache(self.spark.read.table(self.table_name))
-        activity.logger.info("Updated existing mapping table reread")
+        version = (
+            DeltaTable.forName(self.spark, self.table_name).history(1).head()["version"]
+        )
+        self.existing_mapping_df = self.cache(
+            self.spark.read.option("versionAsOf", version).table(self.table_name)
+        )
+        activity.logger.info(
+            "Updated existing mapping table reread at version %d", version
+        )
 
     def merge_to_dt(self, df: DataFrame):
         merge_df_into_dt_on_column(
