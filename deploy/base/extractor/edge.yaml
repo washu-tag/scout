@@ -35,7 +35,7 @@ data:
     serviceAccount:
       create: true
       annotations:
-        eks.amazonaws.com/role-arn: '${lake_writer_role_arn}'
+        eks.amazonaws.com/role-arn: '${irsa_role_prefix}-hl7log-extractor'
     envFrom:
       - configMapRef:
           name: s3-env
@@ -83,7 +83,7 @@ data:
     serviceAccount:
       create: true
       annotations:
-        eks.amazonaws.com/role-arn: '${lake_writer_role_arn}'
+        eks.amazonaws.com/role-arn: '${irsa_role_prefix}-hl7-transformer'
     envFrom:
       - configMapRef:
           name: s3-env

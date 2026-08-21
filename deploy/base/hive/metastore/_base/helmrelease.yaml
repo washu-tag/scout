@@ -2,7 +2,7 @@
 # the hive DB as the `hive` owner over the -rw endpoint; S3 creds = lake-writer.
 # Mode-parameterized via cluster-vars (ADR 0035): on-prem sets s3_path_style_access=true
 # + a MinIO endpoint/key; aws sets path-style=false, empty endpoint/key, the WebIdentity
-# hive_hadoop_opts, and lake_writer_role_arn for the IRSA ServiceAccount.
+# hive_hadoop_opts, and irsa_role_prefix-hive-metastore for the IRSA ServiceAccount.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -29,12 +29,12 @@ spec:
       # plain multi-arch tags). Overrides the chart appVersion.
       tag: '3.1.3-e.15'
     fullnameOverride: hive-metastore
-    # aws: IRSA SA via lake_writer_role_arn. on-prem has no IRSA webhook, so the empty
+    # aws: IRSA SA via ${irsa_role_prefix}-hive-metastore. on-prem has no IRSA webhook, so the empty
     # role-arn annotation is inert and the SA just runs the pod.
     serviceAccount:
       create: true
       annotations:
-        eks.amazonaws.com/role-arn: '${lake_writer_role_arn}'
+        eks.amazonaws.com/role-arn: '${irsa_role_prefix}-hive-metastore'
     service:
       type: ClusterIP
       port: 9083

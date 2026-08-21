@@ -38,7 +38,7 @@ data:
     serviceAccount:
       create: true
       annotations:
-        eks.amazonaws.com/role-arn: '${lake_reader_role_arn}'
+        eks.amazonaws.com/role-arn: '${irsa_role_prefix}-trino'
     envFrom:
       - secretRef:
           name: trino-authz-env

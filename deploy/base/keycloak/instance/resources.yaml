@@ -89,7 +89,7 @@ metadata:
   name: keycloak-opa-bundle-writer
   namespace: '${keycloak_namespace}'
   annotations:
-    eks.amazonaws.com/role-arn: '${opa_bundle_writer_role_arn}'
+    eks.amazonaws.com/role-arn: '${irsa_role_prefix}-opa-bundle-writer'
 ---
 # Host Ingress (traefik k3s edge) -> operator-created keycloak-service; the operator
 # needs a subdomain and has no path-based ingress. Mirrors the role's keycloak-ingress.

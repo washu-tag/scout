@@ -53,6 +53,7 @@ hl7log_extractor_resources_requests_memory
 hl7log_extractor_timeout
 hl7logs_root_dir
 ingest_postgres_table_name
+irsa_role_prefix
 keycloak_bootstrap_admin_user
 keycloak_internal_url
 keycloak_namespace
@@ -60,8 +61,6 @@ keycloak_realm_name
 keycloak_realm_url
 keycloak_superset_client_id
 lake_bucket
-lake_reader_role_arn
-lake_writer_role_arn
 loki_admin_bucket
 loki_chunks_bucket
 loki_ruler_bucket
@@ -73,9 +72,7 @@ oauth2_proxy_namespace
 oauth2_proxy_subdomain
 oauth_provider_name
 opa_bundle_object_key
-opa_bundle_reader_role_arn
 opa_bundle_s3_endpoint
-opa_bundle_writer_role_arn
 opa_bundles_bucket
 postgres_cluster_name
 postgres_cluster_namespace

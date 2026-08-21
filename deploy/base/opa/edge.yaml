@@ -47,7 +47,7 @@ data:
     serviceAccount:
       create: true
       annotations:
-        eks.amazonaws.com/role-arn: '${opa_bundle_reader_role_arn}'
+        eks.amazonaws.com/role-arn: '${irsa_role_prefix}-opa-bundle-reader'
     bundleReader:
       secretName: ''
     config:

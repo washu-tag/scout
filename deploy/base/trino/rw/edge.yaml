@@ -34,7 +34,7 @@ data:
     serviceAccount:
       create: true
       annotations:
-        eks.amazonaws.com/role-arn: '${lake_writer_role_arn}'
+        eks.amazonaws.com/role-arn: '${irsa_role_prefix}-trino-rw'
     catalogs:
       delta: |
         connector.name=delta_lake
