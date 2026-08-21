@@ -68,7 +68,11 @@ jobs:
           for d in sorted(dirs):
               blob += subprocess.run(["kustomize", "build", d],
                                      capture_output=True, text=True).stdout + "\n"
-          for f in glob.glob("deploy/flux/*.yaml"):
+          # shared DAG + both mode subdirs (flux/{aws,on-prem}/), so aws-only edge
+          # vars (ALB, IRSA role-arns) are covered too and neither mode can rot.
+          for f in glob.glob("deploy/flux/*.yaml") + glob.glob("deploy/flux/*/*.yaml"):
+              if f.endswith("kustomization.yaml"):
+                  continue
               blob += open(f).read() + "\n"
           blob = blob.replace("$$", "\x00")  # drop $$-escaped literals before matching
           used = set(re.findall(r'\$\{([A-Za-z0-9_]+)[:}]', blob))  # ${NAME} / ${NAME:-def}
@@ -147,48 +151,58 @@ jobs:
           print("OPA data document matches the Ansible trino_* source")
           PY
 
-      - name: Parse Flux Kustomizations + check the DAG
+      - name: Parse Flux Kustomizations + check the DAG (per service_mode)
         run: |
           python3 - <<'PY'
           import yaml, glob, sys, collections
-          nodes = {}; edges = []; names = collections.Counter()
-          for f in sorted(glob.glob("deploy/flux/*.yaml")):
-              try:
-                  docs = list(yaml.safe_load_all(open(f)))
-              except Exception as e:
-                  print(f"::error file={f}::YAML parse failed: {e}"); sys.exit(1)
-              for d in docs:
-                  if not d:
-                      continue
-                  name = d["metadata"]["name"]
-                  names[name] += 1          # count before insert to catch collisions
-                  nodes[name] = f
-                  for dep in d.get("spec", {}).get("dependsOn", []):
-                      edges.append((name, dep["name"]))
+          # The DAG is mode-agnostic shared files (deploy/flux/*.yaml) UNION exactly one
+          # mode subdir (flux/{aws,on-prem}/), since a site reconciles the shared set +
+          # one subdir (ADR 0035). The `storage-ready` gate + the ingress edge live only
+          # in the subdirs, so check each mode's union: a lake consumer's
+          # dependsOn: storage-ready must resolve in BOTH modes with no collision.
+          def load(files):
+              nodes = {}; edges = []; names = collections.Counter()
+              for f in sorted(files):
+                  if f.endswith("kustomization.yaml"):
+                      continue  # kustomize aggregator, not a Flux Kustomization
+                  try:
+                      docs = list(yaml.safe_load_all(open(f)))
+                  except Exception as e:
+                      print(f"::error file={f}::YAML parse failed: {e}"); sys.exit(1)
+                  for d in docs:
+                      if not d:
+                          continue
+                      name = d["metadata"]["name"]
+                      names[name] += 1
+                      nodes[name] = f
+                      for dep in d.get("spec", {}).get("dependsOn", []):
+                          edges.append((name, dep["name"]))
+              return nodes, edges, names
+          shared = glob.glob("deploy/flux/*.yaml")
           rc = 0
-          dups = sorted(n for n, c in names.items() if c > 1)
-          if dups:
-              print(f"::error::duplicate Kustomization metadata.name across files (they collide in "
-                    f"flux-system and prune each other): {dups}"); rc = 1
-          missing = sorted({b for _, b in edges if b not in nodes})
-          if missing:
-              print(f"::error::dependsOn references a Kustomization that does not exist: {missing}"); rc = 1
-          # Drop dangling edges before the sort so a missing target reports as a
-          # dangling ref (above), not a phantom cycle.
-          edges = [(a, b) for a, b in edges if b in nodes]
-          g = collections.defaultdict(list); indeg = collections.Counter()
-          for a, b in edges:
-              g[b].append(a); indeg[a] += 1
-          q = [n for n in nodes if indeg[n] == 0]; seen = 0
-          while q:
-              x = q.pop(); seen += 1
-              for y in g[x]:
-                  indeg[y] -= 1
-                  if indeg[y] == 0:
-                      q.append(y)
-          if seen != len(nodes):
-              print(f"::error::the Flux dependsOn graph has a cycle ({seen}/{len(nodes)} sortable)"); rc = 1
-          if rc == 0:
-              print(f"{len(nodes)} Kustomizations, {len(edges)} edges: acyclic, no dup names, no dangling refs")
+          for mode in ("on-prem", "aws"):
+              nodes, edges, names = load(shared + glob.glob(f"deploy/flux/{mode}/*.yaml"))
+              dups = sorted(n for n, c in names.items() if c > 1)
+              if dups:
+                  print(f"::error::[{mode}] duplicate Kustomization metadata.name (collide in "
+                        f"flux-system, prune each other): {dups}"); rc = 1
+              missing = sorted({b for _, b in edges if b not in nodes})
+              if missing:
+                  print(f"::error::[{mode}] dependsOn references a Kustomization that does not exist: {missing}"); rc = 1
+              edges = [(a, b) for a, b in edges if b in nodes]
+              g = collections.defaultdict(list); indeg = collections.Counter()
+              for a, b in edges:
+                  g[b].append(a); indeg[a] += 1
+              q = [n for n in nodes if indeg[n] == 0]; seen = 0
+              while q:
+                  x = q.pop(); seen += 1
+                  for y in g[x]:
+                      indeg[y] -= 1
+                      if indeg[y] == 0:
+                          q.append(y)
+              if seen != len(nodes):
+                  print(f"::error::[{mode}] the Flux dependsOn graph has a cycle ({seen}/{len(nodes)} sortable)"); rc = 1
+              if rc == 0:
+                  print(f"[{mode}] {len(nodes)} Kustomizations, {len(edges)} edges: acyclic, no dup names, no dangling refs")
           sys.exit(rc)
           PY

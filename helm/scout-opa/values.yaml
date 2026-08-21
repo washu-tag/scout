@@ -27,10 +27,19 @@ config:
 
 # Bundle-reader Secret managed outside this chart; Deployment mounts it via
 # envFrom. credsHash feeds the rolling-hash so rotation rolls pods without
-# re-reading the Secret values into the chart.
+# re-reading the Secret values into the chart. Set secretName: '' in aws mode
+# (IRSA) so no static-cred Secret is mounted.
 bundleReader:
   secretName: opa-bundle-reader
   credsHash: ''
+
+# aws only: create an IRSA SA for S3 bundle reads. create:false (default) keeps a bare
+# helm install / chart tests / on-prem unchanged (chart-default SA + bundle-reader Secret).
+serviceAccount:
+  create: false
+  name: ''
+  annotations: {}
+  automount: true
 
 service:
   port: 8181

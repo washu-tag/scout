@@ -1463,5 +1463,12 @@ jobs:
           # Apply the Flux Kustomizations, let the DAG converge, then run the SAME
           # ingest suite Ansible deploy-and-test runs, against the Flux-reconciled
           # slice. Fleshed out when the artifact + secret seed land.
-          kubectl apply -f config-artifact/flux/ || kubectl apply -f deploy/flux/
+          # Shared DAG (non-recursive: the aws/ + on-prem/ subdirs are skipped) PLUS the
+          # on-prem mode set -- storage-ready=the real MinIO tenant, oauth2-proxy, the
+          # Traefik edge -- via `-k` since that subdir has a kustomization.yaml. Without
+          # the on-prem set the lake consumers' dependsOn: storage-ready never resolves.
+          # The e2e cluster is on-prem k3s.
+          FLUX_DIR=config-artifact/flux; [ -d "$FLUX_DIR" ] || FLUX_DIR=deploy/flux
+          kubectl apply -f "$FLUX_DIR"/
+          kubectl apply -k "$FLUX_DIR"/on-prem
           flux reconcile kustomization extractor --with-source --timeout=15m

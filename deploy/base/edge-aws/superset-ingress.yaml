@@ -1,0 +1,42 @@
+# Public ALB for Superset, ALB-native OIDC against the scout realm via the dedicated
+# alb-oidc client + browser-flow gate (realm template) -- not the oauth2-proxy client.
+# scheme via the `alb` IngressClassParams. NOTE: the realm ships out-of-band, so
+# validate the gate on a live Keycloak; until then this admits any realm user.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: superset-alb
+  namespace: '${scout_analytics_namespace}'
+  annotations:
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: ${acm_cert_arn}
+    alb.ingress.kubernetes.io/group.name: ${alb_group_name}
+    alb.ingress.kubernetes.io/auth-type: oidc
+    alb.ingress.kubernetes.io/auth-on-unauthenticated-request: authenticate
+    alb.ingress.kubernetes.io/auth-scope: 'openid email profile'
+    # 8h SSO lifetime; short because the ALB cookie isn't reachable by Keycloak
+    # end_session (the logout-propagation lever until an idpresponse hook lands).
+    alb.ingress.kubernetes.io/auth-session-timeout: '28800'
+    alb.ingress.kubernetes.io/auth-idp-oidc: |
+      {
+        "Issuer": "${keycloak_realm_url}",
+        "AuthorizationEndpoint": "${keycloak_realm_url}/protocol/openid-connect/auth",
+        "TokenEndpoint": "${keycloak_realm_url}/protocol/openid-connect/token",
+        "UserInfoEndpoint": "${keycloak_realm_url}/protocol/openid-connect/userinfo",
+        "SecretName": "alb-oidc-keycloak"
+      }
+spec:
+  ingressClassName: alb
+  rules:
+    - host: 'superset.${server_hostname}'
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: superset
+                port:
+                  number: 8088
