@@ -20,7 +20,7 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
-    - name: minio-tenant
+    - name: storage-ready
     - name: hive-metastore
     - name: opa
     - name: keycloak-realm
@@ -45,6 +45,6 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
-    - name: minio-tenant
+    - name: storage-ready
     - name: hive-metastore
     - name: scout-extractor-foundation

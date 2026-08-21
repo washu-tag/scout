@@ -1,17 +1,19 @@
-# Flux Kustomizations for hive (Phase 3 DAG). Each pulls scout-config (OCIRepository)
-# + cluster-vars for ${...} substitution. dependsOn reproduces Ansible deploy order.
-
+# on-prem MinIO (Phase 3 DAG). operator split from tenant so a CR never reconciles
+# before its CRDs exist (ADR: the CRD-ordering deadlock). The tenant is named
+# `storage-ready` -- the mode-agnostic gate the shared lake consumers dependsOn -- so
+# on-prem they genuinely wait for buckets + IAM (wait:true). aws provides
+# storage-ready as an inert marker instead (../aws/storage.yaml).
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: hive-db
+  name: minio-operator
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./base/hive/db
+  path: ./base/minio/operator
   prune: true
   wait: true
-  timeout: 10m
+  timeout: 5m
   sourceRef:
     kind: OCIRepository
     name: scout-config
@@ -20,17 +22,16 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
-    - name: scout-data-foundation
-    - name: postgres-cluster
+    - name: scout-operators-foundation
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: hive-metastore
+  name: storage-ready
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./base/hive/metastore
+  path: ./base/minio/tenant
   prune: true
   wait: true
   timeout: 10m
@@ -43,5 +44,4 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: scout-data-foundation
-    - name: hive-db
-    - name: storage-ready
+    - name: minio-operator

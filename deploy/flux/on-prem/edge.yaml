@@ -1,17 +1,17 @@
-# Flux Kustomization for opa (Phase 3 DAG). config artifact (OCIRepository
-# scout-config) + cluster-vars ${...} subst; dependsOn reproduces Ansible order.
-
+# on-prem ingress/auth edge: the oauth2-proxy Traefik forwardAuth Middlewares
+# (Traefik CRDs an aws cluster has no controller for). dependsOn oauth2-proxy since
+# the Middlewares route to its Service.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: opa
+  name: edge-on-prem
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./base/opa
+  path: ./base/edge-on-prem
   prune: true
   wait: true
-  timeout: 10m
+  timeout: 5m
   sourceRef:
     kind: OCIRepository
     name: scout-config
@@ -20,5 +20,4 @@ spec:
       - kind: ConfigMap
         name: cluster-vars
   dependsOn:
-    - name: scout-analytics-foundation
-    - name: storage-ready
+    - name: oauth2-proxy
