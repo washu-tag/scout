@@ -424,6 +424,7 @@ export default function SearchDetailPage() {
                                       : []),
                                   ]}
                                   highlightDiagnosis={meta.data?.match_diagnoses ?? []}
+                                  sql={meta.data?.sql}
                                 />
                               </div>
                             </td>
@@ -651,6 +652,7 @@ export default function SearchDetailPage() {
           sql={meta.data?.sql ?? ''}
           highlightTerms={meta.data?.match_terms ?? []}
           highlightDiagnosis={meta.data?.match_diagnoses ?? []}
+          searchId={searchId}
           onClose={() => setSqlModalOpen(false)}
         />
       )}

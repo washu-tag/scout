@@ -1,8 +1,9 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useMemo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { friendlyError, getReport } from '../../api/client';
 import { buildDiscussPrompt } from '../../chat';
 import { useChatPrompt } from '../../ChatPrompt';
+import { highlightSourcesFromSql } from '../../lib/sqlHighlight';
 import { fmtDate } from './format';
 import { paginationBtn } from './styles';
 
@@ -10,6 +11,9 @@ export function RowDetail(props: {
   row: Record<string, unknown>;
   highlightTerms: string[];
   highlightDiagnosis: string[];
+  /** The search's SQL. Its positive patterns highlight the span that actually
+   *  matched, which `highlightTerms` -- plain literals -- routinely cannot. */
+  sql?: string;
 }) {
   const requestPrompt = useChatPrompt();
   const reportId = String(props.row['primary_report_identifier'] ?? '');
@@ -29,6 +33,28 @@ export function RowDetail(props: {
   // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
   const highlightRe = escaped.length ? new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi') : null;
 
+  // Highlight the spans the SQL matched *and* the literal terms: the patterns catch
+  // synonyms and word orders the terms miss, while a term may come from a filter the
+  // SQL applied separately. One regex has to drive split(), so union the sources.
+  const textRe = useMemo(() => {
+    const { bodies, flags } = highlightSourcesFromSql(props.sql);
+    const branches = [...bodies, ...escaped.map((t) => `\\b${t}\\b`)];
+    if (!branches.length) return null;
+    // Deduplicate: the SQL's inline flags already carry `i`, and repeating a flag
+    // is a constructor error, not a no-op.
+    const flagStr = Array.from(new Set([...flags.replace('m', ''), 'g', 'i'])).join('');
+    try {
+      // safe: pattern branches passed isBacktrackSafe, term branches are escaped
+      // literals
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+      return new RegExp(`(${branches.join('|')})`, flagStr);
+    } catch {
+      // Keep the terms working rather than losing every highlight on the row.
+      return highlightRe;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.sql, escaped.join('\u0000')]);
+
   // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
   const dxPrefixes = props.highlightDiagnosis
     .map((d) => d.trim().replace(/%+$/, '').toLowerCase())
@@ -36,8 +62,8 @@ export function RowDetail(props: {
 
   const applyTextHighlights = (text: string): ReactNode => {
     if (!text) return null;
-    if (!highlightRe) return text;
-    const parts = text.split(highlightRe);
+    if (!textRe) return text;
+    const parts = text.split(textRe);
     return parts.map((p, i) =>
       i % 2 === 1 ? (
         <mark key={i} style={{ background: '#fff3a3', color: '#222', padding: '0 1px' }}>
