@@ -51,6 +51,7 @@
   "oauth2_proxy_subdomain": "auth",
   "oauth_provider_name": "Keycloak",
   "opa_bundle_object_key": "scout/bundle.tar.gz",
+  "opa_bundle_reader_role_arn": "",
   "opa_bundles_bucket": "opa-bundles",
   "postgres_cluster_name": "postgresql-cluster",
   "postgres_cluster_namespace": "scout-core",

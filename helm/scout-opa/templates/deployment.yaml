@@ -27,6 +27,7 @@ spec:
         # appear in clear text anywhere in the rendered manifest.
         policy-hash: {{ include "scout-opa.policyHash" . | quote }}
     spec:
+      serviceAccountName: {{ include "scout-opa.serviceAccountName" . }}
       containers:
         - name: opa
           image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
@@ -43,9 +44,13 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
+          {{- if .Values.bundleReader.secretName }}
+          # Static bundle-reader creds (on-prem MinIO). Empty secretName in aws mode
+          # (IRSA) renders no envFrom, so the SDK default chain finds the SA token.
           envFrom:
             - secretRef:
                 name: {{ .Values.bundleReader.secretName }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:
