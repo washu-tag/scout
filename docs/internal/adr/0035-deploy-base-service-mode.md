@@ -136,8 +136,12 @@ analytics apps) stays mode-agnostic; only the edge moves.
   verbatim.**
 - MinIO is **on-prem-only** (the `storage-ready` gate); opa and the Keycloak OPA-bundle
   writer both moved to S3+IRSA in aws (`scout-opa` gained an IRSA `serviceAccount`
-  template, since we own it), so an aws cluster stands up **zero MinIO**. New vars:
-  `opa_bundle_reader_role_arn`, `opa_bundle_writer_role_arn`, `opa_bundle_s3_endpoint`.
+  template, since we own it), so an aws cluster stands up **zero MinIO**.
+- **Identity is per-component IRSA**, matching the live adapt-dev convention: one
+  `irsa_role_prefix` cluster-var, and each aws-edge ServiceAccount appends its component
+  suffix (`-hive-metastore`, `-trino`, `-hl7log-extractor`, `-opa-bundle-reader`, ...), a
+  least-privilege role per workload provisioned in the platform repo. New vars:
+  `irsa_role_prefix`, `opa_bundle_s3_endpoint`.
 - The **ingress edge is implemented** as `base/edge-{on-prem,aws}/`: on-prem Traefik
   forwardAuth Middlewares vs aws ALB-native-OIDC Ingresses (Keycloak un-gated + an admin
   fixed-response; Superset ALB-OIDC). Adds `acm_cert_arn` + `alb_group_name` to the
