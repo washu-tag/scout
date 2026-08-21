@@ -17,7 +17,9 @@ data:
       yaml: |
         services:
           bundle-store:
-            url: http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000
+            # Same endpoint the Keycloak writer uses (opa_bundle_s3_endpoint) so
+            # reader + writer can't drift; on-prem = the in-cluster MinIO -hl service.
+            url: ${opa_bundle_s3_endpoint}
             credentials:
               s3_signing:
                 environment_credentials: {}

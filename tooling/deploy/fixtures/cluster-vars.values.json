@@ -52,6 +52,8 @@
   "oauth_provider_name": "Keycloak",
   "opa_bundle_object_key": "scout/bundle.tar.gz",
   "opa_bundle_reader_role_arn": "",
+  "opa_bundle_s3_endpoint": "http://scout-hl.scout-data:9000",
+  "opa_bundle_writer_role_arn": "",
   "opa_bundles_bucket": "opa-bundles",
   "postgres_cluster_name": "postgresql-cluster",
   "postgres_cluster_namespace": "scout-core",

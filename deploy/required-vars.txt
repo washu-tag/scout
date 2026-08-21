@@ -74,6 +74,8 @@ oauth2_proxy_subdomain
 oauth_provider_name
 opa_bundle_object_key
 opa_bundle_reader_role_arn
+opa_bundle_s3_endpoint
+opa_bundle_writer_role_arn
 opa_bundles_bucket
 postgres_cluster_name
 postgres_cluster_namespace

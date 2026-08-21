@@ -41,6 +41,14 @@ spec:
     enabled: false
   proxy:
     headers: xforwarded
+  # aws: run Keycloak (the OPA-bundle writer SPI) under an IRSA ServiceAccount so it
+  # writes the bundle to S3 via web-identity, no static keys. on-prem: the SA's empty
+  # role-arn annotation is inert (no IRSA webhook on k3s) and the SPI uses the
+  # opa-bundle-writer Secret. SA object defined below.
+  unsupported:
+    podTemplate:
+      spec:
+        serviceAccountName: keycloak-opa-bundle-writer
   additionalOptions:
     - name: metrics-enabled
       value: 'true'
@@ -53,8 +61,11 @@ spec:
     # Hacky env-into-pod path until the operator supports it; the SPI reads these (ADR 0021).
     - name: scout-url
       value: '${server_hostname}'
+    # aws: empty -> the SPI's blank-check uses the SDK default (regional virtual-host)
+    # S3 endpoint via IRSA; on-prem: the in-cluster MinIO -hl service. Must match the
+    # OPA reader's endpoint (opa-edge-on-prem) so writer + reader hit the same store.
     - name: opa-bundle-s3-endpoint
-      value: 'http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000'
+      value: '${opa_bundle_s3_endpoint}'
     - name: opa-bundle-s3-bucket
       value: '${opa_bundles_bucket}'
     - name: opa-bundle-s3-object-key
@@ -67,10 +78,28 @@ spec:
       secret:
         name: opa-bundle-writer
         key: access-key
+    # aws: opa-bundle-writer is site-seeded with EMPTY keys so the SPI's blank-check
+    # falls through to IRSA (the SA above); the Secret object persists but carries no
+    # credential. Dropping it entirely needs a raw-CR overlay the ${service_mode} flux
+    # path can't express (documented follow-up); empty-seed is the MinIO-free stopgap.
+    - name: opa-bundle-s3-access-key
+      secret:
+        name: opa-bundle-writer
+        key: access-key
     - name: opa-bundle-s3-secret-key
       secret:
         name: opa-bundle-writer
         key: secret-key
+---
+# aws IRSA SA for the OPA-bundle writer SPI (referenced by unsupported.podTemplate
+# above). Mode-agnostic object; the role-arn annotation is empty + inert on-prem.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keycloak-opa-bundle-writer
+  namespace: '${keycloak_namespace}'
+  annotations:
+    eks.amazonaws.com/role-arn: '${opa_bundle_writer_role_arn}'
 ---
 # Host Ingress (traefik k3s edge) -> operator-created keycloak-service; the operator
 # needs a subdomain and has no path-based ingress. Mirrors the role's keycloak-ingress.
