@@ -14,6 +14,16 @@ on:
       - .release-please-manifest.json
       - CHANGELOG.md
       - version.txt
+  # Manual escape hatch (the narrowed image_build trigger otherwise leaves no way to
+  # force one): rebuild + rescan every image even when the path filter wouldn't. Bypasses
+  # the filter via the image_build output below; publish still gates on tests, so a manual
+  # rebuild can't skip them.
+  workflow_dispatch:
+    inputs:
+      rebuild_images:
+        description: 'Force a full image rebuild + rescan'
+        type: boolean
+        default: false
 
 # Cancel a PR's superseded runs. Keyed on head_ref (set only for pull_request);
 # push events (main / ci-** / demo**) fall back to a unique run_id group and are
@@ -40,7 +50,9 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      ci: ${{ steps.filter.outputs.ci }}
+      # A workflow_dispatch with rebuild_images bypasses the path filter (paths-filter has
+      # no base to diff on a manual run, so the input is OR'd in here rather than fed to it).
+      image_build: ${{ steps.filter.outputs.image_build == 'true' || github.event.inputs.rebuild_images == 'true' }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       hl7-listener: ${{ steps.filter.outputs.hl7-listener }}
@@ -70,13 +82,14 @@ jobs:
         id: filter
         with:
           filters: |
-            # Only ci.yaml and the composite actions it calls affect image
-            # contents. Sibling workflows must NOT force a full rebuild+rescan, or
-            # an unrelated CI edit surfaces the newest fixable CVE on all images.
-            # ci.yaml calls no reusable workflows, so this pair is complete.
-            ci:
-              - '.github/workflows/ci.yaml'
-              - '.github/actions/**'
+            # Only the shared build action changes what EVERY image's build does, so only
+            # it forces a full rebuild+rescan. Editing ci.yaml or the scan/import/publish/
+            # version actions no longer rebuilds every image (unchanged ones are pulled), so
+            # a CI edit won't surface a fresh CVE across all images. The root .dockerignore
+            # only affects the scout-notebook build (its context is the repo root), so it
+            # lives in that image's filter, not here.
+            image_build:
+              - '.github/actions/docker-build-cache/**'
             hl7log-extractor:
               - 'extractor/hl7log-extractor/**'
               - 'linting_java_checkstyle.xml'
@@ -87,6 +100,8 @@ jobs:
             scout-notebook:
               - 'helm/scout-notebook/**'
               - 'sdk/python/**'
+              # Built from the repo root, so the root .dockerignore governs its context.
+              - '.dockerignore'
             launchpad:
               - 'launchpad/**'
             superset:
@@ -189,7 +204,7 @@ jobs:
           subproject: ${{ matrix.subproject }}
           image-name: ${{ matrix.image-name }}
       - name: 'Build/Cache Image - ${{ matrix.image-name }}'
-        if: needs.changes.outputs[matrix.image-name] == 'true' || steps.check-image.outputs.exists == 'false' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs[matrix.image-name] == 'true' || steps.check-image.outputs.exists == 'false' || needs.changes.outputs.image_build == 'true'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: ${{ matrix.subproject }}
