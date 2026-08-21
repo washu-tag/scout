@@ -1,0 +1,65 @@
+# Per-mode ingress + security-headers for Superset, merged into the HelmRelease via
+# valuesFrom (ADR 0035), so the shared base ships no mode-specific ingress (no dead
+# Traefik Ingress in aws). on-prem: chart Traefik Ingress + the oauth2-proxy +
+# security-headers middleware chain (ADR 0012). aws: chart ingress OFF (the ALB
+# Ingress in base/edge-aws/superset-ingress.yaml serves the host); the ADR-0012
+# header set is emitted app-side via Flask-Talisman, since an ALB cannot inject
+# response headers on a proxied 200. service_mode picks one; both ship.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: superset-edge-on-prem
+  namespace: '${scout_analytics_namespace}'
+data:
+  values.yaml: |
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      annotations:
+        traefik.ingress.kubernetes.io/router.middlewares: >-
+          ${oauth2_proxy_namespace}-oauth2-proxy-error@kubernetescrd,
+          ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
+          kube-system-security-headers@kubernetescrd
+      path: /
+      hosts:
+        - 'superset.${server_hostname}'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: superset-edge-aws
+  namespace: '${scout_analytics_namespace}'
+data:
+  # Chart ingress off (the ALB Ingress serves the host). security-headers move
+  # app-side via Flask-Talisman, mirroring the on-prem Traefik `security-headers`
+  # Middleware (ADR 0012), minus the oauth2-proxy CSP source (no oauth2-proxy in aws).
+  # force_https False: the ALB terminates TLS and forwards http in-cluster. NOTE: CSP
+  # must be validated against the running Superset (a too-strict policy blanks the UI).
+  values.yaml: |
+    ingress:
+      enabled: false
+    configOverrides:
+      security_headers: |
+        TALISMAN_ENABLED = True
+        TALISMAN_CONFIG = {
+            "force_https": False,
+            "strict_transport_security": True,
+            "strict_transport_security_max_age": 31536000,
+            "strict_transport_security_include_subdomains": True,
+            "frame_options": "DENY",
+            "content_security_policy": {
+                "default-src": "'self'",
+                "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+                "style-src": "'self' 'unsafe-inline'",
+                "img-src": "'self' data: blob:",
+                "font-src": "'self' data:",
+                "connect-src": "'self' ws: wss: https://keycloak.${server_hostname}",
+                "form-action": "'self' https://keycloak.${server_hostname}",
+                "frame-ancestors": "'none'",
+            },
+        }
+        HTTP_HEADERS = {
+            "X-Content-Type-Options": "nosniff",
+            "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+            "Cross-Origin-Opener-Policy": "same-origin",
+        }
