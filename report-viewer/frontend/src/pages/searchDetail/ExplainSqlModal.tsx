@@ -76,8 +76,14 @@ export function ExplainSqlModal(props: {
               paddingRight: '2.25rem',
               fontSize: '0.74rem',
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              whiteSpace: 'pre',
+              // The model may emit the whole statement on one line, which turns a
+              // `pre` block into a single unreadable horizontal scroll. Wrap, and
+              // break inside long regex literals that have no spaces to wrap at.
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'anywhere',
               overflowX: 'auto',
+              maxHeight: '18rem',
+              overflowY: 'auto',
               margin: 0,
             }}
           >
