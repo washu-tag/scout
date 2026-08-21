@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { getMatchedSpans } from '../../api/client';
 import { Modal } from '../../Modal';
 
 export function ExplainSqlModal(props: {
@@ -7,6 +9,8 @@ export function ExplainSqlModal(props: {
   highlightTerms: string[];
   highlightDiagnosis: string[];
   onClose: () => void;
+  /** EXPERIMENTAL: enables the matched-text breakdown. */
+  searchId?: string;
 }) {
   const terms = props.highlightTerms.filter((t) => t.trim().length > 0);
   // Gate the accuracy caveat on the SQL, not on match_terms: those are a model-supplied
@@ -125,6 +129,7 @@ export function ExplainSqlModal(props: {
             {copied ? <CheckIcon /> : <CopyIcon />}
           </button>
         </div>
+        {props.searchId && <MatchedTextPanel searchId={props.searchId} />}
         {(terms.length > 0 || codes.length > 0) && (
           <div style={{ marginTop: '1rem' }}>
             <div style={{ fontWeight: 600, marginBottom: '0.2rem', fontSize: '0.85rem' }}>
@@ -195,6 +200,111 @@ export function ExplainSqlModal(props: {
         )}
       </div>
     </Modal>
+  );
+}
+
+// EXPERIMENTAL / WIP: what the search actually matched, ranked.
+// A term list cannot be compared across searches -- it drops the structure and is
+// the model's summary rather than the query's effect. This is the effect: same
+// shape every time, so two cohorts can be read side by side. The tail is the point;
+// coincidental matches surface there, not in the head.
+function MatchedTextPanel(props: { searchId: string }) {
+  const [open, setOpen] = useState(false);
+  const q = useQuery({
+    queryKey: ['spans', props.searchId],
+    queryFn: () => getMatchedSpans(props.searchId),
+    enabled: open,
+    staleTime: 5 * 60_000,
+  });
+  const spans = q.data?.spans ?? [];
+  const repeated = spans.filter((s) => s.n > 1);
+  const singles = spans.filter((s) => s.n === 1);
+  return (
+    <div style={{ marginTop: '1rem' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+          font: 'inherit',
+          fontWeight: 600,
+          fontSize: '0.85rem',
+          color: 'var(--rv-accent)',
+          cursor: 'pointer',
+        }}
+      >
+        {open ? '▾' : '▸'} What this search matched
+      </button>
+      {open && (
+        <div style={{ marginTop: '0.5rem', fontSize: '0.78rem' }}>
+          {q.isLoading && <span style={{ color: 'var(--rv-muted)' }}>Counting…</span>}
+          {q.isError && (
+            <span style={{ color: 'var(--rv-muted)' }}>Could not load the breakdown.</span>
+          )}
+          {q.data && !q.data.supported && (
+            <span style={{ color: 'var(--rv-muted)' }}>
+              This search has no free-text pattern to break down.
+            </span>
+          )}
+          {q.data?.supported && (
+            <>
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--rv-muted)', lineHeight: 1.4 }}>
+                The distinct phrases the pattern matched, most common first — {q.data.distinct}{' '}
+                phrasings across {q.data.total} rows. Compare this between searches to see what a
+                reworded question changed.
+              </p>
+              <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                <tbody>
+                  {repeated.map((s, i) => (
+                    <tr key={i}>
+                      <td
+                        style={{
+                          padding: '1px 0',
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                        }}
+                      >
+                        {s.text}
+                      </td>
+                      <td
+                        style={{
+                          padding: '1px 0 1px 0.75rem',
+                          textAlign: 'right',
+                          fontVariantNumeric: 'tabular-nums',
+                          color: 'var(--rv-muted)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {s.n}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {singles.length > 0 && (
+                <details style={{ marginTop: '0.5rem' }}>
+                  <summary style={{ cursor: 'pointer', color: 'var(--rv-muted)' }}>
+                    {singles.length} phrasings seen once
+                  </summary>
+                  <div
+                    style={{
+                      marginTop: '0.35rem',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {singles.map((s, i) => (
+                      <div key={i}>{s.text}</div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

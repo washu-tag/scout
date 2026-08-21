@@ -624,6 +624,7 @@ export default function SearchDetailPage() {
           sql={meta.data?.sql ?? ''}
           highlightTerms={meta.data?.match_terms ?? []}
           highlightDiagnosis={meta.data?.match_diagnoses ?? []}
+          searchId={searchId}
           onClose={() => setSqlModalOpen(false)}
         />
       )}
