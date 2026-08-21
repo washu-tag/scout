@@ -836,7 +836,7 @@
         "alias": "alb-oidc-require-role",
         "config": {
           "negate": "true",
-          "role": "{{ keycloak_alb_oidc_role }}"
+          "condUserRole": "{{ keycloak_alb_oidc_role }}"
         }
       }{% endif %}
     ],

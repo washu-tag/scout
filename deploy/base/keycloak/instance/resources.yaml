@@ -74,10 +74,6 @@ spec:
       value: '${s3_region}'
     - name: opa-bundle-realm
       value: '${keycloak_realm_name}'
-    - name: opa-bundle-s3-access-key
-      secret:
-        name: opa-bundle-writer
-        key: access-key
     # aws: opa-bundle-writer is site-seeded with EMPTY keys so the SPI's blank-check
     # falls through to IRSA (the SA above); the Secret object persists but carries no
     # credential. Dropping it entirely needs a raw-CR overlay the ${service_mode} flux

@@ -1,6 +1,6 @@
 # Mode-agnostic storage join point (ADR 0035). The lake consumers (hive, trino,
 # extractor, opa) dependsOn a Kustomization named `storage-ready`; that name is
-# provided per-mode from flux/edge-${service_mode} (NOT the shared DAG), so the edge
+# provided per-mode from flux/{aws,on-prem}/ (NOT the shared DAG), so the edge
 # resolves in both modes with no dangling ref and no name collision:
 #   - aws: a storage-ready Kustomization points here -- this inert, immediately-Ready
 #     marker (the lake is S3+IRSA; nothing to stand up), so consumers proceed.
