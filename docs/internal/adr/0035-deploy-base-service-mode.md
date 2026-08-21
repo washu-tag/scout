@@ -51,33 +51,37 @@ other `${var}`. How each mode delta is expressed depends on its shape:
    inline. Applied to trino (ro + rw: catalog + `serviceAccount` + `envFrom`) and both
    extractor workers (`envFrom` + `volumes`/`volumeMounts` + the aws `serviceAccount`).
 
-3. **Structural / raw-manifest deltas: per-mode edge sets under `base/edge-{on-prem,aws}/`.**
-   The auth/ingress edge is raw manifests a ConfigMap `valuesFrom` cannot reach, so it
-   ships as two kustomize dirs a site selects between (a `scout-edge` Kustomization ->
-   `./base/edge-${service_mode}`), not in the shared `flux/` DAG. on-prem carries the
-   oauth2-proxy Traefik forwardAuth `Middleware`s, relocated out of `base/oauth2-proxy`
-   because they are Traefik CRDs an aws cluster has no controller for (the one required
-   base change; everything else on-prem is a standard Ingress that is simply inert in
-   aws). aws carries public ALB Ingresses with ALB-native OIDC, mirroring the live
-   adapt-dev pattern: the ALB reuses the same `oauth2-proxy` Keycloak client (via the
-   `alb-oidc-keycloak` Secret), so the realm's `oauth2-proxy-user` approval gate still
-   applies, and Keycloak is exposed un-gated (it is the OP) with its master-realm admin
-   paths blocked by an ALB fixed-response.
+3. **Structural / raw-manifest deltas: per-mode `flux/{aws,on-prem}/` subdirs.** The
+   auth/ingress edge is raw manifests a ConfigMap `valuesFrom` cannot reach, so it ships in
+   the mode subdir a site reconciles alongside the shared `flux/` DAG (the same place the
+   `storage-ready` gate above lives; the base resources are under `base/edge-{on-prem,aws}/`).
+   on-prem carries the oauth2-proxy Traefik forwardAuth `Middleware`s, relocated out of
+   `base/oauth2-proxy` because they are Traefik CRDs an aws cluster has no controller for.
+   aws carries public ALB Ingresses with ALB-native OIDC: since that admits any user who
+   completes the exchange, it uses a **dedicated `alb-oidc` Keycloak client** (per-host
+   `/oauth2/idpresponse` callbacks) bound to a browser-flow override that denies anyone
+   without the `oauth2-proxy-user` role, the on-prem approval gate now enforced
+   Keycloak-side, not the reused oauth2-proxy client an earlier draft assumed. Keycloak
+   itself is un-gated (it is the OP), master-realm admin paths blocked by an ALB fixed-response.
 
-**MinIO is not an edge.** Earlier framing had the in-cluster MinIO Tenant as on-prem-only,
-with the open question of how storage consumers' `dependsOn: minio-tenant` survives in
-aws. Implementation resolved it: the MinIO Tenant is **mode-independent**. It backs the
-OPA authz-bundle pipe (the Keycloak SPI writes the bundle, OPA polls it) and the bundle
-service accounts in *both* modes, decoupled from the data lake. So `minio-tenant` ships
-unconditionally, the shared `dependsOn` holds in aws, and only the data-lake *access*
-(hive/trino/extractor) flips to S3 + IRSA. No no-op tenant, no mode-specific
-storage-readiness edge.
+**MinIO is on-prem-only; aws ships none.** The lake consumers `dependsOn` a mode-agnostic
+`storage-ready` Kustomization whose body comes from the `flux/{aws,on-prem}/` subdir a
+site reconciles: on-prem it IS the real MinIO tenant (`wait:true`, so consumers wait for
+buckets + IAM); aws it is an inert immediately-Ready marker (the lake is S3+IRSA). One
+name, one object per mode → the `dependsOn` resolves in both with no collision and aws
+stands up zero MinIO. (An earlier draft kept MinIO in aws to back the OPA bundle and
+called the tenant "mode-independent"; moving opa to S3 (below) removed the last aws
+MinIO consumer, so the tenant is on-prem-only.)
 
-**opa stays on MinIO.** opa is a HelmRelease and S3-adjacent, but its bundle is an
-internal control-plane artifact, not lake data, and its chart has no ServiceAccount
-template (IRSA is not expressible without a chart change). opa and its Keycloak-SPI writer
-are left unflipped in both modes. Moving them to S3 would let an aws cluster drop MinIO
-entirely, a separate decision needing a chart change + a dedicated bundle-reader role.
+**opa moves to S3+IRSA (we own the chart).** `scout-opa` is a Scout chart, so rather than
+leave the authz bundle on MinIO in aws we added an IRSA `serviceAccount` template + a
+conditional bundle-reader `envFrom` to the chart (mirroring the sibling Scout charts that
+already ship one). In aws opa's bundle plugin reads from S3 via the IRSA SA (no MinIO, no
+static Secret); on-prem it keeps the MinIO reader Secret. The Keycloak OPA-bundle *writer*
+SPI does the same (its blank-keys-→-IRSA path already existed, no Java change). So the
+whole OPA authz-bundle pipe is S3+IRSA in aws, and MinIO is genuinely on-prem-only. (An
+earlier draft treated scout-opa's missing SA template as a fixed constraint and left opa on
+MinIO. We own the chart, so we changed it.)
 
 **The secret contract is mode-specific** and documented in `required-secrets.md`: cloud
 uses IRSA (no object-store access-key Secrets), on-prem uses the MinIO-user credential
@@ -88,13 +92,18 @@ analytics apps) stays mode-agnostic; only the edge moves.
 
 ## Alternatives considered
 
-- **Chart-internal branching on `service_mode` for the config-block deltas** (pass the
-  mode as a value; the chart conditions the catalog/envFrom/volumes). Works for the
-  value-class deltas (used above) but not the config-block ones: the Trino catalog's
-  present/absent access-key lines and the hostPath-vs-emptyDir volume are structural, and
-  baking a mode switch into every such chart spreads the conditional across many charts
-  we do not all own. The `valuesFrom` edge keeps the conditional in one reviewable place
-  per workload.
+- **Chart-internal branching on `service_mode`** (pass the mode as a value; the chart
+  conditions the catalog/envFrom/volumes/SA). We DO own most of these charts (`scout-opa`,
+  `hive-metastore`, the extractor charts), so this is on the table, and we use it when the
+  mode needs a chart *capability* rather than data: `scout-opa` gained a `serviceAccount`
+  template for its aws IRSA SA. But when the delta is a per-mode *values* block (envFrom
+  membership, the Trino catalog's present/absent lines, hostPath-vs-emptyDir), a
+  `valuesFrom` edge ConfigMap keeps it as reviewable data in the deploy base instead of
+  scattering `if aws` branches through chart templates, and it is the *only* option for
+  the genuinely upstream charts we can't modify (trino, superset). Rule of thumb: add a
+  template capability to a chart we own when the mode needs one; carry per-mode values in
+  the edge ConfigMap either way. (This corrects an earlier draft that avoided chart changes
+  by wrongly treating our own charts as unmodifiable.)
 - **Per-mode flux paths for the HelmRelease config-blocks too** (as with the ingress
   edge). Rejected for values: a single `service_mode` var selects a ConfigMap by name
   inside the shared DAG, so there is no need for a site to reconcile a different flux path
@@ -125,9 +134,10 @@ analytics apps) stays mode-agnostic; only the edge moves.
   internal-comm) alongside the S3 creds, and the extractor never wired an IRSA
   ServiceAccount at all (aws lake writes would fail). **Do not port the Ansible aws branch
   verbatim.**
-- `minio-tenant` is mode-independent (resolved); opa + the Keycloak SPI writer are
-  deliberately left on MinIO. Both are revisitable if an aws cluster ever needs to drop
-  MinIO, gated on opa chart SA support + a bundle-reader role.
+- MinIO is **on-prem-only** (the `storage-ready` gate); opa and the Keycloak OPA-bundle
+  writer both moved to S3+IRSA in aws (`scout-opa` gained an IRSA `serviceAccount`
+  template, since we own it), so an aws cluster stands up **zero MinIO**. New vars:
+  `opa_bundle_reader_role_arn`, `opa_bundle_writer_role_arn`, `opa_bundle_s3_endpoint`.
 - The **ingress edge is implemented** as `base/edge-{on-prem,aws}/`: on-prem Traefik
   forwardAuth Middlewares vs aws ALB-native-OIDC Ingresses (Keycloak un-gated + an admin
   fixed-response; Superset ALB-OIDC). Adds `acm_cert_arn` + `alb_group_name` to the
