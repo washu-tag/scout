@@ -33,9 +33,8 @@ bundleReader:
   secretName: opa-bundle-reader
   credsHash: ''
 
-# aws mode only: create an IRSA ServiceAccount so OPA's bundle plugin reads from
-# S3 via web-identity creds. create: false (default) keeps a bare `helm install`,
-# chart tests, and on-prem unchanged (chart-default SA, bundle-reader Secret).
+# aws only: create an IRSA SA for S3 bundle reads. create:false (default) keeps a bare
+# helm install / chart tests / on-prem unchanged (chart-default SA + bundle-reader Secret).
 serviceAccount:
   create: false
   name: ''

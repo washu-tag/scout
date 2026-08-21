@@ -1,8 +1,6 @@
-# Per-mode storage/identity for trino-ro, merged into the HelmRelease via
-# valuesFrom (ADR 0035). service_mode picks one by name; both ship, the unused
-# one is inert. Each carries the full catalog + envFrom so the merge is a clean
-# override (Flux merges valuesFrom under inline spec.values). trino-authz-env
-# (keystore + internal-comm) stays in both modes; only the S3 creds differ.
+# Per-mode storage/identity for trino-ro via valuesFrom (ADR 0035): on-prem = MinIO
+# creds + endpoint + path-style; aws = IRSA SA + S3, no static keys. trino-authz-env
+# (keystore + internal-comm) stays in both modes. Both ship; service_mode picks one.
 apiVersion: v1
 kind: ConfigMap
 metadata:

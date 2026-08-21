@@ -41,10 +41,8 @@ spec:
     enabled: false
   proxy:
     headers: xforwarded
-  # aws: run Keycloak (the OPA-bundle writer SPI) under an IRSA ServiceAccount so it
-  # writes the bundle to S3 via web-identity, no static keys. on-prem: the SA's empty
-  # role-arn annotation is inert (no IRSA webhook on k3s) and the SPI uses the
-  # opa-bundle-writer Secret. SA object defined below.
+  # aws: Keycloak (OPA-bundle writer SPI) runs under an IRSA SA (S3 via web-identity);
+  # on-prem: the empty role-arn is inert and the SPI uses the opa-bundle-writer Secret.
   unsupported:
     podTemplate:
       spec:
@@ -61,8 +59,7 @@ spec:
     # Hacky env-into-pod path until the operator supports it; the SPI reads these (ADR 0021).
     - name: scout-url
       value: '${server_hostname}'
-    # aws: empty -> the SPI's blank-check uses the SDK default (regional virtual-host)
-    # S3 endpoint via IRSA; on-prem: the in-cluster MinIO -hl service. Must match the
+    # aws: empty -> SDK-default S3 via IRSA; on-prem: in-cluster MinIO. Must match the
     # OPA reader's endpoint (opa-edge-on-prem) so writer + reader hit the same store.
     - name: opa-bundle-s3-endpoint
       value: '${opa_bundle_s3_endpoint}'
@@ -74,10 +71,8 @@ spec:
       value: '${s3_region}'
     - name: opa-bundle-realm
       value: '${keycloak_realm_name}'
-    # aws: opa-bundle-writer is site-seeded with EMPTY keys so the SPI's blank-check
-    # falls through to IRSA (the SA above); the Secret object persists but carries no
-    # credential. Dropping it entirely needs a raw-CR overlay the ${service_mode} flux
-    # path can't express (documented follow-up); empty-seed is the MinIO-free stopgap.
+    # aws: opa-bundle-writer is site-seeded EMPTY so the blank-check falls through to
+    # IRSA; dropping the Secret needs a raw-CR overlay (follow-up). MinIO-free stopgap.
     - name: opa-bundle-s3-access-key
       secret:
         name: opa-bundle-writer
@@ -87,8 +82,7 @@ spec:
         name: opa-bundle-writer
         key: secret-key
 ---
-# aws IRSA SA for the OPA-bundle writer SPI (referenced by unsupported.podTemplate
-# above). Mode-agnostic object; the role-arn annotation is empty + inert on-prem.
+# IRSA SA for the OPA-bundle writer SPI (unsupported.podTemplate); role-arn inert on-prem.
 apiVersion: v1
 kind: ServiceAccount
 metadata:

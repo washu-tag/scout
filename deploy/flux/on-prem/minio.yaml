@@ -1,8 +1,6 @@
-# on-prem MinIO (Phase 3 DAG). operator split from tenant so a CR never reconciles
-# before its CRDs exist (ADR: the CRD-ordering deadlock). The tenant is named
-# `storage-ready` -- the mode-agnostic gate the shared lake consumers dependsOn -- so
-# on-prem they genuinely wait for buckets + IAM (wait:true). aws provides
-# storage-ready as an inert marker instead (../aws/storage.yaml).
+# on-prem MinIO. operator split from tenant so a CR never dry-runs before its CRDs
+# (the CRD-ordering deadlock). The tenant is named `storage-ready` -- the gate the
+# lake consumers dependsOn -- so on-prem they wait for buckets (wait:true); aws inert.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:

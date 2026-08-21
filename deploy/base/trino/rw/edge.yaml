@@ -1,7 +1,5 @@
-# Per-mode storage/identity for trino-rw, merged into the HelmRelease via
-# valuesFrom (ADR 0035). service_mode picks one by name; both ship, the unused
-# one is inert. trino-rw has no JWT/TLS, so on-prem needs only the trino-rw-s3
-# creds and aws needs no envFrom at all (credentials via IRSA).
+# Per-mode storage/identity for trino-rw via valuesFrom (ADR 0035): on-prem = the
+# trino-rw-s3 creds; aws = IRSA SA, no envFrom (rw has no JWT/TLS). Both ship.
 apiVersion: v1
 kind: ConfigMap
 metadata:

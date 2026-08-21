@@ -45,8 +45,7 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
           {{- if .Values.bundleReader.secretName }}
-          # Static bundle-reader creds (on-prem MinIO). Empty secretName in aws mode
-          # (IRSA) renders no envFrom, so the SDK default chain finds the SA token.
+          # on-prem: bundle-reader creds. aws: empty secretName -> no envFrom (IRSA).
           envFrom:
             - secretRef:
                 name: {{ .Values.bundleReader.secretName }}

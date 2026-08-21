@@ -33,6 +33,17 @@ until CI switches `deploy-and-test` to deploy from it. See
   chart versions are pinned in `versions.yaml` + Renovate-tracked.
 - **Secrets by fixed name only** — bases reference them (e.g. `superuser-secret`);
   values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git.
+- **Service-mode (`aws` vs `on-prem`, ADR 0035) picks a mechanism by the shape of the
+  delta**, so the three-way split is one rule, not ad hoc:
+  1. *scalar diff* → an inline `${var}` the chart branches on (e.g. hive
+     `S3_PATH_STYLE_ACCESS`, the extractor `sparkDefaults.mode`).
+  2. *list-membership / block diff a scalar can't express* (envFrom entries, catalog
+     lines, an aws-only ServiceAccount) → a per-mode `valuesFrom` edge ConfigMap named
+     `<workload>-edge-${service_mode}` (trino, extractor, opa, superset).
+  3. *a whole resource present in one mode only, or a CRD the other mode lacks*
+     (MinIO, the Traefik Middlewares, oauth2-proxy, the ALB Ingresses) → the mode
+     subdir `flux/{aws,on-prem}/`, since `${var}` can't add/drop a document and a flux
+     path isn't substituted.
 
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (22 Flux

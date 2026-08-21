@@ -1,9 +1,6 @@
-# Per-mode storage/identity for the extractor workers, merged into each
-# HelmRelease via valuesFrom (ADR 0035). service_mode picks one by name; both
-# ship, the unused one is inert. Each carries the FULL envFrom + volumes/
-# volumeMounts (Flux replaces lists) plus the aws IRSA ServiceAccount. Note: the
-# Ansible aws branch never wired IRSA for the extractor (lake writes would fail);
-# the aws edges add the lake-writer SA that the sibling roles already use.
+# Per-mode storage/identity for the extractor workers via valuesFrom (ADR 0035):
+# on-prem = hostPath logs + s3-secret; aws = IRSA lake-writer SA + emptyDir, s3-secret
+# dropped. Each carries the full envFrom + volumes (Flux replaces lists). Both ship.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -33,8 +30,7 @@ metadata:
   name: hl7log-extractor-edge-aws
   namespace: '${scout_extractor_namespace}'
 data:
-  # IRSA lake-writer SA (SDK default chain -> WebIdentity); s3-secret dropped so
-  # static keys can't shadow the role. emptyDir /data (no node logs in aws).
+  # IRSA lake-writer SA; s3-secret dropped (static keys can't shadow the role).
   values.yaml: |
     serviceAccount:
       create: true
@@ -82,8 +78,7 @@ metadata:
   name: hl7-transformer-edge-aws
   namespace: '${scout_extractor_namespace}'
 data:
-  # IRSA lake-writer SA -> Spark WebIdentity (sparkDefaults.mode=aws); s3-secret
-  # dropped, postgres-secret kept. emptyDir /data (no node logs in aws).
+  # IRSA lake-writer SA (Spark WebIdentity); s3-secret dropped, postgres-secret kept.
   values.yaml: |
     serviceAccount:
       create: true

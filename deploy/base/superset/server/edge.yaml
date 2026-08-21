@@ -1,10 +1,6 @@
-# Per-mode ingress + security-headers for Superset, merged into the HelmRelease via
-# valuesFrom (ADR 0035), so the shared base ships no mode-specific ingress (no dead
-# Traefik Ingress in aws). on-prem: chart Traefik Ingress + the oauth2-proxy +
-# security-headers middleware chain (ADR 0012). aws: chart ingress OFF (the ALB
-# Ingress in base/edge-aws/superset-ingress.yaml serves the host); the ADR-0012
-# header set is emitted app-side via Flask-Talisman, since an ALB cannot inject
-# response headers on a proxied 200. service_mode picks one; both ship.
+# Per-mode ingress + security-headers for Superset via valuesFrom (ADR 0035). on-prem:
+# Traefik chart ingress + the oauth2-proxy/security-headers middleware chain (ADR 0012).
+# aws: chart ingress off (the ALB serves), ADR-0012 headers app-side via Talisman.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -30,11 +26,8 @@ metadata:
   name: superset-edge-aws
   namespace: '${scout_analytics_namespace}'
 data:
-  # Chart ingress off (the ALB Ingress serves the host). security-headers move
-  # app-side via Flask-Talisman, mirroring the on-prem Traefik `security-headers`
-  # Middleware (ADR 0012), minus the oauth2-proxy CSP source (no oauth2-proxy in aws).
-  # force_https False: the ALB terminates TLS and forwards http in-cluster. NOTE: CSP
-  # must be validated against the running Superset (a too-strict policy blanks the UI).
+  # ADR-0012 headers app-side via Talisman (ALB can't inject); force_https False (ALB
+  # terminates TLS). NOTE: validate CSP on the running Superset (too-strict blanks the UI).
   values.yaml: |
     ingress:
       enabled: false

@@ -1,7 +1,5 @@
-# oauth2-proxy Traefik forwardAuth Middlewares, moved out of base/oauth2-proxy so
-# the shared base applies cleanly on an aws cluster (no Traefik CRDs). Consumers
-# chain ${oauth2_proxy_namespace}-oauth2-proxy-{auth,error}@kubernetescrd (superset,
-# minio console). ADR 0035 on-prem ingress edge.
+# oauth2-proxy Traefik forwardAuth Middlewares (moved here from base/oauth2-proxy so
+# the shared base applies on aws, which has no Traefik CRDs). ADR 0035 on-prem edge.
 ---
 # forwardAuth gate. authResponseHeaders copies preferred-username upstream
 # (Voila -> X-Trino-User, ADR 0022).

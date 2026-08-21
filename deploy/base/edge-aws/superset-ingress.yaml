@@ -1,12 +1,7 @@
-# Public ALB for Superset, gated by ALB-native OIDC against the Keycloak scout realm.
-# The alb-oidc-keycloak Secret carries a DEDICATED `alb-oidc` confidential client
-# (client + browser-flow live in the realm template, service-mode track P6) -- not
-# the on-prem oauth2-proxy client: ALB-OIDC only needs a successful token exchange,
-# so the approval gate must be enforced by that client's browser flow, and its
-# callback path (/oauth2/idpresponse) differs from oauth2-proxy's (/oauth2/callback).
-# scheme via the `alb` IngressClassParams. Superset also runs app-level Keycloak
-# OAuth for RBAC. NOTE: the realm client + gate land in P6; until then this Ingress
-# authenticates any realm user (documented follow-up, tracked in the PR).
+# Public ALB for Superset, ALB-native OIDC against the scout realm via the dedicated
+# alb-oidc client + browser-flow gate (realm template) -- not the oauth2-proxy client.
+# scheme via the `alb` IngressClassParams. NOTE: the realm ships out-of-band, so
+# validate the gate on a live Keycloak; until then this admits any realm user.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -21,10 +16,8 @@ metadata:
     alb.ingress.kubernetes.io/auth-type: oidc
     alb.ingress.kubernetes.io/auth-on-unauthenticated-request: authenticate
     alb.ingress.kubernetes.io/auth-scope: 'openid email profile'
-    # 8h, tracks the Scout-wide Keycloak SSO lifetime (keycloak_token_lifespan /
-    # oauth2_proxy_cookie_expire), not adapt-dev's hand-ported 7d. The ALB session
-    # cookie isn't reachable by Keycloak end_session, so a short lifetime is the
-    # logout-propagation lever until an idpresponse logout hook lands (follow-up).
+    # 8h SSO lifetime; short because the ALB cookie isn't reachable by Keycloak
+    # end_session (the logout-propagation lever until an idpresponse hook lands).
     alb.ingress.kubernetes.io/auth-session-timeout: '28800'
     alb.ingress.kubernetes.io/auth-idp-oidc: |
       {
