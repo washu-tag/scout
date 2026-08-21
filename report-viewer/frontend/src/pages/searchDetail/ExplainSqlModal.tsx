@@ -59,8 +59,8 @@ export function ExplainSqlModal(props: {
           >
             <strong>Text matching is approximate.</strong> Rows were picked by matching words in the
             report text, so unusual phrasing can be missed and a mention meant to be ruled out can
-            slip through. A language model is generating these patterns. Prompt clearly if you have
-            preferences and recognize that results will change when the patterns change. The SQL
+            slip through. A language model writes these patterns for each search, so be specific
+            about what you want, and expect the count to shift if you rephrase or ask again. The SQL
             below is what defines <em>this</em> cohort. Expand rows in the table to review the
             matches.
           </p>
