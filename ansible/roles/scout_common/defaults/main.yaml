@@ -193,6 +193,16 @@ keycloak_minio_client_id: minio
 keycloak_launchpad_client_id: launchpad
 keycloak_open_webui_client_id: open-webui
 keycloak_xnat_client_id: xnat
+# AWS ALB-native OIDC (ADR 0035, aws_deployment only): a dedicated confidential client
+# the ALB uses for browser auth. The ALB calls back to https://<host>/oauth2/idpresponse
+# per host, and a browser-flow override gates login to keycloak_alb_oidc_role (ALB OIDC
+# otherwise admits any realm user). keycloak_alb_oidc_client_secret is vault-provided,
+# required only when aws_deployment. Keycloak 26 rejects redirect-uri host wildcards, so
+# keycloak_alb_oidc_hosts lists each ALB-gated host (the un-gated keycloak host excluded).
+keycloak_alb_oidc_client_id: alb-oidc
+keycloak_alb_oidc_hosts:
+  - 'superset.{{ server_hostname }}'
+keycloak_alb_oidc_role: oauth2-proxy-user
 
 # OAuth callback URLs for each client
 open_webui_callback_url: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'
