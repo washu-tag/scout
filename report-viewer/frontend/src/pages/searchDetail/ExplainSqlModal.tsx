@@ -59,9 +59,10 @@ export function ExplainSqlModal(props: {
           >
             <strong>Text matching is approximate.</strong> Rows were picked by matching words in the
             report text, so unusual phrasing can be missed and a mention meant to be ruled out can
-            slip through. The patterns are written fresh for each search, so the same question asked
-            again can return a different count. The SQL below is what defines <em>this</em> cohort —
-            expand a few rows to check it against the report.
+            slip through. A language model is generating these patterns. Prompt clearly if you have
+            preferences and recognize that results will change when the patterns change. The SQL
+            below is what defines <em>this</em> cohort. Expand rows in the table to review the
+            matches.
           </p>
         )}
         <div style={{ fontWeight: 600, marginBottom: '0.35rem', fontSize: '0.85rem' }}>SQL</div>
