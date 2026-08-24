@@ -270,10 +270,12 @@
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_oauth2_proxy_client_secret }}",
         "redirectUris": [
-          "{{ oauth2_proxy_callback_url }}"
+          "{{ oauth2_proxy_callback_url }}"{% for h in keycloak_alb_oidc_hosts %},
+          "https://{{ h }}/oauth2/idpresponse"{% endfor %}
         ],
         "webOrigins": [
-          "{{ oauth2_proxy_base_url }}"
+          "{{ oauth2_proxy_base_url }}"{% for h in keycloak_alb_oidc_hosts %},
+          "https://{{ h }}"{% endfor %}
         ],
         "attributes": {
           "post.logout.redirect.uris": "https://{{ server_hostname }}"
@@ -683,35 +685,6 @@
           "organization",
           "offline_access"
         ]
-      }{% endif %}{% if aws_deployment | default(false) | bool %},
-      {
-        "name": "{{ keycloak_alb_oidc_client_id }}",
-        "description": "AWS ALB-native OIDC client (ADR 0035)",
-        "enabled": true,
-        "clientId": "{{ keycloak_alb_oidc_client_id }}",
-        "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_alb_oidc_client_secret }}",
-        "standardFlowEnabled": true,
-        "directAccessGrantsEnabled": false,
-        "redirectUris": [
-{% for h in keycloak_alb_oidc_hosts %}          "https://{{ h }}/oauth2/idpresponse"{{ "," if not loop.last else "" }}
-{% endfor %}
-        ],
-        "webOrigins": [
-{% for h in keycloak_alb_oidc_hosts %}          "https://{{ h }}"{{ "," if not loop.last else "" }}
-{% endfor %}
-        ],
-        "authenticationFlowBindingOverrides": {
-          "browser": "alb-oidc-browser"
-        },
-        "defaultClientScopes": [
-          "web-origins",
-          "acr",
-          "profile",
-          "roles",
-          "basic",
-          "email"
-        ]
       }{% endif %}
     ],
     "identityProviders": [
@@ -793,34 +766,7 @@
             "userSetupAllowed": false
           }
         ]
-      }{% if aws_deployment | default(false) | bool %},
-      {#- ALB-OIDC approval-gate flow (ADR 0035). VALIDATE on a live Keycloak 26 before
-          merge (conditional-user-role/deny-access/CONDITIONAL semantics aren't CI-testable):
-          confirm a user without keycloak_alb_oidc_role is denied. aws-gated. -#}
-      {
-        "alias": "alb-oidc-browser",
-        "description": "browser flow + ALB-OIDC approval-role gate (ADR 0035)",
-        "providerId": "basic-flow",
-        "topLevel": true,
-        "builtIn": false,
-        "authenticationExecutions": [
-          { "authenticator": "auth-cookie", "authenticatorFlow": false, "requirement": "ALTERNATIVE", "priority": 10, "userSetupAllowed": false },
-          { "authenticatorConfig": "default-provider", "authenticator": "identity-provider-redirector", "authenticatorFlow": false, "requirement": "ALTERNATIVE", "priority": 25, "userSetupAllowed": false },
-          { "authenticatorFlow": true, "requirement": "ALTERNATIVE", "priority": 30, "flowAlias": "forms", "userSetupAllowed": false },
-          { "authenticatorFlow": true, "requirement": "CONDITIONAL", "priority": 40, "flowAlias": "alb-oidc-gate", "userSetupAllowed": false }
-        ]
-      },
-      {
-        "alias": "alb-oidc-gate",
-        "description": "deny login unless the user holds keycloak_alb_oidc_role",
-        "providerId": "basic-flow",
-        "topLevel": false,
-        "builtIn": false,
-        "authenticationExecutions": [
-          { "authenticatorConfig": "alb-oidc-require-role", "authenticator": "conditional-user-role", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 10, "userSetupAllowed": false },
-          { "authenticator": "deny-access-authenticator", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 20, "userSetupAllowed": false }
-        ]
-      }{% endif %}
+      }
     ],
     "authenticatorConfig": [
       {
@@ -828,14 +774,7 @@
         "config": {
           "defaultProvider": "{{ keycloak_default_provider }}"
         }
-      }{% if aws_deployment | default(false) | bool %},
-      {
-        "alias": "alb-oidc-require-role",
-        "config": {
-          "negate": "true",
-          "condUserRole": "{{ keycloak_alb_oidc_role }}"
-        }
-      }{% endif %}
+      }
     ],
     {#- User-profile config: full-replace semantics via keycloak-config-cli
         (Scout owns this block). First four attrs are the Keycloak 26.x
