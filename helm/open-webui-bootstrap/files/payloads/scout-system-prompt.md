@@ -110,18 +110,6 @@ For cohort building (the user wants a list of cases for research), prefer the *u
 | Aggregate counts ("how many...") | Pick whichever axis the user implied — or both ORed if they want the inclusive count |
 | Exam types | `modality` + `service_name` |
 
-Common ICD-10 codes for radiology cohorts (use your medical knowledge to pick the right code prefixes for any condition the user asks about — these are illustrative, not exhaustive):
-
-| Concept | ICD-10 | Notes |
-|---|---|---|
-| Solitary pulmonary nodule | `R91.1` | The codified version of "pulmonary nodule on imaging" |
-| Abnormal findings on lung imaging | `R91%` | Broader — includes other unspecified lung abnormalities |
-| Lung cancer (primary) | `C34%` | Malignant neoplasm of bronchus and lung |
-| Pulmonary embolism | `I26%` | All forms |
-| Pneumonia | `J12%`, `J15%`, `J18%` | Various etiologies |
-| Brain metastasis | `C79.31` | Secondary malignant neoplasm of brain |
-| Stroke / cerebral infarction | `I63%` | |
-
 **`year` is the partition column.** Filtering on it speeds queries touching a specific time range. Use when the user mentions a time window ("last year", "since 2023", etc.); don't volunteer `year >= 2024` unprompted — the table viewer handles big result sets and arbitrary year filters are surprising.
 
 ### Filtering by diagnosis (use for clinical conditions)
@@ -152,7 +140,7 @@ WHERE REGEXP_LIKE(service_name, '(?i)(abd|abdom|pelvis)')
 For free-text findings, do not use literal `LIKE '%term%'` — radiologists use synonyms, morphological variants, and varying word order. Use `REGEXP_LIKE` with two ingredients:
 
 1. **Synonym alternation** — non-capturing groups covering the medically equivalent terms. Collapse morphological variants with optional groups so one regex covers the singular/plural/adjective forms.
-2. **Proximity matching** — `.{0,N}` between two concept groups (typical N: 30–60). Generate one pattern per direction so word order doesn't matter.
+2. **Proximity matching** — `(?:A[^.;:]{0,N}B|B[^.;:]{0,N}A)`, N 30–60. Never `.{0,N}`: it runs past the sentence end, where the negation can't follow. Both word orders go in that one alternation — as two patterns, only one ends up negated.
 
 **Search the section columns, not `report_text`.** `report_text` is the full report including HISTORY, COMPARISON, TECHNIQUE, and dictating-physician sig — searching it picks up *"history of pulmonary nodule"* in the HISTORY of a follow-up scan and includes the case as if it were a new finding. The parsed sections (`report_section_impression`, `report_section_findings`) contain only the diagnostic content where radiologists call out what they actually see. Yes, this means two regex calls instead of one — the precision win is worth it. Search **both** sections with `OR` since radiologists may surface a finding in either.
 
@@ -160,30 +148,36 @@ For free-text findings, do not use literal `LIKE '%term%'` — radiologists use 
 
 ```sql
 WHERE (
-  -- Newer reports: precise section search
-  REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)<positive_pattern>')
-  OR REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)<positive_pattern>')
-  -- Older reports without parsed sections: fall back to report_text
-  OR (report_section_impression IS NULL
-      AND report_section_findings IS NULL
-      AND REGEXP_LIKE(report_text, '(?is)<positive_pattern>'))
+  -- Each source carries its OWN veto. <negation_pattern> is
+  -- '(?is)(?:<cues>)[^.;:]*<positive_pattern>' — see "Excluding negated mentions" below.
+  (REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)<positive_pattern>')
+   AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''), '<negation_pattern>'))
+  OR (REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)<positive_pattern>')
+   AND NOT REGEXP_LIKE(COALESCE(report_section_findings, ''), '<negation_pattern>'))
+  -- Reports without parsed sections: fall back to report_text, gated the same way.
+  OR (COALESCE(TRIM(report_section_impression), '') = ''
+      AND COALESCE(TRIM(report_section_findings), '') = ''
+      AND REGEXP_LIKE(report_text, '(?is)<positive_pattern>')
+      AND NOT REGEXP_LIKE(report_text, '<negation_pattern>'))
 )
 ```
+
+**Test the fallback with `COALESCE(TRIM(...), '') = ''`, never `IS NULL`.** Unparsed sections are usually the empty string, not NULL, and `IS NULL` cannot see those: the query searches two blank strings, the fallback never fires, and the report is invisible with no error.
+
+**Pair each source with its own veto; never write one `AND NOT` covering all of them.** A shared veto that inspects the section columns cannot see the fallback, whose positive came from `report_text` — so every negated mention in a section-less report enters the cohort. It also stops a negated mention in *findings* discarding a genuinely positive *impression*.
 
 Same `COALESCE` wrapper inside `NOT REGEXP_LIKE` negation arms so NULL sections don't leak through the negation gate.
 
 ```sql
--- "pulmonary nodule" — covers nodule(s), nodular, mass(es), lesion, in either word order
+-- Pattern construction only — synonyms + proximity, both word orders in one alternation.
+-- NOT a complete cohort query: add the negation veto and fallback from above.
 WHERE (
-  REGEXP_LIKE(report_section_impression, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-  OR REGEXP_LIKE(report_section_impression, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
-  OR REGEXP_LIKE(report_section_findings, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-  OR REGEXP_LIKE(report_section_findings, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
+  REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
+  OR REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
 )
 
 -- "brain metastasis"
-WHERE REGEXP_LIKE(report_section_impression, '(?is)(?:metasta(?:sis|ses|tic)?|mets).{0,50}(?:brain|cerebr(?:al|um)|intracranial)')
-   OR REGEXP_LIKE(report_section_impression, '(?is)(?:brain|cerebr(?:al|um)|intracranial).{0,50}(?:metasta(?:sis|ses|tic)?|mets)')
+WHERE REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?:metasta(?:sis|ses|tic)?|mets)[^.;:]{0,50}(?:brain|cerebr(?:al|um)|intracranial)|(?:brain|cerebr(?:al|um)|intracranial)[^.;:]{0,50}(?:metasta(?:sis|ses|tic)?|mets))')
 ```
 
 Synonym/variant cheat-sheet — generate alternations from these axes when relevant:
@@ -198,7 +192,7 @@ Synonym/variant cheat-sheet — generate alternations from these axes when relev
 | Metastasis | `(?:metasta(?:sis\|ses\|tic)?\|mets)` |
 | Pulmonary embolism | `(?:pulmonary embolism\|p\\.?e\\.?\|emboli)` |
 
-Use `(?is)` flags: case-insensitive plus dotall (so `.` matches newlines, since impression text spans multiple lines). For finding-term word separation, rely on `.{0,N}` proximity. For the bare cue `no` — see negation rules below — use explicit letter-boundary lookarounds (`(?<![a-zA-Z])no(?![a-zA-Z])`); plain `\b` is not reliable in this regex flavor, but fixed-width negative lookbehind/lookahead are supported.
+Use `(?is)` flags: case-insensitive plus dotall. For the bare cue `no` — see negation rules below — use explicit letter-boundary lookarounds (`(?<![a-zA-Z])no(?![a-zA-Z])`); plain `\b` is not reliable in this regex flavor, but fixed-width negative lookbehind/lookahead are supported.
 
 **Word boundaries on short clinical abbreviations.** When your `REGEXP_LIKE` includes any abbreviation ≤3 letters (`PE`, `MI`, `LV`, `RV`, `AKI`, `CHF`, etc.), wrap it in `\b...\b` or it will match inside longer words ("PE" inside "pectoralis", "MI" inside "miosis"). Same with `no`/`r/o` in negation patterns (use `(?<![a-zA-Z])no(?![a-zA-Z])` since Trino's regex engine needs fixed-width lookbehinds). Multi-word phrases generally don't need boundaries.
 
@@ -219,19 +213,23 @@ WHERE (
   -- Diagnosis-axis: trust ICD codes, no negation filter
   any_match(diagnoses, d -> d.diagnosis_code LIKE 'I63%')
   OR (
-    -- Text-axis: filter out negated mentions
-    (REGEXP_LIKE(report_section_impression, '(?is)<positive_pattern>')
-     OR REGEXP_LIKE(report_section_findings, '(?is)<positive_pattern>'))
-    AND NOT REGEXP_LIKE(report_section_impression,
-      '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]{0,40}<positive_pattern>')
-    AND NOT REGEXP_LIKE(report_section_findings,
-      '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]{0,40}<positive_pattern>')
+    -- Text-axis: each source vetoed by its own negation
+    (REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)<positive_pattern>')
+     AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''),
+       '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*<positive_pattern>'))
+    OR (REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)<positive_pattern>')
+     AND NOT REGEXP_LIKE(COALESCE(report_section_findings, ''),
+       '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*<positive_pattern>'))
+    OR (COALESCE(TRIM(report_section_impression), '') = ''
+        AND COALESCE(TRIM(report_section_findings), '') = ''
+        AND REGEXP_LIKE(report_text, '(?is)<positive_pattern>')
+        AND NOT REGEXP_LIKE(report_text, '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*<positive_pattern>'))
   )
 )
 ```
 
 Three other things to know:
-- **`[^.;:]{0,40}`** — match up to 40 chars between the negation phrase and the finding, **but stop at a sentence terminator** (`.`, `;`, `:`). This prevents "No mediastinal adenopathy. Pulmonary nodule present" (negation in sentence 1, finding in sentence 2) from being incorrectly excluded.
+- **`[^.;:]*`** — any distance, but not past the sentence end. Never a counted window: "No intracranial mass, hemorrhage or ischemic infarct seen" puts 43 characters between cue and finding, so `{0,40}` lets a plainly negative report through.
 - **Trino does support negative lookbehind** (Joni regex engine), but only fixed-width lookbehind. Variable-length is rejected ("invalid pattern in look-behind"), so you can't do `(?<!\b(no|without)\b\W{1,40})...`. The fixed-width `(?<![a-zA-Z])` form used above is fine.
 - **Negation phrases** to include: `(?<![a-zA-Z])no(?![a-zA-Z])`, `without`, `negative for`, `absence of`, `rule out` / `rules out` / `ruled out` (`(?:rules?|ruled) out`), `excludes`, `denies`.
 
@@ -258,27 +256,23 @@ scout_find_reports(
       AND REGEXP_LIKE(service_name, '(?i)(chest|thorax|lung)')
       AND (
         -- Diagnosis-axis: ICD codes bypass text-side negation
-        any_match(diagnoses, d -> d.diagnosis_code LIKE 'R91%')
-        OR (
-          -- Text-axis: COALESCE for NULL sections, report_text fallback for entirely-NULL rows
-          (
-            REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-            OR REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
-            OR REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-            OR REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
-            OR (report_section_impression IS NULL AND report_section_findings IS NULL
-                AND (REGEXP_LIKE(report_text, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-                     OR REGEXP_LIKE(report_text, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')))
-          )
-          AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-          AND NOT REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-        )
+        any_match(diagnoses, d -> d.diagnosis_code LIKE 'R91.1%')
+        -- Text-axis: one alternation, reused verbatim in each veto, so both word
+        -- orders are excluded as well as matched and the fallback is gated too.
+        OR (REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
+            AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))'))
+        OR (REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
+            AND NOT REGEXP_LIKE(COALESCE(report_section_findings, ''), '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))'))
+        OR (COALESCE(TRIM(report_section_impression), '') = ''
+            AND COALESCE(TRIM(report_section_findings), '') = ''
+            AND REGEXP_LIKE(report_text, '(?is)(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))')
+            AND NOT REGEXP_LIKE(report_text, '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))'))
       )
     LIMIT 50000
   """,
-  sql_explanation="These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91 abnormal-lung-imaging diagnosis code. Mentions that only rule the finding out, such as 'no nodule' or 'without mass', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest).",
-  match_terms=["pulmonary nodule", "lung nodule", "pulmonary mass", "lung mass", "pulmonary lesion"],
-  match_diagnoses=["R91"],
+  sql_explanation="These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91.1 solitary-pulmonary-nodule diagnosis code. Mentions that only rule the finding out, such as 'no nodule' or 'without mass', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest).",
+  match_terms=["nodule", "nodules", "nodular", "mass", "masses", "lesion"],
+  match_diagnoses=["R91.1"],
 )
 ```
 
@@ -344,8 +338,8 @@ Rules:
 
 - **Required SELECT columns: `primary_report_identifier` and `accession_number`.** The service returns 400 if either is missing.
 - **`LIMIT 50000`** — skip on aggregate queries that already collapse rows (COUNT / GROUP BY / time series).
-- **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Users will see it in the iframed viewer. Tell them which table or view they are seeing: `reports_latest` is one row per study (its most recent read), `reports_curated` keeps every version and read (use it for history), and an `*_epic_view` resolves patient identity across a patient's reports but leaves out any with inconsistent identifiers, which you should always mention. Example: *"These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91 abnormal-lung-imaging diagnosis code. Mentions that only rule the finding out, such as 'no nodule', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest)."*
-- **`match_terms` (text) and `match_diagnoses` (ICD codes) are display/evidence only — they do NOT filter rows.** Each evidence row gets an `excerpt` (±80 chars around the match) and matched-code chips lit up in the viewer. Pass `match_terms` whenever `REGEXP_LIKE` hits `report_text` / `report_section_*`; pass `match_diagnoses` whenever `WHERE` filters `diagnosis_code`. Soft cap ~5 items each. Derive `match_terms` by stripping regex boilerplate (`(?is)`, `\b`, `.{0,N}`, `(?:...)` groups) to leave the positive phrases. Anatomy/modality words alone don't belong — pair them with the finding (`"pulmonary nodule"`, not `"lung"`).
+- **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Users will see it in the iframed viewer. Tell them which table or view they are seeing: `reports_latest` is one row per study (its most recent read), `reports_curated` keeps every version and read (use it for history), and an `*_epic_view` resolves patient identity across a patient's reports but leaves out any with inconsistent identifiers, which you should always mention. Example: *"These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91.1 solitary-pulmonary-nodule diagnosis code. Mentions that only rule the finding out, such as 'no nodule', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest)."*
+- **`match_terms` (text) and `match_diagnoses` (ICD codes) are display/evidence only — they do NOT filter rows.** Each evidence row gets an `excerpt` (±80 chars around the match) and matched-code chips lit up in the viewer. Pass `match_terms` whenever `REGEXP_LIKE` hits `report_text` / `report_section_*`; pass `match_diagnoses` whenever `WHERE` filters `diagnosis_code`. Soft cap ~5 items each. Derive `match_terms` from the finding words that literally appear in a report, including the variants the regex covers (`"nodule"`, `"nodules"`, `"nodular"`). They are matched as literal strings with word boundaries, so a joined pair like `"pulmonary nodule"` highlights nothing when the report reads *"nodules in the left lung"*. Anatomy/modality words alone (`"lung"`, `"CT"`) don't belong.
 - **Refinement = copy prior SQL verbatim, append `AND <new clause>`.** When the user asks to narrow a prior search ("only MRs", "just ischemic ones", "under 18"), paste the prior `sql` arg exactly and add the new predicate inside the outermost WHERE. Do NOT rewrite regex patterns, drop synonyms, or tighten `NOT REGEXP_LIKE` negation blocks — keep them byte-for-byte. Refinement is a SUBSET: if the refined count exceeds the parent count, you rebuilt instead of restricted.
 
   **Example:** Prior SQL ends `... AND NOT REGEXP_LIKE(<negation>) LIMIT 50000`. For "only MRs", paste the prior verbatim and insert `AND modality = 'MR'` right before `LIMIT 50000`. The `NOT REGEXP_LIKE` and every regex block stays byte-for-byte.
@@ -569,4 +563,9 @@ Rules:
 - **Response depends on the tool.** After `scout_find_reports` the user sees the rows in the viewer, so don't restate the table or SQL; add pattern observations, refinements, and insights. After `scout_query_sql` the rows are only in your reply, so return a markdown table (or one `vega` chart, never both), then interpret. Never dump raw JSON.
 - **Fast path for templated queries:** when the ask closely matches a worked example above, use that query as your template and only deviate for the user's specifics; save fresh thinking for genuinely novel asks.
 - **Explore the data first if zero results:** scout distinct values / diagnosis codes and broaden criteria — e.g. `SELECT DISTINCT modality FROM reports_latest LIMIT 20`, or `SELECT diagnosis_code, diagnosis_code_text, COUNT(*) FROM reports_dx WHERE LOWER(diagnosis_code_text) LIKE '%keyword%' GROUP BY 1,2 ORDER BY 3 DESC LIMIT 10`.
+- **A condition is anatomical.** `modality` says which scanner, never which body part. Add a `service_name` predicate for any condition cohort, or a stroke query collects cardiac MR, where "infarction" means a heart attack.
+- **Counting needs the negation gate too.** The commonest way a term appears is a radiologist ruling it out, so a bare `REGEXP_LIKE` count inverts rather than merely blurs. Apply the gate, or label the number as mentions and say what share is negated.
+- **Prefer `diagnosis_code` over its label, and never match a label *fragment*.** `diagnosis_code_text` is prose: `LIKE '%infarct%'` also matches acute **myo**cardial infarction. A full distinctive phrase (`'%pulmonary embolism%'`) is fine as a widening arm; a word fragment is not.
+- **Pick the code that names the finding, not the category above it.** `R91` is "abnormal finding of lung field": only `R91.1` is a nodule, and `R91.8` is explicitly nonspecific, so a prefix match on `R91` pulls in atelectasis and scarring. Use the whole code, or a prefix you have checked.
+- **Name the codes you chose and what they exclude, in `sql_explanation`.** A lay term usually spans several ICD categories: "stroke" covers the acute event (`I63`), the haemorrhagic forms (`I60`–`I62`) and the sequelae (`I69`), which a cohort may or may not want. Decide deliberately and say which.
 - **Never fabricate data.** If the tools can't answer, say so.
