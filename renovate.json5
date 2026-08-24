@@ -225,6 +225,25 @@
       "matchStrings": ["appVersion:\\s*\"(?<currentValue>[\\d\\.]+)\""],
       "datasourceTemplate": "docker",
       "depNameTemplate": "apache/superset"
+    },
+    // hive-metastore has the same appVersion->image coupling: its values.yaml
+    // leaves image.tag empty so the tag falls back to .Chart.AppVersion. The
+    // Ansible role always overrides the tag with hive_image_tag, so the drift
+    // is invisible under `make install-hive` -- but a direct `helm install` or
+    // Flux (ADR 0031) renders the chart without that override and deploys
+    // whatever appVersion says. update-versions.sh deliberately stamps only
+    // `version` for external-application charts, leaving appVersion as a
+    // hand-maintained upstream pin, so tracking it here doesn't fight the
+    // release lane. Same depName as the versions.yaml annotation, so both
+    // bumps arrive in one PR. Needs its own versioning: the shared regex
+    // manager's `[\d.]+` can't match the `-e.<build>` suffix.
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["helm/hive-metastore/Chart.yaml"],
+      "matchStrings": ["appVersion:\\s*\"(?<currentValue>[\\d\\.]+-e\\.\\d+)\""],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "starburstdata/hive",
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?<compatibility>-e\\.)(?<build>\\d+)$"
     }
   ]
 }
