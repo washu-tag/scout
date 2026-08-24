@@ -15,6 +15,47 @@ See [Creating the Ansible Inventory File](../../../docs/source/technical/invento
 
 See `defaults/main.yaml` for complete variable definitions and defaults.
 
+## Datastore
+
+New clusters install with `--cluster-init`, so the server uses **embedded etcd** rather
+than k3s's default embedded SQLite (kine). Set `k3s_cluster_init: false` to opt out; the
+flag is also skipped automatically when `k3s_extra_args` sets `--datastore-endpoint`.
+
+Why: kine keeps a SQLite write-ahead log that a checkpoint cannot reset while any reader
+holds a snapshot. The WAL therefore pins at a high-water mark, and every blocking
+checkpoint has to fold the whole thing back while holding SQLite's single writer lock —
+stalling all writes for the duration. A lease renewal is a write, so a stall longer than a
+renew deadline makes every holder of a 15-second lease (operators, schedulers) lose
+leadership simultaneously and restart. The stalls are independent of cluster load; they
+persist at a few writes per second.
+
+### Converting an existing cluster
+
+The install task is guarded with `creates: /usr/local/bin/k3s-uninstall.sh`, so it is
+skipped on a node that already has k3s — changing this variable will **not** convert an
+existing cluster. Convert one by hand on the server node:
+
+```bash
+# 1. back up the datastore (consistent snapshot, no downtime)
+python3 -c "
+import sqlite3
+src = sqlite3.connect('file:/var/lib/rancher/k3s/server/db/state.db?mode=ro', uri=True, timeout=60)
+dst = sqlite3.connect('/var/lib/rancher/k3s/server/db-backup/state.db')
+src.backup(dst)"
+
+# 2. enable embedded etcd and restart
+printf 'cluster-init: true\n' > /etc/rancher/k3s/config.yaml
+systemctl restart k3s
+```
+
+k3s migrates the SQLite contents into etcd on that first start (it logs
+`Migrating content from sqlite to etcd` and renames the old file to `state.db.migrated`).
+The restart takes the API server down for about a minute and stops containers on that
+node, so treat it as a maintenance window.
+
+This is effectively one-way: k3s ignores datastore arguments once an etcd datastore exists
+on disk, so reverting means restoring the backup and removing `db/etcd`.
+
 ## Dependencies
 
 - `scout_common` role (for Helm chart deployment patterns)

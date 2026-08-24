@@ -23,6 +23,15 @@ air_gapped: false
 # All servers and agents must use the same token
 k3s_token: ''
 
+# Datastore: embedded etcd instead of the default embedded SQLite (kine).
+# kine keeps a SQLite WAL that a checkpoint can never reset while a reader holds a
+# snapshot, so the WAL pins at a high-water mark and each blocking checkpoint stalls
+# every write behind it. Stalls past a lease renew deadline make every 15s-lease holder
+# (operators, schedulers) lose leadership at once and restart. Embedded etcd removes
+# that mechanism. Ignored when k3s_extra_args sets --datastore-endpoint, and it only
+# affects FRESH installs — see the role README for converting an existing cluster.
+k3s_cluster_init: true
+
 # Additional arguments to pass to k3s server (e.g., '--snapshotter=native' for container environments)
 k3s_extra_args: ''
 
