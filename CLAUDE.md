@@ -272,7 +272,7 @@ the ADR itself before changing anything it covers.
 - **0032** re-ingest gate — `content_hash` makes an unchanged re-ingest a no-op. Read before touching the base merge or OBX ordering
 - **0033** Hauler build lane — the build manifest is a signed Hauler haul. Read before changing build-lane bundling or air-gap transport
 - **0034** launchpad catalog — chips/groups come from ConfigMaps labelled `launchpad.scout.xnat.org/catalog`, discovered at runtime. Read before adding a service tile or touching launchpad rendering
-- **0035** service-mode deploy base — one `service_mode` (aws|on-prem) var flips the storage/identity + ingress/auth edges in the `deploy/` base and `scout-config` artifact. Read before touching the aws/on-prem edge, IRSA roles, or the ALB-OIDC gate
+- **0035** service-mode deploy base — one `service_mode` (aws|on-prem) var flips the storage/identity + ingress/auth edges in the `deploy/` base and `scout-config` artifact. Read before touching the aws/on-prem edge, IRSA roles, or the ALB-OIDC ingress
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.

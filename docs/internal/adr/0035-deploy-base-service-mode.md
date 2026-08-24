@@ -70,6 +70,18 @@ other `${var}`. How each mode delta is expressed depends on its shape:
    simpler.) Keycloak itself is un-gated (it is the OP), master-realm admin paths blocked by
    an ALB fixed-response.
 
+**Load-bearing assumption: the upstream OAuth apps are org-restricted.** With no per-role
+gate, aws-mode authorization *is* realm membership, and the realm auto-creates a user on
+first broker login (`registrationAllowed` is off, but both IdPs set `trustEmail: true` and
+use the default first-broker-login flow, and nothing in the realm restricts which upstream
+accounts may broker in). So the real boundary is the IdP / OAuth-app config, not the realm:
+the Microsoft IdP is tenant-scoped (`tenantId`), and the GitHub OAuth app must be
+org-restricted for GitHub sign-in to be a boundary at all. On-prem this was incidental (an
+auto-created user still lacked `oauth2-proxy-user`, which oauth2-proxy's `allowed_roles`
+enforced); aws has nothing in that position, so org-restriction of the upstream apps is
+load-bearing. A site whose upstream apps are not org-restricted must add a gate before
+exposing aws-mode ingress.
+
 **Security response headers move app-side in aws.** On-prem chains ADR 0012's
 `kube-system-security-headers` Traefik Middleware (CSP, HSTS, frame/content-type options)
 onto every gated Ingress; ALB has no response-header injection, so that shared edge control
