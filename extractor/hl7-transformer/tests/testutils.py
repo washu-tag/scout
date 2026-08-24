@@ -1,8 +1,7 @@
 """Shared helpers for tests that drive the base-table merge path.
 
 Kept out of conftest.py so they can be imported explicitly (pytest puts this
-directory on sys.path). test_derive.py predates this module and keeps its own
-local copies of the session helpers.
+directory on sys.path).
 """
 
 from contextlib import contextmanager
@@ -19,7 +18,7 @@ def injected_session(spark):
 
 def patched_session(spark):
     """mock.patch replacement for spark_activity_session: ignore the (app_name,
-    health_file) args and yield the test session."""
+    health_file, on_spark_failure) args and yield the test session."""
     return mock.patch(
         "hl7scout.hl7extractor.deltalake.spark_activity_session",
         lambda *args, **kwargs: injected_session(spark),
