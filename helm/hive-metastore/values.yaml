@@ -79,19 +79,19 @@ resources:
 #  so 600s should give us headroom
 startupProbe:
   tcpSocket:
-    port: 9083
+    port: http
   periodSeconds: 10
   failureThreshold: 60
 
 readinessProbe:
   tcpSocket:
-    port: 9083
+    port: http
   initialDelaySeconds: 5
   periodSeconds: 5
 
 livenessProbe:
   tcpSocket:
-    port: 9083
+    port: http
   initialDelaySeconds: 5
   periodSeconds: 10
 
