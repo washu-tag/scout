@@ -261,3 +261,15 @@ export function downloadCsv(
   a.remove();
   URL.revokeObjectURL(url);
 }
+
+// EXPERIMENTAL / WIP: distinct matched spans for a search, ranked.
+export interface MatchedSpans {
+  supported: boolean;
+  spans: { text: string; n: number }[];
+  distinct: number;
+  total: number;
+}
+
+export async function getMatchedSpans(searchId: string): Promise<MatchedSpans> {
+  return api<MatchedSpans>(`/api/searches/${encodeURIComponent(searchId)}/spans`);
+}

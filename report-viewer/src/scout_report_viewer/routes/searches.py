@@ -621,3 +621,126 @@ def _extract_excerpt(
             out = out + "…"
         return out
     return None
+
+
+# --------------------------------------------------------------------------
+# EXPERIMENTAL / WIP: what a search actually matched, aggregated.
+#
+# Answers "compare two cohorts" better than a term list: same shape, different
+# distribution. Reads the positive REGEXP_LIKE patterns out of the saved SQL, so
+# it describes the query that ran rather than the model's summary of it.
+#
+# Known limits: extracts with the positive pattern only, so a row
+# admitted via findings whose impression carries a *negated* match will show the
+# impression span; and it costs a second Trino scan. Production should fold this
+# into the search query instead.
+# --------------------------------------------------------------------------
+
+_TEXT_COL_RE = re.compile(r"report_text|report_section_", re.I)
+
+
+def _text_patterns(sql: str, *, negated: bool) -> list[str]:
+    """REGEXP_LIKE patterns tested against report text, positive or veto."""
+    out: list[str] = []
+    for m in re.finditer(r"REGEXP_LIKE\s*\(", sql, re.I):
+        is_neg = bool(
+            re.search(r"\bNOT\s*$", sql[max(0, m.start() - 200) : m.start()], re.I)
+        )
+        if is_neg != negated:
+            continue
+        depth, i, last, last_at = 1, m.end(), None, -1
+        start = i
+        while i < len(sql) and depth > 0:
+            c = sql[i]
+            if c == "'":
+                j = i + 1
+                buf = ""
+                while j < len(sql):
+                    if sql[j] == "'":
+                        if j + 1 < len(sql) and sql[j + 1] == "'":
+                            buf += "'"
+                            j += 2
+                            continue
+                        break
+                    buf += sql[j]
+                    j += 1
+                last, last_at, i = buf, i, j
+            elif c == "(":
+                depth += 1
+            elif c == ")":
+                depth -= 1
+            i += 1
+        if last and last_at > start and _TEXT_COL_RE.search(sql[start:last_at]):
+            out.append(last)
+    return out
+
+
+@router.get("/{search_id}/spans")
+async def get_search_spans(
+    search_id: str,
+    user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
+) -> dict[str, Any]:
+    ds = await store.get_search(search_id, owner_sub=user.sub)
+    if ds is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    source_sql = ds["sql"]
+    patterns = _text_patterns(source_sql, negated=False)
+    if not patterns:
+        return {"supported": False, "spans": [], "distinct": 0, "total": 0}
+
+    pat = patterns[0].replace("'", "''")
+    vetoes = _text_patterns(source_sql, negated=True)
+    veto = vetoes[0].replace("'", "''") if vetoes else None
+    tbl = "delta.default.reports_latest"
+    m = re.search(r"\bFROM\s+([A-Za-z_][\w.]*)", source_sql, re.I)
+    if m:
+        name = m.group(1)
+        tbl = name if "." in name else f"delta.default.{name}"
+
+    # A positive pattern still matches *inside* a negated phrase ("no infarct"),
+    # so extracting without the veto labels code-admitted rows as text matches.
+    # Mirror the query's own per-source gate instead.
+    def gate(col: str) -> str:
+        ok = f"REGEXP_LIKE(r.{col}, '{pat}')"
+        if veto:
+            ok += f" AND NOT REGEXP_LIKE(r.{col}, '{veto}')"
+        return ok
+
+    blank = (
+        "COALESCE(TRIM(r.report_section_impression), '') = '' "
+        "AND COALESCE(TRIM(r.report_section_findings), '') = ''"
+    )
+    sql = f"""
+    WITH cohort AS ({source_sql})
+    SELECT LOWER(REGEXP_REPLACE(TRIM(CASE
+             WHEN {gate('report_section_impression')}
+               THEN REGEXP_EXTRACT(r.report_section_impression, '{pat}')
+             WHEN {gate('report_section_findings')}
+               THEN REGEXP_EXTRACT(r.report_section_findings, '{pat}')
+             WHEN {blank} AND {gate('report_text')}
+               THEN REGEXP_EXTRACT(r.report_text, '{pat}')
+             ELSE '(matched on diagnosis code)'
+           END), '\\s+', ' ')) AS text,
+           COUNT(*) AS n
+    FROM {tbl} r
+    JOIN cohort c ON c.primary_report_identifier = r.primary_report_identifier
+    GROUP BY 1 ORDER BY n DESC, 1 LIMIT 200
+    """
+    try:
+        with metrics.time_trino("spans_query"):
+            # safe: persisted validated SQL; pattern came from that same SQL
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            _cols, rows = await trino_client.execute(sql, user=user.sub)
+    except Exception:
+        log.exception("span aggregate failed (experimental)")
+        return {"supported": False, "spans": [], "distinct": 0, "total": 0}
+
+    spans = [{"text": r.get("text") or "", "n": int(r.get("n") or 0)} for r in rows]
+    return {
+        "supported": True,
+        "spans": spans,
+        "distinct": len(spans),
+        "total": sum(s["n"] for s in spans),
+    }
