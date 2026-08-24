@@ -1,7 +1,7 @@
-# Public ALB for Superset, ALB-native OIDC against the scout realm via the dedicated
-# alb-oidc client + browser-flow gate (realm template) -- not the oauth2-proxy client.
-# scheme via the `alb` IngressClassParams. NOTE: the realm ships out-of-band, so
-# validate the gate on a live Keycloak; until then this admits any realm user.
+# Public ALB for Superset, ALB-native OIDC against the scout realm. The ALB reuses the
+# oauth2-proxy client (creds arrive in the alb-oidc-keycloak Secret) with per-host
+# /oauth2/idpresponse callbacks on that client, matching live adapt-dev. Access is by realm
+# membership (no per-role Keycloak gate); scheme via the `alb` IngressClassParams (ADR 0035).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
