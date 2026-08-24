@@ -3,8 +3,8 @@
 The `deploy/` base references Kubernetes Secrets by **fixed name only**, never their
 values. A site materializes each one; how depends on the deployment mode:
 
-- **Cloud** (adapt-dev + other AWS setups): the site's IaC (Terraform) writes the
-  backing values to a secrets manager (AWS Secrets Manager under `/embark/scout/*`),
+- **Cloud** (AWS estates): the site's IaC (Terraform) writes the backing values to a
+  secrets manager (AWS Secrets Manager under a site-chosen prefix, e.g. `/scout/*`),
   and External Secrets Operator pulls them in via a `ClusterSecretStore`. Values are
   never in git.
 - **Air-gapped / on-prem**: SOPS-encrypted Secrets committed to the site repo,
@@ -69,8 +69,8 @@ oauth2-proxy stays in `ContainerCreating` on the missing mount.
 - `keycloak-config`, `superset-config` — rendered config (CI / chart), not credentials
 
 ## Notes for cloud setups
-- Provision the backing values with your IaC; keep them out of git. adapt-dev does this
-  with Terraform into AWS Secrets Manager, consumed by ESO.
+- Provision the backing values with your IaC; keep them out of git. A typical AWS estate
+  does this with Terraform into AWS Secrets Manager, consumed by ESO.
 - Several values are shared across secrets (e.g. one Postgres role password appears in
   its `cnpg-role-*` and in the app's DB secret; one lake credential appears under
   several key names). Provision the value once and template it into each Secret.
