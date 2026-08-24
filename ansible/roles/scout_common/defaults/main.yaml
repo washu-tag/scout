@@ -195,7 +195,7 @@ keycloak_open_webui_client_id: open-webui
 keycloak_xnat_client_id: xnat
 # AWS ALB-native OIDC (ADR 0035, aws mode): the ALB reuses the oauth2-proxy client for
 # browser auth, calling back to https://<host>/oauth2/idpresponse per host (each host adds
-# that callback to the oauth2-proxy client's redirectUris, matching the live adapt-dev
+# that callback to the oauth2-proxy client's redirectUris, matching the live AWS
 # realm). Access is by realm membership: ALB-native OIDC admits any authenticated realm
 # user, so authorization is the controlled realm membership (groups + brokered IdPs); there
 # is no per-role Keycloak gate. Keycloak 26 rejects redirect-uri host wildcards, so

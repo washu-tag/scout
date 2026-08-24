@@ -2,7 +2,7 @@
 # un-gated. The master-realm admin endpoints are blocked at the ALB (fixed-response
 # 403) so the temp-admin account is not internet-reachable; only the in-cluster
 # keycloak-client-sync CronJob uses them, hitting the Service directly. Mirrors
-# adapt-dev apps/scout-core/ingress.yaml. scheme (internet-facing) comes from the
+# the live AWS cluster's public ingress. scheme (internet-facing) comes from the
 # `alb` IngressClassParams, not a per-ingress annotation (ignored on EKS Auto).
 apiVersion: networking.k8s.io/v1
 kind: Ingress

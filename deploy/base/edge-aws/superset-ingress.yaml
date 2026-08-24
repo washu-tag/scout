@@ -1,6 +1,6 @@
 # Public ALB for Superset, ALB-native OIDC against the scout realm. The ALB reuses the
 # oauth2-proxy client (creds arrive in the alb-oidc-keycloak Secret) with per-host
-# /oauth2/idpresponse callbacks on that client, matching live adapt-dev. Access is by realm
+# /oauth2/idpresponse callbacks on that client, matching the live AWS cluster. Access is by realm
 # membership (no per-role Keycloak gate); scheme via the `alb` IngressClassParams (ADR 0035).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
