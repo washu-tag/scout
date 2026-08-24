@@ -19,7 +19,7 @@ The Phase-3 `deploy/` base and the `scout-config` OCI artifact (ADR 0031), howev
 endpoint; the extractor pinned chart-owned `spark-defaults` `mode: on-prem`; trino ro/rw
 carried a MinIO catalog with static access keys; ingress everywhere is Traefik.
 
-The first real consumer is **adapt-dev**, a cloud (EKS Auto) cluster with no Traefik (it
+The first real consumer is a cloud (EKS Auto) cluster with no Traefik (it
 uses ALB) whose Scout data lake is on AWS S3 + IRSA. Other cloud setups will be the same.
 A per-site ALB/S3 overlay would make every cloud site re-implement the edge, the
 hand-ported drift ADR 0031 exists to kill. So the **artifact itself must express both
@@ -59,7 +59,7 @@ other `${var}`. How each mode delta is expressed depends on its shape:
    `base/oauth2-proxy` because they are Traefik CRDs an aws cluster has no controller for.
    aws carries public ALB Ingresses with ALB-native OIDC. The ALB reuses the **oauth2-proxy
    Keycloak client** (each ALB host adds its `/oauth2/idpresponse` callback to that client's
-   redirectUris), matching the live adapt-dev realm. **Access is by realm membership**:
+   redirectUris), matching the live AWS realm. **Access is by realm membership**:
    ALB-native OIDC admits any user who completes the exchange and there is no per-role
    Keycloak gate, so authorization is the controlled realm membership (groups + brokered
    IdPs), the posture the live cluster already runs. (An earlier draft added a dedicated
@@ -141,7 +141,7 @@ analytics apps) stays mode-agnostic; only the edge moves.
 ## Consequences
 
 - One `scout-config` artifact ships both modes; a site is a `service_mode` value (+ one
-  ingress edge set, once that lands). adapt-dev is the first `aws`-mode consumer, set via a
+  ingress edge set, once that lands). The first `aws`-mode consumer is a cloud cluster, set via a
   gitops change (its cluster-vars + IRSA/ESO secrets), not in this repo.
 - The **storage edge is implemented** (hive value-class; trino + extractor config-block).
   `service_mode`, `lake_reader_role_arn`, `lake_writer_role_arn`, `s3_path_style_access`,
@@ -156,7 +156,7 @@ analytics apps) stays mode-agnostic; only the edge moves.
 - MinIO is **on-prem-only** (the `storage-ready` gate); opa and the Keycloak OPA-bundle
   writer both moved to S3+IRSA in aws (`scout-opa` gained an IRSA `serviceAccount`
   template, since we own it), so an aws cluster stands up **zero MinIO**.
-- **Identity is per-component IRSA**, matching the live adapt-dev convention: one
+- **Identity is per-component IRSA**, matching the live cluster convention: one
   `irsa_role_prefix` cluster-var, and each aws-edge ServiceAccount appends its component
   suffix (`-hive-metastore`, `-trino`, `-hl7log-extractor`, `-opa-bundle-reader`, ...), a
   least-privilege role per workload provisioned in the platform repo. New vars:
