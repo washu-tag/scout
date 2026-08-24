@@ -64,6 +64,19 @@ other `${var}`. How each mode delta is expressed depends on its shape:
    Keycloak-side, not the reused oauth2-proxy client an earlier draft assumed. Keycloak
    itself is un-gated (it is the OP), master-realm admin paths blocked by an ALB fixed-response.
 
+**Security response headers move app-side in aws.** On-prem chains ADR 0012's
+`kube-system-security-headers` Traefik Middleware (CSP, HSTS, frame/content-type options)
+onto every gated Ingress; ALB has no response-header injection, so that shared edge control
+has no aws equivalent. In aws mode the headers are the application's responsibility: Superset
+emits them via Flask-Talisman, Open WebUI carries its own CSP (ADR 0009), and report-viewer
+plus the components that follow (jupyter, launchpad, monitoring) each set their own as they
+land in the aws edge. Anything that can only get them from the Traefik middleware is an
+explicit gap, not a silent one. A shared aws equivalent (a CloudFront response-headers-policy
+or a WAF rule in front of the ALB) is possible later but out of scope here; the base does not
+rely on an edge middleware for headers in aws. This is the ADR 0012 implication of dropping
+Traefik that ADR 0011 did not weigh, and the reason the auth edge (oauth2-proxy) and the
+hardening edge (security-headers) both need an aws answer, not just the former.
+
 **MinIO is on-prem-only; aws ships none.** The lake consumers `dependsOn` a mode-agnostic
 `storage-ready` Kustomization whose body comes from the `flux/{aws,on-prem}/` subdir a
 site reconciles: on-prem it IS the real MinIO tenant (`wait:true`, so consumers wait for
@@ -156,4 +169,6 @@ analytics apps) stays mode-agnostic; only the edge moves.
 - ADR 0011 (service-mode layered architecture), extended here to the deploy base.
 - ADR 0031 (GitOps deployment base), the base + artifact this parameterizes.
 - ADR 0030 (two-lane versioning), the artifact publish lane that ships both edges.
+- ADR 0012 (security scan response and hardening), whose edge security-header middleware moves app-side in aws.
+- ADR 0009 (Open WebUI CSP), the app-side header model aws mode relies on.
 - `deploy/required-secrets.md`, `deploy/required-vars.txt`, the per-mode contracts.
