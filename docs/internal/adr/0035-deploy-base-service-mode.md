@@ -57,12 +57,18 @@ other `${var}`. How each mode delta is expressed depends on its shape:
    `storage-ready` gate below lives; the base resources are under `base/edge-{on-prem,aws}/`).
    on-prem carries the oauth2-proxy Traefik forwardAuth `Middleware`s, relocated out of
    `base/oauth2-proxy` because they are Traefik CRDs an aws cluster has no controller for.
-   aws carries public ALB Ingresses with ALB-native OIDC: since that admits any user who
-   completes the exchange, it uses a **dedicated `alb-oidc` Keycloak client** (per-host
-   `/oauth2/idpresponse` callbacks) bound to a browser-flow override that denies anyone
-   without the `oauth2-proxy-user` role, the on-prem approval gate now enforced
-   Keycloak-side, not the reused oauth2-proxy client an earlier draft assumed. Keycloak
-   itself is un-gated (it is the OP), master-realm admin paths blocked by an ALB fixed-response.
+   aws carries public ALB Ingresses with ALB-native OIDC. The ALB reuses the **oauth2-proxy
+   Keycloak client** (each ALB host adds its `/oauth2/idpresponse` callback to that client's
+   redirectUris), matching the live adapt-dev realm. **Access is by realm membership**:
+   ALB-native OIDC admits any user who completes the exchange and there is no per-role
+   Keycloak gate, so authorization is the controlled realm membership (groups + brokered
+   IdPs), the posture the live cluster already runs. (An earlier draft added a dedicated
+   `alb-oidc` client bound to a browser-flow role gate; review found the `conditional-user-role`
+   gate read the client role `oauth2-proxy-user` as a realm role and denied everyone, an
+   existing SSO session short-circuited the CONDITIONAL execution, and the block was
+   `aws_deployment`-gated so it never rendered into the artifact. Matching live is proven and
+   simpler.) Keycloak itself is un-gated (it is the OP), master-realm admin paths blocked by
+   an ALB fixed-response.
 
 **Security response headers move app-side in aws.** On-prem chains ADR 0012's
 `kube-system-security-headers` Traefik Middleware (CSP, HSTS, frame/content-type options)
@@ -158,7 +164,7 @@ analytics apps) stays mode-agnostic; only the edge moves.
 - The **ingress edge is implemented** as `base/edge-{on-prem,aws}/`: on-prem Traefik
   forwardAuth Middlewares vs aws ALB-native-OIDC Ingresses (Keycloak un-gated + an admin
   fixed-response; Superset ALB-OIDC). Adds `acm_cert_arn` + `alb_group_name` to the
-  contract and `alb-oidc-keycloak` (the dedicated `alb-oidc` Keycloak client's creds) to
+  contract and `alb-oidc-keycloak` (the oauth2-proxy client's id + secret, which the ALB reads for OIDC) to
   the site-seeded secrets; scheme comes from the `alb`/`alb-internal` IngressClassParams
   (Layer-0, which override the per-ingress annotation on EKS Auto). Only Superset +
   Keycloak are covered so far (the base's public components); jupyter, launchpad, and
