@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import App from './App';
 import SearchesListPage from './pages/SearchesListPage';
 import SearchDetailPage from './pages/SearchDetailPage';
+import PlotPage from './pages/PlotPage';
 import { ApiError, getConfig } from './api/client';
 import { setChatOrigin } from './chat';
 import { postHeight } from './iframeHeight';
@@ -19,6 +20,7 @@ const router = (
       <Route path="/" element={<App />}>
         <Route index element={<SearchesListPage />} />
         <Route path="searches/:searchId" element={<SearchDetailPage />} />
+        <Route path="plots/:plotId" element={<PlotPage />} />
       </Route>
     </Routes>
   </BrowserRouter>

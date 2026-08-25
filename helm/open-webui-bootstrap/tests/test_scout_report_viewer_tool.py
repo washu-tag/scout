@@ -53,6 +53,62 @@ async def test_post_without_bearer_raises_and_skips_request(oauth, monkeypatch):
     assert not called
 
 
+@pytest.mark.parametrize("oauth", [None, {"access_token": ""}])
+@pytest.mark.asyncio
+async def test_get_without_bearer_raises_and_skips_request(oauth, monkeypatch):
+    called = False
+
+    def handler(request):
+        nonlocal called
+        called = True
+        return httpx.Response(200, json={})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
+        await tool._get("/api/plots/abc123", oauth=oauth)
+    assert not called
+
+
+@pytest.mark.parametrize(
+    "oauth,expected",
+    [("tok123", "Bearer tok123"), ({"access_token": "tok456"}, "Bearer tok456")],
+)
+@pytest.mark.asyncio
+async def test_get_with_bearer_forwards_authorization_header(
+    oauth, expected, monkeypatch
+):
+    seen = {}
+
+    def handler(request):
+        seen["authorization"] = request.headers.get("authorization")
+        return httpx.Response(200, json={"ok": True})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    result = await tool._get("/api/plots/abc123", oauth=oauth)
+    assert result == {"ok": True}
+    assert seen["authorization"] == expected
+
+
+def test_render_chart_data_includes_sql_explanation_and_rows():
+    plot = {
+        "sql": "SELECT modality, COUNT(*) AS n FROM reports_latest GROUP BY 1",
+        "sql_explanation": "Report counts by modality.",
+        "rows": [{"modality": "CT", "n": 3}, {"modality": "MRI", "n": 1}],
+    }
+    text = Tools._render_chart_data(plot)
+    assert "Report counts by modality." in text
+    assert "SELECT modality, COUNT(*)" in text
+    assert "| modality | n |" in text
+    assert "CT" in text and "MRI" in text
+    assert "do not call" in text.lower()
+
+
+def test_render_chart_data_handles_no_rows():
+    plot = {"sql": "SELECT 1", "sql_explanation": "", "rows": []}
+    text = Tools._render_chart_data(plot)
+    assert "no rows" in text.lower()
+
+
 @pytest.mark.asyncio
 async def test_post_multipart_without_bearer_raises_and_skips_request(monkeypatch):
     called = False
@@ -120,3 +176,16 @@ async def test_post_upstream_non_401_error_still_raised_with_bearer_present(
     tool = _tool_with_transport(handler, monkeypatch)
     with pytest.raises(ReportViewerServiceError, match="trino unavailable"):
         await tool._post("/api/searches", {"sql": "SELECT 1"}, oauth="valid-token")
+
+
+def test_error_text_omits_prefix_for_session_expired():
+    exc = SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
+    assert Tools._error_text(exc, "Failed") == _SESSION_EXPIRED_MESSAGE
+
+
+def test_error_text_keeps_prefix_for_other_errors():
+    exc = ReportViewerServiceError("report-viewer is temporarily unavailable")
+    assert (
+        Tools._error_text(exc, "Failed")
+        == "Failed: report-viewer is temporarily unavailable"
+    )

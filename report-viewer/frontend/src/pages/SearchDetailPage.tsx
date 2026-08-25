@@ -29,6 +29,7 @@ import { useChatPrompt } from '../ChatPrompt';
 import { RowDetail } from './searchDetail/RowDetail';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
+import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, paginationBtn } from './searchDetail/styles';
@@ -676,41 +677,5 @@ export default function SearchDetailPage() {
         />
       )}
     </div>
-  );
-}
-
-function ExpandIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width="13"
-      height="13"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 6V3h3M10 3h3v3M13 10v3h-3M6 13H3v-3" />
-    </svg>
-  );
-}
-
-function ContractIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width="13"
-      height="13"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 3v3H3M13 6h-3V3M10 13v-3h3M3 10h3v3" />
-    </svg>
   );
 }

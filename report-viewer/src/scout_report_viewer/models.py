@@ -203,3 +203,33 @@ class RowsResponse(BaseModel):
     rows: list[dict[str, Any]]
     total: int
     truncated: bool
+
+
+class PlotRequest(BaseModel):
+    """SQL plus the LLM's Vega-Lite spec, minus its data. Backs
+    `scout_chart_sql`."""
+
+    sql: str
+    vega_lite_spec: dict[str, Any]
+    sql_explanation: str = ""
+    owui_chat_id: str = ""
+
+
+class PlotResponse(BaseModel):
+    """Where the chart can be viewed. No spec, no rows: they stay server-side."""
+
+    id: str
+    view_url: str
+    columns: list[str]
+    row_count: int
+
+
+class PlotDetail(BaseModel):
+    """Spec and rows for the SPA's chart route, plus the SQL and its
+    explanation for the "What this search matches" panel."""
+
+    id: str
+    spec: dict[str, Any]
+    rows: list[dict[str, Any]]
+    sql: str
+    sql_explanation: str

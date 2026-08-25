@@ -138,3 +138,12 @@ def auth_headers() -> dict[str, str]:
         "X-Auth-Request-Preferred-Username": "alice",
         "X-Report-Viewer-Gateway": os.environ["REPORT_VIEWER_GATEWAY_SECRET"],
     }
+
+
+@pytest.fixture
+def other_auth_headers() -> dict[str, str]:
+    """A second signed-in user, for cross-user access checks."""
+    return {
+        "X-Auth-Request-Preferred-Username": "bob",
+        "X-Report-Viewer-Gateway": os.environ["REPORT_VIEWER_GATEWAY_SECRET"],
+    }

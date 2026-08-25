@@ -39,11 +39,12 @@ _VIEWER_NOTE = (
 
 
 class Tools:
-    """Thin client over the Scout report-viewer service. Exposes three
-    LLM-callable methods - `scout_find_reports`, `scout_query_sql`,
-    `scout_get_reports` - all namespaced `scout_*` to disambiguate
-    from OWUI built-ins (search_notes, view_note, etc.). See each
-    method's docstring for its contract."""
+    """Thin client over the Scout report-viewer service. Exposes
+    LLM-callable methods: `scout_find_reports`, `scout_chart_sql`,
+    `scout_query_sql`, `scout_get_reports`, `scout_get_chart_data`,
+    all namespaced `scout_*` to disambiguate from OWUI built-ins
+    (search_notes, view_note, etc.). See each method's docstring for
+    its contract."""
 
     class Valves(BaseModel):
         report_viewer_internal_url: str = Field(
@@ -167,6 +168,106 @@ class Tools:
         await self._emit_embed(__event_emitter__, created["view_url"])
 
         return self._render_search_summary(created)
+
+    async def scout_chart_sql(
+        self,
+        sql: str,
+        vega_lite_spec: dict,
+        sql_explanation: Optional[str] = None,
+        __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
+        __oauth_token__: Any = None,
+        __metadata__: Optional[dict] = None,
+    ) -> str:
+        """Chart the result of a query and show it to the user. Use whenever
+        the user asks for a chart, plot, graph, distribution, trend,
+        histogram, or breakdown.
+
+        Write the SQL and the Vega-Lite spec together in this one call, and
+        **omit `data`** - the service runs the query and renders the chart
+        itself, so neither the spec nor the rows come back to you.
+
+        Always aggregate in the SQL so the query returns one row per mark -
+        `GROUP BY`, bucketing ages or dates yourself. Reference columns by
+        the names your SQL projects, e.g. `{"mark": "bar", "encoding":
+        {"x": {"field": "age_bracket", "type": "ordinal"},
+         "y": {"field": "patients", "type": "quantitative"}}}`.
+
+        :param sql: Trino SQL for the chart's rows, already aggregated.
+        :param vega_lite_spec: Vega-Lite spec with no `data` key.
+        :param sql_explanation: One- to three-sentence plain-language
+            description of what the chart shows, covering both the rows the
+            SQL selects and what the chart does with them. Surfaced behind
+            the viewer's "Explain Search" button so the user can sanity-check
+            the chart without reading raw SQL.
+        :return: A one-line confirmation plus the chart's internal handle
+            (keep it in mind for a later `scout_get_chart_data` call). The
+            chart is rendered for the user as an iframe above your message;
+            reply with interpretation only.
+        """
+        await self._emit(__event_emitter__, "Building chart\u2026", done=False)
+        try:
+            plot = await self._post(
+                "/api/plots",
+                {
+                    "sql": sql,
+                    "vega_lite_spec": vega_lite_spec,
+                    "sql_explanation": sql_explanation or "",
+                    "owui_chat_id": _chat_id(__metadata__),
+                },
+                oauth=__oauth_token__,
+            )
+        except ReportViewerServiceError as exc:
+            await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
+            return (
+                f"Error building chart: {exc}\n\n"
+                "Fix the SQL or the spec and call scout_chart_sql again."
+            )
+        n = plot.get("row_count", 0)
+        await self._emit(__event_emitter__, "Chart ready", done=True)
+        await self._emit_embed(__event_emitter__, plot["view_url"])
+        return (
+            f"Chart rendered for the user as an iframe above this message "
+            f"({n} data points over {', '.join(plot.get('columns') or [])}). "
+            "Do not restate the data, do not add a table, and do not write a "
+            "vega code fence. Reply with a short interpretation only.\n\n"
+            f"Internal chart handle: {plot['id']}."
+        )
+
+    async def scout_get_chart_data(
+        self,
+        chart_id: str,
+        __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
+        __oauth_token__: Any = None,
+    ) -> Any:
+        """Fetch the SQL, explanation, and rows behind a chart the user
+        is already looking at, so you can analyze it in prose.
+
+        Use whenever the user wants your read on a chart shown earlier
+        in this conversation, whether or not they name it: patterns,
+        outliers, follow-ups. If they name a chart's internal handle,
+        use it; otherwise use the handle from the most recent
+        `scout_chart_sql` call in this conversation. Unlike
+        `scout_chart_sql`, which never returns its rows so a chart
+        doesn't bloat every turn's context, this tool deliberately
+        pulls them in for exactly this ask.
+
+        :param chart_id: The chart's internal handle: the one the
+            user named, or your most recent chart's if they didn't.
+        :return: The chart's SQL, explanation, and rows as a markdown
+            table, for you to interpret, not to restate as JSON or a
+            fence.
+        """
+        await self._emit(__event_emitter__, "Reading chart data…", done=False)
+        try:
+            plot = await self._get(f"/api/plots/{chart_id}", oauth=__oauth_token__)
+        except ReportViewerServiceError as exc:
+            await self._emit(
+                __event_emitter__, self._error_text(exc, "Failed"), done=True
+            )
+            return self._error_text(exc, "Error reading chart")
+        n = len(plot.get("rows") or [])
+        await self._emit(__event_emitter__, f"Chart data ready ({n} rows)", done=True)
+        return self._render_chart_data(plot)
 
     async def scout_query_sql(
         self,
@@ -440,6 +541,28 @@ class Tools:
             raise ReportViewerServiceError(_short_error(r))
         return r.json()
 
+    async def _get(self, path: str, *, oauth: Any) -> dict:
+        """GET `report_viewer_internal_url + path`, forwarding the
+        caller's OWUI access token as Bearer. Same error contract as
+        `_post`."""
+        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}{path}"
+        bearer = self._token_from_owui(oauth)
+        if not bearer:
+            raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
+        headers = {"Authorization": f"Bearer {bearer}"}
+        try:
+            async with httpx.AsyncClient(
+                timeout=self.valves.request_timeout_seconds
+            ) as c:
+                r = await c.get(url, headers=headers)
+        except httpx.RequestError:
+            raise ReportViewerServiceError("report-viewer is temporarily unavailable")
+        if r.status_code == 401:
+            raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
+        if r.status_code >= 400:
+            raise ReportViewerServiceError(_short_error(r))
+        return r.json()
+
     async def _post_multipart(
         self,
         path: str,
@@ -560,6 +683,35 @@ class Tools:
         if not rows:
             return "Aggregate query returned no rows."
         return "\n".join(_md_table(cols, rows))
+
+    @staticmethod
+    def _render_chart_data(plot: dict) -> str:
+        """SQL + explanation + rows for a chart the user is already
+        looking at, so the LLM can interpret it rather than re-render
+        or restate it."""
+        sql = plot.get("sql") or ""
+        explanation = plot.get("sql_explanation") or ""
+        rows: list[dict] = plot.get("rows") or []
+        parts: list[str] = []
+        if explanation:
+            parts.append(explanation)
+            parts.append("")
+        parts.append(f"SQL:\n```sql\n{sql}\n```")
+        if rows:
+            parts.append("")
+            parts.extend(_md_table(list(rows[0].keys()), rows))
+        else:
+            parts.append("")
+            parts.append("Query returned no rows.")
+        parts.append("")
+        parts.append(
+            "This is the data behind the chart the user is already looking at. "
+            "Do not restate it as a table or JSON, and do not call "
+            "scout_chart_sql again unless the user asks for a new or revised "
+            "chart. Reply with your analysis: patterns, outliers, anything "
+            "worth flagging."
+        )
+        return "\n".join(parts)
 
     @staticmethod
     def _error_text(exc: ReportViewerServiceError, prefix: str) -> str:
