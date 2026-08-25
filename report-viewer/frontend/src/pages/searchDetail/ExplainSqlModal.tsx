@@ -9,6 +9,8 @@ export function ExplainSqlModal(props: {
   onClose: () => void;
 }) {
   const terms = props.highlightTerms.filter((t) => t.trim().length > 0);
+  // Gate on the SQL: match_terms is a model-supplied hint it can omit.
+  const matchesText = /REGEXP_LIKE/i.test(props.sql);
   const codes = props.highlightDiagnosis.filter((d) => d.trim().length > 0);
   const [copied, setCopied] = useState(false);
   const onCopySql = () => {
@@ -40,6 +42,27 @@ export function ExplainSqlModal(props: {
             No plain-language explanation was attached to this search.
           </p>
         )}
+        {matchesText && (
+          <p
+            style={{
+              margin: '0 0 1rem',
+              padding: '0.5rem 0.7rem',
+              background: 'var(--rv-accent-soft)',
+              borderLeft: '3px solid var(--rv-accent)',
+              borderRadius: 3,
+              color: 'var(--rv-fg)',
+              fontSize: '0.78rem',
+              lineHeight: 1.45,
+            }}
+          >
+            <strong>Text matching is approximate.</strong> Rows were picked by matching words in the
+            report text, so unusual phrasing can be missed and a mention meant to be ruled out can
+            slip through. A language model writes these patterns for each search, so be specific
+            about what you want, and expect the cohort to change slightly if you ask again or
+            rephrase. The SQL below is what defines <em>this</em> cohort. Expand rows in the table
+            to review the matches.
+          </p>
+        )}
         <div style={{ fontWeight: 600, marginBottom: '0.35rem', fontSize: '0.85rem' }}>SQL</div>
         <div style={{ position: 'relative' }}>
           <pre
@@ -51,8 +74,12 @@ export function ExplainSqlModal(props: {
               paddingRight: '2.25rem',
               fontSize: '0.74rem',
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              whiteSpace: 'pre',
+              // The model may emit the whole statement on one line; wrap, and break inside long regexes.
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'anywhere',
               overflowX: 'auto',
+              maxHeight: '18rem',
+              overflowY: 'auto',
               margin: 0,
             }}
           >
