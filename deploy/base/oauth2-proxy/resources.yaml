@@ -1,9 +1,9 @@
 # oauth2-proxy: cluster-wide OIDC auth edge (ADR 0031) in ${oauth2_proxy_namespace}
-# (kube-system, a built-in namespace this base does NOT create). Defines two Traefik
-# middlewares consumers chain (${oauth2_proxy_namespace}-oauth2-proxy-{auth,error}@kubernetescrd):
-#   - oauth2-proxy-auth (forwardAuth): /oauth2/auth 200 -> copies
-#     X-Auth-Request-Preferred-Username upstream (Voila -> X-Trino-User, ADR 0022).
-#   - oauth2-proxy-error (errors): 401 -> redirect to /oauth2/sign_in?rd={url}.
+# (kube-system, a built-in namespace this base does NOT create). The two Traefik
+# forwardAuth Middlewares consumers chain
+# (${oauth2_proxy_namespace}-oauth2-proxy-{auth,error}@kubernetescrd) are Traefik CRDs,
+# so they live in the on-prem ingress edge (base/edge-on-prem, ADR 0035), not here --
+# an aws cluster has no Traefik CRDs to apply them against and uses ALB-native OIDC.
 # provider = keycloak-oidc (${keycloak_realm_url}); sessions in shared Valkey
 # (${valkey_namespace}), hence dependsOn valkey + keycloak-realm (needs the OIDC
 # clients from the realm import, not just Keycloak up).
@@ -105,33 +105,3 @@ spec:
         mountPath: /etc/oauth2-proxy/templates
       - name: oauth2-proxy-logo
         mountPath: /var/www/static/logo
----
-# forwardAuth gate. authResponseHeaders copies preferred-username upstream
-# (Voila -> X-Trino-User, ADR 0022).
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
-  name: oauth2-proxy-auth
-  namespace: '${oauth2_proxy_namespace}'
-spec:
-  forwardAuth:
-    address: 'https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/auth'
-    trustForwardHeader: true
-    authResponseHeaders:
-      - X-Auth-Request-Preferred-Username
----
-# 401 -> sign-in redirect. {url} is a Traefik placeholder (single braces),
-# untouched by Flux ${...} substitution.
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
-  name: oauth2-proxy-error
-  namespace: '${oauth2_proxy_namespace}'
-spec:
-  errors:
-    status:
-      - '401'
-    service:
-      name: oauth2-proxy
-      port: 80
-    query: '/oauth2/sign_in?rd={url}'

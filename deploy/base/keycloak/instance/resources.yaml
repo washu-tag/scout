@@ -41,6 +41,12 @@ spec:
     enabled: false
   proxy:
     headers: xforwarded
+  # aws: Keycloak (OPA-bundle writer SPI) runs under an IRSA SA (S3 via web-identity);
+  # on-prem: the empty role-arn is inert and the SPI uses the opa-bundle-writer Secret.
+  unsupported:
+    podTemplate:
+      spec:
+        serviceAccountName: keycloak-opa-bundle-writer
   additionalOptions:
     - name: metrics-enabled
       value: 'true'
@@ -53,8 +59,10 @@ spec:
     # Hacky env-into-pod path until the operator supports it; the SPI reads these (ADR 0021).
     - name: scout-url
       value: '${server_hostname}'
+    # aws: empty -> SDK-default S3 via IRSA; on-prem: in-cluster MinIO. Must match the
+    # OPA reader's endpoint (opa-edge-on-prem) so writer + reader hit the same store.
     - name: opa-bundle-s3-endpoint
-      value: 'http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000'
+      value: '${opa_bundle_s3_endpoint}'
     - name: opa-bundle-s3-bucket
       value: '${opa_bundles_bucket}'
     - name: opa-bundle-s3-object-key
@@ -63,6 +71,8 @@ spec:
       value: '${s3_region}'
     - name: opa-bundle-realm
       value: '${keycloak_realm_name}'
+    # aws: opa-bundle-writer is site-seeded EMPTY so the blank-check falls through to
+    # IRSA; dropping the Secret needs a raw-CR overlay (follow-up). MinIO-free stopgap.
     - name: opa-bundle-s3-access-key
       secret:
         name: opa-bundle-writer
@@ -71,6 +81,15 @@ spec:
       secret:
         name: opa-bundle-writer
         key: secret-key
+---
+# IRSA SA for the OPA-bundle writer SPI (unsupported.podTemplate); role-arn inert on-prem.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keycloak-opa-bundle-writer
+  namespace: '${keycloak_namespace}'
+  annotations:
+    eks.amazonaws.com/role-arn: '${irsa_role_prefix}-opa-bundle-writer'
 ---
 # Host Ingress (traefik k3s edge) -> operator-created keycloak-service; the operator
 # needs a subdomain and has no path-based ingress. Mirrors the role's keycloak-ingress.

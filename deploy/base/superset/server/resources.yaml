@@ -117,6 +117,9 @@ spec:
       valuesKey: superset_metrics.py
       targetPath: configOverrides.prometheus_metrics
       literal: true
+    # Per-mode ingress + security-headers (ADR 0035); whole-values.yaml merge.
+    - kind: ConfigMap
+      name: 'superset-edge-${service_mode}'
   values:
     # Scout custom image (build-lane-stamped at publish; literal here).
     image:
@@ -132,19 +135,8 @@ spec:
     # No bundled Postgres; metadata DB is the shared CNPG cluster.
     postgresql:
       enabled: false
-    ingress:
-      enabled: true
-      ingressClassName: traefik
-      annotations:
-        # oauth2-proxy pair tracks ${oauth2_proxy_namespace}; security-headers is
-        # traefik-owned (kube-system), created outside this base.
-        traefik.ingress.kubernetes.io/router.middlewares: >-
-          ${oauth2_proxy_namespace}-oauth2-proxy-error@kubernetescrd,
-          ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
-          kube-system-security-headers@kubernetescrd
-      path: /
-      hosts:
-        - 'superset.${server_hostname}'
+    # ingress + security-headers are mode-specific (Traefik + middleware chain on-prem
+    # vs ALB + app-side Talisman in aws) -> the superset-edge-${service_mode} ConfigMap.
     supersetNode:
       connections:
         # Connection values arrive at runtime from `superset-env` via os.getenv.

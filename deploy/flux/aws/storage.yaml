@@ -1,0 +1,23 @@
+# aws storage gate: the lake is S3+IRSA, so `storage-ready` is an inert,
+# immediately-Ready marker (no MinIO). Same name the shared lake consumers
+# dependsOn; on-prem provides it as the real MinIO tenant instead (../on-prem).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage-ready
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/storage-ready
+  prune: true
+  wait: true
+  timeout: 2m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-data-foundation

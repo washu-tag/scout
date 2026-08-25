@@ -33,6 +33,12 @@ spec:
         kind: HelmRepository
         name: scout-charts
         namespace: '${scout_extractor_namespace}'
+  # Storage/identity differs by deployment mode (ADR 0035): service_mode selects
+  # the on-prem (hostPath logs + s3-secret) or aws (IRSA SA + emptyDir) edge
+  # ConfigMap, which supplies envFrom + volumes (+ the aws ServiceAccount).
+  valuesFrom:
+    - kind: ConfigMap
+      name: 'hl7log-extractor-edge-${service_mode}'
   values:
     # Image repo/tag build-lane-stamped at config-artifact publish; placeholder here.
     image:
@@ -41,11 +47,7 @@ spec:
     service:
       type: ClusterIP
       port: 8080
-    envFrom:
-      - secretRef:
-          name: s3-secret
-      - configMapRef:
-          name: s3-env
+    # envFrom (s3-secret + s3-env) is mode-specific -> the edge ConfigMap.
     env:
       - name: TZ
         value: '${timezone}'
@@ -64,16 +66,8 @@ spec:
       limits:
         cpu: '${hl7log_extractor_resources_limits_cpu}'
         memory: '${hl7log_extractor_resources_limits_memory}'
-    # HL7 logs mounted from node (on-prem); HostToContainer surfaces rotated logs.
-    volumes:
-      - name: data
-        hostPath:
-          path: '${extractor_data_dir}'
-    volumeMounts:
-      - name: data
-        mountPath: /data
-        readOnly: true
-        mountPropagation: HostToContainer
+    # volumes/volumeMounts differ by mode (hostPath logs on-prem vs emptyDir aws)
+    # -> the edge ConfigMap.
     livenessProbe:
       httpGet:
         path: /actuator/health/liveness
@@ -95,7 +89,7 @@ spec:
         s3:
           endpoint: '${s3_endpoint}'
           region: '${s3_region}'
-          path-style-access: true
+          path-style-access: '${s3_path_style_access}'
         spring:
           datasource:
             url: 'jdbc:postgresql://${postgres_cluster_name}-rw.${postgres_cluster_namespace}:${db_port}/${ingest_postgres_table_name}'
@@ -134,6 +128,12 @@ spec:
         kind: HelmRepository
         name: scout-charts
         namespace: '${scout_extractor_namespace}'
+  # Storage/identity differs by deployment mode (ADR 0035): service_mode selects
+  # the on-prem (hostPath logs + s3-secret) or aws (IRSA SA + emptyDir) edge
+  # ConfigMap, which supplies envFrom + volumes (+ the aws ServiceAccount).
+  valuesFrom:
+    - kind: ConfigMap
+      name: 'hl7-transformer-edge-${service_mode}'
   values:
     # Image repo/tag build-lane-stamped at config-artifact publish; placeholder here.
     image:
@@ -160,13 +160,7 @@ spec:
                 except OSError:
                     print('waiting for dns...', flush=True)
                     time.sleep(2)
-    envFrom:
-      - secretRef:
-          name: s3-secret
-      - configMapRef:
-          name: s3-env
-      - secretRef:
-          name: postgres-secret
+    # envFrom (s3-secret + s3-env + postgres-secret) is mode-specific -> edge ConfigMap.
     env:
       - name: TEMPORAL_ADDRESS
         value: 'temporal-internal-frontend.${scout_extractor_namespace}:7236'
@@ -194,15 +188,8 @@ spec:
       limits:
         cpu: '${hl7_transformer_cpu_limit}'
         memory: '${hl7_transformer_memory_limit}'
-    volumes:
-      - name: data
-        hostPath:
-          path: '${extractor_data_dir}'
-    volumeMounts:
-      - name: data
-        mountPath: /data
-        readOnly: true
-        mountPropagation: HostToContainer
+    # volumes/volumeMounts differ by mode (hostPath logs on-prem vs emptyDir aws)
+    # -> the edge ConfigMap.
     ports:
       - containerPort: 8000
     readinessProbe:
@@ -224,7 +211,7 @@ spec:
     # S3 creds ride the s3-secret envFrom, never this block. Modality map = chart default.
     sparkDefaults:
       enabled: true
-      mode: on-prem
+      mode: '${service_mode}'
       shufflePartitions: ${spark_sql_shuffle_partitions}
       hiveMetastoreUri: '${hive_metastore_endpoint}'
       warehouseDir: '${delta_lake_path}'

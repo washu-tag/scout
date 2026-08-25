@@ -270,10 +270,12 @@
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_oauth2_proxy_client_secret }}",
         "redirectUris": [
-          "{{ oauth2_proxy_callback_url }}"
+          "{{ oauth2_proxy_callback_url }}"{% for h in keycloak_alb_oidc_hosts %},
+          "https://{{ h }}/oauth2/idpresponse"{% endfor %}
         ],
         "webOrigins": [
-          "{{ oauth2_proxy_base_url }}"
+          "{{ oauth2_proxy_base_url }}"{% for h in keycloak_alb_oidc_hosts %},
+          "https://{{ h }}"{% endfor %}
         ],
         "attributes": {
           "post.logout.redirect.uris": "https://{{ server_hostname }}"

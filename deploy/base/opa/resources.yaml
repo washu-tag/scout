@@ -1,14 +1,13 @@
 # OPA: Trino access-control policy engine (ADRs 0020/0021), scout-opa OCI chart
 # as Deployment + Service in the Trino namespace (opa_namespace == trino_namespace).
 # Static AuthZ (Rego + inventory-rendered data doc) is baked in below; per-user
-# attributes come at runtime via the bundle plugin (ADR 0021) polling MinIO, hence
-# dependsOn minio-tenant (bundle + bundle-reader IAM user provisioned there).
+# attributes come at runtime via the bundle plugin (ADR 0021).
 #
-# Fixed-name Secret, seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git:
-#   - opa-bundle-reader (Secret): AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY /
-#     AWS_REGION (required even against MinIO -- credential resolver fails closed
-#     without it). Same values minio-tenant seeds into ${s3_opa_bundle_reader}-creds
-#     in scout-data; mirrored here by fixed name, mounted via envFrom.
+# The bundle store is mode-selected (ADR 0035) by the opa-edge-${service_mode}
+# ConfigMap via valuesFrom: on-prem reads from the in-cluster MinIO with the
+# fixed-name opa-bundle-reader Secret (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY /
+# AWS_REGION, seeded by CI/site or ESO, mirrors ${s3_opa_bundle_reader}-creds); aws
+# reads from S3 via an IRSA ServiceAccount (no MinIO, no static Secret).
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -26,6 +25,12 @@ spec:
         kind: HelmRepository
         name: scout-charts
         namespace: '${scout_analytics_namespace}'
+  # Bundle store differs by mode (ADR 0035): service_mode selects the on-prem (MinIO
+  # + reader Secret) or aws (IRSA SA + S3) edge ConfigMap, supplying bundleReader +
+  # the OPA config.yaml (+ the aws ServiceAccount).
+  valuesFrom:
+    - kind: ConfigMap
+      name: 'opa-edge-${service_mode}'
   values:
     replicaCount: 2
     # Same-namespace NetworkPolicy locks OPA's unauthenticated API to the Trino coordinator.
@@ -44,11 +49,7 @@ spec:
       limits:
         cpu: 500m
         memory: 256Mi
-    bundleReader:
-      # Fixed-name Secret (above), envFrom-mounted. credsHash rollout trigger
-      # omitted: no hashing secret values in git; rotation-rollout deferred to
-      # Phase 4 (ESO/Reloader).
-      secretName: opa-bundle-reader
+    # bundleReader (the opa-bundle-reader Secret) is mode-specific -> edge ConfigMap.
     # Static data document. Only ${report_delta_table_name} is a shared cluster-var;
     # baseline_hidden_tables derives from it so a renamed report table can't leave
     # the patient-mapping table unhidden.
@@ -69,31 +70,7 @@ spec:
           },
           "masked_columns": ["patient_name", "full_patient_name", "zip_or_postal_code"]
         }
-    # Bundle plugin config (ADR 0021). Headless `-hl` MinIO service so DNS resolves
-    # to all tenant pods; resource is the bundle the Keycloak SPI listener publishes.
-    # `persist: true` keeps the last good bundle in pod-local emptyDir so a restart
-    # during a MinIO outage doesn't drop OPA to deny-all. 5-10s poll meets ADR 0020
-    # real-time-offboarding.
-    config:
-      yaml: |
-        services:
-          minio:
-            url: http://${minio_tenant_name}-hl.${minio_tenant_namespace}:9000
-            credentials:
-              s3_signing:
-                environment_credentials: {}
-        bundles:
-          scout-users:
-            service: minio
-            resource: ${opa_bundles_bucket}/${opa_bundle_object_key}
-            polling:
-              min_delay_seconds: 5
-              max_delay_seconds: 10
-            persist: true
-        decision_logs:
-          console: true
-          reporting:
-            min_delay_seconds: 5
-            max_delay_seconds: 15
-        status:
-          console: true
+    # Bundle plugin config (ADR 0021) is mode-specific (MinIO on-prem vs S3 aws) ->
+    # the edge ConfigMap. `persist: true` there keeps the last good bundle so a
+    # restart during a store outage doesn't drop OPA to deny-all; 5-10s poll meets
+    # ADR 0020 real-time-offboarding.
