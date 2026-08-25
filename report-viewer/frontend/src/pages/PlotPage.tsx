@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { friendlyError, getPlot } from '../api/client';
@@ -77,10 +77,13 @@ function sizing(spec: Record<string, unknown>) {
 export default function PlotPage() {
   const { plotId = '' } = useParams<{ plotId: string }>();
   const requestPrompt = useChatPrompt();
+  const content = useRef<HTMLDivElement>(null);
   const holder = useRef<HTMLDivElement>(null);
   // What the chart itself asked for, so the frame can be restored after the
   // explain panel closes.
   const naturalHeight = useRef(MIN_HEIGHT);
+  // Read inside the resize observer, which must not be rebuilt per render.
+  const modalOpen = useRef(false);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [dark, setDark] = useState(
@@ -103,9 +106,36 @@ export default function PlotPage() {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
+  // Measure `content`, which is content-sized, not the scroller around it - the
+  // scroller is capped at the frame viewport and would just report the height
+  // it already has. `top` is the shell's padding above the content, doubled to
+  // cover the matching strip below the buttons.
+  const measure = useCallback(() => {
+    const el = content.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    naturalHeight.current = Math.max(
+      MIN_HEIGHT,
+      Math.ceil(rect.height + Math.max(0, rect.top) * 2),
+    );
+    setIframeHeight(
+      modalOpen.current ? Math.max(naturalHeight.current, MODAL_HEIGHT) : naturalHeight.current,
+    );
+  }, []);
+
+  // The chart is width-fitted, so a width change redraws it at a new height.
+  useEffect(() => {
+    const el = content.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure]);
+
   // Give the explain panel room while it is open, then hand the frame back to
   // the chart. Kept out of the render effect so opening it does not redraw.
   useEffect(() => {
+    modalOpen.current = sqlModalOpen;
     setIframeHeight(
       sqlModalOpen ? Math.max(naturalHeight.current, MODAL_HEIGHT) : naturalHeight.current,
     );
@@ -150,103 +180,103 @@ export default function PlotPage() {
           return;
         }
         view = result;
-        // The drawing is done, so let the iframe take its actual size rather
-        // than the chart being squeezed into a guess. Measure the whole page,
-        // not just the chart, so the id row and button row are never chopped
-        // off no matter what surrounds the chart.
-        const drawn = (page.current ?? el).getBoundingClientRect().height;
-        naturalHeight.current = Math.max(MIN_HEIGHT, Math.ceil(drawn));
-        setIframeHeight(naturalHeight.current);
+        measure();
       })
       .catch((err: unknown) => setRenderError(String(err)));
     return () => {
       cancelled = true;
       view?.finalize();
     };
-  }, [spec, dark]);
+  }, [spec, dark, measure]);
 
   return (
     <div
-      ref={page}
-      style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: '1 1 auto',
+        minHeight: 0,
+        overflowY: 'auto',
+      }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          marginBottom: '0.3rem',
-          fontSize: '0.85rem',
-          flex: '0 0 auto',
-        }}
-      >
-        <span style={{ flex: 1 }} />
-        {plot.data && (
-          <span
-            title="Chart ID"
-            style={{
-              color: 'var(--rv-muted)',
-              fontSize: '0.7rem',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              userSelect: 'all',
-            }}
-          >
-            {plotId}
-          </span>
-        )}
-      </div>
-      {plot.error && (
-        <p style={{ color: 'var(--rv-danger)' }}>{friendlyError(plot.error, 'this chart')}</p>
-      )}
-      {renderError && (
-        <p style={{ color: 'var(--rv-danger)', fontSize: '0.8rem' }}>
-          This chart could not be drawn: {renderError}
-        </p>
-      )}
-      {!plot.data && plot.isLoading && <p style={{ color: 'var(--rv-muted)' }}>Loading chart…</p>}
-      <div
-        ref={holder}
-        style={{
-          // Height comes from the drawing, not the other way round. No cap and
-          // no overflow: a scrollbar inside an iframe is a trap, so the frame
-          // grows instead and the user scrolls the chat like any other page.
-          padding: '0.5rem',
-          background: 'var(--rv-surface)',
-          border: '1px solid var(--rv-border)',
-          borderRadius: 4,
-        }}
-      />
-      {(plot.data?.sql_explanation || plot.data?.sql) && (
+      <div ref={content} style={{ display: 'flex', flexDirection: 'column', flex: '0 0 auto' }}>
         <div
           style={{
             display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '0.5rem',
-            padding: '0.3rem 0.1rem 0',
+            alignItems: 'center',
+            marginBottom: '0.3rem',
+            fontSize: '0.85rem',
+            flex: '0 0 auto',
           }}
         >
-          <button
-            type="button"
-            onClick={() =>
-              requestPrompt(buildDiscussPlotPrompt(plotId), {
-                title: 'Discuss in Chat?',
-                description: "Pull this chart's data into the chat and get the model's read on it.",
-              })
-            }
-            style={paginationBtn}
-            title="Pull this chart's data into the chat and get the model's read on it"
-          >
-            Discuss in Chat
-          </button>
-          <button
-            type="button"
-            onClick={() => setSqlModalOpen(true)}
-            style={paginationBtn}
-            title="See what this search matches and the underlying SQL"
-          >
-            Explain Search
-          </button>
+          <span style={{ flex: 1 }} />
+          {plot.data && (
+            <span
+              title="Chart ID"
+              style={{
+                color: 'var(--rv-muted)',
+                fontSize: '0.7rem',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                userSelect: 'all',
+              }}
+            >
+              {plotId}
+            </span>
+          )}
         </div>
-      )}
+        {plot.error && (
+          <p style={{ color: 'var(--rv-danger)' }}>{friendlyError(plot.error, 'this chart')}</p>
+        )}
+        {renderError && (
+          <p style={{ color: 'var(--rv-danger)', fontSize: '0.8rem' }}>
+            This chart could not be drawn: {renderError}
+          </p>
+        )}
+        {!plot.data && plot.isLoading && <p style={{ color: 'var(--rv-muted)' }}>Loading chart…</p>}
+        <div
+          ref={holder}
+          style={{
+            // Uncapped: height comes from the drawing, and the frame follows.
+            padding: '0.5rem',
+            background: 'var(--rv-surface)',
+            border: '1px solid var(--rv-border)',
+            borderRadius: 4,
+          }}
+        />
+        {(plot.data?.sql_explanation || plot.data?.sql) && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '0.5rem',
+              padding: '0.3rem 0.1rem 0',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() =>
+                requestPrompt(buildDiscussPlotPrompt(plotId), {
+                  title: 'Discuss in Chat?',
+                  description:
+                    "Pull this chart's data into the chat and get the model's read on it.",
+                })
+              }
+              style={paginationBtn}
+              title="Pull this chart's data into the chat and get the model's read on it"
+            >
+              Discuss in Chat
+            </button>
+            <button
+              type="button"
+              onClick={() => setSqlModalOpen(true)}
+              style={paginationBtn}
+              title="See what this search matches and the underlying SQL"
+            >
+              Explain Search
+            </button>
+          </div>
+        )}
+      </div>
       {sqlModalOpen && plot.data && (
         <ExplainSqlModal
           explanation={plot.data.sql_explanation}
