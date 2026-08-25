@@ -4,7 +4,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/washu-tag/report-viewer
-  tag: 4.2.0
+  tag: latest
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

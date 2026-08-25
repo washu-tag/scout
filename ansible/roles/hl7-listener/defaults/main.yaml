@@ -47,7 +47,7 @@ hl7_listener_node_port: ''
 
 # Container image (built in CI, published to GHCR; pulled via the Harbor mirror in air-gapped mode)
 hl7_listener_image_repository: ghcr.io/washu-tag/hl7-listener
-hl7_listener_image_tag: 4.2.0
+hl7_listener_image_tag: latest
 
 # HL7 Batcher configuration
 # Aggregates HL7 messages from Kafka, zips them, uploads to S3, publishes manifest to Kafka

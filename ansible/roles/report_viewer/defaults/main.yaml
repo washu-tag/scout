@@ -10,7 +10,7 @@ report_viewer_helm_release_name: report-viewer
 
 # Image
 report_viewer_image_repository: ghcr.io/washu-tag/report-viewer
-report_viewer_image_tag: 4.2.0
+report_viewer_image_tag: latest
 
 # Ingress
 report_viewer_subdomain: report-viewer

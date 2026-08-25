@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scout_report_viewer"
-version = "4.2.0"
+version = "0.0.dev0"
 description = "Scout report-viewer service - surfaces saved searches outside OWUI so the chat surface stays light"
 authors = [
     {name = "Scout Team"},
