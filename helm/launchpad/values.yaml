@@ -46,7 +46,7 @@ docsUrl: ''
 
 image:
   repository: ghcr.io/washu-tag/launchpad
-  tag: latest
+  tag: 4.2.0
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
