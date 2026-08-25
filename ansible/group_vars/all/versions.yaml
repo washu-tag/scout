@@ -2,7 +2,7 @@
 # Renovate-monitored (see renovate.json5); pinned exactly for provenance.
 
 # renovate: datasource=github-releases depName=k3s-io/k3s
-k3s_version: v1.36.2+k3s1
+k3s_version: v1.36.3+k3s1
 
 # Helm 3.x until Helm 4's plugin ecosystem matures (helm-diff compat).
 # renovate: datasource=github-releases depName=helm/helm

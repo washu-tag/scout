@@ -71,7 +71,7 @@ The report viewer fetches the whole cohort each time you open a chat, which can 
 
 ![Report viewer embedded in chat](../images/ScoutReportViewer.png)
 
-Click a column header to sort. The bottom toolbar handles paging, column visibility, filtering and other options.
+Click a column header to sort. Under each header is a one-line summary of that column across the whole result set, a histogram for ages and dates, a bar for categories like modality, and a pie chart for sex. The bottom toolbar handles paging, column visibility, filtering and other options.
 
 - **Explain Search** shows what the search matched, which table it read, and the SQL.
 - **Download CSV** exports your current filters, sort order, and visible columns, not the whole original search.
@@ -79,7 +79,7 @@ Click a column header to sort. The bottom toolbar handles paging, column visibil
 
 ### Filtering and Refining
 
-There are two ways to narrow a cohort. **Filters** hides rows from the set already loaded, and clearing them brings the rows back. Going through chat instead produces fresh SQL and a **new** saved search, leaving the original intact to compare or return to.
+There are two ways to narrow a cohort. **Filters** hides rows from the set already loaded, and clearing them brings the rows back. The column summaries update to match whatever's currently visible. Going through chat instead produces fresh SQL and a **new** saved search, leaving the original intact to compare or return to.
 
 The filter dialog offers age and date ranges, sex, the modalities present in your results, and contains-matches on service, Epic MRN, Patient MPI, accession, and facility. Only fields your search returned appear.
 

@@ -25,6 +25,13 @@ body {
   --rv-accent: #4477aa;
   --rv-danger: #b00;
   --rv-success: #1a7a3a;
+
+  /* Column profile bars. */
+  --rv-profile-1: #4477aa;
+  --rv-profile-2: #7ba8d2;
+  --rv-profile-3: #cfe3f5;
+  --rv-profile-other: #808080;
+  --rv-profile-empty: #b4b4b4;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -39,6 +46,13 @@ body {
     --rv-accent: #5b9bd5;
     --rv-danger: #ff6b6b;
     --rv-success: #3fbf6a;
+
+    /* Column profile bars dark. */
+    --rv-profile-1: #4a7ba4;
+    --rv-profile-2: #77aed8;
+    --rv-profile-3: #cfe6fa;
+    --rv-profile-other: #b0b0b0;
+    --rv-profile-empty: #787878;
   }
 }
 
