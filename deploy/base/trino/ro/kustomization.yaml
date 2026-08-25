@@ -2,6 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - resources.yaml
+  # Per-mode edge ConfigMaps (both modes; the HR selects one via service_mode).
+  - edge.yaml
 # Shared JMX-exporter + Prometheus-scrape config (kept in one place so it can't
 # drift between trino-ro and trino-rw).
 components:

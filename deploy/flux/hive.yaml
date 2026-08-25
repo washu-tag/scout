@@ -44,4 +44,4 @@ spec:
   dependsOn:
     - name: scout-data-foundation
     - name: hive-db
-    - name: minio-tenant
+    - name: storage-ready

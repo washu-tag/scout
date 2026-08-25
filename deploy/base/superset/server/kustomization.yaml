@@ -4,6 +4,8 @@ kind: Kustomization
 namespace: '${scout_analytics_namespace}'
 resources:
   - resources.yaml
+  # Per-mode ingress + security-headers (both modes; HR selects one via service_mode).
+  - edge.yaml
 # Single-source the two config .py (ansible/roles/superset/files/* symlink to them);
 # HelmRelease valuesFrom deep-sets them into configOverrides. Both envsubst-clean.
 configMapGenerator:

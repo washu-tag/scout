@@ -89,6 +89,12 @@ spec:
         kind: HelmRepository
         name: trino
         namespace: '${scout_analytics_namespace}'
+  # Storage/identity differs by deployment mode (ADR 0035): service_mode selects
+  # the on-prem (MinIO creds + path-style) or aws (IRSA SA + S3) edge ConfigMap,
+  # which supplies catalogs + envFrom (+ the aws ServiceAccount).
+  valuesFrom:
+    - kind: ConfigMap
+      name: 'trino-ro-edge-${service_mode}'
   values:
     # JWT auth over HTTPS terminated by Trino itself (ADR 0022), OPA access
     # control (ADR 0020), internal-communication shared secret.
@@ -136,13 +142,7 @@ spec:
       - name: trino-tls
         secretName: trino-tls
         path: /etc/trino/tls
-    # Fixed-name secrets -> container env; Trino reads them via $${ENV:VAR} in
-    # the properties above and the catalog below.
-    envFrom:
-      - secretRef:
-          name: trino-s3
-      - secretRef:
-          name: trino-authz-env
+    # envFrom (trino-s3 + trino-authz-env) is mode-specific -> the edge ConfigMap.
     # Coordinator: JVM heap = 1G, pod memory limit = 4x heap for off-heap.
     coordinator:
       jvm:
@@ -201,16 +201,5 @@ spec:
           ports:
             - port: 5556
               protocol: TCP
-    # Read-only Delta catalog over the read-only Hive metastore. On-prem: MinIO
-    # S3, path-style, creds from the trino-s3 envFrom via $${ENV:...}.
-    catalogs:
-      delta: |
-        connector.name=delta_lake
-        hive.metastore.uri=${hive_metastore_endpoint_readonly}
-        delta.security=READ_ONLY
-        fs.native-s3.enabled=true
-        s3.region=${s3_region}
-        s3.aws-access-key=$${ENV:S3_ACCESS_KEY}
-        s3.aws-secret-key=$${ENV:S3_SECRET_KEY}
-        s3.endpoint=${s3_endpoint}
-        s3.path-style-access=true
+    # Read-only Delta catalog is mode-specific (MinIO creds/endpoint on-prem vs
+    # IRSA S3 in aws) -> supplied by the edge ConfigMap via valuesFrom.
