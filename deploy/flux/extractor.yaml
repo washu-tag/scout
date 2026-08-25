@@ -25,7 +25,7 @@ spec:
     # Ingest DB + owner role now provisioned on the shared CNPG cluster (its health
     # gate waits for the Database); postgres-cluster replaces the old extractor-db-init edge.
     - name: postgres-cluster
-    - name: minio-tenant
+    - name: storage-ready
     # hl7-transformer values hardwire the metastore URI + TRINO_HOST, so wait for both.
     - name: hive-metastore
     - name: trino-rw

@@ -14,6 +14,16 @@ on:
       - .release-please-manifest.json
       - CHANGELOG.md
       - version.txt
+  # Manual escape hatch (the narrowed image_build trigger otherwise leaves no way to
+  # force one): rebuild + rescan every image even when the path filter wouldn't. Bypasses
+  # the filter via the image_build output below; publish still gates on tests, so a manual
+  # rebuild can't skip them.
+  workflow_dispatch:
+    inputs:
+      rebuild_images:
+        description: 'Force a full image rebuild + rescan'
+        type: boolean
+        default: false
 
 # Cancel a PR's superseded runs. Keyed on head_ref (set only for pull_request);
 # push events (main / ci-** / demo**) fall back to a unique run_id group and are
@@ -40,7 +50,10 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      ci: ${{ steps.filter.outputs.ci }}
+      # A workflow_dispatch with rebuild_images bypasses the path filter (paths-filter has
+      # no base to diff on a manual run, so the input is OR'd in here rather than fed to it).
+      image_build: ${{ steps.filter.outputs.image_build == 'true' || github.event.inputs.rebuild_images == 'true' }}
+      e2e: ${{ steps.filter.outputs.e2e }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       hl7-listener: ${{ steps.filter.outputs.hl7-listener }}
@@ -69,14 +82,25 @@ jobs:
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
         id: filter
         with:
+          predicate-quantifier: 'some-with-excludes'
           filters: |
-            # Only ci.yaml and the composite actions it calls affect image
-            # contents. Sibling workflows must NOT force a full rebuild+rescan, or
-            # an unrelated CI edit surfaces the newest fixable CVE on all images.
-            # ci.yaml calls no reusable workflows, so this pair is complete.
-            ci:
-              - '.github/workflows/ci.yaml'
-              - '.github/actions/**'
+            # Run the deploy/smoke e2e unless the PR touches only docs, markdown, or
+            # non-ci workflow files (some-with-excludes makes '!' subtractive). ci.yaml is
+            # kept in scope (the exclude spares it): it wires the e2e, so a PR editing it
+            # must revalidate. e2e machinery under .github/actions + .github/ci_resources runs too.
+            e2e:
+              - '**'
+              - '!docs/**'
+              - '!**/*.md'
+              - '!.github/workflows/!(ci.yaml)'
+            # Only the shared build action changes what EVERY image's build does, so only
+            # it forces a full rebuild+rescan. Editing ci.yaml or the scan/import/publish/
+            # version actions no longer rebuilds every image (unchanged ones are pulled), so
+            # a CI edit won't surface a fresh CVE across all images. The root .dockerignore
+            # only affects the scout-notebook build (its context is the repo root), so it
+            # lives in that image's filter, not here.
+            image_build:
+              - '.github/actions/docker-build-cache/**'
             hl7log-extractor:
               - 'extractor/hl7log-extractor/**'
               - 'linting_java_checkstyle.xml'
@@ -87,6 +111,8 @@ jobs:
             scout-notebook:
               - 'helm/scout-notebook/**'
               - 'sdk/python/**'
+              # Built from the repo root, so the root .dockerignore governs its context.
+              - '.dockerignore'
             launchpad:
               - 'launchpad/**'
             superset:
@@ -189,7 +215,7 @@ jobs:
           subproject: ${{ matrix.subproject }}
           image-name: ${{ matrix.image-name }}
       - name: 'Build/Cache Image - ${{ matrix.image-name }}'
-        if: needs.changes.outputs[matrix.image-name] == 'true' || steps.check-image.outputs.exists == 'false' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs[matrix.image-name] == 'true' || steps.check-image.outputs.exists == 'false' || needs.changes.outputs.image_build == 'true'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: ${{ matrix.subproject }}
@@ -352,14 +378,18 @@ jobs:
           image-name: ${{ matrix.image-name }}
           subproject: ${{ matrix.subproject }}
         continue-on-error: ${{ matrix.allow-failure == true }}
-  deploy-and-test:
+  deploy-and-test-e2e:
     runs-on: ubuntu-latest
     needs:
+      - changes
       - lint
       - build-and-upload
       - unit-test
       - hl7-transformer-unit
       - ansible-and-python-tests
+    # Skip on PRs that change only docs/markdown (see the e2e filter). Always runs
+    # on push/schedule/dispatch so main and releases get the full validation.
+    if: ${{ success() && (github.event_name != 'pull_request' || needs.changes.outputs.e2e == 'true') }}
     permissions:
       contents: read
       packages: read
@@ -492,6 +522,37 @@ jobs:
         if: always()
         run: |
           sudo -E kubectl -n scout-extractor logs deployment/hl7-transformer
+  # Required-check gate. deploy-and-test-e2e is conditional, so this always-run
+  # job reports the `deploy-and-test` context the ruleset requires: it passes when
+  # the e2e succeeded or was legitimately skipped (docs-only PR), and fails when
+  # the e2e ran (or should have) and did not succeed.
+  deploy-and-test:
+    name: deploy-and-test
+    needs: [changes, deploy-and-test-e2e]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Gate on the e2e result'
+        shell: bash
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          E2E: ${{ needs.changes.outputs.e2e }}
+          EVENT: ${{ github.event_name }}
+          RESULT: ${{ needs.deploy-and-test-e2e.result }}
+        run: |
+          # Only take the skip-pass path when changes succeeded and definitively
+          # reported e2e=false for a PR; otherwise require a real e2e success so a
+          # failure or a failed prerequisite (skipped e2e) still blocks the merge.
+          if [ "$CHANGES" = "success" ] && [ "$EVENT" = "pull_request" ] && [ "$E2E" = "false" ]; then
+            echo "PR changes no deploy/test surface; e2e skipped, gate passes."
+            exit 0
+          fi
+          if [ "$RESULT" = "success" ]; then
+            echo "e2e succeeded."
+            exit 0
+          fi
+          echo "::error::deploy-and-test-e2e result=$RESULT (changes=$CHANGES e2e=$E2E); gate fails."
+          exit 1
   # Split across two runners: the full Scout stack + image pinning ran the 72 GB
   # runner into DiskPressure during chatbot's ollama+open-webui pulls, so each
   # side deploys only what it tests. Both install common infra (k3s, traefik,
@@ -505,14 +566,18 @@ jobs:
   # which needs the voila Service to resolve its target URL).
   # Playbook names assume PR #409 splits analytics.yaml into trino.yaml + superset.yaml;
   # update matrix.playbooks if naming lands differently.
-  # `name:` is explicit so smoke-test-analytics / smoke-test-notebooks stay the
-  # GitHub check names branch protection is configured against.
+  # smoke-test's `name:` is explicit so the per-side checks stay
+  # smoke-test-analytics / smoke-test-notebooks. They are not required checks (the
+  # ruleset requires deploy-and-test + CodeQL), so gating them here is safe: a
+  # docs-only PR skips them without blocking the merge.
   smoke-test:
     name: smoke-test-${{ matrix.side }}
     runs-on: ubuntu-latest
     needs:
+      - changes
       - lint
       - build-and-upload
+    if: ${{ success() && (github.event_name != 'pull_request' || needs.changes.outputs.e2e == 'true') }}
     permissions:
       contents: read
       packages: read
@@ -1364,7 +1429,7 @@ jobs:
       # setup-python is a bare interpreter; stamp_config.py imports PyYAML.
       - run: pip install pyyaml
       - name: Login to GHCR
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1463,5 +1528,12 @@ jobs:
           # Apply the Flux Kustomizations, let the DAG converge, then run the SAME
           # ingest suite Ansible deploy-and-test runs, against the Flux-reconciled
           # slice. Fleshed out when the artifact + secret seed land.
-          kubectl apply -f config-artifact/flux/ || kubectl apply -f deploy/flux/
+          # Shared DAG (non-recursive: the aws/ + on-prem/ subdirs are skipped) PLUS the
+          # on-prem mode set -- storage-ready=the real MinIO tenant, oauth2-proxy, the
+          # Traefik edge -- via `-k` since that subdir has a kustomization.yaml. Without
+          # the on-prem set the lake consumers' dependsOn: storage-ready never resolves.
+          # The e2e cluster is on-prem k3s.
+          FLUX_DIR=config-artifact/flux; [ -d "$FLUX_DIR" ] || FLUX_DIR=deploy/flux
+          kubectl apply -f "$FLUX_DIR"/
+          kubectl apply -k "$FLUX_DIR"/on-prem
           flux reconcile kustomization extractor --with-source --timeout=15m

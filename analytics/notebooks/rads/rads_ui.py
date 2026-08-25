@@ -15,7 +15,7 @@ from io import BytesIO
 import base64
 
 from rads_builder import (
-    export_rads_data,
+    patient_display_id,
     calculate_score_distribution,
     calculate_demographics_breakdown,
     calculate_patient_progression,
@@ -321,12 +321,7 @@ def create_statistics_panel(state):
 
         # Create patient_id column for unique patient identification
         df_copy = df.copy()
-        df_copy["patient_id"] = df_copy.apply(
-            lambda row: (
-                row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"]
-            ),
-            axis=1,
-        )
+        df_copy["patient_id"] = df_copy["scout_patient_id"]
         unique_patients = df_copy["patient_id"].nunique()
 
         # Get one row per patient (most recent report)
@@ -813,9 +808,9 @@ def create_time_comparison_panel(state):
     # Time period selector for comparison
     period_selector = widgets.Dropdown(
         options=[
-            ("Current Month vs Last Month", "month"),
-            ("Current Quarter vs Last Quarter", "quarter"),
-            ("This Year vs 5 Years Ago", "year"),
+            ("Latest Month vs Prior Month", "month"),
+            ("Latest Quarter vs Prior Quarter", "quarter"),
+            ("Latest Year vs 5 Years Earlier", "year"),
         ],
         value="month",
         description="Compare:",
@@ -916,15 +911,22 @@ def create_time_comparison_panel(state):
         full_df = state["full_df"]  # Use full dataset, not filtered
         period_value = period_selector.value
 
+        # Measure the periods from the newest report rather than from today, so
+        # "latest" is the latest period the data covers. The lake routinely lags
+        # real time, and anchoring on today then compares two empty months.
+        anchor = full_df["requested_dt"].max() if len(full_df) > 0 else None
+        if pd.isna(anchor):
+            anchor = None
+
         if period_value == "month":
-            start1, end1, label1 = get_time_period_filter("current_month")
-            start2, end2, label2 = get_time_period_filter("last_month")
+            start1, end1, label1 = get_time_period_filter("current_month", anchor)
+            start2, end2, label2 = get_time_period_filter("last_month", anchor)
         elif period_value == "quarter":
-            start1, end1, label1 = get_time_period_filter("current_quarter")
-            start2, end2, label2 = get_time_period_filter("last_quarter")
+            start1, end1, label1 = get_time_period_filter("current_quarter", anchor)
+            start2, end2, label2 = get_time_period_filter("last_quarter", anchor)
         elif period_value == "year":
-            start1, end1, label1 = get_time_period_filter("current_year")
-            start2, end2, label2 = get_time_period_filter("5_years_ago")
+            start1, end1, label1 = get_time_period_filter("current_year", anchor)
+            start2, end2, label2 = get_time_period_filter("5_years_ago", anchor)
         else:
             return
 
@@ -977,9 +979,31 @@ def create_time_comparison_panel(state):
             </div>
             """
 
+        # The latest period always holds the anchor report, but the prior one can
+        # fall in a gap. An empty side renders as an empty chart and reads as a
+        # broken panel, so name the range the data actually covers.
+        coverage_note = ""
+        if (len(df1) == 0 or len(df2) == 0) and len(full_df) > 0:
+            covered = (
+                f"{full_df['requested_dt'].min():%Y-%m-%d} to "
+                f"{full_df['requested_dt'].max():%Y-%m-%d}"
+            )
+            coverage_note = f"""
+            <div style='background: #fef3c7; padding: 12px; border-radius: 4px;
+                        border-left: 3px solid #f59e0b; margin-bottom: 16px;'>
+                <div style='font-size: 13px; color: #78350f;'>
+                    One of these periods has no reports. Periods are measured from the
+                    newest report; these {len(full_df):,} reports span
+                    <strong>{covered}</strong>.
+                </div>
+            </div>
+            """
+
         comparison_html = f"""
         <div style='background: white; padding: 16px; border-radius: 6px; border: 1px solid #e5e7eb; margin-top: 16px;'>
             <h3 style='margin: 0 0 16px 0; font-size: 16px; color: {PURPLE_PRIMARY};'>Time Period Comparison</h3>
+
+            {coverage_note}
 
             <!-- Trend Chart -->
             <div style='margin-bottom: 24px;'>
@@ -999,7 +1023,7 @@ def create_time_comparison_panel(state):
     # Set up event handlers
     analysis_type.observe(on_analysis_type_change, names="value")
     granularity_selector.observe(lambda change: render_analysis(), names="value")
-    period_selector.observe(lambda change: on_period_comparison_change(), names="value")
+    period_selector.observe(lambda change: render_analysis(), names="value")
 
     # Initial setup
     update_controls()
@@ -1077,10 +1101,7 @@ def create_demographics_charts(df):
 
     # Prepare data - count unique patients only
     df_copy = df.copy()
-    df_copy["patient_id"] = df_copy.apply(
-        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"],
-        axis=1,
-    )
+    df_copy["patient_id"] = df_copy["scout_patient_id"]
 
     # Get one row per patient (most recent report)
     df_patients = df_copy.sort_values("requested_dt", ascending=False).drop_duplicates(
@@ -1519,10 +1540,17 @@ def create_patient_progression_panel(state):
 
         # Get unique patients for dropdown
         patient_ids = sorted(progression_df["patient_id"].unique())
+        patient_labels = (
+            progression_df.drop_duplicates("patient_id")
+            .set_index("patient_id")["patient_display_id"]
+            .to_dict()
+        )
 
         # Patient selector
         patient_selector = widgets.Dropdown(
-            options=[(f"Patient: {pid}", pid) for pid in patient_ids],
+            options=[
+                (f"Patient: {patient_labels.get(pid, pid)}", pid) for pid in patient_ids
+            ],
             description="Select Patient:",
             layout=widgets.Layout(width="400px"),
             style={"description_width": "120px"},
@@ -1557,15 +1585,9 @@ def create_patient_progression_panel(state):
                 ].sort_values("requested_dt")
 
                 # Get original report data
-                original_df = df[
-                    df.apply(
-                        lambda r: (
-                            r["epic_mrn"] if pd.notna(r["epic_mrn"]) else r["empi_mr"]
-                        )
-                        == patient_id,
-                        axis=1,
-                    )
-                ].sort_values("requested_dt")
+                original_df = df[df["scout_patient_id"] == patient_id].sort_values(
+                    "requested_dt"
+                )
 
                 # Collect all unique scores this patient has had across all reports
                 all_patient_scores = set()
@@ -1609,9 +1631,9 @@ def create_patient_progression_panel(state):
                     )
 
                     # Get full report text and all RADS scores from original dataframe
-                    accession = row["obr_3_filler_order_number"]
+                    accession = row["accession_number"]
                     report_data = original_df[
-                        original_df["obr_3_filler_order_number"] == accession
+                        original_df["accession_number"] == accession
                     ]
 
                     if len(report_data) > 0:
@@ -1823,7 +1845,7 @@ def create_patient_progression_panel(state):
 
                     <!-- Patient info -->
                     <div style='font-size: 15px; color: #374151; margin-bottom: 20px; font-weight: 500;'>
-                        Patient: {html.escape(str(patient_id))} | Age: {patient_age} | Sex: {patient_sex}
+                        Patient: {html.escape(str(patient_labels.get(patient_id, patient_id)))} | Age: {patient_age} | Sex: {patient_sex}
                         <div style='margin-top: 4px; font-size: 13px; color: #6b7280; font-weight: 400;'>
                             Total Reports: {total_reports} | Span: {months_span} months
                         </div>
@@ -1944,15 +1966,13 @@ def create_report_browser(state):
         next_btn.disabled = current_pos >= len(df) - 1
 
         # Render report
-        patient_id = html.escape(
-            str(row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"])
-        )
+        patient_id = html.escape(str(patient_display_id(row)))
         requested_dt = (
             row["requested_dt"].strftime("%Y-%m-%d")
             if pd.notna(row["requested_dt"])
             else "N/A"
         )
-        accession = html.escape(str(row.get("obr_3_filler_order_number", "Unknown")))
+        accession = html.escape(str(row.get("accession_number", "Unknown")))
         patient_age = html.escape(str(row.get("patient_age", "Unknown")))
         sex = html.escape(str(row.get("sex", "Unknown")))
         modality = html.escape(str(row.get("modality", "Unknown")))
@@ -2082,71 +2102,3 @@ def create_report_browser(state):
     render_report()
 
     return nav_bar, report_output
-
-
-# ============================================================================
-# EXPORT CONTROLS
-# ============================================================================
-
-
-def create_export_controls(state):
-    """Create export controls."""
-    include_report_text_check = widgets.Checkbox(
-        value=False,
-        description="Include full report text",
-        style={"description_width": "initial"},
-    )
-
-    export_button = widgets.Button(
-        description="📥 Export RADS Data CSV",
-        button_style="info",
-        layout=widgets.Layout(width="auto"),
-    )
-
-    export_output = widgets.Output()
-
-    def on_export(b):
-        with export_output:
-            export_output.clear_output(wait=True)
-
-            try:
-                filepath = export_rads_data(
-                    state["df"], include_report_text_check.value
-                )
-
-                display(
-                    HTML(
-                        f"""
-                    <div style='background: {SUCCESS_GRADIENT}; padding: 16px; border-radius: 8px;
-                                color: white; margin-top: 12px;'>
-                        <div style='font-weight: 600; margin-bottom: 8px;'>✓ Export Successful</div>
-                        <div style='font-size: 14px; opacity: 0.95;'>
-                            Exported {len(state['df'])} reports<br>
-                            File: <code style='background: rgba(255,255,255,0.2); padding: 2px 6px;
-                                               border-radius: 4px;'>{filepath}</code>
-                        </div>
-                    </div>
-                """
-                    )
-                )
-            except Exception as e:
-                display(
-                    HTML(
-                        f"""
-                    <div style='background: {RED_ERROR}; padding: 16px; border-radius: 8px;
-                                color: white; margin-top: 12px;'>
-                        <div style='font-weight: 600; margin-bottom: 8px;'>✗ Export Failed</div>
-                        <div style='font-size: 14px; opacity: 0.95;'>Error: {str(e)}</div>
-                    </div>
-                """
-                    )
-                )
-
-    export_button.on_click(on_export)
-
-    container = widgets.HBox(
-        [include_report_text_check, export_button, export_output],
-        layout=widgets.Layout(gap="16px", align_items="center"),
-    )
-
-    return container

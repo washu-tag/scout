@@ -6,6 +6,8 @@
 # validate-deploy.yaml; regenerate with the snippet in that workflow when bases add
 # or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler
 # (Phase 5) validate a site's values against this list.
+acm_cert_arn
+alb_group_name
 cassandra_cluster_name
 cassandra_cpu_limit
 cassandra_cpu_request
@@ -28,6 +30,7 @@ elasticsearch_memory_limit
 elasticsearch_memory_request
 elasticsearch_storage_size
 extractor_data_dir
+hive_hadoop_opts
 hive_metastore_endpoint
 hive_metastore_endpoint_readonly
 hive_namespace
@@ -50,6 +53,7 @@ hl7log_extractor_resources_requests_memory
 hl7log_extractor_timeout
 hl7logs_root_dir
 ingest_postgres_table_name
+irsa_role_prefix
 keycloak_bootstrap_admin_user
 keycloak_internal_url
 keycloak_namespace
@@ -68,6 +72,7 @@ oauth2_proxy_namespace
 oauth2_proxy_subdomain
 oauth_provider_name
 opa_bundle_object_key
+opa_bundle_s3_endpoint
 opa_bundles_bucket
 postgres_cluster_name
 postgres_cluster_namespace
@@ -94,6 +99,7 @@ s3_lake_writer
 s3_loki_writer
 s3_opa_bundle_reader
 s3_opa_bundle_writer
+s3_path_style_access
 s3_region
 scout_analytics_namespace
 scout_core_namespace
@@ -104,6 +110,7 @@ scout_operators_namespace
 scratch_bucket
 scratch_path
 server_hostname
+service_mode
 spark_sql_shuffle_partitions
 timezone
 trino_https_port

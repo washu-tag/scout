@@ -12,6 +12,16 @@ until CI switches `deploy-and-test` to deploy from it. See
   so a CR never dry-runs before its CRD exists.
 - `flux/<component>.yaml` — the Flux `Kustomization` CRs pointing at the bases and
   wiring the DAG (`dependsOn` + CEL `healthChecks`), reproducing the Ansible order.
+- `base/edge-{on-prem,aws}/` + `base/storage-ready/` — per-mode resources (ADR 0035):
+  the ingress/auth edge (on-prem Traefik forwardAuth Middlewares vs aws ALB-native-OIDC
+  Ingresses) and the inert aws storage marker. Wired by `flux/{on-prem,aws}/`, not the
+  shared DAG.
+- `flux/{on-prem,aws}/` — the per-mode Flux set: the `storage-ready` gate (inert in aws;
+  the real MinIO tenant on-prem), the ingress edge, and on-prem MinIO + oauth2-proxy.
+  The shared `kubectl apply -f flux/` is non-recursive so it never applies these; a site
+  reconciles the shared `flux/` plus exactly one subdir via a Kustomization pointing at
+  `./flux/${service_mode}`. The lake consumers dependsOn the mode-agnostic `storage-ready`
+  name, supplied by whichever subdir the site selects.
 
 ## Conventions
 - **Site scalars are `${var}` postBuild substitutions** from a `cluster-vars`
@@ -24,6 +34,17 @@ until CI switches `deploy-and-test` to deploy from it. See
 - **Secrets by fixed name only** — bases reference them (e.g. `superuser-secret`);
   values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git. The
   full contract (names, keys, per-mode materialization) is in `required-secrets.md`.
+- **Service-mode (`aws` vs `on-prem`, ADR 0035) picks a mechanism by the shape of the
+  delta**, so the three-way split is one rule, not ad hoc:
+  1. *scalar diff* → an inline `${var}` the chart branches on (e.g. hive
+     `S3_PATH_STYLE_ACCESS`, the extractor `sparkDefaults.mode`).
+  2. *list-membership / block diff a scalar can't express* (envFrom entries, catalog
+     lines, an aws-only ServiceAccount) → a per-mode `valuesFrom` edge ConfigMap named
+     `<workload>-edge-${service_mode}` (trino, extractor, opa, superset).
+  3. *a whole resource present in one mode only, or a CRD the other mode lacks*
+     (MinIO, the Traefik Middlewares, oauth2-proxy, the ALB Ingresses) → the mode
+     subdir `flux/{aws,on-prem}/`, since `${var}` can't add/drop a document and a flux
+     path isn't substituted.
 
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (22 Flux

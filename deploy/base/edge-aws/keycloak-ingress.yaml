@@ -1,0 +1,46 @@
+# Public ALB for Keycloak. No OIDC -- Keycloak is the OIDC OP and must be reachable
+# un-gated. The master-realm admin endpoints are blocked at the ALB (fixed-response
+# 403) so the temp-admin account is not internet-reachable; only the in-cluster
+# keycloak-client-sync CronJob uses them, hitting the Service directly. Mirrors
+# the live AWS cluster's public ingress. scheme (internet-facing) comes from the
+# `alb` IngressClassParams, not a per-ingress annotation (ignored on EKS Auto).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-alb
+  namespace: '${keycloak_namespace}'
+  annotations:
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: ${acm_cert_arn}
+    alb.ingress.kubernetes.io/group.name: ${alb_group_name}
+    alb.ingress.kubernetes.io/actions.deny-admin: |
+      {"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"403","messageBody":"Forbidden"}}
+spec:
+  ingressClassName: alb
+  rules:
+    - host: 'keycloak.${server_hostname}'
+      http:
+        paths:
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: deny-admin
+                port:
+                  name: use-annotation
+          - path: /realms/master
+            pathType: Prefix
+            backend:
+              service:
+                name: deny-admin
+                port:
+                  name: use-annotation
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak-service
+                port:
+                  number: 8080
