@@ -77,7 +77,6 @@ function sizing(spec: Record<string, unknown>) {
 export default function PlotPage() {
   const { plotId = '' } = useParams<{ plotId: string }>();
   const requestPrompt = useChatPrompt();
-  const page = useRef<HTMLDivElement>(null);
   const holder = useRef<HTMLDivElement>(null);
   // What the chart itself asked for, so the frame can be restored after the
   // explain panel closes.
@@ -131,9 +130,12 @@ export default function PlotPage() {
     let cancelled = false;
     setRenderError(null);
     // Imported here so the vega bundle is fetched only by this route.
-    import('vega-embed')
-      .then(({ default: embed }) =>
+    Promise.all([import('vega-embed'), import('vega-interpreter')])
+      .then(([{ default: embed }, { expressionInterpreter }]) =>
         embed(el, spec as never, {
+          // CSP-safe mode: skips Vega's eval-based codegen so a model-authored spec cannot execute JS.
+          ast: true,
+          expr: expressionInterpreter,
           // Export only. `source` opens a blank window because OWUI's iframe
           // sandbox blocks writing to it, and `editor` is off-origin so the
           // CSP would block it too.
