@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import App from './App';
-import SearchesListPage from './pages/SearchesListPage';
+import SavedListPage from './pages/SavedListPage';
 import SearchDetailPage from './pages/SearchDetailPage';
 import PlotPage from './pages/PlotPage';
 import { ApiError, getConfig } from './api/client';
@@ -18,7 +18,7 @@ const router = (
   <BrowserRouter basename="/spa">
     <Routes>
       <Route path="/" element={<App />}>
-        <Route index element={<SearchesListPage />} />
+        <Route index element={<SavedListPage />} />
         <Route path="searches/:searchId" element={<SearchDetailPage />} />
         <Route path="plots/:plotId" element={<PlotPage />} />
       </Route>

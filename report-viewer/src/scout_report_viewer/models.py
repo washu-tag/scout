@@ -224,6 +224,20 @@ class PlotResponse(BaseModel):
     row_count: int
 
 
+class PlotMeta(BaseModel):
+    """One saved chart as it appears in the SPA's listing. No spec and no
+    rows - the listing shows metadata, and the chart route fetches the rest."""
+
+    id: str
+    sql: str
+    owner_sub: str
+    created_at: datetime
+    sql_explanation: str = ""
+    # OWUI conversation ID - the SPA groups charts with the searches from
+    # the same chat. Empty when the caller didn't supply it.
+    owui_chat_id: str = ""
+
+
 class PlotDetail(BaseModel):
     """Spec and rows for the SPA's chart route, plus the SQL and its
     explanation for the "What this search matches" panel."""

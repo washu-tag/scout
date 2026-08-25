@@ -51,6 +51,26 @@ def test_viewing_a_chart_re_runs_its_sql(client, auth_headers, fake_trino):
     assert "data" not in detail["spec"]
 
 
+def test_the_listing_returns_metadata_newest_first(client, auth_headers, fake_trino):
+    for _ in range(2):
+        fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    first = _create(client, auth_headers, explanation="one").json()["id"]
+    second = _create(client, auth_headers, explanation="two").json()["id"]
+    listed = client.get("/api/plots", headers=auth_headers).json()
+    assert [p["id"] for p in listed] == [second, first]
+    assert listed[0]["sql_explanation"] == "two"
+    # The spec and rows stay server-side until the chart route asks for them.
+    assert "spec" not in listed[0] and "rows" not in listed[0]
+
+
+def test_the_listing_only_shows_your_own_charts(
+    client, auth_headers, other_auth_headers, fake_trino
+):
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    _create(client, auth_headers)
+    assert client.get("/api/plots", headers=other_auth_headers).json() == []
+
+
 def test_another_user_cannot_open_someone_elses_chart(
     client, auth_headers, other_auth_headers, fake_trino
 ):

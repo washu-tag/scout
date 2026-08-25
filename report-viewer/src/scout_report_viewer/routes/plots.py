@@ -1,8 +1,9 @@
 """HTTP routes for `/api/plots`.
 
-A chart is saved SQL plus a Vega-Lite spec. `GET` re-runs the SQL for the
-iframe, so charts stay live and no result rows are stored, same bargain as a
-saved search.
+A chart is saved SQL plus a Vega-Lite spec. `GET /{id}` re-runs the SQL for
+the iframe, so charts stay live and no result rows are stored, same bargain as
+a saved search. `GET /api/plots` lists the caller's charts for the SPA
+homepage, which shows them next to saved searches.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from .. import metrics, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
 from ..ids import new_plot_id
-from ..models import PlotDetail, PlotRequest, PlotResponse
+from ..models import PlotDetail, PlotMeta, PlotRequest, PlotResponse
 from ..store import PlotStore, get_plot_store
 
 log = logging.getLogger(__name__)
@@ -73,6 +74,27 @@ def _validate_spec(spec: dict[str, Any]) -> None:
             detail="vega_lite_spec needs a 'mark' (or layer/facet/concat)",
         )
     _reject_foreign_urls(spec)
+
+
+@router.get("", response_model=list[PlotMeta])
+async def list_plots(
+    user: User = Depends(get_current_user),
+    store: PlotStore = Depends(get_plot_store),
+) -> list[PlotMeta]:
+    """Caller's charts, newest first. The SPA homepage lists these alongside
+    saved searches. Owner-scoped - only the authenticated user's own."""
+    rows = await store.list_plots(user.sub)
+    return [
+        PlotMeta(
+            id=r["id"],
+            sql=r["sql"],
+            owner_sub=r["owner_sub"],
+            created_at=r["created_at"],
+            sql_explanation=r.get("sql_explanation") or "",
+            owui_chat_id=r.get("owui_chat_id") or "",
+        )
+        for r in rows
+    ]
 
 
 @router.post("", response_model=PlotResponse, status_code=status.HTTP_200_OK)

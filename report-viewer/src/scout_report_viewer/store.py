@@ -159,6 +159,38 @@ class PlotStore:
                     )
                 await conn.commit()
 
+    async def list_plots(
+        self, owner_sub: str, *, limit: int = 200
+    ) -> list[dict[str, Any]]:
+        """Return the caller's charts, newest first. The spec is left behind -
+        the listing only needs metadata, and specs are re-read on view."""
+        with metrics.time_postgres("list_plots"):
+            async with self._pool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        """
+                        SELECT id, sql, sql_explanation, owner_sub,
+                               owui_chat_id, created_at
+                        FROM plots
+                        WHERE owner_sub = %s
+                        ORDER BY created_at DESC
+                        LIMIT %s
+                        """,
+                        (owner_sub, limit),
+                    )
+                    rows = await cur.fetchall()
+        return [
+            {
+                "id": id_,
+                "sql": sql,
+                "sql_explanation": explanation or "",
+                "owner_sub": owner,
+                "owui_chat_id": chat_id or "",
+                "created_at": created_at,
+            }
+            for id_, sql, explanation, owner, chat_id, created_at in rows
+        ]
+
     async def get_plot(self, plot_id: str, owner_sub: str) -> dict[str, Any] | None:
         with metrics.time_postgres("get_plot"):
             async with self._pool.connection() as conn:
