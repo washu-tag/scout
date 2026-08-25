@@ -32,7 +32,8 @@ until CI switches `deploy-and-test` to deploy from it. See
   publish (placeholder in git, concrete only in the published artifact). Upstream
   chart versions are pinned in `versions.yaml` + Renovate-tracked.
 - **Secrets by fixed name only** — bases reference them (e.g. `superuser-secret`);
-  values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git.
+  values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git. The
+  full contract (names, keys, per-mode materialization) is in `required-secrets.md`.
 - **Service-mode (`aws` vs `on-prem`, ADR 0035) picks a mechanism by the shape of the
   delta**, so the three-way split is one rule, not ad hoc:
   1. *scalar diff* → an inline `${var}` the chart branches on (e.g. hive
