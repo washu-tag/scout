@@ -45,11 +45,9 @@ server:
           - '{{ keycloak_oidc_certs_url }}'
         refreshInterval: 1m
       # Temporal's default claim mapper parses <namespace>:<role> strings, so its
-      # role names ARE its permission strings. They used to arrive in `groups`,
-      # flattened together with every other client's roles by a mapper on the
-      # shared microprofile-jwt scope; they now come from a mapper on Temporal's
-      # own client, pinned to it, in the claim Temporal actually names. Set
-      # explicitly rather than relying on Temporal's default for this key.
+      # role names ARE its permission strings.
+      # `permissions` is Temporal's default value for this claim name, so we
+      # could omit it here, but we leave it to make the connection explicit.
       permissionsClaimName: permissions
       authorizer: default
       claimMapper: default
