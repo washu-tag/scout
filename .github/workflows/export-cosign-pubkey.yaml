@@ -1,0 +1,36 @@
+name: Export cosign public key
+
+# One-off export of the PUBLIC half of the artifact-signing key so it can be published
+# (e.g. wired into a Flux OCIRepository cosign-verify secret, or shipped for air-gapped /
+# external verification). The public key is stable until the signing key rotates, so run
+# this only when you need to (re-)publish it.
+#
+# COSIGN_PUBLIC_KEY is a registered secret, so its value is masked in run logs; the derived
+# key is therefore written to an artifact (artifact contents are not masked), never printed.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-pubkey:
+    name: Export cosign public key
+    runs-on: ubuntu-latest
+    steps:
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Derive the public key from the signing key
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cosign public-key --key env://COSIGN_PRIVATE_KEY > cosign.pub
+          grep -q 'BEGIN PUBLIC KEY' cosign.pub || { echo "::error::cosign.pub is not a public key"; exit 1; }
+          echo "wrote cosign.pub ($(wc -c < cosign.pub) bytes)"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cosign-pub
+          path: cosign.pub
+          retention-days: 1
