@@ -117,7 +117,9 @@ configOverrides:
             "remote_app": {
                 "client_id": "{{ keycloak_superset_client_id }}",
                 "client_secret": "{{ keycloak_superset_client_secret }}",
-                "client_kwargs": {"scope": "openid microprofile-jwt"},
+                # Roles arrive in the groups claim (userinfo) from a mapper on
+                # this client; profile/email are default scopes.
+                "client_kwargs": {"scope": "openid"},
                 "api_base_url": "{{ keycloak_realm_url }}/protocol/",
                 "access_token_url": "{{ keycloak_oidc_token_url }}",
                 "authorize_url": "{{ keycloak_oidc_auth_url }}",

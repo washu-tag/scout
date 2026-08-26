@@ -80,5 +80,5 @@ web:
     - name: TEMPORAL_AUTH_CALLBACK_URL
       value: 'https://temporal.{{ server_hostname }}/auth/sso/callback'
     - name: TEMPORAL_AUTH_SCOPES
-      value: openid microprofile-jwt
+      value: openid email profile
 {% endif %}
