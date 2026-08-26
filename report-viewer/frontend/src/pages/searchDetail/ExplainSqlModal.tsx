@@ -55,12 +55,11 @@ export function ExplainSqlModal(props: {
               lineHeight: 1.45,
             }}
           >
-            <strong>Text matching is approximate.</strong> Rows were picked by matching words in the
-            report text, so unusual phrasing can be missed and a mention meant to be ruled out can
-            slip through. A language model writes these patterns for each search, so be specific
-            about what you want, and expect the cohort to change slightly if you ask again or
-            rephrase. The SQL below is what defines <em>this</em> cohort. Expand rows in the table
-            to review the matches.
+            <strong>Text matching is approximate.</strong> Reports were picked by matching words in
+            the report text, so unusual phrasing can be missed and a mention meant to be ruled out
+            can slip through. A language model writes these patterns, so be specific about what you
+            want, and expect results to shift a little if you ask again. The SQL below is what did
+            the matching.
           </p>
         )}
         <div style={{ fontWeight: 600, marginBottom: '0.35rem', fontSize: '0.85rem' }}>SQL</div>
