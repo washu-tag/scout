@@ -173,6 +173,32 @@ jobs:
           java-version: ${{ ENV.JAVA_VERSION }}
           cache: 'gradle'
       - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+  verify-cosign-pubkey:
+    # The repo-root cosign.pub is the published mirror of the public half of
+    # COSIGN_PRIVATE_KEY. It's an unchecked mirror otherwise: derive the real key
+    # and diff it, so a stale key (a rotation that didn't refresh the file) or the
+    # authoring placeholder fails here, red and self-announcing, instead of
+    # verification silently breaking for every consumer in the field. Standalone
+    # (no paths filter) so rotation drift is caught even when cosign.pub is
+    # untouched; same-repo PRs have the secret.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: cosign.pub matches the signing key
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cosign public-key --key env://COSIGN_PRIVATE_KEY > cosign.pub.derived
+          if ! diff -u cosign.pub cosign.pub.derived; then
+            echo "::error file=cosign.pub::cosign.pub does not match the signing key. Refresh it (run the export-cosign-pubkey workflow) after a rotation, or replace the authoring placeholder with the real key."
+            exit 1
+          fi
+          echo "cosign.pub matches the derived public key."
   build-and-upload:
     runs-on: ubuntu-latest
     needs: changes
