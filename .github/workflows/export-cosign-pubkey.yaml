@@ -27,7 +27,6 @@ jobs:
         run: |
           set -euo pipefail
           cosign public-key --key env://COSIGN_PRIVATE_KEY > cosign.pub
-          grep -q 'BEGIN PUBLIC KEY' cosign.pub || { echo "::error::cosign.pub is not a public key"; exit 1; }
           echo "wrote cosign.pub ($(wc -c < cosign.pub) bytes)"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

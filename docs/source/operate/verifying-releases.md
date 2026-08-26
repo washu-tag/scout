@@ -43,9 +43,10 @@ cosign verify --key cosign.pub --insecure-ignore-tlog \
 ```
 
 A matching signature prints the verified payload and exits `0`; a wrong key or a
-tampered artifact exits non-zero. Charts, images, and the config artifact are
-also verified in-cluster by Flux via `spec.verify` against the same key, so the
-manual check above mirrors what the cluster enforces on every reconcile.
+tampered artifact exits non-zero. In-cluster enforcement of the same signatures
+through Flux `spec.verify` is the intended end state (ADR 0031/0033); it is not
+yet wired into the deploy base, so today this manual check is how you confirm a
+release before trusting it.
 
 (why-keyed)=
 ## Why a key, not keyless
