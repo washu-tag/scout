@@ -8,7 +8,10 @@ grafana.ini:
     auto_login: true
     client_id: "{{ keycloak_grafana_client_id }}"
     client_secret: $__file{/etc/secrets/keycloak-grafana/client-secret}
-    scopes: openid microprofile-jwt
+    # Roles arrive in the groups claim from a mapper on this client, so nothing
+    # needs requesting; email/profile are default scopes, which is what the
+    # attribute paths below read.
+    scopes: openid
     email_attribute_path: email
     login_attribute_path: preferred_username
     name_attribute_path: name

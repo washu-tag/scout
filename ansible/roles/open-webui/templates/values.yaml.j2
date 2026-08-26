@@ -236,8 +236,8 @@ extraEnvVars:
   - name: ENABLE_OAUTH_ROLE_MANAGEMENT
     value: 'true'
 
-  # Role claim path (uses 'groups' claim from microprofile-jwt scope which includes
-  # all client roles and is present in both access and ID tokens)
+  # Role claim path. The groups claim carries this client's own roles, from a
+  # mapper on the client, in both the access and ID tokens.
   - name: OAUTH_ROLES_CLAIM
     value: 'groups'
 

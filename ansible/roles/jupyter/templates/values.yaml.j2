@@ -142,9 +142,10 @@ hub:
       userdata_params:
         state: 'state'
       username_claim: 'preferred_username'
+      # Roles arrive in the groups claim from a mapper on this client, read out
+      # of userinfo via auth_state_groups_key below.
       scope:
         - openid
-        - microprofile-jwt
       enable_auth_state: true
       # Refresh the user's Keycloak token before spawning so kernels start
       # with a fresh access_token; the scout SDK re-fetches from the Hub API
