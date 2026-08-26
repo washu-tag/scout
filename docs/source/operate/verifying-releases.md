@@ -73,8 +73,10 @@ Deployment](air-gapped.md) for the full transport flow.
 
 ## Regenerating the public key
 
-The public key is derived from the signing key, so it can be re-exported at any
-time without the private material. Run the **Export cosign public key** workflow
-(`.github/workflows/export-cosign-pubkey.yaml`) via *workflow_dispatch*; it
-derives the key and uploads it as the `cosign-pub` build artifact. Use that to
-refresh `cosign.pub` if the signing key is ever rotated.
+The public key is derived from the signing key, so it can be regenerated at any
+time without the private material. If the signing key is rotated, the
+`verify-cosign-pubkey` CI check goes red until `cosign.pub` is refreshed. Run the
+**Export cosign public key** workflow (`.github/workflows/export-cosign-pubkey.yaml`)
+via *workflow_dispatch*: it derives the key and, if it differs from the committed
+`cosign.pub`, opens a PR that refreshes the file (a no-op when it already
+matches). Review and merge that PR to bring the check back to green.
