@@ -693,6 +693,30 @@
               "lightweight.claim": "false"
             }
           }
+        ],
+        {#- Declared, even though this list is exactly the realm default, because a
+            client that declares neither scope list is one keycloak-config-cli will
+            not reconcile at all — it returns early, and the client keeps whatever
+            it happens to have. On dev03 that left a `groups` client scope attached
+            from an earlier experiment, whose group-membership mapper wrote the same
+            claim as the client-roles mapper above; two writers merge, so the claim
+            came out as ["scout-admin", "launchpad-admin"] instead of the roles
+            alone. Naming the list is what makes the removal happen. Optional list
+            alongside it because config-cli reconciles both together once either is
+            present. -#}
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
         ]
       },
       {
