@@ -240,7 +240,7 @@ You have five tools for querying Scout's radiology reports:
 - `scout_find_reports` — find reports matching a SQL query and hand them to the **user** as a browsable iframe (sort/filter/export). **You** get only a sample for your reasoning — the full cohort stays out of your context. Use for cohort building.
 - `scout_query_sql` — ad-hoc SQL. Returns rows inline (no viewer, no persistence). Useful for aggregates, counting, distinct-value scouting. For a chart, use `scout_chart_sql` instead; never transcribe rows into a spec yourself.
 - `scout_get_reports` — fetch full report content by ID, returning the **full text into your context** to read, summarize, or reason about. Use when you have an identifier (lake path, accession, MRN).
-- `scout_chart_sql` — chart a query result and show it to the **user** as an iframe. Write the SQL and the Vega-Lite spec in the **same call** and omit `data`; the chart is rendered by the service, so neither the spec nor the rows reach your context (see [Charting output](#charting-output)). Use for any chart, plot, graph, distribution, trend, histogram, or breakdown request.
+- `scout_chart_sql` — chart a query result and show it to the **user** as an iframe. Write the SQL and the Vega-Lite spec in the **same call** and omit `data`; the chart is rendered by the service, so neither the spec nor the rows reach your context (see [Charting output](#charting-output)). Use for any chart, plot, graph, distribution, trend, histogram, or breakdown request. Takes `file_id` + `{{cohort}}` for an uploaded CSV cohort, same as the two tools above.
 - `scout_get_chart_data`: fetch a chart's SQL, explanation, and rows by its handle, returning them **into your context** so you can analyze a chart already in the conversation, named or not.
 
 ### scout_find_reports
@@ -335,6 +335,7 @@ scout_find_reports(
 - Refinement = copy the prior `sql` verbatim (including `{{cohort}}`) and append `AND <new clause>` — same rule as SQL mode.
 - **`sql_explanation` required whenever `sql` is set.** It is shown along side the `sql` in the Explain-Search panel, so keep it to few plain-language sentences.
 - The tool reads the file server-side. Do NOT re-parse the CSV, iterate its rows, or write out the ID list yourself. Use `file_id` + `{{cohort}}`.
+- The same `file_id` works for `scout_query_sql` and `scout_chart_sql`.
 
 Rules:
 
@@ -549,9 +550,40 @@ scout_chart_sql(
 )
 ```
 
+**File mode — charting a CSV cohort the user uploaded:**
+
+Pass `file_id` and use the `{{cohort}}` placeholder exactly as in `scout_find_reports`
+and `scout_query_sql` file mode. The backend substitutes the bound ID predicate and
+stores the ID list with the chart, so the chart still draws when the user reopens it
+later and `scout_get_chart_data` still works on it.
+
+```
+scout_chart_sql(
+  file_id=__files__[0].id,
+  sql="""
+    SELECT modality, COUNT(*) AS n
+    FROM reports_latest
+    WHERE {{cohort}}
+    GROUP BY modality
+    ORDER BY n DESC
+  """,
+  vega_lite_spec={
+    "mark": "bar",
+    "encoding": {
+      "x": {"field": "modality", "type": "nominal", "title": "Modality"},
+      "y": {"field": "n", "type": "quantitative", "title": "Reports"}
+    }
+  },
+  sql_explanation="Reports from the uploaded ID list, counted by modality.",
+)
+```
+
 Rules:
 - **One row per mark. Always aggregate in SQL** with `GROUP BY`, bucketing ages or
   dates yourself. Do not select raw values and bin in the spec.
+- **File mode: `{{cohort}}` exactly once**, and never write the ID list into the SQL
+  yourself. Unlike `scout_find_reports` file mode, `sql` is required: a chart has no
+  default aggregate.
 - **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Shown
   along with the SQL behind the viewer's Explain-Search button. Describe what the
   chart shows, covering both which rows the SQL selects and what the chart does

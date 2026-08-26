@@ -8,6 +8,8 @@ Viewing a chart re-runs its query, so queue a Trino response per request.
 
 from __future__ import annotations
 
+import json
+
 BAR = {
     "mark": "bar",
     "encoding": {
@@ -15,6 +17,21 @@ BAR = {
         "y": {"field": "n", "type": "quantitative"},
     },
 }
+
+
+CSV = b"accession_number\nACC1\nACC2\nACC1\n"
+COHORT_SQL = (
+    "SELECT modality, COUNT(*) n FROM reports_latest WHERE {{cohort}} GROUP BY modality"
+)
+
+
+def _create_from_file(client, auth_headers, sql=COHORT_SQL, csv=CSV):
+    return client.post(
+        "/api/plots/from-file",
+        files={"file": ("cohort.csv", csv, "text/csv")},
+        data={"sql": sql, "vega_lite_spec": json.dumps(BAR)},
+        headers=auth_headers,
+    )
 
 
 def _create(
@@ -69,6 +86,37 @@ def test_the_listing_only_shows_your_own_charts(
     fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
     _create(client, auth_headers)
     assert client.get("/api/plots", headers=other_auth_headers).json() == []
+
+
+def test_a_csv_chart_re_runs_bound_to_the_uploaded_ids(
+    client, auth_headers, fake_trino
+):
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 2}])
+    plot_id = _create_from_file(client, auth_headers).json()["id"]
+
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 2}])
+    assert client.get(f"/api/plots/{plot_id}", headers=auth_headers).status_code == 200
+
+    create_sql, create_params = fake_trino.calls[0]
+    view_sql, view_params = fake_trino.calls[1]
+    # Deduped, and bound rather than interpolated.
+    assert create_params == [["ACC1", "ACC2"]]
+    assert view_params == [["ACC1", "ACC2"]]
+    assert view_sql == create_sql
+    assert "{{cohort}}" not in view_sql
+    assert 'contains(?, "accession_number")' in view_sql
+
+
+def test_a_csv_chart_without_the_cohort_placeholder_is_refused(
+    client, auth_headers, fake_trino
+):
+    r = _create_from_file(
+        client,
+        auth_headers,
+        sql="SELECT modality, COUNT(*) n FROM reports_latest GROUP BY modality",
+    )
+    assert r.status_code == 400
+    assert "{{cohort}}" in r.json()["detail"]
 
 
 def test_another_user_cannot_open_someone_elses_chart(

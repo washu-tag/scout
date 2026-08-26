@@ -174,6 +174,8 @@ class Tools:
         sql: str,
         vega_lite_spec: dict,
         sql_explanation: Optional[str] = None,
+        file_id: Optional[str] = None,
+        id_column: Optional[str] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
         __metadata__: Optional[dict] = None,
@@ -192,30 +194,60 @@ class Tools:
         {"x": {"field": "age_bracket", "type": "ordinal"},
          "y": {"field": "patients", "type": "quantitative"}}}`.
 
-        :param sql: Trino SQL for the chart's rows, already aggregated.
+        To chart a CSV cohort the user uploaded, pass `file_id` and include
+        `{{cohort}}` exactly once in the SQL - the backend substitutes the ID
+        predicate and stores the list with the chart, so it keeps working on
+        later views. Never write the ID list out yourself.
+
+        :param sql: Trino SQL for the chart's rows, already aggregated. In
+            file mode, include `{{cohort}}` exactly once.
         :param vega_lite_spec: Vega-Lite spec with no `data` key.
         :param sql_explanation: One- to three-sentence plain-language
             description of what the chart shows, covering both the rows the
             SQL selects and what the chart does with them. Surfaced behind
             the viewer's "Explain Search" button so the user can sanity-check
             the chart without reading raw SQL.
+        :param file_id: Optional. OWUI file id for a cohort CSV
+            (typically `__files__[0].id`).
+        :param id_column: Optional (file mode only). One of
+            `primary_report_identifier`, `accession_number`, `epic_mrn`,
+            `patient_mpi`. Inferred from the CSV header when omitted.
         :return: A one-line confirmation plus the chart's internal handle
             (keep it in mind for a later `scout_get_chart_data` call). The
             chart is rendered for the user as an iframe above your message;
             reply with interpretation only.
         """
+        # Before the status emit, so a bad file reads as a file error.
+        fetched: tuple[bytes, str] | None = None
+        if file_id:
+            got = await self._fetch_owui_file(file_id)
+            if isinstance(got, str):
+                return got
+            fetched = got
+
         await self._emit(__event_emitter__, "Building chart\u2026", done=False)
         try:
-            plot = await self._post(
-                "/api/plots",
-                {
-                    "sql": sql,
-                    "vega_lite_spec": vega_lite_spec,
-                    "sql_explanation": sql_explanation or "",
-                    "owui_chat_id": _chat_id(__metadata__),
-                },
-                oauth=__oauth_token__,
-            )
+            if fetched:
+                plot = await self._chart_from_file(
+                    fetched=fetched,
+                    sql=sql,
+                    vega_lite_spec=vega_lite_spec,
+                    sql_explanation=sql_explanation,
+                    id_column=id_column,
+                    oauth=__oauth_token__,
+                    metadata=__metadata__,
+                )
+            else:
+                plot = await self._post(
+                    "/api/plots",
+                    {
+                        "sql": sql,
+                        "vega_lite_spec": vega_lite_spec,
+                        "sql_explanation": sql_explanation or "",
+                        "owui_chat_id": _chat_id(__metadata__),
+                    },
+                    oauth=__oauth_token__,
+                )
         except ReportViewerServiceError as exc:
             await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
             return (
@@ -231,6 +263,38 @@ class Tools:
             "Do not restate the data, do not add a table, and do not write a "
             "vega code fence. Reply with a short interpretation only.\n\n"
             f"Internal chart handle: {plot['id']}."
+        )
+
+    async def _chart_from_file(
+        self,
+        *,
+        fetched: tuple[bytes, str],
+        sql: str,
+        vega_lite_spec: dict,
+        sql_explanation: Optional[str],
+        id_column: Optional[str],
+        oauth: Any,
+        metadata: Optional[dict],
+    ) -> dict:
+        """Chart scoped to an uploaded CSV cohort. `sql` must include
+        `{{cohort}}` exactly once."""
+        contents, filename = fetched
+        form: dict[str, str] = {
+            "sql": sql,
+            "vega_lite_spec": json.dumps(vega_lite_spec),
+        }
+        if sql_explanation:
+            form["sql_explanation"] = sql_explanation
+        if id_column:
+            form["id_column"] = id_column
+        chat_id = _chat_id(metadata)
+        if chat_id:
+            form["owui_chat_id"] = chat_id
+        return await self._post_multipart(
+            "/api/plots/from-file",
+            files={"file": (filename, contents, "text/csv")},
+            data=form,
+            oauth=oauth,
         )
 
     async def scout_get_chart_data(

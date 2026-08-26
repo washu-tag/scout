@@ -123,8 +123,8 @@ class SearchStore:
 
 
 class PlotStore:
-    """Owner-scoped CRUD over the `plots` table. Stores SQL and spec only, so
-    charts are re-evaluated on view."""
+    """Owner-scoped CRUD over the `plots` table. Stores SQL, spec, and any
+    uploaded ID list, so charts are re-evaluated on view."""
 
     def __init__(self, pool: AsyncConnectionPool) -> None:
         self._pool = pool
@@ -138,6 +138,7 @@ class PlotStore:
         owner_sub: str,
         sql_explanation: str | None = None,
         owui_chat_id: str | None = None,
+        uploaded_ids: list[str] | None = None,
     ) -> None:
         with metrics.time_postgres("insert_plot"):
             async with self._pool.connection() as conn:
@@ -145,14 +146,16 @@ class PlotStore:
                     await cur.execute(
                         """
                         INSERT INTO plots
-                          (id, sql, sql_explanation, spec, owner_sub, owui_chat_id)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                          (id, sql, sql_explanation, spec, uploaded_ids,
+                           owner_sub, owui_chat_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
                         """,
                         (
                             plot_id,
                             sql,
                             sql_explanation or "",
                             Jsonb(spec),
+                            uploaded_ids,
                             owner_sub,
                             owui_chat_id or "",
                         ),
@@ -197,8 +200,8 @@ class PlotStore:
                 async with conn.cursor() as cur:
                     await cur.execute(
                         """
-                        SELECT id, sql, sql_explanation, spec, owner_sub,
-                               owui_chat_id, created_at
+                        SELECT id, sql, sql_explanation, spec, uploaded_ids,
+                               owner_sub, owui_chat_id, created_at
                         FROM plots
                         WHERE id = %s AND owner_sub = %s
                         """,
@@ -207,12 +210,13 @@ class PlotStore:
                     row = await cur.fetchone()
         if row is None:
             return None
-        id_, sql, explanation, spec, owner, chat_id, created_at = row
+        id_, sql, explanation, spec, uploaded_ids, owner, chat_id, created_at = row
         return {
             "id": id_,
             "sql": sql,
             "sql_explanation": explanation or "",
             "spec": spec,
+            "uploaded_ids": uploaded_ids,
             "owner_sub": owner,
             "owui_chat_id": chat_id or "",
             "created_at": created_at,
