@@ -639,6 +639,7 @@ jobs:
     env:
       MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
       BUNDLE_REPO: ghcr.io/washu-tag/manifests/scout
+      CONFIG_REPO: ghcr.io/washu-tag/manifests/scout-config
       RELEASE_VERSION: ${{ inputs.version }}
       RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
     steps:
@@ -668,20 +669,22 @@ jobs:
             BUILD_VERSION=""
           fi
           if [ -z "${BUILD_VERSION}" ]; then
-            echo "::warning::run ${RUN_ID} published no haul-version artifact (build lane not live yet?); skipping the ${RELEASE_VERSION} haul alias. Alias manually once it is: oras tag ${MANIFEST_REPO}:<build> ${RELEASE_VERSION} && oras tag ${BUNDLE_REPO}:<build> ${RELEASE_VERSION}"
+            echo "::warning::run ${RUN_ID} published no haul-version artifact (build lane not live yet?); skipping the ${RELEASE_VERSION} alias. Alias manually once it is: oras tag ${MANIFEST_REPO}:<build> ${RELEASE_VERSION} && oras tag ${BUNDLE_REPO}:<build> ${RELEASE_VERSION} && oras tag ${CONFIG_REPO}:<build> ${RELEASE_VERSION}"
             echo "found=false" >> "$GITHUB_OUTPUT"
           else
             echo "found=true" >> "$GITHUB_OUTPUT"
             echo "build_version=${BUILD_VERSION}" >> "$GITHUB_OUTPUT"
           fi
-      - name: Alias the manifest + bundle to the release version
+      - name: Alias the manifest, bundle, and config artifact to the release version
         if: steps.buildver.outputs.found == 'true'
         env:
           BUILD_VERSION: ${{ steps.buildver.outputs.build_version }}
         run: |
           set -euo pipefail
           # oras tag adds :${RELEASE_VERSION} onto the same digest as the build tag; the
-          # bundle's cosign signature (digest-keyed) verifies unchanged through the alias.
+          # cosign signatures (digest-keyed) verify unchanged through the alias. scout-config
+          # is the GitOps deploy artifact, aliased so a site can pin scout-config:X.Y.Z.
           oras tag "${MANIFEST_REPO}:${BUILD_VERSION}" "${RELEASE_VERSION}"
           oras tag "${BUNDLE_REPO}:${BUILD_VERSION}" "${RELEASE_VERSION}"
-          echo "::notice::aliased haul ${BUILD_VERSION} -> ${RELEASE_VERSION}"
+          oras tag "${CONFIG_REPO}:${BUILD_VERSION}" "${RELEASE_VERSION}"
+          echo "::notice::aliased haul + config ${BUILD_VERSION} -> ${RELEASE_VERSION}"
