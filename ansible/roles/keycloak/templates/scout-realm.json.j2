@@ -158,16 +158,11 @@
           }
         ],
         {#- MinIO's vocabulary is closed: `consoleAdmin` is a MinIO built-in canned
-            policy, so the role name IS the value MinIO wants in its `policy` claim.
-            Modelling it as a client role replaces the `policy` group attribute this
-            used to travel on, whose mapper set aggregate.attrs, merging the user's
-            OWN attributes with their groups' — a user attribute named `policy` set
-            outside the declarative user profile granted MinIO policies. A role grant
-            has no such path. -#}
+            policy, so the role name IS the value MinIO wants in its `policy` claim. -#}
         "{{ keycloak_minio_client_id }}": [
           {
             "name": "consoleAdmin",
-            "description": "MinIO canned policy granted to Scout admins (emitted in the policy claim)",
+            "description": "MinIO canned policy granted to Scout admins",
             "composite": false,
             "clientRole": true,
             "attributes": {}
@@ -219,8 +214,7 @@
     "groups": [
       {
         "name": "scout-admin",
-        {#- Declared empty, not omitted: keycloak-config-cli leaves a key a document
-            does not declare, so `{}` is what actually retracts the old
+        {#- Declared empty, not omitted, to retract the old
             `policy: [consoleAdmin]` attribute. Its value now lives as a MinIO
             client role, granted below. No group in this realm carries attributes. -#}
         "attributes": {},
@@ -250,13 +244,9 @@
           "{{ keycloak_minio_client_id }}": [
             "consoleAdmin"
           ],
-          {#- The break-glass path: what lets a site admin use the Keycloak console.
-              With fullScopeAllowed off everywhere these roles no longer ride along in
-              any service's token — they reach only the built-in security-admin-console
-              client, which this document does not declare and config-cli does not
-              touch. Narrowing realm-admin to a Scout-owned composite of the
-              fine-grained realm-management roles is the natural follow-up; it is a
-              separate change. -#}
+          {#- This lets a site admin use the Keycloak console.
+              TODO: Narrow realm-admin (a composite role with more permissions than
+              an admin likely needs) to a finer-grained set of roles. -#}
           "realm-management": [
             "realm-admin"
           ]
@@ -292,11 +282,6 @@
         "name": "{{ keycloak_oauth2_proxy_client_id }}",
         "description": "OAuth2 Proxy Client",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "{{ keycloak_oauth2_proxy_client_id }}",
         "clientAuthenticatorType": "client-secret",
@@ -331,11 +316,6 @@
         "name": "{{ keycloak_jupyterhub_client_id }}",
         "description": "JupyterHub Client",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "{{ keycloak_jupyterhub_client_id }}",
         "clientAuthenticatorType": "client-secret",
@@ -353,10 +333,6 @@
             long-term — the scout_trino helper fetches a current value from
             the Hub via JUPYTERHUB_API_TOKEN (Hub refreshes via auth_state
             on demand), so realm-default access-token TTL is fine. -#}
-        {#- Roles in a `groups` claim, pinned to this client. Why that shape, and what
-            the unpinned version of this mapper did, is at the microprofile-jwt scope
-            near the end of this file.
-            Read from the userinfo response via auth_state_groups_key. -#}
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -395,11 +371,6 @@
         "name": "{{ keycloak_grafana_client_id }}",
         "description": "Grafana Client",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "{{ keycloak_grafana_client_id }}",
         "clientAuthenticatorType": "client-secret",
@@ -411,10 +382,7 @@
         "webOrigins": [
           "https://grafana.{{ server_hostname }}"
         ],
-        {#- Roles in a `groups` claim, pinned to this client. Why that shape, and what
-            the unpinned version of this mapper did, is at the microprofile-jwt scope
-            near the end of this file.
-            Grafana's role_attribute_path is JMESPath over the ID token and userinfo,
+        {#- Grafana's role_attribute_path is JMESPath over the ID token and userinfo,
             so both must carry it. -#}
         "protocolMappers": [
           {
@@ -453,11 +421,6 @@
         "name": "{{ keycloak_temporal_client_id }}",
         "description": "Temporal Client",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "{{ keycloak_temporal_client_id }}",
         "clientAuthenticatorType": "client-secret",
@@ -477,8 +440,7 @@
         },
         {#- Temporal's default claim mapper parses <namespace>:<role> strings, so its
             role names ARE its permission strings and the claim it reads is
-            `permissions`, not `groups`. Pinned to this client, so the claim carries
-            Temporal's two roles and no other client's. -#}
+            `permissions`, not `groups`. -#}
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -516,11 +478,6 @@
         "name": "{{ keycloak_superset_client_id }}",
         "description": "Superset Client",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "{{ keycloak_superset_client_id }}",
         "clientAuthenticatorType": "client-secret",
@@ -532,10 +489,7 @@
         "webOrigins": [
           "https://superset.{{ server_hostname }}"
         ],
-        {#- Roles in a `groups` claim, pinned to this client. Why that shape, and what
-            the unpinned version of this mapper did, is at the microprofile-jwt scope
-            near the end of this file.
-            userinfo.token.claim is load-bearing: Flask-AppBuilder's Keycloak handler
+        {#- userinfo.token.claim is load-bearing: Flask-AppBuilder's Keycloak handler
             reads role_keys from the userinfo response, not from the token. -#}
         "protocolMappers": [
           {
@@ -574,11 +528,6 @@
         "name": "{{ keycloak_minio_client_id }}",
         "description": "Minio Client",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "{{ keycloak_minio_client_id }}",
         "clientAuthenticatorType": "client-secret",
@@ -598,8 +547,7 @@
         },
         {#- MinIO's default MINIO_IDENTITY_OPENID_CLAIM_NAME is `policy` and the role
             name is the canned-policy name. id.token.claim must stay true: MinIO's web
-            identity flow presents the ID token. Replaces the aggregate user-attribute
-            mapper on the minio-authorization scope; the wire value is unchanged. -#}
+            identity flow presents the ID token. -#}
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -637,11 +585,6 @@
         "name": "{{ keycloak_launchpad_client_id }}",
         "description": "Launchpad Client",
         "enabled": true,
-        {#- Least privilege: without this the launchpad token carries every role
-            the user has, so a leaked admin token would be realm-admin. Every client
-            in this realm now sets it, and each is granted scope for its own roles
-            (and only its own) in clientScopeMappings below — which is what keeps the
-            isAdmin gate resolving off launchpad-admin. -#}
         "fullScopeAllowed": false,
         "clientId": "{{ keycloak_launchpad_client_id }}",
         "clientAuthenticatorType": "client-secret",
@@ -659,11 +602,6 @@
             itself; the -api suffix keeps it distinct from the scout-user group.
             Same shape as trino-audience. -#}
         "protocolMappers": [
-          {#- Roles in a `groups` claim, pinned to this client. Why that shape, and what
-              the unpinned version of this mapper did, is at the microprofile-jwt scope
-              near the end of this file.
-              next-auth exposes ID-token claims as `profile`, so id.token.claim is
-              what the isAdmin gate reads. -#}
           {
             "name": "client-roles",
             "protocol": "openid-connect",
@@ -694,16 +632,6 @@
             }
           }
         ],
-        {#- Declared, even though this list is exactly the realm default, because a
-            client that declares neither scope list is one keycloak-config-cli will
-            not reconcile at all — it returns early, and the client keeps whatever
-            it happens to have. On dev03 that left a `groups` client scope attached
-            from an earlier experiment, whose group-membership mapper wrote the same
-            claim as the client-roles mapper above; two writers merge, so the claim
-            came out as ["scout-admin", "launchpad-admin"] instead of the roles
-            alone. Naming the list is what makes the removal happen. Optional list
-            alongside it because config-cli reconciles both together once either is
-            present. -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -723,11 +651,6 @@
         "name": "{{ keycloak_open_webui_client_id }}",
         "description": "Open WebUI Client",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "{{ keycloak_open_webui_client_id }}",
         "clientAuthenticatorType": "client-secret",
@@ -742,19 +665,7 @@
         {#- Audience scope the OWUI user token carries to report-viewer
             on the user's behalf (ADR 0022). report-viewer validates
             required-audience=report-viewer on inbound Bearer tokens
-            from the OWUI tool runtime.
-
-            `roles` was dropped here once, because the audience-resolve mapper it
-            carries adds an `aud` entry for every client the user has a role in and
-            an admin's token reached 9 audiences including realm-management. That was
-            a symptom of full scope, not of the scope itself: audience-resolve
-            iterates the roles that are IN the token, and with fullScopeAllowed off
-            those are this client's roles alone. Restored, so the realm has one
-            uniform client shape rather than a per-client workaround. -#}
-        {#- Roles in a `groups` claim, pinned to this client. Why that shape, and what
-            the unpinned version of this mapper did, is at the microprofile-jwt scope
-            near the end of this file.
-            OAUTH_ROLES_CLAIM=groups, read from both the access and ID tokens. -#}
+            from the OWUI tool runtime. -#}
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -763,6 +674,8 @@
             "consentRequired": false,
             "config": {
               "usermodel.clientRoleMapping.clientId": "{{ keycloak_open_webui_client_id }}",
+              {#- claim.name=groups matches OAUTH_ROLES_CLAIM=groups,
+                  read from both the access and ID tokens. -#}
               "claim.name": "groups",
               "multivalued": "true",
               "jsonType.label": "String",
@@ -799,11 +712,6 @@
         "name": "superset_svc",
         "description": "Service principal for Superset connecting to Trino (impersonates the logged-in user via X-Trino-User)",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "superset_svc",
         "clientAuthenticatorType": "client-secret",
@@ -830,11 +738,6 @@
         "name": "voila_svc",
         "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "voila_svc",
         "clientAuthenticatorType": "client-secret",
@@ -861,11 +764,6 @@
         "name": "report_viewer_svc",
         "description": "Service principal for report-viewer impersonating the chat/iframe user via X-Trino-User",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "report_viewer_svc",
         "clientAuthenticatorType": "client-secret",
@@ -892,11 +790,6 @@
         "name": "{{ keycloak_xnat_client_id }}",
         "description": "XNAT Client",
         "enabled": true,
-        {#- Role scope mappings, not full scope: "By default, each client gets all
-            the role mappings of the user", which the docs call a development-only
-            setting. Off, this client's tokens carry only the roles named for it in
-            the realm's clientScopeMappings — its own, and nothing from
-            realm-management or any sibling service. -#}
         "fullScopeAllowed": false,
         "clientId": "{{ keycloak_xnat_client_id }}",
         "clientAuthenticatorType": "client-secret",
@@ -911,12 +804,6 @@
         "attributes": {
           "pkce.code.challenge.method": "S256"
         },
-        {#- Roles in a `groups` claim, pinned to this client. Why that shape, and what
-            the unpinned version of this mapper did, is at the microprofile-jwt scope
-            near the end of this file.
-            Replaces a group-membership mapper that wrote this same claim while the
-            shared scope also wrote it — two writers merge into one array rather than
-            one replacing the other, so the values piled up. -#}
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -1235,14 +1122,9 @@
         }
       ]
     },
-    {#- The other half of fullScopeAllowed: false. A client is NOT implicitly in
-        scope for the roles it defines — with full scope off and no mapping, a
-        client's tokens carry no client roles at all, including its own, and the
-        role mapper above emits an empty claim. That failure is silent (an app sees
-        an unprivileged user, not an error), which is why every role-owning client
-        gets an explicit self-mapping here and why the render test asserts one
-        exists for each. Each entry grants exactly one client scope over exactly
-        its own roles; nothing here crosses a client boundary. -#}
+    {#- With fullScopeAllowed: false, a client is not implicitly in
+        scope for the roles it defines, which is why every role-owning client
+        gets an explicit self-mapping here. -#}
     "clientScopeMappings": {
       "{{ keycloak_oauth2_proxy_client_id }}": [
         {
@@ -1310,14 +1192,8 @@
         "config": {}
       }
     ],
-    {#- What a client gets at CREATION when it declares no scope lists of its own.
-        Keycloak consults this only when creating a client — the realm-update
-        endpoint ignores the field and an existing client keeps what it has — so it
-        is a contract for clients created later, not a retrofit. microprofile-jwt is
-        deliberately absent from both lists so a new client cannot inherit the scope
-        this change retires. keycloak-config-cli reconciles these lists against the
-        realm and prunes, which also drops Keycloak's SAML-only role_list and
-        saml_organization; Scout has no SAML clients. -#}
+    {#- What a client gets at creation when it declares no scope lists of its own.
+        If this is updated, an existing client keeps what it has. -#}
     "defaultDefaultClientScopes": [
       "acr",
       "basic",
@@ -1388,16 +1264,7 @@
           }
         ]
       },
-      {#- Retired, not deleted: microprofile-jwt is a Keycloak built-in that a
-          fresh realm always recreates, so the reachable end state is
-          declared-with-no-mappers and referenced by no client. Its `client roles`
-          mapper — added here, not shipped by Keycloak — had no
-          usermodel.clientRoleMapping.clientId, so it flattened every client's roles
-          into one `groups` array, which is what made the client-role namespace
-          inert: superset_admin and grafana-admin landed in the same array, and the
-          app-name prefixes on those role names were the symptom. Each client now
-          delivers its own roles from its own mapper. `[]` is what performs the
-          removal — omitting the key leaves the mappers in place. -#}
+      {#- Retired, not deleted -#}
       {
         "name": "microprofile-jwt",
         "description": "Microprofile - JWT built-in scope (retired; role delivery is per-client)",
