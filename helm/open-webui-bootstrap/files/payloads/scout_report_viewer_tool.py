@@ -10,11 +10,13 @@ version: 0.1.0
 
 from __future__ import annotations
 
+import asyncio
 import inspect
 import json
 import logging
 import os
-from typing import Any, Awaitable, Callable, Optional
+from collections import OrderedDict
+from typing import Any, Awaitable, Callable, Literal, Optional
 
 import httpx
 from pydantic import BaseModel, Field
@@ -24,13 +26,23 @@ log = logging.getLogger(__name__)
 _MAX_GET_IDS = 100
 _MD_CELL_MAX = 400
 _MAX_UPLOAD_BYTES = 32 * 1024 * 1024
+EmbedKind = Literal["cohort", "chart"]
+_EMBED_COHORT: EmbedKind = "cohort"
+_EMBED_CHART: EmbedKind = "chart"
+_MAX_CHARTS_PER_TURN = 4
+_MAX_TURNS_TRACKED = 64
+# turn key -> {"embeds": [(kind, url)], "lock": asyncio.Lock()}, LRU by write.
+_TURN_EMBEDS: OrderedDict[str, dict[str, Any]] = OrderedDict()
 _SESSION_EXPIRED_MESSAGE = "Session expired - sign out of Open WebUI and back in, then regenerate this response."
 _VIEWER_NOTE = (
     "The sample table above is a subset of results; when the search "
     "used match_terms or match_diagnoses, an evidence table with "
     "excerpts and matched diagnoses is included too. "
-    "A search viewer is rendered as an iframe above this message. "
+    "The full results are shown to the user in a search viewer above "
+    "this message, alongside any charts you drew this turn. "
     "The user can sort, filter, and explore the full results there. "
+    "Call this tool at most once per turn; a second call replaces this "
+    "viewer. "
     "Do not restate the tables or the SQL. "
     "Use the sample and evidence to confirm your query and reply "
     "with insights, follow-up queries, pattern observations, "
@@ -71,9 +83,14 @@ class Tools:
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
         __metadata__: Optional[dict] = None,
+        __message_id__: Optional[str] = None,
     ) -> Any:
         """Save a SQL search over Scout's radiology reports and render
-        the results in an iframed viewer.
+        the results in a viewer above your reply.
+
+        Call this at most once per turn: a second call replaces the first
+        viewer. Charts from `scout_chart_sql` in the same turn are
+        unaffected and stay on screen next to it.
 
         Two modes:
         * SQL mode: pass `sql` (and optional `match_terms`,
@@ -108,7 +125,7 @@ class Tools:
         :param file_id: OWUI file id (file mode only).
         :param id_column: File mode only. See allowed values above.
         :return: Markdown sample + evidence tables for your reasoning,
-            plus an embedded `<iframe>` of the viewer for the user.
+            plus the full-result viewer rendered for the user.
         """
         # File mode: delegate to the file-import branch. The LLM passes
         # file_id from `__files__[0].id`; the tool reads file bytes
@@ -122,6 +139,7 @@ class Tools:
                 __event_emitter__=__event_emitter__,
                 __oauth_token__=__oauth_token__,
                 __metadata__=__metadata__,
+                __message_id__=__message_id__,
             )
 
         if not sql:
@@ -161,11 +179,13 @@ class Tools:
         )
         await self._emit(__event_emitter__, found, done=True)
 
-        # `replace: true` keeps a single iframe per message even if the
-        # LLM iterates scout_find_reports mid-turn. embeds is separate
-        # from message.content, working around OWUI 0.9.5's outlet-filter
-        # + message-event injection gaps.
-        await self._emit_embed(__event_emitter__, created["view_url"])
+        await self._emit_embed(
+            __event_emitter__,
+            created["view_url"],
+            kind=_EMBED_COHORT,
+            message_id=__message_id__,
+            metadata=__metadata__,
+        )
 
         return self._render_search_summary(created)
 
@@ -179,10 +199,15 @@ class Tools:
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
         __metadata__: Optional[dict] = None,
+        __message_id__: Optional[str] = None,
     ) -> str:
         """Chart the result of a query and show it to the user. Use whenever
         the user asks for a chart, plot, graph, distribution, trend,
         histogram, or breakdown.
+
+        One chart per call. Several calls in one turn all render, and a
+        chart can share a turn with a `scout_find_reports` viewer - prefer
+        two focused charts over one crowded spec.
 
         Write the SQL and the Vega-Lite spec together in this one call, and
         **omit `data`** - the service runs the query and renders the chart
@@ -214,8 +239,9 @@ class Tools:
             `patient_mpi`. Inferred from the CSV header when omitted.
         :return: A one-line confirmation plus the chart's internal handle
             (keep it in mind for a later `scout_get_chart_data` call). The
-            chart is rendered for the user as an iframe above your message;
-            reply with interpretation only.
+            chart is rendered for the user above your message, next to
+            anything else you rendered this turn; reply with
+            interpretation only.
         """
         # Before the status emit, so a bad file reads as a file error.
         fetched: tuple[bytes, str] | None = None
@@ -256,12 +282,20 @@ class Tools:
             )
         n = plot.get("row_count", 0)
         await self._emit(__event_emitter__, "Chart ready", done=True)
-        await self._emit_embed(__event_emitter__, plot["view_url"])
+        await self._emit_embed(
+            __event_emitter__,
+            plot["view_url"],
+            kind=_EMBED_CHART,
+            message_id=__message_id__,
+            metadata=__metadata__,
+        )
         return (
-            f"Chart rendered for the user as an iframe above this message "
+            f"Chart rendered for the user above this message "
             f"({n} data points over {', '.join(plot.get('columns') or [])}). "
             "Do not restate the data, do not add a table, and do not write a "
-            "vega code fence. Reply with a short interpretation only.\n\n"
+            "vega code fence. Reply with a short interpretation only, in "
+            "one reply covering every chart and viewer you rendered this "
+            "turn.\n\n"
             f"Internal chart handle: {plot['id']}."
         )
 
@@ -435,6 +469,7 @@ class Tools:
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __oauth_token__: Any = None,
         __metadata__: Optional[dict] = None,
+        __message_id__: Optional[str] = None,
     ) -> Any:
         """Forward an OWUI-uploaded CSV to the report-viewer service,
         which parses, dedups, validates, and saves the search.
@@ -489,7 +524,13 @@ class Tools:
             else "Matched reports from your list"
         )
         await self._emit(__event_emitter__, matched, done=True)
-        await self._emit_embed(__event_emitter__, created["view_url"])
+        await self._emit_embed(
+            __event_emitter__,
+            created["view_url"],
+            kind=_EMBED_COHORT,
+            message_id=__message_id__,
+            metadata=__metadata__,
+        )
         return self._render_from_file_summary(created, filename)
 
     async def _query_from_file(
@@ -806,17 +847,45 @@ class Tools:
     async def _emit_embed(
         emitter: Optional[Callable[[Any], Awaitable[None]]],
         url: str,
+        *,
+        kind: EmbedKind,
+        message_id: Any = None,
+        metadata: Optional[dict] = None,
     ) -> None:
-        """Push a single iframe URL into `message.embeds`. `replace: True`
-        wipes any prior embeds on the same message, so iterative
-        scout_find_reports calls within one turn don't stack iframes."""
+        """Render this turn's viewers and charts in `message.embeds`.
+
+        OWUI assigns `message.embeds = data.embeds` outright, so a bare
+        single-URL emit wipes whatever an earlier tool call in the same turn
+        rendered. The emitter is write-only, so the turn's list is tracked
+        here and replayed whole on every call: charts accumulate, and a
+        second cohort viewer supersedes the first.
+
+        Without a message id one turn cannot be told from the next, so the
+        URL is emitted alone and nothing is stored.
+        """
         if emitter is None:
             return
+        key = _turn_key(message_id, metadata)
+        if not key:
+            await Tools._send_embeds(emitter, [url])
+            return
+        entry = _record_embed(key, kind, url)
+        # Held across the send so parallel tool calls in one turn cannot land
+        # their snapshots out of order.
+        async with entry["lock"]:
+            await Tools._send_embeds(emitter, [u for _, u in entry["embeds"]])
+
+    @staticmethod
+    async def _send_embeds(
+        emitter: Callable[[Any], Awaitable[None]], urls: list[str]
+    ) -> None:
+        """`replace` is inert in OWUI 0.11 (it always assigns) but states the
+        intent if append semantics ever land."""
         try:
             await emitter(
                 {
                     "type": "embeds",
-                    "data": {"embeds": [url], "replace": True},
+                    "data": {"embeds": urls, "replace": True},
                 }
             )
         except Exception:
@@ -837,6 +906,50 @@ def _chat_id(meta: Any) -> str:
     if isinstance(meta, dict):
         return str(meta.get("chat_id") or "")
     return ""
+
+
+def _turn_key(message_id: Any, meta: Any) -> str:
+    """Identity of the assistant message being built. OWUI injects
+    `__message_id__` flat; older builds carry it only in `__metadata__`.
+    `chat_id` namespaces it so ids cannot collide across chats. Empty means
+    no turn identity: keying on chat_id or session_id alone would replay one
+    turn's embeds into the next."""
+    mid = str(message_id or "")
+    if not mid and isinstance(meta, dict):
+        mid = str(meta.get("message_id") or meta.get("assistant_message_id") or "")
+    return f"{_chat_id(meta)}:{mid}" if mid else ""
+
+
+def _next_embeds(
+    prev: list[tuple[str, str]], kind: str, url: str
+) -> list[tuple[str, str]]:
+    """Fold one embed into a turn's list. Charts accumulate in emission
+    order; at most one cohort viewer survives, and a newer one lands last.
+    Over the cap the oldest chart is dropped, never the cohort."""
+    out = [
+        e
+        for e in prev
+        if e != (kind, url) and not (kind == _EMBED_COHORT and e[0] == _EMBED_COHORT)
+    ]
+    out.append((kind, url))
+    charts = [i for i, e in enumerate(out) if e[0] == _EMBED_CHART]
+    for i in reversed(charts[: max(0, len(charts) - _MAX_CHARTS_PER_TURN)]):
+        del out[i]
+    return out
+
+
+def _record_embed(key: str, kind: str, url: str) -> dict[str, Any]:
+    """Fold `url` into the turn's entry, LRU-evicting stale turns so a
+    long-lived process cannot accumulate one entry per message."""
+    entry = _TURN_EMBEDS.get(key)
+    if entry is None:
+        entry = {"embeds": [], "lock": asyncio.Lock()}
+        _TURN_EMBEDS[key] = entry
+    entry["embeds"] = _next_embeds(entry["embeds"], kind, url)
+    _TURN_EMBEDS.move_to_end(key)
+    while len(_TURN_EMBEDS) > _MAX_TURNS_TRACKED:
+        _TURN_EMBEDS.popitem(last=False)
+    return entry
 
 
 def _md_table(columns: list[str], rows: list[dict]) -> list[str]:
