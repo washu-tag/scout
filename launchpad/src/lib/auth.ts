@@ -7,9 +7,7 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
       issuer: process.env.KEYCLOAK_ISSUER!,
-      // launchpad-admin arrives in the groups claim from a mapper on this client,
-      // so it is in the ID token whether or not anything is requested. `profile`
-      // is still needed for preferred_username.
+      // `profile` is needed for preferred_username
       authorization: { params: { scope: 'openid email profile' } },
     }),
   ],
