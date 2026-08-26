@@ -63,7 +63,7 @@ temporal_admin_tools_image_tag: 1.31.0
 strimzi_operator_version: 1.1.0
 # Kafka broker version deployed by Strimzi; must be in the operator's supported set.
 # renovate: datasource=docker depName=apache/kafka
-kafka_version: 4.3.1
+kafka_version: 4.3.0
 
 # Analytics & Query Engines - Trino
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
