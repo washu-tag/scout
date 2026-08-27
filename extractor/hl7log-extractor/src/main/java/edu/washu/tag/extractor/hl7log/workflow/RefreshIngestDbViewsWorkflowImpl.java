@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 @WorkflowImpl(taskQueues = Constants.REFRESH_VIEWS_QUEUE)
 public class RefreshIngestDbViewsWorkflowImpl implements RefreshIngestDbViewsWorkflow {
     private static final Logger logger = Workflow.getLogger(RefreshIngestDbViewsWorkflowImpl.class);
-    private static final Duration REFRESH_VIEWS_HEARTBEAT_TIMEOUT = Duration.ofSeconds(Constants.REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 2);
+    private static final Duration REFRESH_VIEWS_HEARTBEAT_TIMEOUT = Duration.ofSeconds(Constants.REFRESH_VIEWS_HEARTBEAT_TIMEOUT_SECONDS);
     private static final Duration IDLE_TIMEOUT = Duration.ofHours(1);
 
     // Workflow state - these do NOT need to be Atomic because Temporal workflows
