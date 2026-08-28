@@ -22,7 +22,7 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 | `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor}` | `username`, `password` | CNPG managed roles |
 | `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role) |
 | `keycloak-admin-secret` | `username`, `password` | Keycloak bootstrap admin + config-cli |
-| `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `xnat`, `open_webui`, `voila_svc`, `report_viewer_svc`, `github_client_id`, `github_client_secret` | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names) |
+| `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names) |
 | `valkey-auth` | `password`, `password-file` | Valkey chart + exporter |
 
 ## scout-data (minio / hive)
@@ -81,3 +81,8 @@ oauth2-proxy stays in `ContainerCreating` on the missing mount.
 - Rotating a `keycloak-client-secrets` value does not by itself re-run the config-cli
   import (the Job reads it via `envFrom` by name); it applies on the next realm/chart
   upgrade, or force it with `flux reconcile hr keycloak-config-cli -n <ns>`.
+- Every enabled component's key must be present. config-cli leaves an unresolved
+  `$(env:...)` as literal text, so a missing key would set that client's secret to a
+  guessable placeholder. Provision `keycloak-client-secrets` fail-closed (an
+  ExternalSecret that errors if a source key is absent), and only enable an IdP or the
+  XNAT client once its key exists.

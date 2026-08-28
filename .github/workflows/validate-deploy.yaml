@@ -8,6 +8,8 @@ on:
     paths:
       - deploy/**
       - tooling/deploy/**
+      # The realm config-cli imports + the config-hash it is stamped from live here.
+      - helm/keycloak-config-cli/**
       - .github/workflows/validate-deploy.yaml
       # OPA data-doc drift guard reads the Ansible source; re-run on those too.
       - ansible/roles/opa/defaults/main.yaml

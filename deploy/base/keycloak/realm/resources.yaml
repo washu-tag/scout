@@ -54,8 +54,18 @@ spec:
     config:
       scout:
         file: files/scout-realm.json
-    # Per-site ALB-OIDC host prefixes (comma-separated); the chart ranges over these
-    # to build the oauth2-proxy redirect URIs, so a site lists exactly its own hosts.
+    # Scout realm config (cluster-vars; arrive as strings, the realm gates on eq "true").
+    # enableXnat provisions the XNAT client/role; github/microsoft toggle the IdPs;
+    # albOidcHosts is the comma-separated full ALB-OIDC host list (AWS sites; empty
+    # on-prem, which uses the oauth2-proxy callback the realm builds from server_hostname).
+    # SMTP, terms localizations, and trino AuthZ attributes use the chart defaults
+    # (site overlay overrides them; see values.yaml).
+    enableXnat: '${keycloak_enable_xnat}'
+    github:
+      enabled: '${keycloak_github_enabled}'
+    microsoft:
+      enabled: '${keycloak_microsoft_enabled}'
+    defaultProvider: '${keycloak_default_provider}'
     albOidcHosts: '${keycloak_alb_oidc_hosts}'
     annotations:
       # config-hash: CI stamps the realm file's truncated sha256 at publish so a
@@ -76,7 +86,7 @@ spec:
       # + mappers, app-owned clients, and operator flows intact; stale cleanup is deliberate.
       # (config-cli never manages users, so they are always untouched.)
       SPRING_APPLICATION_JSON: >-
-        {"import":{"var-substitution":{"enabled":true},"managed":{"client":"no-delete","client-scope":"no-delete","client-scope-mapping":"no-delete","scope-mapping":"no-delete","role":"no-delete","group":"no-delete","sub-group":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","required-action":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
+        {"import":{"var-substitution":{"enabled":true},"managed":{"client":"no-delete","client-scope":"no-delete","client-scope-mapping":"no-delete","scope-mapping":"no-delete","role":"no-delete","group":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","required-action":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
     # Client + GitHub-IdP secrets the realm var-substitutes ($(env:oauth2_proxy),
     # $(env:github_client_id), ...). Site-materialized fixed-name Secret whose keys
     # are the $(env:...) names (see required-secrets.md).
