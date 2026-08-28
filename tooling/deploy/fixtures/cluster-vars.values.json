@@ -34,6 +34,7 @@
   "hl7logs_root_dir": "/data",
   "ingest_postgres_table_name": "ingest",
   "irsa_role_prefix": "",
+  "keycloak_alb_oidc_hosts": "superset,grafana,jupyter,temporal,xnat",
   "keycloak_bootstrap_admin_user": "admin",
   "keycloak_namespace": "scout-core",
   "keycloak_realm_name": "scout",

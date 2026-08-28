@@ -38,6 +38,14 @@ env:
   KEYCLOAK_USER: admin
   IMPORT_PATH: /config/
 
+# Pulled into the Job env in bulk (e.g. a client-secrets Secret whose keys are the
+# $(env:...) names the realm var-substitutes).
+envFrom: []
+
+# Comma-separated host prefixes a realm file may range over to build per-site
+# ALB-OIDC redirect URIs (oauth2-proxy). Site overrides via the HelmRelease values.
+albOidcHosts: 'superset,grafana,jupyter,temporal,xnat'
+
 secrets: {}
 #  KEYCLOAK_PASSWORD:
 

@@ -54,6 +54,7 @@ hl7log_extractor_timeout
 hl7logs_root_dir
 ingest_postgres_table_name
 irsa_role_prefix
+keycloak_alb_oidc_hosts
 keycloak_bootstrap_admin_user
 keycloak_internal_url
 keycloak_namespace

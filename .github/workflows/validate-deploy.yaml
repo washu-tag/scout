@@ -101,7 +101,7 @@ jobs:
           python3 tooling/deploy/stamp_config.py \
             --deploy-dir /tmp/stamped \
             --haul tooling/deploy/fixtures/haul.yaml \
-            --realm-file tooling/deploy/fixtures/realm.json
+            --realm-file helm/keycloak-config-cli/files/scout-realm.json
           python3 tooling/deploy/gen_cluster_vars.py \
             --values tooling/deploy/fixtures/cluster-vars.values.json \
             --required-vars deploy/required-vars.txt >/tmp/cluster-vars.yaml
