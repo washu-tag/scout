@@ -72,7 +72,10 @@ smtp:
   debug: 'false'
 # Terms-of-use localization overrides (realm messageBundles.en).
 termsLocalizations: {}
-# Trino AuthZ user-profile attributes (OPA data-access dimensions); options set per site.
+# Trino AuthZ user-profile attributes (OPA data-access dimensions). The realm reads
+# display_name/options/max_length/value_pattern per attribute; column is the OPA
+# side of the same map (unused here). options set per site turns an attribute into a
+# validated pick-list.
 trinoAttributeFilters:
   allowed_facilities:
     column: sending_facility
