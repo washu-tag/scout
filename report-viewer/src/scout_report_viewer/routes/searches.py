@@ -463,7 +463,10 @@ async def get_search_meta(
 ) -> SearchMeta:
     ds = await store.get_search(search_id, user.sub)
     if ds is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="search not found",
+        )
     return SearchMeta(
         id=ds["id"],
         sql=ds["sql"],
@@ -487,7 +490,10 @@ async def delete_search(
     existence of other users' rows)."""
     deleted = await store.delete_search(search_id, user.sub)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="search not found",
+        )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -515,7 +521,10 @@ async def get_search_rows(
     sort/filter/pagination params."""
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="search not found",
+        )
 
     source_sql = ds["sql"]
     uploaded_ids = ds.get("uploaded_ids")
@@ -557,7 +566,10 @@ async def get_search_accessions(
 ) -> dict[str, Any]:
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="search not found",
+        )
     sql = ds["sql"]
     uploaded_ids = ds.get("uploaded_ids")
     sql = (

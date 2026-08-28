@@ -161,7 +161,7 @@ class Tools:
             created = await self._post("/api/searches", payload, oauth=__oauth_token__)
         except ReportViewerServiceError as exc:
             await self._emit(
-                __event_emitter__, self._error_text(exc, "Failed"), done=True
+                __event_emitter__, self._status_error(exc, "Search failed"), done=True
             )
             return self._error_text(exc, "Error fetching reports")
 
@@ -274,8 +274,17 @@ class Tools:
                     },
                     oauth=__oauth_token__,
                 )
+        except ServiceTimeoutError:
+            await self._emit(__event_emitter__, "Chart timed out", done=True)
+            return (
+                f"Chart query timed out after "
+                f"{self.valves.request_timeout_seconds}s. "
+                "The SQL is valid, it just scans too much."
+            )
         except ReportViewerServiceError as exc:
-            await self._emit(__event_emitter__, f"Failed: {exc}", done=True)
+            await self._emit(
+                __event_emitter__, self._status_error(exc, "Chart failed"), done=True
+            )
             return (
                 f"Error building chart: {exc}\n\n"
                 "Fix the SQL or the spec and call scout_chart_sql again."
@@ -360,7 +369,9 @@ class Tools:
             plot = await self._get(f"/api/plots/{chart_id}", oauth=__oauth_token__)
         except ReportViewerServiceError as exc:
             await self._emit(
-                __event_emitter__, self._error_text(exc, "Failed"), done=True
+                __event_emitter__,
+                self._status_error(exc, "Could not read the chart"),
+                done=True,
             )
             return self._error_text(exc, "Error reading chart")
         n = len(plot.get("rows") or [])
@@ -404,7 +415,7 @@ class Tools:
             )
         except ReportViewerServiceError as exc:
             await self._emit(
-                __event_emitter__, self._error_text(exc, "Failed"), done=True
+                __event_emitter__, self._status_error(exc, "Query failed"), done=True
             )
             return self._error_text(exc, "Error running query")
         n = len(agg.get("rows", []))
@@ -510,7 +521,7 @@ class Tools:
             )
         except ReportViewerServiceError as exc:
             await self._emit(
-                __event_emitter__, self._error_text(exc, "Import failed"), done=True
+                __event_emitter__, self._status_error(exc, "Import failed"), done=True
             )
             return self._error_text(exc, "Error")
         count = created.get("count")
@@ -561,7 +572,7 @@ class Tools:
             )
         except ReportViewerServiceError as exc:
             await self._emit(
-                __event_emitter__, self._error_text(exc, "Failed"), done=True
+                __event_emitter__, self._status_error(exc, "Query failed"), done=True
             )
             return self._error_text(exc, "Error running query")
         n = len(agg.get("rows", []))
@@ -638,12 +649,14 @@ class Tools:
                 timeout=self.valves.request_timeout_seconds
             ) as c:
                 r = await c.post(url, headers=headers, json=payload)
+        except httpx.TimeoutException:
+            raise ServiceTimeoutError("timed out")
         except httpx.RequestError:
             raise ReportViewerServiceError("report-viewer is temporarily unavailable")
         if r.status_code == 401:
             raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
         if r.status_code >= 400:
-            raise ReportViewerServiceError(_short_error(r))
+            raise _service_error(r)
         return r.json()
 
     async def _get(self, path: str, *, oauth: Any) -> dict:
@@ -660,12 +673,14 @@ class Tools:
                 timeout=self.valves.request_timeout_seconds
             ) as c:
                 r = await c.get(url, headers=headers)
+        except httpx.TimeoutException:
+            raise ServiceTimeoutError("timed out")
         except httpx.RequestError:
             raise ReportViewerServiceError("report-viewer is temporarily unavailable")
         if r.status_code == 401:
             raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
         if r.status_code >= 400:
-            raise ReportViewerServiceError(_short_error(r))
+            raise _service_error(r)
         return r.json()
 
     async def _post_multipart(
@@ -686,12 +701,14 @@ class Tools:
                 timeout=self.valves.request_timeout_seconds
             ) as c:
                 r = await c.post(url, headers=headers, files=files, data=data)
+        except httpx.TimeoutException:
+            raise ServiceTimeoutError("timed out")
         except httpx.RequestError:
             raise ReportViewerServiceError("report-viewer is temporarily unavailable")
         if r.status_code == 401:
             raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
         if r.status_code >= 400:
-            raise ReportViewerServiceError(_short_error(r))
+            raise _service_error(r)
         return r.json()
 
     @staticmethod
@@ -825,6 +842,22 @@ class Tools:
         return str(exc) if isinstance(exc, SessionExpiredError) else f"{prefix}: {exc}"
 
     @staticmethod
+    def _status_error(exc: ReportViewerServiceError, what: str) -> str:
+        """Status-pill text. `what` is the fallback for failures only the
+        model can act on; the full message still goes to it via the return."""
+        if isinstance(exc, SessionExpiredError):
+            return str(exc)
+        if isinstance(exc, ServiceTimeoutError):
+            return "Timed out, try a narrower query"
+        if exc.status == 413 and exc.detail:
+            return exc.detail  # already written for the user
+        if exc.status == 404:
+            return "Not found"
+        if exc.status == 0 or exc.status >= 500:
+            return "Scout is temporarily unavailable, try again in a moment"
+        return what
+
+    @staticmethod
     async def _emit(
         emitter: Optional[Callable[[Any], Awaitable[None]]],
         text: str,
@@ -893,11 +926,19 @@ class Tools:
 
 
 class ReportViewerServiceError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, status: int = 0, detail: str = "") -> None:
+        super().__init__(message)
+        self.status = status
+        self.detail = detail
 
 
 class SessionExpiredError(ReportViewerServiceError):
     """No usable OWUI token: either none was provided, or report-viewer rejected it."""
+
+
+class ServiceTimeoutError(ReportViewerServiceError):
+    """The request outlived `request_timeout_seconds`. The query is valid, so
+    this is a cost signal, not something to fix in the SQL."""
 
 
 def _chat_id(meta: Any) -> str:
@@ -972,13 +1013,17 @@ def _md_table(columns: list[str], rows: list[dict]) -> list[str]:
     return out
 
 
-def _short_error(resp: httpx.Response) -> str:
-    """Trim the response body for an LLM-readable error string."""
+def _service_error(resp: httpx.Response) -> ReportViewerServiceError:
+    """Message for the model; status and detail kept for the status pill."""
+    detail = ""
     try:
         body = resp.json()
-        detail = body.get("detail") if isinstance(body, dict) else None
-        if detail:
-            return f"{resp.status_code}: {detail}"
+        if isinstance(body, dict) and body.get("detail"):
+            detail = str(body["detail"])
     except Exception:
         pass
-    return f"{resp.status_code}: {resp.text[:200]}"
+    return ReportViewerServiceError(
+        f"{resp.status_code}: {detail or resp.text[:200]}",
+        status=resp.status_code,
+        detail=detail,
+    )
