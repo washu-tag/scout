@@ -8,6 +8,8 @@ on:
     paths:
       - deploy/**
       - tooling/deploy/**
+      # The realm config-cli imports + the config-hash it is stamped from live here.
+      - helm/keycloak-config-cli/**
       - .github/workflows/validate-deploy.yaml
       # OPA data-doc drift guard reads the Ansible source; re-run on those too.
       - ansible/roles/opa/defaults/main.yaml
@@ -101,7 +103,7 @@ jobs:
           python3 tooling/deploy/stamp_config.py \
             --deploy-dir /tmp/stamped \
             --haul tooling/deploy/fixtures/haul.yaml \
-            --realm-file tooling/deploy/fixtures/realm.json
+            --realm-file helm/keycloak-config-cli/files/scout-realm.json
           python3 tooling/deploy/gen_cluster_vars.py \
             --values tooling/deploy/fixtures/cluster-vars.values.json \
             --required-vars deploy/required-vars.txt >/tmp/cluster-vars.yaml

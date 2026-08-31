@@ -1471,14 +1471,15 @@ jobs:
           # The build lane's haul is the source of truth for concrete tags.
           oras pull "${MANIFEST_REPO}:main" -o haul
           cp -r deploy config-artifact
-          # config-hash must match the realm content the site seeds into the
-          # keycloak-config Secret; render + pass that realm once wired. Until then
-          # the fixture keeps the hash deterministic (import re-fires on a real
-          # realm change once wired).
+          # config-hash = sha256 of the realm config-cli imports (the chart's
+          # files/scout-realm.json), so a realm change re-fires the import. A host-list
+          # (albOidcHosts) change re-fires too via the HelmRelease values; rotating a
+          # keycloak-client-secrets value alone does not (envFrom is by name), so that
+          # lands on the next upgrade.
           python3 tooling/deploy/stamp_config.py \
             --deploy-dir config-artifact \
             --haul haul/haul.yaml \
-            --realm-file tooling/deploy/fixtures/realm.json
+            --realm-file helm/keycloak-config-cli/files/scout-realm.json
       - name: Publish + sign the scout-config artifact
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
