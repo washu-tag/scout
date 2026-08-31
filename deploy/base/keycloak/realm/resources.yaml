@@ -78,13 +78,18 @@ spec:
       # config-cli var-substitutes $(env:server_hostname) into every client URL.
       server_hostname: '${server_hostname}'
       # config-cli rails (Spring Boot; keys = exact import.* props). var-substitution
-      # resolves $(env:...) from the Job env. managed *=no-delete on EVERY prune-capable
-      # type makes the import additive: config-cli creates/updates from this realm but
-      # never deletes a live entity (remote-state does NOT reliably scope this -- a first
-      # run against a populated realm otherwise prunes live clients, IdP mappers, scope
-      # mappings, roles, etc. not present here). So a takeover leaves any live brokered IdP
-      # + its mappers, app-owned clients, and operator flows intact; stale cleanup is deliberate.
-      # (config-cli never manages users, so they are always untouched.)
+      # resolves $(env:...) from the Job env. managed *=no-delete keeps this TAKEOVER
+      # import additive: the first run against a populated realm must not prune live
+      # clients, IdP mappers, or roles not yet in the artifact (remote-state only scopes
+      # deletes after config-cli has managed the realm once). So a takeover leaves any
+      # live brokered IdP + its mappers, app-owned clients, and operator flows intact.
+      # Removal process: while additive, decommission a client by dropping it from the
+      # template AND deleting the client + secret via the admin API. Once the first import
+      # is clean, a follow-up narrows client/role/group/client-scope/scope-mapping back to
+      # full; remote-state (now populated) scopes deletes to config-cli-created entities,
+      # so removing a client from the template decommissions it while a live non-artifact
+      # client stays. identity-provider[-mapper]/component/authentication-flow stay
+      # no-delete (provisioned outside the artifact). config-cli never manages users.
       SPRING_APPLICATION_JSON: >-
         {"import":{"var-substitution":{"enabled":true},"managed":{"client":"no-delete","client-scope":"no-delete","client-scope-mapping":"no-delete","scope-mapping":"no-delete","role":"no-delete","group":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","required-action":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
     # Client + GitHub-IdP secrets the realm var-substitutes ($(env:oauth2_proxy),
