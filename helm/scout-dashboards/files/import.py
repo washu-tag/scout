@@ -77,8 +77,11 @@ _METRIC_FIELDS = (
 )
 
 
-def grant_schema_access(role_name: str, database_uuid: str, schema: str) -> bool:
-    """Grant `role_name` Superset's `schema_access` permission on `schema`.
+def grant_schema_access(
+    role_name: str, database_uuid: str, catalog: str, schema: str
+) -> bool:
+    """Grant `role_name` Superset's `schema_access` permission on
+    `catalog`.`schema`.
 
     Issue #687: Gamma has no datasource access by default, so regular
     (Gamma) users would see none of the shared dashboards/datasets unless
@@ -92,7 +95,9 @@ def grant_schema_access(role_name: str, database_uuid: str, schema: str) -> bool
     database = db.session.query(Database).filter_by(uuid=database_uuid).first()
     if role is None or database is None:
         return False
-    schema_perm = security_manager.get_schema_perm(database, schema)
+    schema_perm = security_manager.get_schema_perm(
+        database.database_name, catalog=catalog, schema=schema
+    )
     pvm = security_manager.add_permission_view_menu("schema_access", schema_perm)
     if pvm not in role.permissions:
         role.permissions.append(pvm)
@@ -325,7 +330,9 @@ if GAMMA_SCHEMA_ACCESS_SCHEMA:
     with open(f"{ANALYTICS}/databases/Scout_Data_Lake.yaml") as f:
         database_uuid = yaml.safe_load(f)["uuid"]
     granted_gamma_schema_access = grant_schema_access(
-        "Gamma", database_uuid, GAMMA_SCHEMA_ACCESS_SCHEMA
+        # "delta" matches the hardcoded catalog in the Trino sqlalchemy_uri
+        # this chart renders (scout-dashboards.databaseYaml in _helpers.tpl).
+        "Gamma", database_uuid, "delta", GAMMA_SCHEMA_ACCESS_SCHEMA
     )
     db.session.flush()
 else:
