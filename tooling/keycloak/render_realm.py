@@ -94,7 +94,7 @@ VARMAP = {
 }
 
 GUARD = (
-    '    {{- $idps := list }}\n'
+    "    {{- $idps := list }}\n"
     '    {{- if eq (.Values.github.enabled | toString) "true" }}{{- $idps = append $idps "github" }}{{- end }}\n'
     '    {{- if eq (.Values.microsoft.enabled | toString) "true" }}{{- $idps = append $idps "microsoft" }}{{- end }}\n'
     '    {{- if not (has .Values.defaultProvider $idps) }}{{- fail (printf "keycloak realm: defaultProvider %q is not an enabled IdP (github.enabled=%v microsoft.enabled=%v)" .Values.defaultProvider .Values.github.enabled .Values.microsoft.enabled) }}{{- end }}\n'
@@ -105,28 +105,67 @@ def render(s):
     # 1) strip Jinja comments
     s = re.sub(r"\{#.*?#\}", "", s, flags=re.S)
     # 2) control blocks -> helm (string-typed cluster-vars: gate on eq "true")
-    s = s.replace("{% if enable_xnat | default(false) | bool %}", '{{- if eq (.Values.enableXnat | toString) "true" }}')
-    s = s.replace("{% if keycloak_gh_client_id is defined and keycloak_gh_client_id %}", '{{- if eq (.Values.github.enabled | toString) "true" }}')
-    s = s.replace("{% if keycloak_microsoft_client_id is defined and keycloak_microsoft_client_id %}", '{{- if eq (.Values.microsoft.enabled | toString) "true" }}')
-    s = s.replace("{% for h in keycloak_alb_oidc_hosts %}", '{{- range $h := (splitList "," .Values.albOidcHosts | compact) }}')
-    s = s.replace("{% for attr_name, attr_config in trino_attribute_filters.items() %}", "{{- range $attr_name, $attr_config := .Values.trinoAttributeFilters }}")
-    s = s.replace("{% if attr_config.options is defined %}", '{{- if hasKey $attr_config "options" }}')
+    s = s.replace(
+        "{% if enable_xnat | default(false) | bool %}",
+        '{{- if eq (.Values.enableXnat | toString) "true" }}',
+    )
+    s = s.replace(
+        "{% if keycloak_gh_client_id is defined and keycloak_gh_client_id %}",
+        '{{- if eq (.Values.github.enabled | toString) "true" }}',
+    )
+    s = s.replace(
+        "{% if keycloak_microsoft_client_id is defined and keycloak_microsoft_client_id %}",
+        '{{- if eq (.Values.microsoft.enabled | toString) "true" }}',
+    )
+    s = s.replace(
+        "{% for h in keycloak_alb_oidc_hosts %}",
+        '{{- range $h := (splitList "," .Values.albOidcHosts | compact) }}',
+    )
+    s = s.replace(
+        "{% for attr_name, attr_config in trino_attribute_filters.items() %}",
+        "{{- range $attr_name, $attr_config := .Values.trinoAttributeFilters }}",
+    )
+    s = s.replace(
+        "{% if attr_config.options is defined %}",
+        '{{- if hasKey $attr_config "options" }}',
+    )
     s = s.replace("{% else %}", "{{- else }}")
     s = s.replace("{% endif %}", "{{- end }}")
     s = s.replace("{% endfor %}", "{{- end }}")
     # 3) inline-expression specials (trino loop)
-    s = s.replace("{{ 'multiselect' if attr_config.options is defined else 'text' }}", '{{- if hasKey $attr_config "options" }}multiselect{{- else }}text{{- end }}')
-    s = s.replace("{{ attr_config.display_name | default('Scout AuthZ — ' ~ attr_name) }}", '{{ $attr_config.display_name | default (printf "Scout AuthZ — %s" $attr_name) }}')
-    s = s.replace("{{ attr_config.max_length | default(64) }}", "{{ $attr_config.max_length | default 64 }}")
-    s = s.replace("{{ attr_config.options | to_json }}", "{{ $attr_config.options | toJson }}")
-    s = s.replace("{{ attr_config.value_pattern | default('^([A-Za-z0-9 _-]+|\\\\\\\\*)$') }}", '{{ $attr_config.value_pattern | default "^([A-Za-z0-9 _-]+|\\\\\\\\*)$" }}')
-    s = s.replace("{{ attr_config.value_pattern_error | default('Use a code (letters, digits, spaces, hyphen, underscore) or the * wildcard for all values.') }}", '{{ $attr_config.value_pattern_error | default "Use a code (letters, digits, spaces, hyphen, underscore) or the * wildcard for all values." }}')
+    s = s.replace(
+        "{{ 'multiselect' if attr_config.options is defined else 'text' }}",
+        '{{- if hasKey $attr_config "options" }}multiselect{{- else }}text{{- end }}',
+    )
+    s = s.replace(
+        "{{ attr_config.display_name | default('Scout AuthZ — ' ~ attr_name) }}",
+        '{{ $attr_config.display_name | default (printf "Scout AuthZ — %s" $attr_name) }}',
+    )
+    s = s.replace(
+        "{{ attr_config.max_length | default(64) }}",
+        "{{ $attr_config.max_length | default 64 }}",
+    )
+    s = s.replace(
+        "{{ attr_config.options | to_json }}", "{{ $attr_config.options | toJson }}"
+    )
+    s = s.replace(
+        "{{ attr_config.value_pattern | default('^([A-Za-z0-9 _-]+|\\\\\\\\*)$') }}",
+        '{{ $attr_config.value_pattern | default "^([A-Za-z0-9 _-]+|\\\\\\\\*)$" }}',
+    )
+    s = s.replace(
+        "{{ attr_config.value_pattern_error | default('Use a code (letters, digits, spaces, hyphen, underscore) or the * wildcard for all values.') }}",
+        '{{ $attr_config.value_pattern_error | default "Use a code (letters, digits, spaces, hyphen, underscore) or the * wildcard for all values." }}',
+    )
     s = s.replace("{{ attr_name }}", "{{ $attr_name }}")
     s = s.replace("{{ h }}", "{{ $h }}")
     # 4) plain {{ var }} substitutions (longest key first)
     for key in sorted(VARMAP, key=len, reverse=True):
-        s = re.sub(r"\{\{\s*" + re.escape(key) + r"\s*\}\}", lambda m, v=VARMAP[key]: v, s)
-    leftover = re.findall(r"\{\{(?!\s*[-.$])(?![^}]*(Values|printf|toJson|default|dict))[^}]*\}\}", s)
+        s = re.sub(
+            r"\{\{\s*" + re.escape(key) + r"\s*\}\}", lambda m, v=VARMAP[key]: v, s
+        )
+    leftover = re.findall(
+        r"\{\{(?!\s*[-.$])(?![^}]*(Values|printf|toJson|default|dict))[^}]*\}\}", s
+    )
     if leftover:
         raise SystemExit("unmapped ansible {{ }} remain: %s" % sorted(set(leftover)))
     # 6) strip static trailing commas (invalid JSON)
@@ -134,19 +173,28 @@ def render(s):
     # 6b) identityProviders -> leading-comma (both entries optional)
     s = s.replace(
         '},\n        {{- end }}\n        {{- if eq (.Values.microsoft.enabled | toString) "true" }}\n        {',
-        '}\n        {{- end }}\n        {{- if eq (.Values.microsoft.enabled | toString) "true" }}\n        {{- if eq (.Values.github.enabled | toString) "true" }},{{- end }}\n        {')
+        '}\n        {{- end }}\n        {{- if eq (.Values.microsoft.enabled | toString) "true" }}\n        {{- if eq (.Values.github.enabled | toString) "true" }},{{- end }}\n        {',
+    )
     s = s.replace(
         '},\n        {{- end }}\n    ],\n    "authenticationFlows"',
-        '}\n        {{- end }}\n    ],\n    "authenticationFlows"')
+        '}\n        {{- end }}\n    ],\n    "authenticationFlows"',
+    )
     # 6c) trim each ALB host and drop blanks
-    s = s.replace('(splitList "," .Values.albOidcHosts | compact) }}',
-                  '(splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }}')
-    s = s.replace('"https://{{ $h }}/oauth2/idpresponse"{{- end }}',
-                  '"https://{{ $h }}/oauth2/idpresponse"{{- end }}{{- end }}')
-    s = s.replace('"https://{{ $h }}"{{- end }}',
-                  '"https://{{ $h }}"{{- end }}{{- end }}')
+    s = s.replace(
+        '(splitList "," .Values.albOidcHosts | compact) }}',
+        '(splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }}',
+    )
+    s = s.replace(
+        '"https://{{ $h }}/oauth2/idpresponse"{{- end }}',
+        '"https://{{ $h }}/oauth2/idpresponse"{{- end }}{{- end }}',
+    )
+    s = s.replace(
+        '"https://{{ $h }}"{{- end }}', '"https://{{ $h }}"{{- end }}{{- end }}'
+    )
     # 6d) fail the render if defaultProvider is not an enabled IdP
-    s = s.replace('    "authenticatorConfig": [', GUARD + '    "authenticatorConfig": [')
+    s = s.replace(
+        '    "authenticatorConfig": [', GUARD + '    "authenticatorConfig": ['
+    )
     return HEADER + s
 
 
@@ -155,7 +203,11 @@ def main():
     if "--check" in sys.argv:
         cur = OUT.read_text() if OUT.exists() else ""
         if cur != out:
-            print("ERROR: %s is stale. Run: python3 tooling/keycloak/render_realm.py" % OUT.relative_to(ROOT), file=sys.stderr)
+            print(
+                "ERROR: %s is stale. Run: python3 tooling/keycloak/render_realm.py"
+                % OUT.relative_to(ROOT),
+                file=sys.stderr,
+            )
             sys.exit(1)
         print("%s is up to date." % OUT.relative_to(ROOT))
         return
