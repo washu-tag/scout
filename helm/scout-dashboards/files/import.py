@@ -90,6 +90,9 @@ def grant_schema_access(
     role<->permission link is only appended if missing. Returns False if
     the database row doesn't exist yet (first install, before the CLI
     creates it) or the role doesn't exist.
+
+    Additive only: disabling `gammaSchemaAccess` later doesn't revoke a
+    grant already made.
     """
     role = security_manager.find_role(role_name)
     database = db.session.query(Database).filter_by(uuid=database_uuid).first()
@@ -332,7 +335,10 @@ if GAMMA_SCHEMA_ACCESS_SCHEMA:
     granted_gamma_schema_access = grant_schema_access(
         # "delta" matches the hardcoded catalog in the Trino sqlalchemy_uri
         # this chart renders (scout-dashboards.databaseYaml in _helpers.tpl).
-        "Gamma", database_uuid, "delta", GAMMA_SCHEMA_ACCESS_SCHEMA
+        "Gamma",
+        database_uuid,
+        "delta",
+        GAMMA_SCHEMA_ACCESS_SCHEMA,
     )
     db.session.flush()
 else:
