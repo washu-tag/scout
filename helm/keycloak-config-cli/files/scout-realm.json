@@ -1,3 +1,6 @@
+{{/* GENERATED from ansible/roles/keycloak/templates/scout-realm.json.j2 by
+     tooling/keycloak/render_realm.py -- do not edit by hand; edit the template
+     and re-run the tool. The helm {{ }} / $(env:) tokens are intentional. */}}
 {
     "enabled": true,
     "realm": "scout",
