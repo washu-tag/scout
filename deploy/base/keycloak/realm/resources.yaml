@@ -82,8 +82,8 @@ spec:
       # type makes the import additive: config-cli creates/updates from this realm but
       # never deletes a live entity (remote-state does NOT reliably scope this -- a first
       # run against a populated realm otherwise prunes live clients, IdP mappers, scope
-      # mappings, roles, etc. not present here). So a takeover leaves the live dnanexus IdP
-      # + mappers, app-owned clients, and operator flows intact; stale cleanup is deliberate.
+      # mappings, roles, etc. not present here). So a takeover leaves any live brokered IdP
+      # + its mappers, app-owned clients, and operator flows intact; stale cleanup is deliberate.
       # (config-cli never manages users, so they are always untouched.)
       SPRING_APPLICATION_JSON: >-
         {"import":{"var-substitution":{"enabled":true},"managed":{"client":"no-delete","client-scope":"no-delete","client-scope-mapping":"no-delete","scope-mapping":"no-delete","role":"no-delete","group":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","required-action":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
