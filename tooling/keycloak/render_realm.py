@@ -101,6 +101,16 @@ GUARD = (
 )
 
 
+def _sub(s, old, new):
+    """str.replace that fails closed: a silent no-op here would emit a corrupt realm."""
+    if old not in s:
+        raise SystemExit(
+            "render_realm.py: post-processing anchor not found (template changed?): %r"
+            % (old[:70],)
+        )
+    return s.replace(old, new)
+
+
 def render(s):
     # 1) strip Jinja comments
     s = re.sub(r"\{#.*?#\}", "", s, flags=re.S)
@@ -137,6 +147,8 @@ def render(s):
         "{{ 'multiselect' if attr_config.options is defined else 'text' }}",
         '{{- if hasKey $attr_config "options" }}multiselect{{- else }}text{{- end }}',
     )
+    # The em dashes here are U+2014, verbatim from the ansible source; keep the two
+    # lanes in sync (do not "fix" to a hyphen or the helm-lane default silently diverges).
     s = s.replace(
         "{{ attr_config.display_name | default('Scout AuthZ — ' ~ attr_name) }}",
         '{{ $attr_config.display_name | default (printf "Scout AuthZ — %s" $attr_name) }}',
@@ -163,38 +175,46 @@ def render(s):
         s = re.sub(
             r"\{\{\s*" + re.escape(key) + r"\s*\}\}", lambda m, v=VARMAP[key]: v, s
         )
-    leftover = re.findall(
-        r"\{\{(?!\s*[-.$])(?![^}]*(Values|printf|toJson|default|dict))[^}]*\}\}", s
-    )
+    # 5) fail closed on anything the tool did not translate: a non-helm {{ }} token
+    #    (helm tokens start with -, ., or $) or a surviving jinja {% %} control block.
+    leftover = re.findall(r"\{\{(?!\s*[-.$])[^}]*\}\}", s)
     if leftover:
         raise SystemExit("unmapped ansible {{ }} remain: %s" % sorted(set(leftover)))
+    control = re.findall(r"\{%.*?%\}", s, flags=re.S)
+    if control:
+        raise SystemExit(
+            "unhandled jinja control blocks remain: %s" % sorted(set(control))
+        )
     # 6) strip static trailing commas (invalid JSON)
     s = re.sub(r",(\s*[}\]])", r"\1", s)
-    # 6b) identityProviders -> leading-comma (both entries optional)
-    s = s.replace(
+    # 6b) identityProviders -> leading-comma (both entries optional). _sub fails closed
+    #     so a reindent/reorder of the IdP block can't silently emit invalid JSON.
+    s = _sub(
+        s,
         '},\n        {{- end }}\n        {{- if eq (.Values.microsoft.enabled | toString) "true" }}\n        {',
         '}\n        {{- end }}\n        {{- if eq (.Values.microsoft.enabled | toString) "true" }}\n        {{- if eq (.Values.github.enabled | toString) "true" }},{{- end }}\n        {',
     )
-    s = s.replace(
+    s = _sub(
+        s,
         '},\n        {{- end }}\n    ],\n    "authenticationFlows"',
         '}\n        {{- end }}\n    ],\n    "authenticationFlows"',
     )
     # 6c) trim each ALB host and drop blanks
-    s = s.replace(
+    s = _sub(
+        s,
         '(splitList "," .Values.albOidcHosts | compact) }}',
         '(splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }}',
     )
-    s = s.replace(
+    s = _sub(
+        s,
         '"https://{{ $h }}/oauth2/idpresponse"{{- end }}',
         '"https://{{ $h }}/oauth2/idpresponse"{{- end }}{{- end }}',
     )
-    s = s.replace(
-        '"https://{{ $h }}"{{- end }}', '"https://{{ $h }}"{{- end }}{{- end }}'
+    s = _sub(
+        s, '"https://{{ $h }}"{{- end }}', '"https://{{ $h }}"{{- end }}{{- end }}'
     )
     # 6d) fail the render if defaultProvider is not an enabled IdP
-    s = s.replace(
-        '    "authenticatorConfig": [', GUARD + '    "authenticatorConfig": ['
-    )
+    s = _sub(s, '    "authenticatorConfig": [', GUARD + '    "authenticatorConfig": [')
     return HEADER + s
 
 
