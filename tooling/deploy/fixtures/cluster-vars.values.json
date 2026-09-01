@@ -1,6 +1,5 @@
 {
   "_comment": "Sample site values for gen_cluster_vars.py. Scalars mirror the Ansible role defaults (scout_common, cassandra, elasticsearch, extractor, postgres, minio, valkey, oauth2-proxy, keycloak); server_hostname and extractor_data_dir are site-specific placeholders. The four nested dicts mirror the nested Ansible defaults that get flattened into cluster-vars. Keys starting with a name that is NOT in required-vars.txt (hive_metastore_instance[_readonly], keycloak_subdomain, trino_rw_release_name, trino_rw_namespace, the *_default/postgres_parameters dicts) are derivation inputs only and are not emitted.",
-
   "acm_cert_arn": "",
   "alb_group_name": "",
   "cassandra_cluster_name": "cassandra-cluster",
@@ -10,8 +9,19 @@
   "cassandra_init_heap": "1G",
   "cassandra_max_heap": "2G",
   "cassandra_storage_size": "10Gi",
+  "cassandra_system_logger_resources_default": {
+    "limits": {
+      "cpu": "500m",
+      "memory": "256Mi"
+    },
+    "requests": {
+      "cpu": "100m",
+      "memory": "128Mi"
+    }
+  },
   "cnpg_operator_namespace": "scout-operators",
   "db_port": "5432",
+  "deployer_name": "WashU",
   "eck_operator_namespace": "scout-operators",
   "elasticsearch_cluster_name": "elasticsearch",
   "elasticsearch_cpu_limit": "2",
@@ -20,6 +30,8 @@
   "elasticsearch_storage_size": "10Gi",
   "extractor_data_dir": "/mnt/hl7-logs",
   "hive_hadoop_opts": "",
+  "hive_metastore_instance": "hive-metastore",
+  "hive_metastore_instance_readonly": "hive-metastore-readonly",
   "hive_namespace": "scout-data",
   "hl7_raw_bucket": "hl7-raw",
   "hl7_transformer_cpu_limit": "4",
@@ -30,6 +42,16 @@
   "hl7log_extractor_concurrency": "150",
   "hl7log_extractor_heartbeat_timeout": "30",
   "hl7log_extractor_jvm_heap_max_ram_percentage": "60",
+  "hl7log_extractor_resources_default": {
+    "limits": {
+      "cpu": "2",
+      "memory": "2Gi"
+    },
+    "requests": {
+      "cpu": "100m",
+      "memory": "1Gi"
+    }
+  },
   "hl7log_extractor_timeout": "480",
   "hl7logs_root_dir": "/data",
   "ingest_postgres_table_name": "ingest",
@@ -39,9 +61,11 @@
   "keycloak_default_provider": "github",
   "keycloak_enable_xnat": "false",
   "keycloak_github_enabled": "true",
+  "keycloak_launchpad_client_id": "launchpad",
   "keycloak_microsoft_enabled": "false",
   "keycloak_namespace": "scout-core",
   "keycloak_realm_name": "scout",
+  "keycloak_subdomain": "keycloak",
   "keycloak_superset_client_id": "superset",
   "lake_bucket": "lake",
   "loki_admin_bucket": "loki-admin",
@@ -59,6 +83,35 @@
   "opa_bundles_bucket": "opa-bundles",
   "postgres_cluster_name": "postgresql-cluster",
   "postgres_cluster_namespace": "scout-core",
+  "postgres_parameters": {
+    "checkpoint_completion_target": "0.9",
+    "default_statistics_target": "100",
+    "effective_cache_size": "1GB",
+    "effective_io_concurrency": "1",
+    "huge_pages": "try",
+    "maintenance_work_mem": "64MB",
+    "max_connections": "100",
+    "max_parallel_maintenance_workers": "2",
+    "max_parallel_workers": "4",
+    "max_parallel_workers_per_gather": "2",
+    "max_wal_size": "4GB",
+    "max_worker_processes": "4",
+    "min_wal_size": "1GB",
+    "random_page_cost": "4",
+    "shared_buffers": "256MB",
+    "wal_buffers": "4MB",
+    "work_mem": "4MB"
+  },
+  "postgres_resources_default": {
+    "limits": {
+      "cpu": "2",
+      "memory": "2Gi"
+    },
+    "requests": {
+      "cpu": "250m",
+      "memory": "1Gi"
+    }
+  },
   "postgres_storage_size": "1Gi",
   "postgres_user": "scout",
   "prometheus_namespace": "scout-monitoring",
@@ -75,6 +128,7 @@
   "scout_core_namespace": "scout-core",
   "scout_data_namespace": "scout-data",
   "scout_docs_url": "https://washu-scout.readthedocs.io/en/latest",
+  "scout_env": "ci",
   "scout_extractor_namespace": "scout-extractor",
   "scout_operators_namespace": "scout-operators",
   "scratch_bucket": "scratch",
@@ -84,46 +138,10 @@
   "timezone": "America/Chicago",
   "trino_https_port": "8443",
   "trino_rw_endpoint_port": "8080",
+  "trino_rw_namespace": "scout-extractor",
+  "trino_rw_release_name": "trino-rw",
   "trino_user": "trino",
   "trino_view_enabled": "true",
   "valkey_namespace": "scout-core",
-  "valkey_storage_size": "8Gi",
-
-  "hive_metastore_instance": "hive-metastore",
-  "hive_metastore_instance_readonly": "hive-metastore-readonly",
-  "keycloak_subdomain": "keycloak",
-  "trino_rw_release_name": "trino-rw",
-  "trino_rw_namespace": "scout-extractor",
-
-  "postgres_parameters": {
-    "max_connections": "100",
-    "shared_buffers": "256MB",
-    "effective_cache_size": "1GB",
-    "maintenance_work_mem": "64MB",
-    "checkpoint_completion_target": "0.9",
-    "wal_buffers": "4MB",
-    "default_statistics_target": "100",
-    "random_page_cost": "4",
-    "effective_io_concurrency": "1",
-    "work_mem": "4MB",
-    "huge_pages": "try",
-    "min_wal_size": "1GB",
-    "max_wal_size": "4GB",
-    "max_worker_processes": "4",
-    "max_parallel_workers_per_gather": "2",
-    "max_parallel_workers": "4",
-    "max_parallel_maintenance_workers": "2"
-  },
-  "postgres_resources_default": {
-    "requests": { "cpu": "250m", "memory": "1Gi" },
-    "limits": { "cpu": "2", "memory": "2Gi" }
-  },
-  "hl7log_extractor_resources_default": {
-    "requests": { "cpu": "100m", "memory": "1Gi" },
-    "limits": { "cpu": "2", "memory": "2Gi" }
-  },
-  "cassandra_system_logger_resources_default": {
-    "requests": { "cpu": "100m", "memory": "128Mi" },
-    "limits": { "cpu": "500m", "memory": "256Mi" }
-  }
+  "valkey_storage_size": "8Gi"
 }
