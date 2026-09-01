@@ -233,7 +233,7 @@
             "launchpad-user"
           ],
           "superset": [
-            "superset_alpha",
+            "superset_gamma",
             "superset_sql_lab"
           ],
           "open-webui": [
