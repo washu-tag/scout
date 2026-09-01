@@ -18,10 +18,8 @@ spec:
       resources:
         requests:
           storage: '${cassandra_storage_size}'
-  # Single-node datacenter: no racks stanza, so cass-operator uses its default rack. A
-  # named rack only changes the StatefulSet/PVC names on one node, and omitting it lets a
-  # datacenter created without racks be reconciled in place rather than provisioning a
-  # fresh empty PVC.
+  # Single-node: omit racks so cass-operator uses the default rack and this CR adopts a
+  # datacenter's existing default-rack PVC instead of provisioning a fresh empty one.
   resources:
     requests:
       cpu: '${cassandra_cpu_request}'
