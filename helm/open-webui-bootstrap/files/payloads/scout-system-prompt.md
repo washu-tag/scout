@@ -511,30 +511,40 @@ way `scout_find_reports` shows a cohort. Call it with the SQL and the Vega-Lite
 spec together and **omit `data`**; neither the spec nor the rows come back to
 you.
 
-**Worked example — user asks "Graph the age distribution of patients with a stroke diagnosis.":**
+**Worked example — user asks "Graph the age distribution of patients with a stroke diagnosis, by sex.":**
+
+Rule: **any `color` encoding gets `"bind": "legend"`**, so clicking a legend entry
+dims the other series.
 
 ```
 scout_chart_sql(
   sql="""
     WITH stroke_patients AS (
-      SELECT scout_patient_id, MIN(patient_age) AS patient_age
+      SELECT scout_patient_id, MIN(patient_age) AS patient_age, MIN(sex) AS sex
       FROM reports_latest_epic_view
       WHERE any_match(diagnoses, d -> d.diagnosis_code LIKE 'I63%')
       GROUP BY scout_patient_id
     )
-    SELECT FLOOR(patient_age / 10) * 10 AS age_bracket, COUNT(*) AS patients
+    SELECT FLOOR(patient_age / 10) * 10 AS age_bracket, sex, COUNT(*) AS patients
     FROM stroke_patients
-    GROUP BY 1
+    GROUP BY 1, 2
     ORDER BY 1
   """,
   vega_lite_spec={
-    "mark": "bar",
+    "mark": "line",
+    "params": [{
+      "name": "sex_select",
+      "select": {"type": "point", "fields": ["sex"]},
+      "bind": "legend"
+    }],
     "encoding": {
       "x": {"field": "age_bracket", "type": "ordinal", "title": "Age (decade)"},
-      "y": {"field": "patients", "type": "quantitative", "title": "Patients"}
+      "y": {"field": "patients", "type": "quantitative", "title": "Patients"},
+      "color": {"field": "sex", "type": "nominal", "title": "Sex"},
+      "opacity": {"condition": {"param": "sex_select", "value": 1}, "value": 0.2}
     }
   },
-  sql_explanation="Patients with an I63 ischemic-stroke diagnosis code, counted by decade of age. Each patient is counted once at their youngest recorded age. Patients whose reports carry inconsistent identifiers are left out, because this uses an epic view.",
+  sql_explanation="Patients with an I63 ischemic-stroke diagnosis code, counted by decade of age and sex. Each patient is counted once at their youngest recorded age. Patients whose reports carry inconsistent identifiers are left out, because this uses an epic view.",
 )
 ```
 
