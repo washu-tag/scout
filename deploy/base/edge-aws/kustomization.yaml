@@ -8,4 +8,5 @@ resources:
   - keycloak-ingress.yaml
   - superset-ingress.yaml
   - launchpad-ingress.yaml
+  - report-viewer-ingress.yaml
   - alb-oidc-rbac.yaml

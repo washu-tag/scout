@@ -1,0 +1,49 @@
+# Public ALB for report-viewer at report-viewer.${server_hostname}, ALB-native OIDC
+# against the scout realm. Mirrors the superset ALB: reuses the oauth2-proxy client
+# (creds in alb-oidc-keycloak), access by realm membership, scheme via the `alb`
+# IngressClassParams (ADR 0035). Only the SPA (/spa) and its API (/api) are exposed;
+# /healthz, /metrics, /docs stay in-cluster, matching the chart's Traefik ingress.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: report-viewer-alb
+  namespace: '${scout_analytics_namespace}'
+  annotations:
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: ${acm_cert_arn}
+    alb.ingress.kubernetes.io/group.name: ${alb_group_name}
+    alb.ingress.kubernetes.io/auth-type: oidc
+    alb.ingress.kubernetes.io/auth-on-unauthenticated-request: authenticate
+    alb.ingress.kubernetes.io/auth-scope: 'openid email profile'
+    alb.ingress.kubernetes.io/auth-session-timeout: '28800'
+    alb.ingress.kubernetes.io/auth-idp-oidc: |
+      {
+        "Issuer": "${keycloak_realm_url}",
+        "AuthorizationEndpoint": "${keycloak_realm_url}/protocol/openid-connect/auth",
+        "TokenEndpoint": "${keycloak_realm_url}/protocol/openid-connect/token",
+        "UserInfoEndpoint": "${keycloak_realm_url}/protocol/openid-connect/userinfo",
+        "SecretName": "alb-oidc-keycloak"
+      }
+spec:
+  ingressClassName: alb
+  rules:
+    - host: 'report-viewer.${server_hostname}'
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: report-viewer
+                port:
+                  number: 8000
+          - path: /spa
+            pathType: Prefix
+            backend:
+              service:
+                name: report-viewer
+                port:
+                  number: 8000

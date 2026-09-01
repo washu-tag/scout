@@ -1,0 +1,63 @@
+# report-viewer (Scout saved-search viewer, ADR 0030/0031): scout-owned OCI chart as
+# a Deployment + Service in ${scout_analytics_namespace} (owned by
+# scout-analytics-foundation, dependsOn, which also owns the shared scout-charts
+# HelmRepository referenced below, so it is not redeclared here). Surfaces saved
+# searches outside Open WebUI.
+#
+# Secrets never in git. existingSecret points at the fixed-name `report-viewer`
+# Secret seeded by CI/site (Phase 3) or ESO (Phase 4), carrying
+# REPORT_VIEWER_DATABASE_URL, REPORT_VIEWER_TRINO_AUTH_CLIENT_SECRET,
+# REPORT_VIEWER_GATEWAY_SECRET, and ca.crt (envFrom + the trino-ca mount).
+#
+# Ingress is mode-selected (ADR 0035) by the report-viewer-edge-${service_mode}
+# ConfigMap (edge.yaml): on-prem = chart Traefik ingress + oauth2-proxy middlewares;
+# aws = chart ingress off, the ALB in edge-aws/report-viewer-ingress.yaml serves.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  # Release name `report-viewer` = the Service name the edge-aws Ingress backends to,
+  # and fixes the chart fullname so the externally-seeded `report-viewer` Secret matches.
+  name: report-viewer
+  namespace: '${scout_analytics_namespace}'
+spec:
+  interval: 30m
+  # Scout-owned OCI chart; GitOps lane owns the real version via OCIRepository
+  # (ADR 0030/0031). Literal 0.0.0 placeholder until the stamping job lands.
+  chart:
+    spec:
+      chart: report-viewer
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${scout_analytics_namespace}'
+  # Ingress differs by mode (ADR 0035): service_mode selects the on-prem/aws edge.
+  valuesFrom:
+    - kind: ConfigMap
+      name: 'report-viewer-edge-${service_mode}'
+  values:
+    # Fixed-name Secret seeded externally (see header): the chart skips its own Secret
+    # and reads env (envFrom) + the trino-ca cert from it. The Scout image tag defaults
+    # to the chart's stamped appVersion (ADR 0030), so it is not pinned here.
+    existingSecret: report-viewer
+    env:
+      REPORT_VIEWER_EXTERNAL_URL: 'https://report-viewer.${server_hostname}'
+      # Chat origin the SPA postMessages to; mirrors open-webui's ingress host.
+      REPORT_VIEWER_CHAT_ORIGIN: 'https://chat.${server_hostname}'
+      # Trino service + principal impersonation (ADR 0022). HTTPS-only, same namespace.
+      REPORT_VIEWER_TRINO_HOST: 'trino.${scout_analytics_namespace}'
+      REPORT_VIEWER_TRINO_PORT: '${trino_https_port}'
+      REPORT_VIEWER_TRINO_SCHEME: https
+      REPORT_VIEWER_TRINO_CATALOG: delta
+      REPORT_VIEWER_TRINO_SCHEMA: default
+      REPORT_VIEWER_TRINO_AUTH_TOKEN_URL: '${keycloak_internal_url}/realms/${keycloak_realm_name}/protocol/openid-connect/token'
+      REPORT_VIEWER_TRINO_AUTH_CLIENT_ID: report_viewer_svc
+      # OIDC for inbound JWT validation. Internal JWKS URL bypasses Traefik + the
+      # external cert; issuer must match the JWT (the external realm URL).
+      REPORT_VIEWER_OIDC_ISSUER: '${keycloak_realm_url}'
+      REPORT_VIEWER_OIDC_JWKS_URL: '${keycloak_internal_url}/realms/${keycloak_realm_name}/protocol/openid-connect/certs'
+    # Trino is HTTPS-only (ADR 0022); trust the cert-manager-managed trino-tls CA
+    # directly (same namespace, so a CA rotation lands on the next pod start).
+    trustedCaSecret:
+      name: trino-tls
+      key: ca.crt

@@ -57,7 +57,7 @@ spec:
           env:
             - name: REPORT_VIEWER_PORT
               value: {{ .Values.service.port | quote }}
-            {{- if .Values.trinoCaCert }}
+            {{- if or .Values.trinoCaCert .Values.existingSecret }}
             - name: REPORT_VIEWER_TRINO_CA_CERT
               value: /etc/trino-ca/ca.crt
             {{- end }}
@@ -81,9 +81,9 @@ spec:
                   optional: {{ default false $ref.optional }}
             {{- end }}
           envFrom:
-            {{- if or .Values.databaseUrl .Values.trinoAuthClientSecret }}
+            {{- if or .Values.databaseUrl .Values.trinoAuthClientSecret .Values.existingSecret }}
             - secretRef:
-                name: {{ include "report-viewer.fullname" . }}
+                name: {{ .Values.existingSecret | default (include "report-viewer.fullname" .) }}
             {{- end }}
             {{- with .Values.envFrom }}
             {{- toYaml . | nindent 12 }}
@@ -95,7 +95,7 @@ spec:
             # for uvicorn scratch space and any transient library writes.
             - name: tmp
               mountPath: /tmp
-            {{- if .Values.trinoCaCert }}
+            {{- if or .Values.trinoCaCert .Values.existingSecret }}
             - name: trino-ca
               mountPath: /etc/trino-ca
               readOnly: true
@@ -108,10 +108,10 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-        {{- if .Values.trinoCaCert }}
+        {{- if or .Values.trinoCaCert .Values.existingSecret }}
         - name: trino-ca
           secret:
-            secretName: {{ include "report-viewer.fullname" . }}
+            secretName: {{ .Values.existingSecret | default (include "report-viewer.fullname" .) }}
             items:
               - key: ca.crt
                 path: ca.crt

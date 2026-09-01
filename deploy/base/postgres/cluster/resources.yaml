@@ -75,6 +75,11 @@ spec:
         login: true
         passwordSecret:
           name: cnpg-role-superset
+      - name: report_viewer
+        ensure: present
+        login: true
+        passwordSecret:
+          name: cnpg-role-report-viewer
       - name: '${postgres_user}'
         ensure: present
         login: true
@@ -135,6 +140,19 @@ spec:
     name: '${postgres_cluster_name}'
   name: superset
   owner: superset
+  ensure: present
+  databaseReclaimPolicy: retain
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: report-viewer
+  namespace: '${postgres_cluster_namespace}'
+spec:
+  cluster:
+    name: '${postgres_cluster_name}'
+  name: report_viewer
+  owner: report_viewer
   ensure: present
   databaseReclaimPolicy: retain
 ---
