@@ -151,8 +151,8 @@ function build(ink: Ink, category: string[], ramp: string[]) {
     area: { opacity: 0.85, line: { strokeWidth: 2 } },
     rule: { color: ink.muted },
     text: { color: ink.fg, fontSize: 11 },
-    // Hover is the default, not an opt-in the model has to remember.
-    mark: { tooltip: true },
+    // Default mark color when no color/fill/stroke encoding is set.
+    mark: { tooltip: true, color: category[0] },
     numberFormat: ',.4~f',
   };
 }
