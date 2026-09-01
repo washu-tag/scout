@@ -18,8 +18,8 @@ spec:
       resources:
         requests:
           storage: '${cassandra_storage_size}'
-  racks:
-    - name: r1
+  # Single-node: omit racks so cass-operator uses the default rack and this CR adopts a
+  # datacenter's existing default-rack PVC instead of provisioning a fresh empty one.
   resources:
     requests:
       cpu: '${cassandra_cpu_request}'

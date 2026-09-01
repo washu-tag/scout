@@ -39,10 +39,11 @@ the `cluster-var`) or rebind the PV (below) **before** switchover.
 
 Notes:
 - **Cassandra rack is the classic trap.** At `size: 1` the rack is cosmetic (it
-  only names the StatefulSet/PVC), so an install can sit on either `r1` or the
-  default rack with no functional difference, until adoption, when the name has to
-  match. The artifact pins `racks: [{name: r1}]`; an install on the default rack
-  must rebind before it adopts.
+  only names the StatefulSet/PVC), so an install can sit on the default rack or a
+  named rack like `r1` with no functional difference, until adoption, when the name
+  has to match. The artifact uses the default rack (no `racks:` stanza); an install
+  on a named rack (e.g. `r1` from an older template) must rebind to the default rack
+  (step 4) before it adopts.
 - **Temporal has no PVC of its own.** Its durable state is Cassandra (history
   store) and Elasticsearch (visibility store), so protecting those two protects
   Temporal. A stranded Cassandra volume is lost workflow history; a stranded ES
@@ -107,7 +108,7 @@ kubectl -n <ns> get pvc -l v1.min.io/tenant=<tenant>                        # Mi
 
 Compare against the artifact-rendered name. The names are deterministic from the
 site `cluster-vars`, so the simplest check is to plug those values into the
-patterns above (e.g. rack `r1` gives `server-data-<cluster>-<dc>-r1-sts-0`). To
+patterns above (e.g. the default rack gives `server-data-<cluster>-<dc>-default-sts-0`). To
 render straight from the base instead, export the vars and substitute:
 
 ```sh
