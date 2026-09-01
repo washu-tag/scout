@@ -9,14 +9,8 @@
         - log:
             message: 'Received HL7 message from ${header.CamelMllpRemoteAddress}'
             loggingLevel: INFO
-        # Content validation is off deliberately. HAPI's default validation rejects a
-        # message that populates a field its declared version has withdrawn (PID-9 and
-        # PID-12 at v2.7, for example). That failed the exchange, so MLLP answered MSA|AE
-        # and the message never reached Kafka or bronze -- lost, not quarantined -- and
-        # the exception embedded the offending field's value in the service log. Bronze
-        # has to capture a message whether or not it satisfies a content-usage rule;
-        # parsing and validation belong downstream of collection. This route only needs
-        # MSH-10 for the Kafka key and the header values it logs below.
+        # Validation off so bronze captures a message even when it violates HAPI's
+        # version-conformance rules; with it on, those were answered MSA|AE and lost.
         - unmarshal:
             hl7:
               validate: false
