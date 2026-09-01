@@ -96,6 +96,125 @@ For each stateful service, in order:
    liveness probe.
 6. **Rollback** is restore-from-snapshot (step 1) onto the original CR.
 
+## Commands
+
+Placeholders: `<ns>` namespace, `<cluster>`/`<name>`/`<tenant>`/`<dc>` the CR name,
+`<pv>` the bound PersistentVolume, `<old-pvc>`/`<new-pvc>` the PVC names. Run these
+per stateful service, in the step order above.
+
+### 1. Inventory the live PVC names
+
+```sh
+kubectl -n <ns> get pvc | grep <cluster>                                    # Cassandra
+kubectl -n <ns> get pvc -l cnpg.io/cluster=<cluster>                        # Postgres (CNPG)
+kubectl -n <ns> get pvc -l elasticsearch.k8s.elastic.co/cluster-name=<name> # Elasticsearch (ECK)
+kubectl -n <ns> get pvc -l v1.min.io/tenant=<tenant>                        # MinIO (on-prem)
+```
+
+Compare against the artifact-rendered name. The names are deterministic from the
+site `cluster-vars`, so the simplest check is to plug those values into the
+patterns above (e.g. rack `r1` gives `server-data-<cluster>-<dc>-r1-sts-0`). To
+render straight from the base instead, export the vars and substitute:
+
+```sh
+eval "$(kubectl -n <flux-ns> get cm cluster-vars \
+  -o go-template='{{range $k,$v := .data}}export {{$k}}={{printf "%q" $v}}{{"\n"}}{{end}}')"
+kustomize build deploy/base/cassandra/datacenter | envsubst
+```
+
+### 2. Snapshot every live PVC (the net)
+
+```sh
+kubectl -n <ns> apply -f - <<EOF
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: <old-pvc>-premigration
+spec:
+  volumeSnapshotClassName: <snapshot-class>
+  source:
+    persistentVolumeClaimName: <old-pvc>
+EOF
+```
+
+Cloud-native alternative (resolve the volume handle, snapshot at the provider):
+
+```sh
+PV=$(kubectl -n <ns> get pvc <old-pvc> -o jsonpath='{.spec.volumeName}')
+kubectl get pv "$PV" -o jsonpath='{.spec.csi.volumeHandle}'   # feed to e.g. aws ec2 create-snapshot
+```
+
+### 3. Prune-guard so switchover adopts instead of deleting
+
+```sh
+A=kustomize.toolkit.fluxcd.io/prune=disabled
+kubectl -n <ns> annotate cassandradatacenter/<dc> "$A"
+kubectl -n <ns> annotate cluster.postgresql.cnpg.io/<cluster> "$A"
+kubectl -n <ns> annotate elasticsearch/<name> "$A"
+kubectl -n <ns> annotate helmrelease/<tenant> "$A"          # MinIO tenant
+kubectl annotate ns <ns> "$A"
+# ECK: never reclaim the data volume on a reconcile
+kubectl -n <ns> patch elasticsearch <name> --type=merge \
+  -p '{"spec":{"volumeClaimDeletePolicy":"DeleteOnScaledownOnly"}}'
+```
+
+### 4. Rebind a PV (only when the name does not match)
+
+```sh
+# quiesce with the operator-blessed stop (keeps PVCs):
+kubectl -n <ns> patch cassandradatacenter <dc> --type=merge -p '{"spec":{"stopped":true}}'  # Cassandra
+kubectl cnpg hibernate on <cluster> -n <ns>                                                 # Postgres
+
+PV=$(kubectl -n <ns> get pvc <old-pvc> -o jsonpath='{.spec.volumeName}')
+kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+kubectl -n <ns> delete pvc <old-pvc>
+kubectl patch pv "$PV" --type=json -p '[{"op":"remove","path":"/spec/claimRef"}]'
+kubectl -n <ns> apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: <new-pvc>
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: <same-as-pv>
+  resources:
+    requests:
+      storage: <same-as-pv>
+  volumeName: $PV
+EOF
+kubectl -n <ns> get pvc <new-pvc> -o wide   # expect Bound to $PV
+# then un-quiesce (unset stopped / hibernate off) and let Flux reconcile the artifact CR
+```
+
+### 5. Verify data, not liveness
+
+```sh
+kubectl -n <ns> exec <cassandra-pod> -c cassandra -- nodetool status
+kubectl -n <ns> exec <pg-primary> -- psql -U postgres -c '\dt+'
+kubectl -n <ns> exec <es-pod> -- curl -s localhost:9200/_cat/indices?v
+```
+
+### 6. Rollback: recreate the PVC from the snapshot
+
+```sh
+kubectl -n <ns> apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: <old-pvc>
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: <class>
+  resources:
+    requests:
+      storage: <size>
+  dataSource:
+    name: <old-pvc>-premigration
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
+EOF
+```
+
 ## Preflight checklist
 
 Per stateful service (Cassandra, Postgres, Elasticsearch, and MinIO in on-prem
