@@ -22,15 +22,8 @@ compute those names from CR fields, so a rendered `cluster-vars` value that
 disagrees with the live install is enough to strand a volume.
 
 Do not trust the name formulas below as gospel (operator versions change them).
-Read the live name directly and compare it to a local render:
-
-```sh
-# live
-kubectl -n <ns> get pvc
-
-# what the artifact would create (postBuild-substituted with the site cluster-vars)
-kustomize build deploy/base/<component>/cluster | kubectl kustomize ... # or a Flux dry-run
-```
+Read the live name directly (`kubectl -n <ns> get pvc`) and compare it to a local
+render of the base (Commands, step 1).
 
 Match: prune-guard and adopt. Mismatch: reconcile the name (align the artifact or
 the `cluster-var`) or rebind the PV (below) **before** switchover.
@@ -42,7 +35,7 @@ the `cluster-var`) or rebind the PV (below) **before** switchover.
 | Cassandra | `CassandraDatacenter` (cass-operator) | `clusterName`, `metadata.name` (datacenter), **rack name** | `server-data-<cluster>-<dc>-<rack>-sts-0` | rack name (`r1` vs the default `default` rack when `racks:` is omitted) |
 | Postgres | `Cluster` (CNPG) | `metadata.name`, `instances` | `<cluster>-1` (one PVC per instance serial) | cluster name; instance count |
 | Elasticsearch | `Elasticsearch` (ECK) | `metadata.name`, nodeSet `name`, volumeClaimTemplate `name` | `elasticsearch-data-<name>-es-<nodeset>-0` | nodeSet name (`default`); cluster name |
-| MinIO (on-prem only) | `Tenant` (MinIO operator) | tenant `name`, pool `name`, servers/volumes | `data0-<tenant>-<pool>-0` | tenant name; pool name; server/volume count |
+| MinIO (on-prem only) | `Tenant` (MinIO operator) | tenant `name`, pool `name`, servers/volumes | `data<vol>-<tenant>-<pool>-<server>` (e.g. `data0-<tenant>-pool-0-0`) | tenant name; pool name; server/volume count |
 
 Notes:
 - **Cassandra rack is the classic trap.** At `size: 1` the rack is cosmetic (it
@@ -68,8 +61,9 @@ For each stateful service, in order:
    `CassandraDatacenter` / CNPG `Cluster` / `Elasticsearch` / `Tenant` and the
    namespace with `kustomize.toolkit.fluxcd.io/prune: disabled` so the switchover
    **adopts** the running resource instead of cascade-deleting it. For ECK also set
-   `volumeClaimDeletePolicy: DeleteOnScaledownOnly` so a reconcile never reclaims
-   the data volume.
+   `volumeClaimDeletePolicy: DeleteOnScaledownOnly` so that deleting the
+   Elasticsearch CR (e.g. an accidental prune) retains the data PVC; it is
+   reclaimed only on an explicit node scale-down, which adoption does not do.
 3. **Verify the PVC name matches** (the rule above). If it matches, the artifact
    CR adopts the existing StatefulSet/PVC in place and you are done for that
    service.
@@ -122,6 +116,10 @@ eval "$(kubectl -n <flux-ns> get cm cluster-vars \
 kustomize build deploy/base/cassandra/datacenter | envsubst
 ```
 
+`cluster-vars` is trusted config, so the `%q` render is fine here; do not source
+untrusted ConfigMap values this way (`%q` is Go quoting, not shell-safe: `$`,
+backticks, and `\` survive it).
+
 ### 2. Snapshot every live PVC (the net)
 
 ```sh
@@ -153,7 +151,7 @@ kubectl -n <ns> annotate cluster.postgresql.cnpg.io/<cluster> "$A"
 kubectl -n <ns> annotate elasticsearch/<name> "$A"
 kubectl -n <ns> annotate helmrelease/<tenant> "$A"          # MinIO tenant
 kubectl annotate ns <ns> "$A"
-# ECK: never reclaim the data volume on a reconcile
+# ECK: retain the data PVC if the CR is deleted (reclaimed only on node scale-down)
 kubectl -n <ns> patch elasticsearch <name> --type=merge \
   -p '{"spec":{"volumeClaimDeletePolicy":"DeleteOnScaledownOnly"}}'
 ```
