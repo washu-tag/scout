@@ -230,7 +230,7 @@ spec:
                     "client_id": "${keycloak_superset_client_id}",
                     # Confidential-client secret from env (superset-env), never in git.
                     "client_secret": os.environ.get("KEYCLOAK_SUPERSET_CLIENT_SECRET"),
-                    "client_kwargs": {"scope": "openid microprofile-jwt"},
+                    "client_kwargs": {"scope": "openid"},
                     "api_base_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/",
                     "access_token_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/token",
                     "authorize_url": "https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/auth",

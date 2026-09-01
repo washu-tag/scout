@@ -140,7 +140,8 @@ Keycloak groups automatically assign client-specific roles for each service:
 **Authentication Flow**:
 1. User authenticates via OAuth2 Proxy → checks for `oauth2-proxy-user` client role
 2. User accesses specific service → service checks for its own client roles
-3. All client roles are mapped to the `groups` claim in JWT tokens via the `microprofile-jwt` scope
+3. Each client's own roles are mapped to the `groups` claim in its JWT by a per-client
+   role mapper, pinned to that client and scoped by its `clientScopeMappings` entry
 
 **Note**: Scout uses Keycloak groups to assign client roles. Always add users to the `scout-user` group for standard access, and to the `scout-admin` group for elevated admin access instead of assigning client roles directly.
 
