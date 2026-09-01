@@ -144,6 +144,14 @@ function build(ink: Ink, category: string[], ramp: string[]) {
       offset: 10,
       subtitleColor: ink.muted,
     },
+    // Facet row/column/panel titles - not covered by `title` or `axis`.
+    header: {
+      titleColor: ink.fg,
+      titleFontSize: 12,
+      titleFontWeight: 600,
+      labelColor: ink.fg,
+      labelFontSize: 11,
+    },
     // Thin marks, rounded data-end anchored to the baseline.
     bar: { cornerRadiusEnd: 3 },
     line: { strokeWidth: 2 },

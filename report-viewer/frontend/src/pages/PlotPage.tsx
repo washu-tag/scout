@@ -73,12 +73,28 @@ function sizing(spec: Record<string, unknown>) {
     : { height: CONTINUOUS_HEIGHT, autosize: { type: 'fit', contains: 'padding' } };
 }
 
-// On a facet, top-level width sizes each panel, not the whole layout - put
-// it on the child spec instead so `columns` divides the container correctly.
-function withContainerWidth(spec: Record<string, unknown>) {
+const FACET_GUTTER = 20; // Vega-Lite's default spacing between facet panels
+const HOLDER_PADDING = 16; // holder's own 0.5rem left+right padding
+
+function facetColumns(spec: Record<string, unknown>): number {
+  if (typeof spec.columns === 'number') return spec.columns;
+  const facet = spec.facet as { columns?: unknown } | undefined;
+  return typeof facet?.columns === 'number' ? facet.columns : 1;
+}
+
+// `width: 'container'` only resizes responsively on a single view or layer
+// (Vega-Lite docs), so a facet's child spec needs an explicit pixel width
+// computed from the measured container, split across its `columns`.
+function withContainerWidth(spec: Record<string, unknown>, containerWidth: number) {
   const child = (spec as { spec?: unknown }).spec;
   if (isComposite(spec) && child && typeof child === 'object') {
-    return { ...spec, spec: { ...(child as Record<string, unknown>), width: 'container' } };
+    const columns = Math.max(1, facetColumns(spec));
+    const available = Math.max(0, containerWidth - HOLDER_PADDING);
+    const width =
+      containerWidth > 0
+        ? Math.max(120, Math.floor((available - (columns - 1) * FACET_GUTTER) / columns))
+        : 'container';
+    return { ...spec, spec: { ...(child as Record<string, unknown>), width } };
   }
   return { ...spec, width: 'container' };
 }
@@ -91,6 +107,7 @@ export default function PlotPage() {
   const naturalHeight = useRef(MIN_HEIGHT);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
   const [dark, setDark] = useState(
     () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false,
   );
@@ -100,6 +117,11 @@ export default function PlotPage() {
     queryFn: () => getPlot(plotId),
     enabled: !!plotId,
   });
+
+  const base = useMemo(() => (plot.data ? withInteractivity(plot.data.spec) : null), [plot.data]);
+  // Only a facet needs the measured width - a single view already resizes
+  // itself via `container`, so this stays stable and skips its re-embeds.
+  const isFacet = !!base && isComposite(base);
 
   // Redraw on theme change: the config is merged at render, so an existing
   // chart follows the browser between light and dark.
@@ -124,7 +146,10 @@ export default function PlotPage() {
       Math.ceil(rect.height + Math.max(0, rect.top) * 2),
     );
     setIframeHeight(naturalHeight.current);
-  }, []);
+    if (isFacet) {
+      setContainerWidth((prev) => (Math.abs(prev - rect.width) > 4 ? rect.width : prev));
+    }
+  }, [isFacet]);
 
   // The chart is width-fitted, so a width change redraws it at a new height.
   useEffect(() => {
@@ -136,15 +161,14 @@ export default function PlotPage() {
   }, [measure]);
 
   const spec = useMemo(() => {
-    if (!plot.data) return null;
-    const base = withInteractivity(plot.data.spec);
+    if (!plot.data || !base) return null;
     return {
-      ...withContainerWidth(base),
+      ...withContainerWidth(base, containerWidth),
       data: { values: plot.data.rows },
       ...sizing(base),
       config: chartTheme(dark),
     };
-  }, [plot.data, dark]);
+  }, [plot.data, base, containerWidth, dark]);
 
   useEffect(() => {
     const el = holder.current;
