@@ -62,12 +62,25 @@ function withInteractivity(spec: Record<string, unknown>) {
  * keeps axes and titles inside the box instead of spilling past it.
  */
 function sizing(spec: Record<string, unknown>) {
+  // Vega-Lite doesn't support `fit` autosize on facet/concat.
+  if (isComposite(spec)) return { height: CONTINUOUS_HEIGHT };
+
   const enc = spec.encoding as Enc | undefined;
   const yType = enc?.y?.type;
-  const stepped = !isComposite(spec) && !!yType && !CONTINUOUS.has(yType);
+  const stepped = !!yType && !CONTINUOUS.has(yType);
   return stepped
     ? { height: { step: BAND }, autosize: { type: 'fit-x', contains: 'padding' } }
     : { height: CONTINUOUS_HEIGHT, autosize: { type: 'fit', contains: 'padding' } };
+}
+
+// On a facet, top-level width sizes each panel, not the whole layout - put
+// it on the child spec instead so `columns` divides the container correctly.
+function withContainerWidth(spec: Record<string, unknown>) {
+  const child = (spec as { spec?: unknown }).spec;
+  if (isComposite(spec) && child && typeof child === 'object') {
+    return { ...spec, spec: { ...(child as Record<string, unknown>), width: 'container' } };
+  }
+  return { ...spec, width: 'container' };
 }
 
 export default function PlotPage() {
@@ -126,9 +139,8 @@ export default function PlotPage() {
     if (!plot.data) return null;
     const base = withInteractivity(plot.data.spec);
     return {
-      ...base,
+      ...withContainerWidth(base),
       data: { values: plot.data.rows },
-      width: 'container',
       ...sizing(base),
       config: chartTheme(dark),
     };
