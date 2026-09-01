@@ -13,10 +13,6 @@ import { chartTheme } from './chartTheme';
 // the content being squeezed into a fixed box. Two bars should not get the
 // same height as twenty diagnoses.
 const MIN_HEIGHT = 320; // a two-bar chart should not be a sliver
-// The explain panel is fixed to the iframe viewport at 80vh, so a short chart
-// would give it a letterbox. Grow the frame while it is open instead of
-// padding every small chart to suit a panel that is usually closed.
-const MODAL_HEIGHT = 520;
 const BAND = 22; // pixels per category on a discrete axis
 const CONTINUOUS_HEIGHT = 300; // scatter/line: nothing to count, so pick one
 
@@ -79,11 +75,7 @@ export default function PlotPage() {
   const requestPrompt = useChatPrompt();
   const content = useRef<HTMLDivElement>(null);
   const holder = useRef<HTMLDivElement>(null);
-  // What the chart itself asked for, so the frame can be restored after the
-  // explain panel closes.
   const naturalHeight = useRef(MIN_HEIGHT);
-  // Read inside the resize observer, which must not be rebuilt per render.
-  const modalOpen = useRef(false);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [dark, setDark] = useState(
@@ -118,9 +110,7 @@ export default function PlotPage() {
       MIN_HEIGHT,
       Math.ceil(rect.height + Math.max(0, rect.top) * 2),
     );
-    setIframeHeight(
-      modalOpen.current ? Math.max(naturalHeight.current, MODAL_HEIGHT) : naturalHeight.current,
-    );
+    setIframeHeight(naturalHeight.current);
   }, []);
 
   // The chart is width-fitted, so a width change redraws it at a new height.
@@ -131,15 +121,6 @@ export default function PlotPage() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [measure]);
-
-  // Give the explain panel room while it is open, then hand the frame back to
-  // the chart. Kept out of the render effect so opening it does not redraw.
-  useEffect(() => {
-    modalOpen.current = sqlModalOpen;
-    setIframeHeight(
-      sqlModalOpen ? Math.max(naturalHeight.current, MODAL_HEIGHT) : naturalHeight.current,
-    );
-  }, [sqlModalOpen]);
 
   const spec = useMemo(() => {
     if (!plot.data) return null;
