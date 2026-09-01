@@ -15,8 +15,6 @@ metadata:
     alb.ingress.kubernetes.io/auth-type: oidc
     alb.ingress.kubernetes.io/auth-on-unauthenticated-request: authenticate
     alb.ingress.kubernetes.io/auth-scope: 'openid email profile'
-    # 8h SSO lifetime; short because the ALB cookie isn't reachable by Keycloak
-    # end_session (the logout-propagation lever until an idpresponse hook lands).
     alb.ingress.kubernetes.io/auth-session-timeout: '28800'
     alb.ingress.kubernetes.io/auth-idp-oidc: |
       {

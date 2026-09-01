@@ -25,6 +25,9 @@ data:
     faviconPublicRoute:
       enabled: true
       host: '${server_hostname}'
+    auth:
+      # oauth2-proxy sign-out lives at the auth subdomain, not the root host.
+      oauth2ProxySignOutUrl: 'https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/sign_out'
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -24,9 +24,7 @@ spec:
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  # Release name `launchpad` fixes the chart fullname, so the service is
-  # `launchpad` (edge-aws Ingress backend) and the chart's *-keycloak-secret /
-  # *-nextauth-secret names resolve against it.
+  # Release name `launchpad` = the Service name the edge-aws Ingress backends to.
   name: launchpad
   namespace: '${scout_core_namespace}'
 spec:
@@ -46,10 +44,9 @@ spec:
     - kind: ConfigMap
       name: 'launchpad-edge-${service_mode}'
   values:
-    # Scout image tag defaults to the chart's stamped appVersion (ADR 0030), so it
-    # is not pinned here. The catalog-discovery sidecar is an upstream image pinned
-    # in versions.yaml (launchpad_sidecar_image_tag), Renovate-tracked; literal
-    # mirror, keep in lockstep.
+    # catalog-discovery sidecar: upstream image, literal mirror of versions.yaml
+    # (launchpad_sidecar_image_tag, Renovate-tracked); the Scout image tag defaults
+    # to the chart's stamped appVersion (ADR 0030), so it is not pinned here.
     catalog:
       discovery:
         enabled: true
@@ -67,7 +64,7 @@ spec:
         issuer: '${keycloak_realm_url}'
       nextAuthUrl: 'https://${server_hostname}/api/auth'
       existingNextAuthSecret: launchpad-nextauth-secret
-      # 8h SSO lifetime (matches keycloak_token_lifespan): the next-auth cookie
-      # can't outlive the refresh token it carries.
+      # 8h SSO lifetime: the next-auth cookie can't outlive the refresh token it carries.
       sessionMaxAge: 28800
-      oauth2ProxySignOutUrl: 'https://${server_hostname}/oauth2/sign_out'
+      # oauth2ProxySignOutUrl is on-prem only (oauth2-proxy has no aws counterpart);
+      # it is set in the launchpad-edge-on-prem ConfigMap (edge.yaml).
