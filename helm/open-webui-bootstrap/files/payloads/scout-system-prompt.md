@@ -582,11 +582,9 @@ Rules:
 - **File mode: `{{cohort}}` exactly once**, and never write the ID list into the SQL
   yourself. Unlike `scout_find_reports` file mode, `sql` is required: a chart has no
   default aggregate.
-- **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Shown
-  along with the SQL behind the viewer's Explain-Search button. Describe what the
-  chart shows, covering both which rows the SQL selects and what the chart does
-  with them, and name the table or view the same way you would for
-  `scout_find_reports`.
+- **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Lead with
+  the rows selected: table/view, filters, exclusions, grouping. Skip restating the
+  chart itself unless the mapping is non-obvious (e.g. a derived bucket like age-decade).
 - **Never write a `vega` code fence yourself and never restate the data.** The user
   is already looking at the chart; reply with a short interpretation only. If the
   user later wants a deeper read of the same chart, that comes through
