@@ -1487,7 +1487,7 @@ jobs:
         run: |
           set -euo pipefail
           # Stamped bases + the required-vars contract (ADR 0031 Appendix B).
-          tar -C config-artifact -czf scout-config.tar.gz base flux required-vars.txt
+          tar -C config-artifact -czf scout-config.tar.gz base flux modes required-vars.txt
           oras push "${CONFIG_REPO}:${VERSION}" scout-config.tar.gz:application/gzip
           cosign sign --key env://COSIGN_PRIVATE_KEY \
             --use-signing-config=false --tlog-upload=false --yes "${CONFIG_REPO}:${VERSION}"
@@ -1555,12 +1555,12 @@ jobs:
           # Apply the Flux Kustomizations, let the DAG converge, then run the SAME
           # ingest suite Ansible deploy-and-test runs, against the Flux-reconciled
           # slice. Fleshed out when the artifact + secret seed land.
-          # Shared DAG (non-recursive: the aws/ + on-prem/ subdirs are skipped) PLUS the
-          # on-prem mode set -- storage-ready=the real MinIO tenant, oauth2-proxy, the
-          # Traefik edge -- via `-k` since that subdir has a kustomization.yaml. Without
-          # the on-prem set the lake consumers' dependsOn: storage-ready never resolves.
-          # The e2e cluster is on-prem k3s.
-          FLUX_DIR=config-artifact/flux; [ -d "$FLUX_DIR" ] || FLUX_DIR=deploy/flux
+          # Shared DAG (flux/ holds only the shared set now) PLUS the on-prem mode set --
+          # storage-ready=the real MinIO tenant, oauth2-proxy, the Traefik edge -- via `-k`
+          # since that dir has a kustomization.yaml. Without the on-prem set the lake
+          # consumers' dependsOn: storage-ready never resolves. The e2e cluster is on-prem k3s.
+          FLUX_DIR=config-artifact/flux; MODES_DIR=config-artifact/modes
+          [ -d "$FLUX_DIR" ] || { FLUX_DIR=deploy/flux; MODES_DIR=deploy/modes; }
           kubectl apply -f "$FLUX_DIR"/
-          kubectl apply -k "$FLUX_DIR"/on-prem
+          kubectl apply -k "$MODES_DIR"/on-prem
           flux reconcile kustomization extractor --with-source --timeout=15m

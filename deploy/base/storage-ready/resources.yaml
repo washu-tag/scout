@@ -1,5 +1,5 @@
 # Mode-agnostic `storage-ready` gate (ADR 0035): the name lake consumers dependsOn,
-# provided per-mode from flux/{aws,on-prem}/. aws = this inert marker (lake is S3+IRSA);
+# provided per-mode from modes/{aws,on-prem}/. aws = this inert marker (lake is S3+IRSA);
 # on-prem = the real MinIO tenant. Just gives wait:true a Ready object.
 apiVersion: v1
 kind: ConfigMap
