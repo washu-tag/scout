@@ -90,6 +90,32 @@ function hoistFacetColumns(spec: Record<string, unknown>) {
   return typeof columns === 'number' ? { ...spec, facet: rest, columns } : spec;
 }
 
+// Vega-Lite generates a duplicate internal signal when the same point
+// selection drives `opacity.condition` in more than one layer - keep the
+// condition on the first layer only.
+function dedupeLayerOpacity(spec: Record<string, unknown>): Record<string, unknown> {
+  const layers = spec.layer;
+  if (!Array.isArray(layers)) return spec;
+
+  const seen = new Set<string>();
+  const deduped = layers.map((layer) => {
+    if (!layer || typeof layer !== 'object') return layer;
+    const enc = (layer as Record<string, unknown>).encoding as
+      | { opacity?: { condition?: { param?: unknown } } }
+      | undefined;
+    const param = enc?.opacity?.condition?.param;
+    if (typeof param !== 'string') return layer;
+    if (seen.has(param)) {
+      const restEnc = { ...(enc as Record<string, unknown>) };
+      delete restEnc.opacity;
+      return { ...(layer as Record<string, unknown>), encoding: restEnc };
+    }
+    seen.add(param);
+    return layer;
+  });
+  return { ...spec, layer: deduped };
+}
+
 /**
  * Height and autosize for one spec.
  *
@@ -169,7 +195,11 @@ export default function PlotPage() {
 
   const base = useMemo(
     () =>
-      plot.data ? withLegendSelection(withInteractivity(hoistFacetColumns(plot.data.spec))) : null,
+      plot.data
+        ? withLegendSelection(
+            withInteractivity(dedupeLayerOpacity(hoistFacetColumns(plot.data.spec))),
+          )
+        : null,
     [plot.data],
   );
   // Only a facet needs the measured width - a single view already resizes
@@ -307,13 +337,14 @@ export default function PlotPage() {
           ref={holder}
           style={{
             // Uncapped: height comes from the drawing, and the frame follows.
+            display: renderError ? 'none' : undefined,
             padding: '0.5rem',
             background: 'var(--rv-surface)',
             border: '1px solid var(--rv-border)',
             borderRadius: 4,
           }}
         />
-        {(plot.data?.sql_explanation || plot.data?.sql) && (
+        {!renderError && (plot.data?.sql_explanation || plot.data?.sql) && (
           <div
             style={{
               display: 'flex',
