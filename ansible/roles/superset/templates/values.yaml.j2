@@ -170,11 +170,7 @@ configOverrides:
 
     def _register_chat_cohort_export_api(app) -> None:
         from flask import Blueprint
-        from flask_appbuilder.security.sqla.models import User as FabUser
-        from sqlalchemy import text
         from superset import db
-        from superset.connectors.sqla.models import SqlaTable
-        from superset.models.core import Database
 
         with app.app_context():
             _ensure_chat_cohort_grants_table(db.engine)
@@ -183,6 +179,18 @@ configOverrides:
 
         @bp.route("/internal/chat-cohort-export", methods=["POST"])
         def create_chat_cohort_export():
+            # Imported lazily, per-request rather than at registration time
+            # (which runs during KeycloakSecurityManager.__init__, mid
+            # configure_fab): superset.connectors.sqla.models pulls in
+            # superset.db_engine_specs, whose module-level marshmallow
+            # schemas call flask_babel.gettext() at import time, and Babel
+            # isn't registered in app.extensions yet at that point
+            # (KeyError: 'babel' crashing every worker on boot).
+            from flask_appbuilder.security.sqla.models import User as FabUser
+            from sqlalchemy import text
+            from superset.connectors.sqla.models import SqlaTable
+            from superset.models.core import Database
+
             token = request.headers.get("X-Cohort-Export-Token", "")
             if not hmac.compare_digest(token, CHAT_COHORT_EXPORT_TOKEN):
                 return jsonify({"error": "unauthorized"}), 401
