@@ -113,7 +113,8 @@ def _sub(s, old, new):
 
 def render(s):
     # 1) strip Jinja comments
-    s = re.sub(r"\{#.*?#\}", "", s, flags=re.S)
+    s = re.sub(r"^[ \t]*\{#.*?#\}[ \t]*\r?\n", "", s, flags=re.S | re.M)  # whole-line
+    s = re.sub(r"\{#.*?#\}", "", s, flags=re.S)  # inline remnant
     # 2) control blocks -> helm (string-typed cluster-vars: gate on eq "true")
     s = s.replace(
         "{% if enable_xnat | default(false) | bool %}",
