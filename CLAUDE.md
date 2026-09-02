@@ -273,6 +273,7 @@ the ADR itself before changing anything it covers.
 - **0033** Hauler build lane — the build manifest is a signed Hauler haul. Read before changing build-lane bundling or air-gap transport
 - **0034** launchpad catalog — chips/groups come from ConfigMaps labelled `launchpad.scout.xnat.org/catalog`, discovered at runtime. Read before adding a service tile or touching launchpad rendering
 - **0035** service-mode deploy base — one `service_mode` (aws|on-prem) var flips the storage/identity + ingress/auth edges in the `deploy/` base and `scout-config` artifact. Read before touching the aws/on-prem edge, IRSA roles, or the ALB-OIDC ingress
+- **0037** keycloak realm single writer — only `app-manager` applies the realm; a deploy publishes the base realm document and stops, and components ship their own clients as fragments. Read before touching realm apply, the break-glass path, or fragment discovery
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.
