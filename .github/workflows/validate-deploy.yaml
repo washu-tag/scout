@@ -208,3 +208,27 @@ jobs:
                   print(f"[{mode}] {len(nodes)} Kustomizations, {len(edges)} edges: acyclic, no dup names, no dangling refs")
           sys.exit(rc)
           PY
+
+      - name: Flux path builds render as the controller does
+        run: |
+          set -euo pipefail
+          # The DAG check above unions the shared set with one mode at a time; it never
+          # renders path: ./flux as the single recursive build Flux does, which pulls in
+          # both mode subdirs and collides on `storage-ready`. Build each real path +
+          # assert the shared kustomization lists exactly the shared files.
+          for p in deploy/flux deploy/flux/aws deploy/flux/on-prem; do
+            kustomize build "$p" >/dev/null && echo "  ok   $p" \
+              || { echo "::error file=$p::kustomize build failed for $p"; exit 1; }
+          done
+          python3 - <<'PY'
+          import glob, yaml, sys
+          listed = set(yaml.safe_load(open("deploy/flux/kustomization.yaml"))["resources"])
+          actual = {f.rsplit("/", 1)[-1] for f in glob.glob("deploy/flux/*.yaml")
+                    if not f.endswith("kustomization.yaml")}
+          if listed != actual:
+              print("::error::deploy/flux/kustomization.yaml must list exactly the shared flux/*.yaml set")
+              if actual - listed: print("  missing from kustomization.yaml:", sorted(actual - listed))
+              if listed - actual: print("  listed but no such file:", sorted(listed - actual))
+              sys.exit(1)
+          print(f"shared flux kustomization covers all {len(actual)} shared Kustomization files")
+          PY
