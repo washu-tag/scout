@@ -14,14 +14,14 @@ until CI switches `deploy-and-test` to deploy from it. See
   wiring the DAG (`dependsOn` + CEL `healthChecks`), reproducing the Ansible order.
 - `base/edge-{on-prem,aws}/` + `base/storage-ready/` — per-mode resources (ADR 0035):
   the ingress/auth edge (on-prem Traefik forwardAuth Middlewares vs aws ALB-native-OIDC
-  Ingresses) and the inert aws storage marker. Wired by `flux/{on-prem,aws}/`, not the
+  Ingresses) and the inert aws storage marker. Wired by `modes/{on-prem,aws}/`, not the
   shared DAG.
-- `flux/{on-prem,aws}/` — the per-mode Flux set: the `storage-ready` gate (inert in aws;
+- `modes/{on-prem,aws}/` — the per-mode Flux set, a sibling of `flux/` (not nested under
+  it, so `flux/` has no subdir to recurse into): the `storage-ready` gate (inert in aws;
   the real MinIO tenant on-prem), the ingress edge, and on-prem MinIO + oauth2-proxy.
-  The shared `kubectl apply -f flux/` is non-recursive so it never applies these; a site
-  reconciles the shared `flux/` plus exactly one subdir via a Kustomization pointing at
-  `./flux/${service_mode}`. The lake consumers dependsOn the mode-agnostic `storage-ready`
-  name, supplied by whichever subdir the site selects.
+  `flux/` holds only the shared set, so a site reconciles it plus exactly one mode via a
+  Kustomization pointing at `./modes/${service_mode}`. The lake consumers dependsOn the
+  mode-agnostic `storage-ready` name, supplied by whichever mode the site selects.
 
 ## Conventions
 - **Site scalars are `${var}` postBuild substitutions** from a `cluster-vars`
@@ -43,7 +43,7 @@ until CI switches `deploy-and-test` to deploy from it. See
      `<workload>-edge-${service_mode}` (trino, extractor, opa, superset).
   3. *a whole resource present in one mode only, or a CRD the other mode lacks*
      (MinIO, the Traefik Middlewares, oauth2-proxy, the ALB Ingresses) → the mode
-     subdir `flux/{aws,on-prem}/`, since `${var}` can't add/drop a document and a flux
+     set `modes/{aws,on-prem}/`, since `${var}` can't add/drop a document and a flux
      path isn't substituted.
 
 ## Status

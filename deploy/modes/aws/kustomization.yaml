@@ -1,8 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # aws mode-specific Flux set (ADR 0035): the storage-ready gate (inert; lake is
-# S3+IRSA) + the ALB-OIDC ingress edge. Site-reconciled via ./flux/aws. Not in the
-# shared (non-recursive) deploy/flux/. Counterpart: ../on-prem.
+# S3+IRSA) + the ALB-OIDC ingress edge. Site-reconciled via ./modes/aws, a sibling of
+# the shared deploy/flux/. Counterpart: ../on-prem.
 resources:
   - storage.yaml
   - edge.yaml

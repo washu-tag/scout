@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# ${scout_core_namespace} resolved by Flux post-build substitution.
+namespace: '${scout_core_namespace}'
+resources:
+  - resources.yaml
+  # Per-mode ingress edge (HR selects one via service_mode).
+  - edge.yaml
