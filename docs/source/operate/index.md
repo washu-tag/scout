@@ -11,5 +11,6 @@ air-gapped
 verifying-releases
 ingest
 data_authorization
+keycloak-fragments
 monitoring
 ```
