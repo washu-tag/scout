@@ -850,9 +850,10 @@
             "clientId": "{{ keycloak_gh_client_id }}",
             "clientSecret": "{{ keycloak_gh_client_secret }}"
           }
-        },
+        }
         {% endif %}
         {% if keycloak_microsoft_client_id is defined and keycloak_microsoft_client_id %}
+        {% if keycloak_gh_client_id is defined and keycloak_gh_client_id %},{% endif %}
         {
           "alias": "microsoft",
           "providerId": "microsoft",
@@ -864,7 +865,7 @@
             "clientSecret": "{{ keycloak_microsoft_client_secret }}",
             "tenantId": "{{ keycloak_microsoft_tenant_id }}"
           }
-        },
+        }
         {% endif %}
     ],
     "authenticationFlows": [
