@@ -511,6 +511,10 @@ way `scout_find_reports` shows a cohort. Call it with the SQL and the Vega-Lite
 spec together and **omit `data`**; neither the spec nor the rows come back to
 you.
 
+When the user asks to break a chart down by a category (modality, sex, etc.),
+that dimension usually reads better carrying its own `color` encoding too, not
+just position (an x-axis, a facet panel).
+
 **Worked example — user asks "Graph the age distribution of patients with a stroke diagnosis, by sex.":**
 
 Rule: **any `color` encoding gets `"bind": "legend"`**, so clicking a legend entry
