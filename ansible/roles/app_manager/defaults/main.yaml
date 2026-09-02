@@ -1,0 +1,40 @@
+---
+# Scout app manager role defaults
+# User-configurable settings are in inventory.yaml
+
+# Helm
+app_manager_helm_chart_ref: '{{ scout_repo_dir }}/helm/scout-app-manager'
+
+# Image
+app_manager_image_repository: ghcr.io/washu-tag/scout-app-manager
+app_manager_image_tag: latest
+app_manager_image_pull_policy: IfNotPresent
+
+# diff | apply. A first install should stay in `diff` until the log reports the
+# composed realm byte-identical to the base realm; that is the cheapest proof
+# the composer is not rewriting the platform's own realm.
+app_manager_apply_mode: diff
+
+# A floor, not a schedule: the sidecar calls the reconciler on every fragment
+# change.
+app_manager_resync_seconds: 600
+app_manager_debounce_seconds: 2
+# Absence tolerated before a fragment's realm objects are retracted. Longer than
+# a chart upgrade's delete-then-create window, so it survives one.
+app_manager_retraction_grace_seconds: 300
+app_manager_job_timeout_seconds: 300
+# How long a finished apply Job is kept for inspection.
+app_manager_job_ttl_seconds: 3600
+app_manager_log_level: INFO
+
+# Fragment discovery. ALL, or a comma-separated namespace list for a tighter
+# posture. The label itself is a published contract with fragment authors and
+# is fixed in the chart, not configurable here.
+app_manager_discovery_namespace: ALL
+
+app_manager_resources_default:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    memory: 256Mi

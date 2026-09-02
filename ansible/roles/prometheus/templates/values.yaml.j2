@@ -143,6 +143,26 @@ extraScrapeConfigs: |
       - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
         target_label: integration
 
+  - job_name: app-manager
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace]
+        action: keep
+        regex: {{ app_manager_namespace | default(scout_core_namespace) }}
+      - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+        action: keep
+        regex: scout-app-manager
+      # The reconciler's port (http, 8080), not the sidecar's health port.
+      - source_labels: [__meta_kubernetes_pod_container_port_name]
+        action: keep
+        regex: http
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+
   - job_name: postgres
     metrics_path: /metrics
     kubernetes_sd_configs:

@@ -1,0 +1,117 @@
+"""Applying a composed realm through a keycloak-config-cli Job."""
+
+import logging
+import time
+import urllib.parse
+from importlib import resources
+from string import Template
+
+from . import yamlio
+from .k8s import ApiError, Client
+from .models import APPLY_JOB_LABEL
+from .settings import Settings
+
+log = logging.getLogger("app-manager")
+
+# Deletion is asynchronous, so the name stays taken for a moment after it.
+DELETE_POLL_SECONDS = 1.0
+DELETE_TIMEOUT_SECONDS = 60.0
+
+
+def _finished(job: dict) -> bool:
+    status = job.get("status", {})
+    return bool(status.get("succeeded") or status.get("failed"))
+
+
+def apply_job_body(**values) -> dict:
+    template = (
+        resources.files("scout_app_manager")
+        .joinpath("resources/apply-job.yaml")
+        .read_text()
+    )
+    body = yamlio.safe_load(Template(template).substitute(**values))
+    if not isinstance(body, dict) or body.get("kind") != "Job":
+        raise ValueError("apply-job.yaml did not render to a Job")
+    return body
+
+
+class RealmApplier:
+    def __init__(self, settings: Settings, client: Client, namespace: str) -> None:
+        self.settings = settings
+        self.client = client
+        self.namespace = namespace
+
+    def publish(self, text: str) -> None:
+        self.client.put_secret(
+            self.namespace,
+            self.settings.composed_secret,
+            {"scout-realm.json": text},
+            labels={"app.kubernetes.io/managed-by": "app-manager"},
+        )
+
+    def run(self, desired_hash: str) -> tuple[bool, str]:
+        name = f"app-manager-apply-{desired_hash[7:19]}"
+        self._prune(keep=name)
+        if not self._clear_finished(name):
+            return False, f"the previous {name} is still terminating"
+        log.info("APPLY    running %s for realm %s", name, desired_hash[:19])
+        try:
+            self.client.create_job(self.namespace, self._body(name))
+        except ApiError as exc:
+            if exc.status != 409:
+                raise
+            log.info("APPLY    job %s is already running; waiting on it", name)
+        return self._wait(name)
+
+    def _clear_finished(self, name: str) -> bool:
+        """Free the name if a finished Job holds it. False if it is still going.
+
+        The name is the realm hash, so an unchanged realm asks for the same Job
+        every reconcile. A Job that has already succeeded or failed is a
+        previous attempt's verdict: waiting on it again would replay a stale
+        failure for the whole of the Job's TTL, long after Keycloak came back.
+        An unfinished one is a live apply -- possibly a break-glass reconcile's
+        -- and is waited on instead.
+        """
+        job = self.client.get_job(self.namespace, name)
+        if job is None or not _finished(job):
+            return True
+        log.info("APPLY    replacing the finished job %s", name)
+        self.client.delete_job(self.namespace, name)
+        deadline = time.monotonic() + DELETE_TIMEOUT_SECONDS
+        while self.client.get_job(self.namespace, name) is not None:
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(DELETE_POLL_SECONDS)
+        return True
+
+    def _body(self, name: str) -> dict:
+        return apply_job_body(
+            name=name,
+            namespace=self.namespace,
+            image=self.settings.config_cli_image,
+            keycloak_url=self.settings.keycloak_url,
+            admin_secret=self.settings.admin_secret,
+            composed_secret=self.settings.composed_secret,
+            ttl_seconds=self.settings.job_ttl_seconds,
+        )
+
+    def _prune(self, keep: str) -> None:
+        selector = urllib.parse.quote(f"{APPLY_JOB_LABEL}=apply")
+        for job in self.client.list_jobs(self.namespace, selector):
+            name = job["metadata"]["name"]
+            if name != keep:
+                self.client.delete_job(self.namespace, name)
+
+    def _wait(self, name: str) -> tuple[bool, str]:
+        deadline = time.monotonic() + self.settings.job_timeout_seconds
+        while time.monotonic() < deadline:
+            job = self.client.get_job(self.namespace, name)
+            if job:
+                status = job.get("status", {})
+                if status.get("succeeded"):
+                    return True, "succeeded"
+                if status.get("failed"):
+                    return False, self.client.job_logs(self.namespace, name) or "failed"
+            time.sleep(2)
+        return False, f"timed out after {self.settings.job_timeout_seconds}s"

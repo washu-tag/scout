@@ -1,0 +1,81 @@
+---
+nameOverride: ''
+fullnameOverride: ''
+
+image:
+  repository: ghcr.io/washu-tag/scout-app-manager
+  tag: latest
+  pullPolicy: IfNotPresent
+
+manager:
+  # diff | apply. Start a deployment in `diff` with no fragments deployed: the
+  # composed realm must come out byte-identical to the base realm, which is the
+  # cheapest possible proof that the composer is not quietly rewriting things.
+  applyMode: diff
+  # Public hostname suffix. Fragments interpolate it as ${domain}.
+  domain: ''
+  # A floor, not a schedule: the sidecar's request-on-change is the normal
+  # wake-up.
+  resyncSeconds: 600
+  # Collapses a burst of sidecar notifications into one reconcile.
+  debounceSeconds: 2
+  # Absence tolerated before a fragment's realm objects are retracted. Longer
+  # than a chart upgrade's delete-then-create window.
+  retractionGraceSeconds: 300
+  jobTimeoutSeconds: 300
+  # How long a finished apply Job is kept for inspection.
+  jobTtlSeconds: 3600
+  logLevel: INFO
+  # In-cluster Keycloak, used by the keycloak-config-cli Job.
+  keycloakUrl: http://keycloak-service:8080
+  # Injected into every browser client's redirect URIs so no component has to
+  # hardcode oauth2-proxy's subdomain. Defaults to https://auth.<domain>.
+  signoutUrl: ''
+  adminSecret: keycloak-admin-secret
+  # The Ansible-rendered realm. The platform still owns this; the reconciler
+  # only ever reads it.
+  baseRealmSecret: keycloak-config
+  baseRealmKey: scout-realm.json
+  # Where the composed realm is written for config-cli to consume.
+  composedSecret: keycloak-config-composed
+  configCliImage: docker.io/adorsys/keycloak-config-cli:6.5.1-26.5.5
+
+discovery:
+  # The discovery label is a fixed contract shared with fragment authors and
+  # with scout_app_manager.schema. Changing it is an API migration, not config.
+  label: keycloak.scout.xnat.org/fragment
+  labelValue: 'true'
+  namespace: ALL
+  image:
+    repository: quay.io/kiwigrid/k8s-sidecar
+    tag: 2.10.1
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 10m, memory: 64Mi }
+    limits: { memory: 128Mi }
+
+serviceAccount:
+  create: true
+  name: ''
+
+rbac:
+  create: true
+
+resources:
+  requests: { cpu: 25m, memory: 128Mi }
+  limits: { memory: 256Mi }
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  fsGroup: 65532
+  seccompProfile: { type: RuntimeDefault }
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: ['ALL'] }
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

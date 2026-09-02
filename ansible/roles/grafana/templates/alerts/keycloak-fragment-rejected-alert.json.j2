@@ -1,0 +1,89 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "1m-evaluations",
+      "folder": "Scout",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "keycloak_fragment_rejected_alert_01",
+          "title": "Keycloak Fragment Rejected",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus_datasource_01",
+              "model": {
+                "editorMode": "code",
+                "expr": "sum(scout_app_manager_fragments{state=~\"rejected|invalid\"})",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [0],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": []
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Alerting",
+          "for": "10m",
+          "annotations": {
+            "summary": "A Keycloak fragment has been rejected for 10 minutes; the service that shipped it cannot authenticate.",
+            "description": "The app manager composed the realm without a fragment it discovered, so that component's Keycloak client, roles, or group grants are absent while the component itself stays deployed and healthy. Run `kubectl get cm scout-app-manager-status -n [% app_manager_namespace %] -o yaml` for the per-fragment reason.",
+            "URL": "[% server_hostname %]"
+          },
+          "labels": {},
+          "isPaused": [% alert_is_disabled | default(false) | bool | tojson %],
+          "notification_settings": {
+            "receiver": "[% grafana_alert_contact_point %]"
+          }
+        }
+      ]
+    }
+  ]
+}

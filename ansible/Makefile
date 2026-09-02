@@ -1,7 +1,7 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-valkey install-auth install-lake install-trino install-superset install-orchestrator \
     install-extractor install-hl7-listener install-monitor install-jupyter install-launchpad install-voila \
-    install-report-viewer install-staging install-xnat install-data-generator verify-node echo
+    install-report-viewer install-app-manager install-staging install-xnat install-data-generator verify-node echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -104,6 +104,9 @@ install-voila:
 
 install-report-viewer:
 	$(ANSIBLE_CMD) playbooks/report-viewer.yaml
+
+install-app-manager:
+	$(ANSIBLE_CMD) playbooks/app-manager.yaml
 
 install-data-generator:
 	$(ANSIBLE_CMD) playbooks/data_generator.yaml

@@ -1,0 +1,84 @@
+{{- if .Values.rbac.create }}
+---
+# In its own namespace the reconciler is a normal controller: it writes the
+# composed realm and drives config-cli Jobs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "appmanager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "appmanager.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ['']
+    # Reads the base realm and each fragment client's credential; writes the
+    # composed realm. All in this namespace only.
+    resources: [secrets]
+    verbs: [get, list, create, update, patch]
+  - apiGroups: ['']
+    # The status document. The ClusterRole below reads it; the write is scoped
+    # to this namespace.
+    resources: [configmaps]
+    verbs: [get, create, update, patch]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [get, list, create, delete]
+  - apiGroups: ['']
+    resources: [pods]
+    verbs: [get, list]
+  - apiGroups: ['']
+    # Only so a failed apply can report why in the reconciler's own log.
+    resources: [pods/log]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "appmanager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "appmanager.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "appmanager.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "appmanager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+---
+# Cluster-wide, and now a single read-only capability: the discovery sidecar
+# has to find fragment ConfigMaps in the namespaces components live in.
+#
+# Nothing here touches Secrets. Client credentials are provided rather than
+# generated, and they are read from this release's own namespace, so the
+# reconciler needs no cross-namespace Secret access in either direction --
+# neither the write it used to hold to publish generated credentials, nor the
+# far broader cluster-wide read that fetching them from component namespaces
+# would have required.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "appmanager.fullname" . }}-{{ .Release.Namespace }}
+  labels:
+    {{- include "appmanager.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ['']
+    resources: [configmaps]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "appmanager.fullname" . }}-{{ .Release.Namespace }}
+  labels:
+    {{- include "appmanager.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "appmanager.fullname" . }}-{{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "appmanager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

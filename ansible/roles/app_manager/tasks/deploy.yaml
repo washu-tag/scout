@@ -1,0 +1,24 @@
+---
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ app_manager_namespace }}'
+
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    app_manager_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+- name: Deploy app manager
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ app_manager_helm_release_name }}'
+    helm_chart_ref: '{{ app_manager_helm_chart_ref }}'
+    helm_chart_namespace: '{{ app_manager_namespace }}'
+    helm_chart_values_files:
+      - '{{ scout_repo_dir }}/helm/scout-app-manager/values.yaml'
+    helm_chart_values: '{{ app_manager_helm_chart_values }}'
+    helm_chart_timeout: 10m

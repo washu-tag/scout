@@ -298,6 +298,23 @@ jobs:
         # Same install path as the runtime image and local runs: deps (incl.
         # pinned Spark/Delta) resolve from pyproject.toml via pip.
         run: cd extractor/hl7-transformer && python -m pip install '.[test]' && python -m pytest tests/ -v
+  app-manager-unit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Pinned to the runtime image's interpreter (python:3.14-slim), so the
+      # tests hit the interpreter that ships. The package needs 3.14: it relies
+      # on PEP 649 deferred annotations rather than `from __future__`.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+          cache-dependency-path: 'app-manager/pyproject.toml'
+      - name: 'Unit tests: app manager'
+        shell: bash
+        run: cd app-manager && python -m pip install -e '.[test]' && python -m pytest -v
   ansible-and-python-tests:
     runs-on: ubuntu-latest
     permissions:
@@ -427,6 +444,7 @@ jobs:
       - build-and-upload
       - unit-test
       - hl7-transformer-unit
+      - app-manager-unit
       - ansible-and-python-tests
     # Skip on PRs that change only docs/markdown (see the e2e filter). Always runs
     # on push/schedule/dispatch so main and releases get the full validation.

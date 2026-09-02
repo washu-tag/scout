@@ -1,0 +1,71 @@
+# The Job that applies a composed realm.
+#
+# Placeholders are string.Template style (`${name}`),
+# substituted by reconciler.apply_job_body().
+#
+# Substitutions: name, namespace, image, keycloak_url, admin_secret,
+# composed_secret, ttl_seconds.
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${name}
+  namespace: ${namespace}
+  labels:
+    app.kubernetes.io/name: scout-app-manager
+    appmanager.scout.xnat.org/role: apply
+spec:
+  # No retries. A failed apply is reported and the previous realm stays in
+  # place; retrying the same document would just fail the same way.
+  backoffLimit: 0
+  ttlSecondsAfterFinished: ${ttl_seconds}
+  template:
+    metadata:
+      labels:
+        appmanager.scout.xnat.org/role: apply
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: keycloak-config-cli
+          image: ${image}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+          env:
+            - name: KEYCLOAK_URL
+              value: ${keycloak_url}
+            - name: IMPORT_PATH
+              value: /config/
+            - name: KEYCLOAK_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ${admin_secret}
+                  key: username
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ${admin_secret}
+                  key: password
+            # `full` on the types the composed realm is authoritative for, so
+            # removing a fragment removes its objects; `no-delete` on the rest,
+            # which are Keycloak's own or provisioned outside the artifact.
+            # config-cli's remote state does not cover client scopes, so `full`
+            # there would prune undeclared ones including built-ins.
+            - name: SPRING_APPLICATION_JSON
+              value: >-
+                {"import":{"managed":{"client":"full","role":"full","group":"full","scope-mapping":"full","client-scope-mapping":"full","client-scope":"no-delete","required-action":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          secret:
+            secretName: ${composed_secret}
+            defaultMode: 0444

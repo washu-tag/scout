@@ -761,6 +761,18 @@ k3s_cluster:
     report_viewer_gateway_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     #---------------------------------------------------------------------------
+    # Scout app manager
+    #---------------------------------------------------------------------------
+    # Start in `diff` and switch to `apply` once the log reports the composed
+    # realm byte-identical to the base realm.
+    # app_manager_apply_mode: apply
+    # Absence tolerated before a fragment's realm objects are retracted. Raise
+    # it if a chart here takes longer than five minutes to delete-then-create.
+    # app_manager_retraction_grace_seconds: 300
+    # Only a floor: fragment changes wake the reconciler immediately.
+    # app_manager_resync_seconds: 600
+
+    #---------------------------------------------------------------------------
     # data-generator
     #---------------------------------------------------------------------------
     # Uncomment the following line to enable the data generator for test reports

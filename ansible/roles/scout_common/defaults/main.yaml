@@ -124,6 +124,8 @@ keycloak_namespace: '{{ scout_core_namespace }}'
 valkey_namespace: '{{ scout_core_namespace }}'
 valkey_helm_release_name: valkey
 launchpad_namespace: '{{ scout_core_namespace }}'
+app_manager_namespace: '{{ scout_core_namespace }}'
+app_manager_helm_release_name: scout-app-manager
 
 # Data layer
 minio_tenant_namespace: '{{ scout_data_namespace }}'
