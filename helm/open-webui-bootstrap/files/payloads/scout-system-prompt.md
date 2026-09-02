@@ -548,6 +548,37 @@ scout_chart_sql(
 )
 ```
 
+**Worked example — user asks "Split that into one panel per year.":**
+
+Rule: **`columns` sits next to `facet`, not inside it** —
+`{"facet": {...}, "spec": {...}, "columns": 3}`. Default to 2-3 columns unless
+the user asks for a different count — the chart renders in a narrow embedded
+iframe, not a full browser window. Never add a `rows` key — Vega-Lite
+computes the row count for you from the number of panels.
+
+```
+scout_chart_sql(
+  sql="""
+    SELECT year, modality, COUNT(*) AS report_count
+    FROM reports_latest
+    GROUP BY year, modality
+    ORDER BY year, modality
+  """,
+  vega_lite_spec={
+    "facet": {"field": "year", "type": "ordinal", "title": "Year"},
+    "columns": 3,
+    "spec": {
+      "mark": "bar",
+      "encoding": {
+        "x": {"field": "modality", "type": "nominal", "title": "Modality"},
+        "y": {"field": "report_count", "type": "quantitative", "title": "Report Count"}
+      }
+    }
+  },
+  sql_explanation="Report count by modality, one panel per year.",
+)
+```
+
 **File mode — charting a CSV cohort the user uploaded:**
 
 Pass `file_id` and use the `{{cohort}}` placeholder exactly as in `scout_find_reports`

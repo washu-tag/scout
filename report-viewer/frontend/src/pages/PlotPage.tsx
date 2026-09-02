@@ -18,7 +18,7 @@ const CONTINUOUS_HEIGHT = 300; // scatter/line: nothing to count, so pick one
 
 const CONTINUOUS = new Set(['quantitative', 'temporal']);
 
-type Enc = Record<string, { type?: string } | undefined>;
+type Enc = Record<string, { type?: string; field?: string } | undefined>;
 
 const COMPOSITE = ['layer', 'facet', 'hconcat', 'vconcat', 'concat', 'repeat'];
 
@@ -53,6 +53,48 @@ function withInteractivity(spec: Record<string, unknown>) {
 }
 
 /**
+ * Click-to-isolate on the legend. The model reproduces this boilerplate
+ * inconsistently, so any discrete `color` field gets it here instead - same
+ * reasoning as `withInteractivity`. Recurses into a facet's child spec, where
+ * `color` actually lives.
+ */
+function withLegendSelection(spec: Record<string, unknown>): Record<string, unknown> {
+  const child = (spec as { spec?: unknown }).spec;
+  if (isComposite(spec)) {
+    return child && typeof child === 'object'
+      ? { ...spec, spec: withLegendSelection(child as Record<string, unknown>) }
+      : spec;
+  }
+  if (!('mark' in spec)) return spec;
+
+  const enc = spec.encoding as Enc | undefined;
+  const color = enc?.color;
+  if (!color?.type || color.type === 'quantitative' || typeof color.field !== 'string') return spec;
+  if ((enc as Record<string, unknown>).opacity) return spec;
+
+  const existing = Array.isArray(spec.params) ? spec.params : [];
+  if (existing.some((p: { bind?: unknown }) => p?.bind === 'legend')) return spec;
+
+  return {
+    ...spec,
+    params: [
+      ...existing,
+      { name: 'rv_legend', select: { type: 'point', fields: [color.field] }, bind: 'legend' },
+    ],
+    encoding: { ...enc, opacity: { condition: { param: 'rv_legend', value: 1 }, value: 0.2 } },
+  };
+}
+
+// Wrapping only takes effect from a top-level `columns`, but the model
+// consistently nests it inside the facet channel instead - hoist it out.
+function hoistFacetColumns(spec: Record<string, unknown>) {
+  const facet = spec.facet;
+  if (!facet || typeof facet !== 'object' || typeof spec.columns === 'number') return spec;
+  const { columns, ...rest } = facet as Record<string, unknown>;
+  return typeof columns === 'number' ? { ...spec, facet: rest, columns } : spec;
+}
+
+/**
  * Height and autosize for one spec.
  *
  * A discrete y axis gets `step` sizing, one band per category, so ten
@@ -75,28 +117,48 @@ function sizing(spec: Record<string, unknown>) {
 
 const FACET_GUTTER = 20; // Vega-Lite's default spacing between facet panels
 const HOLDER_PADDING = 16; // holder's own 0.5rem left+right padding
+const MIN_PANEL_WIDTH = 120; // a panel narrower than this is unreadable
 
-function facetColumns(spec: Record<string, unknown>): number {
+// `undefined` means the facet never asked for a wrap count (e.g. a row-only
+// facet), as opposed to explicitly asking for one - only the latter gets
+// clamped/rewritten below.
+function explicitFacetColumns(spec: Record<string, unknown>): number | undefined {
   if (typeof spec.columns === 'number') return spec.columns;
   const facet = spec.facet as { columns?: unknown } | undefined;
-  return typeof facet?.columns === 'number' ? facet.columns : 1;
+  return typeof facet?.columns === 'number' ? facet.columns : undefined;
 }
 
-// `width: 'container'` only resizes responsively on a single view or layer
-// (Vega-Lite docs), so a facet's child spec needs an explicit pixel width
-// computed from the measured container, split across its `columns`.
+/**
+ * `width: 'container'` only resizes responsively on a single view or layer
+ * (Vega-Lite docs), so a facet's child spec needs an explicit pixel width
+ * computed from the measured container, split across its `columns`.
+ *
+ * A requested column count is also clamped to what fits at MIN_PANEL_WIDTH,
+ * and the clamped value is written back into the spec itself - otherwise
+ * Vega-Lite would still wrap at the original count while our width math
+ * assumed fewer columns, overflowing the container either way.
+ */
 function withContainerWidth(spec: Record<string, unknown>, containerWidth: number) {
   const child = (spec as { spec?: unknown }).spec;
-  if (isComposite(spec) && child && typeof child === 'object') {
-    const columns = Math.max(1, facetColumns(spec));
-    const available = Math.max(0, containerWidth - HOLDER_PADDING);
-    const width =
-      containerWidth > 0
-        ? Math.max(120, Math.floor((available - (columns - 1) * FACET_GUTTER) / columns))
-        : 'container';
-    return { ...spec, spec: { ...(child as Record<string, unknown>), width } };
+  if (!isComposite(spec) || !child || typeof child !== 'object') {
+    return { ...spec, width: 'container' };
   }
-  return { ...spec, width: 'container' };
+
+  const requested = explicitFacetColumns(spec);
+  const available = Math.max(0, containerWidth - HOLDER_PADDING);
+  let columns = requested ?? 1;
+  let patch: Record<string, unknown> = {};
+  if (containerWidth > 0 && requested !== undefined) {
+    const maxColumns = Math.max(1, Math.floor(available / (MIN_PANEL_WIDTH + FACET_GUTTER)));
+    columns = Math.min(requested, maxColumns);
+    patch = { columns };
+  }
+
+  const width =
+    containerWidth > 0
+      ? Math.max(MIN_PANEL_WIDTH, Math.floor((available - (columns - 1) * FACET_GUTTER) / columns))
+      : 'container';
+  return { ...spec, ...patch, spec: { ...(child as Record<string, unknown>), width } };
 }
 
 export default function PlotPage() {
@@ -118,7 +180,11 @@ export default function PlotPage() {
     enabled: !!plotId,
   });
 
-  const base = useMemo(() => (plot.data ? withInteractivity(plot.data.spec) : null), [plot.data]);
+  const base = useMemo(
+    () =>
+      plot.data ? withLegendSelection(withInteractivity(hoistFacetColumns(plot.data.spec))) : null,
+    [plot.data],
+  );
   // Only a facet needs the measured width - a single view already resizes
   // itself via `container`, so this stays stable and skips its re-embeds.
   const isFacet = !!base && isComposite(base);
