@@ -5,7 +5,6 @@
     "enabled": true,
     "realm": "scout",
     "displayName": "Scout",
-    
     "attributes": {
       "userProfileEnabled": "true"
     },
@@ -14,21 +13,17 @@
     "adminEventsDetailsEnabled": true,
     "ssoSessionIdleTimeout": 28800,
     "ssoSessionMaxLifespan": 28800,
-    
     "accessTokenLifespan": 300,
-    
     "emailTheme": "scout",
     "loginTheme": "scout",
     "internationalizationEnabled": true,
     "supportedLocales": ["en"],
     "defaultLocale": "en",
-    
     "messageBundles": {
       "en": {{ .Values.termsLocalizations | default dict | toJson }}
     },
     "eventsListeners": [
       "user-approval-email",
-      
       "opa-user-bundle-publisher",
       "jboss-logging"
     ],
@@ -141,11 +136,10 @@
             "attributes": {}
           }
         ],
-        
         "minio": [
           {
             "name": "consoleAdmin",
-            "description": "MinIO canned policy granted to Scout admins (emitted in the policy claim)",
+            "description": "MinIO canned policy granted to Scout admins",
             "composite": false,
             "clientRole": true,
             "attributes": {}
@@ -197,7 +191,6 @@
     "groups": [
       {
         "name": "scout-admin",
-        
         "attributes": {},
         "clientRoles": {
           "oauth2-proxy": [
@@ -225,7 +218,6 @@
           "minio": [
             "consoleAdmin"
           ],
-          
           "realm-management": [
             "realm-admin"
           ]
@@ -261,7 +253,6 @@
         "name": "oauth2-proxy",
         "description": "OAuth2 Proxy Client",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "oauth2-proxy",
         "clientAuthenticatorType": "client-secret",
@@ -296,7 +287,6 @@
         "name": "jupyterhub",
         "description": "JupyterHub Client",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "jupyterhub",
         "clientAuthenticatorType": "client-secret",
@@ -308,8 +298,6 @@
         "webOrigins": [
           "https://jupyter.$(env:server_hostname)"
         ],
-        
-        
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -348,7 +336,6 @@
         "name": "grafana",
         "description": "Grafana Client",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "grafana",
         "clientAuthenticatorType": "client-secret",
@@ -360,7 +347,6 @@
         "webOrigins": [
           "https://grafana.$(env:server_hostname)"
         ],
-        
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -398,7 +384,6 @@
         "name": "temporal",
         "description": "Temporal Client",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "temporal",
         "clientAuthenticatorType": "client-secret",
@@ -416,7 +401,6 @@
           "client.session.max.lifespan": "28800",
           "client.offline.session.idle.timeout": "28800"
         },
-        
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -454,7 +438,6 @@
         "name": "superset",
         "description": "Superset Client",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "superset",
         "clientAuthenticatorType": "client-secret",
@@ -466,7 +449,6 @@
         "webOrigins": [
           "https://superset.$(env:server_hostname)"
         ],
-        
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -504,7 +486,6 @@
         "name": "minio",
         "description": "Minio Client",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "minio",
         "clientAuthenticatorType": "client-secret",
@@ -522,7 +503,6 @@
           "client.session.max.lifespan": "28800",
           "client.offline.session.idle.timeout": "28800"
         },
-        
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -560,7 +540,6 @@
         "name": "launchpad",
         "description": "Launchpad Client",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "launchpad",
         "clientAuthenticatorType": "client-secret",
@@ -572,9 +551,7 @@
         "webOrigins": [
           "https://$(env:server_hostname)"
         ],
-        
         "protocolMappers": [
-          
           {
             "name": "client-roles",
             "protocol": "openid-connect",
@@ -604,13 +581,26 @@
               "lightweight.claim": "false"
             }
           }
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
         ]
       },
       {
         "name": "open-webui",
         "description": "Open WebUI Client",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "open-webui",
         "clientAuthenticatorType": "client-secret",
@@ -622,8 +612,6 @@
         "webOrigins": [
           "https://chat.$(env:server_hostname)"
         ],
-        
-        
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -658,12 +646,10 @@
           "offline_access"
         ]
       },
-      
       {
         "name": "superset_svc",
         "description": "Service principal for Superset connecting to Trino (impersonates the logged-in user via X-Trino-User)",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "superset_svc",
         "clientAuthenticatorType": "client-secret",
@@ -690,7 +676,6 @@
         "name": "voila_svc",
         "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "voila_svc",
         "clientAuthenticatorType": "client-secret",
@@ -717,7 +702,6 @@
         "name": "report_viewer_svc",
         "description": "Service principal for report-viewer impersonating the chat/iframe user via X-Trino-User",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "report_viewer_svc",
         "clientAuthenticatorType": "client-secret",
@@ -744,7 +728,6 @@
         "name": "xnat",
         "description": "XNAT Client",
         "enabled": true,
-        
         "fullScopeAllowed": false,
         "clientId": "xnat",
         "clientAuthenticatorType": "client-secret",
@@ -759,7 +742,6 @@
         "attributes": {
           "pkce.code.challenge.method": "S256"
         },
-        
         "protocolMappers": [
           {
             "name": "client-roles",
@@ -888,7 +870,6 @@
         }
       }
     ],
-    
     "userProfile": {
       "attributes": [
         {
@@ -977,7 +958,6 @@
           "group": "scout",
           "multivalued": false
         },
-        
 {{- range $attr_name, $attr_config := .Values.trinoAttributeFilters }}
         {
           "name": "{{ $attr_name }}",
@@ -988,7 +968,6 @@
           },
           "group": "scout",
           "multivalued": true,
-          
           "annotations": {
             "scoutAuthz": "true",
             "inputType": "{{- if hasKey $attr_config "options" }}multiselect{{- else }}text{{- end }}"
@@ -1026,7 +1005,6 @@
             }
           }
         },
-        
         {
           "name": "bypass_hidden_tables",
           "displayName": "Scout AuthZ — bypass view-only table restrictions",
@@ -1060,7 +1038,6 @@
         }
       ]
     },
-    
     "clientScopeMappings": {
       "oauth2-proxy": [
         {
@@ -1128,7 +1105,6 @@
         "config": {}
       }
     ],
-    
     "defaultDefaultClientScopes": [
       "acr",
       "basic",
@@ -1137,14 +1113,8 @@
       "roles",
       "web-origins"
     ],
-    "defaultOptionalClientScopes": [
-      "address",
-      "offline_access",
-      "organization",
-      "phone"
-    ],
+    "defaultOptionalClientScopes": [],
     "clientScopes": [
-      
       {
         "name": "trino-audience",
         "description": "Adds aud=trino to access tokens for clients calling Trino",
@@ -1169,7 +1139,6 @@
           }
         ]
       },
-      
       {
         "name": "report-viewer-audience",
         "description": "Adds aud=report-viewer to access tokens for clients calling report-viewer",
@@ -1194,7 +1163,6 @@
           }
         ]
       },
-      
       {
         "name": "microprofile-jwt",
         "description": "Microprofile - JWT built-in scope (retired; role delivery is per-client)",
