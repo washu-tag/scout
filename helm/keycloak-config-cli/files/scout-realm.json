@@ -141,6 +141,16 @@
             "attributes": {}
           }
         ],
+        
+        "minio": [
+          {
+            "name": "consoleAdmin",
+            "description": "MinIO canned policy granted to Scout admins (emitted in the policy claim)",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
         "open-webui": [
           {
             "name": "open-webui-admin",
@@ -187,11 +197,8 @@
     "groups": [
       {
         "name": "scout-admin",
-        "attributes": {
-          "policy": [
-            "consoleAdmin"
-          ]
-        },
+        
+        "attributes": {},
         "clientRoles": {
           "oauth2-proxy": [
             "oauth2-proxy-user"
@@ -215,6 +222,10 @@
           "open-webui": [
             "open-webui-admin"
           ],
+          "minio": [
+            "consoleAdmin"
+          ],
+          
           "realm-management": [
             "realm-admin"
           ]
@@ -250,6 +261,8 @@
         "name": "oauth2-proxy",
         "description": "OAuth2 Proxy Client",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "oauth2-proxy",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:oauth2_proxy)",
@@ -270,8 +283,7 @@
           "profile",
           "roles",
           "basic",
-          "email",
-          "microprofile-jwt"
+          "email"
         ],
         "optionalClientScopes": [
           "address",
@@ -284,6 +296,8 @@
         "name": "jupyterhub",
         "description": "JupyterHub Client",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "jupyterhub",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:jupyterhub)",
@@ -295,6 +309,25 @@
           "https://jupyter.$(env:server_hostname)"
         ],
         
+        
+        "protocolMappers": [
+          {
+            "name": "client-roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "usermodel.clientRoleMapping.clientId": "jupyterhub",
+              "claim.name": "groups",
+              "multivalued": "true",
+              "jsonType.label": "String",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "introspection.token.claim": "true"
+            }
+          }
+        ],
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -302,7 +335,6 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt",
           "trino-audience"
         ],
         "optionalClientScopes": [
@@ -316,6 +348,8 @@
         "name": "grafana",
         "description": "Grafana Client",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "grafana",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:grafana)",
@@ -326,14 +360,32 @@
         "webOrigins": [
           "https://grafana.$(env:server_hostname)"
         ],
+        
+        "protocolMappers": [
+          {
+            "name": "client-roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "usermodel.clientRoleMapping.clientId": "grafana",
+              "claim.name": "groups",
+              "multivalued": "true",
+              "jsonType.label": "String",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "introspection.token.claim": "true"
+            }
+          }
+        ],
         "defaultClientScopes": [
           "web-origins",
           "acr",
           "profile",
           "roles",
           "basic",
-          "email",
-          "microprofile-jwt"
+          "email"
         ],
         "optionalClientScopes": [
           "address",
@@ -346,6 +398,8 @@
         "name": "temporal",
         "description": "Temporal Client",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "temporal",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:temporal)",
@@ -362,14 +416,32 @@
           "client.session.max.lifespan": "28800",
           "client.offline.session.idle.timeout": "28800"
         },
+        
+        "protocolMappers": [
+          {
+            "name": "client-roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "usermodel.clientRoleMapping.clientId": "temporal",
+              "claim.name": "permissions",
+              "multivalued": "true",
+              "jsonType.label": "String",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "introspection.token.claim": "true"
+            }
+          }
+        ],
         "defaultClientScopes": [
           "web-origins",
           "acr",
           "profile",
           "roles",
           "basic",
-          "email",
-          "microprofile-jwt"
+          "email"
         ],
         "optionalClientScopes": [
           "address",
@@ -382,6 +454,8 @@
         "name": "superset",
         "description": "Superset Client",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "superset",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:superset)",
@@ -392,14 +466,32 @@
         "webOrigins": [
           "https://superset.$(env:server_hostname)"
         ],
+        
+        "protocolMappers": [
+          {
+            "name": "client-roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "usermodel.clientRoleMapping.clientId": "superset",
+              "claim.name": "groups",
+              "multivalued": "true",
+              "jsonType.label": "String",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "introspection.token.claim": "true"
+            }
+          }
+        ],
         "defaultClientScopes": [
           "web-origins",
           "acr",
           "profile",
           "roles",
           "basic",
-          "email",
-          "microprofile-jwt"
+          "email"
         ],
         "optionalClientScopes": [
           "address",
@@ -412,6 +504,8 @@
         "name": "minio",
         "description": "Minio Client",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "minio",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:minio)",
@@ -428,15 +522,32 @@
           "client.session.max.lifespan": "28800",
           "client.offline.session.idle.timeout": "28800"
         },
+        
+        "protocolMappers": [
+          {
+            "name": "client-roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "usermodel.clientRoleMapping.clientId": "minio",
+              "claim.name": "policy",
+              "multivalued": "true",
+              "jsonType.label": "String",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "introspection.token.claim": "true"
+            }
+          }
+        ],
         "defaultClientScopes": [
           "web-origins",
           "acr",
           "profile",
           "roles",
-          "minio-authorization",
           "basic",
-          "email",
-          "microprofile-jwt"
+          "email"
         ],
         "optionalClientScopes": [
           "address",
@@ -463,6 +574,23 @@
         ],
         
         "protocolMappers": [
+          
+          {
+            "name": "client-roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "usermodel.clientRoleMapping.clientId": "launchpad",
+              "claim.name": "groups",
+              "multivalued": "true",
+              "jsonType.label": "String",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "introspection.token.claim": "true"
+            }
+          },
           {
             "name": "scout-users-api-audience-mapper",
             "protocol": "openid-connect",
@@ -482,6 +610,8 @@
         "name": "open-webui",
         "description": "Open WebUI Client",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "open-webui",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:open_webui)",
@@ -493,13 +623,32 @@
           "https://chat.$(env:server_hostname)"
         ],
         
+        
+        "protocolMappers": [
+          {
+            "name": "client-roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "usermodel.clientRoleMapping.clientId": "open-webui",
+              "claim.name": "groups",
+              "multivalued": "true",
+              "jsonType.label": "String",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "introspection.token.claim": "true"
+            }
+          }
+        ],
         "defaultClientScopes": [
           "web-origins",
           "acr",
           "profile",
+          "roles",
           "basic",
           "email",
-          "microprofile-jwt",
           "report-viewer-audience"
         ],
         "optionalClientScopes": [
@@ -514,6 +663,8 @@
         "name": "superset_svc",
         "description": "Service principal for Superset connecting to Trino (impersonates the logged-in user via X-Trino-User)",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "superset_svc",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:superset_svc)",
@@ -532,7 +683,6 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt",
           "trino-audience"
         ]
       },
@@ -540,6 +690,8 @@
         "name": "voila_svc",
         "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "voila_svc",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:voila_svc)",
@@ -558,7 +710,6 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt",
           "trino-audience"
         ]
       },
@@ -566,6 +717,8 @@
         "name": "report_viewer_svc",
         "description": "Service principal for report-viewer impersonating the chat/iframe user via X-Trino-User",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "report_viewer_svc",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:report_viewer_svc)",
@@ -584,7 +737,6 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt",
           "trino-audience"
         ]
       }{{- if eq (.Values.enableXnat | toString) "true" }},
@@ -592,6 +744,8 @@
         "name": "xnat",
         "description": "XNAT Client",
         "enabled": true,
+        
+        "fullScopeAllowed": false,
         "clientId": "xnat",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:xnat)",
@@ -605,18 +759,22 @@
         "attributes": {
           "pkce.code.challenge.method": "S256"
         },
+        
         "protocolMappers": [
           {
-            "name": "groups",
+            "name": "client-roles",
             "protocol": "openid-connect",
-            "protocolMapper": "oidc-group-membership-mapper",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
             "consentRequired": false,
             "config": {
+              "usermodel.clientRoleMapping.clientId": "xnat",
               "claim.name": "groups",
-              "full.path": "false",
+              "multivalued": "true",
+              "jsonType.label": "String",
               "id.token.claim": "true",
               "access.token.claim": "true",
-              "userinfo.token.claim": "true"
+              "userinfo.token.claim": "true",
+              "introspection.token.claim": "true"
             }
           }
         ],
@@ -626,8 +784,7 @@
           "profile",
           "roles",
           "basic",
-          "email",
-          "microprofile-jwt"
+          "email"
         ],
         "optionalClientScopes": [
           "address",
@@ -905,12 +1062,60 @@
     },
     
     "clientScopeMappings": {
+      "oauth2-proxy": [
+        {
+          "client": "oauth2-proxy",
+          "roles": ["oauth2-proxy-user"]
+        }
+      ],
+      "jupyterhub": [
+        {
+          "client": "jupyterhub",
+          "roles": ["jupyterhub-admin", "jupyterhub-user"]
+        }
+      ],
+      "superset": [
+        {
+          "client": "superset",
+          "roles": ["superset_admin", "superset_alpha", "superset_gamma", "superset_sql_lab"]
+        }
+      ],
+      "grafana": [
+        {
+          "client": "grafana",
+          "roles": ["grafana-admin", "grafana-editor", "grafana-viewer"]
+        }
+      ],
+      "temporal": [
+        {
+          "client": "temporal",
+          "roles": ["temporal-system:admin", "default:admin"]
+        }
+      ],
+      "open-webui": [
+        {
+          "client": "open-webui",
+          "roles": ["open-webui-admin", "open-webui-user"]
+        }
+      ],
       "launchpad": [
         {
           "client": "launchpad",
           "roles": ["launchpad-admin", "launchpad-user"]
         }
-      ]
+      ],
+      "minio": [
+        {
+          "client": "minio",
+          "roles": ["consoleAdmin"]
+        }
+      ]{{- if eq (.Values.enableXnat | toString) "true" }},
+      "xnat": [
+        {
+          "client": "xnat",
+          "roles": ["xnat-access"]
+        }
+      ]{{- end }}
     },
     "requiredActions": [
       {
@@ -923,36 +1128,22 @@
         "config": {}
       }
     ],
+    
+    "defaultDefaultClientScopes": [
+      "acr",
+      "basic",
+      "email",
+      "profile",
+      "roles",
+      "web-origins"
+    ],
+    "defaultOptionalClientScopes": [
+      "address",
+      "offline_access",
+      "organization",
+      "phone"
+    ],
     "clientScopes": [
-      {
-        "name": "minio-authorization",
-        "description": "Minio Authorization Scope",
-        "protocol": "openid-connect",
-        "attributes": {
-          "include.in.token.scope": "true",
-          "display.on.consent.screen": "true"
-        },
-        "protocolMappers": [
-          {
-            "name": "minio-policy-mapper",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-usermodel-attribute-mapper",
-            "consentRequired": false,
-            "config": {
-              "aggregate.attrs": "true",
-              "introspection.token.claim": "true",
-              "multivalued": "true",
-              "userinfo.token.claim": "true",
-              "user.attribute": "policy",
-              "id.token.claim": "true",
-              "lightweight.claim": "false",
-              "access.token.claim": "true",
-              "claim.name": "policy",
-              "jsonType.label": "String"
-            }
-          }
-        ]
-      },
       
       {
         "name": "trino-audience",
@@ -1003,63 +1194,16 @@
           }
         ]
       },
+      
       {
         "name": "microprofile-jwt",
-        "description": "Microprofile - JWT built-in scope",
+        "description": "Microprofile - JWT built-in scope (retired; role delivery is per-client)",
         "protocol": "openid-connect",
         "attributes": {
           "include.in.token.scope": "true",
           "display.on.consent.screen": "false"
         },
-        "protocolMappers": [
-          {
-            "name": "client roles",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-usermodel-client-role-mapper",
-            "consentRequired": false,
-            "config": {
-              "introspection.token.claim": "true",
-              "multivalued": "true",
-              "userinfo.token.claim": "true",
-              "user.attribute": "foo",
-              "lightweight.claim": "false",
-              "id.token.claim": "true",
-              "access.token.claim": "true",
-              "claim.name": "groups",
-              "jsonType.label": "String"
-            }
-          },
-          {
-            "name": "upn",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-usermodel-attribute-mapper",
-            "consentRequired": false,
-            "config": {
-              "introspection.token.claim": "true",
-              "userinfo.token.claim": "true",
-              "user.attribute": "username",
-              "id.token.claim": "true",
-              "access.token.claim": "true",
-              "claim.name": "upn",
-              "jsonType.label": "String"
-            }
-          },
-          {
-            "name": "groups",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-usermodel-realm-role-mapper",
-            "consentRequired": false,
-            "config": {
-              "introspection.token.claim": "true",
-              "multivalued": "true",
-              "user.attribute": "foo",
-              "id.token.claim": "true",
-              "access.token.claim": "true",
-              "claim.name": "groups",
-              "jsonType.label": "String"
-            }
-          }
-        ]
+        "protocolMappers": []
       }
     ]
   }
