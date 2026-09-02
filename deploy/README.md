@@ -43,7 +43,7 @@ until CI switches `deploy-and-test` to deploy from it. See
      `<workload>-edge-${service_mode}` (trino, extractor, opa, superset).
   3. *a whole resource present in one mode only, or a CRD the other mode lacks*
      (MinIO, the Traefik Middlewares, oauth2-proxy, the ALB Ingresses) → the mode
-     subdir `flux/{aws,on-prem}/`, since `${var}` can't add/drop a document and a flux
+     set `modes/{aws,on-prem}/`, since `${var}` can't add/drop a document and a flux
      path isn't substituted.
 
 ## Status
