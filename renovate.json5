@@ -95,6 +95,25 @@
         "**Reminder:** Check that the pinned `cass_operator_version` supports this Cassandra version. See [K8ssandra release notes](https://github.com/k8ssandra/cass-operator/releases)."
       ]
     },
+    // Strimzi only supports a fixed set of Kafka broker versions per operator
+    // release (#692: Renovate bumped kafka_version to 4.3.1, which
+    // strimzi_operator_version 1.1.0 doesn't support). allowedVersions pins
+    // apache/kafka to 1.1.0's actual supported set (4.2.0, 4.2.1, 4.3.0) so
+    // Renovate can't propose an incompatible bump; the reminders on both
+    // sides cover updating that regex when the operator itself bumps.
+    {
+      "matchDepNames": ["apache/kafka"],
+      "allowedVersions": "/^4\\.2\\.\\d+$|^4\\.3\\.0$/",
+      "prBodyNotes": [
+        "**Reminder:** Check that `strimzi_operator_version` in `versions.yaml` supports this Kafka version. See the [Strimzi supported versions matrix](https://strimzi.io/downloads/)."
+      ]
+    },
+    {
+      "matchDepNames": ["strimzi-kafka-operator"],
+      "prBodyNotes": [
+        "**Reminder:** Check the new operator's supported Kafka versions at the [Strimzi supported versions matrix](https://strimzi.io/downloads/) and update both `kafka_version` and the `allowedVersions` regex on the `apache/kafka` packageRule in `renovate.json5` if the supported set changed."
+      ]
+    },
     // Keycloak SPI compatibility: Scout's custom event listeners
     // (opa-user-bundle-publisher, user-approval-email) and required
     // action (ScoutTermsRequiredAction) all implement `@SpiType

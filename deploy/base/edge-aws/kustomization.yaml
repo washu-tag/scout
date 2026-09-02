@@ -7,4 +7,5 @@ kind: Kustomization
 resources:
   - keycloak-ingress.yaml
   - superset-ingress.yaml
+  - launchpad-ingress.yaml
   - alb-oidc-rbac.yaml
