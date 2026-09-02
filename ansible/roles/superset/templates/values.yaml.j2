@@ -107,7 +107,8 @@ configOverrides:
     from superset.security import SupersetSecurityManager
     from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
     from superset.exceptions import SupersetSecurityException
-    from flask import g, redirect, session
+    from flask import g, redirect, session, request, jsonify
+    import hmac
     import logging
     OAUTH_PROVIDERS = OPENID_PROVIDERS = [
         {
@@ -136,6 +137,106 @@ configOverrides:
     AUTH_USER_REGISTRATION = True
     AUTH_USER_REGISTRATION_ROLE = 'Gamma'
     AUTH_ROLES_SYNC_AT_LOGIN = True
+
+    # --- Issue #628 PoC: export a chat cohort into an isolated Superset dataset ---
+    # Gamma's schema_access grant (#687) covers only delta.default, so any
+    # dataset tagged with a different `schema` value (nominal — no real Trino
+    # schema is created; the dataset's own `sql` is fully qualified) falls
+    # through Superset's `raise_for_access` schema check into a genuine
+    # per-object check. `chat_cohort_grants` is a narrow allowlist of
+    # (dataset_id, username) consulted only when the normal check fails, so
+    # cohort datasets stay private to the user who exported them.
+    #
+    # PoC only: CHAT_COHORT_EXPORT_TOKEN is a hardcoded shared secret that
+    # authenticates report-viewer's calls to the one new
+    # /internal/chat-cohort-export endpoint it guards — nothing else accepts
+    # it. Replace with a provisioned Secret before this leaves prototype
+    # status (see report-viewer's matching constant).
+    CHAT_COHORT_EXPORT_TOKEN = "scout-poc-chat-cohort-export-8f2e1c"
+    CHAT_COHORT_EXPORT_SCHEMA = "chat_exports"
+
+    def _ensure_chat_cohort_grants_table(engine) -> None:
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE TABLE IF NOT EXISTS chat_cohort_grants ("
+                    "dataset_id INTEGER NOT NULL, "
+                    "username VARCHAR(255) NOT NULL, "
+                    "created_at TIMESTAMP NOT NULL DEFAULT now(), "
+                    "PRIMARY KEY (dataset_id, username))"
+                )
+            )
+
+    def _register_chat_cohort_export_api(app) -> None:
+        from flask import Blueprint
+        from flask_appbuilder.security.sqla.models import User as FabUser
+        from sqlalchemy import text
+        from superset import db
+        from superset.connectors.sqla.models import SqlaTable
+        from superset.models.core import Database
+
+        with app.app_context():
+            _ensure_chat_cohort_grants_table(db.engine)
+
+        bp = Blueprint("chat_cohort_export", __name__)
+
+        @bp.route("/internal/chat-cohort-export", methods=["POST"])
+        def create_chat_cohort_export():
+            token = request.headers.get("X-Cohort-Export-Token", "")
+            if not hmac.compare_digest(token, CHAT_COHORT_EXPORT_TOKEN):
+                return jsonify({"error": "unauthorized"}), 401
+            body = request.get_json(force=True, silent=True) or {}
+            sql = body.get("sql")
+            username = body.get("username")
+            title = body.get("title") or "Chat cohort export"
+            if not sql or not username:
+                return jsonify({"error": "sql and username are required"}), 400
+
+            database = (
+                db.session.query(Database)
+                .filter_by(database_name="Scout Data Lake")
+                .first()
+            )
+            if database is None:
+                return jsonify({"error": "Scout Data Lake database not found"}), 500
+
+            table = SqlaTable(
+                table_name=f"{title} ({username})",
+                schema=CHAT_COHORT_EXPORT_SCHEMA,
+                catalog="delta",
+                sql=sql,
+                database=database,
+            )
+            owner = db.session.query(FabUser).filter_by(username=username).first()
+            if owner is not None:
+                table.owners = [owner]
+            db.session.add(table)
+            db.session.flush()  # assign table.id
+
+            db.session.execute(
+                text(
+                    "INSERT INTO chat_cohort_grants (dataset_id, username) "
+                    "VALUES (:did, :u) ON CONFLICT DO NOTHING"
+                ),
+                {"did": table.id, "u": username},
+            )
+            db.session.commit()
+
+            return (
+                jsonify(
+                    {
+                        "dataset_id": table.id,
+                        "explore_url": (
+                            f"/explore/?datasource_type=table&datasource_id={table.id}"
+                        ),
+                    }
+                ),
+                201,
+            )
+
+        app.register_blueprint(bp)
+
     class KeycloakOAuthView(AuthOAuthView):
         """
         Custom Auth View to handle Keycloak login and logout redirection
@@ -165,12 +266,21 @@ configOverrides:
             app.config.setdefault("AUTH_ROLES_MAPPING", AUTH_ROLES_MAPPING)
             app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
             self.authoauthview = KeycloakOAuthView
+            _register_chat_cohort_export_api(app)
         def raise_for_access(self, **kwargs) -> None:
             # The base check only confirms the caller can use the (shared) Trino
             # database, not that they ran the query, so any signed-in user could
             # download another user's SQL Lab results via its guessable id.
             # Require query ownership unless the caller has all_query_access.
-            super().raise_for_access(**kwargs)
+            try:
+                super().raise_for_access(**kwargs)
+            except SupersetSecurityException:
+                # Issue #628 PoC: a chat-cohort-export dataset the base check
+                # rejects (no schema_access, not owner) is still allowed if
+                # the caller holds an explicit chat_cohort_grants row for it.
+                if self._has_chat_cohort_export_grant(kwargs.get("datasource")):
+                    return
+                raise
             query = kwargs.get("query")
             if (
                 query is not None
@@ -184,6 +294,24 @@ configOverrides:
                         level=ErrorLevel.ERROR,
                     )
                 )
+        def _has_chat_cohort_export_grant(self, datasource) -> bool:
+            from sqlalchemy import text
+            from superset import db
+            if (
+                datasource is None
+                or getattr(datasource, "schema", None) != CHAT_COHORT_EXPORT_SCHEMA
+                or not g.user
+                or g.user.is_anonymous
+            ):
+                return False
+            row = db.session.execute(
+                text(
+                    "SELECT 1 FROM chat_cohort_grants "
+                    "WHERE dataset_id = :did AND username = :u"
+                ),
+                {"did": datasource.id, "u": g.user.username},
+            ).first()
+            return row is not None
     CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
   proxy_configuration: |
     PREFERRED_URL_SCHEME = "https"

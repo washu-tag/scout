@@ -193,6 +193,14 @@ class SearchMeta(BaseModel):
     owui_chat_id: str = ""
 
 
+class ExportToSupersetResponse(BaseModel):
+    """Issue #628 PoC: a new Superset dataset scoped to one cohort,
+    private to the exporting user."""
+
+    dataset_id: int
+    explore_url: str
+
+
 class RowsResponse(BaseModel):
     """The full cohort in one response for client-side sort/filter/paginate.
     Lean columns only (report bodies dropped; fetched per-row via

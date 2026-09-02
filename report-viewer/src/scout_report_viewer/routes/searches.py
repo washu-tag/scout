@@ -20,6 +20,7 @@ import logging
 import re
 from typing import Any
 
+import httpx
 from fastapi import (
     APIRouter,
     Depends,
@@ -51,9 +52,17 @@ from ..models import (
     CreateFromFileResponse,
     CreateSearchRequest,
     CreateSearchResponse,
+    ExportToSupersetResponse,
     RowsResponse,
     SearchMeta,
 )
+
+# PoC only (#628) - must match CHAT_COHORT_EXPORT_TOKEN in the Superset
+# KeycloakSecurityManager config override
+# (ansible/roles/superset/templates/values.yaml.j2). Authenticates only
+# calls to Superset's /internal/chat-cohort-export endpoint. Replace with a
+# provisioned secret before this leaves prototype status.
+_CHAT_COHORT_EXPORT_TOKEN = "scout-poc-chat-cohort-export-8f2e1c"
 
 log = logging.getLogger(__name__)
 
@@ -498,6 +507,62 @@ async def delete_search(
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def _inline_uploaded_ids(sql: str, uploaded_ids: list[str] | None) -> str:
+    """Superset's virtual dataset runs `sql` with no param binding, so a
+    from-file search's single `contains(?, col)` predicate needs its ids
+    inlined as a literal array before export."""
+    if not uploaded_ids:
+        return sql
+    escaped = ",".join("'" + v.replace("'", "''") + "'" for v in uploaded_ids)
+    return sql.replace("?", f"ARRAY[{escaped}]", 1)
+
+
+@router.post(
+    "/{search_id}/export-to-superset",
+    response_model=ExportToSupersetResponse,
+)
+async def export_search_to_superset(
+    search_id: str,
+    user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
+) -> ExportToSupersetResponse:
+    """Issue #628 PoC: create a Superset dataset scoped to this cohort's SQL.
+
+    The dataset is tagged with a schema Gamma has no blanket schema_access
+    to, so it isn't visible to other users - Superset's KeycloakSecurityManager
+    (ansible/roles/superset/templates/values.yaml.j2) grants access back only
+    to the caller via a chat_cohort_grants row the Superset endpoint inserts.
+    """
+    ds = await store.get_search(search_id, owner_sub=user.sub)
+    if ds is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    sql = _inline_uploaded_ids(ds["sql"], ds.get("uploaded_ids"))
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                f"{settings.superset_internal_url}/internal/chat-cohort-export",
+                json={
+                    "sql": sql,
+                    "username": user.sub,
+                    "title": ds.get("sql_explanation") or "Chat cohort export",
+                },
+                headers={"X-Cohort-Export-Token": _CHAT_COHORT_EXPORT_TOKEN},
+            )
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        log.exception("superset export failed")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"superset export failed: {exc}",
+        )
+    payload = resp.json()
+    return ExportToSupersetResponse(
+        dataset_id=payload["dataset_id"],
+        explore_url=f"{settings.external_url.rstrip('/')}/superset{payload['explore_url']}",
+    )
 
 
 def _rows_query_error(exc: Exception, stage: str) -> HTTPException:

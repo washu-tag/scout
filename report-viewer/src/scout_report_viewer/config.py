@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     # is truncated and the SPA shows a "showing first N" banner.
     max_cohort_rows: int = 50000
 
+    # Issue #628 PoC: in-cluster URL for Superset's internal
+    # /internal/chat-cohort-export endpoint (routes/searches.py). Not the
+    # external oauth2-proxy-fronted URL - this call is service-to-service.
+    superset_internal_url: str = "http://superset.superset.svc.cluster.local:8088"
+
     @model_validator(mode="after")
     def _issuer_required_with_jwks(self) -> "Settings":
         if self.oidc_jwks_url and not self.oidc_issuer:
