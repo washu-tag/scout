@@ -40,3 +40,8 @@ data:
       enabled: false
     faviconPublicRoute:
       enabled: false
+    auth:
+      # aws uses ALB-native OIDC, not oauth2-proxy, so suppress the chart's
+      # oauth2-proxy sign-out URL (its default is a placeholder host). The
+      # deployment gates the env on truthiness, so '' omits it.
+      oauth2ProxySignOutUrl: ''

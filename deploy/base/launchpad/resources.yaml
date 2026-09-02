@@ -8,9 +8,8 @@
 #   launchpad-keycloak-secret  key `client-secret` (OIDC client secret)
 #   launchpad-nextauth-secret  key `secret`        (next-auth cookie secret)
 #
-# Ingress is mode-selected (ADR 0035) by the launchpad-edge-${service_mode}
-# ConfigMap (edge.yaml): on-prem = chart Traefik ingress + oauth2-proxy middlewares;
-# aws = chart ingress off, the ALB in edge-aws/launchpad-ingress.yaml serves.
+# Ingress is mode-selected (ADR 0035) via the launchpad-edge-${service_mode}
+# ConfigMap (edge.yaml).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
