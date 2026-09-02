@@ -139,6 +139,7 @@ function sizing(spec: Record<string, unknown>) {
 
 const FACET_GUTTER = 20; // Vega-Lite's default spacing between facet panels
 const HOLDER_PADDING = 16; // holder's own 0.5rem left+right padding
+const CHART_PADDING = 16; // chartTheme.ts config.padding: 8, both sides
 const MIN_PANEL_WIDTH = 120; // a panel narrower than this is unreadable
 
 // Must match chartTheme.ts's axis config - this measures against the same
@@ -197,7 +198,7 @@ function withContainerWidth(
 
   const requested = explicitFacetColumns(spec);
   const axisReserve = measureAxisReserve(child as Record<string, unknown>, rows);
-  const available = Math.max(0, containerWidth - HOLDER_PADDING - axisReserve);
+  const available = Math.max(0, containerWidth - HOLDER_PADDING - CHART_PADDING - axisReserve);
   let columns = requested ?? 1;
   let patch: Record<string, unknown> = {};
   if (containerWidth > 0 && requested !== undefined) {
