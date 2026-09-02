@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # on-prem mode-specific Flux set (ADR 0035): real MinIO (tenant named storage-ready so
 # lake consumers wait on it), oauth2-proxy, + the Traefik forwardAuth edge.
-# Site-reconciled via ./flux/on-prem. Counterpart: ../aws.
+# Site-reconciled via ./modes/on-prem, a sibling of the shared deploy/flux/. Counterpart: ../aws.
 resources:
   - minio.yaml
   - oauth2-proxy.yaml

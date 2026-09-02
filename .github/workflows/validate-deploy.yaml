@@ -70,9 +70,9 @@ jobs:
           for d in sorted(dirs):
               blob += subprocess.run(["kustomize", "build", d],
                                      capture_output=True, text=True).stdout + "\n"
-          # shared DAG + both mode subdirs (flux/{aws,on-prem}/), so aws-only edge
+          # shared DAG + both mode sets (deploy/modes/{aws,on-prem}/), so aws-only edge
           # vars (ALB, IRSA role-arns) are covered too and neither mode can rot.
-          for f in glob.glob("deploy/flux/*.yaml") + glob.glob("deploy/flux/*/*.yaml"):
+          for f in glob.glob("deploy/flux/*.yaml") + glob.glob("deploy/modes/*/*.yaml"):
               if f.endswith("kustomization.yaml"):
                   continue
               blob += open(f).read() + "\n"
@@ -158,9 +158,9 @@ jobs:
           python3 - <<'PY'
           import yaml, glob, sys, collections
           # The DAG is mode-agnostic shared files (deploy/flux/*.yaml) UNION exactly one
-          # mode subdir (flux/{aws,on-prem}/), since a site reconciles the shared set +
-          # one subdir (ADR 0035). The `storage-ready` gate + the ingress edge live only
-          # in the subdirs, so check each mode's union: a lake consumer's
+          # mode set (deploy/modes/{aws,on-prem}/), since a site reconciles the shared set
+          # + one mode (ADR 0035). The `storage-ready` gate + the ingress edge live only in
+          # the mode sets, so check each mode's union: a lake consumer's
           # dependsOn: storage-ready must resolve in BOTH modes with no collision.
           def load(files):
               nodes = {}; edges = []; names = collections.Counter()
@@ -180,10 +180,14 @@ jobs:
                       for dep in d.get("spec", {}).get("dependsOn", []):
                           edges.append((name, dep["name"]))
               return nodes, edges, names
+          # flux/ holds the shared set only; the mode sets are SIBLINGS (deploy/modes/),
+          # so path: ./flux has no subdir to recurse into (the storage-ready collision).
+          if glob.glob("deploy/flux/*/"):
+              print("::error::deploy/flux/ must have no subdirs; mode sets live in deploy/modes/"); sys.exit(1)
           shared = glob.glob("deploy/flux/*.yaml")
           rc = 0
           for mode in ("on-prem", "aws"):
-              nodes, edges, names = load(shared + glob.glob(f"deploy/flux/{mode}/*.yaml"))
+              nodes, edges, names = load(shared + glob.glob(f"deploy/modes/{mode}/*.yaml"))
               dups = sorted(n for n, c in names.items() if c > 1)
               if dups:
                   print(f"::error::[{mode}] duplicate Kustomization metadata.name (collide in "
@@ -207,28 +211,4 @@ jobs:
               if rc == 0:
                   print(f"[{mode}] {len(nodes)} Kustomizations, {len(edges)} edges: acyclic, no dup names, no dangling refs")
           sys.exit(rc)
-          PY
-
-      - name: Flux path builds render as the controller does
-        run: |
-          set -euo pipefail
-          # The DAG check above unions the shared set with one mode at a time; it never
-          # renders path: ./flux as the single recursive build Flux does, which pulls in
-          # both mode subdirs and collides on `storage-ready`. Build each real path +
-          # assert the shared kustomization lists exactly the shared files.
-          for p in deploy/flux deploy/flux/aws deploy/flux/on-prem; do
-            kustomize build "$p" >/dev/null && echo "  ok   $p" \
-              || { echo "::error file=$p::kustomize build failed for $p"; exit 1; }
-          done
-          python3 - <<'PY'
-          import glob, yaml, sys
-          listed = set(yaml.safe_load(open("deploy/flux/kustomization.yaml"))["resources"])
-          actual = {f.rsplit("/", 1)[-1] for f in glob.glob("deploy/flux/*.yaml")
-                    if not f.endswith("kustomization.yaml")}
-          if listed != actual:
-              print("::error::deploy/flux/kustomization.yaml must list exactly the shared flux/*.yaml set")
-              if actual - listed: print("  missing from kustomization.yaml:", sorted(actual - listed))
-              if listed - actual: print("  listed but no such file:", sorted(listed - actual))
-              sys.exit(1)
-          print(f"shared flux kustomization covers all {len(actual)} shared Kustomization files")
           PY
