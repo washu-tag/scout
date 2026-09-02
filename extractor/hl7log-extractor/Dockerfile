@@ -23,6 +23,10 @@ RUN ./gradlew build -x test -x checkstyleMain -x checkstyleTest
 # Use a smaller base image for the final stage
 FROM amazoncorretto:21-alpine
 
+# libssl3/libcrypto3 repeatedly lag Alpine's OpenSSL patches on this base image;
+# pull latest explicitly instead of waiting on a rebuild. No-op once caught up.
+RUN apk add --no-cache --upgrade libssl3 libcrypto3
+
 # Set the working directory in the container
 WORKDIR /app
 

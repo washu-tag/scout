@@ -52,8 +52,8 @@ spec:
             - name: KEYCLOAK_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "launchpad.fullname" . }}-keycloak-secret
-                  key: client-secret
+                  name: {{ .Values.auth.keycloak.existingSecret | default (printf "%s-keycloak-secret" (include "launchpad.fullname" .)) }}
+                  key: {{ .Values.auth.keycloak.existingSecretKey | default "client-secret" }}
             - name: KEYCLOAK_ISSUER
               value: {{ .Values.auth.keycloak.issuer | quote }}
             - name: NEXTAUTH_URL
@@ -61,8 +61,8 @@ spec:
             - name: NEXTAUTH_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "launchpad.fullname" . }}-nextauth-secret
-                  key: secret
+                  name: {{ .Values.auth.existingNextAuthSecret | default (printf "%s-nextauth-secret" (include "launchpad.fullname" .)) }}
+                  key: {{ .Values.auth.existingNextAuthSecretKey | default "secret" }}
             - name: NEXTAUTH_SESSION_MAX_AGE
               value: {{ .Values.auth.sessionMaxAge | quote }}
             {{- if .Values.auth.oauth2ProxySignOutUrl }}

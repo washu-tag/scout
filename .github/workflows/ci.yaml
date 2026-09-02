@@ -173,6 +173,32 @@ jobs:
           java-version: ${{ ENV.JAVA_VERSION }}
           cache: 'gradle'
       - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+  verify-cosign-pubkey:
+    # The repo-root cosign.pub is the published mirror of the public half of
+    # COSIGN_PRIVATE_KEY. It's an unchecked mirror otherwise: derive the real key
+    # and diff it, so a stale key (a rotation that didn't refresh the file) or the
+    # authoring placeholder fails here, red and self-announcing, instead of
+    # verification silently breaking for every consumer in the field. Standalone
+    # (no paths filter) so rotation drift is caught even when cosign.pub is
+    # untouched; same-repo PRs have the secret.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: cosign.pub matches the signing key
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cosign public-key --key env://COSIGN_PRIVATE_KEY > cosign.pub.derived
+          if ! diff -u cosign.pub cosign.pub.derived; then
+            echo "::error file=cosign.pub::cosign.pub does not match the signing key. Refresh it (run the export-cosign-pubkey workflow) after a rotation, or replace the authoring placeholder with the real key."
+            exit 1
+          fi
+          echo "cosign.pub matches the derived public key."
   build-and-upload:
     runs-on: ubuntu-latest
     needs: changes
@@ -1445,14 +1471,15 @@ jobs:
           # The build lane's haul is the source of truth for concrete tags.
           oras pull "${MANIFEST_REPO}:main" -o haul
           cp -r deploy config-artifact
-          # config-hash must match the realm content the site seeds into the
-          # keycloak-config Secret; render + pass that realm once wired. Until then
-          # the fixture keeps the hash deterministic (import re-fires on a real
-          # realm change once wired).
+          # config-hash = sha256 of the realm config-cli imports (the chart's
+          # files/scout-realm.json), so a realm change re-fires the import. A host-list
+          # (albOidcHosts) change re-fires too via the HelmRelease values; rotating a
+          # keycloak-client-secrets value alone does not (envFrom is by name), so that
+          # lands on the next upgrade.
           python3 tooling/deploy/stamp_config.py \
             --deploy-dir config-artifact \
             --haul haul/haul.yaml \
-            --realm-file tooling/deploy/fixtures/realm.json
+            --realm-file helm/keycloak-config-cli/files/scout-realm.json
       - name: Publish + sign the scout-config artifact
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
@@ -1460,7 +1487,7 @@ jobs:
         run: |
           set -euo pipefail
           # Stamped bases + the required-vars contract (ADR 0031 Appendix B).
-          tar -C config-artifact -czf scout-config.tar.gz base flux required-vars.txt
+          tar -C config-artifact -czf scout-config.tar.gz base flux modes required-vars.txt
           oras push "${CONFIG_REPO}:${VERSION}" scout-config.tar.gz:application/gzip
           cosign sign --key env://COSIGN_PRIVATE_KEY \
             --use-signing-config=false --tlog-upload=false --yes "${CONFIG_REPO}:${VERSION}"
@@ -1528,12 +1555,12 @@ jobs:
           # Apply the Flux Kustomizations, let the DAG converge, then run the SAME
           # ingest suite Ansible deploy-and-test runs, against the Flux-reconciled
           # slice. Fleshed out when the artifact + secret seed land.
-          # Shared DAG (non-recursive: the aws/ + on-prem/ subdirs are skipped) PLUS the
-          # on-prem mode set -- storage-ready=the real MinIO tenant, oauth2-proxy, the
-          # Traefik edge -- via `-k` since that subdir has a kustomization.yaml. Without
-          # the on-prem set the lake consumers' dependsOn: storage-ready never resolves.
-          # The e2e cluster is on-prem k3s.
-          FLUX_DIR=config-artifact/flux; [ -d "$FLUX_DIR" ] || FLUX_DIR=deploy/flux
+          # Shared DAG (flux/ holds only the shared set now) PLUS the on-prem mode set --
+          # storage-ready=the real MinIO tenant, oauth2-proxy, the Traefik edge -- via `-k`
+          # since that dir has a kustomization.yaml. Without the on-prem set the lake
+          # consumers' dependsOn: storage-ready never resolves. The e2e cluster is on-prem k3s.
+          FLUX_DIR=config-artifact/flux; MODES_DIR=config-artifact/modes
+          [ -d "$FLUX_DIR" ] || { FLUX_DIR=deploy/flux; MODES_DIR=deploy/modes; }
           kubectl apply -f "$FLUX_DIR"/
-          kubectl apply -k "$FLUX_DIR"/on-prem
+          kubectl apply -k "$MODES_DIR"/on-prem
           flux reconcile kustomization extractor --with-source --timeout=15m

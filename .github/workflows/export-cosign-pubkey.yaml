@@ -1,0 +1,58 @@
+name: Export cosign public key
+
+# Rotation helper for the published verification key. Derives the PUBLIC half of
+# the signing key and, if it differs from the committed repo-root cosign.pub,
+# opens a PR that refreshes the file. Run it after rotating COSIGN_PRIVATE_KEY:
+# the ci.yaml verify-cosign-pubkey guard goes red until cosign.pub is refreshed,
+# and this is the one-click way to refresh it.
+#
+# It only ever handles public key material, never the private key it derives
+# from. main requires review + linear history, so the refresh lands as a
+# reviewable PR rather than a direct push (a trust-root change stays reviewed).
+# No-op (no PR) when the committed key already matches. Uses the release GitHub
+# App token, not GITHUB_TOKEN, so the PR triggers CI (incl. verify-cosign-pubkey).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh-pubkey:
+    name: Refresh committed cosign.pub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token from GitHub App
+        id: app_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app_token.outputs.token }}
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Derive the public key and open a refresh PR if it changed
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          set -euo pipefail
+          cosign public-key --key env://COSIGN_PRIVATE_KEY > cosign.pub
+          if git diff --quiet -- cosign.pub; then
+            echo "::notice::cosign.pub already matches the signing key; nothing to refresh."
+            exit 0
+          fi
+          branch="chore/refresh-cosign-pubkey-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add cosign.pub
+          git commit -m "chore: refresh committed cosign public key"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore: refresh committed cosign public key" \
+            --body "Automated refresh of the repo-root \`cosign.pub\` from the current signing key, opened by the \`export-cosign-pubkey\` workflow. Turns the \`verify-cosign-pubkey\` CI guard back to green after a key rotation. Only public key material changed."

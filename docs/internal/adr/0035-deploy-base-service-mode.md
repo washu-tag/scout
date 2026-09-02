@@ -51,10 +51,12 @@ other `${var}`. How each mode delta is expressed depends on its shape:
    inline. Applied to trino (ro + rw: catalog + `serviceAccount` + `envFrom`) and both
    extractor workers (`envFrom` + `volumes`/`volumeMounts` + the aws `serviceAccount`).
 
-3. **Structural / raw-manifest deltas: per-mode `flux/{aws,on-prem}/` subdirs.** The
+3. **Structural / raw-manifest deltas: per-mode `modes/{aws,on-prem}/` sets.** The
    auth/ingress edge is raw manifests a ConfigMap `valuesFrom` cannot reach, so it ships in
-   the mode subdir a site reconciles alongside the shared `flux/` DAG (the same place the
+   the mode set a site reconciles alongside the shared `flux/` DAG (the same place the
    `storage-ready` gate below lives; the base resources are under `base/edge-{on-prem,aws}/`).
+   These live in `modes/` as siblings of `flux/`, not nested inside it, so the shared
+   `path: ./flux` has no subdir to recurse into.
    on-prem carries the oauth2-proxy Traefik forwardAuth `Middleware`s, relocated out of
    `base/oauth2-proxy` because they are Traefik CRDs an aws cluster has no controller for.
    aws carries public ALB Ingresses with ALB-native OIDC. The ALB reuses the **oauth2-proxy
@@ -96,7 +98,7 @@ Traefik that ADR 0011 did not weigh, and the reason the auth edge (oauth2-proxy)
 hardening edge (security-headers) both need an aws answer, not just the former.
 
 **MinIO is on-prem-only; aws ships none.** The lake consumers `dependsOn` a mode-agnostic
-`storage-ready` Kustomization whose body comes from the `flux/{aws,on-prem}/` subdir a
+`storage-ready` Kustomization whose body comes from the `modes/{aws,on-prem}/` set a
 site reconciles: on-prem it IS the real MinIO tenant (`wait:true`, so consumers wait for
 buckets + IAM); aws it is an inert immediately-Ready marker (the lake is S3+IRSA). One
 name, one object per mode → the `dependsOn` resolves in both with no collision and aws

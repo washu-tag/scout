@@ -134,7 +134,7 @@ Keycloak groups automatically assign client-specific roles for each service:
 - OAuth2 Proxy: `oauth2-proxy-user` (required for any Scout access)
 - Launchpad: `launchpad-user` (standard user view)
 - JupyterHub: `jupyterhub-user`
-- Superset: `superset_alpha`, `superset_sql_lab`
+- Superset: `superset_gamma`, `superset_sql_lab`
 - Open WebUI: `open-webui-user` (if enabled)
 
 **Authentication Flow**:
