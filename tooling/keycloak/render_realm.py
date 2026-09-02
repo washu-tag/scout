@@ -188,19 +188,7 @@ def render(s):
         )
     # 6) strip static trailing commas (invalid JSON)
     s = re.sub(r",(\s*[}\]])", r"\1", s)
-    # 6b) identityProviders -> leading-comma (both entries optional). _sub fails closed
-    #     so a reindent/reorder of the IdP block can't silently emit invalid JSON.
-    s = _sub(
-        s,
-        '},\n        {{- end }}\n        {{- if eq (.Values.microsoft.enabled | toString) "true" }}\n        {',
-        '}\n        {{- end }}\n        {{- if eq (.Values.microsoft.enabled | toString) "true" }}\n        {{- if eq (.Values.github.enabled | toString) "true" }},{{- end }}\n        {',
-    )
-    s = _sub(
-        s,
-        '},\n        {{- end }}\n    ],\n    "authenticationFlows"',
-        '}\n        {{- end }}\n    ],\n    "authenticationFlows"',
-    )
-    # 6c) trim each ALB host and drop blanks
+    # 6b) trim each ALB host and drop blanks
     s = _sub(
         s,
         '(splitList "," .Values.albOidcHosts | compact) }}',
@@ -214,7 +202,7 @@ def render(s):
     s = _sub(
         s, '"https://{{ $h }}"{{- end }}', '"https://{{ $h }}"{{- end }}{{- end }}'
     )
-    # 6d) fail the render if defaultProvider is not an enabled IdP
+    # 6c) fail the render if defaultProvider is not an enabled IdP
     s = _sub(s, '    "authenticatorConfig": [', GUARD + '    "authenticatorConfig": [')
     return HEADER + s
 
