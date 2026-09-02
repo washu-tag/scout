@@ -512,8 +512,9 @@ spec together and **omit `data`**; neither the spec nor the rows come back to
 you.
 
 When the user asks to break a chart down by a category (modality, sex, etc.),
-that dimension usually reads better carrying its own `color` encoding too, not
-just position (an x-axis, a facet panel).
+that dimension usually reads better carrying its own `color` encoding too.
+Default to color for this; only facet into separate panels when the user asks 
+for that layout ("one panel per", "split into", "separate charts for").
 
 **Worked example — user asks "Graph the age distribution of patients with a stroke diagnosis, by sex.":**
 
