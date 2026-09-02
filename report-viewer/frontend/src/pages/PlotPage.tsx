@@ -52,12 +52,8 @@ function withInteractivity(spec: Record<string, unknown>) {
   };
 }
 
-/**
- * Click-to-isolate on the legend. The model reproduces this boilerplate
- * inconsistently, so any discrete `color` field gets it here instead - same
- * reasoning as `withInteractivity`. Recurses into a facet's child spec, where
- * `color` actually lives.
- */
+// Click-to-isolate on the legend, injected for the same reason as
+// `withInteractivity`. Recurses into a facet's child spec, where color lives.
 function withLegendSelection(spec: Record<string, unknown>): Record<string, unknown> {
   const child = (spec as { spec?: unknown }).spec;
   if (isComposite(spec)) {
@@ -117,27 +113,18 @@ function sizing(spec: Record<string, unknown>) {
 
 const FACET_GUTTER = 20; // Vega-Lite's default spacing between facet panels
 const HOLDER_PADDING = 16; // holder's own 0.5rem left+right padding
+const AXIS_RESERVE = 56; // first column's y axis width (labels + title + ticks); tune by testing
 const MIN_PANEL_WIDTH = 120; // a panel narrower than this is unreadable
 
-// `undefined` means the facet never asked for a wrap count (e.g. a row-only
-// facet), as opposed to explicitly asking for one - only the latter gets
-// clamped/rewritten below.
+// Only an explicit wrap count gets clamped/rewritten below.
 function explicitFacetColumns(spec: Record<string, unknown>): number | undefined {
   if (typeof spec.columns === 'number') return spec.columns;
   const facet = spec.facet as { columns?: unknown } | undefined;
   return typeof facet?.columns === 'number' ? facet.columns : undefined;
 }
 
-/**
- * `width: 'container'` only resizes responsively on a single view or layer
- * (Vega-Lite docs), so a facet's child spec needs an explicit pixel width
- * computed from the measured container, split across its `columns`.
- *
- * A requested column count is also clamped to what fits at MIN_PANEL_WIDTH,
- * and the clamped value is written back into the spec itself - otherwise
- * Vega-Lite would still wrap at the original count while our width math
- * assumed fewer columns, overflowing the container either way.
- */
+// Vega-Lite only resizes `container` width responsively for a single view or
+// layer, so a facet's child spec needs an explicit pixel width instead.
 function withContainerWidth(spec: Record<string, unknown>, containerWidth: number) {
   const child = (spec as { spec?: unknown }).spec;
   if (!isComposite(spec) || !child || typeof child !== 'object') {
@@ -145,7 +132,7 @@ function withContainerWidth(spec: Record<string, unknown>, containerWidth: numbe
   }
 
   const requested = explicitFacetColumns(spec);
-  const available = Math.max(0, containerWidth - HOLDER_PADDING);
+  const available = Math.max(0, containerWidth - HOLDER_PADDING - AXIS_RESERVE);
   let columns = requested ?? 1;
   let patch: Record<string, unknown> = {};
   if (containerWidth > 0 && requested !== undefined) {
