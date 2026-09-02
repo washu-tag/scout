@@ -113,7 +113,7 @@ function sizing(spec: Record<string, unknown>) {
 
 const FACET_GUTTER = 20; // Vega-Lite's default spacing between facet panels
 const HOLDER_PADDING = 16; // holder's own 0.5rem left+right padding
-const AXIS_RESERVE = 56; // first column's y axis width (labels + title + ticks); tune by testing
+const AXIS_RESERVE = 71; // first column's y axis width (labels + title + ticks); tune by testing
 const MIN_PANEL_WIDTH = 120; // a panel narrower than this is unreadable
 
 // Only an explicit wrap count gets clamped/rewritten below.
