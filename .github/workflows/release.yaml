@@ -443,6 +443,26 @@ jobs:
 
           echo "::notice::Created release v${VERSION}"
 
+      - name: Clear the release PR's pending label
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          REPO: ${{ github.repository }}
+        # release-please labels its release PR `autorelease: pending` and only clears
+        # that label when IT creates the release -- which it never does, because
+        # release-please.yaml sets skip-github-release and this lane owns the tag and
+        # the Release. Left set, the merged release PR reads to release-please as an
+        # untagged release forever, and every later run aborts with "There are
+        # untagged, merged release PRs outstanding" instead of opening the next
+        # release PR. Clear it here, once the release actually exists.
+        run: |
+          set -euo pipefail
+          prs="$(gh pr list --repo "${REPO}" --state merged \
+            --label 'autorelease: pending' --json number --jq '.[].number')"
+          for pr in ${prs}; do
+            gh pr edit "${pr}" --repo "${REPO}" --remove-label 'autorelease: pending'
+            echo "::notice::cleared 'autorelease: pending' on #${pr}"
+          done
+
   reset-dev:
     name: Reset to Dev Versions
     runs-on: ubuntu-latest
