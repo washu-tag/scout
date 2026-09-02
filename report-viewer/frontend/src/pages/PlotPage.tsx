@@ -139,8 +139,42 @@ function sizing(spec: Record<string, unknown>) {
 
 const FACET_GUTTER = 20; // Vega-Lite's default spacing between facet panels
 const HOLDER_PADDING = 16; // holder's own 0.5rem left+right padding
-const AXIS_RESERVE = 71; // first column's y axis width (labels + title + ticks); tune by testing
 const MIN_PANEL_WIDTH = 120; // a panel narrower than this is unreadable
+
+// Must match chartTheme.ts's axis config - this measures against the same
+// font/size Vega actually draws the labels with.
+const AXIS_LABEL_FONT = '11px system-ui, -apple-system, "Segoe UI", sans-serif';
+const AXIS_LABEL_LIMIT = 260; // matches chartTheme.ts axis.labelLimit
+const AXIS_OVERHEAD = 34; // ticks + padding + rotated title thickness
+
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+
+function textWidth(text: string): number {
+  measureCtx ??= document.createElement('canvas').getContext('2d');
+  if (!measureCtx) return text.length * 7;
+  measureCtx.font = AXIS_LABEL_FONT;
+  return measureCtx.measureText(text).width;
+}
+
+// Only the first facet column renders the y axis, and its width depends on
+// the actual label text (a service name vs. a small count), not a guess -
+// measure it directly instead of assuming one fixed size fits every chart.
+function measureAxisReserve(
+  childSpec: Record<string, unknown>,
+  rows: Array<Record<string, unknown>>,
+) {
+  const enc = (childSpec.encoding ?? {}) as Enc;
+  const field = enc.y?.field;
+  if (!field || rows.length === 0) return AXIS_OVERHEAD;
+
+  let max = 0;
+  for (const row of rows) {
+    const value = row[field];
+    if (value == null) continue;
+    max = Math.max(max, textWidth(String(value)));
+  }
+  return AXIS_OVERHEAD + Math.min(max, AXIS_LABEL_LIMIT);
+}
 
 // Only an explicit wrap count gets clamped/rewritten below.
 function explicitFacetColumns(spec: Record<string, unknown>): number | undefined {
@@ -149,16 +183,21 @@ function explicitFacetColumns(spec: Record<string, unknown>): number | undefined
   return typeof facet?.columns === 'number' ? facet.columns : undefined;
 }
 
-// Vega-Lite only resizes `container` width responsively for a single view or
+// Vega-Lite only resizes `container` width responsively on a single view or
 // layer, so a facet's child spec needs an explicit pixel width instead.
-function withContainerWidth(spec: Record<string, unknown>, containerWidth: number) {
+function withContainerWidth(
+  spec: Record<string, unknown>,
+  containerWidth: number,
+  rows: Array<Record<string, unknown>>,
+) {
   const child = (spec as { spec?: unknown }).spec;
   if (!isComposite(spec) || !child || typeof child !== 'object') {
     return { ...spec, width: 'container' };
   }
 
   const requested = explicitFacetColumns(spec);
-  const available = Math.max(0, containerWidth - HOLDER_PADDING - AXIS_RESERVE);
+  const axisReserve = measureAxisReserve(child as Record<string, unknown>, rows);
+  const available = Math.max(0, containerWidth - HOLDER_PADDING - axisReserve);
   let columns = requested ?? 1;
   let patch: Record<string, unknown> = {};
   if (containerWidth > 0 && requested !== undefined) {
@@ -246,7 +285,7 @@ export default function PlotPage() {
   const spec = useMemo(() => {
     if (!plot.data || !base) return null;
     return {
-      ...withContainerWidth(base, containerWidth),
+      ...withContainerWidth(base, containerWidth, plot.data.rows),
       data: { values: plot.data.rows },
       ...sizing(base),
       config: chartTheme(dark),
