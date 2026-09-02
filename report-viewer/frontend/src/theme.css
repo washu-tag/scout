@@ -85,3 +85,7 @@ div.vega-embed summary {
 .vega-embed details[open] summary {
   opacity: 1;
 }
+/* default -9px overhangs past the edge, forcing a scroll in the iframe */
+div.vega-embed .vega-actions {
+  right: 6px;
+}
