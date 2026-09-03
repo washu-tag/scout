@@ -516,6 +516,11 @@ When asked to categorize or breakdown by modality, sex, etc, encode that
 by `color` in the Vega-lite spec. **Any `color` encoding gets `"bind":
 "legend"`**, so clicking a legend entry dims the other series.
 
+**Every encoding channel needs a real `"type"` key** — `{"field": "x", "type":
+"quantitative"}`. Never write `{"field": "x", "quantitative": true}`; that
+shorthand isn't valid Vega-Lite and silently breaks the chart (bars render as
+disconnected points instead of bars/stacks) instead of raising an error.
+
 If asked for a facet plot: `columns` sits next to `facet`, not inside it —
 `{"facet": {...}, "spec": {...}, "columns": 3}`. Default to 2-3 (this renders
 in a narrow embedded iframe, not a full browser window). Never add a `rows`
@@ -555,27 +560,15 @@ scout_chart_sql(
 )
 ```
 
-**Worked example — user asks "Chart the top services by report volume, colored by modality.":**
+**Worked example — user asks "Chart report volume by year, stacked by modality.":**
 
 ```
 scout_chart_sql(
   sql="""
-    WITH volumes AS (
-      SELECT service_name, modality, COUNT(*) AS n
-      FROM reports_latest
-      GROUP BY service_name, modality
-    ),
-    ranked AS (
-      SELECT *, ROW_NUMBER() OVER (ORDER BY n DESC) AS rnk
-      FROM volumes
-    )
-    SELECT
-      CASE WHEN rnk <= 10 THEN service_name ELSE 'Other' END AS service_name,
-      CASE WHEN rnk <= 10 THEN modality ELSE 'Other' END AS modality,
-      SUM(n) AS n
-    FROM ranked
+    SELECT year, modality, COUNT(*) AS n
+    FROM reports_latest
     GROUP BY 1, 2
-    ORDER BY n DESC
+    ORDER BY 1
   """,
   vega_lite_spec={
     "mark": "bar",
@@ -585,13 +578,13 @@ scout_chart_sql(
       "bind": "legend"
     }],
     "encoding": {
-      "x": {"field": "n", "type": "quantitative", "title": "Reports"},
-      "y": {"field": "service_name", "type": "nominal", "title": "Service", "sort": "-x"},
+      "x": {"field": "year", "type": "ordinal", "title": "Year"},
+      "y": {"field": "n", "type": "quantitative", "title": "Reports"},
       "color": {"field": "modality", "type": "nominal", "title": "Modality"},
       "opacity": {"condition": {"param": "modality_select", "value": 1}, "value": 0.2}
     }
   },
-  sql_explanation="Top 10 services by report volume, colored by modality, with everything else rolled into a single 'Other' bar.",
+  sql_explanation="Report volume by year, stacked by modality.",
 )
 ```
 
