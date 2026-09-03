@@ -131,6 +131,54 @@ def _reject_bad_legend_bind(node: Any) -> None:
             _reject_bad_legend_bind(item)
 
 
+def _spec_transform_outputs(node: Any) -> set[str]:
+    """Field names a `transform` introduces - not expected among SQL columns."""
+    out: set[str] = set()
+    if isinstance(node, dict):
+        for t in node.get("transform") or []:
+            if not isinstance(t, dict):
+                continue
+            as_ = t.get("as")
+            if isinstance(as_, str):
+                out.add(as_)
+            elif isinstance(as_, list):
+                out.update(a for a in as_ if isinstance(a, str))
+        for value in node.values():
+            out |= _spec_transform_outputs(value)
+    elif isinstance(node, list):
+        for item in node:
+            out |= _spec_transform_outputs(item)
+    return out
+
+
+def _spec_fields(node: Any) -> set[str]:
+    """Every `field` referenced anywhere in the spec's encodings."""
+    out: set[str] = set()
+    if isinstance(node, dict):
+        field = node.get("field")
+        if isinstance(field, str):
+            out.add(field)
+        for value in node.values():
+            out |= _spec_fields(value)
+    elif isinstance(node, list):
+        for item in node:
+            out |= _spec_fields(item)
+    return out
+
+
+def _reject_unknown_fields(spec: dict[str, Any], columns: list[str]) -> None:
+    known = set(columns) | _spec_transform_outputs(spec)
+    unknown = sorted(_spec_fields(spec) - known)
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"vega_lite_spec references field(s) not in the query's "
+                f"columns: {unknown}. SQL returns: {columns}"
+            ),
+        )
+
+
 _RENDER_TIMEOUT_SECONDS = 10
 
 
@@ -288,6 +336,7 @@ async def create_plot(
     columns, row_count = await _run_chart_query(
         body.sql, user_sub=user.sub, op="plot_query"
     )
+    _reject_unknown_fields(spec, columns)
     return await _save_chart(
         store,
         sql=body.sql,
@@ -339,6 +388,7 @@ async def create_plot_from_file(
         params=[cleaned],
         hint=f". Your SQL (before {{{{cohort}}}} substitution): {sql}",
     )
+    _reject_unknown_fields(spec, columns)
     return await _save_chart(
         store,
         sql=chart_sql,

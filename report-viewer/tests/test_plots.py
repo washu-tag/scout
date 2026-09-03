@@ -176,6 +176,21 @@ def test_a_spec_that_fails_to_render_is_refused(client, auth_headers, fake_trino
     assert "render" in r.json()["detail"]
 
 
+def test_a_field_not_in_the_query_columns_is_refused(client, auth_headers, fake_trino):
+    fake_trino(["modality", "n"], [])
+    fake_trino(["n"], [{"n": 1}])
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "count", "type": "quantitative"},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    assert "count" in r.json()["detail"]
+
+
 def test_a_model_chosen_color_scheme_is_stripped(client, auth_headers, fake_trino):
     fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
     spec = {
