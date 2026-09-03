@@ -75,13 +75,16 @@ spec:
             visibility:
               elasticsearch:
                 version: v7 # All ES versions (7/8/9) use the v7 template format
+                # Connection is mode-selected (ADR 0036): on-prem ECK (scheme http, port
+                # 9200, elastic user + the ${elasticsearch_cluster_name}-es-elastic-user
+                # secret), aws managed OpenSearch (scheme https, port 443, site creds). All
+                # scalars, so plain ${var}s (ADR 0035 pattern 1) rather than an edge ConfigMap.
                 url:
-                  scheme: http # TLS disabled on Elasticsearch for simplicity
-                  host: '${es_host}:9200'
-                username: elastic
-                # elastic-user secret from ECK (fixed name).
-                existingSecret: '${elasticsearch_cluster_name}-es-elastic-user'
-                secretKey: elastic
+                  scheme: '${es_scheme}'
+                  host: '${es_host}:${es_port}'
+                username: '${es_username}'
+                existingSecret: '${es_secret}'
+                secretKey: '${es_secret_key}'
                 logLevel: error
                 indices:
                   visibility: temporal_visibility_v1

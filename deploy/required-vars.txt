@@ -31,6 +31,11 @@ elasticsearch_memory_limit
 elasticsearch_memory_request
 elasticsearch_storage_size
 es_host
+es_port
+es_scheme
+es_secret
+es_secret_key
+es_username
 extractor_data_dir
 hive_hadoop_opts
 hive_metastore_endpoint

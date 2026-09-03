@@ -1,7 +1,7 @@
 # Extractor: HL7-log ingest workers (ADR 0030/0031). Two Scout-owned OCI charts:
 # hl7log-extractor (Java/Temporal, splits+uploads logs then triggers ingest) and
 # hl7-transformer (Spark/Python, HL7 -> Delta Lake). dependsOn temporal-bootstrap
-# (share temporal-internal-frontend), postgres-cluster (ingest DB), minio-tenant.
+# (share temporal-internal-frontend), postgres-ready (ingest DB), minio-tenant.
 # Fixed-name secrets seeded by CI/site or SOPS/ESO, NEVER in git: postgres-secret
 # (ingest DB creds; transformer envFrom + extractor SPRING_DATASOURCE_PASSWORD),
 # s3-secret (lake writer AWS creds). Modality map is chart-owned (no ConfigMap).

@@ -1,5 +1,5 @@
 # Per-namespace foundation (ADR 0031): sole owner of the ${scout_core_namespace}
-# Namespace, shared by postgres-cluster, keycloak, and valkey (all resolve to
+# Namespace, shared by postgres-ready, keycloak, and valkey (all resolve to
 # scout_core_namespace). Co-declaring it across their prune:true Kustomizations would
 # let a mistimed prune cascade-delete the namespace, so each dependsOn this foundation.
 # No shared HelmRepository here, only the Namespace.
