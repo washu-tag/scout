@@ -6,5 +6,4 @@ kind: Kustomization
 resources:
   - storage.yaml
   - postgres.yaml
-  - es.yaml
   - edge.yaml

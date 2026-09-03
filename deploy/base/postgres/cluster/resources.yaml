@@ -80,6 +80,11 @@ spec:
         login: true
         passwordSecret:
           name: cnpg-role-extractor
+      - name: temporal
+        ensure: present
+        login: true
+        passwordSecret:
+          name: cnpg-role-temporal
 ---
 apiVersion: v1
 kind: Service
@@ -97,7 +102,7 @@ spec:
 # App databases. databaseReclaimPolicy: retain so a pruned/deleted Database CR
 # never drops a PHI-bearing database. Reconciler retries until its owner role
 # (above) exists; postgres-ready's health gate (modes/on-prem/postgres.yaml) blocks
-# dependents until all four report status.applied. Must live in the Cluster's
+# dependents until all six report status.applied. Must live in the Cluster's
 # namespace (spec.cluster is a LocalObjectReference), not the app bases.
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
@@ -148,5 +153,34 @@ spec:
     name: '${postgres_cluster_name}'
   name: '${ingest_postgres_table_name}'
   owner: '${postgres_user}'
+  ensure: present
+  databaseReclaimPolicy: retain
+---
+# Temporal's two stores (default history + visibility). Underscore in the DB name
+# (temporal_visibility) can't be a k8s object name, so metadata.name differs from
+# spec.name (as extractor-ingest does).
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: temporal
+  namespace: '${postgres_cluster_namespace}'
+spec:
+  cluster:
+    name: '${postgres_cluster_name}'
+  name: temporal
+  owner: temporal
+  ensure: present
+  databaseReclaimPolicy: retain
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: temporal-visibility
+  namespace: '${postgres_cluster_namespace}'
+spec:
+  cluster:
+    name: '${postgres_cluster_name}'
+  name: temporal_visibility
+  owner: temporal
   ensure: present
   databaseReclaimPolicy: retain

@@ -6,6 +6,5 @@ kind: Kustomization
 resources:
   - minio.yaml
   - postgres.yaml
-  - es.yaml
   - oauth2-proxy.yaml
   - edge.yaml

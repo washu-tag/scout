@@ -1,30 +1,11 @@
 {
-  "_comment": "Sample site values for gen_cluster_vars.py. Scalars mirror the Ansible role defaults (scout_common, cassandra, elasticsearch, extractor, postgres, minio, valkey, oauth2-proxy, keycloak); server_hostname and extractor_data_dir are site-specific placeholders. The four nested dicts mirror the nested Ansible defaults that get flattened into cluster-vars. Keys starting with a name that is NOT in required-vars.txt (hive_metastore_instance[_readonly], keycloak_subdomain, trino_rw_release_name, trino_rw_namespace, the *_default/postgres_parameters dicts) are derivation inputs only and are not emitted.",
+  "_comment": "Sample site values for gen_cluster_vars.py. Scalars mirror the Ansible role defaults (scout_common, extractor, postgres, minio, valkey, oauth2-proxy, keycloak); server_hostname and extractor_data_dir are site-specific placeholders. The three nested dicts mirror the nested Ansible defaults that get flattened into cluster-vars. Keys starting with a name that is NOT in required-vars.txt (hive_metastore_instance[_readonly], keycloak_subdomain, trino_rw_release_name, trino_rw_namespace, the *_default/postgres_parameters dicts) are derivation inputs only and are not emitted.",
 
   "acm_cert_arn": "",
   "alb_group_name": "",
-  "cassandra_cluster_name": "cassandra-cluster",
-  "cassandra_cpu_limit": "2",
-  "cassandra_cpu_request": "100m",
-  "cassandra_datacenter_name": "dc1",
-  "cassandra_init_heap": "1G",
-  "cassandra_max_heap": "2G",
-  "cassandra_storage_size": "10Gi",
   "cnpg_operator_namespace": "scout-operators",
   "db_port": "5432",
   "deployer_name": "WashU",
-  "eck_operator_namespace": "scout-operators",
-  "elasticsearch_cluster_name": "elasticsearch",
-  "elasticsearch_cpu_limit": "2",
-  "elasticsearch_cpu_request": "100m",
-  "elasticsearch_max_heap": "512M",
-  "elasticsearch_storage_size": "10Gi",
-  "es_host": "elasticsearch-es-http.scout-extractor",
-  "es_port": "9200",
-  "es_scheme": "http",
-  "es_secret": "elasticsearch-es-elastic-user",
-  "es_secret_key": "elastic",
-  "es_username": "elastic",
   "extractor_data_dir": "/mnt/hl7-logs",
   "hive_hadoop_opts": "",
   "hive_namespace": "scout-data",
@@ -131,9 +112,5 @@
   "hl7log_extractor_resources_default": {
     "requests": { "cpu": "100m", "memory": "1Gi" },
     "limits": { "cpu": "2", "memory": "2Gi" }
-  },
-  "cassandra_system_logger_resources_default": {
-    "requests": { "cpu": "100m", "memory": "128Mi" },
-    "limits": { "cpu": "500m", "memory": "256Mi" }
   }
 }
