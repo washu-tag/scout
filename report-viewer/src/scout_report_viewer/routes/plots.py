@@ -89,7 +89,10 @@ def _strip_nested(node: Any) -> Any:
 
 def _clean_spec(raw_spec: dict[str, Any]) -> dict[str, Any]:
     """Strip viewer-owned/palette keys once, before validating, so the
-    render check covers what actually gets persisted, not the raw input."""
+    render check covers what actually gets persisted, not the raw input.
+    Checks for a `url` on the raw spec first - stripping `data` would
+    otherwise silently remove the evidence before it could be rejected."""
+    _reject_foreign_urls(raw_spec)
     spec = {k: v for k, v in raw_spec.items() if k not in _COSMETIC_KEYS}
     return _strip_nested(spec)
 
@@ -228,7 +231,6 @@ async def _validate_spec(spec: dict[str, Any]) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="vega_lite_spec needs a 'mark' (or layer/facet/concat/repeat)",
         )
-    _reject_foreign_urls(spec)
     _reject_bad_legend_bind(spec)
     await _reject_uncompilable_spec(spec)
 
