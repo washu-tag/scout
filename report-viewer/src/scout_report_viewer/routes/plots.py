@@ -15,6 +15,7 @@ import json
 import logging
 from typing import Any
 
+import vl_convert
 from fastapi import (
     APIRouter,
     Depends,
@@ -82,6 +83,36 @@ def _reject_foreign_urls(node: Any) -> None:
             _reject_foreign_urls(item)
 
 
+def _reject_bad_legend_bind(node: Any) -> None:
+    """Valid form is `"bind": "legend"`, not `{"legend": true}`."""
+    if isinstance(node, dict):
+        bind = node.get("bind")
+        if isinstance(bind, dict) and bind.get("legend") is True:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    'bind must be the string "legend", not '
+                    '{"legend": true} - use "bind": "legend" on the param'
+                ),
+            )
+        for value in node.values():
+            _reject_bad_legend_bind(value)
+    elif isinstance(node, list):
+        for item in node:
+            _reject_bad_legend_bind(item)
+
+
+def _reject_uncompilable_spec(spec: dict[str, Any]) -> None:
+    """Catch-all: actually render the spec rather than just inspecting it."""
+    try:
+        vl_convert.vegalite_to_svg(spec)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"vega_lite_spec failed to render: {exc}",
+        )
+
+
 def _parse_spec_form(raw: str) -> dict[str, Any]:
     """The spec rides as JSON text; a multipart body can't carry a JSON object."""
     try:
@@ -108,6 +139,8 @@ def _validate_spec(spec: dict[str, Any]) -> None:
             detail="vega_lite_spec needs a 'mark' (or layer/facet/concat/repeat)",
         )
     _reject_foreign_urls(spec)
+    _reject_bad_legend_bind(spec)
+    _reject_uncompilable_spec(spec)
 
 
 @router.get("", response_model=list[PlotMeta])
