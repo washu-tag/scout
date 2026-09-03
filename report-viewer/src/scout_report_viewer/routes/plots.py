@@ -87,6 +87,11 @@ def _strip_nested(node: Any) -> Any:
     return node
 
 
+def _wrap_sql(sql: str) -> str:
+    """Strip a trailing `;` so the SQL can be nested as a subquery."""
+    return sql.rstrip().rstrip(";")
+
+
 def _clean_spec(raw_spec: dict[str, Any]) -> dict[str, Any]:
     """Strip viewer-owned/palette keys once, before validating, so the
     render check covers what actually gets persisted, not the raw input.
@@ -339,13 +344,12 @@ async def create_plot(
 ) -> PlotResponse:
     spec = _clean_spec(body.vega_lite_spec)
     await _validate_spec(spec)
-    columns, row_count = await _run_chart_query(
-        body.sql, user_sub=user.sub, op="plot_query"
-    )
+    sql = _wrap_sql(body.sql)
+    columns, row_count = await _run_chart_query(sql, user_sub=user.sub, op="plot_query")
     _reject_unknown_fields(spec, columns)
     return await _save_chart(
         store,
-        sql=body.sql,
+        sql=sql,
         raw_spec=spec,
         columns=columns,
         row_count=row_count,
@@ -381,6 +385,7 @@ async def create_plot_from_file(
     finally:
         await file.close()
     guard_upload_size(raw)
+    sql = _wrap_sql(sql)
     assert_cohort_placeholder(sql)
     ids, resolved_id_column, _column_inferred = parse_csv_ids(raw, id_column)
     cleaned = dedup_ids(ids, resolved_id_column)
