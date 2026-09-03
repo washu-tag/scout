@@ -194,9 +194,9 @@ const DEFAULT_FACET_COLUMNS = 3;
 
 // Only an explicit wrap count gets clamped/rewritten below.
 function explicitFacetColumns(spec: Record<string, unknown>): number | undefined {
-  if (typeof spec.columns === 'number') return spec.columns;
+  if (typeof spec.columns === 'number' && spec.columns > 0) return spec.columns;
   const facet = spec.facet as { columns?: unknown } | undefined;
-  return typeof facet?.columns === 'number' ? facet.columns : undefined;
+  return typeof facet?.columns === 'number' && facet.columns > 0 ? facet.columns : undefined;
 }
 
 // No `row` means Vega-Lite renders one unbounded row without a `columns`.
