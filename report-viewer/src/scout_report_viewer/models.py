@@ -222,6 +222,7 @@ class PlotResponse(BaseModel):
     view_url: str
     columns: list[str]
     row_count: int
+    truncated: bool
 
 
 class PlotMeta(BaseModel):

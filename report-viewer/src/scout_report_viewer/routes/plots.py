@@ -276,7 +276,7 @@ async def _run_chart_query(
     op: str,
     params: list | None = None,
     hint: str = "",
-) -> tuple[list[str], int]:
+) -> tuple[list[str], int, bool]:
     """Run it now so a broken query fails while the model can still fix it.
     `hint` is appended to that error. Only columns and a count are needed
     here, so probe with LIMIT 0 instead of buffering every row."""
@@ -307,7 +307,9 @@ async def _run_chart_query(
             detail="query returned no rows, so there is nothing to chart",
         )
     metrics.RESULT_ROWS.labels(op=op).observe(row_count)
-    return columns, row_count
+    cap = settings.max_cohort_rows
+    truncated = row_count > cap
+    return columns, min(row_count, cap), truncated
 
 
 async def _save_chart(
@@ -317,6 +319,7 @@ async def _save_chart(
     raw_spec: dict[str, Any],
     columns: list[str],
     row_count: int,
+    truncated: bool,
     user_sub: str,
     sql_explanation: str | None,
     owui_chat_id: str | None,
@@ -341,6 +344,7 @@ async def _save_chart(
         view_url=f"{settings.external_url.rstrip('/')}/spa/plots/{plot_id}",
         columns=[c for c in columns if c not in _HEAVY_COLS],
         row_count=row_count,
+        truncated=truncated,
     )
 
 
@@ -353,7 +357,9 @@ async def create_plot(
     spec = _clean_spec(body.vega_lite_spec)
     await _validate_spec(spec)
     sql = _wrap_sql(body.sql)
-    columns, row_count = await _run_chart_query(sql, user_sub=user.sub, op="plot_query")
+    columns, row_count, truncated = await _run_chart_query(
+        sql, user_sub=user.sub, op="plot_query"
+    )
     _reject_unknown_fields(spec, columns)
     return await _save_chart(
         store,
@@ -361,6 +367,7 @@ async def create_plot(
         raw_spec=spec,
         columns=columns,
         row_count=row_count,
+        truncated=truncated,
         user_sub=user.sub,
         sql_explanation=body.sql_explanation,
         owui_chat_id=body.owui_chat_id,
@@ -400,7 +407,7 @@ async def create_plot_from_file(
 
     predicate = f"contains(?, {quote_ident(resolved_id_column)})"
     chart_sql = substitute_cohort(sql, predicate)
-    columns, row_count = await _run_chart_query(
+    columns, row_count, truncated = await _run_chart_query(
         chart_sql,
         user_sub=user.sub,
         op="plot_query_from_file",
@@ -414,6 +421,7 @@ async def create_plot_from_file(
         raw_spec=spec,
         columns=columns,
         row_count=row_count,
+        truncated=truncated,
         user_sub=user.sub,
         sql_explanation=sql_explanation,
         owui_chat_id=owui_chat_id,
