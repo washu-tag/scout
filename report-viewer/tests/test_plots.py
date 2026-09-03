@@ -139,6 +139,24 @@ def test_a_spec_carrying_any_url_is_refused(client, auth_headers, fake_trino):
     assert "url" in r.json()["detail"]
 
 
+def test_a_legend_bind_object_is_refused(client, auth_headers, fake_trino):
+    spec = {
+        "mark": "bar",
+        "params": [{"name": "sel", "select": "point", "bind": {"legend": True}}],
+        "encoding": {"x": {"field": "a", "type": "nominal"}},
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    assert "bind" in r.json()["detail"]
+
+
+def test_a_spec_that_fails_to_render_is_refused(client, auth_headers, fake_trino):
+    spec = {"mark": {"point": {"size": 100}}, "encoding": {}}
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    assert "render" in r.json()["detail"]
+
+
 def test_report_bodies_never_reach_the_browser(client, auth_headers, fake_trino):
     rows = [{"modality": "MR", "report_text": "PHI narrative"}]
     fake_trino(["modality", "report_text"], rows)
