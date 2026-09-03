@@ -177,6 +177,15 @@ configOverrides:
 
         bp = Blueprint("chat_cohort_export", __name__)
 
+        # Flask-WTF's CSRFProtect guards every POST/PUT/PATCH/DELETE route by
+        # default, including new blueprints. This endpoint is authenticated
+        # by CHAT_COHORT_EXPORT_TOKEN instead of a session CSRF token, so it
+        # needs an explicit exemption or every call 400s before the handler
+        # runs.
+        from superset.extensions import csrf
+
+        csrf.exempt(bp)
+
         @bp.route("/internal/chat-cohort-export", methods=["POST"])
         def create_chat_cohort_export():
             # Imported lazily, per-request rather than at registration time
