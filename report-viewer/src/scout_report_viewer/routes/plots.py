@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import vl_convert
@@ -199,15 +200,16 @@ def _reject_unknown_fields(spec: dict[str, Any], columns: list[str]) -> None:
 
 
 _RENDER_TIMEOUT_SECONDS = 10
+# Separate from the default executor so a stuck render can't starve Trino/auth.
+_RENDER_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="vl-render")
 
 
 async def _reject_uncompilable_spec(spec: dict[str, Any]) -> None:
-    """Catch-all: actually render the spec rather than just inspecting it.
-    Off the event loop and time-boxed - a slow render (e.g. a `repeat`/
-    `concat` fan-out) would otherwise stall every other request."""
+    """Catch-all: actually render the spec rather than just inspecting it."""
+    loop = asyncio.get_running_loop()
     try:
         await asyncio.wait_for(
-            asyncio.to_thread(vl_convert.vegalite_to_svg, spec),
+            loop.run_in_executor(_RENDER_EXECUTOR, vl_convert.vegalite_to_svg, spec),
             timeout=_RENDER_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
