@@ -187,14 +187,16 @@ def _spec_fields(node: Any) -> set[str]:
 
 
 def _reject_unknown_fields(spec: dict[str, Any], columns: list[str]) -> None:
-    known = set(columns) | _spec_transform_outputs(spec)
+    # _HEAVY_COLS never reach the renderer, so they aren't "known" either.
+    available = [c for c in columns if c not in _HEAVY_COLS]
+    known = set(available) | _spec_transform_outputs(spec)
     unknown = sorted(_spec_fields(spec) - known)
     if unknown:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
                 f"vega_lite_spec references field(s) not in the query's "
-                f"columns: {unknown}. SQL returns: {columns}"
+                f"columns: {unknown}. SQL returns: {available}"
             ),
         )
 

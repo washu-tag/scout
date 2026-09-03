@@ -222,6 +222,21 @@ def test_a_field_not_in_the_query_columns_is_refused(client, auth_headers, fake_
     assert "count" in r.json()["detail"]
 
 
+def test_a_field_that_is_a_heavy_column_is_refused(client, auth_headers, fake_trino):
+    fake_trino(["modality", "report_text"], [])
+    fake_trino(["n"], [{"n": 1}])
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "report_text", "type": "quantitative"},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    assert "report_text" in r.json()["detail"]
+
+
 def test_an_aggregate_transform_output_field_is_allowed(
     client, auth_headers, fake_trino
 ):
