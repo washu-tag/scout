@@ -247,3 +247,4 @@ class PlotDetail(BaseModel):
     rows: list[dict[str, Any]]
     sql: str
     sql_explanation: str
+    truncated: bool

@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 
+from scout_report_viewer.config import settings
+
 BAR = {
     "mark": "bar",
     "encoding": {
@@ -66,6 +68,23 @@ def test_viewing_a_chart_re_runs_its_sql(client, auth_headers, fake_trino):
     assert detail["rows"] == [{"modality": "MR", "n": 9}]
     assert detail["spec"]["mark"] == "bar"
     assert "data" not in detail["spec"]
+    assert detail["truncated"] is False
+
+
+def test_viewing_a_chart_truncates_at_cap(
+    client, auth_headers, fake_trino, monkeypatch
+):
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    plot_id = _create(client, auth_headers).json()["id"]
+    monkeypatch.setattr(settings, "max_cohort_rows", 3, raising=False)
+    # Endpoint fetches cap+1 (=4) to detect overflow; return 4 rows.
+    fake_trino(
+        ["modality", "n"], [{"modality": m, "n": i} for i, m in enumerate("ABCD")]
+    )
+    detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
+    assert detail["truncated"] is True
+    assert len(detail["rows"]) == 3
+    assert "LIMIT 4" in fake_trino.calls[-1][0]
 
 
 def test_the_listing_returns_metadata_newest_first(client, auth_headers, fake_trino):

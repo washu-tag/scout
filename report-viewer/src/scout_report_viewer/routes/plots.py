@@ -356,10 +356,13 @@ async def get_plot(
             status_code=status.HTTP_404_NOT_FOUND, detail="chart not found"
         )
     uploaded_ids = plot.get("uploaded_ids")
+    cap = settings.max_cohort_rows
+    # Fetch cap+1 so we can flag truncation without a separate COUNT.
+    all_sql = f"SELECT s.* FROM ({plot['sql']}) s LIMIT {cap + 1}"
     try:
         with metrics.time_trino("plot_rows"):
             _cols, rows = await trino_client.execute(
-                plot["sql"],
+                all_sql,
                 user=user.sub,
                 params=[uploaded_ids] if uploaded_ids else None,
             )
@@ -369,7 +372,7 @@ async def get_plot(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"could not re-run this chart's query: {exc}",
         )
-    cap = settings.max_cohort_rows
+    truncated = len(rows) > cap
     lean_rows = [
         {k: v for k, v in r.items() if k not in _HEAVY_COLS} for r in rows[:cap]
     ]
@@ -377,6 +380,7 @@ async def get_plot(
     return PlotDetail(
         id=plot["id"],
         spec=plot["spec"],
+        truncated=truncated,
         rows=lean_rows,
         sql=plot["sql"],
         sql_explanation=plot["sql_explanation"],

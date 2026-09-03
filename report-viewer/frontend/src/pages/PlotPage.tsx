@@ -366,6 +366,14 @@ export default function PlotPage() {
             flex: '0 0 auto',
           }}
         >
+          {plot.data?.truncated && (
+            <span
+              title="Narrow the query to see the full result"
+              style={{ color: 'var(--rv-muted)', fontSize: '0.7rem' }}
+            >
+              Chart Data Truncated
+            </span>
+          )}
           <span style={{ flex: 1 }} />
           {plot.data && (
             <span
