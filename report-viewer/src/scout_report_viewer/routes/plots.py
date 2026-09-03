@@ -71,12 +71,13 @@ _SCALE_PALETTE_KEYS: frozenset[str] = frozenset({"scheme", "range"})
 
 
 def _strip_nested(node: Any) -> Any:
-    """Drops `data` at any depth (a layer/facet child's own `data.values`
-    would shadow the queried rows) and palette keys from any `scale`."""
+    """Drops `data` and cosmetic/viewer-owned keys at any depth - a nested
+    child spec could otherwise keep its own `data.values`, `width`, etc. -
+    and palette keys from any `scale`."""
     if isinstance(node, dict):
         out = {}
         for key, value in node.items():
-            if key == "data":
+            if key == "data" or key in _COSMETIC_KEYS:
                 continue
             if key == "scale" and isinstance(value, dict):
                 value = {k: v for k, v in value.items() if k not in _SCALE_PALETTE_KEYS}
@@ -103,8 +104,7 @@ def _clean_spec(raw_spec: Any) -> dict[str, Any]:
             detail="vega_lite_spec must be a JSON object",
         )
     _reject_foreign_urls(raw_spec)
-    spec = {k: v for k, v in raw_spec.items() if k not in _COSMETIC_KEYS}
-    return _strip_nested(spec)
+    return _strip_nested(raw_spec)
 
 
 def _reject_foreign_urls(node: Any) -> None:

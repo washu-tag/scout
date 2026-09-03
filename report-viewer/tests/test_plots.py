@@ -267,6 +267,16 @@ def test_nested_data_is_stripped(client, auth_headers, fake_trino):
     assert "data" not in detail["spec"]["layer"][0]
 
 
+def test_nested_width_and_height_are_stripped(client, auth_headers, fake_trino):
+    _queue_chart_query(fake_trino, ["modality", "n"], [{"modality": "MR", "n": 7}])
+    spec = {"layer": [{**BAR, "width": 5000, "height": 5000}]}
+    plot_id = _create(client, auth_headers, spec=spec).json()["id"]
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
+    layer = detail["spec"]["layer"][0]
+    assert "width" not in layer and "height" not in layer
+
+
 def test_report_bodies_never_reach_the_browser(client, auth_headers, fake_trino):
     rows = [{"modality": "MR", "report_text": "PHI narrative"}]
     spec = {"mark": "bar", "encoding": {"x": {"field": "modality", "type": "nominal"}}}
