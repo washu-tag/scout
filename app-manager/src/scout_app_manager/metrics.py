@@ -63,6 +63,18 @@ def render(state: State) -> str:
             "1 when the composed realm differs from what was last applied.",
             int(state.pending_change),
         ),
+        (
+            "realm_drift",
+            "1 when the live realm was last written by something other than "
+            "this reconciler.",
+            int(state.drift),
+        ),
+        (
+            "realm_checksum_readable",
+            "1 when the live realm's import checksum could be read from "
+            "Keycloak. 0 means drift cannot be detected at all.",
+            int(bool(state.live_checksum)),
+        ),
     ):
         lines += [
             f"# HELP {PREFIX}_{name} {help_text}",

@@ -54,8 +54,23 @@ def test_the_realm_facts_are_exposed(setup):
     assert found["scout_app_manager_base_realm_applied"] == "1"
     assert found["scout_app_manager_discovery_synced"] == "1"
     assert found["scout_app_manager_apply_pending"] == "0"
+    assert found["scout_app_manager_realm_drift"] == "0"
+    assert found["scout_app_manager_realm_checksum_readable"] == "1"
     assert float(found["scout_app_manager_last_apply_success_timestamp_seconds"]) > 0
     assert found['scout_app_manager_phase{phase="Applied"}'] == "1"
+
+
+def test_an_unreachable_keycloak_says_so_rather_than_reading_as_no_drift(setup):
+    """0 here means drift detection is off, not that the realm is in step."""
+    service, _, _ = setup
+    service.settings.apply_mode = "apply"
+    service.reconcile_once()
+    service.keycloak.readable = False
+
+    found = series(metrics.render(service.reconcile_once()))
+
+    assert found["scout_app_manager_realm_checksum_readable"] == "0"
+    assert found["scout_app_manager_realm_drift"] == "0"
 
 
 def test_a_held_retraction_is_visible(setup):

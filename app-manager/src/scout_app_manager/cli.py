@@ -222,6 +222,14 @@ def _status() -> int:
         f"discovery synced: {state.discovery_synced} · "
         f"base realm applied: {state.base_realm_applied}"
     )
+    if state.drift:
+        print(
+            f"DRIFT: the realm reports import checksum "
+            f"{(state.live_checksum or '-')[:12]}, but this reconciler last "
+            f"wrote {(state.applied_import_checksum or '-')[:12]}"
+        )
+    elif not state.live_checksum:
+        print("live realm checksum unreadable; drift cannot be detected")
 
     on_disk = {str(item.ref): item for item in _collect([settings.fragment_dir])}
     site = Site(domain=settings.domain, signout_url=settings.signout_url)

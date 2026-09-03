@@ -1,5 +1,11 @@
 import yaml
-from conftest import fragment_yaml, setup, status_of, write_fragment  # noqa: F401
+from conftest import (  # noqa: F401
+    FakeKeycloak,
+    fragment_yaml,
+    setup,
+    status_of,
+    write_fragment,
+)
 
 from scout_app_manager.models import (
     HOLDING,
@@ -25,7 +31,9 @@ def published(client) -> dict:
 
 def restart(service) -> AppManagerService:
     """A fresh process over the same cluster."""
-    return AppManagerService(service.settings, service.client)
+    return AppManagerService(
+        service.settings, service.client, keycloak=FakeKeycloak(service.client)
+    )
 
 
 def test_the_document_is_camel_cased_and_carries_every_fragment(setup):
@@ -78,6 +86,26 @@ def test_a_restart_resumes_the_applied_hash_and_does_not_reapply(setup):
     assert state.last_applied_hash is not None
     assert state.pending_change is False
     assert client.jobs == jobs
+
+
+def test_a_restart_still_knows_what_it_last_wrote_to_the_realm(setup):
+    """Without the checksum persisted, a restart has nothing to compare the
+    live realm against and drift goes unnoticed until the next apply."""
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+    service.reconcile_once()
+    expected = published(client)["appliedImportChecksum"]
+    assert expected
+
+    revived = restart(service)
+    revived.state.discovery_synced = True
+    client.realm_checksum = "0" * 64
+    state = revived.reconcile_once()
+
+    # It noticed across the restart, re-applied, and put the realm back to the
+    # same document -- so the checksum it expects is the one it started with.
+    assert len(client.created_jobs) == 2
+    assert state.applied_import_checksum == expected
 
 
 def test_a_restart_keeps_a_running_grace_clock(setup):

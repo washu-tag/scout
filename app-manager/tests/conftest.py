@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 from pathlib import Path
 
@@ -95,6 +96,8 @@ class FakeClient:
         self.created_jobs: list[str] = []
         self.deleted_jobs: list[str] = []
         self.job_succeeds = True
+        # Stands in for the realm attribute config-cli writes after an import.
+        self.realm_checksum: str | None = None
 
     def namespace(self) -> str:
         return "scout-core"
@@ -138,6 +141,16 @@ class FakeClient:
         # reporting the verdict of the run that produced it.
         self.job_status[name] = {"succeeded": 1} if self.job_succeeds else {"failed": 1}
         self.created_jobs.append(name)
+        if self.job_succeeds:
+            # What config-cli would leave on the realm: a checksum over the
+            # document it just imported. A test simulates another writer by
+            # assigning realm_checksum something else.
+            document = (
+                (self.configmaps.get((namespace, "keycloak-config-composed")) or {})
+                .get("data", {})
+                .get("scout-realm.json", "")
+            )
+            self.realm_checksum = hashlib.sha256(document.encode()).hexdigest()
         return body
 
     def get_job(self, namespace, name):
@@ -155,6 +168,24 @@ class FakeClient:
 
     def job_logs(self, namespace, name, tail=40):
         return "config-cli said no"
+
+
+class FakeKeycloak:
+    """The realm's own record of what was last imported into it.
+
+    Backed by the FakeClient so an apply moves it the way a real one does;
+    `readable = False` is Keycloak being unreachable, which must read as "we do
+    not know" rather than as drift.
+    """
+
+    def __init__(self, client: FakeClient):
+        self.client = client
+        self.readable = True
+        self.reads = 0
+
+    def import_checksum(self):
+        self.reads += 1
+        return self.client.realm_checksum if self.readable else None
 
 
 @pytest.fixture
@@ -186,7 +217,7 @@ def setup(tmp_path, base_realm, monkeypatch):
         "keycloak-client-secrets",
         {"oauth2_proxy": "op", "launchpad_client": "lp"},
     )
-    service = AppManagerService(settings, client)
+    service = AppManagerService(settings, client, keycloak=FakeKeycloak(client))
     # The normal running state; a test wanting the refused path clears it.
     service.state.discovery_synced = True
     return service, fragments, client

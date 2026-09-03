@@ -57,6 +57,12 @@ class State:
     # tells one apply from the next.
     secrets_version: str | None = None
     applied_secrets_version: str | None = None
+    # config-cli's own record of the last document imported into the realm:
+    # what it read back after our apply, and what the realm says now. Unequal
+    # means another writer, which hash comparison alone cannot see.
+    applied_import_checksum: str | None = None
+    live_checksum: str | None = None
+    drift: bool = False
     identical_to_base: bool = True
     phase: str = PENDING
     applied_at: str | None = None

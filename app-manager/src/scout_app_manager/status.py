@@ -57,6 +57,9 @@ def to_document(state: State) -> dict:
         "appliedAt": state.applied_at,
         "appliedHash": state.last_applied_hash,
         "appliedSecretsVersion": state.applied_secrets_version,
+        "appliedImportChecksum": state.applied_import_checksum,
+        "liveImportChecksum": state.live_checksum,
+        "driftDetected": state.drift,
         "lastResult": state.last_result,
         "lastReconcile": state.last_reconcile,
         "applyMode": state.apply_mode,
@@ -89,6 +92,9 @@ def from_document(doc: dict) -> State:
         composed_hash=doc.get("composedHash"),
         secrets_version=doc.get("observedSecretsVersion"),
         applied_secrets_version=doc.get("appliedSecretsVersion"),
+        # Durable: without it a restart has no expectation to compare the live
+        # realm against, and drift goes unnoticed until the next apply.
+        applied_import_checksum=doc.get("appliedImportChecksum"),
         identical_to_base=bool(doc.get("identicalToBase")),
         phase=doc.get("phase", State.phase),
         applied_at=doc.get("appliedAt"),

@@ -34,6 +34,7 @@ from .compose import (
     realm_hash,
 )
 from .k8s import ApiError, Client, value_of, version_of
+from .keycloak import KeycloakAdmin
 from .load import LoadedFragment, parse_realm_document, scan
 from .models import (
     APPLIED,
@@ -78,11 +79,15 @@ class AppManagerService:
         settings: Settings,
         client: Client,
         applier: RealmApplier | None = None,
+        keycloak: KeycloakAdmin | None = None,
     ) -> None:
         self.settings = settings
         self.client = client
         self.namespace = settings.namespace or client.namespace()
         self.applier = applier or RealmApplier(settings, client, self.namespace)
+        self.keycloak = keycloak or KeycloakAdmin(
+            settings.keycloak_url, settings.keycloak_realm, self.admin_credentials
+        )
         self.store = StatusStore(client, self.namespace, settings.status_configmap)
         self.state = self._resume()
         self.reconciles = 0
@@ -141,6 +146,15 @@ class AppManagerService:
             )
             return set()
         return {key for key in (secret.get("data") or {}) if value_of(secret, key)}
+
+    def admin_credentials(self) -> tuple[str, str] | None:
+        """The same credential the apply Job authenticates with."""
+        secret = self.secret(self.settings.admin_secret)
+        username = value_of(secret, "username")
+        password = value_of(secret, "password")
+        if not username or not password:
+            return None
+        return username, password
 
     def secrets_version(self, names: list[str]) -> str:
         """A digest over the resourceVersions of everything the apply reads.
@@ -229,9 +243,12 @@ class AppManagerService:
         self.state.composed_hash = desired_hash
         self.state.secrets_version = secrets_version
         self.state.identical_to_base = desired_hash == base_hash
+        self.state.live_checksum = self.keycloak.import_checksum()
+        self.state.drift = self._drifted()
         self.state.pending_change = (
             desired_hash != self.state.last_applied_hash
             or secrets_version != self.state.applied_secrets_version
+            or self.state.drift
         )
 
         if held:
@@ -253,6 +270,25 @@ class AppManagerService:
         self._apply(result, document, desired_hash, secrets_version)
         self.store.save(self.state)
         return self.state
+
+    def _drifted(self) -> bool:
+        """Did something other than this reconciler write the realm?
+
+        Only answerable between two known values. An unreadable realm, or an
+        apply whose read-back did not come through, leaves no expectation to
+        compare against -- and "we do not know" must not become "re-apply".
+        """
+        expected = self.state.applied_import_checksum
+        live = self.state.live_checksum
+        if not expected or not live or expected == live:
+            return False
+        log.warning(
+            "DRIFT     the realm was last written by something other than this "
+            "reconciler (import checksum %s, expected %s); re-applying",
+            live[:12],
+            expected[:12],
+        )
+        return True
 
     def _refuse_unresolved(self, missing: list[str]) -> State:
         """A named credential with nothing behind it is not a partial apply.
@@ -385,6 +421,13 @@ class AppManagerService:
             return
         log.info("APPLY     succeeded; realm is now %s", desired_hash[:19])
         stamp = now()
+        # What config-cli actually recorded, which is the only thing a later
+        # drift check can compare against. Read after the apply rather than
+        # computed: the checksum covers the post-substitution document plus a
+        # salt, neither of which this process should have to reproduce.
+        self.state.applied_import_checksum = self.keycloak.import_checksum()
+        self.state.live_checksum = self.state.applied_import_checksum
+        self.state.drift = False
         self.state.last_applied_hash = desired_hash
         self.state.applied_secrets_version = secrets_version
         self.state.pending_change = False

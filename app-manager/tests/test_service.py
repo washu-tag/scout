@@ -15,6 +15,7 @@ from scout_app_manager.compose import SecretBinding
 from scout_app_manager.loop import await_discovery
 from scout_app_manager.models import (
     APPLIED,
+    FAILED,
     HOLDING,
     INSTALLED,
     INVALID,
@@ -415,6 +416,89 @@ def test_an_untouched_credential_does_not_re_apply(setup):
     service.reconcile_once()
 
     assert len(client.created_jobs) == 1
+
+
+# --- another writer -----------------------------------------------------------
+
+
+def test_a_realm_written_by_something_else_is_re_applied(setup):
+    """The two-writer window this whole design exists to close.
+
+    `make install-auth` applies the base realm without the reconciler's rails
+    and deletes every fragment-created client. Hash comparison cannot see it:
+    the composed document did not move, so the reconciler used to report the
+    realm up to date while a fragment's client was gone.
+    """
+    service, fragments, client = setup
+    service.settings.apply_mode = "apply"
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    state = service.reconcile_once()
+    assert state.drift is False
+    assert len(client.created_jobs) == 1
+
+    client.realm_checksum = "0" * 64  # somebody else imported a realm
+    state = service.reconcile_once()
+
+    # A successful repair clears the flag, so the re-apply is the evidence.
+    assert len(client.created_jobs) == 2
+    assert state.drift is False
+    # The expectation came back from the realm, so this settles rather than
+    # re-applying on every reconcile from here on.
+    assert service.reconcile_once().drift is False
+    assert len(client.created_jobs) == 2
+
+
+def test_drift_is_still_reported_when_the_repair_fails(setup):
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+    service.settings.job_timeout_seconds = 5
+    service.reconcile_once()
+
+    client.realm_checksum = "0" * 64
+    client.job_succeeds = False
+    state = service.reconcile_once()
+
+    assert state.drift is True
+    assert state.phase == FAILED
+
+
+def test_an_unreadable_realm_is_not_drift(setup):
+    """Not knowing must not become re-applying."""
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+    service.reconcile_once()
+
+    service.keycloak.readable = False
+    state = service.reconcile_once()
+
+    assert state.drift is False
+    assert state.live_checksum is None
+    assert len(client.created_jobs) == 1
+
+
+def test_drift_needs_an_apply_of_our_own_to_compare_against(setup):
+    """Diff mode writes no realm, so there is no expectation to hold anyone to."""
+    service, _, client = setup
+    client.realm_checksum = "0" * 64
+
+    state = service.reconcile_once()
+
+    assert state.drift is False
+    assert state.applied_import_checksum is None
+    assert state.live_checksum == "0" * 64
+
+
+def test_the_expected_checksum_is_what_config_cli_recorded(setup):
+    """Read back, not computed: the checksum covers the post-substitution
+    document plus a salt, and reproducing that here would be a second
+    implementation of somebody else's hash."""
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+
+    state = service.reconcile_once()
+
+    assert state.applied_import_checksum == client.realm_checksum
+    assert state.applied_import_checksum is not None
 
 
 def test_a_fragment_carries_its_reported_effect(setup):
