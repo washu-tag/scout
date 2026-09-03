@@ -1,4 +1,4 @@
-# ADR 0036: Managed Data Services in aws Mode (RDS + OpenSearch)
+# ADR 0036: Managed Data Tier in aws Mode, and Temporal on PostgreSQL
 
 **Date**: 2026-09
 **Status**: Proposed.
@@ -7,75 +7,112 @@
 ## Context
 
 ADR 0035 established a `service_mode` (`aws` | `on-prem`) that splits the storage/identity and
-ingress/auth edges by platform. It did **not** extend to the **data tier**: the deploy base runs
-PostgreSQL as a self-hosted CloudNativePG (CNPG) `Cluster` and Elasticsearch as a self-hosted ECK
-`Elasticsearch` in **both** modes.
+ingress/auth edges by platform. It did **not** extend to the **data tier**: the deploy base runs three
+self-hosted stateful systems in **both** modes:
+
+- **PostgreSQL** as a CloudNativePG (CNPG) `Cluster` (hive metastore, keycloak, superset, extractor).
+- **Cassandra** as a cass-operator `CassandraDatacenter` (Temporal's default persistence store).
+- **Elasticsearch** as an ECK `Elasticsearch` (Temporal's visibility store).
 
 Self-hosting stateful databases in-cluster is the right default on-prem (air-gapped, no managed
 services), but it is an anti-pattern in a cloud (aws) deployment:
 
 - **Operational burden.** Backups, PITR, failover, minor-version patching, and storage scaling are the
-  operator's job when self-hosted, and the platform's job on RDS / OpenSearch. A cloud site pays for
-  compute + EBS to run a database its platform already offers as a service.
+  operator's job when self-hosted, and the platform's job on a managed endpoint. A cloud site pays for
+  compute + EBS to run databases its platform already offers as services.
 - **Blast radius.** The database lives in the same cluster it serves, so a namespace deletion, a node
   recycle (EKS Auto consolidation), or a botched migration can take the data with it. Observed: a cutover
   that reverted a self-hosted CNPG + ECK saw the namespace-deletion cascade destroy the backing EBS
-  volumes (Delete-reclaim PVs); recovery depended on out-of-band snapshots. A managed endpoint is
-  decoupled from the cluster's lifecycle.
+  volumes (Delete-reclaim PVs); recovery depended on out-of-band snapshots.
 - **Cutover fragility.** Adopting an existing operator-managed CR in place hits server-side-apply
   conflicts on fields the operator defaults: CNPG stores `postgresql.parameters` values as typed scalars,
   and cass-operator populates `podTemplateSpec.spec.containers`, so re-applying a differently-authored CR
-  over the live object fails the dry-run. A managed endpoint has no in-cluster CR to adopt, so this class
-  of conflict disappears.
+  over the live object fails the dry-run.
+
+A naive "make aws fully managed" reading of this says: swap postgres to RDS, Elasticsearch to OpenSearch,
+and cassandra to Amazon Keyspaces. That is three managed services, one of which (Keyspaces) is a hard swap
+from Temporal's cassandra plugin (protocol, LWT, tunable-consistency differences).
+
+**The observation that simplifies the whole tier:** cassandra and Elasticsearch each exist for exactly one
+reason, and it is the same reason. Cassandra is Temporal's default store; Elasticsearch is Temporal's
+visibility store. Nothing else in the deploy base consumes either one. They were inherited from the
+temporalio Helm chart's default datastore combo, not chosen for a scale requirement Scout has (its
+workload is batch HL7 extraction, well inside PostgreSQL's envelope). Temporal supports PostgreSQL for
+**both** stores: the `default` store via the `postgres12` SQL plugin, and the `visibility` store via SQL
+advanced visibility (GA since Temporal 1.20; Scout pins 1.31). So Temporal can run entirely on PostgreSQL,
+and cassandra + Elasticsearch can be removed from Scout altogether.
 
 ## Decision
 
-Extend `service_mode` to the data tier. Postgres and Elasticsearch become **mode-selected between a
-self-hosted operator (on-prem) and an external managed endpoint (aws)**, consumed through a connection
-abstraction rather than a hardcoded in-cluster service name.
+**1. The data tier is PostgreSQL-only, mode-selected between self-hosted (on-prem) and managed (aws).**
 
-**postgres**
 - **on-prem**: CNPG `Cluster` as today (the `postgres-cluster` Flux Kustomization).
 - **aws**: no CNPG `Cluster`. Consumers connect to an external **RDS** instance via `${postgres_host}`
   (+ `${postgres_port}`) and a site-provided credential Secret. `postgres-cluster` becomes on-prem-only,
   the same way ADR 0035 makes `storage-ready`/MinIO and the Traefik edge on-prem-only.
 
-**elasticsearch**
-- **on-prem**: ECK `Elasticsearch` as today (the `elasticsearch-cluster` Kustomization).
-- **aws**: no ECK cluster. The extractor + consumers connect to an external **OpenSearch** domain via
-  `${es_host}` and a site credential Secret. `elasticsearch-cluster` becomes on-prem-only.
+The seam is a host cluster-var (`${postgres_host}`) that resolves to the in-cluster service name on-prem
+(e.g. `postgresql-cluster-rw.<ns>.svc`) and to the RDS endpoint on aws. Every consumer (hive-metastore,
+keycloak, superset, extractor, launchpad) already reads its DB host from config; they switch to the
+cluster-var. Credentials stay fixed-name Secrets (ADR 0031); an aws site materializes them from RDS
+instead of from the operator-generated Secret.
 
-**The seam** is a per-service host cluster-var (`${postgres_host}`, `${es_host}`) that resolves to the
-in-cluster service name on-prem (e.g. `postgresql-cluster-rw.<ns>.svc`) and to the managed endpoint on
-aws. Every consumer (hive-metastore, keycloak, superset, extractor, launchpad) already reads its DB/ES
-host from config; they switch to the cluster-var. Credentials stay fixed-name Secrets (ADR 0031); an aws
-site materializes them from RDS/OpenSearch instead of from the operator-generated Secret.
+**2. Temporal moves off cassandra + Elasticsearch onto PostgreSQL, in both modes.**
 
-**cassandra (temporal)** stays self-hosted (cass-operator) in **both** modes for now. Temporal's
-cassandra-schema tooling plus the operator's rack/repair/topology management make Amazon Keyspaces a
-non-trivial swap (protocol, LWT, tunable-consistency differences). Managed cassandra for temporal is an
-explicit follow-up, out of scope here. Its adopt-in-place conflict (above) is handled separately: either
-force-apply the `CassandraDatacenter`, or exclude it from the adopt and let cass-operator keep ownership.
+Temporal's persistence changes from `{default: cassandra, visibility: elasticsearch}` to
+`{default: sql/postgres12, visibility: sql/postgres12}` (the temporalio chart's `sql` datastore). Temporal
+gets its own `temporal` + `temporal_visibility` databases and role, provisioned the same way the other app
+roles/DBs are (a CNPG managed role on-prem; RDS on aws) and initialized by the chart's schema-setup job
+(temporal-sql-tool, via the admin-tools image already pinned). Both datastores resolve to `${postgres_host}`
+like every other consumer.
+
+**3. cassandra and Elasticsearch are removed from the deploy base entirely.**
+
+With Temporal on PostgreSQL, nothing consumes them. Drop the `cassandra` + `elasticsearch` bases, their
+operators (cass-operator, ECK), and their Flux Kustomizations. This also retires the cassandra rack/PVC
+naming and its r1->default rebind migration (ADR/runbook), the cassandra JVM tuning, and the cassandra +
+ECK adopt-in-place conflicts (there is no CR to adopt).
 
 ## Consequences
 
-- **aws sites provision RDS + OpenSearch out-of-band** (site IaC) and pass the endpoints as cluster-vars
-  + the credentials as the fixed-name Secrets. Same principle as ADR 0035: the artifact expresses both
-  modes; the site selects one and supplies that mode's inputs.
-- **Removes the CNPG/ECK adopt-in-place conflict** for postgres + ES in aws (no in-cluster CR to adopt),
-  and removes the in-cluster blast radius for those tiers.
-- **on-prem is unchanged.**
-- **Migration** from an existing self-hosted deployment to managed is a one-time dump/restore (`pg_dump` /
-  reindex or snapshot-restore) at the aws cutover; flipping the connection cluster-var is the switch.
-- **Contract additions**: `postgres_host`/`postgres_port`/`es_host` (+ any TLS opts) in `required-vars.txt`;
-  the RDS/OpenSearch credential Secrets in `required-secrets.md`.
-- **Cost/latency**: managed endpoints add a network hop vs an in-cluster pod; acceptable for the
-  operational + durability gains.
+- **aws needs one managed service, not three.** RDS only. No OpenSearch, no Amazon Keyspaces. The hardest
+  managed swap (Keyspaces) never happens, because cassandra is gone.
+- **on-prem drops two operators.** cass-operator and ECK are removed; on-prem runs one stateful operator
+  (CNPG) instead of three. This is a change to on-prem as well as aws, so the ADR's scope is both modes.
+- **Removes every data-tier adopt-in-place conflict.** postgres in aws has no in-cluster CR; cassandra + ES
+  no longer exist. The cutover's only remaining stateful-adoption case is CNPG on-prem.
+- **Retires the cassandra rack migration.** Existing r1 clusters (incl WashU prod) no longer owe an
+  r1->default PV rebind; cassandra is decommissioned, not migrated in place.
+- **New migration cost: Temporal history.** Temporal has no cross-backend history migration. An existing
+  cassandra/ES deployment cuts over by quiescing (stop admitting workflows, let running ones drain, resume
+  on empty PostgreSQL history) or by accepting completed-history loss. This is tractable for Scout's
+  short-lived batch workflows (a maintenance window sized to the longest-running workflow) and is simpler
+  than the r1->default PV surgery it replaces. The postgres migration itself is the same one-time
+  `pg_dump`/restore at the aws cutover; flipping `${postgres_host}` is the switch.
+- **PostgreSQL carries more load.** Temporal history + visibility now share the database with the app
+  schemas. Give Temporal its own database + role (isolation, retention), set a sane namespace retention so
+  the visibility table does not bloat, and size RDS / the CNPG cluster accordingly. On aws a dedicated
+  Temporal RDS instance is optional if load isolation is wanted; at Scout's scale a single instance is fine.
+- **Contract changes**: add `postgres_host`/`postgres_port` (+ any TLS opts) and the Temporal DB/role to
+  `required-vars.txt`; add the RDS credential Secret + the Temporal DB Secret to `required-secrets.md`;
+  remove the cassandra + Elasticsearch cluster-vars and their Secrets.
+- **on-prem is otherwise unchanged** (still CNPG-backed; it now also hosts Temporal).
 
 ## Alternatives considered
 
-- **Keep self-hosting in aws** (status quo): rejected — operational burden, blast radius, and the cutover
+- **Keep self-hosting in aws** (status quo): rejected, operational burden, blast radius, and the cutover
   fragility above.
+- **Make aws fully managed with three services** (RDS + OpenSearch + Amazon Keyspaces), keeping Temporal on
+  cassandra + ES: rejected. It triples the managed-service surface, and Keyspaces is a hard swap from
+  Temporal's cassandra plugin. Because cassandra + ES are Temporal-only, moving Temporal to postgres removes
+  the need for two of the three.
+- **Move Temporal's default store to postgres but keep ES for visibility**: a valid de-risking phase (drop
+  cassandra first, ES second), but the end state carries an entire operator (ECK, or an OpenSearch domain)
+  for one job, Temporal visibility, that PostgreSQL serves natively at 1.31. Recommended only as an interim
+  step, not the target.
+- **Reintroduce ES/OpenSearch later for a non-Temporal search need**: out of scope. If Scout ever grows a
+  search feature beyond Temporal visibility, ES/OpenSearch can return as a mode-selected service under the
+  same ADR 0035/0036 pattern; nothing here precludes it.
 - **Self-host but harden** (Retain reclaim, force-apply, PVC guards): mitigates the data-loss + conflict
-  symptoms but keeps the operational burden, and is strictly worse than a managed endpoint in a cloud that
-  offers one. (Still the right hardening for on-prem and for the cassandra tier that stays self-hosted.)
+  symptoms but keeps the operational burden; strictly worse than a managed endpoint in a cloud that offers
+  one. (Still the right hardening for the on-prem CNPG that remains.)
