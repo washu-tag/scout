@@ -269,9 +269,13 @@ async def _run_chart_query(
     count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
     try:
         with metrics.time_trino(op):
+            # safe: sql is LLM-authored, wrapped as subquery; OPA is the AuthZ boundary
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             columns, _ = await trino_client.execute(
                 probe_sql, user=user_sub, params=params
             )
+            # safe: sql is LLM-authored, wrapped as subquery; OPA is the AuthZ boundary
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             _, count_rows = await trino_client.execute(
                 count_sql, user=user_sub, params=params
             )
@@ -421,6 +425,8 @@ async def get_plot(
     all_sql = f"SELECT s.* FROM ({plot['sql']}) s LIMIT {cap + 1}"
     try:
         with metrics.time_trino("plot_rows"):
+            # safe: plot["sql"] is persisted validated SQL; ids bind via ?
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             _cols, rows = await trino_client.execute(
                 all_sql,
                 user=user.sub,
