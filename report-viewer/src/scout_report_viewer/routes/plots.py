@@ -11,6 +11,7 @@ chart so every re-run binds the same rows.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -129,10 +130,23 @@ def _reject_bad_legend_bind(node: Any) -> None:
             _reject_bad_legend_bind(item)
 
 
-def _reject_uncompilable_spec(spec: dict[str, Any]) -> None:
-    """Catch-all: actually render the spec rather than just inspecting it."""
+_RENDER_TIMEOUT_SECONDS = 10
+
+
+async def _reject_uncompilable_spec(spec: dict[str, Any]) -> None:
+    """Catch-all: actually render the spec rather than just inspecting it.
+    Off the event loop and time-boxed - a slow render (e.g. a `repeat`/
+    `concat` fan-out) would otherwise stall every other request."""
     try:
-        vl_convert.vegalite_to_svg(spec)
+        await asyncio.wait_for(
+            asyncio.to_thread(vl_convert.vegalite_to_svg, spec),
+            timeout=_RENDER_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="vega_lite_spec took too long to render",
+        )
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -151,7 +165,7 @@ def _parse_spec_form(raw: str) -> dict[str, Any]:
         )
 
 
-def _validate_spec(spec: dict[str, Any]) -> None:
+async def _validate_spec(spec: dict[str, Any]) -> None:
     if not isinstance(spec, dict):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -167,7 +181,7 @@ def _validate_spec(spec: dict[str, Any]) -> None:
         )
     _reject_foreign_urls(spec)
     _reject_bad_legend_bind(spec)
-    _reject_uncompilable_spec(spec)
+    await _reject_uncompilable_spec(spec)
 
 
 @router.get("", response_model=list[PlotMeta])
@@ -262,7 +276,7 @@ async def create_plot(
     store: PlotStore = Depends(get_plot_store),
 ) -> PlotResponse:
     spec = _clean_spec(body.vega_lite_spec)
-    _validate_spec(spec)
+    await _validate_spec(spec)
     columns, rows = await _run_chart_query(body.sql, user_sub=user.sub, op="plot_query")
     return await _save_chart(
         store,
@@ -296,7 +310,7 @@ async def create_plot_from_file(
     the same cohort.
     """
     spec = _clean_spec(_parse_spec_form(vega_lite_spec))
-    _validate_spec(spec)
+    await _validate_spec(spec)
     try:
         raw = await file.read()
     finally:
