@@ -20,9 +20,12 @@ pluggable app single-site.
 """
 
 import re
+from collections.abc import Iterator
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from .substitution import OPEN as SUBSTITUTION_OPEN
 
 API_VERSION = "keycloak.scout.xnat.org/v1alpha1"
 KIND = "KeycloakFragment"
@@ -72,6 +75,44 @@ STRUCTURAL_CLAIMS = frozenset(
 # nothing dangerous: a client role is scoped to its client, and each redirect
 # URI is host-checked. The real bound is on document size, and the discovery
 # volume already has one.
+
+
+def strings(value: object, path: str = "") -> Iterator[tuple[str, str]]:
+    """Every string anywhere in a model, with the field path that reached it."""
+    if isinstance(value, str):
+        yield path or "(root)", value
+    elif isinstance(value, BaseModel):
+        for name, item in value:
+            yield from strings(item, f"{path}.{name}" if path else name)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            yield from strings(item, f"{path}.{key}" if path else str(key))
+    elif isinstance(value, (list, tuple)):
+        for index, item in enumerate(value):
+            yield from strings(item, f"{path}[{index}]")
+
+
+def check_no_substitution(model: BaseModel) -> None:
+    """Refuse config-cli's substitution prefix anywhere in a fragment.
+
+    The composed realm is applied with `import.var-substitution` on, and
+    substitution does not care which part of the document it is reading. A
+    fragment that wrote `$(env:oauth2_proxy)` into a display name would have
+    oauth2-proxy's client secret resolved into a field it is allowed to read
+    back. The reconciler writes the fragment's own `$(env:...)` token itself
+    (`substitution.env_name`), so nothing legitimate needs this syntax.
+
+    Walks every string rather than the four fields that are reachable today:
+    this is the security boundary, and a term added later must not quietly opt
+    out of it.
+    """
+    for where, text in strings(model):
+        if SUBSTITUTION_OPEN in text:
+            raise ValueError(
+                f"{where}: {text!r} contains {SUBSTITUTION_OPEN!r}, which the "
+                "realm import would resolve as a variable; a fragment may not "
+                "use substitution syntax"
+            )
 
 
 def duration_seconds(value: str) -> int:
@@ -160,6 +201,7 @@ class ClientSpec(BaseModel):
 
     @model_validator(mode="after")
     def _check(self) -> ClientSpec:
+        check_no_substitution(self)
         if not CLIENT_ID_RE.match(self.clientId):
             raise ValueError(
                 f"clientId {self.clientId!r} must match {CLIENT_ID_RE.pattern}"

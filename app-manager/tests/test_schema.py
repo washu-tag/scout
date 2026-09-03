@@ -164,6 +164,40 @@ def test_unknown_placeholder_is_caught_offline():
         load(fragment_yaml(redirectUris=["https://hello.${realm_domain}/cb"]))
 
 
+# --- config-cli substitution ------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("displayName", "$(env:oauth2_proxy)"),
+        ("description", "leaks $(env:superset) here"),
+        ("appUrl", "https://hello.${domain}/$(env:launchpad_client)"),
+        ("redirectUris", ["https://hello.${domain}/cb?x=$(env:grafana)"]),
+    ],
+)
+def test_substitution_syntax_is_refused(field, value):
+    """The realm is applied with var-substitution on, and it reads everything.
+
+    `$(env:superset)` in a display name would have config-cli resolve
+    superset's client secret into a field this fragment's own component can
+    read straight back out of Keycloak.
+    """
+    with pytest.raises(ValidationError, match="substitution"):
+        load(fragment_yaml(**{field: value}))
+
+
+def test_substitution_syntax_is_refused_inside_a_redirect_host():
+    """The host check alone does not catch it: this one ends in the domain."""
+    with pytest.raises(ValidationError, match="substitution"):
+        load(fragment_yaml(redirectUris=["https://$(env:minio).${domain}/cb"]))
+
+
+def test_a_lone_dollar_is_still_fine():
+    """Only the substitution prefix is refused, not the character."""
+    assert load(fragment_yaml(displayName="Hello $ Scout")).clients[0].displayName
+
+
 def test_several_hosts_are_allowed():
     """oauth2-proxy has two; the old subdomain form could not say this."""
     fragment = load(
