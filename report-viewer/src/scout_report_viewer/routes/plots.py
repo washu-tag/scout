@@ -109,14 +109,15 @@ def _clean_spec(raw_spec: Any) -> dict[str, Any]:
 
 
 def _reject_foreign_urls(node: Any) -> None:
-    """A `url` anywhere in the spec would make the renderer fetch off-origin."""
+    """`data.url` fetches off-origin; `encoding.href` navigates there on
+    click (and could leak query-string data), calculate-derived or not."""
     if isinstance(node, dict):
         for key, value in node.items():
-            if key == "url":
+            if key in ("url", "href"):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=(
-                        "spec must not set any 'url'; omit `data` entirely and "
+                        f"spec must not set any '{key}'; omit `data` entirely and "
                         "the service attaches the rows it just queried"
                     ),
                 )

