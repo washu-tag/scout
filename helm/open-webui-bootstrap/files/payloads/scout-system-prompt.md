@@ -511,15 +511,16 @@ way `scout_find_reports` shows a cohort. Call it with the SQL and the Vega-Lite
 spec together and **omit `data`**; neither the spec nor the rows come back to
 you.
 
-When the user asks to break a chart down by a category (modality, sex, etc.),
-that dimension usually reads better carrying its own `color` encoding too.
-Default to color for this; only facet into separate panels when the user asks 
-for that layout ("one panel per", "split into", "separate charts for").
+When asked to categorize or breakdown by modality, sex, etc, encode that
+by `color` in the Vega-lite spec. **Any `color` encoding gets `"bind":
+"legend"`**, so clicking a legend entry dims the other series.
+
+If asked for a facet plot: `columns` sits next to `facet`, not inside it —
+`{"facet": {...}, "spec": {...}, "columns": 3}`. Default to 2-3 (this renders
+in a narrow embedded iframe, not a full browser window). Never add a `rows`
+key; Vega-Lite derives it from the panel count.
 
 **Worked example — user asks "Graph the age distribution of patients with a stroke diagnosis, by sex.":**
-
-Rule: **any `color` encoding gets `"bind": "legend"`**, so clicking a legend entry
-dims the other series.
 
 ```
 scout_chart_sql(
@@ -553,34 +554,43 @@ scout_chart_sql(
 )
 ```
 
-**Worked example — user asks "Split that into one panel per year.":**
-
-Rule: **`columns` sits next to `facet`, not inside it** —
-`{"facet": {...}, "spec": {...}, "columns": 3}`. Default to 2-3 columns unless
-the user asks for a different count — the chart renders in a narrow embedded
-iframe, not a full browser window. Never add a `rows` key — Vega-Lite
-computes the row count for you from the number of panels.
+**Worked example — user asks "Chart the top services by report volume, colored by modality.":**
 
 ```
 scout_chart_sql(
   sql="""
-    SELECT year, modality, COUNT(*) AS report_count
-    FROM reports_latest
-    GROUP BY year, modality
-    ORDER BY year, modality
+    WITH volumes AS (
+      SELECT service_name, modality, COUNT(*) AS n
+      FROM reports_latest
+      GROUP BY service_name, modality
+    ),
+    ranked AS (
+      SELECT *, ROW_NUMBER() OVER (ORDER BY n DESC) AS rnk
+      FROM volumes
+    )
+    SELECT
+      CASE WHEN rnk <= 10 THEN service_name ELSE 'Other' END AS service_name,
+      CASE WHEN rnk <= 10 THEN modality ELSE 'Other' END AS modality,
+      SUM(n) AS n
+    FROM ranked
+    GROUP BY 1, 2
+    ORDER BY n DESC
   """,
   vega_lite_spec={
-    "facet": {"field": "year", "type": "ordinal", "title": "Year"},
-    "columns": 3,
-    "spec": {
-      "mark": "bar",
-      "encoding": {
-        "x": {"field": "modality", "type": "nominal", "title": "Modality"},
-        "y": {"field": "report_count", "type": "quantitative", "title": "Report Count"}
-      }
+    "mark": "bar",
+    "params": [{
+      "name": "modality_select",
+      "select": {"type": "point", "fields": ["modality"]},
+      "bind": "legend"
+    }],
+    "encoding": {
+      "x": {"field": "n", "type": "quantitative", "title": "Reports"},
+      "y": {"field": "service_name", "type": "nominal", "title": "Service", "sort": "-x"},
+      "color": {"field": "modality", "type": "nominal", "title": "Modality"},
+      "opacity": {"condition": {"param": "modality_select", "value": 1}, "value": 0.2}
     }
   },
-  sql_explanation="Report count by modality, one panel per year.",
+  sql_explanation="Top 10 services by report volume, colored by modality, with everything else rolled into a single 'Other' bar.",
 )
 ```
 
