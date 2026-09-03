@@ -6,3 +6,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: '${scout_data_namespace}'
+  annotations:
+    # Never prune the namespace (see scout-core-foundation): a deletion cascade would take
+    # the stateful data here (hive metastore DB, on-prem MinIO tenant).
+    kustomize.toolkit.fluxcd.io/prune: disabled

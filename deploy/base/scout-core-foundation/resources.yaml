@@ -7,3 +7,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: '${scout_core_namespace}'
+  annotations:
+    # Never prune the namespace: a namespace DELETION cascades to its PVCs -> PVs ->
+    # volumes, which the Database/CR-level reclaim guards don't stop. The stateful data
+    # lives here (postgres). Removing scout leaves the namespace, deliberately.
+    kustomize.toolkit.fluxcd.io/prune: disabled
