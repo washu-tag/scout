@@ -58,10 +58,10 @@ _HEAVY_COLS: frozenset[str] = frozenset(
 )
 
 
-# The viewer owns how a chart looks, and merges its own config at render.
-# A model-supplied palette or size fights that, so drop them on the way in.
+# Viewer-owned keys; `usermeta` too since vega-embed lets a spec override
+# our CSP-safe embed options (e.g. re-enable eval-based codegen) via it.
 _COSMETIC_KEYS: frozenset[str] = frozenset(
-    {"config", "background", "padding", "width", "height", "autosize"}
+    {"config", "background", "padding", "width", "height", "autosize", "usermeta"}
 )
 
 

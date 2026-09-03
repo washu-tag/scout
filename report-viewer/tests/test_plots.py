@@ -179,6 +179,15 @@ def test_a_model_chosen_color_scheme_is_stripped(client, auth_headers, fake_trin
     assert scale["domain"] == ["MR", "CT"]
 
 
+def test_usermeta_is_stripped(client, auth_headers, fake_trino):
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    spec = {**BAR, "usermeta": {"embedOptions": {"ast": False}}}
+    plot_id = _create(client, auth_headers, spec=spec).json()["id"]
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
+    assert "usermeta" not in detail["spec"]
+
+
 def test_report_bodies_never_reach_the_browser(client, auth_headers, fake_trino):
     rows = [{"modality": "MR", "report_text": "PHI narrative"}]
     fake_trino(["modality", "report_text"], rows)
