@@ -17,6 +17,7 @@ import {
 import {
   activeFilterCount,
   downloadCsv,
+  exportSearchToSuperset,
   filterRows,
   friendlyError,
   getSearch,
@@ -82,6 +83,9 @@ export default function SearchDetailPage() {
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const colPickerRef = useRef<HTMLDivElement>(null);
+  // Issue #628 PoC.
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
@@ -621,6 +625,26 @@ export default function SearchDetailPage() {
               </button>
               <button
                 type="button"
+                disabled={exporting}
+                onClick={async () => {
+                  setExporting(true);
+                  setExportError(null);
+                  try {
+                    const result = await exportSearchToSuperset(searchId);
+                    window.open(result.dashboard_url ?? result.explore_url, '_blank', 'noopener');
+                  } catch (err) {
+                    setExportError(friendlyError(err, 'exporting this cohort'));
+                  } finally {
+                    setExporting(false);
+                  }
+                }}
+                style={paginationBtn}
+                title="PoC: create a private Superset dashboard scoped to this cohort"
+              >
+                {exporting ? 'Exporting…' : 'Export to Superset'}
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   const next = !iframeExpanded;
                   setIframeExpanded(next);
@@ -642,6 +666,9 @@ export default function SearchDetailPage() {
                 {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
               </button>
             </div>
+            {exportError && (
+              <p style={{ color: 'var(--rv-danger)', margin: '0.25rem 0 0' }}>{exportError}</p>
+            )}
           </div>
         )
       )}

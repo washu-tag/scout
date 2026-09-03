@@ -199,6 +199,10 @@ class ExportToSupersetResponse(BaseModel):
 
     dataset_id: int
     explore_url: str
+    # Set when the standard Scout dashboard was cloned against the new
+    # dataset; None if that dashboard hasn't been deployed (bare dataset/
+    # Explore view only).
+    dashboard_url: str | None = None
 
 
 class RowsResponse(BaseModel):

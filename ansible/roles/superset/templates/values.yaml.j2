@@ -154,6 +154,13 @@ configOverrides:
     # status (see report-viewer's matching constant).
     CHAT_COHORT_EXPORT_TOKEN = "scout-poc-chat-cohort-export-8f2e1c"
     CHAT_COHORT_EXPORT_SCHEMA = "chat_exports"
+    # The standard "Scout" dashboard (helm/scout-dashboards/files/analytics/
+    # dashboards/core/Scout_1.yaml) and the reports_latest dataset (.../
+    # datasets/Scout_Data_Lake/core/reports_latest.yaml) its charts are bound
+    # to - cloned against the new cohort dataset instead of leaving the user
+    # with a bare Explore view.
+    CORE_DASHBOARD_UUID = "47457783-1886-46d8-9012-df03fcb684eb"
+    CORE_DATASET_UUID = "14cdaed5-905e-499a-b020-13e1b54097c8"
 
     def _ensure_chat_cohort_grants_table(engine) -> None:
         from sqlalchemy import text
@@ -167,6 +174,51 @@ configOverrides:
                     "PRIMARY KEY (dataset_id, username))"
                 )
             )
+
+    def _clone_remap_position(position, chart_id_map) -> dict:
+        for value in position.values():
+            if not isinstance(value, dict) or value.get("type") != "CHART":
+                continue
+            meta = value.get("meta", {})
+            old_id = meta.get("chartId")
+            if old_id in chart_id_map:
+                meta["chartId"] = chart_id_map[old_id]
+        return position
+
+    def _clone_remap_metadata(metadata, chart_id_map, old_dataset_id, new_dataset_id) -> dict:
+        def remap_list(ids):
+            return [chart_id_map.get(i, i) for i in ids]
+
+        cc = metadata.get("chart_configuration") or {}
+        new_cc = {}
+        for key, val in cc.items():
+            try:
+                old_id = int(key)
+            except (TypeError, ValueError):
+                new_cc[key] = val
+                continue
+            new_id = chart_id_map.get(old_id, old_id)
+            if isinstance(val, dict):
+                if isinstance(val.get("id"), int):
+                    val["id"] = chart_id_map.get(val["id"], val["id"])
+                cf = val.get("crossFilters") or {}
+                if isinstance(cf.get("chartsInScope"), list):
+                    cf["chartsInScope"] = remap_list(cf["chartsInScope"])
+            new_cc[str(new_id)] = val
+        if cc:
+            metadata["chart_configuration"] = new_cc
+
+        gcc = metadata.get("global_chart_configuration") or {}
+        if isinstance(gcc.get("chartsInScope"), list):
+            gcc["chartsInScope"] = remap_list(gcc["chartsInScope"])
+
+        for nf in metadata.get("native_filter_configuration") or []:
+            if isinstance(nf.get("chartsInScope"), list):
+                nf["chartsInScope"] = remap_list(nf["chartsInScope"])
+            for target in nf.get("targets") or []:
+                if isinstance(target, dict) and target.get("datasetId") == old_dataset_id:
+                    target["datasetId"] = new_dataset_id
+        return metadata
 
     def _register_chat_cohort_export_api(app) -> None:
         from flask import Blueprint
@@ -195,10 +247,14 @@ configOverrides:
             # schemas call flask_babel.gettext() at import time, and Babel
             # isn't registered in app.extensions yet at that point
             # (KeyError: 'babel' crashing every worker on boot).
+            import json
+
             from flask_appbuilder.security.sqla.models import User as FabUser
             from sqlalchemy import text
             from superset.connectors.sqla.models import SqlaTable
             from superset.models.core import Database
+            from superset.models.dashboard import Dashboard
+            from superset.models.slice import Slice
 
             token = request.headers.get("X-Cohort-Export-Token", "")
             if not hmac.compare_digest(token, CHAT_COHORT_EXPORT_TOKEN):
@@ -231,6 +287,68 @@ configOverrides:
             db.session.add(table)
             db.session.flush()  # assign table.id
 
+            # Clone the standard Scout dashboard against the new dataset, if
+            # it's been deployed (helm/scout-dashboards import Job creates
+            # it). Skipped gracefully otherwise - the bare dataset/Explore
+            # view still works.
+            dashboard_url = None
+            source_dashboard = (
+                db.session.query(Dashboard).filter_by(uuid=CORE_DASHBOARD_UUID).first()
+            )
+            if source_dashboard is not None:
+                source_dataset = (
+                    db.session.query(SqlaTable).filter_by(uuid=CORE_DATASET_UUID).first()
+                )
+                chart_id_map = {}
+                new_slices = []
+                for src_slice in source_dashboard.slices:
+                    params = json.loads(src_slice.params or "{}")
+                    params["datasource"] = f"{table.id}__table"
+                    params.pop("dashboards", None)
+                    new_slice = Slice(
+                        slice_name=src_slice.slice_name,
+                        viz_type=src_slice.viz_type,
+                        datasource_id=table.id,
+                        datasource_type="table",
+                        params=json.dumps(params),
+                        # Regenerated fresh on first render from params/datasource
+                        # rather than carried over pointed at the old dataset.
+                        query_context=None,
+                        cache_timeout=src_slice.cache_timeout,
+                    )
+                    if owner is not None:
+                        new_slice.owners = [owner]
+                    db.session.add(new_slice)
+                    db.session.flush()  # assign new_slice.id
+                    chart_id_map[src_slice.id] = new_slice.id
+                    new_slices.append(new_slice)
+
+                position = _clone_remap_position(
+                    json.loads(source_dashboard.position_json or "{}"), chart_id_map
+                )
+                metadata = _clone_remap_metadata(
+                    json.loads(source_dashboard.json_metadata or "{}"),
+                    chart_id_map,
+                    source_dataset.id if source_dataset is not None else None,
+                    table.id,
+                )
+                new_dashboard = Dashboard(
+                    dashboard_title=f"{title} ({username})",
+                    position_json=json.dumps(position),
+                    json_metadata=json.dumps(metadata),
+                    # Draft (not published): Superset restricts draft
+                    # dashboards to owners + admins, giving this real
+                    # dashboard-level isolation independent of the dataset's
+                    # chat_cohort_grants check below.
+                    published=False,
+                    slices=new_slices,
+                )
+                if owner is not None:
+                    new_dashboard.owners = [owner]
+                db.session.add(new_dashboard)
+                db.session.flush()  # assign new_dashboard.id
+                dashboard_url = f"/superset/dashboard/{new_dashboard.id}/"
+
             db.session.execute(
                 text(
                     "INSERT INTO chat_cohort_grants (dataset_id, username) "
@@ -247,6 +365,7 @@ configOverrides:
                         "explore_url": (
                             f"/explore/?datasource_type=table&datasource_id={table.id}"
                         ),
+                        "dashboard_url": dashboard_url,
                     }
                 ),
                 201,

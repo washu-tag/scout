@@ -559,9 +559,12 @@ async def export_search_to_superset(
             detail=f"superset export failed: {exc}",
         )
     payload = resp.json()
+    base = settings.superset_external_url.rstrip("/")
+    dashboard_url = payload.get("dashboard_url")
     return ExportToSupersetResponse(
         dataset_id=payload["dataset_id"],
-        explore_url=f"{settings.superset_external_url.rstrip('/')}{payload['explore_url']}",
+        explore_url=f"{base}{payload['explore_url']}",
+        dashboard_url=f"{base}{dashboard_url}" if dashboard_url else None,
     )
 
 
