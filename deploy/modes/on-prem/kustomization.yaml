@@ -5,5 +5,7 @@ kind: Kustomization
 # Site-reconciled via ./modes/on-prem, a sibling of the shared deploy/flux/. Counterpart: ../aws.
 resources:
   - minio.yaml
+  - postgres.yaml
+  - es.yaml
   - oauth2-proxy.yaml
   - edge.yaml

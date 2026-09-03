@@ -74,6 +74,10 @@ oauth2-proxy stays in `ContainerCreating` on the missing mount.
 ## Notes for cloud setups
 - Provision the backing values with your IaC; keep them out of git. A typical AWS estate
   does this with Terraform into AWS Secrets Manager, consumed by ESO.
+- **Data tier is managed in aws (ADR 0036).** postgres = RDS, elasticsearch = OpenSearch:
+  no CNPG/ECK deploys (`postgres-ready`/`es-ready` are inert markers), consumers reach the
+  endpoint via the `${postgres_host}` / `${es_host}` site vars, and the DB/ES credential
+  Secrets are materialized from RDS/OpenSearch (same fixed names) instead of the operator.
 - Several values are shared across secrets (e.g. one Postgres role password appears in
   its `cnpg-role-*` and in the app's DB secret; one lake credential appears under
   several key names). Provision the value once and template it into each Secret.

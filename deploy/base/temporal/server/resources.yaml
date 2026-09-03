@@ -77,7 +77,7 @@ spec:
                 version: v7 # All ES versions (7/8/9) use the v7 template format
                 url:
                   scheme: http # TLS disabled on Elasticsearch for simplicity
-                  host: '${elasticsearch_cluster_name}-es-http.${scout_extractor_namespace}:9200'
+                  host: '${es_host}:9200'
                 username: elastic
                 # elastic-user secret from ECK (fixed name).
                 existingSecret: '${elasticsearch_cluster_name}-es-elastic-user'

@@ -30,6 +30,7 @@ elasticsearch_max_heap
 elasticsearch_memory_limit
 elasticsearch_memory_request
 elasticsearch_storage_size
+es_host
 extractor_data_dir
 hive_hadoop_opts
 hive_metastore_endpoint
@@ -87,6 +88,7 @@ postgres_cpu_limit
 postgres_cpu_request
 postgres_default_statistics_target
 postgres_effective_cache_size
+postgres_host
 postgres_maintenance_work_mem
 postgres_max_connections
 postgres_max_wal_size

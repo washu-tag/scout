@@ -92,7 +92,7 @@ spec:
           path-style-access: '${s3_path_style_access}'
         spring:
           datasource:
-            url: 'jdbc:postgresql://${postgres_cluster_name}-rw.${postgres_cluster_namespace}:${db_port}/${ingest_postgres_table_name}'
+            url: 'jdbc:postgresql://${postgres_host}:${db_port}/${ingest_postgres_table_name}'
             username: '${postgres_user}'
           temporal:
             connection:

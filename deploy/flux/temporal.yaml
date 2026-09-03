@@ -23,7 +23,7 @@ spec:
   dependsOn:
     - name: scout-extractor-foundation
     - name: cassandra-datacenter
-    - name: elasticsearch-cluster
+    - name: es-ready
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

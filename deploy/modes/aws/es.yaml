@@ -1,0 +1,23 @@
+# aws elasticsearch gate (ADR 0036): search is a managed OpenSearch domain reached at
+# ${es_host}, so `es-ready` is an inert, immediately-Ready marker (no ECK). Same name the
+# ES consumer (temporal) dependsOn; on-prem provides it as the ECK Elasticsearch (../on-prem).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: es-ready
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/es-ready
+  prune: true
+  wait: true
+  timeout: 2m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-extractor-foundation

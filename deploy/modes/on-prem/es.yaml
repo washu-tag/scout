@@ -1,7 +1,7 @@
-# Flux Kustomizations for elasticsearch (Phase 3 DAG). Pull config artifact (OCIRepository
-# scout-config) + cluster-vars for ${...} subst; dependsOn reproduces Ansible order.
-# CRD-owning operator is split so the CR never reconciles before its CRDs exist.
-
+# on-prem elasticsearch: self-hosted ECK (ADR 0036). Operator (L1) then the Elasticsearch
+# CR as the mode-agnostic `es-ready` gate (L2a), split so the CR never reconciles before the
+# ECK CRDs exist. aws provides es-ready as an inert marker (managed OpenSearch) instead
+# (../aws). The ES consumer (temporal) dependsOn es-ready in both modes.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -26,7 +26,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: elasticsearch-cluster
+  name: es-ready
   namespace: flux-system
 spec:
   interval: 30m
