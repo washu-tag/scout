@@ -213,13 +213,19 @@ async def _run_chart_query(
     op: str,
     params: list | None = None,
     hint: str = "",
-) -> tuple[list[str], list[dict[str, Any]]]:
+) -> tuple[list[str], int]:
     """Run it now so a broken query fails while the model can still fix it.
-    `hint` is appended to that error."""
+    `hint` is appended to that error. Only columns and a count are needed
+    here, so probe with LIMIT 0 instead of buffering every row."""
+    probe_sql = f"SELECT s.* FROM ({sql}) s LIMIT 0"
+    count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
     try:
         with metrics.time_trino(op):
-            columns, rows = await trino_client.execute(
-                sql, user=user_sub, params=params
+            columns, _ = await trino_client.execute(
+                probe_sql, user=user_sub, params=params
+            )
+            _, count_rows = await trino_client.execute(
+                count_sql, user=user_sub, params=params
             )
     except Exception as exc:
         log.exception("trino plot query failed")
@@ -227,13 +233,14 @@ async def _run_chart_query(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}{hint}",
         )
-    if not rows:
+    row_count = int(count_rows[0]["n"]) if count_rows else 0
+    if row_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="query returned no rows, so there is nothing to chart",
         )
-    metrics.RESULT_ROWS.labels(op=op).observe(len(rows))
-    return columns, rows
+    metrics.RESULT_ROWS.labels(op=op).observe(row_count)
+    return columns, row_count
 
 
 async def _save_chart(
@@ -278,13 +285,15 @@ async def create_plot(
 ) -> PlotResponse:
     spec = _clean_spec(body.vega_lite_spec)
     await _validate_spec(spec)
-    columns, rows = await _run_chart_query(body.sql, user_sub=user.sub, op="plot_query")
+    columns, row_count = await _run_chart_query(
+        body.sql, user_sub=user.sub, op="plot_query"
+    )
     return await _save_chart(
         store,
         sql=body.sql,
         raw_spec=spec,
         columns=columns,
-        row_count=len(rows),
+        row_count=row_count,
         user_sub=user.sub,
         sql_explanation=body.sql_explanation,
         owui_chat_id=body.owui_chat_id,
@@ -323,7 +332,7 @@ async def create_plot_from_file(
 
     predicate = f"contains(?, {quote_ident(resolved_id_column)})"
     chart_sql = substitute_cohort(sql, predicate)
-    columns, rows = await _run_chart_query(
+    columns, row_count = await _run_chart_query(
         chart_sql,
         user_sub=user.sub,
         op="plot_query_from_file",
@@ -335,7 +344,7 @@ async def create_plot_from_file(
         sql=chart_sql,
         raw_spec=spec,
         columns=columns,
-        row_count=len(rows),
+        row_count=row_count,
         user_sub=user.sub,
         sql_explanation=sql_explanation,
         owui_chat_id=owui_chat_id,
