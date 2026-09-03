@@ -1,5 +1,29 @@
 # Changelog
 
+## [4.3.0](https://github.com/washu-tag/scout/compare/v4.2.0...v4.3.0) (2026-09-03)
+
+
+### Features
+
+* **deploy:** add launchpad to the GitOps deploy base ([#708](https://github.com/washu-tag/scout/issues/708)) ([4366e06](https://github.com/washu-tag/scout/commit/4366e061339e14568c006d51da757c1d30cc3c75))
+* **keycloak:** manage the scout realm declaratively with keycloak-config-cli ([#698](https://github.com/washu-tag/scout/issues/698)) ([31a69ec](https://github.com/washu-tag/scout/commit/31a69ec48649c84c2ece8d64b34541877a514480))
+* **report-viewer:** add chat driven charting ([#718](https://github.com/washu-tag/scout/issues/718)) ([18c5319](https://github.com/washu-tag/scout/commit/18c531961c68ad902be4e1922c31e5fa8acd0fbd))
+
+
+### Bug Fixes
+
+* **cassandra:** drop the single-node rack name so the datacenter adopts its PVC in place ([#700](https://github.com/washu-tag/scout/issues/700)) ([5e56905](https://github.com/washu-tag/scout/commit/5e56905b1212d2a822f3632ad5fd604b5ec24ce3))
+* **deploy:** make mode sets siblings under modes/ (path: ./flux recursion fix) ([#709](https://github.com/washu-tag/scout/issues/709)) ([1e7d1c7](https://github.com/washu-tag/scout/commit/1e7d1c74f36804307911a182740214311c14f4a4))
+* Drop kafka pin to 4.3.0 for compatibility with 1.1.0 of operator ([#694](https://github.com/washu-tag/scout/issues/694)) ([bea19b7](https://github.com/washu-tag/scout/commit/bea19b713eb1a020ebbc08ef9473b2deb8c79327))
+* **extractor:** force libssl3/libcrypto3 security upgrade in base image ([#696](https://github.com/washu-tag/scout/issues/696)) ([2669c6a](https://github.com/washu-tag/scout/commit/2669c6ac555287b06cd29991ea6129a181555c55))
+* **extractor:** loosen refresh-views heartbeat timeout ([#695](https://github.com/washu-tag/scout/issues/695)) ([464c560](https://github.com/washu-tag/scout/commit/464c560cb74fcab049ccabf86b5a07cf061608f8))
+* **hl7-listener:** stop discarding messages that fail HL7 content validation ([#707](https://github.com/washu-tag/scout/issues/707)) ([fdedd53](https://github.com/washu-tag/scout/commit/fdedd53d09a4e6203f40727c79e8f141a8b88127))
+* Narrow superset role from Alpha to Gamma ([#703](https://github.com/washu-tag/scout/issues/703)) ([2b53bd1](https://github.com/washu-tag/scout/commit/2b53bd1b6602d90f758d9aadace081fb06cd5607))
+* **release:** also alias the scout-config artifact to the release version ([#689](https://github.com/washu-tag/scout/issues/689)) ([ac06200](https://github.com/washu-tag/scout/commit/ac06200eab8792a2aab00577f067eda7c647909d))
+* **release:** clear the autorelease label after tagging ([#714](https://github.com/washu-tag/scout/issues/714)) ([c5796ab](https://github.com/washu-tag/scout/commit/c5796ab1dd7f66e2eea3750792546109f52f01b5))
+* **release:** docker/login-action in publish-charts so cosign can auth to ghcr ([#688](https://github.com/washu-tag/scout/issues/688)) ([4189154](https://github.com/washu-tag/scout/commit/4189154f3a2b4d982745e529c38dee774b87f34b))
+* resolve fixable Trivy CVEs across keycloak, hl7-listener, launchpad, report-viewer  ([#706](https://github.com/washu-tag/scout/issues/706)) ([2699d4b](https://github.com/washu-tag/scout/commit/2699d4b41f37d81e2cb210f866b9eab09db87b01))
+
 ## [4.2.0](https://github.com/washu-tag/scout/compare/v4.1.0...v4.2.0) (2026-08-25)
 
 
