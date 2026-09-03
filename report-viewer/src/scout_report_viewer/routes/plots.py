@@ -92,11 +92,16 @@ def _wrap_sql(sql: str) -> str:
     return sql.rstrip().rstrip(";")
 
 
-def _clean_spec(raw_spec: dict[str, Any]) -> dict[str, Any]:
+def _clean_spec(raw_spec: Any) -> dict[str, Any]:
     """Strip viewer-owned/palette keys once, before validating, so the
     render check covers what actually gets persisted, not the raw input.
     Checks for a `url` on the raw spec first - stripping `data` would
     otherwise silently remove the evidence before it could be rejected."""
+    if not isinstance(raw_spec, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="vega_lite_spec must be a JSON object",
+        )
     _reject_foreign_urls(raw_spec)
     spec = {k: v for k, v in raw_spec.items() if k not in _COSMETIC_KEYS}
     return _strip_nested(spec)
@@ -229,11 +234,6 @@ def _parse_spec_form(raw: str) -> dict[str, Any]:
 
 
 async def _validate_spec(spec: dict[str, Any]) -> None:
-    if not isinstance(spec, dict):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="vega_lite_spec must be a JSON object",
-        )
     if not any(
         k in spec
         for k in ("mark", "layer", "facet", "hconcat", "vconcat", "concat", "repeat")

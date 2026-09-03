@@ -144,6 +144,19 @@ def test_a_csv_chart_without_the_cohort_placeholder_is_refused(
     assert "{{cohort}}" in r.json()["detail"]
 
 
+def test_a_non_object_spec_on_the_file_path_is_400_not_500(
+    client, auth_headers, fake_trino
+):
+    r = client.post(
+        "/api/plots/from-file",
+        files={"file": ("cohort.csv", CSV, "text/csv")},
+        data={"sql": COHORT_SQL, "vega_lite_spec": json.dumps(["not", "an", "object"])},
+        headers=auth_headers,
+    )
+    assert r.status_code == 400
+    assert "object" in r.json()["detail"]
+
+
 def test_another_user_cannot_open_someone_elses_chart(
     client, auth_headers, other_auth_headers, fake_trino
 ):
