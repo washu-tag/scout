@@ -45,9 +45,15 @@ spec:
           # The credentials the composed realm names but does not carry. Its
           # keys are the substitution variables verbatim, which is why this
           # Secret can be taken wholesale.
+          #
+          # optional, because the reconciler has already checked that every
+          # variable the document names resolves and refused the apply if one
+          # did not. Without it an absent Secret is a CreateContainerConfigError
+          # on a pod nobody is looking at, instead of that message.
           envFrom:
             - secretRef:
                 name: ${client_secrets_secret}
+                optional: true
           env:
             - name: KEYCLOAK_URL
               value: ${keycloak_url}

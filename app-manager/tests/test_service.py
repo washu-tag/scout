@@ -615,7 +615,11 @@ def test_the_apply_job_can_resolve_what_the_realm_names():
     container = job_body()["spec"]["template"]["spec"]["containers"][0]
     env = {e["name"]: e for e in container["env"]}
 
-    assert container["envFrom"] == [{"secretRef": {"name": "keycloak-client-secrets"}}]
+    # optional: the reconciler refuses the apply itself when a name does not
+    # resolve, so an absent Secret must not become a pod-level failure.
+    assert container["envFrom"] == [
+        {"secretRef": {"name": "keycloak-client-secrets", "optional": True}}
+    ]
     assert env["server_hostname"]["value"] == "scout.example.edu"
     substitution_on = json.loads(env["SPRING_APPLICATION_JSON"]["value"])["import"]
     assert substitution_on["var-substitution"]["enabled"] is True
