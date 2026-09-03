@@ -349,7 +349,9 @@ export default function PlotPage() {
         view = result;
         measure();
       })
-      .catch((err: unknown) => setRenderError(String(err)));
+      .catch((err: unknown) => {
+        if (!cancelled) setRenderError(String(err));
+      });
     return () => {
       cancelled = true;
       view?.finalize();
