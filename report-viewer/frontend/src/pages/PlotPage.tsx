@@ -81,6 +81,19 @@ function withLegendSelection(spec: Record<string, unknown>): Record<string, unkn
   };
 }
 
+// `opacity` only works inside `encoding`, but the model sometimes puts it
+// at the top level instead, where Vega-Lite silently ignores it.
+function hoistTopLevelOpacity(spec: Record<string, unknown>): Record<string, unknown> {
+  if (isComposite(spec) || !('mark' in spec)) return spec;
+  const opacity = spec.opacity;
+  if (!opacity || typeof opacity !== 'object') return spec;
+  const enc = (spec.encoding as Record<string, unknown>) ?? {};
+  if (enc.opacity) return spec;
+  const rest = { ...spec };
+  delete rest.opacity;
+  return { ...rest, encoding: { ...enc, opacity } };
+}
+
 // Wrapping only takes effect from a top-level `columns`, but the model
 // consistently nests it inside the facet channel instead - hoist it out.
 function hoistFacetColumns(spec: Record<string, unknown>) {
@@ -239,7 +252,9 @@ export default function PlotPage() {
     () =>
       plot.data
         ? withLegendSelection(
-            withInteractivity(dedupeLayerOpacity(hoistFacetColumns(plot.data.spec))),
+            withInteractivity(
+              dedupeLayerOpacity(hoistTopLevelOpacity(hoistFacetColumns(plot.data.spec))),
+            ),
           )
         : null,
     [plot.data],

@@ -65,6 +65,31 @@ _COSMETIC_KEYS: frozenset[str] = frozenset(
 )
 
 
+_SCALE_PALETTE_KEYS: frozenset[str] = frozenset({"scheme", "range"})
+
+
+def _strip_scale_palette(node: Any) -> Any:
+    """A nested `encoding.*.scale.scheme` fights the theme the same way a
+    top-level `config` does, but _COSMETIC_KEYS only strips top-level keys."""
+    if isinstance(node, dict):
+        out = {}
+        for key, value in node.items():
+            if key == "scale" and isinstance(value, dict):
+                value = {k: v for k, v in value.items() if k not in _SCALE_PALETTE_KEYS}
+            out[key] = _strip_scale_palette(value)
+        return out
+    if isinstance(node, list):
+        return [_strip_scale_palette(item) for item in node]
+    return node
+
+
+def _clean_spec(raw_spec: dict[str, Any]) -> dict[str, Any]:
+    """Strip viewer-owned/palette keys once, before validating, so the
+    render check covers what actually gets persisted, not the raw input."""
+    spec = {k: v for k, v in raw_spec.items() if k not in _COSMETIC_KEYS}
+    return _strip_scale_palette(spec)
+
+
 def _reject_foreign_urls(node: Any) -> None:
     """A `url` anywhere in the spec would make the renderer fetch off-origin."""
     if isinstance(node, dict):
@@ -206,8 +231,8 @@ async def _save_chart(
     owui_chat_id: str | None,
     uploaded_ids: list[str] | None = None,
 ) -> PlotResponse:
-    """Drop the spec keys the viewer owns, persist, return the view URL."""
-    spec = {k: v for k, v in raw_spec.items() if k not in _COSMETIC_KEYS}
+    """Persist the already-cleaned spec, return the view URL."""
+    spec = dict(raw_spec)
     spec["$schema"] = VEGA_LITE_SCHEMA
     spec.pop("data", None)
 
@@ -235,12 +260,13 @@ async def create_plot(
     user: User = Depends(get_current_user),
     store: PlotStore = Depends(get_plot_store),
 ) -> PlotResponse:
-    _validate_spec(body.vega_lite_spec)
+    spec = _clean_spec(body.vega_lite_spec)
+    _validate_spec(spec)
     columns, rows = await _run_chart_query(body.sql, user_sub=user.sub, op="plot_query")
     return await _save_chart(
         store,
         sql=body.sql,
-        raw_spec=body.vega_lite_spec,
+        raw_spec=spec,
         columns=columns,
         row_count=len(rows),
         user_sub=user.sub,
@@ -268,7 +294,7 @@ async def create_plot_from_file(
     The deduped ID list is stored with the chart, so later views re-run against
     the same cohort.
     """
-    spec = _parse_spec_form(vega_lite_spec)
+    spec = _clean_spec(_parse_spec_form(vega_lite_spec))
     _validate_spec(spec)
     try:
         raw = await file.read()

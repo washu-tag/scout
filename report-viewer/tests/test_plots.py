@@ -157,6 +157,28 @@ def test_a_spec_that_fails_to_render_is_refused(client, auth_headers, fake_trino
     assert "render" in r.json()["detail"]
 
 
+def test_a_model_chosen_color_scheme_is_stripped(client, auth_headers, fake_trino):
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "n", "type": "quantitative"},
+            "color": {
+                "field": "modality",
+                "type": "nominal",
+                "scale": {"scheme": "category10", "domain": ["MR", "CT"]},
+            },
+        },
+    }
+    plot_id = _create(client, auth_headers, spec=spec).json()["id"]
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
+    scale = detail["spec"]["encoding"]["color"]["scale"]
+    assert "scheme" not in scale
+    assert scale["domain"] == ["MR", "CT"]
+
+
 def test_report_bodies_never_reach_the_browser(client, auth_headers, fake_trino):
     rows = [{"modality": "MR", "report_text": "PHI narrative"}]
     fake_trino(["modality", "report_text"], rows)
