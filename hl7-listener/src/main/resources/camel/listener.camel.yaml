@@ -9,8 +9,11 @@
         - log:
             message: 'Received HL7 message from ${header.CamelMllpRemoteAddress}'
             loggingLevel: INFO
+        # Validation off so bronze captures a message even when it violates HAPI's
+        # version-conformance rules; with it on, those were answered MSA|AE and lost.
         - unmarshal:
-            hl7: {}
+            hl7:
+              validate: false
         - log:
             message: 'Parsed HL7 message: controlId=${header.CamelHL7MessageControl}, type=${header.CamelHL7TriggerEvent}, version=${header.CamelHL7VersionId}'
             loggingLevel: INFO

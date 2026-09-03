@@ -19,7 +19,8 @@ public class Constants {
         SearchAttributeKey.forOffsetDateTime(Constants.TEMPORAL_SCHEDULED_START_TIME);
     public static final DateTimeFormatter YYYYMMDD_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
     public static final String REFRESH_VIEWS_PROCEDURE_NAME = "refresh_materialized_views";
-    public static final int REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS = 5;
+    public static final int REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS = 30;
+    public static final int REFRESH_VIEWS_HEARTBEAT_TIMEOUT_SECONDS = 300;
     public static final int REFRESH_VIEWS_TIMEOUT_HOURS = 3;
     public static final String VIEW_REFRESH_WORKFLOW_ID = "view-refresh-ingest-db";
 }

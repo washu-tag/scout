@@ -2,5 +2,5 @@ apiVersion: v2
 name: temporal-bootstrap
 description: "Idempotent Temporal setup applied as Helm hooks (post-install,post-upgrade), mirroring the scout-dashboards import model. Currently enforces the `default` namespace's workflow-history retention (issue #432); a natural home for future Temporal bootstrap such as the scheduled-ingest schedule."
 type: application
-version: 4.2.0
+version: 0.0.0-dev
 appVersion: "1.31.0"

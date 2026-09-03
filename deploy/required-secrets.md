@@ -22,7 +22,10 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 | `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor}` | `username`, `password` | CNPG managed roles |
 | `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role) |
 | `keycloak-admin-secret` | `username`, `password` | Keycloak bootstrap admin + config-cli |
+| `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names) |
 | `valkey-auth` | `password`, `password-file` | Valkey chart + exporter |
+| `launchpad-keycloak-secret` | `client-secret` | launchpad OIDC login (pod-side; = the realm's `launchpad_client` value, not that key) |
+| `launchpad-nextauth-secret` | `secret` | launchpad next-auth session signing (generate-once) |
 
 ## scout-data (minio / hive)
 **Mode-specific.** Cloud uses AWS S3 + IRSA (no access-key Secrets); the MinIO-user
@@ -66,7 +69,7 @@ oauth2-proxy stays in `ContainerCreating` on the missing mount.
 - `${cassandra_cluster_name}-superuser` — cass-operator
 - `${elasticsearch_cluster_name}-es-elastic-user` — ECK
 - `trino-tls` — cert-manager `Certificate`
-- `keycloak-config`, `superset-config` — rendered config (CI / chart), not credentials
+- `superset-config` — rendered config (CI / chart), not credentials
 
 ## Notes for cloud setups
 - Provision the backing values with your IaC; keep them out of git. A typical AWS estate
@@ -75,5 +78,13 @@ oauth2-proxy stays in `ContainerCreating` on the missing mount.
   its `cnpg-role-*` and in the app's DB secret; one lake credential appears under
   several key names). Provision the value once and template it into each Secret.
 - Generate-once values with no natural source (`SUPERSET_SECRET_KEY`, the oauth2-proxy
-  `cookie-secret`, `trino-authz-env`) should be created once and stored, not rotated
-  casually (some are consumed at TLS-issue time).
+  `cookie-secret`, `trino-authz-env`, the launchpad `launchpad-nextauth-secret`) should
+  be created once and stored, not rotated casually (some are consumed at TLS-issue time).
+- Rotating a `keycloak-client-secrets` value does not by itself re-run the config-cli
+  import (the Job reads it via `envFrom` by name); it applies on the next realm/chart
+  upgrade, or force it with `flux reconcile hr keycloak-config-cli -n <ns>`.
+- Every enabled component's key must be present. config-cli leaves an unresolved
+  `$(env:...)` as literal text, so a missing key would set that client's secret to a
+  guessable placeholder. Provision `keycloak-client-secrets` fail-closed (an
+  ExternalSecret that errors if a source key is absent), and only enable an IdP or the
+  XNAT client once its key exists.

@@ -28,6 +28,10 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
+# libssl3/libcrypto3 repeatedly lag Alpine's OpenSSL patches on this base image;
+# pull latest explicitly instead of waiting on a rebuild. No-op once caught up.
+RUN apk add --no-cache --upgrade libssl3 libcrypto3
+
 ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED=1

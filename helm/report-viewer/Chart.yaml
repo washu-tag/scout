@@ -4,6 +4,6 @@ description: Scout report-viewer service - surfaces saved searches outside Open 
 
 type: application
 
-version: 4.2.0
+version: 0.0.0-dev
 
-appVersion: "4.2.0"
+appVersion: "latest"

@@ -24,7 +24,7 @@ helm_chart_values_files: []
 # Shared notebook image (scipy-notebook + trino-python-client + voila).
 # Used as JupyterHub's singleuser image and as Voila's image.
 scout_notebook_image_name: ghcr.io/washu-tag/scout-notebook
-scout_notebook_image_tag: 4.2.0
+scout_notebook_image_tag: latest
 
 # Shared OWUI DB name
 open_webui_database: openwebui
