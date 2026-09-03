@@ -99,10 +99,13 @@ def _validate_spec(spec: dict[str, Any]) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="vega_lite_spec must be a JSON object",
         )
-    if not any(k in spec for k in ("mark", "layer", "facet", "hconcat", "vconcat")):
+    if not any(
+        k in spec
+        for k in ("mark", "layer", "facet", "hconcat", "vconcat", "concat", "repeat")
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="vega_lite_spec needs a 'mark' (or layer/facet/concat)",
+            detail="vega_lite_spec needs a 'mark' (or layer/facet/concat/repeat)",
         )
     _reject_foreign_urls(spec)
 
