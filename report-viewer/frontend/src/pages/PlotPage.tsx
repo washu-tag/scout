@@ -207,10 +207,12 @@ function withContainerWidth(
     patch = { columns };
   }
 
+  // `container` isn't supported on a facet child at all (see comment above),
+  // so before the first measurement this needs a real number, not that string.
   const width =
     containerWidth > 0
       ? Math.max(MIN_PANEL_WIDTH, Math.floor((available - (columns - 1) * FACET_GUTTER) / columns))
-      : 'container';
+      : MIN_PANEL_WIDTH * 2;
   return { ...spec, ...patch, spec: { ...(child as Record<string, unknown>), width } };
 }
 
