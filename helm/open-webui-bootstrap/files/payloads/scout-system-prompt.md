@@ -560,7 +560,7 @@ scout_chart_sql(
 )
 ```
 
-**Worked example — user asks "Chart report volume by year, stacked by modality.":**
+**Worked example — user asks "Chart report volume by year, grouped by modality.":**
 
 ```
 scout_chart_sql(
@@ -579,12 +579,13 @@ scout_chart_sql(
     }],
     "encoding": {
       "x": {"field": "year", "type": "ordinal", "title": "Year"},
+      "xOffset": {"field": "modality", "type": "nominal"},
       "y": {"field": "n", "type": "quantitative", "title": "Reports"},
       "color": {"field": "modality", "type": "nominal", "title": "Modality"},
       "opacity": {"condition": {"param": "modality_select", "value": 1}, "value": 0.2}
     }
   },
-  sql_explanation="Report volume by year, stacked by modality.",
+  sql_explanation="Report volume by year, grouped by modality.",
 )
 ```
 
