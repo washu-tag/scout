@@ -11,9 +11,12 @@ Translation:
   - Jinja {% if/for %}      -> helm {{- if/range }} (conditionals gate on eq "true"
     because cluster-vars arrive as quoted strings; the alb host loop splits a
     comma-string and trims/drops blanks).
-  - secrets keycloak_*_secret -> $(env:<name>) (config-cli var-substitution, Job env).
-  - server_hostname + callback URLs -> $(env:server_hostname) reconstructions.
-  - site config (smtp/provider/terms/xnat/idps/hosts/attrs) -> chart .Values.
+  - site config (smtp/provider/terms/lifespans/xnat/idps/hosts/attrs) -> chart .Values.
+
+Client secrets, client ids and hostnames used to be translated here too. They are
+now written as `$(env:...)` in the template itself and pass through untouched, so
+both lanes hand config-cli the same tokens and resolve them from the same Job env.
+What is left in VARMAP is what the two lanes genuinely source differently.
 
 Usage:
   render_realm.py            # write the chart file
@@ -54,43 +57,6 @@ VARMAP = {
     "keycloak_smtp_from": "{{ .Values.smtp.from }}",
     "keycloak_smtp_envelope_from": "{{ .Values.smtp.envelopeFrom }}",
     "keycloak_smtp_ssl": "{{ .Values.smtp.ssl }}",
-    "keycloak_oauth2_proxy_client_id": "oauth2-proxy",
-    "keycloak_jupyterhub_client_id": "jupyterhub",
-    "keycloak_grafana_client_id": "grafana",
-    "keycloak_temporal_client_id": "temporal",
-    "keycloak_superset_client_id": "superset",
-    "keycloak_minio_client_id": "minio",
-    "keycloak_launchpad_client_id": "launchpad",
-    "keycloak_open_webui_client_id": "open-webui",
-    "keycloak_xnat_client_id": "xnat",
-    "keycloak_oauth2_proxy_client_secret": "$(env:oauth2_proxy)",
-    "keycloak_jupyterhub_client_secret": "$(env:jupyterhub)",
-    "keycloak_grafana_client_secret": "$(env:grafana)",
-    "keycloak_temporal_client_secret": "$(env:temporal)",
-    "keycloak_superset_client_secret": "$(env:superset)",
-    "keycloak_minio_client_secret": "$(env:minio)",
-    "keycloak_launchpad_client_secret": "$(env:launchpad_client)",
-    "keycloak_open_webui_client_secret": "$(env:open_webui)",
-    "keycloak_superset_svc_client_secret": "$(env:superset_svc)",
-    "keycloak_voila_svc_client_secret": "$(env:voila_svc)",
-    "keycloak_report_viewer_svc_client_secret": "$(env:report_viewer_svc)",
-    "keycloak_xnat_client_secret": "$(env:xnat)",
-    "keycloak_gh_client_id": "$(env:github_client_id)",
-    "keycloak_gh_client_secret": "$(env:github_client_secret)",
-    "keycloak_microsoft_client_id": "$(env:microsoft_client_id)",
-    "keycloak_microsoft_client_secret": "$(env:microsoft_client_secret)",
-    "keycloak_microsoft_tenant_id": "$(env:microsoft_tenant_id)",
-    "oauth2_proxy_callback_url": "https://auth.$(env:server_hostname)/oauth2/callback",
-    "oauth2_proxy_base_url": "https://auth.$(env:server_hostname)",
-    "oauth2_proxy_signout_url": "https://auth.$(env:server_hostname)/oauth2/sign_out",
-    "jupyterhub_callback_url": "https://jupyter.$(env:server_hostname)/hub/oauth_callback",
-    "grafana_callback_url": "https://grafana.$(env:server_hostname)/login/generic_oauth",
-    "temporal_callback_url": "https://temporal.$(env:server_hostname)/auth/sso/callback",
-    "superset_callback_url": "https://superset.$(env:server_hostname)/oauth-authorized/keycloak",
-    "minio_callback_url": "https://minio.$(env:server_hostname)/oauth_callback",
-    "launchpad_callback_url": "https://$(env:server_hostname)/api/auth/callback/keycloak",
-    "open_webui_callback_url": "https://chat.$(env:server_hostname)/oauth/oidc/callback",
-    "server_hostname": "$(env:server_hostname)",
 }
 
 GUARD = (

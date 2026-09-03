@@ -63,7 +63,7 @@
     },
     "roles": {
       "client": {
-        "{{ keycloak_oauth2_proxy_client_id }}": [
+        "oauth2-proxy": [
           {
             "name": "oauth2-proxy-user",
             "description": "Scout User Role for OAuth2 Proxy Client",
@@ -72,7 +72,7 @@
             "attributes": {}
           }
         ],
-        "{{ keycloak_jupyterhub_client_id }}": [
+        "jupyterhub": [
           {
             "name": "jupyterhub-admin",
             "description": "Scout Admin Role for JupyterHub Client",
@@ -88,7 +88,7 @@
             "attributes": {}
           }
         ],
-        "{{ keycloak_superset_client_id }}": [
+        "superset": [
           {
             "name": "superset_admin",
             "description": "Superset Admin role",
@@ -118,7 +118,7 @@
             "attributes": {}
           }
         ],
-        "{{ keycloak_grafana_client_id }}": [
+        "grafana": [
           {
             "name": "grafana-admin",
             "description": "Scout Admin Role for Grafana Client",
@@ -141,7 +141,7 @@
             "attributes": {}
           }
         ],
-        "{{ keycloak_temporal_client_id }}": [
+        "temporal": [
           {
             "name": "temporal-system:admin",
             "description": "Scout Admin Role for Temporal System",
@@ -159,7 +159,7 @@
         ],
         {#- MinIO's vocabulary is closed: `consoleAdmin` is a MinIO built-in canned
             policy, so the role name IS the value MinIO wants in its `policy` claim. -#}
-        "{{ keycloak_minio_client_id }}": [
+        "minio": [
           {
             "name": "consoleAdmin",
             "description": "MinIO canned policy granted to Scout admins",
@@ -168,7 +168,7 @@
             "attributes": {}
           }
         ],
-        "{{ keycloak_open_webui_client_id }}": [
+        "open-webui": [
           {
             "name": "open-webui-admin",
             "description": "Scout Admin Role for Open WebUI Client",
@@ -184,7 +184,7 @@
             "attributes": {}
           }
         ],
-        "{{ keycloak_launchpad_client_id }}": [
+        "launchpad": [
           {
             "name": "launchpad-admin",
             "description": "Scout Admin Role for Launchpad Client",
@@ -200,7 +200,7 @@
             "attributes": {}
           }
         ]{% if enable_xnat | default(false) | bool %},
-        "{{ keycloak_xnat_client_id }}": [
+        "xnat": [
           {
             "name": "xnat-access",
             "description": "Scout User Role for XNAT Client",
@@ -219,29 +219,29 @@
             client role, granted below. No group in this realm carries attributes. -#}
         "attributes": {},
         "clientRoles": {
-          "{{ keycloak_oauth2_proxy_client_id }}": [
+          "oauth2-proxy": [
             "oauth2-proxy-user"
           ],
-          "{{ keycloak_jupyterhub_client_id }}": [
+          "jupyterhub": [
             "jupyterhub-admin"
           ],
-          "{{ keycloak_launchpad_client_id }}": [
+          "launchpad": [
             "launchpad-admin"
           ],
-          "{{ keycloak_superset_client_id }}": [
+          "superset": [
             "superset_admin"
           ],
-          "{{ keycloak_grafana_client_id }}": [
+          "grafana": [
             "grafana-admin"
           ],
-          "{{ keycloak_temporal_client_id }}": [
+          "temporal": [
             "temporal-system:admin",
             "default:admin"
           ],
-          "{{ keycloak_open_webui_client_id }}": [
+          "open-webui": [
             "open-webui-admin"
           ],
-          "{{ keycloak_minio_client_id }}": [
+          "minio": [
             "consoleAdmin"
           ],
           {#- This lets a site admin use the Keycloak console.
@@ -255,23 +255,23 @@
       {
         "name": "scout-user",
         "clientRoles": {
-          "{{ keycloak_oauth2_proxy_client_id }}": [
+          "oauth2-proxy": [
             "oauth2-proxy-user"
           ],
-          "{{ keycloak_jupyterhub_client_id }}": [
+          "jupyterhub": [
             "jupyterhub-user"
           ],
-          "{{ keycloak_launchpad_client_id }}": [
+          "launchpad": [
             "launchpad-user"
           ],
-          "{{ keycloak_superset_client_id }}": [
+          "superset": [
             "superset_gamma",
             "superset_sql_lab"
           ],
-          "{{ keycloak_open_webui_client_id }}": [
+          "open-webui": [
             "open-webui-user"
           ]{% if enable_xnat | default(false) | bool %},
-          "{{ keycloak_xnat_client_id }}": [
+          "xnat": [
             "xnat-access"
           ]{% endif %}
         }
@@ -279,23 +279,23 @@
     ],
     "clients": [
       {
-        "name": "{{ keycloak_oauth2_proxy_client_id }}",
+        "name": "oauth2-proxy",
         "description": "OAuth2 Proxy Client",
         "enabled": true,
         "fullScopeAllowed": false,
-        "clientId": "{{ keycloak_oauth2_proxy_client_id }}",
+        "clientId": "oauth2-proxy",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_oauth2_proxy_client_secret }}",
+        "secret": "$(env:oauth2_proxy)",
         "redirectUris": [
-          "{{ oauth2_proxy_callback_url }}"{% for h in keycloak_alb_oidc_hosts %},
+          "https://auth.$(env:server_hostname)/oauth2/callback"{% for h in keycloak_alb_oidc_hosts %},
           "https://{{ h }}/oauth2/idpresponse"{% endfor %}
         ],
         "webOrigins": [
-          "{{ oauth2_proxy_base_url }}"{% for h in keycloak_alb_oidc_hosts %},
+          "https://auth.$(env:server_hostname)"{% for h in keycloak_alb_oidc_hosts %},
           "https://{{ h }}"{% endfor %}
         ],
         "attributes": {
-          "post.logout.redirect.uris": "https://{{ server_hostname }}"
+          "post.logout.redirect.uris": "https://$(env:server_hostname)"
         },
         "defaultClientScopes": [
           "web-origins",
@@ -313,19 +313,19 @@
         ]
       },
       {
-        "name": "{{ keycloak_jupyterhub_client_id }}",
+        "name": "jupyterhub",
         "description": "JupyterHub Client",
         "enabled": true,
         "fullScopeAllowed": false,
-        "clientId": "{{ keycloak_jupyterhub_client_id }}",
+        "clientId": "jupyterhub",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_jupyterhub_client_secret }}",
+        "secret": "$(env:jupyterhub)",
         "redirectUris": [
-          "{{ jupyterhub_callback_url }}",
-          "{{ oauth2_proxy_signout_url }}"
+          "https://jupyter.$(env:server_hostname)/hub/oauth_callback",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
-          "https://jupyter.{{ server_hostname }}"
+          "https://jupyter.$(env:server_hostname)"
         ],
         {#- trino-audience scope adds aud=trino to access tokens so notebooks
             can forward the user's JupyterHub token directly to Trino (JWT
@@ -340,7 +340,7 @@
             "protocolMapper": "oidc-usermodel-client-role-mapper",
             "consentRequired": false,
             "config": {
-              "usermodel.clientRoleMapping.clientId": "{{ keycloak_jupyterhub_client_id }}",
+              "usermodel.clientRoleMapping.clientId": "jupyterhub",
               "claim.name": "groups",
               "multivalued": "true",
               "jsonType.label": "String",
@@ -368,19 +368,19 @@
         ]
       },
       {
-        "name": "{{ keycloak_grafana_client_id }}",
+        "name": "grafana",
         "description": "Grafana Client",
         "enabled": true,
         "fullScopeAllowed": false,
-        "clientId": "{{ keycloak_grafana_client_id }}",
+        "clientId": "grafana",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_grafana_client_secret }}",
+        "secret": "$(env:grafana)",
         "redirectUris": [
-          "{{ grafana_callback_url }}",
-          "{{ oauth2_proxy_signout_url }}"
+          "https://grafana.$(env:server_hostname)/login/generic_oauth",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
-          "https://grafana.{{ server_hostname }}"
+          "https://grafana.$(env:server_hostname)"
         ],
         {#- Grafana's role_attribute_path is JMESPath over the ID token and userinfo,
             so both must carry it. -#}
@@ -391,7 +391,7 @@
             "protocolMapper": "oidc-usermodel-client-role-mapper",
             "consentRequired": false,
             "config": {
-              "usermodel.clientRoleMapping.clientId": "{{ keycloak_grafana_client_id }}",
+              "usermodel.clientRoleMapping.clientId": "grafana",
               "claim.name": "groups",
               "multivalued": "true",
               "jsonType.label": "String",
@@ -418,19 +418,19 @@
         ]
       },
       {
-        "name": "{{ keycloak_temporal_client_id }}",
+        "name": "temporal",
         "description": "Temporal Client",
         "enabled": true,
         "fullScopeAllowed": false,
-        "clientId": "{{ keycloak_temporal_client_id }}",
+        "clientId": "temporal",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_temporal_client_secret }}",
+        "secret": "$(env:temporal)",
         "redirectUris": [
-          "{{ temporal_callback_url }}",
-          "{{ oauth2_proxy_signout_url }}"
+          "https://temporal.$(env:server_hostname)/auth/sso/callback",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
-          "https://temporal.{{ server_hostname }}"
+          "https://temporal.$(env:server_hostname)"
         ],
         "attributes": {
           "access.token.lifespan": "{{ keycloak_temporal_token_lifespan }}",
@@ -448,7 +448,7 @@
             "protocolMapper": "oidc-usermodel-client-role-mapper",
             "consentRequired": false,
             "config": {
-              "usermodel.clientRoleMapping.clientId": "{{ keycloak_temporal_client_id }}",
+              "usermodel.clientRoleMapping.clientId": "temporal",
               "claim.name": "permissions",
               "multivalued": "true",
               "jsonType.label": "String",
@@ -475,19 +475,19 @@
         ]
       },
       {
-        "name": "{{ keycloak_superset_client_id }}",
+        "name": "superset",
         "description": "Superset Client",
         "enabled": true,
         "fullScopeAllowed": false,
-        "clientId": "{{ keycloak_superset_client_id }}",
+        "clientId": "superset",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_superset_client_secret }}",
+        "secret": "$(env:superset)",
         "redirectUris": [
-          "{{ superset_callback_url }}",
-          "{{ oauth2_proxy_signout_url }}"
+          "https://superset.$(env:server_hostname)/oauth-authorized/keycloak",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
-          "https://superset.{{ server_hostname }}"
+          "https://superset.$(env:server_hostname)"
         ],
         {#- userinfo.token.claim is load-bearing: Flask-AppBuilder's Keycloak handler
             reads role_keys from the userinfo response, not from the token. -#}
@@ -498,7 +498,7 @@
             "protocolMapper": "oidc-usermodel-client-role-mapper",
             "consentRequired": false,
             "config": {
-              "usermodel.clientRoleMapping.clientId": "{{ keycloak_superset_client_id }}",
+              "usermodel.clientRoleMapping.clientId": "superset",
               "claim.name": "groups",
               "multivalued": "true",
               "jsonType.label": "String",
@@ -525,19 +525,19 @@
         ]
       },
       {
-        "name": "{{ keycloak_minio_client_id }}",
+        "name": "minio",
         "description": "Minio Client",
         "enabled": true,
         "fullScopeAllowed": false,
-        "clientId": "{{ keycloak_minio_client_id }}",
+        "clientId": "minio",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_minio_client_secret }}",
+        "secret": "$(env:minio)",
         "redirectUris": [
-          "{{ minio_callback_url }}",
-          "{{ oauth2_proxy_signout_url }}"
+          "https://minio.$(env:server_hostname)/oauth_callback",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
-          "https://minio.{{ server_hostname }}"
+          "https://minio.$(env:server_hostname)"
         ],
         "attributes": {
           "access.token.lifespan": "{{ keycloak_minio_token_lifespan }}",
@@ -555,7 +555,7 @@
             "protocolMapper": "oidc-usermodel-client-role-mapper",
             "consentRequired": false,
             "config": {
-              "usermodel.clientRoleMapping.clientId": "{{ keycloak_minio_client_id }}",
+              "usermodel.clientRoleMapping.clientId": "minio",
               "claim.name": "policy",
               "multivalued": "true",
               "jsonType.label": "String",
@@ -582,19 +582,19 @@
         ]
       },
       {
-        "name": "{{ keycloak_launchpad_client_id }}",
+        "name": "launchpad",
         "description": "Launchpad Client",
         "enabled": true,
         "fullScopeAllowed": false,
-        "clientId": "{{ keycloak_launchpad_client_id }}",
+        "clientId": "launchpad",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_launchpad_client_secret }}",
+        "secret": "$(env:launchpad_client)",
         "redirectUris": [
-          "{{ launchpad_callback_url }}",
-          "{{ oauth2_proxy_signout_url }}"
+          "https://$(env:server_hostname)/api/auth/callback/keycloak",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
-          "https://{{ server_hostname }}"
+          "https://$(env:server_hostname)"
         ],
         {#- aud=scout-users-api so the scout-users SPI — which can grant scout-admin
             -> realm-admin — accepts only tokens minted for the launchpad, as
@@ -608,7 +608,7 @@
             "protocolMapper": "oidc-usermodel-client-role-mapper",
             "consentRequired": false,
             "config": {
-              "usermodel.clientRoleMapping.clientId": "{{ keycloak_launchpad_client_id }}",
+              "usermodel.clientRoleMapping.clientId": "launchpad",
               "claim.name": "groups",
               "multivalued": "true",
               "jsonType.label": "String",
@@ -648,19 +648,19 @@
         ]
       },
       {
-        "name": "{{ keycloak_open_webui_client_id }}",
+        "name": "open-webui",
         "description": "Open WebUI Client",
         "enabled": true,
         "fullScopeAllowed": false,
-        "clientId": "{{ keycloak_open_webui_client_id }}",
+        "clientId": "open-webui",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_open_webui_client_secret }}",
+        "secret": "$(env:open_webui)",
         "redirectUris": [
-          "{{ open_webui_callback_url }}",
-          "{{ oauth2_proxy_signout_url }}"
+          "https://chat.$(env:server_hostname)/oauth/oidc/callback",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
-          "https://chat.{{ server_hostname }}"
+          "https://chat.$(env:server_hostname)"
         ],
         {#- Audience scope the OWUI user token carries to report-viewer
             on the user's behalf (ADR 0022). report-viewer validates
@@ -673,7 +673,7 @@
             "protocolMapper": "oidc-usermodel-client-role-mapper",
             "consentRequired": false,
             "config": {
-              "usermodel.clientRoleMapping.clientId": "{{ keycloak_open_webui_client_id }}",
+              "usermodel.clientRoleMapping.clientId": "open-webui",
               {#- claim.name=groups matches OAUTH_ROLES_CLAIM=groups,
                   read from both the access and ID tokens. -#}
               "claim.name": "groups",
@@ -715,7 +715,7 @@
         "fullScopeAllowed": false,
         "clientId": "superset_svc",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_superset_svc_client_secret }}",
+        "secret": "$(env:superset_svc)",
         "serviceAccountsEnabled": true,
         "standardFlowEnabled": false,
         "directAccessGrantsEnabled": false,
@@ -741,7 +741,7 @@
         "fullScopeAllowed": false,
         "clientId": "voila_svc",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_voila_svc_client_secret }}",
+        "secret": "$(env:voila_svc)",
         "serviceAccountsEnabled": true,
         "standardFlowEnabled": false,
         "directAccessGrantsEnabled": false,
@@ -767,7 +767,7 @@
         "fullScopeAllowed": false,
         "clientId": "report_viewer_svc",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_report_viewer_svc_client_secret }}",
+        "secret": "$(env:report_viewer_svc)",
         "serviceAccountsEnabled": true,
         "standardFlowEnabled": false,
         "directAccessGrantsEnabled": false,
@@ -787,19 +787,19 @@
         ]
       }{% if enable_xnat | default(false) | bool %},
       {
-        "name": "{{ keycloak_xnat_client_id }}",
+        "name": "xnat",
         "description": "XNAT Client",
         "enabled": true,
         "fullScopeAllowed": false,
-        "clientId": "{{ keycloak_xnat_client_id }}",
+        "clientId": "xnat",
         "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_xnat_client_secret }}",
+        "secret": "$(env:xnat)",
         "redirectUris": [
-          "https://xnat.{{ server_hostname }}/openid-login",
-          "{{ oauth2_proxy_signout_url }}"
+          "https://xnat.$(env:server_hostname)/openid-login",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
-          "https://xnat.{{ server_hostname }}"
+          "https://xnat.$(env:server_hostname)"
         ],
         "attributes": {
           "pkce.code.challenge.method": "S256"
@@ -811,7 +811,7 @@
             "protocolMapper": "oidc-usermodel-client-role-mapper",
             "consentRequired": false,
             "config": {
-              "usermodel.clientRoleMapping.clientId": "{{ keycloak_xnat_client_id }}",
+              "usermodel.clientRoleMapping.clientId": "xnat",
               "claim.name": "groups",
               "multivalued": "true",
               "jsonType.label": "String",
@@ -847,8 +847,8 @@
           "enabled": true,
           "trustEmail": true,
           "config": {
-            "clientId": "{{ keycloak_gh_client_id }}",
-            "clientSecret": "{{ keycloak_gh_client_secret }}"
+            "clientId": "$(env:github_client_id)",
+            "clientSecret": "$(env:github_client_secret)"
           }
         }
         {% endif %}
@@ -861,9 +861,9 @@
           "enabled": true,
           "trustEmail": true,
           "config": {
-            "clientId": "{{ keycloak_microsoft_client_id }}",
-            "clientSecret": "{{ keycloak_microsoft_client_secret }}",
-            "tenantId": "{{ keycloak_microsoft_tenant_id }}"
+            "clientId": "$(env:microsoft_client_id)",
+            "clientSecret": "$(env:microsoft_client_secret)",
+            "tenantId": "$(env:microsoft_tenant_id)"
           }
         }
         {% endif %}
@@ -1127,57 +1127,57 @@
         scope for the roles it defines, which is why every role-owning client
         gets an explicit self-mapping here. -#}
     "clientScopeMappings": {
-      "{{ keycloak_oauth2_proxy_client_id }}": [
+      "oauth2-proxy": [
         {
-          "client": "{{ keycloak_oauth2_proxy_client_id }}",
+          "client": "oauth2-proxy",
           "roles": ["oauth2-proxy-user"]
         }
       ],
-      "{{ keycloak_jupyterhub_client_id }}": [
+      "jupyterhub": [
         {
-          "client": "{{ keycloak_jupyterhub_client_id }}",
+          "client": "jupyterhub",
           "roles": ["jupyterhub-admin", "jupyterhub-user"]
         }
       ],
-      "{{ keycloak_superset_client_id }}": [
+      "superset": [
         {
-          "client": "{{ keycloak_superset_client_id }}",
+          "client": "superset",
           "roles": ["superset_admin", "superset_alpha", "superset_gamma", "superset_sql_lab"]
         }
       ],
-      "{{ keycloak_grafana_client_id }}": [
+      "grafana": [
         {
-          "client": "{{ keycloak_grafana_client_id }}",
+          "client": "grafana",
           "roles": ["grafana-admin", "grafana-editor", "grafana-viewer"]
         }
       ],
-      "{{ keycloak_temporal_client_id }}": [
+      "temporal": [
         {
-          "client": "{{ keycloak_temporal_client_id }}",
+          "client": "temporal",
           "roles": ["temporal-system:admin", "default:admin"]
         }
       ],
-      "{{ keycloak_open_webui_client_id }}": [
+      "open-webui": [
         {
-          "client": "{{ keycloak_open_webui_client_id }}",
+          "client": "open-webui",
           "roles": ["open-webui-admin", "open-webui-user"]
         }
       ],
-      "{{ keycloak_launchpad_client_id }}": [
+      "launchpad": [
         {
-          "client": "{{ keycloak_launchpad_client_id }}",
+          "client": "launchpad",
           "roles": ["launchpad-admin", "launchpad-user"]
         }
       ],
-      "{{ keycloak_minio_client_id }}": [
+      "minio": [
         {
-          "client": "{{ keycloak_minio_client_id }}",
+          "client": "minio",
           "roles": ["consoleAdmin"]
         }
       ]{% if enable_xnat | default(false) | bool %},
-      "{{ keycloak_xnat_client_id }}": [
+      "xnat": [
         {
-          "client": "{{ keycloak_xnat_client_id }}",
+          "client": "xnat",
           "roles": ["xnat-access"]
         }
       ]{% endif %}
