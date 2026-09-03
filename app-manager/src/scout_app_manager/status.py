@@ -95,6 +95,11 @@ def from_document(doc: dict) -> State:
         # Durable: without it a restart has no expectation to compare the live
         # realm against, and drift goes unnoticed until the next apply.
         applied_import_checksum=doc.get("appliedImportChecksum"),
+        # Observations rather than memory -- a reconcile overwrites both before
+        # reading them. They round-trip because `status` renders this document
+        # and would otherwise report a readable realm as unreadable.
+        live_checksum=doc.get("liveImportChecksum"),
+        drift=bool(doc.get("driftDetected")),
         identical_to_base=bool(doc.get("identicalToBase")),
         phase=doc.get("phase", State.phase),
         applied_at=doc.get("appliedAt"),

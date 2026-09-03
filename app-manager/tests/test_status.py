@@ -56,6 +56,24 @@ def test_the_document_is_camel_cased_and_carries_every_fragment(setup):
     assert entry["retractingSince"] is None
 
 
+def test_the_published_document_round_trips(setup):
+    """`status` reads this document back, so a field that does not survive the
+    trip is reported wrong -- a readable realm as unreadable, in the case that
+    found this."""
+    service, fragments, client = setup
+    service.settings.apply_mode = "apply"
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+
+    store = service.store
+    restored = store.load()
+
+    assert restored.live_checksum == client.realm_checksum
+    assert restored.applied_import_checksum == client.realm_checksum
+    assert restored.drift is False
+    assert restored.applied_secrets_version == service.state.applied_secrets_version
+
+
 def test_a_failed_apply_is_published_as_failed(setup):
     service, fragments, client = setup
     service.settings.apply_mode = "apply"
