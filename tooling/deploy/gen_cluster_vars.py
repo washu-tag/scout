@@ -140,8 +140,8 @@ def check(data: dict, required: list) -> tuple:
 
 
 def _yaml_double_quoted(value) -> str:
-    """YAML double-quoted scalar for an arbitrary string (values may contain
-    ``://``, braces, and the JSON quotes of the system-logger scalar)."""
+    """YAML double-quoted scalar for an arbitrary string (endpoint values contain
+    ``://``); backslashes and quotes are escaped defensively."""
     s = str(value).replace("\\", "\\\\").replace('"', '\\"')
     return '"{}"'.format(s)
 

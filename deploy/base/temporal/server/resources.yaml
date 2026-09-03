@@ -59,10 +59,9 @@ spec:
         persistence:
           defaultStore: default
           visibilityStore: visibility
-          # Both stores are the shared Postgres (${postgres_host}: CNPG on-prem, RDS on
-          # aws). Databases are pre-created (CNPG Database CRs on-prem, the site on aws),
-          # so createDatabase: false; the chart's schema Job owns the Temporal tables
-          # (manageSchema: true). Password by fixed-name secret; user is the CNPG role.
+          # DBs are pre-created (CNPG Database CRs on-prem, the site on aws), so
+          # createDatabase: false; the chart's schema Job owns the Temporal tables
+          # (manageSchema: true). user is the temporal CNPG role.
           datastores:
             default:
               sql:
