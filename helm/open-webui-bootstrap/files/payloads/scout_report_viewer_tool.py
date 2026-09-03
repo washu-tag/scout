@@ -301,16 +301,23 @@ class Tools:
             )
         n = plot.get("row_count", 0)
         await self._emit(__event_emitter__, "Chart ready", done=True)
-        await self._emit_embed(
+        evicted = await self._emit_embed(
             __event_emitter__,
             plot["view_url"],
             kind=_EMBED_CHART,
             message_id=__message_id__,
             metadata=__metadata__,
         )
+        rendered = (
+            f"An earlier chart from this turn was dropped (max "
+            f"{_MAX_CHARTS_PER_TURN} per turn) - this chart rendered for the "
+            "user above this message"
+            if evicted
+            else "Chart rendered for the user above this message"
+        )
         return (
-            f"Chart rendered for the user above this message "
-            f"({n} data points over {', '.join(plot.get('columns') or [])}). "
+            f"{rendered} ({n} data points over "
+            f"{', '.join(plot.get('columns') or [])}). "
             "Do not restate the data, do not add a table, and do not write a "
             "vega code fence. Reply with a short interpretation only, in "
             "one reply covering every chart and viewer you rendered this "
@@ -894,8 +901,9 @@ class Tools:
         kind: EmbedKind,
         message_id: Any = None,
         metadata: Optional[dict] = None,
-    ) -> None:
-        """Render this turn's viewers and charts in `message.embeds`.
+    ) -> bool:
+        """Render this turn's viewers and charts in `message.embeds`. Returns
+        whether an older chart was evicted to make room for this one.
 
         OWUI assigns `message.embeds = data.embeds` outright, so a bare
         single-URL emit wipes whatever an earlier tool call in the same turn
@@ -907,16 +915,17 @@ class Tools:
         URL is emitted alone and nothing is stored.
         """
         if emitter is None:
-            return
+            return False
         key = _turn_key(message_id, metadata)
         if not key:
             await Tools._send_embeds(emitter, [url])
-            return
-        entry = _record_embed(key, kind, url)
+            return False
+        entry, evicted = _record_embed(key, kind, url)
         # Held across the send so parallel tool calls in one turn cannot land
         # their snapshots out of order.
         async with entry["lock"]:
             await Tools._send_embeds(emitter, [u for _, u in entry["embeds"]])
+        return evicted
 
     @staticmethod
     async def _send_embeds(
@@ -973,7 +982,7 @@ def _turn_key(message_id: Any, meta: Any) -> str:
 
 def _next_embeds(
     prev: list[tuple[str, str]], kind: str, url: str
-) -> list[tuple[str, str]]:
+) -> tuple[list[tuple[str, str]], bool]:
     """Fold one embed into a turn's list. Charts accumulate in emission
     order; at most one cohort viewer survives, and a newer one lands last.
     Over the cap the oldest chart is dropped, never the cohort."""
@@ -984,23 +993,24 @@ def _next_embeds(
     ]
     out.append((kind, url))
     charts = [i for i, e in enumerate(out) if e[0] == _EMBED_CHART]
-    for i in reversed(charts[: max(0, len(charts) - _MAX_CHARTS_PER_TURN)]):
+    dropped = charts[: max(0, len(charts) - _MAX_CHARTS_PER_TURN)]
+    for i in reversed(dropped):
         del out[i]
-    return out
+    return out, bool(dropped)
 
 
-def _record_embed(key: str, kind: str, url: str) -> dict[str, Any]:
+def _record_embed(key: str, kind: str, url: str) -> tuple[dict[str, Any], bool]:
     """Fold `url` into the turn's entry, LRU-evicting stale turns so a
     long-lived process cannot accumulate one entry per message."""
     entry = _TURN_EMBEDS.get(key)
     if entry is None:
         entry = {"embeds": [], "lock": asyncio.Lock()}
         _TURN_EMBEDS[key] = entry
-    entry["embeds"] = _next_embeds(entry["embeds"], kind, url)
+    entry["embeds"], evicted = _next_embeds(entry["embeds"], kind, url)
     _TURN_EMBEDS.move_to_end(key)
     while len(_TURN_EMBEDS) > _MAX_TURNS_TRACKED:
         _TURN_EMBEDS.popitem(last=False)
-    return entry
+    return entry, evicted
 
 
 def _md_table(columns: list[str], rows: list[dict]) -> list[str]:

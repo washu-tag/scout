@@ -509,7 +509,8 @@ Rules:
 Renders the chart itself and shows it to the user above your message, the same
 way `scout_find_reports` shows a cohort. Call it with the SQL and the Vega-Lite
 spec together and **omit `data`**; neither the spec nor the rows come back to
-you.
+you. **At most 4 charts stay visible per turn** — call it more than that in
+one turn and the oldest one drops off.
 
 When asked to categorize or breakdown by modality, sex, etc, encode that
 by `color` in the Vega-lite spec. **Any `color` encoding gets `"bind":
