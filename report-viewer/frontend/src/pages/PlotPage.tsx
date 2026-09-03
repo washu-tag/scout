@@ -190,11 +190,20 @@ function measureAxisReserve(
   return AXIS_OVERHEAD + Math.min(max, AXIS_LABEL_LIMIT);
 }
 
+const DEFAULT_FACET_COLUMNS = 3;
+
 // Only an explicit wrap count gets clamped/rewritten below.
 function explicitFacetColumns(spec: Record<string, unknown>): number | undefined {
   if (typeof spec.columns === 'number') return spec.columns;
   const facet = spec.facet as { columns?: unknown } | undefined;
   return typeof facet?.columns === 'number' ? facet.columns : undefined;
+}
+
+// No `row` means Vega-Lite renders one unbounded row without a `columns`.
+function needsColumnDefault(spec: Record<string, unknown>): boolean {
+  const facet = spec.facet;
+  if (!facet || typeof facet !== 'object') return false;
+  return !('row' in facet);
 }
 
 // Vega-Lite only resizes `container` width responsively on a single view or
@@ -209,7 +218,8 @@ function withContainerWidth(
     return { ...spec, width: 'container' };
   }
 
-  const requested = explicitFacetColumns(spec);
+  const requested =
+    explicitFacetColumns(spec) ?? (needsColumnDefault(spec) ? DEFAULT_FACET_COLUMNS : undefined);
   const axisReserve = measureAxisReserve(child as Record<string, unknown>, rows);
   const available = Math.max(0, containerWidth - HOLDER_PADDING - CHART_PADDING - axisReserve);
   let columns = requested ?? 1;
