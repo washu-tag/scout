@@ -1,0 +1,11 @@
+# Mode-agnostic `postgres-ready` gate (ADR 0036): the name DB consumers dependsOn,
+# provided per-mode from modes/{aws,on-prem}/. aws = this inert marker (postgres is a
+# managed RDS instance at ${postgres_host}); on-prem = the real CNPG Cluster. Just gives
+# wait:true a Ready object.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-ready
+  namespace: flux-system
+data:
+  mode: '${service_mode}'

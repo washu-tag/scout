@@ -36,7 +36,7 @@ spec:
             - name: HOME
               value: /tmp
             - name: PGHOST
-              value: '${postgres_cluster_name}-rw.${postgres_cluster_namespace}'
+              value: '${postgres_host}'
             - name: PGPORT
               value: '5432'
             - name: PGSSLMODE

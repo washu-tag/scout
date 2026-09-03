@@ -19,7 +19,7 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 | secret | keys | consumed by |
 | --- | --- | --- |
 | `superuser-secret` | `username`, `password` | CNPG `Cluster.superuserSecret` |
-| `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor}` | `username`, `password` | CNPG managed roles |
+| `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor,temporal}` | `username`, `password` | CNPG managed roles |
 | `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role) |
 | `keycloak-admin-secret` | `username`, `password` | Keycloak bootstrap admin + config-cli |
 | `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names) |
@@ -43,6 +43,7 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | --- | --- | --- |
 | `s3-secret` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | hl7log-extractor + hl7-transformer (lake-writer; cloud = IRSA instead) |
 | `postgres-secret` | `DB_PASSWORD` (+ DB coords) | extractor datasource (= the extractor role) |
+| `temporal-db-secret` | `password` | Temporal server + schema Job (= the temporal CNPG role) |
 | `trino-rw-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-rw (lake-writer; cloud = IRSA instead) |
 
 ## scout-analytics (superset / opa / trino-ro)
@@ -66,14 +67,17 @@ site must provide it as a Secret (from CI or the site repo, not the secrets mana
 oauth2-proxy stays in `ContainerCreating` on the missing mount.
 
 ## Not site-provided (generated in-cluster, listed so they aren't double-provisioned)
-- `${cassandra_cluster_name}-superuser` — cass-operator
-- `${elasticsearch_cluster_name}-es-elastic-user` — ECK
 - `trino-tls` — cert-manager `Certificate`
 - `superset-config` — rendered config (CI / chart), not credentials
 
 ## Notes for cloud setups
 - Provision the backing values with your IaC; keep them out of git. A typical AWS estate
   does this with Terraform into AWS Secrets Manager, consumed by ESO.
+- **Data tier is managed in aws (ADR 0036).** postgres = RDS: no CNPG deploy
+  (`postgres-ready` is an inert marker), consumers reach it via the `${postgres_host}` site
+  var, and the DB credential Secrets are materialized from RDS (same fixed names) instead of
+  the operator. Temporal runs on Postgres (no Cassandra/Elasticsearch), so its history +
+  visibility databases live in RDS too.
 - Several values are shared across secrets (e.g. one Postgres role password appears in
   its `cnpg-role-*` and in the app's DB secret; one lake credential appears under
   several key names). Provision the value once and template it into each Secret.

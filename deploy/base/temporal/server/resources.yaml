@@ -1,9 +1,11 @@
-# Temporal server (ingest-slice orchestrator). External persistence, so dependsOn
-# both datastores: Cassandra (default store), Elasticsearch (visibility store).
+# Temporal server (ingest-slice orchestrator). Persistence is PostgreSQL for both the
+# default (history) and visibility stores (ADR 0036; Temporal 1.20+ serves advanced
+# visibility on SQL, so no Cassandra/Elasticsearch). Both stores resolve to
+# ${postgres_host} (CNPG on-prem, RDS on aws), so dependsOn postgres-ready.
 # Namespace owned by scout-extractor-foundation, not declared here (avoids
 # co-ownership/prune conflicts). Frontend JWT authz + web-UI ingress/OIDC are
 # omitted (separate Keycloak-realm/auth-overlay workstream), which is why Keycloak
-# is not a dependsOn. Datastore creds referenced by fixed name (existingSecret).
+# is not a dependsOn. DB password referenced by fixed name (existingSecret).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -20,8 +22,8 @@ metadata:
   namespace: '${scout_extractor_namespace}'
 spec:
   interval: 30m
-  # Mirrors Ansible helm timeout: chart's schema-setup Jobs (Cassandra keyspace +
-  # ES visibility index) run at install and take a while.
+  # The chart's schema-setup Jobs (setup-schema + update-schema on both Postgres
+  # stores) run at install and take a while.
   timeout: 15m
   # Pinned in versions.yaml (temporal_version), Renovate-tracked there. Literal
   # mirror, not stamped (stamper covers only Scout charts); keep in lockstep.
@@ -34,7 +36,7 @@ spec:
         name: temporal
         namespace: '${scout_extractor_namespace}'
   values:
-    # k3s/air-gapped: no docker-in-schema-job, no bundled ES (own ECK cluster).
+    # k3s/air-gapped: no docker-in-schema-job, no ES index tool (Postgres visibility).
     shims:
       dockerize: false
       elasticsearchTool: false
@@ -57,31 +59,33 @@ spec:
         persistence:
           defaultStore: default
           visibilityStore: visibility
+          # DBs are pre-created (CNPG Database CRs on-prem, the site on aws), so
+          # createDatabase: false; the chart's schema Job owns the Temporal tables
+          # (manageSchema: true). user is the temporal CNPG role.
           datastores:
             default:
-              cassandra:
-                hosts: '${cassandra_cluster_name}-${cassandra_datacenter_name}-service.${scout_extractor_namespace}'
-                port: 9042
-                keyspace: temporal
-                user: user
-                # Superuser secret from cass-operator (fixed name).
-                existingSecret: '${cassandra_cluster_name}-superuser'
+              sql:
+                pluginName: postgres12
+                databaseName: temporal
+                connectAddr: '${postgres_host}:${db_port}'
+                connectProtocol: tcp
+                user: temporal
+                existingSecret: temporal-db-secret
                 secretKey: password
-                replicationFactor: 1
-                consistency:
-                  default:
-                    consistency: local_quorum
-                    serialConsistency: local_serial
+                createDatabase: false
+                manageSchema: true
+                maxConns: 20
+                maxConnLifetime: '1h'
             visibility:
-              elasticsearch:
-                version: v7 # All ES versions (7/8/9) use the v7 template format
-                url:
-                  scheme: http # TLS disabled on Elasticsearch for simplicity
-                  host: '${elasticsearch_cluster_name}-es-http.${scout_extractor_namespace}:9200'
-                username: elastic
-                # elastic-user secret from ECK (fixed name).
-                existingSecret: '${elasticsearch_cluster_name}-es-elastic-user'
-                secretKey: elastic
-                logLevel: error
-                indices:
-                  visibility: temporal_visibility_v1
+              sql:
+                pluginName: postgres12
+                databaseName: temporal_visibility
+                connectAddr: '${postgres_host}:${db_port}'
+                connectProtocol: tcp
+                user: temporal
+                existingSecret: temporal-db-secret
+                secretKey: password
+                createDatabase: false
+                manageSchema: true
+                maxConns: 10
+                maxConnLifetime: '1h'

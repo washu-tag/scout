@@ -21,7 +21,7 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: scout-analytics-foundation
-    - name: postgres-cluster
+    - name: postgres-ready
     - name: valkey
     - name: trino-ro
     - name: keycloak-realm
