@@ -3,10 +3,11 @@ Enforce the workflow-history retention on Temporal's default namespace
 (issue #432).
 
 The temporal chart's namespace-setup job is create-only (`describe || create`),
-so it never updates retention on an already-existing namespace. This hook Job
-runs `temporal operator namespace update` on every install/upgrade, so
-retention converges on both fresh and existing clusters. It's idempotent, so
-re-running is harmless.
+so it never updates retention on an already-existing namespace, and it can lag
+or fail to persist the namespace on a fresh cluster. This hook Job creates the
+namespace if it is still missing, then runs `temporal operator namespace update`
+on every install/upgrade, so the namespace exists and retention converges on
+both fresh and existing clusters. It's idempotent, so re-running is harmless.
 
 Runs as a post-install/post-upgrade hook with before-hook-creation delete, so
 it re-executes on every `helm upgrade` -- the same reconciling pattern as
@@ -59,9 +60,13 @@ spec:
             - -c
             - |
               set -eu
-              # Wait for the namespace to exist (the temporal chart's create job
-              # is create-only and may lag on a fresh install), then enforce the
-              # configured retention.
+              # Ensure the namespace exists, then enforce retention. The temporal
+              # chart's namespace job is create-only and can lag or, on a fresh
+              # cluster, fail to persist it (observed on adapt-dev), so create it if
+              # missing (idempotent) rather than only waiting.
+              temporal operator namespace describe -n {{ .Values.namespace.name | quote }} >/dev/null 2>&1 \
+                || temporal operator namespace create {{ .Values.namespace.name | quote }} \
+                     --retention {{ .Values.namespace.retention | quote }}
               i=0
               until temporal operator namespace describe -n {{ .Values.namespace.name | quote }} >/dev/null 2>&1; do
                 i=$((i + 1))
