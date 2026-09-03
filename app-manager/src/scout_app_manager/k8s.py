@@ -24,6 +24,26 @@ class ApiError(RuntimeError):
         self.status = status
 
 
+def value_of(secret: dict | None, key: str) -> str | None:
+    """One key out of a fetched Secret. A function, so a caller can read
+    several keys and the resourceVersion from one GET."""
+    if not secret:
+        return None
+    encoded = (secret.get("data") or {}).get(key)
+    if encoded is None:
+        return None
+    return base64.b64decode(encoded).decode("utf-8")
+
+
+def version_of(secret: dict | None) -> str:
+    """The Secret's resourceVersion, which moves when and only when its
+    contents do. How a credential rotation is noticed now that rotating one
+    leaves the realm document untouched."""
+    if not secret:
+        return ""
+    return (secret.get("metadata") or {}).get("resourceVersion") or ""
+
+
 class Client:
     def __init__(self, timeout: float = 30.0):
         host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
@@ -73,21 +93,23 @@ class Client:
                 return None
             raise
 
-    def _put(
+    # --- ConfigMaps -----------------------------------------------------
+
+    def get_configmap(self, namespace: str, name: str) -> dict | None:
+        return self._get(f"/api/v1/namespaces/{namespace}/configmaps/{name}")
+
+    def put_configmap_data(
         self,
-        resource: str,
-        kind: str,
         namespace: str,
         name: str,
         data: dict[str, str],
-        labels: dict[str, str] | None,
-        extra: dict | None = None,
+        labels: dict[str, str] | None = None,
     ) -> None:
-        """Merge-patch the object's data, creating it the first time."""
+        """Merge-patch the ConfigMap's data, creating it the first time."""
         metadata: dict = {"name": name, "namespace": namespace}
         if labels:
             metadata["labels"] = labels
-        collection = f"/api/v1/namespaces/{namespace}/{resource}"
+        collection = f"/api/v1/namespaces/{namespace}/configmaps"
         try:
             self.request(
                 "PATCH",
@@ -103,55 +125,19 @@ class Client:
                 collection,
                 json={
                     "apiVersion": "v1",
-                    "kind": kind,
+                    "kind": "ConfigMap",
                     "metadata": metadata,
                     "data": data,
-                    **(extra or {}),
                 },
             )
 
-    # --- ConfigMaps -----------------------------------------------------
-
-    def get_configmap(self, namespace: str, name: str) -> dict | None:
-        return self._get(f"/api/v1/namespaces/{namespace}/configmaps/{name}")
-
-    def put_configmap_data(
-        self,
-        namespace: str,
-        name: str,
-        data: dict[str, str],
-        labels: dict[str, str] | None = None,
-    ) -> None:
-        self._put("configmaps", "ConfigMap", namespace, name, data, labels)
-
     # --- Secrets --------------------------------------------------------
+
+    # Read only. The reconciler used to write one -- the composed realm -- and
+    # that is a ConfigMap now, so nothing it does needs a Secret write.
 
     def get_secret(self, namespace: str, name: str) -> dict | None:
         return self._get(f"/api/v1/namespaces/{namespace}/secrets/{name}")
-
-    def get_secret_value(self, namespace: str, name: str, key: str) -> str | None:
-        secret = self.get_secret(namespace, name)
-        if not secret:
-            return None
-        encoded = (secret.get("data") or {}).get(key)
-        if encoded is None:
-            return None
-        return base64.b64decode(encoded).decode("utf-8")
-
-    def put_secret(
-        self,
-        namespace: str,
-        name: str,
-        values: dict[str, str],
-        labels: dict[str, str] | None = None,
-    ) -> None:
-        data = {
-            k: base64.b64encode(v.encode("utf-8")).decode("ascii")
-            for k, v in values.items()
-        }
-        self._put(
-            "secrets", "Secret", namespace, name, data, labels, {"type": "Opaque"}
-        )
 
     # --- Jobs -----------------------------------------------------------
 

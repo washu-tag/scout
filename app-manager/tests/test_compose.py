@@ -1,10 +1,12 @@
 import copy
+import json
 
 import pytest
 from conftest import fragment_yaml, write_fragment
 
 from scout_app_manager.compose import (
     BUILTIN_CLIENTS,
+    SecretBinding,
     Site,
     canonical,
     compose,
@@ -48,7 +50,6 @@ def test_invariants_are_injected_not_declared(base_realm, tmp_path, hello_yaml):
         "https://auth.scout.example.edu/oauth2/sign_out",
     ]
     assert client["webOrigins"] == ["https://hello.scout.example.edu"]
-    assert "secret" not in client
 
 
 def test_pkce_is_opt_in_because_enforcing_it_breaks_real_clients(
@@ -269,10 +270,11 @@ def test_plan_describes_the_effect_for_review(tmp_path, hello_yaml):
     assert client.secret_source == "hello-keycloak-client/client-secret"
 
 
-def test_the_referenced_secret_is_inlined(base_realm, tmp_path, hello_yaml):
-    """config-cli reads the credential from the composed document.
+def test_the_referenced_secret_is_named_not_inlined(base_realm, tmp_path, hello_yaml):
+    """The document names the credential; config-cli resolves it at import.
 
-    Same shape as the Ansible-rendered base realm, which inlines all fourteen.
+    Same shape as the base realm's own clients, and what lets the composed
+    realm be published as a ConfigMap.
     """
     write_fragment(tmp_path, "scout-demo", "hello-fragment", hello_yaml)
     calls = []
@@ -285,10 +287,56 @@ def test_the_referenced_secret_is_inlined(base_realm, tmp_path, hello_yaml):
         base_realm, scan(tmp_path), Site(domain="scout.example.edu"), resolve
     )
 
-    assert client_of(result.realm, "hello")["secret"] == "s3cret"
-    # Once per client per reconcile: each call is an API round-trip, and this
-    # used to happen twice — once to validate the reference, once to inline it.
+    assert client_of(result.realm, "hello")["secret"] == "$(env:fragment_hello)"
+    assert "s3cret" not in json.dumps(result.realm)
+    assert result.bindings == {
+        "fragment_hello": SecretBinding(
+            env="fragment_hello", name="hello-keycloak-client", key="client-secret"
+        )
+    }
+    # Still read once per client per reconcile -- to prove there is a value,
+    # not to copy it. Each call is an API round-trip.
     assert calls == [("hello-keycloak-client", "client-secret")]
+
+
+def test_two_clients_that_share_a_variable_are_both_rejected(base_realm, tmp_path):
+    """`a_b` and `a-b` are distinct clientIds and one environment variable.
+
+    Nobody wins the race, for the same reason a clientId collision rejects
+    every party: whichever the Job set last would hand its credential to both.
+    """
+    write_fragment(tmp_path, "one", "f", fragment_yaml(client="shared_app"))
+    write_fragment(tmp_path, "two", "f", fragment_yaml(client="shared-app"))
+
+    result = compose(
+        base_realm, scan(tmp_path), Site(domain="scout.example.edu"), lambda n, k: "s"
+    )
+
+    assert result.accepted == []
+    assert len(result.rejected) == 2
+    for _, reasons in result.rejected:
+        assert any("fragment_shared_app" in reason for reason in reasons)
+
+
+def test_a_fragment_cannot_claim_a_base_realm_variable(base_realm, tmp_path):
+    """The `fragment_` prefix keeps the two namespaces apart on its own.
+
+    This is the backstop for an operator who puts a `fragment_`-prefixed key
+    into keycloak-client-secrets: envFrom would win over the per-client
+    secretKeyRef, quietly handing a platform credential to a fragment client.
+    """
+    write_fragment(tmp_path, "scout-demo", "f", fragment_yaml(client="hello"))
+
+    result = compose(
+        base_realm,
+        scan(tmp_path),
+        Site(domain="scout.example.edu"),
+        lambda n, k: "s",
+        reserved_env=frozenset({"fragment_hello"}),
+    )
+
+    assert result.accepted == []
+    assert "base realm already uses" in result.rejected[0][1][0]
 
 
 def test_a_missing_secret_rejects_the_fragment(base_realm, tmp_path, hello_yaml):

@@ -12,6 +12,14 @@ full (with `${domain}` for portability) and this module enforces that every one
 of them lands inside the Scout domain. Deriving URLs from a subdomain was
 simpler but could not express a client at the apex, a client with two hosts, or
 the platform signout URI that eight of nine real clients carry.
+
+No credential is ever written here. A client's `secret` comes out as the
+`$(env:...)` token config-cli resolves at import, matching what the base realm
+has carried since the Ansible lane stopped inlining its own -- so the composed
+realm is an ordinary document that can be published as a ConfigMap, hashed, and
+read during an incident without handling secrets. What this module produces
+instead is the *binding* from each token to the Secret and key it comes from,
+which `apply` turns into Job environment.
 """
 
 import copy
@@ -21,6 +29,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
+from . import substitution
 from .load import FragmentRef, LoadedFragment
 from .schema import (
     GRANTABLE_GROUPS,
@@ -73,6 +82,7 @@ class ClientEffect:
     roles: list[str] = field(default_factory=list)
     grants: dict[str, list[str]] = field(default_factory=dict)
     secret_source: str = ""
+    secret_env: str = ""
     pkce: str = "off"
     lifespans: dict[str, str] = field(default_factory=dict)
     app_url: str = ""
@@ -89,11 +99,28 @@ class FragmentEffect:
     errors: list[str] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class SecretBinding:
+    """Where the value behind one `$(env:...)` token comes from.
+
+    Always a Secret in the reconciler's own namespace, which is what keeps its
+    Kubernetes permissions namespace-scoped (see `schema.SecretRef`).
+    """
+
+    env: str
+    name: str
+    key: str
+
+
 @dataclass
 class ComposeResult:
     realm: dict
     accepted: list[LoadedFragment] = field(default_factory=list)
     rejected: list[tuple[LoadedFragment, list[str]]] = field(default_factory=list)
+    # env name -> the Secret the apply Job must read it from. Only fragments
+    # appear here; the base realm's tokens come from one fixed Secret the Job
+    # takes wholesale with envFrom.
+    bindings: dict[str, SecretBinding] = field(default_factory=dict)
 
 
 # Resolves (secretName, key) -> value, from the reconciler's own namespace.
@@ -182,6 +209,7 @@ def effect_of(spec: ClientSpec, site: Site) -> ClientEffect:
         roles=list(spec.roles),
         grants={g: list(r) for g, r in spec.grants.items()},
         secret_source=f"{spec.secretRef.name}/{spec.secretRef.key}",
+        secret_env=substitution.env_name(spec.clientId),
         pkce=spec.pkce,
         lifespans=lifespans,
         app_url=app_url,
@@ -212,6 +240,7 @@ def compose(
     fragments: list[LoadedFragment],
     site: Site,
     resolve_secret: SecretResolver | None = None,
+    reserved_env: frozenset[str] = frozenset(),
 ) -> ComposeResult:
     """Merge discovered fragments into a copy of the base realm.
 
@@ -219,6 +248,10 @@ def compose(
     rejected with a reason and left out, while the base realm and every other
     fragment still compose. A broken fragment breaks its own component's auth,
     loudly, and nothing else.
+
+    `reserved_env` is the base realm's own substitution variables. A fragment
+    whose derived name lands on one of them is rejected rather than allowed to
+    redirect a platform client's credential.
     """
     realm = copy.deepcopy(base_realm)
     result = ComposeResult(realm=realm)
@@ -241,11 +274,15 @@ def compose(
     # name, because "whoever reconciled first" is not a property anyone can
     # reason about at review time.
     claim_owners: dict[str, list[FragmentRef]] = {}
+    env_owners: dict[str, list[FragmentRef]] = {}
     for loaded in candidates:
         if loaded.ref in rejected or loaded.fragment is None:
             continue
         for spec in loaded.fragment.clients:
             claim_owners.setdefault(spec.clientId, []).append(loaded.ref)
+            env_owners.setdefault(substitution.env_name(spec.clientId), []).append(
+                loaded.ref
+            )
 
     for client_id, refs in claim_owners.items():
         if len(refs) > 1:
@@ -255,16 +292,26 @@ def compose(
                     + ", ".join(str(r) for r in refs if r != ref)
                 )
 
+    # Distinct clientIds can still land on one variable name -- `a-b` and `a.b`
+    # both sanitise to `fragment_a_b` -- and whichever the Job set last would
+    # hand its credential to both clients.
+    for env, refs in env_owners.items():
+        if len(set(refs)) > 1:
+            for ref in set(refs):
+                rejected.setdefault(ref, []).append(
+                    f"the credential variable {env!r} is also claimed by "
+                    + ", ".join(str(r) for r in sorted(set(refs)) if r != ref)
+                )
+
     # What each admitted fragment resolved to, kept from the validation pass:
     # composing it again would mean a second GET for every client's Secret.
-    admitted: dict[FragmentRef, tuple[list[ClientEffect], dict[str, str]]] = {}
+    admitted: dict[FragmentRef, list[ClientEffect]] = {}
 
     for loaded in candidates:
         if loaded.ref in rejected or loaded.fragment is None:
             continue
         problems: list[str] = []
         effects: list[ClientEffect] = []
-        secrets: dict[str, str] = {}
         for spec in loaded.fragment.clients:
             if spec.clientId in existing_clients:
                 problems.append(
@@ -276,16 +323,23 @@ def compose(
                     f"client {spec.clientId!r} is one of Keycloak's built-in "
                     "clients; a fragment may not adopt a platform-owned client"
                 )
+            env = substitution.env_name(spec.clientId)
+            if env in reserved_env:
+                problems.append(
+                    f"client {spec.clientId!r} resolves to the credential variable "
+                    f"{env!r}, which the base realm already uses"
+                )
             try:
                 effects.append(effect_of(spec, site))
             except ValueError as exc:
                 problems.append(str(exc))
+            # Read only to prove there is something to read. The value stays in
+            # the Secret; the document gets the token, and the apply Job gets a
+            # secretKeyRef. An absent or empty one would be substituted as a
+            # blank credential, or left as the literal token, with no error.
             if resolve_secret is not None:
                 ref = spec.secretRef
-                secret = resolve_secret(ref.name, ref.key)
-                if secret:
-                    secrets[spec.clientId] = secret
-                else:
+                if not resolve_secret(ref.name, ref.key):
                     problems.append(
                         f"client {spec.clientId!r} references secret "
                         f"{ref.name}/{ref.key}, which is missing or empty in the "
@@ -299,7 +353,7 @@ def compose(
         if problems:
             rejected[loaded.ref] = problems
         else:
-            admitted[loaded.ref] = (effects, secrets)
+            admitted[loaded.ref] = effects
 
     for loaded in candidates:
         if loaded.ref in rejected or loaded.fragment is None:
@@ -309,8 +363,13 @@ def compose(
             loaded.fragment,
             str(loaded.ref),
             groups_by_name,
-            *admitted[loaded.ref],
+            admitted[loaded.ref],
         )
+        for spec in loaded.fragment.clients:
+            env = substitution.env_name(spec.clientId)
+            result.bindings[env] = SecretBinding(
+                env=env, name=spec.secretRef.name, key=spec.secretRef.key
+            )
         result.accepted.append(loaded)
 
     result.rejected = [
@@ -327,16 +386,13 @@ def _apply(
     source: str,
     groups_by_name: dict[str, dict],
     effects: list[ClientEffect],
-    secrets: dict[str, str],
 ) -> None:
     clients = realm.setdefault("clients", [])
     roles = realm.setdefault("roles", {}).setdefault("client", {})
     scope_mappings = realm.setdefault("clientScopeMappings", {})
 
     for spec, effect in zip(fragment.clients, effects, strict=True):
-        clients.append(
-            _client_representation(spec, effect, source, secrets.get(spec.clientId))
-        )
+        clients.append(_client_representation(spec, effect, source))
 
         if spec.roles:
             roles[spec.clientId] = [
@@ -367,7 +423,6 @@ def _client_representation(
     spec: ClientSpec,
     effect: ClientEffect,
     source: str,
-    secret: str | None = None,
 ) -> dict:
     """Render the effect `plan` reported. Nothing about the site is derived here."""
     interactive = effect.interactive
@@ -403,10 +458,11 @@ def _client_representation(
     }
     if effect.app_url:
         representation["rootUrl"] = effect.app_url
-    if secret:
-        # Inlined, like every client secret in the Ansible-rendered base realm.
-        # The composed document lands in a Secret, same as the base one does.
-        representation["secret"] = secret
+    # Named, never inlined -- the same form the base realm's own clients use.
+    # `compose` has already proven there is a non-empty value behind it, and
+    # publishes the binding the apply Job needs to put it in config-cli's
+    # environment.
+    representation["secret"] = substitution.placeholder(effect.secret_env)
     if effect.redirect_uris:
         representation["redirectUris"] = effect.redirect_uris
     if effect.web_origins:
@@ -448,8 +504,17 @@ def canonical(realm: dict) -> str:
     return json.dumps(realm, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
 
 
+def document_hash(text: str) -> str:
+    """sha256 over the exact bytes that reach config-cli.
+
+    Also what config-cli records in the realm's import-checksum attribute, so
+    `keycloak` can compare the two without reading anything back.
+    """
+    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def realm_hash(realm: dict) -> str:
-    return "sha256:" + hashlib.sha256(canonical(realm).encode("utf-8")).hexdigest()
+    return document_hash(canonical(realm))
 
 
 def fragment_client_ids(realm: dict) -> dict[str, str]:
@@ -470,9 +535,11 @@ __all__ = [
     "ComposeResult",
     "FragmentEffect",
     "GRANTABLE_GROUPS",
+    "SecretBinding",
     "Site",
     "canonical",
     "compose",
+    "document_hash",
     "fragment_client_ids",
     "plan",
     "realm_hash",

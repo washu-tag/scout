@@ -8,15 +8,32 @@ disagree.
 Retraction is damped, because a vanished fragment is indistinguishable from one
 mid-redeploy: absence suppresses the apply until the grace period has run, and
 never retracts unless discovery has reported a complete sync.
+
+The realm document names its credentials rather than carrying them, which puts
+two obligations here. Every `$(env:...)` it names must resolve to something
+non-empty before the apply, because config-cli installs an unresolved token
+verbatim as a client secret and nothing errors. And a rotation has to be
+noticed some other way, since replacing a credential no longer moves the
+document -- that is what the Secrets' resourceVersions are for.
 """
 
+import hashlib
 import logging
 from dataclasses import replace
 from pathlib import Path
 
+from . import substitution
 from .apply import RealmApplier
-from .compose import ComposeResult, Site, canonical, compose, plan, realm_hash
-from .k8s import ApiError, Client
+from .compose import (
+    ComposeResult,
+    Site,
+    canonical,
+    compose,
+    document_hash,
+    plan,
+    realm_hash,
+)
+from .k8s import ApiError, Client, value_of, version_of
 from .load import LoadedFragment, parse_realm_document, scan
 from .models import (
     APPLIED,
@@ -69,6 +86,9 @@ class AppManagerService:
         self.store = StatusStore(client, self.namespace, settings.status_configmap)
         self.state = self._resume()
         self.reconciles = 0
+        # One GET per distinct Secret per reconcile. Cleared at the top of each
+        # one, so a rotation is seen on the next pass and not a stale value.
+        self._secrets: dict[str, dict | None] = {}
 
     def _resume(self) -> State:
         """Pick up where the last process left off, or start clean."""
@@ -93,12 +113,46 @@ class AppManagerService:
     def site(self) -> Site:
         return Site(domain=self.settings.domain, signout_url=self.settings.signout_url)
 
+    def secret(self, name: str) -> dict | None:
+        """A Secret from this namespace, fetched once per reconcile."""
+        if name not in self._secrets:
+            try:
+                self._secrets[name] = self.client.get_secret(self.namespace, name)
+            except ApiError:
+                log.exception("could not read secret %s/%s", self.namespace, name)
+                self._secrets[name] = None
+        return self._secrets[name]
+
     def resolve_secret(self, name: str, key: str) -> str | None:
-        try:
-            return self.client.get_secret_value(self.namespace, name, key)
-        except ApiError:
-            log.exception("could not read secret %s/%s", self.namespace, name)
-            return None
+        return value_of(self.secret(name), key)
+
+    def client_secret_keys(self) -> set[str]:
+        """The base realm's substitution variables that actually resolve.
+
+        A key present but empty is treated as absent: config-cli would happily
+        substitute the empty string as a client's credential.
+        """
+        secret = self.secret(self.settings.client_secrets_secret)
+        if not secret:
+            log.warning(
+                "secret %s not found; the base realm's $(env:...) variables "
+                "cannot be resolved",
+                self.settings.client_secrets_secret,
+            )
+            return set()
+        return {key for key in (secret.get("data") or {}) if value_of(secret, key)}
+
+    def secrets_version(self, names: list[str]) -> str:
+        """A digest over the resourceVersions of everything the apply reads.
+
+        The document is stable across a rotation now, so without this nothing
+        would re-run the import and Keycloak would keep the old credential
+        while every consumer had already switched.
+        """
+        digest = hashlib.sha256()
+        for name in sorted(set(names)):
+            digest.update(f"{name}={version_of(self.secret(name))}\0".encode())
+        return "sha256:" + digest.hexdigest()
 
     def base_realm(self) -> dict:
         raw = parse_realm_document(
@@ -135,10 +189,18 @@ class AppManagerService:
         return state
 
     def _reconcile(self) -> State:
+        self._secrets.clear()
         prior = prior_installed(self.state)
         loaded = scan(self.settings.fragment_dir)
         base = self.base_realm()
-        result = compose(base, loaded, self.site(), self.resolve_secret)
+        resolvable = self.client_secret_keys()
+        result = compose(
+            base,
+            loaded,
+            self.site(),
+            self.resolve_secret,
+            reserved_env=frozenset(resolvable),
+        )
 
         reasons = {str(item.ref): why for item, why in result.rejected}
         statuses = [
@@ -148,18 +210,34 @@ class AppManagerService:
         statuses.extend(held)
 
         self._log_decisions(statuses)
-        desired_hash = realm_hash(result.realm)
+        document = canonical(result.realm)
+        desired_hash = document_hash(document)
         base_hash = realm_hash(base)
+        secrets_version = self.secrets_version(
+            [self.settings.client_secrets_secret]
+            + [b.name for b in result.bindings.values()]
+        )
+        # Everything config-cli will have in its environment: the base realm's
+        # Secret taken wholesale, one variable per fragment client, and the
+        # site hostname every base-realm URL is written against.
+        available = resolvable | set(result.bindings) | {substitution.SERVER_HOSTNAME}
+        missing = substitution.unresolved(document, available)
 
         self.state.fragments = statuses
         self.state.last_reconcile = now()
         self.state.base_hash = base_hash
         self.state.composed_hash = desired_hash
+        self.state.secrets_version = secrets_version
         self.state.identical_to_base = desired_hash == base_hash
-        self.state.pending_change = desired_hash != self.state.last_applied_hash
+        self.state.pending_change = (
+            desired_hash != self.state.last_applied_hash
+            or secrets_version != self.state.applied_secrets_version
+        )
 
         if held:
             return self._hold(held)
+        if missing:
+            return self._refuse_unresolved(missing)
         if not self.state.pending_change:
             self.state.phase = APPLIED if self.state.last_applied_hash else PENDING
             self.state.last_result = (
@@ -172,7 +250,26 @@ class AppManagerService:
 
         self.state.phase = PENDING
         self.store.save(self.state)
-        self._apply(result, desired_hash)
+        self._apply(result, document, desired_hash, secrets_version)
+        self.store.save(self.state)
+        return self.state
+
+    def _refuse_unresolved(self, missing: list[str]) -> State:
+        """A named credential with nothing behind it is not a partial apply.
+
+        config-cli leaves an unresolved `$(env:x)` alone and Keycloak stores
+        that string as the client's secret -- a working-looking client anyone
+        who can read the realm can authenticate as. There is no per-client way
+        out of it either: a base-realm client cannot be dropped the way a
+        fragment can, so the whole apply stops here.
+        """
+        self.state.phase = REFUSED
+        self.state.last_result = (
+            "refusing to apply: the realm names "
+            + ", ".join(f"$(env:{name})" for name in missing)
+            + f", which {self.settings.client_secrets_secret} does not resolve"
+        )
+        log.error("REFUSED   %s", self.state.last_result)
         self.store.save(self.state)
         return self.state
 
@@ -268,9 +365,19 @@ class AppManagerService:
         self.store.save(self.state)
         return self.state
 
-    def _apply(self, result: ComposeResult, desired_hash: str) -> None:
-        self.applier.publish(canonical(result.realm))
-        ok, detail = self.applier.run(desired_hash)
+    def _apply(
+        self,
+        result: ComposeResult,
+        document: str,
+        desired_hash: str,
+        secrets_version: str,
+    ) -> None:
+        self.applier.publish(document)
+        # The Job name keys off both, so a rotation with an unchanged document
+        # is a distinct attempt rather than a reused name.
+        ok, detail = self.applier.run(
+            document_hash(desired_hash + secrets_version), result.bindings
+        )
         if not ok:
             log.error("APPLY     FAILED for realm %s: %s", desired_hash[:19], detail)
             self.state.phase = FAILED
@@ -279,6 +386,7 @@ class AppManagerService:
         log.info("APPLY     succeeded; realm is now %s", desired_hash[:19])
         stamp = now()
         self.state.last_applied_hash = desired_hash
+        self.state.applied_secrets_version = secrets_version
         self.state.pending_change = False
         self.state.phase = APPLIED
         self.state.applied_at = stamp

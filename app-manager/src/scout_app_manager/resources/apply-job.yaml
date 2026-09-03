@@ -4,7 +4,12 @@
 # substituted by reconciler.apply_job_body().
 #
 # Substitutions: name, namespace, image, keycloak_url, admin_secret,
-# composed_secret, ttl_seconds.
+# composed_configmap, client_secrets_secret, server_hostname, ttl_seconds.
+#
+# One env entry per fragment client's credential is appended by
+# RealmApplier._body(); everything the base realm names arrives through
+# envFrom. Note that a dollar sign not part of a placeholder is a Template
+# error even inside a comment, so write config-cli's tokens as `env:name`.
 ---
 apiVersion: batch/v1
 kind: Job
@@ -37,11 +42,21 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ['ALL']
+          # The credentials the composed realm names but does not carry. Its
+          # keys are the substitution variables verbatim, which is why this
+          # Secret can be taken wholesale.
+          envFrom:
+            - secretRef:
+                name: ${client_secrets_secret}
           env:
             - name: KEYCLOAK_URL
               value: ${keycloak_url}
             - name: IMPORT_PATH
               value: /config/
+            # Every base-realm client URL is written against this. Site
+            # configuration, not a credential, so it is passed in the clear.
+            - name: server_hostname
+              value: ${server_hostname}
             - name: KEYCLOAK_USER
               valueFrom:
                 secretKeyRef:
@@ -52,6 +67,10 @@ spec:
                 secretKeyRef:
                   name: ${admin_secret}
                   key: password
+            # var-substitution resolves the env: tokens from this container's
+            # environment. Without it config-cli installs each token verbatim
+            # as a client credential, and Keycloak accepts it.
+            #
             # `full` on the types the composed realm is authoritative for, so
             # removing a fragment removes its objects; `no-delete` on the rest,
             # which are Keycloak's own or provisioned outside the artifact.
@@ -59,13 +78,15 @@ spec:
             # there would prune undeclared ones including built-ins.
             - name: SPRING_APPLICATION_JSON
               value: >-
-                {"import":{"managed":{"client":"full","role":"full","group":"full","scope-mapping":"full","client-scope-mapping":"full","client-scope":"no-delete","required-action":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
+                {"import":{"var-substitution":{"enabled":true},"managed":{"client":"full","role":"full","group":"full","scope-mapping":"full","client-scope-mapping":"full","client-scope":"no-delete","required-action":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
           volumeMounts:
             - name: config
               mountPath: /config
               readOnly: true
       volumes:
+        # A ConfigMap, not a Secret: the composed realm names its credentials
+        # rather than carrying them.
         - name: config
-          secret:
-            secretName: ${composed_secret}
+          configMap:
+            name: ${composed_configmap}
             defaultMode: 0444

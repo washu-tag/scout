@@ -13,6 +13,7 @@ manager:
   jobTtlSeconds: {{ app_manager_job_ttl_seconds }}
   logLevel: '{{ app_manager_log_level }}'
   keycloakUrl: '{{ keycloak_internal_url }}'
+  keycloakRealm: '{{ keycloak_realm_name }}'
   signoutUrl: '{{ oauth2_proxy_signout_url }}'
   configCliImage: '{{ keycloak_config_cli_image }}:{{ keycloak_config_cli_image_tag }}'
 

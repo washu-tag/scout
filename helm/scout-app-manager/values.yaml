@@ -32,12 +32,20 @@ manager:
   # hardcode oauth2-proxy's subdomain. Defaults to https://auth.<domain>.
   signoutUrl: ''
   adminSecret: keycloak-admin-secret
+  # The realm the reconciler reads the live import checksum from, to notice a
+  # realm written by something other than itself.
+  keycloakRealm: scout
   # The Ansible-rendered realm. The platform still owns this; the reconciler
   # only ever reads it.
   baseRealmSecret: keycloak-config
   baseRealmKey: scout-realm.json
-  # Where the composed realm is written for config-cli to consume.
-  composedSecret: keycloak-config-composed
+  # The credentials the base realm names as `$(env:...)` but does not carry.
+  # Keys are those variables verbatim; the apply Job takes it with envFrom, and
+  # the reconciler reads it to check every name resolves before applying.
+  clientSecretsSecret: keycloak-client-secrets
+  # Where the composed realm is written for config-cli to consume. A ConfigMap,
+  # not a Secret: it names its credentials rather than carrying them.
+  composedConfigMap: keycloak-config-composed
   configCliImage: docker.io/adorsys/keycloak-config-cli:6.5.1-26.5.5
 
 discovery:

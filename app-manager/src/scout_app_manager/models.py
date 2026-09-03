@@ -52,6 +52,11 @@ class State:
     pending_change: bool = False
     base_hash: str | None = None
     composed_hash: str | None = None
+    # A digest over the resourceVersions of every Secret the apply reads. The
+    # document no longer moves when a credential is rotated, so this is what
+    # tells one apply from the next.
+    secrets_version: str | None = None
+    applied_secrets_version: str | None = None
     identical_to_base: bool = True
     phase: str = PENDING
     applied_at: str | None = None

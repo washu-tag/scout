@@ -1,10 +1,17 @@
 import json
 
 import pytest
-from conftest import fragment_yaml, setup, status_of, write_fragment  # noqa: F401
+from conftest import (  # noqa: F401
+    FakeClient,
+    fragment_yaml,
+    setup,
+    status_of,
+    write_fragment,
+)
 
 from scout_app_manager import apply, loop
-from scout_app_manager.apply import apply_job_body
+from scout_app_manager.apply import RealmApplier, apply_job_body
+from scout_app_manager.compose import SecretBinding
 from scout_app_manager.loop import await_discovery
 from scout_app_manager.models import (
     APPLIED,
@@ -20,7 +27,7 @@ from scout_app_manager.settings import Settings
 
 def composed_realm(client) -> dict:
     return json.loads(
-        client.secrets[("scout-core", "keycloak-config-composed")]["plain"][
+        client.configmaps[("scout-core", "keycloak-config-composed")]["data"][
             "scout-realm.json"
         ]
     )
@@ -217,7 +224,7 @@ def test_diff_mode_never_writes(setup):
     state = service.reconcile_once()
 
     assert client.jobs == {}
-    assert ("scout-core", "keycloak-config-composed") not in client.secrets
+    assert ("scout-core", "keycloak-config-composed") not in client.configmaps
     assert state.pending_change is True
     assert "diff mode" in state.last_result
 
@@ -314,6 +321,102 @@ def test_an_empty_fragment_dir_still_applies_the_base_realm(setup):
     assert [c["clientId"] for c in realm["clients"]] == ["launchpad", "oauth2-proxy"]
 
 
+# --- the realm names its credentials rather than carrying them --------------
+
+
+def name_a_credential(service, variable):
+    """Put a `$(env:...)` token in the base realm, as the real one has."""
+    realm = json.loads(open(service.settings.base_realm_path).read())
+    realm["clients"][0]["secret"] = f"$(env:{variable})"
+    open(service.settings.base_realm_path, "w").write(json.dumps(realm))
+
+
+def test_a_resolvable_base_realm_credential_applies(setup):
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+    name_a_credential(service, "oauth2_proxy")
+
+    state = service.reconcile_once()
+
+    assert state.phase == APPLIED
+    # Still named in the document that reaches config-cli; the value only ever
+    # exists in the Job's environment.
+    assert composed_realm(client)["clients"][0]["secret"] == "$(env:oauth2_proxy)"
+
+
+def test_an_unresolvable_base_realm_credential_refuses_the_whole_apply(setup):
+    """config-cli would install the literal token as the client's secret.
+
+    Unlike a fragment, a base-realm client cannot be dropped and the rest
+    applied, so this stops everything.
+    """
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+    name_a_credential(service, "not_in_the_secret")
+
+    state = service.reconcile_once()
+
+    assert state.phase == REFUSED
+    assert "$(env:not_in_the_secret)" in state.last_result
+    assert client.jobs == {}
+
+
+def test_a_present_but_empty_credential_counts_as_unresolvable(setup):
+    """An empty value is substituted, so the client gets a blank secret."""
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+    client.set_secret("scout-core", "keycloak-client-secrets", {"oauth2_proxy": ""})
+    name_a_credential(service, "oauth2_proxy")
+
+    assert service.reconcile_once().phase == REFUSED
+    assert client.jobs == {}
+
+
+def test_the_site_hostname_needs_no_secret(setup):
+    """Every base-realm URL is written against it, and it is not a credential."""
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+    realm = json.loads(open(service.settings.base_realm_path).read())
+    realm["clients"][0]["redirectUris"] = ["https://x.$(env:server_hostname)/cb"]
+    open(service.settings.base_realm_path, "w").write(json.dumps(realm))
+
+    assert service.reconcile_once().phase == APPLIED
+    job = next(iter(client.jobs.values()))
+    env = {
+        e["name"]: e for e in job["spec"]["template"]["spec"]["containers"][0]["env"]
+    }
+    assert env["server_hostname"]["value"] == service.settings.domain
+
+
+def test_rotating_a_credential_re_applies_an_unchanged_document(setup):
+    """The document no longer moves when a credential does, so this is the
+    only thing that would notice."""
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+    # reconcile_once returns the live State, so snapshot rather than compare
+    # the object with itself.
+    first = service.reconcile_once()
+    document, version = first.composed_hash, first.secrets_version
+
+    client.set_secret(
+        "scout-core", "keycloak-client-secrets", {"oauth2_proxy": "rotated"}
+    )
+    second = service.reconcile_once()
+
+    assert second.composed_hash == document
+    assert second.secrets_version != version
+    assert len(client.created_jobs) == 2
+
+
+def test_an_untouched_credential_does_not_re_apply(setup):
+    service, _, client = setup
+    service.settings.apply_mode = "apply"
+    service.reconcile_once()
+    service.reconcile_once()
+
+    assert len(client.created_jobs) == 1
+
+
 def test_a_fragment_carries_its_reported_effect(setup):
     service, fragments, _ = setup
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -389,17 +492,26 @@ def test_a_malformed_number_names_the_variable(monkeypatch, name, value):
         Settings()
 
 
+def job_body(**overrides):
+    return apply_job_body(
+        **{
+            "name": "app-manager-apply-abc",
+            "namespace": "scout-core",
+            "image": "adorsys/keycloak-config-cli:6.5.1",
+            "keycloak_url": "http://keycloak-service:8080",
+            "admin_secret": "keycloak-admin-secret",
+            "composed_configmap": "keycloak-config-composed",
+            "client_secrets_secret": "keycloak-client-secrets",
+            "server_hostname": "scout.example.edu",
+            "ttl_seconds": 3600,
+            **overrides,
+        }
+    )
+
+
 def test_the_apply_job_is_rendered_from_the_yaml_resource():
     """The Job is a Kubernetes object and lives in YAML, not a Python dict."""
-    body = apply_job_body(
-        name="app-manager-apply-abc",
-        namespace="scout-core",
-        image="adorsys/keycloak-config-cli:6.5.1",
-        keycloak_url="http://keycloak-service:8080",
-        admin_secret="keycloak-admin-secret",
-        composed_secret="keycloak-config-composed",
-        ttl_seconds=3600,
-    )
+    body = job_body()
     assert body["kind"] == "Job"
     assert body["metadata"]["name"] == "app-manager-apply-abc"
     assert body["spec"]["backoffLimit"] == 0
@@ -410,20 +522,43 @@ def test_the_apply_job_is_rendered_from_the_yaml_resource():
     # The admin credential is a secretKeyRef, never an inline value.
     assert env["KEYCLOAK_PASSWORD"]["valueFrom"]["secretKeyRef"]["key"] == "password"
     volume = body["spec"]["template"]["spec"]["volumes"][0]
-    assert volume["secret"]["secretName"] == "keycloak-config-composed"
+    # A ConfigMap: the composed realm names its credentials, never carries them.
+    assert volume["configMap"]["name"] == "keycloak-config-composed"
+
+
+def test_the_apply_job_can_resolve_what_the_realm_names():
+    """Everything the composed document's `$(env:...)` tokens need."""
+    container = job_body()["spec"]["template"]["spec"]["containers"][0]
+    env = {e["name"]: e for e in container["env"]}
+
+    assert container["envFrom"] == [{"secretRef": {"name": "keycloak-client-secrets"}}]
+    assert env["server_hostname"]["value"] == "scout.example.edu"
+    substitution_on = json.loads(env["SPRING_APPLICATION_JSON"]["value"])["import"]
+    assert substitution_on["var-substitution"]["enabled"] is True
+
+
+def test_a_fragment_credential_arrives_as_its_own_secret_key_ref():
+    applier = RealmApplier(Settings(), FakeClient(), "scout-core")
+    body = applier._body(
+        "app-manager-apply-abc",
+        {
+            "fragment_hello": SecretBinding(
+                "fragment_hello", "hello-keycloak-client", "client-secret"
+            )
+        },
+    )
+    env = {
+        e["name"]: e for e in body["spec"]["template"]["spec"]["containers"][0]["env"]
+    }
+    assert env["fragment_hello"]["valueFrom"]["secretKeyRef"] == {
+        "name": "hello-keycloak-client",
+        "key": "client-secret",
+    }
 
 
 def test_the_apply_job_declares_its_prune_posture():
     """Config-cli's own default is `full` on every type."""
-    body = apply_job_body(
-        name="app-manager-apply-abc",
-        namespace="scout-core",
-        image="adorsys/keycloak-config-cli:6.5.1",
-        keycloak_url="http://keycloak-service:8080",
-        admin_secret="keycloak-admin-secret",
-        composed_secret="keycloak-config-composed",
-        ttl_seconds=3600,
-    )
+    body = job_body()
     container = body["spec"]["template"]["spec"]["containers"][0]
     env = {e["name"]: e for e in container["env"]}
     managed = json.loads(env["SPRING_APPLICATION_JSON"]["value"])["import"]["managed"]

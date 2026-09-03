@@ -44,12 +44,16 @@ spec:
               value: {{ .Values.manager.applyMode | quote }}
             - name: APP_MANAGER_KEYCLOAK_URL
               value: {{ .Values.manager.keycloakUrl | quote }}
+            - name: APP_MANAGER_KEYCLOAK_REALM
+              value: {{ .Values.manager.keycloakRealm | quote }}
             - name: APP_MANAGER_SIGNOUT_URL
               value: {{ .Values.manager.signoutUrl | quote }}
             - name: APP_MANAGER_ADMIN_SECRET
               value: {{ .Values.manager.adminSecret | quote }}
-            - name: APP_MANAGER_COMPOSED_SECRET
-              value: {{ .Values.manager.composedSecret | quote }}
+            - name: APP_MANAGER_CLIENT_SECRETS_SECRET
+              value: {{ .Values.manager.clientSecretsSecret | quote }}
+            - name: APP_MANAGER_COMPOSED_CONFIGMAP
+              value: {{ .Values.manager.composedConfigMap | quote }}
             - name: APP_MANAGER_CONFIG_CLI_IMAGE
               value: {{ .Values.manager.configCliImage | quote }}
             - name: APP_MANAGER_STATUS_CONFIGMAP

@@ -1,3 +1,4 @@
+import base64
 import json
 from pathlib import Path
 
@@ -110,12 +111,22 @@ class FakeClient:
     def get_secret(self, namespace, name):
         return self.secrets.get((namespace, name))
 
-    def get_secret_value(self, namespace, name, key):
-        secret = self.secrets.get((namespace, name)) or {}
-        return (secret.get("plain") or {}).get(key)
+    def set_secret(self, namespace, name, values: dict[str, str]):
+        """Write a Secret the way the API stores one, bumping resourceVersion.
 
-    def put_secret(self, namespace, name, values, labels=None):
-        self.secrets[(namespace, name)] = {"plain": dict(values), "labels": labels}
+        The shape matters: the reconciler reads `data` and
+        `metadata.resourceVersion` off a single GET, and the second is how it
+        notices a rotation.
+        """
+        key = (namespace, name)
+        version = int((self.secrets.get(key) or {}).get("_version", 0)) + 1
+        self.secrets[key] = {
+            "metadata": {"name": name, "resourceVersion": str(version)},
+            "data": {
+                k: base64.b64encode(v.encode()).decode() for k, v in values.items()
+            },
+            "_version": version,
+        }
 
     def create_job(self, namespace, body):
         """409s on a name that is taken, exactly as the API does."""
@@ -164,10 +175,17 @@ def setup(tmp_path, base_realm, monkeypatch):
     client = FakeClient()
     # Every fragment client references a Secret in the service's namespace;
     # the fixture provisions the one the default fragment names.
-    client.secrets[("scout-core", "hello-keycloak-client")] = {
-        "plain": {"client-secret": "s3cret"},
-        "labels": None,
-    }
+    client.set_secret(
+        "scout-core", "hello-keycloak-client", {"client-secret": "s3cret"}
+    )
+    # The base realm's own credentials. The miniature realm in `base_realm`
+    # carries no `$(env:...)` tokens, so these are only here to be a realistic
+    # reserved-name set and something for a rotation test to move.
+    client.set_secret(
+        "scout-core",
+        "keycloak-client-secrets",
+        {"oauth2_proxy": "op", "launchpad_client": "lp"},
+    )
     service = AppManagerService(settings, client)
     # The normal running state; a test wanting the refused path clears it.
     service.state.discovery_synced = True

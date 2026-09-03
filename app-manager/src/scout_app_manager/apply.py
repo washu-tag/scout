@@ -7,6 +7,7 @@ from importlib import resources
 from string import Template
 
 from . import yamlio
+from .compose import SecretBinding
 from .k8s import ApiError, Client
 from .models import APPLY_JOB_LABEL
 from .settings import Settings
@@ -42,21 +43,29 @@ class RealmApplier:
         self.namespace = namespace
 
     def publish(self, text: str) -> None:
-        self.client.put_secret(
+        """Write the composed realm where the Job will mount it.
+
+        A ConfigMap: the document names its credentials rather than carrying
+        them, so nothing here is sensitive and an operator can read it during
+        an incident without Secret access.
+        """
+        self.client.put_configmap_data(
             self.namespace,
-            self.settings.composed_secret,
+            self.settings.composed_configmap,
             {"scout-realm.json": text},
             labels={"app.kubernetes.io/managed-by": "app-manager"},
         )
 
-    def run(self, desired_hash: str) -> tuple[bool, str]:
-        name = f"app-manager-apply-{desired_hash[7:19]}"
+    def run(
+        self, apply_key: str, bindings: dict[str, SecretBinding] | None = None
+    ) -> tuple[bool, str]:
+        name = f"app-manager-apply-{apply_key[7:19]}"
         self._prune(keep=name)
         if not self._clear_finished(name):
             return False, f"the previous {name} is still terminating"
-        log.info("APPLY    running %s for realm %s", name, desired_hash[:19])
+        log.info("APPLY    running %s", name)
         try:
-            self.client.create_job(self.namespace, self._body(name))
+            self.client.create_job(self.namespace, self._body(name, bindings or {}))
         except ApiError as exc:
             if exc.status != 409:
                 raise
@@ -85,16 +94,32 @@ class RealmApplier:
             time.sleep(DELETE_POLL_SECONDS)
         return True
 
-    def _body(self, name: str) -> dict:
-        return apply_job_body(
+    def _body(self, name: str, bindings: dict[str, SecretBinding]) -> dict:
+        body = apply_job_body(
             name=name,
             namespace=self.namespace,
             image=self.settings.config_cli_image,
             keycloak_url=self.settings.keycloak_url,
             admin_secret=self.settings.admin_secret,
-            composed_secret=self.settings.composed_secret,
+            composed_configmap=self.settings.composed_configmap,
+            client_secrets_secret=self.settings.client_secrets_secret,
+            server_hostname=self.settings.domain,
             ttl_seconds=self.settings.job_ttl_seconds,
         )
+        # Appended rather than templated: the count varies with what is
+        # installed, and a YAML fragment spliced into a string template is a
+        # worse way to say "one more list entry".
+        env = body["spec"]["template"]["spec"]["containers"][0]["env"]
+        for binding in sorted(bindings.values(), key=lambda b: b.env):
+            env.append(
+                {
+                    "name": binding.env,
+                    "valueFrom": {
+                        "secretKeyRef": {"name": binding.name, "key": binding.key}
+                    },
+                }
+            )
+        return body
 
     def _prune(self, keep: str) -> None:
         selector = urllib.parse.quote(f"{APPLY_JOB_LABEL}=apply")

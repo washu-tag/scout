@@ -11,13 +11,15 @@ metadata:
     {{- include "appmanager.labels" . | nindent 4 }}
 rules:
   - apiGroups: ['']
-    # Reads the base realm and each fragment client's credential; writes the
-    # composed realm. All in this namespace only.
+    # Read-only, and only in this namespace: the base realm's credentials and
+    # each fragment client's. It reads them to check they resolve, never to
+    # copy them -- the composed realm names credentials rather than carrying
+    # them, so the reconciler no longer writes a Secret at all.
     resources: [secrets]
-    verbs: [get, list, create, update, patch]
+    verbs: [get]
   - apiGroups: ['']
-    # The status document. The ClusterRole below reads it; the write is scoped
-    # to this namespace.
+    # The status document and the composed realm. The ClusterRole below reads
+    # fragments; these writes are scoped to this namespace.
     resources: [configmaps]
     verbs: [get, create, update, patch]
   - apiGroups: [batch]

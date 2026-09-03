@@ -27,12 +27,18 @@ class Settings(BaseSettings):
     )
     domain: str = "scout.example.edu"
     namespace: str = ""
-    composed_secret: str = "keycloak-config-composed"
+    # Not a Secret: the composed realm names its credentials, never carries
+    # them.
+    composed_configmap: str = "keycloak-config-composed"
     status_configmap: str = "scout-app-manager-status"
     apply_mode: ApplyMode = "diff"
     keycloak_url: str = "http://keycloak-service:8080"
+    keycloak_realm: str = "scout"
     signout_url: str = ""
     admin_secret: str = "keycloak-admin-secret"
+    # Keys are the base realm's `$(env:...)` variables verbatim; the apply Job
+    # takes it wholesale with envFrom.
+    client_secrets_secret: str = "keycloak-client-secrets"
     config_cli_image: str = "docker.io/adorsys/keycloak-config-cli:6.5.1-26.5.5"
     # A floor, not a schedule: the sidecar's request-on-change is the normal
     # wake-up.

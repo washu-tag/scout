@@ -88,7 +88,10 @@ def print_effect(effect: FragmentEffect, indent: str = "    ") -> None:
             print(f"{indent}    redirect  {uri}")
         for origin in client.web_origins:
             print(f"{indent}    origin    {origin}")
-        print(f"{indent}    secret    {client.secret_source}")
+        print(
+            f"{indent}    secret    {client.secret_source} "
+            f"-> $(env:{client.secret_env})"
+        )
         print(
             f"{indent}    pkce      "
             + ("required (S256)" if client.pkce == "required" else "NOT enforced")
