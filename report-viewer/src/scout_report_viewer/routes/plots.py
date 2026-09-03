@@ -140,7 +140,9 @@ def _reject_bad_legend_bind(node: Any) -> None:
 
 
 def _spec_transform_outputs(node: Any) -> set[str]:
-    """Field names a `transform` introduces - not expected among SQL columns."""
+    """Field names a `transform` introduces - not expected among SQL columns.
+    `aggregate`/`joinaggregate`/`window` nest their `as` one level deeper,
+    inside each op entry, rather than on the transform stage itself."""
     out: set[str] = set()
     if isinstance(node, dict):
         for t in node.get("transform") or []:
@@ -151,6 +153,10 @@ def _spec_transform_outputs(node: Any) -> set[str]:
                 out.add(as_)
             elif isinstance(as_, list):
                 out.update(a for a in as_ if isinstance(a, str))
+            for key in ("aggregate", "joinaggregate", "window"):
+                for op in t.get(key) or []:
+                    if isinstance(op, dict) and isinstance(op.get("as"), str):
+                        out.add(op["as"])
         for value in node.values():
             out |= _spec_transform_outputs(value)
     elif isinstance(node, list):

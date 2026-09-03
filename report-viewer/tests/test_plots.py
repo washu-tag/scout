@@ -197,6 +197,23 @@ def test_a_field_not_in_the_query_columns_is_refused(client, auth_headers, fake_
     assert "count" in r.json()["detail"]
 
 
+def test_an_aggregate_transform_output_field_is_allowed(
+    client, auth_headers, fake_trino
+):
+    fake_trino(["modality", "n"], [])
+    fake_trino(["n"], [{"n": 1}])
+    spec = {
+        "mark": "bar",
+        "transform": [{"aggregate": [{"op": "sum", "field": "n", "as": "total"}]}],
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "total", "type": "quantitative"},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 200
+
+
 def test_a_model_chosen_color_scheme_is_stripped(client, auth_headers, fake_trino):
     _queue_chart_query(fake_trino, ["modality", "n"], [{"modality": "MR", "n": 7}])
     spec = {
