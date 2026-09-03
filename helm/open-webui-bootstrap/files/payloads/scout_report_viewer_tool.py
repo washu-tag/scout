@@ -251,6 +251,16 @@ class Tools:
                 return got
             fetched = got
 
+        # A spec that fails to serialize would otherwise raise past every
+        # handler below as a raw, unguided exception.
+        try:
+            json.dumps(vega_lite_spec)
+        except (TypeError, ValueError, RecursionError) as exc:
+            return (
+                f"Error building chart: vega_lite_spec is not valid JSON ({exc}).\n\n"
+                "Fix the spec and call scout_chart_sql again."
+            )
+
         await self._emit(__event_emitter__, "Building chart\u2026", done=False)
         try:
             if fetched:
