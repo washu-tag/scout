@@ -14,7 +14,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.0",
-    "vega-embed": "^7.1.0",
+    "vega-embed": "^7.2.0",
     "vega-interpreter": "^2.3.1"
   },
   "devDependencies": {

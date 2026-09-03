@@ -35,7 +35,8 @@ dependencies = [
     "prometheus-client>=0.20",
     "yoyo-migrations",
     # Server-side render check for a saved spec, before persisting it.
-    "vl-convert-python",
+    # >=1.9 defaults to Vega-Lite v6, matching the frontend and stamped schema.
+    "vl-convert-python>=1.9.0",
 ]
 
 [project.optional-dependencies]

@@ -46,7 +46,8 @@ log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/plots", tags=["plots"])
 
-VEGA_LITE_SCHEMA = "https://vega.github.io/schema/vega-lite/v5.json"
+# Must match the Vega-Lite version the frontend and vl-convert-python compile against.
+VEGA_LITE_SCHEMA = "https://vega.github.io/schema/vega-lite/v6.json"
 
 # Never plottable, and the browser has no use for them here.
 _HEAVY_COLS: frozenset[str] = frozenset(
