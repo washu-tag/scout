@@ -351,13 +351,18 @@ open_webui_scout_default_suggestion_prompts:
 #   - terminal:          shell access — same risks, broader blast radius
 #   - vision:            unused by Scout (no images in the data)
 # Capabilities not listed here keep their OWUI default (true): file_context,
-# file_upload, citations, status_updates.
+# file_upload, status_updates.
+#   - citations: Scout bypasses OWUI's RAG (native function-calling inlines
+#     schema docs into the system prompt instead), so there are never any
+#     sources to cite; leaving this on just renders an empty "No sources
+#     found" pill on every turn.
 open_webui_scout_default_capabilities:
   vision: false
   web_search: false
   image_generation: false
   code_interpreter: false
   terminal: false
+  citations: false
 
 # Builtin tools (OWUI 0.9.x) — per-category enable/disable for the helper
 # functions OWUI auto-injects into a model's tool list under native function-

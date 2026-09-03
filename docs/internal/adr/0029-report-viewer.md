@@ -5,6 +5,14 @@
 **Decision Owner**: TAG Team
 **Supersedes**: Open WebUI's Trino-access parts of ADR 0019, ADR 0020, and ADR 0022 (the MCP Trino tool, openwebui_mcp_svc, and the interim PASSWORD authenticator)
 
+**Addendum** (2026-09-03): Adds a fourth and fifth tool, `scout_chart_sql` and
+`scout_get_chart_data` (`/api/plots` routes), which persist a SQL query and Vega-Lite
+spec to a new `plots` table and return a `view_url` that iframes a chart instead of a
+table of reports — the same just-in-time re-run pattern as `scout_find_reports`. The
+spec is sanitized server-side before it's persisted or rendered, and the frontend
+renders it in CSP-safe mode, consistent with this ADR's existing iframe security
+posture.
+
 ## Context
 
 Scout's chat surface (Open WebUI) is an effective natural-language entry point for cohort building. Researchers describe what they want, an LLM translates it to Trino SQL against the Delta Lake radiology reports, and a cohort emerges through follow-up questions. The chat context is not designed for large-data interaction though. Dumping thousands of rows into the LLM's window blows its context budget and produces worse answers on the next turn. Rendering the same rows as chat markdown gives researchers a text surface but no browse, sort, filter, or export affordances, and it still puts the payload into the model's context.

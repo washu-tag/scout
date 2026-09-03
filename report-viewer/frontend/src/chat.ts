@@ -62,3 +62,7 @@ export function buildFilterPrompt(searchId: string, filters: FilterState): strin
 export function buildDiscussPrompt(sourceFile: string): string {
   return `Read the report at \`${sourceFile}\`. Walk me through the findings, impression, and key diagnoses.`;
 }
+
+export function buildDiscussPlotPrompt(chartId: string): string {
+  return `Discuss the chart \`${chartId}\`. Pull its data and give me your read: patterns, outliers, anything worth flagging.`;
+}

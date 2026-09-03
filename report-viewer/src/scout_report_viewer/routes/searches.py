@@ -42,6 +42,7 @@ from ..csv_upload import (
     dedup_ids,
     guard_upload_size,
     parse_csv_ids,
+    quote_ident,
     substitute_cohort,
 )
 from ..ids import new_search_id
@@ -85,16 +86,6 @@ def _assert_required_projections(columns: list[str]) -> None:
                 f"missing: {missing}. Got columns: {columns}"
             ),
         )
-
-
-# Identifiers can't be param-bound in Trino; values always are.
-def _quote_ident(name: str) -> str:
-    if not name.replace("_", "").isalnum():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"unsafe identifier: {name!r}",
-        )
-    return f'"{name}"'
 
 
 def _qualified_reports() -> str:
@@ -193,7 +184,7 @@ async def create_search(
             str(r.get(id_column)) for r in sample_rows if r.get(id_column) is not None
         ]
         if sample_ids:
-            col_q = _quote_ident(id_column)
+            col_q = quote_ident(id_column)
             extras_sql = (
                 f"SELECT {col_q} AS _id, "
                 f"report_section_impression, report_section_findings, "
@@ -342,9 +333,9 @@ async def create_search_from_file(
     if sql:
         assert_cohort_placeholder(sql)
     ids, resolved_id_column, column_inferred = parse_csv_ids(raw, id_column)
-    cleaned = dedup_ids(ids)
+    cleaned = dedup_ids(ids, resolved_id_column)
 
-    col_q = _quote_ident(resolved_id_column)
+    col_q = quote_ident(resolved_id_column)
 
     # All IDs are bound at read time; validate only on the default path, where
     # the table is known, to report unmatched. Custom SQL targets an unknown
@@ -361,7 +352,7 @@ async def create_search_from_file(
             chunk = cleaned[start : start + CHUNK]
             try:
                 with metrics.time_trino("from_file_validate"):
-                    # safe: identifier from _quote_ident allowlist, IDs bind via ?
+                    # safe: identifier from quote_ident allowlist, IDs bind via ?
                     # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                     _cols, rows = await trino_client.execute(
                         validate_sql, user=user.sub, params=[chunk]
@@ -472,7 +463,10 @@ async def get_search_meta(
 ) -> SearchMeta:
     ds = await store.get_search(search_id, user.sub)
     if ds is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="search not found",
+        )
     return SearchMeta(
         id=ds["id"],
         sql=ds["sql"],
@@ -496,7 +490,10 @@ async def delete_search(
     existence of other users' rows)."""
     deleted = await store.delete_search(search_id, user.sub)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="search not found",
+        )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -524,7 +521,10 @@ async def get_search_rows(
     sort/filter/pagination params."""
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="search not found",
+        )
 
     source_sql = ds["sql"]
     uploaded_ids = ds.get("uploaded_ids")
@@ -566,7 +566,10 @@ async def get_search_accessions(
 ) -> dict[str, Any]:
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="search not found",
+        )
     sql = ds["sql"]
     uploaded_ids = ds.get("uploaded_ids")
     sql = (

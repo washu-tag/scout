@@ -46,13 +46,15 @@ def _needs_pg(request):
 
 @pytest_asyncio.fixture
 async def reset_schema():
-    """Drop and recreate the `searches` table so each test starts clean."""
+    """Drop and recreate the `searches` and `plots` tables so each test starts
+    clean."""
     _needs_pg(None)
     settings.database_url = TEST_DB_URL
     async with AsyncConnectionPool(TEST_DB_URL, open=False) as pool:
         async with pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute("DROP TABLE IF EXISTS searches CASCADE")
+                await cur.execute("DROP TABLE IF EXISTS plots CASCADE")
                 await cur.execute("DROP TABLE IF EXISTS _yoyo_migration CASCADE")
                 await cur.execute("DROP TABLE IF EXISTS _yoyo_log CASCADE")
                 await cur.execute("DROP TABLE IF EXISTS _yoyo_version CASCADE")
@@ -136,5 +138,14 @@ def client(reset_schema):
 def auth_headers() -> dict[str, str]:
     return {
         "X-Auth-Request-Preferred-Username": "alice",
+        "X-Report-Viewer-Gateway": os.environ["REPORT_VIEWER_GATEWAY_SECRET"],
+    }
+
+
+@pytest.fixture
+def other_auth_headers() -> dict[str, str]:
+    """A second signed-in user, for cross-user access checks."""
+    return {
+        "X-Auth-Request-Preferred-Username": "bob",
         "X-Report-Viewer-Gateway": os.environ["REPORT_VIEWER_GATEWAY_SECRET"],
     }

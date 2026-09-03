@@ -11,7 +11,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from . import logging_setup, metrics
 from .config import settings
 from .db import check_ready, create_pool, ensure_schema
-from .routes import config_router, reports_router, searches_router
+from .routes import config_router, plots_router, reports_router, searches_router
 
 _VERSION = version("scout_report_viewer")
 
@@ -87,6 +87,7 @@ def create_app() -> FastAPI:
     app.include_router(config_router)
     app.include_router(searches_router)
     app.include_router(reports_router)
+    app.include_router(plots_router)
 
     # html=True falls unmapped /spa/* back to index.html so SPA-router refreshes work.
     _spa_dir = Path(__file__).parent / "static"

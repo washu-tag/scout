@@ -1,4 +1,4 @@
-"""Persistence layer for searches."""
+"""Persistence layer for searches and charts."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from fastapi import Depends
+from psycopg.types.json import Jsonb
 from psycopg_pool import AsyncConnectionPool
 
 from . import metrics
@@ -121,8 +122,113 @@ class SearchStore:
         return [_row_to_dict(r) for r in rows]
 
 
+class PlotStore:
+    """Owner-scoped CRUD over the `plots` table. Stores SQL, spec, and any
+    uploaded ID list, so charts are re-evaluated on view."""
+
+    def __init__(self, pool: AsyncConnectionPool) -> None:
+        self._pool = pool
+
+    async def insert_plot(
+        self,
+        *,
+        plot_id: str,
+        sql: str,
+        spec: dict[str, Any],
+        owner_sub: str,
+        sql_explanation: str | None = None,
+        owui_chat_id: str | None = None,
+        uploaded_ids: list[str] | None = None,
+    ) -> None:
+        with metrics.time_postgres("insert_plot"):
+            async with self._pool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        """
+                        INSERT INTO plots
+                          (id, sql, sql_explanation, spec, uploaded_ids,
+                           owner_sub, owui_chat_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """,
+                        (
+                            plot_id,
+                            sql,
+                            sql_explanation or "",
+                            Jsonb(spec),
+                            uploaded_ids,
+                            owner_sub,
+                            owui_chat_id or "",
+                        ),
+                    )
+                await conn.commit()
+
+    async def list_plots(
+        self, owner_sub: str, *, limit: int = 200
+    ) -> list[dict[str, Any]]:
+        """Return the caller's charts, newest first. The spec is left behind -
+        the listing only needs metadata, and specs are re-read on view."""
+        with metrics.time_postgres("list_plots"):
+            async with self._pool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        """
+                        SELECT id, sql, sql_explanation, owner_sub,
+                               owui_chat_id, created_at
+                        FROM plots
+                        WHERE owner_sub = %s
+                        ORDER BY created_at DESC
+                        LIMIT %s
+                        """,
+                        (owner_sub, limit),
+                    )
+                    rows = await cur.fetchall()
+        return [
+            {
+                "id": id_,
+                "sql": sql,
+                "sql_explanation": explanation or "",
+                "owner_sub": owner,
+                "owui_chat_id": chat_id or "",
+                "created_at": created_at,
+            }
+            for id_, sql, explanation, owner, chat_id, created_at in rows
+        ]
+
+    async def get_plot(self, plot_id: str, owner_sub: str) -> dict[str, Any] | None:
+        with metrics.time_postgres("get_plot"):
+            async with self._pool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        """
+                        SELECT id, sql, sql_explanation, spec, uploaded_ids,
+                               owner_sub, owui_chat_id, created_at
+                        FROM plots
+                        WHERE id = %s AND owner_sub = %s
+                        """,
+                        (plot_id, owner_sub),
+                    )
+                    row = await cur.fetchone()
+        if row is None:
+            return None
+        id_, sql, explanation, spec, uploaded_ids, owner, chat_id, created_at = row
+        return {
+            "id": id_,
+            "sql": sql,
+            "sql_explanation": explanation or "",
+            "spec": spec,
+            "uploaded_ids": uploaded_ids,
+            "owner_sub": owner,
+            "owui_chat_id": chat_id or "",
+            "created_at": created_at,
+        }
+
+
 def get_store(pool: AsyncConnectionPool = Depends(get_pool)) -> SearchStore:
     return SearchStore(pool)
+
+
+def get_plot_store(pool: AsyncConnectionPool = Depends(get_pool)) -> PlotStore:
+    return PlotStore(pool)
 
 
 def _row_to_dict(row: tuple) -> dict[str, Any]:

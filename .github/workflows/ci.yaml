@@ -330,6 +330,9 @@ jobs:
       - name: 'Unit tests: Open WebUI iframe-defaults event function'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_scout_iframe_defaults_event.py -v
+      - name: 'Unit tests: Open WebUI report-viewer tool'
+        shell: bash
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_scout_report_viewer_tool.py -v
       - name: 'Unit tests: report-viewer'
         shell: bash
         env:

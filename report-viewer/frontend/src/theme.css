@@ -70,3 +70,22 @@ body {
 tr.scout-row:hover {
   background: var(--rv-surface-2) !important;
 }
+
+/* vega-embed pins its action menu to the top-right corner of the drawing, hard
+   against the border and on top of the plot. Inset it and fade it until the
+   chart is hovered. The div. prefix outweighs vega-embed's own rule. */
+div.vega-embed summary {
+  top: 6px;
+  right: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.vega-embed:hover summary,
+.vega-embed summary:focus-visible,
+.vega-embed details[open] summary {
+  opacity: 1;
+}
+/* default -9px overhangs past the edge, forcing a scroll in the iframe */
+div.vega-embed .vega-actions {
+  right: 6px;
+}
