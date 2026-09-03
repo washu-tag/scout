@@ -295,10 +295,10 @@ class Tools:
             await self._emit(
                 __event_emitter__, self._status_error(exc, "Chart failed"), done=True
             )
-            return (
-                f"Error building chart: {exc}\n\n"
-                "Fix the SQL or the spec and call scout_chart_sql again."
-            )
+            error = self._error_text(exc, "Error building chart")
+            if isinstance(exc, SessionExpiredError):
+                return error
+            return f"{error}\n\nFix the SQL or the spec and call scout_chart_sql again."
         n = plot.get("row_count", 0)
         await self._emit(__event_emitter__, "Chart ready", done=True)
         evicted = await self._emit_embed(
