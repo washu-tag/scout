@@ -68,18 +68,20 @@ _COSMETIC_KEYS: frozenset[str] = frozenset(
 _SCALE_PALETTE_KEYS: frozenset[str] = frozenset({"scheme", "range"})
 
 
-def _strip_scale_palette(node: Any) -> Any:
-    """A nested `encoding.*.scale.scheme` fights the theme the same way a
-    top-level `config` does, but _COSMETIC_KEYS only strips top-level keys."""
+def _strip_nested(node: Any) -> Any:
+    """Drops `data` at any depth (a layer/facet child's own `data.values`
+    would shadow the queried rows) and palette keys from any `scale`."""
     if isinstance(node, dict):
         out = {}
         for key, value in node.items():
+            if key == "data":
+                continue
             if key == "scale" and isinstance(value, dict):
                 value = {k: v for k, v in value.items() if k not in _SCALE_PALETTE_KEYS}
-            out[key] = _strip_scale_palette(value)
+            out[key] = _strip_nested(value)
         return out
     if isinstance(node, list):
-        return [_strip_scale_palette(item) for item in node]
+        return [_strip_nested(item) for item in node]
     return node
 
 
@@ -87,7 +89,7 @@ def _clean_spec(raw_spec: dict[str, Any]) -> dict[str, Any]:
     """Strip viewer-owned/palette keys once, before validating, so the
     render check covers what actually gets persisted, not the raw input."""
     spec = {k: v for k, v in raw_spec.items() if k not in _COSMETIC_KEYS}
-    return _strip_scale_palette(spec)
+    return _strip_nested(spec)
 
 
 def _reject_foreign_urls(node: Any) -> None:
@@ -234,7 +236,6 @@ async def _save_chart(
     """Persist the already-cleaned spec, return the view URL."""
     spec = dict(raw_spec)
     spec["$schema"] = VEGA_LITE_SCHEMA
-    spec.pop("data", None)
 
     plot_id = new_plot_id()
     await store.insert_plot(

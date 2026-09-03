@@ -188,6 +188,15 @@ def test_usermeta_is_stripped(client, auth_headers, fake_trino):
     assert "usermeta" not in detail["spec"]
 
 
+def test_nested_data_is_stripped(client, auth_headers, fake_trino):
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    spec = {"layer": [{**BAR, "data": {"values": [{"modality": "FAKE", "n": 999}]}}]}
+    plot_id = _create(client, auth_headers, spec=spec).json()["id"]
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
+    assert "data" not in detail["spec"]["layer"][0]
+
+
 def test_report_bodies_never_reach_the_browser(client, auth_headers, fake_trino):
     rows = [{"modality": "MR", "report_text": "PHI narrative"}]
     fake_trino(["modality", "report_text"], rows)
