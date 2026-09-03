@@ -51,3 +51,5 @@ report_viewer_trino_auth_client_secret: '{{ keycloak_report_viewer_svc_client_se
 # (routes/searches.py). Service-to-service - not the external oauth2-proxy
 # host.
 report_viewer_superset_internal_url: 'http://superset.{{ superset_namespace }}:8088'
+# Matches Superset's own ingress host (ansible/roles/superset/templates/values.yaml.j2).
+report_viewer_superset_external_url: 'https://superset.{{ server_hostname }}'

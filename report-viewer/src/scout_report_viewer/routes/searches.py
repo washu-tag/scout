@@ -561,7 +561,7 @@ async def export_search_to_superset(
     payload = resp.json()
     return ExportToSupersetResponse(
         dataset_id=payload["dataset_id"],
-        explore_url=f"{settings.external_url.rstrip('/')}/superset{payload['explore_url']}",
+        explore_url=f"{settings.superset_external_url.rstrip('/')}{payload['explore_url']}",
     )
 
 
