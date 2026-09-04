@@ -15,10 +15,15 @@ log = logging.getLogger("app-manager")
 
 
 def main() -> int:
+    level = os.environ.get("APP_MANAGER_LOG_LEVEL", "INFO")
     logging.basicConfig(
-        level=os.environ.get("APP_MANAGER_LOG_LEVEL", "INFO"),
+        level=level,
         format="%(asctime)s %(levelname)-7s %(name)s %(message)s",
     )
+    if level.upper() != "DEBUG":
+        # A reconcile is a dozen requests and they now run every minute, so at
+        # INFO the client's per-request line buries the reconciler's own.
+        logging.getLogger("httpx2").setLevel(logging.WARNING)
     settings = Settings()
     client = Client()
     service = AppManagerService(settings, client)

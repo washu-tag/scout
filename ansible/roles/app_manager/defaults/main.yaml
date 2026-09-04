@@ -16,8 +16,10 @@ app_manager_image_pull_policy: IfNotPresent
 app_manager_apply_mode: diff
 
 # A floor, not a schedule: the sidecar calls the reconciler on every fragment
-# change.
-app_manager_resync_seconds: 600
+# change, and the reconciler watches this namespace's Secrets and the base
+# realm ConfigMap itself. It is also the worst case for the one input nothing
+# can watch -- a realm written by something other than the reconciler.
+app_manager_resync_seconds: 60
 app_manager_debounce_seconds: 2
 # Wake on a credential rotation or a re-rendered base realm instead of waiting
 # out the floor. Off is the break-glass; the floor still catches the change.

@@ -14,9 +14,10 @@ manager:
   applyMode: diff
   # Public hostname suffix. Fragments interpolate it as ${domain}.
   domain: ''
-  # A floor, not a schedule: the sidecar's request-on-change is the normal
-  # wake-up.
-  resyncSeconds: 600
+  # A floor, not a schedule: a change to a watched object is the normal wake-up.
+  # It is also the worst case for the one input nothing can watch -- a realm
+  # written by something other than the reconciler.
+  resyncSeconds: 60
   # Collapses a burst of sidecar notifications into one reconcile.
   debounceSeconds: 2
   # Absence tolerated before a fragment's realm objects are retracted. Longer

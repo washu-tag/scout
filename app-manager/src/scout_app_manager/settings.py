@@ -46,9 +46,11 @@ class Settings(BaseSettings):
     # takes it wholesale with envFrom.
     client_secrets_secret: str = "keycloak-client-secrets"
     config_cli_image: str = "docker.io/adorsys/keycloak-config-cli:6.5.1-26.5.5"
-    # A floor, not a schedule: the sidecar's request-on-change is the normal
-    # wake-up.
-    resync_seconds: int = 600
+    # A floor, not a schedule: a change to a watched object is the normal
+    # wake-up. It is also the worst case for the one input nothing can watch --
+    # a realm written by something other than this reconciler, which is a
+    # Keycloak read rather than a Kubernetes event.
+    resync_seconds: int = 60
     # One request per resource written, so a startup sync arrives as a burst.
     debounce_seconds: float = 2.0
     discovery_health_url: str = "http://127.0.0.1:8081/healthz"
