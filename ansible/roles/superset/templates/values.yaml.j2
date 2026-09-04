@@ -162,17 +162,35 @@ configOverrides:
     # dashboards/core/Scout_1.yaml), cloned against cohort-scoped datasets
     # instead of leaving the user with a bare Explore view.
     CORE_DASHBOARD_UUID = "47457783-1886-46d8-9012-df03fcb684eb"
-    # Every source dataset the dashboard's charts are bound to, mapped to
-    # the real (delta.default) table its cohort-scoped clone widens
-    # against. Not single-dataset: the "Diagnoses" chart reads reports_dx
-    # (a pre-exploded one-row-per-diagnosis view), not reports_latest like
-    # the other 10 charts. Extend this if a future dashboard version adds
-    # another source.
+    # Every source dataset the dashboard's charts are bound to: the real
+    # table its cohort-scoped clone widens against, the column on that
+    # table to filter by, and the column holding the matching values on
+    # whatever that filter is correlated against - the raw cohort SQL for
+    # the main reports_latest dataset itself, or the main reports_latest
+    # cohort clone (guaranteed to carry every reports_latest column, unlike
+    # the raw cohort SQL) for every other source. Not all three use the
+    # same key: reports_dx (a pre-exploded one-row-per-diagnosis view) has
+    # no primary_report_identifier column at all, only message_control_id;
+    # the raw "reports" table predates the source_file ->
+    # primary_report_identifier rename applied in reports_latest. Extend
+    # this if a future dashboard version adds another source.
     CORE_MAIN_DATASET_UUID = "14cdaed5-905e-499a-b020-13e1b54097c8"  # reports_latest.yaml
     CORE_SOURCE_DATASETS = {
-        CORE_MAIN_DATASET_UUID: "reports_latest",
-        "32d5849e-ae01-4933-a81c-7697cc254092": "reports_dx",  # reports_dx.yaml
-        "a7e9c2b4-5f3d-4a6e-9b1c-8d7f2e4a6c9b": "reports",  # reports.yaml (curated table)
+        CORE_MAIN_DATASET_UUID: {
+            "table": "reports_latest",
+            "key": "primary_report_identifier",
+            "correlate_key": "primary_report_identifier",
+        },
+        "32d5849e-ae01-4933-a81c-7697cc254092": {  # reports_dx.yaml
+            "table": "reports_dx",
+            "key": "message_control_id",
+            "correlate_key": "message_control_id",
+        },
+        "a7e9c2b4-5f3d-4a6e-9b1c-8d7f2e4a6c9b": {  # reports.yaml (pre-rename raw table)
+            "table": "reports",
+            "key": "source_file",
+            "correlate_key": "primary_report_identifier",
+        },
     }
 
     def _ensure_chat_cohort_grants_table(engine) -> None:
@@ -333,13 +351,13 @@ configOverrides:
 
             from superset.utils.core import override_user
 
-            def _create_cohort_dataset(source_uuid: str, source_table_name: str) -> SqlaTable:
+            def _create_cohort_dataset(source_uuid: str, spec: dict, correlate_sql: str) -> SqlaTable:
                 widened_sql = (
-                    f"SELECT * FROM {source_table_name} WHERE primary_report_identifier IN "
-                    f"(SELECT primary_report_identifier FROM ({sql}) cohort)"
+                    f"SELECT * FROM {spec['table']} WHERE {spec['key']} IN "
+                    f"(SELECT {spec['correlate_key']} FROM ({correlate_sql}) cohort)"
                 )
                 ds_table = SqlaTable(
-                    table_name=f"{title} ({username}) [{source_table_name}]",
+                    table_name=f"{title} ({username}) [{spec['table']}]",
                     schema="default",
                     catalog="delta",
                     sql=widened_sql,
@@ -400,7 +418,7 @@ configOverrides:
             # created lazily, only if the dashboard clone actually needs
             # them.
             table = _create_cohort_dataset(
-                CORE_MAIN_DATASET_UUID, CORE_SOURCE_DATASETS[CORE_MAIN_DATASET_UUID]
+                CORE_MAIN_DATASET_UUID, CORE_SOURCE_DATASETS[CORE_MAIN_DATASET_UUID], sql
             )
             cohort_tables = {CORE_MAIN_DATASET_UUID: table}
 
@@ -434,7 +452,7 @@ configOverrides:
                         continue
                     if src_uuid not in cohort_tables:
                         cohort_tables[src_uuid] = _create_cohort_dataset(
-                            src_uuid, CORE_SOURCE_DATASETS[src_uuid]
+                            src_uuid, CORE_SOURCE_DATASETS[src_uuid], table.sql
                         )
                     target_table = cohort_tables[src_uuid]
                     dataset_id_map[src_slice.datasource_id] = target_table.id
