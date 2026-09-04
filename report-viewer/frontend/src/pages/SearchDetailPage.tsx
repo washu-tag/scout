@@ -87,6 +87,7 @@ export default function SearchDetailPage() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportedLink, setExportedLink] = useState<string | null>(null);
+  const [copyFailed, setCopyFailed] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
@@ -648,8 +649,13 @@ export default function SearchDetailPage() {
                       // one path guaranteed to work here.
                       try {
                         await navigator.clipboard.writeText(url);
+                        setCopyFailed(false);
                       } catch {
-                        /* still show the link below even if the copy failed */
+                        // Sandboxed iframes often lack allow-clipboard-write,
+                        // so this fails silently more often than not here -
+                        // still show the link below, just don't claim it was
+                        // copied when it wasn't.
+                        setCopyFailed(true);
                       }
                       setExportedLink(url);
                     } else {
@@ -700,8 +706,11 @@ export default function SearchDetailPage() {
             )}
             {exportedLink && (
               <p style={{ margin: '0.25rem 0 0' }}>
-                Link copied to clipboard. This view is embedded in chat, so open a new browser
-                tab yourself and paste it: <code>{exportedLink}</code>
+                {copyFailed
+                  ? "Couldn't copy automatically (this embedded view may not allow clipboard access)."
+                  : 'Link copied to clipboard.'}{' '}
+                This view is embedded in chat, so open a new browser tab yourself and paste it:{' '}
+                <code>{exportedLink}</code>
               </p>
             )}
           </div>
