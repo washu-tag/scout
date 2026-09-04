@@ -46,3 +46,10 @@ report_viewer_trino_ca_cert: ''
 report_viewer_trino_auth_token_url: '{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/token'
 report_viewer_trino_auth_client_id: report_viewer_svc
 report_viewer_trino_auth_client_secret: '{{ keycloak_report_viewer_svc_client_secret }}'
+
+# Issue #628 PoC: in-cluster Superset URL for the chat-cohort-export call
+# (routes/searches.py). Service-to-service - not the external oauth2-proxy
+# host.
+report_viewer_superset_internal_url: 'http://superset.{{ superset_namespace }}:8088'
+# Matches Superset's own ingress host (ansible/roles/superset/templates/values.yaml.j2).
+report_viewer_superset_external_url: 'https://superset.{{ server_hostname }}'

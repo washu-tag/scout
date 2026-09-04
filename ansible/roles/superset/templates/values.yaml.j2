@@ -107,7 +107,8 @@ configOverrides:
     from superset.security import SupersetSecurityManager
     from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
     from superset.exceptions import SupersetSecurityException
-    from flask import g, redirect, session
+    from flask import g, redirect, session, request, jsonify
+    import hmac
     import logging
     OAUTH_PROVIDERS = OPENID_PROVIDERS = [
         {
@@ -136,6 +137,389 @@ configOverrides:
     AUTH_USER_REGISTRATION = True
     AUTH_USER_REGISTRATION_ROLE = 'Gamma'
     AUTH_ROLES_SYNC_AT_LOGIN = True
+
+    # --- Issue #628 PoC: export a chat cohort into an isolated Superset dataset ---
+    # Gamma's schema_access grant (#687) covers only delta.default, so any
+    # dataset tagged with a different `schema` value (nominal — no real Trino
+    # schema is created; the dataset's own `sql` is fully qualified) falls
+    # through Superset's `raise_for_access` schema check into a genuine
+    # per-object check. `chat_cohort_grants` is a narrow allowlist of
+    # (dataset_id, username) consulted only when the normal check fails, so
+    # cohort datasets stay private to the user who exported them.
+    #
+    # PoC only: CHAT_COHORT_EXPORT_TOKEN is a hardcoded shared secret that
+    # authenticates report-viewer's calls to the one new
+    # /internal/chat-cohort-export endpoint it guards — nothing else accepts
+    # it. Replace with a provisioned Secret before this leaves prototype
+    # status (see report-viewer's matching constant).
+    CHAT_COHORT_EXPORT_TOKEN = "scout-poc-chat-cohort-export-8f2e1c"
+    # A separate Database row (see _register_chat_cohort_export_api),
+    # pointed at the same Trino connection as "Scout Data Lake" but under
+    # its own name so its schema_perm isn't covered by Gamma's blanket
+    # schema_access grant on [Scout Data Lake].[delta].[default].
+    CHAT_EXPORT_DATABASE_NAME = "Scout Chat Exports"
+    # The standard "Scout" dashboard (helm/scout-dashboards/files/analytics/
+    # dashboards/core/Scout_1.yaml), cloned against cohort-scoped datasets
+    # instead of leaving the user with a bare Explore view.
+    CORE_DASHBOARD_UUID = "47457783-1886-46d8-9012-df03fcb684eb"
+    # Every source dataset the dashboard's charts are bound to: the real
+    # table its cohort-scoped clone widens against, the column on that
+    # table to filter by, and the column holding the matching values on
+    # whatever that filter is correlated against - the raw cohort SQL for
+    # the main reports_latest dataset itself, or the main reports_latest
+    # cohort clone (guaranteed to carry every reports_latest column, unlike
+    # the raw cohort SQL) for every other source. Not all three use the
+    # same key: reports_dx (a pre-exploded one-row-per-diagnosis view) has
+    # no primary_report_identifier column at all, only message_control_id;
+    # the raw "reports" table predates the source_file ->
+    # primary_report_identifier rename applied in reports_latest. Extend
+    # this if a future dashboard version adds another source.
+    CORE_MAIN_DATASET_UUID = "14cdaed5-905e-499a-b020-13e1b54097c8"  # reports_latest.yaml
+    CORE_SOURCE_DATASETS = {
+        CORE_MAIN_DATASET_UUID: {
+            "table": "reports_latest",
+            "key": "primary_report_identifier",
+            "correlate_key": "primary_report_identifier",
+        },
+        "32d5849e-ae01-4933-a81c-7697cc254092": {  # reports_dx.yaml
+            "table": "reports_dx",
+            "key": "message_control_id",
+            "correlate_key": "message_control_id",
+        },
+        "a7e9c2b4-5f3d-4a6e-9b1c-8d7f2e4a6c9b": {  # reports.yaml (pre-rename raw table)
+            "table": "reports",
+            "key": "source_file",
+            "correlate_key": "primary_report_identifier",
+        },
+    }
+
+    def _ensure_chat_cohort_grants_table(engine) -> None:
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE TABLE IF NOT EXISTS chat_cohort_grants ("
+                    "dataset_id INTEGER NOT NULL, "
+                    "username VARCHAR(255) NOT NULL, "
+                    "created_at TIMESTAMP NOT NULL DEFAULT now(), "
+                    "PRIMARY KEY (dataset_id, username))"
+                )
+            )
+
+    def _clone_remap_position(position, chart_id_map) -> dict:
+        for value in position.values():
+            if not isinstance(value, dict) or value.get("type") != "CHART":
+                continue
+            meta = value.get("meta", {})
+            old_id = meta.get("chartId")
+            if old_id in chart_id_map:
+                meta["chartId"] = chart_id_map[old_id]
+        return position
+
+    def _clone_remap_metadata(metadata, chart_id_map, dataset_id_map) -> dict:
+        def remap_list(ids):
+            return [chart_id_map.get(i, i) for i in ids]
+
+        cc = metadata.get("chart_configuration") or {}
+        new_cc = {}
+        for key, val in cc.items():
+            try:
+                old_id = int(key)
+            except (TypeError, ValueError):
+                new_cc[key] = val
+                continue
+            new_id = chart_id_map.get(old_id, old_id)
+            if isinstance(val, dict):
+                if isinstance(val.get("id"), int):
+                    val["id"] = chart_id_map.get(val["id"], val["id"])
+                cf = val.get("crossFilters") or {}
+                if isinstance(cf.get("chartsInScope"), list):
+                    cf["chartsInScope"] = remap_list(cf["chartsInScope"])
+            new_cc[str(new_id)] = val
+        if cc:
+            metadata["chart_configuration"] = new_cc
+
+        gcc = metadata.get("global_chart_configuration") or {}
+        if isinstance(gcc.get("chartsInScope"), list):
+            gcc["chartsInScope"] = remap_list(gcc["chartsInScope"])
+
+        for nf in metadata.get("native_filter_configuration") or []:
+            if isinstance(nf.get("chartsInScope"), list):
+                nf["chartsInScope"] = remap_list(nf["chartsInScope"])
+            for target in nf.get("targets") or []:
+                if isinstance(target, dict) and target.get("datasetId") in dataset_id_map:
+                    target["datasetId"] = dataset_id_map[target["datasetId"]]
+        return metadata
+
+    def _register_chat_cohort_export_api(app) -> None:
+        from flask import Blueprint
+        from superset import db
+
+        with app.app_context():
+            _ensure_chat_cohort_grants_table(db.engine)
+
+        bp = Blueprint("chat_cohort_export", __name__)
+
+        # Flask-WTF's CSRFProtect guards every POST/PUT/PATCH/DELETE route by
+        # default, including new blueprints. This endpoint is authenticated
+        # by CHAT_COHORT_EXPORT_TOKEN instead of a session CSRF token, so it
+        # needs an explicit exemption or every call 400s before the handler
+        # runs.
+        from superset.extensions import csrf
+
+        csrf.exempt(bp)
+
+        @bp.route("/internal/chat-cohort-export", methods=["POST"])
+        def create_chat_cohort_export():
+            # Imported lazily, per-request rather than at registration time
+            # (which runs during KeycloakSecurityManager.__init__, mid
+            # configure_fab): superset.connectors.sqla.models pulls in
+            # superset.db_engine_specs, whose module-level marshmallow
+            # schemas call flask_babel.gettext() at import time, and Babel
+            # isn't registered in app.extensions yet at that point
+            # (KeyError: 'babel' crashing every worker on boot).
+            import json
+
+            from flask_appbuilder.security.sqla.models import User as FabUser
+            from sqlalchemy import text
+            from superset.connectors.sqla.models import SqlaTable, SqlMetric
+            from superset.models.core import Database
+            from superset.models.dashboard import Dashboard
+            from superset.models.slice import Slice
+
+            token = request.headers.get("X-Cohort-Export-Token", "")
+            if not hmac.compare_digest(token, CHAT_COHORT_EXPORT_TOKEN):
+                return jsonify({"error": "unauthorized"}), 401
+            body = request.get_json(force=True, silent=True) or {}
+            sql = body.get("sql")
+            username = body.get("username")
+            title = body.get("title") or "Chat cohort export"
+            if not sql or not username:
+                return jsonify({"error": "sql and username are required"}), 400
+
+            # Required, not just cosmetic ownership: fetch_metadata() below
+            # runs impersonated as this user (override_user) so cohort SQL
+            # that legitimately touches OPA-restricted tables (e.g. a
+            # bypass_hidden_tables-flagged user's own patient-mapping query)
+            # is authorized the same way it already was when they ran it
+            # through report-viewer's own impersonated Trino connection.
+            owner = db.session.query(FabUser).filter_by(username=username).first()
+            if owner is None:
+                return (
+                    jsonify({"error": f"no Superset user found for {username!r}"}),
+                    400,
+                )
+
+            source_database = (
+                db.session.query(Database)
+                .filter_by(database_name="Scout Data Lake")
+                .first()
+            )
+            if source_database is None:
+                return jsonify({"error": "Scout Data Lake database not found"}), 500
+
+            # A separate Database row pointed at the identical Trino
+            # connection, rather than reusing "Scout Data Lake" directly.
+            # Superset's schema_perm (and so Gamma's blanket schema_access
+            # grant from #687) is keyed on database_name, not the physical
+            # connection - a second Database row gives cohort exports their
+            # own permission namespace while the dataset's schema stays the
+            # real "default" (required for fetch_metadata()/query execution
+            # to resolve the cohort SQL's unqualified table names at all;
+            # a nonexistent nominal schema just 400s with SCHEMA_NOT_FOUND).
+            database = (
+                db.session.query(Database)
+                .filter_by(database_name=CHAT_EXPORT_DATABASE_NAME)
+                .first()
+            )
+            if database is None:
+                database = Database(
+                    database_name=CHAT_EXPORT_DATABASE_NAME,
+                    extra=source_database.extra,
+                    cache_timeout=source_database.cache_timeout,
+                    expose_in_sqllab=False,
+                    allow_run_async=source_database.allow_run_async,
+                    allow_ctas=False,
+                    allow_cvas=False,
+                    allow_dml=False,
+                    allow_file_upload=False,
+                    impersonate_user=source_database.impersonate_user,
+                )
+                database.set_sqlalchemy_uri(source_database.sqlalchemy_uri_decrypted)
+                db.session.add(database)
+                db.session.flush()
+
+            from superset.utils.core import override_user
+
+            def _create_cohort_dataset(source_uuid: str, spec: dict, correlate_sql: str) -> SqlaTable:
+                widened_sql = (
+                    f"SELECT * FROM {spec['table']} WHERE {spec['key']} IN "
+                    f"(SELECT {spec['correlate_key']} FROM ({correlate_sql}) cohort)"
+                )
+                ds_table = SqlaTable(
+                    table_name=f"{title} ({username}) [{spec['table']}]",
+                    schema="default",
+                    catalog="delta",
+                    sql=widened_sql,
+                    database=database,
+                    owners=[owner],
+                )
+                db.session.add(ds_table)
+                db.session.flush()  # assign ds_table.id
+                # Introspects the query via Trino to populate columns and the
+                # default "count" metric - the same step Superset's own
+                # dataset-creation flow runs. Skipped, the cloned charts
+                # below (which reference "count" by name) fail with "Metric
+                # 'count' does not exist" since a bare ORM insert leaves the
+                # new dataset with zero columns/metrics. Impersonated as the
+                # exporting user rather than run under the unimpersonated
+                # superset_svc system identity, which OPA's hidden-table
+                # policy never grants bypass_hidden_tables to.
+                with override_user(owner):
+                    ds_table.fetch_metadata()
+                # fetch_metadata() only ever synthesizes the default "count"
+                # metric from the query's output columns - it doesn't know
+                # about curated metrics like reports_dx's distinct_reports
+                # (COUNT(DISTINCT message_control_id)). Copy any of the
+                # source dataset's own metric definitions the cloned charts
+                # might reference by name.
+                source_dataset = (
+                    db.session.query(SqlaTable).filter_by(uuid=source_uuid).first()
+                )
+                existing_metric_names = {m.metric_name for m in ds_table.metrics}
+                for src_metric in (source_dataset.metrics if source_dataset is not None else []):
+                    if src_metric.metric_name in existing_metric_names:
+                        continue
+                    ds_table.metrics.append(
+                        SqlMetric(
+                            metric_name=src_metric.metric_name,
+                            verbose_name=src_metric.verbose_name,
+                            metric_type=src_metric.metric_type,
+                            expression=src_metric.expression,
+                            description=src_metric.description,
+                            d3format=src_metric.d3format,
+                            currency=src_metric.currency,
+                            warning_text=src_metric.warning_text,
+                        )
+                    )
+                db.session.flush()
+                db.session.execute(
+                    text(
+                        "INSERT INTO chat_cohort_grants (dataset_id, username) "
+                        "VALUES (:did, :u) ON CONFLICT DO NOTHING"
+                    ),
+                    {"did": ds_table.id, "u": username},
+                )
+                return ds_table
+
+            # Always create the main (reports_latest) dataset - used for the
+            # bare Explore fallback below even when the dashboard isn't
+            # cloned. Additional source datasets (e.g. reports_dx) are
+            # created lazily, only if the dashboard clone actually needs
+            # them.
+            table = _create_cohort_dataset(
+                CORE_MAIN_DATASET_UUID, CORE_SOURCE_DATASETS[CORE_MAIN_DATASET_UUID], sql
+            )
+            cohort_tables = {CORE_MAIN_DATASET_UUID: table}
+
+            # Clone the standard Scout dashboard against the cohort
+            # dataset(s), if it's been deployed (helm/scout-dashboards
+            # import Job creates it). Skipped gracefully otherwise - the
+            # bare dataset/Explore view still works.
+            dashboard_url = None
+            source_dashboard = (
+                db.session.query(Dashboard).filter_by(uuid=CORE_DASHBOARD_UUID).first()
+            )
+            if source_dashboard is not None:
+                # Live source dataset id -> its uuid, so each chart's
+                # datasource_id can be resolved back to which cohort clone
+                # (creating it on first use) it belongs on.
+                source_uuid_by_id = {}
+                for src_uuid in CORE_SOURCE_DATASETS:
+                    src_ds = db.session.query(SqlaTable).filter_by(uuid=src_uuid).first()
+                    if src_ds is not None:
+                        source_uuid_by_id[src_ds.id] = src_uuid
+
+                chart_id_map = {}
+                dataset_id_map = {}
+                new_slices = []
+                for src_slice in source_dashboard.slices:
+                    src_uuid = source_uuid_by_id.get(src_slice.datasource_id)
+                    if src_uuid is None:
+                        # Chart bound to a dataset CORE_SOURCE_DATASETS
+                        # doesn't know about - skip cloning it rather than
+                        # guess which cohort dataset it belongs on.
+                        continue
+                    if src_uuid not in cohort_tables:
+                        cohort_tables[src_uuid] = _create_cohort_dataset(
+                            src_uuid, CORE_SOURCE_DATASETS[src_uuid], table.sql
+                        )
+                    target_table = cohort_tables[src_uuid]
+                    dataset_id_map[src_slice.datasource_id] = target_table.id
+
+                    params = json.loads(src_slice.params or "{}")
+                    params["datasource"] = f"{target_table.id}__table"
+                    params.pop("dashboards", None)
+                    new_slice = Slice(
+                        slice_name=src_slice.slice_name,
+                        viz_type=src_slice.viz_type,
+                        datasource_id=target_table.id,
+                        datasource_type="table",
+                        params=json.dumps(params),
+                        # Regenerated fresh on first render from params/datasource
+                        # rather than carried over pointed at the old dataset.
+                        query_context=None,
+                        cache_timeout=src_slice.cache_timeout,
+                    )
+                    if owner is not None:
+                        new_slice.owners = [owner]
+                    db.session.add(new_slice)
+                    db.session.flush()  # assign new_slice.id
+                    chart_id_map[src_slice.id] = new_slice.id
+                    new_slices.append(new_slice)
+
+                position = _clone_remap_position(
+                    json.loads(source_dashboard.position_json or "{}"), chart_id_map
+                )
+                metadata = _clone_remap_metadata(
+                    json.loads(source_dashboard.json_metadata or "{}"),
+                    chart_id_map,
+                    dataset_id_map,
+                )
+                new_dashboard = Dashboard(
+                    dashboard_title=f"{title} ({username})",
+                    position_json=json.dumps(position),
+                    json_metadata=json.dumps(metadata),
+                    # Draft (not published): Superset restricts draft
+                    # dashboards to owners + admins, giving this real
+                    # dashboard-level isolation independent of the dataset's
+                    # chat_cohort_grants check below.
+                    published=False,
+                    slices=new_slices,
+                )
+                if owner is not None:
+                    new_dashboard.owners = [owner]
+                db.session.add(new_dashboard)
+                db.session.flush()  # assign new_dashboard.id
+                dashboard_url = f"/superset/dashboard/{new_dashboard.id}/"
+
+            db.session.commit()
+
+            return (
+                jsonify(
+                    {
+                        "dataset_id": table.id,
+                        "explore_url": (
+                            f"/explore/?datasource_type=table&datasource_id={table.id}"
+                        ),
+                        "dashboard_url": dashboard_url,
+                    }
+                ),
+                201,
+            )
+
+        app.register_blueprint(bp)
+
     class KeycloakOAuthView(AuthOAuthView):
         """
         Custom Auth View to handle Keycloak login and logout redirection
@@ -165,12 +549,21 @@ configOverrides:
             app.config.setdefault("AUTH_ROLES_MAPPING", AUTH_ROLES_MAPPING)
             app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
             self.authoauthview = KeycloakOAuthView
+            _register_chat_cohort_export_api(app)
         def raise_for_access(self, **kwargs) -> None:
             # The base check only confirms the caller can use the (shared) Trino
             # database, not that they ran the query, so any signed-in user could
             # download another user's SQL Lab results via its guessable id.
             # Require query ownership unless the caller has all_query_access.
-            super().raise_for_access(**kwargs)
+            try:
+                super().raise_for_access(**kwargs)
+            except SupersetSecurityException:
+                # Issue #628 PoC: a chat-cohort-export dataset the base check
+                # rejects (no schema_access, not owner) is still allowed if
+                # the caller holds an explicit chat_cohort_grants row for it.
+                if self._has_chat_cohort_export_grant(kwargs.get("datasource")):
+                    return
+                raise
             query = kwargs.get("query")
             if (
                 query is not None
@@ -184,6 +577,25 @@ configOverrides:
                         level=ErrorLevel.ERROR,
                     )
                 )
+        def _has_chat_cohort_export_grant(self, datasource) -> bool:
+            from sqlalchemy import text
+            from superset import db
+            database = getattr(datasource, "database", None)
+            if (
+                datasource is None
+                or getattr(database, "database_name", None) != CHAT_EXPORT_DATABASE_NAME
+                or not g.user
+                or g.user.is_anonymous
+            ):
+                return False
+            row = db.session.execute(
+                text(
+                    "SELECT 1 FROM chat_cohort_grants "
+                    "WHERE dataset_id = :did AND username = :u"
+                ),
+                {"did": datasource.id, "u": g.user.username},
+            ).first()
+            return row is not None
     CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
   proxy_configuration: |
     PREFERRED_URL_SCHEME = "https"
