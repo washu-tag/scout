@@ -36,9 +36,15 @@ manager:
   # realm written by something other than itself.
   keycloakRealm: scout
   # The Ansible-rendered realm. The platform still owns this; the reconciler
-  # only ever reads it.
-  baseRealmSecret: keycloak-config
+  # only ever reads it, by name and from the API. A ConfigMap rather than a
+  # Secret because the document names its credentials as `$(env:...)` and
+  # carries none of them.
+  baseRealmConfigMap: keycloak-config
   baseRealmKey: scout-realm.json
+  # Watch this namespace's Secrets and the ConfigMap above, so a rotation or a
+  # re-rendered realm wakes the reconciler instead of waiting out
+  # resyncSeconds. Off is the break-glass; the floor still catches the change.
+  objectWatch: true
   # The credentials the base realm names as `$(env:...)` but does not carry.
   # Keys are those variables verbatim; the apply Job takes it with envFrom, and
   # the reconciler reads it to check every name resolves before applying.

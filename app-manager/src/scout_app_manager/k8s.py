@@ -8,6 +8,8 @@ obvious -- every call the reconciler can make is a function in this file.
 
 import base64
 import os
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 import httpx2 as httpx
@@ -92,6 +94,26 @@ class Client:
             if exc.status == 404:
                 return None
             raise
+
+    @contextmanager
+    def stream(
+        self, path: str, *, read_timeout: float | None = None
+    ) -> Iterator[Iterator[str]]:
+        """A long-lived streaming GET, for a watch.
+
+        Its own timeout: this client is built with a 30s read timeout, which
+        would abort an idle watch every 30 seconds. A caller should still pass
+        one -- without any read timeout a half-open connection blocks until the
+        kernel gives up on it, which is hours.
+        """
+        timeout = httpx.Timeout(connect=10.0, read=read_timeout, write=10.0, pool=10.0)
+        with self._http.stream(
+            "GET", f"{self.base}{path}", headers=self._headers(), timeout=timeout
+        ) as response:
+            if response.status_code >= 400:
+                response.read()
+                raise ApiError(response.status_code, response.text[:500])
+            yield response.iter_lines()
 
     # --- ConfigMaps -----------------------------------------------------
 

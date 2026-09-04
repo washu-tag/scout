@@ -36,8 +36,15 @@ spec:
                   fieldPath: metadata.namespace
             - name: APP_MANAGER_FRAGMENT_DIR
               value: /fragments
-            - name: APP_MANAGER_BASE_REALM
-              value: /base-realm/{{ .Values.manager.baseRealmKey }}
+            # Read by name from the API every reconcile, not from a mount: a
+            # projected volume is refreshed lazily, so on a notification it
+            # still holds the previous bytes.
+            - name: APP_MANAGER_BASE_REALM_CONFIGMAP
+              value: {{ .Values.manager.baseRealmConfigMap | quote }}
+            - name: APP_MANAGER_BASE_REALM_KEY
+              value: {{ .Values.manager.baseRealmKey | quote }}
+            - name: APP_MANAGER_OBJECT_WATCH
+              value: {{ .Values.manager.objectWatch | quote }}
             - name: APP_MANAGER_DOMAIN
               value: {{ required "manager.domain is required" .Values.manager.domain | quote }}
             - name: APP_MANAGER_APPLY_MODE
@@ -91,11 +98,13 @@ spec:
             - name: fragments
               mountPath: /fragments
               readOnly: true
-            - name: base-realm
-              mountPath: /base-realm
-              readOnly: true
-        # Discovery is the sidecar's job, so the reconciler itself never needs
-        # a cluster-wide watch in its own code (ADR 0034's pattern).
+        # Fragment discovery is the sidecar's job, because a fragment is found
+        # by label across every namespace and its file layout is what the
+        # loader reads (ADR 0034's pattern). The base realm is not: it is one
+        # object, named by this chart, and selecting it by label would let any
+        # labelled ConfigMap become a realm that is applied wholesale. The
+        # reconciler watches it -- and this namespace's Secrets -- itself, as a
+        # doorbell only. See rbac.yaml.
         - name: discovery
           image: '{{ .Values.discovery.image.repository }}:{{ .Values.discovery.image.tag }}'
           imagePullPolicy: {{ .Values.discovery.image.pullPolicy }}
@@ -148,9 +157,6 @@ spec:
         - name: fragments
           emptyDir:
             sizeLimit: 10Mi
-        - name: base-realm
-          secret:
-            secretName: {{ .Values.manager.baseRealmSecret }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

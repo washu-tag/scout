@@ -4,7 +4,7 @@ import logging
 import os
 import threading
 
-from . import api, metrics
+from . import api, metrics, watch
 from .health import serve
 from .k8s import Client
 from .loop import run_forever
@@ -20,7 +20,8 @@ def main() -> int:
         format="%(asctime)s %(levelname)-7s %(name)s %(message)s",
     )
     settings = Settings()
-    service = AppManagerService(settings, Client())
+    client = Client()
+    service = AppManagerService(settings, client)
     log.info(
         "starting: namespace=%s domain=%s mode=%s fragments=%s",
         service.namespace,
@@ -37,6 +38,18 @@ def main() -> int:
     threading.Thread(
         target=api.serve, args=(settings.reload_port, wake), daemon=True
     ).start()
+    if settings.object_watch:
+        # Fragments arrive by the sidecar; these are the two inputs that do
+        # not, and neither is selected by label.
+        for resource, names in (
+            ("secrets", service.watched_secrets),
+            ("configmaps", service.watched_configmaps),
+        ):
+            threading.Thread(
+                target=watch.run_forever,
+                args=(client, service.namespace, resource, names, wake),
+                daemon=True,
+            ).start()
     run_forever(service, settings, wake)
     return 0
 

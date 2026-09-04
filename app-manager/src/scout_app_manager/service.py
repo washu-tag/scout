@@ -73,6 +73,22 @@ def display_name_for(item: LoadedFragment) -> str:
     return name
 
 
+def referenced_secrets(loaded: list[LoadedFragment]) -> set[str]:
+    """Every Secret a fragment names, whether or not it exists yet.
+
+    Taken from what was loaded rather than from what composed, because a
+    missing credential is exactly what gets a fragment rejected -- and the
+    fragment landing before its Secret is the case the doorbell is most useful
+    for. Binding-derived names would cover everything except it.
+    """
+    return {
+        client.secretRef.name
+        for item in loaded
+        if item.fragment
+        for client in item.fragment.clients
+    }
+
+
 class AppManagerService:
     def __init__(
         self,
@@ -94,6 +110,9 @@ class AppManagerService:
         # One GET per distinct Secret per reconcile. Cleared at the top of each
         # one, so a rotation is seen on the next pass and not a stale value.
         self._secrets: dict[str, dict | None] = {}
+        # What the Secret watch should ring the doorbell for. Widened by each
+        # reconcile as fragments name their own credentials.
+        self._watched_secrets = {settings.client_secrets_secret, settings.admin_secret}
 
     def _resume(self) -> State:
         """Pick up where the last process left off, or start clean."""
@@ -156,6 +175,21 @@ class AppManagerService:
             return None
         return username, password
 
+    def watched_secrets(self) -> set[str]:
+        """The Secrets whose rotation should wake the reconciler.
+
+        Recomputed each reconcile rather than configured, so a fragment needs
+        no label on its Secret -- its `secretRef` already names it. A new
+        fragment's credential joins the set on the reconcile that composes it,
+        which its own ConfigMap event has already triggered.
+        """
+        return set(self._watched_secrets)
+
+    def watched_configmaps(self) -> set[str]:
+        """The base realm, and nothing else. Fragments come by the sidecar."""
+        name = self.settings.base_realm_configmap
+        return {name} if name else set()
+
     def secrets_version(self, names: list[str]) -> str:
         """A digest over the resourceVersions of everything the apply reads.
 
@@ -169,10 +203,33 @@ class AppManagerService:
         return "sha256:" + digest.hexdigest()
 
     def base_realm(self) -> dict:
-        raw = parse_realm_document(
-            Path(self.settings.base_realm_path).read_text(encoding="utf-8")
-        )
+        raw = parse_realm_document(self._base_realm_text())
         return raw.get("realm_representation", raw)
+
+    def _base_realm_text(self) -> str:
+        """The base realm document, read by name from the API every reconcile.
+
+        By name, and not from any copy on disk. A projected volume is
+        refreshed lazily, so on a notification it still holds the previous
+        bytes. A sidecar-delivered copy would be worse: the sidecar selects by
+        *label*, so any labelled ConfigMap in the namespace could become the
+        realm -- and unlike a fragment, the base realm is applied wholesale,
+        with none of the composer's rails on what it may contain. The watch is
+        only the doorbell; this is the read.
+
+        The path is what the CLI uses, where there is no cluster to ask.
+        """
+        name = self.settings.base_realm_configmap
+        if not name:
+            return Path(self.settings.base_realm_path).read_text(encoding="utf-8")
+        configmap = self.client.get_configmap(self.namespace, name) or {}
+        text = (configmap.get("data") or {}).get(self.settings.base_realm_key)
+        if not text:
+            raise FileNotFoundError(
+                f"configmap {self.namespace}/{name} has no "
+                f"{self.settings.base_realm_key}"
+            )
+        return text
 
     def ready(self) -> bool:
         """Readiness: the base realm has been applied. Never about fragments.
@@ -227,10 +284,14 @@ class AppManagerService:
         document = canonical(result.realm)
         desired_hash = document_hash(document)
         base_hash = realm_hash(base)
+        bound = {b.name for b in result.bindings.values()}
         secrets_version = self.secrets_version(
-            [self.settings.client_secrets_secret]
-            + [b.name for b in result.bindings.values()]
+            [self.settings.client_secrets_secret] + sorted(bound)
         )
+        self._watched_secrets = {
+            self.settings.client_secrets_secret,
+            self.settings.admin_secret,
+        } | referenced_secrets(loaded)
         # Everything config-cli will have in its environment: the base realm's
         # Secret taken wholesale, one variable per fragment client, and the
         # site hostname every base-realm URL is written against.

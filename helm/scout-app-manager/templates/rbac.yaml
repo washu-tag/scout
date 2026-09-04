@@ -15,13 +15,22 @@ rules:
     # each fragment client's. It reads them to check they resolve, never to
     # copy them -- the composed realm names credentials rather than carrying
     # them, so the reconciler no longer writes a Secret at all.
+    #
+    # `watch` is the same objects in the same namespace, not a wider read: it
+    # exists so a rotation wakes the reconciler instead of waiting out the
+    # resync floor, and the watch is a doorbell -- every value acted on still
+    # comes from the `get`.
     resources: [secrets]
-    verbs: [get]
+    verbs: [get, list, watch]
   - apiGroups: ['']
     # The status document and the composed realm. The ClusterRole below reads
-    # fragments; these writes are scoped to this namespace.
+    # fragments; these writes are scoped to this namespace. `list, watch` is
+    # the base realm: read by name every reconcile, and watched here so a
+    # re-render wakes the reconciler. Stated locally even though the
+    # ClusterRole's cluster-wide read already covers it -- this rule is where
+    # the reconciler's own calls are meant to be legible.
     resources: [configmaps]
-    verbs: [get, create, update, patch]
+    verbs: [get, list, watch, create, update, patch]
   - apiGroups: [batch]
     resources: [jobs]
     verbs: [get, list, create, delete]
@@ -49,10 +58,11 @@ subjects:
     name: {{ include "appmanager.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 ---
-# Cluster-wide, and now a single read-only capability: the discovery sidecar
+# Cluster-wide, and still a single read-only capability: the discovery sidecar
 # has to find fragment ConfigMaps in the namespaces components live in.
 #
-# Nothing here touches Secrets. Client credentials are provided rather than
+# Nothing here touches Secrets, and the Secret watch in the Role above does not
+# change that -- it is namespaced. Client credentials are provided rather than
 # generated, and they are read from this release's own namespace, so the
 # reconciler needs no cross-namespace Secret access in either direction --
 # neither the write it used to hold to publish generated credentials, nor the

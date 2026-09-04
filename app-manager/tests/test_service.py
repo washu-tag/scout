@@ -418,6 +418,124 @@ def test_an_untouched_credential_does_not_re_apply(setup):
     assert len(client.created_jobs) == 1
 
 
+# --- where the base realm is read from ----------------------------------------
+
+
+def test_the_configured_configmap_is_read_by_name(setup, base_realm):
+    """Not from a mount, and not from anything selected by label: the base
+    realm is applied wholesale, with none of a fragment's rails."""
+    service, _, client = setup
+    service.settings.base_realm_configmap = "keycloak-config"
+    client.configmaps[("scout-core", "keycloak-config")] = {
+        "data": {
+            "scout-realm.json": json.dumps({**base_realm, "realm": "from-the-api"})
+        }
+    }
+
+    assert service.base_realm()["realm"] == "from-the-api"
+
+
+def test_the_configmap_is_re_read_every_reconcile(setup, base_realm):
+    """The whole point of reading by name: no copy to go stale."""
+    service, _, client = setup
+    service.settings.base_realm_configmap = "keycloak-config"
+    key = ("scout-core", "keycloak-config")
+    client.configmaps[key] = {
+        "data": {"scout-realm.json": json.dumps({**base_realm, "realm": "first"})}
+    }
+    assert service.base_realm()["realm"] == "first"
+
+    client.configmaps[key] = {
+        "data": {"scout-realm.json": json.dumps({**base_realm, "realm": "second"})}
+    }
+    assert service.base_realm()["realm"] == "second"
+
+
+def test_a_missing_configmap_is_an_error_not_an_empty_realm(setup):
+    """An empty realm would retract every client Keycloak has."""
+    service, _, _ = setup
+    service.settings.base_realm_configmap = "keycloak-config"
+
+    with pytest.raises(FileNotFoundError):
+        service.base_realm()
+
+
+def test_a_configmap_without_the_key_is_an_error(setup):
+    service, _, client = setup
+    service.settings.base_realm_configmap = "keycloak-config"
+    client.configmaps[("scout-core", "keycloak-config")] = {
+        "data": {"other.json": "{}"}
+    }
+
+    with pytest.raises(FileNotFoundError):
+        service.base_realm()
+
+
+def test_the_path_is_still_the_source_when_no_configmap_is_named(setup):
+    """How the CLI reads it, where there is no cluster to ask."""
+    service, _, _ = setup
+
+    assert service.settings.base_realm_configmap == ""
+    assert service.base_realm()["realm"] == "scout"
+
+
+# --- what the secret watch rings for ------------------------------------------
+
+
+def test_a_fragment_credential_joins_the_watched_set(setup, hello_yaml):
+    """No label on the Secret: the fragment's own secretRef names it."""
+    service, fragments, _ = setup
+    assert "hello-keycloak-client" not in service.watched_secrets()
+
+    write_fragment(fragments, "hello", "hello-keycloak", hello_yaml)
+    service.reconcile_once()
+
+    assert "hello-keycloak-client" in service.watched_secrets()
+
+
+def test_a_fragment_whose_secret_does_not_exist_yet_is_still_watched(setup):
+    """The bootstrap case, and the one the doorbell is most useful for: the
+    fragment lands first and is rejected for the missing credential, so a
+    binding-derived set would never wake when the Secret arrives."""
+    service, fragments, client = setup
+    write_fragment(
+        fragments, "later", "later-keycloak", fragment_yaml("later", client="later")
+    )
+    state = service.reconcile_once()
+
+    assert status_of(state, "later/later-keycloak").status == REJECTED
+    assert "later-keycloak-client" in service.watched_secrets()
+
+
+def test_only_the_base_realm_configmap_is_watched(setup):
+    """Fragments come by the sidecar; nothing else should wake on a ConfigMap."""
+    service, _, _ = setup
+    assert service.watched_configmaps() == set()
+
+    service.settings.base_realm_configmap = "keycloak-config"
+    assert service.watched_configmaps() == {"keycloak-config"}
+
+
+def test_the_platform_credentials_are_watched_before_any_reconcile(setup):
+    """A rotation during startup still has to wake something."""
+    service, _, _ = setup
+
+    assert service.watched_secrets() == {
+        "keycloak-client-secrets",
+        "keycloak-admin-secret",
+    }
+
+
+def test_a_retracted_fragment_stops_being_watched(setup, hello_yaml):
+    service, fragments, _ = setup
+    path = write_fragment(fragments, "hello", "hello-keycloak", hello_yaml)
+    service.reconcile_once()
+    path.unlink()
+    service.reconcile_once()
+
+    assert "hello-keycloak-client" not in service.watched_secrets()
+
+
 # --- another writer -----------------------------------------------------------
 
 

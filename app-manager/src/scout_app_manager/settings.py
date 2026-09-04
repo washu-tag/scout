@@ -25,6 +25,12 @@ class Settings(BaseSettings):
         "/base-realm/scout-realm.json",
         validation_alias=AliasChoices("APP_MANAGER_BASE_REALM", "base_realm_path"),
     )
+    # Where the service reads that same document from instead: by name, from
+    # the API, every reconcile. A mounted copy is refreshed lazily and would
+    # still hold the previous bytes when a notification arrives. Empty leaves
+    # base_realm_path as the only source, which is how the CLI reads it.
+    base_realm_configmap: str = ""
+    base_realm_key: str = "scout-realm.json"
     domain: str = "scout.example.edu"
     namespace: str = ""
     # Not a Secret: the composed realm names its credentials, never carries
@@ -47,6 +53,10 @@ class Settings(BaseSettings):
     debounce_seconds: float = 2.0
     discovery_health_url: str = "http://127.0.0.1:8081/healthz"
     discovery_wait_seconds: int = 90
+    # Watch this namespace's Secrets and its base realm ConfigMap, and wake on
+    # a change. Off falls back to the resync floor, which is the break-glass if
+    # the watch ever misbehaves.
+    object_watch: bool = True
     # Absence tolerated before a fragment's realm objects are retracted. Longer
     # than a chart upgrade's delete-then-create window.
     retraction_grace_seconds: int = 300

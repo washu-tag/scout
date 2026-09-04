@@ -19,6 +19,9 @@ app_manager_apply_mode: diff
 # change.
 app_manager_resync_seconds: 600
 app_manager_debounce_seconds: 2
+# Wake on a credential rotation or a re-rendered base realm instead of waiting
+# out the floor. Off is the break-glass; the floor still catches the change.
+app_manager_object_watch: true
 # Absence tolerated before a fragment's realm objects are retracted. Longer than
 # a chart upgrade's delete-then-create window, so it survives one.
 app_manager_retraction_grace_seconds: 300
