@@ -539,7 +539,19 @@ async def export_search_to_superset(
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-    sql = _inline_uploaded_ids(ds["sql"], ds.get("uploaded_ids"))
+    cohort_sql = _inline_uploaded_ids(ds["sql"], ds.get("uploaded_ids"))
+    # The cloned Scout dashboard's charts need the full reports_latest
+    # column set (sending_facility, modality, sex, ...), but a chat-authored
+    # search's outer SELECT often projects only the columns relevant to its
+    # specific question - reusing that SQL directly as the dataset leaves
+    # those charts with "Columns missing in dataset". Re-select the full
+    # row for exactly this cohort's identified reports instead, keyed on
+    # primary_report_identifier (the one column every search's outer SELECT
+    # is required to project - see SEARCH_REQUIRED_COLUMNS).
+    sql = (
+        "SELECT * FROM reports_latest WHERE primary_report_identifier IN "
+        f"(SELECT primary_report_identifier FROM ({cohort_sql}) cohort)"
+    )
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
