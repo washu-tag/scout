@@ -159,12 +159,20 @@ configOverrides:
     # schema_access grant on [Scout Data Lake].[delta].[default].
     CHAT_EXPORT_DATABASE_NAME = "Scout Chat Exports"
     # The standard "Scout" dashboard (helm/scout-dashboards/files/analytics/
-    # dashboards/core/Scout_1.yaml) and the reports_latest dataset (.../
-    # datasets/Scout_Data_Lake/core/reports_latest.yaml) its charts are bound
-    # to - cloned against the new cohort dataset instead of leaving the user
-    # with a bare Explore view.
+    # dashboards/core/Scout_1.yaml), cloned against cohort-scoped datasets
+    # instead of leaving the user with a bare Explore view.
     CORE_DASHBOARD_UUID = "47457783-1886-46d8-9012-df03fcb684eb"
-    CORE_DATASET_UUID = "14cdaed5-905e-499a-b020-13e1b54097c8"
+    # Every source dataset the dashboard's charts are bound to, mapped to
+    # the real (delta.default) table its cohort-scoped clone widens
+    # against. Not single-dataset: the "Diagnoses" chart reads reports_dx
+    # (a pre-exploded one-row-per-diagnosis view), not reports_latest like
+    # the other 10 charts. Extend this if a future dashboard version adds
+    # another source.
+    CORE_MAIN_DATASET_UUID = "14cdaed5-905e-499a-b020-13e1b54097c8"  # reports_latest.yaml
+    CORE_SOURCE_DATASETS = {
+        CORE_MAIN_DATASET_UUID: "reports_latest",
+        "32d5849e-ae01-4933-a81c-7697cc254092": "reports_dx",  # reports_dx.yaml
+    }
 
     def _ensure_chat_cohort_grants_table(engine) -> None:
         from sqlalchemy import text
@@ -189,7 +197,7 @@ configOverrides:
                 meta["chartId"] = chart_id_map[old_id]
         return position
 
-    def _clone_remap_metadata(metadata, chart_id_map, old_dataset_id, new_dataset_id) -> dict:
+    def _clone_remap_metadata(metadata, chart_id_map, dataset_id_map) -> dict:
         def remap_list(ids):
             return [chart_id_map.get(i, i) for i in ids]
 
@@ -220,8 +228,8 @@ configOverrides:
             if isinstance(nf.get("chartsInScope"), list):
                 nf["chartsInScope"] = remap_list(nf["chartsInScope"])
             for target in nf.get("targets") or []:
-                if isinstance(target, dict) and target.get("datasetId") == old_dataset_id:
-                    target["datasetId"] = new_dataset_id
+                if isinstance(target, dict) and target.get("datasetId") in dataset_id_map:
+                    target["datasetId"] = dataset_id_map[target["datasetId"]]
         return metadata
 
     def _register_chat_cohort_export_api(app) -> None:
@@ -322,52 +330,93 @@ configOverrides:
                 db.session.add(database)
                 db.session.flush()
 
-            table = SqlaTable(
-                table_name=f"{title} ({username})",
-                schema="default",
-                catalog="delta",
-                sql=sql,
-                database=database,
-                owners=[owner],
-            )
-            db.session.add(table)
-            db.session.flush()  # assign table.id
-            # Introspects the query via Trino to populate columns and the
-            # default "count" metric - the same step Superset's own
-            # dataset-creation flow runs. Skipped, the cloned charts below
-            # (which reference "count" by name) fail with "Metric 'count'
-            # does not exist" since a bare ORM insert leaves the new dataset
-            # with zero columns/metrics. Impersonated as the exporting user
-            # (see the override_user note above) rather than run under the
-            # unimpersonated superset_svc system identity, which OPA's
-            # hidden-table policy never grants bypass_hidden_tables to.
             from superset.utils.core import override_user
 
-            with override_user(owner):
-                table.fetch_metadata()
+            def _create_cohort_dataset(source_table_name: str) -> SqlaTable:
+                widened_sql = (
+                    f"SELECT * FROM {source_table_name} WHERE primary_report_identifier IN "
+                    f"(SELECT primary_report_identifier FROM ({sql}) cohort)"
+                )
+                ds_table = SqlaTable(
+                    table_name=f"{title} ({username}) [{source_table_name}]",
+                    schema="default",
+                    catalog="delta",
+                    sql=widened_sql,
+                    database=database,
+                    owners=[owner],
+                )
+                db.session.add(ds_table)
+                db.session.flush()  # assign ds_table.id
+                # Introspects the query via Trino to populate columns and the
+                # default "count" metric - the same step Superset's own
+                # dataset-creation flow runs. Skipped, the cloned charts
+                # below (which reference "count" by name) fail with "Metric
+                # 'count' does not exist" since a bare ORM insert leaves the
+                # new dataset with zero columns/metrics. Impersonated as the
+                # exporting user rather than run under the unimpersonated
+                # superset_svc system identity, which OPA's hidden-table
+                # policy never grants bypass_hidden_tables to.
+                with override_user(owner):
+                    ds_table.fetch_metadata()
+                db.session.execute(
+                    text(
+                        "INSERT INTO chat_cohort_grants (dataset_id, username) "
+                        "VALUES (:did, :u) ON CONFLICT DO NOTHING"
+                    ),
+                    {"did": ds_table.id, "u": username},
+                )
+                return ds_table
 
-            # Clone the standard Scout dashboard against the new dataset, if
-            # it's been deployed (helm/scout-dashboards import Job creates
-            # it). Skipped gracefully otherwise - the bare dataset/Explore
-            # view still works.
+            # Always create the main (reports_latest) dataset - used for the
+            # bare Explore fallback below even when the dashboard isn't
+            # cloned. Additional source datasets (e.g. reports_dx) are
+            # created lazily, only if the dashboard clone actually needs
+            # them.
+            table = _create_cohort_dataset(CORE_SOURCE_DATASETS[CORE_MAIN_DATASET_UUID])
+            cohort_tables = {CORE_MAIN_DATASET_UUID: table}
+
+            # Clone the standard Scout dashboard against the cohort
+            # dataset(s), if it's been deployed (helm/scout-dashboards
+            # import Job creates it). Skipped gracefully otherwise - the
+            # bare dataset/Explore view still works.
             dashboard_url = None
             source_dashboard = (
                 db.session.query(Dashboard).filter_by(uuid=CORE_DASHBOARD_UUID).first()
             )
             if source_dashboard is not None:
-                source_dataset = (
-                    db.session.query(SqlaTable).filter_by(uuid=CORE_DATASET_UUID).first()
-                )
+                # Live source dataset id -> its uuid, so each chart's
+                # datasource_id can be resolved back to which cohort clone
+                # (creating it on first use) it belongs on.
+                source_uuid_by_id = {}
+                for src_uuid in CORE_SOURCE_DATASETS:
+                    src_ds = db.session.query(SqlaTable).filter_by(uuid=src_uuid).first()
+                    if src_ds is not None:
+                        source_uuid_by_id[src_ds.id] = src_uuid
+
                 chart_id_map = {}
+                dataset_id_map = {}
                 new_slices = []
                 for src_slice in source_dashboard.slices:
+                    src_uuid = source_uuid_by_id.get(src_slice.datasource_id)
+                    if src_uuid is None:
+                        # Chart bound to a dataset CORE_SOURCE_DATASETS
+                        # doesn't know about - skip cloning it rather than
+                        # guess which cohort dataset it belongs on.
+                        continue
+                    if src_uuid not in cohort_tables:
+                        cohort_tables[src_uuid] = _create_cohort_dataset(
+                            CORE_SOURCE_DATASETS[src_uuid]
+                        )
+                    target_table = cohort_tables[src_uuid]
+                    dataset_id_map[src_slice.datasource_id] = target_table.id
+
                     params = json.loads(src_slice.params or "{}")
-                    params["datasource"] = f"{table.id}__table"
+                    params["datasource"] = f"{target_table.id}__table"
                     params.pop("dashboards", None)
                     new_slice = Slice(
                         slice_name=src_slice.slice_name,
                         viz_type=src_slice.viz_type,
-                        datasource_id=table.id,
+                        datasource_id=target_table.id,
                         datasource_type="table",
                         params=json.dumps(params),
                         # Regenerated fresh on first render from params/datasource
@@ -388,8 +437,7 @@ configOverrides:
                 metadata = _clone_remap_metadata(
                     json.loads(source_dashboard.json_metadata or "{}"),
                     chart_id_map,
-                    source_dataset.id if source_dataset is not None else None,
-                    table.id,
+                    dataset_id_map,
                 )
                 new_dashboard = Dashboard(
                     dashboard_title=f"{title} ({username})",
@@ -408,13 +456,6 @@ configOverrides:
                 db.session.flush()  # assign new_dashboard.id
                 dashboard_url = f"/superset/dashboard/{new_dashboard.id}/"
 
-            db.session.execute(
-                text(
-                    "INSERT INTO chat_cohort_grants (dataset_id, username) "
-                    "VALUES (:did, :u) ON CONFLICT DO NOTHING"
-                ),
-                {"did": table.id, "u": username},
-            )
             db.session.commit()
 
             return (
