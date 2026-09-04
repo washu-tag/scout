@@ -172,6 +172,7 @@ configOverrides:
     CORE_SOURCE_DATASETS = {
         CORE_MAIN_DATASET_UUID: "reports_latest",
         "32d5849e-ae01-4933-a81c-7697cc254092": "reports_dx",  # reports_dx.yaml
+        "a7e9c2b4-5f3d-4a6e-9b1c-8d7f2e4a6c9b": "reports",  # reports.yaml (curated table)
     }
 
     def _ensure_chat_cohort_grants_table(engine) -> None:
@@ -263,7 +264,7 @@ configOverrides:
 
             from flask_appbuilder.security.sqla.models import User as FabUser
             from sqlalchemy import text
-            from superset.connectors.sqla.models import SqlaTable
+            from superset.connectors.sqla.models import SqlaTable, SqlMetric
             from superset.models.core import Database
             from superset.models.dashboard import Dashboard
             from superset.models.slice import Slice
@@ -332,7 +333,7 @@ configOverrides:
 
             from superset.utils.core import override_user
 
-            def _create_cohort_dataset(source_table_name: str) -> SqlaTable:
+            def _create_cohort_dataset(source_uuid: str, source_table_name: str) -> SqlaTable:
                 widened_sql = (
                     f"SELECT * FROM {source_table_name} WHERE primary_report_identifier IN "
                     f"(SELECT primary_report_identifier FROM ({sql}) cohort)"
@@ -358,6 +359,32 @@ configOverrides:
                 # policy never grants bypass_hidden_tables to.
                 with override_user(owner):
                     ds_table.fetch_metadata()
+                # fetch_metadata() only ever synthesizes the default "count"
+                # metric from the query's output columns - it doesn't know
+                # about curated metrics like reports_dx's distinct_reports
+                # (COUNT(DISTINCT message_control_id)). Copy any of the
+                # source dataset's own metric definitions the cloned charts
+                # might reference by name.
+                source_dataset = (
+                    db.session.query(SqlaTable).filter_by(uuid=source_uuid).first()
+                )
+                existing_metric_names = {m.metric_name for m in ds_table.metrics}
+                for src_metric in (source_dataset.metrics if source_dataset is not None else []):
+                    if src_metric.metric_name in existing_metric_names:
+                        continue
+                    ds_table.metrics.append(
+                        SqlMetric(
+                            metric_name=src_metric.metric_name,
+                            verbose_name=src_metric.verbose_name,
+                            metric_type=src_metric.metric_type,
+                            expression=src_metric.expression,
+                            description=src_metric.description,
+                            d3format=src_metric.d3format,
+                            currency=src_metric.currency,
+                            warning_text=src_metric.warning_text,
+                        )
+                    )
+                db.session.flush()
                 db.session.execute(
                     text(
                         "INSERT INTO chat_cohort_grants (dataset_id, username) "
@@ -372,7 +399,9 @@ configOverrides:
             # cloned. Additional source datasets (e.g. reports_dx) are
             # created lazily, only if the dashboard clone actually needs
             # them.
-            table = _create_cohort_dataset(CORE_SOURCE_DATASETS[CORE_MAIN_DATASET_UUID])
+            table = _create_cohort_dataset(
+                CORE_MAIN_DATASET_UUID, CORE_SOURCE_DATASETS[CORE_MAIN_DATASET_UUID]
+            )
             cohort_tables = {CORE_MAIN_DATASET_UUID: table}
 
             # Clone the standard Scout dashboard against the cohort
@@ -405,7 +434,7 @@ configOverrides:
                         continue
                     if src_uuid not in cohort_tables:
                         cohort_tables[src_uuid] = _create_cohort_dataset(
-                            CORE_SOURCE_DATASETS[src_uuid]
+                            src_uuid, CORE_SOURCE_DATASETS[src_uuid]
                         )
                     target_table = cohort_tables[src_uuid]
                     dataset_id_map[src_slice.datasource_id] = target_table.id
