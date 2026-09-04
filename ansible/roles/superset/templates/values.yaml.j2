@@ -153,7 +153,11 @@ configOverrides:
     # it. Replace with a provisioned Secret before this leaves prototype
     # status (see report-viewer's matching constant).
     CHAT_COHORT_EXPORT_TOKEN = "scout-poc-chat-cohort-export-8f2e1c"
-    CHAT_COHORT_EXPORT_SCHEMA = "chat_exports"
+    # A separate Database row (see _register_chat_cohort_export_api),
+    # pointed at the same Trino connection as "Scout Data Lake" but under
+    # its own name so its schema_perm isn't covered by Gamma's blanket
+    # schema_access grant on [Scout Data Lake].[delta].[default].
+    CHAT_EXPORT_DATABASE_NAME = "Scout Chat Exports"
     # The standard "Scout" dashboard (helm/scout-dashboards/files/analytics/
     # dashboards/core/Scout_1.yaml) and the reports_latest dataset (.../
     # datasets/Scout_Data_Lake/core/reports_latest.yaml) its charts are bound
@@ -266,17 +270,48 @@ configOverrides:
             if not sql or not username:
                 return jsonify({"error": "sql and username are required"}), 400
 
-            database = (
+            source_database = (
                 db.session.query(Database)
                 .filter_by(database_name="Scout Data Lake")
                 .first()
             )
-            if database is None:
+            if source_database is None:
                 return jsonify({"error": "Scout Data Lake database not found"}), 500
+
+            # A separate Database row pointed at the identical Trino
+            # connection, rather than reusing "Scout Data Lake" directly.
+            # Superset's schema_perm (and so Gamma's blanket schema_access
+            # grant from #687) is keyed on database_name, not the physical
+            # connection - a second Database row gives cohort exports their
+            # own permission namespace while the dataset's schema stays the
+            # real "default" (required for fetch_metadata()/query execution
+            # to resolve the cohort SQL's unqualified table names at all;
+            # a nonexistent nominal schema just 400s with SCHEMA_NOT_FOUND).
+            database = (
+                db.session.query(Database)
+                .filter_by(database_name=CHAT_EXPORT_DATABASE_NAME)
+                .first()
+            )
+            if database is None:
+                database = Database(
+                    database_name=CHAT_EXPORT_DATABASE_NAME,
+                    extra=source_database.extra,
+                    cache_timeout=source_database.cache_timeout,
+                    expose_in_sqllab=False,
+                    allow_run_async=source_database.allow_run_async,
+                    allow_ctas=False,
+                    allow_cvas=False,
+                    allow_dml=False,
+                    allow_file_upload=False,
+                    impersonate_user=source_database.impersonate_user,
+                )
+                database.set_sqlalchemy_uri(source_database.sqlalchemy_uri_decrypted)
+                db.session.add(database)
+                db.session.flush()
 
             table = SqlaTable(
                 table_name=f"{title} ({username})",
-                schema=CHAT_COHORT_EXPORT_SCHEMA,
+                schema="default",
                 catalog="delta",
                 sql=sql,
                 database=database,
@@ -440,9 +475,10 @@ configOverrides:
         def _has_chat_cohort_export_grant(self, datasource) -> bool:
             from sqlalchemy import text
             from superset import db
+            database = getattr(datasource, "database", None)
             if (
                 datasource is None
-                or getattr(datasource, "schema", None) != CHAT_COHORT_EXPORT_SCHEMA
+                or getattr(database, "database_name", None) != CHAT_EXPORT_DATABASE_NAME
                 or not g.user
                 or g.user.is_anonymous
             ):
