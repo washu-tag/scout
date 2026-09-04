@@ -50,9 +50,7 @@
                       "type": "and"
                     },
                     "query": {
-                      "params": [
-                        "C"
-                      ]
+                      "params": []
                     },
                     "reducer": {
                       "params": [],
@@ -75,6 +73,7 @@
           ],
           "noDataState": "OK",
           "execErrState": "Error",
+          "for": "10m",
           "annotations": {
             "description": "The HL7 listener is receiving messages but the batcher has consumed none for 30 minutes. Kafka lag is building; un-batched messages risk aging out of retention before reaching MinIO bronze.",
             "summary": "HL7 batcher not consuming while the listener is receiving (Kafka lag building).",

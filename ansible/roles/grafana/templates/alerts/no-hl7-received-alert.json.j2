@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "sum(increase(camel_exchanges_total{integration=\"hl7-listener\", eventType=\"context\"}[6h]))",
+                "expr": "sum(increase(camel_exchanges_total{integration=\"hl7-listener\", eventType=\"context\"}[6h])) and (max(up{job=\"hl7-listener\", integration=\"hl7-listener\"}) == 1)",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -50,9 +50,7 @@
                       "type": "and"
                     },
                     "query": {
-                      "params": [
-                        "C"
-                      ]
+                      "params": []
                     },
                     "reducer": {
                       "params": [],

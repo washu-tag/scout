@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "sum(increase(camel_exchanges_failed_total{eventType=\"context\"}[15m]))",
+                "expr": "sum(increase(camel_exchanges_failed_total{integration=~\"hl7-listener|hl7-batcher\", eventType=\"context\"}[15m]))",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -50,9 +50,7 @@
                       "type": "and"
                     },
                     "query": {
-                      "params": [
-                        "C"
-                      ]
+                      "params": []
                     },
                     "reducer": {
                       "params": [],
@@ -75,6 +73,7 @@
           ],
           "noDataState": "OK",
           "execErrState": "Error",
+          "for": "5m",
           "annotations": {
             "description": "The HL7 listener or batcher reported failed exchanges in the last 15 minutes (e.g. Kafka produce errors or MinIO/S3 upload failures).",
             "summary": "HL7 listener/batcher exchange failures in the last 15 minutes.",
