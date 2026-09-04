@@ -270,6 +270,19 @@ configOverrides:
             if not sql or not username:
                 return jsonify({"error": "sql and username are required"}), 400
 
+            # Required, not just cosmetic ownership: fetch_metadata() below
+            # runs impersonated as this user (override_user) so cohort SQL
+            # that legitimately touches OPA-restricted tables (e.g. a
+            # bypass_hidden_tables-flagged user's own patient-mapping query)
+            # is authorized the same way it already was when they ran it
+            # through report-viewer's own impersonated Trino connection.
+            owner = db.session.query(FabUser).filter_by(username=username).first()
+            if owner is None:
+                return (
+                    jsonify({"error": f"no Superset user found for {username!r}"}),
+                    400,
+                )
+
             source_database = (
                 db.session.query(Database)
                 .filter_by(database_name="Scout Data Lake")
@@ -315,10 +328,8 @@ configOverrides:
                 catalog="delta",
                 sql=sql,
                 database=database,
+                owners=[owner],
             )
-            owner = db.session.query(FabUser).filter_by(username=username).first()
-            if owner is not None:
-                table.owners = [owner]
             db.session.add(table)
             db.session.flush()  # assign table.id
             # Introspects the query via Trino to populate columns and the
@@ -326,8 +337,14 @@ configOverrides:
             # dataset-creation flow runs. Skipped, the cloned charts below
             # (which reference "count" by name) fail with "Metric 'count'
             # does not exist" since a bare ORM insert leaves the new dataset
-            # with zero columns/metrics.
-            table.fetch_metadata()
+            # with zero columns/metrics. Impersonated as the exporting user
+            # (see the override_user note above) rather than run under the
+            # unimpersonated superset_svc system identity, which OPA's
+            # hidden-table policy never grants bypass_hidden_tables to.
+            from superset.utils.core import override_user
+
+            with override_user(owner):
+                table.fetch_metadata()
 
             # Clone the standard Scout dashboard against the new dataset, if
             # it's been deployed (helm/scout-dashboards import Job creates
