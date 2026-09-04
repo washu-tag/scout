@@ -631,7 +631,20 @@ export default function SearchDetailPage() {
                   setExportError(null);
                   try {
                     const result = await exportSearchToSuperset(searchId);
-                    window.open(result.dashboard_url ?? result.explore_url, '_blank', 'noopener');
+                    // window.open() creates the new tab as a script-controlled
+                    // auxiliary browsing context, which Chrome's
+                    // Cross-Origin-Opener-Policy enforcement can block outright
+                    // for some cross-origin responses (ERR_BLOCKED_BY_RESPONSE)
+                    // even with noopener - a direct URL paste in the same
+                    // scenario loads fine. A simulated anchor click is a real
+                    // navigation instead, which doesn't hit that COOP check.
+                    const link = document.createElement('a');
+                    link.href = result.dashboard_url ?? result.explore_url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                   } catch (err) {
                     setExportError(friendlyError(err, 'exporting this cohort'));
                   } finally {
