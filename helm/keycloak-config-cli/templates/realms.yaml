@@ -1,4 +1,4 @@
-{{ if not .Values.existingConfigSecret }}
+{{ if and (not .Values.existingConfigSecret) (not .Values.existingConfigMap) }}
 ---
 apiVersion: v1
 kind: Secret

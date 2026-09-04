@@ -115,6 +115,12 @@ config:
 
 existingConfigSecret: ''
 
+# Scout addition. The realm document names its credentials as `$(env:...)` and
+# carries none of them, so it does not have to be a Secret -- and as a
+# ConfigMap the app-manager's sidecar can watch it. Takes precedence over
+# existingConfigSecret when both are set.
+existingConfigMap: ''
+
 # Add additional volumes, e.g. for custom secrets
 extraVolumes: ''
 

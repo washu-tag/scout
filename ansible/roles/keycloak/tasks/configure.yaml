@@ -56,18 +56,27 @@
       data: '{{ keycloak_client_secrets }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
-- name: Create Secret for Scout Keycloak Realm
+# A ConfigMap, not a Secret: the document names every credential as
+# `$(env:...)` and carries none of them. The app manager reads it from here by
+# name, and watches it, so a re-rendered realm reaches the reconciler without
+# waiting out its resync floor.
+#
+# `| string` is not decoration. Without it Ansible's convert-data runs
+# safe_eval over any value starting with `{`, and a realm that happened to
+# render without a bare `true`/`false`/`null` would arrive as a dict, which the
+# API rejects.
+- name: Create ConfigMap for Scout Keycloak Realm
   delegate_to: localhost
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'
     definition:
       apiVersion: v1
-      kind: Secret
+      kind: ConfigMap
       metadata:
         name: keycloak-config
       data:
-        scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
+        scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | string }}"
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Run Keycloak Config CLI
@@ -85,7 +94,7 @@
       image:
         repository: '{{ keycloak_config_cli_image }}'
         tag: '{{ keycloak_config_cli_image_tag }}'
-      existingConfigSecret: 'keycloak-config'
+      existingConfigMap: 'keycloak-config'
       annotations:
         # Force a re-deploy on a change to either input. The secrets have to be
         # in here now that the realm document no longer moves when one is
