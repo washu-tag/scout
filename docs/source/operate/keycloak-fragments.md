@@ -13,8 +13,13 @@ discovers every ConfigMap labelled `keycloak.scout.xnat.org/fragment: "true"`, c
 the valid ones into the platform's rendered realm, and applies the result with
 keycloak-config-cli. The discovery sidecar calls the reconciler when a fragment changes,
 so an edit reaches the realm in a couple of seconds without an operator doing anything.
-`app_manager_resync_seconds` (default 600) is only a floor, bounding how long a missed
-notification can go unnoticed.
+The same is true of the rendered base realm and of a rotated client credential: the
+reconciler watches its own namespace's Secrets and the base realm ConfigMap directly. Those
+two it reads *by name*, never by label — the base realm is applied wholesale, so anything
+label-selected could become a realm without passing a fragment's rails.
+`app_manager_resync_seconds` (default 60) is only a floor, bounding how long a missed
+notification — or a realm written by something other than the reconciler, which no
+Kubernetes watch can see — can go unnoticed.
 
 ## The trust boundary
 
@@ -153,9 +158,12 @@ Secret unreadable, or the reconciler has not applied since it started,
 `scout_app_manager_realm_checksum_readable` goes to 0 and drift stays `false` — that is
 "not known", not "in step".
 
-Both a rotation and drift are noticed at the *next reconcile*, and the discovery sidecar
-only watches fragment ConfigMaps, so neither wakes the reconciler. Worst case is
-`app_manager_resync_seconds` (default 600).
+A rotation wakes the reconciler: it watches its own namespace's Secrets, and a credential
+the realm names — the platform's `keycloak-client-secrets` or any Secret a fragment's
+`secretRef` points at — reaches Keycloak within a reconcile of being rotated. Drift does
+not, and cannot: the live import checksum is a Keycloak read rather than a Kubernetes
+event, so a realm written by something else is repaired within
+`app_manager_resync_seconds` (default 60).
 
 ---
 
@@ -163,6 +171,4 @@ only watches fragment ConfigMaps, so neither wakes the reconciler. Worst case is
 
 - Whether the platform wants a narrower default than `ALL` for discovery.
 - Removing the second writer: the Ansible auth play still applies the realm itself.
-- Waking the reconciler on a base realm or credential change, rather than waiting out the
-  resync floor.
 - An ADR, and a link to it from here.
