@@ -1,6 +1,44 @@
 # MLLP listener route: accept HL7 v2 over MLLP, parse, key by message control id, and
 # publish to Kafka. Config values are Camel property placeholders resolved at runtime from
 # environment variables set on the Deployment (see the hl7-listener Ansible role).
+#
+# Camel requires onException ahead of any route in the same RouteBuilder, so the dead-letter
+# handler is defined first.
+
+# Dead letter: a frame HAPI cannot parse is archived rather than discarded. Camel's default
+# error handler exhausts after one attempt and drops the exchange with only a log line, so
+# before this an unparseable frame left no artifact anywhere -- which is what made the
+# withdrawn-field rejections so hard to characterise.
+#
+# Scoped to HL7Exception deliberately. Transport failures (Kafka unreachable) must keep
+# failing the exchange so MLLP NAKs and the upstream interface engine queues -- that
+# backpressure is load-bearing (see ADR 0028). Marking those handled would tell the sender we
+# hold a message we never durably wrote. Frames that fail before the route -- MLLP framing
+# errors, an MSH too short to read -- never become an exchange, so they stay log-only.
+- onException:
+    exception:
+      - ca.uhn.hl7v2.HL7Exception
+    handled:
+      constant: 'true'
+    steps:
+      - log:
+          message: 'Unparseable HL7 frame from ${header.CamelMllpRemoteAddress}, archiving raw: ${exception.message}'
+          loggingLevel: WARN
+      # The body is still exactly what MLLP delivered: the unmarshal DataFormat throws before
+      # replacing it, and nothing ahead of it touches the body. Hence no useOriginalMessage,
+      # which needs allowUseOriginalMessage on the error handler (off by default) and would
+      # fail silently without it.
+      #
+      # No kafka.KEY either: a frame HAPI rejected has no control id worth trusting, and
+      # Hl7BatchZipper already names keyless entries unknown-<exchangeId>.hl7 in the archive.
+      - to:
+          uri: 'kafka:{{kafka.hl7.topic}}?brokers={{kafka.brokers}}'
+      # Counted on its own because handling the exception takes these out of
+      # camel_exchanges_failed_total -- without it the condition would go invisible, and the
+      # point of the change is to make dropped frames observable, not quieter.
+      - to:
+          uri: 'micrometer:counter:hl7.dead.letter'
+
 - route:
     id: hl7Listener
     from:
