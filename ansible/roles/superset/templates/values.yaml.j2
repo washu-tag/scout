@@ -286,6 +286,13 @@ configOverrides:
                 table.owners = [owner]
             db.session.add(table)
             db.session.flush()  # assign table.id
+            # Introspects the query via Trino to populate columns and the
+            # default "count" metric - the same step Superset's own
+            # dataset-creation flow runs. Skipped, the cloned charts below
+            # (which reference "count" by name) fail with "Metric 'count'
+            # does not exist" since a bare ORM insert leaves the new dataset
+            # with zero columns/metrics.
+            table.fetch_metadata()
 
             # Clone the standard Scout dashboard against the new dataset, if
             # it's been deployed (helm/scout-dashboards import Job creates
