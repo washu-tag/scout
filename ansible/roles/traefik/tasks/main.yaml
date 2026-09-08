@@ -97,6 +97,9 @@
             websecure:
               tls:
                 enabled: true
+              transport:
+                respondingTimeouts:
+                  readTimeout: '{{ traefik_read_timeout }}'
             web:
               redirections:
                 entryPoint:

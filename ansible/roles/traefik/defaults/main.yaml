@@ -5,6 +5,13 @@
 # Timeout for waiting on Traefik Helm jobs (in seconds)
 traefik_helm_job_timeout: 300
 
+# An upload ceiling, not a liveness check. readTimeout bounds reading the whole
+# request, body included, so multi-gigabyte uploads need far more headroom than
+# upstream's 60s default. Stalled transfers are Tomcat's job: its connector read
+# timeout is per-read, so it catches a dead client in seconds. Not 0s — Traefik
+# folds Go's header-read deadline into this same value.
+traefik_read_timeout: 4h
+
 traefik_embeddable_frame_ancestors: 'https://chat.{{ server_hostname }}'
 # Inventory requirements depend on tls_mode:
 #
