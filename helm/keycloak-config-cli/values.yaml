@@ -21,10 +21,21 @@ image:
 #
 # Turn it on to apply the base realm directly, as break-glass for a reconciler
 # that is not working. Note what you get: the *base* realm, so any client that
-# now comes from a fragment is not updatable while this is the writer. The
-# import rails the caller passes decide whether such a client survives at all
-# -- pass managed.*=no-delete (both lanes do) and config-cli leaves undeclared
-# clients alone.
+# now comes from a fragment is not updatable while this is the writer.
+#
+# It is close to additive but not entirely, and the exception is worth knowing
+# before you reach for it. With managed.*=no-delete (both lanes pass it) a
+# fragment's client, its roles, its credential and its scope-mappings all
+# survive a base-only apply -- measured on dev03. Its **group role grants do
+# not**: `group: no-delete` does not stop config-cli pruning a group's
+# clientRoles map, so scout-user and scout-admin lose their grants on every
+# fragment client. The client still exists and still mints tokens; the tokens
+# come out with an empty role claim, which reads downstream as a 403 with
+# nothing in any log.
+#
+# The reconciler repairs it off the import checksum -- 32s end to end on dev03
+# -- so this is a window rather than a state. Do not leave break-glass on
+# longer than the incident.
 #
 # Fails closed: `true`/`True`/`TRUE`, as a boolean or a string, turn it on.
 # Anything else -- including `1` -- leaves it off.

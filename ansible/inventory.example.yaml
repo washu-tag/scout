@@ -321,8 +321,9 @@ k3s_cluster:
     # app manager applies it (ADR 0037); set this to apply the base realm from
     # the play instead, when the reconciler is broken and the core clients have
     # to come back. It only ever has the *base* realm, so a client that comes
-    # from a component's fragment is not updatable while this is on. Turn it off
-    # once the reconciler is healthy.
+    # from a component's fragment is not updatable while this is on, and such an
+    # app's users lose their scout-user / scout-admin roles until the reconciler
+    # repairs it. Turn it off once the reconciler is healthy.
     # keycloak_apply_realm_directly: true
     # Client secrets for Scout services
     keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
