@@ -65,9 +65,12 @@ vulnerabilities:
   # exists only in jetty 12, which neither upstream has moved to
   - id: CVE-2026-2332 # jetty-http (shaded in hadoop-client-runtime, spark-core)
   - id: CVE-2026-10050 # jetty-security 11.0.26 (shaded in spark-core; fix only in jetty 12)
-  # libthrift fix is a major bump (0.16 → 0.23) coupled to Spark's hive
-  # thrift client
+  # libthrift fix is a major bump (0.16 → 0.24) coupled to Spark's hive thrift
+  # client; every Spark line through master still ships 0.16.0, so there is no
+  # base image to move to. The client only ever talks to our own in-cluster
+  # metastore, and Spark's HiveThriftServer is never started by the worker.
   - id: CVE-2026-43869 # libthrift 0.16.0
+  - id: CVE-2026-43871 # libthrift 0.16.0 (same Thrift advisory batch)
   # jline-remote-telnet (JLine's telnet-server transport, pulled in by Spark's
   # spark-shell / connect REPL and never launched by the headless worker) is
   # suppressed by package name in .trivyignore.rego — its advisory IDs churn
