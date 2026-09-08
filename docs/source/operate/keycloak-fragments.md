@@ -45,14 +45,24 @@ set it to a comma-separated list to narrow it.
 
 ## Deploying the reconciler
 
-Start in `diff` mode with no fragments deployed. The composed realm must come out
-byte-identical to the platform's own rendered realm — the cheapest proof that composition
-is not quietly rewriting the base. Switch to `apply` once that holds.
+It installs as part of `make install-auth`, between Keycloak and oauth2-proxy. It is not
+optional: the auth play publishes the base realm document and this is what applies it.
 
-Once in `apply` mode the pod reports Ready only after the realm has been applied at least
-once, and `make install-app-manager` waits for that. A failed first apply therefore fails
-the deploy rather than leaving a running pod that has changed nothing. Fragment outcomes
-never affect readiness: a rejected fragment is one service's problem, not the platform's.
+The pod reports Ready only once *this process* has reconciled the realm successfully — not
+merely once the realm was applied at some point in the past, which a reconciler that is now
+failing on every pass would still be able to claim. On top of that the play waits until the
+reconciler reports having applied the exact document it just published. So a base realm
+naming a credential that does not resolve, or a wedged apply Job, fails `make install-auth`
+rather than leaving it green over stale platform auth.
+
+Fragment outcomes never affect readiness: a rejected fragment is one service's problem, not
+the platform's, and a fragment waiting out its retraction grace keeps the pod Ready.
+
+`app_manager_apply_mode: diff` is the dry run for adopting an existing realm — the composed
+realm should come out byte-identical to the platform's own rendered realm, which is the
+cheapest proof that composition is not quietly rewriting the base. It applies nothing, so
+the deploy's realm-applied wait fails while it is set. Use it for one pass, read the log,
+then put it back.
 
 ## Looking at what it did
 
@@ -148,10 +158,10 @@ liveImportChecksum:    ffffffff...
 driftDetected:         true
 ```
 
-A mismatch forces an apply, which puts the realm back. This is the case that matters most
-today, because **the Ansible auth play is still a second writer**: it runs config-cli with
-no `import.managed.*` rails, so `make install-auth` deletes every fragment-created client.
-The reconciler now restores them within one reconcile rather than never.
+A mismatch forces an apply, which puts the realm back. Nothing in a normal Scout deploy
+writes the realm any more — that is the point of the reconciler being the only writer — so
+drift now means either the [break-glass path](#break-glass-applying-the-base-realm-without-the-reconciler)
+below or a hand edit through the admin console. Either way, the next reconcile undoes it.
 
 Drift is only detectable between two known values. If Keycloak is unreachable, the admin
 Secret unreadable, or the reconciler has not applied since it started,
@@ -165,10 +175,37 @@ not, and cannot: the live import checksum is a Keycloak read rather than a Kuber
 event, so a realm written by something else is repaired within
 `app_manager_resync_seconds` (default 60).
 
+## Break-glass: applying the base realm without the reconciler
+
+The reconciler being the only writer is a policy, not a structural impossibility. If it is
+broken and the platform's own clients have to come back, set in your inventory:
+
+```yaml
+keycloak_apply_realm_directly: true
+```
+
+and run `make install-auth`. That turns the config-cli Job back on as a Helm hook, so the
+play waits for the import and fails if it fails.
+
+Know what you get, because it is not the whole realm:
+
+- **The base realm only.** A client that a component ships as a fragment is not updatable
+  while this is the writer — the Job has never seen that fragment.
+- **A fragment's client survives, its roles do not.** Both lanes pass
+  `import.managed.*=no-delete`, which keeps a fragment's client, its roles, its credential
+  and its scope-mappings. It does **not** keep the `scout-user` / `scout-admin` grants on
+  those roles: config-cli prunes a group's client-role map even under `no-delete`. So users
+  of a fragment app can still log in and will have no permissions, which usually surfaces
+  as a 403 with nothing in any log.
+
+Both are temporary. Once the reconciler is healthy it sees the import checksum has moved,
+re-applies, and restores the grants — measured at 32s from the break-glass Job finishing.
+**Set the flag back to `false` once the incident is over**, or the next `make install-auth`
+will do the same thing again.
+
 ---
 
 **Still to build, before this is a real runbook:**
 
 - Whether the platform wants a narrower default than `ALL` for discovery.
-- Removing the second writer: the Ansible auth play still applies the realm itself.
-- An ADR, and a link to it from here.
+- Moving Scout's own clients out of the base realm and into fragments, one at a time.
