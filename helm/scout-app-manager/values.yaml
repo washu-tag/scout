@@ -36,11 +36,11 @@ manager:
   # The realm the reconciler reads the live import checksum from, to notice a
   # realm written by something other than itself.
   keycloakRealm: scout
-  # The Ansible-rendered realm. The platform still owns this; the reconciler
-  # only ever reads it, by name and from the API. A ConfigMap rather than a
-  # Secret because the document names its credentials as `$(env:...)` and
-  # carries none of them.
-  baseRealmConfigMap: keycloak-config
+  # The base realm. The platform still owns this -- both deploy lanes publish
+  # to this one name and the reconciler only ever reads it, by name and from
+  # the API. A ConfigMap rather than a Secret because the document names its
+  # credentials as `$(env:...)` and carries none of them.
+  baseRealmConfigMap: keycloak-base-realm
   baseRealmKey: scout-realm.json
   # Watch this namespace's Secrets and the ConfigMap above, so a rotation or a
   # re-rendered realm wakes the reconciler instead of waiting out

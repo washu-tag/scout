@@ -425,8 +425,8 @@ def test_the_configured_configmap_is_read_by_name(setup, base_realm):
     """Not from a mount, and not from anything selected by label: the base
     realm is applied wholesale, with none of a fragment's rails."""
     service, _, client = setup
-    service.settings.base_realm_configmap = "keycloak-config"
-    client.configmaps[("scout-core", "keycloak-config")] = {
+    service.settings.base_realm_configmap = "keycloak-base-realm"
+    client.configmaps[("scout-core", "keycloak-base-realm")] = {
         "data": {
             "scout-realm.json": json.dumps({**base_realm, "realm": "from-the-api"})
         }
@@ -438,8 +438,8 @@ def test_the_configured_configmap_is_read_by_name(setup, base_realm):
 def test_the_configmap_is_re_read_every_reconcile(setup, base_realm):
     """The whole point of reading by name: no copy to go stale."""
     service, _, client = setup
-    service.settings.base_realm_configmap = "keycloak-config"
-    key = ("scout-core", "keycloak-config")
+    service.settings.base_realm_configmap = "keycloak-base-realm"
+    key = ("scout-core", "keycloak-base-realm")
     client.configmaps[key] = {
         "data": {"scout-realm.json": json.dumps({**base_realm, "realm": "first"})}
     }
@@ -454,7 +454,7 @@ def test_the_configmap_is_re_read_every_reconcile(setup, base_realm):
 def test_a_missing_configmap_is_an_error_not_an_empty_realm(setup):
     """An empty realm would retract every client Keycloak has."""
     service, _, _ = setup
-    service.settings.base_realm_configmap = "keycloak-config"
+    service.settings.base_realm_configmap = "keycloak-base-realm"
 
     with pytest.raises(FileNotFoundError):
         service.base_realm()
@@ -462,8 +462,8 @@ def test_a_missing_configmap_is_an_error_not_an_empty_realm(setup):
 
 def test_a_configmap_without_the_key_is_an_error(setup):
     service, _, client = setup
-    service.settings.base_realm_configmap = "keycloak-config"
-    client.configmaps[("scout-core", "keycloak-config")] = {
+    service.settings.base_realm_configmap = "keycloak-base-realm"
+    client.configmaps[("scout-core", "keycloak-base-realm")] = {
         "data": {"other.json": "{}"}
     }
 
@@ -512,8 +512,8 @@ def test_only_the_base_realm_configmap_is_watched(setup):
     service, _, _ = setup
     assert service.watched_configmaps() == set()
 
-    service.settings.base_realm_configmap = "keycloak-config"
-    assert service.watched_configmaps() == {"keycloak-config"}
+    service.settings.base_realm_configmap = "keycloak-base-realm"
+    assert service.watched_configmaps() == {"keycloak-base-realm"}
 
 
 def test_the_platform_credentials_are_watched_before_any_reconcile(setup):

@@ -16,6 +16,8 @@ manager:
   keycloakUrl: '{{ keycloak_internal_url }}'
   keycloakRealm: '{{ keycloak_realm_name }}'
   signoutUrl: '{{ oauth2_proxy_signout_url }}'
+  # Shared with the keycloak-config-cli release, which publishes it.
+  baseRealmConfigMap: '{{ keycloak_base_realm_configmap }}'
   configCliImage: '{{ keycloak_config_cli_image }}:{{ keycloak_config_cli_image_tag }}'
 
 discovery:
