@@ -49,6 +49,10 @@ spec:
     image:
       repository: docker.io/adorsys/keycloak-config-cli
       tag: 6.5.1-26.5.5
+    # This release publishes the realm document and stops. The app manager
+    # composes it with the discovered fragments and is the only thing that
+    # applies a realm (ADR 0037); see the chart's values.yaml for break-glass.
+    applyRealm: false
     # Scout realm config (cluster-vars; arrive as strings, the realm gates on eq "true").
     # enableXnat provisions the XNAT client/role; github/microsoft toggle the IdPs;
     # albOidcHosts is the comma-separated full ALB-OIDC host list (AWS sites; empty

@@ -9,6 +9,11 @@ image:
   repository: '{{ keycloak_config_cli_image }}'
   tag: '{{ keycloak_config_cli_image_tag }}'
 
+# Break-glass for a reconciler that is not working; see the chart's values.yaml
+# for what you get and what you do not. `| lower` because this arrives at helm
+# as a string and the chart compares it to "true".
+applyRealm: '{{ keycloak_apply_realm_directly | bool | lower }}'
+
 realmName: '{{ keycloak_realm_name }}'
 
 lifespans:

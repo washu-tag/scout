@@ -22,6 +22,14 @@ keycloak_operator_url: 'https://raw.githubusercontent.com/keycloak/keycloak-k8s-
 # Keycloak Config CLI
 keycloak_config_cli_helm_chart_ref: '{{ scout_repo_dir }}/helm/keycloak-config-cli'
 
+# Break-glass: apply the base realm from this play instead of leaving it to the
+# app manager, which is normally the realm's only writer (ADR 0037). Set it in
+# inventory when the reconciler is broken and the core clients have to come
+# back. It applies the *base* realm only, so a fragment's client is not
+# updatable while this is on -- the no-delete rails do at least keep it from
+# being deleted. Turn it off again once the reconciler is healthy.
+keycloak_apply_realm_directly: false
+
 # Keycloak admin console credentials (password must be defined in inventory)
 keycloak_bootstrap_admin_user: admin
 

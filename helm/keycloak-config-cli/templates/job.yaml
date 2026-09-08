@@ -1,3 +1,20 @@
+{{- /*
+Break-glass only. The app manager is the realm's only writer (ADR 0037), so
+this Job does not render unless applyRealm is explicitly turned on. Leaving it
+here rather than deleting it is the point: sole-writer is a policy, and an
+operator whose reconciler is broken needs the core realm back without editing
+a chart.
+
+Turning it on also restores the old readiness semantics for free, because it is
+a Helm hook -- `helm --wait` and a Flux HelmRelease both wait for it.
+
+The gate is a string comparison, not a truth test, and that is not fussiness:
+values reach this chart as strings from both lanes (Flux cluster-vars, and
+Ansible's own template output), and every non-empty string is truthy in helm --
+so a plain `if` renders this Job for the literal "false" and quietly leaves two
+writers on the realm. Same reason the realm gates on `eq "true"`.
+*/}}
+{{- if eq (.Values.applyRealm | toString | lower) "true" }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -93,3 +110,4 @@ spec:
       securityContext:
       {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

@@ -13,6 +13,23 @@ image:
   pullSecrets: []
   # - myRegistryKeySecretName
 
+# Scout addition, and off by default. The app manager is the realm's only
+# writer (ADR 0037): a deploy publishes the base realm document and stops, and
+# the reconciler composes it with the discovered fragments and applies the
+# result. Two writers on one realm means a deploy of the base realm alone
+# retracts every fragment-created client until the reconciler notices.
+#
+# Turn it on to apply the base realm directly, as break-glass for a reconciler
+# that is not working. Note what you get: the *base* realm, so any client that
+# now comes from a fragment is not updatable while this is the writer. The
+# import rails the caller passes decide whether such a client survives at all
+# -- pass managed.*=no-delete (both lanes do) and config-cli leaves undeclared
+# clients alone.
+#
+# Fails closed: `true`/`True`/`TRUE`, as a boolean or a string, turn it on.
+# Anything else -- including `1` -- leaves it off.
+applyRealm: false
+
 # Count of re(!)tries. A value of 2 means 3 tries in total.
 backoffLimit: 1
 
