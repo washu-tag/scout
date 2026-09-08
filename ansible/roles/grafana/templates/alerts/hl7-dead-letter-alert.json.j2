@@ -8,20 +8,20 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "hl7_exchange_failures_01",
-          "title": "HL7 pipeline exchange failures",
+          "uid": "hl7_dead_letter_01",
+          "title": "Unparseable HL7 frame archived",
           "condition": "C",
           "data": [
             {
               "refId": "A",
               "relativeTimeRange": {
-                "from": 900,
+                "from": 300,
                 "to": 0
               },
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "sum(increase(camel_exchanges_failed_total{integration=~\"hl7-listener|hl7-batcher\", eventType=\"context\"}[15m]))",
+                "expr": "sum(increase(hl7_dead_letter_total{integration=\"hl7-listener\"}[5m]))",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -74,8 +74,8 @@
           "noDataState": "OK",
           "execErrState": "Error",
           "annotations": {
-            "description": "The HL7 listener or batcher reported failed exchanges in the last 15 minutes (e.g. Kafka produce errors or MinIO/S3 upload failures).",
-            "summary": "HL7 listener/batcher exchange failures in the last 15 minutes.",
+            "description": "The listener received a frame it could not parse and wrote it to the archive unread rather than discarding it. Nothing is lost, but the sender emitted something the parser does not accept. The frames are under the hl7-batches prefix, named unknown-*.hl7. If this fires continuously rather than once, the likely cause is a frame carrying fewer than 10 MSH fields: it cannot be acknowledged, so the sender never gets a response and keeps retrying the same failure.",
+            "summary": "An HL7 frame could not be parsed and was archived unread.",
             "URL": "[% server_hostname %]"
           },
           "labels": {},
