@@ -2,24 +2,15 @@
 # publish to Kafka. Config values are Camel property placeholders resolved at runtime from
 # environment variables set on the Deployment (see the hl7-listener Ansible role).
 
-# Dead letter: a frame HAPI cannot parse is archived rather than discarded, so there is
-# something to inspect afterwards instead of only a log line. onException must come before
-# any route in the same RouteBuilder or the context will not start.
+# Archive frames HAPI can't parse instead of dropping them. onException has to precede the
+# route or the context won't start.
 #
-# Scoped to HL7Exception deliberately: transport failures must keep failing the exchange so
-# MLLP NAKs and the sender queues, which is the backpressure ADR 0028 relies on.
+# Only HL7Exception: a Kafka failure must still fail the exchange so MLLP NAKs and the sender
+# queues (ADR 0028).
 #
-# Two thresholds apply to an inbound frame and they do not coincide:
-#   - no MSH-12 (version): HAPI cannot parse it. Archived here, and still acknowledged.
-#   - under 10 MSH fields: Camel cannot build any response out of the header either, so the
-#     exchange fails after this handler has already archived the frame, and the sender gets
-#     nothing back. It may retransmit, each attempt archived again, and retrying can never
-#     succeed because the outcome is deterministic.
-#
-# The second case is not introduced here -- a NAK is built from the same header a positive
-# ACK is -- and it needs a correctly framed payload carrying a non-conformant MSH: every HL7
-# version requires MSH-9 and MSH-10, so a real message has at least 10 fields. The
-# hl7-dead-letter-burst alert is what catches it if it ever happens.
+# Parsing needs MSH-12, acknowledgement needs 10 MSH fields. Under 10 the frame is archived
+# here and the exchange then fails because Camel can't build a response, so the sender sees
+# nothing and may retransmit. Predates this handler: a NAK needs the same header an ACK does.
 - onException:
     exception:
       - ca.uhn.hl7v2.HL7Exception
@@ -29,12 +20,11 @@
       - log:
           message: 'Unparseable HL7 frame from ${header.CamelMllpRemoteAddress}, archiving raw: ${exception.message}'
           loggingLevel: WARN
-      # Body is still what MLLP delivered; unmarshal throws before replacing it. No kafka.KEY,
-      # so Hl7BatchZipper names the entry unknown-<exchangeId>.hl7.
+      # Body is still what MLLP delivered; unmarshal throws before replacing it. No
+      # kafka.KEY, so the archive entry is named unknown-<exchangeId>.hl7.
       - to:
           uri: 'kafka:{{kafka.hl7.topic}}?brokers={{kafka.brokers}}'
-      # Handling the exception takes these out of camel_exchanges_failed_total, so count them
-      # here or the condition goes invisible.
+      # Handled exchanges aren't counted as failed, so count these separately.
       - to:
           uri: 'micrometer:counter:hl7.dead.letter'
 
