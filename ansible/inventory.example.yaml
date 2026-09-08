@@ -317,6 +317,13 @@ k3s_cluster:
     keycloak_microsoft_client_id: 'your-microsoft-client'
     keycloak_microsoft_client_secret: 'your-microsoft-secret'
     keycloak_microsoft_tenant_id: 'your-microsoft-tenant-id'
+    # Break-glass. Normally this play publishes the base realm document and the
+    # app manager applies it (ADR 0037); set this to apply the base realm from
+    # the play instead, when the reconciler is broken and the core clients have
+    # to come back. It only ever has the *base* realm, so a client that comes
+    # from a component's fragment is not updatable while this is on. Turn it off
+    # once the reconciler is healthy.
+    # keycloak_apply_realm_directly: true
     # Client secrets for Scout services
     keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_superset_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -763,14 +770,25 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # Scout app manager
     #---------------------------------------------------------------------------
+    # The app manager is the Keycloak realm's only writer (ADR 0037): the auth
+    # play publishes the base realm document and this reconciles it, together
+    # with any fragments components have shipped. It installs as part of
+    # `make install-auth`, so it is not optional.
+    #
     # Start in `diff` and switch to `apply` once the log reports the composed
     # realm byte-identical to the base realm.
     # app_manager_apply_mode: apply
     # Absence tolerated before a fragment's realm objects are retracted. Raise
     # it if a chart here takes longer than five minutes to delete-then-create.
     # app_manager_retraction_grace_seconds: 300
-    # Only a floor: fragment changes wake the reconciler immediately.
-    # app_manager_resync_seconds: 600
+    # Only a floor: fragment changes, credential rotations and a re-rendered
+    # base realm all wake the reconciler immediately. It is also the worst case
+    # for noticing a realm written by something else.
+    # app_manager_resync_seconds: 60
+    # How long the auth play waits for the reconciler to apply the realm it just
+    # published before failing. Must exceed a retraction grace plus an apply,
+    # since a fragment mid-retraction defers the apply deliberately.
+    # app_manager_realm_wait_seconds: 360
 
     #---------------------------------------------------------------------------
     # data-generator

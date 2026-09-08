@@ -4,5 +4,14 @@
   gather_facts: false
   environment: '{{ cluster_k8s_environment }}'
   roles:
+    # Order is load-bearing under sole-writer (ADR 0037). keycloak publishes the
+    # base realm document but no longer applies it, so app_manager has to run in
+    # this play for the realm to exist at all -- and after keycloak, because the
+    # reconciler refuses until the document is there.
+    #
+    # oauth2-proxy last: its client used to be created by the realm apply this
+    # play performed, and now it arrives when the reconciler applies. app_manager
+    # waits for that, so by here the client exists.
     - role: keycloak
+    - role: app_manager
     - role: oauth2-proxy

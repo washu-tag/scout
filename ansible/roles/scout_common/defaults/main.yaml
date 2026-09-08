@@ -126,6 +126,13 @@ valkey_helm_release_name: valkey
 launchpad_namespace: '{{ scout_core_namespace }}'
 app_manager_namespace: '{{ scout_core_namespace }}'
 app_manager_helm_release_name: scout-app-manager
+# The base realm document, published by the keycloak-config-cli chart in both
+# lanes. Here rather than in roles/keycloak/defaults because the app manager
+# reads it every reconcile -- by name and by key, so both have to match or the
+# reconciler refuses. The key is not really a knob: the chart writes
+# `<realm name>.json` and the realm's name is scout.
+keycloak_base_realm_configmap: keycloak-base-realm
+keycloak_base_realm_key: scout-realm.json
 
 # Data layer
 minio_tenant_namespace: '{{ scout_data_namespace }}'

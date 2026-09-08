@@ -22,3 +22,90 @@
       - '{{ scout_repo_dir }}/helm/scout-app-manager/values.yaml'
     helm_chart_values: '{{ app_manager_helm_chart_values }}'
     helm_chart_timeout: 10m
+
+# Everything below is the deploy gate. `helm --wait` above only proves the pod
+# went Ready, which means *some* reconcile succeeded -- on an upgrade where the
+# chart values did not change, the pod never restarted and that reconcile may
+# predate the realm this play just published. Nothing else would notice: the
+# keycloak role no longer applies the realm, so its success stopped meaning the
+# realm changed.
+#
+# So: read back the document that was published and wait for the reconciler to
+# report having applied exactly that one. Reading it from the cluster rather
+# than re-rendering the template keeps this correct under
+# `make install-app-manager` on its own, and lane-agnostic.
+- name: Read the published base realm
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    namespace: '{{ keycloak_namespace }}'
+    name: '{{ keycloak_base_realm_configmap }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: app_manager_base_realm
+
+- name: Validate the base realm is published
+  ansible.builtin.assert:
+    that: app_manager_base_realm.resources | length > 0
+    fail_msg: >
+      ConfigMap {{ keycloak_namespace }}/{{ keycloak_base_realm_configmap }} does
+      not exist, so there is no realm for the app manager to apply. The keycloak
+      role publishes it, so run `make install-auth` first.
+    quiet: true
+
+# The reconciler publishes sha256 over the document's bytes precisely so that a
+# deploy can compute it. observedBaseHash is over the canonicalised parse and is
+# not reproducible from here.
+- name: Hash the published base realm
+  ansible.builtin.set_fact:
+    app_manager_published_realm_hash: >-
+      sha256:{{ app_manager_base_realm.resources[0].data[keycloak_base_realm_key] | hash('sha256') }}
+
+- name: Wait for the app manager to apply the published realm
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    namespace: '{{ app_manager_namespace }}'
+    name: '{{ app_manager_status_configmap }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: app_manager_status
+  vars:
+    # Absent ConfigMap, absent key and unparseable content all collapse to {},
+    # which fails the conditions below rather than erroring the play.
+    published: >-
+      {{ ((app_manager_status.resources | first | default({})).data | default({}))
+         .status | default('{}') | from_yaml }}
+  until:
+    - published.observedBaseSourceHash | default('') == app_manager_published_realm_hash
+    - published.phase | default('') == 'Applied'
+  retries: '{{ (app_manager_realm_wait_seconds | int // 5) | int }}'
+  delay: 5
+  # The retry loop exhausting is not the message anyone should read; the assert
+  # below says what is actually wrong and how to look at it.
+  failed_when: false
+
+- name: Validate the app manager applied the published realm
+  ansible.builtin.assert:
+    that:
+      - published.observedBaseSourceHash | default('') == app_manager_published_realm_hash
+      - published.phase | default('') == 'Applied'
+    fail_msg: >
+      The app manager has not applied the realm this play published, after
+      {{ app_manager_realm_wait_seconds }}s. It is the only thing that writes the
+      realm, so every Keycloak client is still whatever the last successful apply
+      left -- including the ones this deploy was meant to change. Reported phase
+      "{{ published.phase | default('(no status published)') }}":
+      Refused means the realm names a credential keycloak-client-secrets does not
+      resolve, Holding means a fragment is waiting out its retraction grace and
+      the apply is deliberately deferred, Failed means the apply Job did not
+      succeed. Full detail:
+      kubectl exec -n {{ app_manager_namespace }} deploy/{{ app_manager_helm_release_name }}
+      -c reconciler -- scout-app-manager status
+    quiet: true
+  vars:
+    # Absent ConfigMap, absent key and unparseable content all collapse to {},
+    # which fails the conditions below rather than erroring the play.
+    published: >-
+      {{ ((app_manager_status.resources | first | default({})).data | default({}))
+         .status | default('{}') | from_yaml }}
