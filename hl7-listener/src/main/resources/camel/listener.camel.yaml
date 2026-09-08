@@ -2,16 +2,24 @@
 # publish to Kafka. Config values are Camel property placeholders resolved at runtime from
 # environment variables set on the Deployment (see the hl7-listener Ansible role).
 
-# Dead letter: a frame HAPI cannot parse is archived rather than discarded, so it can be
-# inspected afterwards instead of leaving only a log line. Scoped to HL7Exception on purpose:
-# transport failures must keep failing the exchange so MLLP NAKs and the upstream interface
-# engine queues, which is the backpressure ADR 0028 relies on. Camel requires onException
-# ahead of any route in the same RouteBuilder.
+# Dead letter: a frame HAPI cannot parse is archived rather than discarded, so there is
+# something to inspect afterwards instead of only a log line. onException must come before
+# any route in the same RouteBuilder or the context will not start.
 #
-# A frame whose MSH is too damaged to build an acknowledgement from is archived here too, but
-# Camel then fails the exchange when it cannot generate the ACK, so the sender gets no
-# response and may retransmit -- each retry archived again. Only reachable from input an
-# interface engine does not send.
+# Scoped to HL7Exception deliberately: transport failures must keep failing the exchange so
+# MLLP NAKs and the sender queues, which is the backpressure ADR 0028 relies on.
+#
+# Two thresholds apply to an inbound frame and they do not coincide:
+#   - no MSH-12 (version): HAPI cannot parse it. Archived here, and still acknowledged.
+#   - under 10 MSH fields: Camel cannot build any response out of the header either, so the
+#     exchange fails after this handler has already archived the frame, and the sender gets
+#     nothing back. It may retransmit, each attempt archived again, and retrying can never
+#     succeed because the outcome is deterministic.
+#
+# The second case is not introduced here -- a NAK is built from the same header a positive
+# ACK is -- and it needs a correctly framed payload carrying a non-conformant MSH: every HL7
+# version requires MSH-9 and MSH-10, so a real message has at least 10 fields. The
+# hl7-dead-letter-burst alert is what catches it if it ever happens.
 - onException:
     exception:
       - ca.uhn.hl7v2.HL7Exception

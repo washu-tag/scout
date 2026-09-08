@@ -1,0 +1,91 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "1m-evaluations",
+      "folder": "Scout",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "hl7_dead_letter_burst_01",
+          "title": "HL7 dead-letter burst",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "prometheus_datasource_01",
+              "model": {
+                "editorMode": "code",
+                "expr": "sum(increase(hl7_dead_letter_total{integration=\"hl7-listener\"}[5m]))",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        2
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": []
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "10m",
+          "annotations": {
+            "description": "Unreadable frames have been arriving continuously for 10 minutes. The pending period is deliberately longer than the 5-minute query window, so a one-off batch of malformed messages ages out and stays quiet; only a sustained stream reaches this. The likely cause is a single frame being retransmitted: a frame whose MSH carries fewer than 10 fields cannot be acknowledged, so the sender never gets a response and retries into a deterministic failure. Each attempt is archived again, and a queue-based sender may stall behind it. The frames are under the hl7-batches prefix, named unknown-*.hl7.",
+            "summary": "Unparseable HL7 frames arriving continuously, likely one frame being retransmitted.",
+            "URL": "[% server_hostname %]"
+          },
+          "labels": {},
+          "isPaused": [% alert_is_disabled | default(false) | bool | tojson %],
+          "notification_settings": {
+            "receiver": "[% grafana_alert_contact_point %]"
+          }
+        }
+      ]
+    }
+  ]
+}
