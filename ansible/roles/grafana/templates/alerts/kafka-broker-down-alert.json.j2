@@ -9,7 +9,7 @@
       "rules": [
         {
           "uid": "kafka_broker_down_01",
-          "title": "Kafka broker down",
+          "title": "Kafka cluster not ready",
           "condition": "C",
           "data": [
             {
@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "min(up{job=\"kafka\"})",
+                "expr": "min(strimzi_resource_state{kind=\"Kafka\"})",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -50,9 +50,7 @@
                       "type": "and"
                     },
                     "query": {
-                      "params": [
-                        "C"
-                      ]
+                      "params": []
                     },
                     "reducer": {
                       "params": [],
@@ -73,11 +71,12 @@
               }
             }
           ],
-          "noDataState": "Alerting",
+          "noDataState": "OK",
           "execErrState": "Error",
+          "for": "5m",
           "annotations": {
-            "description": "The Kafka broker (single node, replication factor 1) is unreachable or not reporting metrics. Real-time HL7 ingestion is halted; the listener stops ACKing and Cloverleaf queues upstream until it recovers.",
-            "summary": "Kafka broker is down or unreachable.",
+            "description": "The Strimzi operator reports the Kafka cluster as not ready (single node, replication factor 1). Real-time HL7 ingestion is halted; the listener stops ACKing and the upstream interface engine queues until it recovers.",
+            "summary": "Kafka cluster is not ready.",
             "URL": "[% server_hostname %]"
           },
           "labels": {},
