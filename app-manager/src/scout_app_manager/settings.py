@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # them.
     composed_configmap: str = "keycloak-config-composed"
     status_configmap: str = "scout-app-manager-status"
+    # Fail-safe, and deliberately not the deployment default: a process nobody
+    # configured must not write a realm. Both charts set this to `apply`,
+    # because there the reconciler is the realm's only writer (ADR 0037).
     apply_mode: ApplyMode = "diff"
     keycloak_url: str = "http://keycloak-service:8080"
     keycloak_realm: str = "scout"

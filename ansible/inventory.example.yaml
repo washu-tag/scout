@@ -776,9 +776,10 @@ k3s_cluster:
     # with any fragments components have shipped. It installs as part of
     # `make install-auth`, so it is not optional.
     #
-    # Start in `diff` and switch to `apply` once the log reports the composed
-    # realm byte-identical to the base realm.
-    # app_manager_apply_mode: apply
+    # `apply` is the default and the working value. `diff` is a dry run for
+    # adopting an existing realm -- it applies nothing, so the auth play's
+    # realm-applied gate fails while it is set.
+    # app_manager_apply_mode: diff
     # Absence tolerated before a fragment's realm objects are retracted. Raise
     # it if a chart here takes longer than five minutes to delete-then-create.
     # app_manager_retraction_grace_seconds: 300

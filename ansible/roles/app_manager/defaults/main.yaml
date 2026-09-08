@@ -10,10 +10,16 @@ app_manager_image_repository: ghcr.io/washu-tag/scout-app-manager
 app_manager_image_tag: latest
 app_manager_image_pull_policy: IfNotPresent
 
-# diff | apply. A first install should stay in `diff` until the log reports the
-# composed realm byte-identical to the base realm; that is the cheapest proof
-# the composer is not rewriting the platform's own realm.
-app_manager_apply_mode: diff
+# diff | apply. `apply` because nothing else writes the realm (ADR 0037) -- in
+# `diff` the auth play publishes a realm that is never applied, and on a fresh
+# install that means no Keycloak clients at all. The play's realm-applied gate
+# fails while this is `diff`, deliberately.
+#
+# `diff` is still the dry run worth one pass when adopting an existing realm:
+# with no fragments deployed the composed realm must come out byte-identical to
+# the base realm, which is the cheapest proof the composer is not rewriting the
+# platform's own realm.
+app_manager_apply_mode: apply
 
 # A floor, not a schedule: the sidecar calls the reconciler on every fragment
 # change, and the reconciler watches this namespace's Secrets and the base
