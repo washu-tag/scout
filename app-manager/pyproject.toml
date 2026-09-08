@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scout-app-manager"
-version = "0.0.0"
+version = "0.0.dev0"
 description = "Scout app manager: fragment schema, composer, and reconciler"
 requires-python = ">=3.14"
 dependencies = [

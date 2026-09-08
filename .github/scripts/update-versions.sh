@@ -110,6 +110,11 @@ update_file "ansible/roles/hl7-listener/defaults/main.yaml" \
     "\\1 $DOCKER_TAG" \
     "hl7_listener_image_tag"
 
+update_file "ansible/roles/app_manager/defaults/main.yaml" \
+    "^(app_manager_image_tag:) .+$" \
+    "\\1 $DOCKER_TAG" \
+    "app_manager_image_tag"
+
 echo ""
 echo "Python packages..."
 update_file "extractor/hl7-transformer/pyproject.toml" \
@@ -122,11 +127,19 @@ update_file "report-viewer/pyproject.toml" \
     "\\1$PYTHON_VERSION\\2" \
     "pyproject.toml version"
 
+update_file "app-manager/pyproject.toml" \
+    '^(version = ")[^"]+(")'  \
+    "\\1$PYTHON_VERSION\\2" \
+    "pyproject.toml version"
+
 echo "$DOCKER_TAG" > "extractor/hl7-transformer/VERSION"
 echo "  - VERSION file: extractor/hl7-transformer/VERSION"
 
 echo "$DOCKER_TAG" > "report-viewer/VERSION"
 echo "  - VERSION file: report-viewer/VERSION"
+
+echo "$DOCKER_TAG" > "app-manager/VERSION"
+echo "  - VERSION file: app-manager/VERSION"
 
 echo ""
 echo "Gradle build files..."
@@ -166,6 +179,7 @@ echo ""
 echo "Helm charts (Scout applications - version + appVersion)..."
 for chart in helm/launchpad/Chart.yaml \
              helm/report-viewer/Chart.yaml \
+             helm/scout-app-manager/Chart.yaml \
              helm/extractor/hl7-transformer/Chart.yaml \
              helm/extractor/hl7log-extractor/Chart.yaml \
              helm/hl7-listener/Chart.yaml; do
@@ -227,6 +241,11 @@ update_file "helm/report-viewer/values.yaml" \
     "^(  tag:) .+$" \
     "\\1 $DOCKER_TAG" \
     "report-viewer image.tag"
+
+update_file "helm/scout-app-manager/values.yaml" \
+    "^(  tag:) .+$" \
+    "\\1 $DOCKER_TAG" \
+    "scout-app-manager image.tag"
 
 update_file "helm/voila/values.yaml" \
     "^(  tag:) .+$" \

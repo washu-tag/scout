@@ -34,11 +34,11 @@ env:
   # The images update-versions.sh stamps, i.e. the ones a release retags. superset
   # and keycloak are built from a vendored upstream and keep their upstream version,
   # so they are published but never carry X.Y.Z.
-  SCOUT_VERSIONED_IMAGES: 'hl7log-extractor hl7-transformer hl7-listener scout-notebook launchpad report-viewer'
+  SCOUT_VERSIONED_IMAGES: 'hl7log-extractor hl7-transformer hl7-listener scout-notebook launchpad report-viewer scout-app-manager'
   UPSTREAM_VERSIONED_IMAGES: 'superset keycloak'
-  # The 14 charts publish-charts packages at X.Y.Z (mirrors its matrix); the release
+  # The 15 charts publish-charts packages at X.Y.Z (mirrors its matrix); the release
   # verify step re-checks each is published before the Release is minted.
-  RELEASE_CHARTS: 'hl7-transformer dcm4chee hive-metastore hl7-listener hl7log-extractor keycloak-config-cli launchpad open-webui-bootstrap orthanc report-viewer scout-dashboards scout-opa temporal-bootstrap voila'
+  RELEASE_CHARTS: 'hl7-transformer dcm4chee hive-metastore hl7-listener hl7log-extractor keycloak-config-cli launchpad open-webui-bootstrap orthanc report-viewer scout-app-manager scout-dashboards scout-opa temporal-bootstrap voila'
 
 jobs:
   validate:
@@ -600,6 +600,7 @@ jobs:
           - { name: open-webui-bootstrap, dir: helm/open-webui-bootstrap }
           - { name: orthanc, dir: helm/orthanc }
           - { name: report-viewer, dir: helm/report-viewer }
+          - { name: scout-app-manager, dir: helm/scout-app-manager }
           - { name: scout-dashboards, dir: helm/scout-dashboards }
           - { name: scout-opa, dir: helm/scout-opa }
           - { name: temporal-bootstrap, dir: helm/temporal-bootstrap }
