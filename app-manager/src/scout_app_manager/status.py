@@ -50,6 +50,9 @@ def age_seconds(stamp: str) -> float:
 def to_document(state: State) -> dict:
     return {
         "observedBaseHash": state.base_hash,
+        # The one hash of the base realm a deploy can compute for itself, so
+        # this is the field an `until:` waits on. See `State.base_source_hash`.
+        "observedBaseSourceHash": state.base_source_hash,
         "composedHash": state.composed_hash,
         "observedSecretsVersion": state.secrets_version,
         "identicalToBase": state.identical_to_base,
@@ -89,6 +92,7 @@ def from_document(doc: dict) -> State:
         last_result=doc.get("lastResult", "not yet reconciled"),
         last_reconcile=doc.get("lastReconcile", "never"),
         base_hash=doc.get("observedBaseHash"),
+        base_source_hash=doc.get("observedBaseSourceHash"),
         composed_hash=doc.get("composedHash"),
         secrets_version=doc.get("observedSecretsVersion"),
         applied_secrets_version=doc.get("appliedSecretsVersion"),

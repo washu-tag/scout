@@ -51,6 +51,10 @@ class State:
     apply_mode: str = "diff"
     pending_change: bool = False
     base_hash: str | None = None
+    # sha256 of the base realm document's *bytes*, where base_hash is over the
+    # canonicalised parse. A deploy can compute this one, so it is what an
+    # `until:` waits on to know the document it just published has applied.
+    base_source_hash: str | None = None
     composed_hash: str | None = None
     # A digest over the resourceVersions of every Secret the apply reads. The
     # document no longer moves when a credential is rotated, so this is what

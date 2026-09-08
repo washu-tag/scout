@@ -107,6 +107,10 @@ class AppManagerService:
         self.store = StatusStore(client, self.namespace, settings.status_configmap)
         self.state = self._resume()
         self.reconciles = 0
+        # Whether *this* process has completed a reconcile that left the realm
+        # converged. `_resume` restores the last process's success, which is a
+        # fact about the realm and not about us -- see `ready`.
+        self.converged = False
         # One GET per distinct Secret per reconcile. Cleared at the top of each
         # one, so a rotation is seen on the next pass and not a stale value.
         self._secrets: dict[str, dict | None] = {}
@@ -203,8 +207,22 @@ class AppManagerService:
         return "sha256:" + digest.hexdigest()
 
     def base_realm(self) -> dict:
-        raw = parse_realm_document(self._base_realm_text())
-        return raw.get("realm_representation", raw)
+        """The base realm, parsed. `base_source` when the hash matters too."""
+        return self.base_source()[0]
+
+    def base_source(self) -> tuple[dict, str]:
+        """The base realm, and sha256 over the bytes it came from.
+
+        Two hashes of the same document, deliberately. `realm_hash` is over the
+        canonicalised parse, which is what makes it comparable with the
+        composed realm -- and what makes it uncomputable by a deploy holding
+        only the document. This one is over the bytes, so a deploy can publish
+        a realm and then wait for the reconciler to report having applied
+        exactly that one.
+        """
+        text = self._base_realm_text()
+        raw = parse_realm_document(text)
+        return raw.get("realm_representation", raw), document_hash(text)
 
     def _base_realm_text(self) -> str:
         """The base realm document, read by name from the API every reconcile.
@@ -232,12 +250,21 @@ class AppManagerService:
         return text
 
     def ready(self) -> bool:
-        """Readiness: the base realm has been applied. Never about fragments.
+        """Readiness: the base realm has been applied, by this process.
+
+        Never about fragments -- a rejected or retracting fragment is one
+        service's problem, and this gates the platform's auth deploy.
+
+        `base_realm_applied` alone is not enough, because `_resume` restores it
+        from the status document: a reconciler throwing on every pass would
+        report the *last* process's success and sit Ready while changing
+        nothing. Under sole-writer that is the deploy gate failing silently, so
+        this process has to have converged the realm at least once itself.
 
         Diff mode writes no realm, so there it can only mean the reconcile runs.
         """
         if self.settings.apply_mode == "apply":
-            return self.state.base_realm_applied
+            return self.state.base_realm_applied and self.converged
         return self.reconciles > 0
 
     def next_deadline(self) -> float | None:
@@ -255,15 +282,29 @@ class AppManagerService:
     # --- the reconcile ---------------------------------------------------
 
     def reconcile_once(self) -> State:
-        state = self._reconcile()
+        """One pass, and the verdict on whether it left the realm converged.
+
+        `converged` is set on the way out and never on the way in: clearing it
+        first would make the pod unready for the length of every apply, which
+        the apply Job can make a couple of minutes.
+
+        `Holding` counts. A held retraction leaves the realm alone on purpose,
+        and it is a fragment's business; readiness is not.
+        """
+        try:
+            state = self._reconcile()
+        except Exception:
+            self.converged = False
+            raise
         self.reconciles += 1
+        self.converged = state.phase in (APPLIED, HOLDING)
         return state
 
     def _reconcile(self) -> State:
         self._secrets.clear()
         prior = prior_installed(self.state)
         loaded = scan(self.settings.fragment_dir)
-        base = self.base_realm()
+        base, base_source_hash = self.base_source()
         resolvable = self.client_secret_keys()
         result = compose(
             base,
@@ -301,6 +342,7 @@ class AppManagerService:
         self.state.fragments = statuses
         self.state.last_reconcile = now()
         self.state.base_hash = base_hash
+        self.state.base_source_hash = base_source_hash
         self.state.composed_hash = desired_hash
         self.state.secrets_version = secrets_version
         self.state.identical_to_base = desired_hash == base_hash

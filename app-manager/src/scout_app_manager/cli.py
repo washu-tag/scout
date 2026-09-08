@@ -214,6 +214,9 @@ def _status() -> int:
         f"composed {(state.composed_hash or '-')[:19]}"
         + ("  (identical)" if state.identical_to_base else "")
     )
+    # What a deploy's `until:` compares against, so it has to be readable here
+    # when that wait is the thing that is stuck.
+    print(f"base document {(state.base_source_hash or '-')[:19]}")
     print(
         f"applied {(state.last_applied_hash or '-')[:19]} at "
         f"{state.applied_at or 'never'} · last reconcile {state.last_reconcile}"

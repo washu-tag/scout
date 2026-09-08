@@ -1,3 +1,7 @@
+import hashlib
+import json
+
+import pytest
 import yaml
 from conftest import (  # noqa: F401
     FakeKeycloak,
@@ -10,6 +14,7 @@ from conftest import (  # noqa: F401
 from scout_app_manager.models import (
     HOLDING,
     INSTALLED,
+    REFUSED,
     RETRACTING,
     FragmentStatus,
     State,
@@ -72,6 +77,40 @@ def test_the_published_document_round_trips(setup):
     assert restored.applied_import_checksum == client.realm_checksum
     assert restored.drift is False
     assert restored.applied_secrets_version == service.state.applied_secrets_version
+    assert restored.base_source_hash == service.state.base_source_hash
+
+
+def test_the_base_source_hash_is_over_the_document_a_deploy_published(setup):
+    """A deploy computes this from the bytes it wrote, so it has to be exactly
+    sha256 of them -- not of the parse, which is what observedBaseHash is."""
+    service, fragments, client = setup
+    service.settings.apply_mode = "apply"
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+
+    service.reconcile_once()
+
+    text = open(service.settings.base_realm_path, encoding="utf-8").read()
+    expected = "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+    doc = published(client)
+    assert doc["observedBaseSourceHash"] == expected
+    # Two different hashes of one document, and the difference is the point.
+    assert doc["observedBaseHash"] != expected
+
+
+def test_the_base_source_hash_moves_when_the_document_does(setup):
+    service, fragments, client = setup
+    service.settings.apply_mode = "apply"
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+    before = published(client)["observedBaseSourceHash"]
+
+    path = service.settings.base_realm_path
+    realm = json.loads(open(path).read())
+    realm["displayName"] = "Scout, renamed"
+    open(path, "w").write(json.dumps(realm))
+    service.reconcile_once()
+
+    assert published(client)["observedBaseSourceHash"] != before
 
 
 def test_a_failed_apply_is_published_as_failed(setup):
@@ -175,7 +214,12 @@ def test_diff_mode_readiness_is_about_this_process_not_the_realm(setup):
     assert published(client)["baseRealmApplied"] is False
 
 
-def test_a_restart_restores_readiness(setup):
+def test_a_restart_does_not_inherit_readiness(setup):
+    """The restored fact describes the last process, not this one.
+
+    A reconciler that fails on every pass used to sit Ready on this, which
+    under sole-writer means the deploy gate misses it entirely.
+    """
     service, fragments, _ = setup
     service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -183,7 +227,46 @@ def test_a_restart_restores_readiness(setup):
 
     revived = restart(service)
 
+    assert revived.state.base_realm_applied is True
+    assert revived.ready() is False
+
+    revived.reconcile_once()
+
     assert revived.ready() is True
+
+
+def test_a_reconciler_that_cannot_read_the_realm_goes_unready(setup):
+    """The Phase B2 deploy: a stale image read a realm that was not there."""
+    service, fragments, client = setup
+    service.settings.apply_mode = "apply"
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+    assert service.ready() is True
+
+    service.settings.base_realm_configmap = "gone"
+    with pytest.raises(FileNotFoundError):
+        service.reconcile_once()
+
+    assert service.ready() is False
+
+
+def test_a_refused_apply_is_not_ready(setup):
+    """Refused means the realm is stale, however well the last apply went."""
+    service, fragments, _ = setup
+    service.settings.apply_mode = "apply"
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+    assert service.ready() is True
+
+    # A base-realm credential the client-secrets Secret does not resolve.
+    path = service.settings.base_realm_path
+    realm = json.loads(open(path).read())
+    realm["clients"][0]["secret"] = "$(env:not_in_the_secret)"
+    open(path, "w").write(json.dumps(realm))
+    state = service.reconcile_once()
+
+    assert state.phase == REFUSED
+    assert service.ready() is False
 
 
 def test_readiness_is_false_until_the_realm_is_applied(setup):
@@ -199,6 +282,22 @@ def test_readiness_is_false_until_the_realm_is_applied(setup):
 
     client.job_succeeds = True
     service.reconcile_once()
+    assert service.ready() is True
+
+
+def test_a_held_retraction_stays_ready(setup):
+    """Holding leaves the realm alone deliberately, and it is one fragment's
+    business. Going unready here would fail the platform's auth deploy over a
+    chart upgrade elsewhere on the cluster."""
+    service, fragments, _ = setup
+    service.settings.apply_mode = "apply"
+    path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+
+    path.unlink()
+    state = service.reconcile_once()
+
+    assert state.phase == HOLDING
     assert service.ready() is True
 
 
