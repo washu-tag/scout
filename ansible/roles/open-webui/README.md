@@ -128,7 +128,7 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 
 ### What gets configured automatically
 
-**Scout Explorer models** — per `scout_models` entry with a `ui:` block: display name, description, system prompt (`helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`), Scout report-viewer tool reference (`scout_report_viewer_tool`), suggestion prompts, profile image, capability flags (`web_search` / `code_interpreter` / `terminal` / `image_generation` disabled), and advanced params (`function_calling: native`, `reasoning_effort: high`, `keep_alive` derived from `preload`). The raw Ollama tag (e.g. `gemma4:31b`) is hidden from the picker.
+**Scout Explorer models** — per `scout_models` entry with a `ui:` block: display name, description, system prompt (`helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`), Scout report-viewer tool reference (`scout_report_viewer_tool`), suggestion prompts, profile image, capability flags (`web_search` / `code_interpreter` / `terminal` / `image_generation` / `citations` disabled), and advanced params (`function_calling: native`, `reasoning_effort: high`, `keep_alive` derived from `preload`). The raw Ollama tag (e.g. `gemma4:31b`) is hidden from the picker.
 
 **Filter Functions** — installed, configured with valves, and toggled global on every deploy:
 - **Link Sanitizer** ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md))

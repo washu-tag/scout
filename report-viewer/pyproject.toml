@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scout_report_viewer"
-version = "0.0.dev0"
+version = "4.3.0"
 description = "Scout report-viewer service - surfaces saved searches outside OWUI so the chat surface stays light"
 authors = [
     {name = "Scout Team"},
@@ -34,6 +34,9 @@ dependencies = [
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
     "yoyo-migrations",
+    # Server-side render check for a saved spec, before persisting it.
+    # >=1.9 defaults to Vega-Lite v6, matching the frontend and stamped schema.
+    "vl-convert-python>=1.9.0",
 ]
 
 [project.optional-dependencies]

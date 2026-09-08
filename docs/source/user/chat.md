@@ -57,10 +57,12 @@ Scout Chat is powered by [Open WebUI](https://docs.openwebui.com/) with [Ollama]
 When you ask a question, Scout Chat:
 
 1. **Interprets** your question in its "Thinking" mode
-2. **Calls a tool** to fetch data. Three tools are available:
+2. **Calls a tool** to fetch data. Five tools are available:
    - `scout_find_reports` for cohort building.
    - `scout_get_reports` for looking up specific reports.
    - `scout_query_sql` for aggregate analytics like counts, distributions, and groupings.
+   - `scout_chart_sql` for turning an aggregate query into a chart.
+   - `scout_get_chart_data` for analyzing a chart with the AI.
 3. **Analyzes** the returned data and provides a natural language answer
 
 A cohort search (`scout_find_reports`) renders the report viewer, an interactive table above the reply. Aggregate questions are answered in the reply itself, without the viewer.
@@ -113,6 +115,30 @@ This is useful for:
 - Learning SQL syntax for use in {ref}`Analytics <analytics>` SQL Lab
 - Debugging unexpected results
 - Adapting queries for {ref}`Notebooks <notebooks>`
+
+### Creating Charts
+
+Ask for a chart in plain language, for example:
+
+```
+Chart report volume by month for 2024
+Show me a bar chart of the top 10 diagnosis codes
+Plot the age distribution for this cohort
+```
+
+The AI writes the SQL and a Vega-Lite chart, which renders inline in the reply. Like a 
+cohort search, the chart re-runs its query each time you open it, so it reflects current 
+data rather than a snapshot from when it was created.
+
+![Chart rendered in chat](../images/ScoutChatCharting.png)
+
+- **Explain Search** shows the SQL and explanation behind the chart, same as for a
+  cohort table.
+- **Discuss in Chat** pulls the chart's underlying data back into the conversation so
+  you can ask follow-up questions about it.
+- Depending on the chart type, you can hover for tooltips, click a legend entry to
+  isolate a series, and drag or scroll to pan and zoom. 
+- The "..." menu in the corner of the chart lets you export it as an image.
 
 ## Tips for Effective Queries
 
@@ -183,7 +209,8 @@ Scout Chat includes security protections that block external content. If the AI 
 LLM responses may contain links to third-party services. These links could potentially contain sensitive data from your query embedded in the URL. If you see a broken image or an external link, do not click it.
 ```
 
-For visualizations, copy the data to {ref}`Analytics <analytics>` and build charts there.
+For more advanced visualizations, copy the data to {ref}`Analytics <analytics>` and
+build charts there.
 
 ## Chat Sharing
 

@@ -5,7 +5,7 @@ import { paginationBtn } from './pages/searchDetail/styles';
 
 // Cross-origin from the chat, so we can't detect an existing draft; confirm
 // before overwriting it.
-type PromptOptions = { title: string; onConfirm?: () => void };
+type PromptOptions = { title: string; description?: string; onConfirm?: () => void };
 type RequestPrompt = (text: string | null, opts: PromptOptions) => void;
 
 const ChatPromptContext = createContext<RequestPrompt | null>(null);
@@ -37,6 +37,9 @@ export function ChatPromptProvider(props: { children: ReactNode }) {
       {pending !== null && (
         <Modal onClose={() => setPending(null)} ariaLabel={pending.title} maxWidth={360}>
           <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>{pending.title}</p>
+          {pending.description && (
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>{pending.description}</p>
+          )}
           <p style={{ margin: '0 0 1rem', fontSize: '0.85rem' }}>
             This replaces any unsent text in the chat box.
           </p>

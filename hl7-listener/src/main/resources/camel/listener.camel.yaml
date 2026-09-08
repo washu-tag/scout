@@ -1,6 +1,33 @@
 # MLLP listener route: accept HL7 v2 over MLLP, parse, key by message control id, and
 # publish to Kafka. Config values are Camel property placeholders resolved at runtime from
 # environment variables set on the Deployment (see the hl7-listener Ansible role).
+
+# Archive frames HAPI can't parse instead of dropping them. onException has to precede the
+# route or the context won't start.
+#
+# Only HL7Exception: a Kafka failure must still fail the exchange so MLLP NAKs and the sender
+# queues (ADR 0028).
+#
+# Parsing needs MSH-12, acknowledgement needs 10 MSH fields. Under 10 the frame is archived
+# here and the exchange then fails because Camel can't build a response, so the sender sees
+# nothing and may retransmit. Predates this handler: a NAK needs the same header an ACK does.
+- onException:
+    exception:
+      - ca.uhn.hl7v2.HL7Exception
+    handled:
+      constant: 'true'
+    steps:
+      - log:
+          message: 'Unparseable HL7 frame from ${header.CamelMllpRemoteAddress}, archiving raw: ${exception.message}'
+          loggingLevel: WARN
+      # Body is still what MLLP delivered; unmarshal throws before replacing it. No
+      # kafka.KEY, so the archive entry is named unknown-<exchangeId>.hl7.
+      - to:
+          uri: 'kafka:{{kafka.hl7.topic}}?brokers={{kafka.brokers}}'
+      # Handled exchanges aren't counted as failed, so count these separately.
+      - to:
+          uri: 'micrometer:counter:hl7.dead.letter'
+
 - route:
     id: hl7Listener
     from:
