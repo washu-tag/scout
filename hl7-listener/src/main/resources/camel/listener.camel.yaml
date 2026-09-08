@@ -18,10 +18,8 @@
     handled:
       constant: 'true'
     steps:
-      # Exception type, not its message: the frame itself is archived below, and HAPI messages
-      # can quote field content, which must not reach the logs.
       - log:
-          message: 'Unparseable HL7 frame from ${header.CamelMllpRemoteAddress}, archiving raw (${exception.class.simpleName})'
+          message: 'Unparseable HL7 frame from ${header.CamelMllpRemoteAddress}, archiving raw: ${exception.message}'
           loggingLevel: WARN
       # Body is still what MLLP delivered; unmarshal throws before replacing it. No kafka.KEY,
       # so Hl7BatchZipper names the entry unknown-<exchangeId>.hl7.
