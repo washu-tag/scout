@@ -112,6 +112,16 @@ that's what keeps it from needing cluster-wide Secret read. So your chart render
 value into two namespaces: yours, for the app to mount, and the reconciler's, for the
 realm apply.
 
+The value never enters the composed realm. The reconciler writes
+`$(env:fragment_<clientId>)` there and mounts your Secret into the import job, which is
+what lets the composed realm be an ordinary ConfigMap. Two consequences for you:
+
+- Rotating the Secret is enough. The reconciler notices the change and re-applies; you do
+  not have to touch the fragment.
+- A Secret that is missing or empty rejects the fragment rather than creating a client
+  with a blank credential, so check the fragment's `errors` in the status document if a
+  client does not appear.
+
 ## Where it goes in your chart
 
 ```
@@ -141,6 +151,10 @@ grants reach — or the reasons it is invalid.
 Protocol mappers, client scopes, `fullScopeAllowed`, service-account role assignments,
 realm roles, groups other than the two grantable ones, another component's client, `http`
 URLs, wildcards, off-domain redirect targets.
+
+Nor `$(` anywhere in any field. The realm is imported with keycloak-config-cli's variable
+substitution on, and substitution reads the whole document — `$(env:oauth2_proxy)` in a
+display name would resolve a platform client's credential into a field you can read back.
 
 ## After you install
 

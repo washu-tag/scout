@@ -62,6 +62,10 @@ $ kubectl get cm scout-app-manager-status -n scout-core -o yaml
 deliberately left alone" phases, `Holding` and `Refused`. Each fragment carries its
 `state`, the `contentHash` that was applied, and the reasons if it was excluded.
 
+`Refused` has two causes and `lastResult` says which: a retraction the reconciler will not
+act on because discovery never reported a sync, or a credential the realm names that
+nothing resolves (see [below](#credentials-are-named-not-carried)).
+
 ```console
 $ kubectl exec -n scout-core deployment/scout-app-manager -- scout-app-manager status
 ```
@@ -100,10 +104,65 @@ initial sync. If it has not, the reconciler holds indefinitely and reports
 `phase: Refused` — because on a fresh pod an empty fragment directory is not evidence that
 anything was deleted, and acting on it would retract every fragment-created client at once.
 
+## Credentials are named, not carried
+
+Neither the platform's realm nor the composed one holds a client secret. Both write
+`$(env:<name>)` and keycloak-config-cli resolves it at import from the job's environment:
+the platform's credentials come from the `keycloak-client-secrets` Secret, whose keys are
+exactly those names, and each fragment client's from the Secret its `secretRef` points at.
+So `keycloak-config-composed` is a ConfigMap you can read, diff and hash freely.
+
+The failure this creates is quiet, which is why the reconciler guards it. config-cli leaves
+an unresolvable `$(env:superset)` alone, and Keycloak stores that string as superset's
+client secret — a working-looking client that anyone who can read the realm can
+authenticate as. So before every apply the reconciler checks each name in the document
+resolves to a non-empty value, and refuses the whole apply if one does not:
+
+```text
+phase: Refused
+lastResult: refusing to apply: the realm names $(env:superset), which
+  keycloak-client-secrets does not resolve
+```
+
+A *fragment* whose own Secret is missing is only that fragment's problem and is rejected
+on its own. A platform client cannot be dropped that way, so its apply stops everything.
+
+Rotating a credential is enough on its own — the reconciler watches each Secret's
+`resourceVersion` (`observedSecretsVersion` in the status document) because replacing a
+value no longer changes the realm document at all.
+
+## Drift: a realm written by something else
+
+`appliedHash` only says what this reconciler last applied. To notice another writer, the
+reconciler reads back the checksum config-cli records on the realm after each import and
+compares it with what it saw after its own:
+
+```text
+appliedImportChecksum: 9dfdad68...
+liveImportChecksum:    ffffffff...
+driftDetected:         true
+```
+
+A mismatch forces an apply, which puts the realm back. This is the case that matters most
+today, because **the Ansible auth play is still a second writer**: it runs config-cli with
+no `import.managed.*` rails, so `make install-auth` deletes every fragment-created client.
+The reconciler now restores them within one reconcile rather than never.
+
+Drift is only detectable between two known values. If Keycloak is unreachable, the admin
+Secret unreadable, or the reconciler has not applied since it started,
+`scout_app_manager_realm_checksum_readable` goes to 0 and drift stays `false` — that is
+"not known", not "in step".
+
+Both a rotation and drift are noticed at the *next reconcile*, and the discovery sidecar
+only watches fragment ConfigMaps, so neither wakes the reconciler. Worst case is
+`app_manager_resync_seconds` (default 600).
+
 ---
 
 **Still to build, before this is a real runbook:**
 
 - Whether the platform wants a narrower default than `ALL` for discovery.
-- Drift detection: nothing yet notices a realm changed outside the reconciler.
+- Removing the second writer: the Ansible auth play still applies the realm itself.
+- Waking the reconciler on a base realm or credential change, rather than waiting out the
+  resync floor.
 - An ADR, and a link to it from here.
