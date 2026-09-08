@@ -61,6 +61,9 @@
 # name, and watches it, so a re-rendered realm reaches the reconciler without
 # waiting out its resync floor.
 #
+# The GitOps lane publishes the same name from the chart. It has to be the same
+# name, because the reconciler reads it by name and there is one reconciler.
+#
 # `| string` is not decoration. Without it Ansible's convert-data runs
 # safe_eval over any value starting with `{`, and a realm that happened to
 # render without a bare `true`/`false`/`null` would arrive as a dict, which the
@@ -74,7 +77,7 @@
       apiVersion: v1
       kind: ConfigMap
       metadata:
-        name: keycloak-config
+        name: '{{ keycloak_base_realm_configmap }}'
       data:
         scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | string }}"
     kubeconfig: '{{ local_kubeconfig_yaml }}'
@@ -94,7 +97,9 @@
       image:
         repository: '{{ keycloak_config_cli_image }}'
         tag: '{{ keycloak_config_cli_image_tag }}'
-      existingConfigMap: 'keycloak-config'
+      # The task above already published the realm, so the chart renders no
+      # realm of its own (`config` stays empty) and only mounts this one.
+      realmConfigMap: '{{ keycloak_base_realm_configmap }}'
       annotations:
         # Force a re-deploy on a change to either input. The secrets have to be
         # in here now that the realm document no longer moves when one is
