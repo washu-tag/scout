@@ -1,0 +1,69 @@
+# The app manager: the Keycloak realm's only writer (ADR 0037). The
+# keycloak-config-cli release beside it publishes the base realm document to a
+# ConfigMap and applies nothing; this reconciles that document together with any
+# fragment ConfigMaps components have shipped, and runs the config-cli import
+# itself.
+#
+# It lives in this base, not its own, because it and the realm document are one
+# unit: neither is any use without the other, and keycloak-realm's `wait: true`
+# then gates every downstream consumer on the realm actually existing rather
+# than on a document having been written. Namespace owned by
+# scout-core-foundation; scout-charts HelmRepository declared in resources.yaml.
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: scout-app-manager
+  namespace: '${keycloak_namespace}'
+spec:
+  interval: 30m
+  # First install applies the realm before going Ready, so allow for the
+  # config-cli Job (jobTimeoutSeconds is 300 in the chart) plus image pulls.
+  timeout: 10m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  # Ordering, not just politeness: the reconciler refuses to apply anything
+  # until the base realm ConfigMap exists, so without this it would come up,
+  # refuse, and never go Ready -- failing its own install.
+  dependsOn:
+    - name: keycloak-config-cli
+  # Scout-owned OCI chart (ADR 0030); placeholder version stamped from the haul
+  # at config-artifact publish (self-reference, so not Renovate-tracked).
+  chart:
+    spec:
+      chart: scout-app-manager
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${keycloak_namespace}'
+  values:
+    # fragment-discovery sidecar: upstream image, literal mirror of
+    # versions.yaml (launchpad_sidecar_image_tag, Renovate-tracked). The Scout
+    # image tag comes from the chart's stamped appVersion (ADR 0030), so it is
+    # not pinned here -- same as launchpad.
+    discovery:
+      image:
+        repository: quay.io/kiwigrid/k8s-sidecar
+        tag: '2.10.1'
+    manager:
+      # Fragments interpolate this as ${domain}, and every base-realm client URL
+      # is var-substituted against it at import.
+      domain: '${server_hostname}'
+      keycloakUrl: '${keycloak_internal_url}'
+      keycloakRealm: '${keycloak_realm_name}'
+      # The platform signout URI injected into every fragment client. oauth2-proxy
+      # is on-prem only, so on aws this names a host nothing serves -- which is
+      # no worse than the chart's own auth.<domain> fallback and at least honours
+      # a site that moved the subdomain. Revisit when a fragment client on aws
+      # actually needs a working signout.
+      signoutUrl: 'https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/sign_out'
+      # The image the reconciler runs its import Job with. Same pin as the
+      # keycloak-config-cli release beside it; they must not drift, because the
+      # import checksum this reconciler compares against is written by whichever
+      # version last ran.
+      configCliImage: docker.io/adorsys/keycloak-config-cli:6.5.1-26.5.5
