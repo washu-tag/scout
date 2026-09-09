@@ -9,9 +9,7 @@ image:
   repository: '{{ keycloak_config_cli_image }}'
   tag: '{{ keycloak_config_cli_image_tag }}'
 
-# Break-glass for a reconciler that is not working; see the chart's values.yaml
-# for what you get and what you do not. `| lower` because this arrives at helm
-# as a string and the chart compares it to "true".
+# Break-glass for a reconciler that is not working.
 applyRealm: '{{ keycloak_apply_realm_directly | bool | lower }}'
 
 realmName: '{{ keycloak_realm_name }}'
@@ -60,8 +58,6 @@ smtp:
 env:
   KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
   KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
-  # Every client URL in the realm is written against this (the GitOps lane has
-  # done so since ADR 0031); it is site configuration, not a secret.
   server_hostname: '{{ server_hostname }}'
   # Without var-substitution the `$(env:...)` tokens are installed verbatim as
   # client credentials and redirect URIs. managed.*=no-delete matches the

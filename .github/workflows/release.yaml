@@ -36,7 +36,7 @@ env:
   # so they are published but never carry X.Y.Z.
   SCOUT_VERSIONED_IMAGES: 'hl7log-extractor hl7-transformer hl7-listener scout-notebook launchpad report-viewer scout-app-manager'
   UPSTREAM_VERSIONED_IMAGES: 'superset keycloak'
-  # The 15 charts publish-charts packages at X.Y.Z (mirrors its matrix); the release
+  # The charts publish-charts packages at X.Y.Z (mirrors its matrix); the release
   # verify step re-checks each is published before the Release is minted.
   RELEASE_CHARTS: 'hl7-transformer dcm4chee hive-metastore hl7-listener hl7log-extractor keycloak-config-cli launchpad open-webui-bootstrap orthanc report-viewer scout-app-manager scout-dashboards scout-opa temporal-bootstrap voila'
 

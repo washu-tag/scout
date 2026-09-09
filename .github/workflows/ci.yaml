@@ -63,8 +63,6 @@ jobs:
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
       report-viewer: ${{ steps.filter.outputs.report-viewer }}
-      # Keyed on the image name, not the directory, because build-and-upload
-      # indexes these outputs by matrix.image-name. See the matrix entry.
       scout-app-manager: ${{ steps.filter.outputs.scout-app-manager }}
       hl7-transformer-chart: ${{ steps.filter.outputs.hl7-transformer-chart }}
       dcm4chee-chart: ${{ steps.filter.outputs.dcm4chee-chart }}
@@ -132,7 +130,6 @@ jobs:
               - 'keycloak/**'
             report-viewer:
               - 'report-viewer/**'
-            # The key is the image name; the subproject is app-manager/.
             scout-app-manager:
               - 'app-manager/**'
             hl7-transformer-chart:
@@ -249,12 +246,6 @@ jobs:
             subproject: keycloak
           - image-name: report-viewer
             subproject: report-viewer
-          # The only entry where image-name is not the directory basename. The
-          # image is ghcr.io/washu-tag/scout-app-manager and `image-name` is what
-          # docker-build-cache appends to the registry -- it is also the artifact
-          # name, the tar filename, the SARIF category, and the `changes` output
-          # this job indexes by. `subproject` is the build context and Dockerfile
-          # directory, which is app-manager/.
           - image-name: scout-app-manager
             subproject: app-manager
     steps:
@@ -321,9 +312,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # Pinned to the runtime image's interpreter (python:3.14-slim), so the
-      # tests hit the interpreter that ships. The package needs 3.14: it relies
-      # on PEP 649 deferred annotations rather than `from __future__`.
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
@@ -1361,7 +1349,7 @@ jobs:
     # Build-lane haul (ADR 0033): render the manifest (fresh digests + carry), sync to a
     # signed .tar.zst, publish the bundle + manifest. GATES the build (no continue-on-error):
     # a broken/incomplete/unsigned air-gap haul must fail loud. Safe to merge only after
-    # seed-charts.yaml has published all 15 charts (publish-charts is changed-only) and the
+    # seed-charts.yaml has published all charts (publish-charts is changed-only) and the
     # Docker Hub secret is seeded (the upstream pulls below are otherwise rate-limited).
     if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
     runs-on: ubuntu-latest
@@ -1411,8 +1399,7 @@ jobs:
           path: digests
           merge-multiple: true
       - name: Download this run's fresh chart digests
-        # SEPARATE subdir: 6 chart names (hl7-transformer, hl7-listener,
-        # hl7log-extractor, launchpad, report-viewer, scout-app-manager) collide
+        # SEPARATE subdir: some chart names collide
         # with image names, so a flat merge would clobber their digest files.
         # build_haul globs digests/**/* and skips dirs. Same no-continue-on-error
         # invariant as above.
@@ -1424,7 +1411,7 @@ jobs:
       - name: Skip if the haul predecessor is not yet seeded
         id: seeded
         # publish-haul now gates the build, but a run before seed-charts.yaml has
-        # published the 15 charts (incl. the first main run after this lands) has an
+        # published the charts (incl. the first main run after this lands) has an
         # images-only predecessor, so build_haul would fail closed on the uncarried
         # charts and red main. Detect that pre-seed state and skip (warn); a genuine
         # drift (stray fresh digest, bad ref) still fails loudly in the render below.
