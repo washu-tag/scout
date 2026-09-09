@@ -60,7 +60,9 @@ jobs:
           # name dir  (name = Chart.yaml name == charts/<name> repo, per components.txt)
           while read -r name dir; do
             [ -n "${name}" ] || continue
-            helm package "${dir}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
+            app_version="$(bash .github/scripts/chart-app-version.sh "${name}" "${VERSION}")"
+            helm package "${dir}" --version "${VERSION}" \
+              ${app_version:+--app-version "${app_version}"} --destination "${RUNNER_TEMP}"
             helm push "${RUNNER_TEMP}/${name}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
             ref="${REGISTRY}/washu-tag/charts/${name}:${VERSION}"
             digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"

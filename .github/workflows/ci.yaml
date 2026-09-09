@@ -1090,7 +1090,6 @@ jobs:
           - chart-name: hl7-transformer
             chart-dir: helm/extractor/hl7-transformer
             changed: hl7-transformer-chart
-            app-version: true
           - chart-name: dcm4chee
             chart-dir: helm/dcm4chee
             changed: dcm4chee-chart
@@ -1100,18 +1099,15 @@ jobs:
           - chart-name: hl7-listener
             chart-dir: helm/hl7-listener
             changed: hl7-listener-chart
-            app-version: true
           - chart-name: hl7log-extractor
             chart-dir: helm/extractor/hl7log-extractor
             changed: hl7log-extractor-chart
-            app-version: true
           - chart-name: keycloak-config-cli
             chart-dir: helm/keycloak-config-cli
             changed: keycloak-config-cli-chart
           - chart-name: launchpad
             chart-dir: helm/launchpad
             changed: launchpad-chart
-            app-version: true
           - chart-name: open-webui-bootstrap
             chart-dir: helm/open-webui-bootstrap
             changed: open-webui-bootstrap-chart
@@ -1121,7 +1117,6 @@ jobs:
           - chart-name: report-viewer
             chart-dir: helm/report-viewer
             changed: report-viewer-chart
-            app-version: true
           - chart-name: scout-dashboards
             chart-dir: helm/scout-dashboards
             changed: scout-dashboards-chart
@@ -1146,28 +1141,24 @@ jobs:
       - name: 'Publish chart - ${{ matrix.chart-name }}'
         if: needs.changes.outputs[matrix.changed] == 'true'
         shell: bash
-        # helm preinstalled (OCI push needs >= 3.8). Only --version is stamped;
-        # Chart.yaml keeps its 0.0.0-dev / appVersion "latest" placeholders.
-        # appVersion-to-image coupling is phase 2, so the default image tag stays
-        # :latest and phase-0 consumers pin image.tag for immutability. Token via
-        # stdin (never argv).
+        # helm preinstalled (OCI push needs >= 3.8). Chart.yaml is never stamped:
+        # `version` is this build's tag and `appVersion` (the image tag the chart
+        # defaults to) comes from chart-app-version.sh, which maps each chart to the
+        # version being published (Scout images) or the versions.yaml pin (upstream
+        # images). Token via stdin (never argv).
         env:
           CHART_DIR: ${{ matrix.chart-dir }}
           CHART_NAME: ${{ matrix.chart-name }}
           VERSION: ${{ needs.changes.outputs.version }}
-          APP_VERSION_FLAG: ${{ matrix.app-version && format('--app-version {0}', needs.changes.outputs.version) || '' }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
           helm version --short
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
-          # appVersion is the image tag the chart defaults to, so it is stamped only
-          # for charts whose image is a Scout image. Charts wrapping an upstream image
-          # (voila, hive-metastore, scout-dashboards, ...) keep the upstream version
-          # their Chart.yaml declares -- see #610/#617.
-          helm package "${CHART_DIR}" --version "${VERSION}" ${APP_VERSION_FLAG} \
-            --destination "${RUNNER_TEMP}"
+          app_version="$(bash .github/scripts/chart-app-version.sh "${CHART_NAME}" "${VERSION}")"
+          helm package "${CHART_DIR}" --version "${VERSION}" \
+            ${app_version:+--app-version "${app_version}"} --destination "${RUNNER_TEMP}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
           # Record the pushed chart by digest for the build-lane haul (ADR 0033),
           # read back via a stable --format contract (matching docker-push;

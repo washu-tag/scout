@@ -4,10 +4,9 @@ replicaCount: 2
 
 image:
   repository: openpolicyagent/opa
-  # Empty falls through to .Chart.AppVersion — the upstream OPA version this
-  # chart wraps (#610, #617), not a stamped placeholder. Ansible and the GitOps
-  # deploy base both override it; versions.yaml's opa_image_tag is the
-  # Renovate-tracked pin.
+  # Empty falls through to .Chart.AppVersion, stamped at package time from
+  # versions.yaml (opa_image_tag). Ansible and the GitOps deploy base both set
+  # it explicitly.
   tag: ''
   pullPolicy: IfNotPresent
 
