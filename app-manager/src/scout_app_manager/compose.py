@@ -249,9 +249,9 @@ def compose(
     fragment still compose. A broken fragment breaks its own component's auth,
     loudly, and nothing else.
 
-    `reserved_env` is the base realm's own substitution variables. A fragment
-    whose derived name lands on one of them is rejected rather than allowed to
-    redirect a platform client's credential.
+    `reserved_env` is the keys of the credentials Secret the apply Job takes
+    wholesale. A fragment whose derived variable name lands on one of them is
+    rejected rather than allowed to share a variable with a platform client.
     """
     realm = copy.deepcopy(base_realm)
     result = ComposeResult(realm=realm)
@@ -323,11 +323,18 @@ def compose(
                     f"client {spec.clientId!r} is one of Keycloak's built-in "
                     "clients; a fragment may not adopt a platform-owned client"
                 )
+            # Not unreachable, despite the `fragment_` prefix: reserved_env is
+            # the client-secrets Secret's keys, which a site can add to. A
+            # `fragment_`-prefixed key there and this binding are one variable,
+            # and the apply Job's env would override the Secret's envFrom --
+            # installing the fragment's credential on whatever base-realm client
+            # names it.
             env = substitution.env_name(spec.clientId)
             if env in reserved_env:
                 problems.append(
                     f"client {spec.clientId!r} resolves to the credential variable "
-                    f"{env!r}, which the base realm already uses"
+                    f"{env!r}, which the platform's client-secrets Secret already "
+                    "defines"
                 )
             try:
                 effects.append(effect_of(spec, site))

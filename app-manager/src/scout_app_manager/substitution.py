@@ -29,9 +29,10 @@ PLACEHOLDER_RE = re.compile(r"\$\(env:([^)]*)\)")
 # does not live in the client-secrets Secret and is accounted for separately.
 SERVER_HOSTNAME = "server_hostname"
 
-# Prefix for the variable a fragment client's credential arrives in. Distinct
-# from every base-realm key by construction, and `compose` rejects a fragment
-# whose derived name collides with one anyway.
+# Prefix for the variable a fragment client's credential arrives in. It keeps
+# fragments clear of the keys Scout ships, but not of the ones a site adds:
+# `keycloak-client-secrets` is site-editable, so `compose` rejects a fragment
+# whose derived name lands on a key that Secret already defines.
 FRAGMENT_PREFIX = "fragment_"
 
 _NOT_IDENTIFIER = re.compile(r"[^A-Za-z0-9]")

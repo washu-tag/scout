@@ -155,7 +155,12 @@ class AppManagerService:
         return value_of(self.secret(name), key)
 
     def client_secret_keys(self) -> set[str]:
-        """The base realm's substitution variables that actually resolve.
+        """The client-secrets Secret's keys that resolve to something.
+
+        The base realm's substitution variables by intent, but read from the
+        Secret rather than from the document: this is what the apply Job's
+        envFrom will actually put in config-cli's environment, which is what
+        makes it both the resolvable set and the reserved one.
 
         A key present but empty is treated as absent: config-cli would happily
         substitute the empty string as a client's credential.

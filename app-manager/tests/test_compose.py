@@ -319,11 +319,12 @@ def test_two_clients_that_share_a_variable_are_both_rejected(base_realm, tmp_pat
 
 
 def test_a_fragment_cannot_claim_a_base_realm_variable(base_realm, tmp_path):
-    """The `fragment_` prefix keeps the two namespaces apart on its own.
+    """The `fragment_` prefix keeps Scout's own keys apart; a site's it cannot.
 
     This is the backstop for an operator who puts a `fragment_`-prefixed key
-    into keycloak-client-secrets: envFrom would win over the per-client
-    secretKeyRef, quietly handing a platform credential to a fragment client.
+    into keycloak-client-secrets: the apply Job's per-client secretKeyRef wins
+    over envFrom for the same name, so any base-realm client naming that
+    variable is quietly installed with the fragment's credential.
     """
     write_fragment(tmp_path, "scout-demo", "f", fragment_yaml(client="hello"))
 
@@ -336,7 +337,7 @@ def test_a_fragment_cannot_claim_a_base_realm_variable(base_realm, tmp_path):
     )
 
     assert result.accepted == []
-    assert "base realm already uses" in result.rejected[0][1][0]
+    assert "client-secrets Secret already defines" in result.rejected[0][1][0]
 
 
 def test_a_missing_secret_rejects_the_fragment(base_realm, tmp_path, hello_yaml):
