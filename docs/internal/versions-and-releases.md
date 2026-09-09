@@ -67,16 +67,15 @@ Developer                    GitHub                        CI
     |                           |          v                |
     |                           |     Wait for build -------+---> [Build fails]
     |                           |          |                |           |
-    |                           |          v                |           |
-    |                           |     Publish images        |           |
-    |                           |     (non-main only)       |           |
-    |                           |          |                |           |
-    |                           |          v                |           |
-    |                           |     Create release        |           |
-    |                           |     (auto-gen changelog)  |           |
-    |                           |     Create vX.Y.Z tag     |           |
-    |                           |          |                |           |
-    |                           |          +<---------------+-----------+
+    |                           |          v                |           v
+    |                           |     Publish images        |    main stays STAMPED
+    |                           |     (non-main only)       |    (bump kept for a retry)
+    |                           |          |                |
+    |                           |          v                |
+    |                           |     Create release        |
+    |                           |     (auto-gen changelog)  |
+    |                           |     Create vX.Y.Z tag     |
+    |                           |          |                |
     |                           |          v                |
     |                           |     Reset to dev versions |
     |                           |     Push to branch        |
@@ -84,7 +83,7 @@ Developer                    GitHub                        CI
     |<-- Release complete ------|                           |
 ```
 
-> **Note**: The reset to dev versions step runs regardless of whether the build succeeded or failed. The only exception is if the release job itself fails (e.g., `gh release create` errors) — in that case, reset is skipped to allow a simple retry. See [Design Decision: Reset Timing](#design-decision-reset-timing) for rationale.
+> **Note**: The reset to dev versions step runs **only after the release succeeds** (`reset-dev` is gated on `needs.release.result == 'success'`). Any earlier failure leaves `main` stamped at `X.Y.Z`, deliberately, so the version bump commit survives for a retry. See [Design Decision: Reset Timing](#design-decision-reset-timing) for what that costs and how to get out of it.
 
 ### Triggering a Release
 
@@ -168,13 +167,12 @@ Because the tag is created at the end of the workflow (after everything else suc
 - **Recovery**: Fix the issue, re-run the workflow
 
 ### Build Fails Due to a Bug
-- Version bump commit exists, but build failed
-- Reset to dev versions has already happened (see [Design Decision: Reset Timing](#design-decision-reset-timing))
-- **Recovery**: Push fix commits to `main`, then re-run the release workflow. It will:
-  - Create a new version bump commit (since the previous one is no longer at HEAD)
-  - Wait for the build on HEAD to succeed
-  - Create the release and tag pointing to HEAD (which includes your fixes)
-  - Reset to dev versions
+- Version bump commit exists and is still the head of `main`; the build failed
+- Reset to dev versions has **not** happened — `reset-dev` only runs on a successful release — so `main` is stamped at `X.Y.Z` while nothing is published at that version. Everything downstream feels it: `derive-version` reads `X.Y.Z`, `check-image-exists` finds no such tag, and every PR rebuilds and rescans all eight images until this is undone.
+- **Recovery**, in this order:
+  1. Land the fix on `main` as a normal PR.
+  2. Land a commit whose message contains a line reading exactly `Reset to dev versions`. This is load-bearing: `validate` greps for it over `bump..HEAD`, and `version-bump` re-stamps only when it finds one. Without it, a re-dispatch pins straight back to the failed stamp commit and fails identically. `main` is PR-gated and only the release App bypasses that, so the line has to survive the squash — put it in the squash body: `gh pr merge <N> --squash --body "Reset to dev versions"`. Verify with `git log --grep="^Reset to dev versions$" <bump-sha>..origin/main` before continuing.
+  3. Re-dispatch the same version: `gh workflow run release.yaml --ref main -f version=X.Y.Z`. `validate` tolerates the orphan boundary tag, `version-bump` re-stamps the fixed HEAD, and the tag moves forward to the commit that was actually built.
 
 ### Release Creation Fails (Rare)
 - Version bump commit exists on `main`, build succeeded, but `gh release create` failed
@@ -203,60 +201,13 @@ This allows safe re-runs after partial failures without manual intervention.
 
 - The **tag points to HEAD** at release time, which may be the version bump commit or a later fix commit. This ensures the tag references the exact code that was built and released.
 
-## Design Decision: Reset Timing
+## Reset Timing
 
-The workflow always resets to dev versions after the version bump, regardless of whether the build and release succeeded. This is a deliberate design choice with trade-offs worth understanding.
+`reset-dev` is gated on `needs.release.result == 'success'`, so a failure anywhere earlier leaves `main` stamped at `X.Y.Z`. That is intentional: the version bump commit survives, so a retry can reuse the build that already succeeded, or re-stamp a fixed HEAD once a `Reset to dev versions` commit follows it.
 
-### Current Behavior (Always Reset)
+It deliberately does not consult `validate`'s `reset_exists`. That flag is computed before `version-bump` runs, so on a re-release it reports the *previous* cycle's reset and skips the current one — which is how v4.1.0's re-release left `main` stamped at 4.1.0.
 
-After the version bump commit is pushed, the reset to dev versions happens regardless of the build outcome. If the build fails:
-
-1. Version bump commit is on `main`
-2. Build fails
-3. Reset to dev versions happens anyway
-4. `main` is back to dev versions
-5. To release, you must re-run the workflow (which creates a new version bump)
-
-**Exception**: If the release job itself fails (not skipped due to build failure, but actually runs and fails), reset does not happen. This allows a simple retry that reuses the existing version bump commit and successful build. This is a rare scenario that would only occur if `gh release create` fails due to a transient error.
-
-**Advantages:**
-- The repository stays in a consistent, expected state (dev versions)
-- Simpler mental model: dev versions are always the "normal" state on `main`
-- No ambiguity about what versions are currently on `main`
-
-**Disadvantages:**
-- Re-running the release requires creating a new version bump commit
-- If you push fixes to `main`, they won't be built with release versions until you re-run the workflow
-
-### Alternative: Reset Only After Success
-
-An alternative approach would reset to dev versions only after the release succeeds:
-
-1. Version bump commit is on `main`
-2. Build fails
-3. `main` stays at release versions
-4. You push a fix commit
-5. Build runs again with release versions
-6. Re-run the workflow, which skips to waiting for the build, then releases
-
-**Advantages:**
-- Any fix commits are immediately built with release versions
-- The moment the build succeeds, you have versioned artifacts ready
-- Re-running the workflow just waits for an existing successful build
-
-**Disadvantages:**
-- `main` stays at release versions during the "broken" period, which could be confusing
-- Multiple commits may have release versions in their files
-- If you abandon the release, you must manually reset to dev versions
-
-### Rationale for Current Choice
-
-The current "always reset" behavior was chosen because:
-- It keeps the repository in a predictable state
-- It avoids the scenario where `main` has release versions for an extended period
-- The extra version bump commit on retry is a minor cost for clearer repository state
-
-Both approaches are valid. If the alternative behavior is preferred, the `reset-dev` job condition could be changed to only run when `release.result == 'success'` (removing the `|| needs.release.result == 'skipped'` clause).
+While `main` is stamped, nothing is published at that version, so `check-image-exists` reports every image absent and every unrelated PR rebuilds and rescans all eight. `verify-dev-reset` is gated on the same successful release, so it does not fire here — the red release run is the only signal. Recovery is in [Build Fails Due to a Bug](#build-fails-due-to-a-bug).
 
 ## CI Components
 
