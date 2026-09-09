@@ -136,15 +136,56 @@ template.
 
 ## Check it before you deploy
 
-The validator is the same code the reconciler runs, so it gives the same verdict without
-a cluster:
+The validator is the same code the reconciler runs, so it gives the same verdict without a
+cluster. Render your chart and pipe it in — it picks the labelled ConfigMaps out of the
+stream and ignores the rest of your manifests:
 
 ```console
-$ scout-app-manager validate fragment.yaml --domain scout.example.edu
+$ helm template . | docker run -i --rm --entrypoint scout-app-manager \
+    ghcr.io/washu-tag/scout-app-manager:latest validate - --domain scout.example.edu
+OK       my-service/my-service-keycloak  (sha256:f8d95216755d)
+    client my-service  [STANDARD]
+        redirect  https://my-service.scout.example.edu/auth/callback
+        redirect  https://auth.scout.example.edu/oauth2/sign_out
+        origin    https://my-service.scout.example.edu
+        secret    my-service-keycloak-client/client-secret -> $(env:fragment_my_service)
+        pkce      required (S256)
+        roles     my-service-user, my-service-admin (claim 'groups')
+        grants    my-service-admin -> everyone in scout-admin
+        grants    my-service-user -> everyone in scout-user
 ```
 
-It prints the client, its resolved URLs, whether PKCE is enforced, the roles, and who the
-grants reach — or the reasons it is invalid.
+That is the whole effect your fragment has on the realm: the resolved URLs (including the
+signout URI added for you), whether PKCE is enforced, the roles, and who the grants reach.
+Read the last two lines before you ship — they are the ones that hand a role to every Scout
+user.
+
+It exits non-zero and prints the reasons instead if the fragment is one the reconciler
+would refuse. Four of those are silent failures in a cluster, which is the argument for
+running this first:
+
+- the ConfigMap is missing the `keycloak.scout.xnat.org/fragment` label, so nothing ever
+  discovers it;
+- its data key does not end in `.yaml`, `.yml` or `.json`, so the reconciler reads nothing
+  from it;
+- a redirect URI points outside the Scout domain;
+- a field name is misspelled — the vocabulary is closed, so a typo is an error, not a
+  default.
+
+If you already have a Scout cluster, the reconciler's own pod carries the same binary and
+`kubectl exec -i` pipes into it the same way. No image pull, and you are checking against
+the version that site actually runs:
+
+```console
+$ helm template . | kubectl exec -i -n scout-core deploy/scout-app-manager -c reconciler \
+    -- scout-app-manager validate - --domain scout.example.edu
+```
+
+`validate` also takes files and directories instead of `-`, and accepts a bare fragment
+document as readily as the ConfigMap around it. `--domain` defaults to
+`scout.example.edu`; pass your site's if a redirect URI's host matters to you. Add
+`--signout-url` only if your site overrides the default
+`https://auth.<domain>/oauth2/sign_out`.
 
 ## What you cannot declare
 
@@ -181,5 +222,4 @@ nothing happened.
 
 **Still to write:** the `SERVICE_ACCOUNT` and `TOKEN_EXCHANGE` shapes with examples; how
 an app reads and enforces its roles; how this interacts with adding a
-[launchpad chip](launchpad-chips.md); how to get the validator (container? pip?); an ADR
-link once the design settles.
+[launchpad chip](launchpad-chips.md); an ADR link once the design settles.

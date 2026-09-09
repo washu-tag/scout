@@ -8,7 +8,12 @@ import yaml
 
 from scout_app_manager.compose import Site
 from scout_app_manager.k8s import ApiError
-from scout_app_manager.schema import API_VERSION, KIND
+from scout_app_manager.schema import (
+    API_VERSION,
+    FRAGMENT_LABEL,
+    FRAGMENT_LABEL_VALUE,
+    KIND,
+)
 from scout_app_manager.service import AppManagerService
 from scout_app_manager.settings import Settings
 
@@ -76,6 +81,30 @@ def base_realm() -> dict:
             "launchpad": [{"client": "launchpad", "roles": ["launchpad-user"]}]
         },
     }
+
+
+def configmap_yaml(
+    name: str = "my-service-keycloak",
+    namespace: str | None = "my-service",
+    *,
+    labelled: bool = True,
+    data: dict[str, str] | None = None,
+) -> str:
+    """The shape an author actually has in their chart: a wrapping ConfigMap."""
+    metadata: dict = {"name": name}
+    if namespace is not None:
+        metadata["namespace"] = namespace
+    if labelled:
+        metadata["labels"] = {FRAGMENT_LABEL: FRAGMENT_LABEL_VALUE}
+    return yaml.safe_dump(
+        {
+            "apiVersion": "v1",
+            "kind": "ConfigMap",
+            "metadata": metadata,
+            "data": data if data is not None else {"fragment.yaml": fragment_yaml()},
+        },
+        sort_keys=False,
+    )
 
 
 def write_fragment(directory: Path, namespace: str, name: str, body: str) -> Path:

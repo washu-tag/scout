@@ -1,8 +1,10 @@
 """`scout-app-manager` — the laptop tool and the in-pod inspection path.
 
-`validate`, `compose`, and `diff` run the same code the service runs, with no
-cluster: a fragment author should be able to get the service's verdict before
-anything is deployed.
+`validate` runs the same code the service runs, with no cluster: a fragment
+author should be able to get the service's verdict before anything is
+deployed. It reads a rendered chart, a ConfigMap or a bare fragment, from
+files or stdin, so `helm template . | scout-app-manager validate -` works
+through `docker run -i` and `kubectl exec -i` alike.
 
 `status` and `reconcile` need the cluster, so they are meant to be run inside
 the pod (`kubectl exec`). `status` only reads. `reconcile` writes, and is
@@ -10,13 +12,13 @@ break-glass only: it is a second process against one realm.
 """
 
 import argparse
-import difflib
 import logging
 import sys
 from pathlib import Path
 
-from .compose import FragmentEffect, Site, canonical, compose, plan
-from .load import LoadedFragment, parse_realm_document, scan
+from .compose import FragmentEffect, Site, plan
+from .load import LoadedFragment, scan, scan_stream
+from .schema import FRAGMENT_LABEL, FRAGMENT_LABEL_VALUE
 from .settings import Settings
 
 
@@ -27,32 +29,27 @@ def main(argv: list[str] | None = None) -> int:
     p_validate = sub.add_parser(
         "validate", help="check fragments and print what they would do"
     )
-    p_validate.add_argument("paths", nargs="+", help="fragment files or a directory")
+    p_validate.add_argument(
+        "paths", nargs="+", help="fragment files, a directory, or - for stdin"
+    )
     p_validate.add_argument("--domain", default="scout.example.edu")
+    p_validate.add_argument(
+        "--signout-url",
+        default="",
+        help="the site's platform signout URI (default: derived from --domain)",
+    )
 
-    for name, help_text in (
-        ("compose", "merge fragments into a base realm"),
-        ("diff", "show what fragments change in a base realm"),
-    ):
-        p = sub.add_parser(name, help=help_text)
-        p.add_argument("--base", required=True, help="base realm JSON")
-        p.add_argument("--fragments", required=True, help="fragment directory")
-        p.add_argument("--domain", required=True)
-        if name == "compose":
-            p.add_argument("--out", help="write composed realm here (default stdout)")
-
-    p_reconcile = sub.add_parser(
+    # No loop mode to select: looping is what the service does, and a second
+    # looping writer is the thing ADR 0037 exists to prevent.
+    sub.add_parser(
         "reconcile", help="break-glass: run one reconcile, which may write the realm"
     )
-    p_reconcile.add_argument("--once", action="store_true", default=True)
 
     sub.add_parser("status", help="what is installed, and what is broken (read-only)")
 
     args = parser.parse_args(argv)
     if args.command == "validate":
         return _validate(args)
-    if args.command in ("compose", "diff"):
-        return _compose_or_diff(args)
     if args.command == "reconcile":
         return _reconcile()
     return _status()
@@ -64,21 +61,20 @@ def main(argv: list[str] | None = None) -> int:
 def _collect(paths: list[str]) -> list[LoadedFragment]:
     loaded: list[LoadedFragment] = []
     for raw in paths:
+        if raw == "-":
+            loaded.extend(scan_stream(sys.stdin.read()))
+            continue
         path = Path(raw)
         if path.is_dir():
             loaded.extend(scan(path))
-        else:
-            loaded.extend(scan_single(path))
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            print(f"cannot read {raw}: {exc.strerror or exc}", file=sys.stderr)
+            continue
+        loaded.extend(scan_stream(text, path.name))
     return loaded
-
-
-def scan_single(path: Path) -> list[LoadedFragment]:
-    import tempfile
-
-    with tempfile.TemporaryDirectory() as tmp:
-        link = Path(tmp) / path.name
-        link.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-        return scan(tmp)
 
 
 def print_effect(effect: FragmentEffect, indent: str = "    ") -> None:
@@ -110,9 +106,14 @@ def print_effect(effect: FragmentEffect, indent: str = "    ") -> None:
 def _validate(args: argparse.Namespace) -> int:
     loaded = _collect(args.paths)
     if not loaded:
-        print("no fragments found", file=sys.stderr)
+        print(
+            "no fragments found: a fragment is a ConfigMap labelled "
+            f"{FRAGMENT_LABEL}: {FRAGMENT_LABEL_VALUE!r}",
+            file=sys.stderr,
+        )
         return 1
 
+    site = Site(domain=args.domain, signout_url=args.signout_url)
     failed = False
     for item in loaded:
         if not item.valid:
@@ -121,7 +122,7 @@ def _validate(args: argparse.Namespace) -> int:
             for err in item.errors:
                 print(f"    - {err}")
             continue
-        effect = plan(item, Site(domain=args.domain))
+        effect = plan(item, site)
         if effect.errors:
             failed = True
             print(f"INVALID  {item.ref}")
@@ -131,40 +132,6 @@ def _validate(args: argparse.Namespace) -> int:
         print(f"OK       {item.ref}  ({item.content_hash[:19]})")
         print_effect(effect)
     return 1 if failed else 0
-
-
-def _compose_or_diff(args: argparse.Namespace) -> int:
-    base = parse_realm_document(Path(args.base).read_text(encoding="utf-8"))
-    realm = base.get("realm_representation", base)
-
-    result = compose(realm, scan(args.fragments), Site(domain=args.domain))
-
-    for item, reasons in result.rejected:
-        print(f"rejected {item.ref}: {'; '.join(reasons)}", file=sys.stderr)
-    for item in result.accepted:
-        print(f"accepted {item.ref}", file=sys.stderr)
-
-    if args.command == "compose":
-        text = canonical(result.realm)
-        if args.out:
-            Path(args.out).write_text(text, encoding="utf-8")
-        else:
-            sys.stdout.write(text)
-        return 0
-
-    diff = difflib.unified_diff(
-        canonical(realm).splitlines(keepends=True),
-        canonical(result.realm).splitlines(keepends=True),
-        fromfile="base realm",
-        tofile="composed realm",
-    )
-    wrote = False
-    for line in diff:
-        wrote = True
-        sys.stdout.write(line)
-    if not wrote:
-        print("no change: composed realm is identical to the base realm")
-    return 0
 
 
 # --- cluster needed --------------------------------------------------------

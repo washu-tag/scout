@@ -18,11 +18,16 @@ except ImportError:  # pragma: no cover - PyYAML built without libyaml
 
 YAMLError = yaml.YAMLError
 
-__all__ = ["YAMLError", "safe_dump", "safe_load"]
+__all__ = ["YAMLError", "safe_dump", "safe_load", "safe_load_all"]
 
 
 def safe_load(text: str) -> Any:
     return yaml.load(text, Loader=_Loader)
+
+
+def safe_load_all(text: str) -> list[Any]:
+    """Every document in a `---`-separated stream, e.g. a rendered chart."""
+    return list(yaml.load_all(text, Loader=_Loader))
 
 
 def safe_dump(data: Any, **kwargs: Any) -> str:
