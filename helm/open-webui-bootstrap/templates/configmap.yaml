@@ -20,6 +20,7 @@ data:
         "tool_server_connections" (.Values.persistentConfig.tool_server_connections | default list)
         "default_model_id" (.Values.persistentConfig.default_model_id | default "")
         "task_model_id" (.Values.persistentConfig.task_model_id | default "")
+        "jwt_expires_in" (.Values.persistentConfig.jwt_expires_in | default "")
     | toJson }}
 
   # Filter function payloads — bootstrap.py inlines each entry's content_file

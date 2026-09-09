@@ -5,3 +5,5 @@ report-viewer/**/dist/**
 report-viewer/**/build/**
 # Vendored upstream manifests (keycloak-config-cli CRDs + operator); keep byte-exact
 deploy/base/keycloak/operator/upstream/
+# Helm chart files/ assets are templated (helm tpl); not parseable as JSON/YAML
+helm/**/files/**

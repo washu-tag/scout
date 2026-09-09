@@ -24,11 +24,12 @@ Usage: python import.py [analytics_dir] [--databases-only]
 
 import glob
 import json
+import os
 import sys
 
 import yaml
 
-from superset import db  # noqa: E402
+from superset import db, security_manager  # noqa: E402
 from superset.app import create_app  # noqa: E402
 
 app = create_app()
@@ -74,6 +75,36 @@ _METRIC_FIELDS = (
     "currency",
     "warning_text",
 )
+
+
+def grant_schema_access(
+    role_name: str, database_uuid: str, catalog: str, schema: str
+) -> bool:
+    """Grant `role_name` Superset's `schema_access` permission on
+    `catalog`.`schema`.
+
+    Issue #687: Gamma has no datasource access by default, so regular
+    (Gamma) users would see none of the shared dashboards/datasets unless
+    something backfills this. Idempotent — `add_permission_view_menu`
+    returns the existing PermissionView if already registered, and the
+    role<->permission link is only appended if missing. Returns False if
+    the database row doesn't exist yet (first install, before the CLI
+    creates it) or the role doesn't exist.
+
+    Additive only: disabling `gammaSchemaAccess` later doesn't revoke a
+    grant already made.
+    """
+    role = security_manager.find_role(role_name)
+    database = db.session.query(Database).filter_by(uuid=database_uuid).first()
+    if role is None or database is None:
+        return False
+    schema_perm = security_manager.get_schema_perm(
+        database.database_name, catalog=catalog, schema=schema
+    )
+    pvm = security_manager.add_permission_view_menu("schema_access", schema_perm)
+    if pvm not in role.permissions:
+        role.permissions.append(pvm)
+    return True
 
 
 def update_database(path: str) -> bool:
@@ -295,6 +326,24 @@ if DATABASES_ONLY:
     )
     sys.exit(0)
 
+# Gamma schema-access backfill (#687). Runs post-CLI so the Database row is
+# guaranteed to exist (either pre-existing or just created by import-dashboards).
+GAMMA_SCHEMA_ACCESS_SCHEMA = os.environ.get("GAMMA_SCHEMA_ACCESS_SCHEMA", "")
+if GAMMA_SCHEMA_ACCESS_SCHEMA:
+    with open(f"{ANALYTICS}/databases/Scout_Data_Lake.yaml") as f:
+        database_uuid = yaml.safe_load(f)["uuid"]
+    granted_gamma_schema_access = grant_schema_access(
+        # "delta" matches the hardcoded catalog in the Trino sqlalchemy_uri
+        # this chart renders (scout-dashboards.databaseYaml in _helpers.tpl).
+        "Gamma",
+        database_uuid,
+        "delta",
+        GAMMA_SCHEMA_ACCESS_SCHEMA,
+    )
+    db.session.flush()
+else:
+    granted_gamma_schema_access = None
+
 # Pass 1: datasets. Sync columns/metrics on existing datasets by UUID.
 updated_datasets = skipped_datasets = 0
 for path in sorted(glob.glob(f"{ANALYTICS}/datasets/**/*.yaml", recursive=True)):
@@ -326,6 +375,7 @@ db.session.commit()
 
 print(
     f"force-update: databases updated={updated_databases} skipped={skipped_databases}, "
+    f"gamma_schema_access_granted={granted_gamma_schema_access}, "
     f"datasets updated={updated_datasets} skipped={skipped_datasets}, "
     f"charts updated={updated_charts} skipped={skipped_charts}, "
     f"dashboards updated={updated_dashboards} skipped={skipped_dashboards}, "

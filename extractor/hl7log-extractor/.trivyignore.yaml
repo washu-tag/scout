@@ -1,4 +1,1 @@
-vulnerabilities:
-  # Fix available in Alpine repos but amazoncorretto:21-alpine not yet rebuilt
-  # with openssl 3.5.7-r0 — check Docker Hub for a rebuild
-  - id: CVE-2026-45447 # libcrypto3/libssl3 3.5.6-r0 → 3.5.7-r0
+vulnerabilities: []

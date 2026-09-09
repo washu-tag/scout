@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from temporalio import activity
 
@@ -35,14 +35,17 @@ class IngestHl7FilesActivity:
 
     default_report_table_name: str
     health_file: Path
+    on_spark_failure: Optional[Callable[[], None]]
 
     def __init__(
         self,
         default_report_table_name: str,
         health_file: Path,
+        on_spark_failure: Optional[Callable[[], None]] = None,
     ):
         self.default_report_table_name = default_report_table_name
         self.health_file = health_file
+        self.on_spark_failure = on_spark_failure
 
     @activity.defn(name=ACTIVITY_NAME)
     def ingest_hl7_files_to_delta_lake(
@@ -66,6 +69,7 @@ class IngestHl7FilesActivity:
             report_table_name,
             self.health_file,
             create_mapping=create_mapping,
+            on_spark_failure=self.on_spark_failure,
         )
 
         return IngestHl7FilesToDeltaLakeActivityOutput(num_hl7_ingested)

@@ -1,0 +1,1065 @@
+{{/* GENERATED from ansible/roles/keycloak/templates/scout-realm.json.j2 by
+     tooling/keycloak/render_realm.py -- do not edit by hand; edit the template
+     and re-run the tool. The helm {{ }} / $(env:) tokens are intentional. */}}
+{
+    "enabled": true,
+    "realm": "scout",
+    "displayName": "Scout",
+    
+    "attributes": {
+      "userProfileEnabled": "true"
+    },
+    "eventsEnabled": true,
+    "adminEventsEnabled": true,
+    "adminEventsDetailsEnabled": true,
+    "ssoSessionIdleTimeout": 28800,
+    "ssoSessionMaxLifespan": 28800,
+    
+    "accessTokenLifespan": 300,
+    
+    "emailTheme": "scout",
+    "loginTheme": "scout",
+    "internationalizationEnabled": true,
+    "supportedLocales": ["en"],
+    "defaultLocale": "en",
+    
+    "messageBundles": {
+      "en": {{ .Values.termsLocalizations | default dict | toJson }}
+    },
+    "eventsListeners": [
+      "user-approval-email",
+      
+      "opa-user-bundle-publisher",
+      "jboss-logging"
+    ],
+    "smtpServer": {
+      "debug": "{{ .Values.smtp.debug }}",
+      "replyToDisplayName": "{{ .Values.smtp.replyToDisplayName }}",
+      "starttls": "{{ .Values.smtp.starttls }}",
+      "auth": "{{ .Values.smtp.auth }}",
+      "port": "{{ .Values.smtp.port }}",
+      "host": "{{ .Values.smtp.host }}",
+      "replyTo": "{{ .Values.smtp.replyTo }}",
+      "from": "{{ .Values.smtp.from }}",
+      "fromDisplayName": "{{ .Values.smtp.fromDisplayName }}",
+      "envelopeFrom": "{{ .Values.smtp.envelopeFrom }}",
+      "ssl": "{{ .Values.smtp.ssl }}"
+    },
+    "roles": {
+      "client": {
+        "oauth2-proxy": [
+          {
+            "name": "oauth2-proxy-user",
+            "description": "Scout User Role for OAuth2 Proxy Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
+        "jupyterhub": [
+          {
+            "name": "jupyterhub-admin",
+            "description": "Scout Admin Role for JupyterHub Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "jupyterhub-user",
+            "description": "Scout User Role for JupyterHub Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
+        "superset": [
+          {
+            "name": "superset_admin",
+            "description": "Superset Admin role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "superset_alpha",
+            "description": "Superset Alpha role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "superset_gamma",
+            "description": "Superset Gamma role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "superset_sql_lab",
+            "description": "Superset sql_lab role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
+        "grafana": [
+          {
+            "name": "grafana-admin",
+            "description": "Scout Admin Role for Grafana Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "grafana-editor",
+            "description": "Scout Editor Role for Grafana Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "grafana-viewer",
+            "description": "Scout Viewer Role for Grafana Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
+        "temporal": [
+          {
+            "name": "temporal-system:admin",
+            "description": "Scout Admin Role for Temporal System",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "default:admin",
+            "description": "Scout Admin Role for Temporal Default Namespace",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
+        "open-webui": [
+          {
+            "name": "open-webui-admin",
+            "description": "Scout Admin Role for Open WebUI Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "open-webui-user",
+            "description": "Scout User Role for Open WebUI Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
+        "launchpad": [
+          {
+            "name": "launchpad-admin",
+            "description": "Scout Admin Role for Launchpad Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "launchpad-user",
+            "description": "Scout User Role for Launchpad Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ]{{- if eq (.Values.enableXnat | toString) "true" }},
+        "xnat": [
+          {
+            "name": "xnat-access",
+            "description": "Scout User Role for XNAT Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ]{{- end }}
+      }
+    },
+    "groups": [
+      {
+        "name": "scout-admin",
+        "attributes": {
+          "policy": [
+            "consoleAdmin"
+          ]
+        },
+        "clientRoles": {
+          "oauth2-proxy": [
+            "oauth2-proxy-user"
+          ],
+          "jupyterhub": [
+            "jupyterhub-admin"
+          ],
+          "launchpad": [
+            "launchpad-admin"
+          ],
+          "superset": [
+            "superset_admin"
+          ],
+          "grafana": [
+            "grafana-admin"
+          ],
+          "temporal": [
+            "temporal-system:admin",
+            "default:admin"
+          ],
+          "open-webui": [
+            "open-webui-admin"
+          ],
+          "realm-management": [
+            "realm-admin"
+          ]
+        }
+      },
+      {
+        "name": "scout-user",
+        "clientRoles": {
+          "oauth2-proxy": [
+            "oauth2-proxy-user"
+          ],
+          "jupyterhub": [
+            "jupyterhub-user"
+          ],
+          "launchpad": [
+            "launchpad-user"
+          ],
+          "superset": [
+            "superset_gamma",
+            "superset_sql_lab"
+          ],
+          "open-webui": [
+            "open-webui-user"
+          ]{{- if eq (.Values.enableXnat | toString) "true" }},
+          "xnat": [
+            "xnat-access"
+          ]{{- end }}
+        }
+      }
+    ],
+    "clients": [
+      {
+        "name": "oauth2-proxy",
+        "description": "OAuth2 Proxy Client",
+        "enabled": true,
+        "clientId": "oauth2-proxy",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:oauth2_proxy)",
+        "redirectUris": [
+          "https://auth.$(env:server_hostname)/oauth2/callback"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
+          "https://{{ $h }}/oauth2/idpresponse"{{- end }}{{- end }}
+        ],
+        "webOrigins": [
+          "https://auth.$(env:server_hostname)"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
+          "https://{{ $h }}"{{- end }}{{- end }}
+        ],
+        "attributes": {
+          "post.logout.redirect.uris": "https://$(env:server_hostname)"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
+        ]
+      },
+      {
+        "name": "jupyterhub",
+        "description": "JupyterHub Client",
+        "enabled": true,
+        "clientId": "jupyterhub",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:jupyterhub)",
+        "redirectUris": [
+          "https://jupyter.$(env:server_hostname)/hub/oauth_callback",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+        ],
+        "webOrigins": [
+          "https://jupyter.$(env:server_hostname)"
+        ],
+        
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
+        ]
+      },
+      {
+        "name": "grafana",
+        "description": "Grafana Client",
+        "enabled": true,
+        "clientId": "grafana",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:grafana)",
+        "redirectUris": [
+          "https://grafana.$(env:server_hostname)/login/generic_oauth",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+        ],
+        "webOrigins": [
+          "https://grafana.$(env:server_hostname)"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
+        ]
+      },
+      {
+        "name": "temporal",
+        "description": "Temporal Client",
+        "enabled": true,
+        "clientId": "temporal",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:temporal)",
+        "redirectUris": [
+          "https://temporal.$(env:server_hostname)/auth/sso/callback",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+        ],
+        "webOrigins": [
+          "https://temporal.$(env:server_hostname)"
+        ],
+        "attributes": {
+          "access.token.lifespan": "28800",
+          "client.session.idle.timeout": "28800",
+          "client.session.max.lifespan": "28800",
+          "client.offline.session.idle.timeout": "28800"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
+        ]
+      },
+      {
+        "name": "superset",
+        "description": "Superset Client",
+        "enabled": true,
+        "clientId": "superset",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:superset)",
+        "redirectUris": [
+          "https://superset.$(env:server_hostname)/oauth-authorized/keycloak",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+        ],
+        "webOrigins": [
+          "https://superset.$(env:server_hostname)"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
+        ]
+      },
+      {
+        "name": "minio",
+        "description": "Minio Client",
+        "enabled": true,
+        "clientId": "minio",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:minio)",
+        "redirectUris": [
+          "https://minio.$(env:server_hostname)/oauth_callback",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+        ],
+        "webOrigins": [
+          "https://minio.$(env:server_hostname)"
+        ],
+        "attributes": {
+          "access.token.lifespan": "28800",
+          "client.session.idle.timeout": "28800",
+          "client.session.max.lifespan": "28800",
+          "client.offline.session.idle.timeout": "28800"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "minio-authorization",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
+        ]
+      },
+      {
+        "name": "launchpad",
+        "description": "Launchpad Client",
+        "enabled": true,
+        
+        "fullScopeAllowed": false,
+        "clientId": "launchpad",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:launchpad_client)",
+        "redirectUris": [
+          "https://$(env:server_hostname)/api/auth/callback/keycloak",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+        ],
+        "webOrigins": [
+          "https://$(env:server_hostname)"
+        ],
+        
+        "protocolMappers": [
+          {
+            "name": "scout-users-api-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "scout-users-api",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
+        ]
+      },
+      {
+        "name": "open-webui",
+        "description": "Open WebUI Client",
+        "enabled": true,
+        "clientId": "open-webui",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:open_webui)",
+        "redirectUris": [
+          "https://chat.$(env:server_hostname)/oauth/oidc/callback",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+        ],
+        "webOrigins": [
+          "https://chat.$(env:server_hostname)"
+        ],
+        
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "report-viewer-audience"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
+        ]
+      },
+      
+      {
+        "name": "superset_svc",
+        "description": "Service principal for Superset connecting to Trino (impersonates the logged-in user via X-Trino-User)",
+        "enabled": true,
+        "clientId": "superset_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:superset_svc)",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
+        ]
+      },
+      {
+        "name": "voila_svc",
+        "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User",
+        "enabled": true,
+        "clientId": "voila_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:voila_svc)",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
+        ]
+      },
+      {
+        "name": "report_viewer_svc",
+        "description": "Service principal for report-viewer impersonating the chat/iframe user via X-Trino-User",
+        "enabled": true,
+        "clientId": "report_viewer_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:report_viewer_svc)",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
+        ]
+      }{{- if eq (.Values.enableXnat | toString) "true" }},
+      {
+        "name": "xnat",
+        "description": "XNAT Client",
+        "enabled": true,
+        "clientId": "xnat",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:xnat)",
+        "redirectUris": [
+          "https://xnat.$(env:server_hostname)/openid-login",
+          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+        ],
+        "webOrigins": [
+          "https://xnat.$(env:server_hostname)"
+        ],
+        "attributes": {
+          "pkce.code.challenge.method": "S256"
+        },
+        "protocolMappers": [
+          {
+            "name": "groups",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-group-membership-mapper",
+            "consentRequired": false,
+            "config": {
+              "claim.name": "groups",
+              "full.path": "false",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true"
+            }
+          }
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access"
+        ]
+      }{{- end }}
+    ],
+    "identityProviders": [
+        {{- if eq (.Values.github.enabled | toString) "true" }}
+        {
+          "alias": "github",
+          "providerId": "github",
+          "displayName": "GitHub",
+          "enabled": true,
+          "trustEmail": true,
+          "config": {
+            "clientId": "$(env:github_client_id)",
+            "clientSecret": "$(env:github_client_secret)"
+          }
+        }
+        {{- end }}
+        {{- if eq (.Values.microsoft.enabled | toString) "true" }}
+        {{- if eq (.Values.github.enabled | toString) "true" }},{{- end }}
+        {
+          "alias": "microsoft",
+          "providerId": "microsoft",
+          "displayName": "Microsoft",
+          "enabled": true,
+          "trustEmail": true,
+          "config": {
+            "clientId": "$(env:microsoft_client_id)",
+            "clientSecret": "$(env:microsoft_client_secret)",
+            "tenantId": "$(env:microsoft_tenant_id)"
+          }
+        }
+        {{- end }}
+    ],
+    "authenticationFlows": [
+      {
+        "alias": "browser",
+        "description": "Browser based authentication",
+        "providerId": "basic-flow",
+        "topLevel": true,
+        "builtIn": true,
+        "authenticationExecutions": [
+          {
+            "authenticator": "auth-cookie",
+            "authenticatorFlow": false,
+            "requirement": "ALTERNATIVE",
+            "priority": 10,
+            "autheticatorFlow": false,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticator": "auth-spnego",
+            "authenticatorFlow": false,
+            "requirement": "DISABLED",
+            "priority": 20,
+            "autheticatorFlow": false,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorConfig": "default-provider",
+            "authenticator": "identity-provider-redirector",
+            "authenticatorFlow": false,
+            "requirement": "ALTERNATIVE",
+            "priority": 25,
+            "autheticatorFlow": false,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorFlow": true,
+            "requirement": "ALTERNATIVE",
+            "priority": 26,
+            "autheticatorFlow": true,
+            "flowAlias": "Organization",
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorFlow": true,
+            "requirement": "ALTERNATIVE",
+            "priority": 30,
+            "autheticatorFlow": true,
+            "flowAlias": "forms",
+            "userSetupAllowed": false
+          }
+        ]
+      }
+    ],
+    {{- $idps := list }}
+    {{- if eq (.Values.github.enabled | toString) "true" }}{{- $idps = append $idps "github" }}{{- end }}
+    {{- if eq (.Values.microsoft.enabled | toString) "true" }}{{- $idps = append $idps "microsoft" }}{{- end }}
+    {{- if not (has .Values.defaultProvider $idps) }}{{- fail (printf "keycloak realm: defaultProvider %q is not an enabled IdP (github.enabled=%v microsoft.enabled=%v)" .Values.defaultProvider .Values.github.enabled .Values.microsoft.enabled) }}{{- end }}
+    "authenticatorConfig": [
+      {
+        "alias": "default-provider",
+        "config": {
+          "defaultProvider": "{{ .Values.defaultProvider }}"
+        }
+      }
+    ],
+    
+    "userProfile": {
+      "attributes": [
+        {
+          "name": "username",
+          "displayName": "${username}",
+          "validations": {
+            "length": {"min": 3, "max": 255},
+            "username-prohibited-characters": {},
+            "up-username-not-idn-homograph": {}
+          },
+          "permissions": {
+            "view": ["admin", "user"],
+            "edit": ["admin", "user"]
+          },
+          "multivalued": false
+        },
+        {
+          "name": "email",
+          "displayName": "${email}",
+          "validations": {
+            "email": {},
+            "length": {"max": 255}
+          },
+          "required": {
+            "roles": ["user"]
+          },
+          "permissions": {
+            "view": ["admin", "user"],
+            "edit": ["admin", "user"]
+          },
+          "multivalued": false
+        },
+        {
+          "name": "firstName",
+          "displayName": "${firstName}",
+          "validations": {
+            "length": {"max": 255},
+            "person-name-prohibited-characters": {}
+          },
+          "permissions": {
+            "view": ["admin", "user"],
+            "edit": ["admin", "user"]
+          },
+          "multivalued": false
+        },
+        {
+          "name": "lastName",
+          "displayName": "${lastName}",
+          "validations": {
+            "length": {"max": 255},
+            "person-name-prohibited-characters": {}
+          },
+          "permissions": {
+            "view": ["admin", "user"],
+            "edit": ["admin", "user"]
+          },
+          "multivalued": false
+        },
+        {
+          "name": "scout_terms_hash_accepted",
+          "displayName": "Scout Terms of Use — accepted hash",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false
+        },
+        {
+          "name": "scout_terms_accepted_at",
+          "displayName": "Scout Terms of Use — accepted at (epoch seconds)",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false
+        },
+        {
+          "name": "scout_admin_approval_email_sent_at",
+          "displayName": "Scout admin approval email — sent at (epoch millis)",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false
+        },
+        
+{{- range $attr_name, $attr_config := .Values.trinoAttributeFilters }}
+        {
+          "name": "{{ $attr_name }}",
+          "displayName": "{{ $attr_config.display_name | default (printf "Scout AuthZ — %s" $attr_name) }}",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": true,
+          
+          "annotations": {
+            "scoutAuthz": "true",
+            "inputType": "{{- if hasKey $attr_config "options" }}multiselect{{- else }}text{{- end }}"
+          },
+          "validations": {
+            "length": {"max": {{ $attr_config.max_length | default 64 }}},
+{{- if hasKey $attr_config "options" }}
+            "options": {"options": {{ $attr_config.options | toJson }}}
+{{- else }}
+            "pattern": {
+              "pattern": "{{ $attr_config.value_pattern | default "^([A-Za-z0-9 _-]+|\\\\*)$" }}",
+              "error-message": "{{ $attr_config.value_pattern_error | default "Use a code (letters, digits, spaces, hyphen, underscore) or the * wildcard for all values." }}"
+            }
+{{- end }}
+          }
+        },
+{{- end }}
+        {
+          "name": "redact_select_identifiers",
+          "displayName": "Scout AuthZ — redact select identifier columns",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false,
+          "annotations": {
+            "scoutAuthz": "true",
+            "inputType": "select",
+            "scoutDefault": "false"
+          },
+          "validations": {
+            "options": {
+              "options": ["true", "false"]
+            }
+          }
+        },
+        
+        {
+          "name": "bypass_hidden_tables",
+          "displayName": "Scout AuthZ — bypass view-only table restrictions",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false,
+          "annotations": {
+            "scoutAuthz": "true",
+            "inputType": "select",
+            "scoutDefault": "false"
+          },
+          "validations": {
+            "options": {
+              "options": ["true", "false"]
+            }
+          }
+        }
+      ],
+      "groups": [
+        {
+          "name": "user-metadata",
+          "displayHeader": "User metadata",
+          "displayDescription": "Attributes, which refer to user metadata"
+        },
+        {
+          "name": "scout",
+          "displayHeader": "Scout"
+        }
+      ]
+    },
+    
+    "clientScopeMappings": {
+      "launchpad": [
+        {
+          "client": "launchpad",
+          "roles": ["launchpad-admin", "launchpad-user"]
+        }
+      ]
+    },
+    "requiredActions": [
+      {
+        "alias": "SCOUT_TERMS",
+        "name": "Accept Scout Terms of Use",
+        "providerId": "SCOUT_TERMS",
+        "enabled": true,
+        "defaultAction": false,
+        "priority": 10,
+        "config": {}
+      }
+    ],
+    "clientScopes": [
+      {
+        "name": "minio-authorization",
+        "description": "Minio Authorization Scope",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "true",
+          "display.on.consent.screen": "true"
+        },
+        "protocolMappers": [
+          {
+            "name": "minio-policy-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "consentRequired": false,
+            "config": {
+              "aggregate.attrs": "true",
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "policy",
+              "id.token.claim": "true",
+              "lightweight.claim": "false",
+              "access.token.claim": "true",
+              "claim.name": "policy",
+              "jsonType.label": "String"
+            }
+          }
+        ]
+      },
+      
+      {
+        "name": "trino-audience",
+        "description": "Adds aud=trino to access tokens for clients calling Trino",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "trino-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "trino",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
+        ]
+      },
+      
+      {
+        "name": "report-viewer-audience",
+        "description": "Adds aud=report-viewer to access tokens for clients calling report-viewer",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "report-viewer-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "report-viewer",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
+        ]
+      },
+      {
+        "name": "microprofile-jwt",
+        "description": "Microprofile - JWT built-in scope",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "true",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "client roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "foo",
+              "lightweight.claim": "false",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "groups",
+              "jsonType.label": "String"
+            }
+          },
+          {
+            "name": "upn",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "username",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "upn",
+              "jsonType.label": "String"
+            }
+          },
+          {
+            "name": "groups",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-realm-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "user.attribute": "foo",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "groups",
+              "jsonType.label": "String"
+            }
+          }
+        ]
+      }
+    ]
+  }

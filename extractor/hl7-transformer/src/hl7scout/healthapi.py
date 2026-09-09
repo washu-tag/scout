@@ -53,7 +53,11 @@ def unhealthy_json_response(
     )
 
 
-async def start_health_check_server():
+def health_check_server() -> uvicorn.Server:
+    """Build (but do not start) the health check server.
+
+    The caller runs it with ``await server.serve()``, which returns only once
+    ``server.should_exit`` is set.
+    """
     config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="warning")
-    server = uvicorn.Server(config)
-    await server.serve()
+    return uvicorn.Server(config)

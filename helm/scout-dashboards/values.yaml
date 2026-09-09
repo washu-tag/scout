@@ -33,6 +33,12 @@ supersetRelease:
 # (created by the apache/superset chart's init Job).
 importUser: admin
 
+# Trino schema to grant Superset's Gamma role read/browse access to (issue
+# #687). Gamma has no datasource access by default, so this backfills the
+# access regular (Gamma) users need to see the bundled dashboards/datasets
+# above, all of which live in this one schema. Empty disables the grant.
+gammaSchemaAccess: default
+
 # Built-in dashboard bundles to install. Each name corresponds to a
 # subdirectory under files/analytics/{charts,dashboards,datasets/Scout_Data_Lake}/.
 # Available built-ins: core, quality, followup, patients.

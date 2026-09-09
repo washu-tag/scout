@@ -12,6 +12,16 @@ until CI switches `deploy-and-test` to deploy from it. See
   so a CR never dry-runs before its CRD exists.
 - `flux/<component>.yaml` — the Flux `Kustomization` CRs pointing at the bases and
   wiring the DAG (`dependsOn` + CEL `healthChecks`), reproducing the Ansible order.
+- `base/edge-{on-prem,aws}/` + `base/storage-ready/` — per-mode resources (ADR 0035):
+  the ingress/auth edge (on-prem Traefik forwardAuth Middlewares vs aws ALB-native-OIDC
+  Ingresses) and the inert aws storage marker. Wired by `modes/{on-prem,aws}/`, not the
+  shared DAG.
+- `modes/{on-prem,aws}/` — the per-mode Flux set, a sibling of `flux/` (not nested under
+  it, so `flux/` has no subdir to recurse into): the `storage-ready` gate (inert in aws;
+  the real MinIO tenant on-prem), the ingress edge, and on-prem MinIO + oauth2-proxy.
+  `flux/` holds only the shared set, so a site reconciles it plus exactly one mode via a
+  Kustomization pointing at `./modes/${service_mode}`. The lake consumers dependsOn the
+  mode-agnostic `storage-ready` name, supplied by whichever mode the site selects.
 
 ## Conventions
 - **Site scalars are `${var}` postBuild substitutions** from a `cluster-vars`
@@ -22,13 +32,25 @@ until CI switches `deploy-and-test` to deploy from it. See
   publish (placeholder in git, concrete only in the published artifact). Upstream
   chart versions are pinned in `versions.yaml` + Renovate-tracked.
 - **Secrets by fixed name only** — bases reference them (e.g. `superuser-secret`);
-  values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git.
+  values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git. The
+  full contract (names, keys, per-mode materialization) is in `required-secrets.md`.
+- **Service-mode (`aws` vs `on-prem`, ADR 0035) picks a mechanism by the shape of the
+  delta**, so the three-way split is one rule, not ad hoc:
+  1. *scalar diff* → an inline `${var}` the chart branches on (e.g. hive
+     `S3_PATH_STYLE_ACCESS`, the extractor `sparkDefaults.mode`).
+  2. *list-membership / block diff a scalar can't express* (envFrom entries, catalog
+     lines, an aws-only ServiceAccount) → a per-mode `valuesFrom` edge ConfigMap named
+     `<workload>-edge-${service_mode}` (trino, extractor, opa, superset).
+  3. *a whole resource present in one mode only, or a CRD the other mode lacks*
+     (MinIO, the Traefik Middlewares, oauth2-proxy, the ALB Ingresses) → the mode
+     set `modes/{aws,on-prem}/`, since `${var}` can't add/drop a document and a flux
+     path isn't substituted.
 
 ## Status
-**Bases + DAG done for the ingest slice + the auth/analytics layer** (22 Flux
-`Kustomization`s, acyclic): postgres, minio, cassandra, elasticsearch, hive,
-temporal, extractor, valkey, keycloak (+ realm), oauth2-proxy, opa, trino (ro+rw),
-superset (+ dashboards).
+**Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared
+`Kustomization` DAG plus one per-mode set, acyclic): postgres, minio, hive, temporal
+(on Postgres), extractor, valkey, keycloak (+ realm), oauth2-proxy, opa, trino
+(ro+rw), superset (+ dashboards).
 
 Remaining components: jupyter, report-viewer, monitoring, launchpad, and the
 feature Components (chat/voila/xnat/data-generator/gpu).

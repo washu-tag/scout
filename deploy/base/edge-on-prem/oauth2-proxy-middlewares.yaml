@@ -1,0 +1,32 @@
+# oauth2-proxy Traefik forwardAuth Middlewares (moved here from base/oauth2-proxy so
+# the shared base applies on aws, which has no Traefik CRDs). ADR 0035 on-prem edge.
+---
+# forwardAuth gate. authResponseHeaders copies preferred-username upstream
+# (Voila -> X-Trino-User, ADR 0022).
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: oauth2-proxy-auth
+  namespace: '${oauth2_proxy_namespace}'
+spec:
+  forwardAuth:
+    address: 'https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/auth'
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-Preferred-Username
+---
+# 401 -> sign-in redirect. {url} is a Traefik placeholder (single braces),
+# untouched by Flux ${...} substitution.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: oauth2-proxy-error
+  namespace: '${oauth2_proxy_namespace}'
+spec:
+  errors:
+    status:
+      - '401'
+    service:
+      name: oauth2-proxy
+      port: 80
+    query: '/oauth2/sign_in?rd={url}'

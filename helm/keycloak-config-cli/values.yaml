@@ -38,6 +38,48 @@ env:
   KEYCLOAK_USER: admin
   IMPORT_PATH: /config/
 
+# Pulled into the Job env in bulk (e.g. a client-secrets Secret whose keys are the
+# $(env:...) names the realm var-substitutes).
+envFrom: []
+
+# --- Scout realm config (consumed by files/scout-realm.json) ---
+# Values arrive as strings via Flux cluster-vars, so the realm gates on eq "true".
+# Provision the XNAT client, role, and group binding.
+enableXnat: 'false'
+# Identity providers (creds come via envFrom; see required-secrets.md). The browser
+# flow redirects to defaultProvider.
+github:
+  enabled: 'true'
+microsoft:
+  enabled: 'false'
+defaultProvider: github
+# Comma-separated full ALB-OIDC hostnames the oauth2-proxy client accepts
+# /oauth2/idpresponse from (AWS sites, e.g. superset.<domain>). On-prem uses the
+# oauth2-proxy callback the realm builds from server_hostname, so this can stay empty.
+albOidcHosts: ''
+# Realm SMTP (dev default is mailhog; a real site overrides host + from).
+smtp:
+  host: mailhog-service.mailhog
+  port: '1025'
+  from: example@example.com
+  fromDisplayName: Scout
+  replyTo: ''
+  replyToDisplayName: ''
+  envelopeFrom: ''
+  auth: ''
+  ssl: 'false'
+  starttls: 'false'
+  debug: 'false'
+# Terms-of-use localization overrides (realm messageBundles.en).
+termsLocalizations: {}
+# Trino AuthZ user-profile attributes (OPA data-access dimensions). The realm reads
+# display_name/options/max_length/value_pattern per attribute; column is the OPA
+# side of the same map (unused here). options set per site turns an attribute into a
+# validated pick-list.
+trinoAttributeFilters:
+  allowed_facilities:
+    column: sending_facility
+
 secrets: {}
 #  KEYCLOAK_PASSWORD:
 

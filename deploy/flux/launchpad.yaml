@@ -1,0 +1,26 @@
+# Flux Kustomization for launchpad (Phase 3 DAG). config artifact (OCIRepository
+# scout-config) + cluster-vars ${...} subst; dependsOn reproduces Ansible order.
+# oauth2-proxy is intentionally NOT a dependsOn: it is mode-specific (on-prem only),
+# so depending on it would leave this Kustomization unresolved in aws mode.
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: launchpad
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/launchpad
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-core-foundation
+    - name: keycloak-realm

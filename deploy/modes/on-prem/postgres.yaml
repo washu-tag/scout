@@ -1,0 +1,58 @@
+# on-prem postgres: self-hosted CNPG (ADR 0036). Operator (L1) then the Cluster as the
+# mode-agnostic `postgres-ready` gate (L2a), split so the Cluster never reconciles before
+# the CNPG CRDs exist. aws provides postgres-ready as an inert marker (managed RDS) instead
+# (../aws). DB consumers dependsOn postgres-ready in both modes.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: postgres-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/postgres/operator
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-operators-foundation
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: postgres-ready
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/postgres/cluster
+  prune: true
+  wait: true
+  timeout: 10m
+  dependsOn:
+    - name: scout-core-foundation
+    - name: postgres-operator
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  # `current` only, no `failed`: CNPG reports Ready=False during NORMAL transients (cold
+  # initdb, single-instance restart, owner-role-before-Database race); a `failed` expr would
+  # fail-fast and block dependents for the full interval. Let the 10m timeout be the only
+  # failure path. Gate on Databases too (status.applied) so a dependent never runs before
+  # its DB/owner role exists.
+  healthCheckExprs:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      current: status.conditions.exists(e, e.type == 'Ready' && e.status == 'True')
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Database
+      current: has(status.applied) && status.applied == true

@@ -173,9 +173,17 @@ auth:
     enabled: true
     clientId: 'launchpad-client'
     clientSecret: 'changeme'
+    # When set, the chart skips creating the keycloak Secret and reads the OIDC
+    # client secret from this existing Secret instead (GitOps: seeded by ESO).
+    existingSecret: ''
+    existingSecretKey: client-secret
     issuer: 'https://keycloak.example.com/auth/realms/scout'
   nextAuthUrl: 'https://launchpad.example.com'
   nextAuthSecret: 'changeme'
+  # When set, the chart skips creating the next-auth Secret and reads it from
+  # this existing Secret instead.
+  existingNextAuthSecret: ''
+  existingNextAuthSecretKey: secret
   # next-auth session lifetime (seconds). Must match the Keycloak SSO session
   # lifetime so the cookie can't outlive the refresh token it carries (8h).
   sessionMaxAge: 28800

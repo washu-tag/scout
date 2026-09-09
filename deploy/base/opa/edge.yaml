@@ -1,0 +1,77 @@
+# Per-mode OPA bundle store via valuesFrom (ADR 0035): on-prem = in-cluster MinIO +
+# opa-bundle-reader Secret; aws = S3 via an IRSA SA (no MinIO, no Secret). Both ship;
+# service_mode picks one. (OPA's bundle plugin needs an explicit service URL.)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-edge-on-prem
+  namespace: '${scout_analytics_namespace}'
+data:
+  values.yaml: |
+    bundleReader:
+      secretName: opa-bundle-reader
+    config:
+      yaml: |
+        services:
+          bundle-store:
+            # Same endpoint the Keycloak writer uses (opa_bundle_s3_endpoint) so
+            # reader + writer can't drift; on-prem = the in-cluster MinIO -hl service.
+            url: ${opa_bundle_s3_endpoint}
+            credentials:
+              s3_signing:
+                environment_credentials: {}
+        bundles:
+          scout-users:
+            service: bundle-store
+            resource: ${opa_bundles_bucket}/${opa_bundle_object_key}
+            polling:
+              min_delay_seconds: 5
+              max_delay_seconds: 10
+            persist: true
+        decision_logs:
+          console: true
+          reporting:
+            min_delay_seconds: 5
+            max_delay_seconds: 15
+        status:
+          console: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-edge-aws
+  namespace: '${scout_analytics_namespace}'
+data:
+  # IRSA reader SA -> web-identity; bundleReader.secretName empty -> no static Secret.
+  values.yaml: |
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: '${irsa_role_prefix}-opa-bundle-reader'
+    bundleReader:
+      secretName: ''
+    config:
+      yaml: |
+        services:
+          bundle-store:
+            # Virtual-host S3 URL (matches the SDK-default writer); resource = object key.
+            url: https://${opa_bundles_bucket}.s3.${s3_region}.amazonaws.com
+            credentials:
+              s3_signing:
+                web_identity_credentials:
+                  aws_region: ${s3_region}
+        bundles:
+          scout-users:
+            service: bundle-store
+            resource: ${opa_bundle_object_key}
+            polling:
+              min_delay_seconds: 5
+              max_delay_seconds: 10
+            persist: true
+        decision_logs:
+          console: true
+          reporting:
+            min_delay_seconds: 5
+            max_delay_seconds: 15
+        status:
+          console: true

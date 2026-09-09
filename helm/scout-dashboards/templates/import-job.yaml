@@ -38,6 +38,8 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.supersetRelease.valkeyAuthSecret }}
                   key: REDIS_PASSWORD
+            - name: GAMMA_SCHEMA_ACCESS_SCHEMA
+              value: {{ .Values.gammaSchemaAccess | quote }}
           command:
             - /bin/sh
             - -c

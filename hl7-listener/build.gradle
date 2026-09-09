@@ -17,7 +17,7 @@ repositories {
 	mavenCentral()
 }
 
-def camelVersion = '4.18.2'
+def camelVersion = '4.18.3'
 def hapiVersion = '2.5.1'
 
 // camel-spring-boot-dependencies is the harmonized BOM that reconciles the Camel and
@@ -79,7 +79,8 @@ configurations.all {
 			details.useVersion '2.21.4' // CVE-2026-54512/-54513 (jackson-annotations has no 2.21.4 release)
 			details.because 'Trivy HIGH'
 		} else if (g == 'org.apache.tomcat.embed') {
-			details.useVersion '10.1.55' // CVE-2026-41293/-43512/-43515 (CRITICAL) + -34483/-41284/-42498/-43513
+			details.useVersion '10.1.59' // CVE-2026-65182/-65905/-68525 (CRITICAL); supersedes the 10.1.55 pin.
+			// Trivy names 10.1.58 as the fix, but Tomcat never published it (10.1.57 -> 10.1.59), so 10.1.59 is the first available build carrying it.
 			details.because 'Trivy CRITICAL/HIGH'
 		} else if (g == 'io.micrometer' && n.startsWith('micrometer') && !n.startsWith('micrometer-tracing')) {
 			details.useVersion '1.15.12' // CVE-2026-40983/-40984 (micrometer-core); bump the 1.15.x core modules in lockstep

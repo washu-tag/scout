@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -29,7 +29,9 @@ import { useChatPrompt } from '../ChatPrompt';
 import { RowDetail } from './searchDetail/RowDetail';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
+import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
+import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, paginationBtn } from './searchDetail/styles';
 
 const COLUMNS_CONFIG: Array<{
@@ -150,6 +152,27 @@ export default function SearchDetailPage() {
     }
     return Array.from(set).sort();
   }, [rowsQ.data]);
+
+  // The profile row sticks below the header, so it needs the header's actual
+  // rendered height. A callback ref, not an effect, since the table only
+  // renders once rows arrive and an effect keyed on mount would find no
+  // header yet. Floored so a fractional height rounds down to a slight
+  // overlap rather than up to a visible gap.
+  const [headerHeight, setHeaderHeight] = useState(28);
+  const headerObserver = useRef<ResizeObserver | null>(null);
+  const headerRowRef = useCallback((el: HTMLTableRowElement | null) => {
+    headerObserver.current?.disconnect();
+    if (!el) return;
+    const measure = () => setHeaderHeight(Math.floor(el.getBoundingClientRect().height));
+    measure();
+    headerObserver.current = new ResizeObserver(measure);
+    headerObserver.current.observe(el);
+  }, []);
+
+  const dateFields = useMemo(
+    () => new Set(COLUMNS_CONFIG.filter((c) => c.kind === 'date').map((c) => c.field)),
+    [],
+  );
 
   const columns = useMemo(
     () =>
@@ -287,8 +310,8 @@ export default function SearchDetailPage() {
                 }}
               >
                 <thead>
-                  {table.getHeaderGroups().map((hg) => (
-                    <tr key={hg.id}>
+                  {table.getHeaderGroups().map((hg, hgIndex) => (
+                    <tr key={hg.id} ref={hgIndex === 0 ? headerRowRef : undefined}>
                       {hg.headers.map((header) => {
                         const colMeta = header.column.columnDef.meta as
                           | { align?: 'right' | 'center' }
@@ -344,6 +367,12 @@ export default function SearchDetailPage() {
                       })}
                     </tr>
                   ))}
+                  <ColumnProfileRow
+                    columns={table.getVisibleLeafColumns()}
+                    rows={data}
+                    dateFields={dateFields}
+                    stickyTop={headerHeight}
+                  />
                 </thead>
                 <tbody>
                   {table.getRowModel().rows.map((row) => {
@@ -648,41 +677,5 @@ export default function SearchDetailPage() {
         />
       )}
     </div>
-  );
-}
-
-function ExpandIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width="13"
-      height="13"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 6V3h3M10 3h3v3M13 10v3h-3M6 13H3v-3" />
-    </svg>
-  );
-}
-
-function ContractIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width="13"
-      height="13"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 3v3H3M13 6h-3V3M10 13v-3h3M3 10h3v3" />
-    </svg>
   );
 }

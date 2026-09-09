@@ -74,6 +74,26 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
+# 10s x 60 retries = 600s = 10 minutes for startup
+# hive image's startup script can wait 300s for postgres db to start before trying schema setup,
+#  so 600s should give us headroom
+startupProbe:
+  tcpSocket:
+    port: http
+  periodSeconds: 10
+  failureThreshold: 60
+
+readinessProbe:
+  tcpSocket:
+    port: http
+  periodSeconds: 5
+
+livenessProbe:
+  tcpSocket:
+    port: http
+  periodSeconds: 10
+  failureThreshold: 3
+
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
   enabled: false

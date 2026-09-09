@@ -57,10 +57,12 @@ Scout Chat is powered by [Open WebUI](https://docs.openwebui.com/) with [Ollama]
 When you ask a question, Scout Chat:
 
 1. **Interprets** your question in its "Thinking" mode
-2. **Calls a tool** to fetch data. Three tools are available:
+2. **Calls a tool** to fetch data. Five tools are available:
    - `scout_find_reports` for cohort building.
    - `scout_get_reports` for looking up specific reports.
    - `scout_query_sql` for aggregate analytics like counts, distributions, and groupings.
+   - `scout_chart_sql` for turning an aggregate query into a chart.
+   - `scout_get_chart_data` for analyzing a chart with the AI.
 3. **Analyzes** the returned data and provides a natural language answer
 
 A cohort search (`scout_find_reports`) renders the report viewer, an interactive table above the reply. Aggregate questions are answered in the reply itself, without the viewer.
@@ -71,7 +73,7 @@ The report viewer fetches the whole cohort each time you open a chat, which can 
 
 ![Report viewer embedded in chat](../images/ScoutReportViewer.png)
 
-Click a column header to sort. The bottom toolbar handles paging, column visibility, filtering and other options.
+Click a column header to sort. Under each header is a one-line summary of that column across the whole result set, a histogram for ages and dates, a bar for categories like modality, and a pie chart for sex. The bottom toolbar handles paging, column visibility, filtering and other options.
 
 - **Explain Search** shows what the search matched, which table it read, and the SQL.
 - **Download CSV** exports your current filters, sort order, and visible columns, not the whole original search.
@@ -79,7 +81,7 @@ Click a column header to sort. The bottom toolbar handles paging, column visibil
 
 ### Filtering and Refining
 
-There are two ways to narrow a cohort. **Filters** hides rows from the set already loaded, and clearing them brings the rows back. Going through chat instead produces fresh SQL and a **new** saved search, leaving the original intact to compare or return to.
+There are two ways to narrow a cohort. **Filters** hides rows from the set already loaded, and clearing them brings the rows back. The column summaries update to match whatever's currently visible. Going through chat instead produces fresh SQL and a **new** saved search, leaving the original intact to compare or return to.
 
 The filter dialog offers age and date ranges, sex, the modalities present in your results, and contains-matches on service, Epic MRN, Patient MPI, accession, and facility. Only fields your search returned appear.
 
@@ -113,6 +115,30 @@ This is useful for:
 - Learning SQL syntax for use in {ref}`Analytics <analytics>` SQL Lab
 - Debugging unexpected results
 - Adapting queries for {ref}`Notebooks <notebooks>`
+
+### Creating Charts
+
+Ask for a chart in plain language, for example:
+
+```
+Chart report volume by month for 2024
+Show me a bar chart of the top 10 diagnosis codes
+Plot the age distribution for this cohort
+```
+
+The AI writes the SQL and a Vega-Lite chart, which renders inline in the reply. Like a 
+cohort search, the chart re-runs its query each time you open it, so it reflects current 
+data rather than a snapshot from when it was created.
+
+![Chart rendered in chat](../images/ScoutChatCharting.png)
+
+- **Explain Search** shows the SQL and explanation behind the chart, same as for a
+  cohort table.
+- **Discuss in Chat** pulls the chart's underlying data back into the conversation so
+  you can ask follow-up questions about it.
+- Depending on the chart type, you can hover for tooltips, click a legend entry to
+  isolate a series, and drag or scroll to pan and zoom. 
+- The "..." menu in the corner of the chart lets you export it as an image.
 
 ## Tips for Effective Queries
 
@@ -183,7 +209,8 @@ Scout Chat includes security protections that block external content. If the AI 
 LLM responses may contain links to third-party services. These links could potentially contain sensitive data from your query embedded in the URL. If you see a broken image or an external link, do not click it.
 ```
 
-For visualizations, copy the data to {ref}`Analytics <analytics>` and build charts there.
+For more advanced visualizations, copy the data to {ref}`Analytics <analytics>` and
+build charts there.
 
 ## Chat Sharing
 

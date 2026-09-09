@@ -1,0 +1,69 @@
+# Launchpad (Scout home/nav UI, ADR 0030/0031): scout-owned OCI chart as a
+# Deployment + Service in ${scout_core_namespace} (owned by scout-core-foundation,
+# dependsOn, not declared here). Root-host app: the ingress lands on
+# ${server_hostname}.
+#
+# Secrets never in git. The chart's existingSecret hooks point at two fixed-name
+# Secrets seeded by CI/site (Phase 3) or ESO (Phase 4):
+#   launchpad-keycloak-secret  key `client-secret` (OIDC client secret)
+#   launchpad-nextauth-secret  key `secret`        (next-auth cookie secret)
+#
+# Ingress is mode-selected (ADR 0035) via the launchpad-edge-${service_mode}
+# ConfigMap (edge.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: scout-charts
+  namespace: '${scout_core_namespace}'
+spec:
+  interval: 1h
+  type: oci
+  url: oci://ghcr.io/washu-tag/charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  # Release name `launchpad` = the Service name the edge-aws Ingress backends to.
+  name: launchpad
+  namespace: '${scout_core_namespace}'
+spec:
+  interval: 30m
+  # Scout-owned OCI chart; GitOps lane owns the real version via OCIRepository
+  # (ADR 0030/0031). Literal 0.0.0 placeholder until the stamping job lands.
+  chart:
+    spec:
+      chart: launchpad
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${scout_core_namespace}'
+  # Ingress differs by mode (ADR 0035): service_mode selects the on-prem/aws edge.
+  valuesFrom:
+    - kind: ConfigMap
+      name: 'launchpad-edge-${service_mode}'
+  values:
+    # catalog-discovery sidecar: upstream image, literal mirror of versions.yaml
+    # (launchpad_sidecar_image_tag, Renovate-tracked); the Scout image tag defaults
+    # to the chart's stamped appVersion (ADR 0030), so it is not pinned here.
+    catalog:
+      discovery:
+        enabled: true
+        image:
+          repository: quay.io/kiwigrid/k8s-sidecar
+          tag: '2.10.1'
+    scoutEnv: '${scout_env}'
+    deployerName: '${deployer_name}'
+    docsUrl: '${scout_docs_url}'
+    auth:
+      keycloak:
+        enabled: true
+        clientId: '${keycloak_launchpad_client_id}'
+        existingSecret: launchpad-keycloak-secret
+        issuer: '${keycloak_realm_url}'
+      nextAuthUrl: 'https://${server_hostname}/api/auth'
+      existingNextAuthSecret: launchpad-nextauth-secret
+      # 8h SSO lifetime: the next-auth cookie can't outlive the refresh token it carries.
+      sessionMaxAge: 28800
+      # oauth2ProxySignOutUrl is on-prem only (oauth2-proxy has no aws counterpart);
+      # it is set in the launchpad-edge-on-prem ConfigMap (edge.yaml).

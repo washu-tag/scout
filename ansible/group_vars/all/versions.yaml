@@ -2,7 +2,7 @@
 # Renovate-monitored (see renovate.json5); pinned exactly for provenance.
 
 # renovate: datasource=github-releases depName=k3s-io/k3s
-k3s_version: v1.36.2+k3s1
+k3s_version: v1.36.3+k3s1
 
 # Helm 3.x until Helm 4's plugin ecosystem matures (helm-diff compat).
 # renovate: datasource=github-releases depName=helm/helm
@@ -63,7 +63,7 @@ temporal_admin_tools_image_tag: 1.31.0
 strimzi_operator_version: 1.1.0
 # Kafka broker version deployed by Strimzi; must be in the operator's supported set.
 # renovate: datasource=docker depName=apache/kafka
-kafka_version: 4.3.1
+kafka_version: 4.3.0
 
 # Analytics & Query Engines - Trino
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino

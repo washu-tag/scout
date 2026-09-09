@@ -113,11 +113,11 @@ Stage 4: to summarize what we know about each report we're left with in this sta
 * Every report in the incoming batch must have a partial ID match to another report, either in the batch or already in the mapping table
 * Every report in the incoming batch has both a non-null `mpi` and `epic_mrn`
 
-At this point we do a recursive search to find all linked reports, row by row. The expectation is that this will not be particularly fast, but that we have already
-narrowed down the scope of the reports to process such that there will not be a significant time problem. For each report left, we do the following:
-1. Search both the remaining reports and mapping table by `mpi` and `epic_mrn` to find the partial matches.
-2. For each of the partial matches, perform the same search if any new `mpi` or `epic_mrn` values are uncovered.
-3. Recurse as far as necessary to build the full patient "web".
+At this point we find, for each remaining report, the full set of linked reports — its patient "web". Every report is an edge joining an `mpi` vertex to an `epic_mrn`
+vertex, so a web is a connected component of that graph, and we build them in two steps:
+1. Close over the mapping table in Spark. Seed a frontier with the distinct `mpi` and `epic_mrn` values of the remaining reports, fetch every mapping row carrying one
+of them, add any newly revealed identifier to the frontier, and repeat until the frontier stops growing. Real webs are shallow, so this settles in a couple of rounds.
+2. Group the remaining reports and the fetched mapping rows into connected components with union-find, in Python.
 
 With this bolus of report mappings, if there is still only a single non-null value for `mpi` and a single non-null value for `epic_mrn`, the data is all still
 consistent. In this case, we will overwrite all values for `scout_patient_id` with the first value already in the mapping table (or create one if none), and _copy_ any such

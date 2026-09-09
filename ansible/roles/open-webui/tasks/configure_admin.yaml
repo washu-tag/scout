@@ -4,7 +4,8 @@
 #   1. Migrates the bootstrap user's bcrypt hash to match the derived password.
 #   2. Mints an admin JWT via /signin or (on fresh DB) /signup.
 #   3. Re-pushes env-var-seeded PersistentConfig (tool servers, RAG template,
-#      DEFAULT_MODELS, TASK_MODEL) — OWUI is seed-only for these otherwise.
+#      DEFAULT_MODELS, TASK_MODEL, JWT expiry) — OWUI is seed-only for these
+#      otherwise.
 #   4. Creates/updates filter functions + sets valves + toggles global/active.
 #   5. Creates/updates custom Scout Explorer models + hide-base overrides.
 #
@@ -63,6 +64,7 @@
         tool_server_connections: '{{ tool_server_connections | default([]) }}'
         default_model_id: '{{ open_webui_default_model_id | default("") }}'
         task_model_id: '{{ open_webui_task_model_id | default("") }}'
+        jwt_expires_in: '{{ keycloak_token_lifespan }}s'
       filterFunctions: '{{ open_webui_filter_functions | default([]) }}'
       eventFunctions: '{{ open_webui_event_functions | default([]) }}'
       toolFunctions: '{{ open_webui_tool_functions | default([]) }}'

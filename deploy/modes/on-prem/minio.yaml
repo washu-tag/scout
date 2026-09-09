@@ -1,0 +1,45 @@
+# on-prem MinIO. operator split from tenant so a CR never dry-runs before its CRDs
+# (the CRD-ordering deadlock). The tenant is named `storage-ready` -- the gate the
+# lake consumers dependsOn -- so on-prem they wait for buckets (wait:true); aws inert.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: minio-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/minio/operator
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-operators-foundation
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: storage-ready
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/minio/tenant
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-data-foundation
+    - name: minio-operator

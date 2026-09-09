@@ -35,10 +35,6 @@ RED_ERROR = "#F44336"
 TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
 TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
 
-# Export directory
-EXPORT_DIR = "/home/jovyan/rads_exports"
-os.makedirs(EXPORT_DIR, exist_ok=True)
-
 # RADS score categories
 LIRADS_SCORES = [
     "LR-1",
@@ -344,9 +340,6 @@ def build_rads_query(config):
         conditions.append("REGEXP_LIKE(report_text, '(?is)(PI-?RADS)')")
         criteria_summary.append("Report mentions PI-RADS")
 
-    # Ensure we have patient ID
-    conditions.append("(epic_mrn IS NOT NULL OR empi_mr IS NOT NULL)")
-
     # Build WHERE clause
     where_clause = " AND ".join(conditions) if conditions else "1=1"
 
@@ -362,9 +355,10 @@ def build_rads_query(config):
     # Build full query
     sql = f"""
     SELECT DISTINCT
-        obr_3_filler_order_number,
-        epic_mrn,
-        empi_mr,
+        accession_number,
+        scout_patient_id,
+        resolved_epic_mrn AS epic_mrn,
+        resolved_mpi      AS mpi,
         patient_age,
         sex,
         race,
@@ -374,10 +368,9 @@ def build_rads_query(config):
         requested_dt,
         observation_dt,
         report_text,
-        diagnoses,
         sending_facility,
         message_dt
-    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports
+    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports_latest_epic_view
     WHERE {where_clause}
     ORDER BY message_dt DESC
     {limit_clause}
@@ -482,18 +475,22 @@ def load_rads_data(config, status_output):
 # ============================================================================
 
 
-def get_time_period_filter(period_type):
+def get_time_period_filter(period_type, anchor=None):
     """
     Get date filter for predefined time periods.
 
     Args:
         period_type: 'current_month', 'last_month', 'current_quarter',
                      'last_quarter', 'current_year', '5_years_ago'
+        anchor: the date the periods are measured from. Defaults to today. The
+                dashboard passes the newest report date instead, so that
+                "current" means the latest period the data covers — anchoring on
+                today leaves every comparison empty whenever ingestion lags.
 
     Returns:
         tuple: (start_date, end_date, label)
     """
-    today = datetime.now()
+    today = anchor if anchor is not None else datetime.now()
 
     if period_type == "current_month":
         start = today.replace(day=1)
@@ -561,13 +558,31 @@ def filter_by_date_range(df, start_date, end_date):
         start_ts = start_ts.tz_localize("UTC")
         end_ts = end_ts.tz_localize("UTC")
 
-    mask = (df["requested_dt"] >= start_ts) & (df["requested_dt"] <= end_ts)
+    # end_date names a whole day, so take everything before the next midnight.
+    # Comparing against the bare timestamp would drop the end day's reports,
+    # which for a period ending "today" is every report so far today.
+    end_ts = end_ts.normalize() + pd.Timedelta(days=1)
+
+    mask = (df["requested_dt"] >= start_ts) & (df["requested_dt"] < end_ts)
     return df[mask]
 
 
 # ============================================================================
 # STATISTICS & ANALYSIS
 # ============================================================================
+
+
+def patient_display_id(row):
+    """Label a patient for display: resolved EPIC MRN, else resolved MPI.
+
+    Grouping and counting key on scout_patient_id, which is stable for a patient
+    across HL7 versions. This is only what gets shown next to their reports, and
+    falls back to that ID for the patients who carry neither identifier.
+    """
+    for col in ("epic_mrn", "mpi"):
+        if pd.notna(row[col]):
+            return row[col]
+    return row["scout_patient_id"]
 
 
 def calculate_score_distribution(df, by_patients=False):
@@ -589,12 +604,7 @@ def calculate_score_distribution(df, by_patients=False):
     if by_patients:
         # Create patient_id column
         df_copy = df.copy()
-        df_copy["patient_id"] = df_copy.apply(
-            lambda row: (
-                row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"]
-            ),
-            axis=1,
-        )
+        df_copy["patient_id"] = df_copy["scout_patient_id"]
 
         # Explode rads_scores to count all detected scores per patient
         # Create a row for each score in the rads_scores list
@@ -688,10 +698,7 @@ def calculate_demographics_breakdown(df):
 
     # Create patient_id and get one row per patient (most recent report)
     df_copy = df.copy()
-    df_copy["patient_id"] = df_copy.apply(
-        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"],
-        axis=1,
-    )
+    df_copy["patient_id"] = df_copy["scout_patient_id"]
 
     # For demographics, we take the most recent report per patient
     # This ensures we count each patient only once
@@ -734,15 +741,11 @@ def calculate_patient_progression(df):
         return pd.DataFrame()
 
     # Group by patient
-    df_sorted = df.sort_values(["epic_mrn", "empi_mr", "requested_dt"])
+    df_sorted = df.sort_values(["scout_patient_id", "requested_dt"])
 
     # Get patients with multiple reports
-    patient_id = df_sorted.apply(
-        lambda row: row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"],
-        axis=1,
-    )
-
-    df_sorted["patient_id"] = patient_id
+    df_sorted["patient_id"] = df_sorted["scout_patient_id"]
+    df_sorted["patient_display_id"] = df_sorted.apply(patient_display_id, axis=1)
 
     # Count reports per patient
     report_counts = df_sorted.groupby("patient_id").size()
@@ -796,7 +799,8 @@ def calculate_patient_progression(df):
     return progression_df[
         [
             "patient_id",
-            "obr_3_filler_order_number",
+            "patient_display_id",
+            "accession_number",
             "requested_dt",
             "primary_rads_score",
             "previous_score",
@@ -804,58 +808,3 @@ def calculate_patient_progression(df):
             "report_sequence",
         ]
     ].copy()
-
-
-# ============================================================================
-# EXPORT FUNCTIONALITY
-# ============================================================================
-
-
-def export_rads_data(df, include_report_text=False):
-    """
-    Export RADS data to CSV.
-
-    Args:
-        df: DataFrame with RADS data
-        include_report_text: Whether to include full report text
-
-    Returns:
-        Path to exported file
-    """
-    # Build export dataframe
-    export_df = df[
-        [
-            "obr_3_filler_order_number",
-            "epic_mrn",
-            "empi_mr",
-            "patient_age",
-            "sex",
-            "race",
-            "ethnic_group",
-            "modality",
-            "service_name",
-            "requested_dt",
-            "observation_dt",
-            "sending_facility",
-            "primary_rads_score",
-        ]
-    ].copy()
-
-    # Add all detected scores as comma-separated
-    export_df["all_rads_scores"] = df["rads_scores"].apply(
-        lambda x: ", ".join(x) if x else ""
-    )
-
-    # Optionally include report text
-    if include_report_text:
-        export_df["report_text"] = df["report_text"]
-
-    # Generate filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"rads_data_{timestamp}.csv"
-    filepath = os.path.join(EXPORT_DIR, filename)
-
-    # Save
-    export_df.to_csv(filepath, index=False)
-
-    return filepath

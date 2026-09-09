@@ -21,4 +21,4 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: scout-analytics-foundation
-    - name: minio-tenant
+    - name: storage-ready

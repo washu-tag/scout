@@ -1,47 +1,8 @@
 # Everything below ships inside the upstream quay.io/keycloak/keycloak
-# server distribution (its bundled jackson / JDBC-driver jars), not in
-# our event-listener provider jar (whose Keycloak deps are compileOnly and
-# don't ship). There's nothing to bump in our layer and no fixed base image
-# to adopt yet. Revisit when a newer Keycloak release bundles the fixed
-# versions.
+# server distribution, not in our event-listener provider jar (whose
+# Keycloak deps are compileOnly and don't ship). There's nothing to bump
+# in our layer and no fixed version available yet.
 vulnerabilities:
   # mssql-jdbc (Keycloak bundles JDBC drivers for all supported DBs; Scout
   # uses postgres, so the SQL Server driver is never loaded)
   - id: CVE-2025-59250 # com.microsoft.sqlserver:mssql-jdbc 13.2.1
-  # jackson-databind bundled by Keycloak
-  - id: CVE-2026-54512 # jackson-databind
-  - id: CVE-2026-54513 # jackson-databind
-  # postgresql JDBC driver bundled by Keycloak (the driver Scout actually uses).
-  # CVE-2026-54291 is a SCRAM channel-binding downgrade that only bites when the
-  # client sets channelBinding=require over a MITM'd TLS link; Scout's Keycloak DB
-  # connection doesn't. Fixed in pgjdbc 42.7.12, which Keycloak 26.6.4 doesn't
-  # bundle yet; drop this once a newer Keycloak base ships the fixed driver.
-  - id: CVE-2026-54291 # org.postgresql:postgresql 42.7.11
-  # netty bundled by the Keycloak/Quarkus distribution in /opt/keycloak/lib/lib/main
-  # (our event-listener provider jar ships no netty). Fixed in 4.1.136.Final, which
-  # Keycloak 26.6.4 doesn't bundle yet; drop when a newer Keycloak base ships it.
-  - id: CVE-2026-55831 # io.netty:netty-codec-http 4.1.135.Final
-  - id: CVE-2026-55833 # io.netty:netty-codec-http 4.1.135.Final
-  - id: CVE-2026-55851 # io.netty:netty-codec-haproxy 4.1.135.Final
-  - id: CVE-2026-56745 # io.netty:netty-codec-http 4.1.135.Final
-  - id: CVE-2026-59901 # io.netty:netty-codec 4.1.135.Final
-  # HTTP/2 decompression refcount leak (direct-memory DoS), reachable only when the
-  # HTTP/2 server decompresses *request* bodies. Quarkus leaves that off
-  # (quarkus.http.enable-decompression defaults to false) and Scout doesn't set it.
-  # Same 4.1.136 fix as the entries above: Keycloak 26.6.4 and 26.7.0 both build on
-  # Quarkus 3.33.2.1, whose BOM pins netty 4.1.135, so a Keycloak bump won't clear it.
-  - id: CVE-2026-56819 # io.netty:netty-codec-http2 4.1.135.Final
-  # micrometer-core bundled by the Keycloak/Quarkus distribution in /opt/keycloak/lib/lib/main
-  # (Keycloak uses it for the metrics Scout enables — KC_METRICS_ENABLED / KC_EVENT_METRICS_USER_ENABLED;
-  # our event-listener provider jar declares no micrometer). Fixed in 1.15.12 / 1.16.6, which the
-  # micrometer pinned by Quarkus 3.33.2.1 doesn't ship — Keycloak 26.6.4 and 26.7.0 both build on it,
-  # so a Keycloak bump won't clear it. Drop when a newer base ships the fixed micrometer.
-  - id: CVE-2026-40983 # io.micrometer:micrometer-core 1.15.10
-  - id: CVE-2026-40984 # io.micrometer:micrometer-core 1.15.10
-  # jackson-core shaded into the upstream keycloak-admin-cli jar (/opt/keycloak/bin/client),
-  # companion to the jackson-databind entries above; fixed in 2.21.4, not bundled yet.
-  - id: GHSA-r7wm-3cxj-wff9 # com.fasterxml.jackson.core:jackson-core 2.21.2 (keycloak-admin-cli)
-  # base-image el9 RPMs from quay.io/keycloak/keycloak:26.6.4 (not our layer); no newer
-  # Keycloak base ships the fixed RPMs yet, and 26.6.4 is the latest release.
-  - id: CVE-2026-47063 # java-21-openjdk-headless 21.0.11 (base RPM)
-  - id: CVE-2026-54369 # libacl 2.3.1-4.el9 (base RPM)

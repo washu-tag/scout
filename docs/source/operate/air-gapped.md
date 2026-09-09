@@ -363,6 +363,7 @@ Air-gapped installations only support **Rocky Linux 9** for production nodes due
 
 ## Additional Information
 
+- [Verifying Releases](verifying-releases.md) - checking cosign signatures on relocated artifacts offline
 - [Creating the Ansible Inventory File](inventory.md)
 - [K3s Air-Gapped Installation Docs](https://docs.k3s.io/installation/airgap)
 - [Harbor Documentation](https://goharbor.io/docs/latest/)

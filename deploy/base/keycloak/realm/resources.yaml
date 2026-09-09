@@ -1,7 +1,9 @@
 # Keycloak realm import via keycloak-config-cli (Scout OCI chart). Split from the
 # instance base so keycloak-realm dependsOn keycloak-instance (health-gated on the
 # Keycloak CR Ready): the import runs only after Keycloak is up, no first-boot race.
-# Imports the rendered realm from the fixed-name keycloak-config Secret using the
+# The realm ships in the chart (files/scout-realm.json); the chart's tpl builds the
+# per-site oauth2-proxy redirects from albOidcHosts, and config-cli var-substitutes
+# $(env:server_hostname) + the client/IdP secrets from the Job env at import. Uses the
 # keycloak-admin-secret admin creds. Namespace owned by scout-core-foundation.
 ---
 # scout-charts OCI source for the config-cli HelmRelease.
@@ -47,13 +49,53 @@ spec:
     image:
       repository: docker.io/adorsys/keycloak-config-cli
       tag: 6.5.1-26.5.5
-    existingConfigSecret: keycloak-config
+    # The realm is the chart's files/scout-realm.json (helm tpl renders it: the
+    # oauth2-proxy redirect URIs are built by ranging over albOidcHosts).
+    config:
+      scout:
+        file: files/scout-realm.json
+    # Scout realm config (cluster-vars; arrive as strings, the realm gates on eq "true").
+    # enableXnat provisions the XNAT client/role; github/microsoft toggle the IdPs;
+    # albOidcHosts is the comma-separated full ALB-OIDC host list (AWS sites; empty
+    # on-prem, which uses the oauth2-proxy callback the realm builds from server_hostname).
+    # SMTP, terms localizations, and trino AuthZ attributes use the chart defaults
+    # (site overlay overrides them; see values.yaml).
+    enableXnat: '${keycloak_enable_xnat}'
+    github:
+      enabled: '${keycloak_github_enabled}'
+    microsoft:
+      enabled: '${keycloak_microsoft_enabled}'
+    defaultProvider: '${keycloak_default_provider}'
+    albOidcHosts: '${keycloak_alb_oidc_hosts}'
     annotations:
-      # config-hash: CI stamps the realm Secret's truncated sha256 at publish so a
+      # config-hash: CI stamps the realm file's truncated sha256 at publish so a
       # realm-only change re-runs the import (mirrors the role's config-hash).
       config-hash: '0'
     env:
       # Merged over the chart defaults (IMPORT_PATH=/config/ preserved).
       KEYCLOAK_URL: 'http://keycloak-service.${keycloak_namespace}:8080/'
       KEYCLOAK_USER: '${keycloak_bootstrap_admin_user}'
+      # config-cli var-substitutes $(env:server_hostname) into every client URL.
+      server_hostname: '${server_hostname}'
+      # config-cli rails (Spring Boot; keys = exact import.* props). var-substitution
+      # resolves $(env:...) from the Job env. managed *=no-delete keeps this TAKEOVER
+      # import additive: the first run against a populated realm must not prune live
+      # clients, IdP mappers, or roles not yet in the artifact (remote-state only scopes
+      # deletes after config-cli has managed the realm once). So a takeover leaves any
+      # live brokered IdP + its mappers, app-owned clients, and operator flows intact.
+      # Removal process: while additive, decommission a client by dropping it from the
+      # template AND deleting the client + secret via the admin API. Once the first import
+      # is clean, a follow-up narrows client/role/group/client-scope/scope-mapping back to
+      # full; remote-state (now populated) scopes deletes to config-cli-created entities,
+      # so removing a client from the template decommissions it while a live non-artifact
+      # client stays. identity-provider[-mapper]/component/authentication-flow stay
+      # no-delete (provisioned outside the artifact). config-cli never manages users.
+      SPRING_APPLICATION_JSON: >-
+        {"import":{"var-substitution":{"enabled":true},"managed":{"client":"no-delete","client-scope":"no-delete","client-scope-mapping":"no-delete","scope-mapping":"no-delete","role":"no-delete","group":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","required-action":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
+    # Client + GitHub-IdP secrets the realm var-substitutes ($(env:oauth2_proxy),
+    # $(env:github_client_id), ...). Site-materialized fixed-name Secret whose keys
+    # are the $(env:...) names (see required-secrets.md).
+    envFrom:
+      - secretRef:
+          name: keycloak-client-secrets
     existingSecret: keycloak-admin-secret

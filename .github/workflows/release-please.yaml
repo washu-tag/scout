@@ -50,5 +50,9 @@ jobs:
           manifest-file: .release-please-manifest.json
           # release.yaml owns the tag + GitHub Release (it stamps, waits for the
           # build, and verifies images first). release-please only maintains the PR
-          # + manifest, so it must not double-cut the release on merge.
+          # + manifest, so it must not double-cut the release on merge. Because it
+          # never cuts the release it also never clears the `autorelease: pending`
+          # label it puts on the merged release PR; release.yaml's "Clear the release
+          # PR's pending label" step does that, and without it this action aborts on
+          # every later run instead of opening the next release PR.
           skip-github-release: true

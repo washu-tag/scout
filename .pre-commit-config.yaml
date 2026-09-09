@@ -57,3 +57,9 @@ repos:
         pass_filenames: false
         files: \.java$
         entry: bash -c 'cd keycloak/event-listener && ./gradlew clean checkstyleMain checkstyleTest'
+      - id: keycloak-realm-generated
+        name: keycloak config-cli realm is generated from the ansible template
+        language: system
+        pass_filenames: false
+        files: ^(ansible/roles/keycloak/templates/scout-realm\.json\.j2|helm/keycloak-config-cli/files/scout-realm\.json|tooling/keycloak/render_realm\.py)$
+        entry: python3 tooling/keycloak/render_realm.py --check

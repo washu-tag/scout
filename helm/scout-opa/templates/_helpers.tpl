@@ -14,6 +14,15 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 app: {{ include "scout-opa.fullname" . }}
 {{- end }}
 
+{{/* SA name: default = the fixed fullname (opa-trino) when created, else `default`. */}}
+{{- define "scout-opa.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "scout-opa.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end }}
+
 {{/* Rollout hash of policy + data + config + bundle-reader credsHash. Hashes the
      EFFECTIVE rego (chart file when no override) so an in-place edit to
      files/main.rego still rolls pods at the fixed dev chart version. */}}
