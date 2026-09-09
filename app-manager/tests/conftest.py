@@ -176,7 +176,21 @@ class FakeClient:
         self.jobs[name] = body
         # The outcome is fixed when the Job is created, so a stale Job keeps
         # reporting the verdict of the run that produced it.
-        self.job_status[name] = {"succeeded": 1} if self.job_succeeds else {"failed": 1}
+        self.job_status[name] = (
+            {"succeeded": 1}
+            if self.job_succeeds
+            else {
+                "failed": 1,
+                "conditions": [
+                    {
+                        "type": "Failed",
+                        "status": "True",
+                        "reason": "BackoffLimitExceeded",
+                        "message": "Job has reached the specified backoff limit",
+                    }
+                ],
+            }
+        )
         self.created_jobs.append(name)
         if self.job_succeeds:
             # What config-cli would leave on the realm: a checksum over the
@@ -203,9 +217,6 @@ class FakeClient:
         self.deleted_jobs.append(name)
         self.jobs.pop(name, None)
         self.job_status.pop(name, None)
-
-    def job_logs(self, namespace, name, tail=40):
-        return "config-cli said no"
 
 
 class FakeKeycloak:

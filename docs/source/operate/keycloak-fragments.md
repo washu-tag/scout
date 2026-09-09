@@ -75,6 +75,12 @@ deliberately left alone" phases, `Holding` and `Refused`. Each fragment carries 
 act on because discovery never reported a sync, or a credential the realm names that
 nothing resolves (see [below](#credentials-are-named-not-carried)).
 
+`Failed` reports why in Kubernetes' own words and names the Job to read. It does not quote
+keycloak-config-cli's log, on purpose: that log is written after variable substitution, so
+it can carry a resolved client secret, and this document is a ConfigMap. Failed Jobs are
+kept for `app_manager_job_ttl_seconds` (default 3600) so `kubectl logs -n scout-core
+job/<name>` still has it.
+
 ```console
 $ kubectl exec -n scout-core deployment/scout-app-manager -- scout-app-manager status
 ```

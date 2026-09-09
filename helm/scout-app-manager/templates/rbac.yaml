@@ -32,15 +32,12 @@ rules:
     resources: [configmaps]
     verbs: [get, list, watch, create, update, patch]
   - apiGroups: [batch]
+    # The apply. A failed one is reported from the Job's own status
+    # conditions, which is why nothing here reads a pod or its log:
+    # config-cli's log is written after variable substitution, and the
+    # reconciler's report of it lands in a ConfigMap.
     resources: [jobs]
     verbs: [get, list, create, delete]
-  - apiGroups: ['']
-    resources: [pods]
-    verbs: [get, list]
-  - apiGroups: ['']
-    # Only so a failed apply can report why in the reconciler's own log.
-    resources: [pods/log]
-    verbs: [get]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

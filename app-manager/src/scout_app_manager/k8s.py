@@ -207,22 +207,6 @@ class Client:
         )
         return result.get("items", [])
 
-    def job_logs(self, namespace: str, job_name: str, tail: int = 40) -> str:
-        pods = self.request(
-            "GET",
-            f"/api/v1/namespaces/{namespace}/pods?labelSelector=job-name%3D{job_name}",
-        ).get("items", [])
-        chunks = []
-        for pod in pods:
-            name = pod["metadata"]["name"]
-            try:
-                token = self._headers()
-                response = self._http.get(
-                    f"{self.base}/api/v1/namespaces/{namespace}/pods/{name}/log"
-                    f"?tailLines={tail}",
-                    headers=token,
-                )
-                chunks.append(response.text)
-            except httpx.HTTPError as exc:  # pragma: no cover - diagnostics only
-                chunks.append(f"(could not read logs for {name}: {exc})")
-        return "\n".join(chunks)
+    # No pod read here, deliberately. A failed apply is reported from the Job's
+    # own status conditions: config-cli's log is post-substitution, and the
+    # reason ends up in a ConfigMap.

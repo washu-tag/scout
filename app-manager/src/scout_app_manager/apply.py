@@ -24,6 +24,24 @@ def _finished(job: dict) -> bool:
     return bool(status.get("succeeded") or status.get("failed"))
 
 
+def _failure_reason(job: dict) -> str:
+    """Why the Job failed, in Kubernetes' own words.
+
+    Deliberately not the config-cli pod's log. That log is written after
+    variable substitution, so it can carry a resolved client credential, and
+    this string is rendered into the status ConfigMap -- an object with none of
+    a Secret's protection, readable by anyone who can read ConfigMaps in the
+    namespace. The Job is kept for `job_ttl_seconds` so the detail stays one
+    `kubectl logs` away for someone who already has that access.
+    """
+    for condition in job.get("status", {}).get("conditions") or []:
+        if condition.get("type") == "Failed" and str(condition.get("status")) == "True":
+            reason = condition.get("reason") or "the apply job failed"
+            message = condition.get("message")
+            return f"{reason}: {message}" if message else str(reason)
+    return "the apply job failed"
+
+
 def apply_job_body(**values) -> dict:
     template = (
         resources.files("scout_app_manager")
@@ -137,6 +155,9 @@ class RealmApplier:
                 if status.get("succeeded"):
                     return True, "succeeded"
                 if status.get("failed"):
-                    return False, self.client.job_logs(self.namespace, name) or "failed"
+                    return False, (
+                        f"{_failure_reason(job)}; run `kubectl logs -n "
+                        f"{self.namespace} job/{name}` for the detail"
+                    )
             time.sleep(2)
         return False, f"timed out after {self.settings.job_timeout_seconds}s"

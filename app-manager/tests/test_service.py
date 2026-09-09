@@ -320,6 +320,11 @@ def test_a_failed_apply_does_not_record_the_realm_as_applied(setup):
 
     assert state.last_applied_hash is None
     assert "apply failed" in state.last_result
+    # From the Job's own conditions, and pointing at the log rather than
+    # quoting it: config-cli's log is post-substitution, and this string is
+    # rendered into a ConfigMap.
+    assert "BackoffLimitExceeded" in state.last_result
+    assert "kubectl logs" in state.last_result
 
 
 def test_a_failed_apply_is_retried_rather_than_replayed(setup):
