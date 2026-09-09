@@ -71,7 +71,8 @@ def test_an_unreachable_keycloak_says_so_rather_than_reading_as_no_drift(setup):
     assert found["scout_app_manager_realm_drift"] == "0"
 
 
-def test_a_held_retraction_is_visible(setup):
+def test_a_retracting_fragment_is_visible(setup):
+    """It is composed from cache, so the realm is Applied and it is not."""
     service, fragments, _ = setup
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
@@ -80,7 +81,7 @@ def test_a_held_retraction_is_visible(setup):
     found = series(metrics.render(service.reconcile_once()))
 
     assert found['scout_app_manager_fragments{state="retracting"}'] == "1"
-    assert found['scout_app_manager_phase{phase="Holding"}'] == "1"
+    assert found['scout_app_manager_phase{phase="Applied"}'] == "1"
 
 
 def test_label_values_are_escaped():

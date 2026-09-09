@@ -5,6 +5,7 @@ import pytest
 from conftest import (  # noqa: F401
     FakeClient,
     fragment_yaml,
+    restart,
     setup,
     status_of,
     write_fragment,
@@ -110,7 +111,7 @@ def test_deleting_the_fragment_removes_everything(setup):
     )
 
 
-def test_a_vanished_fragment_is_held_before_it_is_retracted(setup):
+def test_a_vanished_fragment_keeps_its_realm_objects(setup):
     """A chart upgrade's delete-then-create must not kill a live client."""
     service, fragments, client = setup
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -123,10 +124,55 @@ def test_a_vanished_fragment_is_held_before_it_is_retracted(setup):
     entry = status_of(state, "scout-demo/hello")
     assert entry.status == RETRACTING
     assert entry.retracting_since is not None
-    assert state.phase == HOLDING
-    # No new apply, and the last applied document still carries the client.
+    # Composed from the copy this process last applied, so the document did not
+    # move and there is nothing new to apply.
+    assert state.phase == APPLIED
     assert client.jobs == applied
     assert any(c["clientId"] == "hello" for c in composed_realm(client)["clients"])
+
+
+def test_an_absent_fragment_does_not_freeze_the_rest_of_the_realm(setup):
+    """One component redeploying used to defer every other realm change.
+
+    Worse, a flapping fragment reset the clock, so the freeze had no bound
+    while the pod went on reporting Ready.
+    """
+    service, fragments, client = setup
+    path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+
+    path.unlink()
+    realm = json.loads(open(service.settings.base_realm_path).read())
+    realm["displayName"] = "Renamed"
+    open(service.settings.base_realm_path, "w").write(json.dumps(realm))
+    state = service.reconcile_once()
+
+    assert state.phase == APPLIED
+    composed = composed_realm(client)
+    assert composed["displayName"] == "Renamed"
+    assert any(c["clientId"] == "hello" for c in composed["clients"])
+
+
+@pytest.mark.parametrize("synced,phase", [(True, HOLDING), (False, REFUSED)])
+def test_an_absent_fragment_with_no_composed_copy_holds_the_apply(setup, synced, phase):
+    """The one absence still worth stopping for: a restart mid-redeploy.
+
+    There is nothing to stand in for the fragment, so applying would prune its
+    realm objects on the strength of one empty directory.
+    """
+    service, fragments, client = setup
+    path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+    applied = dict(client.jobs)
+
+    path.unlink()
+    revived = restart(service)
+    revived.state.discovery_synced = synced
+    state = revived.reconcile_once()
+
+    assert status_of(state, "scout-demo/hello").status == RETRACTING
+    assert state.phase == phase
+    assert client.jobs == applied
 
 
 def test_a_fragment_that_comes_back_inside_the_grace_period_is_a_no_op(setup):
@@ -148,21 +194,58 @@ def test_a_fragment_that_comes_back_inside_the_grace_period_is_a_no_op(setup):
 
 
 def test_nothing_is_retracted_until_discovery_reports_a_sync(setup):
-    """An empty fragment dir is not evidence of deletion."""
+    """An empty fragment dir is not evidence of deletion.
+
+    Even with the grace period elapsed: the clock only starts meaning
+    something once discovery has said it looked and found nothing.
+    """
     service, fragments, client = setup
     service.settings.retraction_grace_seconds = 0
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
-    applied = dict(client.jobs)
 
     service.state.discovery_synced = False
     path.unlink()
     state = service.reconcile_once()
 
     assert status_of(state, "scout-demo/hello").status == RETRACTING
-    assert state.phase == REFUSED
-    assert client.jobs == applied
     assert any(c["clientId"] == "hello" for c in composed_realm(client)["clients"])
+
+
+@pytest.mark.parametrize("how", ["unreadable", "deleted"])
+def test_a_credential_that_blips_does_not_retract_its_client(setup, how):
+    """The Secret watch schedules the reconcile straight into this window.
+
+    Rejecting the fragment drops it out of the composed realm, and the apply
+    prunes what the realm does not declare -- so a delete-then-create of one
+    Secret used to take a live client with it.
+    """
+    service, fragments, client = setup
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+
+    if how == "unreadable":
+        client.unreadable_secrets.add("hello-keycloak-client")
+    else:
+        del client.secrets[("scout-core", "hello-keycloak-client")]
+    state = service.reconcile_once()
+
+    assert status_of(state, "scout-demo/hello").status == INSTALLED
+    assert any(c["clientId"] == "hello" for c in composed_realm(client)["clients"])
+
+
+def test_a_credential_gone_past_the_grace_period_rejects_its_fragment(setup):
+    """Damping is a window, not a licence to run on a credential nobody has."""
+    service, fragments, client = setup
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+
+    service.settings.retraction_grace_seconds = 0
+    del client.secrets[("scout-core", "hello-keycloak-client")]
+    state = service.reconcile_once()
+
+    assert status_of(state, "scout-demo/hello").status == REJECTED
+    assert not any(c["clientId"] == "hello" for c in composed_realm(client)["clients"])
 
 
 def test_a_rejected_fragment_going_absent_retracts_nothing(setup):
@@ -512,7 +595,9 @@ def test_the_platform_credentials_are_watched_before_any_reconcile(setup):
 
 
 def test_a_retracted_fragment_stops_being_watched(setup, hello_yaml):
+    """Only once retracted: while it is composed from cache it is still ours."""
     service, fragments, _ = setup
+    service.settings.retraction_grace_seconds = 0
     path = write_fragment(fragments, "hello", "hello-keycloak", hello_yaml)
     service.reconcile_once()
     path.unlink()

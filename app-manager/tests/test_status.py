@@ -6,6 +6,7 @@ import yaml
 from conftest import (  # noqa: F401
     FakeKeycloak,
     fragment_yaml,
+    restart,
     setup,
     status_of,
     write_fragment,
@@ -32,13 +33,6 @@ from scout_app_manager.status import (
 def published(client) -> dict:
     data = client.configmaps[("scout-core", "scout-app-manager-status")]["data"]
     return yaml.safe_load(data[STATUS_KEY])
-
-
-def restart(service) -> AppManagerService:
-    """A fresh process over the same cluster."""
-    return AppManagerService(
-        service.settings, service.client, keycloak=FakeKeycloak(service.client)
-    )
 
 
 def test_the_document_is_camel_cased_and_carries_every_fragment(setup):
@@ -271,10 +265,12 @@ def test_a_held_retraction_stays_ready(setup):
     service.reconcile_once()
 
     path.unlink()
-    state = service.reconcile_once()
+    revived = restart(service)
+    revived.state.discovery_synced = True
+    state = revived.reconcile_once()
 
     assert state.phase == HOLDING
-    assert service.ready() is True
+    assert revived.ready() is True
 
 
 def test_readiness_ignores_a_rejected_fragment(setup):
@@ -297,11 +293,13 @@ def test_an_unchanged_realm_does_not_report_the_previous_outcome(setup):
     path = write_fragment(fragments, "scout-demo", "hello", body)
     service.reconcile_once()
     path.unlink()
-    service.reconcile_once()
+    revived = restart(service)
+    revived.state.discovery_synced = True
+    revived.reconcile_once()
     assert "holding" in published(client)["lastResult"]
 
     write_fragment(fragments, "scout-demo", "hello", body)
-    service.reconcile_once()
+    revived.reconcile_once()
 
     doc = published(client)
     assert doc["phase"] == "Applied"

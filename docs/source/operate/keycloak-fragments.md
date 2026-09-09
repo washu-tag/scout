@@ -102,16 +102,26 @@ disappears is indistinguishable from one being redeployed, and a chart upgrade t
 deletes and recreates its ConfigMap would otherwise retract a live client and kill its
 sessions within a second.
 
-So a previously-installed fragment that goes absent enters `retracting` and **suppresses
-the apply entirely** (`phase: Holding`) until it has been gone for
-`app_manager_retraction_grace_seconds` (default 300). If it comes back inside that window,
-nothing happened at all. The cost is that an unrelated fragment installed during a hold
-waits for it.
+So a previously-installed fragment that goes absent enters `retracting` and **keeps its
+realm objects**, composed from the copy the reconciler last applied, until it has been gone
+for `app_manager_retraction_grace_seconds` (default 300). If it comes back inside that
+window, nothing happened at all. Everything else — the base realm, other fragments,
+credential rotations — goes on reaching Keycloak meanwhile.
+
+The one absence that does stop the apply is a fragment this pod has never composed, which
+after a restart is every fragment that has not been rediscovered yet. There is nothing to
+stand in for it, so applying would drop its realm objects; the reconciler reports
+`phase: Holding` and leaves the realm alone until it comes back or its grace runs out.
 
 A retraction additionally requires that the discovery sidecar has reported a complete
-initial sync. If it has not, the reconciler holds indefinitely and reports
-`phase: Refused` — because on a fresh pod an empty fragment directory is not evidence that
-anything was deleted, and acting on it would retract every fragment-created client at once.
+initial sync. If it has not, nothing is ever retracted — because on a fresh pod an empty
+fragment directory is not evidence that anything was deleted, and acting on it would
+retract every fragment-created client at once. A fragment held with no composed copy in
+that state reports `phase: Refused` rather than `Holding`.
+
+A credential is damped the same way and for the same window: a `secretRef` that stops
+resolving — deleted, or the API momentarily refusing — is served from the value last read
+rather than rejecting the fragment, because a rejected fragment is one the apply prunes.
 
 ## Credentials are named, not carried
 

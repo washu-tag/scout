@@ -5,9 +5,13 @@ Anything that decides something lives here; cli.py prints, loop.py schedules.
 labels what it decided, so the CLI's report and the applied realm cannot
 disagree.
 
-Retraction is damped, because a vanished fragment is indistinguishable from one
-mid-redeploy: absence suppresses the apply until the grace period has run, and
-never retracts unless discovery has reported a complete sync.
+Retraction is damped, because a vanished input is indistinguishable from one
+mid-redeploy. A fragment that goes absent keeps its place in the realm from the
+copy last composed, and a Secret that does the same is served from the copy last
+read; both for the grace period, and a fragment is never retracted unless
+discovery has reported a complete sync. The apply is only suppressed when
+absence leaves nothing to compose from, which is a fragment this process never
+saw.
 
 The realm document names its credentials rather than carrying them, which puts
 two obligations here. Every `$(env:...)` it names must resolve to something
@@ -19,6 +23,7 @@ document -- that is what the Secrets' resourceVersions are for.
 
 import hashlib
 import logging
+import time
 from dataclasses import replace
 from pathlib import Path
 
@@ -114,9 +119,21 @@ class AppManagerService:
         # One GET per distinct Secret per reconcile. Cleared at the top of each
         # one, so a rotation is seen on the next pass and not a stale value.
         self._secrets: dict[str, dict | None] = {}
+        # The last copy successfully read of each, and when. A Secret that is
+        # momentarily gone -- a chart upgrade's delete-then-create, an API blip
+        # -- otherwise rejects the fragment naming it, and the apply prunes
+        # what no fragment declares. Damped for the same window and for the
+        # same reason a missing fragment is. In memory only: these are
+        # credentials, so a restart inside the window is a real read failure.
+        self._last_good: dict[str, tuple[dict, float]] = {}
         # What the Secret watch should ring the doorbell for. Widened by each
         # reconcile as fragments name their own credentials.
         self._watched_secrets = {settings.client_secrets_secret, settings.admin_secret}
+        # The copy of each fragment last composed into the realm, so a fragment
+        # that goes absent can keep its realm objects through its grace period
+        # without freezing every other change. Empty after a restart, which is
+        # the one case that still has to hold the apply.
+        self._composed: dict[str, LoadedFragment] = {}
 
     def _resume(self) -> State:
         """Pick up where the last process left off, or start clean."""
@@ -143,12 +160,50 @@ class AppManagerService:
     def secret(self, name: str) -> dict | None:
         """A Secret from this namespace, fetched once per reconcile."""
         if name not in self._secrets:
-            try:
-                self._secrets[name] = self.client.get_secret(self.namespace, name)
-            except ApiError:
-                log.exception("could not read secret %s/%s", self.namespace, name)
-                self._secrets[name] = None
+            self._secrets[name] = self._read_secret(name)
         return self._secrets[name]
+
+    def _read_secret(self, name: str) -> dict | None:
+        try:
+            found = self.client.get_secret(self.namespace, name)
+        except ApiError:
+            log.exception("could not read secret %s/%s", self.namespace, name)
+            found = None
+        if found is None:
+            return self._stale(name)
+        self._last_good[name] = (found, time.monotonic())
+        return found
+
+    def _stale(self, name: str) -> dict | None:
+        """The copy last read, while it is younger than the retraction grace.
+
+        Absent and unreadable are damped alike, because from here they are the
+        same event: the Secret was there, it is not now, and composing without
+        it retracts a live client. Its resourceVersion comes back with it, so
+        serving one does not look like a rotation either.
+        """
+        cached = self._last_good.get(name)
+        if cached is None:
+            return None
+        secret, read_at = cached
+        waited = time.monotonic() - read_at
+        if waited >= self.settings.retraction_grace_seconds:
+            del self._last_good[name]
+            log.warning(
+                "secret %s/%s has been unreadable for %ds; giving up on the copy "
+                "last read from it",
+                self.namespace,
+                name,
+                int(waited),
+            )
+            return None
+        log.warning(
+            "secret %s/%s is unreadable; using the copy read %ds ago",
+            self.namespace,
+            name,
+            int(waited),
+        )
+        return secret
 
     def resolve_secret(self, name: str, key: str) -> str | None:
         return value_of(self.secret(name), key)
@@ -303,7 +358,9 @@ class AppManagerService:
     def _reconcile(self) -> State:
         self._secrets.clear()
         prior = prior_installed(self.state)
-        loaded = scan(self.settings.fragment_dir)
+        discovered = scan(self.settings.fragment_dir)
+        held, restored = self._retracting(prior, {str(i.ref) for i in discovered})
+        loaded = discovered + restored
         base, base_source_hash = self.base_source()
         resolvable = self.client_secret_keys()
         result = compose(
@@ -313,13 +370,18 @@ class AppManagerService:
             self.resolve_secret,
             reserved_env=frozenset(resolvable),
         )
+        for item in result.accepted:
+            self._composed[str(item.ref)] = item
 
         reasons = {str(item.ref): why for item, why in result.rejected}
         statuses = [
-            self._status(item, reasons.get(str(item.ref)), prior) for item in loaded
+            self._status(item, reasons.get(str(item.ref)), prior) for item in discovered
         ]
-        held = self._retracting(prior, {s.ref for s in statuses})
         statuses.extend(held)
+        # Only absence with nothing to compose from stops the apply. Everything
+        # else -- a base realm change, a rotation -- goes through while the
+        # grace period runs.
+        blocked = [h for h in held if h.ref not in {str(i.ref) for i in restored}]
 
         self._log_decisions(statuses)
         document = canonical(result.realm)
@@ -354,8 +416,8 @@ class AppManagerService:
             or self.state.drift
         )
 
-        if held:
-            return self._hold(held)
+        if blocked:
+            return self._hold(blocked)
         if missing:
             return self._refuse_unresolved(missing)
         if not self.state.pending_change:
@@ -440,12 +502,18 @@ class AppManagerService:
 
     def _retracting(
         self, prior: dict[str, FragmentStatus], present: set[str]
-    ) -> list[FragmentStatus]:
+    ) -> tuple[list[FragmentStatus], list[LoadedFragment]]:
         """Fragments that were in the realm and are no longer on disk.
 
-        A returned entry holds the apply; a dropped one is a retraction.
+        Returns what to report about each, and the cached copies to compose
+        with. Composing the cached copy is what keeps a redeploying component
+        out of everyone else's way: its realm objects stay exactly as they
+        were, and the base realm and every other fragment still reach Keycloak.
+
+        A fragment absent past its grace is dropped from both, which is the
+        retraction. One absent with no cached copy is neither -- see `_hold`.
         """
-        held = []
+        held, restored = [], []
         for ref, was in sorted(prior.items()):
             if ref in present:
                 continue
@@ -453,33 +521,47 @@ class AppManagerService:
             waited = age_seconds(since)
             expired = waited >= self.settings.retraction_grace_seconds
             if expired and self.state.discovery_synced:
+                self._composed.pop(ref, None)
                 log.warning(
                     "RETRACTED %s: absent for %ds, removing its realm objects",
                     ref,
                     int(waited),
                 )
                 continue
-            # No elapsed time: nothing reconciles during a hold, so this string
-            # sits frozen in the status document until the grace period ends.
+            cached = self._composed.get(ref)
+            if cached is not None:
+                restored.append(cached)
             reason = (
                 "discovery has not reported a complete sync, so an absent "
                 "fragment cannot be told apart from an unsynced one"
                 if not self.state.discovery_synced
                 else f"absent since {since}; its realm objects are retracted if "
                 f"it has not returned {self.settings.retraction_grace_seconds}s later"
+            ) + (
+                ""
+                if cached is not None
+                else "; this process never composed it, so the realm cannot be "
+                "applied without dropping it"
             )
             log.warning("HOLDING   %s: absent for %ds", ref, int(waited))
             held.append(
                 replace(was, status=RETRACTING, retracting_since=since, errors=[reason])
             )
-        return held
+        return held, restored
 
-    def _hold(self, held: list[FragmentStatus]) -> State:
-        """Leave the realm exactly as it is, and say why."""
+    def _hold(self, blocked: list[FragmentStatus]) -> State:
+        """Leave the realm exactly as it is, and say why.
+
+        Only reached for a fragment absent with nothing to compose in its
+        place, which after a restart is every fragment that has not come back
+        yet. Applying anyway would prune its realm objects on the strength of
+        one empty directory.
+        """
         refused = not self.state.discovery_synced
         self.state.phase = REFUSED if refused else HOLDING
         self.state.last_result = (
-            f"holding: {len(held)} fragment(s) absent but not yet retracted"
+            f"holding: {len(blocked)} fragment(s) absent, with no copy this "
+            "process composed to stand in for them"
             + (" (discovery never synced)" if refused else "")
         )
         log.warning("HOLDING   the realm is unchanged: %s", self.state.last_result)

@@ -125,6 +125,9 @@ class FakeClient:
         self.created_jobs: list[str] = []
         self.deleted_jobs: list[str] = []
         self.job_succeeds = True
+        # Names whose GET raises rather than answering, for the blip a Secret
+        # read is damped against.
+        self.unreadable_secrets: set[str] = set()
         # Stands in for the realm attribute config-cli writes after an import.
         self.realm_checksum: str | None = None
 
@@ -141,6 +144,8 @@ class FakeClient:
             existing["labels"] = labels
 
     def get_secret(self, namespace, name):
+        if name in self.unreadable_secrets:
+            raise ApiError(500, "the API server is having a moment")
         return self.secrets.get((namespace, name))
 
     def set_secret(self, namespace, name, values: dict[str, str]):
@@ -249,6 +254,17 @@ def setup(tmp_path, base_realm, monkeypatch):
     # The normal running state; a test wanting the refused path clears it.
     service.state.discovery_synced = True
     return service, fragments, client
+
+
+def restart(service) -> AppManagerService:
+    """A fresh process over the same cluster.
+
+    Its caches are empty, which is what makes it the way to reach the one
+    absence the reconciler still has to hold the apply for.
+    """
+    return AppManagerService(
+        service.settings, service.client, keycloak=FakeKeycloak(service.client)
+    )
 
 
 def status_of(state, ref):

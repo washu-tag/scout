@@ -214,9 +214,9 @@ reasons. `installed` means it is in the realm.
 **Deleting the ConfigMap removes everything it created — but not instantly.** A fragment
 that goes missing is held for a grace period (five minutes by default) before its realm
 objects are retracted, because a chart upgrade that deletes and recreates your ConfigMap
-would otherwise take your client down and kill every session on it. During the hold the
-status document reports your fragment as `retracting`. If it comes back inside the window,
-nothing happened.
+would otherwise take your client down and kill every session on it. In the meantime your
+client stays exactly as it was and the status document reports your fragment as
+`retracting`. If it comes back inside the window, nothing happened.
 
 ---
 
