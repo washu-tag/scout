@@ -30,7 +30,7 @@ spec:
       serviceAccountName: {{ include "scout-opa.serviceAccountName" . }}
       containers:
         - name: opa
-          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          image: {{ printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - run
