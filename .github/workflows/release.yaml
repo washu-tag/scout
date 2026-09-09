@@ -590,16 +590,16 @@ jobs:
       fail-fast: false
       matrix:
         chart:
-          - { name: hl7-transformer, dir: helm/extractor/hl7-transformer }
+          - { name: hl7-transformer, dir: helm/extractor/hl7-transformer, app-version: true }
           - { name: dcm4chee, dir: helm/dcm4chee }
           - { name: hive-metastore, dir: helm/hive-metastore }
-          - { name: hl7-listener, dir: helm/hl7-listener }
-          - { name: hl7log-extractor, dir: helm/extractor/hl7log-extractor }
+          - { name: hl7-listener, dir: helm/hl7-listener, app-version: true }
+          - { name: hl7log-extractor, dir: helm/extractor/hl7log-extractor, app-version: true }
           - { name: keycloak-config-cli, dir: helm/keycloak-config-cli }
-          - { name: launchpad, dir: helm/launchpad }
+          - { name: launchpad, dir: helm/launchpad, app-version: true }
           - { name: open-webui-bootstrap, dir: helm/open-webui-bootstrap }
           - { name: orthanc, dir: helm/orthanc }
-          - { name: report-viewer, dir: helm/report-viewer }
+          - { name: report-viewer, dir: helm/report-viewer, app-version: true }
           - { name: scout-dashboards, dir: helm/scout-dashboards }
           - { name: scout-opa, dir: helm/scout-opa }
           - { name: temporal-bootstrap, dir: helm/temporal-bootstrap }
@@ -623,6 +623,7 @@ jobs:
           CHART_DIR: ${{ matrix.chart.dir }}
           CHART_NAME: ${{ matrix.chart.name }}
           VERSION: ${{ inputs.version }}
+          APP_VERSION_FLAG: ${{ matrix.chart.app-version && format('--app-version {0}', inputs.version) || '' }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTOR: ${{ github.actor }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
@@ -630,7 +631,9 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
-          helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
+          # --app-version only for charts whose image is a Scout image; see ci.yaml.
+          helm package "${CHART_DIR}" --version "${VERSION}" ${APP_VERSION_FLAG} \
+            --destination "${RUNNER_TEMP}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
           ref="${REGISTRY}/washu-tag/charts/${CHART_NAME}:${VERSION}"
           digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"
