@@ -175,6 +175,28 @@ def test_an_absent_fragment_with_no_composed_copy_holds_the_apply(setup, synced,
     assert client.jobs == applied
 
 
+def test_a_cached_copy_that_no_longer_composes_holds_the_apply(setup):
+    """Applying without it is the retraction, arriving early and unannounced.
+
+    Here a second fragment turns up claiming the absent one's clientId, which
+    rejects both -- so the stand-in is gone and there is nothing to compose.
+    """
+    service, fragments, client = setup
+    path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+    applied = dict(client.jobs)
+
+    path.unlink()
+    write_fragment(fragments, "team-b", "hello", fragment_yaml("hello"))
+    state = service.reconcile_once()
+
+    assert state.phase == HOLDING
+    assert client.jobs == applied
+    assert any(
+        "also declared by" in e for e in status_of(state, "scout-demo/hello").errors
+    )
+
+
 def test_a_fragment_that_comes_back_inside_the_grace_period_is_a_no_op(setup):
     service, fragments, client = setup
     body = fragment_yaml("hello")

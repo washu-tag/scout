@@ -386,11 +386,20 @@ class AppManagerService:
         statuses = [
             self._status(item, reasons.get(str(item.ref)), prior) for item in discovered
         ]
+        for status in held:
+            status.errors.extend(reasons.get(status.ref, []))
         statuses.extend(held)
         # Only absence with nothing to compose from stops the apply. Everything
         # else -- a base realm change, a rotation -- goes through while the
         # grace period runs.
-        blocked = [h for h in held if h.ref not in {str(i.ref) for i in restored}]
+        #
+        # A cached copy that no longer composes is nothing too: applying without
+        # it is exactly the retraction the grace period exists to defer, and it
+        # would happen with no elapsed clock and no phase to notice it by.
+        standing_in = {
+            str(item.ref) for item in restored if str(item.ref) not in reasons
+        }
+        blocked = [h for h in held if h.ref not in standing_in]
 
         self._log_decisions(statuses)
         document = canonical(result.realm)
