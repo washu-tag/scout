@@ -78,13 +78,25 @@ spec:
             # as a client credential, and Keycloak accepts it.
             #
             # `full` on the types the composed realm is authoritative for, so
-            # removing a fragment removes its objects; `no-delete` on the rest,
-            # which are Keycloak's own or provisioned outside the artifact.
-            # config-cli's remote state does not cover client scopes, so `full`
-            # there would prune undeclared ones including built-ins.
+            # removing a fragment removes its objects; `no-delete` on the rest.
+            #
+            # identity-provider is `full` for the same reason and not an
+            # oversight: the base realm renders every brokered IdP the site has
+            # configured, and nothing else creates one -- so `no-delete` would
+            # mean removing an IdP from the inventory left it live forever,
+            # which is decommissioning silently not working.
+            #
+            # The rest are Keycloak's own. The realm declares one required
+            # action and one authentication flow out of the dozen-odd every
+            # realm is created with, and its key providers not at all, so `full`
+            # there prunes the platform's own furniture. config-cli's remote
+            # state does not cover client scopes either, so `full` there would
+            # take undeclared ones including built-ins. identity-provider-mapper
+            # stays put because the realm declares no mappers at all; deleting
+            # the provider takes its own with it.
             - name: SPRING_APPLICATION_JSON
               value: >-
-                {"import":{"var-substitution":{"enabled":true},"managed":{"client":"full","role":"full","group":"full","scope-mapping":"full","client-scope-mapping":"full","client-scope":"no-delete","required-action":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
+                {"import":{"var-substitution":{"enabled":true},"managed":{"client":"full","role":"full","group":"full","scope-mapping":"full","client-scope-mapping":"full","identity-provider":"full","client-scope":"no-delete","required-action":"no-delete","identity-provider-mapper":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
           volumeMounts:
             - name: config
               mountPath: /config

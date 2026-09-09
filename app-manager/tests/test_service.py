@@ -869,20 +869,21 @@ def test_the_apply_job_declares_its_prune_posture():
     env = {e["name"]: e for e in container["env"]}
     managed = json.loads(env["SPRING_APPLICATION_JSON"]["value"])["import"]["managed"]
 
-    # Owned by the composed realm, including what its role claim depends on.
+    # Owned by the composed realm, including what its role claim depends on --
+    # and the brokered IdPs, so removing one from the inventory removes it.
     for owned in (
         "client",
         "role",
         "group",
         "scope-mapping",
         "client-scope-mapping",
+        "identity-provider",
     ):
         assert managed[owned] == "full", owned
-    # Keycloak's own, or provisioned outside the artifact.
+    # Keycloak's own, and mostly not declared by the realm at all.
     for kept in (
         "client-scope",
         "required-action",
-        "identity-provider",
         "identity-provider-mapper",
         "authentication-flow",
         "component",

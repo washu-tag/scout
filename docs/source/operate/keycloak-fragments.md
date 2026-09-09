@@ -209,12 +209,16 @@ Know what you get, because it is not the whole realm:
 
 - **The base realm only.** A client that a component ships as a fragment is not updatable
   while this is the writer — the Job has never seen that fragment.
-- **A fragment's client survives, its roles do not.** Both lanes pass
-  `import.managed.*=no-delete`, which keeps a fragment's client, its roles, its credential
-  and its scope-mappings. It does **not** keep the `scout-user` / `scout-admin` grants on
-  those roles: config-cli prunes a group's client-role map even under `no-delete`. So users
-  of a fragment app can still log in and will have no permissions, which usually surfaces
-  as a 403 with nothing in any log.
+- **A fragment's client survives, its roles do not.** The break-glass Job passes
+  `import.managed.*=no-delete` in both lanes, which keeps a fragment's client, its roles,
+  its credential and its scope-mappings. It does **not** keep the `scout-user` /
+  `scout-admin` grants on those roles: config-cli prunes a group's client-role map even
+  under `no-delete`. So users of a fragment app can still log in and will have no
+  permissions, which usually surfaces as a 403 with nothing in any log.
+- **Nothing is removed.** All-`no-delete` also means a brokered identity provider taken
+  out of the inventory stays live until the reconciler applies again. The reconciler's own
+  Job runs `identity-provider: full`, because the realm document is authoritative for
+  those; this one is not authoritative for anything.
 
 Both are temporary. Once the reconciler is healthy it sees the import checksum has moved,
 re-applies, and restores the grants — measured at 32s from the break-glass Job finishing.
