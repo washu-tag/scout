@@ -28,10 +28,9 @@ def main() -> int:
     client = Client()
     service = AppManagerService(settings, client)
     log.info(
-        "starting: namespace=%s domain=%s mode=%s fragments=%s",
+        "starting: namespace=%s domain=%s fragments=%s",
         service.namespace,
         settings.domain,
-        settings.apply_mode,
         settings.fragment_dir,
     )
     wake = threading.Event()
@@ -43,18 +42,17 @@ def main() -> int:
     threading.Thread(
         target=api.serve, args=(settings.reload_port, wake), daemon=True
     ).start()
-    if settings.object_watch:
-        # Fragments arrive by the sidecar; these are the two inputs that do
-        # not, and neither is selected by label.
-        for resource, names in (
-            ("secrets", service.watched_secrets),
-            ("configmaps", service.watched_configmaps),
-        ):
-            threading.Thread(
-                target=watch.run_forever,
-                args=(client, service.namespace, resource, names, wake),
-                daemon=True,
-            ).start()
+    # Fragments arrive by the sidecar; these are the two inputs that do not,
+    # and neither is selected by label.
+    for resource, names in (
+        ("secrets", service.watched_secrets),
+        ("configmaps", service.watched_configmaps),
+    ):
+        threading.Thread(
+            target=watch.run_forever,
+            args=(client, service.namespace, resource, names, wake),
+            daemon=True,
+        ).start()
     run_forever(service, settings, wake)
     return 0
 

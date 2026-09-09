@@ -65,7 +65,6 @@ def to_document(state: State) -> dict:
         "driftDetected": state.drift,
         "lastResult": state.last_result,
         "lastReconcile": state.last_reconcile,
-        "applyMode": state.apply_mode,
         "discoverySynced": state.discovery_synced,
         "baseRealmApplied": state.base_realm_applied,
         "fragments": [

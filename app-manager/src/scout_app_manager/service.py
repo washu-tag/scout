@@ -123,8 +123,7 @@ class AppManagerService:
         restored = self.store.load()
         if restored is None:
             log.info("no previous status found; starting from an empty state")
-            return State(apply_mode=self.settings.apply_mode)
-        restored.apply_mode = self.settings.apply_mode
+            return State()
         # A fact about this process: a previous sync says nothing about
         # /fragments now, and trusting it would retract on an empty dir.
         restored.discovery_synced = False
@@ -265,12 +264,8 @@ class AppManagerService:
         report the *last* process's success and sit Ready while changing
         nothing. Under sole-writer that is the deploy gate failing silently, so
         this process has to have converged the realm at least once itself.
-
-        Diff mode writes no realm, so there it can only mean the reconcile runs.
         """
-        if self.settings.apply_mode == "apply":
-            return self.state.base_realm_applied and self.converged
-        return self.reconciles > 0
+        return self.state.base_realm_applied and self.converged
 
     def next_deadline(self) -> float | None:
         """Seconds until a held retraction's grace period runs out, if any.
@@ -370,8 +365,6 @@ class AppManagerService:
             )
             self.store.save(self.state)
             return self.state
-        if self.settings.apply_mode != "apply":
-            return self._report_diff(result, base_hash, desired_hash)
 
         self.state.phase = PENDING
         self.store.save(self.state)
@@ -490,22 +483,6 @@ class AppManagerService:
             + (" (discovery never synced)" if refused else "")
         )
         log.warning("HOLDING   the realm is unchanged: %s", self.state.last_result)
-        self.store.save(self.state)
-        return self.state
-
-    def _report_diff(
-        self, result: ComposeResult, base_hash: str, desired_hash: str
-    ) -> State:
-        if self.state.identical_to_base:
-            summary = "composed realm is byte-identical to the base realm"
-        else:
-            summary = (
-                f"{len(result.accepted)} fragment(s) would change the realm "
-                f"({base_hash[:19]} -> {desired_hash[:19]})"
-            )
-        log.info("DIFF MODE: not applying. %s", summary)
-        self.state.last_result = f"diff mode: {summary}"
-        self.state.phase = PENDING
         self.store.save(self.state)
         return self.state
 

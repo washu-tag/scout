@@ -48,7 +48,6 @@ class State:
     last_reconcile: str = "never"
     last_applied_hash: str | None = None
     last_result: str = "not yet reconciled"
-    apply_mode: str = "diff"
     pending_change: bool = False
     base_hash: str | None = None
     # sha256 of the base realm document's *bytes*, where base_hash is over the

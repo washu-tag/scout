@@ -46,7 +46,6 @@ def test_every_state_is_emitted_even_at_zero(setup):
 
 def test_the_realm_facts_are_exposed(setup):
     service, fragments, _ = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
 
     found = series(metrics.render(service.reconcile_once()))
@@ -63,7 +62,6 @@ def test_the_realm_facts_are_exposed(setup):
 def test_an_unreachable_keycloak_says_so_rather_than_reading_as_no_drift(setup):
     """0 here means drift detection is off, not that the realm is in step."""
     service, _, _ = setup
-    service.settings.apply_mode = "apply"
     service.reconcile_once()
     service.keycloak.readable = False
 
@@ -75,7 +73,6 @@ def test_an_unreachable_keycloak_says_so_rather_than_reading_as_no_drift(setup):
 
 def test_a_held_retraction_is_visible(setup):
     service, fragments, _ = setup
-    service.settings.apply_mode = "apply"
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
     path.unlink()

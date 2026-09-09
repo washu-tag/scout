@@ -58,12 +58,6 @@ rather than leaving it green over stale platform auth.
 Fragment outcomes never affect readiness: a rejected fragment is one service's problem, not
 the platform's, and a fragment waiting out its retraction grace keeps the pod Ready.
 
-`app_manager_apply_mode: diff` is the dry run for adopting an existing realm — the composed
-realm should come out byte-identical to the platform's own rendered realm, which is the
-cheapest proof that composition is not quietly rewriting the base. It applies nothing, so
-the deploy's realm-applied wait fails while it is set. Use it for one pass, read the log,
-then put it back.
-
 ## Looking at what it did
 
 The reconciler publishes a status document after every reconcile. This is the first place

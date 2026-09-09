@@ -37,7 +37,6 @@ def composed_realm(client) -> dict:
 def test_a_discovered_fragment_is_installed(setup):
     """Discovery is the whole gate: a valid fragment reaches the realm."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
 
     state = service.reconcile_once()
@@ -49,7 +48,6 @@ def test_a_discovered_fragment_is_installed(setup):
 def test_an_edit_reaches_the_realm_unreviewed(setup):
     """Including one that widens a grant. Nothing stands between the two."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
 
@@ -92,7 +90,6 @@ def test_an_invalid_fragment_is_excluded(setup):
 def test_deleting_the_fragment_removes_everything(setup):
     """With no grace period, absence retracts immediately."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     service.settings.retraction_grace_seconds = 0
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
@@ -115,7 +112,6 @@ def test_deleting_the_fragment_removes_everything(setup):
 def test_a_vanished_fragment_is_held_before_it_is_retracted(setup):
     """A chart upgrade's delete-then-create must not kill a live client."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
     applied = dict(client.jobs)
@@ -134,7 +130,6 @@ def test_a_vanished_fragment_is_held_before_it_is_retracted(setup):
 
 def test_a_fragment_that_comes_back_inside_the_grace_period_is_a_no_op(setup):
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     body = fragment_yaml("hello")
     path = write_fragment(fragments, "scout-demo", "hello", body)
     service.reconcile_once()
@@ -154,7 +149,6 @@ def test_a_fragment_that_comes_back_inside_the_grace_period_is_a_no_op(setup):
 def test_nothing_is_retracted_until_discovery_reports_a_sync(setup):
     """An empty fragment dir is not evidence of deletion."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     service.settings.retraction_grace_seconds = 0
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
@@ -205,7 +199,6 @@ def test_no_fragments_composes_to_the_base_realm_byte_for_byte(setup):
 
     assert state.identical_to_base is True
     assert state.base_hash == state.composed_hash
-    assert "byte-identical" in state.last_result
 
 
 def test_a_fragment_moves_the_realm_off_the_base(setup):
@@ -218,21 +211,8 @@ def test_a_fragment_moves_the_realm_off_the_base(setup):
     assert state.base_hash != state.composed_hash
 
 
-def test_diff_mode_never_writes(setup):
+def test_a_reconcile_writes_the_composed_realm_and_runs_config_cli(setup):
     service, fragments, client = setup
-    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
-
-    state = service.reconcile_once()
-
-    assert client.jobs == {}
-    assert ("scout-core", "keycloak-config-composed") not in client.configmaps
-    assert state.pending_change is True
-    assert "diff mode" in state.last_result
-
-
-def test_apply_mode_writes_the_composed_realm_and_runs_config_cli(setup):
-    service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
 
     state = service.reconcile_once()
@@ -248,7 +228,6 @@ def test_apply_mode_writes_the_composed_realm_and_runs_config_cli(setup):
 
 def test_a_failed_apply_does_not_record_the_realm_as_applied(setup):
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     service.settings.job_timeout_seconds = 5
     client.job_succeeds = False
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -267,7 +246,6 @@ def test_a_failed_apply_is_retried_rather_than_replayed(setup):
     failed Job again would report a stale failure for its whole TTL.
     """
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     service.settings.job_timeout_seconds = 5
     client.job_succeeds = False
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -311,7 +289,6 @@ def test_a_still_running_apply_job_is_waited_on_not_replaced(setup, monkeypatch)
 
 def test_an_empty_fragment_dir_still_applies_the_base_realm(setup):
     service, _, client = setup
-    service.settings.apply_mode = "apply"
 
     service.reconcile_once()
 
@@ -334,7 +311,6 @@ def name_a_credential(service, variable):
 
 def test_a_resolvable_base_realm_credential_applies(setup):
     service, _, client = setup
-    service.settings.apply_mode = "apply"
     name_a_credential(service, "oauth2_proxy")
 
     state = service.reconcile_once()
@@ -352,7 +328,6 @@ def test_an_unresolvable_base_realm_credential_refuses_the_whole_apply(setup):
     applied, so this stops everything.
     """
     service, _, client = setup
-    service.settings.apply_mode = "apply"
     name_a_credential(service, "not_in_the_secret")
 
     state = service.reconcile_once()
@@ -365,7 +340,6 @@ def test_an_unresolvable_base_realm_credential_refuses_the_whole_apply(setup):
 def test_a_present_but_empty_credential_counts_as_unresolvable(setup):
     """An empty value is substituted, so the client gets a blank secret."""
     service, _, client = setup
-    service.settings.apply_mode = "apply"
     client.set_secret("scout-core", "keycloak-client-secrets", {"oauth2_proxy": ""})
     name_a_credential(service, "oauth2_proxy")
 
@@ -376,7 +350,6 @@ def test_a_present_but_empty_credential_counts_as_unresolvable(setup):
 def test_the_site_hostname_needs_no_secret(setup):
     """Every base-realm URL is written against it, and it is not a credential."""
     service, _, client = setup
-    service.settings.apply_mode = "apply"
     realm = json.loads(open(service.settings.base_realm_path).read())
     realm["clients"][0]["redirectUris"] = ["https://x.$(env:server_hostname)/cb"]
     open(service.settings.base_realm_path, "w").write(json.dumps(realm))
@@ -393,7 +366,6 @@ def test_rotating_a_credential_re_applies_an_unchanged_document(setup):
     """The document no longer moves when a credential does, so this is the
     only thing that would notice."""
     service, _, client = setup
-    service.settings.apply_mode = "apply"
     # reconcile_once returns the live State, so snapshot rather than compare
     # the object with itself.
     first = service.reconcile_once()
@@ -411,7 +383,6 @@ def test_rotating_a_credential_re_applies_an_unchanged_document(setup):
 
 def test_an_untouched_credential_does_not_re_apply(setup):
     service, _, client = setup
-    service.settings.apply_mode = "apply"
     service.reconcile_once()
     service.reconcile_once()
 
@@ -548,7 +519,6 @@ def test_a_realm_written_by_something_else_is_re_applied(setup):
     realm up to date while a fragment's client was gone.
     """
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     state = service.reconcile_once()
     assert state.drift is False
@@ -568,7 +538,6 @@ def test_a_realm_written_by_something_else_is_re_applied(setup):
 
 def test_drift_is_still_reported_when_the_repair_fails(setup):
     service, _, client = setup
-    service.settings.apply_mode = "apply"
     service.settings.job_timeout_seconds = 5
     service.reconcile_once()
 
@@ -583,7 +552,6 @@ def test_drift_is_still_reported_when_the_repair_fails(setup):
 def test_an_unreadable_realm_is_not_drift(setup):
     """Not knowing must not become re-applying."""
     service, _, client = setup
-    service.settings.apply_mode = "apply"
     service.reconcile_once()
 
     service.keycloak.readable = False
@@ -595,10 +563,13 @@ def test_an_unreadable_realm_is_not_drift(setup):
 
 
 def test_drift_needs_an_apply_of_our_own_to_compare_against(setup):
-    """Diff mode writes no realm, so there is no expectation to hold anyone to."""
+    """An apply whose read-back did not arrive leaves nothing to compare to."""
     service, _, client = setup
-    client.realm_checksum = "0" * 64
+    service.keycloak.readable = False
+    service.reconcile_once()
 
+    service.keycloak.readable = True
+    client.realm_checksum = "0" * 64
     state = service.reconcile_once()
 
     assert state.drift is False
@@ -611,7 +582,6 @@ def test_the_expected_checksum_is_what_config_cli_recorded(setup):
     document plus a salt, and reproducing that here would be a second
     implementation of somebody else's hash."""
     service, _, client = setup
-    service.settings.apply_mode = "apply"
 
     state = service.reconcile_once()
 
@@ -655,33 +625,15 @@ def test_the_app_label_falls_back_to_the_configmap_name(setup):
     )
 
 
-def test_settings_default_to_diff_mode(monkeypatch):
-    monkeypatch.delenv("APP_MANAGER_APPLY_MODE", raising=False)
-    assert Settings().apply_mode == "diff"
-
-
 def test_settings_read_the_environment_per_process_not_per_import(monkeypatch):
     """Each Settings reads the environment. Read at import, an env var would be
     a fact about the interpreter, and one exported on a CI runner would change
     the behaviour of every test in the suite."""
-    monkeypatch.setenv("APP_MANAGER_APPLY_MODE", "apply")
+    monkeypatch.setenv("APP_MANAGER_KEYCLOAK_REALM", "other")
     monkeypatch.setenv("APP_MANAGER_RESYNC_SECONDS", "42")
     settings = Settings()
-    assert settings.apply_mode == "apply"
+    assert settings.keycloak_realm == "other"
     assert settings.resync_seconds == 42
-
-
-@pytest.mark.parametrize("mode", ["Apply", "apply ", "applied", "", "true"])
-def test_an_unrecognised_apply_mode_is_refused(monkeypatch, mode):
-    """It used to mean diff, silently — and diff mode reports Ready.
-
-    So `applyMode: Apply` in an inventory produced a pod that passed its
-    readiness probe, satisfied helm's wait, reported phase Pending, and never
-    wrote a realm.
-    """
-    monkeypatch.setenv("APP_MANAGER_APPLY_MODE", mode)
-    with pytest.raises(SystemExit, match="APP_MANAGER_APPLY_MODE"):
-        Settings()
 
 
 @pytest.mark.parametrize(

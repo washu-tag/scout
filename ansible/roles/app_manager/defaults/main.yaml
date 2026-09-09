@@ -10,26 +10,12 @@ app_manager_image_repository: ghcr.io/washu-tag/scout-app-manager
 app_manager_image_tag: latest
 app_manager_image_pull_policy: IfNotPresent
 
-# diff | apply. `apply` because nothing else writes the realm (ADR 0037) -- in
-# `diff` the auth play publishes a realm that is never applied, and on a fresh
-# install that means no Keycloak clients at all. The play's realm-applied gate
-# fails while this is `diff`, deliberately.
-#
-# `diff` is still the dry run worth one pass when adopting an existing realm:
-# with no fragments deployed the composed realm must come out byte-identical to
-# the base realm, which is the cheapest proof the composer is not rewriting the
-# platform's own realm.
-app_manager_apply_mode: apply
-
 # A floor, not a schedule: the sidecar calls the reconciler on every fragment
 # change, and the reconciler watches this namespace's Secrets and the base
 # realm ConfigMap itself. It is also the worst case for the one input nothing
 # can watch -- a realm written by something other than the reconciler.
 app_manager_resync_seconds: 60
 app_manager_debounce_seconds: 2
-# Wake on a credential rotation or a re-rendered base realm instead of waiting
-# out the floor. Off is the break-glass; the floor still catches the change.
-app_manager_object_watch: true
 # Absence tolerated before a fragment's realm objects are retracted. Longer than
 # a chart upgrade's delete-then-create window, so it survives one.
 app_manager_retraction_grace_seconds: 300

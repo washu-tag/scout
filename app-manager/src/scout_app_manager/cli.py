@@ -175,7 +175,7 @@ def _status() -> int:
         )
         return 1
 
-    print(f"phase {state.phase} · mode {settings.apply_mode} · {state.last_result}")
+    print(f"phase {state.phase} · {state.last_result}")
     print(
         f"base {(state.base_hash or '-')[:19]} -> "
         f"composed {(state.composed_hash or '-')[:19]}"

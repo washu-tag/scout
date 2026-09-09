@@ -172,7 +172,6 @@ def test_status_reports_why_a_fragment_was_excluded(in_pod, capsys):
 def test_status_never_writes(in_pod, capsys):
     """An operator looking must not become a second writer."""
     service, fragments = in_pod
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
     jobs, secrets = dict(service.client.jobs), dict(service.client.secrets)

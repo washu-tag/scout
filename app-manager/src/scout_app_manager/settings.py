@@ -1,16 +1,9 @@
 """Process configuration, read from the environment as each Settings is built."""
 
-from typing import Literal
-
 from pydantic import AliasChoices, Field, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_PREFIX = "APP_MANAGER_"
-
-# What the manager may do with a composed realm. `diff` reports it, `apply`
-# writes it. Closed because this one input decides whether the component does
-# anything at all.
-ApplyMode = Literal["diff", "apply"]
 
 
 class Settings(BaseSettings):
@@ -37,10 +30,6 @@ class Settings(BaseSettings):
     # them.
     composed_configmap: str = "keycloak-config-composed"
     status_configmap: str = "scout-app-manager-status"
-    # Fail-safe, and deliberately not the deployment default: a process nobody
-    # configured must not write a realm. Both charts set this to `apply`,
-    # because there the reconciler is the realm's only writer (ADR 0037).
-    apply_mode: ApplyMode = "diff"
     keycloak_url: str = "http://keycloak-service:8080"
     keycloak_realm: str = "scout"
     signout_url: str = ""
@@ -58,10 +47,6 @@ class Settings(BaseSettings):
     debounce_seconds: float = 2.0
     discovery_health_url: str = "http://127.0.0.1:8081/healthz"
     discovery_wait_seconds: int = 90
-    # Watch this namespace's Secrets and its base realm ConfigMap, and wake on
-    # a change. Off falls back to the resync floor, which is the break-glass if
-    # the watch ever misbehaves.
-    object_watch: bool = True
     # Absence tolerated before a fragment's realm objects are retracted. Longer
     # than a chart upgrade's delete-then-create window.
     retraction_grace_seconds: int = 300

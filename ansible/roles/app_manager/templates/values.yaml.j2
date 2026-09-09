@@ -4,11 +4,9 @@ image:
   pullPolicy: '{{ app_manager_image_pull_policy }}'
 
 manager:
-  applyMode: '{{ app_manager_apply_mode }}'
   domain: '{{ server_hostname }}'
   resyncSeconds: {{ app_manager_resync_seconds }}
   debounceSeconds: {{ app_manager_debounce_seconds }}
-  objectWatch: {{ app_manager_object_watch | bool | lower }}
   retractionGraceSeconds: {{ app_manager_retraction_grace_seconds }}
   jobTimeoutSeconds: {{ app_manager_job_timeout_seconds }}
   jobTtlSeconds: {{ app_manager_job_ttl_seconds }}

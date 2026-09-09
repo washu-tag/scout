@@ -229,7 +229,6 @@ def setup(tmp_path, base_realm, monkeypatch):
         base_realm_path=str(realm_path),
         domain="scout.example.edu",
         namespace="scout-core",
-        apply_mode="diff",
         resync_seconds=1,
     )
     client = FakeClient()

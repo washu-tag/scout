@@ -8,17 +8,6 @@ image:
   pullPolicy: IfNotPresent
 
 manager:
-  # diff | apply. `apply` is the default because nothing else writes the realm
-  # (ADR 0037): the deploy publishes the base realm document and this reconciles
-  # it, so a reconciler in `diff` mode means a realm that is never applied at
-  # all -- on a fresh install, no Keycloak clients.
-  #
-  # `diff` remains the dry run, and it is worth one pass when adopting an
-  # existing realm: with no fragments deployed the composed realm must come out
-  # byte-identical to the base realm, which is the cheapest possible proof that
-  # the composer is not quietly rewriting things. Expect the deploy to fail its
-  # realm-applied gate while it is set.
-  applyMode: apply
   # Public hostname suffix. Fragments interpolate it as ${domain}.
   domain: ''
   # A floor, not a schedule: a change to a watched object is the normal wake-up.
@@ -49,10 +38,6 @@ manager:
   # credentials as `$(env:...)` and carries none of them.
   baseRealmConfigMap: keycloak-base-realm
   baseRealmKey: scout-realm.json
-  # Watch this namespace's Secrets and the ConfigMap above, so a rotation or a
-  # re-rendered realm wakes the reconciler instead of waiting out
-  # resyncSeconds. Off is the break-glass; the floor still catches the change.
-  objectWatch: true
   # The credentials the base realm names as `$(env:...)` but does not carry.
   # Keys are those variables verbatim; the apply Job takes it with envFrom, and
   # the reconciler reads it to check every name resolves before applying.

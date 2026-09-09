@@ -43,7 +43,6 @@ def restart(service) -> AppManagerService:
 
 def test_the_document_is_camel_cased_and_carries_every_fragment(setup):
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
 
     service.reconcile_once()
@@ -66,7 +65,6 @@ def test_the_published_document_round_trips(setup):
     trip is reported wrong -- a readable realm as unreadable, in the case that
     found this."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
 
@@ -84,7 +82,6 @@ def test_the_base_source_hash_is_over_the_document_a_deploy_published(setup):
     """A deploy computes this from the bytes it wrote, so it has to be exactly
     sha256 of them -- not of the parse, which is what observedBaseHash is."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
 
     service.reconcile_once()
@@ -99,7 +96,6 @@ def test_the_base_source_hash_is_over_the_document_a_deploy_published(setup):
 
 def test_the_base_source_hash_moves_when_the_document_does(setup):
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
     before = published(client)["observedBaseSourceHash"]
@@ -115,7 +111,6 @@ def test_the_base_source_hash_moves_when_the_document_does(setup):
 
 def test_a_failed_apply_is_published_as_failed(setup):
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     service.settings.job_timeout_seconds = 5
     client.job_succeeds = False
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -131,7 +126,6 @@ def test_a_failed_apply_is_published_as_failed(setup):
 
 def test_a_restart_resumes_the_applied_hash_and_does_not_reapply(setup):
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
     jobs = dict(client.jobs)
@@ -149,7 +143,6 @@ def test_a_restart_still_knows_what_it_last_wrote_to_the_realm(setup):
     """Without the checksum persisted, a restart has nothing to compare the
     live realm against and drift goes unnoticed until the next apply."""
     service, _, client = setup
-    service.settings.apply_mode = "apply"
     service.reconcile_once()
     expected = published(client)["appliedImportChecksum"]
     assert expected
@@ -168,7 +161,6 @@ def test_a_restart_still_knows_what_it_last_wrote_to_the_realm(setup):
 def test_a_restart_keeps_a_running_grace_clock(setup):
     """Otherwise a restart hands a vanished fragment a fresh clock."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
     path.unlink()
@@ -189,7 +181,6 @@ def test_a_restart_keeps_a_running_grace_clock(setup):
 def test_a_restart_with_an_empty_fragment_dir_refuses_rather_than_retracting(setup):
     """The reconciler is up before the sidecar has written anything."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     service.settings.retraction_grace_seconds = 0
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
@@ -204,16 +195,6 @@ def test_a_restart_with_an_empty_fragment_dir_refuses_rather_than_retracting(set
     assert client.jobs == jobs
 
 
-def test_diff_mode_readiness_is_about_this_process_not_the_realm(setup):
-    service, _, client = setup
-
-    assert service.ready() is False
-    service.reconcile_once()
-
-    assert service.ready() is True
-    assert published(client)["baseRealmApplied"] is False
-
-
 def test_a_restart_does_not_inherit_readiness(setup):
     """The restored fact describes the last process, not this one.
 
@@ -221,7 +202,6 @@ def test_a_restart_does_not_inherit_readiness(setup):
     under sole-writer means the deploy gate misses it entirely.
     """
     service, fragments, _ = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
 
@@ -238,7 +218,6 @@ def test_a_restart_does_not_inherit_readiness(setup):
 def test_a_reconciler_that_cannot_read_the_realm_goes_unready(setup):
     """The Phase B2 deploy: a stale image read a realm that was not there."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
     assert service.ready() is True
@@ -253,7 +232,6 @@ def test_a_reconciler_that_cannot_read_the_realm_goes_unready(setup):
 def test_a_refused_apply_is_not_ready(setup):
     """Refused means the realm is stale, however well the last apply went."""
     service, fragments, _ = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
     assert service.ready() is True
@@ -271,7 +249,6 @@ def test_a_refused_apply_is_not_ready(setup):
 
 def test_readiness_is_false_until_the_realm_is_applied(setup):
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     service.settings.job_timeout_seconds = 5
     client.job_succeeds = False
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -290,7 +267,6 @@ def test_a_held_retraction_stays_ready(setup):
     business. Going unready here would fail the platform's auth deploy over a
     chart upgrade elsewhere on the cluster."""
     service, fragments, _ = setup
-    service.settings.apply_mode = "apply"
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
 
@@ -304,7 +280,6 @@ def test_a_held_retraction_stays_ready(setup):
 def test_readiness_ignores_a_rejected_fragment(setup):
     """One broken fragment is one service's problem, not the platform's."""
     service, fragments, _ = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     write_fragment(
         fragments, "scout-bad", "broken", fragment_yaml("broken", fullScopeAllowed=True)
@@ -318,7 +293,6 @@ def test_readiness_ignores_a_rejected_fragment(setup):
 
 def test_an_unchanged_realm_does_not_report_the_previous_outcome(setup):
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     body = fragment_yaml("hello")
     path = write_fragment(fragments, "scout-demo", "hello", body)
     service.reconcile_once()
@@ -338,7 +312,6 @@ def test_an_unchanged_realm_does_not_report_the_previous_outcome(setup):
 def test_a_resumed_service_distrusts_the_published_discovery_flag(setup):
     """A previous process's sync says nothing about /fragments now."""
     service, fragments, client = setup
-    service.settings.apply_mode = "apply"
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
     assert published(client)["discoverySynced"] is True
