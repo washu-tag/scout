@@ -5,4 +5,5 @@ kind: Kustomization
 # the shared deploy/flux/. Counterpart: ../on-prem.
 resources:
   - storage.yaml
+  - postgres.yaml
   - edge.yaml
