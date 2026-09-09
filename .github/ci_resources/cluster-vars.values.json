@@ -1,20 +1,7 @@
 {
   "_comment": "CI site values for the deploy-and-test-flux ingest slice. Mirrors the Ansible role defaults (= tooling/deploy/fixtures) with CI-specific overrides: lake_bucket matches .github/ci_resources/inventory.yaml (ci-lake) and server_hostname uses the CI test domain. Consumed by gen_cluster_vars.py to emit the cluster-vars ConfigMap for Flux postBuild.",
-  "cassandra_cluster_name": "cassandra-cluster",
-  "cassandra_cpu_limit": "2",
-  "cassandra_cpu_request": "100m",
-  "cassandra_datacenter_name": "dc1",
-  "cassandra_init_heap": "1G",
-  "cassandra_max_heap": "2G",
-  "cassandra_storage_size": "10Gi",
   "cnpg_operator_namespace": "scout-operators",
   "db_port": "5432",
-  "eck_operator_namespace": "scout-operators",
-  "elasticsearch_cluster_name": "elasticsearch",
-  "elasticsearch_cpu_limit": "2",
-  "elasticsearch_cpu_request": "100m",
-  "elasticsearch_max_heap": "512M",
-  "elasticsearch_storage_size": "10Gi",
   "extractor_data_dir": "/mnt/hl7-logs",
   "hive_namespace": "scout-data",
   "hl7_raw_bucket": "hl7-raw",
@@ -119,14 +106,20 @@
       "memory": "2Gi"
     }
   },
-  "cassandra_system_logger_resources_default": {
-    "requests": {
-      "cpu": "100m",
-      "memory": "128Mi"
-    },
-    "limits": {
-      "cpu": "500m",
-      "memory": "256Mi"
-    }
-  }
+  "service_mode": "on-prem",
+  "scout_env": "ci",
+  "deployer_name": "ci",
+  "postgres_host": "postgresql-cluster-rw.scout-core",
+  "s3_path_style_access": "true",
+  "opa_bundle_s3_endpoint": "http://minio.scout-data",
+  "hive_hadoop_opts": "",
+  "keycloak_github_enabled": "true",
+  "keycloak_microsoft_enabled": "false",
+  "keycloak_default_provider": "github",
+  "keycloak_enable_xnat": "false",
+  "keycloak_launchpad_client_id": "launchpad",
+  "keycloak_alb_oidc_hosts": "",
+  "irsa_role_prefix": "",
+  "acm_cert_arn": "",
+  "alb_group_name": ""
 }
