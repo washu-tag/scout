@@ -46,16 +46,18 @@ and cassandra + Elasticsearch can be removed from Scout altogether.
 
 **1. The data tier is PostgreSQL-only, mode-selected between self-hosted (on-prem) and managed (aws).**
 
-- **on-prem**: CNPG `Cluster` as today (the `postgres-cluster` Flux Kustomization).
+- **on-prem**: CNPG `Cluster` as today, behind the mode-agnostic `postgres-ready` gate Kustomization.
 - **aws**: no CNPG `Cluster`. Consumers connect to an external **RDS** instance via `${postgres_host}`
-  (+ `${postgres_port}`) and a site-provided credential Secret. `postgres-cluster` becomes on-prem-only,
-  the same way ADR 0035 makes `storage-ready`/MinIO and the Traefik edge on-prem-only.
+  (+ the existing `${db_port}`) and a site-provided credential Secret. `postgres-ready` is provided
+  per-mode (an inert marker on aws), the same way ADR 0035 makes `storage-ready`/MinIO and the
+  Traefik edge mode-selected.
 
 The seam is a host cluster-var (`${postgres_host}`) that resolves to the in-cluster service name on-prem
-(e.g. `postgresql-cluster-rw.<ns>.svc`) and to the RDS endpoint on aws. Every consumer (hive-metastore,
-keycloak, superset, extractor, launchpad) already reads its DB host from config; they switch to the
-cluster-var. Credentials stay fixed-name Secrets (ADR 0031); an aws site materializes them from RDS
-instead of from the operator-generated Secret.
+(e.g. `postgresql-cluster-rw.<ns>.svc`) and to the RDS endpoint on aws. The consumers that template the
+host (hive-metastore, keycloak, extractor, temporal) resolve it from the cluster-var; superset reads its
+DB coordinates from the `superset-env` Secret and launchpad has no Postgres, so for those an aws site sets
+the host in the Secret values. Credentials stay fixed-name Secrets (ADR 0031); an aws site materializes
+them from RDS instead of from the operator-generated Secret.
 
 **2. Temporal moves off cassandra + Elasticsearch onto PostgreSQL, in both modes.**
 
@@ -93,9 +95,12 @@ ECK adopt-in-place conflicts (there is no CR to adopt).
   schemas. Give Temporal its own database + role (isolation, retention), set a sane namespace retention so
   the visibility table does not bloat, and size RDS / the CNPG cluster accordingly. On aws a dedicated
   Temporal RDS instance is optional if load isolation is wanted; at Scout's scale a single instance is fine.
-- **Contract changes**: add `postgres_host`/`postgres_port` (+ any TLS opts) and the Temporal DB/role to
-  `required-vars.txt`; add the RDS credential Secret + the Temporal DB Secret to `required-secrets.md`;
-  remove the cassandra + Elasticsearch cluster-vars and their Secrets.
+- **Contract changes**: add the Temporal DB/role to `required-vars.txt` (`postgres_host` + `db_port`
+  already exist and are reused). Add the RDS credential Secret + the Temporal DB Secret to
+  `required-secrets.md`; remove the cassandra + Elasticsearch cluster-vars and their Secrets.
+- **TLS is a tier-wide aws item**: extractor, keycloak, hive-metastore, and temporal all connect without
+  an explicit sslmode today, so an aws site either leaves `rds.force_ssl` off or adds sslmode across the
+  tier (not just Temporal). Out of scope here; called out so it is not missed at the aws cutover.
 - **on-prem is otherwise unchanged** (still CNPG-backed; it now also hosts Temporal).
 
 ## Alternatives considered

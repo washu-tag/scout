@@ -1,6 +1,6 @@
 # Per-namespace foundation (ADR 0031): sole owner of the ${scout_extractor_namespace}
-# Namespace and the shared scout-charts HelmRepository (cassandra, elasticsearch, extractor,
-# temporal, trino-rw live here; extractor + temporal-bootstrap pull from scout-charts).
+# Namespace and the shared scout-charts HelmRepository (extractor, temporal, trino-rw live
+# here; extractor + temporal-bootstrap pull from scout-charts).
 # Co-declaring either across their prune:true Kustomizations makes them fight over ownership
 # (a delete of one prunes it from the others), so each dependsOn this foundation.
 apiVersion: v1

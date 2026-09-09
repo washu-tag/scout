@@ -187,8 +187,9 @@ analytics apps) stays mode-agnostic; only the edge moves.
 ## Related
 
 - ADR 0011 (service-mode layered architecture), extended here to the deploy base.
-- ADR 0036 (managed data services in aws mode), extends this service-mode to the postgres +
-  elasticsearch data tier (RDS + OpenSearch on aws; CNPG + ECK stay on-prem).
+- ADR 0036 (managed data services in aws mode), extends this service-mode to the postgres
+  data tier (RDS on aws, CNPG on-prem) and moves Temporal onto Postgres (dropping Cassandra
+  + Elasticsearch).
 - ADR 0031 (GitOps deployment base), the base + artifact this parameterizes.
 - ADR 0030 (two-lane versioning), the artifact publish lane that ships both edges.
 - ADR 0012 (security scan response and hardening), whose edge security-header middleware moves app-side in aws.

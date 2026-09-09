@@ -47,10 +47,10 @@ until CI switches `deploy-and-test` to deploy from it. See
      path isn't substituted.
 
 ## Status
-**Bases + DAG done for the ingest slice + the auth/analytics layer** (22 Flux
-`Kustomization`s, acyclic): postgres, minio, cassandra, elasticsearch, hive,
-temporal, extractor, valkey, keycloak (+ realm), oauth2-proxy, opa, trino (ro+rw),
-superset (+ dashboards).
+**Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared
+`Kustomization` DAG plus one per-mode set, acyclic): postgres, minio, hive, temporal
+(on Postgres), extractor, valkey, keycloak (+ realm), oauth2-proxy, opa, trino
+(ro+rw), superset (+ dashboards).
 
 Remaining components: jupyter, report-viewer, monitoring, launchpad, and the
 feature Components (chat/voila/xnat/data-generator/gpu).
