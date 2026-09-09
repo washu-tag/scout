@@ -648,6 +648,38 @@ def test_drift_is_still_reported_when_the_repair_fails(setup):
     assert state.phase == FAILED
 
 
+def test_a_deleted_realm_is_re_applied(setup):
+    """It used to read as "we do not know", which is the answer for a Keycloak
+    that cannot be reached -- so the reconciler reported Applied and stayed
+    Ready with no realm in Keycloak at all."""
+    service, _, client = setup
+    service.reconcile_once()
+
+    client.realm_exists = False
+    service.reconcile_once()
+
+    # A successful repair clears the flag, so the re-apply is the evidence.
+    assert len(client.created_jobs) == 2
+    assert client.realm_exists is True
+
+
+@pytest.mark.parametrize("how", ["deleted", "unchecksummed"])
+def test_a_realm_nothing_has_imported_into_leaves_the_pod_unready(setup, how):
+    service, _, client = setup
+    service.settings.job_timeout_seconds = 5
+    service.reconcile_once()
+    assert service.ready() is True
+
+    if how == "deleted":
+        client.realm_exists = False
+    else:
+        client.realm_checksum = None
+    client.job_succeeds = False
+    service.reconcile_once()
+
+    assert service.ready() is False
+
+
 def test_an_unreadable_realm_is_not_drift(setup):
     """Not knowing must not become re-applying."""
     service, _, client = setup

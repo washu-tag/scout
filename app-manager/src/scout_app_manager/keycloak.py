@@ -1,4 +1,4 @@
-"""Reading back what the realm says was last imported into it.
+"""Reading back whether the realm is there, and what it says was last imported.
 
 `pending_change` compares the composed realm with the last one this process
 applied, and never looks at Keycloak. That is blind to the case this whole
@@ -29,6 +29,7 @@ changes it.
 import logging
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 
 import httpx2 as httpx
 
@@ -50,10 +51,32 @@ EXPIRY_MARGIN_SECONDS = 30.0
 Credentials = Callable[[], "tuple[str, str] | None"]
 
 
+@dataclass(frozen=True)
+class RealmRead:
+    """What one admin read learned about the realm.
+
+    Three answers, not two, because "the realm is gone" and "we could not ask"
+    call for opposite responses and used to arrive as the same `None`. A
+    deleted realm read as "we do not know", which left the reconciler
+    reporting Applied and Ready over a Keycloak with no Scout realm in it.
+    """
+
+    # The read landed. False is unreachable, unauthenticated, or a 5xx.
+    known: bool = False
+    # ... and the realm was there.
+    exists: bool = False
+    # ... and config-cli had recorded what it last imported.
+    checksum: str | None = None
+
+
+# What every failed read returns: a warning, and no claim about the realm.
+UNKNOWN = RealmRead()
+
+
 class KeycloakAdmin:
     """The one thing the reconciler asks Keycloak directly.
 
-    Every failure is a warning and a None: not knowing whether the realm
+    A failure is a warning and an UNKNOWN: not knowing whether the realm
     drifted must never stop a reconcile, and must never be mistaken for
     knowing that it did.
     """
@@ -65,17 +88,29 @@ class KeycloakAdmin:
         self._token = ""
         self._expires_at = 0.0
 
-    def import_checksum(self) -> str | None:
-        """The checksum config-cli recorded, or None if it cannot be read."""
-        realm = self._realm()
-        if realm is None:
-            return None
-        return (realm.get("attributes") or {}).get(CHECKSUM_ATTRIBUTE)
-
-    def _realm(self) -> dict | None:
+    def read(self) -> RealmRead:
+        """Whether the realm is there, and what config-cli last imported."""
         token = self._access_token()
         if not token:
-            return None
+            return UNKNOWN
+        response = self._get_realm(token)
+        if response is None:
+            return UNKNOWN
+        if response.status_code == 404:
+            return RealmRead(known=True, exists=False)
+        if response.status_code != 200:
+            log.warning(
+                "Keycloak returned %s reading realm %s",
+                response.status_code,
+                self.realm,
+            )
+            return UNKNOWN
+        attributes = response.json().get("attributes") or {}
+        return RealmRead(
+            known=True, exists=True, checksum=attributes.get(CHECKSUM_ATTRIBUTE)
+        )
+
+    def _get_realm(self, token: str):
         try:
             response = httpx.get(
                 f"{self.base}/admin/realms/{self.realm}",
@@ -85,25 +120,22 @@ class KeycloakAdmin:
         except httpx.HTTPError as exc:
             log.warning("could not read realm %s from Keycloak: %s", self.realm, exc)
             return None
-        if response.status_code == 401:
-            # The token went stale mid-flight; one retry with a fresh one.
-            self._expires_at = 0.0
-            token = self._access_token()
-            if not token:
-                return None
-            response = httpx.get(
+        if response.status_code != 401:
+            return response
+        # The token went stale mid-flight; one retry with a fresh one.
+        self._expires_at = 0.0
+        token = self._access_token()
+        if not token:
+            return None
+        try:
+            return httpx.get(
                 f"{self.base}/admin/realms/{self.realm}",
                 headers={"Authorization": f"Bearer {token}"},
                 timeout=TIMEOUT_SECONDS,
             )
-        if response.status_code != 200:
-            log.warning(
-                "Keycloak returned %s reading realm %s",
-                response.status_code,
-                self.realm,
-            )
+        except httpx.HTTPError as exc:
+            log.warning("could not read realm %s from Keycloak: %s", self.realm, exc)
             return None
-        return response.json()
 
     def _access_token(self) -> str:
         if self._token and time.monotonic() < self._expires_at:
@@ -143,4 +175,4 @@ class KeycloakAdmin:
         return self._token
 
 
-__all__ = ["CHECKSUM_ATTRIBUTE", "KeycloakAdmin"]
+__all__ = ["CHECKSUM_ATTRIBUTE", "UNKNOWN", "KeycloakAdmin", "RealmRead"]

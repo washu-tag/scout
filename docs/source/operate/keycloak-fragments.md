@@ -167,10 +167,18 @@ writes the realm any more — that is the point of the reconciler being the only
 drift now means either the [break-glass path](#break-glass-applying-the-base-realm-without-the-reconciler)
 below or a hand edit through the admin console. Either way, the next reconcile undoes it.
 
-Drift is only detectable between two known values. If Keycloak is unreachable, the admin
-Secret unreadable, or the reconciler has not applied since it started,
-`scout_app_manager_realm_checksum_readable` goes to 0 and drift stays `false` — that is
-"not known", not "in step".
+Two coarser cases count as drift too, and both are repaired the same way: the realm has
+been **deleted**, or it exists but carries no import checksum at all, meaning
+keycloak-config-cli has never written it. Either sets `realmUnmanaged: true` and makes the
+pod unready, because a reconciler with nothing pending would otherwise go on reporting
+`Applied` about a document that is no longer in any Keycloak.
+
+Comparing checksums needs two known values, though, and none of this is inferred from a
+read that did not land. If Keycloak is unreachable, the admin Secret unreadable, or the
+reconciler has not applied since it started,
+`scout_app_manager_realm_checksum_readable` goes to 0 and both `driftDetected` and
+`realmUnmanaged` stay `false` — that is "not known", not "in step", and it is deliberately
+not a reason to re-apply or to go unready.
 
 A rotation wakes the reconciler: it watches its own namespace's Secrets, and a credential
 the realm names — the platform's `keycloak-client-secrets` or any Secret a fragment's

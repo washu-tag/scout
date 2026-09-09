@@ -8,6 +8,7 @@ import yaml
 
 from scout_app_manager.compose import Site
 from scout_app_manager.k8s import ApiError
+from scout_app_manager.keycloak import RealmRead
 from scout_app_manager.schema import (
     API_VERSION,
     FRAGMENT_LABEL,
@@ -128,7 +129,9 @@ class FakeClient:
         # Names whose GET raises rather than answering, for the blip a Secret
         # read is damped against.
         self.unreadable_secrets: set[str] = set()
-        # Stands in for the realm attribute config-cli writes after an import.
+        # Stands in for the realm itself, and for the attribute config-cli
+        # writes on it after an import. A successful apply creates both.
+        self.realm_exists = True
         self.realm_checksum: str | None = None
 
     def namespace(self) -> str:
@@ -185,6 +188,7 @@ class FakeClient:
                 .get("scout-realm.json", "")
             )
             self.realm_checksum = hashlib.sha256(document.encode()).hexdigest()
+            self.realm_exists = True
         return body
 
     def get_job(self, namespace, name):
@@ -205,11 +209,12 @@ class FakeClient:
 
 
 class FakeKeycloak:
-    """The realm's own record of what was last imported into it.
+    """The realm, and its own record of what was last imported into it.
 
-    Backed by the FakeClient so an apply moves it the way a real one does;
+    Backed by the FakeClient so an apply moves it the way a real one does.
     `readable = False` is Keycloak being unreachable, which must read as "we do
-    not know" rather than as drift.
+    not know"; the client's `realm_exists = False` is the realm having been
+    deleted, which is a different answer entirely.
     """
 
     def __init__(self, client: FakeClient):
@@ -217,9 +222,13 @@ class FakeKeycloak:
         self.readable = True
         self.reads = 0
 
-    def import_checksum(self):
+    def read(self) -> RealmRead:
         self.reads += 1
-        return self.client.realm_checksum if self.readable else None
+        if not self.readable:
+            return RealmRead()
+        if not self.client.realm_exists:
+            return RealmRead(known=True, exists=False)
+        return RealmRead(known=True, exists=True, checksum=self.client.realm_checksum)
 
 
 @pytest.fixture

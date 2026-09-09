@@ -192,7 +192,12 @@ def _status() -> int:
         f"discovery synced: {state.discovery_synced} · "
         f"base realm applied: {state.base_realm_applied}"
     )
-    if state.drift:
+    if state.realm_unmanaged:
+        print(
+            f"UNMANAGED: realm {settings.keycloak_realm} is gone, or nothing "
+            "has ever imported into it"
+        )
+    elif state.drift:
         print(
             f"DRIFT: the realm reports import checksum "
             f"{(state.live_checksum or '-')[:12]}, but this reconciler last "

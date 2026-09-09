@@ -39,7 +39,7 @@ from .compose import (
     realm_hash,
 )
 from .k8s import ApiError, Client, value_of, version_of
-from .keycloak import KeycloakAdmin
+from .keycloak import KeycloakAdmin, RealmRead
 from .load import LoadedFragment, parse_realm_document, scan
 from .models import (
     APPLIED,
@@ -319,8 +319,17 @@ class AppManagerService:
         report the *last* process's success and sit Ready while changing
         nothing. Under sole-writer that is the deploy gate failing silently, so
         this process has to have converged the realm at least once itself.
+
+        And the realm has to still be there. Deleting it, or replacing it with
+        one nothing has ever imported into, is otherwise invisible from here:
+        a converged reconciler with no pending change reports Applied about a
+        document that is no longer in any Keycloak.
         """
-        return self.state.base_realm_applied and self.converged
+        return (
+            self.state.base_realm_applied
+            and self.converged
+            and not self.state.realm_unmanaged
+        )
 
     def next_deadline(self) -> float | None:
         """Seconds until a held retraction's grace period runs out, if any.
@@ -408,8 +417,7 @@ class AppManagerService:
         self.state.composed_hash = desired_hash
         self.state.secrets_version = secrets_version
         self.state.identical_to_base = desired_hash == base_hash
-        self.state.live_checksum = self.keycloak.import_checksum()
-        self.state.drift = self._drifted()
+        self._observe(self.keycloak.read())
         self.state.pending_change = (
             desired_hash != self.state.last_applied_hash
             or secrets_version != self.state.applied_secrets_version
@@ -434,21 +442,47 @@ class AppManagerService:
         self.store.save(self.state)
         return self.state
 
-    def _drifted(self) -> bool:
-        """Did something other than this reconciler write the realm?
+    def _observe(self, read: RealmRead) -> None:
+        """Record what the live realm looks like, and whether it is ours.
 
-        Only answerable between two known values. An unreadable realm, or an
-        apply whose read-back did not come through, leaves no expectation to
-        compare against -- and "we do not know" must not become "re-apply".
+        A read that did not land claims nothing: "we do not know" must not
+        become "re-apply", and it must not become "the realm is gone" either.
         """
+        self.state.live_checksum = read.checksum
+        self.state.realm_unmanaged = read.known and not (read.exists and read.checksum)
+        self.state.drift = self._drifted(read)
+
+    def _drifted(self, read: RealmRead) -> bool:
+        """Did something other than this reconciler last write the realm?
+
+        Three ways to know, all repaired by applying again. The realm is gone.
+        It is there but carries no import checksum at all, so config-cli has
+        never written it. Or its checksum is not the one our own apply read
+        back -- which is only answerable once we have applied, because an apply
+        whose read-back did not arrive leaves no expectation to compare with.
+        """
+        if not read.known:
+            return False
+        if not read.exists:
+            log.warning(
+                "DRIFT     realm %s does not exist; applying it",
+                self.settings.keycloak_realm,
+            )
+            return True
+        if not read.checksum:
+            log.warning(
+                "DRIFT     realm %s carries no import checksum, so nothing has "
+                "ever imported into it; applying",
+                self.settings.keycloak_realm,
+            )
+            return True
         expected = self.state.applied_import_checksum
-        live = self.state.live_checksum
-        if not expected or not live or expected == live:
+        if not expected or expected == read.checksum:
             return False
         log.warning(
             "DRIFT     the realm was last written by something other than this "
             "reconciler (import checksum %s, expected %s); re-applying",
-            live[:12],
+            read.checksum[:12],
             expected[:12],
         )
         return True
@@ -591,9 +625,11 @@ class AppManagerService:
         # What config-cli actually recorded, which is the only thing a later
         # drift check can compare against. Read after the apply rather than
         # computed: the checksum covers the post-substitution document plus a
-        # salt, neither of which this process should have to reproduce.
-        self.state.applied_import_checksum = self.keycloak.import_checksum()
-        self.state.live_checksum = self.state.applied_import_checksum
+        # salt, neither of which this process should have to reproduce. Re-read
+        # rather than assumed, so a successful apply also clears the "no realm
+        # to be ready about" verdict this same reconcile took before it.
+        self._observe(self.keycloak.read())
+        self.state.applied_import_checksum = self.state.live_checksum
         self.state.drift = False
         self.state.last_applied_hash = desired_hash
         self.state.applied_secrets_version = secrets_version

@@ -75,6 +75,12 @@ def render(state: State) -> str:
             "Keycloak. 0 means drift cannot be detected at all.",
             int(bool(state.live_checksum)),
         ),
+        (
+            "realm_unmanaged",
+            "1 when the realm was read and is either gone or has never been "
+            "imported into. The reconciler is unready while it is.",
+            int(state.realm_unmanaged),
+        ),
     ):
         lines += [
             f"# HELP {PREFIX}_{name} {help_text}",

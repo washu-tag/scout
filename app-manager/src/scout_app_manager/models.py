@@ -65,6 +65,10 @@ class State:
     # means another writer, which hash comparison alone cannot see.
     applied_import_checksum: str | None = None
     live_checksum: str | None = None
+    # The realm was read, and it is either gone or carries no import checksum
+    # at all. Both mean nothing this reconciler wrote is in Keycloak, so it is
+    # not Ready -- unlike a read that failed, which claims nothing.
+    realm_unmanaged: bool = False
     drift: bool = False
     identical_to_base: bool = True
     phase: str = PENDING

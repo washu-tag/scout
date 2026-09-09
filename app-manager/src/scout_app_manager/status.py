@@ -62,6 +62,7 @@ def to_document(state: State) -> dict:
         "appliedSecretsVersion": state.applied_secrets_version,
         "appliedImportChecksum": state.applied_import_checksum,
         "liveImportChecksum": state.live_checksum,
+        "realmUnmanaged": state.realm_unmanaged,
         "driftDetected": state.drift,
         "lastResult": state.last_result,
         "lastReconcile": state.last_reconcile,
@@ -102,6 +103,7 @@ def from_document(doc: dict) -> State:
         # reading them. They round-trip because `status` renders this document
         # and would otherwise report a readable realm as unreadable.
         live_checksum=doc.get("liveImportChecksum"),
+        realm_unmanaged=bool(doc.get("realmUnmanaged")),
         drift=bool(doc.get("driftDetected")),
         identical_to_base=bool(doc.get("identicalToBase")),
         phase=doc.get("phase", State.phase),
