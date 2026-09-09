@@ -181,6 +181,16 @@ jobs:
     # verification silently breaking for every consumer in the field. Standalone
     # (no paths filter) so rotation drift is caught even when cosign.pub is
     # untouched; same-repo PRs have the secret.
+    #
+    # Except Dependabot's. Its pull_request runs are same-repo but read only the
+    # (empty) Dependabot secret scope, never the Actions one, so COSIGN_PRIVATE_KEY
+    # arrives blank and the derive fails -- red on every dependency PR, for a reason
+    # that has nothing to do with the PR. Drift is a property of the repo, not of a
+    # change, and this still runs on every other PR and on the push that merges the
+    # Dependabot one, so nothing goes unchecked for longer than a merge. The event
+    # is guarded too: under Dependabot auto-merge the push actor is also
+    # dependabot[bot], and that run does have the secret.
+    if: ${{ github.event_name != 'pull_request' || github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
