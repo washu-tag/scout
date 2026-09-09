@@ -174,13 +174,14 @@ jobs:
           cache: 'gradle'
       - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
   verify-cosign-pubkey:
-    # The repo-root cosign.pub is the published mirror of the public half of
-    # COSIGN_PRIVATE_KEY. It's an unchecked mirror otherwise: derive the real key
-    # and diff it, so a stale key (a rotation that didn't refresh the file) or the
-    # authoring placeholder fails here, red and self-announcing, instead of
-    # verification silently breaking for every consumer in the field. Standalone
-    # (no paths filter) so rotation drift is caught even when cosign.pub is
-    # untouched; same-repo PRs have the secret.
+    # cosign.pub in the repo root is the public half of COSIGN_PRIVATE_KEY, and
+    # nothing else checks it: derive the key and diff, so a missed rotation or the
+    # authoring placeholder fails here instead of breaking verification downstream.
+    # No paths filter, since the file goes stale without being touched.
+    # Skipped on Dependabot PRs: those runs only get Dependabot secrets, so
+    # COSIGN_PRIVATE_KEY is empty. The push to main still runs it. Checking the
+    # event too, since the auto-merge push actor is also dependabot[bot].
+    if: ${{ github.event_name != 'pull_request' || github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
