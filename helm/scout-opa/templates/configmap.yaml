@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "scout-opa.fullname" . }}-policy
   labels:
-    {{- include "scout-opa.labels" . | nindent 4 }}
+    {{- include "scout-opa.objectLabels" . | nindent 4 }}
 data:
   policy.rego: |
 {{ .Values.policy.rego | default (.Files.Get "files/main.rego") | indent 4 }}

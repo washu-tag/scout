@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "scout-opa.fullname" . }}
   labels:
-    {{- include "scout-opa.labels" . | nindent 4 }}
+    {{- include "scout-opa.objectLabels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:

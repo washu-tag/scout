@@ -10,6 +10,19 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
+{{- define "scout-opa.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/* Object-metadata labels: scout-opa.labels plus helm.sh/chart. Not used on the
+     pod template — keeping the chart version out of spec.template means a release
+     bump leaves a manifest diff for helm to upgrade on (so the release reports its
+     real chart version) without rolling pods. Rollout is driven by policyHash. */}}
+{{- define "scout-opa.objectLabels" -}}
+helm.sh/chart: {{ include "scout-opa.chart" . }}
+{{ include "scout-opa.labels" . }}
+{{- end }}
+
 {{- define "scout-opa.selectorLabels" -}}
 app: {{ include "scout-opa.fullname" . }}
 {{- end }}
