@@ -3,13 +3,12 @@
 # and `open_webui.models.auths` (same modules the app uses), and so the Python
 # version + bcrypt version are guaranteed to match.
 #
-# Scout deployments overwrite `image.ref` with whatever image is actually
-# running on the OWUI Pod (discovered post-`helm install` in configure_admin.yaml),
-# so the bootstrap Job stays in lockstep with the upstream chart's appVersion
-# without needing a separate pin. Standalone chart users should override
-# `image.ref` to match their OWUI deployment.
+# There is no default: any pinned value here can disagree with the OWUI that is
+# actually running, so the template requires it. Scout deployments set `image.ref`
+# to the image discovered on the running OWUI Pod (configure_admin.yaml);
+# standalone chart users must set it to match their OWUI deployment.
 image:
-  ref: 'ghcr.io/open-webui/open-webui:0.11.0'
+  ref: ''
   pullPolicy: IfNotPresent
 
 # In-cluster URL for OWUI. Bypasses Traefik (no oauth2-proxy gate) so the
