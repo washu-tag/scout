@@ -8,16 +8,16 @@ offline and proves the same path the air-gapped sites use (ESO/AWS-SM can't, it 
 a network route the on-prem clusters don't have).
 
 Contents:
-- `gen-secrets.sh` — renders the 18 ingest-slice Secret manifests from
+- `gen-secrets.sh` — renders the 19 ingest-slice Secret manifests from
   `../inventory.yaml` (so the CI creds live in one place, not duplicated here).
 - `secrets.enc.yaml` — the rendered Secrets, SOPS-encrypted (data values only). **The
   committed artifact.** Not present until the setup below is run.
 - `kustomization.yaml` — lists `secrets.enc.yaml`.
 - `.gitignore` — keeps the plaintext render (`secrets.yaml`) out of git.
 
-The Secrets cover the `extractor` dependsOn closure: `superuser-secret` + the five
-`cnpg-role-*` companions (scout-core), `postgres-secret` / `s3-secret` / `trino-rw-s3`
-(scout-extractor), hive metastore write+readonly, MinIO root config, and the five MinIO
+The Secrets cover the `extractor` dependsOn closure: `superuser-secret` + the six
+`cnpg-role-*` companions (scout-core), `postgres-secret` / `s3-secret` / `trino-rw-s3` /
+`temporal-db-secret` (scout-extractor), hive metastore write+readonly, MinIO root config, and the five MinIO
 tenant-user creds (scout-data). Cassandra/Elasticsearch datastore secrets are
 deliberately excluded (operator-minted).
 

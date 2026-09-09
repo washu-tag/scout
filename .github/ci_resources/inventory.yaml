@@ -99,6 +99,7 @@ k3s_cluster:
     hive_readonly_postgres_password: hivero123
     superset_postgres_user: superset
     superset_postgres_password: superset123
+    temporal_postgres_password: temporal123
     postgres_parameters: {} # Use PG defaults
     postgres_storage_size: 5Gi
 

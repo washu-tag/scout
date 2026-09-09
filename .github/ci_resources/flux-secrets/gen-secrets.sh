@@ -46,13 +46,14 @@ EOF
   while [ "$#" -gt 0 ]; do printf '  %s: "%s"\n' "$1" "$2"; shift 2; done
 }
 
-# --- scout-core: CNPG superuser + all 5 managed-role companions ---
+# --- scout-core: CNPG superuser + all 6 managed-role companions ---
 basic_auth superuser-secret        scout-core postgres      "$(v postgres_superuser_password)"
 basic_auth cnpg-role-extractor     scout-core "$(v postgres_user)"        "$(v postgres_password)"
 basic_auth cnpg-role-hive          scout-core hive          "$(v hive_postgres_password)"
 basic_auth cnpg-role-hive-readonly scout-core hive_readonly "$(v hive_readonly_postgres_password)"
 basic_auth cnpg-role-keycloak      scout-core keycloak      "$(v keycloak_postgres_password)"
 basic_auth cnpg-role-superset      scout-core "$(v superset_postgres_user)" "$(v superset_postgres_password)"
+basic_auth cnpg-role-temporal      scout-core temporal      "$(v temporal_postgres_password)"
 
 # --- scout-extractor: app-side DB + S3 creds (DB_PASSWORD matches cnpg-role-extractor) ---
 opaque postgres-secret scout-extractor \
@@ -62,6 +63,8 @@ opaque s3-secret scout-extractor \
   AWS_ACCESS_KEY_ID "$(v s3_lake_writer)" AWS_SECRET_ACCESS_KEY "$(v s3_lake_writer_secret)"
 opaque trino-rw-s3 scout-extractor \
   S3_ACCESS_KEY "$(v s3_lake_writer)" S3_SECRET_KEY "$(v s3_lake_writer_secret)"
+# Temporal server + schema Job connect with this; password = the temporal CNPG role.
+opaque temporal-db-secret scout-extractor password "$(v temporal_postgres_password)"
 
 # --- scout-data: hive metastore (write + readonly), MinIO root config, 5 tenant users ---
 opaque hive-metastore-secret scout-data \
