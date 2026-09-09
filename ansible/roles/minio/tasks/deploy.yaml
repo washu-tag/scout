@@ -38,7 +38,7 @@
           export MINIO_REGION={{ s3_region }}
           {% if minio_oidc_enabled %}
           export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM="{{ keycloak_wellknown_url }}"
-          export MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM="{{ keycloak_minio_client_id }}"
+          export MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM="minio"
           export MINIO_IDENTITY_OPENID_CLIENT_SECRET_PRIMARY_IAM="{{ keycloak_minio_client_secret }}"
           export MINIO_IDENTITY_OPENID_SCOPES_PRIMARY_IAM="openid"
           export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC_PRIMARY_IAM="on"

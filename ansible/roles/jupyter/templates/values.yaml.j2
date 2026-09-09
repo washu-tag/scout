@@ -132,7 +132,7 @@ hub:
       authenticator_class: 'oauthenticator.generic.GenericOAuthenticator'
     GenericOAuthenticator:
       login_service: 'Keycloak'
-      client_id: '{{ keycloak_jupyterhub_client_id }}'
+      client_id: 'jupyterhub'
       client_secret: '{{ keycloak_jupyterhub_client_secret }}'
       oauth_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
       authorize_url: '{{ keycloak_oidc_auth_url }}'

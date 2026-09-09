@@ -187,16 +187,10 @@ alloy_namespace: '{{ scout_monitoring_namespace }}'
 # OAuth configuration
 oauth_provider_name: Keycloak # User-facing name for OAuth provider (e.g., 'WashU Key', 'Keycloak')
 
-# Keycloak OAuth client IDs and secrets (client secrets must be defined in inventory)
-keycloak_oauth2_proxy_client_id: oauth2-proxy
-keycloak_superset_client_id: superset
-keycloak_jupyterhub_client_id: jupyterhub
-keycloak_grafana_client_id: grafana
-keycloak_temporal_client_id: temporal
-keycloak_minio_client_id: minio
-keycloak_launchpad_client_id: launchpad
-keycloak_open_webui_client_id: open-webui
-keycloak_xnat_client_id: xnat
+# Keycloak client secrets must be defined in inventory. The client *IDs* are not
+# variables: the realm document names each one as a literal, so a per-site
+# override moved a consumer's config off a client that still had the old name.
+# They are written out where they are used.
 # AWS ALB-native OIDC (ADR 0035, aws mode): the ALB reuses the oauth2-proxy client for
 # browser auth, calling back to https://<host>/oauth2/idpresponse per host (each host adds
 # that callback to the oauth2-proxy client's redirectUris, matching the live AWS
@@ -366,7 +360,7 @@ xnat_plugins_default:
           auto.verified: 'true'
           siteUrl: 'https://xnat.{{ server_hostname }}'
           preEstablishedRedirUri: /openid-login
-          openid.keycloak.clientId: '{{ keycloak_xnat_client_id }}'
+          openid.keycloak.clientId: 'xnat'
           openid.keycloak.clientSecret: '{{ keycloak_xnat_client_secret }}'
           openid.keycloak.accessTokenUri: '{{ keycloak_realm_url }}/protocol/openid-connect/token'
           openid.keycloak.userAuthUri: '{{ keycloak_realm_url }}/protocol/openid-connect/auth'
