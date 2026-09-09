@@ -56,11 +56,15 @@ jobs:
           VERSION="0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
-          mkdir -p digests
+          mkdir -p digests predecessor
+          # bootstrap-haul.yaml seeded the 8 images into :main. The seed publishes
+          # charts only, so a Scout-image chart's appVersion is the tag its image
+          # carries there; the render step below carries the same images forward.
+          oras pull "${MANIFEST_REPO}:main" -o predecessor
           # name dir  (name = Chart.yaml name == charts/<name> repo, per components.txt)
           while read -r name dir; do
             [ -n "${name}" ] || continue
-            app_version="$(bash .github/scripts/chart-app-version.sh "${name}" "${VERSION}")"
+            app_version="$(bash .github/scripts/chart-app-version.sh "${name}" "${VERSION}" predecessor/haul.yaml)"
             helm package "${dir}" --version "${VERSION}" \
               ${app_version:+--app-version "${app_version}"} --destination "${RUNNER_TEMP}"
             helm push "${RUNNER_TEMP}/${name}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
@@ -90,9 +94,6 @@ jobs:
       - name: Render the haul manifest (14 fresh charts + carry the images)
         run: |
           set -euo pipefail
-          mkdir -p predecessor
-          # bootstrap-haul.yaml seeded the 8 images into :main; carry them.
-          oras pull "${MANIFEST_REPO}:main" -o predecessor
           python3 tooling/manifest/build_haul.py \
             --digests-dir digests \
             --components tooling/manifest/components.txt \

@@ -1138,25 +1138,35 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ./.github/actions/install-hauler-oras
+        if: needs.changes.outputs[matrix.changed] == 'true'
       - name: 'Publish chart - ${{ matrix.chart-name }}'
         if: needs.changes.outputs[matrix.changed] == 'true'
         shell: bash
         # helm preinstalled (OCI push needs >= 3.8). Chart.yaml is never stamped:
         # `version` is this build's tag and `appVersion` (the image tag the chart
-        # defaults to) comes from chart-app-version.sh, which maps each chart to the
-        # version being published (Scout images) or the versions.yaml pin (upstream
-        # images). Token via stdin (never argv).
+        # defaults to) comes from chart-app-version.sh: the build that produced the
+        # chart's Scout image, or the versions.yaml pin for an upstream image. Token
+        # via stdin (never argv).
         env:
           CHART_DIR: ${{ matrix.chart-dir }}
           CHART_NAME: ${{ matrix.chart-name }}
           VERSION: ${{ needs.changes.outputs.version }}
+          MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
+          # Scout-image charts share their image's name, so this is "was the image
+          # rebuilt (and so published at VERSION) this run"; empty for other charts.
+          IMAGE_REBUILT: ${{ needs.changes.outputs[matrix.chart-name] == 'true' }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
           helm version --short
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
-          app_version="$(bash .github/scripts/chart-app-version.sh "${CHART_NAME}" "${VERSION}")"
+          # A Scout image that was not rebuilt this run is carried at its previous
+          # tag, so its chart's appVersion is read from the predecessor haul (the
+          # last build's) to keep the chart's default image tag resolvable.
+          oras pull "${MANIFEST_REPO}:main" -o predecessor
+          app_version="$(bash .github/scripts/chart-app-version.sh "${CHART_NAME}" "${VERSION}" predecessor/haul.yaml)"
           helm package "${CHART_DIR}" --version "${VERSION}" \
             ${app_version:+--app-version "${app_version}"} --destination "${RUNNER_TEMP}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
