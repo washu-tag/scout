@@ -28,7 +28,7 @@ def group_of(realm, name):
 
 
 def test_no_fragments_is_a_byte_identical_realm(base_realm, tmp_path):
-    """The diff-mode invariant the first deploy has to satisfy."""
+    """The invariant a first deploy has to satisfy."""
     before = canonical(base_realm)
     result = composed(base_realm, tmp_path)
     assert canonical(result.realm) == before
@@ -316,6 +316,29 @@ def test_two_clients_that_share_a_variable_are_both_rejected(base_realm, tmp_pat
     assert len(result.rejected) == 2
     for _, reasons in result.rejected:
         assert any("fragment_shared_app" in reason for reason in reasons)
+
+
+def test_two_clients_in_one_configmap_that_share_a_variable_are_rejected(
+    base_realm, tmp_path
+):
+    """One source, so there is no other fragment to name in the reason.
+
+    Rejecting only on distinct sources would have let this one through, and
+    the two clients would then have shared whichever credential the Job set
+    last.
+    """
+    write_fragment(tmp_path, "one", "f", fragment_yaml(client="shared_app"))
+    (tmp_path / "namespace_one.configmap_f.second.yaml").write_text(
+        fragment_yaml(client="shared-app"), encoding="utf-8"
+    )
+
+    result = compose(
+        base_realm, scan(tmp_path), Site(domain="scout.example.edu"), lambda n, k: "s"
+    )
+
+    assert result.accepted == []
+    assert len(result.rejected) == 1
+    assert any("fragment_shared_app" in reason for reason in result.rejected[0][1])
 
 
 def test_a_fragment_cannot_claim_a_base_realm_variable(base_realm, tmp_path):

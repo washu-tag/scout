@@ -1,3 +1,4 @@
+import base64
 import json
 
 import pytest
@@ -9,7 +10,7 @@ from conftest import (  # noqa: F401
     write_fragment,
 )
 
-from scout_app_manager import apply, loop
+from scout_app_manager import apply, loop, main
 from scout_app_manager.apply import RealmApplier, apply_job_body
 from scout_app_manager.compose import SecretBinding
 from scout_app_manager.loop import await_discovery
@@ -347,6 +348,19 @@ def test_a_present_but_empty_credential_counts_as_unresolvable(setup):
     assert client.jobs == {}
 
 
+def test_a_binary_credential_counts_as_unresolvable(setup):
+    """It used to raise out of the accessor and stop every realm update."""
+    service, _, client = setup
+    client.set_secret("scout-core", "keycloak-client-secrets", {"oauth2_proxy": "x"})
+    client.secrets[("scout-core", "keycloak-client-secrets")]["data"][
+        "oauth2_proxy"
+    ] = base64.b64encode(b"\xff\xfe").decode()
+    name_a_credential(service, "oauth2_proxy")
+
+    assert service.reconcile_once().phase == REFUSED
+    assert client.jobs == {}
+
+
 def test_the_site_hostname_needs_no_secret(setup):
     """Every base-realm URL is written against it, and it is not a credential."""
     service, _, client = setup
@@ -634,6 +648,18 @@ def test_settings_read_the_environment_per_process_not_per_import(monkeypatch):
     settings = Settings()
     assert settings.keycloak_realm == "other"
     assert settings.resync_seconds == 42
+
+
+@pytest.mark.parametrize("value,expected", [("debug", "DEBUG"), (" info ", "INFO")])
+def test_the_log_level_is_normalised(monkeypatch, value, expected):
+    monkeypatch.setenv("APP_MANAGER_LOG_LEVEL", value)
+    assert main.log_level() == expected
+
+
+def test_an_unrecognised_log_level_names_the_variable(monkeypatch):
+    monkeypatch.setenv("APP_MANAGER_LOG_LEVEL", "verbose")
+    with pytest.raises(SystemExit, match="APP_MANAGER_LOG_LEVEL"):
+        main.log_level()
 
 
 @pytest.mark.parametrize(

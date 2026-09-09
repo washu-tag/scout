@@ -274,14 +274,14 @@ def compose(
     # name, because "whoever reconciled first" is not a property anyone can
     # reason about at review time.
     claim_owners: dict[str, list[FragmentRef]] = {}
-    env_owners: dict[str, list[FragmentRef]] = {}
+    env_owners: dict[str, list[tuple[FragmentRef, str]]] = {}
     for loaded in candidates:
         if loaded.ref in rejected or loaded.fragment is None:
             continue
         for spec in loaded.fragment.clients:
             claim_owners.setdefault(spec.clientId, []).append(loaded.ref)
             env_owners.setdefault(substitution.env_name(spec.clientId), []).append(
-                loaded.ref
+                (loaded.ref, spec.clientId)
             )
 
     for client_id, refs in claim_owners.items():
@@ -294,13 +294,15 @@ def compose(
 
     # Distinct clientIds can still land on one variable name -- `a-b` and `a.b`
     # both sanitise to `fragment_a_b` -- and whichever the Job set last would
-    # hand its credential to both clients.
-    for env, refs in env_owners.items():
-        if len(set(refs)) > 1:
-            for ref in set(refs):
+    # hand its credential to both clients. Keyed by clientId rather than by
+    # source, because two such clients in one ConfigMap collide just as
+    # squarely as two in different ones.
+    for env, owners in env_owners.items():
+        if len({client_id for _, client_id in owners}) > 1:
+            for ref in {ref for ref, _ in owners}:
                 rejected.setdefault(ref, []).append(
-                    f"the credential variable {env!r} is also claimed by "
-                    + ", ".join(str(r) for r in sorted(set(refs)) if r != ref)
+                    f"the credential variable {env!r} is claimed by more than one "
+                    "client: " + ", ".join(f"{c!r} ({r})" for r, c in sorted(owners))
                 )
 
     # What each admitted fragment resolved to, kept from the validation pass:

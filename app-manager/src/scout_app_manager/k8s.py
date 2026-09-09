@@ -7,12 +7,16 @@ obvious -- every call the reconciler can make is a function in this file.
 """
 
 import base64
+import binascii
+import logging
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
 import httpx2 as httpx
+
+log = logging.getLogger("app-manager")
 
 SA_DIR = Path("/var/run/secrets/kubernetes.io/serviceaccount")
 TOKEN_PATH = SA_DIR / "token"
@@ -28,13 +32,27 @@ class ApiError(RuntimeError):
 
 def value_of(secret: dict | None, key: str) -> str | None:
     """One key out of a fetched Secret. A function, so a caller can read
-    several keys and the resourceVersion from one GET."""
+    several keys and the resourceVersion from one GET.
+
+    A Secret holds bytes, and nothing stops a key of one the reconciler reads
+    from holding something that is not text. Unreadable is reported as absent,
+    which fails the value closed -- the alternative is an exception out of a
+    pure accessor, which reaches the reconcile loop and stops every realm
+    update until someone finds the Secret.
+    """
     if not secret:
         return None
     encoded = (secret.get("data") or {}).get(key)
     if encoded is None:
         return None
-    return base64.b64decode(encoded).decode("utf-8")
+    try:
+        return base64.b64decode(encoded).decode("utf-8")
+    except (UnicodeDecodeError, binascii.Error, ValueError):
+        name = (secret.get("metadata") or {}).get("name", "(unnamed)")
+        log.warning(
+            "secret %s key %s is not UTF-8 text; treating it as absent", name, key
+        )
+        return None
 
 
 def version_of(secret: dict | None) -> str:

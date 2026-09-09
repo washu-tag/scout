@@ -14,13 +14,26 @@ from .settings import Settings
 log = logging.getLogger("app-manager")
 
 
+def log_level() -> str:
+    """The configured level, normalised, or the same SystemExit Settings gives.
+
+    `basicConfig` takes the name verbatim, so a lowercase one used to raise --
+    before any handler existed, which is a process that dies with a traceback
+    over a spelling.
+    """
+    level = os.environ.get("APP_MANAGER_LOG_LEVEL", "INFO").strip().upper()
+    if level not in logging.getLevelNamesMapping():
+        raise SystemExit(f"APP_MANAGER_LOG_LEVEL: not a log level, not {level!r}")
+    return level
+
+
 def main() -> int:
-    level = os.environ.get("APP_MANAGER_LOG_LEVEL", "INFO")
+    level = log_level()
     logging.basicConfig(
         level=level,
         format="%(asctime)s %(levelname)-7s %(name)s %(message)s",
     )
-    if level.upper() != "DEBUG":
+    if level != "DEBUG":
         # A reconcile is a dozen requests and they now run every minute, so at
         # INFO the client's per-request line buries the reconciler's own.
         logging.getLogger("httpx2").setLevel(logging.WARNING)
