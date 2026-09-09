@@ -1,4 +1,17 @@
 ---
+- name: Validate the app manager runs in the Keycloak namespace
+  ansible.builtin.assert:
+    that: app_manager_namespace == keycloak_namespace
+    fail_msg: >
+      app_manager_namespace is {{ app_manager_namespace }} but keycloak_namespace
+      is {{ keycloak_namespace }}, and the two have to match: the reconciler
+      reads the base realm ConfigMap, keycloak-client-secrets and
+      keycloak-admin-secret from its own namespace -- and runs the apply Job
+      there -- with no way to point it at another. Deployed split it would
+      refuse every reconcile and fail this play's realm-applied gate. Drop the
+      override, or move both by setting keycloak_namespace.
+    quiet: true
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common

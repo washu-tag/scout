@@ -124,7 +124,10 @@ keycloak_namespace: '{{ scout_core_namespace }}'
 valkey_namespace: '{{ scout_core_namespace }}'
 valkey_helm_release_name: valkey
 launchpad_namespace: '{{ scout_core_namespace }}'
-app_manager_namespace: '{{ scout_core_namespace }}'
+# Keycloak's namespace, not core's: the reconciler reads the base realm
+# ConfigMap and both keycloak-* Secrets from its own namespace, and there is no
+# chart knob to point it anywhere else. The GitOps lane places it the same way.
+app_manager_namespace: '{{ keycloak_namespace }}'
 app_manager_helm_release_name: scout-app-manager
 # The base realm document, published by the keycloak-config-cli chart in both
 # lanes. Here rather than in roles/keycloak/defaults because the app manager
