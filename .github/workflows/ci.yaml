@@ -728,13 +728,20 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Pre-import only the images each side deploys (common: keycloak, launchpad;
-      # per-side pushes gate on matrix.side).
+      # Pre-import only the images each side deploys (common: keycloak,
+      # scout-app-manager, launchpad; per-side pushes gate on matrix.side).
       - name: 'Push image to k3s - keycloak'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: keycloak
           image-name: keycloak
+      # Both sides run the auth playbook, which installs the app manager -- and
+      # the realm it applies is what every other client authenticates against.
+      - name: 'Push image to k3s - scout-app-manager'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: app-manager
+          image-name: scout-app-manager
       - name: 'Push image to k3s - launchpad'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
