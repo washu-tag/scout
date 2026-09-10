@@ -25,6 +25,19 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
+The ConfigMap the realm documents are published to, and the Job mounts.
+
+Upstream publishes them as a Secret (<fullname>-config-realms, overridable with
+existingConfigSecret). The realm document names its credentials as
+`$(env:...)` and carries none of them, so it does not have to be a Secret, and
+as a ConfigMap it can be read and diffed like any other config. The name is
+fixed rather than release-derived so a reader outside the chart can find it.
+*/}}
+{{- define "keycloak-config-cli.realmConfigMap" -}}
+keycloak-base-realm
+{{- end }}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "keycloak-config-cli.chart" -}}

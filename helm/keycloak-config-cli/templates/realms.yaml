@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ tpl .Values.realmConfigMap $ }}
+  name: {{ include "keycloak-config-cli.realmConfigMap" . }}
   labels:
   {{- include "keycloak-config-cli.labels" . | nindent 4 }}
 data:

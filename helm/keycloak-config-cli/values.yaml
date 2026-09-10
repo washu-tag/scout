@@ -121,9 +121,9 @@ existingSecrets:
 #   key: my-secret-key
 #   envVar: MY_ENV_VAR
 
-# The realm documents this chart publishes into realmConfigMap. The data key is
-# the name here plus `.json`, and readers find it by that key (the app manager
-# by `scout-realm.json`), so the key name is a contract, not a knob.
+# The realm documents this chart publishes into the base realm ConfigMap (named
+# in _helpers.tpl). The data key is the name here plus `.json`, and the Job
+# mounts it under that name, so the key is a contract, not a knob.
 #
 # `file` is a path in the chart, rendered through `tpl`; the Scout realm below
 # is what both lanes install, and files/scout-realm.json is the only copy of it.
@@ -133,13 +133,6 @@ existingSecrets:
 config:
   scout-realm:
     file: files/scout-realm.json
-
-# Scout addition, replacing upstream's existingConfigSecret/existingConfigMap.
-# The realm document names its credentials as `$(env:...)` and carries none of
-# them, so it does not have to be a Secret -- and as a ConfigMap the app manager
-# can read it by name (ADR 0037). The name is what the reconciler reads, so it
-# is a contract too: neither lane overrides it.
-realmConfigMap: keycloak-base-realm
 
 # Add additional volumes, e.g. for custom secrets
 extraVolumes: ''

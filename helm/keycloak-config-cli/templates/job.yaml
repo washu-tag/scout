@@ -81,7 +81,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: "{{ tpl .Values.realmConfigMap $ }}"
+            name: "{{ include "keycloak-config-cli.realmConfigMap" . }}"
             defaultMode: 0555
         {{- with .Values.extraVolumes }}
         {{- tpl . $ | nindent 8 }}
