@@ -76,9 +76,12 @@
     published: >-
       {{ ((app_manager_status.resources | first | default({})).data | default({}))
          .status | default('{}') | from_yaml }}
-  until:
-    - published.observedBaseSourceHash | default('') == app_manager_published_realm_hash
-    - published.phase | default('') == 'Applied'
+  # One expression rather than a list of them: `until` is documented as a single
+  # conditional, and an unsupported shape here would fail the play rather than
+  # just waiting wrong.
+  until: >-
+    {{ (published.observedBaseSourceHash | default('') == app_manager_published_realm_hash)
+       and (published.phase | default('') == 'Applied') }}
   retries: '{{ (app_manager_realm_wait_seconds | int // 5) | int }}'
   delay: 5
   # The retry loop exhausting is not the message anyone should read; the assert
