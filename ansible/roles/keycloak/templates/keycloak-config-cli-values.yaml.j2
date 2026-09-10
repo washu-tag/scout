@@ -11,12 +11,6 @@ image:
 
 realmConfigMap: '{{ keycloak_base_realm_configmap }}'
 
-# The key is a contract, not a knob: the chart writes `<key>.json` into
-# realmConfigMap, and the Job mounts it under that name.
-config:
-  scout-realm:
-    file: files/scout-realm.json
-
 realmName: '{{ keycloak_realm_name }}'
 
 lifespans:

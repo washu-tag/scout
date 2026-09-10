@@ -122,20 +122,17 @@ existingSecrets:
 #   envVar: MY_ENV_VAR
 
 # The realm documents this chart publishes into realmConfigMap. The data key is
-# the name here plus `.json`, and readers find it by that key, so the two have
-# to agree.
+# the name here plus `.json`, and readers find it by that key (the app manager
+# by `scout-realm.json`), so the key name is a contract, not a knob.
 #
-# `file` is a path in the chart, rendered through `tpl`; both lanes ship the
-# Scout realm that way, and files/scout-realm.json is the only copy of it.
-# `inline` is a structure, for a test or a one-off.
+# `file` is a path in the chart, rendered through `tpl`; the Scout realm below
+# is what both lanes install, and files/scout-realm.json is the only copy of it.
+# `inline` is a structure, for a test or a one-off. Adding either here merges
+# with this default and imports both; to replace it, set `scout-realm: null`
+# alongside.
 config:
-  {}
-  # <name>:
-  #   file: <path in the chart>
-  # <name>:
-  #   inline:
-  #     realm: <realm name>
-  #     clients: []
+  scout-realm:
+    file: files/scout-realm.json
 
 # Scout addition, replacing upstream's existingConfigSecret/existingConfigMap.
 # The realm document names its credentials as `$(env:...)` and carries none of
