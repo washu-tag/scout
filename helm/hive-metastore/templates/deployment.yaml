@@ -76,7 +76,20 @@ spec:
           {{- end }}
           {{- with $env }}
           env:
-            {{- toYaml . | nindent 12 }}
+            {{- /* Quote value so a boolean-ish var renders as a string. A caller sets these
+                   from cluster-vars via Flux postBuild (e.g. S3_PATH_STYLE_ACCESS from
+                   ${s3_path_style_access}=false); kustomize drops the source quotes and Flux
+                   substitutes the bare bool, so toYaml would emit `value: false` and the K8s
+                   env schema (string-only) rejects it. */ -}}
+            {{- range . }}
+            - name: {{ .name }}
+              {{- if hasKey . "valueFrom" }}
+              valueFrom:
+                {{- toYaml .valueFrom | nindent 16 }}
+              {{- else }}
+              value: {{ .value | quote }}
+              {{- end }}
+            {{- end }}
           {{- end }}
           {{- with .Values.envFrom }}
           envFrom:
