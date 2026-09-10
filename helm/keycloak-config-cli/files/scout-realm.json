@@ -1,6 +1,5 @@
 {{/* The Scout realm, and the only copy of it. Rendered through helm `tpl`
-     by the chart's realms.yaml, then published as a ConfigMap for the app
-     manager to compose with the discovered fragments (ADR 0037). Both the
+     by the chart's realms.yaml, then published as a ConfigMap. Both the
      Ansible and the GitOps lane install this same file; they differ only in
      where the values below come from.
 

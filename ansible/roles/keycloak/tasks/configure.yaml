@@ -38,8 +38,7 @@
     keycloak_empty_client_secrets: >-
       {{ keycloak_client_secrets | dict2items | rejectattr('value') | map(attribute='key') | list }}
 
-# Two documents, deliberately split. The realm carries `$(env:...)` tokens and
-# no credentials, so it can be read, hashed and diffed by anything. The
+# The realm JSON carries `$(env:...)` tokens and no credentials. The
 # credentials live here, and reach config-cli through the Job environment.
 - name: Create Secret for Keycloak client secrets
   delegate_to: localhost
@@ -55,17 +54,15 @@
       data: '{{ keycloak_client_secrets }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
-# Rendered through a set_fact, like the client secrets above, because that is
-# what fails loudly on a variable the template expects and the inventory does
-# not set. The same lookup inline in a task argument yields null and carries on.
 - name: Parse Helm values
   ansible.builtin.set_fact:
     keycloak_config_cli_values: "{{ lookup('template', 'keycloak-config-cli-values.yaml.j2') | from_yaml }}"
 
-# Stamped after the render because it covers the render: a change to the realm
-# document, to any value it is rendered from, or to a client secret is a new
-# attempt at applying it. The apply Job is a Helm hook with a fixed name, so
-# without this it would be reused verbatim.
+# keycloak_config_hash is applied to the job to force helm to render it
+# whenever the underlying realm or secrets have changed.
+# (helm-diff would be able to tell that the realm JSON has changed and would
+# make helm render the job, but it can't see when the secrets have changed since
+# they are applied outside the chart.)
 - name: Stamp the values with a config hash
   ansible.builtin.set_fact:
     keycloak_config_cli_values: >-
@@ -93,9 +90,6 @@
     name: keycloak-config
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
-# This release publishes the base realm ConfigMap and applies it. The GitOps
-# lane installs the same chart and the same file; the two differ only in where
-# the realm values come from.
 - name: Run Keycloak Config CLI
   ansible.builtin.include_role:
     name: scout_common

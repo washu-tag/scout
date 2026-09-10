@@ -49,8 +49,6 @@ spec:
     image:
       repository: docker.io/adorsys/keycloak-config-cli
       tag: 6.5.1-26.5.5
-    # The realm itself is the chart's default: files/scout-realm.json, published
-    # to the chart's realmConfigMap under the key the app manager reads.
     # Scout realm config (cluster-vars; arrive as strings, the realm gates on eq "true").
     # enableXnat provisions the XNAT client/role; github/microsoft toggle the IdPs;
     # albOidcHosts is the comma-separated full ALB-OIDC host list (AWS sites; empty
