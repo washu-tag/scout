@@ -137,8 +137,8 @@ config:
 # Scout addition, replacing upstream's existingConfigSecret/existingConfigMap.
 # The realm document names its credentials as `$(env:...)` and carries none of
 # them, so it does not have to be a Secret -- and as a ConfigMap the app manager
-# can read it by name (ADR 0037). Both lanes publish to this one name because
-# that is what the reconciler reads; only who writes it differs.
+# can read it by name (ADR 0037). The name is what the reconciler reads, so it
+# is a contract too: neither lane overrides it.
 realmConfigMap: keycloak-base-realm
 
 # Add additional volumes, e.g. for custom secrets

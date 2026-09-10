@@ -103,7 +103,7 @@
     api_version: v1
     kind: ConfigMap
     namespace: '{{ keycloak_namespace }}'
-    name: '{{ keycloak_base_realm_configmap }}'
+    name: keycloak-base-realm
     kubeconfig: '{{ local_kubeconfig_yaml }}'
   register: keycloak_existing_base_realm
 
@@ -114,7 +114,7 @@
     api_version: v1
     kind: ConfigMap
     namespace: '{{ keycloak_namespace }}'
-    name: '{{ keycloak_base_realm_configmap }}'
+    name: keycloak-base-realm
     definition:
       metadata:
         labels:

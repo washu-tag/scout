@@ -124,10 +124,6 @@ keycloak_namespace: '{{ scout_core_namespace }}'
 valkey_namespace: '{{ scout_core_namespace }}'
 valkey_helm_release_name: valkey
 launchpad_namespace: '{{ scout_core_namespace }}'
-# The ConfigMap the base realm document is published to. In scout_common rather
-# than roles/keycloak/defaults because the name is a contract and not a site
-# knob: the GitOps lane publishes the same one, and its readers find it by name.
-keycloak_base_realm_configmap: keycloak-base-realm
 
 # Data layer
 minio_tenant_namespace: '{{ scout_data_namespace }}'
