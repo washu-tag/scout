@@ -1,0 +1,24 @@
+# aws postgres gate (ADR 0036): postgres is a managed RDS instance reached at
+# ${postgres_host}, so `postgres-ready` is an inert, immediately-Ready marker (no CNPG).
+# Same name the shared DB consumers dependsOn; on-prem provides it as the CNPG Cluster
+# instead (../on-prem).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: postgres-ready
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/postgres-ready
+  prune: true
+  wait: true
+  timeout: 2m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-core-foundation

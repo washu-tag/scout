@@ -8,28 +8,10 @@
 # (Phase 5) validate a site's values against this list.
 acm_cert_arn
 alb_group_name
-cassandra_cluster_name
-cassandra_cpu_limit
-cassandra_cpu_request
-cassandra_datacenter_name
-cassandra_init_heap
-cassandra_max_heap
-cassandra_memory_limit
-cassandra_memory_request
-cassandra_storage_size
-cassandra_system_logger_resources
 cnpg_operator_namespace
 db_port
 delta_lake_path
 deployer_name
-eck_operator_namespace
-elasticsearch_cluster_name
-elasticsearch_cpu_limit
-elasticsearch_cpu_request
-elasticsearch_max_heap
-elasticsearch_memory_limit
-elasticsearch_memory_request
-elasticsearch_storage_size
 extractor_data_dir
 hive_hadoop_opts
 hive_metastore_endpoint
@@ -87,6 +69,7 @@ postgres_cpu_limit
 postgres_cpu_request
 postgres_default_statistics_target
 postgres_effective_cache_size
+postgres_host
 postgres_maintenance_work_mem
 postgres_max_connections
 postgres_max_wal_size

@@ -2,13 +2,13 @@
 # Renovate-monitored (see renovate.json5); pinned exactly for provenance.
 
 # renovate: datasource=github-releases depName=k3s-io/k3s
-k3s_version: v1.36.3+k3s1
+k3s_version: v1.36.4+k3s1
 
 # Helm 3.x until Helm 4's plugin ecosystem matures (helm-diff compat).
 # renovate: datasource=github-releases depName=helm/helm
 helm_version: v3.19.2
 # renovate: datasource=github-releases depName=databus23/helm-diff
-helm_diff_plugin_version: 'v3.15.10'
+helm_diff_plugin_version: 'v3.15.11'
 
 # Databases & Data Storage - Elasticsearch
 # renovate: datasource=helm registryUrl=https://helm.elastic.co depName=eck-operator
@@ -150,11 +150,11 @@ dcm4che_tools_version: 5.33.1
 # the regex manager has no allowedVersionsTemplate). New family = bump all 3 + their regexes
 # together. (A mismatched combo wedged the deploy in PR #400.)
 # renovate: datasource=docker depName=dcm4che/dcm4chee-arc-psql
-dcm4chee_arc_version: 5.35.0
+dcm4chee_arc_version: 5.35.1
 # renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose
 dcm4chee_db_version: 18.3-35
 # renovate: datasource=docker depName=dcm4che/slapd-dcm4chee versioning=loose
-dcm4chee_ldap_version: 2.6.13-35.0
+dcm4chee_ldap_version: 2.6.13-35.1
 
 # Medical Imaging - Orthanc
 # "latest" (not pinned); not Renovate-monitored.

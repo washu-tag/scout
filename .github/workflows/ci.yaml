@@ -54,6 +54,7 @@ jobs:
       # no base to diff on a manual run, so the input is OR'd in here rather than fed to it).
       image_build: ${{ steps.filter.outputs.image_build == 'true' || github.event.inputs.rebuild_images == 'true' }}
       e2e: ${{ steps.filter.outputs.e2e }}
+      release_pr: ${{ steps.filter.outputs.release_pr }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       hl7-listener: ${{ steps.filter.outputs.hl7-listener }}
@@ -101,6 +102,12 @@ jobs:
             # lives in that image's filter, not here.
             image_build:
               - '.github/actions/docker-build-cache/**'
+            # release-please's PR is the only thing that touches the manifest, so this
+            # is an exact "this is the release PR" signal (release-dispatch.yaml keys off
+            # the same file). It turns on scan-published, so a CVE fails the release PR
+            # rather than the stamped commit after it.
+            release_pr:
+              - '.release-please-manifest.json'
             hl7log-extractor:
               - 'extractor/hl7log-extractor/**'
               - 'linting_java_checkstyle.xml'
@@ -174,13 +181,14 @@ jobs:
           cache: 'gradle'
       - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
   verify-cosign-pubkey:
-    # The repo-root cosign.pub is the published mirror of the public half of
-    # COSIGN_PRIVATE_KEY. It's an unchecked mirror otherwise: derive the real key
-    # and diff it, so a stale key (a rotation that didn't refresh the file) or the
-    # authoring placeholder fails here, red and self-announcing, instead of
-    # verification silently breaking for every consumer in the field. Standalone
-    # (no paths filter) so rotation drift is caught even when cosign.pub is
-    # untouched; same-repo PRs have the secret.
+    # cosign.pub in the repo root is the public half of COSIGN_PRIVATE_KEY, and
+    # nothing else checks it: derive the key and diff, so a missed rotation or the
+    # authoring placeholder fails here instead of breaking verification downstream.
+    # No paths filter, since the file goes stale without being touched.
+    # Skipped on Dependabot PRs: those runs only get Dependabot secrets, so
+    # COSIGN_PRIVATE_KEY is empty. The push to main still runs it. Checking the
+    # event too, since the auto-merge push actor is also dependabot[bot].
+    if: ${{ github.event_name != 'pull_request' || github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -389,10 +397,13 @@ jobs:
         run: cd ansible/roles/scout_common && molecule test -s default
   scan-images:
     runs-on: ubuntu-latest
-    needs: build-and-upload
+    needs: [changes, build-and-upload]
     if: ${{ !cancelled() && needs.build-and-upload.result == 'success' }}
     permissions:
       contents: read
+      # An image that build-and-upload did not rebuild is scanned from the
+      # registry instead; packages are private, so the pull needs a token.
+      packages: read
       security-events: write
     strategy:
       fail-fast: false
@@ -406,6 +417,7 @@ jobs:
         with:
           image-name: ${{ matrix.image-name }}
           subproject: ${{ matrix.subproject }}
+          scan-published: ${{ needs.changes.outputs.release_pr }}
         continue-on-error: ${{ matrix.allow-failure == true }}
   deploy-and-test-e2e:
     runs-on: ubuntu-latest
