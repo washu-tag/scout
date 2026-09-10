@@ -134,6 +134,11 @@ class AppManagerService:
         # without freezing every other change. Empty after a restart, which is
         # the one case that still has to hold the apply.
         self._composed: dict[str, LoadedFragment] = {}
+        # The decision last logged for each fragment. A sweep a minute mostly
+        # re-decides what the previous one did, and only the change is news.
+        # Per-process, like `converged`: this is a fact about what this process
+        # has already said, so a restart reprints the inventory it starts from.
+        self._logged: dict[str, tuple[str, str, tuple[str, ...]]] = {}
 
     def _resume(self) -> State:
         """Pick up where the last process left off, or start clean."""
@@ -655,7 +660,17 @@ class AppManagerService:
                 fragment.applied_at = stamp
 
     def _log_decisions(self, statuses: list[FragmentStatus]) -> None:
+        """Log a fragment's decision when it is new or when it changed.
+
+        A fragment's content is part of the decision, so an edit that stays
+        installed still prints -- otherwise the only trace of which fragment
+        moved the realm is the apply's hash. A fragment that goes away is
+        forgotten, so coming back prints again.
+        """
         for status in statuses:
+            decision = (status.status, status.content_hash, tuple(status.errors))
+            if self._logged.get(status.ref) == decision:
+                continue
             if status.status in PROBLEMS:
                 log.warning(
                     "EXCLUDED  %s: %s",
@@ -664,3 +679,9 @@ class AppManagerService:
                 )
             elif status.status == INSTALLED:
                 log.info("INSTALLED %s", status.ref)
+            self._logged[status.ref] = decision
+        self._logged = {
+            ref: decision
+            for ref, decision in self._logged.items()
+            if ref in {s.ref for s in statuses}
+        }

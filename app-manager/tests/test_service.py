@@ -783,6 +783,68 @@ def test_the_app_label_falls_back_to_the_configmap_name(setup):
     )
 
 
+def installed_lines(caplog):
+    return [r.getMessage() for r in caplog.records if r.msg.startswith("INSTALLED")]
+
+
+def test_an_unchanged_fragment_is_logged_once_not_once_a_sweep(setup, caplog):
+    """The resync floor is a minute, and most sweeps decide nothing new."""
+    service, fragments, _ = setup
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    with caplog.at_level("INFO"):
+        for _ in range(4):
+            service.reconcile_once()
+
+    assert installed_lines(caplog) == ["INSTALLED scout-demo/hello"]
+
+
+def test_an_edited_fragment_is_logged_again(setup, caplog):
+    """Its content is part of the decision, so the edit says which one moved."""
+    service, fragments, _ = setup
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    with caplog.at_level("INFO"):
+        service.reconcile_once()
+        write_fragment(
+            fragments,
+            "scout-demo",
+            "hello",
+            fragment_yaml("hello", displayName="Hello Scout"),
+        )
+        service.reconcile_once()
+
+    assert installed_lines(caplog) == ["INSTALLED scout-demo/hello"] * 2
+
+
+def test_a_restart_reprints_the_fragments_it_starts_from(setup, caplog):
+    """Damped per process: what this one has said, not what the realm holds."""
+    service, fragments, _ = setup
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+
+    with caplog.at_level("INFO"):
+        restart(service).reconcile_once()
+
+    assert installed_lines(caplog) == ["INSTALLED scout-demo/hello"]
+
+
+def test_an_excluded_fragment_relogs_when_the_reason_changes(setup, caplog):
+    service, fragments, _ = setup
+    write_fragment(
+        fragments, "scout-bad", "broken", fragment_yaml("broken", fullScopeAllowed=True)
+    )
+    with caplog.at_level("INFO"):
+        service.reconcile_once()
+        service.reconcile_once()
+        write_fragment(
+            fragments, "scout-bad", "broken", fragment_yaml("broken", roleClaim="sub")
+        )
+        service.reconcile_once()
+
+    excluded = [r for r in caplog.records if r.msg.startswith("EXCLUDED")]
+    assert len(excluded) == 2
+    assert excluded[0].args != excluded[1].args
+
+
 def test_settings_read_the_environment_per_process_not_per_import(monkeypatch):
     """Each Settings reads the environment. Read at import, an env var would be
     a fact about the interpreter, and one exported on a CI runner would change
