@@ -30,9 +30,9 @@
     that: keycloak_empty_client_secrets | length == 0
     fail_msg: >
       Empty Keycloak client secret(s): {{ keycloak_empty_client_secrets | join(', ') }}.
-      These name keys of the keycloak-client-secrets Secret; each comes from the
-      matching keycloak_*_client_secret in your inventory.yaml. An empty value
-      would be installed as the client's credential.
+      These name keys of the keycloak-client-secrets Secret; each comes from a
+      keycloak_* variable in your inventory.yaml. An empty value would be
+      installed as the client's credential.
     quiet: true
   vars:
     keycloak_empty_client_secrets: >-
@@ -45,6 +45,7 @@
   no_log: true
   kubernetes.core.k8s:
     state: present
+    apply: true
     namespace: '{{ keycloak_namespace }}'
     definition:
       apiVersion: v1

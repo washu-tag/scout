@@ -53,8 +53,11 @@ spec:
     # enableXnat provisions the XNAT client/role; github/microsoft toggle the IdPs;
     # albOidcHosts is the comma-separated full ALB-OIDC host list (AWS sites; empty
     # on-prem, which uses the oauth2-proxy callback the realm builds from server_hostname).
-    # Realm name, token lifespans, SMTP, terms localizations, and trino AuthZ
-    # attributes use the chart defaults (site overlay overrides them; see values.yaml).
+    # Token lifespans, SMTP, terms localizations, and trino AuthZ attributes use
+    # the chart defaults (site overlay overrides them; see values.yaml). realmName
+    # and oauth2ProxySubdomain must match what the rest of the lane substitutes.
+    realmName: '${keycloak_realm_name}'
+    oauth2ProxySubdomain: '${oauth2_proxy_subdomain}'
     enableXnat: '${keycloak_enable_xnat}'
     github:
       enabled: '${keycloak_github_enabled}'

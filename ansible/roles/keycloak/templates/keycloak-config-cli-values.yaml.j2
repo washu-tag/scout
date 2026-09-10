@@ -31,6 +31,8 @@ defaultProvider: '{{ keycloak_default_provider }}'
 # The chart takes one comma-separated string; this lane carries a list.
 albOidcHosts: '{{ keycloak_alb_oidc_hosts | join(",") }}'
 
+oauth2ProxySubdomain: '{{ oauth2_proxy_subdomain }}'
+
 termsLocalizations:
   {{ keycloak_terms_localizations | to_nice_yaml(indent=2) | indent(2) }}
 
@@ -57,8 +59,10 @@ env:
   # done so since ADR 0031); it is site configuration, not a secret.
   server_hostname: '{{ server_hostname }}'
   # Without var-substitution the `$(env:...)` tokens are installed verbatim as
-  # client credentials and redirect URIs.
-  SPRING_APPLICATION_JSON: '{"import":{"var-substitution":{"enabled":true}}}'
+  # client credentials and redirect URIs. managed.*=no-delete matches the
+  # GitOps lane.
+  SPRING_APPLICATION_JSON: >-
+    {"import":{"var-substitution":{"enabled":true},"managed":{"client":"no-delete","client-scope":"no-delete","client-scope-mapping":"no-delete","scope-mapping":"no-delete","role":"no-delete","group":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","required-action":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
 
 # The client and IdP secrets the realm names as `$(env:...)`, reaching
 # config-cli's environment in bulk.

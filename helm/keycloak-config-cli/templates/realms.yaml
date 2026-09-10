@@ -1,4 +1,3 @@
-{{- if .Values.config }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -16,4 +15,3 @@ data:
     {{- tpl (toJson $config.inline) $ | trim | nindent 4 }}
     {{- end }}
   {{- end }}
-{{- end }}

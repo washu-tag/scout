@@ -401,7 +401,6 @@ k3s_cluster:
     # role derives Maven proxies from them. See the all.vars block above.
     #
     # Override these naming defaults only if your environment differs:
-    # keycloak_xnat_client_id: xnat       # Keycloak clientId for XNAT
     # xnat_namespace: xnat                # Namespace where XNAT is deployed
     # xnat_chart_git_ref: xnat-1.1.0      # NrgXnat/helm-charts tag to deploy
     # (xnat_image_tag and the openid plugin version are pinned in

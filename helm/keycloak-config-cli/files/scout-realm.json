@@ -20,13 +20,13 @@
     "eventsEnabled": true,
     "adminEventsEnabled": true,
     "adminEventsDetailsEnabled": true,
-    "ssoSessionIdleTimeout": {{ .Values.lifespans.ssoSession }},
-    "ssoSessionMaxLifespan": {{ .Values.lifespans.ssoSession }},
+    "ssoSessionIdleTimeout": {{ .Values.lifespans.ssoSession | default 28800 }},
+    "ssoSessionMaxLifespan": {{ .Values.lifespans.ssoSession | default 28800 }},
     {{- /* End-user access-token lifespan, set explicitly (rather than relying on
         Keycloak's matching built-in default) so consumers that must stay in
         sync with it — JupyterHub's auth_refresh_age — compute from the same
         keycloak_access_token_lifespan variable. */}}
-    "accessTokenLifespan": {{ .Values.lifespans.accessToken }},
+    "accessTokenLifespan": {{ .Values.lifespans.accessToken | default 300 }},
     {{- /* Realm-level session timeouts align with the oauth2-proxy cookie (8h)
         so users get one consistent session across the stack.
         Required by Keycloak 26.6+: `client.session.idle.timeout` on the
@@ -295,11 +295,11 @@
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:oauth2_proxy)",
         "redirectUris": [
-          "https://auth.$(env:server_hostname)/oauth2/callback"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/callback"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
           "https://{{ $h }}/oauth2/idpresponse"{{- end }}{{- end }}
         ],
         "webOrigins": [
-          "https://auth.$(env:server_hostname)"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
           "https://{{ $h }}"{{- end }}{{- end }}
         ],
         "attributes": {
@@ -330,7 +330,7 @@
         "secret": "$(env:jupyterhub)",
         "redirectUris": [
           "https://jupyter.$(env:server_hostname)/hub/oauth_callback",
-          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
           "https://jupyter.$(env:server_hostname)"
@@ -385,7 +385,7 @@
         "secret": "$(env:grafana)",
         "redirectUris": [
           "https://grafana.$(env:server_hostname)/login/generic_oauth",
-          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
           "https://grafana.$(env:server_hostname)"
@@ -435,7 +435,7 @@
         "secret": "$(env:temporal)",
         "redirectUris": [
           "https://temporal.$(env:server_hostname)/auth/sso/callback",
-          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
           "https://temporal.$(env:server_hostname)"
@@ -492,7 +492,7 @@
         "secret": "$(env:superset)",
         "redirectUris": [
           "https://superset.$(env:server_hostname)/oauth-authorized/keycloak",
-          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
           "https://superset.$(env:server_hostname)"
@@ -542,7 +542,7 @@
         "secret": "$(env:minio)",
         "redirectUris": [
           "https://minio.$(env:server_hostname)/oauth_callback",
-          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
           "https://minio.$(env:server_hostname)"
@@ -599,7 +599,7 @@
         "secret": "$(env:launchpad_client)",
         "redirectUris": [
           "https://$(env:server_hostname)/api/auth/callback/keycloak",
-          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
           "https://$(env:server_hostname)"
@@ -665,7 +665,7 @@
         "secret": "$(env:open_webui)",
         "redirectUris": [
           "https://chat.$(env:server_hostname)/oauth/oidc/callback",
-          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
           "https://chat.$(env:server_hostname)"
@@ -804,7 +804,7 @@
         "secret": "$(env:xnat)",
         "redirectUris": [
           "https://xnat.$(env:server_hostname)/openid-login",
-          "https://auth.$(env:server_hostname)/oauth2/sign_out"
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/sign_out"
         ],
         "webOrigins": [
           "https://xnat.$(env:server_hostname)"
@@ -1046,10 +1046,10 @@
             scopes. Per-attribute display_name / value_pattern / max_length
             overrides are honored; defaults fit alphanumeric category codes
             with a `*` wildcard. */}}
-{{- range $attr_name, $attr_config := .Values.trinoAttributeFilters }}
+{{- range $attr_name, $attr_config := (include "keycloak-config-cli.trinoAttributeFilters" $ | fromYaml) }}
         {
-          "name": "{{ $attr_name }}",
-          "displayName": "{{ $attr_config.display_name | default (printf "Scout AuthZ — %s" $attr_name) }}",
+          "name": {{ $attr_name | toJson }},
+          "displayName": {{ $attr_config.display_name | default (printf "Scout AuthZ — %s" $attr_name) | toJson }},
           "permissions": {
             "view": ["admin"],
             "edit": ["admin"]
@@ -1071,8 +1071,8 @@
             "options": {"options": {{ $attr_config.options | toJson }}}
 {{- else }}
             "pattern": {
-              "pattern": "{{ $attr_config.value_pattern | default "^([A-Za-z0-9 _-]+|\\\\*)$" }}",
-              "error-message": "{{ $attr_config.value_pattern_error | default "Use a code (letters, digits, spaces, hyphen, underscore) or the * wildcard for all values." }}"
+              "pattern": {{ $attr_config.value_pattern | default "^([A-Za-z0-9 _-]+|\\*)$" | toJson }},
+              "error-message": {{ $attr_config.value_pattern_error | default "Use a code (letters, digits, spaces, hyphen, underscore) or the * wildcard for all values." | toJson }}
             }
 {{- end }}
           }

@@ -38,6 +38,23 @@ keycloak-base-realm
 {{- end }}
 
 {{/*
+The default Trino AuthZ dimensions. Here rather than in values.yaml so Helm's
+map coalesce cannot merge them back into a site's own set.
+*/}}
+{{- define "keycloak-config-cli.trinoAttributeFiltersDefault" -}}
+allowed_facilities:
+  column: sending_facility
+{{- end }}
+
+{{- define "keycloak-config-cli.trinoAttributeFilters" -}}
+{{- if .Values.trinoAttributeFilters -}}
+{{- toYaml .Values.trinoAttributeFilters -}}
+{{- else -}}
+{{- include "keycloak-config-cli.trinoAttributeFiltersDefault" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "keycloak-config-cli.chart" -}}
