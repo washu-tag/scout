@@ -412,7 +412,7 @@ enable_gpu_node_taint: true
 # Adding a new restriction dimension is one inventory edit — both
 # Keycloak and OPA pick it up on next deploy. Optional per-attribute
 # overrides for display name / validation pattern live alongside
-# `column`, see ansible/roles/keycloak/templates/scout-realm.json.j2
+# `column`, see helm/keycloak-config-cli/files/scout-realm.json
 # for the rendered shape.
 trino_attribute_filters:
   allowed_facilities:

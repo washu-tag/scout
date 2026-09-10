@@ -163,7 +163,9 @@ shares a token cache across concurrent users.
   (`eagerTokenRefresh` extraConfig, `auth_refresh_age`).
 - Lifespan variable: `ansible/roles/scout_common/defaults/main.yaml`
   (`keycloak_access_token_lifespan`), consumed by
-  `ansible/roles/keycloak/templates/scout-realm.json.j2`.
+  ~~`ansible/roles/keycloak/templates/scout-realm.json.j2`~~
+  `helm/keycloak-config-cli/files/scout-realm.json` as the chart's
+  `lifespans.accessToken` value.
 - Tests: `sdk/python/tests/test_query.py` (401 detection direct/chained,
   403-and-non-auth excluded, retry-once, no-retry-on-403, provider
   invalidation) and
