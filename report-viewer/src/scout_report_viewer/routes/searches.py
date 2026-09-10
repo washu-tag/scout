@@ -34,6 +34,7 @@ from fastapi import (
 )
 
 from .. import metrics, progress, trino_client
+from ..evidence import with_evidence
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
@@ -522,8 +523,12 @@ async def get_search_rows(
     source_sql = ds["sql"]
     uploaded_ids = ds.get("uploaded_ids")
     cap = settings.max_cohort_rows
+    # Derived per read, not stored, so the saved search stays a verbatim record
+    # of what the model wrote. Falls back to the original sql for any shape it
+    # cannot rewrite.
+    scored_sql, _has_evidence = with_evidence(source_sql)
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
-    all_sql = f"SELECT s.* FROM ({source_sql}) s LIMIT {cap + 1}"
+    all_sql = f"SELECT s.* FROM ({scored_sql}) s LIMIT {cap + 1}"
     token = progress.valid_token(progress_id)
     progress_key = _progress_key(search_id, user.sub, token) if token else None
     handle = trino_client.QueryHandle()

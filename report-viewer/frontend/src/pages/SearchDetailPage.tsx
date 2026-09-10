@@ -35,6 +35,7 @@ import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
+import { EvidenceChip } from './searchDetail/EvidenceChip';
 import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
 
 const COLUMNS_CONFIG: Array<{
@@ -44,7 +45,7 @@ const COLUMNS_CONFIG: Array<{
   defaultHidden?: boolean;
   align?: 'right' | 'center';
   mono?: boolean;
-  kind?: 'date';
+  kind?: 'date' | 'evidence';
 }> = [
   { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true },
   {
@@ -70,6 +71,12 @@ const COLUMNS_CONFIG: Array<{
   { field: 'patient_age', title: 'Age', width: 50, align: 'right' },
   { field: 'sex', title: 'Sex', width: 40, align: 'center' },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
+  // Why each row is in the cohort, derived from the search SQL itself.
+  // Only the source chip shows by default -- the grid is already tight, and
+  // the column picker exposes the spans for anyone auditing a cohort.
+  { field: 'ev_source', title: 'Matched on', width: 92, kind: 'evidence' },
+  { field: 'ev_span', title: 'Matched text', width: 200, defaultHidden: true },
+  { field: 'ev_negated_span', title: 'Ruled out text', width: 200, defaultHidden: true },
 ];
 
 type Row = Record<string, unknown>;
@@ -202,7 +209,17 @@ export default function SearchDetailPage() {
           id: c.field,
           header: c.title,
           size: c.width,
-          cell: (info) => (c.kind === 'date' ? fmtDate(info.getValue()) : fmtCell(info.getValue())),
+          cell: (info) => {
+            if (c.kind === 'date') return fmtDate(info.getValue());
+            if (c.kind === 'evidence')
+              return (
+                <EvidenceChip
+                  source={info.getValue()}
+                  contradicted={info.row.original['ev_contradicted']}
+                />
+              );
+            return fmtCell(info.getValue());
+          },
           meta: { align: c.align, mono: c.mono },
         }),
       ),

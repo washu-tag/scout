@@ -20,14 +20,29 @@ export function RowDetail(props: {
     staleTime: 5 * 60_000,
   });
 
+  // Spans are computed by Trino from the search's own regex, so they agree
+  // with the row selection in a way match_terms cannot.
+  const evSpan = String(props.row['ev_span'] ?? '').trim();
+  const evNegatedSpan = String(props.row['ev_negated_span'] ?? '').trim();
+
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   // \b boundaries so short tokens like "PE" don't match in "pectoralis".
-  const escaped = props.highlightTerms
+  const termAtoms = props.highlightTerms
     .map((t) => t.trim())
     .filter((t) => t.length >= 2)
-    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  // safe: all regex metachars escaped above, alternation of literal strings is linear-time
+    .map(esc);
+
+  // Negated span first: alternation is leftmost-first, so the whole ruled-out
+  // phrase wins over the bare finding it embeds. Spans get no \b -- they are
+  // extracted report text and may begin or end on punctuation.
+  const alternatives = [
+    ...(evNegatedSpan ? [esc(evNegatedSpan)] : []),
+    ...(evSpan ? [esc(evSpan)] : []),
+    ...(termAtoms.length ? [`\\b(?:${termAtoms.join('|')})\\b`] : []),
+  ];
+  // safe: every atom is escaped literal text, so this is linear-time
   // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
-  const highlightRe = escaped.length ? new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi') : null;
+  const highlightRe = alternatives.length ? new RegExp(`(${alternatives.join('|')})`, 'gi') : null;
 
   // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
   const dxPrefixes = props.highlightDiagnosis
@@ -38,15 +53,29 @@ export function RowDetail(props: {
     if (!text) return null;
     if (!highlightRe) return text;
     const parts = text.split(highlightRe);
-    return parts.map((p, i) =>
-      i % 2 === 1 ? (
-        <mark key={i} style={{ background: '#fff3a3', color: '#222', padding: '0 1px' }}>
+    const negated = evNegatedSpan.toLowerCase();
+    return parts.map((p, i) => {
+      if (i % 2 === 0) return <Fragment key={i}>{p}</Fragment>;
+      const isNegated = negated !== '' && p.trim().toLowerCase() === negated;
+      return (
+        <mark
+          key={i}
+          title={isNegated ? 'Ruled out here - kept by a diagnosis code' : undefined}
+          style={
+            isNegated
+              ? {
+                  background: '#ffd7d5',
+                  color: '#222',
+                  padding: '0 1px',
+                  textDecoration: 'underline wavy #b35',
+                }
+              : { background: '#fff3a3', color: '#222', padding: '0 1px' }
+          }
+        >
           {p}
         </mark>
-      ) : (
-        <Fragment key={i}>{p}</Fragment>
-      ),
-    );
+      );
+    });
   };
 
   const diagnoses = reportQ.data?.diagnoses ?? props.row.diagnoses;

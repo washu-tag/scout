@@ -26,6 +26,7 @@ dependencies = [
     "pydantic>=2",
     "pydantic-settings>=2",
     "trino",
+    "sqlglot>=25",
     # trino-python-client 0.337+ imports tzlocal but doesn't declare it
     # as required - packaging bug. Listed explicitly so installs work.
     "tzlocal",
