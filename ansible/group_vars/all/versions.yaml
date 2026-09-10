@@ -150,7 +150,7 @@ dcm4che_tools_version: 5.33.1
 # the regex manager has no allowedVersionsTemplate). New family = bump all 3 + their regexes
 # together. (A mismatched combo wedged the deploy in PR #400.)
 # renovate: datasource=docker depName=dcm4che/dcm4chee-arc-psql
-dcm4chee_arc_version: 5.35.0
+dcm4chee_arc_version: 5.35.1
 # renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose
 dcm4chee_db_version: 18.3-35
 # renovate: datasource=docker depName=dcm4che/slapd-dcm4chee versioning=loose
