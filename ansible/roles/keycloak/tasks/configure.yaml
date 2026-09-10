@@ -78,7 +78,7 @@
           ~ (keycloak_client_secrets | dictsort | to_json))
          | hash("sha256") | truncate(8, True, "") }}
 
-# TEMPORARY -- drop both of these after the next major release.
+# TEMPORARY -- drop this after the next major release.
 #
 # The realm used to be published as a Secret with every client credential
 # inlined in it. Nothing writes or reads it now, so an upgraded site would keep
@@ -92,38 +92,6 @@
     namespace: '{{ keycloak_namespace }}'
     name: keycloak-config
     kubeconfig: '{{ local_kubeconfig_yaml }}'
-
-# And the base realm ConfigMap was created by this role rather than by the
-# chart. Helm refuses to adopt an object it did not create, so on a site that
-# already has one the release below fails outright until it is handed over --
-# which is what these two annotations and the label mean.
-- name: Look for a base realm ConfigMap Helm does not own
-  delegate_to: localhost
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: ConfigMap
-    namespace: '{{ keycloak_namespace }}'
-    name: keycloak-base-realm
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
-  register: keycloak_existing_base_realm
-
-- name: Hand the base realm ConfigMap over to Helm
-  delegate_to: localhost
-  kubernetes.core.k8s:
-    state: patched
-    api_version: v1
-    kind: ConfigMap
-    namespace: '{{ keycloak_namespace }}'
-    name: keycloak-base-realm
-    definition:
-      metadata:
-        labels:
-          app.kubernetes.io/managed-by: Helm
-        annotations:
-          meta.helm.sh/release-name: keycloak-config-cli
-          meta.helm.sh/release-namespace: '{{ keycloak_namespace }}'
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
-  when: keycloak_existing_base_realm.resources | length > 0
 
 # This release publishes the base realm ConfigMap and applies it. The GitOps
 # lane installs the same chart and the same file; the two differ only in where
