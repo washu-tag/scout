@@ -46,7 +46,9 @@ docsUrl: ''
 
 image:
   repository: ghcr.io/washu-tag/launchpad
-  tag: latest
+  # Empty falls through to .Chart.AppVersion, which helm package stamps at
+  # publish time. Ansible and the GitOps deploy base both set this explicitly.
+  tag: ''
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

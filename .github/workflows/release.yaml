@@ -575,7 +575,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate, version-bump, wait-for-build]
     # ADR 0030: a release publishes all charts at X.Y.Z (not just the build-lane
-    # 0.YYYYMMDD.run). Packaged from the stamped commit so Chart.yaml is at X.Y.Z.
+    # 0.YYYYMMDD.run). Chart version and appVersion are passed at package time
+    # (chart-app-version.sh); the stamped commit is checked out for voila's
+    # values.yaml image.tag, the one chart field update-versions.sh still rewrites.
     # Runs BEFORE `release` (which needs + verifies it), so a failed chart leg blocks
     # the Release rather than leaving it published with charts partly missing.
     if: >-
@@ -630,7 +632,11 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
-          helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
+          # No predecessor haul: a release publishes every Scout image at X.Y.Z, so
+          # Scout-image charts get X.Y.Z as their appVersion.
+          app_version="$(bash .github/scripts/chart-app-version.sh "${CHART_NAME}" "${VERSION}")"
+          helm package "${CHART_DIR}" --version "${VERSION}" \
+            ${app_version:+--app-version "${app_version}"} --destination "${RUNNER_TEMP}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
           ref="${REGISTRY}/washu-tag/charts/${CHART_NAME}:${VERSION}"
           digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"

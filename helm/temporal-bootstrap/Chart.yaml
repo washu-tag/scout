@@ -3,4 +3,6 @@ name: temporal-bootstrap
 description: "Idempotent Temporal setup applied as Helm hooks (post-install,post-upgrade), mirroring the scout-dashboards import model. Currently enforces the `default` namespace's workflow-history retention (issue #432); a natural home for future Temporal bootstrap such as the scheduled-ingest schedule."
 type: application
 version: 0.0.0-dev
-appVersion: "1.31.0"
+# Stamped at package time from versions.yaml (temporal_admin_tools_image_tag) by .github/scripts/chart-app-version.sh;
+# this placeholder never ships and deliberately does not resolve to an image.
+appVersion: "0.0.0-dev"

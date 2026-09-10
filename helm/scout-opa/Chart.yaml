@@ -3,4 +3,6 @@ name: scout-opa
 description: OPA policy engine enforcing Scout's Trino access-control policy (ADRs 0020/0021)
 type: application
 version: 0.0.0-dev
-appVersion: "latest"
+# Stamped at package time from versions.yaml (opa_image_tag) by .github/scripts/chart-app-version.sh;
+# this placeholder never ships and deliberately does not resolve to an image.
+appVersion: "0.0.0-dev"

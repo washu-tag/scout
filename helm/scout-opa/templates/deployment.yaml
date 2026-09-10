@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "scout-opa.fullname" . }}
   labels:
-    {{- include "scout-opa.labels" . | nindent 4 }}
+    {{- include "scout-opa.objectLabels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -30,7 +30,7 @@ spec:
       serviceAccountName: {{ include "scout-opa.serviceAccountName" . }}
       containers:
         - name: opa
-          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          image: {{ printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - run

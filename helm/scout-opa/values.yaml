@@ -4,7 +4,10 @@ replicaCount: 2
 
 image:
   repository: openpolicyagent/opa
-  tag: latest
+  # Empty falls through to .Chart.AppVersion, stamped at package time from
+  # versions.yaml (opa_image_tag). Ansible and the GitOps deploy base both set
+  # it explicitly.
+  tag: ''
   pullPolicy: IfNotPresent
 
 resources:

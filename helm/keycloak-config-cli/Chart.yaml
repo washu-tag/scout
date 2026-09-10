@@ -7,4 +7,6 @@ type: application
 
 version: 0.0.0-dev
 
-appVersion: "6.4.0-26"
+# Stamped at package time from versions.yaml (keycloak_config_cli_image_tag) by .github/scripts/chart-app-version.sh;
+# this placeholder never ships and deliberately does not resolve to an image.
+appVersion: "0.0.0-dev"

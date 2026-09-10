@@ -30,7 +30,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: bootstrap
-          image: {{ .Values.image.ref | quote }}
+          image: {{ required "image.ref must be set to the image the running Open WebUI Pod uses (see values.yaml)" .Values.image.ref | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           # OWUI's image expects to be the API server; we override to run our
           # bootstrap script instead. Same image = same Python deps + same
