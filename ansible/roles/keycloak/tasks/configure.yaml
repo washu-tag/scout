@@ -82,6 +82,21 @@
         scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | string }}"
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+# TEMPORARY -- drop this task after the next major release. The realm used to be
+# published as a Secret of this name with every client credential inlined in it.
+# Nothing has written it since the document moved to a ConfigMap of named
+# credentials, so an upgraded site would keep a dump of its pre-rotation
+# credentials in the namespace indefinitely.
+- name: Remove the superseded realm Secret
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Secret
+    namespace: '{{ keycloak_namespace }}'
+    name: keycloak-config
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
 - name: Run Keycloak Config CLI
   ansible.builtin.include_role:
     name: scout_common
