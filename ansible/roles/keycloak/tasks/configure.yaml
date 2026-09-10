@@ -39,8 +39,7 @@
       {{ keycloak_client_secrets | dict2items | rejectattr('value') | map(attribute='key') | list }}
 
 # Two documents, deliberately split. The realm carries `$(env:...)` tokens and
-# no credentials, so it can be read, hashed and diffed by anything — which is
-# what lets the app manager treat it as an ordinary input (ADR XXXX). The
+# no credentials, so it can be read, hashed and diffed by anything. The
 # credentials live here, and reach config-cli through the Job environment.
 - name: Create Secret for Keycloak client secrets
   delegate_to: localhost
@@ -56,37 +55,34 @@
       data: '{{ keycloak_client_secrets }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
-# A ConfigMap, not a Secret: the document names every credential as
-# `$(env:...)` and carries none of them. The app manager reads it from here by
-# name, and watches it, so a re-rendered realm reaches the reconciler without
-# waiting out its resync floor.
-#
-# The GitOps lane publishes the same name from the chart. It has to be the same
-# name, because the reconciler reads it by name and there is one reconciler.
-#
-# `| string` is not decoration. Without it Ansible's convert-data runs
-# safe_eval over any value starting with `{`, and a realm that happened to
-# render without a bare `true`/`false`/`null` would arrive as a dict, which the
-# API rejects.
-- name: Create ConfigMap for Scout Keycloak Realm
-  delegate_to: localhost
-  kubernetes.core.k8s:
-    state: present
-    namespace: '{{ keycloak_namespace }}'
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: '{{ keycloak_base_realm_configmap }}'
-      data:
-        scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | string }}"
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
+# Rendered through a set_fact, like the client secrets above, because that is
+# what fails loudly on a variable the template expects and the inventory does
+# not set. The same lookup inline in a task argument yields null and carries on.
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    keycloak_config_cli_values: "{{ lookup('template', 'keycloak-config-cli-values.yaml.j2') | from_yaml }}"
 
-# TEMPORARY -- drop this task after the next major release. The realm used to be
-# published as a Secret of this name with every client credential inlined in it.
-# Nothing has written it since the document moved to a ConfigMap of named
-# credentials, so an upgraded site would keep a dump of its pre-rotation
-# credentials in the namespace indefinitely.
+# Stamped after the render because it covers the render: a change to the realm
+# document, to any value it is rendered from, or to a client secret is a new
+# attempt at applying it. The apply Job is a Helm hook with a fixed name, so
+# without this it would be reused verbatim.
+- name: Stamp the values with a config hash
+  ansible.builtin.set_fact:
+    keycloak_config_cli_values: >-
+      {{ keycloak_config_cli_values
+         | combine({'annotations': {'config-hash': keycloak_config_hash}}) }}
+  vars:
+    keycloak_config_hash: >-
+      {{ (lookup('file', keycloak_config_cli_helm_chart_ref ~ '/files/scout-realm.json')
+          ~ (keycloak_config_cli_values | to_json)
+          ~ (keycloak_client_secrets | dictsort | to_json))
+         | hash("sha256") | truncate(8, True, "") }}
+
+# TEMPORARY -- drop both of these after the next major release.
+#
+# The realm used to be published as a Secret with every client credential
+# inlined in it. Nothing writes or reads it now, so an upgraded site would keep
+# a dump of its pre-rotation credentials in the namespace forever.
 - name: Remove the superseded realm Secret
   delegate_to: localhost
   kubernetes.core.k8s:
@@ -97,6 +93,41 @@
     name: keycloak-config
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+# And the base realm ConfigMap was created by this role rather than by the
+# chart. Helm refuses to adopt an object it did not create, so on a site that
+# already has one the release below fails outright until it is handed over --
+# which is what these two annotations and the label mean.
+- name: Look for a base realm ConfigMap Helm does not own
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    namespace: '{{ keycloak_namespace }}'
+    name: '{{ keycloak_base_realm_configmap }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: keycloak_existing_base_realm
+
+- name: Hand the base realm ConfigMap over to Helm
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: patched
+    api_version: v1
+    kind: ConfigMap
+    namespace: '{{ keycloak_namespace }}'
+    name: '{{ keycloak_base_realm_configmap }}'
+    definition:
+      metadata:
+        labels:
+          app.kubernetes.io/managed-by: Helm
+        annotations:
+          meta.helm.sh/release-name: keycloak-config-cli
+          meta.helm.sh/release-namespace: '{{ keycloak_namespace }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  when: keycloak_existing_base_realm.resources | length > 0
+
+# This release publishes the base realm ConfigMap and applies it. The GitOps
+# lane installs the same chart and the same file; the two differ only in where
+# the realm values come from.
 - name: Run Keycloak Config CLI
   ansible.builtin.include_role:
     name: scout_common
@@ -108,31 +139,4 @@
     helm_chart_create_namespace: true
     helm_chart_wait: true
     helm_chart_timeout: '5m'
-    helm_chart_values:
-      image:
-        repository: '{{ keycloak_config_cli_image }}'
-        tag: '{{ keycloak_config_cli_image_tag }}'
-      # The task above already published the realm, so the chart renders no
-      # realm of its own (`config` stays empty) and only mounts this one.
-      realmConfigMap: '{{ keycloak_base_realm_configmap }}'
-      annotations:
-        # Force a re-deploy on a change to either input. The secrets have to be
-        # in here now that the realm document no longer moves when one is
-        # rotated — without them a rotation would leave Keycloak on the old
-        # credential while every consumer had already switched.
-        config-hash: >-
-          {{ (lookup("template", "scout-realm.json.j2") ~ (keycloak_client_secrets | dictsort | to_json))
-             | hash("sha256") | truncate(8, True, "") }}
-      env:
-        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
-        KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
-        # Every client URL in the realm is written against this (the GitOps lane
-        # has done so since ADR 0031); it is site configuration, not a secret.
-        server_hostname: '{{ server_hostname }}'
-        # Without var-substitution the `$(env:...)` tokens are installed
-        # verbatim as client credentials and redirect URIs.
-        SPRING_APPLICATION_JSON: '{"import":{"var-substitution":{"enabled":true}}}'
-      envFrom:
-        - secretRef:
-            name: keycloak-client-secrets
-      existingSecret: keycloak-admin-secret
+    helm_chart_values: '{{ keycloak_config_cli_values }}'
