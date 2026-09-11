@@ -109,6 +109,7 @@ configOverrides:
     from superset.exceptions import SupersetSecurityException
     from flask import g, redirect, session, request, jsonify
     import hmac
+    import uuid as uuid_lib
     import logging
     OAUTH_PROVIDERS = OPENID_PROVIDERS = [
         {
@@ -192,6 +193,13 @@ configOverrides:
             "correlate_key": "primary_report_identifier",
         },
     }
+
+    def _cohort_export_uuid(*parts: str) -> str:
+        # Deterministic per (search_id, ...) rather than Superset's default
+        # random uuid4, so re-exporting the same search resolves back to the
+        # same dataset/dashboard instead of erroring on a table_name/slug
+        # collision or piling up duplicates.
+        return str(uuid_lib.uuid5(uuid_lib.NAMESPACE_URL, ":".join(("scout-chat-cohort-export",) + parts)))
 
     def _ensure_chat_cohort_grants_table(engine) -> None:
         from sqlalchemy import text
@@ -291,11 +299,15 @@ configOverrides:
             if not hmac.compare_digest(token, CHAT_COHORT_EXPORT_TOKEN):
                 return jsonify({"error": "unauthorized"}), 401
             body = request.get_json(force=True, silent=True) or {}
+            search_id = body.get("search_id")
             sql = body.get("sql")
             username = body.get("username")
             title = body.get("title") or "Chat cohort export"
-            if not sql or not username:
-                return jsonify({"error": "sql and username are required"}), 400
+            if not search_id or not sql or not username:
+                return (
+                    jsonify({"error": "search_id, sql, and username are required"}),
+                    400,
+                )
 
             # Required, not just cosmetic ownership: fetch_metadata() below
             # runs impersonated as this user (override_user) so cohort SQL
@@ -352,11 +364,17 @@ configOverrides:
             from superset.utils.core import override_user
 
             def _create_cohort_dataset(source_uuid: str, spec: dict, correlate_sql: str) -> SqlaTable:
+                ds_uuid = _cohort_export_uuid(search_id, spec["table"])
+                existing = db.session.query(SqlaTable).filter_by(uuid=ds_uuid).first()
+                if existing is not None:
+                    return existing
+
                 widened_sql = (
                     f"SELECT * FROM {spec['table']} WHERE {spec['key']} IN "
                     f"(SELECT {spec['correlate_key']} FROM ({correlate_sql}) cohort)"
                 )
                 ds_table = SqlaTable(
+                    uuid=ds_uuid,
                     table_name=f"{title} ({username}) [{spec['table']}]",
                     schema="default",
                     catalog="delta",
@@ -431,6 +449,23 @@ configOverrides:
                 db.session.query(Dashboard).filter_by(uuid=CORE_DASHBOARD_UUID).first()
             )
             if source_dashboard is not None:
+                # Deterministic per search_id, kept as the SAME row (not
+                # delete+recreate) across repeat exports of this search, so
+                # dashboard_url stays stable. Its slices are rebuilt fresh
+                # each time in case the standard dashboard template changed
+                # since the last export.
+                dash_uuid = _cohort_export_uuid(search_id, "dashboard")
+                existing_dashboard = (
+                    db.session.query(Dashboard).filter_by(uuid=dash_uuid).first()
+                )
+                if existing_dashboard is not None:
+                    old_slices = list(existing_dashboard.slices)
+                    existing_dashboard.slices = []
+                    db.session.flush()
+                    for old_slice in old_slices:
+                        db.session.delete(old_slice)
+                    db.session.flush()
+
                 # Live source dataset id -> its uuid, so each chart's
                 # datasource_id can be resolved back to which cohort clone
                 # (creating it on first use) it belongs on.
@@ -486,20 +521,29 @@ configOverrides:
                     chart_id_map,
                     dataset_id_map,
                 )
-                new_dashboard = Dashboard(
-                    dashboard_title=f"{title} ({username})",
-                    position_json=json.dumps(position),
-                    json_metadata=json.dumps(metadata),
-                    # Draft (not published): Superset restricts draft
-                    # dashboards to owners + admins, giving this real
-                    # dashboard-level isolation independent of the dataset's
-                    # chat_cohort_grants check below.
-                    published=False,
-                    slices=new_slices,
-                )
+                if existing_dashboard is not None:
+                    new_dashboard = existing_dashboard
+                    new_dashboard.dashboard_title = f"{title} ({username})"
+                    new_dashboard.position_json = json.dumps(position)
+                    new_dashboard.json_metadata = json.dumps(metadata)
+                    new_dashboard.published = False
+                    new_dashboard.slices = new_slices
+                else:
+                    new_dashboard = Dashboard(
+                        uuid=dash_uuid,
+                        dashboard_title=f"{title} ({username})",
+                        position_json=json.dumps(position),
+                        json_metadata=json.dumps(metadata),
+                        # Draft (not published): Superset restricts draft
+                        # dashboards to owners + admins, giving this real
+                        # dashboard-level isolation independent of the
+                        # dataset's chat_cohort_grants check below.
+                        published=False,
+                        slices=new_slices,
+                    )
+                    db.session.add(new_dashboard)
                 if owner is not None:
                     new_dashboard.owners = [owner]
-                db.session.add(new_dashboard)
                 db.session.flush()  # assign new_dashboard.id
                 dashboard_url = f"/superset/dashboard/{new_dashboard.id}/"
 

@@ -550,6 +550,7 @@ async def export_search_to_superset(
             resp = await client.post(
                 f"{settings.superset_internal_url}/internal/chat-cohort-export",
                 json={
+                    "search_id": search_id,
                     "sql": sql,
                     "username": user.sub,
                     "title": ds.get("sql_explanation") or "Chat cohort export",
