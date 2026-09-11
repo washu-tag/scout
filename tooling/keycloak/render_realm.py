@@ -113,7 +113,8 @@ def _sub(s, old, new):
 
 def render(s):
     # 1) strip Jinja comments
-    s = re.sub(r"\{#.*?#\}", "", s, flags=re.S)
+    s = re.sub(r"^[ \t]*\{#.*?#\}[ \t]*\r?\n", "", s, flags=re.S | re.M)  # whole-line
+    s = re.sub(r"\{#.*?#\}", "", s, flags=re.S)  # inline remnant
     # 2) control blocks -> helm (string-typed cluster-vars: gate on eq "true")
     s = s.replace(
         "{% if enable_xnat | default(false) | bool %}",
@@ -187,19 +188,7 @@ def render(s):
         )
     # 6) strip static trailing commas (invalid JSON)
     s = re.sub(r",(\s*[}\]])", r"\1", s)
-    # 6b) identityProviders -> leading-comma (both entries optional). _sub fails closed
-    #     so a reindent/reorder of the IdP block can't silently emit invalid JSON.
-    s = _sub(
-        s,
-        '},\n        {{- end }}\n        {{- if eq (.Values.microsoft.enabled | toString) "true" }}\n        {',
-        '}\n        {{- end }}\n        {{- if eq (.Values.microsoft.enabled | toString) "true" }}\n        {{- if eq (.Values.github.enabled | toString) "true" }},{{- end }}\n        {',
-    )
-    s = _sub(
-        s,
-        '},\n        {{- end }}\n    ],\n    "authenticationFlows"',
-        '}\n        {{- end }}\n    ],\n    "authenticationFlows"',
-    )
-    # 6c) trim each ALB host and drop blanks
+    # 6b) trim each ALB host and drop blanks
     s = _sub(
         s,
         '(splitList "," .Values.albOidcHosts | compact) }}',
@@ -213,7 +202,7 @@ def render(s):
     s = _sub(
         s, '"https://{{ $h }}"{{- end }}', '"https://{{ $h }}"{{- end }}{{- end }}'
     )
-    # 6d) fail the render if defaultProvider is not an enabled IdP
+    # 6c) fail the render if defaultProvider is not an enabled IdP
     s = _sub(s, '    "authenticatorConfig": [', GUARD + '    "authenticatorConfig": [')
     return HEADER + s
 

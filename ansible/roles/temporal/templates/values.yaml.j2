@@ -44,7 +44,11 @@ server:
         keySourceURIs:
           - '{{ keycloak_oidc_certs_url }}'
         refreshInterval: 1m
-      permissionsClaimName: groups
+      # Temporal's default claim mapper parses <namespace>:<role> strings, so its
+      # role names ARE its permission strings.
+      # `permissions` is Temporal's default value for this claim name, so we
+      # could omit it here, but we leave it to make the connection explicit.
+      permissionsClaimName: permissions
       authorizer: default
       claimMapper: default
 {% endif %}
@@ -74,5 +78,5 @@ web:
     - name: TEMPORAL_AUTH_CALLBACK_URL
       value: 'https://temporal.{{ server_hostname }}/auth/sso/callback'
     - name: TEMPORAL_AUTH_SCOPES
-      value: openid microprofile-jwt
+      value: openid email profile
 {% endif %}
