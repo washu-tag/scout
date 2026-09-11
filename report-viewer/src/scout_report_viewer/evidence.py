@@ -155,6 +155,15 @@ def _unsupported(select: exp.Select) -> str | None:
     return None
 
 
+def _enclosing_select(node: exp.Expression) -> exp.Expression | None:
+    parent = node.parent
+    while parent is not None:
+        if isinstance(parent, exp.Select):
+            return parent
+        parent = parent.parent
+    return None
+
+
 def _sibling_veto(
     node: exp.Expression,
     leaf: TextLeaf,
@@ -209,6 +218,10 @@ def build_plan(sql: str) -> EvidencePlan | None:
     nodes: list[tuple[exp.Expression, TextLeaf]] = []
     # find_all, not walk: walk's yield shape changed between sqlglot majors.
     for node in where.find_all(exp.RegexpLike, exp.Anonymous):
+        # Only the outer query's own predicates. A column referenced inside a
+        # subquery is in scope there, not in the SELECT we splice into.
+        if _enclosing_select(node) is not tree:
+            continue
         parts = _regexp_like_parts(node)
         if parts is None:
             continue

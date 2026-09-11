@@ -247,3 +247,16 @@ def test_highlight_expression_guards_the_empty_case() -> None:
 def test_no_text_predicate_means_no_highlight_expression() -> None:
     sql = "SELECT primary_report_identifier FROM reports_latest WHERE modality = 'MR'"
     assert highlight_hits_expression(sql) is None
+
+
+def test_a_nested_predicate_is_left_alone() -> None:
+    """A column in a subquery is in scope there, not in the SELECT we splice."""
+    sql = (
+        "SELECT primary_report_identifier FROM reports_dx "
+        "WHERE primary_report_identifier IN ("
+        "SELECT primary_report_identifier FROM reports_latest "
+        "WHERE REGEXP_LIKE(report_section_impression, '(?is)stroke'))"
+    )
+    out, has_evidence = with_evidence(sql)
+    assert has_evidence is False
+    assert out == sql

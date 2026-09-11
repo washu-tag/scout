@@ -65,6 +65,36 @@ router = APIRouter(prefix="/api/searches", tags=["searches"])
 
 _LLM_SAMPLE_ROWS = 10
 
+
+async def _execute_or_fall_back(
+    scored: str, original: str, *, user: str, op: str, params: list[Any] | None = None
+) -> tuple[list[str], list[dict[str, Any]], bool]:
+    """Run `scored`, falling back to the sql the model actually wrote.
+
+    The evidence rewrite is a projection-only splice and cannot change which
+    rows match, but it can still reference a column the outer query does not
+    expose. A cohort must never fail to load because of a reviewing aid, so any
+    error retries the original and simply returns no evidence.
+    """
+    try:
+        with metrics.time_trino(op):
+            # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            columns, rows = await trino_client.execute(scored, user=user, params=params)
+        return columns, rows, scored != original
+    except Exception:
+        if scored == original:
+            raise
+        log.exception("evidence rewrite failed at trino; retrying original sql")
+        with metrics.time_trino(op):
+            # safe: same query the model authored, unmodified
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            columns, rows = await trino_client.execute(
+                original, user=user, params=params
+            )
+        return columns, rows, False
+
+
 # Report-body columns never sent to the grid: too large for 50k-row payloads,
 # and the SPA fetches them per-row via /reports/read on expand. Shared by the
 # create-sample response and the full-cohort fetch.
@@ -150,13 +180,15 @@ async def create_search(
     # Sample query doubles as SQL validation: errors surface here before
     # we persist anything. The LIMIT lives outside the saved sql so the
     # LLM's own LIMIT is respected on later /rows reads.
-    scored_sql, has_evidence = with_evidence(sql)
-    sample_sql = f"SELECT s.* FROM ({scored_sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
+    scored_sql, _rewritten = with_evidence(sql)
+    limit = f" s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
-        with metrics.time_trino("create_sample_query"):
-            # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            columns, sample_rows = await trino_client.execute(sample_sql, user=user.sub)
+        columns, sample_rows, has_evidence = await _execute_or_fall_back(
+            f"SELECT s.* FROM ({scored_sql}){limit}",
+            f"SELECT s.* FROM ({sql}){limit}",
+            user=user.sub,
+            op="create_sample_query",
+        )
     except Exception as exc:
         log.exception("trino sample query failed")
         raise HTTPException(
@@ -470,18 +502,20 @@ async def get_search_rows(
     # cannot rewrite.
     scored_sql, _has_evidence = with_evidence(source_sql)
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
-    all_sql = f"SELECT s.* FROM ({scored_sql}) s LIMIT {cap + 1}"
+    limit = f" s LIMIT {cap + 1}"
     token = progress.valid_token(progress_id)
     progress_key = _progress_key(search_id, user.sub, token) if token else None
-    handle = trino_client.QueryHandle()
-    try:
+
+    async def run(query: str) -> tuple[list[str], list[dict[str, Any]]]:
+        # A fresh handle per attempt; a retry cannot reuse a cancelled one.
+        handle = trino_client.QueryHandle()
         with metrics.time_trino("rows_query"):
             # safe: source_sql is persisted validated SQL; ids bind via ?
-            columns, rows = await trino_client.cancel_on_disconnect(
+            return await trino_client.cancel_on_disconnect(
                 request.receive,
                 # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 trino_client.execute(
-                    all_sql,
+                    query,
                     user=user.sub,
                     params=[uploaded_ids] if uploaded_ids else None,
                     progress_key=progress_key,
@@ -489,10 +523,23 @@ async def get_search_rows(
                 ),
                 handle,
             )
+
+    try:
+        columns, rows = await run(f"SELECT s.* FROM ({scored_sql}){limit}")
     except trino_client.ClientDisconnected:
         raise HTTPException(status_code=499, detail="client disconnected")
     except Exception as exc:
-        raise _rows_query_error(exc, "rows")
+        if scored_sql == source_sql:
+            raise _rows_query_error(exc, "rows")
+        # Projection-only, but it can still name a column the outer query does
+        # not expose. A cohort must never be lost to a reviewing aid.
+        log.exception("evidence rewrite failed at trino; retrying original sql")
+        try:
+            columns, rows = await run(f"SELECT s.* FROM ({source_sql}){limit}")
+        except trino_client.ClientDisconnected:
+            raise HTTPException(status_code=499, detail="client disconnected")
+        except Exception as retry_exc:
+            raise _rows_query_error(retry_exc, "rows")
 
     truncated = len(rows) > cap
     if truncated:
