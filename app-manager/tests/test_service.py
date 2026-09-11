@@ -1083,3 +1083,67 @@ def test_the_sweep_proceeds_once_the_previous_job_is_really_gone(setup, monkeypa
 
     assert len(client.created_jobs) == 2
     assert state.phase == APPLIED
+
+
+def test_a_credential_served_from_cache_holds_the_apply(setup):
+    """Composing from a copy is fine. Applying from one is not.
+
+    The apply Job reads the real Secret, not this process's memory of it. A
+    fragment's credential is a required secretKeyRef, so its pod would never
+    start; the platform's arrives by an *optional* envFrom, so the pod would
+    start with nothing set and config-cli would install `$(env:oauth2_proxy)`
+    verbatim as a client secret.
+    """
+    service, fragments, client = setup
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+    applied = dict(client.jobs)
+
+    # The Secret goes; the fragment is still composed from the copy last read.
+    del client.secrets[("scout-core", "hello-keycloak-client")]
+    write_fragment(
+        fragments, "scout-demo", "hello", fragment_yaml("hello", pkce="required")
+    )
+    state = service.reconcile_once()
+
+    assert status_of(state, "scout-demo/hello").status == INSTALLED
+    assert state.phase == HOLDING
+    assert "hello-keycloak-client" in state.last_result
+    assert client.jobs == applied
+
+
+def test_the_platform_secret_going_away_does_not_apply_literal_tokens(setup):
+    """`_refuse_unresolved` cannot catch this one: it read the same copy."""
+    service, fragments, client = setup
+    service.reconcile_once()
+    applied = dict(client.jobs)
+
+    del client.secrets[("scout-core", "keycloak-client-secrets")]
+    realm = json.loads(open(service.settings.base_realm_path).read())
+    realm["displayName"] = "Renamed"
+    open(service.settings.base_realm_path, "w").write(json.dumps(realm))
+    state = service.reconcile_once()
+
+    assert state.phase == HOLDING
+    assert "keycloak-client-secrets" in state.last_result
+    assert client.jobs == applied
+
+
+def test_a_credential_that_comes_back_releases_the_hold(setup):
+    service, fragments, client = setup
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+
+    del client.secrets[("scout-core", "hello-keycloak-client")]
+    write_fragment(
+        fragments, "scout-demo", "hello", fragment_yaml("hello", pkce="required")
+    )
+    assert service.reconcile_once().phase == HOLDING
+
+    client.set_secret(
+        "scout-core", "hello-keycloak-client", {"client-secret": "s3cret"}
+    )
+    state = service.reconcile_once()
+
+    assert state.phase == APPLIED
+    assert status_of(state, "scout-demo/hello").status == INSTALLED

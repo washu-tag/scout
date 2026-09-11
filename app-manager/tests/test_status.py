@@ -254,11 +254,16 @@ def test_readiness_is_false_until_the_realm_is_applied(setup):
     assert service.ready() is True
 
 
-def test_a_held_retraction_stays_ready(setup):
-    """Holding leaves the realm alone deliberately, and it is one fragment's
-    business. Going unready here would fail the platform's auth deploy over a
-    chart upgrade elsewhere on the cluster."""
-    service, fragments, _ = setup
+def test_holding_is_not_ready(setup):
+    """Holding leaves the realm alone with a change outstanding, so it is not
+    "a fragment's problem" -- it is "the realm this deploy published is not in
+    Keycloak", and Ready is the whole of the Flux lane's gate on that.
+
+    This process has applied nothing at all: it came up, found a fragment
+    absent with no copy to stand in for it, and stopped. Reporting Ready there
+    satisfies the gate over a realm nothing has imported.
+    """
+    service, fragments, client = setup
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()
 
@@ -268,6 +273,12 @@ def test_a_held_retraction_stays_ready(setup):
     state = revived.reconcile_once()
 
     assert state.phase == HOLDING
+    assert revived.ready() is False
+
+    # And it clears itself: the fragment comes back, the realm applies, Ready.
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+
+    assert revived.reconcile_once().phase == "Applied"
     assert revived.ready() is True
 
 

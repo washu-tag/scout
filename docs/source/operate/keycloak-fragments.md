@@ -68,8 +68,15 @@ reconciler reports having applied the exact document it just published. So a bas
 naming a credential that does not resolve, or a wedged apply Job, fails `make install-auth`
 rather than leaving it green over stale platform auth.
 
-Fragment outcomes never affect readiness: a rejected fragment is one service's problem, not
-the platform's, and a fragment waiting out its retraction grace keeps the pod Ready.
+A fragment's own outcome never affects readiness: a rejected or invalid fragment is one
+service's problem, not the platform's, and the realm applies without it. The same is true
+of a fragment waiting out its retraction grace with a composed copy standing in for it —
+the realm is applied and unchanged, so the pod is Ready.
+
+What does make the pod unready is `Holding` or `Refused`, because both mean the realm was
+left alone *with a change outstanding*: what the deploy published is not what is in
+Keycloak. That is the platform's problem however it was caused, and Ready is the whole of
+the Flux lane's gate on the realm existing at all.
 
 ## Looking at what it did
 
@@ -140,6 +147,14 @@ that state reports `phase: Refused` rather than `Holding`.
 A credential is damped the same way and for the same window: a `secretRef` that stops
 resolving — deleted, or the API momentarily refusing — is served from the value last read
 rather than rejecting the fragment, because a rejected fragment is one the apply prunes.
+
+A damped credential does stop the apply, though, and that is the difference between it and
+a damped fragment. A fragment is composed from a copy and the resulting document is the
+whole of what the apply needs; a credential is not in the document at all, so the apply Job
+goes and reads the Secret itself and this pod's copy is no use to it. So the reconciler
+reports `phase: Holding`, naming the Secret, and leaves the realm alone until it can read
+it. Nothing is retracted meanwhile — that is what the copy is for — but nothing else
+reaches Keycloak either until the Secret is back.
 
 ## Credentials are named, not carried
 

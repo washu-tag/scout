@@ -129,6 +129,10 @@ class AppManagerService:
         # same reason a missing fragment is. In memory only: these are
         # credentials, so a restart inside the window is a real read failure.
         self._last_good: dict[str, tuple[dict, float]] = {}
+        # Which of those were served from cache this reconcile. Composing from a
+        # copy is fine; applying from one is not, because the apply Job reads
+        # the real Secret and not this process's memory of it.
+        self._damped: set[str] = set()
         # What the Secret watch should ring the doorbell for. Widened by each
         # reconcile as fragments name their own credentials.
         self._watched_secrets = {settings.client_secrets_secret, settings.admin_secret}
@@ -211,6 +215,7 @@ class AppManagerService:
             name,
             int(waited),
         )
+        self._damped.add(name)
         return secret
 
     def resolve_secret(self, name: str, key: str) -> str | None:
@@ -360,8 +365,17 @@ class AppManagerService:
         first would make the pod unready for the length of every apply, which
         the apply Job can make a couple of minutes.
 
-        `Holding` counts. A held retraction leaves the realm alone on purpose,
-        and it is a fragment's business; readiness is not.
+        Only `Applied` counts, and that is narrower than it looks: a pass with
+        nothing pending reaches it by having compared the composed document and
+        the live import checksum against what was applied, so it is a
+        verification rather than a memory.
+
+        `Holding` does not count, which is the difference between "a fragment
+        is a service's problem" and "the realm this deploy published is not in
+        Keycloak". Holding is always the second: the realm was left alone with
+        a change outstanding. Counting it let a process that had applied
+        nothing at all report Ready by holding on its first pass -- and Ready
+        is the whole of the Flux lane's gate on the realm existing.
         """
         try:
             state = self._reconcile()
@@ -369,11 +383,12 @@ class AppManagerService:
             self.converged = False
             raise
         self.reconciles += 1
-        self.converged = state.phase in (APPLIED, HOLDING)
+        self.converged = state.phase == APPLIED
         return state
 
     def _reconcile(self) -> State:
         self._secrets.clear()
+        self._damped.clear()
         prior = prior_installed(self.state)
         discovered = scan(self.settings.fragment_dir)
         held, restored = self._retracting(prior, {str(i.ref) for i in discovered})
@@ -445,6 +460,13 @@ class AppManagerService:
 
         if blocked:
             return self._hold(blocked)
+        # Checked before `missing`, which cannot see it: `resolvable` was read
+        # from the same cached copy, so every variable looks satisfied.
+        damped = self._damped & (
+            {self.settings.client_secrets_secret, self.settings.admin_secret} | bound
+        )
+        if damped:
+            return self._hold_credentials(damped)
         if missing:
             return self._refuse_unresolved(missing)
         if not self.state.pending_change:
@@ -512,6 +534,36 @@ class AppManagerService:
             expected[:12],
         )
         return True
+
+    def _hold_credentials(self, names: set[str]) -> State:
+        """A Secret the apply reads is being served from cache. Do not apply.
+
+        Damping a Secret keeps a momentary blip from retracting the client that
+        names it, and for composing that is enough -- the document only names
+        its credentials. The apply is a different matter, because the Job reads
+        the real Secret and not this process's memory of one:
+
+        - a fragment's credential is a required `secretKeyRef`, so its pod
+          never starts and the whole apply dies by timeout; and
+        - the platform's `keycloak-client-secrets` arrives by an *optional*
+          `envFrom`, so the pod does start, with none of those variables set,
+          and config-cli installs `$(env:oauth2_proxy)` verbatim as
+          oauth2-proxy's client secret. `_refuse_unresolved` cannot catch that
+          one, because it read the same cached copy and saw every name resolve.
+
+        Holding costs a frozen realm for as long as the Secret stays away,
+        bounded by the retraction grace. Applying costs a credential anyone who
+        can read the realm can use.
+        """
+        self.state.phase = HOLDING
+        self.state.last_result = (
+            "holding: could not read "
+            + ", ".join(sorted(names))
+            + "; the apply needs the value itself, not the copy last read"
+        )
+        log.warning("HOLDING   %s", self.state.last_result)
+        self.store.save(self.state)
+        return self.state
 
     def _refuse_unresolved(self, missing: list[str]) -> State:
         """A named credential with nothing behind it is not a partial apply.
