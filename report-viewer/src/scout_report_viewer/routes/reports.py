@@ -5,13 +5,17 @@ of one ID to /api/reports/read)."""
 
 from __future__ import annotations
 
+import json
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from .. import metrics, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
+from ..evidence import highlight_hits_expression
+from ..store import SearchStore, get_store
 from ..csv_upload import (
     assert_cohort_placeholder,
     dedup_ids,
@@ -21,6 +25,7 @@ from ..csv_upload import (
     substitute_cohort,
 )
 from ..models import (
+    Highlight,
     DEFAULT_READ_REPORTS_TABLE,
     EPIC_VIEW_TABLES,
     INPUT_ID_COLUMNS,
@@ -122,6 +127,7 @@ async def query_from_file(
 async def read_reports(
     body: ReadReportsRequest,
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> ReadReportsResponse:
     """Fetch full content of specific reports by ID. Backs
     `scout_get_reports` (LLM context) and the SPA row-expand panel
@@ -170,4 +176,68 @@ async def read_reports(
             detail=f"trino query failed: {exc}",
         )
     metrics.RESULT_ROWS.labels(op="read_reports").observe(len(rows))
-    return ReadReportsResponse(columns=columns, rows=rows)
+    return ReadReportsResponse(
+        columns=columns,
+        rows=rows,
+        highlights=await _highlights(body.search_id, rows, column, table, user, store),
+    )
+
+
+async def _highlights(
+    search_id: str | None,
+    rows: list[dict[str, Any]],
+    id_column: str,
+    table: str,
+    user: User,
+    store: SearchStore,
+) -> list[list[Highlight]]:
+    """Match offsets per row, computed by Trino from the search's own patterns.
+
+    A separate query rather than extra columns on the read: highlighting is a
+    nicety, and isolating it means a failure here cannot stop a report opening.
+    Owner-scoped, so naming someone else's search yields nothing rather than
+    leaking its patterns.
+    """
+    if not search_id or not rows:
+        return []
+    try:
+        search = await store.get_search(search_id, owner_sub=user.sub)
+        if search is None:
+            return []
+        expression = highlight_hits_expression(search["sql"])
+        if expression is None:
+            return []
+        ids = [str(r.get(id_column)) for r in rows if r.get(id_column) is not None]
+        if not ids:
+            return []
+        sql = (
+            f'SELECT "{id_column}" AS _id, {expression} AS hits '
+            f'FROM {table} WHERE contains(?, "{id_column}")'
+        )
+        with metrics.time_trino("read_reports_highlights"):
+            # safe: table and id_column are allowlisted by the caller, the
+            # patterns are quoted literals from persisted sql, ids bind via ?
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            _cols, hit_rows = await trino_client.execute(
+                sql, user=user.sub, params=[ids]
+            )
+    except Exception:
+        log.exception("highlight query failed (non-fatal)")
+        return []
+
+    by_id: dict[str, list[Highlight]] = {}
+    for hit_row in hit_rows:
+        raw = hit_row.get("hits")
+        parsed = json.loads(raw) if isinstance(raw, str) else (raw or [])
+        by_id[str(hit_row.get("_id"))] = [
+            # Trino positions are 1-based; the frontend slices from 0.
+            Highlight(
+                field=h["field"],
+                start=h["pos"] - 1,
+                end=h["pos"] - 1 + h["len"],
+                polarity=h["polarity"],
+            )
+            for h in parsed
+            if h.get("pos", 0) > 0 and h.get("len", 0) > 0
+        ]
+    return [by_id.get(str(r.get(id_column)), []) for r in rows]

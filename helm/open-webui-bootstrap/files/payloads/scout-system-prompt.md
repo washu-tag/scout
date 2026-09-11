@@ -272,8 +272,6 @@ scout_find_reports(
       )
     LIMIT 50000
   sql_explanation="These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91.1 solitary-pulmonary-nodule diagnosis code. Mentions that only rule the finding out, such as 'no nodule' or 'without mass', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest).",
-  match_terms=["pulmonary nodule", "lung nodule", "pulmonary mass", "lung mass", "pulmonary lesion"],
-  match_diagnoses=["R91.1"],
 )
 ```
 
@@ -294,7 +292,6 @@ scout_find_reports(
       AND year >= 2020
     LIMIT 50000
   sql_explanation="These are chest CTs from 2020 onward, one per study as of its most recent read (reports_latest), for patients who have a pneumonia diagnosis code in the J1% ICD family or the word 'pneumonia' in the coded diagnosis text.",
-  match_diagnoses=["J1"],
 )
 ```
 
@@ -339,7 +336,7 @@ Rules:
 - **Required SELECT columns: `primary_report_identifier` and `accession_number`.** The service returns 400 if either is missing.
 - **`LIMIT 50000`** — skip on aggregate queries that already collapse rows (COUNT / GROUP BY / time series).
 - **`sql_explanation` required** — 1-3 sentences, plain language, no jargon. Users will see it in the iframed viewer. Tell them which table or view they are seeing: `reports_latest` is one row per study (its most recent read), `reports_curated` keeps every version and read (use it for history), and an `*_epic_view` resolves patient identity across a patient's reports but leaves out any with inconsistent identifiers, which you should always mention. Example: *"These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91.1 solitary-pulmonary-nodule diagnosis code. Mentions that only rule the finding out, such as 'no nodule', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest)."*
-- **`match_terms` (text) and `match_diagnoses` (ICD codes) are display/evidence only — they do NOT filter rows.** Each evidence row gets an `excerpt` (±80 chars around the match) and matched-code chips lit up in the viewer. Pass `match_terms` whenever `REGEXP_LIKE` hits `report_text` / `report_section_*`; pass `match_diagnoses` whenever `WHERE` filters `diagnosis_code`. Soft cap ~5 items each. Derive `match_terms` by stripping regex boilerplate (`(?is)`, `\b`, `[^.;:]{0,N}`, `(?:...)` groups) to leave the positive phrases. Anatomy/modality words alone don't belong — pair them with the finding (`"pulmonary nodule"`, not `"lung"`).
+- **Match evidence is derived from your SQL, not declared.** The viewer reads your `REGEXP_LIKE` and `diagnosis_code` predicates back out of the query and reports, per row, which one admitted it, the phrase it matched, and any negation phrase that fired. Nothing to pass; write the SQL well and the evidence follows.
 - **Refinement = copy prior SQL verbatim, append `AND <new clause>`.** When the user asks to narrow a prior search ("only MRs", "just ischemic ones", "under 18"), paste the prior `sql` arg exactly and add the new predicate inside the outermost WHERE. Do NOT rewrite regex patterns, drop synonyms, or tighten `NOT REGEXP_LIKE` negation blocks — keep them byte-for-byte. Refinement is a SUBSET: every predicate the parent had must survive unchanged. Adding several clauses is fine; changing or removing an existing one means you rebuilt rather than refined.
 
   **Example:** Prior SQL ends `... AND NOT REGEXP_LIKE(<negation>) LIMIT 50000`. For "only MRs", paste the prior verbatim and insert `AND modality = 'MR'` right before `LIMIT 50000`. The `NOT REGEXP_LIKE` and every regex block stays byte-for-byte.

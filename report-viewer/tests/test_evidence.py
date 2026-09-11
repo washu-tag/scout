@@ -6,7 +6,12 @@ import pytest
 import sqlglot
 from sqlglot import exp
 
-from scout_report_viewer.evidence import EV_COLUMNS, build_plan, with_evidence
+from scout_report_viewer.evidence import (
+    EV_COLUMNS,
+    build_plan,
+    highlight_hits_expression,
+    with_evidence,
+)
 
 # The shape the chat system prompt templates: a diagnosis axis ORed with a text
 # axis, each text source carrying its own veto, plus a report_text fallback.
@@ -45,14 +50,14 @@ def test_classifies_each_source_and_pairs_its_veto() -> None:
     plan = build_plan(CANONICAL)
     assert plan is not None
     assert plan.has_dx_axis is True
-    # Impression first: it is the radiologist's call and wins the ev_source tie.
+    # Ordered so the span comes from the most specific section that matched.
     assert [p.column for p in plan.positives] == [
         "report_section_impression",
         "report_section_findings",
         "report_text",
     ]
     for pos in plan.positives:
-        veto = plan.veto_by_column[pos.column]
+        veto = plan.veto_for[pos]
         assert veto.negated and veto.column == pos.column
         assert veto.pattern.endswith("(?:glioblastoma|gbm)")
 
@@ -71,7 +76,7 @@ def test_where_clause_is_untouched() -> None:
     assert out.endswith(CANONICAL[CANONICAL.index("FROM reports_latest") :])
 
 
-def test_adds_exactly_the_four_evidence_columns() -> None:
+def test_adds_exactly_the_evidence_columns() -> None:
     before = select_aliases(CANONICAL)
     out, _ = with_evidence(CANONICAL)
     after = select_aliases(out)
@@ -79,7 +84,7 @@ def test_adds_exactly_the_four_evidence_columns() -> None:
     assert after[len(before) :] == list(EV_COLUMNS)
 
 
-def test_span_reads_the_column_its_pattern_matched() -> None:
+def test_include_span_reads_the_column_its_pattern_matched() -> None:
     out, _ = with_evidence(CANONICAL)
     for column in (
         "report_section_impression",
@@ -124,17 +129,68 @@ def test_rewriting_twice_does_not_stack_columns() -> None:
     assert select_aliases(twice).count("ev_source") == 1
 
 
+def test_exclude_span_is_set_even_when_another_source_admitted_the_row() -> None:
+    """One section can admit the row while another carries the exclusion."""
+    out, _ = with_evidence(CANONICAL)
+    exclude = next(
+        e
+        for e in sqlglot.parse_one(out, dialect="trino").expressions
+        if e.alias_or_name == "ev_negative_span"
+    )
+    # Keyed only on the exclusion patterns, never on which source admitted.
+    assert "ev_source" not in exclude.sql(dialect="trino")
+
+
+def test_source_reports_one_text_axis() -> None:
+    """Section parsing is heuristic, so which section matched is not published."""
+    out, _ = with_evidence(CANONICAL)
+    assert "'text'" in out
+    for section in ("'impression'", "'findings'", "'report_text'"):
+        assert section not in out
+
+
+def test_the_diagnosis_arm_is_evaluated_not_assumed() -> None:
+    """An unexplained row reads unknown rather than blaming a code that may
+    not have matched."""
+    out, _ = with_evidence(CANONICAL)
+    assert "CARDINALITY(FILTER(diagnoses" in out
+    assert "ELSE 'diagnosis_code'" not in out
+
+
+def test_each_positive_pairs_with_the_veto_in_its_own_and() -> None:
+    """Two concepts on one column must not share a veto."""
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "(REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)nodule') "
+        "AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)no[^.;:]*nodule')) "
+        "AND (REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)emphysema') "
+        "AND NOT REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)no[^.;:]*emphysema'))"
+    )
+    plan = build_plan(sql)
+    assert plan is not None
+    pairing = {pos.pattern: veto.pattern for pos, veto in plan.veto_for.items()}
+    assert pairing == {
+        "(?is)nodule": "(?is)no[^.;:]*nodule",
+        "(?is)emphysema": "(?is)no[^.;:]*emphysema",
+    }
+
+
+def test_the_report_text_arm_keeps_its_blank_section_guard() -> None:
+    """report_text is a fallback. Without the guard a HISTORY mention would be
+    reported as the reason for a row the query admitted on its diagnosis code."""
+    out, _ = with_evidence(CANONICAL)
+    arm = next(
+        line
+        for line in out.splitlines()
+        if "REGEXP_EXTRACT(report_text," in line and "THEN" in line
+    )
+    assert "COALESCE(TRIM(report_section_impression), '') = ''" in arm
+    assert "COALESCE(TRIM(report_section_findings), '') = ''" in arm
+
+
 def test_without_a_diagnosis_axis_nothing_claims_a_code() -> None:
     out, _ = with_evidence(TEXT_ONLY)
     assert "'diagnosis_code'" not in out
-    contradicted = next(
-        e
-        for e in sqlglot.parse_one(out, dialect="trino").expressions
-        if e.alias_or_name == "ev_contradicted"
-    )
-    assert (
-        isinstance(contradicted.this, exp.Boolean) and contradicted.this.this is False
-    )
 
 
 def test_single_quotes_in_a_pattern_are_escaped() -> None:
@@ -147,7 +203,7 @@ def test_single_quotes_in_a_pattern_are_escaped() -> None:
     span = next(
         e
         for e in sqlglot.parse_one(out, dialect="trino").expressions
-        if e.alias_or_name == "ev_span"
+        if e.alias_or_name == "ev_positive_span"
     )
     assert "(?is)patient's stroke" in [
         n.this for n in span.find_all(exp.Literal) if n.is_string
@@ -162,3 +218,32 @@ def test_from_inside_a_string_literal_is_not_the_splice_point() -> None:
     out, has_evidence = with_evidence(sql)
     assert has_evidence is True
     assert out.endswith(sql[sql.index("FROM reports_latest") :])
+
+
+def test_highlight_expression_is_valid_trino() -> None:
+    expression = highlight_hits_expression(CANONICAL)
+    assert expression is not None
+    sqlglot.parse_one(
+        f"SELECT id, {expression} AS hits FROM reports_curated", dialect="trino"
+    )
+
+
+def test_highlight_expression_covers_both_polarities_per_column() -> None:
+    expression = highlight_hits_expression(CANONICAL)
+    assert expression is not None
+    assert expression.count("'positive'") == 3
+    assert expression.count("'negative'") == 3
+    assert "REGEXP_POSITION" in expression
+
+
+def test_highlight_expression_guards_the_empty_case() -> None:
+    """sequence(1, 0) counts down in Trino, so zero matches needs its own arm."""
+    expression = highlight_hits_expression(CANONICAL)
+    assert expression is not None
+    assert expression.count("CARDINALITY(") >= 6
+    assert "CAST(ARRAY[] AS ARRAY(" in expression
+
+
+def test_no_text_predicate_means_no_highlight_expression() -> None:
+    sql = "SELECT primary_report_identifier FROM reports_latest WHERE modality = 'MR'"
+    assert highlight_hits_expression(sql) is None

@@ -1,12 +1,8 @@
-/** Which arm of the search SQL admitted this row. */
+/** Which source admitted this row, and whether an exclusion pattern also hit. */
 
 const LABEL: Record<string, string> = {
-  impression: 'Impression',
-  findings: 'Findings',
-  addendum: 'Addendum',
-  technician_note: 'Tech note',
-  report_text: 'Full text',
-  diagnosis_code: 'Code',
+  text: 'Report text',
+  diagnosis_code: 'DX code',
 };
 
 const base: React.CSSProperties = {
@@ -22,35 +18,33 @@ const base: React.CSSProperties = {
   border: '1px solid transparent',
 };
 
-export function EvidenceChip(props: { source: unknown; contradicted: unknown }) {
+export function EvidenceChip(props: { source: unknown; negativeSpan: unknown }) {
   const source = props.source == null ? '' : String(props.source);
-  if (!source) return <span style={{ color: 'var(--rv-muted)' }}>-</span>;
+  const label = source ? (LABEL[source] ?? source) : 'Unknown';
+  const excluded = props.negativeSpan != null && String(props.negativeSpan) !== '';
 
-  const label = LABEL[source] ?? source;
-  // Only a code-admitted row can be contradicted; a text match is its own evidence.
-  const contradicted = props.contradicted === true && source === 'diagnosis_code';
+  const style = excluded
+    ? {
+        ...base,
+        background: 'var(--rv-accent-soft)',
+        borderColor: 'var(--rv-danger)',
+        color: 'var(--rv-danger)',
+      }
+    : !source
+      ? { ...base, background: 'var(--rv-surface-2)', color: 'var(--rv-muted)' }
+      : source === 'diagnosis_code'
+        ? { ...base, background: 'var(--rv-surface-2)', color: 'var(--rv-muted)' }
+        : { ...base, background: 'var(--rv-accent-soft)', color: 'var(--rv-fg)' };
+
+  const title = excluded
+    ? 'The report text also carries negative evidence - worth reviewing'
+    : source
+      ? `Matched on ${label.toLowerCase()}`
+      : 'Matched a predicate the viewer could not identify';
 
   return (
-    <span
-      title={
-        contradicted
-          ? 'Matched a diagnosis code, but the report text rules the finding out'
-          : `Matched on ${label.toLowerCase()}`
-      }
-      style={
-        contradicted
-          ? {
-              ...base,
-              background: 'var(--rv-accent-soft)',
-              borderColor: 'var(--rv-danger)',
-              color: 'var(--rv-danger)',
-            }
-          : source === 'diagnosis_code'
-            ? { ...base, background: 'var(--rv-surface-2)', color: 'var(--rv-muted)' }
-            : { ...base, background: 'var(--rv-accent-soft)', color: 'var(--rv-fg)' }
-      }
-    >
-      {contradicted ? `⚠ ${label}` : label}
+    <span title={title} style={style}>
+      {excluded ? `\u26a0 ${label}` : label}
     </span>
   );
 }

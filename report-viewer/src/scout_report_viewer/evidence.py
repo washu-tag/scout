@@ -1,8 +1,8 @@
 """Derive match evidence from a saved cohort query.
 
 Parses the saved SQL, finds the `REGEXP_LIKE` predicates testing a report-body
-column, and splices `ev_source` / `ev_span` / `ev_negated_span` /
-`ev_contradicted` onto its SELECT list.
+column, and splices `ev_source` / `ev_positive_span` /
+`ev_negative_span` onto its SELECT list.
 
 Appended to the original SELECT rather than wrapped in a CTE: the model
 projects only display columns, so the body columns are in scope here and
@@ -38,8 +38,7 @@ TEXT_COLUMNS = frozenset(
     }
 )
 
-# Tie-break when several sources matched: impression is the radiologist's call,
-# report_text is the fallback for reports with no parsed sections.
+# Which source wins when several matched.
 SOURCE_ORDER = (
     "report_section_impression",
     "report_section_findings",
@@ -48,15 +47,12 @@ SOURCE_ORDER = (
     "report_text",
 )
 
-SOURCE_LABEL = {
-    "report_section_impression": "impression",
-    "report_section_findings": "findings",
-    "report_section_addendum": "addendum",
-    "report_section_technician_note": "technician_note",
-    "report_text": "report_text",
-}
+# Section parsing is heuristic, so which section matched is not a claim we can
+# stand behind to a user. Reported as one text axis; SOURCE_ORDER still decides
+# internally which column the span is read from.
+TEXT_LABEL = "text"
 
-EV_COLUMNS = ("ev_source", "ev_span", "ev_negated_span", "ev_contradicted")
+EV_COLUMNS = ("ev_source", "ev_positive_span", "ev_negative_span", "ev_dx_codes")
 
 MAX_TEXT_LEAVES = 24
 
@@ -72,16 +68,36 @@ class TextLeaf:
 class EvidencePlan:
     positives: list[TextLeaf] = field(default_factory=list)
     vetoes: list[TextLeaf] = field(default_factory=list)
-    veto_by_column: dict[str, TextLeaf] = field(default_factory=dict)
-    has_dx_axis: bool = False
+    veto_for: dict[TextLeaf, TextLeaf] = field(default_factory=dict)
+    #: parsed-section columns with a positive, i.e. what report_text falls back from
+    section_columns: set[str] = field(default_factory=set)
+    #: LIKE patterns the query matches diagnosis_code against
+    dx_patterns: list[str] = field(default_factory=list)
+
+    @property
+    def has_dx_axis(self) -> bool:
+        return bool(self.dx_patterns)
+
+
+def _names_in(node: exp.Expression) -> set[str]:
+    """Every column name referenced, qualified or not.
+
+    A qualified reference like `d.diagnosis_code` parses as a Dot of
+    Identifiers rather than a Column, so both node types have to be read.
+    """
+    names = {c.name for c in node.find_all(exp.Column)}
+    names |= {i.name for i in node.find_all(exp.Identifier)}
+    return names
 
 
 def _text_column_of(node: exp.Expression) -> str | None:
     # The subject is usually wrapped, e.g. COALESCE(report_section_impression, '').
-    for col in node.find_all(exp.Column):
-        if col.name in TEXT_COLUMNS:
-            return col.name
-    return None
+    hit = _names_in(node) & TEXT_COLUMNS
+    return (
+        min(hit, key=lambda n: SOURCE_ORDER.index(n) if n in SOURCE_ORDER else 99)
+        if hit
+        else None
+    )
 
 
 def _is_negated(node: exp.Expression) -> bool:
@@ -111,11 +127,20 @@ def _regexp_like_parts(node: exp.Expression) -> tuple[str, str] | None:
     return column, pattern_node.this
 
 
-def _has_dx_predicate(where: exp.Expression) -> bool:
-    return any(
-        col.name in ("diagnoses", "diagnosis_code", "diagnosis_code_text")
-        for col in where.find_all(exp.Column)
-    )
+def _dx_patterns(where: exp.Expression) -> list[str]:
+    """LIKE patterns applied to diagnosis_code, sorted for a stable rewrite.
+
+    Replaces the model-supplied match_diagnoses: these are the codes the query
+    actually filters on, not the ones it said it would.
+    """
+    out: list[str] = []
+    for like in where.find_all(exp.Like):
+        subject, pattern = like.this, like.expression
+        if not isinstance(pattern, exp.Literal) or not pattern.is_string:
+            continue
+        if "diagnosis_code" in _names_in(subject) and pattern.this not in out:
+            out.append(pattern.this)
+    return sorted(out)
 
 
 def _unsupported(select: exp.Select) -> str | None:
@@ -127,6 +152,32 @@ def _unsupported(select: exp.Select) -> str | None:
         return "GROUP BY"
     if any(e.alias_or_name in EV_COLUMNS for e in select.expressions):
         return "already has evidence columns"
+    return None
+
+
+def _sibling_veto(
+    node: exp.Expression,
+    leaf: TextLeaf,
+    nodes: list[tuple[exp.Expression, TextLeaf]],
+) -> TextLeaf | None:
+    """The veto guarding this positive: nearest negated sibling on the same column.
+
+    `(A AND NOT A_veto) AND (B AND NOT B_veto)` puts each positive next to its
+    own veto, so widening out from the innermost enclosing AND finds the right
+    one. Keying on column alone would hand B whichever veto came first.
+    """
+    ancestor: exp.Expression | None = node
+    while ancestor is not None:
+        if isinstance(ancestor, exp.And):
+            within = set(id(n) for n in ancestor.find_all(exp.Expression))
+            for other, other_leaf in nodes:
+                if (
+                    other_leaf.negated
+                    and other_leaf.column == leaf.column
+                    and id(other) in within
+                ):
+                    return other_leaf
+        ancestor = ancestor.parent
     return None
 
 
@@ -153,14 +204,16 @@ def build_plan(sql: str) -> EvidencePlan | None:
     if where is None:
         return None
 
-    plan = EvidencePlan(has_dx_axis=_has_dx_predicate(where))
+    plan = EvidencePlan(dx_patterns=_dx_patterns(where))
     seen: set[TextLeaf] = set()
+    nodes: list[tuple[exp.Expression, TextLeaf]] = []
     # find_all, not walk: walk's yield shape changed between sqlglot majors.
     for node in where.find_all(exp.RegexpLike, exp.Anonymous):
         parts = _regexp_like_parts(node)
         if parts is None:
             continue
         leaf = TextLeaf(column=parts[0], pattern=parts[1], negated=_is_negated(node))
+        nodes.append((node, leaf))
         if leaf in seen:
             continue
         seen.add(leaf)
@@ -172,16 +225,25 @@ def build_plan(sql: str) -> EvidencePlan | None:
         log.info("evidence: %d text predicates exceeds cap; skipping", len(seen))
         return None
 
-    for veto in plan.vetoes:
-        plan.veto_by_column.setdefault(veto.column, veto)
+    for node, leaf in nodes:
+        if leaf.negated:
+            continue
+        veto = _sibling_veto(node, leaf, nodes)
+        if veto is not None:
+            plan.veto_for.setdefault(leaf, veto)
 
-    plan.positives.sort(
-        key=lambda p: (
-            SOURCE_ORDER.index(p.column)
-            if p.column in SOURCE_ORDER
+    def source_rank(leaf: TextLeaf) -> int:
+        return (
+            SOURCE_ORDER.index(leaf.column)
+            if leaf.column in SOURCE_ORDER
             else len(SOURCE_ORDER)
         )
-    )
+
+    plan.section_columns = {
+        p.column for p in plan.positives if p.column != "report_text"
+    }
+    plan.positives.sort(key=source_rank)
+    plan.vetoes.sort(key=source_rank)
     return plan
 
 
@@ -194,46 +256,67 @@ def _matches(leaf: TextLeaf) -> str:
 
 
 def _admitted(plan: EvidencePlan, pos: TextLeaf) -> str:
-    veto = plan.veto_by_column.get(pos.column)
-    if veto is None:
-        return _matches(pos)
-    return f"({_matches(pos)} AND NOT {_matches(veto)})"
+    parts = [_matches(pos)]
+    veto = plan.veto_for.get(pos)
+    if veto is not None:
+        parts.append(f"NOT {_matches(veto)}")
+    # report_text is the templated fallback, reachable only when no section
+    # parsed. Without this guard a HISTORY mention would be reported as the
+    # reason for a row the query actually admitted on its diagnosis code.
+    if pos.column == "report_text" and plan.section_columns:
+        parts.extend(
+            f"COALESCE(TRIM({col}), '') = ''" for col in sorted(plan.section_columns)
+        )
+    return "(" + " AND ".join(parts) + ")"
 
 
 def build_evidence_columns(plan: EvidencePlan) -> str:
     source_arms = "\n    ".join(
-        f"WHEN {_admitted(plan, p)} THEN {_lit(SOURCE_LABEL.get(p.column, p.column))}"
-        for p in plan.positives
+        f"WHEN {_admitted(plan, p)} THEN {_lit(TEXT_LABEL)}" for p in plan.positives
     )
-    span_arms = "\n    ".join(
+    include_arms = "\n    ".join(
         f"WHEN {_admitted(plan, p)} THEN REGEXP_EXTRACT({p.column}, {_lit(p.pattern)})"
         for p in plan.positives
     )
-    # Without a diagnosis axis there is no other way in, so an unmatched row
-    # cannot be labelled diagnosis_code.
-    source_else = _lit("diagnosis_code") if plan.has_dx_axis else "NULL"
+    # Evaluate the diagnosis arm rather than assuming it. Anything that matches
+    # nothing is NULL, surfaced as "unknown", which is honest about a predicate
+    # we failed to model instead of blaming a code that may not have matched.
+    if plan.dx_patterns:
+        matching = " OR ".join(
+            f"d.diagnosis_code LIKE {_lit(p)}" for p in plan.dx_patterns
+        )
+        source_else = (
+            f"CASE WHEN CARDINALITY(FILTER(diagnoses, d -> {matching})) > 0"
+            f" THEN {_lit('diagnosis_code')} ELSE NULL END"
+        )
+    else:
+        source_else = "NULL"
 
     if plan.vetoes:
-        neg_arms = "\n    ".join(
+        exclude_arms = "\n    ".join(
             f"WHEN {_matches(v)} THEN REGEXP_EXTRACT({v.column}, {_lit(v.pattern)})"
             for v in plan.vetoes
         )
-        negated = f"CASE\n    {neg_arms}\n    ELSE NULL\n  END"
+        exclude = f"CASE\n    {exclude_arms}\n    ELSE NULL\n  END"
     else:
-        negated = "CAST(NULL AS VARCHAR)"
+        exclude = "CAST(NULL AS VARCHAR)"
 
-    if plan.has_dx_axis and plan.vetoes:
-        any_positive = " OR ".join(_matches(p) for p in plan.positives)
-        any_admitted = " OR ".join(_admitted(plan, p) for p in plan.positives)
-        contradicted = f"CASE WHEN ({any_positive}) AND NOT ({any_admitted}) THEN true ELSE false END"
+    if plan.dx_patterns:
+        matching = " OR ".join(
+            f"d.diagnosis_code LIKE {_lit(p)}" for p in plan.dx_patterns
+        )
+        dx_codes = (
+            f"ARRAY_JOIN(TRANSFORM(FILTER(diagnoses, d -> {matching}),"
+            f" d -> d.diagnosis_code), ', ')"
+        )
     else:
-        contradicted = "false"
+        dx_codes = "CAST(NULL AS VARCHAR)"
 
     return (
         f"  , CASE\n    {source_arms}\n    ELSE {source_else}\n  END AS ev_source\n"
-        f"  , CASE\n    {span_arms}\n    ELSE NULL\n  END AS ev_span\n"
-        f"  , {negated} AS ev_negated_span\n"
-        f"  , {contradicted} AS ev_contradicted\n"
+        f"  , CASE\n    {include_arms}\n    ELSE NULL\n  END AS ev_positive_span\n"
+        f"  , {exclude} AS ev_negative_span\n"
+        f"  , {dx_codes} AS ev_dx_codes\n"
     )
 
 
@@ -282,3 +365,40 @@ def with_evidence(sql: str) -> tuple[str, bool]:
     if rewritten is None:
         return sql, False
     return rewritten, True
+
+
+_HIT_ROW = "ROW(field VARCHAR, pos INTEGER, len INTEGER, polarity VARCHAR)"
+
+
+def _hits_for_leaf(leaf: TextLeaf) -> str:
+    """Every match of one pattern as ROWs of (field, 1-based pos, length)."""
+    col = f"COALESCE({leaf.column}, '')"
+    all_matches = f"REGEXP_EXTRACT_ALL({col}, {_lit(leaf.pattern)})"
+    polarity = "negative" if leaf.negated else "positive"
+    element = (
+        f"CAST(ROW({_lit(leaf.column)}, "
+        f"REGEXP_POSITION({col}, {_lit(leaf.pattern)}, 1, i), "
+        f"LENGTH({all_matches}[i]), {_lit(polarity)}) AS {_HIT_ROW})"
+    )
+    # sequence(1, 0) counts *down* in Trino, so the empty case needs its own arm.
+    return (
+        f"IF(CARDINALITY({all_matches}) = 0,"
+        f" CAST(ARRAY[] AS ARRAY({_HIT_ROW})),"
+        f" TRANSFORM(SEQUENCE(1, CARDINALITY({all_matches})), i -> {element}))"
+    )
+
+
+def highlight_hits_expression(sql: str) -> str | None:
+    """A JSON array of every pattern match, or None if there is nothing to mark.
+
+    Trino does the matching, so the offsets come from the same engine that
+    selected the rows. Meant for a single-report read, where one extra pass per
+    pattern is free; it would be wasteful across a whole cohort.
+    """
+    plan = build_plan(sql)
+    if plan is None:
+        return None
+    arrays = " || ".join(
+        _hits_for_leaf(leaf) for leaf in (*plan.positives, *plan.vetoes)
+    )
+    return f"CAST({arrays} AS JSON)"

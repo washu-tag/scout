@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Modal } from '../../Modal';
+import { MatchStats } from './MatchStats';
+import { hasEvidence } from './evidenceStats';
 
 export function ExplainSqlModal(props: {
   explanation: string;
   sql: string;
-  highlightTerms: string[];
-  highlightDiagnosis: string[];
+  rows: Record<string, unknown>[];
   onClose: () => void;
 }) {
-  const terms = props.highlightTerms.filter((t) => t.trim().length > 0);
+  const showStats = hasEvidence(props.rows);
   // Gate on the SQL: match_terms is a model-supplied hint it can omit.
   const matchesText = /REGEXP_LIKE/i.test(props.sql);
-  const codes = props.highlightDiagnosis.filter((d) => d.trim().length > 0);
   const [copied, setCopied] = useState(false);
   const onCopySql = () => {
     if (!props.sql) return;
@@ -120,74 +120,7 @@ export function ExplainSqlModal(props: {
             {copied ? <CheckIcon /> : <CopyIcon />}
           </button>
         </div>
-        {(terms.length > 0 || codes.length > 0) && (
-          <div style={{ marginTop: '1rem' }}>
-            <div style={{ fontWeight: 600, marginBottom: '0.2rem', fontSize: '0.85rem' }}>
-              Match criteria
-            </div>
-            <p
-              style={{
-                margin: '0 0 0.5rem',
-                color: 'var(--rv-muted)',
-                fontSize: '0.78rem',
-                lineHeight: 1.4,
-              }}
-            >
-              Words and diagnosis codes the LLM flagged as positive signals. They are highlighted in
-              the report text and diagnosis chips when you expand a row, so you can spot-check why
-              each row matched. <strong>Display only:</strong> these do not filter the search, the
-              SQL above is what selected these rows.
-            </p>
-            {terms.length > 0 && (
-              <div style={{ marginBottom: codes.length > 0 ? '0.4rem' : 0 }}>
-                <span
-                  style={{ color: 'var(--rv-muted)', fontSize: '0.78rem', marginRight: '0.4rem' }}
-                >
-                  Match terms:
-                </span>
-                {terms.map((t, i) => (
-                  <code
-                    key={i}
-                    style={{
-                      background: '#fff3a3',
-                      color: '#222',
-                      padding: '0 4px',
-                      marginRight: 4,
-                      borderRadius: 2,
-                      fontSize: '0.78rem',
-                    }}
-                  >
-                    {t}
-                  </code>
-                ))}
-              </div>
-            )}
-            {codes.length > 0 && (
-              <div>
-                <span
-                  style={{ color: 'var(--rv-muted)', fontSize: '0.78rem', marginRight: '0.4rem' }}
-                >
-                  Match diagnoses:
-                </span>
-                {codes.map((d, i) => (
-                  <code
-                    key={i}
-                    style={{
-                      background: '#fff3a3',
-                      color: '#222',
-                      padding: '0 4px',
-                      marginRight: 4,
-                      borderRadius: 2,
-                      fontSize: '0.78rem',
-                    }}
-                  >
-                    {d}
-                  </code>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {showStats && <MatchStats rows={props.rows} />}
       </div>
     </Modal>
   );

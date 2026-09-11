@@ -74,9 +74,9 @@ const COLUMNS_CONFIG: Array<{
   // Why each row is in the cohort, derived from the search SQL itself.
   // Only the source chip shows by default -- the grid is already tight, and
   // the column picker exposes the spans for anyone auditing a cohort.
-  { field: 'ev_source', title: 'Matched on', width: 92, kind: 'evidence' },
-  { field: 'ev_span', title: 'Matched text', width: 200, defaultHidden: true },
-  { field: 'ev_negated_span', title: 'Ruled out text', width: 200, defaultHidden: true },
+  { field: 'ev_source', title: 'Matched on', width: 105, kind: 'evidence' },
+  { field: 'ev_positive_span', title: 'Positive evidence', width: 200, defaultHidden: true },
+  { field: 'ev_negative_span', title: 'Negative evidence', width: 200, defaultHidden: true },
 ];
 
 type Row = Record<string, unknown>;
@@ -85,6 +85,19 @@ const columnHelper = createColumnHelper<Row>();
 
 // Lets the empty table render its headers before the first fetch returns.
 const DEFAULT_COLUMNS = COLUMNS_CONFIG.filter((c) => !c.defaultHidden).map((c) => c.field);
+
+// Least self-evidencing first: a code-only row has no text in the report to
+// check against, while a text match shows the reviewer its own phrase.
+const REVIEW_ORDER = ['diagnosis_code', 'text'];
+
+function reviewRank(row: Row): number {
+  if (row.ev_negative_span) return 0;
+  // Unknown outranks everything explained: we could not say why it is here.
+  const source = String(row.ev_source ?? '');
+  if (!source) return 1;
+  const i = REVIEW_ORDER.indexOf(source);
+  return 2 + (i === -1 ? REVIEW_ORDER.length : i);
+}
 
 export default function SearchDetailPage() {
   const { searchId = '' } = useParams<{ searchId: string }>();
@@ -215,11 +228,15 @@ export default function SearchDetailPage() {
               return (
                 <EvidenceChip
                   source={info.getValue()}
-                  contradicted={info.row.original['ev_contradicted']}
+                  negativeSpan={info.row.original['ev_negative_span']}
                 />
               );
             return fmtCell(info.getValue());
           },
+          sortingFn:
+            c.kind === 'evidence'
+              ? (a, b) => reviewRank(a.original) - reviewRank(b.original)
+              : 'auto',
           meta: { align: c.align, mono: c.mono },
         }),
       ),
@@ -488,16 +505,7 @@ export default function SearchDetailPage() {
                         <tr style={{ background: DETAIL_ZONE_BG }}>
                           <td colSpan={row.getVisibleCells().length} style={{ padding: 0 }}>
                             <div style={{ padding: '0.75rem 1rem' }}>
-                              <RowDetail
-                                row={row.original}
-                                highlightTerms={[
-                                  ...(meta.data?.match_terms ?? []),
-                                  ...(appliedFilters.service_name
-                                    ? [appliedFilters.service_name]
-                                    : []),
-                                ]}
-                                highlightDiagnosis={meta.data?.match_diagnoses ?? []}
-                              />
+                              <RowDetail row={row.original} />
                             </div>
                           </td>
                         </tr>
@@ -739,8 +747,7 @@ export default function SearchDetailPage() {
         <ExplainSqlModal
           explanation={meta.data?.sql_explanation ?? ''}
           sql={meta.data?.sql ?? ''}
-          highlightTerms={meta.data?.match_terms ?? []}
-          highlightDiagnosis={meta.data?.match_diagnoses ?? []}
+          rows={rowsQ.data?.rows ?? []}
           onClose={() => setSqlModalOpen(false)}
         />
       )}

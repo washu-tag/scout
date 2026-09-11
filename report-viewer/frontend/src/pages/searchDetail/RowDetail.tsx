@@ -1,68 +1,63 @@
 import { Fragment, type ReactNode } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { friendlyError, getReport } from '../../api/client';
+import { friendlyError, getReport, type Highlight } from '../../api/client';
 import { buildDiscussPrompt } from '../../chat';
 import { useChatPrompt } from '../../ChatPrompt';
 import { fmtDate } from './format';
 import { paginationBtn } from './styles';
 
-export function RowDetail(props: {
-  row: Record<string, unknown>;
-  highlightTerms: string[];
-  highlightDiagnosis: string[];
-}) {
+const TEXT_FIELDS = [
+  'report_text',
+  'report_section_impression',
+  'report_section_findings',
+] as const;
+
+export function RowDetail(props: { row: Record<string, unknown> }) {
   const requestPrompt = useChatPrompt();
+  const { searchId } = useParams<{ searchId: string }>();
   const reportId = String(props.row['primary_report_identifier'] ?? '');
   const reportQ = useQuery({
-    queryKey: ['report', reportId],
-    queryFn: () => getReport(reportId, 'primary_report_identifier'),
+    queryKey: ['report', reportId, searchId],
+    queryFn: () => getReport(reportId, 'primary_report_identifier', searchId),
     enabled: !!reportId,
     staleTime: 5 * 60_000,
   });
 
-  // Spans are computed by Trino from the search's own regex, so they agree
-  // with the row selection in a way match_terms cannot.
-  const evSpan = String(props.row['ev_span'] ?? '').trim();
-  const evNegatedSpan = String(props.row['ev_negated_span'] ?? '').trim();
+  const highlights = reportQ.data?.highlights ?? [];
+  // Diagnosis chips light up from the codes the query actually filtered on,
+  // read out of its own predicates rather than a model-supplied list.
+  const matchedCodes = new Set(
+    String(props.row['ev_dx_codes'] ?? '')
+      .split(',')
+      .map((c) => c.trim().toLowerCase())
+      .filter(Boolean),
+  );
 
-  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // \b boundaries so short tokens like "PE" don't match in "pectoralis".
-  const termAtoms = props.highlightTerms
-    .map((t) => t.trim())
-    .filter((t) => t.length >= 2)
-    .map(esc);
-
-  // Negated span first: alternation is leftmost-first, so the whole ruled-out
-  // phrase wins over the bare finding it embeds. Spans get no \b -- they are
-  // extracted report text and may begin or end on punctuation.
-  const alternatives = [
-    ...(evNegatedSpan ? [esc(evNegatedSpan)] : []),
-    ...(evSpan ? [esc(evSpan)] : []),
-    ...(termAtoms.length ? [`\\b(?:${termAtoms.join('|')})\\b`] : []),
-  ];
-  // safe: every atom is escaped literal text, so this is linear-time
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
-  const highlightRe = alternatives.length ? new RegExp(`(${alternatives.join('|')})`, 'gi') : null;
-
-  // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
-  const dxPrefixes = props.highlightDiagnosis
-    .map((d) => d.trim().replace(/%+$/, '').toLowerCase())
-    .filter((d) => d.length >= 1);
-
-  const applyTextHighlights = (text: string): ReactNode => {
-    if (!text) return null;
-    if (!highlightRe) return text;
-    const parts = text.split(highlightRe);
-    const negated = evNegatedSpan.toLowerCase();
-    return parts.map((p, i) => {
-      if (i % 2 === 0) return <Fragment key={i}>{p}</Fragment>;
-      const isNegated = negated !== '' && p.trim().toLowerCase() === negated;
-      return (
+  // Offsets index the exact string this response returned, so a mark cannot
+  // land on the wrong characters. Negative spans embed the positive phrase, so
+  // they win any overlap and the whole ruled-out phrase reads as one mark.
+  const applyOffsets = (text: string, field: string, hits: Highlight[]): ReactNode => {
+    const ordered = hits
+      .filter((h) => h.field === field && h.start < h.end && h.end <= text.length)
+      .sort(
+        (a, b) =>
+          a.start - b.start ||
+          b.end - b.start - (a.end - a.start) ||
+          (a.polarity === 'negative' ? -1 : 1),
+      );
+    const out: ReactNode[] = [];
+    let at = 0;
+    ordered.forEach((h, i) => {
+      if (h.start < at) return;
+      if (h.start > at) out.push(<Fragment key={`t${i}`}>{text.slice(at, h.start)}</Fragment>);
+      const excluded = h.polarity === 'negative';
+      out.push(
         <mark
-          key={i}
-          title={isNegated ? 'Ruled out here - kept by a diagnosis code' : undefined}
+          key={`m${i}`}
+          title={excluded ? 'Negative evidence' : 'Positive evidence'}
           style={
-            isNegated
+            excluded
               ? {
                   background: '#ffd7d5',
                   color: '#222',
@@ -72,10 +67,13 @@ export function RowDetail(props: {
               : { background: '#fff3a3', color: '#222', padding: '0 1px' }
           }
         >
-          {p}
-        </mark>
+          {text.slice(h.start, h.end)}
+        </mark>,
       );
+      at = h.end;
     });
+    if (at < text.length) out.push(<Fragment key="tail">{text.slice(at)}</Fragment>);
+    return out;
   };
 
   const diagnoses = reportQ.data?.diagnoses ?? props.row.diagnoses;
@@ -94,19 +92,8 @@ export function RowDetail(props: {
   const dxList = Array.isArray(diagnoses) ? (diagnoses as Array<Record<string, unknown>>) : [];
   const positiveDxIndex = new Set<number>();
   for (let i = 0; i < dxList.length; i++) {
-    const code = String(dxList[i].diagnosis_code ?? '');
-    const text = String(dxList[i].diagnosis_code_text ?? '');
-    if (!code) continue;
-    const codeLc = code.toLowerCase();
-    if (dxPrefixes.some((p) => codeLc.startsWith(p))) {
-      positiveDxIndex.add(i);
-      continue;
-    }
-    if (highlightRe) {
-      // Reset lastIndex; it sticks across .test() calls on /g regexes.
-      highlightRe.lastIndex = 0;
-      if (highlightRe.test(code + ' ' + text)) positiveDxIndex.add(i);
-    }
+    const code = String(dxList[i].diagnosis_code ?? '').toLowerCase();
+    if (code && matchedCodes.has(code)) positiveDxIndex.add(i);
   }
 
   const m = meta as Partial<{
@@ -248,12 +235,14 @@ export function RowDetail(props: {
             fontSize: '0.74rem',
           }}
         >
-          {applyTextHighlights(
-            (reportQ.data.report_text as string | null) ??
-              (reportQ.data.report_section_impression as string | null) ??
-              (reportQ.data.report_section_findings as string | null) ??
-              '',
-          ) || <em style={{ color: 'var(--rv-muted)' }}>(empty)</em>}
+          {(() => {
+            const field = TEXT_FIELDS.find((f) => reportQ.data?.[f]) ?? 'report_text';
+            const text = String(reportQ.data?.[field] ?? '');
+            if (!text) return <em style={{ color: 'var(--rv-muted)' }}>(empty)</em>;
+            // Offsets when the search supplied them; the literal-term path
+            // still covers CSV cohorts and searches with no text predicate.
+            return applyOffsets(text, field, highlights);
+          })()}
         </div>
       )}
 

@@ -185,20 +185,35 @@ export interface ReportDetail {
   report_section_findings: string | null;
   report_section_addendum: string | null;
   diagnoses: Array<Record<string, unknown>> | null;
+  highlights?: Highlight[];
 }
 
 // Shares /api/reports/read with the OWUI scout_get_reports tool.
 // Row visibility is enforced by OPA at Trino; no app-side cohort check.
-export async function getReport(reportId: string, idColumn: string): Promise<ReportDetail> {
-  const resp = await api<{ columns: string[]; rows: Array<Record<string, unknown>> }>(
-    '/api/reports/read',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: [reportId], id_column: idColumn }),
-    },
-  );
+export type Highlight = {
+  field: string;
+  start: number;
+  end: number;
+  polarity: 'positive' | 'negative';
+};
+
+export async function getReport(
+  reportId: string,
+  idColumn: string,
+  searchId?: string,
+): Promise<ReportDetail> {
+  const resp = await api<{
+    columns: string[];
+    rows: Array<Record<string, unknown>>;
+    highlights?: Highlight[][];
+  }>('/api/reports/read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [reportId], id_column: idColumn, search_id: searchId }),
+  });
   const row = resp.rows[0] ?? {};
+  // Offsets index the text in this same response, so they cannot drift.
+  row.highlights = resp.highlights?.[0] ?? [];
   // reports_latest exposes the lake file path as `primary_report_identifier`;
   // the frontend refers to it as `source_file`.
   if (row.primary_report_identifier !== undefined && row.source_file === undefined) {
