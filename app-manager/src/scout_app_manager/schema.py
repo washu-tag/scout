@@ -187,6 +187,13 @@ class SecretRef(BaseModel):
     component's chart renders the same value into both places -- its own
     namespace for the app, the reconciler's for the realm apply -- exactly as
     Scout already fans a vault-held client secret out to two consumers today.
+
+    *Which* Secret there is not constrained, so a fragment can alias a platform
+    client's credential onto a client it owns and read it back out of a token.
+    That rests on the trust posture, not on a check: a fragment author is
+    someone who already deploys every Secret on the site. Opening fragment
+    authorship wider than that needs a constraint here first -- see the trust
+    boundary section of docs/source/operate/keycloak-fragments.md.
     """
 
     model_config = ConfigDict(extra="forbid")

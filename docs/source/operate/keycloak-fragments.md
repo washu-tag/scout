@@ -34,6 +34,19 @@ So the set of namespaces the app manager watches is the set of namespaces whose 
 you trust with realm configuration. `app_manager_discovery_namespace` defaults to `ALL`;
 set it to a comma-separated list to narrow it.
 
+One bound the composer does **not** enforce is which Secret a fragment's `secretRef` may
+name. It has to be a Secret in the reconciler's namespace — that is what keeps the
+reconciler's Kubernetes permissions namespace-scoped — but any Secret there will do, so a
+fragment can put a platform client's credential on a client it owns and read it back out
+of a token. That is deliberate, and it rests on the assumption above: a fragment author is
+someone who already deploys every Secret on the site, so aliasing one gains them nothing
+they could not read directly.
+
+The assumption is what to revisit, not the check. If fragment authorship is ever opened to
+writers who are *not* trusted with the platform's secrets, `secretRef` needs a constraint —
+a naming convention tied to the source ConfigMap, or an explicit allowlist — before that
+happens, not after.
+
 ## Fragment states
 
 | State        | Meaning                                                                             |
