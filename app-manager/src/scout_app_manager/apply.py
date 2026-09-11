@@ -78,7 +78,13 @@ class RealmApplier:
         self, apply_key: str, bindings: dict[str, SecretBinding] | None = None
     ) -> tuple[bool, str]:
         name = f"app-manager-apply-{apply_key[7:19]}"
-        self._prune(keep=name)
+        lingering = self._prune(keep=name)
+        if lingering:
+            return False, (
+                "a previous apply is still running: "
+                + ", ".join(lingering)
+                + "; refusing to start a second writer on the realm"
+            )
         if not self._clear_finished(name):
             return False, f"the previous {name} is still terminating"
         log.info("APPLY    running %s", name)
@@ -103,6 +109,16 @@ class RealmApplier:
         if job is None or not _finished(job):
             return True
         log.info("APPLY    replacing the finished job %s", name)
+        return self._delete_and_wait(name)
+
+    def _delete_and_wait(self, name: str) -> bool:
+        """Delete a Job and wait for it to be gone. False if it outlasts the wait.
+
+        Gone means gone: `delete_job` uses foreground propagation, so the Job
+        object survives until its pod has terminated, and this loop ends when
+        config-cli has actually stopped rather than when the API accepted the
+        delete.
+        """
         self.client.delete_job(self.namespace, name)
         deadline = time.monotonic() + DELETE_TIMEOUT_SECONDS
         while self.client.get_job(self.namespace, name) is not None:
@@ -138,12 +154,24 @@ class RealmApplier:
             )
         return body
 
-    def _prune(self, keep: str) -> None:
+    def _prune(self, keep: str) -> list[str]:
+        """Remove every other apply Job, and name the ones that would not go.
+
+        Waited out one at a time, because the whole point of the sweep is that
+        no other config-cli is writing the realm when the next one starts. A
+        Job still present after the wait is reported rather than ignored: the
+        caller refuses to apply over it.
+        """
         selector = urllib.parse.quote(f"{APPLY_JOB_LABEL}=apply")
+        lingering = []
         for job in self.client.list_jobs(self.namespace, selector):
             name = job["metadata"]["name"]
-            if name != keep:
-                self.client.delete_job(self.namespace, name)
+            if name == keep:
+                continue
+            log.info("APPLY    removing the superseded job %s", name)
+            if not self._delete_and_wait(name):
+                lingering.append(name)
+        return lingering
 
     def _wait(self, name: str) -> tuple[bool, str]:
         deadline = time.monotonic() + self.settings.job_timeout_seconds

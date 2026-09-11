@@ -125,6 +125,9 @@ class FakeClient:
         self.job_status: dict[str, dict] = {}
         self.created_jobs: list[str] = []
         self.deleted_jobs: list[str] = []
+        # Jobs whose delete is accepted but which stay present, the way a
+        # foreground deletion does while its pod is still terminating.
+        self.lingering_jobs: set[str] = set()
         self.job_succeeds = True
         # Names whose GET raises rather than answering, for the blip a Secret
         # read is damped against.
@@ -215,6 +218,8 @@ class FakeClient:
 
     def delete_job(self, namespace, name):
         self.deleted_jobs.append(name)
+        if name in self.lingering_jobs:
+            return
         self.jobs.pop(name, None)
         self.job_status.pop(name, None)
 

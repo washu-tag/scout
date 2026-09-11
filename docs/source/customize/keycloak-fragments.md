@@ -167,7 +167,8 @@ running this first:
 - the ConfigMap is missing the `keycloak.scout.xnat.org/fragment` label, so nothing ever
   discovers it;
 - its data key does not end in `.yaml`, `.yml` or `.json`, so the reconciler reads nothing
-  from it;
+  from it — or it carries a second dot, like `my.fragment.yaml`, which the discovery
+  sidecar's filenames cannot tell apart from part of the ConfigMap's own name;
 - a redirect URI points outside the Scout domain;
 - a field name is misspelled — the vocabulary is closed, so a typo is an error, not a
   default.

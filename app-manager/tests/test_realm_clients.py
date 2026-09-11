@@ -309,7 +309,10 @@ def test_composed_client_matches_the_live_realm(
     if extras.get("service_account"):
         assert client["serviceAccountsEnabled"] is True
         assert client["standardFlowEnabled"] is False
-        assert "redirectUris" not in client
+        # Emitted empty, not omitted: config-cli reads an absent field as
+        # "do not manage", so an omitted one could never be cleared again.
+        assert client["redirectUris"] == []
+        assert client["webOrigins"] == []
     else:
         # The platform signout URI is injected, never declared: eight of nine
         # real interactive clients carry it and none should hardcode it.

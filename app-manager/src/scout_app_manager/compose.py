@@ -36,6 +36,7 @@ from .schema import (
     ClientSpec,
     Fragment,
     PLACEHOLDER_RE,
+    check_unambiguous,
     duration_seconds,
 )
 
@@ -151,10 +152,12 @@ def substitute(text: str, site: Site) -> str:
 def check_host(uri: str, site: Site) -> None:
     """Every redirect target must land inside the Scout domain.
 
-    This is the property `subdomain` used to buy by construction. Enforcing it
-    as a check instead costs one function and buys back every URL shape the
-    real realm uses.
+    The whole of that enforcement, so it re-checks for the characters where a
+    browser's idea of the hostname parts company with `urlparse`'s rather than
+    trusting `schema.check_unambiguous` to have run. The site's own `domain`
+    reaches this function too, and it does not come from a fragment.
     """
+    check_unambiguous(uri, "redirect URI")
     host = (urlparse(uri).hostname or "").lower()
     domain = site.domain.lower()
     if host != domain and not host.endswith(f".{domain}"):
@@ -472,10 +475,11 @@ def _client_representation(
     # publishes the binding the apply Job needs to put it in config-cli's
     # environment.
     representation["secret"] = substitution.placeholder(effect.secret_env)
-    if effect.redirect_uris:
-        representation["redirectUris"] = effect.redirect_uris
-    if effect.web_origins:
-        representation["webOrigins"] = effect.web_origins
+    # Always present, empty included. config-cli reads an absent field as "do
+    # not manage this", so omitting them when a client has none would mean a
+    # redirect URI could be added but never taken away again.
+    representation["redirectUris"] = effect.redirect_uris
+    representation["webOrigins"] = effect.web_origins
 
     # Scope lists are deliberately absent. A newly created client is seeded
     # from the realm's defaultDefaultClientScopes, so restating the same six

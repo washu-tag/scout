@@ -27,13 +27,22 @@ from .schema import FRAGMENT_LABEL, FRAGMENT_LABEL_VALUE, KIND, Fragment
 
 # kiwigrid k8s-sidecar, UNIQUE_FILENAMES=true:
 #   namespace_<namespace>.<resource>_<name>.<data-key>
-# Verified against a running launchpad catalog sidecar. ConfigMap names
-# containing a dot are not parseable here and are reported rather than guessed.
+# Verified against a running launchpad catalog sidecar. The namespace is a DNS
+# label and cannot hold a dot; everything after the resource is the name and
+# the key, and `parse_source_name` decides whether that split is knowable.
 SIDECAR_FILENAME_RE = re.compile(
-    r"^namespace_(?P<namespace>[^.]+)\.(?P<resource>[a-z]+)_(?P<name>[^.]+)\.(?P<key>.+)$"
+    r"^namespace_(?P<namespace>[^.]+)\.(?P<resource>[a-z]+)_(?P<rest>.+)$"
 )
 
 YAML_SUFFIXES = (".yaml", ".yml", ".json")
+
+# A fragment ConfigMap's data key carries one dot, its suffix. That is what
+# makes the sidecar's filename splittable: the name may hold dots, the key may
+# not, so the last two segments are always the key. `_from_configmap` enforces
+# it where a real ConfigMap is in hand, which is before anything is deployed.
+DATA_KEY_RULE = (
+    "a fragment's data key must be <name>.yaml, .yml or .json, with no other dot"
+)
 
 
 log = logging.getLogger(__name__)
@@ -118,15 +127,35 @@ class LoadedFragment:
 
 
 def parse_source_name(filename: str) -> tuple[FragmentRef, str] | None:
+    """The ConfigMap a sidecar-written file came from, and the data key in it.
+
+    Split from the right, because a ConfigMap name is a DNS *subdomain* and may
+    hold dots while a fragment's data key may not (see `DATA_KEY_RULE`). So
+    `namespace_kc.configmap_app.blue.fragment.yaml` is `app.blue` holding
+    `fragment.yaml`, and its sibling `app.green` is a different ConfigMap.
+
+    Splitting from the left instead reads both as `app`: two components'
+    clients merge into one fragment under one ref, and that ref is written into
+    every client's `scout.fragment.source` attribute as provenance the cluster
+    is supposed to have attested.
+
+    None when the filename is not the sidecar's shape at all, which is a
+    hand-placed file and genuinely has no provenance.
+    """
     match = SIDECAR_FILENAME_RE.match(filename)
     if not match:
         return None
     if match.group("resource") not in ("configmap", "secret"):
         return None
-    return (
-        FragmentRef(match.group("namespace"), match.group("name")),
-        match.group("key"),
-    )
+    rest = match.group("rest")
+    suffix = _suffix_of(rest)
+    if not suffix:
+        return None
+    head, dot, tail = rest[: -len(suffix)].rpartition(".")
+    name, key = (head, tail + suffix) if dot else (tail, suffix.lstrip("."))
+    if not name or not key:
+        return None
+    return FragmentRef(match.group("namespace"), name), key
 
 
 def scan(directory: str | Path) -> list[LoadedFragment]:
@@ -156,8 +185,8 @@ def scan(directory: str | Path) -> list[LoadedFragment]:
             continue
         parsed = parse_source_name(path.name)
         if parsed is None:
-            # A hand-placed file (the CLI's normal case), or a ConfigMap whose
-            # name contains a dot. Either way it has no cluster provenance.
+            # A hand-placed file, which is the CLI's normal case and has no
+            # cluster provenance by nature.
             ref, key = FragmentRef("-", path.name), path.name
         else:
             ref, key = parsed
@@ -198,10 +227,19 @@ def scan_stream(text: str, source: str = "stdin") -> list[LoadedFragment]:
 
     if not files:
         return problems
-    with tempfile.TemporaryDirectory() as tmp:
-        for name, body in files.items():
-            (Path(tmp) / name).write_text(body, encoding="utf-8")
-        return sorted(scan(tmp) + problems, key=lambda item: item.ref)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, body in files.items():
+                (Path(tmp) / name).write_text(body, encoding="utf-8")
+            return sorted(scan(tmp) + problems, key=lambda item: item.ref)
+    except OSError as exc:
+        # The container runs with a read-only root filesystem, so this is a
+        # missing writable /tmp rather than a bad fragment. It is still not
+        # allowed to raise: the caller is a CLI reporting on documents.
+        return [
+            _problem(FragmentRef("-", source), f"cannot stage for reading: {exc}"),
+            *problems,
+        ]
 
 
 def _bare_name(source: str, index: int | None) -> str:
@@ -242,14 +280,31 @@ def _from_configmap(
         return
 
     written = 0
+    refused = 0
     for key, value in data.items():
-        if not _suffix_of(str(key)):
+        suffix = _suffix_of(str(key))
+        if not suffix:
+            continue
+        if "." in str(key)[: -len(suffix)]:
+            # The sidecar writes `<namespace>.configmap_<name>.<key>`, and a
+            # dotted key makes that unsplittable. Caught here because this is
+            # the one place a real ConfigMap is in hand; from the filename
+            # alone it is already too late to tell.
+            problems.append(
+                _problem(
+                    ref,
+                    f"data key {key!r} would be indistinguishable from part of "
+                    f"the ConfigMap name once the discovery sidecar writes it "
+                    f"to disk: {DATA_KEY_RULE}",
+                )
+            )
+            refused += 1
             continue
         files[f"namespace_{ref.namespace}.configmap_{ref.name}.{key}"] = (
             value if isinstance(value, str) else yamlio.safe_dump(value)
         )
         written += 1
-    if not written:
+    if not written and not refused:
         problems.append(
             _problem(
                 ref,

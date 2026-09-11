@@ -2,17 +2,20 @@ import copy
 import json
 
 import pytest
-from conftest import fragment_yaml, write_fragment
+from conftest import configmap_yaml, fragment_yaml, write_fragment
 
 from scout_app_manager.compose import (
     BUILTIN_CLIENTS,
     SecretBinding,
     Site,
     canonical,
+    check_host,
     compose,
     plan,
 )
-from scout_app_manager.load import scan
+from scout_app_manager.load import scan, scan_stream
+
+SITE = Site(domain="scout.example.edu")
 
 
 def composed(base_realm, tmp_path, domain="scout.example.edu"):
@@ -84,6 +87,17 @@ def test_a_redirect_outside_the_scout_domain_is_refused(base_realm, tmp_path):
     result = composed(base_realm, tmp_path)
     assert result.accepted == []
     assert "outside scout.example.edu" in " ".join(result.rejected[0][1])
+
+
+def test_a_backslash_host_is_refused_by_the_domain_check_itself(base_realm, tmp_path):
+    """check_host is the whole of the domain enforcement, so it re-checks.
+
+    `https://evil.example\\.scout.example.edu/cb` is host `scout.example.edu`
+    to `urlparse` and host `evil.example` in an address bar. The schema refuses
+    it first, and this asserts the composer would too if it ever ran alone.
+    """
+    with pytest.raises(ValueError, match="browser reads"):
+        check_host("https://evil.example\\.scout.example.edu/cb", SITE)
 
 
 def test_a_lookalike_host_is_refused(base_realm, tmp_path):
@@ -246,6 +260,39 @@ def test_provenance_comes_from_the_sidecar_filename(tmp_path, hello_yaml):
     assert loaded.ref.namespace == "scout-demo"
     assert loaded.ref.name == "hello-fragment"
     assert loaded.content_hash.startswith("sha256:")
+
+
+def test_a_dotted_configmap_name_keeps_its_own_provenance(tmp_path):
+    """A ConfigMap name is a DNS subdomain, so `app.blue` is a legal one.
+
+    Split from the left, `app.blue` and `app.green` both read as `app`: two
+    components' clients merge into one fragment, under one ref, and that ref is
+    written into the realm as provenance the cluster attested.
+    """
+    write_fragment(tmp_path, "scout-demo", "app.blue", fragment_yaml(client="blue"))
+    write_fragment(tmp_path, "scout-demo", "app.green", fragment_yaml(client="green"))
+
+    loaded = sorted(scan(tmp_path), key=lambda item: item.ref)
+
+    assert [str(item.ref) for item in loaded] == [
+        "scout-demo/app.blue",
+        "scout-demo/app.green",
+    ]
+    assert [c.clientId for item in loaded for c in item.fragment.clients] == [
+        "blue",
+        "green",
+    ]
+
+
+def test_a_dotted_data_key_is_reported_before_it_is_deployed(tmp_path):
+    """It is what makes the filename splittable, so `validate` is where to say so."""
+    problems = scan_stream(
+        configmap_yaml(
+            "hello", "scout-demo", data={"my.fragment.yaml": fragment_yaml()}
+        )
+    )
+    assert len(problems) == 1
+    assert "no other dot" in " ".join(problems[0].errors)
 
 
 def test_content_hash_changes_when_the_fragment_changes(tmp_path, hello_yaml):

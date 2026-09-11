@@ -164,6 +164,28 @@ def test_unknown_placeholder_is_caught_offline():
         load(fragment_yaml(redirectUris=["https://hello.${realm_domain}/cb"]))
 
 
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "https://evil.example.com\\.${domain}/cb",
+        "https://evil.example.com\t.${domain}/cb",
+        "https://evil.example.com\n.${domain}/cb",
+        "https://evil.example.com\r.${domain}/cb",
+    ],
+)
+def test_a_host_a_browser_reads_differently_is_refused(uri):
+    """The domain check is only as good as the hostname it is handed.
+
+    WHATWG ends the authority at a backslash and strips tab, CR and LF from a
+    URL outright, so every one of these is `evil.example.com` in an address bar
+    while `urlparse` -- and therefore `compose.check_host` -- reads a host
+    inside the Scout domain. Keycloak matches a registered redirect URI as a
+    string, so it would hand the authorization code over to the first host.
+    """
+    with pytest.raises(ValidationError, match="browser reads"):
+        load(fragment_yaml(redirectUris=[uri]))
+
+
 # --- config-cli substitution ------------------------------------------------
 
 

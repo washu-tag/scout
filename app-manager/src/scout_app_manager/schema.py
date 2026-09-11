@@ -46,6 +46,15 @@ DURATION_RE = re.compile(r"^(\d+)([smhd]?)$")
 TEMPLATE_VARS = ("domain",)
 PLACEHOLDER_RE = re.compile(r"\$\{([^}]*)\}")
 
+# Characters where a browser and `urlparse` read different hosts out of the
+# same string. WHATWG ends the authority at a backslash and strips tab, CR and
+# LF from a URL entirely, so `https://evil.com\.scout.example.edu/cb` has host
+# `scout.example.edu` to `urlparse` -- inside the Scout domain, and therefore
+# past `compose.check_host` -- and host `evil.com` in the address bar. Keycloak
+# matches a registered redirect URI as a string, so it would hand the code over.
+# Nothing legitimate needs any of them in a URL.
+AMBIGUOUS_URL_CHARS = frozenset("\\\t\r\n")
+
 # Groups a fragment may grant its own roles into. Not configurable: these two
 # are the platform's coarse tiers and nothing else is addressable.
 GRANTABLE_GROUPS = ("scout-user", "scout-admin")
@@ -132,6 +141,17 @@ def check_placeholders(text: str, where: str) -> None:
             )
 
 
+def check_unambiguous(value: str, where: str) -> None:
+    """Refuse a URL whose host a browser and `urlparse` would disagree about."""
+    found = sorted(AMBIGUOUS_URL_CHARS & set(value))
+    if found:
+        raise ValueError(
+            f"{where}: {value!r} contains {', '.join(repr(c) for c in found)}, "
+            "which a browser reads as ending the hostname and this does not; "
+            "a URL may not contain a backslash, tab, carriage return or newline"
+        )
+
+
 def check_url(value: str, where: str) -> None:
     """Syntactic checks only.
 
@@ -140,6 +160,7 @@ def check_url(value: str, where: str) -> None:
     that half.
     """
     check_placeholders(value, where)
+    check_unambiguous(value, where)
     if not value.startswith("https://"):
         raise ValueError(f"{where}: {value!r} must be an https URL")
     if "*" in value:

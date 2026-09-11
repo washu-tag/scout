@@ -431,7 +431,9 @@ class AppManagerService:
         self.state.composed_hash = desired_hash
         self.state.secrets_version = secrets_version
         self.state.identical_to_base = desired_hash == base_hash
-        self._observe(self.keycloak.read())
+        read = self.keycloak.read()
+        self._observe(read)
+        self.state.drift = self._drifted(read)
         self.state.pending_change = (
             desired_hash != self.state.last_applied_hash
             or secrets_version != self.state.applied_secrets_version
@@ -457,14 +459,21 @@ class AppManagerService:
         return self.state
 
     def _observe(self, read: RealmRead) -> None:
-        """Record what the live realm looks like, and whether it is ours.
+        """Record what the live realm looks like.
 
         A read that did not land claims nothing: "we do not know" must not
         become "re-apply", and it must not become "the realm is gone" either.
+
+        With no expectation to compare against there is no drift check at all,
+        so the first checksum that does arrive is adopted as one. That is the
+        state an apply whose read-back did not land leaves behind, and the
+        alternative to adopting is detection staying off until some later
+        change happens to force another apply.
         """
         self.state.live_checksum = read.checksum
         self.state.realm_unmanaged = read.known and not (read.exists and read.checksum)
-        self.state.drift = self._drifted(read)
+        if read.checksum and not self.state.applied_import_checksum:
+            self.state.applied_import_checksum = read.checksum
 
     def _drifted(self, read: RealmRead) -> bool:
         """Did something other than this reconciler last write the realm?
@@ -642,9 +651,22 @@ class AppManagerService:
         # salt, neither of which this process should have to reproduce. Re-read
         # rather than assumed, so a successful apply also clears the "no realm
         # to be ready about" verdict this same reconcile took before it.
-        self._observe(self.keycloak.read())
-        self.state.applied_import_checksum = self.state.live_checksum
-        self.state.drift = False
+        read = self.keycloak.read()
+        self._observe(read)
+        if read.checksum:
+            self.state.applied_import_checksum = read.checksum
+            self.state.drift = False
+        else:
+            # Only a read that landed says anything. Overwriting a good
+            # expectation with None here would leave nothing to compare
+            # against, and `_drifted` reports no drift when there is nothing to
+            # compare -- so one unanswered read would switch drift detection
+            # off and leave it off.
+            log.warning(
+                "applied the realm, but reading its import checksum back did "
+                "not land; drift against this apply goes unnoticed until a "
+                "later read does"
+            )
         self.state.last_applied_hash = desired_hash
         self.state.applied_secrets_version = secrets_version
         self.state.pending_change = False

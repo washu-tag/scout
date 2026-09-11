@@ -30,6 +30,23 @@ class ApiError(RuntimeError):
         self.status = status
 
 
+class TransportError(ApiError):
+    """The request never reached an answer: DNS, connect, TLS, or a timeout.
+
+    A subclass, because it is the most common way a call fails and every caller
+    already guards with `except ApiError` -- several of them promising in their
+    docstrings that they cannot fail a reconcile. Raw httpx exceptions escaping
+    those guards would break that promise on the likeliest path.
+
+    Its status is 0, which collides with no HTTP status, so `exc.status == 404`
+    still means exactly a 404.
+    """
+
+    def __init__(self, message: str):
+        RuntimeError.__init__(self, f"kubernetes API unreachable: {message}")
+        self.status = 0
+
+
 def value_of(secret: dict | None, key: str) -> str | None:
     """One key out of a fetched Secret. A function, so a caller can read
     several keys and the resourceVersion from one GET.
@@ -95,9 +112,12 @@ class Client:
         merged = self._headers()
         if headers:
             merged.update(headers)
-        response = self._http.request(
-            method, f"{self.base}{path}", json=json, headers=merged
-        )
+        try:
+            response = self._http.request(
+                method, f"{self.base}{path}", json=json, headers=merged
+            )
+        except httpx.HTTPError as exc:
+            raise TransportError(f"{method} {path}: {exc}") from exc
         if response.status_code >= 400:
             raise ApiError(response.status_code, response.text[:500])
         if not response.content:
@@ -125,13 +145,16 @@ class Client:
         kernel gives up on it, which is hours.
         """
         timeout = httpx.Timeout(connect=10.0, read=read_timeout, write=10.0, pool=10.0)
-        with self._http.stream(
-            "GET", f"{self.base}{path}", headers=self._headers(), timeout=timeout
-        ) as response:
-            if response.status_code >= 400:
-                response.read()
-                raise ApiError(response.status_code, response.text[:500])
-            yield response.iter_lines()
+        try:
+            with self._http.stream(
+                "GET", f"{self.base}{path}", headers=self._headers(), timeout=timeout
+            ) as response:
+                if response.status_code >= 400:
+                    response.read()
+                    raise ApiError(response.status_code, response.text[:500])
+                yield response.iter_lines()
+        except httpx.HTTPError as exc:
+            raise TransportError(f"GET {path}: {exc}") from exc
 
     # --- ConfigMaps -----------------------------------------------------
 
@@ -190,11 +213,19 @@ class Client:
         )
 
     def delete_job(self, namespace: str, name: str) -> None:
+        """Delete a Job and its pods.
+
+        Foreground propagation, so the Job object outlives its pods and waiting
+        for it to disappear is waiting for config-cli to be gone. Under
+        Background the Job is deleted at once and the pods are reaped whenever
+        the garbage collector gets to them -- which would let a previous import
+        still be writing the realm as the next one starts.
+        """
         try:
             self.request(
                 "DELETE",
                 f"/apis/batch/v1/namespaces/{namespace}/jobs/{name}"
-                "?propagationPolicy=Background",
+                "?propagationPolicy=Foreground",
             )
         except ApiError as exc:
             if exc.status != 404:

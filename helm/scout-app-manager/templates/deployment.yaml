@@ -94,6 +94,12 @@ spec:
             - name: fragments
               mountPath: /fragments
               readOnly: true
+            # readOnlyRootFilesystem leaves nowhere to write, and
+            # `scout-app-manager validate` stages what it is given under the
+            # sidecar's filename convention so an in-pod verdict is the
+            # reconciler's verdict.
+            - name: tmp
+              mountPath: /tmp
         # Fragment discovery is the sidecar's job, because a fragment is found
         # by label across every namespace and its file layout is what the
         # loader reads (ADR 0034's pattern). The base realm is not: it is one
@@ -151,6 +157,9 @@ spec:
               mountPath: /fragments
       volumes:
         - name: fragments
+          emptyDir:
+            sizeLimit: 10Mi
+        - name: tmp
           emptyDir:
             sizeLimit: 10Mi
       {{- with .Values.nodeSelector }}

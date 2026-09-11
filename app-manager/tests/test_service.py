@@ -720,19 +720,48 @@ def test_an_unreadable_realm_is_not_drift(setup):
     assert len(client.created_jobs) == 1
 
 
-def test_drift_needs_an_apply_of_our_own_to_compare_against(setup):
-    """An apply whose read-back did not arrive leaves nothing to compare to."""
+def test_an_apply_with_no_read_back_recovers_its_expectation(setup):
+    """An apply whose read-back did not arrive leaves nothing to compare to.
+
+    Nothing to compare means no drift check at all, so the first checksum that
+    does arrive becomes the expectation instead of detection staying off until
+    some later change happens to force another apply.
+    """
     service, _, client = setup
     service.keycloak.readable = False
     service.reconcile_once()
+    assert service.state.applied_import_checksum is None
 
     service.keycloak.readable = True
     client.realm_checksum = "0" * 64
     state = service.reconcile_once()
 
     assert state.drift is False
-    assert state.applied_import_checksum is None
     assert state.live_checksum == "0" * 64
+    assert state.applied_import_checksum == "0" * 64
+
+    # And the check is live again: the next writer that is not us is seen, and
+    # repaired inside the same reconcile.
+    applied = len(client.created_jobs)
+    client.realm_checksum = "1" * 64
+    service.reconcile_once()
+
+    assert len(client.created_jobs) == applied + 1
+
+
+def test_a_failed_read_back_does_not_erase_a_good_expectation(setup, tmp_path):
+    """Overwriting it with None would switch drift detection off for good."""
+    service, fragments, _ = setup
+    service.reconcile_once()
+    expected = service.state.applied_import_checksum
+    assert expected
+
+    # A realm change applies, and this time the read back does not land.
+    service.keycloak.readable = False
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    state = service.reconcile_once()
+
+    assert state.applied_import_checksum == expected
 
 
 def test_the_expected_checksum_is_what_config_cli_recorded(setup):
@@ -1016,3 +1045,39 @@ def test_the_wait_is_skipped_when_there_is_no_sidecar(setup):
     service, _, _ = setup
     service.settings.discovery_health_url = ""
     assert await_discovery(service.settings) is True
+
+
+def test_a_superseded_apply_job_is_waited_out_before_the_next_one(setup, monkeypatch):
+    """Two config-cli runs on one realm is the invariant ADR 0037 exists for.
+
+    Pruning the previous Job only tells the API to delete it. Until its pod is
+    gone that import is still writing, so the sweep waits -- and refuses to
+    start the next one rather than overlapping with it.
+    """
+    monkeypatch.setattr(apply, "DELETE_TIMEOUT_SECONDS", 0.0)
+    monkeypatch.setattr(apply, "DELETE_POLL_SECONDS", 0.0)
+    service, fragments, client = setup
+    service.reconcile_once()
+    stale = client.created_jobs[0]
+    client.lingering_jobs.add(stale)
+
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    state = service.reconcile_once()
+
+    assert stale in client.deleted_jobs
+    assert client.created_jobs == [stale]
+    assert state.phase == FAILED
+    assert "still running" in state.last_result
+
+
+def test_the_sweep_proceeds_once_the_previous_job_is_really_gone(setup, monkeypatch):
+    monkeypatch.setattr(apply, "DELETE_TIMEOUT_SECONDS", 0.0)
+    monkeypatch.setattr(apply, "DELETE_POLL_SECONDS", 0.0)
+    service, fragments, client = setup
+    service.reconcile_once()
+
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    state = service.reconcile_once()
+
+    assert len(client.created_jobs) == 2
+    assert state.phase == APPLIED
