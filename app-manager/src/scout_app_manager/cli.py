@@ -1,10 +1,19 @@
 """`scout-app-manager` — the laptop tool and the in-pod inspection path.
 
-`validate` runs the same code the service runs, with no cluster: a fragment
-author should be able to get the service's verdict before anything is
-deployed. It reads a rendered chart, a ConfigMap or a bare fragment, from
-files or stdin, so `helm template . | scout-app-manager validate -` works
-through `docker run -i` and `kubectl exec -i` alike.
+`validate` checks a fragment **on its own**, and that boundary is the point:
+a fragment author gets the same answer wherever they run it, before there is a
+cluster to run it against. It reads a rendered chart, a ConfigMap or a bare
+fragment, from files or stdin, so `helm template . | scout-app-manager validate -`
+works through `docker run -i` and `kubectl exec -i` alike.
+
+So it is not the reconciler's verdict, and the gap is the rejections that are
+about the realm rather than about the fragment: adopting a client the base
+realm already declares, a credential variable a site's own Secret already
+defines, granting into a group that does not exist, a `secretRef` with nothing
+behind it, and a clientId another fragment is claiming. Those need the base
+realm, the cluster's Secrets, or the other fragments, and none of the three is
+a property of the document in front of you. The reconciler reports them per
+fragment, in `status` and in its log.
 
 `status` needs the cluster, so it is meant to be run inside the pod
 (`kubectl exec`). Every subcommand here only reads: the running reconciler is

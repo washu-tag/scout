@@ -322,24 +322,33 @@ class AppManagerService:
         return text
 
     def ready(self) -> bool:
-        """Readiness: the base realm has been applied, by this process.
+        """Readiness: *the* base realm is applied, and this process applied it.
 
-        Never about fragments -- a rejected or retracting fragment is one
-        service's problem, and this gates the platform's auth deploy.
+        Four conditions, each covering something the others cannot see.
 
-        `base_realm_applied` alone is not enough, because `_resume` restores it
-        from the status document: a reconciler throwing on every pass would
-        report the *last* process's success and sit Ready while changing
-        nothing. Under sole-writer that is the deploy gate failing silently, so
-        this process has to have converged the realm at least once itself.
+        The base realm has been applied at all. Never about fragments: a
+        rejected one is one service's problem, and this gates the platform's
+        auth deploy.
 
-        And the realm has to still be there. Deleting it, or replacing it with
-        one nothing has ever imported into, is otherwise invisible from here:
-        a converged reconciler with no pending change reports Applied about a
-        document that is not in any Keycloak.
+        It is the document that is published *now*. This is what makes a deploy
+        able to gate on the pod instead of on the shape of the status document:
+        publishing a new base realm makes the pod unready within a probe
+        period, and Ready again when that document is what config-cli imported.
+
+        This process converged it. `_resume` restores the two facts above from
+        the status document, so a reconciler throwing on every pass would
+        otherwise report the *last* process's success and sit Ready while
+        changing nothing -- which under sole-writer is the deploy gate failing
+        silently.
+
+        And the realm is still there. Deleting it, or replacing it with one
+        nothing has ever imported into, is invisible to the rest: a converged
+        reconciler with no pending change reports Applied about a document that
+        is not in any Keycloak.
         """
         return (
             self.state.base_realm_applied
+            and self.state.applied_base_source_hash == self.state.base_source_hash
             and self.converged
             and not self.state.realm_unmanaged
         )
@@ -728,6 +737,7 @@ class AppManagerService:
         self.state.phase = APPLIED
         self.state.applied_at = stamp
         self.state.base_realm_applied = True
+        self.state.applied_base_source_hash = self.state.base_source_hash
         self.state.last_result = (
             f"applied {desired_hash[:19]} "
             f"({len(result.accepted)} fragment(s) composed)"

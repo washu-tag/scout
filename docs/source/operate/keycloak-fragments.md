@@ -61,12 +61,17 @@ happens, not after.
 It installs as part of `make install-auth`, between Keycloak and oauth2-proxy. It is not
 optional: the auth play publishes the base realm document and this is what applies it.
 
-The pod reports Ready only once *this process* has reconciled the realm successfully — not
-merely once the realm was applied at some point in the past, which a reconciler that is now
-failing on every pass would still be able to claim. On top of that the play waits until the
-reconciler reports having applied the exact document it just published. So a base realm
-naming a credential that does not resolve, or a wedged apply Job, fails `make install-auth`
-rather than leaving it green over stale platform auth.
+The pod reports Ready only once *this process* has applied *the base realm document that is
+published now*. Both halves matter. "This process", because a reconciler failing on every
+pass could otherwise claim the last one's success. "Published now", because otherwise a
+deploy that republishes the realm without restarting the pod finds it already Ready, over a
+reconcile that predates the deploy entirely.
+
+That is what the deploy gates on, in both lanes — `helm --wait` and the Flux HelmRelease
+alike. Republishing the realm makes the pod unready within a probe period and Ready again
+once config-cli has imported that document, so a base realm naming a credential that does
+not resolve, or a wedged apply Job, fails `make install-auth` rather than leaving it green
+over stale platform auth.
 
 A fragment's own outcome never affects readiness: a rejected or invalid fragment is one
 service's problem, not the platform's, and the realm applies without it. The same is true

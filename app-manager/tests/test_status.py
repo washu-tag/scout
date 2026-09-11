@@ -371,3 +371,49 @@ def test_an_unreadable_status_is_ignored_rather_than_fatal(setup):
 def test_a_corrupt_timestamp_reads_as_just_now():
     """So it can never be what retracts a live client."""
     assert age_seconds("not a timestamp") == 0.0
+
+
+def test_publishing_a_new_base_realm_makes_the_pod_unready(setup):
+    """What lets a deploy gate on the pod instead of on this document's shape.
+
+    Ready has to mean "the realm you just published is in Keycloak", not "some
+    realm is". Without the applied hash, an upgrade that does not restart the
+    pod finds it already Ready, over a reconcile that predates the deploy.
+    """
+    service, fragments, _ = setup
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+    assert service.ready() is True
+
+    path = service.settings.base_realm_path
+    realm = json.loads(open(path).read())
+    realm["displayName"] = "Renamed"
+    open(path, "w").write(json.dumps(realm))
+
+    # The document on the cluster has moved and nothing has applied it yet.
+    service.state.base_source_hash = "sha256:" + "0" * 64
+    assert service.ready() is False
+
+    service.reconcile_once()
+    assert service.ready() is True
+
+
+def test_a_restart_over_a_realm_it_never_applied_is_not_ready(setup):
+    """The restored facts describe a document that is no longer the one."""
+    service, fragments, client = setup
+    write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
+    service.reconcile_once()
+
+    path = service.settings.base_realm_path
+    realm = json.loads(open(path).read())
+    realm["displayName"] = "Published while it was down"
+    open(path, "w").write(json.dumps(realm))
+
+    revived = restart(service)
+    assert revived.state.applied_base_source_hash is not None
+    assert revived.ready() is False
+
+    revived.state.discovery_synced = True
+    revived.reconcile_once()
+
+    assert revived.ready() is True

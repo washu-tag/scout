@@ -30,7 +30,8 @@ app_manager_log_level: INFO
 # defers the apply on purpose -- with the defaults above that is 300 + ~30.
 app_manager_realm_wait_seconds: 360
 
-# The reconciler's status document, which the gate reads. The chart derives this
+# The reconciler's status document. The gate decides on the pod's readiness and
+# reads this only to put a reason in the failure message. The chart derives the
 # name from its own fullname, so overriding nameOverride/fullnameOverride there
 # means overriding this too.
 app_manager_status_configmap: '{{ app_manager_helm_release_name }}-status'

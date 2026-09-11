@@ -34,18 +34,20 @@
     helm_chart_values: '{{ app_manager_helm_chart_values }}'
     helm_chart_timeout: 10m
 
-# Everything below is the deploy gate, and it cannot be the pod's readiness.
-# `helm --wait` above only proves the pod went Ready, and Ready is deliberately
-# blind to fragments -- a fragment waiting out its retraction grace with no
-# cached copy leaves the realm unapplied and the pod Ready, because one
-# component's chart upgrade must not fail the platform's auth deploy. On top of
-# that, an upgrade that did not change the chart values never restarts the pod
-# at all, so the reconcile behind that Ready may predate this play entirely.
+# Everything below is the deploy gate, and the thing it waits on is the pod's
+# own readiness. The reconciler reports Ready only once *this process* has
+# applied *the base realm document that is published now* -- so a pod that was
+# already running when this play republished the realm goes unready within a
+# probe period and comes back when the new document is what config-cli
+# imported. `helm --wait` above cannot be that gate on its own, because an
+# upgrade that did not change the chart values never restarts the pod, and it
+# can sample Ready before the reconciler has read the new ConfigMap.
 #
-# So: read back the document that was published and wait for the reconciler to
-# report having applied exactly that one. Reading it from the cluster rather
-# than re-rendering the template keeps this correct under
-# `make install-app-manager` on its own, and lane-agnostic.
+# Deliberately not a comparison against the status ConfigMap's fields. That
+# document is the reconciler's, and a deploy that reproduced its hashing and
+# its phase vocabulary in Jinja would break the next time either moved. The
+# status document is read below only to *explain* a failure, never to decide
+# one, so its shape changing costs a worse error message and nothing else.
 - name: Read the published base realm
   delegate_to: localhost
   kubernetes.core.k8s_info:
@@ -61,62 +63,68 @@
     that: app_manager_base_realm.resources | length > 0
     fail_msg: >
       ConfigMap {{ keycloak_namespace }}/{{ keycloak_base_realm_configmap }} does
-      not exist, so there is no realm for the app manager to apply. The
-      keycloak-config-cli release publishes it, so run `make install-auth` first.
+      not exist, so there is no realm for the app manager to apply and it will
+      never report Ready. The keycloak-config-cli release publishes it, so run
+      `make install-auth` first.
     quiet: true
 
 - name: Wait for the app manager to apply the published realm
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: '{{ app_manager_namespace }}'
+    name: '{{ app_manager_helm_release_name }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: app_manager_deployment
   vars:
-    # The reconciler publishes sha256 over the document's *bytes* precisely so
-    # that a deploy can compute it; observedBaseHash is over the canonicalised
-    # parse and is not reproducible from here.
-    expected: >-
-      sha256:{{ app_manager_base_realm.resources[0].data[keycloak_base_realm_key] | hash('sha256') }}
-    # A failed lookup, an absent ConfigMap, an absent key and unparseable
-    # content all collapse to {}, which fails the conditions below rather than
-    # erroring the play. `default([])` has to come first: `| first` on an
-    # undefined `resources` raises, and a later `| default({})` cannot rescue
-    # an expression that already blew up.
+    # `default([])` first: `| first` on an undefined `resources` raises, and a
+    # later `| default({})` cannot rescue an expression that already blew up.
+    deployed: >-
+      {{ (app_manager_deployment.resources | default([]) | first | default({})).status
+         | default({}) }}
+  until: (deployed.readyReplicas | default(0) | int) > 0
+  retries: '{{ (app_manager_realm_wait_seconds | int // 5) | int }}'
+  delay: 5
+  # The retry loop exhausting is not the message anyone should read; the assert
+  # below says what is actually wrong and how to look at it. (`failed_when`
+  # does suppress an exhausted `until:`, verified on ansible-core 2.21.)
+  failed_when: false
+
+- name: Read the app manager's status, for the message
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    namespace: '{{ app_manager_namespace }}'
+    name: '{{ app_manager_status_configmap }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: app_manager_status
+  failed_when: false
+
+- name: Validate the app manager applied the published realm
+  vars:
+    ready: >-
+      {{ ((app_manager_deployment.resources | default([]) | first | default({})).status
+          | default({})).readyReplicas | default(0) | int > 0 }}
     published: >-
       {{ ((app_manager_status.resources | default([]) | first | default({}))
           .data | default({})).status | default('{}') | from_yaml }}
-    # Both must hold, as one expression so the poll and the assert cannot drift
-    # apart. Every use is `applied | bool`: this renders to the *string*
-    # "False", and a bare conditional on a non-empty string is true.
-    applied: >-
-      {{ (published.observedBaseSourceHash | default('') == expected)
-         and (published.phase | default('') == 'Applied') }}
-  block:
-    - name: Poll the app manager's status
-      delegate_to: localhost
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: ConfigMap
-        namespace: '{{ app_manager_namespace }}'
-        name: '{{ app_manager_status_configmap }}'
-        kubeconfig: '{{ local_kubeconfig_yaml }}'
-      register: app_manager_status
-      until: applied | bool
-      retries: '{{ (app_manager_realm_wait_seconds | int // 5) | int }}'
-      delay: 5
-      # The retry loop exhausting is not the message anyone should read; the
-      # assert below says what is actually wrong and how to look at it.
-      failed_when: false
-
-    - name: Validate the app manager applied the published realm
-      ansible.builtin.assert:
-        that: applied | bool
-        fail_msg: >
-          The app manager has not applied the realm this play published, after
-          {{ app_manager_realm_wait_seconds }}s. It is the only thing that writes
-          the realm, so every Keycloak client is still whatever the last
-          successful apply left -- including the ones this deploy was meant to
-          change. Reported phase
-          "{{ published.phase | default('(no status published)') }}":
-          Refused means the realm names a credential keycloak-client-secrets does
-          not resolve, Holding means a fragment is absent with no cached copy to
-          compose in its place, Failed means the apply Job did not succeed. Full
-          detail:
-          kubectl exec -n {{ app_manager_namespace }} deploy/{{ app_manager_helm_release_name }}
-          -c reconciler -- scout-app-manager status
-        quiet: true
+  ansible.builtin.assert:
+    # `ready` renders to the *string* "False", and a bare conditional on a
+    # non-empty string is true.
+    that: ready | bool
+    fail_msg: >
+      The app manager has not applied the realm this play published, after
+      {{ app_manager_realm_wait_seconds }}s. It is the only thing that writes
+      the realm, so every Keycloak client is still whatever the last successful
+      apply left -- including the ones this deploy was meant to change. Reported
+      phase "{{ published.phase | default('(no status published)') }}":
+      Holding means either a fragment is absent with no cached copy to compose
+      in its place or a Secret the apply needs could not be read, Refused means
+      the realm names a credential keycloak-client-secrets does not resolve,
+      Failed means the apply Job did not succeed. Last result:
+      "{{ published.lastResult | default('(none)') }}". Full detail:
+      kubectl exec -n {{ app_manager_namespace }} deploy/{{ app_manager_helm_release_name }}
+      -c reconciler -- scout-app-manager status
+    quiet: true

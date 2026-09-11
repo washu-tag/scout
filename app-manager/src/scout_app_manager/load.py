@@ -204,8 +204,9 @@ def scan_stream(text: str, source: str = "stdin") -> list[LoadedFragment]:
 
     `scan()` reads what the sidecar wrote. This reaches that same code by
     writing what it finds into a temporary directory under the sidecar's
-    filename convention, so an offline verdict is the in-cluster verdict down
-    to the provenance and the content hash. Never raises, for scan()'s reason.
+    filename convention, so what an author is shown -- the provenance, the
+    content hash, the parse -- is what the reconciler will read off disk.
+    Never raises, for scan()'s reason.
     """
     try:
         documents = [d for d in yamlio.safe_load_all(text) if isinstance(d, dict)]

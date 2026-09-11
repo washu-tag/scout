@@ -88,6 +88,13 @@ spec:
             httpGet: {path: /readyz, port: http}
             initialDelaySeconds: 2
             periodSeconds: 5
+            # One failed probe is enough. Readiness answers "is the base realm
+            # that is published now the one in Keycloak", and a deploy gates on
+            # it -- so the window between republishing the realm and the pod
+            # admitting it has not applied yet is a window in which that gate
+            # passes over stale auth. Nothing routes to this pod, so flapping
+            # on a single probe costs nothing.
+            failureThreshold: 1
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:

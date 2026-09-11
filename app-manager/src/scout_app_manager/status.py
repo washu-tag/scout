@@ -71,9 +71,14 @@ class State:
     pending_change: bool = False
     base_hash: str | None = None
     # sha256 of the base realm document's *bytes*, where base_hash is over the
-    # canonicalised parse. A deploy can compute this one, so it is what an
-    # `until:` waits on to know the document it just published has applied.
+    # canonicalised parse. A deploy can compute this one for itself, which is
+    # what lets it ask whether the document it just published is the one in
+    # Keycloak.
     base_source_hash: str | None = None
+    # ... and the one that was. Readiness is the difference between the two, so
+    # publishing a new base realm makes the pod unready until it lands, and a
+    # deploy gates on the pod rather than on the shape of this document.
+    applied_base_source_hash: str | None = None
     composed_hash: str | None = None
     # A digest over the resourceVersions of every Secret the apply reads. The
     # document is stable across a credential rotation, so this is what tells one
@@ -129,9 +134,10 @@ def age_seconds(stamp: str) -> float:
 def to_document(state: State) -> dict:
     return {
         "observedBaseHash": state.base_hash,
-        # The one hash of the base realm a deploy can compute for itself, so
-        # this is the field an `until:` waits on. See `State.base_source_hash`.
+        # The base realm as published, and as applied. A deploy can compute
+        # the first for itself; readiness is the two being equal.
         "observedBaseSourceHash": state.base_source_hash,
+        "appliedBaseSourceHash": state.applied_base_source_hash,
         "composedHash": state.composed_hash,
         "observedSecretsVersion": state.secrets_version,
         "identicalToBase": state.identical_to_base,
@@ -172,6 +178,8 @@ def from_document(doc: dict) -> State:
         last_reconcile=doc.get("lastReconcile", "never"),
         base_hash=doc.get("observedBaseHash"),
         base_source_hash=doc.get("observedBaseSourceHash"),
+        # Durable, like `base_realm_applied`: it is a fact about the realm.
+        applied_base_source_hash=doc.get("appliedBaseSourceHash"),
         composed_hash=doc.get("composedHash"),
         secrets_version=doc.get("observedSecretsVersion"),
         applied_secrets_version=doc.get("appliedSecretsVersion"),

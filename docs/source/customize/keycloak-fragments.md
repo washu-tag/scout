@@ -160,8 +160,8 @@ signout URI added for you), whether PKCE is enforced, the roles, and who the gra
 Read the last two lines before you ship — they are the ones that hand a role to every Scout
 user.
 
-It exits non-zero and prints the reasons instead if the fragment is one the reconciler
-would refuse. Four of those are silent failures in a cluster, which is the argument for
+It exits non-zero and prints the reasons instead if there is something wrong with the
+fragment itself. Four of those are silent failures in a cluster, which is the argument for
 running this first:
 
 - the ConfigMap is missing the `keycloak.scout.xnat.org/fragment` label, so nothing ever
@@ -172,6 +172,23 @@ running this first:
 - a redirect URI points outside the Scout domain;
 - a field name is misspelled — the vocabulary is closed, so a typo is an error, not a
   default.
+
+**It checks your fragment on its own**, which is why you get the same answer wherever you
+run it. What it cannot tell you is anything about the realm your fragment is going to land
+in, so these five are the reconciler's to report and not this command's:
+
+- your `clientId` is one the base realm already declares, or one Keycloak creates in every
+  realm (`account`, `admin-cli`, `realm-management`, …);
+- your `clientId` is one another fragment is also claiming — both are rejected, because
+  "whoever reconciled first" is not something anyone can reason about at review time;
+- your credential variable collides with a key the site's own `keycloak-client-secrets`
+  defines;
+- you grant into a group the base realm does not have;
+- your `secretRef` points at a Secret that is missing or empty in the reconciler's
+  namespace.
+
+They show up as `rejected` in `scout-app-manager status` and in the reconciler's log, with
+the reason, and they never affect any other fragment.
 
 If you already have a Scout cluster, the reconciler's own pod carries the same binary and
 `kubectl exec -i` pipes into it the same way. No image pull, and you are checking against
