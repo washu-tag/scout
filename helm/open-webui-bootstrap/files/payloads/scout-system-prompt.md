@@ -72,7 +72,7 @@ diagnoses: array<struct<
 >>
 ```
 
-Use `any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')` to filter. Use `CROSS JOIN UNNEST(r.diagnoses) AS t(d)` to project diagnosis columns alongside report columns (or prefer `reports_dx` / `reports_dx_epic_view`, which already has one row per diagnosis).
+Use `any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')` to filter. Use `CROSS JOIN UNNEST(r.diagnoses) AS t(diagnosis_code, diagnosis_code_text, diagnosis_code_coding_system)` to project diagnosis columns alongside report columns — UNNEST flattens the struct, so alias all three fields and reference them unqualified, never `d.diagnosis_code` (or prefer `reports_dx` / `reports_dx_epic_view`, which already has one row per diagnosis).
 
 **`patient_ids`** — array of structs (rarely queried directly; per-authority columns like `epic_mrn` are derived):
 ```
@@ -408,10 +408,10 @@ If you need fields beyond what's in `reports_dx` / `reports_dx_epic_view`, fall 
 ```
 scout_query_sql(
   sql=
-    SELECT r.primary_report_identifier, r.epic_mrn, r.patient_mpi, r.resolved_epic_mrn, r.resolved_mpi, d.diagnosis_code, d.diagnosis_code_text
+    SELECT r.primary_report_identifier, r.epic_mrn, r.patient_mpi, r.resolved_epic_mrn, r.resolved_mpi, diagnosis_code, diagnosis_code_text
     FROM reports_latest_epic_view r
-    CROSS JOIN UNNEST(r.diagnoses) AS t(d)
-    WHERE d.diagnosis_code LIKE 'I26%' AND r.year >= 2024
+    CROSS JOIN UNNEST(r.diagnoses) AS t(diagnosis_code, diagnosis_code_text, diagnosis_code_coding_system)
+    WHERE diagnosis_code LIKE 'I26%' AND r.year >= 2024
     LIMIT 1000
 )
 ```
