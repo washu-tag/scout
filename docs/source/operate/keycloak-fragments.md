@@ -1,0 +1,252 @@
+# Operating the App Manager
+
+```{warning}
+**Draft, and not yet ready for a site to run.** There is no console: what the app manager
+has done is reported through a status ConfigMap, an alert, and its pod log. Read the
+[trust boundary](#the-trust-boundary) section before enabling it on a site whose
+namespaces are not all operator-controlled.
+```
+
+A component can ship its own Keycloak client as a
+[fragment](../customize/keycloak-fragments.md). The `scout-app-manager` reconciler
+discovers every ConfigMap labelled `keycloak.scout.xnat.org/fragment: "true"`, composes
+the valid ones into the platform's rendered realm, and applies the result with
+keycloak-config-cli. The discovery sidecar calls the reconciler when a fragment changes,
+so an edit reaches the realm in a couple of seconds without an operator doing anything.
+The same is true of the rendered base realm and of a rotated client credential: the
+reconciler watches its own namespace's Secrets and the base realm ConfigMap directly. Those
+two it reads *by name*, never by label — the base realm is applied wholesale, so anything
+label-selected could become a realm without passing a fragment's rails.
+`app_manager_resync_seconds` (default 60) is only a floor, bounding how long a missed
+notification — or a realm written by something other than the reconciler, which no
+Kubernetes watch can see — can go unnoticed.
+
+## The trust boundary
+
+Discovery *is* the gate. Anyone who can create a labelled ConfigMap in a watched namespace
+gets a Keycloak client in the Scout realm, and can grant its roles to every `scout-user`
+and `scout-admin`. The composer bounds what a fragment may ask for — `https` redirect URIs
+inside the Scout domain, its own client roles only, no protocol mappers, no scope
+handling, no adopting a platform-owned client — but within those bounds nothing reviews a
+fragment before it takes effect.
+
+So the set of namespaces the app manager watches is the set of namespaces whose writers
+you trust with realm configuration. `app_manager_discovery_namespace` defaults to `ALL`;
+set it to a comma-separated list to narrow it.
+
+One bound the composer does **not** enforce is which Secret a fragment's `secretRef` may
+name. It has to be a Secret in the reconciler's namespace — that is what keeps the
+reconciler's Kubernetes permissions namespace-scoped — but any Secret there will do, so a
+fragment can put a platform client's credential on a client it owns and read it back out
+of a token. That is deliberate, and it rests on the assumption above: a fragment author is
+someone who already deploys every Secret on the site, so aliasing one gains them nothing
+they could not read directly.
+
+The assumption is what to revisit, not the check. If fragment authorship is ever opened to
+writers who are *not* trusted with the platform's secrets, `secretRef` needs a constraint —
+a naming convention tied to the source ConfigMap, or an explicit allowlist — before that
+happens, not after.
+
+## Fragment states
+
+| State        | Meaning                                                                             |
+| ------------ | ----------------------------------------------------------------------------------- |
+| `installed`  | Discovered, valid, and composed into the realm.                                     |
+| `invalid`    | Failed schema validation. Excluded and logged; every other fragment still composes.  |
+| `rejected`   | Valid but not composable — name collision, missing secret, unknown group.            |
+| `retracting` | Was installed and has gone missing. See [retraction](#retraction-is-damped).         |
+
+## Deploying the reconciler
+
+It installs as part of `make install-auth`, between Keycloak and oauth2-proxy. It is not
+optional: the auth play publishes the base realm document and this is what applies it.
+
+The pod reports Ready only once *this process* has applied *the base realm document that is
+published now*. Both halves matter. "This process", because a reconciler failing on every
+pass could otherwise claim the last one's success. "Published now", because otherwise a
+deploy that republishes the realm without restarting the pod finds it already Ready, over a
+reconcile that predates the deploy entirely.
+
+That is what the deploy gates on, in both lanes — `helm --wait` and the Flux HelmRelease
+alike. Republishing the realm makes the pod unready within a probe period and Ready again
+once config-cli has imported that document, so a base realm naming a credential that does
+not resolve, or a wedged apply Job, fails `make install-auth` rather than leaving it green
+over stale platform auth.
+
+A fragment's own outcome never affects readiness: a rejected or invalid fragment is one
+service's problem, not the platform's, and the realm applies without it. The same is true
+of a fragment waiting out its retraction grace with a composed copy standing in for it —
+the realm is applied and unchanged, so the pod is Ready.
+
+What does make the pod unready is `Holding` or `Refused`, because both mean the realm was
+left alone *with a change outstanding*: what the deploy published is not what is in
+Keycloak. That is the platform's problem however it was caused, and Ready is the whole of
+the Flux lane's gate on the realm existing at all.
+
+## Looking at what it did
+
+The reconciler publishes a status document after every reconcile. This is the first place
+to look, and it does not require reading logs:
+
+```console
+$ kubectl get cm scout-app-manager-status -n scout-core -o yaml
+```
+
+`phase` is the headline — `Applied`, `Pending`, `Failed`, or one of the two "the realm was
+deliberately left alone" phases, `Holding` and `Refused`. Each fragment carries its
+`state`, the `contentHash` that was applied, and the reasons if it was excluded.
+
+`Refused` has two causes and `lastResult` says which: a retraction the reconciler will not
+act on because discovery never reported a sync, or a credential the realm names that
+nothing resolves (see [below](#credentials-are-named-not-carried)).
+
+`Failed` reports why in Kubernetes' own words and names the Job to read. It does not quote
+keycloak-config-cli's log, on purpose: that log is written after variable substitution, so
+it can carry a resolved client secret, and this document is a ConfigMap. Failed Jobs are
+kept for `app_manager_job_ttl_seconds` (default 3600) so `kubectl logs -n scout-core
+job/<name>` still has it.
+
+```console
+$ kubectl exec -n scout-core deployment/scout-app-manager -- scout-app-manager status
+```
+
+`status` reads that document — it does not reconcile — and adds each fragment's realm
+effect recomputed from disk: the clients, their resolved redirect URIs, whether PKCE is
+enforced, the roles, and who the grants reach. It also flags a fragment edited since the
+last apply. Every subcommand is read-only; the running reconciler is the only thing that
+writes, and it re-reads everything at least once every `app_manager_resync_seconds`.
+
+The pod log carries the same decisions (`INSTALLED`, `EXCLUDED` with the reason, `HOLDING`,
+`RETRACTED`, the composed realm's hash, and each config-cli Job's outcome), and
+`/metrics` on port 8080 exposes them as
+`scout_app_manager_fragments{state=...}`, `scout_app_manager_phase`,
+`scout_app_manager_base_realm_applied`, and `scout_app_manager_discovery_synced`. The
+**Keycloak Fragment Rejected** alert fires when a fragment has been excluded for ten
+minutes, because that component stays deployed and healthy while being unable to
+authenticate — nothing else would tell you.
+
+## Retraction is damped
+
+Removing a fragment removes its realm objects, but not immediately. A fragment that
+disappears is indistinguishable from one being redeployed, and a chart upgrade that
+deletes and recreates its ConfigMap would otherwise retract a live client and kill its
+sessions within a second.
+
+So a previously-installed fragment that goes absent enters `retracting` and **keeps its
+realm objects**, composed from the copy the reconciler last applied, until it has been gone
+for `app_manager_retraction_grace_seconds` (default 300). If it comes back inside that
+window, nothing happened at all. Everything else — the base realm, other fragments,
+credential rotations — goes on reaching Keycloak meanwhile.
+
+The one absence that does stop the apply is a fragment this pod has never composed, which
+after a restart is every fragment that has not been rediscovered yet. There is nothing to
+stand in for it, so applying would drop its realm objects; the reconciler reports
+`phase: Holding` and leaves the realm alone until it comes back or its grace runs out.
+
+A retraction additionally requires that the discovery sidecar has reported a complete
+initial sync. If it has not, nothing is ever retracted — because on a fresh pod an empty
+fragment directory is not evidence that anything was deleted, and acting on it would
+retract every fragment-created client at once. A fragment held with no composed copy in
+that state reports `phase: Refused` rather than `Holding`.
+
+A credential is damped the same way and for the same window: a `secretRef` that stops
+resolving — deleted, or the API momentarily refusing — is served from the value last read
+rather than rejecting the fragment, because a rejected fragment is one the apply prunes.
+
+A damped credential does stop the apply, though, and that is the difference between it and
+a damped fragment. A fragment is composed from a copy and the resulting document is the
+whole of what the apply needs; a credential is not in the document at all, so the apply Job
+goes and reads the Secret itself and this pod's copy is no use to it. So the reconciler
+reports `phase: Holding`, naming the Secret, and leaves the realm alone until it can read
+it. Nothing is retracted meanwhile — that is what the copy is for — but nothing else
+reaches Keycloak either until the Secret is back.
+
+## Credentials are named, not carried
+
+Neither the platform's realm nor the composed one holds a client secret. Both write
+`$(env:<name>)` and keycloak-config-cli resolves it at import from the job's environment:
+the platform's credentials come from the `keycloak-client-secrets` Secret, whose keys are
+exactly those names, and each fragment client's from the Secret its `secretRef` points at.
+So `keycloak-config-composed` is a ConfigMap you can read, diff and hash freely.
+
+The failure this creates is quiet, which is why the reconciler guards it. config-cli leaves
+an unresolvable `$(env:superset)` alone, and Keycloak stores that string as superset's
+client secret — a working-looking client that anyone who can read the realm can
+authenticate as. So before every apply the reconciler checks each name in the document
+resolves to a non-empty value, and refuses the whole apply if one does not:
+
+```text
+phase: Refused
+lastResult: refusing to apply: the realm names $(env:superset), which
+  keycloak-client-secrets does not resolve
+```
+
+A *fragment* whose own Secret is missing is only that fragment's problem and is rejected
+on its own. A platform client cannot be dropped that way, so its apply stops everything.
+
+Rotating a credential is enough on its own — the reconciler watches each Secret's
+`resourceVersion` (`observedSecretsVersion` in the status document) because replacing a
+value no longer changes the realm document at all.
+
+## Drift: a realm written by something else
+
+`appliedHash` only says what this reconciler last applied. To notice another writer, the
+reconciler reads back the checksum config-cli records on the realm after each import and
+compares it with what it saw after its own:
+
+```text
+appliedImportChecksum: 9dfdad68...
+liveImportChecksum:    ffffffff...
+driftDetected:         true
+```
+
+A mismatch forces an apply, which puts the realm back. Nothing in a Scout deploy writes the
+realm — that is the point of the reconciler being the only writer — so drift means a hand
+edit through the admin console, or a config-cli run someone started themselves. Either way,
+the next reconcile undoes it.
+
+Two coarser cases count as drift too, and both are repaired the same way: the realm has
+been **deleted**, or it exists but carries no import checksum at all, meaning
+keycloak-config-cli has never written it. Either sets `realmUnmanaged: true` and makes the
+pod unready, because a reconciler with nothing pending would otherwise go on reporting
+`Applied` about a document that is no longer in any Keycloak.
+
+Comparing checksums needs two known values, though, and none of this is inferred from a
+read that did not land. If Keycloak is unreachable, the admin Secret unreadable, or the
+reconciler has not applied since it started,
+`scout_app_manager_realm_checksum_readable` goes to 0 and both `driftDetected` and
+`realmUnmanaged` stay `false` — that is "not known", not "in step", and it is deliberately
+not a reason to re-apply or to go unready.
+
+A rotation wakes the reconciler: it watches its own namespace's Secrets, and a credential
+the realm names — the platform's `keycloak-client-secrets` or any Secret a fragment's
+`secretRef` points at — reaches Keycloak within a reconcile of being rotated. Drift does
+not, and cannot: the live import checksum is a Keycloak read rather than a Kubernetes
+event, so a realm written by something else is repaired within
+`app_manager_resync_seconds` (default 60).
+
+## There is no second way to write the realm
+
+Nothing but the reconciler applies a realm. The charts in both lanes render the base realm
+document and publish it to a ConfigMap; no Job, no flag, and no inventory variable turns
+that into an import.
+
+That is deliberate. A base-realm-only apply is not a smaller version of the real thing: it
+keeps a fragment's client, roles, credential and scope-mappings under `no-delete`, but it
+prunes the `scout-user` / `scout-admin` grants on those roles anyway — config-cli prunes a
+group's client-role map even under `no-delete`. Every fragment app's users would keep
+logging in and lose their permissions, surfacing as a 403 with nothing in any log. A
+mechanism whose failure mode is that is worse than not having it.
+
+So the reconciler is platform infrastructure on the same footing as Keycloak itself: if it
+is down the realm is frozen, exactly as it would be if Keycloak were down, and the fix is
+to get it running rather than to route around it. A reconciler outage on its own changes
+nothing about a working realm — every service goes on authenticating against what was last
+applied.
+
+---
+
+**Still to build, before this is a real runbook:**
+
+- Whether the platform wants a narrower default than `ALL` for discovery.
+- Moving Scout's own clients out of the base realm and into fragments, one at a time.

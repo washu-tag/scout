@@ -1,0 +1,49 @@
+---
+# Scout app manager role defaults
+# User-configurable settings are in inventory.yaml
+
+# Helm
+app_manager_helm_chart_ref: '{{ scout_repo_dir }}/helm/scout-app-manager'
+
+# Image
+app_manager_image_repository: ghcr.io/washu-tag/scout-app-manager
+app_manager_image_tag: latest
+app_manager_image_pull_policy: IfNotPresent
+
+# A floor, not a schedule: the sidecar calls the reconciler on every fragment
+# change, and the reconciler watches this namespace's Secrets and the base
+# realm ConfigMap itself. It is also the worst case for the one input nothing
+# can watch -- a realm written by something other than the reconciler.
+app_manager_resync_seconds: 60
+app_manager_debounce_seconds: 2
+# Absence tolerated before a fragment's realm objects are retracted. Longer than
+# a chart upgrade's delete-then-create window, so it survives one.
+app_manager_retraction_grace_seconds: 300
+app_manager_job_timeout_seconds: 300
+# How long a finished apply Job is kept for inspection.
+app_manager_job_ttl_seconds: 3600
+app_manager_log_level: INFO
+
+# The deploy gate: how long this role waits for the reconciler to apply the
+# base realm the auth play just published, before failing. It has to exceed a
+# retraction grace period plus an apply, because a fragment mid-retraction
+# defers the apply on purpose -- with the defaults above that is 300 + ~30.
+app_manager_realm_wait_seconds: 360
+
+# The reconciler's status document. The gate decides on the pod's readiness and
+# reads this only to put a reason in the failure message. The chart derives the
+# name from its own fullname, so overriding nameOverride/fullnameOverride there
+# means overriding this too.
+app_manager_status_configmap: '{{ app_manager_helm_release_name }}-status'
+
+# Fragment discovery. ALL, or a comma-separated namespace list for a tighter
+# posture. The label itself is a published contract with fragment authors and
+# is fixed in the chart, not configurable here.
+app_manager_discovery_namespace: ALL
+
+app_manager_resources_default:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    memory: 256Mi

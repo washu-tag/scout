@@ -1,0 +1,110 @@
+# The Job that applies a composed realm.
+#
+# Placeholders are string.Template style (`${name}`),
+# substituted by reconciler.apply_job_body().
+#
+# Substitutions: name, namespace, image, keycloak_url, admin_secret,
+# composed_configmap, client_secrets_secret, server_hostname, ttl_seconds.
+#
+# One env entry per fragment client's credential is appended by
+# RealmApplier._body(); everything the base realm names arrives through
+# envFrom. Note that a dollar sign not part of a placeholder is a Template
+# error even inside a comment, so write config-cli's tokens as `env:name`.
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${name}
+  namespace: ${namespace}
+  labels:
+    app.kubernetes.io/name: scout-app-manager
+    appmanager.scout.xnat.org/role: apply
+spec:
+  # No retries. A failed apply is reported and the previous realm stays in
+  # place; retrying the same document would just fail the same way.
+  backoffLimit: 0
+  ttlSecondsAfterFinished: ${ttl_seconds}
+  template:
+    metadata:
+      labels:
+        appmanager.scout.xnat.org/role: apply
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: keycloak-config-cli
+          image: ${image}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+          # The credentials the composed realm names but does not carry. Its
+          # keys are the substitution variables verbatim, which is why this
+          # Secret can be taken wholesale.
+          #
+          # optional, because the reconciler has already checked that every
+          # variable the document names resolves and refused the apply if one
+          # did not. Without it an absent Secret is a CreateContainerConfigError
+          # on a pod nobody is looking at, instead of that message.
+          envFrom:
+            - secretRef:
+                name: ${client_secrets_secret}
+                optional: true
+          env:
+            - name: KEYCLOAK_URL
+              value: ${keycloak_url}
+            - name: IMPORT_PATH
+              value: /config/
+            # Every base-realm client URL is written against this. Site
+            # configuration, not a credential, so it is passed in the clear.
+            - name: server_hostname
+              value: ${server_hostname}
+            - name: KEYCLOAK_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ${admin_secret}
+                  key: username
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ${admin_secret}
+                  key: password
+            # var-substitution resolves the env: tokens from this container's
+            # environment. Without it config-cli installs each token verbatim
+            # as a client credential, and Keycloak accepts it.
+            #
+            # `full` on the types the composed realm is authoritative for, so
+            # removing a fragment removes its objects; `no-delete` on the rest.
+            #
+            # identity-provider is `full` for the same reason and not an
+            # oversight: the base realm renders every brokered IdP the site has
+            # configured, and nothing else creates one -- so `no-delete` would
+            # mean removing an IdP from the inventory left it live forever,
+            # which is decommissioning silently not working.
+            #
+            # The rest are Keycloak's own. The realm declares one required
+            # action and one authentication flow out of the dozen-odd every
+            # realm is created with, and its key providers not at all, so `full`
+            # there prunes the platform's own furniture. config-cli's remote
+            # state does not cover client scopes either, so `full` there would
+            # take undeclared ones including built-ins. identity-provider-mapper
+            # stays put because the realm declares no mappers at all; deleting
+            # the provider takes its own with it.
+            - name: SPRING_APPLICATION_JSON
+              value: >-
+                {"import":{"var-substitution":{"enabled":true},"managed":{"client":"full","role":"full","group":"full","scope-mapping":"full","client-scope-mapping":"full","identity-provider":"full","client-scope":"no-delete","required-action":"no-delete","identity-provider-mapper":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        # A ConfigMap, not a Secret: the composed realm names its credentials
+        # rather than carrying them.
+        - name: config
+          configMap:
+            name: ${composed_configmap}
+            defaultMode: 0444

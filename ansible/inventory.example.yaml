@@ -317,6 +317,14 @@ k3s_cluster:
     keycloak_microsoft_client_id: 'your-microsoft-client'
     keycloak_microsoft_client_secret: 'your-microsoft-secret'
     keycloak_microsoft_tenant_id: 'your-microsoft-tenant-id'
+    # Break-glass. Normally this play publishes the base realm document and the
+    # app manager applies it (ADR 0037); set this to apply the base realm from
+    # the play instead, when the reconciler is broken and the core clients have
+    # to come back. It only ever has the *base* realm, so a client that comes
+    # from a component's fragment is not updatable while this is on, and such an
+    # app's users lose their scout-user / scout-admin roles until the reconciler
+    # repairs it. Turn it off once the reconciler is healthy.
+    # keycloak_apply_realm_directly: true
     # Client secrets for Scout services
     keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_superset_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -759,6 +767,26 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     report_viewer_db_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     report_viewer_gateway_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    #---------------------------------------------------------------------------
+    # Scout app manager
+    #---------------------------------------------------------------------------
+    # The app manager is the Keycloak realm's only writer (ADR 0037): the auth
+    # play publishes the base realm document and this reconciles it, together
+    # with any fragments components have shipped.
+    #
+    # If an app's keycloak config fragment seems to "disappear" we wait
+    # app_manager_retraction_grace_seconds for it to "reappear" before removing
+    # the app's keycloak client.
+    # app_manager_retraction_grace_seconds: 300
+    # We resync the realm at most every app_manager_resync_seconds, less if
+    # app manager detects a change to the realm, a fragment, or a secret.
+    # app_manager_resync_seconds: 60
+    # How long we wait during the deploy playbook for the reconciler to apply the
+    # realm it just published. Must be at least a retraction grace plus a resync,
+    # since if we happen to deploy right as a fragment is mid-retraction we may
+    # have to wait for both timeouts.
+    # app_manager_realm_wait_seconds: 360
 
     #---------------------------------------------------------------------------
     # data-generator

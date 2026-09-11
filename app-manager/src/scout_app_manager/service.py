@@ -1,0 +1,882 @@
+"""Business logic. The CLI and the reconcile loop are both thin callers of this.
+
+Anything that decides something lives here; cli.py prints, loop.py schedules.
+`compose` is the single arbiter of what reaches the realm -- this module only
+labels what it decided, so the CLI's report and the applied realm cannot
+disagree.
+
+One pass is `_reconcile`, and it is five steps with one decision at the end:
+read the inputs, compose them, report what became of each fragment, measure
+what that adds up to, decide. Start there; everything else in the file is
+answering a question one of those five asks.
+
+Retraction is damped, because a vanished input is indistinguishable from one
+mid-redeploy. A fragment that goes absent keeps its place in the realm from the
+copy last composed, and a Secret that does the same is served from the copy last
+read; both for the grace period, and a fragment is never retracted unless
+discovery has reported a complete sync.
+
+Damping is about composing, though, and the apply is held for both of the cases
+where composing from a copy is not enough to apply from one: a fragment absent
+with no copy to compose at all, and a Secret the apply Job will have to read
+for itself.
+
+The realm document names its credentials rather than carrying them, which puts
+two obligations here. Every `$(env:...)` it names must resolve to something
+non-empty before the apply, because config-cli installs an unresolved token
+verbatim as a client secret and nothing errors. And a rotation has to be
+noticed some other way, because replacing a credential does not move the
+document -- that is what the Secrets' resourceVersions are for.
+"""
+
+import hashlib
+import logging
+import time
+from dataclasses import dataclass, replace
+from pathlib import Path
+
+from . import placeholders
+from .apply import RealmApplier
+from .compose import (
+    ComposeResult,
+    Site,
+    canonical,
+    compose,
+    document_hash,
+    plan,
+    realm_hash,
+)
+from .k8s import ApiError, Client, value_of, version_of
+from .keycloak import KeycloakAdmin, RealmRead
+from .load import LoadedFragment, parse_realm_document, scan
+from .settings import Settings
+from .status import (
+    APPLIED,
+    FAILED,
+    HOLDING,
+    INSTALLED,
+    INVALID,
+    PENDING,
+    PROBLEMS,
+    REFUSED,
+    REJECTED,
+    RETRACTING,
+    FragmentStatus,
+    State,
+    StatusStore,
+    age_seconds,
+    now,
+    prior_installed,
+)
+
+log = logging.getLogger("app-manager")
+
+
+def display_name_for(item: LoadedFragment) -> str:
+    """A human label for the app a fragment installs.
+
+    Derived from the primary client's declared display name; the ConfigMap name
+    is the fallback, with the conventional `-keycloak` suffix dropped.
+    """
+    if item.fragment and item.fragment.clients:
+        primary = item.fragment.clients[0]
+        if primary.displayName:
+            return primary.displayName
+    name = item.ref.name
+    for suffix in ("-keycloak", "-keycloak-fragment", "-fragment"):
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
+
+def referenced_secrets(loaded: list[LoadedFragment]) -> set[str]:
+    """Every Secret a fragment names, whether or not it exists yet.
+
+    Taken from what was loaded rather than from what composed, because a
+    missing credential is exactly what gets a fragment rejected -- and the
+    fragment landing before its Secret is the case the doorbell is most useful
+    for. Binding-derived names would cover everything except it.
+    """
+    return {
+        client.secretRef.name
+        for item in loaded
+        if item.fragment
+        for client in item.fragment.clients
+    }
+
+
+@dataclass(frozen=True)
+class Inputs:
+    """What one pass read, before anything was decided about it.
+
+    `discovered` is what is on disk now. `held` is what was in the realm and is
+    not on disk now, and `restored` are the cached copies standing in for
+    however many of those this process has composed before -- which after a
+    restart is none of them. `loaded` is what goes to the composer: both, so a
+    fragment mid-redeploy keeps its realm objects.
+    """
+
+    base: dict
+    base_source_hash: str
+    # The client-secrets Secret's keys that resolve to something. Both the set
+    # the base realm's variables may come from and the set a fragment's derived
+    # variable may not collide with.
+    resolvable: frozenset[str]
+    prior: dict[str, FragmentStatus]
+    discovered: list[LoadedFragment]
+    held: list[FragmentStatus]
+    restored: list[LoadedFragment]
+
+    @property
+    def loaded(self) -> list[LoadedFragment]:
+        return self.discovered + self.restored
+
+
+class AppManagerService:
+    def __init__(
+        self,
+        settings: Settings,
+        client: Client,
+        applier: RealmApplier | None = None,
+        keycloak: KeycloakAdmin | None = None,
+    ) -> None:
+        self.settings = settings
+        self.client = client
+        self.namespace = settings.namespace or client.namespace()
+        self.applier = applier or RealmApplier(settings, client, self.namespace)
+        self.keycloak = keycloak or KeycloakAdmin(
+            settings.keycloak_url, settings.keycloak_realm, self.admin_credentials
+        )
+        self.store = StatusStore(client, self.namespace, settings.status_configmap)
+        self.state = self._resume()
+        self.reconciles = 0
+        # Whether *this* process has completed a reconcile that left the realm
+        # converged. `_resume` restores the last process's success, which is a
+        # fact about the realm and not about us -- see `ready`.
+        self.converged = False
+        # One GET per distinct Secret per reconcile. Cleared at the top of each
+        # one, so a rotation is seen on the next pass and not a stale value.
+        self._secrets: dict[str, dict | None] = {}
+        # The last copy successfully read of each, and when. A Secret that is
+        # momentarily gone -- a chart upgrade's delete-then-create, an API blip
+        # -- otherwise rejects the fragment naming it, and the apply prunes
+        # what no fragment declares. Damped for the same window and for the
+        # same reason a missing fragment is. In memory only: these are
+        # credentials, so a restart inside the window is a real read failure.
+        self._last_good: dict[str, tuple[dict, float]] = {}
+        # Which of those were served from cache this reconcile. Composing from a
+        # copy is fine; applying from one is not, because the apply Job reads
+        # the real Secret and not this process's memory of it.
+        self._damped: set[str] = set()
+        # What the Secret watch should ring the doorbell for. Widened by each
+        # reconcile as fragments name their own credentials.
+        self._watched_secrets = {settings.client_secrets_secret, settings.admin_secret}
+        # The copy of each fragment last composed into the realm, so a fragment
+        # that goes absent can keep its realm objects through its grace period
+        # without freezing every other change. Empty after a restart, which is
+        # the one case that still has to hold the apply.
+        self._composed: dict[str, LoadedFragment] = {}
+        # The decision last logged for each fragment. A sweep a minute mostly
+        # re-decides what the previous one did, and only the change is news.
+        # Per-process, like `converged`: this is a fact about what this process
+        # has already said, so a restart reprints the inventory it starts from.
+        self._logged: dict[str, tuple[str, str, tuple[str, ...]]] = {}
+
+    def _resume(self) -> State:
+        """Pick up where the last process left off, or start clean."""
+        restored = self.store.load()
+        if restored is None:
+            log.info("no previous status found; starting from an empty state")
+            return State()
+        # A fact about this process: a previous sync says nothing about
+        # /fragments now, and trusting it would retract on an empty dir.
+        restored.discovery_synced = False
+        log.info(
+            "resumed: applied=%s baseRealmApplied=%s fragments=%s",
+            (restored.last_applied_hash or "-")[:19],
+            restored.base_realm_applied,
+            len(restored.fragments),
+        )
+        return restored
+
+    # --- inputs ---------------------------------------------------------
+
+    def site(self) -> Site:
+        return Site(domain=self.settings.domain, signout_url=self.settings.signout_url)
+
+    def secret(self, name: str) -> dict | None:
+        """A Secret from this namespace, fetched once per reconcile."""
+        if name not in self._secrets:
+            self._secrets[name] = self._read_secret(name)
+        return self._secrets[name]
+
+    def _read_secret(self, name: str) -> dict | None:
+        try:
+            found = self.client.get_secret(self.namespace, name)
+        except ApiError:
+            log.exception("could not read secret %s/%s", self.namespace, name)
+            found = None
+        if found is None:
+            return self._stale(name)
+        self._last_good[name] = (found, time.monotonic())
+        return found
+
+    def _stale(self, name: str) -> dict | None:
+        """The copy last read, while it is younger than the retraction grace.
+
+        Absent and unreadable are damped alike, because from here they are the
+        same event: the Secret was there, it is not now, and composing without
+        it retracts a live client. Its resourceVersion comes back with it, so
+        serving one does not look like a rotation either.
+        """
+        cached = self._last_good.get(name)
+        if cached is None:
+            return None
+        secret, read_at = cached
+        waited = time.monotonic() - read_at
+        if waited >= self.settings.retraction_grace_seconds:
+            del self._last_good[name]
+            log.warning(
+                "secret %s/%s has been unreadable for %ds; giving up on the copy "
+                "last read from it",
+                self.namespace,
+                name,
+                int(waited),
+            )
+            return None
+        log.warning(
+            "secret %s/%s is unreadable; using the copy read %ds ago",
+            self.namespace,
+            name,
+            int(waited),
+        )
+        self._damped.add(name)
+        return secret
+
+    def resolve_secret(self, name: str, key: str) -> str | None:
+        return value_of(self.secret(name), key)
+
+    def client_secret_keys(self) -> set[str]:
+        """The client-secrets Secret's keys that resolve to something.
+
+        The base realm's substitution variables by intent, but read from the
+        Secret rather than from the document: this is what the apply Job's
+        envFrom will actually put in config-cli's environment, which is what
+        makes it both the resolvable set and the reserved one.
+
+        A key present but empty is treated as absent: config-cli would happily
+        substitute the empty string as a client's credential.
+        """
+        secret = self.secret(self.settings.client_secrets_secret)
+        if not secret:
+            log.warning(
+                "secret %s not found; the base realm's $(env:...) variables "
+                "cannot be resolved",
+                self.settings.client_secrets_secret,
+            )
+            return set()
+        return {key for key in (secret.get("data") or {}) if value_of(secret, key)}
+
+    def admin_credentials(self) -> tuple[str, str] | None:
+        """The same credential the apply Job authenticates with."""
+        secret = self.secret(self.settings.admin_secret)
+        username = value_of(secret, "username")
+        password = value_of(secret, "password")
+        if not username or not password:
+            return None
+        return username, password
+
+    def watched_secrets(self) -> set[str]:
+        """The Secrets whose rotation should wake the reconciler.
+
+        Recomputed each reconcile rather than configured, so a fragment needs
+        no label on its Secret -- its `secretRef` already names it. A new
+        fragment's credential joins the set on the reconcile that composes it,
+        which its own ConfigMap event has already triggered.
+        """
+        return set(self._watched_secrets)
+
+    def watched_configmaps(self) -> set[str]:
+        """The base realm, and nothing else. Fragments come by the sidecar."""
+        name = self.settings.base_realm_configmap
+        return {name} if name else set()
+
+    def secrets_version(self, names: list[str]) -> str:
+        """A digest over the resourceVersions of everything the apply reads.
+
+        The document is stable across a rotation now, so without this nothing
+        would re-run the import and Keycloak would keep the old credential
+        while every consumer had already switched.
+        """
+        digest = hashlib.sha256()
+        for name in sorted(set(names)):
+            digest.update(f"{name}={version_of(self.secret(name))}\0".encode())
+        return "sha256:" + digest.hexdigest()
+
+    def base_realm(self) -> dict:
+        """The base realm, parsed. `base_source` when the hash matters too."""
+        return self.base_source()[0]
+
+    def base_source(self) -> tuple[dict, str]:
+        """The base realm, and sha256 over the bytes it came from.
+
+        Two hashes of the same document, deliberately. `realm_hash` is over the
+        canonicalised parse, which is what makes it comparable with the
+        composed realm -- and what makes it uncomputable by a deploy holding
+        only the document. This one is over the bytes, so a deploy can publish
+        a realm and then wait for the reconciler to report having applied
+        exactly that one.
+        """
+        text = self._base_realm_text()
+        raw = parse_realm_document(text)
+        return raw.get("realm_representation", raw), document_hash(text)
+
+    def _base_realm_text(self) -> str:
+        """The base realm document, read by name from the API every reconcile.
+
+        By name, and not from any copy on disk. A projected volume is
+        refreshed lazily, so on a notification it still holds the previous
+        bytes. A sidecar-delivered copy would be worse: the sidecar selects by
+        *label*, so any labelled ConfigMap in the namespace could become the
+        realm -- and unlike a fragment, the base realm is applied wholesale,
+        with none of the composer's rails on what it may contain. The watch is
+        only the doorbell; this is the read.
+
+        The path is what the CLI uses, where there is no cluster to ask.
+        """
+        name = self.settings.base_realm_configmap
+        if not name:
+            return Path(self.settings.base_realm_path).read_text(encoding="utf-8")
+        configmap = self.client.get_configmap(self.namespace, name) or {}
+        text = (configmap.get("data") or {}).get(self.settings.base_realm_key)
+        if not text:
+            raise FileNotFoundError(
+                f"configmap {self.namespace}/{name} has no "
+                f"{self.settings.base_realm_key}"
+            )
+        return text
+
+    def ready(self) -> bool:
+        """Readiness: *the* base realm is applied, and this process applied it.
+
+        Four conditions, each covering something the others cannot see.
+
+        The base realm has been applied at all. Never about fragments: a
+        rejected one is one service's problem, and this gates the platform's
+        auth deploy.
+
+        It is the document that is published *now*. This is what makes a deploy
+        able to gate on the pod instead of on the shape of the status document:
+        publishing a new base realm makes the pod unready within a probe
+        period, and Ready again when that document is what config-cli imported.
+
+        This process converged it. `_resume` restores the two facts above from
+        the status document, so a reconciler throwing on every pass would
+        otherwise report the *last* process's success and sit Ready while
+        changing nothing -- which under sole-writer is the deploy gate failing
+        silently.
+
+        And the realm is still there. Deleting it, or replacing it with one
+        nothing has ever imported into, is invisible to the rest: a converged
+        reconciler with no pending change reports Applied about a document that
+        is not in any Keycloak.
+        """
+        return (
+            self.state.base_realm_applied
+            and self.state.applied_base_source_hash == self.state.base_source_hash
+            and self.converged
+            and not self.state.realm_unmanaged
+        )
+
+    def next_deadline(self) -> float | None:
+        """Seconds until a held retraction's grace period runs out, if any.
+
+        The loop waits on this so the configured grace is the actual delay.
+        """
+        waits = [
+            self.settings.retraction_grace_seconds - age_seconds(f.retracting_since)
+            for f in self.state.fragments
+            if f.status == RETRACTING and f.retracting_since
+        ]
+        return max(0.0, min(waits)) if waits else None
+
+    # --- the reconcile ---------------------------------------------------
+
+    def reconcile_once(self) -> State:
+        """One pass, and the verdict on whether it left the realm converged.
+
+        `converged` is set on the way out and never on the way in: clearing it
+        first would make the pod unready for the length of every apply, which
+        the apply Job can make a couple of minutes.
+
+        Only `Applied` counts, and that is narrower than it looks: a pass with
+        nothing pending reaches it by having compared the composed document and
+        the live import checksum against what was applied, so it is a
+        verification rather than a memory.
+
+        `Holding` does not count, which is the difference between "a fragment
+        is a service's problem" and "the realm this deploy published is not in
+        Keycloak". Holding is always the second: the realm was left alone with
+        a change outstanding. Counting it let a process that had applied
+        nothing at all report Ready by holding on its first pass -- and Ready
+        is the whole of the Flux lane's gate on the realm existing.
+        """
+        try:
+            state = self._reconcile()
+        except Exception:
+            self.converged = False
+            raise
+        self.reconciles += 1
+        self.converged = state.phase == APPLIED
+        return state
+
+    def _reconcile(self) -> State:
+        """One pass: read, compose, report, measure, decide.
+
+        In that order, and nothing before `_decide` chooses anything. `_gather`
+        reads, `_compose` merges, `_report` labels each fragment, `_measure`
+        hashes and compares -- so the whole of what this can do to a realm is
+        the five branches of one short function, and everything above it is
+        answering the questions those branches ask.
+        """
+        inputs = self._gather()
+        result = self._compose(inputs)
+        blocked = self._report(inputs, result)
+        document, unresolved = self._measure(inputs, result)
+        return self._decide(result, document, unresolved, blocked)
+
+    def _gather(self) -> Inputs:
+        """Read every input. Decides nothing.
+
+        The per-reconcile caches are cleared here rather than anywhere later,
+        so a Secret read during this pass is this pass's answer and a rotation
+        is seen on the next one rather than a stale value.
+        """
+        self._secrets.clear()
+        self._damped.clear()
+        prior = prior_installed(self.state)
+        discovered = scan(self.settings.fragment_dir)
+        held, restored = self._retracting(prior, {str(i.ref) for i in discovered})
+        base, base_source_hash = self.base_source()
+        return Inputs(
+            base=base,
+            base_source_hash=base_source_hash,
+            resolvable=frozenset(self.client_secret_keys()),
+            prior=prior,
+            discovered=discovered,
+            held=held,
+            restored=restored,
+        )
+
+    def _compose(self, inputs: Inputs) -> ComposeResult:
+        """Merge what was read into the base realm, and remember what took.
+
+        The cached copies are what lets a fragment go absent without its realm
+        objects going with it, so one is kept only for what actually composed:
+        a copy that would now be rejected stands in for nothing.
+        """
+        result = compose(
+            inputs.base,
+            inputs.loaded,
+            self.site(),
+            self.resolve_secret,
+            reserved_env=inputs.resolvable,
+        )
+        for item in result.accepted:
+            self._composed[str(item.ref)] = item
+        return result
+
+    def _report(self, inputs: Inputs, result: ComposeResult) -> list[FragmentStatus]:
+        """Say what became of each fragment; return the ones that block an apply.
+
+        A fragment blocks when it is absent and nothing composed stands in for
+        it. Applying then would prune its realm objects, which is exactly the
+        retraction the grace period defers -- arriving early, with no elapsed
+        clock and no phase to notice it by. Everything else goes through while
+        that clock runs: a base realm change, a rotation, another fragment's
+        edit.
+        """
+        reasons = {str(item.ref): why for item, why in result.rejected}
+        statuses = [
+            self._status(item, reasons.get(str(item.ref)), inputs.prior)
+            for item in inputs.discovered
+        ]
+        for status in inputs.held:
+            status.errors.extend(reasons.get(status.ref, []))
+        statuses.extend(inputs.held)
+        self.state.fragments = statuses
+        self._log_decisions(statuses)
+
+        standing_in = {
+            str(item.ref) for item in inputs.restored if str(item.ref) not in reasons
+        }
+        return [h for h in inputs.held if h.ref not in standing_in]
+
+    def _measure(self, inputs: Inputs, result: ComposeResult) -> tuple[str, list[str]]:
+        """Hash it, read the live realm, and work out what is outstanding.
+
+        Returns the composed document and the variables in it that nothing
+        resolves. Everything else lands on the state, which is what the status
+        document and the metrics are rendered from.
+        """
+        document = canonical(result.realm)
+        bound = {b.name for b in result.bindings.values()}
+        self._watched_secrets = {
+            self.settings.client_secrets_secret,
+            self.settings.admin_secret,
+        } | referenced_secrets(inputs.loaded)
+
+        self.state.last_reconcile = now()
+        self.state.base_hash = realm_hash(inputs.base)
+        self.state.base_source_hash = inputs.base_source_hash
+        self.state.composed_hash = document_hash(document)
+        self.state.secrets_version = self.secrets_version(
+            [self.settings.client_secrets_secret] + sorted(bound)
+        )
+        self.state.identical_to_base = self.state.composed_hash == self.state.base_hash
+
+        read = self.keycloak.read()
+        self._observe(read)
+        self.state.drift = self._drifted(read)
+        self.state.pending_change = (
+            self.state.composed_hash != self.state.last_applied_hash
+            or self.state.secrets_version != self.state.applied_secrets_version
+            or self.state.drift
+        )
+
+        # Everything config-cli will have in its environment: the base realm's
+        # Secret taken wholesale, one variable per fragment client, and the
+        # site hostname every base-realm URL is written against.
+        available = (
+            set(inputs.resolvable)
+            | set(result.bindings)
+            | {placeholders.SERVER_HOSTNAME}
+        )
+        return document, placeholders.unresolved(document, available)
+
+    def _decide(
+        self,
+        result: ComposeResult,
+        document: str,
+        unresolved: list[str],
+        blocked: list[FragmentStatus],
+    ) -> State:
+        """Five outcomes, in the order their reasons outrank each other.
+
+        Three of them leave the realm exactly as it is, and they are ordered by
+        how little is known: a fragment that has no stand-in, then a credential
+        read from cache, then a variable nothing resolves at all. Then the two
+        ordinary ones.
+        """
+        if blocked:
+            return self._hold(blocked)
+        # Before `unresolved`, which cannot see this: `resolvable` was read
+        # from the same cached copy, so every variable looks satisfied.
+        damped = self._damped & (
+            {self.settings.client_secrets_secret, self.settings.admin_secret}
+            | {b.name for b in result.bindings.values()}
+        )
+        if damped:
+            return self._hold_credentials(damped)
+        if unresolved:
+            return self._refuse_unresolved(unresolved)
+        if not self.state.pending_change:
+            return self._up_to_date()
+
+        self.state.phase = PENDING
+        self.store.save(self.state)
+        self._apply(result, document)
+        self.store.save(self.state)
+        return self.state
+
+    def _up_to_date(self) -> State:
+        """Nothing to do, and that is a verification rather than a memory.
+
+        Reaching here means the composed document and the live import checksum
+        were both compared against what was applied -- which is what makes this
+        the phase readiness is allowed to count.
+        """
+        self.state.phase = APPLIED if self.state.last_applied_hash else PENDING
+        self.state.last_result = (
+            f"realm is up to date at {(self.state.last_applied_hash or '-')[:19]}"
+        )
+        self.store.save(self.state)
+        return self.state
+
+    def _observe(self, read: RealmRead) -> None:
+        """Record what the live realm looks like.
+
+        A read that did not land claims nothing: "we do not know" must not
+        become "re-apply", and it must not become "the realm is gone" either.
+
+        With no expectation to compare against there is no drift check at all,
+        so the first checksum that does arrive is adopted as one. That is the
+        state an apply whose read-back did not land leaves behind, and the
+        alternative to adopting is detection staying off until some later
+        change happens to force another apply.
+        """
+        self.state.live_checksum = read.checksum
+        self.state.realm_unmanaged = read.known and not (read.exists and read.checksum)
+        if read.checksum and not self.state.applied_import_checksum:
+            self.state.applied_import_checksum = read.checksum
+
+    def _drifted(self, read: RealmRead) -> bool:
+        """Did something other than this reconciler last write the realm?
+
+        Three ways to know, all repaired by applying again. The realm is gone.
+        It is there but carries no import checksum at all, so config-cli has
+        never written it. Or its checksum is not the one our own apply read
+        back -- which is only answerable once we have applied, because an apply
+        whose read-back did not arrive leaves no expectation to compare with.
+        """
+        if not read.known:
+            return False
+        if not read.exists:
+            log.warning(
+                "DRIFT     realm %s does not exist; applying it",
+                self.settings.keycloak_realm,
+            )
+            return True
+        if not read.checksum:
+            log.warning(
+                "DRIFT     realm %s carries no import checksum, so nothing has "
+                "ever imported into it; applying",
+                self.settings.keycloak_realm,
+            )
+            return True
+        expected = self.state.applied_import_checksum
+        if not expected or expected == read.checksum:
+            return False
+        log.warning(
+            "DRIFT     the realm was last written by something other than this "
+            "reconciler (import checksum %s, expected %s); re-applying",
+            read.checksum[:12],
+            expected[:12],
+        )
+        return True
+
+    def _hold_credentials(self, names: set[str]) -> State:
+        """A Secret the apply reads is being served from cache. Do not apply.
+
+        Damping a Secret keeps a momentary blip from retracting the client that
+        names it, and for composing that is enough -- the document only names
+        its credentials. The apply is a different matter, because the Job reads
+        the real Secret and not this process's memory of one:
+
+        - a fragment's credential is a required `secretKeyRef`, so its pod
+          never starts and the whole apply dies by timeout; and
+        - the platform's `keycloak-client-secrets` arrives by an *optional*
+          `envFrom`, so the pod does start, with none of those variables set,
+          and config-cli installs `$(env:oauth2_proxy)` verbatim as
+          oauth2-proxy's client secret. `_refuse_unresolved` cannot catch that
+          one, because it read the same cached copy and saw every name resolve.
+
+        Holding costs a frozen realm for as long as the Secret stays away,
+        bounded by the retraction grace. Applying costs a credential anyone who
+        can read the realm can use.
+        """
+        self.state.phase = HOLDING
+        self.state.last_result = (
+            "holding: could not read "
+            + ", ".join(sorted(names))
+            + "; the apply needs the value itself, not the copy last read"
+        )
+        log.warning("HOLDING   %s", self.state.last_result)
+        self.store.save(self.state)
+        return self.state
+
+    def _refuse_unresolved(self, missing: list[str]) -> State:
+        """A named credential with nothing behind it is not a partial apply.
+
+        config-cli leaves an unresolved `$(env:x)` alone and Keycloak stores
+        that string as the client's secret -- a working-looking client anyone
+        who can read the realm can authenticate as. There is no per-client way
+        out of it either: a base-realm client cannot be dropped the way a
+        fragment can, so the whole apply stops here.
+        """
+        self.state.phase = REFUSED
+        self.state.last_result = (
+            "refusing to apply: the realm names "
+            + ", ".join(f"$(env:{name})" for name in missing)
+            + f", which {self.settings.client_secrets_secret} does not resolve"
+        )
+        log.error("REFUSED   %s", self.state.last_result)
+        self.store.save(self.state)
+        return self.state
+
+    def _status(
+        self,
+        item: LoadedFragment,
+        reasons: list[str] | None,
+        prior: dict[str, FragmentStatus],
+    ) -> FragmentStatus:
+        was = prior.get(str(item.ref))
+        status = FragmentStatus(
+            ref=str(item.ref),
+            namespace=item.ref.namespace,
+            name=item.ref.name,
+            status=INSTALLED,
+            content_hash=item.content_hash,
+            display_name=display_name_for(item),
+            errors=list(item.errors),
+            # When it last reached the realm, not when it was last looked at.
+            applied_at=was.applied_at if was else None,
+        )
+        if not item.valid:
+            # compose rejected it too, for the same reasons it already carries.
+            status.status = INVALID
+            return status
+        status.effect = plan(item, self.site())
+        if reasons is not None:
+            status.status = REJECTED
+            status.errors.extend(reasons)
+        return status
+
+    def _retracting(
+        self, prior: dict[str, FragmentStatus], present: set[str]
+    ) -> tuple[list[FragmentStatus], list[LoadedFragment]]:
+        """Fragments that were in the realm and are no longer on disk.
+
+        Returns what to report about each, and the cached copies to compose
+        with. Composing the cached copy is what keeps a redeploying component
+        out of everyone else's way: its realm objects stay exactly as they
+        were, and the base realm and every other fragment still reach Keycloak.
+
+        A fragment absent past its grace is dropped from both, which is the
+        retraction. One absent with no cached copy is neither -- see `_hold`.
+        """
+        held, restored = [], []
+        for ref, was in sorted(prior.items()):
+            if ref in present:
+                continue
+            since = was.retracting_since or now()
+            waited = age_seconds(since)
+            expired = waited >= self.settings.retraction_grace_seconds
+            if expired and self.state.discovery_synced:
+                self._composed.pop(ref, None)
+                log.warning(
+                    "RETRACTED %s: absent for %ds, removing its realm objects",
+                    ref,
+                    int(waited),
+                )
+                continue
+            cached = self._composed.get(ref)
+            if cached is not None:
+                restored.append(cached)
+            reason = (
+                "discovery has not reported a complete sync, so an absent "
+                "fragment cannot be told apart from an unsynced one"
+                if not self.state.discovery_synced
+                else f"absent since {since}; its realm objects are retracted if "
+                f"it has not returned {self.settings.retraction_grace_seconds}s later"
+            ) + (
+                ""
+                if cached is not None
+                else "; this process never composed it, so the realm cannot be "
+                "applied without dropping it"
+            )
+            log.warning("HOLDING   %s: absent for %ds", ref, int(waited))
+            held.append(
+                replace(was, status=RETRACTING, retracting_since=since, errors=[reason])
+            )
+        return held, restored
+
+    def _hold(self, blocked: list[FragmentStatus]) -> State:
+        """Leave the realm exactly as it is, and say why.
+
+        Only reached for a fragment absent with nothing to compose in its
+        place, which after a restart is every fragment that has not come back
+        yet. Applying anyway would prune its realm objects on the strength of
+        one empty directory.
+        """
+        refused = not self.state.discovery_synced
+        self.state.phase = REFUSED if refused else HOLDING
+        self.state.last_result = (
+            f"holding: {len(blocked)} fragment(s) absent, with no copy this "
+            "process composed to stand in for them"
+            + (" (discovery never synced)" if refused else "")
+        )
+        log.warning("HOLDING   the realm is unchanged: %s", self.state.last_result)
+        self.store.save(self.state)
+        return self.state
+
+    def _apply(self, result: ComposeResult, document: str) -> None:
+        """Publish the composed realm and run the import Job over it."""
+        desired_hash = self.state.composed_hash
+        secrets_version = self.state.secrets_version
+        self.applier.publish(document)
+        # The Job name keys off both, so a rotation with an unchanged document
+        # is a distinct attempt rather than a reused name.
+        ok, detail = self.applier.run(
+            document_hash(desired_hash + secrets_version), result.bindings
+        )
+        if not ok:
+            log.error("APPLY     FAILED for realm %s: %s", desired_hash[:19], detail)
+            self.state.phase = FAILED
+            self.state.last_result = f"apply failed: {detail}"
+            return
+        log.info("APPLY     succeeded; realm is now %s", desired_hash[:19])
+        stamp = now()
+        # What config-cli actually recorded, which is the only thing a later
+        # drift check can compare against. Read after the apply rather than
+        # computed: the checksum covers the post-substitution document plus a
+        # salt, neither of which this process should have to reproduce. Re-read
+        # rather than assumed, so a successful apply also clears the "no realm
+        # to be ready about" verdict this same reconcile took before it.
+        read = self.keycloak.read()
+        self._observe(read)
+        if read.checksum:
+            self.state.applied_import_checksum = read.checksum
+            self.state.drift = False
+        else:
+            # Only a read that landed says anything. Overwriting a good
+            # expectation with None here would leave nothing to compare
+            # against, and `_drifted` reports no drift when there is nothing to
+            # compare -- so one unanswered read would switch drift detection
+            # off and leave it off.
+            log.warning(
+                "applied the realm, but reading its import checksum back did "
+                "not land; drift against this apply goes unnoticed until a "
+                "later read does"
+            )
+        self.state.last_applied_hash = desired_hash
+        self.state.applied_secrets_version = secrets_version
+        self.state.pending_change = False
+        self.state.phase = APPLIED
+        self.state.applied_at = stamp
+        self.state.base_realm_applied = True
+        self.state.applied_base_source_hash = self.state.base_source_hash
+        self.state.last_result = (
+            f"applied {desired_hash[:19]} "
+            f"({len(result.accepted)} fragment(s) composed)"
+        )
+        for fragment in self.state.fragments:
+            if fragment.status == INSTALLED:
+                fragment.applied_at = stamp
+
+    def _log_decisions(self, statuses: list[FragmentStatus]) -> None:
+        """Log a fragment's decision when it is new or when it changed.
+
+        A fragment's content is part of the decision, so an edit that stays
+        installed still prints -- otherwise the only trace of which fragment
+        moved the realm is the apply's hash. A fragment that goes away is
+        forgotten, so coming back prints again.
+        """
+        for status in statuses:
+            decision = (status.status, status.content_hash, tuple(status.errors))
+            if self._logged.get(status.ref) == decision:
+                continue
+            if status.status in PROBLEMS:
+                log.warning(
+                    "EXCLUDED  %s: %s",
+                    status.ref,
+                    "; ".join(status.errors) or status.status,
+                )
+            elif status.status == INSTALLED:
+                log.info("INSTALLED %s", status.ref)
+            self._logged[status.ref] = decision
+        self._logged = {
+            ref: decision
+            for ref, decision in self._logged.items()
+            if ref in {s.ref for s in statuses}
+        }

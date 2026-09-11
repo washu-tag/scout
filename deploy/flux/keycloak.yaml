@@ -49,10 +49,18 @@ spec:
       kind: Keycloak
       current: status.conditions.exists(c, c.type == 'Ready' && c.status == 'True')
 ---
-# Realm import, split from keycloak-instance so this dependsOn gates it on Keycloak
-# Ready (the instance's healthCheckExprs) -- the import runs only after the CR is up,
-# no first-boot race. oauth2-proxy/trino-ro/superset dependsOn this (they need the
-# realm's OIDC clients), not just keycloak-instance.
+# The realm: the base realm document (keycloak-config-cli) and the reconciler that
+# applies it (scout-app-manager). Split from keycloak-instance so this dependsOn
+# gates it on Keycloak Ready (the instance's healthCheckExprs) -- the import runs
+# only after the CR is up, no first-boot race.
+#
+# oauth2-proxy/trino-ro/superset/launchpad dependsOn this. What that buys them has
+# narrowed since ADR 0037 made the reconciler the realm's only writer: Ready here
+# means the *base* realm has been applied, which is the closed set of clients this
+# artifact declares. A client shipped as a component's fragment is not covered --
+# by design, since gating the realm on a fragment the realm does not know about is
+# a cycle. Those arrive within a reconcile of the component's own manifests
+# landing, which is after this.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -73,3 +81,17 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: keycloak-instance
+  # Named explicitly rather than left to `wait: true`, which health-checks every
+  # applied object. The two HelmReleases are the whole of it, and the app manager's
+  # is the one that matters: its Deployment is Ready only once *that process* has
+  # reconciled the realm successfully, so this Kustomization going Ready means the
+  # realm was applied -- not merely that a document was written.
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: keycloak-config-cli
+      namespace: '${keycloak_namespace}'
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: scout-app-manager
+      namespace: '${keycloak_namespace}'

@@ -4,14 +4,14 @@ name: Seed charts
 #
 # publish-charts (ci.yaml) is changed-only, so a never-changed chart is absent
 # from GHCR and the haul's fail-closed carry rejects it. This publishes + signs
-# all 14 charts once, THEN leaves a complete haul predecessor: it carries the 8
+# all charts once, THEN leaves a complete haul predecessor: it carries the
 # images from the current :main haul (seeded by bootstrap-haul.yaml) and folds in
-# the 14 fresh chart digests, so the next ci.yaml run carries all 22 normally.
+# the fresh chart digests, so the next ci.yaml run carries all normally.
 # Publishing the charts to GHCR alone is NOT enough -- build_haul carries strictly
 # from the predecessor manifest, not a live registry lookup, so the charts must be
 # IN the predecessor haul, which is what this workflow's tail writes.
 #
-# Run once at go-live, after bootstrap-haul.yaml has seeded the 8 images. The
+# Run once at go-live, after bootstrap-haul.yaml has seeded the images. The
 # saved bundle omits the 9 upstream images (re-resolved on every real build, never
 # carried); the next ci.yaml run republishes a complete bundle. Its purpose is to
 # seed the carry predecessor, not to be transported.
@@ -45,7 +45,7 @@ jobs:
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Install hauler and oras
         uses: ./.github/actions/install-hauler-oras
-      - name: Package, push, and sign all 14 charts, recording each digest as fresh
+      - name: Package, push, and sign charts, recording each digest as fresh
         env:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTOR: ${{ github.actor }}
@@ -80,16 +80,17 @@ jobs:
           open-webui-bootstrap helm/open-webui-bootstrap
           orthanc helm/orthanc
           report-viewer helm/report-viewer
+          scout-app-manager helm/scout-app-manager
           scout-dashboards helm/scout-dashboards
           scout-opa helm/scout-opa
           temporal-bootstrap helm/temporal-bootstrap
           voila helm/voila
           CHARTS
-      - name: Render the haul manifest (14 fresh charts + carry the images)
+      - name: Render the haul manifest (fresh charts + carry the images)
         run: |
           set -euo pipefail
           mkdir -p predecessor
-          # bootstrap-haul.yaml seeded the 8 images into :main; carry them.
+          # bootstrap-haul.yaml seeded the images into :main; carry them.
           oras pull "${MANIFEST_REPO}:main" -o predecessor
           python3 tooling/manifest/build_haul.py \
             --digests-dir digests \

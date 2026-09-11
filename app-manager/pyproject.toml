@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scout-app-manager"
+version = "0.0.dev0"
+description = "Scout app manager: fragment schema, composer, and reconciler"
+requires-python = ">=3.14"
+dependencies = [
+  "pydantic>=2.7,<3",
+  "pydantic-settings>=2.7,<3",
+  "PyYAML>=6,<7",
+  "httpx2>=2.12,<3",
+  "prometheus-client>=0.20,<1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<9"]
+
+[project.scripts]
+scout-app-manager = "scout_app_manager.cli:main"
+scout-app-manager-service = "scout_app_manager.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+scout_app_manager = ["resources/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

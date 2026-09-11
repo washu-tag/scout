@@ -58,11 +58,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p digests
-          # superset/keycloak have a real semver VERSION file (overridable). The 6
+          # superset/keycloak have a real semver VERSION file (overridable). The
           # Scout images are versioned "latest" in-repo, so seed the newest build-lane
           # tag (0.YYYYMMDD.N), not :latest, or stamp_config fail-closes downstream.
           for name in hl7log-extractor hl7-transformer hl7-listener scout-notebook \
-                      launchpad report-viewer superset keycloak; do
+                      launchpad report-viewer scout-app-manager superset keycloak; do
             case "${name}" in
               superset) src="${SUPERSET_TAG:-$(cat helm/superset/VERSION)}" ;;
               keycloak) src="${KEYCLOAK_TAG:-$(cat keycloak/VERSION)}" ;;
@@ -91,7 +91,7 @@ jobs:
           set -euo pipefail
           echo "VERSION=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           # The OCI charts (in components.txt since #618) aren't published until
-          # seed-charts.yaml runs, so the first haul seeds ONLY the 8 images and has
+          # seed-charts.yaml runs, so the first haul seeds ONLY the images and has
           # no predecessor to carry charts from. Render the images-only subset; the
           # charts/ repos would else fail resolve_refs closed ("neither rebuilt nor
           # carried"). seed-charts then carries these images and folds the charts in.

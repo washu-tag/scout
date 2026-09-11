@@ -1,0 +1,29 @@
+image:
+  repository: '{{ app_manager_image_repository }}'
+  tag: '{{ app_manager_image_tag }}'
+  pullPolicy: '{{ app_manager_image_pull_policy }}'
+
+manager:
+  domain: '{{ server_hostname }}'
+  resyncSeconds: {{ app_manager_resync_seconds }}
+  debounceSeconds: {{ app_manager_debounce_seconds }}
+  retractionGraceSeconds: {{ app_manager_retraction_grace_seconds }}
+  jobTimeoutSeconds: {{ app_manager_job_timeout_seconds }}
+  jobTtlSeconds: {{ app_manager_job_ttl_seconds }}
+  logLevel: '{{ app_manager_log_level }}'
+  keycloakUrl: '{{ keycloak_internal_url }}'
+  keycloakRealm: '{{ keycloak_realm_name }}'
+  signoutUrl: '{{ oauth2_proxy_signout_url }}'
+  # Shared with the keycloak-config-cli release, which publishes it.
+  baseRealmConfigMap: '{{ keycloak_base_realm_configmap }}'
+  baseRealmKey: '{{ keycloak_base_realm_key }}'
+  configCliImage: '{{ keycloak_config_cli_image }}:{{ keycloak_config_cli_image_tag }}'
+
+discovery:
+  namespace: '{{ app_manager_discovery_namespace }}'
+  image:
+    repository: '{{ launchpad_sidecar_image }}'
+    tag: '{{ launchpad_sidecar_image_tag }}'
+
+resources:
+  {{ app_manager_resources_default | combine(app_manager_resources | default({}), recursive=true) | to_nice_yaml(indent=2) | indent(2) }}

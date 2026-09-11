@@ -1,0 +1,93 @@
+{{- if .Values.rbac.create }}
+---
+# In its own namespace the reconciler is a normal controller: it writes the
+# composed realm and drives config-cli Jobs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "appmanager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "appmanager.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ['']
+    # Read-only, and only in this namespace: the base realm's credentials and
+    # each fragment client's. It reads them to check they resolve, never to
+    # copy them -- the composed realm names credentials rather than carrying
+    # them, so the reconciler no longer writes a Secret at all.
+    #
+    # `watch` is the same objects in the same namespace, not a wider read: it
+    # exists so a rotation wakes the reconciler instead of waiting out the
+    # resync floor, and the watch is a doorbell -- every value acted on still
+    # comes from the `get`.
+    resources: [secrets]
+    verbs: [get, list, watch]
+  - apiGroups: ['']
+    # The status document and the composed realm. The ClusterRole below reads
+    # fragments; these writes are scoped to this namespace. `list, watch` is
+    # the base realm: read by name every reconcile, and watched here so a
+    # re-render wakes the reconciler. Stated locally even though the
+    # ClusterRole's cluster-wide read already covers it -- this rule is where
+    # the reconciler's own calls are meant to be legible.
+    resources: [configmaps]
+    verbs: [get, list, watch, create, update, patch]
+  - apiGroups: [batch]
+    # The apply. A failed one is reported from the Job's own status
+    # conditions, which is why nothing here reads a pod or its log:
+    # config-cli's log is written after variable substitution, and the
+    # reconciler's report of it lands in a ConfigMap.
+    resources: [jobs]
+    verbs: [get, list, create, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "appmanager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "appmanager.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "appmanager.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "appmanager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+---
+# Cluster-wide, and still a single read-only capability: the discovery sidecar
+# has to find fragment ConfigMaps in the namespaces components live in.
+#
+# Nothing here touches Secrets, and the Secret watch in the Role above does not
+# change that -- it is namespaced. Client credentials are provided rather than
+# generated, and they are read from this release's own namespace, so the
+# reconciler needs no cross-namespace Secret access in either direction --
+# neither the write it used to hold to publish generated credentials, nor the
+# far broader cluster-wide read that fetching them from component namespaces
+# would have required.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "appmanager.fullname" . }}-{{ .Release.Namespace }}
+  labels:
+    {{- include "appmanager.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ['']
+    resources: [configmaps]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "appmanager.fullname" . }}-{{ .Release.Namespace }}
+  labels:
+    {{- include "appmanager.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "appmanager.fullname" . }}-{{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "appmanager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

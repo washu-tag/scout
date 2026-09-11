@@ -1,0 +1,130 @@
+---
+- name: Validate the app manager runs in the Keycloak namespace
+  ansible.builtin.assert:
+    that: app_manager_namespace == keycloak_namespace
+    fail_msg: >
+      app_manager_namespace is {{ app_manager_namespace }} but keycloak_namespace
+      is {{ keycloak_namespace }}, and the two have to match: the reconciler
+      reads the base realm ConfigMap, keycloak-client-secrets and
+      keycloak-admin-secret from its own namespace -- and runs the apply Job
+      there -- with no way to point it at another. Deployed split it would
+      refuse every reconcile and fail this play's realm-applied gate. Drop the
+      override, or move both by setting keycloak_namespace.
+    quiet: true
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ app_manager_namespace }}'
+
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    app_manager_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+- name: Deploy app manager
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ app_manager_helm_release_name }}'
+    helm_chart_ref: '{{ app_manager_helm_chart_ref }}'
+    helm_chart_namespace: '{{ app_manager_namespace }}'
+    helm_chart_values: '{{ app_manager_helm_chart_values }}'
+    helm_chart_timeout: 10m
+
+# Everything below is the deploy gate, and the thing it waits on is the pod's
+# own readiness. The reconciler reports Ready only once *this process* has
+# applied *the base realm document that is published now* -- so a pod that was
+# already running when this play republished the realm goes unready within a
+# probe period and comes back when the new document is what config-cli
+# imported. `helm --wait` above cannot be that gate on its own, because an
+# upgrade that did not change the chart values never restarts the pod, and it
+# can sample Ready before the reconciler has read the new ConfigMap.
+#
+# Deliberately not a comparison against the status ConfigMap's fields. That
+# document is the reconciler's, and a deploy that reproduced its hashing and
+# its phase vocabulary in Jinja would break the next time either moved. The
+# status document is read below only to *explain* a failure, never to decide
+# one, so its shape changing costs a worse error message and nothing else.
+- name: Read the published base realm
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    namespace: '{{ keycloak_namespace }}'
+    name: '{{ keycloak_base_realm_configmap }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: app_manager_base_realm
+
+- name: Validate the base realm is published
+  ansible.builtin.assert:
+    that: app_manager_base_realm.resources | length > 0
+    fail_msg: >
+      ConfigMap {{ keycloak_namespace }}/{{ keycloak_base_realm_configmap }} does
+      not exist, so there is no realm for the app manager to apply and it will
+      never report Ready. The keycloak-config-cli release publishes it, so run
+      `make install-auth` first.
+    quiet: true
+
+- name: Wait for the app manager to apply the published realm
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: '{{ app_manager_namespace }}'
+    name: '{{ app_manager_helm_release_name }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: app_manager_deployment
+  vars:
+    # `default([])` first: `| first` on an undefined `resources` raises, and a
+    # later `| default({})` cannot rescue an expression that already blew up.
+    deployed: >-
+      {{ (app_manager_deployment.resources | default([]) | first | default({})).status
+         | default({}) }}
+  until: (deployed.readyReplicas | default(0) | int) > 0
+  retries: '{{ (app_manager_realm_wait_seconds | int // 5) | int }}'
+  delay: 5
+  # The retry loop exhausting is not the message anyone should read; the assert
+  # below says what is actually wrong and how to look at it. (`failed_when`
+  # does suppress an exhausted `until:`, verified on ansible-core 2.21.)
+  failed_when: false
+
+- name: Read the app manager's status, for the message
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    namespace: '{{ app_manager_namespace }}'
+    name: '{{ app_manager_status_configmap }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: app_manager_status
+  failed_when: false
+
+- name: Validate the app manager applied the published realm
+  vars:
+    ready: >-
+      {{ ((app_manager_deployment.resources | default([]) | first | default({})).status
+          | default({})).readyReplicas | default(0) | int > 0 }}
+    published: >-
+      {{ ((app_manager_status.resources | default([]) | first | default({}))
+          .data | default({})).status | default('{}') | from_yaml }}
+  ansible.builtin.assert:
+    # `ready` renders to the *string* "False", and a bare conditional on a
+    # non-empty string is true.
+    that: ready | bool
+    fail_msg: >
+      The app manager has not applied the realm this play published, after
+      {{ app_manager_realm_wait_seconds }}s. It is the only thing that writes
+      the realm, so every Keycloak client is still whatever the last successful
+      apply left -- including the ones this deploy was meant to change. Reported
+      phase "{{ published.phase | default('(no status published)') }}":
+      Holding means either a fragment is absent with no cached copy to compose
+      in its place or a Secret the apply needs could not be read, Refused means
+      the realm names a credential keycloak-client-secrets does not resolve,
+      Failed means the apply Job did not succeed. Last result:
+      "{{ published.lastResult | default('(none)') }}". Full detail:
+      kubectl exec -n {{ app_manager_namespace }} deploy/{{ app_manager_helm_release_name }}
+      -c reconciler -- scout-app-manager status
+    quiet: true

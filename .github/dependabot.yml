@@ -59,6 +59,17 @@ updates:
       default-days: 7
     open-pull-requests-limit: 0
 
+  - package-ecosystem: 'pip'
+    directory: '/app-manager'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 0
+
   - package-ecosystem: 'npm'
     directory: '/report-viewer/frontend'
     schedule:

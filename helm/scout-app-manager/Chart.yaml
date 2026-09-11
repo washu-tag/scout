@@ -1,0 +1,9 @@
+---
+apiVersion: v2
+name: scout-app-manager
+description: Composes component-owned Keycloak fragments into the Scout realm
+type: application
+version: 0.0.0-dev
+# Double-quoted deliberately: update-versions.sh stamps this with
+# `^(appVersion: ")[^"]+(")`, and a single-quoted value fails the release.
+appVersion: "latest"

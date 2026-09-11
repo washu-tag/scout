@@ -146,9 +146,11 @@ flowchart LR
   producing build, that tag always exists in the registry — even when the
   chart and the image last changed in different builds. Chart and image
   move as one unit.
-- Charts that wrap third-party images (loki, orthanc, dcm4chee,
-  keycloak-config-cli) keep explicit image references; their `appVersion`
-  carries no coupling meaning.
+- Charts that wrap third-party images (loki, orthanc, dcm4chee~~,
+  keycloak-config-cli~~) keep explicit image references; their `appVersion`
+  carries no coupling meaning. (The keycloak-config-cli chart deploys no
+  container at all under ADR 0037: it renders the base realm and publishes it
+  to a ConfigMap, and the app manager runs the importer.)
 - Scout-built images that deploy through upstream charts (the
   xnat-plugin-installer under the XNAT chart, keycloak via its operator
   resource) are referenced in the deployment base's values and stamped

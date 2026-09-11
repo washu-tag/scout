@@ -5,7 +5,7 @@
 # NOTE: consolidating this with the ci.yaml &image-matrix and publish-charts
 # matrix into ONE source of truth is an open decision (Phase 2 decision 5).
 
-# --- images (the &image-matrix, 8) ---
+# --- images (the &image-matrix, 9) ---
 ghcr.io/washu-tag/hl7log-extractor
 ghcr.io/washu-tag/hl7-transformer
 ghcr.io/washu-tag/hl7-listener
@@ -14,21 +14,27 @@ ghcr.io/washu-tag/launchpad
 ghcr.io/washu-tag/superset
 ghcr.io/washu-tag/keycloak
 ghcr.io/washu-tag/report-viewer
+# The one image whose repo suffix is not its source directory (app-manager/).
+ghcr.io/washu-tag/scout-app-manager
 
-# --- charts (14): repo = ghcr.io/washu-tag/charts/<name> ---
+# --- charts (15): repo = ghcr.io/washu-tag/charts/<name> ---
 # Map CONFIRMED: <name> is the Chart.yaml name == chart dir basename ==
-# publish-charts matrix chart-name for all 14; the dorny changes-filter key is
+# publish-charts matrix chart-name for all 15; the dorny changes-filter key is
 # that name plus a "-chart" suffix. (Phase 2 decision 5 = fold these three lists
 # into one source of truth.)
 #
 # Each chart must be published to ghcr at least once before it can be carried:
 # publish-charts is changed-only, so a never-published chart is absent from the
 # registry and resolve fails closed on it. Going live needs a one-time publish of
-# all 14 (a no-op touch of the chart dirs in one main run) so publish-haul folds
-# them in; each then carries until it changes. Bootstrap only seeds the 8 images,
+# all 15 (a no-op touch of the chart dirs in one main run) so publish-haul folds
+# them in; each then carries until it changes. Bootstrap only seeds the 9 images,
 # not charts. (carry reads the previous haul.yaml, not a live ghcr lookup; hauler
 # pulls each chart via the job's GHCR login, and downstream consumers get the
 # self-contained .tar.zst, so ghcr package visibility is moot.)
+#
+# The same fail-closed rule is why a new component's line and its build wiring
+# have to land together: the first main run that adds a line here must also
+# publish that component, or resolve finds it neither rebuilt nor carried.
 ghcr.io/washu-tag/charts/hl7-transformer
 ghcr.io/washu-tag/charts/dcm4chee
 ghcr.io/washu-tag/charts/hive-metastore
@@ -39,6 +45,7 @@ ghcr.io/washu-tag/charts/launchpad
 ghcr.io/washu-tag/charts/open-webui-bootstrap
 ghcr.io/washu-tag/charts/orthanc
 ghcr.io/washu-tag/charts/report-viewer
+ghcr.io/washu-tag/charts/scout-app-manager
 ghcr.io/washu-tag/charts/scout-dashboards
 ghcr.io/washu-tag/charts/scout-opa
 ghcr.io/washu-tag/charts/temporal-bootstrap

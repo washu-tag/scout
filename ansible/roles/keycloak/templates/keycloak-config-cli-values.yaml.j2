@@ -1,14 +1,11 @@
 ---
-# Values for the keycloak-config-cli release.
+# Values for the keycloak-config-cli release, which renders the base realm and
+# publishes it to a ConfigMap. The app manager applies it (ADR 0037).
 #
 # The realm itself is the chart's own files/scout-realm.json, which helm renders
 # from the values below -- this lane keeps no copy of the document and no second
 # templating pass. The GitOps lane installs the same chart and the same file;
 # the two differ only in where these values come from.
-image:
-  repository: '{{ keycloak_config_cli_image }}'
-  tag: '{{ keycloak_config_cli_image_tag }}'
-
 realmName: '{{ keycloak_realm_name }}'
 
 lifespans:
@@ -52,22 +49,3 @@ smtp:
   starttls: '{{ keycloak_smtp_starttls }}'
   debug: '{{ keycloak_smtp_debug }}'
 
-env:
-  KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
-  KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
-  # Every client URL in the realm is written against this (the GitOps lane has
-  # done so since ADR 0031); it is site configuration, not a secret.
-  server_hostname: '{{ server_hostname }}'
-  # Without var-substitution the `$(env:...)` tokens are installed verbatim as
-  # client credentials and redirect URIs. managed.*=no-delete matches the
-  # GitOps lane.
-  SPRING_APPLICATION_JSON: >-
-    {"import":{"var-substitution":{"enabled":true},"managed":{"client":"no-delete","client-scope":"no-delete","client-scope-mapping":"no-delete","scope-mapping":"no-delete","role":"no-delete","group":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","required-action":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
-
-# The client and IdP secrets the realm names as `$(env:...)`, reaching
-# config-cli's environment in bulk.
-envFrom:
-  - secretRef:
-      name: keycloak-client-secrets
-
-existingSecret: keycloak-admin-secret

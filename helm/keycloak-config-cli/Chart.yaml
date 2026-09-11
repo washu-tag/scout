@@ -1,10 +1,8 @@
 apiVersion: v2
 name: keycloak-config-cli
-description: Import JSON-formatted configuration files into Keycloak - Configuration as Code for Keycloak.
+description: Render the Scout base realm and publish it for the app manager to apply.
 home: https://github.com/adorsys/keycloak-config-cli
 
 type: application
 
 version: 0.0.0-dev
-
-appVersion: "6.4.0-26"

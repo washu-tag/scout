@@ -84,11 +84,13 @@ oauth2-proxy stays in `ContainerCreating` on the missing mount.
 - Generate-once values with no natural source (`SUPERSET_SECRET_KEY`, the oauth2-proxy
   `cookie-secret`, `trino-authz-env`, the launchpad `launchpad-nextauth-secret`) should
   be created once and stored, not rotated casually (some are consumed at TLS-issue time).
-- Rotating a `keycloak-client-secrets` value does not by itself re-run the config-cli
-  import (the Job reads it via `envFrom` by name); it applies on the next realm/chart
-  upgrade, or force it with `flux reconcile hr keycloak-config-cli -n <ns>`.
+- Rotating a `keycloak-client-secrets` value reaches Keycloak on its own: the app
+  manager watches the Secret's `resourceVersion` and re-applies the realm when it moves.
 - Every enabled component's key must be present. config-cli leaves an unresolved
   `$(env:...)` as literal text, so a missing key would set that client's secret to a
   guessable placeholder. Provision `keycloak-client-secrets` fail-closed (an
   ExternalSecret that errors if a source key is absent), and only enable an IdP or the
-  XNAT client once its key exists.
+  XNAT client once its key exists. The app manager refuses to apply a realm naming a key
+  it cannot resolve.
+- The Ansible lane uses this same Secret, with the same keys, created by the `keycloak`
+  role from the `keycloak_*_client_secret` inventory variables.

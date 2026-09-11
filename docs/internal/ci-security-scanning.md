@@ -107,7 +107,7 @@ The `publish` and `publish-demo` jobs require `scan-images` in their `needs:` ar
 
 All actions referenced with `uses:` — first-party (`actions/*`, `github/codeql-action`) and third-party alike — are pinned to full commit SHAs (not tags) across every workflow and composite action, to prevent supply-chain attacks. (The sole exception is the internal `washu-tag/.github` reusable workflow, referenced by `@main` by design.) Dependabot's `github-actions` ecosystem in `dependabot.yml` keeps these pins current.
 
-**Images scanned** (the `&image-matrix` anchor in `ci.yaml`, shared by `build-and-upload` and `scan-images`): `hl7log-extractor`, `hl7-transformer`, `hl7-listener`, `scout-notebook`, `launchpad`, `superset`, `keycloak`, `report-viewer`.
+**Images scanned** (the `&image-matrix` anchor in `ci.yaml`, shared by `build-and-upload` and `scan-images`): `hl7log-extractor`, `hl7-transformer`, `hl7-listener`, `scout-notebook`, `launchpad`, `superset`, `keycloak`, `report-viewer`, `scout-app-manager`.
 
 ### Semgrep
 

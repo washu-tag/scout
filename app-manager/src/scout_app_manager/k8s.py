@@ -1,0 +1,245 @@
+"""Just enough Kubernetes API for the reconciler.
+
+Deliberately not the official client. The reconciler needs five verbs on three
+resource kinds, and what this buys is that the permission surface is legible:
+every call it can make is a function in this file, next to the RBAC that grants
+it. The official client is a generated binding for the whole API, where the
+same reading is a code search.
+"""
+
+import base64
+import binascii
+import logging
+import os
+from collections.abc import Iterator
+from contextlib import contextmanager
+from pathlib import Path
+
+import httpx2 as httpx
+
+log = logging.getLogger("app-manager")
+
+SA_DIR = Path("/var/run/secrets/kubernetes.io/serviceaccount")
+TOKEN_PATH = SA_DIR / "token"
+CA_PATH = SA_DIR / "ca.crt"
+NAMESPACE_PATH = SA_DIR / "namespace"
+
+
+class ApiError(RuntimeError):
+    def __init__(self, status: int, message: str):
+        super().__init__(f"kubernetes API {status}: {message}")
+        self.status = status
+
+
+class TransportError(ApiError):
+    """The request never reached an answer: DNS, connect, TLS, or a timeout.
+
+    A subclass, because it is the most common way a call fails and every caller
+    already guards with `except ApiError` -- several of them promising in their
+    docstrings that they cannot fail a reconcile. Raw httpx exceptions escaping
+    those guards would break that promise on the likeliest path.
+
+    Its status is 0, which collides with no HTTP status, so `exc.status == 404`
+    still means exactly a 404.
+    """
+
+    def __init__(self, message: str):
+        RuntimeError.__init__(self, f"kubernetes API unreachable: {message}")
+        self.status = 0
+
+
+def value_of(secret: dict | None, key: str) -> str | None:
+    """One key out of a fetched Secret. A function, so a caller can read
+    several keys and the resourceVersion from one GET.
+
+    A Secret holds bytes, and nothing stops a key of one the reconciler reads
+    from holding something that is not text. Unreadable is reported as absent,
+    which fails the value closed -- the alternative is an exception out of a
+    pure accessor, which reaches the reconcile loop and stops every realm
+    update until someone finds the Secret.
+    """
+    if not secret:
+        return None
+    encoded = (secret.get("data") or {}).get(key)
+    if encoded is None:
+        return None
+    try:
+        return base64.b64decode(encoded).decode("utf-8")
+    except (UnicodeDecodeError, binascii.Error, ValueError):
+        name = (secret.get("metadata") or {}).get("name", "(unnamed)")
+        log.warning(
+            "secret %s key %s is not UTF-8 text; treating it as absent", name, key
+        )
+        return None
+
+
+def version_of(secret: dict | None) -> str:
+    """The Secret's resourceVersion, which moves when and only when its
+    contents do. How a credential rotation is noticed at all: rotating one
+    leaves the realm document untouched."""
+    if not secret:
+        return ""
+    return (secret.get("metadata") or {}).get("resourceVersion") or ""
+
+
+class Client:
+    def __init__(self, timeout: float = 30.0):
+        host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+        port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
+        self.base = f"https://{host}:{port}"
+        verify = str(CA_PATH) if CA_PATH.exists() else True
+        self._http = httpx.Client(verify=verify, timeout=timeout)
+
+    def namespace(self) -> str:
+        try:
+            return NAMESPACE_PATH.read_text(encoding="utf-8").strip()
+        except OSError:
+            return os.environ.get("APP_MANAGER_NAMESPACE", "default")
+
+    def _headers(self) -> dict[str, str]:
+        # Projected service-account tokens rotate; read on every call rather
+        # than caching a token that expires mid-session.
+        token = TOKEN_PATH.read_text(encoding="utf-8").strip()
+        return {"Authorization": f"Bearer {token}"}
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json: object = None,
+        headers: dict | None = None,
+    ) -> dict:
+        merged = self._headers()
+        if headers:
+            merged.update(headers)
+        try:
+            response = self._http.request(
+                method, f"{self.base}{path}", json=json, headers=merged
+            )
+        except httpx.HTTPError as exc:
+            raise TransportError(f"{method} {path}: {exc}") from exc
+        if response.status_code >= 400:
+            raise ApiError(response.status_code, response.text[:500])
+        if not response.content:
+            return {}
+        return response.json()
+
+    def _get(self, path: str) -> dict | None:
+        """A read where absence is an answer, not an error."""
+        try:
+            return self.request("GET", path)
+        except ApiError as exc:
+            if exc.status == 404:
+                return None
+            raise
+
+    @contextmanager
+    def stream(
+        self, path: str, *, read_timeout: float | None = None
+    ) -> Iterator[Iterator[str]]:
+        """A long-lived streaming GET, for a watch.
+
+        Its own timeout: this client is built with a 30s read timeout, which
+        would abort an idle watch every 30 seconds. A caller should still pass
+        one -- without any read timeout a half-open connection blocks until the
+        kernel gives up on it, which is hours.
+        """
+        timeout = httpx.Timeout(connect=10.0, read=read_timeout, write=10.0, pool=10.0)
+        try:
+            with self._http.stream(
+                "GET", f"{self.base}{path}", headers=self._headers(), timeout=timeout
+            ) as response:
+                if response.status_code >= 400:
+                    response.read()
+                    raise ApiError(response.status_code, response.text[:500])
+                yield response.iter_lines()
+        except httpx.HTTPError as exc:
+            raise TransportError(f"GET {path}: {exc}") from exc
+
+    # --- ConfigMaps -----------------------------------------------------
+
+    def get_configmap(self, namespace: str, name: str) -> dict | None:
+        return self._get(f"/api/v1/namespaces/{namespace}/configmaps/{name}")
+
+    def put_configmap_data(
+        self,
+        namespace: str,
+        name: str,
+        data: dict[str, str],
+        labels: dict[str, str] | None = None,
+    ) -> None:
+        """Merge-patch the ConfigMap's data, creating it the first time."""
+        metadata: dict = {"name": name, "namespace": namespace}
+        if labels:
+            metadata["labels"] = labels
+        collection = f"/api/v1/namespaces/{namespace}/configmaps"
+        try:
+            self.request(
+                "PATCH",
+                f"{collection}/{name}",
+                json={"metadata": metadata, "data": data},
+                headers={"Content-Type": "application/merge-patch+json"},
+            )
+        except ApiError as exc:
+            if exc.status != 404:
+                raise
+            self.request(
+                "POST",
+                collection,
+                json={
+                    "apiVersion": "v1",
+                    "kind": "ConfigMap",
+                    "metadata": metadata,
+                    "data": data,
+                },
+            )
+
+    # --- Secrets --------------------------------------------------------
+
+    # Read only. Nothing the reconciler writes is sensitive -- the composed
+    # realm names its credentials rather than carrying them -- so it needs no
+    # Secret write, and is granted none.
+
+    def get_secret(self, namespace: str, name: str) -> dict | None:
+        return self._get(f"/api/v1/namespaces/{namespace}/secrets/{name}")
+
+    # --- Jobs -----------------------------------------------------------
+
+    def get_job(self, namespace: str, name: str) -> dict | None:
+        return self._get(f"/apis/batch/v1/namespaces/{namespace}/jobs/{name}")
+
+    def create_job(self, namespace: str, body: dict) -> dict:
+        return self.request(
+            "POST", f"/apis/batch/v1/namespaces/{namespace}/jobs", json=body
+        )
+
+    def delete_job(self, namespace: str, name: str) -> None:
+        """Delete a Job and its pods.
+
+        Foreground propagation, so the Job object outlives its pods and waiting
+        for it to disappear is waiting for config-cli to be gone. Under
+        Background the Job is deleted at once and the pods are reaped whenever
+        the garbage collector gets to them -- which would let a previous import
+        still be writing the realm as the next one starts.
+        """
+        try:
+            self.request(
+                "DELETE",
+                f"/apis/batch/v1/namespaces/{namespace}/jobs/{name}"
+                "?propagationPolicy=Foreground",
+            )
+        except ApiError as exc:
+            if exc.status != 404:
+                raise
+
+    def list_jobs(self, namespace: str, label_selector: str) -> list[dict]:
+        result = self.request(
+            "GET",
+            f"/apis/batch/v1/namespaces/{namespace}/jobs?labelSelector={label_selector}",
+        )
+        return result.get("items", [])
+
+    # No pod read here, deliberately. A failed apply is reported from the Job's
+    # own status conditions: config-cli's log is post-substitution, and the
+    # reason ends up in a ConfigMap.
