@@ -1,9 +1,10 @@
 """Just enough Kubernetes API for the reconciler.
 
-Deliberately not the official client: the reconciler needs five verbs on three
-resource kinds, and a hand-rolled client keeps the vendored wheel set small
-enough to build in an air-gapped cluster. It also keeps the permission surface
-obvious -- every call the reconciler can make is a function in this file.
+Deliberately not the official client. The reconciler needs five verbs on three
+resource kinds, and what this buys is that the permission surface is legible:
+every call it can make is a function in this file, next to the RBAC that grants
+it. The official client is a generated binding for the whole API, where the
+same reading is a code search.
 """
 
 import base64

@@ -10,10 +10,9 @@ from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .httpd import Handler as BaseHandler
+from .metrics import CONTENT_TYPE_LATEST
 
 log = logging.getLogger("app-manager")
-
-METRICS_TYPE = "text/plain; version=0.0.4; charset=utf-8"
 
 
 def handler_for(
@@ -32,7 +31,7 @@ def handler_for(
                 else:
                     self.reply(503, b"realm not applied yet")
             elif path == "/metrics" and metrics is not None:
-                self.reply(200, metrics().encode("utf-8"), METRICS_TYPE)
+                self.reply(200, metrics().encode("utf-8"), CONTENT_TYPE_LATEST)
             else:
                 self.reply(404, b"not found")
 

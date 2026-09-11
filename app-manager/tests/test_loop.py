@@ -6,7 +6,7 @@ import httpx2 as httpx
 import pytest
 from conftest import fragment_yaml, setup, write_fragment  # noqa: F401
 
-from scout_app_manager import api, health, loop
+from scout_app_manager import api, health, loop, metrics
 from scout_app_manager.models import RETRACTING, FragmentStatus
 
 
@@ -107,7 +107,8 @@ def test_metrics_are_served_on_the_pod_ip_listener(health_server):
     response = httpx.get(f"{base}/metrics", timeout=5.0)
 
     assert response.status_code == 200
-    assert "version=0.0.4" in response.headers["content-type"]
+    # The client library's own, so the declared version tracks what it emits.
+    assert response.headers["content-type"] == metrics.CONTENT_TYPE_LATEST
     assert "scout_app_manager_fragments" in response.text
 
 

@@ -1,15 +1,27 @@
+"""What a scrape says about the last reconcile.
+
+Read back through Prometheus' own parser rather than by matching lines, so
+these assert what a scrape *means* and not how the exposition happens to order
+its labels.
+"""
+
 from conftest import fragment_yaml, setup, write_fragment  # noqa: F401
+from prometheus_client.parser import text_string_to_metric_families
 
 from scout_app_manager import metrics
 from scout_app_manager.models import INVALID, RETRACTING, FragmentStatus, State
 
 
-def series(text: str) -> dict[str, str]:
+def scrape(text: str) -> dict[tuple[str, frozenset], float]:
     return {
-        line.split(" ")[0]: line.split(" ")[1]
-        for line in text.splitlines()
-        if line and not line.startswith("#")
+        (sample.name, frozenset(sample.labels.items())): sample.value
+        for family in text_string_to_metric_families(text)
+        for sample in family.samples
     }
+
+
+def value(found: dict, metric: str, /, **labels) -> float:
+    return found[(f"{metrics.PREFIX}_{metric}", frozenset(labels.items()))]
 
 
 def test_a_rejected_fragment_is_countable(setup):
@@ -20,17 +32,20 @@ def test_a_rejected_fragment_is_countable(setup):
         fragments, "evil", "takeover", fragment_yaml("launchpad", roles=[], grants={})
     )
 
-    found = series(metrics.render(service.reconcile_once()))
+    found = scrape(metrics.render(service.reconcile_once()))
 
-    assert found['scout_app_manager_fragments{state="rejected"}'] == "1"
-    assert found['scout_app_manager_fragments{state="installed"}'] == "1"
-    assert found['scout_app_manager_fragments{state="invalid"}'] == "0"
+    assert value(found, "fragments", state="rejected") == 1
+    assert value(found, "fragments", state="installed") == 1
+    assert value(found, "fragments", state="invalid") == 0
     assert (
-        found[
-            'scout_app_manager_fragment_state{namespace="evil",name="takeover",'
-            'state="rejected"}'
-        ]
-        == "1"
+        value(
+            found,
+            "fragment_state",
+            namespace="evil",
+            name="takeover",
+            state="rejected",
+        )
+        == 1
     )
 
 
@@ -38,25 +53,25 @@ def test_every_state_is_emitted_even_at_zero(setup):
     """A missing series and a zero series alert differently."""
     service, _, _ = setup
 
-    found = series(metrics.render(service.reconcile_once()))
+    found = scrape(metrics.render(service.reconcile_once()))
 
     for state in ("installed", "invalid", "rejected", "retracting"):
-        assert found[f'scout_app_manager_fragments{{state="{state}"}}'] == "0"
+        assert value(found, "fragments", state=state) == 0
 
 
 def test_the_realm_facts_are_exposed(setup):
     service, fragments, _ = setup
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
 
-    found = series(metrics.render(service.reconcile_once()))
+    found = scrape(metrics.render(service.reconcile_once()))
 
-    assert found["scout_app_manager_base_realm_applied"] == "1"
-    assert found["scout_app_manager_discovery_synced"] == "1"
-    assert found["scout_app_manager_apply_pending"] == "0"
-    assert found["scout_app_manager_realm_drift"] == "0"
-    assert found["scout_app_manager_realm_checksum_readable"] == "1"
-    assert float(found["scout_app_manager_last_apply_success_timestamp_seconds"]) > 0
-    assert found['scout_app_manager_phase{phase="Applied"}'] == "1"
+    assert value(found, "base_realm_applied") == 1
+    assert value(found, "discovery_synced") == 1
+    assert value(found, "apply_pending") == 0
+    assert value(found, "realm_drift") == 0
+    assert value(found, "realm_checksum_readable") == 1
+    assert value(found, "last_apply_success_timestamp_seconds") > 0
+    assert value(found, "phase", phase="Applied") == 1
 
 
 def test_an_unreachable_keycloak_says_so_rather_than_reading_as_no_drift(setup):
@@ -65,10 +80,10 @@ def test_an_unreachable_keycloak_says_so_rather_than_reading_as_no_drift(setup):
     service.reconcile_once()
     service.keycloak.readable = False
 
-    found = series(metrics.render(service.reconcile_once()))
+    found = scrape(metrics.render(service.reconcile_once()))
 
-    assert found["scout_app_manager_realm_checksum_readable"] == "0"
-    assert found["scout_app_manager_realm_drift"] == "0"
+    assert value(found, "realm_checksum_readable") == 0
+    assert value(found, "realm_drift") == 0
 
 
 def test_a_retracting_fragment_is_visible(setup):
@@ -78,14 +93,14 @@ def test_a_retracting_fragment_is_visible(setup):
     service.reconcile_once()
     path.unlink()
 
-    found = series(metrics.render(service.reconcile_once()))
+    found = scrape(metrics.render(service.reconcile_once()))
 
-    assert found['scout_app_manager_fragments{state="retracting"}'] == "1"
-    assert found['scout_app_manager_phase{phase="Applied"}'] == "1"
+    assert value(found, "fragments", state="retracting") == 1
+    assert value(found, "phase", phase="Applied") == 1
 
 
-def test_label_values_are_escaped():
-    """A fragment name cannot break the exposition format."""
+def test_a_label_value_cannot_break_the_exposition():
+    """A fragment names itself, so its name reaches a label unreviewed."""
     state = State(
         fragments=[
             FragmentStatus(
@@ -98,18 +113,20 @@ def test_label_values_are_escaped():
         ]
     )
 
-    text = metrics.render(state)
+    found = scrape(metrics.render(state))
 
-    assert 'name="we\\"ird name"' in text
-    assert len([line for line in text.splitlines() if "fragment_state{" in line]) == 1
+    assert (
+        value(
+            found, "fragment_state", namespace="ns", name='we"ird\nname', state=INVALID
+        )
+        == 1
+    )
 
 
 def test_an_unset_timestamp_is_zero_not_a_crash():
     assert (
-        series(metrics.render(State()))[
-            "scout_app_manager_last_apply_success_timestamp_seconds"
-        ]
-        == "0.0"
+        value(scrape(metrics.render(State())), "last_apply_success_timestamp_seconds")
+        == 0
     )
 
 
