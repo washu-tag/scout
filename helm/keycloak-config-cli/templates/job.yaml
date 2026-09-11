@@ -80,12 +80,8 @@ spec:
             {{- end }}
       volumes:
         - name: config
-          secret:
-            {{- if .Values.existingConfigSecret }}
-            secretName: "{{ tpl .Values.existingConfigSecret $ }}"
-            {{- else }}
-            secretName: "{{ template "keycloak-config-cli.fullname" . }}-config-realms"
-            {{- end }}
+          configMap:
+            name: "{{ include "keycloak-config-cli.realmConfigMap" . }}"
             defaultMode: 0555
         {{- with .Values.extraVolumes }}
         {{- tpl . $ | nindent 8 }}

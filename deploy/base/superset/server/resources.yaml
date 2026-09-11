@@ -227,7 +227,7 @@ spec:
                 "icon": "fa-key",
                 "token_key": "access_token",
                 "remote_app": {
-                    "client_id": "${keycloak_superset_client_id}",
+                    "client_id": "superset",
                     # Confidential-client secret from env (superset-env), never in git.
                     "client_secret": os.environ.get("KEYCLOAK_SUPERSET_CLIENT_SECRET"),
                     "client_kwargs": {"scope": "openid"},

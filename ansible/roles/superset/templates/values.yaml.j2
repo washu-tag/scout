@@ -115,7 +115,7 @@ configOverrides:
             "icon": "fa-key",
             "token_key": "access_token",
             "remote_app": {
-                "client_id": "{{ keycloak_superset_client_id }}",
+                "client_id": "superset",
                 "client_secret": "{{ keycloak_superset_client_secret }}",
                 "client_kwargs": {"scope": "openid"},
                 "api_base_url": "{{ keycloak_realm_url }}/protocol/",
