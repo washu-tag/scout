@@ -89,6 +89,63 @@ def _strip_nested(node: Any) -> Any:
     return node
 
 
+# Clicking a legend entry isolates that series. Synthesised here rather than
+# asked of the model: on a categorised spec the params/opacity pair is roughly
+# a third of the characters and two extra levels of nesting, and every one of
+# them is a chance to get it wrong.
+_LEGEND_PARAM = "rv_legend"
+_DIMMED = 0.2
+
+
+def _binds_legend(node: Any) -> bool:
+    if isinstance(node, dict):
+        return node.get("bind") == "legend" or any(
+            _binds_legend(value) for value in node.values()
+        )
+    if isinstance(node, list):
+        return any(_binds_legend(item) for item in node)
+    return False
+
+
+def _add_legend_toggle(spec: dict[str, Any]) -> dict[str, Any]:
+    """Bind a point selection on the `color` field to the legend.
+
+    Single views only - a selection param belongs on the unit spec, not above a
+    layer or facet. A spec that already binds something to its legend, or that
+    uses `opacity` for something of its own, is left alone.
+    """
+    if "mark" not in spec:
+        return spec
+    encoding = spec.get("encoding")
+    if not isinstance(encoding, dict):
+        return spec
+    color = encoding.get("color")
+    if not isinstance(color, dict) or not isinstance(color.get("field"), str):
+        return spec
+    if "opacity" in encoding or _binds_legend(spec):
+        return spec
+    params = spec.get("params")
+    params = list(params) if isinstance(params, list) else []
+    return {
+        **spec,
+        "params": params
+        + [
+            {
+                "name": _LEGEND_PARAM,
+                "select": {"type": "point", "fields": [color["field"]]},
+                "bind": "legend",
+            }
+        ],
+        "encoding": {
+            **encoding,
+            "opacity": {
+                "condition": {"param": _LEGEND_PARAM, "value": 1},
+                "value": _DIMMED,
+            },
+        },
+    }
+
+
 def _wrap_sql(sql: str) -> str:
     """Strip a trailing `;` so the SQL can be nested as a subquery."""
     return sql.rstrip().rstrip(";")
@@ -404,7 +461,7 @@ async def create_plot(
     user: User = Depends(get_current_user),
     store: PlotStore = Depends(get_plot_store),
 ) -> PlotResponse:
-    spec = _clean_spec(body.vega_lite_spec)
+    spec = _add_legend_toggle(_clean_spec(body.vega_lite_spec))
     await _validate_spec(spec)
     sql = _wrap_sql(body.sql)
     columns, row_count, truncated = await _run_chart_query(
@@ -443,7 +500,7 @@ async def create_plot_from_file(
     The deduped ID list is stored with the chart, so later views re-run against
     the same cohort.
     """
-    spec = _clean_spec(_parse_spec_form(vega_lite_spec))
+    spec = _add_legend_toggle(_clean_spec(_parse_spec_form(vega_lite_spec)))
     await _validate_spec(spec)
     try:
         raw = await file.read()

@@ -504,8 +504,8 @@ you. **At most 4 charts stay visible per turn** — call it more than that in
 one turn and the oldest one drops off.
 
 When asked to categorize or breakdown by modality, sex, etc, encode that
-by `color` in the Vega-lite spec. **Any `color` encoding gets `"bind":
-"legend"`**, so clicking a legend entry dims the other series.
+by `color` in the Vega-lite spec. The viewer adds the click-to-isolate
+legend itself — never write `params` or an `opacity` condition for it.
 
 **Every encoding channel needs a real `"type"` key** — `{"field": "x", "type":
 "quantitative"}`. Never write `{"field": "x", "quantitative": true}`; that
@@ -534,16 +534,10 @@ scout_chart_sql(
     ORDER BY 1
   vega_lite_spec={
     "mark": "line",
-    "params": [{
-      "name": "sex_select",
-      "select": {"type": "point", "fields": ["sex"]},
-      "bind": "legend"
-    }],
     "encoding": {
       "x": {"field": "age_bracket", "type": "ordinal", "title": "Age (decade)"},
       "y": {"field": "patients", "type": "quantitative", "title": "Patients"},
-      "color": {"field": "sex", "type": "nominal", "title": "Sex"},
-      "opacity": {"condition": {"param": "sex_select", "value": 1}, "value": 0.2}
+      "color": {"field": "sex", "type": "nominal", "title": "Sex"}
     }
   },
   sql_explanation="Patients with an I63 ischemic-stroke diagnosis code, counted by decade of age and sex. Each patient is counted once at their youngest recorded age. Patients whose reports carry inconsistent identifiers are left out, because this uses an epic view.",
@@ -561,17 +555,11 @@ scout_chart_sql(
     ORDER BY 1
   vega_lite_spec={
     "mark": "bar",
-    "params": [{
-      "name": "modality_select",
-      "select": {"type": "point", "fields": ["modality"]},
-      "bind": "legend"
-    }],
     "encoding": {
       "x": {"field": "year", "type": "ordinal", "title": "Year"},
       "xOffset": {"field": "modality", "type": "nominal"},
       "y": {"field": "n", "type": "quantitative", "title": "Reports"},
-      "color": {"field": "modality", "type": "nominal", "title": "Modality"},
-      "opacity": {"condition": {"param": "modality_select", "value": 1}, "value": 0.2}
+      "color": {"field": "modality", "type": "nominal", "title": "Modality"}
     }
   },
   sql_explanation="Report volume by year, grouped by modality.",
