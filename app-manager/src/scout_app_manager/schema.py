@@ -85,10 +85,10 @@ STRUCTURAL_CLAIMS = frozenset(
     {"aud", "azp", "exp", "iat", "iss", "jti", "nbf", "sub", "typ"}
 )
 
-# No per-field count limits. They looked like blast-radius bounds but bounded
-# nothing dangerous: a client role is scoped to its client, and each redirect
-# URI is host-checked. The real bound is on document size, and the discovery
-# volume already has one.
+# There are no per-field count limits, because none would bound anything
+# dangerous: a client role is scoped to its client, and each redirect URI is
+# host-checked. The bound that matters is on document size, and the discovery
+# volume has one.
 
 
 def strings(value: object, path: str = "") -> Iterator[tuple[str, str]]:

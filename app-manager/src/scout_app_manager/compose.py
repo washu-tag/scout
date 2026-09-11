@@ -6,20 +6,20 @@ this module decides that means confidential, no ROPC, no implicit, full scope
 off -- and the self scope-mapping that has to accompany full scope off, without
 which the role claim comes out empty and nothing errors.
 
-Two things the fragment declares are checked rather than derived, which is the
-change that made the real realm expressible: redirect URIs are written out in
-full (with `${domain}` for portability) and this module enforces that every one
-of them lands inside the Scout domain. Deriving URLs from a subdomain was
-simpler but could not express a client at the apex, a client with two hosts, or
-the platform signout URI that eight of nine real clients carry.
+Redirect URIs are the one thing a fragment declares in full rather than
+having derived for it (with `${domain}` for portability), and this module
+enforces that every one of them lands inside the Scout domain. Deriving them
+from a subdomain would be simpler and could not express a client at the apex, a
+client with two hosts, or the platform signout URI that eight of nine real
+clients carry.
 
 No credential is ever written here. A client's `secret` comes out as the
-`$(env:...)` token config-cli resolves at import, matching what the base realm
-has carried since the Ansible lane stopped inlining its own -- so the composed
-realm is an ordinary document that can be published as a ConfigMap, hashed, and
-read during an incident without handling secrets. What this module produces
-instead is the *binding* from each token to the Secret and key it comes from,
-which `apply` turns into Job environment.
+`$(env:...)` token config-cli resolves at import, the same form the base
+realm's own clients use -- so the composed realm is an ordinary document that
+can be published as a ConfigMap, hashed, and read during an incident without
+handling secrets. What this module produces instead is the *binding* from each
+token to the Secret and key it comes from, which `apply` turns into Job
+environment.
 """
 
 import copy
@@ -45,8 +45,8 @@ from .schema import (
 #
 # The value is the source ConfigMap's namespace/name, which the cluster
 # attests via the sidecar's filename -- not a label the fragment chose for
-# itself. A self-declared "owner" field would have been decorative here: an
-# attacker writes whatever they like in it, so it could never be evidence.
+# itself. A self-declared "owner" field would be decorative: an attacker
+# writes whatever they like in it, so it could never be evidence.
 SOURCE_ATTRIBUTE = "scout.fragment.source"
 
 # Keycloak creates these in every realm and the base realm document does not

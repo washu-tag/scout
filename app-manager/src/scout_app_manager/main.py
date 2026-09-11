@@ -16,9 +16,10 @@ log = logging.getLogger("app-manager")
 def log_level() -> str:
     """The configured level, normalised, or the same SystemExit Settings gives.
 
-    `basicConfig` takes the name verbatim, so a lowercase one used to raise --
-    before any handler existed, which is a process that dies with a traceback
-    over a spelling.
+    `basicConfig` takes the name verbatim and raises on anything else, before
+    any handler exists to report it -- a process dying with a traceback over a
+    spelling. Normalising the case here covers the whole of what goes wrong in
+    practice, and naming the variable covers the rest.
     """
     level = os.environ.get("APP_MANAGER_LOG_LEVEL", "INFO").strip().upper()
     if level not in logging.getLevelNamesMapping():

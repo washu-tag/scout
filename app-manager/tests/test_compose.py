@@ -433,7 +433,7 @@ def test_the_source_attribute_is_the_attested_ref(base_realm, tmp_path, hello_ya
 
 
 def test_two_namespaces_may_ship_unrelated_clients(base_realm, tmp_path):
-    """Nothing ties a fragment to a name any more, so this is simply fine."""
+    """Nothing ties a fragment's clientId to its source, so this is simply fine."""
     write_fragment(tmp_path, "team-a", "one", fragment_yaml(client="alpha"))
     write_fragment(tmp_path, "team-b", "two", fragment_yaml(client="beta"))
     result = composed(base_realm, tmp_path)

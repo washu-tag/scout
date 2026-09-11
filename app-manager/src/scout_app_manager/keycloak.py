@@ -56,9 +56,9 @@ class RealmRead:
     """What one admin read learned about the realm.
 
     Three answers, not two, because "the realm is gone" and "we could not ask"
-    call for opposite responses and used to arrive as the same `None`. A
-    deleted realm read as "we do not know", which left the reconciler
-    reporting Applied and Ready over a Keycloak with no Scout realm in it.
+    call for opposite responses. Collapsed into one, a deleted realm reads as
+    "we do not know", and the reconciler reports Applied and Ready over a
+    Keycloak with no Scout realm in it.
     """
 
     # The read landed. False is unreachable, unauthenticated, or a 5xx.

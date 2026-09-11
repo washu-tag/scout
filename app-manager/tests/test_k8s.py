@@ -44,7 +44,7 @@ def client(monkeypatch, tmp_path):
     ],
 )
 def test_a_transport_failure_arrives_as_an_api_error(client, monkeypatch, exc):
-    """The likeliest failure of all, and the one `except ApiError` used to miss."""
+    """The likeliest failure of all, and the one `except ApiError` has to cover."""
     monkeypatch.setattr(client, "_http", Refusing(exc))
 
     with pytest.raises(ApiError) as caught:

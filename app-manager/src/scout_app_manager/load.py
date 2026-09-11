@@ -51,13 +51,11 @@ log = logging.getLogger(__name__)
 def parse_realm_document(text: str) -> dict:
     """Parse the published base realm, tolerating trailing commas.
 
-    The realm template used to emit an unconditional comma after each
-    conditional identity-provider block, so a realm rendered with any IdP
-    configured ended that array with `,]`. keycloak-config-cli's Jackson parser
-    accepts it and applied such documents happily; Python's json module will
-    not. The template no longer emits one, but the document may have been
-    published by an older deploy, and refusing it would mean the reconciler
-    cannot start on a cluster that is otherwise working.
+    A cluster can be holding a realm whose `identityProviders` array ends `,]`,
+    published by a deploy that rendered one comma per conditional block.
+    keycloak-config-cli's Jackson parser accepts that and imports it happily;
+    Python's json module does not, and refusing it here would mean the
+    reconciler cannot start on a cluster that is otherwise working.
     """
     try:
         return json.loads(text)
@@ -66,8 +64,8 @@ def parse_realm_document(text: str) -> dict:
         parsed = json.loads(repaired)
         log.warning(
             "base realm is not strict JSON (trailing comma before a closing "
-            "bracket); parsed after repair. It predates the template fix; "
-            "re-run the keycloak role to render it again."
+            "bracket); parsed after repair. Re-run the keycloak role, or "
+            "reconcile the realm HelmRelease, to publish it again."
         )
         return parsed
 

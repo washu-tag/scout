@@ -17,7 +17,7 @@ The realm document names its credentials rather than carrying them, which puts
 two obligations here. Every `$(env:...)` it names must resolve to something
 non-empty before the apply, because config-cli installs an unresolved token
 verbatim as a client secret and nothing errors. And a rotation has to be
-noticed some other way, since replacing a credential no longer moves the
+noticed some other way, because replacing a credential does not move the
 document -- that is what the Secrets' resourceVersions are for.
 """
 
@@ -331,7 +331,7 @@ class AppManagerService:
         And the realm has to still be there. Deleting it, or replacing it with
         one nothing has ever imported into, is otherwise invisible from here:
         a converged reconciler with no pending change reports Applied about a
-        document that is no longer in any Keycloak.
+        document that is not in any Keycloak.
         """
         return (
             self.state.base_realm_applied

@@ -75,7 +75,7 @@ def value_of(secret: dict | None, key: str) -> str | None:
 
 def version_of(secret: dict | None) -> str:
     """The Secret's resourceVersion, which moves when and only when its
-    contents do. How a credential rotation is noticed now that rotating one
+    contents do. How a credential rotation is noticed at all: rotating one
     leaves the realm document untouched."""
     if not secret:
         return ""
@@ -197,8 +197,9 @@ class Client:
 
     # --- Secrets --------------------------------------------------------
 
-    # Read only. The reconciler used to write one -- the composed realm -- and
-    # that is a ConfigMap now, so nothing it does needs a Secret write.
+    # Read only. Nothing the reconciler writes is sensitive -- the composed
+    # realm names its credentials rather than carrying them -- so it needs no
+    # Secret write, and is granted none.
 
     def get_secret(self, namespace: str, name: str) -> dict | None:
         return self._get(f"/api/v1/namespaces/{namespace}/secrets/{name}")

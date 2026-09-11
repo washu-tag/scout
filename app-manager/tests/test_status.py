@@ -190,7 +190,7 @@ def test_a_restart_with_an_empty_fragment_dir_refuses_rather_than_retracting(set
 def test_a_restart_does_not_inherit_readiness(setup):
     """The restored fact describes the last process, not this one.
 
-    A reconciler that fails on every pass used to sit Ready on this, which
+    A reconciler failing on every pass would otherwise sit Ready on it, which
     under sole-writer means the deploy gate misses it entirely.
     """
     service, fragments, _ = setup
@@ -208,7 +208,7 @@ def test_a_restart_does_not_inherit_readiness(setup):
 
 
 def test_a_reconciler_that_cannot_read_the_realm_goes_unready(setup):
-    """The Phase B2 deploy: a stale image read a realm that was not there."""
+    """A reconciler that cannot read its input has nothing to be Ready about."""
     service, fragments, client = setup
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
     service.reconcile_once()

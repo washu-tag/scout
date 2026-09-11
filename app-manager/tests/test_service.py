@@ -132,10 +132,10 @@ def test_a_vanished_fragment_keeps_its_realm_objects(setup):
 
 
 def test_an_absent_fragment_does_not_freeze_the_rest_of_the_realm(setup):
-    """One component redeploying used to defer every other realm change.
+    """One component redeploying must not defer every other realm change.
 
-    Worse, a flapping fragment reset the clock, so the freeze had no bound
-    while the pod went on reporting Ready.
+    A flapping fragment resets its own clock, so a freeze that waited on it
+    would have no bound at all while the pod went on reporting Ready.
     """
     service, fragments, client = setup
     path = write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -239,8 +239,8 @@ def test_a_credential_that_blips_does_not_retract_its_client(setup, how):
     """The Secret watch schedules the reconcile straight into this window.
 
     Rejecting the fragment drops it out of the composed realm, and the apply
-    prunes what the realm does not declare -- so a delete-then-create of one
-    Secret used to take a live client with it.
+    prunes what the realm does not declare -- so undamped, a delete-then-create
+    of one Secret takes a live client with it.
     """
     service, fragments, client = setup
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -459,7 +459,8 @@ def test_a_present_but_empty_credential_counts_as_unresolvable(setup):
 
 
 def test_a_binary_credential_counts_as_unresolvable(setup):
-    """It used to raise out of the accessor and stop every realm update."""
+    """Reported as absent, not raised: an exception out of a pure accessor
+    reaches the reconcile loop and stops every realm update."""
     service, _, client = setup
     client.set_secret("scout-core", "keycloak-client-secrets", {"oauth2_proxy": "x"})
     client.secrets[("scout-core", "keycloak-client-secrets")]["data"][
@@ -487,8 +488,8 @@ def test_the_site_hostname_needs_no_secret(setup):
 
 
 def test_rotating_a_credential_re_applies_an_unchanged_document(setup):
-    """The document no longer moves when a credential does, so this is the
-    only thing that would notice."""
+    """The document does not move when a credential does, so the Secret's
+    resourceVersion is the only thing that would notice."""
     service, _, client = setup
     # reconcile_once returns the live State, so snapshot rather than compare
     # the object with itself.
@@ -639,10 +640,11 @@ def test_a_retracted_fragment_stops_being_watched(setup, hello_yaml):
 def test_a_realm_written_by_something_else_is_re_applied(setup):
     """The two-writer window this whole design exists to close.
 
-    `make install-auth` applies the base realm without the reconciler's rails
-    and deletes every fragment-created client. Hash comparison cannot see it:
-    the composed document did not move, so the reconciler used to report the
-    realm up to date while a fragment's client was gone.
+    Something applies the base realm without the reconciler's rails and takes
+    every fragment-created client's grants with it. Hash comparison cannot see
+    that: the composed document has not moved, so without reading the live
+    import checksum the reconciler reports the realm up to date while a
+    fragment's client is broken.
     """
     service, fragments, client = setup
     write_fragment(fragments, "scout-demo", "hello", fragment_yaml("hello"))
@@ -676,9 +678,9 @@ def test_drift_is_still_reported_when_the_repair_fails(setup):
 
 
 def test_a_deleted_realm_is_re_applied(setup):
-    """It used to read as "we do not know", which is the answer for a Keycloak
-    that cannot be reached -- so the reconciler reported Applied and stayed
-    Ready with no realm in Keycloak at all."""
+    """A deleted realm is a different answer from a Keycloak that cannot be
+    reached. Read as "we do not know", it would leave the reconciler reporting
+    Applied and Ready with no realm in Keycloak at all."""
     service, _, client = setup
     service.reconcile_once()
 
