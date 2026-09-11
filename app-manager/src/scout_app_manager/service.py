@@ -5,13 +5,21 @@ Anything that decides something lives here; cli.py prints, loop.py schedules.
 labels what it decided, so the CLI's report and the applied realm cannot
 disagree.
 
+One pass is `_reconcile`, and it is five steps with one decision at the end:
+read the inputs, compose them, report what became of each fragment, measure
+what that adds up to, decide. Start there; everything else in the file is
+answering a question one of those five asks.
+
 Retraction is damped, because a vanished input is indistinguishable from one
 mid-redeploy. A fragment that goes absent keeps its place in the realm from the
 copy last composed, and a Secret that does the same is served from the copy last
 read; both for the grace period, and a fragment is never retracted unless
-discovery has reported a complete sync. The apply is only suppressed when
-absence leaves nothing to compose from, which is a fragment this process never
-saw.
+discovery has reported a complete sync.
+
+Damping is about composing, though, and the apply is held for both of the cases
+where composing from a copy is not enough to apply from one: a fragment absent
+with no copy to compose at all, and a Secret the apply Job will have to read
+for itself.
 
 The realm document names its credentials rather than carrying them, which puts
 two obligations here. Every `$(env:...)` it names must resolve to something
@@ -24,7 +32,7 @@ document -- that is what the Secrets' resourceVersions are for.
 import hashlib
 import logging
 import time
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from . import placeholders
@@ -95,6 +103,33 @@ def referenced_secrets(loaded: list[LoadedFragment]) -> set[str]:
         if item.fragment
         for client in item.fragment.clients
     }
+
+
+@dataclass(frozen=True)
+class Inputs:
+    """What one pass read, before anything was decided about it.
+
+    `discovered` is what is on disk now. `held` is what was in the realm and is
+    not on disk now, and `restored` are the cached copies standing in for
+    however many of those this process has composed before -- which after a
+    restart is none of them. `loaded` is what goes to the composer: both, so a
+    fragment mid-redeploy keeps its realm objects.
+    """
+
+    base: dict
+    base_source_hash: str
+    # The client-secrets Secret's keys that resolve to something. Both the set
+    # the base realm's variables may come from and the set a fragment's derived
+    # variable may not collide with.
+    resolvable: frozenset[str]
+    prior: dict[str, FragmentStatus]
+    discovered: list[LoadedFragment]
+    held: list[FragmentStatus]
+    restored: list[LoadedFragment]
+
+    @property
+    def loaded(self) -> list[LoadedFragment]:
+        return self.discovered + self.restored
 
 
 class AppManagerService:
@@ -396,99 +431,175 @@ class AppManagerService:
         return state
 
     def _reconcile(self) -> State:
+        """One pass: read, compose, report, measure, decide.
+
+        In that order, and nothing before `_decide` chooses anything. `_gather`
+        reads, `_compose` merges, `_report` labels each fragment, `_measure`
+        hashes and compares -- so the whole of what this can do to a realm is
+        the five branches of one short function, and everything above it is
+        answering the questions those branches ask.
+        """
+        inputs = self._gather()
+        result = self._compose(inputs)
+        blocked = self._report(inputs, result)
+        document, unresolved = self._measure(inputs, result)
+        return self._decide(result, document, unresolved, blocked)
+
+    def _gather(self) -> Inputs:
+        """Read every input. Decides nothing.
+
+        The per-reconcile caches are cleared here rather than anywhere later,
+        so a Secret read during this pass is this pass's answer and a rotation
+        is seen on the next one rather than a stale value.
+        """
         self._secrets.clear()
         self._damped.clear()
         prior = prior_installed(self.state)
         discovered = scan(self.settings.fragment_dir)
         held, restored = self._retracting(prior, {str(i.ref) for i in discovered})
-        loaded = discovered + restored
         base, base_source_hash = self.base_source()
-        resolvable = self.client_secret_keys()
+        return Inputs(
+            base=base,
+            base_source_hash=base_source_hash,
+            resolvable=frozenset(self.client_secret_keys()),
+            prior=prior,
+            discovered=discovered,
+            held=held,
+            restored=restored,
+        )
+
+    def _compose(self, inputs: Inputs) -> ComposeResult:
+        """Merge what was read into the base realm, and remember what took.
+
+        The cached copies are what lets a fragment go absent without its realm
+        objects going with it, so one is kept only for what actually composed:
+        a copy that would now be rejected stands in for nothing.
+        """
         result = compose(
-            base,
-            loaded,
+            inputs.base,
+            inputs.loaded,
             self.site(),
             self.resolve_secret,
-            reserved_env=frozenset(resolvable),
+            reserved_env=inputs.resolvable,
         )
         for item in result.accepted:
             self._composed[str(item.ref)] = item
+        return result
 
+    def _report(self, inputs: Inputs, result: ComposeResult) -> list[FragmentStatus]:
+        """Say what became of each fragment; return the ones that block an apply.
+
+        A fragment blocks when it is absent and nothing composed stands in for
+        it. Applying then would prune its realm objects, which is exactly the
+        retraction the grace period defers -- arriving early, with no elapsed
+        clock and no phase to notice it by. Everything else goes through while
+        that clock runs: a base realm change, a rotation, another fragment's
+        edit.
+        """
         reasons = {str(item.ref): why for item, why in result.rejected}
         statuses = [
-            self._status(item, reasons.get(str(item.ref)), prior) for item in discovered
+            self._status(item, reasons.get(str(item.ref)), inputs.prior)
+            for item in inputs.discovered
         ]
-        for status in held:
+        for status in inputs.held:
             status.errors.extend(reasons.get(status.ref, []))
-        statuses.extend(held)
-        # Only absence with nothing to compose from stops the apply. Everything
-        # else -- a base realm change, a rotation -- goes through while the
-        # grace period runs.
-        #
-        # A cached copy that no longer composes is nothing too: applying without
-        # it is exactly the retraction the grace period exists to defer, and it
-        # would happen with no elapsed clock and no phase to notice it by.
-        standing_in = {
-            str(item.ref) for item in restored if str(item.ref) not in reasons
-        }
-        blocked = [h for h in held if h.ref not in standing_in]
-
+        statuses.extend(inputs.held)
+        self.state.fragments = statuses
         self._log_decisions(statuses)
+
+        standing_in = {
+            str(item.ref) for item in inputs.restored if str(item.ref) not in reasons
+        }
+        return [h for h in inputs.held if h.ref not in standing_in]
+
+    def _measure(self, inputs: Inputs, result: ComposeResult) -> tuple[str, list[str]]:
+        """Hash it, read the live realm, and work out what is outstanding.
+
+        Returns the composed document and the variables in it that nothing
+        resolves. Everything else lands on the state, which is what the status
+        document and the metrics are rendered from.
+        """
         document = canonical(result.realm)
-        desired_hash = document_hash(document)
-        base_hash = realm_hash(base)
         bound = {b.name for b in result.bindings.values()}
-        secrets_version = self.secrets_version(
-            [self.settings.client_secrets_secret] + sorted(bound)
-        )
         self._watched_secrets = {
             self.settings.client_secrets_secret,
             self.settings.admin_secret,
-        } | referenced_secrets(loaded)
-        # Everything config-cli will have in its environment: the base realm's
-        # Secret taken wholesale, one variable per fragment client, and the
-        # site hostname every base-realm URL is written against.
-        available = resolvable | set(result.bindings) | {placeholders.SERVER_HOSTNAME}
-        missing = placeholders.unresolved(document, available)
+        } | referenced_secrets(inputs.loaded)
 
-        self.state.fragments = statuses
         self.state.last_reconcile = now()
-        self.state.base_hash = base_hash
-        self.state.base_source_hash = base_source_hash
-        self.state.composed_hash = desired_hash
-        self.state.secrets_version = secrets_version
-        self.state.identical_to_base = desired_hash == base_hash
+        self.state.base_hash = realm_hash(inputs.base)
+        self.state.base_source_hash = inputs.base_source_hash
+        self.state.composed_hash = document_hash(document)
+        self.state.secrets_version = self.secrets_version(
+            [self.settings.client_secrets_secret] + sorted(bound)
+        )
+        self.state.identical_to_base = self.state.composed_hash == self.state.base_hash
+
         read = self.keycloak.read()
         self._observe(read)
         self.state.drift = self._drifted(read)
         self.state.pending_change = (
-            desired_hash != self.state.last_applied_hash
-            or secrets_version != self.state.applied_secrets_version
+            self.state.composed_hash != self.state.last_applied_hash
+            or self.state.secrets_version != self.state.applied_secrets_version
             or self.state.drift
         )
 
+        # Everything config-cli will have in its environment: the base realm's
+        # Secret taken wholesale, one variable per fragment client, and the
+        # site hostname every base-realm URL is written against.
+        available = (
+            set(inputs.resolvable)
+            | set(result.bindings)
+            | {placeholders.SERVER_HOSTNAME}
+        )
+        return document, placeholders.unresolved(document, available)
+
+    def _decide(
+        self,
+        result: ComposeResult,
+        document: str,
+        unresolved: list[str],
+        blocked: list[FragmentStatus],
+    ) -> State:
+        """Five outcomes, in the order their reasons outrank each other.
+
+        Three of them leave the realm exactly as it is, and they are ordered by
+        how little is known: a fragment that has no stand-in, then a credential
+        read from cache, then a variable nothing resolves at all. Then the two
+        ordinary ones.
+        """
         if blocked:
             return self._hold(blocked)
-        # Checked before `missing`, which cannot see it: `resolvable` was read
+        # Before `unresolved`, which cannot see this: `resolvable` was read
         # from the same cached copy, so every variable looks satisfied.
         damped = self._damped & (
-            {self.settings.client_secrets_secret, self.settings.admin_secret} | bound
+            {self.settings.client_secrets_secret, self.settings.admin_secret}
+            | {b.name for b in result.bindings.values()}
         )
         if damped:
             return self._hold_credentials(damped)
-        if missing:
-            return self._refuse_unresolved(missing)
+        if unresolved:
+            return self._refuse_unresolved(unresolved)
         if not self.state.pending_change:
-            self.state.phase = APPLIED if self.state.last_applied_hash else PENDING
-            self.state.last_result = (
-                f"realm is up to date at {(self.state.last_applied_hash or '-')[:19]}"
-            )
-            self.store.save(self.state)
-            return self.state
+            return self._up_to_date()
 
         self.state.phase = PENDING
         self.store.save(self.state)
-        self._apply(result, document, desired_hash, secrets_version)
+        self._apply(result, document)
+        self.store.save(self.state)
+        return self.state
+
+    def _up_to_date(self) -> State:
+        """Nothing to do, and that is a verification rather than a memory.
+
+        Reaching here means the composed document and the live import checksum
+        were both compared against what was applied -- which is what makes this
+        the phase readiness is allowed to count.
+        """
+        self.state.phase = APPLIED if self.state.last_applied_hash else PENDING
+        self.state.last_result = (
+            f"realm is up to date at {(self.state.last_applied_hash or '-')[:19]}"
+        )
         self.store.save(self.state)
         return self.state
 
@@ -689,13 +800,10 @@ class AppManagerService:
         self.store.save(self.state)
         return self.state
 
-    def _apply(
-        self,
-        result: ComposeResult,
-        document: str,
-        desired_hash: str,
-        secrets_version: str,
-    ) -> None:
+    def _apply(self, result: ComposeResult, document: str) -> None:
+        """Publish the composed realm and run the import Job over it."""
+        desired_hash = self.state.composed_hash
+        secrets_version = self.state.secrets_version
         self.applier.publish(document)
         # The Job name keys off both, so a rotation with an unchanged document
         # is a distinct attempt rather than a reused name.
