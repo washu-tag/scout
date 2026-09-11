@@ -27,7 +27,7 @@ import time
 from dataclasses import replace
 from pathlib import Path
 
-from . import substitution
+from . import placeholders
 from .apply import RealmApplier
 from .compose import (
     ComposeResult,
@@ -41,7 +41,8 @@ from .compose import (
 from .k8s import ApiError, Client, value_of, version_of
 from .keycloak import KeycloakAdmin, RealmRead
 from .load import LoadedFragment, parse_realm_document, scan
-from .models import (
+from .settings import Settings
+from .status import (
     APPLIED,
     FAILED,
     HOLDING,
@@ -54,9 +55,11 @@ from .models import (
     RETRACTING,
     FragmentStatus,
     State,
+    StatusStore,
+    age_seconds,
+    now,
+    prior_installed,
 )
-from .settings import Settings
-from .status import StatusStore, age_seconds, now, prior_installed
 
 log = logging.getLogger("app-manager")
 
@@ -421,8 +424,8 @@ class AppManagerService:
         # Everything config-cli will have in its environment: the base realm's
         # Secret taken wholesale, one variable per fragment client, and the
         # site hostname every base-realm URL is written against.
-        available = resolvable | set(result.bindings) | {substitution.SERVER_HOSTNAME}
-        missing = substitution.unresolved(document, available)
+        available = resolvable | set(result.bindings) | {placeholders.SERVER_HOSTNAME}
+        missing = placeholders.unresolved(document, available)
 
         self.state.fragments = statuses
         self.state.last_reconcile = now()

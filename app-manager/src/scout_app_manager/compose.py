@@ -29,13 +29,13 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
-from . import substitution
+from . import placeholders
 from .load import FragmentRef, LoadedFragment
 from .schema import (
     GRANTABLE_GROUPS,
     ClientSpec,
     Fragment,
-    PLACEHOLDER_RE,
+    TEMPLATE_VAR_RE,
     check_unambiguous,
     duration_seconds,
 )
@@ -146,7 +146,7 @@ class Site:
 
 def substitute(text: str, site: Site) -> str:
     values = site.values()
-    return PLACEHOLDER_RE.sub(lambda m: values[m.group(1)], text)
+    return TEMPLATE_VAR_RE.sub(lambda m: values[m.group(1)], text)
 
 
 def check_host(uri: str, site: Site) -> None:
@@ -212,7 +212,7 @@ def effect_of(spec: ClientSpec, site: Site) -> ClientEffect:
         roles=list(spec.roles),
         grants={g: list(r) for g, r in spec.grants.items()},
         secret_source=f"{spec.secretRef.name}/{spec.secretRef.key}",
-        secret_env=substitution.env_name(spec.clientId),
+        secret_env=placeholders.env_name(spec.clientId),
         pkce=spec.pkce,
         lifespans=lifespans,
         app_url=app_url,
@@ -283,7 +283,7 @@ def compose(
             continue
         for spec in loaded.fragment.clients:
             claim_owners.setdefault(spec.clientId, []).append(loaded.ref)
-            env_owners.setdefault(substitution.env_name(spec.clientId), []).append(
+            env_owners.setdefault(placeholders.env_name(spec.clientId), []).append(
                 (loaded.ref, spec.clientId)
             )
 
@@ -334,7 +334,7 @@ def compose(
             # and the apply Job's env would override the Secret's envFrom --
             # installing the fragment's credential on whatever base-realm client
             # names it.
-            env = substitution.env_name(spec.clientId)
+            env = placeholders.env_name(spec.clientId)
             if env in reserved_env:
                 problems.append(
                     f"client {spec.clientId!r} resolves to the credential variable "
@@ -378,7 +378,7 @@ def compose(
             admitted[loaded.ref],
         )
         for spec in loaded.fragment.clients:
-            env = substitution.env_name(spec.clientId)
+            env = placeholders.env_name(spec.clientId)
             result.bindings[env] = SecretBinding(
                 env=env, name=spec.secretRef.name, key=spec.secretRef.key
             )
@@ -474,7 +474,7 @@ def _client_representation(
     # `compose` has already proven there is a non-empty value behind it, and
     # publishes the binding the apply Job needs to put it in config-cli's
     # environment.
-    representation["secret"] = substitution.placeholder(effect.secret_env)
+    representation["secret"] = placeholders.placeholder(effect.secret_env)
     # Always present, empty included. config-cli reads an absent field as "do
     # not manage this", so omitting them when a client has none would mean a
     # redirect URI could be added but never taken away again.

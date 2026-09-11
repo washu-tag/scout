@@ -1,22 +1,22 @@
-"""What the reconciler knows about config-cli's `$(env:...)` substitution."""
+"""Minting the `$(env:...)` names, finding them, and proving they resolve."""
 
 import pytest
 
-from scout_app_manager import substitution
+from scout_app_manager import placeholders
 
 
 def test_finds_every_reference():
     text = '{"a": "$(env:superset)", "b": "https://x.$(env:server_hostname)/y"}'
-    assert substitution.references(text) == {"superset", "server_hostname"}
+    assert placeholders.references(text) == {"superset", "server_hostname"}
 
 
 def test_a_document_with_no_placeholders_needs_nothing():
-    assert substitution.references('{"secret": "hunter2"}') == set()
+    assert placeholders.references('{"secret": "hunter2"}') == set()
 
 
 def test_unresolved_names_what_is_missing():
     text = "$(env:superset) $(env:grafana) $(env:minio)"
-    assert substitution.unresolved(text, {"grafana"}) == ["minio", "superset"]
+    assert placeholders.unresolved(text, {"grafana"}) == ["minio", "superset"]
 
 
 @pytest.mark.parametrize(
@@ -29,8 +29,8 @@ def test_unresolved_names_what_is_missing():
     ],
 )
 def test_env_names_are_identifiers(client_id, expected):
-    assert substitution.env_name(client_id) == expected
-    assert substitution.env_name(client_id).isidentifier()
+    assert placeholders.env_name(client_id) == expected
+    assert placeholders.env_name(client_id).isidentifier()
 
 
 def test_env_names_can_collide():
@@ -39,10 +39,10 @@ def test_env_names_can_collide():
     `-` and `.` are legal in a clientId and illegal in an environment variable,
     so the mapping cannot be injective.
     """
-    assert substitution.env_name("a-b") == substitution.env_name("a.b")
+    assert placeholders.env_name("a-b") == placeholders.env_name("a.b")
 
 
 def test_a_fragment_name_cannot_shadow_a_base_realm_key():
     """The prefix is what keeps the two namespaces apart."""
     base_keys = {"oauth2_proxy", "superset", "launchpad_client", "server_hostname"}
-    assert not any(k.startswith(substitution.FRAGMENT_PREFIX) for k in base_keys)
+    assert not any(k.startswith(placeholders.FRAGMENT_PREFIX) for k in base_keys)

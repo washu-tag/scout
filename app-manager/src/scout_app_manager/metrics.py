@@ -10,8 +10,7 @@ from collections.abc import Iterator
 from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest
 from prometheus_client.core import GaugeMetricFamily, Metric
 
-from .models import INSTALLED, INVALID, REJECTED, RETRACTING, State
-from .status import epoch
+from .status import INSTALLED, INVALID, REJECTED, RETRACTING, State, epoch
 
 STATES = (INSTALLED, INVALID, REJECTED, RETRACTING)
 

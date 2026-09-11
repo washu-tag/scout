@@ -12,17 +12,15 @@ from conftest import (  # noqa: F401
     write_fragment,
 )
 
-from scout_app_manager.models import (
+from scout_app_manager.service import AppManagerService
+from scout_app_manager.status import (
     HOLDING,
     INSTALLED,
     REFUSED,
     RETRACTING,
+    STATUS_KEY,
     FragmentStatus,
     State,
-)
-from scout_app_manager.service import AppManagerService
-from scout_app_manager.status import (
-    STATUS_KEY,
     StatusStore,
     age_seconds,
     from_document,

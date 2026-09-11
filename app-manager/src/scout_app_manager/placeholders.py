@@ -1,19 +1,27 @@
-"""keycloak-config-cli's `$(env:...)` substitution, seen from this side of it.
+"""The `$(env:...)` holes in the realm: naming them, finding them, proving they fill.
 
-The realm document no longer carries credentials; it names them, and config-cli
-resolves each name from its own process environment at import. That buys a
-composed realm anyone can read, hash and diff -- and costs two things this
-module exists to handle.
+Nothing here substitutes anything. keycloak-config-cli does the substituting,
+inside the apply Job, from that container's own environment. This module is the
+side of that contract the reconciler owns:
 
-**An unresolved name is not an error.** config-cli's StringSubstitutor leaves
-`$(env:superset)` alone when nothing sets `superset`, and Keycloak accepts that
-string as a perfectly good client secret. The failure is silent, permanent, and
-identical across every site, so it has to be caught before the apply rather than
-noticed afterwards.
+- **naming**, `env_name` and `placeholder`: the variable a fragment client's
+  credential will arrive in, and the token written into the document in place
+  of the credential itself. The realm names its credentials rather than
+  carrying them, which is what makes a composed realm something anyone can
+  read, hash and diff.
+- **finding**, `references`: every variable a document asks config-cli to
+  resolve.
+- **proving**, `unresolved`: which of those have nothing behind them. This is
+  the reason the module exists at all. config-cli's StringSubstitutor leaves
+  `$(env:superset)` alone when nothing sets `superset`, and Keycloak accepts
+  that string as a perfectly good client secret -- a working-looking client
+  anyone who can read the realm can authenticate as. The failure is silent,
+  permanent, and identical across every site, so it has to be caught before the
+  apply rather than noticed afterwards.
 
-**Substitution reads the whole document**, including the parts a fragment
-wrote. `schema` refuses `$(` anywhere in a fragment for that reason: without it
-a component could put `$(env:oauth2_proxy)` in its own display name and read a
+Substitution reads the whole document, including the parts a fragment wrote.
+`schema` refuses `$(` anywhere in a fragment for that reason: without it a
+component could put `$(env:oauth2_proxy)` in its own display name and read a
 platform client's credential back out of the realm it is allowed to see.
 """
 

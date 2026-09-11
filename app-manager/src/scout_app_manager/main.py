@@ -4,7 +4,7 @@ import logging
 import os
 import threading
 
-from . import api, health, metrics, shutdown, watch
+from . import health, metrics, reload, shutdown, watch
 from .k8s import Client
 from .loop import run_forever
 from .service import AppManagerService
@@ -52,7 +52,7 @@ def main() -> int:
         health.serve(
             settings.port, service.ready, lambda: metrics.render(service.state)
         ),
-        api.serve(settings.reload_port, wake),
+        reload.serve(settings.reload_port, wake),
     ]
     # Fragments arrive by the sidecar; these are the two inputs that do not,
     # and neither is selected by label.

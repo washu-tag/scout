@@ -15,7 +15,7 @@ from scout_app_manager import apply, loop, main
 from scout_app_manager.apply import RealmApplier, apply_job_body
 from scout_app_manager.compose import SecretBinding
 from scout_app_manager.loop import await_discovery
-from scout_app_manager.models import (
+from scout_app_manager.status import (
     APPLIED,
     FAILED,
     HOLDING,

@@ -6,8 +6,8 @@ import httpx2 as httpx
 import pytest
 from conftest import fragment_yaml, setup, write_fragment  # noqa: F401
 
-from scout_app_manager import api, health, loop, metrics
-from scout_app_manager.models import RETRACTING, FragmentStatus
+from scout_app_manager import health, loop, metrics, reload
+from scout_app_manager.status import RETRACTING, FragmentStatus
 
 
 @pytest.fixture
@@ -17,7 +17,9 @@ def reload_server():
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    server = api.ThreadingHTTPServer((api.LOOPBACK, port), api.handler_for(wake))
+    server = reload.ThreadingHTTPServer(
+        (reload.LOOPBACK, port), reload.handler_for(wake)
+    )
     # shutdown() waits out one poll interval, and the default is 0.5s a fixture.
     threading.Thread(target=server.serve_forever, args=(0.01,), daemon=True).start()
     yield f"http://127.0.0.1:{port}", wake
@@ -55,7 +57,7 @@ def test_a_post_carrying_a_payload_does_not_desynchronise_the_connection(
 
 def test_the_reload_endpoint_binds_to_loopback_only():
     """It can cause a realm write."""
-    assert api.LOOPBACK == "127.0.0.1"
+    assert reload.LOOPBACK == "127.0.0.1"
 
 
 def test_a_get_is_refused_so_a_misconfigured_req_method_is_visible(reload_server):

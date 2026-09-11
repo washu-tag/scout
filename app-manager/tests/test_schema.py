@@ -158,9 +158,9 @@ def test_unsafe_redirect_shapes_are_refused(uri):
         load(fragment_yaml(redirectUris=[uri]))
 
 
-def test_unknown_placeholder_is_caught_offline():
+def test_unknown_template_variable_is_caught_offline():
     """Without this a typo becomes a URL nobody meant, resolved silently."""
-    with pytest.raises(ValidationError, match="unknown placeholder"):
+    with pytest.raises(ValidationError, match="unknown template variable"):
         load(fragment_yaml(redirectUris=["https://hello.${realm_domain}/cb"]))
 
 

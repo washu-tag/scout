@@ -9,7 +9,7 @@ from conftest import fragment_yaml, setup, write_fragment  # noqa: F401
 from prometheus_client.parser import text_string_to_metric_families
 
 from scout_app_manager import metrics
-from scout_app_manager.models import INVALID, RETRACTING, FragmentStatus, State
+from scout_app_manager.status import INVALID, RETRACTING, FragmentStatus, State
 
 
 def scrape(text: str) -> dict[tuple[str, frozenset], float]:

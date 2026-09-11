@@ -1,8 +1,14 @@
 """What the two listeners share: HTTP/1.1 framing, one reply shape, no framework.
 
-`api` (loopback, one POST) and `health` (pod IP, probes and metrics) differ in
-their routes and in nothing else, so the reply headers, the request logging and
-the keep-alive body handling live here rather than in two copies.
+`reload` (loopback, one POST) and `health` (every interface, probes and
+metrics) are separate servers because they differ in what may reach them, not
+in what they serve. Everything below that -- the reply headers, the request
+logging, the keep-alive body handling -- is the same for both and lives here
+rather than in two copies.
+
+No framework, because there is nothing here to route: four paths, no request
+bodies to parse, no response models, and no second concurrency model wanted in
+a process that is otherwise threads and blocking calls.
 """
 
 import logging

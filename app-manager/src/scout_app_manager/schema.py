@@ -25,7 +25,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .substitution import OPEN as SUBSTITUTION_OPEN
+from .placeholders import OPEN as PLACEHOLDER_OPEN
 
 API_VERSION = "keycloak.scout.xnat.org/v1alpha1"
 KIND = "KeycloakFragment"
@@ -40,11 +40,16 @@ ROLE_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_:-]{0,62}$")
 CLAIM_RE = re.compile(r"^[a-z][a-z0-9_]{0,30}$")
 DURATION_RE = re.compile(r"^(\d+)([smhd]?)$")
 
-# The closed set of values a fragment may interpolate. Unknown placeholders are
-# a validation error rather than being passed through, so a typo fails offline
+# The closed set of values a fragment may interpolate. Unknown ones are a
+# validation error rather than being passed through, so a typo fails offline
 # instead of producing a URL nobody meant.
+#
+# `${domain}` is the reconciler's own interpolation, resolved at compose time
+# by `compose.substitute`. Not to be confused with `$(env:...)`, which is
+# config-cli's and is resolved inside the apply Job -- see `placeholders`.
+# A fragment may write the first and may not write the second.
 TEMPLATE_VARS = ("domain",)
-PLACEHOLDER_RE = re.compile(r"\$\{([^}]*)\}")
+TEMPLATE_VAR_RE = re.compile(r"\$\{([^}]*)\}")
 
 # Characters where a browser and `urlparse` read different hosts out of the
 # same string. WHATWG ends the authority at a backslash and strips tab, CR and
@@ -109,16 +114,16 @@ def check_no_substitution(model: BaseModel) -> None:
     fragment that wrote `$(env:oauth2_proxy)` into a display name would have
     oauth2-proxy's client secret resolved into a field it is allowed to read
     back. The reconciler writes the fragment's own `$(env:...)` token itself
-    (`substitution.env_name`), so nothing legitimate needs this syntax.
+    (`placeholders.env_name`), so nothing legitimate needs this syntax.
 
     Walks every string rather than the four fields that are reachable today:
     this is the security boundary, and a term added later must not quietly opt
     out of it.
     """
     for where, text in strings(model):
-        if SUBSTITUTION_OPEN in text:
+        if PLACEHOLDER_OPEN in text:
             raise ValueError(
-                f"{where}: {text!r} contains {SUBSTITUTION_OPEN!r}, which the "
+                f"{where}: {text!r} contains {PLACEHOLDER_OPEN!r}, which the "
                 "realm import would resolve as a variable; a fragment may not "
                 "use substitution syntax"
             )
@@ -132,11 +137,11 @@ def duration_seconds(value: str) -> int:
     return amount * {"": 1, "s": 1, "m": 60, "h": 3600, "d": 86400}[unit]
 
 
-def check_placeholders(text: str, where: str) -> None:
-    for name in PLACEHOLDER_RE.findall(text):
+def check_template_vars(text: str, where: str) -> None:
+    for name in TEMPLATE_VAR_RE.findall(text):
         if name not in TEMPLATE_VARS:
             raise ValueError(
-                f"{where}: unknown placeholder ${{{name}}}; "
+                f"{where}: unknown template variable ${{{name}}}; "
                 f"available: {', '.join('${%s}' % v for v in TEMPLATE_VARS)}"
             )
 
@@ -159,7 +164,7 @@ def check_url(value: str, where: str) -> None:
     the reconciler knows which site it is running on; `compose.resolve` does
     that half.
     """
-    check_placeholders(value, where)
+    check_template_vars(value, where)
     check_unambiguous(value, where)
     if not value.startswith("https://"):
         raise ValueError(f"{where}: {value!r} must be an https URL")

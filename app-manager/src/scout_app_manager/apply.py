@@ -9,10 +9,13 @@ from string import Template
 from . import shutdown, yamlio
 from .compose import SecretBinding
 from .k8s import ApiError, Client
-from .models import APPLY_JOB_LABEL
 from .settings import Settings
 
 log = logging.getLogger("app-manager")
+
+# What `_prune` selects on, and what the Job template stamps. Here because
+# this module is the only thing that creates or removes one.
+APPLY_JOB_LABEL = "appmanager.scout.xnat.org/role"
 
 # Deletion is asynchronous, so the name stays taken for a moment after it.
 DELETE_POLL_SECONDS = 1.0
