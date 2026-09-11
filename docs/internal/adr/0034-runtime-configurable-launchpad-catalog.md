@@ -207,11 +207,12 @@ line, so a renderer bug costs a section, not the tree.
 
 v1 visibility is `audience: user | admin`, filtered **server-side** from the session,
 so a non-admin's HTML never contains admin chips. Coarseness is deliberate: the
-launchpad's `groups` claim carries *client roles* (via the `microprofile-jwt` mapper),
-and the launchpad client sets `fullScopeAllowed: false` admitting exactly
-`launchpad-admin` and `launchpad-user` to keep the session cookie under size limits. A
-plugin's own client roles never reach this token, so per-chip gating cannot key on
-them. If finer gating is ever needed, the compatible path is additional
+launchpad's `groups` claim carries *client roles* (via ~~the `microprofile-jwt` mapper~~
+a client-role mapper on the launchpad client, pinned to that client), and the launchpad
+client sets `fullScopeAllowed: false` admitting exactly `launchpad-admin` and
+`launchpad-user` to keep the session cookie under size limits. A plugin's own client
+roles never reach this token, so per-chip gating cannot key on them. If finer gating
+is ever needed, the compatible path is additional
 launchpad-owned client roles surfaced as a `requiredRole` field — deferred until a real
 chip needs it. At any grain, visibility resolves at login (stale up to the session
 lifetime after a Keycloak change, like the existing admin flag), and chip visibility is

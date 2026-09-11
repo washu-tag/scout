@@ -43,12 +43,10 @@ keycloak_default_provider
 keycloak_enable_xnat
 keycloak_github_enabled
 keycloak_internal_url
-keycloak_launchpad_client_id
 keycloak_microsoft_enabled
 keycloak_namespace
 keycloak_realm_name
 keycloak_realm_url
-keycloak_superset_client_id
 lake_bucket
 loki_admin_bucket
 loki_chunks_bucket

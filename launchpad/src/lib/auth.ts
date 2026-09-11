@@ -7,7 +7,8 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
       issuer: process.env.KEYCLOAK_ISSUER!,
-      authorization: { params: { scope: 'openid email profile microprofile-jwt' } },
+      // `profile` is needed for preferred_username
+      authorization: { params: { scope: 'openid email profile' } },
     }),
   ],
   // Cap our next-auth session at the Keycloak SSO session lifetime (8h, set from

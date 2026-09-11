@@ -44,6 +44,23 @@ envFrom: []
 
 # --- Scout realm config (consumed by files/scout-realm.json) ---
 # Values arrive as strings via Flux cluster-vars, so the realm gates on eq "true".
+# The realm's own name, and its displayName titlecased from it. Launchpad hardcodes
+# `scout`, so this is not really a site knob -- it is a value so that the lane which
+# does carry it as one (Ansible's keycloak_realm_name) can pass it rather than
+# disagree with the realm silently.
+realmName: scout
+# Seconds. ssoSession drives the realm's ssoSessionIdleTimeout + ssoSessionMaxLifespan
+# (the Scout-wide 8h session, matched by the oauth2-proxy cookie); accessToken is the
+# end-user access token, set explicitly so consumers that must stay in step with it
+# can read one value. The two client-level ones default to ssoSession, so raising the
+# session raises them with it; trinoServiceToken is deliberately independent (ADR
+# 0022 service principals, ~4h, keeping token minting off the per-query hot path).
+lifespans:
+  ssoSession: '28800'
+  accessToken: '300'
+  temporalToken: ''
+  minioToken: ''
+  trinoServiceToken: '14400'
 # Provision the XNAT client, role, and group binding.
 enableXnat: 'false'
 # Identity providers (creds come via envFrom; see required-secrets.md). The browser
@@ -57,6 +74,9 @@ defaultProvider: github
 # /oauth2/idpresponse from (AWS sites, e.g. superset.<domain>). On-prem uses the
 # oauth2-proxy callback the realm builds from server_hostname, so this can stay empty.
 albOidcHosts: ''
+# Subdomain oauth2-proxy is served on; the realm registers its callback and
+# sign-out URIs against it.
+oauth2ProxySubdomain: auth
 # Realm SMTP (dev default is mailhog; a real site overrides host + from).
 smtp:
   host: mailhog-service.mailhog
@@ -76,9 +96,9 @@ termsLocalizations: {}
 # display_name/options/max_length/value_pattern per attribute; column is the OPA
 # side of the same map (unused here). options set per site turns an attribute into a
 # validated pick-list.
-trinoAttributeFilters:
-  allowed_facilities:
-    column: sending_facility
+# Empty means the default set in _helpers.tpl; a non-empty map replaces it
+# outright rather than merging with it.
+trinoAttributeFilters: {}
 
 secrets: {}
 #  KEYCLOAK_PASSWORD:
@@ -104,16 +124,18 @@ existingSecrets:
 #   key: my-secret-key
 #   envVar: MY_ENV_VAR
 
+# The realm documents this chart publishes into the base realm ConfigMap (named
+# in _helpers.tpl). The data key is the name here plus `.json`, and the Job
+# mounts it under that name, so the key is a contract, not a knob.
+#
+# `file` is a path in the chart, rendered through `tpl`; the Scout realm below
+# is what both lanes install, and files/scout-realm.json is the only copy of it.
+# `inline` is a structure, for a test or a one-off. Adding either here merges
+# with this default and imports both; to replace it, set `scout-realm: null`
+# alongside.
 config:
-  {}
-  # <realm name>:
-  #   inline:
-  #     realm: <realm name>
-  #     clients: []
-  # <realm name>:
-  #   file: <path>
-
-existingConfigSecret: ''
+  scout-realm:
+    file: files/scout-realm.json
 
 # Add additional volumes, e.g. for custom secrets
 extraVolumes: ''
