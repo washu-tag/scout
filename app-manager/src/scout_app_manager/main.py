@@ -4,8 +4,7 @@ import logging
 import os
 import threading
 
-from . import api, metrics, watch
-from .health import serve
+from . import api, health, metrics, shutdown, watch
 from .k8s import Client
 from .loop import run_forever
 from .service import AppManagerService
@@ -47,14 +46,14 @@ def main() -> int:
         settings.fragment_dir,
     )
     wake = threading.Event()
-    threading.Thread(
-        target=serve,
-        args=(settings.port, service.ready, lambda: metrics.render(service.state)),
-        daemon=True,
-    ).start()
-    threading.Thread(
-        target=api.serve, args=(settings.reload_port, wake), daemon=True
-    ).start()
+    # The loop parks on `wake`, so a stop has to ring it to be noticed.
+    shutdown.install(wake)
+    listeners = [
+        health.serve(
+            settings.port, service.ready, lambda: metrics.render(service.state)
+        ),
+        api.serve(settings.reload_port, wake),
+    ]
     # Fragments arrive by the sidecar; these are the two inputs that do not,
     # and neither is selected by label.
     for resource, names in (
@@ -67,6 +66,14 @@ def main() -> int:
             daemon=True,
         ).start()
     run_forever(service, settings, wake)
+    # Stop answering before the process goes, so kubelet sees the socket close
+    # rather than a connection that opens and then dies mid-reply. The watches
+    # are left to the interpreter: they are daemon threads parked on a socket
+    # read no signal reaches, and nothing depends on how they end.
+    for listener in listeners:
+        listener.shutdown()
+        listener.server_close()
+    log.info("stopped")
     return 0
 
 

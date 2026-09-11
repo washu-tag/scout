@@ -192,7 +192,7 @@ def drive(monkeypatch, outcomes):
         return outcome
 
     monkeypatch.setattr(watch, "watch_once", fake_watch_once)
-    monkeypatch.setattr(watch.time, "sleep", lambda s: sleeps.append(s))
+    monkeypatch.setattr(watch.shutdown, "sleep", lambda s: sleeps.append(s) or True)
     with pytest.raises(SystemExit):
         watch.run_forever(
             FakeStream([]), "scout-core", "secrets", watched(), threading.Event()

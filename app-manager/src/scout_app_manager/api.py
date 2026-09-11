@@ -1,6 +1,11 @@
-"""
-Exposes POST /reload API endpoint to the sidecar's REQ_URL,
-so new files can cause immediate realm refresh.
+"""The loopback listener: POST /reload, the discovery sidecar's doorbell.
+
+Its own server rather than a route on the health listener, because the two
+differ in the one thing a route cannot express -- what may reach them. A POST
+here triggers a realm write, so it binds 127.0.0.1 and the sidecar, which
+shares this pod's network namespace, is the only thing that can call it. The
+health listener binds every interface for kubelet and Prometheus. Merging them
+would publish the write trigger to anything that can route to the pod.
 """
 
 import logging
@@ -37,6 +42,9 @@ def handler_for(wake: threading.Event) -> type[BaseHTTPRequestHandler]:
     return Handler
 
 
-def serve(port: int, wake: threading.Event) -> None:
+def serve(port: int, wake: threading.Event) -> ThreadingHTTPServer:
+    """Start the listener on a background thread and return it, to stop later."""
+    server = ThreadingHTTPServer((LOOPBACK, port), handler_for(wake))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
     log.info("reload endpoint on %s:%s%s", LOOPBACK, port, RELOAD_PATH)
-    ThreadingHTTPServer((LOOPBACK, port), handler_for(wake)).serve_forever()
+    return server

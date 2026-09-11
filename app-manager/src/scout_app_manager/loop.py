@@ -6,6 +6,7 @@ import time
 
 import httpx2 as httpx
 
+from . import shutdown
 from .service import AppManagerService
 from .settings import Settings
 
@@ -37,7 +38,8 @@ def await_discovery(settings: Settings) -> bool:
         if probe_discovery(settings):
             log.info("discovery sidecar reports its initial sync is complete")
             return True
-        time.sleep(1)
+        if not shutdown.sleep(1):
+            return False
     log.error(
         "discovery sidecar was not ready within %ss; reconciling, but nothing "
         "will be retracted until it reports a complete sync",
@@ -66,8 +68,9 @@ def next_wait(service: AppManagerService, settings: Settings) -> float:
 def run_forever(
     service: AppManagerService, settings: Settings, wake: threading.Event
 ) -> None:
+    """Reconcile until asked to stop, between passes rather than during one."""
     service.state.discovery_synced = await_discovery(settings)
-    while True:
+    while not shutdown.requested.is_set():
         if not service.state.discovery_synced:
             service.state.discovery_synced = probe_discovery(settings)
         try:
@@ -77,5 +80,6 @@ def run_forever(
         # One request per resource written, so let the burst land before acting.
         if wake.wait(next_wait(service, settings)):
             wake.clear()
-            time.sleep(settings.debounce_seconds)
+            shutdown.sleep(settings.debounce_seconds)
             wake.clear()
+    log.info("reconcile loop stopped; the realm stays as it was last applied")

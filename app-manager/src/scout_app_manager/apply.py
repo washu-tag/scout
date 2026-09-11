@@ -6,7 +6,7 @@ import urllib.parse
 from importlib import resources
 from string import Template
 
-from . import yamlio
+from . import shutdown, yamlio
 from .compose import SecretBinding
 from .k8s import ApiError, Client
 from .models import APPLY_JOB_LABEL
@@ -17,6 +17,7 @@ log = logging.getLogger("app-manager")
 # Deletion is asynchronous, so the name stays taken for a moment after it.
 DELETE_POLL_SECONDS = 1.0
 DELETE_TIMEOUT_SECONDS = 60.0
+POLL_SECONDS = 2.0
 
 
 def _finished(job: dict) -> bool:
@@ -124,7 +125,8 @@ class RealmApplier:
         while self.client.get_job(self.namespace, name) is not None:
             if time.monotonic() >= deadline:
                 return False
-            time.sleep(DELETE_POLL_SECONDS)
+            if not shutdown.sleep(DELETE_POLL_SECONDS):
+                return False
         return True
 
     def _body(self, name: str, bindings: dict[str, SecretBinding]) -> dict:
@@ -174,6 +176,13 @@ class RealmApplier:
         return lingering
 
     def _wait(self, name: str) -> tuple[bool, str]:
+        """Watch the Job to its verdict, or stop waiting when the process does.
+
+        An abandoned wait leaves the import running -- it is a pod of its own --
+        and the next process finds it by name and waits on that same Job rather
+        than starting a second one. Holding the pod open for it would only run
+        down the termination grace and end in SIGKILL.
+        """
         deadline = time.monotonic() + self.settings.job_timeout_seconds
         while time.monotonic() < deadline:
             job = self.client.get_job(self.namespace, name)
@@ -186,5 +195,6 @@ class RealmApplier:
                         f"{_failure_reason(job)}; run `kubectl logs -n "
                         f"{self.namespace} job/{name}` for the detail"
                     )
-            time.sleep(2)
+            if not shutdown.sleep(POLL_SECONDS):
+                return False, f"{name} was still running when this process stopped"
         return False, f"timed out after {self.settings.job_timeout_seconds}s"

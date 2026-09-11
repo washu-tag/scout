@@ -17,9 +17,9 @@ names.
 import json
 import logging
 import threading
-import time
 from collections.abc import Callable, Iterator
 
+from . import shutdown
 from .k8s import ApiError, Client
 
 log = logging.getLogger("app-manager")
@@ -73,6 +73,8 @@ def watch_once(
         read_timeout=READ_TIMEOUT_SECONDS,
     ) as lines:
         for event in _events(lines):
+            if shutdown.requested.is_set():
+                break
             obj = event.get("object") or {}
             meta = obj.get("metadata") or {}
             version = meta.get("resourceVersion") or version
@@ -112,11 +114,13 @@ def run_forever(
     version = ""
     wait = backoff
     try:
-        while True:
+        while not shutdown.requested.is_set():
             try:
                 version = watch_once(client, namespace, resource, names, wake, version)
                 wait = backoff
             except Exception as exc:
+                if shutdown.requested.is_set():
+                    break
                 # Which failure it was does not change what to do about it, and
                 # a stale resourceVersion is the one a retry cannot carry
                 # forward.
@@ -124,14 +128,18 @@ def run_forever(
                     "%s watch dropped (%s); restarting in %ss", resource, exc, wait
                 )
                 version = ""
-                time.sleep(wait)
+                shutdown.sleep(wait)
                 wait = min(wait * 2, MAX_BACKOFF_SECONDS)
                 continue
-            time.sleep(backoff)
+            shutdown.sleep(backoff)
     finally:
-        # Nothing should end this thread. If something does, the reconciler
-        # keeps working off the resync floor and the only clue is here.
-        log.error(
-            "the %s watch has stopped; changes now wait out the resync floor",
-            resource,
-        )
+        if shutdown.requested.is_set():
+            log.info("the %s watch stopped with the process", resource)
+        else:
+            # Nothing else should end this thread. If something does, the
+            # reconciler keeps working off the resync floor and the only clue
+            # is here.
+            log.error(
+                "the %s watch has stopped; changes now wait out the resync floor",
+                resource,
+            )
