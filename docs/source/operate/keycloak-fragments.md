@@ -88,9 +88,8 @@ $ kubectl exec -n scout-core deployment/scout-app-manager -- scout-app-manager s
 `status` reads that document — it does not reconcile — and adds each fragment's realm
 effect recomputed from disk: the clients, their resolved redirect URIs, whether PKCE is
 enforced, the roles, and who the grants reach. It also flags a fragment edited since the
-last apply. `scout-app-manager reconcile` does write, and exists as break-glass only;
-running it puts a second writer on the realm, which is what the single-writer design
-exists to prevent.
+last apply. Every subcommand is read-only; the running reconciler is the only thing that
+writes, and it re-reads everything at least once every `app_manager_resync_seconds`.
 
 The pod log carries the same decisions (`INSTALLED`, `EXCLUDED` with the reason, `HOLDING`,
 `RETRACTED`, the composed realm's hash, and each config-cli Job's outcome), and
@@ -168,10 +167,10 @@ liveImportChecksum:    ffffffff...
 driftDetected:         true
 ```
 
-A mismatch forces an apply, which puts the realm back. Nothing in a normal Scout deploy
-writes the realm any more — that is the point of the reconciler being the only writer — so
-drift now means either the [break-glass path](#break-glass-applying-the-base-realm-without-the-reconciler)
-below or a hand edit through the admin console. Either way, the next reconcile undoes it.
+A mismatch forces an apply, which puts the realm back. Nothing in a Scout deploy writes the
+realm — that is the point of the reconciler being the only writer — so drift means a hand
+edit through the admin console, or a config-cli run someone started themselves. Either way,
+the next reconcile undoes it.
 
 Two coarser cases count as drift too, and both are repaired the same way: the realm has
 been **deleted**, or it exists but carries no import checksum at all, meaning
@@ -193,37 +192,24 @@ not, and cannot: the live import checksum is a Keycloak read rather than a Kuber
 event, so a realm written by something else is repaired within
 `app_manager_resync_seconds` (default 60).
 
-## Break-glass: applying the base realm without the reconciler
+## There is no second way to write the realm
 
-The reconciler being the only writer is a policy, not a structural impossibility. If it is
-broken and the platform's own clients have to come back, set in your inventory:
+Nothing but the reconciler applies a realm. The charts in both lanes render the base realm
+document and publish it to a ConfigMap; no Job, no flag, and no inventory variable turns
+that into an import.
 
-```yaml
-keycloak_apply_realm_directly: true
-```
+That is deliberate. A base-realm-only apply is not a smaller version of the real thing: it
+keeps a fragment's client, roles, credential and scope-mappings under `no-delete`, but it
+prunes the `scout-user` / `scout-admin` grants on those roles anyway — config-cli prunes a
+group's client-role map even under `no-delete`. Every fragment app's users would keep
+logging in and lose their permissions, surfacing as a 403 with nothing in any log. A
+mechanism whose failure mode is that is worse than not having it.
 
-and run `make install-auth`. That turns the config-cli Job back on as a Helm hook, so the
-play waits for the import and fails if it fails.
-
-Know what you get, because it is not the whole realm:
-
-- **The base realm only.** A client that a component ships as a fragment is not updatable
-  while this is the writer — the Job has never seen that fragment.
-- **A fragment's client survives, its roles do not.** The break-glass Job passes
-  `import.managed.*=no-delete` in both lanes, which keeps a fragment's client, its roles,
-  its credential and its scope-mappings. It does **not** keep the `scout-user` /
-  `scout-admin` grants on those roles: config-cli prunes a group's client-role map even
-  under `no-delete`. So users of a fragment app can still log in and will have no
-  permissions, which usually surfaces as a 403 with nothing in any log.
-- **Nothing is removed.** All-`no-delete` also means a brokered identity provider taken
-  out of the inventory stays live until the reconciler applies again. The reconciler's own
-  Job runs `identity-provider: full`, because the realm document is authoritative for
-  those; this one is not authoritative for anything.
-
-Both are temporary. Once the reconciler is healthy it sees the import checksum has moved,
-re-applies, and restores the grants — measured at 32s from the break-glass Job finishing.
-**Set the flag back to `false` once the incident is over**, or the next `make install-auth`
-will do the same thing again.
+So the reconciler is platform infrastructure on the same footing as Keycloak itself: if it
+is down the realm is frozen, exactly as it would be if Keycloak were down, and the fix is
+to get it running rather than to route around it. A reconciler outage on its own changes
+nothing about a working realm — every service goes on authenticating against what was last
+applied.
 
 ---
 

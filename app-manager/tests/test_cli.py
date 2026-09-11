@@ -14,9 +14,8 @@ from scout_app_manager import cli
 
 @pytest.fixture
 def in_pod(setup, monkeypatch):  # noqa: F811
-    """`status` and `reconcile` run inside the pod; stand in for that wiring."""
+    """`status` runs inside the pod; stand in for that wiring."""
     service, fragments, _ = setup
-    monkeypatch.setattr(cli, "build_service", lambda: service)
     monkeypatch.setattr(cli, "build_store", lambda: (service.settings, service.store))
     return service, fragments
 
@@ -200,6 +199,8 @@ def test_status_flags_a_fragment_edited_since_the_last_apply(in_pod, capsys):
     assert "differs; not yet applied" in capsys.readouterr().out
 
 
-def test_reconcile_once_reports_the_result(in_pod, capsys):
-    assert cli.main(["reconcile"]) == 0
-    assert "reconciled at" in capsys.readouterr().out
+def test_no_subcommand_can_write_the_realm(capsys):
+    """Single writer (ADR 0037): the CLI must not be a second one."""
+    with pytest.raises(SystemExit):
+        cli.main(["reconcile"])
+    assert "invalid choice" in capsys.readouterr().err

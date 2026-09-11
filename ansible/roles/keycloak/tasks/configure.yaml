@@ -39,7 +39,8 @@
       {{ keycloak_client_secrets | dict2items | rejectattr('value') | map(attribute='key') | list }}
 
 # The realm JSON carries `$(env:...)` tokens and no credentials. The
-# credentials live here, and reach config-cli through the Job environment.
+# credentials live here, and reach config-cli through the app manager's apply
+# Job environment.
 - name: Create Secret for Keycloak client secrets
   delegate_to: localhost
   no_log: true
@@ -59,11 +60,10 @@
   ansible.builtin.set_fact:
     keycloak_config_cli_values: "{{ lookup('template', 'keycloak-config-cli-values.yaml.j2') | from_yaml }}"
 
-# keycloak_config_hash is applied to the job to force helm to render it
-# whenever the underlying realm or secrets have changed.
-# (helm-diff would be able to tell that the realm JSON has changed and would
-# make helm render the job, but it can't see when the secrets have changed since
-# they are applied outside the chart.)
+# Annotated onto the published realm ConfigMap, so `kubectl get cm
+# keycloak-base-realm -o yaml` says which realm content and which client
+# secrets this deploy rendered it from. The secrets are applied outside the
+# chart, so nothing else in the object records them.
 - name: Stamp the values with a config hash
   ansible.builtin.set_fact:
     keycloak_config_cli_values: >-
@@ -91,7 +91,7 @@
     name: keycloak-config
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
-- name: Run Keycloak Config CLI
+- name: Publish the base realm document
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart

@@ -6,9 +6,10 @@ deployed. It reads a rendered chart, a ConfigMap or a bare fragment, from
 files or stdin, so `helm template . | scout-app-manager validate -` works
 through `docker run -i` and `kubectl exec -i` alike.
 
-`status` and `reconcile` need the cluster, so they are meant to be run inside
-the pod (`kubectl exec`). `status` only reads. `reconcile` writes, and is
-break-glass only: it is a second process against one realm.
+`status` needs the cluster, so it is meant to be run inside the pod
+(`kubectl exec`). Every subcommand here only reads: the running reconciler is
+the realm's only writer (ADR 0037), and a second process that could apply one
+is exactly what that design forbids.
 """
 
 import argparse
@@ -39,19 +40,11 @@ def main(argv: list[str] | None = None) -> int:
         help="the site's platform signout URI (default: derived from --domain)",
     )
 
-    # No loop mode to select: looping is what the service does, and a second
-    # looping writer is the thing ADR 0037 exists to prevent.
-    sub.add_parser(
-        "reconcile", help="break-glass: run one reconcile, which may write the realm"
-    )
-
     sub.add_parser("status", help="what is installed, and what is broken (read-only)")
 
     args = parser.parse_args(argv)
     if args.command == "validate":
         return _validate(args)
-    if args.command == "reconcile":
-        return _reconcile()
     return _status()
 
 
@@ -137,16 +130,8 @@ def _validate(args: argparse.Namespace) -> int:
 # --- cluster needed --------------------------------------------------------
 
 
-def build_service():
-    from .k8s import Client
-    from .service import AppManagerService
-
-    logging.basicConfig(level="WARNING", format="%(levelname)-7s %(message)s")
-    return AppManagerService(Settings(), Client())
-
-
 def build_store():
-    """The read-only half of the cluster wiring, for `status`."""
+    """The read-only cluster wiring, for `status`."""
     from .k8s import Client
     from .status import StatusStore
 
@@ -155,13 +140,6 @@ def build_store():
     client = Client()
     namespace = settings.namespace or client.namespace()
     return settings, StatusStore(client, namespace, settings.status_configmap)
-
-
-def _reconcile() -> int:
-    service = build_service()
-    state = service.reconcile_once()
-    print(f"reconciled at {state.last_reconcile}: {state.last_result}")
-    return 0
 
 
 def _status() -> int:

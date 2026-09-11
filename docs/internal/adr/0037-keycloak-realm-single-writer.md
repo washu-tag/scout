@@ -75,15 +75,17 @@ Exactly what that looks like—whether the whole realm update is stopped, whethe
 
 As fragments come in, they are validated before they are applied. If a single fragment is broken or invalid, it should be left off while the rest of the apply continues. This is the same approach taken by ADR 0034 for the launchpad chips: a single broken chip should not prevent the whole page from rendering.
 
-### In case of emergency the base realm can still be applied directly
+### ~~In case of emergency the base realm can still be applied directly~~
 
-The single-writer stance is a _policy_, not a structural impossibility. We can keep the existing `keycloak-config-cli` Job in the realm chart behind a default-`false` flag. If for whatever reason the reconciler is not functioning properly and we have some need to change the base realm configuration, we can flip that switch and deploy the chart to directly apply the base realm. In that way the core Scout services can still be updated through a reconciler outage. 
+~~The single-writer stance is a _policy_, not a structural impossibility. We can keep the existing `keycloak-config-cli` Job in the realm chart behind a default-`false` flag. If for whatever reason the reconciler is not functioning properly and we have some need to change the base realm configuration, we can flip that switch and deploy the chart to directly apply the base realm. In that way the core Scout services can still be updated through a reconciler outage.~~
 
-Note: A reconciler outage does not change anything about the realm. If the reconciler went out and we didn't need to make any changes, all other services would continue working perfectly fine. This "emergency" scenario only exists for the case where the reconciler is not working _and_ we need to update the base realm.
+~~Note also: any pluggable app services which require clients published in fragments are not guaranteed to work in this emergency scenario, because the chart only has access to the base realm. Applying the base realm outside of the reconciler will not delete fragment clients or roles, but the `scout-user` / `scout-admin` role grants are on a centralized part of the realm and will be wiped. That will leave a pluggable app's client defined and able to mint tokens, but the tokens will carry no roles so will be rejected by the app service. The fragments continue to exist, however, so once the reconciler comes back into working order it will repopulate these grants into the realm.~~
 
-Note also: any pluggable app services which require clients published in fragments are not guaranteed to work in this emergency scenario, because the chart only has access to the base realm. Applying the base realm outside of the reconciler will not delete fragment clients or roles, but the `scout-user` / `scout-admin` role grants are on a centralized part of the realm and will be wiped. That will leave a pluggable app's client defined and able to mint tokens, but the tokens will carry no roles so will be rejected by the app service.
+**Struck during implementation. There is no break-glass path, and the flag, the Job and the docs for it were removed.** Measuring the escape hatch is what killed it: on dev03 a base-only apply left every fragment client minting tokens with an empty role claim, because `group: no-delete` does not stop config-cli pruning a group's `clientRoles` map. An emergency mechanism whose observable effect is "every pluggable app 403s with nothing in any log" is worse than no mechanism, and keeping it meant a second writer had to stay expressible in both lanes, in the chart, and in the reconciler's own reasoning about whose import checksum it is looking at.
 
-The fragments continue to exist, however, so once the reconciler comes back into working order it will repopulate these grants into the realm.
+Single writer is therefore structural, not policy. The reconciler is platform infrastructure on the same footing as Keycloak: if it is down the realm is frozen, and the fix is to get it running.
+
+The standing note survives the strike, because it is what makes that acceptable: a reconciler outage does not change anything about the realm. If the reconciler goes out and nothing needs to change, every service goes on working against the realm that was last applied. The emergency case only ever arose when the reconciler was broken _and_ the base realm had to change at the same time.
 
 ## Consequences
 
@@ -99,7 +101,7 @@ Once this API becomes more stable we may move towards using it. But for now we c
 
 ## Supersedes
 
-- **ADR 0031 §2 ("One-off operations become Jobs with dependencies")** — specifically its closing claim that "the keycloak-config-cli realm import is already a Helm-hooked Job and doesn't change"; the import becomes reconciler-driven and the Helm hook becomes the break-glass path.
+- **ADR 0031 §2 ("One-off operations become Jobs with dependencies")** — specifically its closing claim that "the keycloak-config-cli realm import is already a Helm-hooked Job and doesn't change"; the import becomes reconciler-driven and the Helm hook is removed outright.
 - **ADR 0026** — the description of the `xnat` client's lifecycle as a block in the realm template gated on `enable_xnat`; the client's provenance becomes a fragment shipped by the XNAT chart. Its consequence about orphaned XNAT *users* stands.
 
 ## Related

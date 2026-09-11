@@ -97,8 +97,7 @@ class RealmApplier:
         every reconcile. A Job that has already succeeded or failed is a
         previous attempt's verdict: waiting on it again would replay a stale
         failure for the whole of the Job's TTL, long after Keycloak came back.
-        An unfinished one is a live apply -- possibly a break-glass reconcile's
-        -- and is waited on instead.
+        An unfinished one is a live apply, and is waited on instead.
         """
         job = self.client.get_job(self.namespace, name)
         if job is None or not _finished(job):
