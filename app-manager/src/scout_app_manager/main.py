@@ -34,8 +34,8 @@ def main() -> int:
         format="%(asctime)s %(levelname)-7s %(name)s %(message)s",
     )
     if level != "DEBUG":
-        # A reconcile is a dozen requests and they now run every minute, so at
-        # INFO the client's per-request line buries the reconciler's own.
+        # A reconcile is a dozen requests. At INFO the client's per-request
+        # line buries the reconciler's own.
         logging.getLogger("httpx2").setLevel(logging.WARNING)
     settings = Settings()
     client = Client()
