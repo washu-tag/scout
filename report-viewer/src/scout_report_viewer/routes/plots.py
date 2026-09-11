@@ -146,6 +146,52 @@ def _reject_bad_legend_bind(node: Any) -> None:
             _reject_bad_legend_bind(item)
 
 
+# The type names Vega-Lite knows. A model that reaches for the shorthand writes
+# one of these as the key instead of as the value of `type`.
+_TYPE_NAMES: frozenset[str] = frozenset(
+    {"quantitative", "ordinal", "nominal", "temporal", "geojson"}
+)
+
+
+def _reject_untyped_channels(node: Any) -> None:
+    """An encoding channel with a `field` needs an explicit `"type"`.
+
+    `{"field": "n", "quantitative": true}` is not Vega-Lite. The unknown key is
+    ignored, the channel is left untyped, and the chart compiles and renders -
+    wrongly, with counts drawn as a discrete axis - so neither the renderer nor
+    `_reject_uncompilable_spec` catches it.
+    """
+    if isinstance(node, dict):
+        encoding = node.get("encoding")
+        if isinstance(encoding, dict):
+            for channel, definition in encoding.items():
+                entries = definition if isinstance(definition, list) else [definition]
+                for entry in entries:
+                    if not isinstance(entry, dict) or "type" in entry:
+                        continue
+                    if not isinstance(entry.get("field"), str):
+                        continue
+                    shorthand = sorted(_TYPE_NAMES & set(entry))
+                    hint = (
+                        f'; write "type": "{shorthand[0]}" rather than '
+                        f'"{shorthand[0]}" as a key'
+                        if shorthand
+                        else ""
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=(
+                            f"encoding channel {channel!r} names a field but has "
+                            f'no "type"{hint}'
+                        ),
+                    )
+        for value in node.values():
+            _reject_untyped_channels(value)
+    elif isinstance(node, list):
+        for item in node:
+            _reject_untyped_channels(item)
+
+
 def _spec_transform_outputs(node: Any) -> set[str]:
     """Field names a `transform` introduces - not expected among SQL columns.
     `aggregate`/`joinaggregate`/`window` nest their `as` one level deeper,
@@ -248,6 +294,7 @@ async def _validate_spec(spec: dict[str, Any]) -> None:
             detail="vega_lite_spec needs a 'mark' (or layer/facet/concat/repeat)",
         )
     _reject_bad_legend_bind(spec)
+    _reject_untyped_channels(spec)
     await _reject_uncompilable_spec(spec)
 
 

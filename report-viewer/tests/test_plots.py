@@ -214,6 +214,90 @@ def test_a_legend_bind_object_is_refused(client, auth_headers, fake_trino):
     assert "bind" in r.json()["detail"]
 
 
+def test_a_channel_using_the_type_shorthand_is_refused(
+    client, auth_headers, fake_trino
+):
+    """`{"quantitative": true}` compiles and renders, so only this check sees it."""
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {"field": "modality", "nominal": True},
+            "y": {"field": "n", "quantitative": True},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    detail = r.json()["detail"]
+    assert "type" in detail
+    assert "nominal" in detail
+
+
+def test_a_channel_with_a_field_and_no_type_is_refused(
+    client, auth_headers, fake_trino
+):
+    spec = {"mark": "bar", "encoding": {"x": {"field": "modality"}}}
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    assert "type" in r.json()["detail"]
+
+
+def test_an_untyped_channel_inside_a_layer_is_refused(client, auth_headers, fake_trino):
+    spec = {
+        "layer": [
+            {
+                "mark": "bar",
+                "encoding": {"x": {"field": "modality", "type": "nominal"}},
+            },
+            {"mark": "line", "encoding": {"y": {"field": "n", "quantitative": True}}},
+        ]
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    assert "type" in r.json()["detail"]
+
+
+def test_a_value_only_channel_needs_no_type(client, auth_headers, fake_trino):
+    """`opacity` carries a condition and a value, never a field - leave it alone."""
+    fake_trino(["modality", "n"], [{"modality": "CT", "n": 1}])
+    fake_trino(["n"], [{"n": 1}])
+    spec = {
+        "mark": "bar",
+        "params": [
+            {
+                "name": "pick",
+                "select": {"type": "point", "fields": ["modality"]},
+                "bind": "legend",
+            }
+        ],
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "n", "type": "quantitative"},
+            "opacity": {"condition": {"param": "pick", "value": 1}, "value": 0.2},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 200
+
+
+def test_a_sort_by_another_field_needs_no_type(client, auth_headers, fake_trino):
+    """`sort` nests a field inside a channel; only the channel itself is checked."""
+    fake_trino(["modality", "n"], [{"modality": "CT", "n": 1}])
+    fake_trino(["n"], [{"n": 1}])
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {
+                "field": "modality",
+                "type": "nominal",
+                "sort": {"field": "n", "op": "sum"},
+            },
+            "y": {"field": "n", "type": "quantitative"},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 200
+
+
 def test_a_spec_that_fails_to_render_is_refused(client, auth_headers, fake_trino):
     spec = {"mark": {"point": {"size": 100}}, "encoding": {}}
     r = _create(client, auth_headers, spec=spec)
