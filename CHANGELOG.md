@@ -1,5 +1,24 @@
 # Changelog
 
+## [5.0.0](https://github.com/washu-tag/scout/compare/v4.3.0...v5.0.0) (2026-09-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* **keycloak:** Swap realm source from ansible to chart + do not render client secrets into template ([#732](https://github.com/washu-tag/scout/issues/732))
+
+### Features
+
+* **deploy:** Postgres-only data tier (RDS in aws) + Temporal on Postgres ([#719](https://github.com/washu-tag/scout/issues/719)) ([3f9fddf](https://github.com/washu-tag/scout/commit/3f9fddf7810cb8b1b58798892ca96680a310ea4a))
+* **keycloak:** Swap realm source from ansible to chart + do not render client secrets into template ([#732](https://github.com/washu-tag/scout/issues/732)) ([864e091](https://github.com/washu-tag/scout/commit/864e0915a7424c3cb069ee55ca312ba11905987f))
+
+
+### Bug Fixes
+
+* **chat:** fix dropped tool calls and untyped charts, and move legend wiring server-side ([#736](https://github.com/washu-tag/scout/issues/736)) ([63161d2](https://github.com/washu-tag/scout/commit/63161d2c7f4cd03468112d3f200f63c6422ee1a9))
+* **ci:** scan every image on the release PR ([#726](https://github.com/washu-tag/scout/issues/726)) ([fb2f3f7](https://github.com/washu-tag/scout/commit/fb2f3f76f620caf3fe3a39f36e753114dd84b11e))
+* **ci:** skip verify-cosign-pubkey on Dependabot PRs ([#728](https://github.com/washu-tag/scout/issues/728)) ([93c6720](https://github.com/washu-tag/scout/commit/93c6720f1ba763b241a04e441686159c5feb55a6))
+
 ## [4.3.0](https://github.com/washu-tag/scout/compare/v4.2.0...v4.3.0) (2026-09-08)
 
 
