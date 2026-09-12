@@ -17,6 +17,7 @@ import {
 import {
   activeFilterCount,
   downloadCsv,
+  exportSearchToSuperset,
   filterRows,
   friendlyError,
   getSearch,
@@ -83,6 +84,11 @@ export default function SearchDetailPage() {
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const colPickerRef = useRef<HTMLDivElement>(null);
+  // Issue #628 PoC.
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportedLink, setExportedLink] = useState<string | null>(null);
+  const [copyFailed, setCopyFailed] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
@@ -622,6 +628,59 @@ export default function SearchDetailPage() {
               </button>
               <button
                 type="button"
+                disabled={exporting}
+                onClick={async () => {
+                  setExporting(true);
+                  setExportError(null);
+                  setExportedLink(null);
+                  try {
+                    const result = await exportSearchToSuperset(searchId);
+                    const url = result.dashboard_url ?? result.explore_url;
+                    if (window.self !== window.top) {
+                      // Embedded in OWUI's chat iframe: OWUI's own frontend
+                      // (not something Scout configures) controls that
+                      // iframe's sandbox attribute, and any new-browsing-
+                      // context creation triggered from inside it - script
+                      // click or real click alike - can be blocked outright
+                      // by the target's Cross-Origin-Opener-Policy
+                      // (ERR_BLOCKED_BY_RESPONSE / "blocked from loading in a
+                      // popup opened by a sandboxed iframe"). A tab the user
+                      // opens themselves is a fresh browsing context
+                      // unrelated to the iframe, so copy-to-clipboard is the
+                      // one path guaranteed to work here.
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        setCopyFailed(false);
+                      } catch {
+                        // Sandboxed iframes often lack allow-clipboard-write,
+                        // so this fails silently more often than not here -
+                        // still show the link below, just don't claim it was
+                        // copied when it wasn't.
+                        setCopyFailed(true);
+                      }
+                      setExportedLink(url);
+                    } else {
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.target = '_blank';
+                      link.rel = 'noopener noreferrer';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }
+                  } catch (err) {
+                    setExportError(friendlyError(err, 'exporting this cohort'));
+                  } finally {
+                    setExporting(false);
+                  }
+                }}
+                style={paginationBtn}
+                title="PoC: create a private Superset dashboard scoped to this cohort"
+              >
+                {exporting ? 'Exporting…' : 'Export to Superset'}
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   const next = !iframeExpanded;
                   setIframeExpanded(next);
@@ -643,6 +702,18 @@ export default function SearchDetailPage() {
                 {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
               </button>
             </div>
+            {exportError && (
+              <p style={{ color: 'var(--rv-danger)', margin: '0.25rem 0 0' }}>{exportError}</p>
+            )}
+            {exportedLink && (
+              <p style={{ margin: '0.25rem 0 0' }}>
+                {copyFailed
+                  ? "Couldn't copy automatically (this embedded view may not allow clipboard access)."
+                  : 'Link copied to clipboard.'}{' '}
+                This view is embedded in chat, so open a new browser tab yourself and paste it:{' '}
+                <code>{exportedLink}</code>
+              </p>
+            )}
           </div>
         )
       )}
