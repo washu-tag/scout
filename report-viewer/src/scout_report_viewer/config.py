@@ -57,7 +57,9 @@ class Settings(BaseSettings):
     # Issue #628 PoC: in-cluster URL for Superset's internal
     # /internal/chat-cohort-export endpoint (routes/searches.py). Not the
     # external oauth2-proxy-fronted URL - this call is service-to-service.
-    superset_internal_url: str = "http://superset.scout-analytics.svc.cluster.local:8088"
+    superset_internal_url: str = (
+        "http://superset.scout-analytics.svc.cluster.local:8088"
+    )
 
     # Issue #628 PoC: Superset's own external (browser-facing) URL, used to
     # build the returned explore_url. Superset has its own ingress
