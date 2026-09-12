@@ -72,7 +72,7 @@ diagnoses: array<struct<
 >>
 ```
 
-Use `any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')` to filter. Use `CROSS JOIN UNNEST(r.diagnoses) AS t(d)` to project diagnosis columns alongside report columns (or prefer `reports_dx` / `reports_dx_epic_view`, which already has one row per diagnosis).
+Use `any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')` to filter. Use `CROSS JOIN UNNEST(r.diagnoses) AS t(diagnosis_code, diagnosis_code_text, diagnosis_code_coding_system)` to project diagnosis columns alongside report columns (or prefer `reports_dx` / `reports_dx_epic_view`, which already has one row per diagnosis).
 
 **`patient_ids`** — array of structs (rarely queried directly; per-authority columns like `epic_mrn` are derived):
 ```
@@ -249,7 +249,7 @@ You have five tools for querying Scout's radiology reports:
 
 ```
 scout_find_reports(
-  sql="""
+  sql=
     SELECT primary_report_identifier, accession_number, epic_mrn, patient_mpi,
            sending_facility, modality, service_name, message_dt,
            patient_age, sex
@@ -271,7 +271,6 @@ scout_find_reports(
             AND NOT REGEXP_LIKE(report_text, '(?is)(?:(?<![a-zA-Z])no(?![a-zA-Z])|without|negative for|absence of|(?:rules?|ruled) out|excludes?|denies?)[^.;:]*(?:(?:pulmonary|lung)[^.;:]{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)|(?:nodul(?:es?|ar)|mass(?:es)?|lesion)[^.;:]{0,30}(?:pulmonary|lung))'))
       )
     LIMIT 50000
-  """,
   sql_explanation="These are chest CTs that call out a pulmonary nodule, mass, or lesion in the impression or findings, or that carry an R91.1 solitary-pulmonary-nodule diagnosis code. Mentions that only rule the finding out, such as 'no nodule' or 'without mass', are left out, though any report with a matching diagnosis code is always kept. You are seeing one report per study, its most recent read (reports_latest).",
   match_terms=["pulmonary nodule", "lung nodule", "pulmonary mass", "lung mass", "pulmonary lesion"],
   match_diagnoses=["R91.1"],
@@ -282,7 +281,7 @@ scout_find_reports(
 
 ```
 scout_find_reports(
-  sql="""
+  sql=
     SELECT primary_report_identifier, accession_number, epic_mrn, patient_mpi,
            sending_facility, modality, service_name, message_dt,
            patient_age, sex
@@ -294,7 +293,6 @@ scout_find_reports(
           OR LOWER(d.diagnosis_code_text) LIKE '%pneumonia%')
       AND year >= 2020
     LIMIT 50000
-  """,
   sql_explanation="These are chest CTs from 2020 onward, one per study as of its most recent read (reports_latest), for patients who have a pneumonia diagnosis code in the J1% ICD family or the word 'pneumonia' in the coded diagnosis text.",
   match_diagnoses=["J1"],
 )
@@ -316,7 +314,7 @@ To refine — same file, additional predicates — pass `sql` with the `{{cohort
 ```
 scout_find_reports(
     file_id=__files__[0].id,
-    sql="""
+    sql=
         SELECT primary_report_identifier, accession_number, epic_mrn, patient_mpi,
                sending_facility, modality, service_name, message_dt,
                patient_age, sex
@@ -324,7 +322,6 @@ scout_find_reports(
         WHERE {{cohort}}
           AND modality = 'CT'
           AND year >= 2024
-    """,
     sql_explanation="This takes the cohort you uploaded and keeps the CT reports from 2024 onward, showing each study once as of its most recent read (reports_latest).",
 )
 ```
@@ -359,13 +356,12 @@ If the user's question is about a CSV cohort they uploaded, pass `file_id` and u
 ```
 scout_query_sql(
   file_id=__files__[0].id,
-  sql="""
+  sql=
     SELECT modality, COUNT(*) AS n
     FROM reports_latest_epic_view
     WHERE {{cohort}}
     GROUP BY modality
     ORDER BY n DESC
-  """,
 )
 ```
 
@@ -373,12 +369,11 @@ scout_query_sql(
 
 ```
 scout_query_sql(
-  sql="""
+  sql=
     SELECT modality, COUNT(DISTINCT scout_patient_id) AS patients
     FROM reports_latest_epic_view
     GROUP BY modality
     ORDER BY patients DESC
-  """,
 )
 ```
 
@@ -386,14 +381,13 @@ scout_query_sql(
 
 ```
 scout_query_sql(
-  sql="""
+  sql=
     SELECT COUNT(DISTINCT scout_patient_id) as patient_count
     FROM reports_latest_epic_view
     WHERE year >= YEAR(CURRENT_DATE) - 1
       AND any_match(diagnoses, d ->
           d.diagnosis_code LIKE 'I26%'
           OR LOWER(d.diagnosis_code_text) LIKE '%pulmonary embolism%')
-  """,
 )
 ```
 
@@ -401,12 +395,11 @@ scout_query_sql(
 
 ```
 scout_query_sql(
-  sql="""
+  sql=
     SELECT primary_report_identifier, epic_mrn, patient_mpi, resolved_epic_mrn, resolved_mpi, diagnosis_code, diagnosis_code_text
     FROM reports_dx_epic_view
     WHERE diagnosis_code LIKE 'I26%'
     LIMIT 1000
-  """,
 )
 ```
 
@@ -414,13 +407,12 @@ If you need fields beyond what's in `reports_dx` / `reports_dx_epic_view`, fall 
 
 ```
 scout_query_sql(
-  sql="""
-    SELECT r.primary_report_identifier, r.epic_mrn, r.patient_mpi, r.resolved_epic_mrn, r.resolved_mpi, d.diagnosis_code, d.diagnosis_code_text
+  sql=
+    SELECT r.primary_report_identifier, r.epic_mrn, r.patient_mpi, r.resolved_epic_mrn, r.resolved_mpi, diagnosis_code, diagnosis_code_text
     FROM reports_latest_epic_view r
-    CROSS JOIN UNNEST(r.diagnoses) AS t(d)
-    WHERE d.diagnosis_code LIKE 'I26%' AND r.year >= 2024
+    CROSS JOIN UNNEST(r.diagnoses) AS t(diagnosis_code, diagnosis_code_text, diagnosis_code_coding_system)
+    WHERE diagnosis_code LIKE 'I26%' AND r.year >= 2024
     LIMIT 1000
-  """,
 )
 ```
 
@@ -428,7 +420,7 @@ scout_query_sql(
 
 ```
 scout_query_sql(
-  sql="""
+  sql=
     WITH stroke_patients AS (
       SELECT scout_patient_id,
              MIN(requested_dt) AS first_stroke_dt
@@ -450,7 +442,6 @@ scout_query_sql(
     GROUP BY r.scout_patient_id
     ORDER BY prior_reports DESC
     LIMIT 1000
-  """,
 )
 ```
 
@@ -513,8 +504,8 @@ you. **At most 4 charts stay visible per turn** — call it more than that in
 one turn and the oldest one drops off.
 
 When asked to categorize or breakdown by modality, sex, etc, encode that
-by `color` in the Vega-lite spec. **Any `color` encoding gets `"bind":
-"legend"`**, so clicking a legend entry dims the other series.
+by `color` in the Vega-lite spec. The viewer adds the click-to-isolate
+legend itself — never write `params` or an `opacity` condition for it.
 
 **Every encoding channel needs a real `"type"` key** — `{"field": "x", "type":
 "quantitative"}`. Never write `{"field": "x", "quantitative": true}`; that
@@ -530,7 +521,7 @@ key; Vega-Lite derives it from the panel count.
 
 ```
 scout_chart_sql(
-  sql="""
+  sql=
     WITH stroke_patients AS (
       SELECT scout_patient_id, MIN(patient_age) AS patient_age, MIN(sex) AS sex
       FROM reports_latest_epic_view
@@ -541,19 +532,12 @@ scout_chart_sql(
     FROM stroke_patients
     GROUP BY 1, 2
     ORDER BY 1
-  """,
   vega_lite_spec={
     "mark": "line",
-    "params": [{
-      "name": "sex_select",
-      "select": {"type": "point", "fields": ["sex"]},
-      "bind": "legend"
-    }],
     "encoding": {
       "x": {"field": "age_bracket", "type": "ordinal", "title": "Age (decade)"},
       "y": {"field": "patients", "type": "quantitative", "title": "Patients"},
-      "color": {"field": "sex", "type": "nominal", "title": "Sex"},
-      "opacity": {"condition": {"param": "sex_select", "value": 1}, "value": 0.2}
+      "color": {"field": "sex", "type": "nominal", "title": "Sex"}
     }
   },
   sql_explanation="Patients with an I63 ischemic-stroke diagnosis code, counted by decade of age and sex. Each patient is counted once at their youngest recorded age. Patients whose reports carry inconsistent identifiers are left out, because this uses an epic view.",
@@ -564,25 +548,18 @@ scout_chart_sql(
 
 ```
 scout_chart_sql(
-  sql="""
+  sql=
     SELECT year, modality, COUNT(*) AS n
     FROM reports_latest
     GROUP BY 1, 2
     ORDER BY 1
-  """,
   vega_lite_spec={
     "mark": "bar",
-    "params": [{
-      "name": "modality_select",
-      "select": {"type": "point", "fields": ["modality"]},
-      "bind": "legend"
-    }],
     "encoding": {
       "x": {"field": "year", "type": "ordinal", "title": "Year"},
       "xOffset": {"field": "modality", "type": "nominal"},
       "y": {"field": "n", "type": "quantitative", "title": "Reports"},
-      "color": {"field": "modality", "type": "nominal", "title": "Modality"},
-      "opacity": {"condition": {"param": "modality_select", "value": 1}, "value": 0.2}
+      "color": {"field": "modality", "type": "nominal", "title": "Modality"}
     }
   },
   sql_explanation="Report volume by year, grouped by modality.",
@@ -599,13 +576,12 @@ later and `scout_get_chart_data` still works on it.
 ```
 scout_chart_sql(
   file_id=__files__[0].id,
-  sql="""
+  sql=
     SELECT modality, COUNT(*) AS n
     FROM reports_latest
     WHERE {{cohort}}
     GROUP BY modality
     ORDER BY n DESC
-  """,
   vega_lite_spec={
     "mark": "bar",
     "encoding": {
