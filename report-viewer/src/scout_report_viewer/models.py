@@ -167,7 +167,6 @@ class ReadReportsResponse(BaseModel):
 
 class CreateSearchResponse(BaseModel):
     id: str
-    count: int | None
     id_column: str
     view_url: str
     columns: list[str]

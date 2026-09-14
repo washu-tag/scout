@@ -5,7 +5,7 @@ which rows match is stored. Every read wraps `sql` and returns the full
 cohort; sort/filter/paginate happen client-side in the SPA.
 
 Endpoints:
-  POST /api/searches                            - save SQL, return sample + count
+  POST /api/searches                            - save SQL, return a sample
   POST /api/searches/from-file                  - upload CSV of IDs, save contains(?, col) SQL and bind the ID list on every read
   GET  /api/searches/{id}                       - metadata
   GET  /api/searches/{id}/rows                  - full cohort (lean cols) for client-side browsing
@@ -135,11 +135,11 @@ async def create_search(
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> CreateSearchResponse:
-    """Save a SQL query as a search. No row materialization - runs one
-    `SELECT COUNT(*)` to cache the count, fetches a small sample for
-    the LLM, and (if match_terms or match_diagnoses is set) one
-    additional small query against reports_curated to populate per-row
-    evidence (excerpt + matched_diagnoses).
+    """Save a SQL query as a search. No row materialization - fetches a
+    small sample for the LLM, and (if match_terms or match_diagnoses is
+    set) one additional small query against reports_curated to populate
+    per-row evidence (excerpt + matched_diagnoses). An empty `sample`
+    means an empty cohort; `GET /rows` reports the real total.
 
     Refinement: when the LLM wants to narrow a search, it writes a new
     `POST /searches` call with the original conditions plus the new
@@ -165,18 +165,6 @@ async def create_search(
         )
     _assert_required_projections(columns)
     id_column = "primary_report_identifier"
-
-    count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
-    try:
-        with metrics.time_trino("create_count_query"):
-            # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            _cols, count_rows = await trino_client.execute(count_sql, user=user.sub)
-        row_count = int(count_rows[0]["n"]) if count_rows else 0
-    except Exception:
-        log.exception("trino count query failed")
-        # NULL (unknown), not 0, so reads can tell a failed count from empty.
-        row_count = None
 
     sample_extras: dict[str, dict[str, Any]] = {}
     if body.match_terms or body.match_diagnoses:
@@ -265,13 +253,11 @@ async def create_search(
     )
 
     metrics.SEARCHES_CREATED.inc()
-    if row_count is not None:
-        metrics.SEARCH_SIZE.observe(row_count)
     log.info(
         "search created",
         extra={
             "search_id": stored["id"],
-            "count": row_count,
+            "empty": not sample_rows,
             "id_column": id_column,
             "user_sub": user.sub,
         },
@@ -279,7 +265,6 @@ async def create_search(
 
     return CreateSearchResponse(
         id=stored["id"],
-        count=row_count,
         id_column=id_column,
         view_url=_view_url(search_id),
         columns=[c for c in columns if c not in _drop_cols],

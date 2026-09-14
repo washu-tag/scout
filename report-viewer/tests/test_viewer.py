@@ -18,7 +18,6 @@ def _sample_rows(n: int) -> list[dict]:
 
 def _make_search(client, auth_headers, fake_trino) -> str:
     fake_trino(_SAMPLE_COLS, _sample_rows(2))
-    fake_trino(["n"], [{"n": 2}])
     return client.post(
         "/api/searches", json={"sql": _SQL}, headers=auth_headers
     ).json()["id"]

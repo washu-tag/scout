@@ -165,19 +165,13 @@ class Tools:
             )
             return self._error_text(exc, "Error fetching reports")
 
-        count = created.get("count")
-        if count == 0:
+        if not created.get("sample"):
             await self._emit(__event_emitter__, "No matching reports", done=True)
             return (
                 "No reports matched. Try scouting the data or broadening the criteria."
             )
 
-        found = (
-            f"Found {count:,} matching reports"
-            if count is not None
-            else "Found matching reports"
-        )
-        await self._emit(__event_emitter__, found, done=True)
+        await self._emit(__event_emitter__, "Found matching reports", done=True)
 
         await self._emit_embed(
             __event_emitter__,
@@ -733,16 +727,16 @@ class Tools:
         """Sample table + evidence table (omitted if every row's
         excerpt is null and matched_diagnoses is empty). Both keyed by
         id_column so they align visually."""
-        count = created.get("count")
         columns: list[str] = created.get("columns") or []
         sample: list[dict] = created.get("sample") or []
         evidence: list[dict] = created.get("evidence") or []
         sid = created.get("id") or ""
         id_column = created.get("id_column") or ""
 
-        cnt = f"{count:,}" if isinstance(count, int) else "an unknown number of"
-        rows_word = "row" if count == 1 else "rows"
-        parts = [f"SQL matched {cnt} {rows_word} across {len(columns)} columns."]
+        parts = [
+            f"SQL ran across {len(columns)} columns. The viewer holds the full "
+            "result. You do not have a row count, do not state one."
+        ]
 
         if sample and columns:
             parts.append("")

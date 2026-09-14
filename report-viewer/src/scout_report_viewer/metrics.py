@@ -50,7 +50,7 @@ _ROW_COUNT_BUCKETS = (
 
 SEARCH_SIZE = Histogram(
     "scout_report_viewer_search_size_rows",
-    "Row count of each search, from the COUNT(*) computed at create time.",
+    "Row count of each CSV-imported search, from its create-time COUNT(*).",
     buckets=_ROW_COUNT_BUCKETS,
 )
 

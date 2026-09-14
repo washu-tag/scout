@@ -43,7 +43,6 @@ def _sample_rows() -> list[dict]:
 
 def test_create_search_happy_path(client, auth_headers, fake_trino):
     fake_trino(_sample_columns(), _sample_rows())
-    fake_trino(["n"], [{"n": 3}])
     r = client.post(
         "/api/searches",
         json={"sql": _SQL_HAPPY},
@@ -51,7 +50,8 @@ def test_create_search_happy_path(client, auth_headers, fake_trino):
     )
     assert r.status_code == 201, r.text
     body = r.json()
-    assert body["count"] == 3
+    assert "count" not in body
+    assert not any("COUNT(*)" in sql for sql, _ in fake_trino.calls)
     assert body["id_column"] == "primary_report_identifier"
     assert body["id"].startswith("s_")
     assert body["columns"] == _sample_columns()
@@ -67,7 +67,6 @@ def test_create_search_happy_path(client, auth_headers, fake_trino):
 
 def test_create_search_empty_result_is_201(client, auth_headers, fake_trino):
     fake_trino(_sample_columns(), [])
-    fake_trino(["n"], [{"n": 0}])
     r = client.post(
         "/api/searches",
         json={"sql": _SQL_HAPPY + " WHERE 1=0"},
@@ -75,7 +74,6 @@ def test_create_search_empty_result_is_201(client, auth_headers, fake_trino):
     )
     assert r.status_code == 201, r.text
     body = r.json()
-    assert body["count"] == 0
     assert body["sample"] == []
     assert body["evidence"] == []
     assert body["columns"] == _sample_columns()
@@ -115,7 +113,6 @@ def test_create_search_missing_accession_number_is_400(
 
 def test_get_meta_returns_404_for_other_user(client, auth_headers, fake_trino):
     fake_trino(_sample_columns(), _sample_rows())
-    fake_trino(["n"], [{"n": 3}])
     r = client.post(
         "/api/searches",
         json={"sql": _SQL_HAPPY},
@@ -136,7 +133,6 @@ def test_delete_by_non_owner_is_404_and_leaves_row_intact(
     client, auth_headers, fake_trino
 ):
     fake_trino(_sample_columns(), _sample_rows())
-    fake_trino(["n"], [{"n": 3}])
     dsid = client.post(
         "/api/searches",
         json={"sql": _SQL_HAPPY},

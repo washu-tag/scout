@@ -242,6 +242,12 @@ export default function SearchDetailPage() {
           flex: '0 0 auto',
         }}
       >
+        {rowsQ.data && (
+          <span style={{ color: 'var(--rv-muted)', fontSize: '0.7rem' }}>
+            {rowsQ.data.total.toLocaleString()}
+            {rowsQ.data.truncated ? '+' : ''} reports
+          </span>
+        )}
         <span style={{ flex: 1 }} />
         {rowsQ.data && (
           <span
