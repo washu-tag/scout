@@ -414,7 +414,8 @@ export default function PlotPage() {
           ref={holder}
           style={{
             // Uncapped: height comes from the drawing, and the frame follows.
-            display: renderError ? 'none' : undefined,
+            // Hidden rather than unmounted: vega-embed attaches to this ref.
+            display: renderError || !plot.data ? 'none' : undefined,
             padding: '0.5rem',
             background: 'var(--rv-surface)',
             border: '1px solid var(--rv-border)',
