@@ -36,6 +36,13 @@ log = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class User:
     sub: str  # owner_sub stored on the search row; also sent as X-Trino-User
+    # Issue #739 PoC: Keycloak client roles (resource_access.<client>.roles),
+    # populated only on the Bearer JWT path. The oauth2-proxy header path
+    # (Path 2 below) carries no role/group claim today - Traefik's
+    # forwardAuth only forwards X-Auth-Request-Preferred-Username - so
+    # role-gated features are scoped to the JWT-bearing surface (the OWUI
+    # embed) until that's addressed separately.
+    roles: frozenset[str] = frozenset()
 
 
 def _gateway_ok(header: str | None) -> bool:
@@ -54,8 +61,8 @@ def _bearer_token(auth_header: str | None) -> str | None:
     return None
 
 
-def _validate_jwt(token: str) -> str | None:
-    """Validate `token` against Keycloak JWKS, return `sub` or None.
+def _validate_jwt(token: str) -> User | None:
+    """Validate `token` against Keycloak JWKS, return a `User` or None.
 
     Returns None - rather than raising - on validation failure so the
     caller can fall through to the next auth path (header, shared
@@ -112,7 +119,16 @@ def _validate_jwt(token: str) -> str | None:
     if not sub:
         log.info("bearer rejected: no preferred_username/sub")
         return None
-    return sub
+    # Issue #739 PoC: client roles for report-viewer-owned role-gated
+    # features (e.g. an admin-only action button), read the same way
+    # Keycloak's standard "roles" client scope shapes them
+    # (resource_access.<client>.roles). report-viewer has no Keycloak
+    # client of its own yet - populating this for real is separate,
+    # deferred work; a caller with no such claim just gets no roles.
+    resource_access = claims.get("resource_access") or {}
+    client_claims = resource_access.get(settings.oidc_roles_client_id) or {}
+    roles = frozenset(client_claims.get("roles") or [])
+    return User(sub=sub, roles=roles)
 
 
 async def get_current_user(
@@ -124,9 +140,9 @@ async def get_current_user(
     token = _bearer_token(authorization)
     if token:
         # JWKS fetch on cache miss is blocking; keep it off the event loop.
-        sub = await asyncio.to_thread(_validate_jwt, token)
-        if sub:
-            return User(sub=sub)
+        user = await asyncio.to_thread(_validate_jwt, token)
+        if user:
+            return user
         # Bearer was present but invalid - 401 directly instead of falling
         # through. If a caller bothered to send a bearer, they meant to
         # authenticate as that user; silently downgrading to header trust

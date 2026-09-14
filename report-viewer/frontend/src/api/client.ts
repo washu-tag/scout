@@ -95,6 +95,27 @@ export function getSearch(searchId: string): Promise<SearchMeta> {
   return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
 }
 
+// Issue #739 PoC: backend-declared, role-filtered toolbar actions.
+// action_type "open-url" is handled generically (see openResult.ts);
+// "client" actions are looked up by client_handler in a small local
+// registry, since they invoke page-specific logic (e.g. building a CSV
+// from the currently loaded/filtered rows) the backend can't supply.
+export interface ActionDescriptor {
+  id: string;
+  title: string;
+  icon: string;
+  tone: string;
+  weight: number;
+  action_type: 'open-url' | 'client';
+  url: string | null;
+  required_role: string | null;
+  client_handler: string | null;
+}
+
+export function listSearchActions(searchId: string): Promise<ActionDescriptor[]> {
+  return api<ActionDescriptor[]>(`/api/searches/${encodeURIComponent(searchId)}/actions`);
+}
+
 export interface FilterState {
   patient_age?: { min?: string; max?: string };
   message_dt?: { min?: string; max?: string };

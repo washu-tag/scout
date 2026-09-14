@@ -1,0 +1,71 @@
+import type { ActionDescriptor } from '../../api/client';
+import { useOpenResult } from '../../openResult';
+import { paginationBtn } from './styles';
+
+/** Issue #739 PoC: renders a backend-declared, role-filtered action list
+ * generically. `open-url` actions are handled uniformly via
+ * `useOpenResult`; `client` actions are dispatched to a handler the page
+ * registers by id - report-viewer can't ship page-specific logic (e.g.
+ * building a CSV from the currently loaded/filtered rows) through a
+ * backend descriptor. An action naming an unregistered handler is
+ * skipped with a console diagnostic rather than breaking the toolbar -
+ * mirrors ADR 0034's "bad chip costs the chip" grading for launchpad
+ * tiles. */
+export function ActionsToolbar({
+  actions,
+  clientHandlers,
+}: {
+  actions: ActionDescriptor[];
+  clientHandlers: Record<string, () => void>;
+}) {
+  const { opening, error, copiedLink, copyFailed, open } = useOpenResult();
+
+  return (
+    <>
+      {actions.map((action) => {
+        if (action.action_type === 'client') {
+          const handler = action.client_handler ? clientHandlers[action.client_handler] : undefined;
+          if (!handler) {
+            console.warn(
+              `ActionsToolbar: no client handler registered for action "${action.id}"`,
+            );
+            return null;
+          }
+          return (
+            <button
+              key={action.id}
+              type="button"
+              onClick={handler}
+              style={paginationBtn}
+              title={action.title}
+            >
+              {action.title}
+            </button>
+          );
+        }
+        return (
+          <button
+            key={action.id}
+            type="button"
+            disabled={opening}
+            onClick={() => action.url && open(action.url)}
+            style={paginationBtn}
+            title={action.title}
+          >
+            {action.title}
+          </button>
+        );
+      })}
+      {error && <p style={{ color: 'var(--rv-danger)', margin: '0.25rem 0 0' }}>{error}</p>}
+      {copiedLink && (
+        <p style={{ margin: '0.25rem 0 0' }}>
+          A new tab should have opened.{' '}
+          {copyFailed
+            ? "Couldn't copy the link automatically, though"
+            : 'Its link is also copied to your clipboard'}
+          , in case it didn't: <code>{copiedLink}</code>
+        </p>
+      )}
+    </>
+  );
+}

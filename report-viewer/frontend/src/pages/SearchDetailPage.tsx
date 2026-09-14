@@ -21,6 +21,7 @@ import {
   friendlyError,
   getSearch,
   getSearchRows,
+  listSearchActions,
   type FilterState,
 } from '../api/client';
 import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
@@ -29,6 +30,7 @@ import { useChatPrompt } from '../ChatPrompt';
 import { RowDetail } from './searchDetail/RowDetail';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
+import { ActionsToolbar } from './searchDetail/ActionsToolbar';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
@@ -100,6 +102,13 @@ export default function SearchDetailPage() {
   const rowsQ = useQuery({
     queryKey: ['search', searchId, 'rows'],
     queryFn: () => getSearchRows(searchId),
+    enabled: !!searchId,
+  });
+
+  // Issue #739 PoC: backend-declared, role-filtered toolbar actions.
+  const actionsQ = useQuery({
+    queryKey: ['search', searchId, 'actions'],
+    queryFn: () => listSearchActions(searchId),
     enabled: !!searchId,
   });
 
@@ -600,26 +609,25 @@ export default function SearchDetailPage() {
                   Explain Search
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  // Always include the unique id so exported rows stay identifiable
-                  // even if the user hid the id/accession columns.
-                  const cols = table.getVisibleLeafColumns().map((c) => c.id);
-                  if (!cols.includes('primary_report_identifier')) {
-                    cols.unshift('primary_report_identifier');
-                  }
-                  downloadCsv(
-                    `${searchId}.csv`,
-                    cols,
-                    table.getPrePaginationRowModel().rows.map((r) => r.original),
-                  );
+              <ActionsToolbar
+                actions={actionsQ.data ?? []}
+                clientHandlers={{
+                  'download-csv': () => {
+                    // Always include the unique id so exported rows stay
+                    // identifiable even if the user hid the id/accession
+                    // columns.
+                    const cols = table.getVisibleLeafColumns().map((c) => c.id);
+                    if (!cols.includes('primary_report_identifier')) {
+                      cols.unshift('primary_report_identifier');
+                    }
+                    downloadCsv(
+                      `${searchId}.csv`,
+                      cols,
+                      table.getPrePaginationRowModel().rows.map((r) => r.original),
+                    );
+                  },
                 }}
-                style={paginationBtn}
-                title="Download the current filtered and sorted rows as CSV"
-              >
-                Download CSV
-              </button>
+              />
               <button
                 type="button"
                 onClick={() => {

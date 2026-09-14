@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     oidc_jwks_url: str = ""
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
+    # Issue #739 PoC: client id whose resource_access.<id>.roles claim
+    # populates User.roles for role-gated action buttons. report-viewer has
+    # no Keycloak client of its own yet, so this claim is empty on real
+    # tokens until that's provisioned - see auth.py.
+    oidc_roles_client_id: str = "report-viewer"
 
     # Shared secret Traefik injects; the header path is refused unless it matches.
     gateway_secret: str = ""

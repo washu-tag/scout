@@ -32,6 +32,7 @@ from fastapi import (
 )
 
 from .. import metrics, trino_client
+from ..actions import ActionDescriptor, list_actions
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
@@ -477,6 +478,26 @@ async def get_search_meta(
         sql_explanation=ds.get("sql_explanation") or "",
         owui_chat_id=ds.get("owui_chat_id") or "",
     )
+
+
+@router.get("/{search_id}/actions", response_model=list[ActionDescriptor])
+async def get_search_actions(
+    search_id: str,
+    user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
+) -> list[ActionDescriptor]:
+    """Issue #739 PoC: role-filtered toolbar actions for this search.
+
+    Owner-scoped like the sibling endpoints even though the static catalog
+    doesn't yet key off search content - a real action (e.g. a future
+    cohort export) will need the search to exist and be owned by the
+    caller before doing anything with it, so this establishes that shape
+    now.
+    """
+    ds = await store.get_search(search_id, owner_sub=user.sub)
+    if ds is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return list_actions(user.roles)
 
 
 @router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)
