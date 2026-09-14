@@ -70,6 +70,26 @@
       "ssl": "{{ .Values.smtp.ssl }}"
     },
     "roles": {
+      {{- /* The two service tiers. Deliberately no `composites` key: an omitted key
+          means keycloak-config-cli never reconciles the edge list, leaving the
+          composer as the single writer of every edge into these roles. Declaring
+          one here makes config-cli replace the whole set on the next realm apply,
+          dropping every fragment's grant. See
+          docs/internal/keycloak-fragment-composition-plan.md. */}}
+      "realm": [
+        {
+          "name": "scout-user",
+          "description": "Scout user tier; app client roles compose into this",
+          "clientRole": false,
+          "attributes": {}
+        },
+        {
+          "name": "scout-admin",
+          "description": "Scout admin tier; app client roles compose into this",
+          "clientRole": false,
+          "attributes": {}
+        }
+      ],
       "client": {
         "oauth2-proxy": [
           {
@@ -226,6 +246,7 @@
             `policy: [consoleAdmin]` attribute. Its value now lives as a MinIO
             client role, granted below. No group in this realm carries attributes. */}}
         "attributes": {},
+        "realmRoles": ["scout-admin"],
         "clientRoles": {
           "oauth2-proxy": [
             "oauth2-proxy-user"
@@ -262,6 +283,7 @@
       },
       {
         "name": "scout-user",
+        "realmRoles": ["scout-user"],
         "clientRoles": {
           "oauth2-proxy": [
             "oauth2-proxy-user"
