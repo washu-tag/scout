@@ -635,38 +635,36 @@ export default function SearchDetailPage() {
                   try {
                     const result = await exportSearchToSuperset(searchId);
                     const url = result.dashboard_url ?? result.explore_url;
-                    if (window.self !== window.top) {
-                      // Embedded in OWUI's chat iframe: OWUI's own frontend
-                      // (not something Scout configures) controls that
-                      // iframe's sandbox attribute, and any new-browsing-
-                      // context creation triggered from inside it - script
-                      // click or real click alike - can be blocked outright
-                      // by the target's Cross-Origin-Opener-Policy
-                      // (ERR_BLOCKED_BY_RESPONSE / "blocked from loading in a
-                      // popup opened by a sandboxed iframe"). A tab the user
-                      // opens themselves is a fresh browsing context
-                      // unrelated to the iframe, so copy-to-clipboard is the
-                      // one path guaranteed to work here.
-                      try {
-                        await navigator.clipboard.writeText(url);
-                        setCopyFailed(false);
-                      } catch {
-                        // Sandboxed iframes often lack allow-clipboard-write,
-                        // so this fails silently more often than not here -
-                        // still show the link below, just don't claim it was
-                        // copied when it wasn't.
-                        setCopyFailed(true);
-                      }
-                      setExportedLink(url);
-                    } else {
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.target = '_blank';
-                      link.rel = 'noopener noreferrer';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
+                    // Always attempt the real navigation first. Superset's
+                    // ingress now sends Cross-Origin-Opener-Policy:
+                    // same-origin-allow-popups (see
+                    // ansible/roles/traefik/tasks/main.yaml's
+                    // popup-friendly-security-headers), so this works even
+                    // from report-viewer's OWUI-embedded iframe. A blocked
+                    // popup doesn't throw a catchable error though - the
+                    // browser just silently drops it - so there's no
+                    // reliable way to detect failure and decide whether to
+                    // fall back. Always also copy the link and show it, as
+                    // a visible "in case that didn't open" affordance
+                    // (relevant for any future export target that doesn't
+                    // send this header).
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      setCopyFailed(false);
+                    } catch {
+                      // Sandboxed iframes often lack allow-clipboard-write.
+                      // Still show the link below, just don't claim it was
+                      // copied when it wasn't.
+                      setCopyFailed(true);
                     }
+                    setExportedLink(url);
                   } catch (err) {
                     setExportError(friendlyError(err, 'exporting this cohort'));
                   } finally {
@@ -706,11 +704,11 @@ export default function SearchDetailPage() {
             )}
             {exportedLink && (
               <p style={{ margin: '0.25rem 0 0' }}>
+                A new tab should have opened.{' '}
                 {copyFailed
-                  ? "Couldn't copy automatically (this embedded view may not allow clipboard access)."
-                  : 'Link copied to clipboard.'}{' '}
-                This view is embedded in chat, so open a new browser tab yourself and paste it:{' '}
-                <code>{exportedLink}</code>
+                  ? "Couldn't copy the link automatically, though"
+                  : "Its link is also copied to your clipboard"}
+                , in case it didn't: <code>{exportedLink}</code>
               </p>
             )}
           </div>
