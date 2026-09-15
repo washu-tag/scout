@@ -79,8 +79,18 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
           env:
-            {{- with .Values.env }}
-              {{- toYaml . | nindent 12 }}
+            {{- /* Quote value: callers set env from cluster-vars via Flux postBuild (e.g.
+                   TRINO_VIEW_ENABLED from ${trino_view_enabled}=true), kustomize drops the
+                   source quotes so toYaml would emit a bare bool that the K8s env schema
+                   (string-only) rejects. */ -}}
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              {{- if hasKey . "valueFrom" }}
+              valueFrom:
+                {{- toYaml .valueFrom | nindent 16 }}
+              {{- else }}
+              value: {{ .value | quote }}
+              {{- end }}
             {{- end }}
             - name: SPARK_EXECUTOR_MEMORY
               value: "{{ .Values.spark.executor.memory }}"
