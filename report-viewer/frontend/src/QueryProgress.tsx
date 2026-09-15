@@ -5,6 +5,9 @@ const POLL_MS = 3000;
 const TICK_MS = 250;
 // A faster query finishes before the indicator is worth showing.
 const SHOW_AFTER_MS = 1000;
+// The total wait is what users report back, so hold it before fading.
+const LINGER_MS = 4000;
+const FADE_MS = 600;
 
 export interface LoadingProgress {
   show: boolean;
@@ -47,8 +50,13 @@ export function useLoadingProgress(
       setShow(false);
       return;
     }
-    // Stays put: the total wait is what users report back.
     setDone(true);
+    const hide = setTimeout(() => {
+      wasShown.current = false;
+      setShow(false);
+      setDone(false);
+    }, LINGER_MS);
+    return () => clearTimeout(hide);
   }, [loading]);
 
   // An empty or failed poll keeps the last value rather than resetting.
@@ -122,6 +130,8 @@ export function QueryProgressInline({
         fontSize: '0.7rem',
         color: 'var(--rv-muted)',
         fontVariantNumeric: 'tabular-nums',
+        opacity: done ? 0 : 1,
+        transition: `opacity ${FADE_MS}ms ease-out ${done ? LINGER_MS - FADE_MS : 0}ms`,
       }}
     >
       {done
