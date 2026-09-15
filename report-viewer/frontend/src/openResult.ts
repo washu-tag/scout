@@ -1,5 +1,21 @@
 import { useCallback, useState } from 'react';
 
+function _execCommandCopy(text: string): boolean {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
 export interface OpenResultState {
   opening: boolean;
   error: string | null;
@@ -26,6 +42,15 @@ export interface OpenResultState {
  * ansible/roles/traefik/tasks/main.yaml), not anything this hook does -
  * a destination that hasn't opted into that header will always fall
  * through to the copy-link affordance when embedded.
+ *
+ * The copy itself uses `document.execCommand('copy')`, not
+ * `navigator.clipboard` - same reasoning and precedent as
+ * ExplainSqlModal.tsx's SQL-copy button: `navigator.clipboard.writeText()`
+ * is blocked by OWUI's artifact-iframe Permissions-Policy (no
+ * `clipboard-write` delegation on the embedding `<iframe>`, which Scout
+ * doesn't control - see ADR 0029), even from a real user click.
+ * execCommand is deprecated but still functional and unaffected by that
+ * policy.
  */
 export function useOpenResult() {
   const [state, setState] = useState<OpenResultState>({
@@ -46,14 +71,7 @@ export function useOpenResult() {
       link.click();
       document.body.removeChild(link);
 
-      let copyFailed = false;
-      try {
-        await navigator.clipboard.writeText(url);
-      } catch {
-        // Sandboxed iframes often lack allow-clipboard-write. Still
-        // expose the link below, just don't claim it was copied.
-        copyFailed = true;
-      }
+      const copyFailed = !_execCommandCopy(url);
       setState({ opening: false, error: null, copiedLink: url, copyFailed });
     } catch (err) {
       setState({
