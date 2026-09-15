@@ -6,3 +6,7 @@ vulnerabilities:
   # mssql-jdbc (Keycloak bundles JDBC drivers for all supported DBs; Scout
   # uses postgres, so the SQL Server driver is never loaded)
   - id: CVE-2025-59250 # com.microsoft.sqlserver:mssql-jdbc 13.2.1
+  # netty-handler (Keycloak/Quarkus bundles netty; our AWS SDK deps exclude the
+  # netty client, so this is upstream only). Fixed in netty 4.1.137.Final, but no
+  # Keycloak image ships it yet; drop this on the next base bump that carries it.
+  - id: CVE-2026-75595 # io.netty:netty-handler 4.1.136.Final
