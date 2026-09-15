@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { friendlyError, getPlot, getPlotProgress } from '../api/client';
-import { QueryProgressBar, useQueryProgress } from '../QueryProgress';
+import { QueryProgressModal, useQueryProgress } from '../QueryProgress';
 import { setHeight as setIframeHeight } from '../iframeHeight';
 import { buildDiscussPlotPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
@@ -414,15 +414,21 @@ export default function PlotPage() {
           </p>
         )}
         {!plot.data && plot.isLoading && (
-          <div
-            style={{
-              background: 'var(--rv-surface)',
-              border: '1px solid var(--rv-border)',
-              borderRadius: 4,
-            }}
-          >
-            <QueryProgressBar label="Loading chart…" progress={plotProgress} />
-          </div>
+          <>
+            {/* `fit` autosize makes CONTINUOUS_HEIGHT the whole SVG, not the plot. */}
+            <div
+              aria-hidden
+              style={{
+                padding: '0.5rem',
+                background: 'var(--rv-surface)',
+                border: '1px solid var(--rv-border)',
+                borderRadius: 4,
+              }}
+            >
+              <div style={{ height: CONTINUOUS_HEIGHT }} />
+            </div>
+            <QueryProgressModal label="Loading chart…" progress={plotProgress} />
+          </>
         )}
         <div
           ref={holder}

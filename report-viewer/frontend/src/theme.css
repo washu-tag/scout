@@ -90,12 +90,12 @@ div.vega-embed .vega-actions {
   right: 6px;
 }
 
-/* Indeterminate progress: used until Trino reports a percentage. */
-@keyframes rvIndeterminate {
-  0% {
-    transform: translateX(-100%);
-  }
+@keyframes rvPulse {
+  0%,
   100% {
-    transform: translateX(400%);
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.45;
   }
 }

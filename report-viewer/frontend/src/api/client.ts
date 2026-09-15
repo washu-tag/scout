@@ -103,10 +103,6 @@ export interface QueryProgress {
   progressPercentage?: number;
   processedRows?: number;
   processedBytes?: number;
-  elapsedTimeMillis?: number;
-  completedSplits?: number;
-  totalSplits?: number;
-  nodes?: number;
 }
 
 export function getSearchProgress(searchId: string): Promise<QueryProgress> {

@@ -28,7 +28,7 @@ import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '.
 import { buildFilterPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
 import { RowDetail } from './searchDetail/RowDetail';
-import { QueryProgressBar, useQueryProgress } from '../QueryProgress';
+import { QueryProgressModal, useQueryProgress } from '../QueryProgress';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
@@ -74,6 +74,63 @@ const COLUMNS_CONFIG: Array<{
 type Row = Record<string, unknown>;
 
 const columnHelper = createColumnHelper<Row>();
+
+const SHELL_ROWS = 12;
+
+function LoadingShell() {
+  const cols = COLUMNS_CONFIG.filter((c) => !c.defaultHidden);
+  return (
+    <div aria-hidden style={{ pointerEvents: 'none', overflow: 'hidden' }}>
+      <table
+        style={{
+          borderCollapse: 'collapse',
+          fontSize: '0.85rem',
+          width: '100%',
+          tableLayout: 'fixed',
+        }}
+      >
+        <thead>
+          <tr>
+            {cols.map((c) => (
+              <th
+                key={c.field}
+                style={{
+                  width: c.width,
+                  textAlign: c.align ?? 'left',
+                  padding: '0.35rem 0.45rem',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  color: 'var(--rv-muted)',
+                  background: 'var(--rv-surface-2)',
+                  boxShadow: 'inset 0 -1px 0 var(--rv-border)',
+                }}
+              >
+                {c.title}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: SHELL_ROWS }, (_, i) => (
+            <tr key={i}>
+              {cols.map((c) => (
+                <td
+                  key={c.field}
+                  style={{
+                    padding: '0.3rem 0.45rem',
+                    borderBottom: '1px solid var(--rv-border)',
+                  }}
+                >
+                  &nbsp;
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function SearchDetailPage() {
   const { searchId = '' } = useParams<{ searchId: string }>();
@@ -272,21 +329,10 @@ export default function SearchDetailPage() {
         <p style={{ color: 'var(--rv-danger)' }}>{friendlyError(rowsQ.error, 'these rows')}</p>
       )}
       {!rowsQ.data && rowsQ.isLoading ? (
-        <div>
-          <QueryProgressBar label="Loading reports…" progress={rowsProgress} />
-          {(meta.data?.sql_explanation || meta.data?.sql) && (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <button
-                type="button"
-                onClick={() => setSqlModalOpen(true)}
-                style={paginationBtn}
-                title="See what this search matches and the underlying SQL"
-              >
-                Explain Search
-              </button>
-            </div>
-          )}
-        </div>
+        <>
+          <LoadingShell />
+          <QueryProgressModal label="Loading reports…" progress={rowsProgress} />
+        </>
       ) : (
         rowsQ.data && (
           <div

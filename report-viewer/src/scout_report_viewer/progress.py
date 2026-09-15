@@ -22,10 +22,6 @@ _FIELDS = (
     "progressPercentage",
     "processedRows",
     "processedBytes",
-    "elapsedTimeMillis",
-    "completedSplits",
-    "totalSplits",
-    "nodes",
 )
 
 
