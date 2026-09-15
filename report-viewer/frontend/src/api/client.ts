@@ -99,14 +99,17 @@ export function getSearch(searchId: string): Promise<SearchMeta> {
 // action_type "open-url" is handled generically (see openResult.ts);
 // "client" actions are looked up by client_handler in a small local
 // registry, since they invoke page-specific logic (e.g. building a CSV
-// from the currently loaded/filtered rows) the backend can't supply.
+// from the currently loaded/filtered rows) the backend can't supply;
+// "backend-call" actions POST to invokeSearchAction below to get a
+// dynamically-computed result URL from a genuinely separate service,
+// then get the same open-url handling.
 export interface ActionDescriptor {
   id: string;
   title: string;
   icon: string;
   tone: string;
   weight: number;
-  action_type: 'open-url' | 'client';
+  action_type: 'open-url' | 'client' | 'backend-call';
   url: string | null;
   required_role: string | null;
   client_handler: string | null;
@@ -114,6 +117,13 @@ export interface ActionDescriptor {
 
 export function listSearchActions(searchId: string): Promise<ActionDescriptor[]> {
   return api<ActionDescriptor[]>(`/api/searches/${encodeURIComponent(searchId)}/actions`);
+}
+
+export function invokeSearchAction(searchId: string, actionId: string): Promise<{ url: string }> {
+  return api<{ url: string }>(
+    `/api/searches/${encodeURIComponent(searchId)}/actions/${encodeURIComponent(actionId)}/invoke`,
+    { method: 'POST' },
+  );
 }
 
 export interface FilterState {

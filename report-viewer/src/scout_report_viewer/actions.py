@@ -20,10 +20,11 @@ no live re-read/TTL snapshot yet).
 A site admin can add a genuinely new button - not just toggle a built-in
 one - via `values.yaml`'s `actions.custom` list, with no report-viewer
 code change or image rebuild: just a values change + `helm upgrade`.
-Only `open-url` actions are authorable this way (see `ActionDescriptor`
-below) - a `client` action needs a handler already registered in
-report-viewer's own frontend, so it isn't expressible as pure values
-data.
+Both `open-url` and `backend-call` are authorable this way (see
+`ActionDescriptor` below and `helm/report-viewer/templates/actions-
+configmap.yaml`) - a `client` action needs a handler already registered
+in report-viewer's own frontend, so it structurally can't be added
+through values data alone.
 
 Graded degradation, mirroring ADR 0034: an unparseable file falls back
 to `_DEFAULT_CATALOG` entirely (bad document costs its only document);
@@ -39,7 +40,7 @@ from typing import Literal
 from urllib.parse import urlparse
 
 import yaml
-from pydantic import BaseModel, ValidationError, model_validator
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from .config import settings
 
@@ -60,6 +61,16 @@ class ActionDescriptor(BaseModel):
       loaded/filtered rows) it cannot receive from a backend descriptor.
       An unregistered handler costs just that action, not the toolbar
       (mirrors ADR 0034's per-chip graceful degradation).
+    - `backend-call`: the SPA POSTs to report-viewer's generic
+      `/api/searches/{id}/actions/{action_id}/invoke`, which forwards the
+      search's context to `endpoint_url` (a genuinely separate,
+      independently deployed service - #595's "Apps" tier) and expects
+      back `{"url": "..."}`, then hands that off to the same `open-url`
+      handling. report-viewer never needs to know anything about what a
+      given plugin actually does - only that it returns a safe http(s)
+      URL. `invoke_token`, if set, is forwarded as `X-Report-Viewer-
+      Action-Token` and is excluded from every API response (never
+      round-trips to the browser).
     """
 
     id: str
@@ -67,10 +78,12 @@ class ActionDescriptor(BaseModel):
     icon: str = "app"
     tone: str = "indigo"
     weight: int = 100
-    action_type: Literal["open-url", "client"]
+    action_type: Literal["open-url", "client", "backend-call"]
     url: str | None = None
     required_role: str | None = None
     client_handler: str | None = None
+    endpoint_url: str | None = None
+    invoke_token: str | None = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
     def _check_action_type_fields(self) -> "ActionDescriptor":
@@ -79,6 +92,11 @@ class ActionDescriptor(BaseModel):
                 raise ValueError(f"action {self.id!r}: open-url requires a safe http(s) url")
         elif self.action_type == "client" and not self.client_handler:
             raise ValueError(f"action {self.id!r}: client action requires client_handler")
+        elif self.action_type == "backend-call":
+            if not self.endpoint_url or not _is_safe_action_url(self.endpoint_url):
+                raise ValueError(
+                    f"action {self.id!r}: backend-call requires a safe http(s) endpoint_url"
+                )
         return self
 
 

@@ -600,6 +600,7 @@ export default function SearchDetailPage() {
                 )}
               </div>
               <ActionsToolbar
+                searchId={searchId}
                 // "Explain Search" is chart-configurable (see
                 // helm/report-viewer/templates/actions-configmap.yaml)
                 // but its per-search visibility (nothing to explain yet)

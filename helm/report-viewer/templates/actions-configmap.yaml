@@ -41,8 +41,16 @@ data:
       icon: {{ .icon | default "app" | quote }}
       tone: {{ .tone | default "indigo" | quote }}
       weight: {{ .weight | default 100 }}
+      {{- if eq (.actionType | default "open-url") "backend-call" }}
+      action_type: backend-call
+      endpoint_url: {{ required (printf "actions.custom[%s]: backend-call needs an endpointUrl" .id) .endpointUrl | quote }}
+      {{- if .invokeToken }}
+      invoke_token: {{ .invokeToken | quote }}
+      {{- end }}
+      {{- else }}
       action_type: open-url
       url: {{ required "actions.custom entries need a url" .url | quote }}
+      {{- end }}
       {{- if .requiredRole }}
       required_role: {{ .requiredRole | quote }}
       {{- end }}
