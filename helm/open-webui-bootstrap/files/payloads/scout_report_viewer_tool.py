@@ -67,7 +67,7 @@ class Tools:
                 "returns into the chat message."
             ),
         )
-        request_timeout_seconds: int = Field(default=120, ge=10, le=600)
+        request_timeout_seconds: int = Field(default=300, ge=10, le=600)
 
     def __init__(self) -> None:
         self.valves = self.Valves()
