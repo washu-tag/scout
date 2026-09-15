@@ -248,13 +248,7 @@ export default function SearchDetailPage() {
           flex: '0 0 auto',
         }}
       >
-        {showLoading && <QueryProgressInline {...loadingState} />}
-        {rowsQ.data && (
-          <span style={{ color: 'var(--rv-muted)', fontSize: '0.7rem' }}>
-            {rowsQ.data.total.toLocaleString()}
-            {rowsQ.data.truncated ? '+' : ''} reports
-          </span>
-        )}
+        {showLoading && <QueryProgressInline {...loadingState} doneLabel="Reports loaded" />}
         <span style={{ flex: 1 }} />
         {
           <span
@@ -443,24 +437,22 @@ export default function SearchDetailPage() {
                     </React.Fragment>
                   );
                 })}
-                {table.getRowModel().rows.length === 0 && (
+                {table.getRowModel().rows.length === 0 && !!rowsQ.data && (
                   <tr>
                     <td
                       colSpan={table.getVisibleFlatColumns().length}
                       style={{ padding: '1rem', textAlign: 'center', color: 'var(--rv-muted)' }}
                     >
-                      {!rowsQ.data ? (
-                        <LoadingSpinner show={showLoading} minHeight={120} />
-                      ) : activeFilterCount(appliedFilters) > 0 ? (
-                        'No rows match your filters.'
-                      ) : (
-                        'No reports in this search.'
-                      )}
+                      {activeFilterCount(appliedFilters) > 0
+                        ? 'No rows match your filters.'
+                        : 'No reports in this search.'}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+            {/* Outside the table: a cell would centre on the scroll width. */}
+            {!rowsQ.data && <LoadingSpinner show={showLoading} minHeight={220} />}
           </div>
           <div
             style={{

@@ -390,7 +390,7 @@ export default function PlotPage() {
             flex: '0 0 auto',
           }}
         >
-          {showLoading && <QueryProgressInline {...loadingState} />}
+          {showLoading && <QueryProgressInline {...loadingState} doneLabel="Chart loaded" />}
           {plot.data?.truncated && (
             <span
               title="Narrow the query to see the full result"
@@ -422,7 +422,7 @@ export default function PlotPage() {
             This chart could not be drawn: {renderError}
           </p>
         )}
-        {showLoading && (
+        {showLoading && !plot.data && (
           /* `fit` autosize makes CONTINUOUS_HEIGHT the whole SVG, not the plot. */
           <div
             style={{

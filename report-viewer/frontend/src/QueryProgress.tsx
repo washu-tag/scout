@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { QueryProgress } from './api/client';
 
 const POLL_MS = 3000;
@@ -8,6 +8,7 @@ const SHOW_AFTER_MS = 1000;
 
 export interface LoadingProgress {
   show: boolean;
+  done: boolean;
   progress: QueryProgress | null;
   seconds: number;
 }
@@ -18,31 +19,41 @@ export function useLoadingProgress(
   fetchProgress: () => Promise<QueryProgress>,
 ): LoadingProgress {
   const [show, setShow] = useState(false);
+  const [done, setDone] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [progress, setProgress] = useState<QueryProgress | null>(null);
+  const wasShown = useRef(false);
 
   useEffect(() => {
-    if (!loading) {
-      setShow(false);
-      setSeconds(0);
+    if (loading) {
+      const startedAt = Date.now();
+      setDone(false);
       setProgress(null);
+      const showTimer = setTimeout(() => {
+        wasShown.current = true;
+        setShow(true);
+      }, SHOW_AFTER_MS);
+      const tick = setInterval(
+        () => setSeconds(Math.floor((Date.now() - startedAt) / 1000)),
+        TICK_MS,
+      );
+      return () => {
+        clearTimeout(showTimer);
+        clearInterval(tick);
+      };
+    }
+    // Nothing was shown, so there is nothing to finish.
+    if (!wasShown.current) {
+      setShow(false);
       return;
     }
-    const startedAt = Date.now();
-    const showTimer = setTimeout(() => setShow(true), SHOW_AFTER_MS);
-    const tick = setInterval(
-      () => setSeconds(Math.floor((Date.now() - startedAt) / 1000)),
-      TICK_MS,
-    );
-    return () => {
-      clearTimeout(showTimer);
-      clearInterval(tick);
-    };
+    // Stays put: the total wait is what users report back.
+    setDone(true);
   }, [loading]);
 
   // An empty or failed poll keeps the last value rather than resetting.
   useEffect(() => {
-    if (!show) return;
+    if (!show || done) return;
     let cancelled = false;
     const poll = async () => {
       try {
@@ -58,9 +69,9 @@ export function useLoadingProgress(
       cancelled = true;
       clearInterval(id);
     };
-  }, [show, fetchProgress]);
+  }, [show, done, fetchProgress]);
 
-  return { show, progress, seconds };
+  return { show, done, progress, seconds };
 }
 
 function compactNumber(n: number): string {
@@ -99,7 +110,12 @@ function detailLine(p: QueryProgress | null, waitedSeconds: number): string {
   return parts.join(' · ');
 }
 
-export function QueryProgressInline({ progress, seconds }: LoadingProgress) {
+export function QueryProgressInline({
+  progress,
+  seconds,
+  done,
+  doneLabel,
+}: LoadingProgress & { doneLabel: string }) {
   return (
     <span
       style={{
@@ -108,7 +124,9 @@ export function QueryProgressInline({ progress, seconds }: LoadingProgress) {
         fontVariantNumeric: 'tabular-nums',
       }}
     >
-      {stateLine(progress)} · {detailLine(progress, seconds)}
+      {done
+        ? `${doneLabel} · ${seconds}s`
+        : `${stateLine(progress)} · ${detailLine(progress, seconds)}`}
     </span>
   );
 }
@@ -128,10 +146,10 @@ export function LoadingSpinner({ show, minHeight }: { show: boolean; minHeight: 
         aria-label="Loading"
         role="status"
         style={{
-          width: 28,
-          height: 28,
+          width: 36,
+          height: 36,
           borderRadius: '50%',
-          border: '2px solid var(--rv-surface-2)',
+          border: '3px solid var(--rv-surface-2)',
           borderTopColor: 'var(--rv-accent)',
           animation: 'rvSpin 0.8s linear infinite',
         }}
