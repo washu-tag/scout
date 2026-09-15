@@ -65,6 +65,15 @@ resources:
     cpu: 2
     memory: 4Gi
 
+# Issue #739 PoC: search-detail toolbar actions, rendered into a
+# ConfigMap and mounted at /app/action-catalog/catalog.yaml (matches
+# scout_report_viewer.config.Settings.action_catalog_path's default).
+# Disabling one just omits it from the rendered catalog - see
+# templates/actions-configmap.yaml.
+actions:
+  explainSearch: true
+  downloadCsv: true
+
 # Env vars injected as REPORT_VIEWER_* - see scout_report_viewer.config.Settings.
 # Populated by the Ansible role's values.yaml.j2 in production.
 env: {}

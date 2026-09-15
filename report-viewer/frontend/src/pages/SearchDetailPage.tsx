@@ -599,19 +599,18 @@ export default function SearchDetailPage() {
                   </div>
                 )}
               </div>
-              {(meta.data?.sql_explanation || meta.data?.sql) && (
-                <button
-                  type="button"
-                  onClick={() => setSqlModalOpen(true)}
-                  style={paginationBtn}
-                  title="See what this search matches and the underlying SQL"
-                >
-                  Explain Search
-                </button>
-              )}
               <ActionsToolbar
-                actions={actionsQ.data ?? []}
+                // "Explain Search" is chart-configurable (see
+                // helm/report-viewer/templates/actions-configmap.yaml)
+                // but its per-search visibility (nothing to explain yet)
+                // stays a page-level concern, not something the generic
+                // toolbar or the backend catalog should encode.
+                actions={(actionsQ.data ?? []).filter(
+                  (a) =>
+                    a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
+                )}
                 clientHandlers={{
+                  'explain-search': () => setSqlModalOpen(true),
                   'download-csv': () => {
                     // Always include the unique id so exported rows stay
                     // identifiable even if the user hid the id/accession

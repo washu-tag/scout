@@ -18,7 +18,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jose import jwt
 from pydantic import ValidationError
 
-from scout_report_viewer import jwks
+from scout_report_viewer import actions, jwks
 from scout_report_viewer.actions import ActionDescriptor, _is_safe_action_url, list_actions
 from scout_report_viewer.config import settings
 
@@ -26,21 +26,47 @@ from scout_report_viewer.config import settings
 # --- Pure-function tests: no fixtures required ---------------------------
 
 
-def test_list_actions_excludes_role_gated_action_without_role():
+def test_default_catalog_matches_shipped_toolbar():
+    """The no-ConfigMap-mounted floor must be exactly today's real
+    toolbar (explain-search, download-csv) - see actions.py's
+    _DEFAULT_CATALOG docstring. Demo/example entries belong in a test's
+    own monkeypatched catalog, not this fallback."""
     ids = {a.id for a in list_actions(frozenset())}
-    assert "admin-diagnostics-poc" not in ids
-    assert "docs-link" in ids
+    assert ids == {"explain-search", "download-csv"}
+
+
+@pytest.fixture
+def catalog_with_admin_action(monkeypatch):
+    """A temporary catalog carrying a role-gated entry, for tests that
+    need to exercise gating without it living in the shipped default."""
+    demo_catalog = [
+        *actions._DEFAULT_CATALOG,
+        ActionDescriptor(
+            id="admin-only-demo",
+            title="Admin Only (test)",
+            action_type="open-url",
+            url="https://example.org/admin",
+            required_role="report-viewer-admin",
+        ),
+    ]
+    monkeypatch.setattr(actions, "_CATALOG", demo_catalog)
+    return demo_catalog
+
+
+def test_list_actions_excludes_role_gated_action_without_role(catalog_with_admin_action):
+    ids = {a.id for a in list_actions(frozenset())}
+    assert "admin-only-demo" not in ids
     assert "download-csv" in ids
 
 
-def test_list_actions_includes_role_gated_action_with_role():
+def test_list_actions_includes_role_gated_action_with_role(catalog_with_admin_action):
     ids = {a.id for a in list_actions(frozenset({"report-viewer-admin"}))}
-    assert "admin-diagnostics-poc" in ids
+    assert "admin-only-demo" in ids
 
 
-def test_list_actions_sorted_by_weight():
-    actions = list_actions(frozenset({"report-viewer-admin"}))
-    weights = [a.weight for a in actions]
+def test_list_actions_sorted_by_weight(catalog_with_admin_action):
+    result = list_actions(frozenset({"report-viewer-admin"}))
+    weights = [a.weight for a in result]
     assert weights == sorted(weights)
 
 
@@ -146,7 +172,9 @@ def _create_search(client, token: str, fake_trino) -> str:
     return r.json()["id"]
 
 
-def test_actions_endpoint_hides_admin_action_without_role(client, keypair, fake_trino):
+def test_actions_endpoint_hides_admin_action_without_role(
+    client, keypair, fake_trino, catalog_with_admin_action
+):
     priv, _ = keypair
     token = _mint(priv, roles=[])
     search_id = _create_search(client, token, fake_trino)
@@ -154,10 +182,12 @@ def test_actions_endpoint_hides_admin_action_without_role(client, keypair, fake_
     r = client.get(f"/api/searches/{search_id}/actions", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200, r.text
     ids = {a["id"] for a in r.json()}
-    assert "admin-diagnostics-poc" not in ids
+    assert "admin-only-demo" not in ids
 
 
-def test_actions_endpoint_shows_admin_action_with_role(client, keypair, fake_trino):
+def test_actions_endpoint_shows_admin_action_with_role(
+    client, keypair, fake_trino, catalog_with_admin_action
+):
     priv, _ = keypair
     token = _mint(priv, roles=["report-viewer-admin"])
     search_id = _create_search(client, token, fake_trino)
@@ -165,7 +195,7 @@ def test_actions_endpoint_shows_admin_action_with_role(client, keypair, fake_tri
     r = client.get(f"/api/searches/{search_id}/actions", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200, r.text
     ids = {a["id"] for a in r.json()}
-    assert "admin-diagnostics-poc" in ids
+    assert "admin-only-demo" in ids
 
 
 def test_actions_endpoint_404s_for_someone_elses_search(client, keypair, fake_trino):

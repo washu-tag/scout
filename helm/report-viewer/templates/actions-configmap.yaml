@@ -1,0 +1,37 @@
+# Issue #739 PoC: the search-detail toolbar's action catalog, mounted
+# directly into the pod - the same "core chips ride a chart-rendered
+# ConfigMap" delivery ADR 0034 uses for launchpad's own tiles, as opposed
+# to the cross-namespace sidecar-discovery mechanism it uses for
+# third-party contributions (a further increment, not attempted here).
+# See scout_report_viewer/actions.py for the loader and its documented
+# graceful-degradation behavior.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "report-viewer.fullname" . }}-actions
+  labels:
+    {{- include "report-viewer.labels" . | nindent 4 }}
+data:
+  # An entry disabled below simply isn't in this list - actions.py's
+  # loader treats an empty (or all-disabled) file as a valid, genuinely
+  # empty catalog, not a missing/broken one, so disabling every action
+  # here does not fall back to re-enabling the built-in defaults.
+  catalog.yaml: |
+    {{- if .Values.actions.explainSearch }}
+    - id: explain-search
+      title: Explain Search
+      icon: info
+      tone: indigo
+      weight: 5
+      action_type: client
+      client_handler: explain-search
+    {{- end }}
+    {{- if .Values.actions.downloadCsv }}
+    - id: download-csv
+      title: Download CSV
+      icon: download
+      tone: slate
+      weight: 10
+      action_type: client
+      client_handler: download-csv
+    {{- end }}
