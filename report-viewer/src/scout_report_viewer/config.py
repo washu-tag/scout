@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     # tokens until that's provisioned - see auth.py.
     oidc_roles_client_id: str = "report-viewer"
 
+    # Issue #739 PoC: path to the action-catalog YAML the Helm chart
+    # renders into a ConfigMap and mounts here (the same "core chips ride
+    # a chart-rendered ConfigMap mounted directly into the pod" delivery
+    # ADR 0034 uses for launchpad's own tiles). Missing file (e.g. local
+    # dev without the chart) falls back to actions.py's built-in defaults.
+    action_catalog_path: str = "/app/action-catalog/catalog.yaml"
+
     # Shared secret Traefik injects; the header path is refused unless it matches.
     gateway_secret: str = ""
 

@@ -1,24 +1,41 @@
 """Extensible per-search action buttons (issue #739 PoC).
 
-Report-viewer's search-detail toolbar currently hardcodes every button in
+Report-viewer's search-detail toolbar used to hardcode every button in
 the frontend. This module proves out a backend-declared contract instead:
 a button is data (`ActionDescriptor`), filtered by the caller's role
 server-side, and rendered generically by the SPA - the same shape ADR 0034
 (#636) used for launchpad chips, adapted for actions that can be gated per
 search rather than always-static links.
 
-PoC scope: `_CATALOG` is a hardcoded list, not runtime discovery. Real
-discovery (labelled ConfigMaps + a sidecar, mirroring ADR 0034) is
-deliberately deferred until this contract shape is validated - see the
-issue for the full design discussion.
+Discovery: `helm/report-viewer`'s chart renders a `catalog.yaml` into a
+ConfigMap and mounts it at `settings.action_catalog_path` - the same
+"core chips ride a chart-rendered ConfigMap mounted directly into the
+pod" delivery ADR 0034 uses for launchpad's *own* tiles (as opposed to
+the cross-namespace sidecar-watch mechanism it uses for third-party
+contributions, which is a further increment this doesn't attempt yet:
+this ConfigMap is owned entirely by report-viewer's own chart, read once
+at process start - a ConfigMap edit needs a pod restart to take effect,
+no live re-read/TTL snapshot yet).
+
+Graded degradation, mirroring ADR 0034: an unparseable file falls back
+to `_DEFAULT_CATALOG` entirely (bad document costs its only document);
+one invalid entry within an otherwise-valid file is skipped, logged, and
+the rest of the catalog still loads (bad chip costs the chip).
 """
 
 from __future__ import annotations
 
+import logging
+from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, model_validator
+import yaml
+from pydantic import BaseModel, ValidationError, model_validator
+
+from .config import settings
+
+log = logging.getLogger(__name__)
 
 
 class ActionDescriptor(BaseModel):
@@ -69,15 +86,21 @@ def _is_safe_action_url(url: str) -> bool:
     return parsed.scheme in ("http", "https") and bool(parsed.netloc)
 
 
-_CATALOG: list[ActionDescriptor] = [
+# Built-in floor when no ConfigMap is mounted (local dev without the
+# chart, or the mount breaking) - ADR 0034's "never an empty page"
+# principle. Matches today's actual toolbar exactly: Explain Search and
+# Download CSV are what already ship on main, just re-expressed through
+# this contract. New demo/example actions belong in the Helm chart's
+# rendered catalog or in tests, not baked into this fallback.
+_DEFAULT_CATALOG: list[ActionDescriptor] = [
     ActionDescriptor(
-        id="docs-link",
-        title="Scout Docs",
-        icon="book",
+        id="explain-search",
+        title="Explain Search",
+        icon="info",
         tone="indigo",
-        weight=100,
-        action_type="open-url",
-        url="https://washu-scout.readthedocs.io/en/latest/",
+        weight=5,
+        action_type="client",
+        client_handler="explain-search",
     ),
     ActionDescriptor(
         id="download-csv",
@@ -88,21 +111,46 @@ _CATALOG: list[ActionDescriptor] = [
         action_type="client",
         client_handler="download-csv",
     ),
-    # Demonstrates role-gating only - required_role="report-viewer-admin"
-    # never matches on a real token today (report-viewer has no Keycloak
-    # client of its own yet, see auth.py), so this is exercised in tests
-    # rather than a live deploy until that's provisioned.
-    ActionDescriptor(
-        id="admin-diagnostics-poc",
-        title="Admin Diagnostics (PoC)",
-        icon="shield",
-        tone="rose",
-        weight=200,
-        action_type="open-url",
-        url="https://washu-scout.readthedocs.io/en/latest/",
-        required_role="report-viewer-admin",
-    ),
 ]
+
+
+def _load_catalog_from_file(path: str) -> list[ActionDescriptor] | None:
+    """Parse `path` into a validated action list, or None if it's absent
+    or unparseable (caller falls back to `_DEFAULT_CATALOG`)."""
+    file = Path(path)
+    if not file.is_file():
+        return None
+    try:
+        raw = yaml.safe_load(file.read_text())
+    except yaml.YAMLError:
+        log.exception("action catalog %s: invalid YAML, using built-in defaults", path)
+        return None
+    # An empty file (e.g. every chart-toggled action disabled) parses to
+    # None, which is a legitimate, intentionally-empty catalog - distinct
+    # from a genuinely malformed shape (a dict/string instead of a list),
+    # which still falls back to _DEFAULT_CATALOG.
+    if raw is None:
+        raw = []
+    if not isinstance(raw, list):
+        log.error("action catalog %s: expected a YAML list, using built-in defaults", path)
+        return None
+
+    catalog: list[ActionDescriptor] = []
+    for i, entry in enumerate(raw):
+        try:
+            catalog.append(ActionDescriptor(**entry))
+        except (TypeError, ValidationError) as exc:
+            log.warning("action catalog %s: skipping entry %d (%s)", path, i, exc)
+    return catalog
+
+
+_loaded_catalog = _load_catalog_from_file(settings.action_catalog_path)
+# `or` would treat a validly-empty list (see above) the same as a missing
+# file, silently reintroducing the defaults a chart-level "disable
+# everything" was meant to remove - check for None explicitly instead.
+_CATALOG: list[ActionDescriptor] = (
+    _loaded_catalog if _loaded_catalog is not None else _DEFAULT_CATALOG
+)
 
 
 def list_actions(user_roles: frozenset[str]) -> list[ActionDescriptor]:
