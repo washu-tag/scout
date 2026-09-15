@@ -20,6 +20,7 @@ import {
   filterRows,
   friendlyError,
   getSearch,
+  getSearchProgress,
   getSearchRows,
   type FilterState,
 } from '../api/client';
@@ -27,6 +28,7 @@ import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '.
 import { buildFilterPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
 import { RowDetail } from './searchDetail/RowDetail';
+import { QueryProgressBar, useQueryProgress } from '../QueryProgress';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
@@ -102,6 +104,9 @@ export default function SearchDetailPage() {
     queryFn: () => getSearchRows(searchId),
     enabled: !!searchId,
   });
+
+  const fetchProgress = useCallback(() => getSearchProgress(searchId), [searchId]);
+  const rowsProgress = useQueryProgress(!rowsQ.data && rowsQ.isLoading, fetchProgress);
 
   // Expansion is keyed by row id (primary_report_identifier); clear on a new
   // cohort fetch so a fresh search doesn't inherit stale expansions.
@@ -267,7 +272,21 @@ export default function SearchDetailPage() {
         <p style={{ color: 'var(--rv-danger)' }}>{friendlyError(rowsQ.error, 'these rows')}</p>
       )}
       {!rowsQ.data && rowsQ.isLoading ? (
-        <p style={{ color: 'var(--rv-muted)' }}>Loading reports…</p>
+        <div>
+          <QueryProgressBar label="Loading reports…" progress={rowsProgress} />
+          {(meta.data?.sql_explanation || meta.data?.sql) && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setSqlModalOpen(true)}
+                style={paginationBtn}
+                title="See what this search matches and the underlying SQL"
+              >
+                Explain Search
+              </button>
+            </div>
+          )}
+        </div>
       ) : (
         rowsQ.data && (
           <div

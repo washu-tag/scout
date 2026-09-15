@@ -83,6 +83,7 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
         sql: str,
         user: str | None = None,
         params: list | tuple | None = None,
+        progress_key: str | None = None,
     ):
         calls.append((sql, params))
         if not queue:

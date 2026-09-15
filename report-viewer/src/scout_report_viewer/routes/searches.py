@@ -31,7 +31,7 @@ from fastapi import (
     status,
 )
 
-from .. import metrics, trino_client
+from .. import metrics, progress, trino_client
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
@@ -482,6 +482,10 @@ async def delete_search(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+def _progress_key(search_id: str, user_sub: str) -> str:
+    return f"search:{search_id}:{user_sub}"
+
+
 def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
     log.exception("trino %s query failed", stage)
     return HTTPException(
@@ -524,6 +528,7 @@ async def get_search_rows(
                 all_sql,
                 user=user.sub,
                 params=[uploaded_ids] if uploaded_ids else None,
+                progress_key=_progress_key(search_id, user.sub),
             )
     except Exception as exc:
         raise _rows_query_error(exc, "rows")
@@ -541,6 +546,16 @@ async def get_search_rows(
         total=len(lean_rows),
         truncated=truncated,
     )
+
+
+@router.get("/{search_id}/progress")
+async def get_search_progress(
+    search_id: str,
+    user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Live Trino stats for this user's in-flight `/rows` query, polled by
+    the SPA's loading indicator. Empty when no query is running."""
+    return progress.get(_progress_key(search_id, user.sub)) or {}
 
 
 @router.get("/{search_id}/accessions")

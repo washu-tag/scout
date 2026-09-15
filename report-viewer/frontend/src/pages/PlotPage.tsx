@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { friendlyError, getPlot } from '../api/client';
+import { friendlyError, getPlot, getPlotProgress } from '../api/client';
+import { QueryProgressBar, useQueryProgress } from '../QueryProgress';
 import { setHeight as setIframeHeight } from '../iframeHeight';
 import { buildDiscussPlotPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
@@ -258,6 +259,9 @@ export default function PlotPage() {
     enabled: !!plotId,
   });
 
+  const fetchProgress = useCallback(() => getPlotProgress(plotId), [plotId]);
+  const plotProgress = useQueryProgress(!plot.data && plot.isLoading, fetchProgress);
+
   const base = useMemo(
     () =>
       plot.data
@@ -409,7 +413,17 @@ export default function PlotPage() {
             This chart could not be drawn: {renderError}
           </p>
         )}
-        {!plot.data && plot.isLoading && <p style={{ color: 'var(--rv-muted)' }}>Loading chart…</p>}
+        {!plot.data && plot.isLoading && (
+          <div
+            style={{
+              background: 'var(--rv-surface)',
+              border: '1px solid var(--rv-border)',
+              borderRadius: 4,
+            }}
+          >
+            <QueryProgressBar label="Loading chart…" progress={plotProgress} />
+          </div>
+        )}
         <div
           ref={holder}
           style={{

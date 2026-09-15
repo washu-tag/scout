@@ -95,6 +95,28 @@ export function getSearch(searchId: string): Promise<SearchMeta> {
   return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
 }
 
+// Raw Trino stats for an in-flight query; `{}` when none is running.
+// Fields are whatever Trino reports, so every one is optional.
+export interface QueryProgress {
+  state?: string;
+  queued?: boolean;
+  progressPercentage?: number;
+  processedRows?: number;
+  processedBytes?: number;
+  elapsedTimeMillis?: number;
+  completedSplits?: number;
+  totalSplits?: number;
+  nodes?: number;
+}
+
+export function getSearchProgress(searchId: string): Promise<QueryProgress> {
+  return api<QueryProgress>(`/api/searches/${encodeURIComponent(searchId)}/progress`);
+}
+
+export function getPlotProgress(plotId: string): Promise<QueryProgress> {
+  return api<QueryProgress>(`/api/plots/${encodeURIComponent(plotId)}/progress`);
+}
+
 export interface FilterState {
   patient_age?: { min?: string; max?: string };
   message_dt?: { min?: string; max?: string };

@@ -27,6 +27,7 @@ import httpx
 from trino.auth import JWTAuthentication
 from trino.dbapi import connect as trino_connect
 
+from . import progress
 from .config import settings
 
 log = logging.getLogger(__name__)
@@ -143,10 +144,19 @@ def _connect(user: str | None) -> Iterator[Any]:
 
 
 def _execute_sync(
-    sql: str, user: str | None, params: list | tuple | None
+    sql: str,
+    user: str | None,
+    params: list | tuple | None,
+    progress_key: str | None = None,
 ) -> tuple[list[str], list[list[Any]]]:
     with _connect(user) as conn:
-        cur = conn.cursor()
+        cur = conn.cursor(
+            stats_callback=(
+                (lambda stats: progress.report(progress_key, stats))
+                if progress_key
+                else None
+            )
+        )
         # Driver requires None or non-empty sequence for params (asserts on type).
         if params:
             cur.execute(sql, params)
@@ -195,15 +205,25 @@ async def execute(
     sql: str,
     user: str | None = None,
     params: list | tuple | None = None,
+    progress_key: str | None = None,
 ) -> tuple[list[str], list[dict[str, Any]]]:
     """Run `sql` against Trino. `params` is bound positionally (`?`).
+
+    With `progress_key`, live Trino stats are published there for the
+    duration of the query (see `progress`).
 
     Lists/tuples bind as Trino ARRAY values, so prefer
     `WHERE contains(?, col)` over `WHERE col IN (...)` for matching a
     column against a caller-supplied list (the driver doesn't expand
     list params into IN-clauses).
     """
-    columns, raw_rows = await asyncio.to_thread(_execute_sync, sql, user, params)
+    try:
+        columns, raw_rows = await asyncio.to_thread(
+            _execute_sync, sql, user, params, progress_key
+        )
+    finally:
+        if progress_key:
+            progress.clear(progress_key)
     dict_rows = [
         {col: _normalize(raw_rows[i][j]) for j, col in enumerate(columns)}
         for i in range(len(raw_rows))

@@ -28,7 +28,7 @@ from fastapi import (
     status,
 )
 
-from .. import metrics, trino_client
+from .. import metrics, progress, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
 from ..csv_upload import (
@@ -149,6 +149,10 @@ def _add_legend_toggle(spec: dict[str, Any]) -> dict[str, Any]:
 def _wrap_sql(sql: str) -> str:
     """Strip a trailing `;` so the SQL can be nested as a subquery."""
     return sql.rstrip().rstrip(";")
+
+
+def _progress_key(plot_id: str, user_sub: str) -> str:
+    return f"plot:{plot_id}:{user_sub}"
 
 
 def _clean_spec(raw_spec: Any) -> dict[str, Any]:
@@ -561,6 +565,7 @@ async def get_plot(
                 all_sql,
                 user=user.sub,
                 params=[uploaded_ids] if uploaded_ids else None,
+                progress_key=_progress_key(plot_id, user.sub),
             )
     except Exception as exc:
         log.exception("trino plot rows failed")
@@ -581,3 +586,13 @@ async def get_plot(
         sql=plot["sql"],
         sql_explanation=plot["sql_explanation"],
     )
+
+
+@router.get("/{plot_id}/progress")
+async def get_plot_progress(
+    plot_id: str,
+    user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Live Trino stats for this user's in-flight chart query, polled by
+    the SPA's loading indicator. Empty when no query is running."""
+    return progress.get(_progress_key(plot_id, user.sub)) or {}
