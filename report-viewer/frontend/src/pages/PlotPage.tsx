@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { friendlyError, getPlot, getPlotProgress } from '../api/client';
-import { QueryProgressModal, useQueryProgress } from '../QueryProgress';
+import {
+  LoadingSpinner,
+  QueryProgressInline,
+  useDelayedLoading,
+  useQueryProgress,
+} from '../QueryProgress';
 import { setHeight as setIframeHeight } from '../iframeHeight';
 import { buildDiscussPlotPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
@@ -259,8 +264,10 @@ export default function PlotPage() {
     enabled: !!plotId,
   });
 
+  const plotLoading = !plot.data && plot.isLoading;
+  const showLoading = useDelayedLoading(plotLoading);
   const fetchProgress = useCallback(() => getPlotProgress(plotId), [plotId]);
-  const plotProgress = useQueryProgress(!plot.data && plot.isLoading, fetchProgress);
+  const plotProgress = useQueryProgress(showLoading, fetchProgress);
 
   const base = useMemo(
     () =>
@@ -382,6 +389,7 @@ export default function PlotPage() {
             flex: '0 0 auto',
           }}
         >
+          {showLoading && <QueryProgressInline progress={plotProgress} />}
           {plot.data?.truncated && (
             <span
               title="Narrow the query to see the full result"
@@ -413,22 +421,18 @@ export default function PlotPage() {
             This chart could not be drawn: {renderError}
           </p>
         )}
-        {!plot.data && plot.isLoading && (
-          <>
-            {/* `fit` autosize makes CONTINUOUS_HEIGHT the whole SVG, not the plot. */}
-            <div
-              aria-hidden
-              style={{
-                padding: '0.5rem',
-                background: 'var(--rv-surface)',
-                border: '1px solid var(--rv-border)',
-                borderRadius: 4,
-              }}
-            >
-              <div style={{ height: CONTINUOUS_HEIGHT }} />
-            </div>
-            <QueryProgressModal label="Loading chart…" progress={plotProgress} />
-          </>
+        {showLoading && (
+          /* `fit` autosize makes CONTINUOUS_HEIGHT the whole SVG, not the plot. */
+          <div
+            style={{
+              padding: '0.5rem',
+              background: 'var(--rv-surface)',
+              border: '1px solid var(--rv-border)',
+              borderRadius: 4,
+            }}
+          >
+            <LoadingSpinner show minHeight={CONTINUOUS_HEIGHT} />
+          </div>
         )}
         <div
           ref={holder}

@@ -99,3 +99,9 @@ div.vega-embed .vega-actions {
     opacity: 0.45;
   }
 }
+
+@keyframes rvSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,8 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Modal } from './Modal';
 import type { QueryProgress } from './api/client';
 
 const POLL_MS = 1000;
+const SHOW_AFTER_MS = 400;
+
+// A fast query would otherwise flash the dialog for a few frames.
+export function useDelayedLoading(loading: boolean): boolean {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      setShow(false);
+      return;
+    }
+    const id = setTimeout(() => setShow(true), SHOW_AFTER_MS);
+    return () => clearTimeout(id);
+  }, [loading]);
+  return show;
+}
 
 // An empty or failed poll keeps the last value; resetting made the bar flicker.
 export function useQueryProgress(
@@ -82,61 +96,76 @@ function useWaitedSeconds(): number {
 }
 
 // Percentage is unclamped on purpose: Trino's goes backwards as it finds splits.
-export function QueryProgressModal({
-  label,
-  progress,
-}: {
-  label: string;
-  progress: QueryProgress | null;
-}) {
+export function QueryProgressInline({ progress }: { progress: QueryProgress | null }) {
   const pct = progress?.progressPercentage;
   const waited = useWaitedSeconds();
+  const detail = detailLine(progress, waited);
 
   return (
-    <Modal onClose={() => {}} ariaLabel={label} minWidth={260} maxWidth={320}>
-      <div
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.4rem',
+        fontSize: '0.7rem',
+        color: 'var(--rv-muted)',
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    >
+      <span
         style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.6rem',
-          alignItems: 'center',
-          textAlign: 'center',
+          width: 70,
+          height: 3,
+          borderRadius: 2,
+          background: 'var(--rv-surface-2)',
+          overflow: 'hidden',
+          flex: '0 0 auto',
         }}
       >
-        <div style={{ fontSize: '0.85rem' }}>{label}</div>
-        <div style={{ fontSize: '0.72rem', color: 'var(--rv-muted)' }}>{stateLine(progress)}</div>
-        <div
+        <span
           style={{
-            width: '100%',
-            height: 4,
+            display: 'block',
+            height: '100%',
             borderRadius: 2,
-            background: 'var(--rv-surface-2)',
-            overflow: 'hidden',
+            background: 'var(--rv-accent)',
+            width: pct == null ? '100%' : `${Math.min(100, Math.max(0, pct))}%`,
+            opacity: pct == null ? 0.35 : 1,
+            animation: pct == null ? 'rvPulse 1.6s ease-in-out infinite' : undefined,
+            transition: 'width 0.4s ease',
           }}
-        >
-          <div
-            style={{
-              height: '100%',
-              borderRadius: 2,
-              background: 'var(--rv-accent)',
-              width: pct == null ? '100%' : `${Math.min(100, Math.max(0, pct))}%`,
-              opacity: pct == null ? 0.35 : 1,
-              animation: pct == null ? 'rvPulse 1.6s ease-in-out infinite' : undefined,
-              transition: 'width 0.4s ease',
-            }}
-          />
-        </div>
-        <div
-          style={{
-            fontSize: '0.7rem',
-            color: 'var(--rv-muted)',
-            fontVariantNumeric: 'tabular-nums',
-            minHeight: '1em',
-          }}
-        >
-          {detailLine(progress, waited)}
-        </div>
-      </div>
-    </Modal>
+        />
+      </span>
+      <span>
+        {stateLine(progress)}
+        {detail && ` · ${detail}`}
+      </span>
+    </span>
+  );
+}
+
+export function LoadingSpinner({ show, minHeight }: { show: boolean; minHeight: number }) {
+  if (!show) return null;
+  return (
+    <div
+      style={{
+        minHeight,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <span
+        aria-label="Loading"
+        role="status"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          border: '2px solid var(--rv-surface-2)',
+          borderTopColor: 'var(--rv-accent)',
+          animation: 'rvSpin 0.8s linear infinite',
+        }}
+      />
+    </div>
   );
 }
