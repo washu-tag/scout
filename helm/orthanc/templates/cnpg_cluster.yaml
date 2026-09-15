@@ -64,13 +64,11 @@ spec:
       secret:
         name: {{ required "postgres.cluster.credentials.externalSecret is required when the CNPG cluster is enabled -- create the kubernetes.io/basic-auth secret out-of-band (the ansible role does this) so the chart never owns credentials" .Values.postgres.cluster.credentials.externalSecret }}
   {{- end }}
+  {{- with .Values.postgres.cluster.parameters }}
   postgresql:
-    {{- if .Values.postgres.cluster.parameters }}
-    {{- with .Values.postgres.cluster.parameters }}
     parameters:
       {{- toYaml . | nindent 6 }}
-    {{- end }}
-    {{- end }}
+  {{- end }}
   {{- with .Values.postgres.cluster.managed }}
   managed:
     {{- toYaml . | nindent 4 }}
