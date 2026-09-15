@@ -17,6 +17,14 @@ this ConfigMap is owned entirely by report-viewer's own chart, read once
 at process start - a ConfigMap edit needs a pod restart to take effect,
 no live re-read/TTL snapshot yet).
 
+A site admin can add a genuinely new button - not just toggle a built-in
+one - via `values.yaml`'s `actions.custom` list, with no report-viewer
+code change or image rebuild: just a values change + `helm upgrade`.
+Only `open-url` actions are authorable this way (see `ActionDescriptor`
+below) - a `client` action needs a handler already registered in
+report-viewer's own frontend, so it isn't expressible as pure values
+data.
+
 Graded degradation, mirroring ADR 0034: an unparseable file falls back
 to `_DEFAULT_CATALOG` entirely (bad document costs its only document);
 one invalid entry within an otherwise-valid file is skipped, logged, and
@@ -136,11 +144,24 @@ def _load_catalog_from_file(path: str) -> list[ActionDescriptor] | None:
         return None
 
     catalog: list[ActionDescriptor] = []
+    seen_ids: set[str] = set()
     for i, entry in enumerate(raw):
         try:
-            catalog.append(ActionDescriptor(**entry))
+            descriptor = ActionDescriptor(**entry)
         except (TypeError, ValidationError) as exc:
             log.warning("action catalog %s: skipping entry %d (%s)", path, i, exc)
+            continue
+        # Matches ADR 0034's chip rule: duplicate ids reject the later
+        # entry, so e.g. a misconfigured actions.custom id colliding with
+        # a built-in (or another custom entry) doesn't silently produce
+        # two same-keyed React list items.
+        if descriptor.id in seen_ids:
+            log.warning(
+                "action catalog %s: skipping entry %d, duplicate id %r", path, i, descriptor.id
+            )
+            continue
+        seen_ids.add(descriptor.id)
+        catalog.append(descriptor)
     return catalog
 
 

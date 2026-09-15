@@ -19,7 +19,12 @@ from jose import jwt
 from pydantic import ValidationError
 
 from scout_report_viewer import actions, jwks
-from scout_report_viewer.actions import ActionDescriptor, _is_safe_action_url, list_actions
+from scout_report_viewer.actions import (
+    ActionDescriptor,
+    _is_safe_action_url,
+    _load_catalog_from_file,
+    list_actions,
+)
 from scout_report_viewer.config import settings
 
 
@@ -95,6 +100,70 @@ def test_open_url_action_requires_safe_url():
 def test_client_action_requires_handler():
     with pytest.raises(ValidationError):
         ActionDescriptor(id="x", title="X", action_type="client", client_handler=None)
+
+
+# --- _load_catalog_from_file: the site-admin-facing actions.custom path ---
+
+
+def test_load_catalog_missing_file_returns_none(tmp_path):
+    assert _load_catalog_from_file(str(tmp_path / "nope.yaml")) is None
+
+
+def test_load_catalog_empty_file_is_a_valid_empty_list(tmp_path):
+    """Distinguishes "every action disabled" from "no file mounted" -
+    the caller must NOT treat this the same as None (see actions.py's
+    _CATALOG assignment comment)."""
+    f = tmp_path / "catalog.yaml"
+    f.write_text("")
+    assert _load_catalog_from_file(str(f)) == []
+
+
+def test_load_catalog_skips_invalid_entry_keeps_rest(tmp_path):
+    f = tmp_path / "catalog.yaml"
+    f.write_text(
+        "- id: bad\n"
+        "  title: Bad\n"
+        "  action_type: open-url\n"
+        "  url: javascript:alert(1)\n"
+        "- id: good\n"
+        "  title: Good\n"
+        "  action_type: open-url\n"
+        "  url: https://example.org\n"
+    )
+    result = _load_catalog_from_file(str(f))
+    ids = {a.id for a in result}
+    assert ids == {"good"}
+
+
+def test_load_catalog_rejects_later_duplicate_id(tmp_path):
+    """Matches ADR 0034's chip rule: duplicate ids reject the later entry -
+    e.g. an actions.custom id colliding with a built-in id."""
+    f = tmp_path / "catalog.yaml"
+    f.write_text(
+        "- id: dup\n"
+        "  title: First\n"
+        "  action_type: open-url\n"
+        "  url: https://example.org/first\n"
+        "- id: dup\n"
+        "  title: Second\n"
+        "  action_type: open-url\n"
+        "  url: https://example.org/second\n"
+    )
+    result = _load_catalog_from_file(str(f))
+    assert len(result) == 1
+    assert result[0].title == "First"
+
+
+def test_load_catalog_malformed_yaml_returns_none(tmp_path):
+    f = tmp_path / "catalog.yaml"
+    f.write_text("[1, 2")  # unclosed flow sequence
+    assert _load_catalog_from_file(str(f)) is None
+
+
+def test_load_catalog_non_list_yaml_returns_none(tmp_path):
+    f = tmp_path / "catalog.yaml"
+    f.write_text("just_a_string")
+    assert _load_catalog_from_file(str(f)) is None
 
 
 # --- End-to-end: role claim -> auth.py -> route ---------------------------
