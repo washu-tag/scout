@@ -239,6 +239,14 @@ class PlotMeta(BaseModel):
     owui_chat_id: str = ""
 
 
+class ActionInvokeResponse(BaseModel):
+    """Issue #739 PoC: the result URL a backend-call action's own
+    endpoint_url returned, ready for the same open/copy-fallback handling
+    as an open-url action."""
+
+    url: str
+
+
 class PlotDetail(BaseModel):
     """Spec and rows for the SPA's chart route, plus the SQL and its
     explanation for the "What this search matches" panel."""

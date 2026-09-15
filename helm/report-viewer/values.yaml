@@ -73,21 +73,38 @@ resources:
 actions:
   explainSearch: true
   downloadCsv: true
-  # Site-admin-authorable link-out buttons - no report-viewer code change
-  # or image rebuild needed, just a values change + helm upgrade. Always
-  # rendered as action_type: open-url (the only action type expressible
-  # as pure data - a "client" action needs a handler already registered
-  # in report-viewer's own frontend, so it isn't something a values entry
-  # alone can add). id/title/url are required; icon/tone/weight fall back
-  # to actions.py's own field defaults if omitted; requiredRole gates the
-  # button behind that Keycloak client role, same as any other action.
+  # Site-admin-authorable buttons - no report-viewer code change or image
+  # rebuild needed, just a values change + helm upgrade. Two shapes:
   #
-  # custom:
-  #   - id: pacs-viewer
-  #     title: Open in PACS
-  #     url: https://pacs.example.org/
-  #     weight: 50
-  #     requiredRole: report-viewer-admin
+  # actionType: open-url (default if omitted) - a static link. id/title/
+  # url required; icon/tone/weight fall back to actions.py's own field
+  # defaults if omitted; requiredRole gates the button behind that
+  # Keycloak client role, same as any other action.
+  #
+  #   custom:
+  #     - id: pacs-viewer
+  #       title: Open in PACS
+  #       url: https://pacs.example.org/
+  #       weight: 50
+  #       requiredRole: report-viewer-admin
+  #
+  # actionType: backend-call - the SPA POSTs the search's context to
+  # endpointUrl (a genuinely separate, independently deployed service -
+  # #595's "Apps" tier) and opens whatever result URL it returns.
+  # invokeToken, if set, is forwarded as X-Report-Viewer-Action-Token and
+  # never round-trips to the browser (see actions.py's ActionDescriptor).
+  #
+  #   custom:
+  #     - id: explore-xnat
+  #       title: Explore in XNAT
+  #       actionType: backend-call
+  #       endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
+  #       invokeToken: <matches xnat-explore-poc's invokeToken value>
+  #
+  # "client" actions (page-specific logic, e.g. Download CSV) can't be
+  # added this way at all - they need a handler already registered in
+  # report-viewer's own frontend, so there's structurally no values field
+  # for one.
   custom: []
 
 # Env vars injected as REPORT_VIEWER_* - see scout_report_viewer.config.Settings.

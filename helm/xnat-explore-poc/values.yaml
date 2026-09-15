@@ -1,0 +1,59 @@
+# Default values for xnat-explore-poc.
+# Issue #739 PoC: a totally fake report-viewer "backend-call" action
+# target. See src/xnat_explore_poc/app.py - no real XNAT integration.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/washu-tag/xnat-explore-poc
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ''
+fullnameOverride: ''
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+service:
+  port: 8000
+
+# In-cluster only - called by report-viewer's backend-call proxy, never by
+# a browser. No Ingress, no oauth2-proxy/Traefik middleware needed.
+networkPolicy:
+  enabled: true
+  # Namespace report-viewer itself deploys into, so its pod can reach this
+  # service. Set to match the report-viewer deployment.
+  reportViewerNamespace: ''
+
+# Bundled XNAT's browser-facing base URL - what /invoke's response points at.
+xnatBaseUrl: ''
+
+# Shared secret report-viewer sends as X-Invoke-Token. PoC only - plain
+# values-driven env var, not a Secret object, matching the earlier
+# chat-cohort-export PoC's explicitly-flagged-insecure precedent. Replace
+# with real service-to-service auth before this leaves prototype status.
+invokeToken: ''
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

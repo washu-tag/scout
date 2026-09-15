@@ -20,6 +20,7 @@ import logging
 import re
 from typing import Any
 
+import httpx
 from fastapi import (
     APIRouter,
     Depends,
@@ -50,6 +51,7 @@ from ..ids import new_search_id
 from ..logging_setup import scrub_for_log
 from ..models import (
     SEARCH_REQUIRED_COLUMNS,
+    ActionInvokeResponse,
     CreateFromFileResponse,
     CreateSearchRequest,
     CreateSearchResponse,
@@ -498,6 +500,52 @@ async def get_search_actions(
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return list_actions(user.roles)
+
+
+@router.post("/{search_id}/actions/{action_id}/invoke", response_model=ActionInvokeResponse)
+async def invoke_search_action(
+    search_id: str,
+    action_id: str,
+    user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
+) -> ActionInvokeResponse:
+    """Issue #739 PoC: generic proxy for `backend-call` actions.
+
+    report-viewer never needs to know anything about what a given plugin
+    does - it forwards the search's context to the action's own
+    endpoint_url (a separately deployed service, e.g. xnat-explore-poc)
+    and relays back whatever result URL it returns. Looked up through
+    list_actions(user.roles), not the raw catalog, so a role-gated action
+    the caller can't even see can't be invoked either - visibility is UX,
+    but the boundary is still enforced here too (ADR 0034's framing).
+    """
+    ds = await store.get_search(search_id, owner_sub=user.sub)
+    if ds is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    action = next((a for a in list_actions(user.roles) if a.id == action_id), None)
+    if action is None or action.action_type != "backend-call" or not action.endpoint_url:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    headers = {}
+    if action.invoke_token:
+        headers["X-Report-Viewer-Action-Token"] = action.invoke_token
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                action.endpoint_url,
+                json={"search_id": search_id, "sql": ds["sql"], "username": user.sub},
+                headers=headers,
+            )
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        log.exception("action %s invoke failed", action_id)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"action invoke failed: {exc}",
+        )
+    payload = resp.json()
+    return ActionInvokeResponse(url=payload["url"])
 
 
 @router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)

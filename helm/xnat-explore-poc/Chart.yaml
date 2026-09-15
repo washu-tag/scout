@@ -1,0 +1,9 @@
+apiVersion: v2
+name: xnat-explore-poc
+description: Fake backend-call target proving report-viewer's pluggable action mechanism (#739 PoC) - not a real XNAT integration
+
+type: application
+
+version: 0.0.0-dev
+
+appVersion: "latest"

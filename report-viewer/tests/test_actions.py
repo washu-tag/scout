@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import time
 
+import httpx
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -100,6 +101,29 @@ def test_open_url_action_requires_safe_url():
 def test_client_action_requires_handler():
     with pytest.raises(ValidationError):
         ActionDescriptor(id="x", title="X", action_type="client", client_handler=None)
+
+
+def test_backend_call_action_requires_safe_endpoint_url():
+    with pytest.raises(ValidationError):
+        ActionDescriptor(id="x", title="X", action_type="backend-call", endpoint_url=None)
+    with pytest.raises(ValidationError):
+        ActionDescriptor(
+            id="x", title="X", action_type="backend-call", endpoint_url="javascript:alert(1)"
+        )
+
+
+def test_backend_call_invoke_token_excluded_from_serialization():
+    """invoke_token must never round-trip to the browser."""
+    d = ActionDescriptor(
+        id="x",
+        title="X",
+        action_type="backend-call",
+        endpoint_url="https://example.org/invoke",
+        invoke_token="super-secret",
+    )
+    assert "invoke_token" not in d.model_dump()
+    assert "invoke_token" not in d.model_dump_json()
+    assert d.invoke_token == "super-secret"  # still a real Python attribute
 
 
 # --- _load_catalog_from_file: the site-admin-facing actions.custom path ---
@@ -277,3 +301,125 @@ def test_actions_endpoint_404s_for_someone_elses_search(client, keypair, fake_tr
         f"/api/searches/{search_id}/actions", headers={"Authorization": f"Bearer {other_token}"}
     )
     assert r.status_code == 404
+
+
+# --- invoke: the generic backend-call proxy --------------------------------
+
+
+class _FakeInvokeResponse:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return self._payload
+
+
+class _FakeAsyncClient:
+    """Stands in for httpx.AsyncClient so no real network call happens -
+    proves report-viewer's proxy logic without needing xnat-explore-poc
+    (or any real service) actually running."""
+
+    last_call: dict | None = None
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+    async def post(self, url, json=None, headers=None):
+        _FakeAsyncClient.last_call = {"url": url, "json": json, "headers": headers}
+        return _FakeInvokeResponse({"url": "https://xnat.example.org?t=123"})
+
+
+@pytest.fixture
+def catalog_with_backend_call_action(monkeypatch):
+    demo_catalog = [
+        *actions._DEFAULT_CATALOG,
+        ActionDescriptor(
+            id="explore-xnat-demo",
+            title="Explore in XNAT (test)",
+            action_type="backend-call",
+            endpoint_url="http://xnat-explore-poc.test.svc.cluster.local:8000/invoke",
+            invoke_token="test-invoke-token",
+        ),
+    ]
+    monkeypatch.setattr(actions, "_CATALOG", demo_catalog)
+    monkeypatch.setattr(httpx, "AsyncClient", _FakeAsyncClient)
+    _FakeAsyncClient.last_call = None
+    return demo_catalog
+
+
+def test_invoke_backend_call_action_returns_url(
+    client, keypair, fake_trino, catalog_with_backend_call_action
+):
+    priv, _ = keypair
+    token = _mint(priv)
+    search_id = _create_search(client, token, fake_trino)
+
+    r = client.post(
+        f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json() == {"url": "https://xnat.example.org?t=123"}
+
+    # Forwarded the shared secret and search context, never the token
+    # itself back to the caller.
+    call = _FakeAsyncClient.last_call
+    assert call["headers"]["X-Report-Viewer-Action-Token"] == "test-invoke-token"
+    assert call["json"]["search_id"] == search_id
+
+
+def test_invoke_unknown_action_404s(client, keypair, fake_trino, catalog_with_backend_call_action):
+    priv, _ = keypair
+    token = _mint(priv)
+    search_id = _create_search(client, token, fake_trino)
+
+    r = client.post(
+        f"/api/searches/{search_id}/actions/does-not-exist/invoke",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 404
+
+
+def test_invoke_non_backend_call_action_404s(
+    client, keypair, fake_trino, catalog_with_admin_action
+):
+    """open-url (and client) actions aren't invokable - they're static or
+    page-local, there's nothing for the proxy to call."""
+    priv, _ = keypair
+    token = _mint(priv, roles=["report-viewer-admin"])
+    search_id = _create_search(client, token, fake_trino)
+
+    r = client.post(
+        f"/api/searches/{search_id}/actions/admin-only-demo/invoke",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 404
+
+
+def test_invoke_backend_call_target_error_returns_502(
+    client, keypair, fake_trino, catalog_with_backend_call_action, monkeypatch
+):
+    class _FailingAsyncClient(_FakeAsyncClient):
+        async def post(self, url, json=None, headers=None):
+            raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(httpx, "AsyncClient", _FailingAsyncClient)
+
+    priv, _ = keypair
+    token = _mint(priv)
+    search_id = _create_search(client, token, fake_trino)
+
+    r = client.post(
+        f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 502
