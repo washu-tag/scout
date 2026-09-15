@@ -73,6 +73,22 @@ resources:
 actions:
   explainSearch: true
   downloadCsv: true
+  # Site-admin-authorable link-out buttons - no report-viewer code change
+  # or image rebuild needed, just a values change + helm upgrade. Always
+  # rendered as action_type: open-url (the only action type expressible
+  # as pure data - a "client" action needs a handler already registered
+  # in report-viewer's own frontend, so it isn't something a values entry
+  # alone can add). id/title/url are required; icon/tone/weight fall back
+  # to actions.py's own field defaults if omitted; requiredRole gates the
+  # button behind that Keycloak client role, same as any other action.
+  #
+  # custom:
+  #   - id: pacs-viewer
+  #     title: Open in PACS
+  #     url: https://pacs.example.org/
+  #     weight: 50
+  #     requiredRole: report-viewer-admin
+  custom: []
 
 # Env vars injected as REPORT_VIEWER_* - see scout_report_viewer.config.Settings.
 # Populated by the Ansible role's values.yaml.j2 in production.

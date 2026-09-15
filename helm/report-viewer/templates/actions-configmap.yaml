@@ -35,3 +35,15 @@ data:
       action_type: client
       client_handler: download-csv
     {{- end }}
+    {{- range .Values.actions.custom }}
+    - id: {{ required "actions.custom entries need an id" .id | quote }}
+      title: {{ required "actions.custom entries need a title" .title | quote }}
+      icon: {{ .icon | default "app" | quote }}
+      tone: {{ .tone | default "indigo" | quote }}
+      weight: {{ .weight | default 100 }}
+      action_type: open-url
+      url: {{ required "actions.custom entries need a url" .url | quote }}
+      {{- if .requiredRole }}
+      required_role: {{ .requiredRole | quote }}
+      {{- end }}
+    {{- end }}
