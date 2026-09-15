@@ -588,6 +588,29 @@ async def get_plot(
     )
 
 
+@router.get("/{plot_id}/meta", response_model=PlotMeta)
+async def get_plot_meta(
+    plot_id: str,
+    user: User = Depends(get_current_user),
+    store: PlotStore = Depends(get_plot_store),
+) -> PlotMeta:
+    """Postgres-only metadata, so the SPA can render the chart's chrome and
+    Explain panel without waiting on `GET /{plot_id}`'s Trino query."""
+    plot = await store.get_plot(plot_id, user.sub)
+    if plot is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="chart not found"
+        )
+    return PlotMeta(
+        id=plot["id"],
+        sql=plot["sql"],
+        owner_sub=plot["owner_sub"],
+        created_at=plot["created_at"],
+        sql_explanation=plot.get("sql_explanation") or "",
+        owui_chat_id=plot.get("owui_chat_id") or "",
+    )
+
+
 @router.get("/{plot_id}/progress")
 async def get_plot_progress(
     plot_id: str,

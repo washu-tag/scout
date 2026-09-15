@@ -514,3 +514,21 @@ def test_an_omitted_explanation_reads_back_as_empty_not_null(
     fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
     detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
     assert detail["sql_explanation"] == ""
+
+
+def test_meta_serves_the_explain_panel_without_running_the_query(
+    client, auth_headers, fake_trino
+):
+    """The point of /meta: no Trino call, so the SPA can render the chart's
+    chrome and Explain panel while the rows query is still going."""
+    _queue_chart_query(fake_trino, ["modality", "n"], [{"modality": "MR", "n": 7}])
+    plot_id = _create(
+        client, auth_headers, explanation="Scan counts by modality."
+    ).json()["id"]
+    before = len(fake_trino.calls)
+
+    meta = client.get(f"/api/plots/{plot_id}/meta", headers=auth_headers).json()
+    assert meta["sql_explanation"] == "Scan counts by modality."
+    assert meta["sql"] == "SELECT modality, COUNT(*) n FROM t"
+    assert "rows" not in meta
+    assert len(fake_trino.calls) == before

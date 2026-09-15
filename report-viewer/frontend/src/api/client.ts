@@ -96,11 +96,9 @@ export function getSearch(searchId: string): Promise<SearchMeta> {
 }
 
 // Raw Trino stats for an in-flight query; `{}` when none is running.
-// Fields are whatever Trino reports, so every one is optional.
 export interface QueryProgress {
   state?: string;
   queued?: boolean;
-  progressPercentage?: number;
   processedRows?: number;
   processedBytes?: number;
 }
@@ -207,6 +205,10 @@ export type PlotDetail = {
   sql_explanation: string;
   truncated: boolean;
 };
+
+export function getPlotMeta(plotId: string): Promise<PlotMeta> {
+  return api<PlotMeta>(`/api/plots/${encodeURIComponent(plotId)}/meta`);
+}
 
 export function getPlot(plotId: string): Promise<PlotDetail> {
   return api<PlotDetail>(`/api/plots/${encodeURIComponent(plotId)}`);

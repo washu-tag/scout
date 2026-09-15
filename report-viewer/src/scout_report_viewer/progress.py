@@ -1,7 +1,6 @@
 """Live Trino query progress for the SPA's loading indicator.
 
-In-process and best-effort: a restart or a second replica means a cache
-miss, which the SPA renders as a plain spinner.
+In-process and best-effort: a restart or a second replica is a cache miss.
 """
 
 from __future__ import annotations
@@ -19,15 +18,13 @@ _entries: dict[str, dict[str, Any]] = {}
 _FIELDS = (
     "state",
     "queued",
-    "progressPercentage",
     "processedRows",
     "processedBytes",
 )
 
 
 def report(key: str, stats: dict[str, Any]) -> None:
-    """Record the latest stats for `key`. Called from the Trino worker
-    thread on every nextUri poll, so it must not block or await."""
+    """Called from the Trino worker thread, so it must not block or await."""
     now = time.time()
     trimmed = {k: stats[k] for k in _FIELDS if k in stats}
     with _lock:

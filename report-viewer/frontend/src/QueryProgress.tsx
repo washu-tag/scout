@@ -1,34 +1,50 @@
 import { useEffect, useState } from 'react';
 import type { QueryProgress } from './api/client';
 
-const POLL_MS = 1000;
-const SHOW_AFTER_MS = 400;
+const POLL_MS = 3000;
+const TICK_MS = 250;
+// A faster query finishes before the indicator is worth showing.
+const SHOW_AFTER_MS = 1000;
 
-// A fast query would otherwise flash the dialog for a few frames.
-export function useDelayedLoading(loading: boolean): boolean {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
-    if (!loading) {
-      setShow(false);
-      return;
-    }
-    const id = setTimeout(() => setShow(true), SHOW_AFTER_MS);
-    return () => clearTimeout(id);
-  }, [loading]);
-  return show;
+export interface LoadingProgress {
+  show: boolean;
+  progress: QueryProgress | null;
+  seconds: number;
 }
 
-// An empty or failed poll keeps the last value; resetting made the bar flicker.
-export function useQueryProgress(
-  active: boolean,
+// Counts from when `loading` began, not `show`, so it is the whole wait.
+export function useLoadingProgress(
+  loading: boolean,
   fetchProgress: () => Promise<QueryProgress>,
-): QueryProgress | null {
+): LoadingProgress {
+  const [show, setShow] = useState(false);
+  const [seconds, setSeconds] = useState(0);
   const [progress, setProgress] = useState<QueryProgress | null>(null);
 
   useEffect(() => {
-    if (!active) return;
+    if (!loading) {
+      setShow(false);
+      setSeconds(0);
+      setProgress(null);
+      return;
+    }
+    const startedAt = Date.now();
+    const showTimer = setTimeout(() => setShow(true), SHOW_AFTER_MS);
+    const tick = setInterval(
+      () => setSeconds(Math.floor((Date.now() - startedAt) / 1000)),
+      TICK_MS,
+    );
+    return () => {
+      clearTimeout(showTimer);
+      clearInterval(tick);
+    };
+  }, [loading]);
+
+  // An empty or failed poll keeps the last value rather than resetting.
+  useEffect(() => {
+    if (!show) return;
     let cancelled = false;
-    const tick = async () => {
+    const poll = async () => {
       try {
         const p = await fetchProgress();
         if (!cancelled && Object.keys(p).length) setProgress(p);
@@ -36,15 +52,15 @@ export function useQueryProgress(
         /* keep the last value */
       }
     };
-    tick();
-    const id = setInterval(tick, POLL_MS);
+    poll();
+    const id = setInterval(poll, POLL_MS);
     return () => {
       cancelled = true;
       clearInterval(id);
     };
-  }, [active, fetchProgress]);
+  }, [show, fetchProgress]);
 
-  return progress;
+  return { show, progress, seconds };
 }
 
 function compactNumber(n: number): string {
@@ -77,68 +93,22 @@ function stateLine(p: QueryProgress | null): string {
 
 function detailLine(p: QueryProgress | null, waitedSeconds: number): string {
   const parts: string[] = [];
-  if (p?.progressPercentage != null) parts.push(`${p.progressPercentage.toFixed(0)}%`);
   if (p?.processedRows) parts.push(`${compactNumber(p.processedRows)} rows`);
   if (p?.processedBytes) parts.push(compactBytes(p.processedBytes));
   parts.push(`${waitedSeconds}s`);
   return parts.join(' · ');
 }
 
-// The user's whole wait, not Trino's `elapsedTimeMillis`, which starts later.
-function useWaitedSeconds(): number {
-  const [seconds, setSeconds] = useState(0);
-  useEffect(() => {
-    const started = Date.now();
-    const id = setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return seconds;
-}
-
-// Percentage is unclamped on purpose: Trino's goes backwards as it finds splits.
-export function QueryProgressInline({ progress }: { progress: QueryProgress | null }) {
-  const pct = progress?.progressPercentage;
-  const waited = useWaitedSeconds();
-  const detail = detailLine(progress, waited);
-
+export function QueryProgressInline({ progress, seconds }: LoadingProgress) {
   return (
     <span
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.4rem',
         fontSize: '0.7rem',
         color: 'var(--rv-muted)',
         fontVariantNumeric: 'tabular-nums',
       }}
     >
-      <span
-        style={{
-          width: 70,
-          height: 3,
-          borderRadius: 2,
-          background: 'var(--rv-surface-2)',
-          overflow: 'hidden',
-          flex: '0 0 auto',
-        }}
-      >
-        <span
-          style={{
-            display: 'block',
-            height: '100%',
-            borderRadius: 2,
-            background: 'var(--rv-accent)',
-            width: pct == null ? '100%' : `${Math.min(100, Math.max(0, pct))}%`,
-            opacity: pct == null ? 0.35 : 1,
-            animation: pct == null ? 'rvPulse 1.6s ease-in-out infinite' : undefined,
-            transition: 'width 0.4s ease',
-          }}
-        />
-      </span>
-      <span>
-        {stateLine(progress)}
-        {detail && ` · ${detail}`}
-      </span>
+      {stateLine(progress)} · {detailLine(progress, seconds)}
     </span>
   );
 }

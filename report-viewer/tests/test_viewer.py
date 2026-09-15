@@ -80,9 +80,8 @@ def test_rows_truncates_at_cap(client, auth_headers, fake_trino, monkeypatch):
 
 
 def test_trino_stats_reach_the_progress_store(monkeypatch):
-    """The `stats_callback` wiring into `conn.cursor()` is the fragile part:
-    a client upgrade renaming the kwarg would silently kill every progress
-    bar. Assert a real execute() publishes and then clears."""
+    """A client upgrade renaming the `stats_callback` kwarg would silently
+    kill every loading indicator, so drive the real execute() path."""
     from scout_report_viewer import progress, trino_client
 
     mid_flight = {}
@@ -93,8 +92,8 @@ def test_trino_stats_reach_the_progress_store(monkeypatch):
             self._cb = stats_callback
 
         def execute(self, sql, params=None):
-            self._cb({"state": "RUNNING", "progressPercentage": 61.5})
-            self._cb({"state": "RUNNING", "progressPercentage": 40.0})
+            self._cb({"state": "RUNNING", "processedRows": 1000})
+            self._cb({"state": "RUNNING", "processedRows": 5000})
             mid_flight.update(progress.get("k") or {})
 
         def fetchall(self):
@@ -110,8 +109,7 @@ def test_trino_stats_reach_the_progress_store(monkeypatch):
     monkeypatch.setattr(trino_client, "_new_conn", lambda user: FakeConn())
     asyncio.run(trino_client.execute("SELECT 1", user="alice", progress_key="k"))
 
-    # Reported verbatim, including going backwards as Trino finds more splits.
-    assert mid_flight == {"state": "RUNNING", "progressPercentage": 40.0}
+    assert mid_flight == {"state": "RUNNING", "processedRows": 5000}
     assert progress.get("k") is None
 
 

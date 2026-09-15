@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { friendlyError, getPlot, getPlotProgress } from '../api/client';
-import {
-  LoadingSpinner,
-  QueryProgressInline,
-  useDelayedLoading,
-  useQueryProgress,
-} from '../QueryProgress';
+import { friendlyError, getPlot, getPlotMeta, getPlotProgress } from '../api/client';
+import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
 import { setHeight as setIframeHeight } from '../iframeHeight';
 import { buildDiscussPlotPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
@@ -264,10 +259,16 @@ export default function PlotPage() {
     enabled: !!plotId,
   });
 
-  const plotLoading = !plot.data && plot.isLoading;
-  const showLoading = useDelayedLoading(plotLoading);
+  // Postgres-only, so the chrome and Explain panel do not wait on the rows.
+  const meta = useQuery({
+    queryKey: ['plot', plotId, 'meta'],
+    queryFn: () => getPlotMeta(plotId),
+    enabled: !!plotId,
+  });
+
   const fetchProgress = useCallback(() => getPlotProgress(plotId), [plotId]);
-  const plotProgress = useQueryProgress(showLoading, fetchProgress);
+  const loadingState = useLoadingProgress(!plot.data && plot.isLoading, fetchProgress);
+  const showLoading = loadingState.show;
 
   const base = useMemo(
     () =>
@@ -389,7 +390,7 @@ export default function PlotPage() {
             flex: '0 0 auto',
           }}
         >
-          {showLoading && <QueryProgressInline progress={plotProgress} />}
+          {showLoading && <QueryProgressInline {...loadingState} />}
           {plot.data?.truncated && (
             <span
               title="Narrow the query to see the full result"
@@ -399,7 +400,7 @@ export default function PlotPage() {
             </span>
           )}
           <span style={{ flex: 1 }} />
-          {plot.data && (
+          {
             <span
               title="Chart ID"
               style={{
@@ -411,7 +412,7 @@ export default function PlotPage() {
             >
               {plotId}
             </span>
-          )}
+          }
         </div>
         {plot.error && (
           <p style={{ color: 'var(--rv-danger)' }}>{friendlyError(plot.error, 'this chart')}</p>
@@ -446,7 +447,7 @@ export default function PlotPage() {
             borderRadius: 4,
           }}
         />
-        {!renderError && (plot.data?.sql_explanation || plot.data?.sql) && (
+        {!renderError && (meta.data?.sql_explanation || meta.data?.sql) && (
           <div
             style={{
               display: 'flex',
@@ -464,6 +465,7 @@ export default function PlotPage() {
                     "Pull this chart's data into the chat and get the model's read on it.",
                 })
               }
+              disabled={!plot.data}
               style={paginationBtn}
               title="Pull this chart's data into the chat and get the model's read on it"
             >
@@ -480,10 +482,10 @@ export default function PlotPage() {
           </div>
         )}
       </div>
-      {sqlModalOpen && plot.data && (
+      {sqlModalOpen && meta.data && (
         <ExplainSqlModal
-          explanation={plot.data.sql_explanation}
-          sql={plot.data.sql}
+          explanation={meta.data.sql_explanation}
+          sql={meta.data.sql}
           highlightTerms={[]}
           highlightDiagnosis={[]}
           onClose={() => setSqlModalOpen(false)}
