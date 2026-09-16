@@ -101,7 +101,8 @@ export function ActionsToolbar({
           {copyFailed
             ? "Couldn't copy the link automatically, though"
             : 'Its link is also copied to your clipboard'}
-          , in case it didn't: <code>{copiedLink}</code>
+          {", in case it didn't: "}
+          <code>{copiedLink}</code>
         </p>
       )}
     </>
