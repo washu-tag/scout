@@ -96,7 +96,8 @@ div.vega-embed .vega-actions {
   }
 }
 
-button:disabled {
+button:disabled,
+select:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }

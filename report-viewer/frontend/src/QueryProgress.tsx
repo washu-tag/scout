@@ -98,9 +98,9 @@ function compactBytes(b: number): string {
 
 const STATE_LABELS: Record<string, string> = {
   QUEUED: 'Waiting for cluster capacity',
-  PLANNING: 'Planning the query',
+  PLANNING: 'Planning query',
   STARTING: 'Starting up',
-  RUNNING: 'Scanning reports',
+  RUNNING: 'Searching',
   FINISHING: 'Fetching results',
   FINISHED: 'Fetching results',
 };
@@ -111,17 +111,17 @@ function stateLine(p: QueryProgress | null): string {
   return (p.state && STATE_LABELS[p.state]) || 'Working';
 }
 
-// `scanned` disambiguates the finished line, which sits near a result count.
-function detailLine(p: QueryProgress | null, waitedSeconds: number, scanned = false): string {
+function detailLine(p: QueryProgress | null, waitedSeconds: number): string {
   const parts: string[] = [];
-  // Trino saturates at 100 against a denominator that is still filling in.
-  if (!scanned && p?.progressPercentage != null) {
+  // Trino saturates at 100 against a denominator that is still filling in, then
+  // freezes there once the scan ends.
+  if (p?.state === 'RUNNING' && p.progressPercentage != null) {
     parts.push(`${Math.min(99, Math.round(p.progressPercentage))}%`);
   }
-  if (p?.processedRows) {
-    parts.push(`${compactNumber(p.processedRows)} rows${scanned ? ' scanned' : ''}`);
-  }
-  if (p?.processedBytes) parts.push(compactBytes(p.processedBytes));
+  // Input counters, so a plan that reads a table twice reports twice its rows.
+  const rows = p?.processedRows ? `${compactNumber(p.processedRows)} rows` : null;
+  const bytes = p?.processedBytes ? compactBytes(p.processedBytes) : null;
+  if (rows || bytes) parts.push(`${[rows, bytes].filter(Boolean).join(', ')} read`);
   parts.push(`${waitedSeconds}s`);
   return parts.join(' · ');
 }
@@ -140,9 +140,7 @@ export function QueryProgressInline({
         fontVariantNumeric: 'tabular-nums',
       }}
     >
-      {done
-        ? `${doneLabel} · ${detailLine(progress, seconds, true)}`
-        : `${stateLine(progress)} · ${detailLine(progress, seconds)}`}
+      {`${done ? doneLabel : stateLine(progress)} · ${detailLine(progress, seconds)}`}
     </span>
   );
 }

@@ -492,6 +492,7 @@ export default function SearchDetailPage() {
             <select
               value={pagination.pageSize}
               onChange={(e) => table.setPageSize(Number(e.target.value))}
+              disabled={!rowsQ.data}
               style={{ fontSize: '0.85rem' }}
             >
               <option value={50}>50</option>

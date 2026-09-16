@@ -171,7 +171,9 @@ class Tools:
                 "No reports matched. Try scouting the data or broadening the criteria."
             )
 
-        await self._emit(__event_emitter__, "Found matching reports", done=True)
+        await self._emit(
+            __event_emitter__, "Found matching reports, opening viewer", done=True
+        )
 
         await self._emit_embed(
             __event_emitter__,
@@ -294,7 +296,7 @@ class Tools:
                 return error
             return f"{error}\n\nFix the SQL or the spec and call scout_chart_sql again."
         n = plot.get("row_count", 0)
-        await self._emit(__event_emitter__, "Chart ready", done=True)
+        await self._emit(__event_emitter__, "Chart created", done=True)
         evicted = await self._emit_embed(
             __event_emitter__,
             plot["view_url"],
