@@ -214,6 +214,90 @@ def test_a_legend_bind_object_is_refused(client, auth_headers, fake_trino):
     assert "bind" in r.json()["detail"]
 
 
+def test_a_channel_using_the_type_shorthand_is_refused(
+    client, auth_headers, fake_trino
+):
+    """`{"quantitative": true}` compiles and renders, so only this check sees it."""
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {"field": "modality", "nominal": True},
+            "y": {"field": "n", "quantitative": True},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    detail = r.json()["detail"]
+    assert "type" in detail
+    assert "nominal" in detail
+
+
+def test_a_channel_with_a_field_and_no_type_is_refused(
+    client, auth_headers, fake_trino
+):
+    spec = {"mark": "bar", "encoding": {"x": {"field": "modality"}}}
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    assert "type" in r.json()["detail"]
+
+
+def test_an_untyped_channel_inside_a_layer_is_refused(client, auth_headers, fake_trino):
+    spec = {
+        "layer": [
+            {
+                "mark": "bar",
+                "encoding": {"x": {"field": "modality", "type": "nominal"}},
+            },
+            {"mark": "line", "encoding": {"y": {"field": "n", "quantitative": True}}},
+        ]
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 400
+    assert "type" in r.json()["detail"]
+
+
+def test_a_value_only_channel_needs_no_type(client, auth_headers, fake_trino):
+    """`opacity` carries a condition and a value, never a field - leave it alone."""
+    fake_trino(["modality", "n"], [{"modality": "CT", "n": 1}])
+    fake_trino(["n"], [{"n": 1}])
+    spec = {
+        "mark": "bar",
+        "params": [
+            {
+                "name": "pick",
+                "select": {"type": "point", "fields": ["modality"]},
+                "bind": "legend",
+            }
+        ],
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "n", "type": "quantitative"},
+            "opacity": {"condition": {"param": "pick", "value": 1}, "value": 0.2},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 200
+
+
+def test_a_sort_by_another_field_needs_no_type(client, auth_headers, fake_trino):
+    """`sort` nests a field inside a channel; only the channel itself is checked."""
+    fake_trino(["modality", "n"], [{"modality": "CT", "n": 1}])
+    fake_trino(["n"], [{"n": 1}])
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {
+                "field": "modality",
+                "type": "nominal",
+                "sort": {"field": "n", "op": "sum"},
+            },
+            "y": {"field": "n", "type": "quantitative"},
+        },
+    }
+    r = _create(client, auth_headers, spec=spec)
+    assert r.status_code == 200
+
+
 def test_a_spec_that_fails_to_render_is_refused(client, auth_headers, fake_trino):
     spec = {"mark": {"point": {"size": 100}}, "encoding": {}}
     r = _create(client, auth_headers, spec=spec)
@@ -266,6 +350,87 @@ def test_an_aggregate_transform_output_field_is_allowed(
     }
     r = _create(client, auth_headers, spec=spec)
     assert r.status_code == 200
+
+
+def _stored_spec(client, auth_headers, fake_trino, spec):
+    _queue_chart_query(fake_trino, ["modality", "n"], [{"modality": "MR", "n": 7}])
+    plot_id = _create(client, auth_headers, spec=spec).json()["id"]
+    fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
+    return client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()["spec"]
+
+
+def test_a_colour_series_gets_a_legend_toggle(client, auth_headers, fake_trino):
+    """The model sends colour only; the params/opacity pair is added here."""
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "n", "type": "quantitative"},
+            "color": {"field": "modality", "type": "nominal"},
+        },
+    }
+    stored = _stored_spec(client, auth_headers, fake_trino, spec)
+    (param,) = stored["params"]
+    assert param["bind"] == "legend"
+    assert param["select"] == {"type": "point", "fields": ["modality"]}
+    assert stored["encoding"]["opacity"]["condition"]["param"] == param["name"]
+
+
+def test_a_chart_without_colour_gets_no_legend_toggle(client, auth_headers, fake_trino):
+    stored = _stored_spec(client, auth_headers, fake_trino, BAR)
+    assert "params" not in stored
+    assert "opacity" not in stored["encoding"]
+
+
+def test_a_colour_value_is_not_a_series(client, auth_headers, fake_trino):
+    """`color` as a constant names no field, so there is nothing to toggle."""
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "n", "type": "quantitative"},
+            "color": {"value": "steelblue"},
+        },
+    }
+    stored = _stored_spec(client, auth_headers, fake_trino, spec)
+    assert "params" not in stored
+
+
+def test_an_author_supplied_legend_bind_is_left_alone(client, auth_headers, fake_trino):
+    spec = {
+        "mark": "bar",
+        "params": [
+            {
+                "name": "mine",
+                "select": {"type": "point", "fields": ["modality"]},
+                "bind": "legend",
+            }
+        ],
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "n", "type": "quantitative"},
+            "color": {"field": "modality", "type": "nominal"},
+            "opacity": {"condition": {"param": "mine", "value": 1}, "value": 0.3},
+        },
+    }
+    stored = _stored_spec(client, auth_headers, fake_trino, spec)
+    assert [p["name"] for p in stored["params"]] == ["mine"]
+    assert stored["encoding"]["opacity"]["value"] == 0.3
+
+
+def test_an_opacity_encoding_of_its_own_is_left_alone(client, auth_headers, fake_trino):
+    spec = {
+        "mark": "bar",
+        "encoding": {
+            "x": {"field": "modality", "type": "nominal"},
+            "y": {"field": "n", "type": "quantitative"},
+            "color": {"field": "modality", "type": "nominal"},
+            "opacity": {"value": 0.6},
+        },
+    }
+    stored = _stored_spec(client, auth_headers, fake_trino, spec)
+    assert "params" not in stored
+    assert stored["encoding"]["opacity"] == {"value": 0.6}
 
 
 def test_a_model_chosen_color_scheme_is_stripped(client, auth_headers, fake_trino):

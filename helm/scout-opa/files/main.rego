@@ -91,11 +91,10 @@ is_system_identity if input.context.identity.user in trino_service_principals
 # and are denied at /allow before any row filter or mask runs.
 #
 # `approved_groups` is hardcoded here because the same group names are
-# hardcoded in the Keycloak realm template
-# (ansible/roles/keycloak/templates/scout-realm.json.j2). Both sides are
+# hardcoded in the Keycloak realm document
+# (helm/keycloak-config-cli/files/scout-realm.json). Both sides are
 # managed by the same team; if the group set ever needs to expand it's
-# one rego edit + one realm-template edit, not worth the inventory
-# plumbing.
+# one rego edit + one realm edit, not worth the inventory plumbing.
 approved_groups := {"scout-user", "scout-admin"}
 
 user_in_approved_group if {

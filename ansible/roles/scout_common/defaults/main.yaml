@@ -183,16 +183,6 @@ alloy_namespace: '{{ scout_monitoring_namespace }}'
 # OAuth configuration
 oauth_provider_name: Keycloak # User-facing name for OAuth provider (e.g., 'WashU Key', 'Keycloak')
 
-# Keycloak OAuth client IDs and secrets (client secrets must be defined in inventory)
-keycloak_oauth2_proxy_client_id: oauth2-proxy
-keycloak_superset_client_id: superset
-keycloak_jupyterhub_client_id: jupyterhub
-keycloak_grafana_client_id: grafana
-keycloak_temporal_client_id: temporal
-keycloak_minio_client_id: minio
-keycloak_launchpad_client_id: launchpad
-keycloak_open_webui_client_id: open-webui
-keycloak_xnat_client_id: xnat
 # AWS ALB-native OIDC (ADR 0035, aws mode): the ALB reuses the oauth2-proxy client for
 # browser auth, calling back to https://<host>/oauth2/idpresponse per host (each host adds
 # that callback to the oauth2-proxy client's redirectUris, matching the live AWS
@@ -203,14 +193,9 @@ keycloak_xnat_client_id: xnat
 keycloak_alb_oidc_hosts:
   - 'superset.{{ server_hostname }}'
 
-# OAuth callback URLs for each client
+# OAuth callback URL for Open WebUI. The realm registers the same URL as a
+# literal, so this is not a site knob.
 open_webui_callback_url: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'
-jupyterhub_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
-grafana_callback_url: 'https://grafana.{{ server_hostname }}/login/generic_oauth'
-temporal_callback_url: 'https://temporal.{{ server_hostname }}/auth/sso/callback'
-superset_callback_url: 'https://superset.{{ server_hostname }}/oauth-authorized/keycloak'
-minio_callback_url: 'https://minio.{{ server_hostname }}/oauth_callback'
-launchpad_callback_url: 'https://{{ server_hostname }}/api/auth/callback/keycloak'
 
 # S3/MinIO configuration (passwords defined in inventory)
 s3_region: us-east-1
@@ -362,7 +347,7 @@ xnat_plugins_default:
           auto.verified: 'true'
           siteUrl: 'https://xnat.{{ server_hostname }}'
           preEstablishedRedirUri: /openid-login
-          openid.keycloak.clientId: '{{ keycloak_xnat_client_id }}'
+          openid.keycloak.clientId: 'xnat'
           openid.keycloak.clientSecret: '{{ keycloak_xnat_client_secret }}'
           openid.keycloak.accessTokenUri: '{{ keycloak_realm_url }}/protocol/openid-connect/token'
           openid.keycloak.userAuthUri: '{{ keycloak_realm_url }}/protocol/openid-connect/auth'
@@ -414,7 +399,7 @@ enable_gpu_node_taint: true
 # Adding a new restriction dimension is one inventory edit — both
 # Keycloak and OPA pick it up on next deploy. Optional per-attribute
 # overrides for display name / validation pattern live alongside
-# `column`, see ansible/roles/keycloak/templates/scout-realm.json.j2
+# `column`, see helm/keycloak-config-cli/files/scout-realm.json
 # for the rendered shape.
 trino_attribute_filters:
   allowed_facilities:

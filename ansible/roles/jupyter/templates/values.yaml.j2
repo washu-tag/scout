@@ -132,7 +132,7 @@ hub:
       authenticator_class: 'oauthenticator.generic.GenericOAuthenticator'
     GenericOAuthenticator:
       login_service: 'Keycloak'
-      client_id: '{{ keycloak_jupyterhub_client_id }}'
+      client_id: 'jupyterhub'
       client_secret: '{{ keycloak_jupyterhub_client_secret }}'
       oauth_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
       authorize_url: '{{ keycloak_oidc_auth_url }}'
@@ -144,7 +144,6 @@ hub:
       username_claim: 'preferred_username'
       scope:
         - openid
-        - microprofile-jwt
       enable_auth_state: true
       # Refresh the user's Keycloak token before spawning so kernels start
       # with a fresh access_token; the scout SDK re-fetches from the Hub API

@@ -87,7 +87,14 @@ build-and-upload (20m) ──→ scan-images (~2m, parallel) ──→ publish
                         └──→ deploy-and-test (20m)      ──┘
 ```
 
-Each matrix entry attempts to download the image tarball artifact. If the image wasn't rebuilt (no file changes and image already in registry), the download is skipped gracefully and the scan is a no-op.
+Each matrix entry attempts to download the image tarball artifact. If the image wasn't rebuilt (no file changes and the derived tag is already in the registry) there is no artifact, and the `scan-published` input decides what happens:
+
+- **Off (default)** — the image is skipped, so a CVE in an image a PR never touched cannot fail that PR.
+- **On (the release PR only)** — the published tag is pulled from GHCR and scanned, resolved to a digest first so the log and SARIF name an immutable build.
+
+The release PR is the one place the skip is dangerous: it changes no image source, so every image would skip and the first real scan would be the version-stamp commit's — after `main` is stamped. That is how 4.3.0 failed. `ci.yaml`'s `changes` job identifies the release PR by a paths filter on `.release-please-manifest.json`, the same signal `release-dispatch.yaml` uses.
+
+A CVE published between the release PR's last run and its merge is still missed; the stamped commit's scan is the backstop.
 
 The composite action (`.github/actions/trivy-scan-image/action.yaml`) does a single Trivy invocation per image:
 
@@ -100,7 +107,7 @@ The `publish` and `publish-demo` jobs require `scan-images` in their `needs:` ar
 
 All actions referenced with `uses:` — first-party (`actions/*`, `github/codeql-action`) and third-party alike — are pinned to full commit SHAs (not tags) across every workflow and composite action, to prevent supply-chain attacks. (The sole exception is the internal `washu-tag/.github` reusable workflow, referenced by `@main` by design.) Dependabot's `github-actions` ecosystem in `dependabot.yml` keeps these pins current.
 
-**Images scanned**: `hl7log-extractor`, `hl7-transformer`, `scout-notebook`, `launchpad`, `superset`, `keycloak`.
+**Images scanned** (the `&image-matrix` anchor in `ci.yaml`, shared by `build-and-upload` and `scan-images`): `hl7log-extractor`, `hl7-transformer`, `hl7-listener`, `scout-notebook`, `launchpad`, `superset`, `keycloak`, `report-viewer`.
 
 ### Semgrep
 
