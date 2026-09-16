@@ -6,6 +6,10 @@
 hl7_listener_namespace: '{{ scout_extractor_namespace }}'
 strimzi_operator_namespace: '{{ scout_operators_namespace }}'
 
+# Helm keeps CRDs in the chart's crds/ dir, which it only installs and never upgrades,
+# so the operator's CRDs are applied separately from the release bundle.
+strimzi_crds_url: 'https://github.com/strimzi/strimzi-kafka-operator/releases/download/{{ strimzi_operator_version }}/strimzi-crds-{{ strimzi_operator_version }}.yaml'
+
 # Kafka configuration
 kafka_cluster_name: kafka
 kafka_replicas: 1
@@ -87,7 +91,9 @@ hl7_test_sender_name: hl7-test-sender
 # Flip to true in inventory only for an isolated smoke test.
 hl7_test_sender_enabled: false
 hl7_test_sender_period: 5000
-hl7_test_sender_cpu_request: 50m
-hl7_test_sender_cpu_limit: 200m
-hl7_test_sender_memory_request: 128Mi
-hl7_test_sender_memory_limit: 256Mi
+# Same size as the listener and batcher: all three run the same Spring Boot image, and
+# startup is CPU-bound - below 500m it cannot clear the 150s startup probe.
+hl7_test_sender_cpu_request: 100m
+hl7_test_sender_cpu_limit: 500m
+hl7_test_sender_memory_request: 256Mi
+hl7_test_sender_memory_limit: 512Mi
