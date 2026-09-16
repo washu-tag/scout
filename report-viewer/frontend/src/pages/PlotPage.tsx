@@ -390,7 +390,9 @@ export default function PlotPage() {
             flex: '0 0 auto',
           }}
         >
-          {showLoading && <QueryProgressInline {...loadingState} doneLabel="Chart loaded" />}
+          {showLoading && !plot.error && (
+            <QueryProgressInline {...loadingState} doneLabel="Chart loaded" />
+          )}
           {plot.data?.truncated && (
             <span
               title="Narrow the query to see the full result"

@@ -223,7 +223,7 @@ async def execute(
         )
     finally:
         if progress_key:
-            progress.clear(progress_key)
+            progress.finish(progress_key)
     dict_rows = [
         {col: _normalize(raw_rows[i][j]) for j, col in enumerate(columns)}
         for i in range(len(raw_rows))

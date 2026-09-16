@@ -101,6 +101,10 @@ export interface QueryProgress {
   queued?: boolean;
   processedRows?: number;
   processedBytes?: number;
+  // Absent until Trino has scheduled the query.
+  progressPercentage?: number;
+  // Set once the query has returned, so these are the final totals.
+  done?: boolean;
 }
 
 export function getSearchProgress(searchId: string): Promise<QueryProgress> {

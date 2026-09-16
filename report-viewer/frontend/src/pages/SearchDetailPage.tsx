@@ -248,7 +248,9 @@ export default function SearchDetailPage() {
           flex: '0 0 auto',
         }}
       >
-        {showLoading && <QueryProgressInline {...loadingState} doneLabel="Reports loaded" />}
+        {showLoading && !rowsQ.error && (
+          <QueryProgressInline {...loadingState} doneLabel="Reports loaded" />
+        )}
         <span style={{ flex: 1 }} />
         {
           <span
@@ -299,6 +301,7 @@ export default function SearchDetailPage() {
               overflowY: 'auto',
               flex: '1 1 auto',
               minHeight: 0,
+              position: 'relative',
               background: 'var(--rv-surface)',
               border: '1px solid var(--rv-border)',
               borderRadius: 4,
@@ -451,8 +454,7 @@ export default function SearchDetailPage() {
                 )}
               </tbody>
             </table>
-            {/* Outside the table: a cell would centre on the scroll width. */}
-            {!rowsQ.data && <LoadingSpinner show={showLoading} minHeight={220} />}
+            {!rowsQ.data && <LoadingSpinner show={showLoading} fill />}
           </div>
           <div
             style={{

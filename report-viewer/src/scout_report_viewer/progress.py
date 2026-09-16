@@ -9,7 +9,7 @@ import threading
 import time
 from typing import Any
 
-# Backstop only; entries are cleared when the query finishes.
+# Finished entries keep their final totals, so this sweep is the only cleanup.
 _MAX_AGE_SECONDS = 600
 
 _lock = threading.Lock()
@@ -20,6 +20,7 @@ _FIELDS = (
     "queued",
     "processedRows",
     "processedBytes",
+    "progressPercentage",
 )
 
 
@@ -41,6 +42,10 @@ def get(key: str) -> dict[str, Any] | None:
         return dict(entry["stats"]) if entry else None
 
 
-def clear(key: str) -> None:
+def finish(key: str) -> None:
+    """Keeps the terminal stats: the SPA's last poll of a running query is up to
+    one poll interval short of the real totals."""
     with _lock:
-        _entries.pop(key, None)
+        entry = _entries.get(key)
+        if entry:
+            entry["stats"]["done"] = True

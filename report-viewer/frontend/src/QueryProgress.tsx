@@ -5,9 +5,13 @@ const POLL_MS = 3000;
 const TICK_MS = 250;
 // A faster query finishes before the indicator is worth showing.
 const SHOW_AFTER_MS = 1000;
-// The total wait is what users report back, so hold it before fading.
-const LINGER_MS = 4000;
-const FADE_MS = 600;
+
+// Trino discovers splits lazily, so its raw percentage can go backwards.
+function monotonic(p: QueryProgress, maxPct: { current: number }): QueryProgress {
+  if (p.progressPercentage == null) return p;
+  maxPct.current = Math.max(maxPct.current, p.progressPercentage);
+  return { ...p, progressPercentage: maxPct.current };
+}
 
 export interface LoadingProgress {
   show: boolean;
@@ -26,12 +30,14 @@ export function useLoadingProgress(
   const [seconds, setSeconds] = useState(0);
   const [progress, setProgress] = useState<QueryProgress | null>(null);
   const wasShown = useRef(false);
+  const maxPct = useRef(0);
 
   useEffect(() => {
     if (loading) {
       const startedAt = Date.now();
       setDone(false);
       setProgress(null);
+      maxPct.current = 0;
       const showTimer = setTimeout(() => {
         wasShown.current = true;
         setShow(true);
@@ -50,14 +56,18 @@ export function useLoadingProgress(
       setShow(false);
       return;
     }
+    // One last read: a running query's poll is short of the final totals.
+    let cancelled = false;
+    fetchProgress()
+      .then((p) => {
+        if (!cancelled && p.done) setProgress(p);
+      })
+      .catch(() => {});
     setDone(true);
-    const hide = setTimeout(() => {
-      wasShown.current = false;
-      setShow(false);
-      setDone(false);
-    }, LINGER_MS);
-    return () => clearTimeout(hide);
-  }, [loading]);
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, fetchProgress]);
 
   // An empty or failed poll keeps the last value rather than resetting.
   useEffect(() => {
@@ -66,7 +76,7 @@ export function useLoadingProgress(
     const poll = async () => {
       try {
         const p = await fetchProgress();
-        if (!cancelled && Object.keys(p).length) setProgress(p);
+        if (!cancelled && Object.keys(p).length) setProgress(monotonic(p, maxPct));
       } catch {
         /* keep the last value */
       }
@@ -110,9 +120,13 @@ function stateLine(p: QueryProgress | null): string {
   return (p.state && STATE_LABELS[p.state]) || 'Working';
 }
 
-function detailLine(p: QueryProgress | null, waitedSeconds: number): string {
+// `scanned` disambiguates the finished line, which sits near a result count.
+function detailLine(p: QueryProgress | null, waitedSeconds: number, scanned = false): string {
   const parts: string[] = [];
-  if (p?.processedRows) parts.push(`${compactNumber(p.processedRows)} rows`);
+  if (!scanned && p?.progressPercentage != null) parts.push(`${Math.round(p.progressPercentage)}%`);
+  if (p?.processedRows) {
+    parts.push(`${compactNumber(p.processedRows)} rows${scanned ? ' scanned' : ''}`);
+  }
   if (p?.processedBytes) parts.push(compactBytes(p.processedBytes));
   parts.push(`${waitedSeconds}s`);
   return parts.join(' · ');
@@ -130,18 +144,26 @@ export function QueryProgressInline({
         fontSize: '0.7rem',
         color: 'var(--rv-muted)',
         fontVariantNumeric: 'tabular-nums',
-        opacity: done ? 0 : 1,
-        transition: `opacity ${FADE_MS}ms ease-out ${done ? LINGER_MS - FADE_MS : 0}ms`,
       }}
     >
       {done
-        ? `${doneLabel} · ${seconds}s`
+        ? `${doneLabel} · ${detailLine(progress, seconds, true)}`
         : `${stateLine(progress)} · ${detailLine(progress, seconds)}`}
     </span>
   );
 }
 
-export function LoadingSpinner({ show, minHeight }: { show: boolean; minHeight: number }) {
+// `fill` centres in a positioned ancestor's visible box rather than in flow,
+// so a table wider or taller than its scroll container doesn't shift it.
+export function LoadingSpinner({
+  show,
+  minHeight,
+  fill,
+}: {
+  show: boolean;
+  minHeight?: number;
+  fill?: boolean;
+}) {
   if (!show) return null;
   return (
     <div
@@ -150,6 +172,7 @@ export function LoadingSpinner({ show, minHeight }: { show: boolean; minHeight: 
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        ...(fill ? { position: 'absolute', inset: 0 } : null),
       }}
     >
       <span

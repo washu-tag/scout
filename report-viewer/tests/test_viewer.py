@@ -110,7 +110,12 @@ def test_trino_stats_reach_the_progress_store(monkeypatch):
     asyncio.run(trino_client.execute("SELECT 1", user="alice", progress_key="k"))
 
     assert mid_flight == {"state": "RUNNING", "processedRows": 5000}
-    assert progress.get("k") is None
+    # Kept after the query returns, flagged, so the SPA can read final totals.
+    assert progress.get("k") == {
+        "state": "RUNNING",
+        "processedRows": 5000,
+        "done": True,
+    }
 
 
 def test_progress_is_not_visible_to_another_user(client, auth_headers, fake_trino):
@@ -125,4 +130,4 @@ def test_progress_is_not_visible_to_another_user(client, auth_headers, fake_trin
             f"/api/searches/{dsid}/progress", headers=auth_headers
         ).json() == {"state": "RUNNING"}
     finally:
-        progress.clear(f"search:{dsid}:alice")
+        progress.finish(f"search:{dsid}:alice")
