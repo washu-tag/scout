@@ -1,0 +1,47 @@
+{
+  "client": {
+    "attributes": {
+      "pkce.code.challenge.method": "S256",
+      "post.logout.redirect.uris": "https://minimal.scout.example.edu",
+      "scout.fragment.reconciler": "true",
+      "scout.fragment.source": "demo/hello-keycloak"
+    },
+    "clientAuthenticatorType": "client-secret",
+    "clientId": "minimal",
+    "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "basic", "email"],
+    "description": "",
+    "directAccessGrantsEnabled": false,
+    "enabled": true,
+    "fullScopeAllowed": false,
+    "implicitFlowEnabled": false,
+    "name": "Minimal",
+    "optionalClientScopes": ["address", "phone", "organization", "offline_access"],
+    "protocol": "openid-connect",
+    "publicClient": false,
+    "redirectUris": ["https://minimal.scout.example.edu/cb"],
+    "secret": "REDACTED",
+    "serviceAccountsEnabled": false,
+    "standardFlowEnabled": true,
+    "webOrigins": ["https://minimal.scout.example.edu"]
+  },
+  "protocolMappers": [
+    {
+      "config": {
+        "access.token.claim": "true",
+        "claim.name": "groups",
+        "id.token.claim": "true",
+        "introspection.token.claim": "true",
+        "jsonType.label": "String",
+        "multivalued": "true",
+        "userinfo.token.claim": "true",
+        "usermodel.clientRoleMapping.clientId": "minimal"
+      },
+      "consentRequired": false,
+      "name": "client-roles",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-client-role-mapper"
+    }
+  ],
+  "roles": [],
+  "tierEdges": {}
+}

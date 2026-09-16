@@ -1,0 +1,57 @@
+{
+  "client": {
+    "attributes": {
+      "pkce.code.challenge.method": "S256",
+      "post.logout.redirect.uris": "https://hello.scout.example.edu",
+      "scout.fragment.reconciler": "true",
+      "scout.fragment.source": "demo/hello-keycloak"
+    },
+    "clientAuthenticatorType": "client-secret",
+    "clientId": "hello",
+    "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "basic", "email"],
+    "description": "the fragment demo app",
+    "directAccessGrantsEnabled": false,
+    "enabled": true,
+    "fullScopeAllowed": false,
+    "implicitFlowEnabled": false,
+    "name": "Hello Scout",
+    "optionalClientScopes": ["address", "phone", "organization", "offline_access"],
+    "protocol": "openid-connect",
+    "publicClient": false,
+    "redirectUris": ["https://hello.scout.example.edu/auth/callback"],
+    "secret": "REDACTED",
+    "serviceAccountsEnabled": false,
+    "standardFlowEnabled": true,
+    "webOrigins": ["https://hello.scout.example.edu"]
+  },
+  "protocolMappers": [
+    {
+      "config": {
+        "access.token.claim": "true",
+        "claim.name": "groups",
+        "id.token.claim": "true",
+        "introspection.token.claim": "true",
+        "jsonType.label": "String",
+        "multivalued": "true",
+        "userinfo.token.claim": "true",
+        "usermodel.clientRoleMapping.clientId": "hello"
+      },
+      "consentRequired": false,
+      "name": "client-roles",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-client-role-mapper"
+    }
+  ],
+  "roles": [
+    {
+      "name": "hello-user"
+    },
+    {
+      "name": "hello-admin"
+    }
+  ],
+  "tierEdges": {
+    "scout-admin": ["hello-admin"],
+    "scout-user": ["hello-user"]
+  }
+}
