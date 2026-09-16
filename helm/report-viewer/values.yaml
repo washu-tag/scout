@@ -77,9 +77,9 @@ actions:
   # rebuild needed, just a values change + helm upgrade. Two shapes:
   #
   # actionType: open-url (default if omitted) - a static link. id/title/
-  # url required; icon/tone/weight fall back to actions.py's own field
-  # defaults if omitted; requiredRole gates the button behind that
-  # Keycloak client role, same as any other action.
+  # url required; weight falls back to actions.py's own field default if
+  # omitted; requiredRole gates the button behind that Keycloak client
+  # role, same as any other action.
   #
   #   custom:
   #     - id: pacs-viewer

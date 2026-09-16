@@ -20,8 +20,6 @@ data:
     {{- if .Values.actions.explainSearch }}
     - id: explain-search
       title: Explain Search
-      icon: info
-      tone: indigo
       weight: 5
       action_type: client
       client_handler: explain-search
@@ -29,8 +27,6 @@ data:
     {{- if .Values.actions.downloadCsv }}
     - id: download-csv
       title: Download CSV
-      icon: download
-      tone: slate
       weight: 10
       action_type: client
       client_handler: download-csv
@@ -38,8 +34,6 @@ data:
     {{- range .Values.actions.custom }}
     - id: {{ required "actions.custom entries need an id" .id | quote }}
       title: {{ required "actions.custom entries need a title" .title | quote }}
-      icon: {{ .icon | default "app" | quote }}
-      tone: {{ .tone | default "indigo" | quote }}
       weight: {{ .weight | default 100 }}
       {{- if eq (.actionType | default "open-url") "backend-call" }}
       action_type: backend-call
