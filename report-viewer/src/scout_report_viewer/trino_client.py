@@ -18,10 +18,11 @@ import json
 import logging
 import threading
 import time
+import contextlib
 from contextlib import contextmanager
 from datetime import date, datetime, time as _time
 from decimal import Decimal
-from typing import Any, AsyncIterator, Iterator
+from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, Mapping, TypeVar
 
 import httpx
 from trino.auth import JWTAuthentication
@@ -31,6 +32,17 @@ from . import progress
 from .config import settings
 
 log = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+
+class ClientDisconnected(Exception):
+    """The HTTP caller went away while its query was still running."""
+
+
+# Cursors of in-flight queries, keyed like the progress store.
+_cancels: dict[str, Callable[[], None]] = {}
+_cancels_lock = threading.Lock()
 
 
 _REFRESH_BEFORE_EXPIRY_FRACTION = 5
@@ -157,14 +169,22 @@ def _execute_sync(
                 else None
             )
         )
-        # Driver requires None or non-empty sequence for params (asserts on type).
-        if params:
-            cur.execute(sql, params)
-        else:
-            cur.execute(sql)
-        rows = cur.fetchall()
-        columns = [d[0] for d in cur.description] if cur.description else []
-        return columns, rows
+        if progress_key:
+            with _cancels_lock:
+                _cancels[progress_key] = cur.cancel
+        try:
+            # Driver requires None or non-empty sequence for params (asserts on type).
+            if params:
+                cur.execute(sql, params)
+            else:
+                cur.execute(sql)
+            rows = cur.fetchall()
+            columns = [d[0] for d in cur.description] if cur.description else []
+            return columns, rows
+        finally:
+            if progress_key:
+                with _cancels_lock:
+                    _cancels.pop(progress_key, None)
 
 
 def _normalize(value: Any) -> Any:
@@ -229,6 +249,49 @@ async def execute(
         for i in range(len(raw_rows))
     ]
     return columns, dict_rows
+
+
+async def cancel_on_disconnect(
+    receive: Callable[[], Awaitable[Mapping[str, Any]]],
+    work: Awaitable[T],
+    progress_key: str,
+) -> T:
+    """Stop `work` at Trino if the caller goes away. ASGI pushes
+    `http.disconnect`, and the worker thread cannot be interrupted, so
+    cancelling the query itself is the only way to end the scan."""
+    task = asyncio.ensure_future(work)
+    watcher = asyncio.ensure_future(_wait_for_disconnect(receive))
+    done, _pending = await asyncio.wait(
+        {task, watcher}, return_when=asyncio.FIRST_COMPLETED
+    )
+    watcher.cancel()
+    if task in done:
+        return task.result()
+    await _cancel_query(progress_key)
+    with contextlib.suppress(Exception):
+        await task
+    raise ClientDisconnected
+
+
+async def _wait_for_disconnect(
+    receive: Callable[[], Awaitable[Mapping[str, Any]]],
+) -> None:
+    while True:
+        message = await receive()
+        if message.get("type") == "http.disconnect":
+            return
+
+
+async def _cancel_query(progress_key: str) -> None:
+    with _cancels_lock:
+        cancel = _cancels.get(progress_key)
+    if cancel is None:
+        return
+    try:
+        # Issues DELETE /v1/query/{id}, so run it off the event loop.
+        await asyncio.to_thread(cancel)
+    except Exception:
+        log.debug("trino cancel failed (ignored)", exc_info=True)
 
 
 async def stream(

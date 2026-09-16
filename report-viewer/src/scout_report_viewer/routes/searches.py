@@ -26,6 +26,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Request,
     Response,
     UploadFile,
     status,
@@ -497,6 +498,7 @@ def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
 @router.get("/{search_id}/rows", response_model=RowsResponse)
 async def get_search_rows(
     search_id: str,
+    request: Request,
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> RowsResponse:
@@ -520,16 +522,23 @@ async def get_search_rows(
     cap = settings.max_cohort_rows
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
     all_sql = f"SELECT s.* FROM ({source_sql}) s LIMIT {cap + 1}"
+    progress_key = _progress_key(search_id, user.sub)
     try:
         with metrics.time_trino("rows_query"):
             # safe: source_sql is persisted validated SQL; ids bind via ?
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            columns, rows = await trino_client.execute(
-                all_sql,
-                user=user.sub,
-                params=[uploaded_ids] if uploaded_ids else None,
-                progress_key=_progress_key(search_id, user.sub),
+            columns, rows = await trino_client.cancel_on_disconnect(
+                request.receive,
+                trino_client.execute(
+                    all_sql,
+                    user=user.sub,
+                    params=[uploaded_ids] if uploaded_ids else None,
+                    progress_key=progress_key,
+                ),
+                progress_key,
             )
+    except trino_client.ClientDisconnected:
+        raise HTTPException(status_code=499, detail="client disconnected")
     except Exception as exc:
         raise _rows_query_error(exc, "rows")
 

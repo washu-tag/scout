@@ -24,6 +24,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Request,
     UploadFile,
     status,
 )
@@ -518,6 +519,7 @@ async def create_plot_from_file(
 @router.get("/{plot_id}", response_model=PlotDetail)
 async def get_plot(
     plot_id: str,
+    request: Request,
     user: User = Depends(get_current_user),
     store: PlotStore = Depends(get_plot_store),
 ) -> PlotDetail:
@@ -532,16 +534,23 @@ async def get_plot(
     cap = settings.max_cohort_rows
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
     all_sql = f"SELECT s.* FROM ({plot['sql']}) s LIMIT {cap + 1}"
+    progress_key = _progress_key(plot_id, user.sub)
     try:
         with metrics.time_trino("plot_rows"):
             # safe: plot["sql"] is persisted validated SQL; ids bind via ?
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            _cols, rows = await trino_client.execute(
-                all_sql,
-                user=user.sub,
-                params=[uploaded_ids] if uploaded_ids else None,
-                progress_key=_progress_key(plot_id, user.sub),
+            _cols, rows = await trino_client.cancel_on_disconnect(
+                request.receive,
+                trino_client.execute(
+                    all_sql,
+                    user=user.sub,
+                    params=[uploaded_ids] if uploaded_ids else None,
+                    progress_key=progress_key,
+                ),
+                progress_key,
             )
+    except trino_client.ClientDisconnected:
+        raise HTTPException(status_code=499, detail="client disconnected")
     except Exception as exc:
         log.exception("trino plot rows failed")
         raise HTTPException(
