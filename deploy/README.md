@@ -49,11 +49,11 @@ until CI switches `deploy-and-test` to deploy from it. See
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared
 `Kustomization` DAG plus one per-mode set, acyclic): postgres, minio, hive, temporal
-(on Postgres), extractor, valkey, keycloak (+ realm), oauth2-proxy, opa, trino
-(ro+rw), superset (+ dashboards).
+(on Postgres), extractor, valkey, keycloak (+ realm + fragment reconciler),
+oauth2-proxy, opa, trino (ro+rw), superset (+ dashboards), launchpad.
 
-Remaining components: jupyter, report-viewer, monitoring, launchpad, and the
-feature Components (chat/voila/xnat/data-generator/gpu).
+Remaining components: jupyter, report-viewer, monitoring, and the feature
+Components (chat/voila/xnat/data-generator/gpu).
 
 Pre-deploy fixes (deferred; all gated on the build lane being live, which is where
 Scout-chart versions get stamped):
@@ -70,7 +70,9 @@ Scout-chart versions get stamped):
    the `Namespace` + shared `HelmRepository`s once, owned by one foundational
    Kustomization every component in that namespace `dependsOn`; component bases set
    `namespace:` and drop those objects. Needs the Ansible namespace-default map to
-   collapse the aliased vars correctly.
+   collapse the aliased vars correctly. `keycloak/fragment-reconciler` is a second
+   consumer of `keycloak/realm`'s `scout-charts` repository and references it rather
+   than re-declaring it, so it belongs in this collection too.
 2. **Config-artifact publish job** stamps the Scout charts' `0.0.0` placeholders
    with real published versions (from the haul).
 3. **`deploy-and-test` switch** to deploy the ingest slice via Flux (ingest suite
