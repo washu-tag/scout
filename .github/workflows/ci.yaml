@@ -1170,6 +1170,22 @@ jobs:
           app_version="$(bash .github/scripts/chart-app-version.sh "${CHART_NAME}" "${VERSION}" predecessor/haul.yaml)"
           helm package "${CHART_DIR}" --version "${VERSION}" \
             ${app_version:+--app-version "${app_version}"} --destination "${RUNNER_TEMP}"
+          # Fail closed if the packaged chart still ships a :latest -- an appVersion,
+          # or an image tag chart-app-version.sh doesn't drive (e.g. an upstream
+          # sidecar). Capture first, then match a here-string (a piped grep -q can
+          # race pipefail via SIGPIPE into a false-pass); regex is value-anchored so
+          # a real tag like latest-jre passes. voila is exempt: it deploys the Scout
+          # scout-notebook image but its appVersion is Voilà's own version, so its
+          # image tag can't fall back to appVersion -- stamping it is a separate
+          # cleanup (see PR description).
+          if [ "${CHART_NAME}" != "voila" ]; then
+            meta="$( { helm show chart "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz"; \
+                       helm show values "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz"; } || true )"
+            if grep -qiE "^[[:space:]]*(appVersion|tag):[[:space:]]*['\"]?latest['\"]?([[:space:]]|$)" <<<"${meta}"; then
+              echo "::error::${CHART_NAME} publishes a :latest (appVersion or image tag)"
+              exit 1
+            fi
+          fi
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
           # Record the pushed chart by digest for the build-lane haul (ADR 0033),
           # read back via a stable --format contract (matching docker-push;

@@ -19,10 +19,10 @@ catalog:
     namespace: ALL
     image:
       repository: quay.io/kiwigrid/k8s-sidecar
-      # Placeholder, matching the app image convention: Ansible injects the
-      # pinned, Renovate-monitored version from group_vars/all/versions.yaml
-      # (launchpad_sidecar_image_tag, ADR 0015).
-      tag: latest
+      # Concrete default so a bare `helm install` doesn't pull :latest; Ansible/
+      # deploy still override it from versions.yaml (launchpad_sidecar_image_tag,
+      # ADR 0015). chart-app-version.sh only drives the main image via appVersion.
+      tag: '2.10.1'
       pullPolicy: IfNotPresent
     resources:
       requests:

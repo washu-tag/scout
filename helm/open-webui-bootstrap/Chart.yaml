@@ -5,6 +5,7 @@ type: application
 version: 0.0.0-dev
 # appVersion is unused — this chart orchestrates a Job against whatever OWUI
 # image is running on the cluster (discovered at deploy time from the OWUI Pod),
-# not a versioned Scout artifact. Kept at "latest" as a placeholder to match
-# scout-dashboards convention; the release-bump script leaves it alone.
-appVersion: "latest"
+# not a versioned Scout artifact. Set to the target OWUI version (matching
+# image.ref + scout-dashboards' concrete-appVersion convention) so no published
+# chart ships appVersion: latest; the release-bump script leaves it alone.
+appVersion: "0.9.6"
