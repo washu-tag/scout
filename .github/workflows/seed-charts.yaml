@@ -56,11 +56,21 @@ jobs:
           VERSION="0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
+          # Stamp version/appVersion/scout image tags to VERSION (same as the release
+          # and ci.yaml chart-publish lanes) so no seeded chart carries a :latest.
+          bash .github/scripts/update-versions.sh "${VERSION}"
           mkdir -p digests
           # name dir  (name = Chart.yaml name == charts/<name> repo, per components.txt)
           while read -r name dir; do
             [ -n "${name}" ] || continue
             helm package "${dir}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
+            # Fail closed on any published :latest (appVersion or image tag). Capture
+            # first, then match a here-string (a piped grep -q could race pipefail).
+            meta="$( { helm show chart "${RUNNER_TEMP}/${name}-${VERSION}.tgz"; \
+                       helm show values "${RUNNER_TEMP}/${name}-${VERSION}.tgz"; } || true )"
+            if grep -qiE "^[[:space:]]*(appVersion:[[:space:]]*['\"]?latest|tag:[[:space:]]*['\"]?latest)" <<<"${meta}"; then
+              echo "::error::${name} publishes a :latest (appVersion or image tag)"; exit 1
+            fi
             helm push "${RUNNER_TEMP}/${name}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
             ref="${REGISTRY}/washu-tag/charts/${name}:${VERSION}"
             digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"

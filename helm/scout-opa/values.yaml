@@ -4,7 +4,10 @@ replicaCount: 2
 
 image:
   repository: openpolicyagent/opa
-  tag: latest
+  # Concrete default (this chart's template reads image.tag directly, no
+  # appVersion fallback) so chart-default consumers don't pull :latest; deploy
+  # overrides it. Renovate-tracked.
+  tag: '1.16.2'
   pullPolicy: IfNotPresent
 
 resources:

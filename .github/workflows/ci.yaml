@@ -1153,11 +1153,11 @@ jobs:
       - name: 'Publish chart - ${{ matrix.chart-name }}'
         if: needs.changes.outputs[matrix.changed] == 'true'
         shell: bash
-        # helm preinstalled (OCI push needs >= 3.8). Only --version is stamped;
-        # Chart.yaml keeps its 0.0.0-dev / appVersion "latest" placeholders.
-        # appVersion-to-image coupling is phase 2, so the default image tag stays
-        # :latest and phase-0 consumers pin image.tag for immutability. Token via
-        # stdin (never argv).
+        # helm preinstalled (OCI push needs >= 3.8). update-versions.sh stamps
+        # version + appVersion + scout image tags to VERSION (same as the release
+        # lane) so the published chart carries no :latest; upstream image defaults
+        # (opa, k8s-sidecar) are pinned concretely in the charts. Token via stdin
+        # (never argv).
         env:
           CHART_DIR: ${{ matrix.chart-dir }}
           CHART_NAME: ${{ matrix.chart-name }}
@@ -1168,7 +1168,21 @@ jobs:
           set -euo pipefail
           helm version --short
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
+          # Stamp version/appVersion/scout image tags to VERSION (the run's date-tag,
+          # which matches the script's X.Y.Z regex) exactly as the release lane does,
+          # so the published chart never carries a :latest default.
+          bash .github/scripts/update-versions.sh "${VERSION}"
           helm package "${CHART_DIR}" --version "${VERSION}" --destination "${RUNNER_TEMP}"
+          # Fail closed if the packaged chart still ships a :latest (appVersion or an
+          # image tag) -- stamp_config's verify_clean only sees the deploy tree, never
+          # a chart default. Capture first (a grep -q short-circuit on a pipe would
+          # race pipefail via SIGPIPE), then match a here-string.
+          meta="$( { helm show chart "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz"; \
+                     helm show values "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz"; } || true )"
+          if grep -qiE "^[[:space:]]*(appVersion:[[:space:]]*['\"]?latest|tag:[[:space:]]*['\"]?latest)" <<<"${meta}"; then
+            echo "::error::${CHART_NAME} publishes a :latest (appVersion or image tag)"
+            exit 1
+          fi
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
           # Record the pushed chart by digest for the build-lane haul (ADR 0033),
           # read back via a stable --format contract (matching docker-push;
