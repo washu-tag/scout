@@ -10,6 +10,5 @@ export const paginationBtn: CSSProperties = {
   background: 'var(--rv-surface)',
   color: 'var(--rv-fg)',
   borderRadius: 3,
-  cursor: 'pointer',
   whiteSpace: 'nowrap',
 };

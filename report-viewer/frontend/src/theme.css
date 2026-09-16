@@ -96,6 +96,10 @@ div.vega-embed .vega-actions {
   }
 }
 
+button {
+  cursor: pointer;
+}
+
 button:disabled,
 select:disabled {
   opacity: 0.4;
