@@ -165,17 +165,29 @@
             X-Powered-By: ''
             Server: ''
 
-# Same-origin framing: for services whose own UI frames itself in an iframe
-# (e.g. XNAT). Identical to security-headers but allows same-origin framing —
-# frame-ancestors 'self' + X-Frame-Options SAMEORIGIN instead of 'none'/DENY.
-- name: Apply same-origin security headers middleware
+# Same-origin framing + popup-friendly COOP: for services whose own UI
+# frames itself in an iframe (e.g. XNAT) AND need to be openable as a
+# popup/new tab from a sandboxed embed elsewhere (e.g. report-viewer's
+# OWUI-embedded "Explore in XNAT" backend-call action, #739). Chrome
+# blocks a popup outright ("blocked from loading in a popup opened by a
+# sandboxed iframe") when the popup's own response sets
+# COOP: same-origin, regardless of the opening iframe's sandbox flags -
+# same-origin-allow-popups keeps COOP's cross-origin-opener isolation for
+# direct navigation while permitting that case. Otherwise identical to
+# security-headers: frame-ancestors 'self' + X-Frame-Options SAMEORIGIN
+# instead of 'none'/DENY. Named for both properties (not just
+# "sameorigin") since it now does more than framing - keep this in sync
+# if a future consumer needs sameorigin framing WITHOUT the popup
+# allowance; split into two middlewares at that point rather than
+# reusing this name for a third behavior.
+- name: Apply same-origin, popup-friendly security headers middleware
   kubernetes.core.k8s:
     state: present
     definition:
       apiVersion: traefik.io/v1alpha1
       kind: Middleware
       metadata:
-        name: security-headers-sameorigin
+        name: security-headers-sameorigin-popups
         namespace: '{{ traefik_namespace }}'
       spec:
         headers:
@@ -195,7 +207,7 @@
             frame-ancestors 'self'
           customResponseHeaders:
             Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
-            Cross-Origin-Opener-Policy: 'same-origin'
+            Cross-Origin-Opener-Policy: 'same-origin-allow-popups'
             X-Powered-By: ''
             Server: ''
 

@@ -61,15 +61,21 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: traefik
     # oauth2-proxy ForwardAuth (edge approval gate) + error redirect + the
-    # same-origin security-headers variant. The openid plugin's /openid-login is
-    # an app-level callback behind this middleware, not an open path.
-    # NB: XNAT's own UI frames same-origin pages, so it uses the -sameorigin
-    # headers (frame-ancestors 'self') rather than the global 'none'/DENY, which
-    # would trip "violates frame-ancestors 'none'" in the browser.
+    # same-origin, popup-friendly security-headers variant. The openid
+    # plugin's /openid-login is an app-level callback behind this
+    # middleware, not an open path.
+    # NB: XNAT's own UI frames same-origin pages, so it uses the
+    # -sameorigin-popups headers (frame-ancestors 'self') rather than the
+    # global 'none'/DENY, which would trip "violates frame-ancestors
+    # 'none'" in the browser. The -popups half lets XNAT be opened as a
+    # popup/new tab from report-viewer's OWUI-embedded "Explore in XNAT"
+    # action (#739) - see the middleware's own definition in
+    # ansible/roles/traefik/tasks/main.yaml for why that's a separate
+    # concern from the framing behavior.
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd,
-      kube-system-security-headers-sameorigin@kubernetescrd
+      kube-system-security-headers-sameorigin-popups@kubernetescrd
   hosts:
     - host: xnat.{{ server_hostname }}
       paths:
