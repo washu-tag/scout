@@ -6,13 +6,6 @@ const TICK_MS = 250;
 // A faster query finishes before the indicator is worth showing.
 const SHOW_AFTER_MS = 1000;
 
-// Trino discovers splits lazily, so its raw percentage can go backwards.
-function monotonic(p: QueryProgress, maxPct: { current: number }): QueryProgress {
-  if (p.progressPercentage == null) return p;
-  maxPct.current = Math.max(maxPct.current, p.progressPercentage);
-  return { ...p, progressPercentage: maxPct.current };
-}
-
 export interface LoadingProgress {
   show: boolean;
   done: boolean;
@@ -30,14 +23,12 @@ export function useLoadingProgress(
   const [seconds, setSeconds] = useState(0);
   const [progress, setProgress] = useState<QueryProgress | null>(null);
   const wasShown = useRef(false);
-  const maxPct = useRef(0);
 
   useEffect(() => {
     if (loading) {
       const startedAt = Date.now();
       setDone(false);
       setProgress(null);
-      maxPct.current = 0;
       const showTimer = setTimeout(() => {
         wasShown.current = true;
         setShow(true);
@@ -76,7 +67,7 @@ export function useLoadingProgress(
     const poll = async () => {
       try {
         const p = await fetchProgress();
-        if (!cancelled && Object.keys(p).length) setProgress(monotonic(p, maxPct));
+        if (!cancelled && Object.keys(p).length) setProgress(p);
       } catch {
         /* keep the last value */
       }
@@ -123,7 +114,10 @@ function stateLine(p: QueryProgress | null): string {
 // `scanned` disambiguates the finished line, which sits near a result count.
 function detailLine(p: QueryProgress | null, waitedSeconds: number, scanned = false): string {
   const parts: string[] = [];
-  if (!scanned && p?.progressPercentage != null) parts.push(`${Math.round(p.progressPercentage)}%`);
+  // Trino saturates at 100 against a denominator that is still filling in.
+  if (!scanned && p?.progressPercentage != null) {
+    parts.push(`${Math.min(99, Math.round(p.progressPercentage))}%`);
+  }
   if (p?.processedRows) {
     parts.push(`${compactNumber(p.processedRows)} rows${scanned ? ' scanned' : ''}`);
   }
