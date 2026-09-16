@@ -43,9 +43,14 @@ spec:
     - kind: ConfigMap
       name: 'launchpad-edge-${service_mode}'
   values:
+    # Pin the launchpad image: the date-tag lane stamps chart version but not
+    # appVersion, so stamp_config.py must rewrite this tag:latest to the haul tag
+    # (extractor pattern), else the chart default deploys a moving :latest.
+    image:
+      repository: ghcr.io/washu-tag/launchpad
+      tag: latest
     # catalog-discovery sidecar: upstream image, literal mirror of versions.yaml
-    # (launchpad_sidecar_image_tag, Renovate-tracked); the Scout image tag defaults
-    # to the chart's stamped appVersion (ADR 0030), so it is not pinned here.
+    # (launchpad_sidecar_image_tag, Renovate-tracked).
     catalog:
       discovery:
         enabled: true
