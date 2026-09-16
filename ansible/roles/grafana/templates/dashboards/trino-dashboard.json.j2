@@ -368,7 +368,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m]))",
+          "expr": "clamp_min(sum(increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) - sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[5m]) or vector(0)), 0)",
           "legendFormat": "Failed (5m)",
           "range": true,
           "refId": "A"
@@ -676,10 +676,21 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[2m])",
+          "expr": "clamp_min(sum(increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[2m])) - sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[2m]) or vector(0)), 0)",
           "legendFormat": "Failed",
           "range": true,
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[2m]) or vector(0))",
+          "legendFormat": "Canceled",
+          "range": true,
+          "refId": "C"
         }
       ],
       "title": "Query Throughput (per minute)",
@@ -888,7 +899,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m]) / (increase(trino_execution_QueryManager_CompletedQueries_TotalCount{namespace=~\"$namespace\"}[5m]) + increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m]) + 0.001)",
+          "expr": "clamp_min(sum(increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) - sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[5m]) or vector(0)), 0) / (sum(increase(trino_execution_QueryManager_CompletedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) + sum(increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) - sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[5m]) or vector(0)) + 0.001)",
           "legendFormat": "Failure Rate",
           "range": true,
           "refId": "A"
