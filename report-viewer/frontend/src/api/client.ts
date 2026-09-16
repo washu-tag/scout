@@ -106,8 +106,6 @@ export function getSearch(searchId: string): Promise<SearchMeta> {
 export interface ActionDescriptor {
   id: string;
   title: string;
-  icon: string;
-  tone: string;
   weight: number;
   action_type: 'open-url' | 'client' | 'backend-call';
   url: string | null;

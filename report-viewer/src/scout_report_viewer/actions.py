@@ -54,7 +54,7 @@ class ActionDescriptor(BaseModel):
       plus an always-shown copy-link fallback - see
       `frontend/src/openResult.ts`). Whether the popup actually succeeds is
       controlled by the destination's own Cross-Origin-Opener-Policy header
-      (e.g. `popup-friendly-security-headers` in
+      (e.g. `security-headers-sameorigin-popups` in
       `ansible/roles/traefik/tasks/main.yaml`), not anything declared here.
     - `client`: the SPA looks up `client_handler` in a small local registry
       of page-specific logic (e.g. building a CSV from the currently
@@ -75,8 +75,6 @@ class ActionDescriptor(BaseModel):
 
     id: str
     title: str
-    icon: str = "app"
-    tone: str = "indigo"
     weight: int = 100
     action_type: Literal["open-url", "client", "backend-call"]
     url: str | None = None
@@ -126,8 +124,6 @@ _DEFAULT_CATALOG: list[ActionDescriptor] = [
     ActionDescriptor(
         id="explain-search",
         title="Explain Search",
-        icon="info",
-        tone="indigo",
         weight=5,
         action_type="client",
         client_handler="explain-search",
@@ -135,8 +131,6 @@ _DEFAULT_CATALOG: list[ActionDescriptor] = [
     ActionDescriptor(
         id="download-csv",
         title="Download CSV",
-        icon="download",
-        tone="slate",
         weight=10,
         action_type="client",
         client_handler="download-csv",
