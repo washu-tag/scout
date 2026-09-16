@@ -58,13 +58,18 @@ hl7_listener_image_tag: latest
 hl7_batcher_name: hl7-batcher
 hl7_batcher_enabled: true
 
-# Batching (Camel Kafka batching consumer): a batch closes at max_poll_records OR after
-# poll_timeout_ms of inactivity, then it is zipped and uploaded to S3 in one O(n) pass. Sized
+# Batching (Camel Kafka batching consumer): a batch closes at max_poll_records, after
+# poll_timeout_ms of inactivity, or at batching_interval_ms, whichever comes first; it is then
+# zipped and uploaded to S3 in one O(n) pass. Sized
 # for the production feed (~200K messages/day, bursty): size dominates at volume (~1000-message
 # zips), the timeout flushes partial batches during lulls. poll_timeout_ms doubles as the Kafka
 # poll timeout, so keep it well under max.poll.interval.ms (5 min).
 hl7_batcher_max_poll_records: 1000
 hl7_batcher_poll_timeout_ms: 30000
+# Ceiling on how long a batch stays open. Without it a slow but unbroken feed never idles, so
+# nothing flushes until the record cap and a batch can stay open for hours. Above the cap's
+# fill time at production rates, so it only bites on slow feeds.
+hl7_batcher_batching_interval_ms: 600000
 
 # Batcher resource configuration
 hl7_batcher_cpu_request: 100m

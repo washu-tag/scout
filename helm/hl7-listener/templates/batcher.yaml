@@ -44,6 +44,8 @@ spec:
               value: {{ .Values.batcher.maxPollRecords | quote }}
             - name: HL7_BATCHER_POLL_TIMEOUT_MS
               value: {{ .Values.batcher.pollTimeoutMs | quote }}
+            - name: HL7_BATCHER_BATCHING_INTERVAL_MS
+              value: {{ .Values.batcher.batchingIntervalMs | quote }}
             - name: S3_BUCKET
               value: {{ .Values.batcher.s3.bucket | quote }}
             - name: S3_ENDPOINT

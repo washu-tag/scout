@@ -28,6 +28,7 @@
         autoCommitEnable: false
         maxPollRecords: '{{hl7.batcher.max.poll.records}}'
         pollTimeoutMs: '{{hl7.batcher.poll.timeout.ms}}'
+        batchingIntervalMs: '{{hl7.batcher.batching.interval.ms}}'
       steps:
         - setHeader:
             name: CamelAwsS3Key
