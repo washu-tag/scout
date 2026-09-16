@@ -59,7 +59,9 @@ def catalog_with_admin_action(monkeypatch):
     return demo_catalog
 
 
-def test_list_actions_excludes_role_gated_action_without_role(catalog_with_admin_action):
+def test_list_actions_excludes_role_gated_action_without_role(
+    catalog_with_admin_action,
+):
     ids = {a.id for a in list_actions(frozenset())}
     assert "admin-only-demo" not in ids
     assert "download-csv" in ids
@@ -93,7 +95,9 @@ def test_is_safe_action_url(url, expected):
 
 def test_open_url_action_requires_safe_url():
     with pytest.raises(ValidationError):
-        ActionDescriptor(id="x", title="X", action_type="open-url", url="javascript:alert(1)")
+        ActionDescriptor(
+            id="x", title="X", action_type="open-url", url="javascript:alert(1)"
+        )
     with pytest.raises(ValidationError):
         ActionDescriptor(id="x", title="X", action_type="open-url", url=None)
 
@@ -105,10 +109,15 @@ def test_client_action_requires_handler():
 
 def test_backend_call_action_requires_safe_endpoint_url():
     with pytest.raises(ValidationError):
-        ActionDescriptor(id="x", title="X", action_type="backend-call", endpoint_url=None)
+        ActionDescriptor(
+            id="x", title="X", action_type="backend-call", endpoint_url=None
+        )
     with pytest.raises(ValidationError):
         ActionDescriptor(
-            id="x", title="X", action_type="backend-call", endpoint_url="javascript:alert(1)"
+            id="x",
+            title="X",
+            action_type="backend-call",
+            endpoint_url="javascript:alert(1)",
         )
 
 
@@ -235,7 +244,9 @@ def install_test_jwks(keypair, monkeypatch):
     yield
 
 
-def _mint(priv_pem: bytes, roles: list[str] | None = None, username: str = "carol") -> str:
+def _mint(
+    priv_pem: bytes, roles: list[str] | None = None, username: str = "carol"
+) -> str:
     now = int(time.time())
     claims = {
         "sub": f"{username}-keycloak-uuid",
@@ -258,7 +269,9 @@ def _create_search(client, token: str, fake_trino) -> str:
     fake_trino(["n"], [{"n": 1}])
     r = client.post(
         "/api/searches",
-        json={"sql": "SELECT primary_report_identifier, accession_number FROM reports_latest"},
+        json={
+            "sql": "SELECT primary_report_identifier, accession_number FROM reports_latest"
+        },
         headers={"Authorization": f"Bearer {token}"},
     )
     assert r.status_code == 201, r.text
@@ -272,7 +285,10 @@ def test_actions_endpoint_hides_admin_action_without_role(
     token = _mint(priv, roles=[])
     search_id = _create_search(client, token, fake_trino)
 
-    r = client.get(f"/api/searches/{search_id}/actions", headers={"Authorization": f"Bearer {token}"})
+    r = client.get(
+        f"/api/searches/{search_id}/actions",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert r.status_code == 200, r.text
     ids = {a["id"] for a in r.json()}
     assert "admin-only-demo" not in ids
@@ -285,7 +301,10 @@ def test_actions_endpoint_shows_admin_action_with_role(
     token = _mint(priv, roles=["report-viewer-admin"])
     search_id = _create_search(client, token, fake_trino)
 
-    r = client.get(f"/api/searches/{search_id}/actions", headers={"Authorization": f"Bearer {token}"})
+    r = client.get(
+        f"/api/searches/{search_id}/actions",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert r.status_code == 200, r.text
     ids = {a["id"] for a in r.json()}
     assert "admin-only-demo" in ids
@@ -298,7 +317,8 @@ def test_actions_endpoint_404s_for_someone_elses_search(client, keypair, fake_tr
 
     other_token = _mint(priv, roles=["report-viewer-admin"], username="dave")
     r = client.get(
-        f"/api/searches/{search_id}/actions", headers={"Authorization": f"Bearer {other_token}"}
+        f"/api/searches/{search_id}/actions",
+        headers={"Authorization": f"Bearer {other_token}"},
     )
     assert r.status_code == 404
 
@@ -377,7 +397,9 @@ def test_invoke_backend_call_action_returns_url(
     assert call["json"]["search_id"] == search_id
 
 
-def test_invoke_unknown_action_404s(client, keypair, fake_trino, catalog_with_backend_call_action):
+def test_invoke_unknown_action_404s(
+    client, keypair, fake_trino, catalog_with_backend_call_action
+):
     priv, _ = keypair
     token = _mint(priv)
     search_id = _create_search(client, token, fake_trino)
