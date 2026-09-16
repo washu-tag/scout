@@ -332,6 +332,10 @@ k3s_cluster:
     keycloak_superset_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_voila_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_report_viewer_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # The fragment reconciler's principal (ADR 0037). Unlike the three above it
+    # talks to Keycloak's own admin API, not Trino, to create the clients that
+    # pluggable apps declare in their fragments.
+    keycloak_fragment_reconciler_svc_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # XNAT's confidential OIDC client secret. Required only when enable_xnat is
     # true. See the XNAT section below.
     # keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
