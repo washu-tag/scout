@@ -235,11 +235,11 @@ def install_test_jwks(keypair, monkeypatch):
     yield
 
 
-def _mint(priv_pem: bytes, roles: list[str] | None = None) -> str:
+def _mint(priv_pem: bytes, roles: list[str] | None = None, username: str = "carol") -> str:
     now = int(time.time())
     claims = {
-        "sub": "carol-keycloak-uuid",
-        "preferred_username": "carol",
+        "sub": f"{username}-keycloak-uuid",
+        "preferred_username": username,
         "iss": _ISSUER,
         "aud": settings.oidc_audience,
         "iat": now,
@@ -293,10 +293,10 @@ def test_actions_endpoint_shows_admin_action_with_role(
 
 def test_actions_endpoint_404s_for_someone_elses_search(client, keypair, fake_trino):
     priv, _ = keypair
-    owner_token = _mint(priv)
+    owner_token = _mint(priv, username="carol")
     search_id = _create_search(client, owner_token, fake_trino)
 
-    other_token = _mint(priv, roles=["report-viewer-admin"])
+    other_token = _mint(priv, roles=["report-viewer-admin"], username="dave")
     r = client.get(
         f"/api/searches/{search_id}/actions", headers={"Authorization": f"Bearer {other_token}"}
     )
