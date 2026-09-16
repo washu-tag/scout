@@ -30,6 +30,10 @@ CHART="${1:?$USAGE}"
 VERSION="${2:?$USAGE}"
 HAUL="${3:-}"
 
+# Resolve a relative haul path against the caller's cwd before the cd to repo root,
+# so a caller outside the root can still pass one.
+[[ -n "$HAUL" && "$HAUL" != /* ]] && HAUL="$PWD/$HAUL"
+
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 fail() {
@@ -68,7 +72,10 @@ case "$CHART" in
     hive-metastore)       from_versions_yaml hive_image_tag ;;
     temporal-bootstrap)   from_versions_yaml temporal_admin_tools_image_tag ;;
     keycloak-config-cli)  from_versions_yaml keycloak_config_cli_image_tag ;;
-    # The import Job runs Scout's superset image, which CI tags from this file.
+    # scout-dashboards imports into Superset via a Job on Scout's superset image.
+    # That image is upstream-versioned (UPSTREAM_VERSIONED_IMAGES, never retagged to
+    # a build or X.Y.Z tag), so the chart couples to Superset's own version from
+    # helm/superset/VERSION rather than the build tag the image carries in the haul.
     scout-dashboards)     tr -d '[:space:]' < helm/superset/VERSION; echo ;;
     *) ;;
 esac

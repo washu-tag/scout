@@ -163,9 +163,10 @@ update_file "tests/auth/package.json" \
     "auth tests package.json version"
 
 # Chart.yaml is NOT stamped: `helm package --version` (all charts) and
-# --app-version (Scout-image charts only) set both at publish time in ci.yaml and
-# release.yaml, so the placeholders never ship. launchpad and report-viewer fall
-# through to .Chart.AppVersion for their image tag.
+# --app-version (Scout-image and upstream-wrapping charts, from chart-app-version.sh)
+# set both at publish time in ci.yaml and release.yaml, so the placeholders never
+# ship. launchpad and report-viewer fall through to .Chart.AppVersion for their
+# image tag.
 #
 # voila is the exception. Its appVersion is Voila's own version, not a Scout image
 # version, so the AppVersion fallback would resolve scout-notebook:0.5.11. Its

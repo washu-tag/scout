@@ -4,8 +4,9 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/washu-tag/report-viewer
-  # Empty falls through to .Chart.AppVersion, which helm package stamps at
-  # publish time. Ansible and the GitOps deploy base both set this explicitly.
+  # Empty falls through to .Chart.AppVersion, which helm package stamps at publish
+  # time (ADR 0030 section 2). Ansible sets this explicitly; report-viewer is not
+  # in the GitOps deploy base yet.
   tag: ''
   pullPolicy: IfNotPresent
 

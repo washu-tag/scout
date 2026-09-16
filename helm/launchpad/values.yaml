@@ -19,10 +19,11 @@ catalog:
     namespace: ALL
     image:
       repository: quay.io/kiwigrid/k8s-sidecar
-      # Concrete default so a bare `helm install` doesn't pull :latest; Ansible/
-      # deploy still override it from versions.yaml (launchpad_sidecar_image_tag,
-      # ADR 0015). chart-app-version.sh only drives the main image via appVersion.
-      tag: '2.10.1'
+      # Required, not defaulted (the template errors if unset). Ansible and the
+      # deploy base set it from versions.yaml (launchpad_sidecar_image_tag, ADR
+      # 0015), the single Renovate-tracked source; a bare `helm install` must pass
+      # --set. chart-app-version.sh drives only the main image, via appVersion.
+      tag: ''
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -46,8 +47,9 @@ docsUrl: ''
 
 image:
   repository: ghcr.io/washu-tag/launchpad
-  # Empty falls through to .Chart.AppVersion, which helm package stamps at
-  # publish time. Ansible and the GitOps deploy base both set this explicitly.
+  # Empty falls through to .Chart.AppVersion, which helm package stamps at publish
+  # time (ADR 0030 section 2). Ansible sets this explicitly; the GitOps deploy base
+  # does not pin it and relies on the stamped appVersion (deploy/base/launchpad).
   tag: ''
   pullPolicy: IfNotPresent
 

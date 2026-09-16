@@ -67,17 +67,10 @@ jobs:
             app_version="$(bash .github/scripts/chart-app-version.sh "${name}" "${VERSION}" predecessor/haul.yaml)"
             helm package "${dir}" --version "${VERSION}" \
               ${app_version:+--app-version "${app_version}"} --destination "${RUNNER_TEMP}"
-            # Fail closed on any published :latest (appVersion or image tag). Capture
-            # first, then match a here-string (a piped grep -q could race pipefail).
-            # voila is exempt (its scout-notebook image tag can't fall back to its
-            # Voilà-versioned appVersion; separate cleanup, see PR description).
-            if [ "${name}" != "voila" ]; then
-              meta="$( { helm show chart "${RUNNER_TEMP}/${name}-${VERSION}.tgz"; \
-                         helm show values "${RUNNER_TEMP}/${name}-${VERSION}.tgz"; } || true )"
-              if grep -qiE "^[[:space:]]*(appVersion|tag):[[:space:]]*['\"]?latest['\"]?([[:space:]]|$)" <<<"${meta}"; then
-                echo "::error::${name} publishes a :latest (appVersion or image tag)"; exit 1
-              fi
-            fi
+            # No published chart may carry a placeholder in a field it publishes
+            # (ADR 0030 section 2).
+            bash .github/scripts/assert-chart-not-latest.sh \
+              "${RUNNER_TEMP}/${name}-${VERSION}.tgz" "${name}"
             helm push "${RUNNER_TEMP}/${name}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
             ref="${REGISTRY}/washu-tag/charts/${name}:${VERSION}"
             digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"

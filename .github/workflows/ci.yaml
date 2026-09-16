@@ -1089,12 +1089,14 @@ jobs:
   # Publish changed Helm charts as versioned OCI artifacts (ADR 0030/0031 phase 0),
   # gated like the image `publish` job.
   publish-charts:
-    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
+    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success' && needs.publish.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    needs: [changes, deploy-and-test, smoke-test]
+    # needs publish so a Scout-image chart is never pushed with appVersion=VERSION
+    # before the image at VERSION exists (ADR 0030 section 2 chart/image coupling).
+    needs: [changes, deploy-and-test, smoke-test, publish]
     strategy:
       fail-fast: false
       matrix:
@@ -1174,29 +1176,20 @@ jobs:
           set -euo pipefail
           helm version --short
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
-          # A Scout image that was not rebuilt this run is carried at its previous
-          # tag, so its chart's appVersion is read from the predecessor haul (the
-          # last build's) to keep the chart's default image tag resolvable.
-          oras pull "${MANIFEST_REPO}:main" -o predecessor
+          # A Scout image not rebuilt this run is carried at its previous tag, so its
+          # chart's appVersion is read from the predecessor haul (the last build's) to
+          # keep the chart's default image tag resolvable. Only the five Scout-image
+          # charts read the haul, and only when their image wasn't rebuilt; a transient
+          # pull is non-fatal so it can't fail a chart that never reads it
+          # (chart-app-version.sh still fails loudly for one that does).
+          oras pull "${MANIFEST_REPO}:main" -o predecessor || true
           app_version="$(bash .github/scripts/chart-app-version.sh "${CHART_NAME}" "${VERSION}" predecessor/haul.yaml)"
           helm package "${CHART_DIR}" --version "${VERSION}" \
             ${app_version:+--app-version "${app_version}"} --destination "${RUNNER_TEMP}"
-          # Fail closed if the packaged chart still ships a :latest -- an appVersion,
-          # or an image tag chart-app-version.sh doesn't drive (e.g. an upstream
-          # sidecar). Capture first, then match a here-string (a piped grep -q can
-          # race pipefail via SIGPIPE into a false-pass); regex is value-anchored so
-          # a real tag like latest-jre passes. voila is exempt: it deploys the Scout
-          # scout-notebook image but its appVersion is Voilà's own version, so its
-          # image tag can't fall back to appVersion -- stamping it is a separate
-          # cleanup (see PR description).
-          if [ "${CHART_NAME}" != "voila" ]; then
-            meta="$( { helm show chart "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz"; \
-                       helm show values "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz"; } || true )"
-            if grep -qiE "^[[:space:]]*(appVersion|tag):[[:space:]]*['\"]?latest['\"]?([[:space:]]|$)" <<<"${meta}"; then
-              echo "::error::${CHART_NAME} publishes a :latest (appVersion or image tag)"
-              exit 1
-            fi
-          fi
+          # No published chart may carry a placeholder in a field it publishes (ADR
+          # 0030 section 2); verify_clean only sees the deploy tree, not chart defaults.
+          bash .github/scripts/assert-chart-not-latest.sh \
+            "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "${CHART_NAME}"
           helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
           # Record the pushed chart by digest for the build-lane haul (ADR 0033),
           # read back via a stable --format contract (matching docker-push;
