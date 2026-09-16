@@ -4,7 +4,7 @@ fullnameOverride: ''
 
 image:
   repository: ghcr.io/washu-tag/keycloak-fragment-reconciler
-  tag: latest
+  tag: ''
   pullPolicy: IfNotPresent
 
 # Public contract: every app names this in a RoleBinding so the reconciler can
