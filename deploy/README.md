@@ -59,8 +59,8 @@ Not in the artifact; a site provides them before reconciling it: cert-manager wi
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared
 `Kustomization` DAG plus one per-mode set, acyclic): postgres, minio, hive, temporal
-(on Postgres), extractor, valkey, keycloak (+ realm), oauth2-proxy, opa, trino
-(ro+rw), superset (+ dashboards).
+(on Postgres), extractor, valkey, keycloak (+ realm + fragment reconciler),
+oauth2-proxy, opa, trino (ro+rw), superset (+ dashboards), launchpad.
 
 Also shipped: launchpad and the aws ingress edge. Remaining components: jupyter,
 report-viewer, monitoring, and the feature Components (chat/voila/xnat/data-generator/gpu).

@@ -1,0 +1,56 @@
+# Keycloak fragment reconciler (ADR 0037), the consumer half of the fragment
+# mechanism: the realm import above creates the scout-user/scout-admin tier
+# roles and this service's own principal, and this turns apps' labelled
+# ConfigMaps into the clients that hang off them. Without it a site gets the
+# tier roles and nothing that uses them, so a published fragment is silently
+# never applied.
+#
+# Consumes the fixed-name keycloak-client-secrets Secret (key
+# fragment_reconciler_svc, the same one config-cli var-substitutes into the
+# realm), so the credential exists once with one writer. Namespace owned by
+# scout-core-foundation; the scout-charts HelmRepository by keycloak/realm,
+# which keycloak-fragment-reconciler dependsOn -- it is deliberately not
+# re-declared here, because two prune:true Kustomizations owning one object is
+# how a prune in either deletes it out from under the other. That makes the
+# keycloak namespace a second consumer of that HelmRepository, which is the
+# condition README fix 1 collects into the foundation; add this base to it.
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keycloak-fragment-reconciler
+  namespace: '${keycloak_namespace}'
+spec:
+  interval: 30m
+  timeout: 5m
+  # Readiness means the tier realm roles were found, so a retry here is waiting
+  # out a realm import that landed a moment after the pod started.
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  # Scout-owned OCI chart (ADR 0030); placeholder version stamped from the haul
+  # at config-artifact publish (self-reference, so not Renovate-tracked).
+  chart:
+    spec:
+      chart: keycloak-fragment-reconciler
+      version: '0.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: scout-charts
+        namespace: '${keycloak_namespace}'
+  values:
+    image:
+      repository: ghcr.io/washu-tag/keycloak-fragment-reconciler
+      tag: latest
+    keycloak:
+      url: 'http://keycloak-service.${keycloak_namespace}:8080'
+      realm: '${keycloak_realm_name}'
+    # Fragments' redirect URIs and app URLs are constrained to this host.
+    serverHostname: '${server_hostname}'
+    # Empty: read fragments from every namespace, since a pluggable app can land
+    # in one this artifact does not know about. A read filter either way -- the
+    # ClusterRole is cluster-wide regardless.
+    watchedNamespaces: []
