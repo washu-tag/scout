@@ -50,9 +50,7 @@ export function ActionsToolbar({
         if (action.action_type === 'client') {
           const handler = action.client_handler ? clientHandlers[action.client_handler] : undefined;
           if (!handler) {
-            console.warn(
-              `ActionsToolbar: no client handler registered for action "${action.id}"`,
-            );
+            console.warn(`ActionsToolbar: no client handler registered for action "${action.id}"`);
             return null;
           }
           return (

@@ -24,14 +24,18 @@ def test_invoke_requires_token():
 
 def test_invoke_rejects_wrong_token():
     r = client.post(
-        "/invoke", json={"search_id": "s_x"}, headers={"X-Report-Viewer-Action-Token": "wrong"}
+        "/invoke",
+        json={"search_id": "s_x"},
+        headers={"X-Report-Viewer-Action-Token": "wrong"},
     )
     assert r.status_code == 401
 
 
 def test_invoke_returns_url_with_timestamp():
     r = client.post(
-        "/invoke", json={"search_id": "s_x"}, headers={"X-Report-Viewer-Action-Token": "test-token"}
+        "/invoke",
+        json={"search_id": "s_x"},
+        headers={"X-Report-Viewer-Action-Token": "test-token"},
     )
     assert r.status_code == 200
     body = r.json()

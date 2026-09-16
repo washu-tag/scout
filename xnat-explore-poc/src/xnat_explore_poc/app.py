@@ -34,8 +34,10 @@ async def invoke(
     # convention (see report_viewer/routes/searches.py's invoke_search_action).
     x_report_viewer_action_token: str | None = Header(default=None),
 ) -> dict:
-    if not settings.invoke_token or not x_report_viewer_action_token or not hmac.compare_digest(
-        x_report_viewer_action_token, settings.invoke_token
+    if (
+        not settings.invoke_token
+        or not x_report_viewer_action_token
+        or not hmac.compare_digest(x_report_viewer_action_token, settings.invoke_token)
     ):
         raise HTTPException(status_code=401, detail="unauthorized")
     # The request body (search_id/sql/username - see report-viewer's

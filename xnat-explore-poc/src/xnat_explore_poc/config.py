@@ -5,7 +5,9 @@ class Settings(BaseSettings):
     """All defaults are dev-friendly; production values come from the Helm
     chart's env block."""
 
-    model_config = SettingsConfigDict(env_prefix="XNAT_EXPLORE_POC_", case_sensitive=False)
+    model_config = SettingsConfigDict(
+        env_prefix="XNAT_EXPLORE_POC_", case_sensitive=False
+    )
 
     host: str = "0.0.0.0"
     port: int = 8000

@@ -89,9 +89,13 @@ class ActionDescriptor(BaseModel):
     def _check_action_type_fields(self) -> "ActionDescriptor":
         if self.action_type == "open-url":
             if not self.url or not _is_safe_action_url(self.url):
-                raise ValueError(f"action {self.id!r}: open-url requires a safe http(s) url")
+                raise ValueError(
+                    f"action {self.id!r}: open-url requires a safe http(s) url"
+                )
         elif self.action_type == "client" and not self.client_handler:
-            raise ValueError(f"action {self.id!r}: client action requires client_handler")
+            raise ValueError(
+                f"action {self.id!r}: client action requires client_handler"
+            )
         elif self.action_type == "backend-call":
             if not self.endpoint_url or not _is_safe_action_url(self.endpoint_url):
                 raise ValueError(
@@ -158,7 +162,9 @@ def _load_catalog_from_file(path: str) -> list[ActionDescriptor] | None:
     if raw is None:
         raw = []
     if not isinstance(raw, list):
-        log.error("action catalog %s: expected a YAML list, using built-in defaults", path)
+        log.error(
+            "action catalog %s: expected a YAML list, using built-in defaults", path
+        )
         return None
 
     catalog: list[ActionDescriptor] = []
@@ -175,7 +181,10 @@ def _load_catalog_from_file(path: str) -> list[ActionDescriptor] | None:
         # two same-keyed React list items.
         if descriptor.id in seen_ids:
             log.warning(
-                "action catalog %s: skipping entry %d, duplicate id %r", path, i, descriptor.id
+                "action catalog %s: skipping entry %d, duplicate id %r",
+                path,
+                i,
+                descriptor.id,
             )
             continue
         seen_ids.add(descriptor.id)
@@ -201,5 +210,7 @@ def list_actions(user_roles: frozenset[str]) -> list[ActionDescriptor]:
     role check at its own endpoint, since a hidden action's URL is not
     itself a secret.
     """
-    visible = [d for d in _CATALOG if d.required_role is None or d.required_role in user_roles]
+    visible = [
+        d for d in _CATALOG if d.required_role is None or d.required_role in user_roles
+    ]
     return sorted(visible, key=lambda d: (d.weight, d.title, d.id))

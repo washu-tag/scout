@@ -607,8 +607,7 @@ export default function SearchDetailPage() {
                 // stays a page-level concern, not something the generic
                 // toolbar or the backend catalog should encode.
                 actions={(actionsQ.data ?? []).filter(
-                  (a) =>
-                    a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
+                  (a) => a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
                 )}
                 clientHandlers={{
                   'explain-search': () => setSqlModalOpen(true),

@@ -502,7 +502,9 @@ async def get_search_actions(
     return list_actions(user.roles)
 
 
-@router.post("/{search_id}/actions/{action_id}/invoke", response_model=ActionInvokeResponse)
+@router.post(
+    "/{search_id}/actions/{action_id}/invoke", response_model=ActionInvokeResponse
+)
 async def invoke_search_action(
     search_id: str,
     action_id: str,
@@ -524,7 +526,11 @@ async def invoke_search_action(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     action = next((a for a in list_actions(user.roles) if a.id == action_id), None)
-    if action is None or action.action_type != "backend-call" or not action.endpoint_url:
+    if (
+        action is None
+        or action.action_type != "backend-call"
+        or not action.endpoint_url
+    ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     headers = {}
