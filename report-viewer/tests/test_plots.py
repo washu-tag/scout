@@ -28,9 +28,8 @@ COHORT_SQL = (
 
 
 def _queue_chart_query(fake_trino, columns, rows):
-    """Chart creation probes for columns, then counts separately."""
+    """Chart creation probes for the columns only."""
     fake_trino(columns, rows)
-    fake_trino(["n"], [{"n": len(rows)}])
 
 
 def _create_from_file(client, auth_headers, sql=COHORT_SQL, csv=CSV):
@@ -60,21 +59,11 @@ def test_create_returns_a_view_url_and_no_chart_payload(
 ):
     _queue_chart_query(fake_trino, ["modality", "n"], [{"modality": "MR", "n": 7}])
     body = _create(client, auth_headers).json()
-    assert body["row_count"] == 1
-    assert body["truncated"] is False
     assert body["view_url"].endswith(f"/spa/plots/{body['id']}")
     assert "spec" not in body and "rows" not in body
-
-
-def test_create_caps_row_count_at_the_cohort_limit(
-    client, auth_headers, fake_trino, monkeypatch
-):
-    monkeypatch.setattr(settings, "max_cohort_rows", 3, raising=False)
-    fake_trino(["modality", "n"], [])
-    fake_trino(["n"], [{"n": 1000}])
-    body = _create(client, auth_headers).json()
-    assert body["row_count"] == 3
-    assert body["truncated"] is True
+    # Creation probes with LIMIT 0 and does not count.
+    assert "LIMIT 0" in fake_trino.calls[-1][0]
+    assert len(fake_trino.calls) == 1
 
 
 def test_viewing_a_chart_re_runs_its_sql(client, auth_headers, fake_trino):

@@ -393,10 +393,18 @@ export default function PlotPage() {
           {showLoading && !plot.error && (
             <QueryProgressInline {...loadingState} doneLabel="Chart loaded" />
           )}
+          {plot.data?.rows.length === 0 && (
+            <span
+              title="The query ran but returned no rows"
+              style={{ color: 'var(--rv-muted)', fontSize: '0.7rem', marginLeft: '0.6rem' }}
+            >
+              Empty result set
+            </span>
+          )}
           {plot.data?.truncated && (
             <span
               title="Narrow the query to see the full result"
-              style={{ color: 'var(--rv-muted)', fontSize: '0.7rem' }}
+              style={{ color: 'var(--rv-muted)', fontSize: '0.7rem', marginLeft: '0.6rem' }}
             >
               Chart Data Truncated
             </span>

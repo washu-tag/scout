@@ -238,7 +238,6 @@ def _routing_handler():
                 json={
                     "id": f"pl_{n}",
                     "view_url": f"https://rv/spa/plots/pl_{n}",
-                    "row_count": 3,
                     "columns": ["modality", "n"],
                 },
             )

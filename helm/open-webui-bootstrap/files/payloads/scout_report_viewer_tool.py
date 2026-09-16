@@ -295,7 +295,6 @@ class Tools:
             if isinstance(exc, SessionExpiredError):
                 return error
             return f"{error}\n\nFix the SQL or the spec and call scout_chart_sql again."
-        n = plot.get("row_count", 0)
         await self._emit(__event_emitter__, "Chart created", done=True)
         evicted = await self._emit_embed(
             __event_emitter__,
@@ -312,8 +311,8 @@ class Tools:
             else "Chart rendered for the user above this message"
         )
         return (
-            f"{rendered} ({n} data points over "
-            f"{', '.join(plot.get('columns') or [])}). "
+            f"{rendered} "
+            f"(columns: {', '.join(plot.get('columns') or [])}). "
             "Do not restate the data, do not add a table, and do not write a "
             "vega code fence. Reply with a short interpretation only, in "
             "one reply covering every chart and viewer you rendered this "

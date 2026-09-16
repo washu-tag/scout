@@ -387,12 +387,11 @@ async def _run_chart_query(
     op: str,
     params: list | None = None,
     hint: str = "",
-) -> tuple[list[str], int, bool]:
+) -> list[str]:
     """Run it now so a broken query fails while the model can still fix it.
-    `hint` is appended to that error. Only columns and a count are needed
-    here, so probe with LIMIT 0 instead of buffering every row."""
+    `hint` is appended to that error. Probes with LIMIT 0: emptiness and
+    truncation are reported by the view, which fetches the rows anyway."""
     probe_sql = f"SELECT s.* FROM ({sql}) s LIMIT 0"
-    count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
     try:
         with metrics.time_trino(op):
             # safe: sql is LLM-authored, wrapped as subquery; OPA is the AuthZ boundary
@@ -400,27 +399,13 @@ async def _run_chart_query(
             columns, _ = await trino_client.execute(
                 probe_sql, user=user_sub, params=params
             )
-            # safe: sql is LLM-authored, wrapped as subquery; OPA is the AuthZ boundary
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            _, count_rows = await trino_client.execute(
-                count_sql, user=user_sub, params=params
-            )
     except Exception as exc:
         log.exception("trino plot query failed")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}{hint}",
         )
-    row_count = int(count_rows[0]["n"]) if count_rows else 0
-    if row_count == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="query returned no rows, so there is nothing to chart",
-        )
-    metrics.RESULT_ROWS.labels(op=op).observe(row_count)
-    cap = settings.max_cohort_rows
-    truncated = row_count > cap
-    return columns, min(row_count, cap), truncated
+    return columns
 
 
 async def _save_chart(
@@ -429,8 +414,6 @@ async def _save_chart(
     sql: str,
     raw_spec: dict[str, Any],
     columns: list[str],
-    row_count: int,
-    truncated: bool,
     user_sub: str,
     sql_explanation: str | None,
     owui_chat_id: str | None,
@@ -454,8 +437,6 @@ async def _save_chart(
         id=plot_id,
         view_url=f"{settings.external_url.rstrip('/')}/spa/plots/{plot_id}",
         columns=[c for c in columns if c not in _HEAVY_COLS],
-        row_count=row_count,
-        truncated=truncated,
     )
 
 
@@ -468,17 +449,13 @@ async def create_plot(
     spec = _add_legend_toggle(_clean_spec(body.vega_lite_spec))
     await _validate_spec(spec)
     sql = _wrap_sql(body.sql)
-    columns, row_count, truncated = await _run_chart_query(
-        sql, user_sub=user.sub, op="plot_query"
-    )
+    columns = await _run_chart_query(sql, user_sub=user.sub, op="plot_query")
     _reject_unknown_fields(spec, columns)
     return await _save_chart(
         store,
         sql=sql,
         raw_spec=spec,
         columns=columns,
-        row_count=row_count,
-        truncated=truncated,
         user_sub=user.sub,
         sql_explanation=body.sql_explanation,
         owui_chat_id=body.owui_chat_id,
@@ -518,7 +495,7 @@ async def create_plot_from_file(
 
     predicate = f"contains(?, {quote_ident(resolved_id_column)})"
     chart_sql = substitute_cohort(sql, predicate)
-    columns, row_count, truncated = await _run_chart_query(
+    columns = await _run_chart_query(
         chart_sql,
         user_sub=user.sub,
         op="plot_query_from_file",
@@ -531,8 +508,6 @@ async def create_plot_from_file(
         sql=chart_sql,
         raw_spec=spec,
         columns=columns,
-        row_count=row_count,
-        truncated=truncated,
         user_sub=user.sub,
         sql_explanation=sql_explanation,
         owui_chat_id=owui_chat_id,
