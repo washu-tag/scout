@@ -63,12 +63,14 @@ jobs:
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
       report-viewer: ${{ steps.filter.outputs.report-viewer }}
+      keycloak-fragment-reconciler: ${{ steps.filter.outputs.keycloak-fragment-reconciler }}
       hl7-transformer-chart: ${{ steps.filter.outputs.hl7-transformer-chart }}
       dcm4chee-chart: ${{ steps.filter.outputs.dcm4chee-chart }}
       hive-metastore-chart: ${{ steps.filter.outputs.hive-metastore-chart }}
       hl7-listener-chart: ${{ steps.filter.outputs.hl7-listener-chart }}
       hl7log-extractor-chart: ${{ steps.filter.outputs.hl7log-extractor-chart }}
       keycloak-config-cli-chart: ${{ steps.filter.outputs.keycloak-config-cli-chart }}
+      keycloak-fragment-reconciler-chart: ${{ steps.filter.outputs.keycloak-fragment-reconciler-chart }}
       launchpad-chart: ${{ steps.filter.outputs.launchpad-chart }}
       open-webui-bootstrap-chart: ${{ steps.filter.outputs.open-webui-bootstrap-chart }}
       orthanc-chart: ${{ steps.filter.outputs.orthanc-chart }}
@@ -128,6 +130,8 @@ jobs:
               - 'keycloak/**'
             report-viewer:
               - 'report-viewer/**'
+            keycloak-fragment-reconciler:
+              - 'keycloak-fragment-reconciler/**'
             hl7-transformer-chart:
               - 'helm/extractor/hl7-transformer/**'
             dcm4chee-chart:
@@ -140,6 +144,8 @@ jobs:
               - 'helm/extractor/hl7log-extractor/**'
             keycloak-config-cli-chart:
               - 'helm/keycloak-config-cli/**'
+            keycloak-fragment-reconciler-chart:
+              - 'helm/keycloak-fragment-reconciler/**'
             launchpad-chart:
               - 'helm/launchpad/**'
             open-webui-bootstrap-chart:
@@ -240,6 +246,8 @@ jobs:
             subproject: keycloak
           - image-name: report-viewer
             subproject: report-viewer
+          - image-name: keycloak-fragment-reconciler
+            subproject: keycloak-fragment-reconciler
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: 'Check if image exists'
@@ -346,6 +354,9 @@ jobs:
         env:
           REPORT_VIEWER_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/report_viewer_test
         run: cd report-viewer && pip install -e '.[dev]' && pytest -v
+      - name: 'Unit tests: keycloak-fragment-reconciler'
+        shell: bash
+        run: cd keycloak-fragment-reconciler && pip install -e '.[test]' && pytest -v
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
@@ -1063,6 +1074,18 @@ jobs:
         with:
           image-name: report-viewer
           version: ${{ needs.changes.outputs.version }}
+      - name: 'Check published - keycloak-fragment-reconciler'
+        id: published-keycloak-fragment-reconciler
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: keycloak-fragment-reconciler
+          image-name: keycloak-fragment-reconciler
+      - name: 'Push Image - keycloak-fragment-reconciler'
+        if: needs.changes.outputs.keycloak-fragment-reconciler == 'true' || steps.published-keycloak-fragment-reconciler.outputs.exists == 'false'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: keycloak-fragment-reconciler
+          version: ${{ needs.changes.outputs.version }}
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Sign published build-lane images
@@ -1117,6 +1140,9 @@ jobs:
           - chart-name: keycloak-config-cli
             chart-dir: helm/keycloak-config-cli
             changed: keycloak-config-cli-chart
+          - chart-name: keycloak-fragment-reconciler
+            chart-dir: helm/keycloak-fragment-reconciler
+            changed: keycloak-fragment-reconciler-chart
           - chart-name: launchpad
             chart-dir: helm/launchpad
             changed: launchpad-chart
@@ -1281,6 +1307,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: report-viewer
+      - name: 'Push Image - keycloak-fragment-reconciler'
+        if: needs.changes.outputs.keycloak-fragment-reconciler == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: keycloak-fragment-reconciler
 
   haul-guard-canary:
     # publish-haul's sync fails closed by counting hauler's "signature verified for
@@ -1306,7 +1337,7 @@ jobs:
     # Build-lane haul (ADR 0033): render the manifest (fresh digests + carry), sync to a
     # signed .tar.zst, publish the bundle + manifest. GATES the build (no continue-on-error):
     # a broken/incomplete/unsigned air-gap haul must fail loud. Safe to merge only after
-    # seed-charts.yaml has published all 14 charts (publish-charts is changed-only) and the
+    # seed-charts.yaml has published all 15 charts (publish-charts is changed-only) and the
     # Docker Hub secret is seeded (the upstream pulls below are otherwise rate-limited).
     if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
     runs-on: ubuntu-latest
@@ -1368,7 +1399,7 @@ jobs:
       - name: Skip if the haul predecessor is not yet seeded
         id: seeded
         # publish-haul now gates the build, but a run before seed-charts.yaml has
-        # published the 14 charts (incl. the first main run after this lands) has an
+        # published the 15 charts (incl. the first main run after this lands) has an
         # images-only predecessor, so build_haul would fail closed on the uncarried
         # charts and red main. Detect that pre-seed state and skip (warn); a genuine
         # drift (stray fresh digest, bad ref) still fails loudly in the render below.

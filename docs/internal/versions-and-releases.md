@@ -363,6 +363,7 @@ This section documents all files containing version strings. The Release Workflo
 | `ansible/roles/launchpad/defaults/main.yaml` | `launchpad_image_tag` |
 | `ansible/roles/report_viewer/defaults/main.yaml` | `report_viewer_image_tag` |
 | `ansible/roles/hl7-listener/defaults/main.yaml` | `hl7_listener_image_tag` |
+| `ansible/roles/keycloak_fragment_reconciler/defaults/main.yaml` | `keycloak_fragment_reconciler_image_tag` |
 
 ### Python Packages
 
@@ -372,6 +373,8 @@ This section documents all files containing version strings. The Release Workflo
 | `extractor/hl7-transformer/VERSION` | entire file | `latest` |
 | `report-viewer/pyproject.toml` | `version` | `0.0.dev0` |
 | `report-viewer/VERSION` | entire file | `latest` |
+| `keycloak-fragment-reconciler/pyproject.toml` | `version` | `0.0.dev0` |
+| `keycloak-fragment-reconciler/VERSION` | entire file | `latest` |
 
 ### Java/Gradle Build Files
 
@@ -401,6 +404,8 @@ This section documents all files containing version strings. The Release Workflo
 | `helm/launchpad/values.yaml` | `image.tag` | `latest` |
 | `helm/report-viewer/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 | `helm/report-viewer/values.yaml` | `image.tag` | `latest` |
+| `helm/keycloak-fragment-reconciler/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
+| `helm/keycloak-fragment-reconciler/values.yaml` | `image.tag` | `latest` |
 | `helm/extractor/hl7-transformer/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 | `helm/extractor/hl7log-extractor/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 | `helm/hl7-listener/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
