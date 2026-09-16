@@ -7,6 +7,13 @@ image:
 
 resources: {{ report_viewer_resources_default | combine(report_viewer_resources | default({}), recursive=true) | to_json }}
 
+# Issue #739 PoC: site-admin-authorable action buttons. Empty by default;
+# see helm/report-viewer/values.yaml for the exact per-entry field shape
+# (open-url vs backend-call) and report_viewer_custom_actions' own
+# comment for the inventory.yaml override shape.
+actions:
+  custom: {{ report_viewer_custom_actions | to_json }}
+
 env:
   REPORT_VIEWER_EXTERNAL_URL: "https://{{ report_viewer_host }}"
   REPORT_VIEWER_CHAT_ORIGIN: "{{ report_viewer_chat_origin }}"

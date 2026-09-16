@@ -46,3 +46,15 @@ report_viewer_trino_ca_cert: ''
 report_viewer_trino_auth_token_url: '{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/token'
 report_viewer_trino_auth_client_id: report_viewer_svc
 report_viewer_trino_auth_client_secret: '{{ keycloak_report_viewer_svc_client_secret }}'
+
+# Issue #739 PoC: site-admin-authorable action buttons (helm/report-viewer's
+# actions.custom - see that chart's values.yaml for the full field
+# reference). Set from inventory.yaml, e.g.:
+#
+# report_viewer_custom_actions:
+#   - id: explore-xnat
+#     title: Explore in XNAT
+#     actionType: backend-call
+#     endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
+#     invokeToken: "{{ vault_xnat_explore_poc_invoke_token }}"
+report_viewer_custom_actions: []
