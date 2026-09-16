@@ -37,11 +37,16 @@ export interface OpenResultState {
  * unconditionally.
  *
  * Whether the popup actually succeeds is controlled by the destination's
- * own Cross-Origin-Opener-Policy response header (e.g.
- * popup-friendly-security-headers in
- * ansible/roles/traefik/tasks/main.yaml), not anything this hook does -
- * a destination that hasn't opted into that header will always fall
- * through to the copy-link affordance when embedded.
+ * own Cross-Origin-Opener-Policy response header, not anything this hook
+ * does. When opened from within a sandboxed iframe (OWUI's chat embed)
+ * without allow-popups-to-escape-sandbox - which we don't control - the
+ * destination must send exactly COOP: unsafe-none; anything else
+ * (including same-origin-allow-popups, easy to assume is "relaxed
+ * enough" but isn't) hits the same block per the WHATWG HTML spec (see
+ * security-headers-sameorigin-popups in
+ * ansible/roles/traefik/tasks/main.yaml for the full writeup). A
+ * destination that hasn't opted into unsafe-none will always fall
+ * through to the copy-link affordance when embedded this way.
  *
  * The copy itself uses `document.execCommand('copy')`, not
  * `navigator.clipboard` - same reasoning and precedent as

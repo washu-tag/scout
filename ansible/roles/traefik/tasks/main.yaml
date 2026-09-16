@@ -168,18 +168,31 @@
 # Same-origin framing + popup-friendly COOP: for services whose own UI
 # frames itself in an iframe (e.g. XNAT) AND need to be openable as a
 # popup/new tab from a sandboxed embed elsewhere (e.g. report-viewer's
-# OWUI-embedded "Explore in XNAT" backend-call action, #739). Chrome
-# blocks a popup outright ("blocked from loading in a popup opened by a
-# sandboxed iframe") when the popup's own response sets
-# COOP: same-origin, regardless of the opening iframe's sandbox flags -
-# same-origin-allow-popups keeps COOP's cross-origin-opener isolation for
-# direct navigation while permitting that case. Otherwise identical to
-# security-headers: frame-ancestors 'self' + X-Frame-Options SAMEORIGIN
-# instead of 'none'/DENY. Named for both properties (not just
-# "sameorigin") since it now does more than framing - keep this in sync
-# if a future consumer needs sameorigin framing WITHOUT the popup
-# allowance; split into two middlewares at that point rather than
-# reusing this name for a third behavior.
+# OWUI-embedded "Explore in XNAT" backend-call action, #739).
+#
+# COOP is 'unsafe-none', not a relaxed-but-still-isolating value like
+# 'same-origin-allow-popups' - per the WHATWG HTML spec's navigation
+# algorithm (github.com/whatwg/html/pull/5817, matching Chromium's
+# "blocked from loading in a popup opened by a sandboxed iframe because
+# this document specified a cross-origin opener policy"), the check a
+# sandboxed opener without allow-popups-to-escape-sandbox hits is a
+# binary "is the target's COOP unsafe-none, or not" - same-origin and
+# same-origin-allow-popups both fail it identically, only unsafe-none
+# passes. OWUI's iframe sandbox attribute isn't something Scout
+# controls, so unsafe-none is the only workable value from this side.
+# Tradeoff accepted: this page loses COOP's cross-origin-isolation
+# hardening (mainly Spectre-class process isolation). The more commonly-
+# cited COOP relaxation risk - reverse tabnabbing via a retained
+# window.opener - is separately neutralized regardless of this value,
+# since report-viewer's openResult.ts always sets rel="noopener
+# noreferrer" on the anchor it opens this with.
+#
+# Otherwise identical to security-headers: frame-ancestors 'self' +
+# X-Frame-Options SAMEORIGIN instead of 'none'/DENY. Named for both
+# properties (not just "sameorigin") since it now does more than framing
+# - keep this in sync if a future consumer needs sameorigin framing
+# WITHOUT the popup allowance; split into two middlewares at that point
+# rather than reusing this name for a third behavior.
 - name: Apply same-origin, popup-friendly security headers middleware
   kubernetes.core.k8s:
     state: present
@@ -207,7 +220,7 @@
             frame-ancestors 'self'
           customResponseHeaders:
             Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
-            Cross-Origin-Opener-Policy: 'same-origin-allow-popups'
+            Cross-Origin-Opener-Policy: 'unsafe-none'
             X-Powered-By: ''
             Server: ''
 
