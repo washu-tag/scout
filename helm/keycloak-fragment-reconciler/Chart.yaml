@@ -1,0 +1,7 @@
+---
+apiVersion: v2
+name: keycloak-fragment-reconciler
+description: Reconciles Keycloak realm fragments published by pluggable apps (ADR 0037)
+type: application
+version: 0.0.0-dev
+appVersion: 'latest'
