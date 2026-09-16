@@ -16,12 +16,13 @@ WORKDIR /app
 # bundled in the base image. The awssdk bundle must be at least the
 # aws-java-sdk-v2 version that hadoop-aws declares in hadoop-project's pom
 # (2.29.52 for 3.4.2); newer 2.x releases are compatible and carry SDK and
-# embedded-netty CVE fixes.
+# embedded-netty CVE fixes. 2.54.19 bundles netty 4.1.138.Final, fixing
+# CVE-2026-75595 (CRITICAL, netty-handler).
 ADD --chown=spark \
     https://repo1.maven.org/maven2/io/delta/delta-spark_4.1_2.13/4.3.0/delta-spark_4.1_2.13-4.3.0.jar \
     https://repo1.maven.org/maven2/io/delta/delta-storage/4.3.0/delta-storage-4.3.0.jar \
     https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.4.2/hadoop-aws-3.4.2.jar \
-    https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.49.3/bundle-2.49.3.jar \
+    https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.54.19/bundle-2.54.19.jar \
     ${SPARK_HOME}/jars/
 
 # Create venv. The seeded setuptools (ubuntu's 59.6.0) has known CVEs.
