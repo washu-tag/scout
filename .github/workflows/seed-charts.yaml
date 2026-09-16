@@ -68,7 +68,7 @@ jobs:
             # first, then match a here-string (a piped grep -q could race pipefail).
             meta="$( { helm show chart "${RUNNER_TEMP}/${name}-${VERSION}.tgz"; \
                        helm show values "${RUNNER_TEMP}/${name}-${VERSION}.tgz"; } || true )"
-            if grep -qiE "^[[:space:]]*(appVersion:[[:space:]]*['\"]?latest|tag:[[:space:]]*['\"]?latest)" <<<"${meta}"; then
+            if grep -qiE "^[[:space:]]*(appVersion|tag):[[:space:]]*['\"]?latest['\"]?([[:space:]]|$)" <<<"${meta}"; then
               echo "::error::${name} publishes a :latest (appVersion or image tag)"; exit 1
             fi
             helm push "${RUNNER_TEMP}/${name}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"

@@ -1179,7 +1179,7 @@ jobs:
           # race pipefail via SIGPIPE), then match a here-string.
           meta="$( { helm show chart "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz"; \
                      helm show values "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz"; } || true )"
-          if grep -qiE "^[[:space:]]*(appVersion:[[:space:]]*['\"]?latest|tag:[[:space:]]*['\"]?latest)" <<<"${meta}"; then
+          if grep -qiE "^[[:space:]]*(appVersion|tag):[[:space:]]*['\"]?latest['\"]?([[:space:]]|$)" <<<"${meta}"; then
             echo "::error::${CHART_NAME} publishes a :latest (appVersion or image tag)"
             exit 1
           fi
