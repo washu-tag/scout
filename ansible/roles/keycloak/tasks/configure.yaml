@@ -21,18 +21,23 @@
   ansible.builtin.set_fact:
     keycloak_client_secrets: "{{ lookup('template', 'keycloak-client-secrets.yaml.j2') | from_yaml }}"
 
-# An undefined variable already fails the template above. An empty one would
-# not: config-cli substitutes it, and the client ends up with a blank
-# credential rather than a broken deploy. Catch that here, where the operator
-# is still watching.
+# The one gate on the credentials, covering both an unset variable and an
+# empty one. The template defaults every key to empty so that both arrive
+# here: config-cli substitutes an empty value happily, and the client ends up
+# with a blank credential rather than a broken deploy. Catch it here, where
+# the operator is still watching and the key can be named.
 - name: Validate no Keycloak client secret is empty
   ansible.builtin.assert:
     that: keycloak_empty_client_secrets | length == 0
     fail_msg: >
-      Empty Keycloak client secret(s): {{ keycloak_empty_client_secrets | join(', ') }}.
+      Empty or unset Keycloak client secret(s): {{ keycloak_empty_client_secrets | join(', ') }}.
       These name keys of the keycloak-client-secrets Secret; each comes from a
-      keycloak_* variable in your inventory.yaml. An empty value would be
-      installed as the client's credential.
+      keycloak_* variable in your inventory.yaml (for example the
+      fragment_reconciler_svc key comes from
+      keycloak_fragment_reconciler_svc_client_secret). A key listed here is
+      either unset or empty; both would be installed as the client's
+      credential. Generate one with:
+      openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
   vars:
     keycloak_empty_client_secrets: >-

@@ -43,6 +43,8 @@ process.
 It writes only clients carrying its own ownership attribute, their roles, their protocol
 mappers, and composite edges naming those roles. It holds no standing Secret permission:
 each app's chart grants it a `resourceNames`-scoped `get` on that app's own credential.
-**The ServiceAccount name and namespace are public contract** — apps name them in a
-`RoleBinding`, so renaming either breaks every installed fragment. See
+**The ServiceAccount name is public contract** — apps name it in a `RoleBinding`, so
+renaming it breaks every installed fragment, and it is deliberately not derived from the
+Helm release name. Apps name the namespace too, but it follows `keycloak_namespace`, so a
+site that overrides namespaces has to use its own. See
 `docs/source/customize/keycloak-fragments.md`.
