@@ -52,5 +52,6 @@ spec:
     serverHostname: '${server_hostname}'
     # Empty: read fragments from every namespace, since a pluggable app can land
     # in one this artifact does not know about. A read filter either way -- the
-    # ClusterRole is cluster-wide regardless.
+    # ClusterRole is cluster-wide regardless, and garbage collection is scoped
+    # to the same list, so narrowing it never reads as a deletion.
     watchedNamespaces: []
