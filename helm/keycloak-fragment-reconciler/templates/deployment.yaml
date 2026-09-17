@@ -21,6 +21,21 @@ spec:
       {{- include "reconciler.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- /*
+      Scrape annotations rather than a scrape job in the Prometheus config:
+      both deploy lanes discover pods by these annotations, so one place
+      covers both, and `drift_repairs_total` is the signal that the base
+      realm's tier roles are reaping fragment grants -- which presents to
+      users as app roles that come and go, not as an outage, so nobody will
+      think to go looking for it.
+      */}}
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: {{ .Values.service.port | quote }}
+        prometheus.io/path: '/metrics'
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
         {{- include "reconciler.selectorLabels" . | nindent 8 }}
     spec:

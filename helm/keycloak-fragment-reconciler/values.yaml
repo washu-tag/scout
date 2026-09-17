@@ -33,12 +33,17 @@ tierRoles:
 serverHostname: ''
 
 # Namespaces to read fragments from; empty means all. A read filter, never a
-# permission boundary -- the ClusterRole is cluster-wide either way.
+# permission boundary -- the ClusterRole is cluster-wide either way. Garbage
+# collection is scoped to the same list, so narrowing this leaves the clients
+# it stops covering alone rather than reading them as deleted.
 watchedNamespaces: []
 
 reconcile:
-  # The authoritative pass, and the only one that may infer an orphan from
-  # absence. -1 disables it, leaving witnessed deletions as the only GC trigger.
+  # How often to re-read everything and repair what nothing reported: a
+  # rotated credential, an admin-console edit, a tier edge reaped by a realm
+  # re-apply. -1 removes the timer entirely and parks on the fragment watch, so
+  # the realm is only re-read when a fragment changes. An orphan's grace period
+  # still comes due either way; what -1 gives up is finding drift unprompted.
   resyncSeconds: 300
   # How long a fragment must be absent before its client is deleted. Held in
   # memory, so a restart restarts the clock -- a floor, not a guarantee.
@@ -50,7 +55,12 @@ logLevel: INFO
 
 service:
   type: ClusterIP
+  # Serves /healthz, /readyz and /metrics. Also the port the scrape annotations
+  # on the pod advertise.
   port: 8080
+
+# Merged over the prometheus.io scrape annotations the Deployment always sets.
+podAnnotations: {}
 
 # replicas and autoscaling are deliberately absent: two writers on the same
 # realm objects is the failure this service is designed against, so the
