@@ -207,6 +207,19 @@
             "clientRole": true,
             "attributes": {}
           }
+        ],
+        {{- /* #739: gates report-viewer's role-gated action buttons. Delivered
+            into resource_access.report-viewer.roles via the client-role mapper
+            on the report-viewer-audience client scope, not via this client's
+            own tokens - report-viewer is bearer-only, it never mints any. */}}
+        "report-viewer": [
+          {
+            "name": "report-viewer-admin",
+            "description": "Scout Admin Role for Report Viewer Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
         ]{{- if eq (.Values.enableXnat | toString) "true" }},
         "xnat": [
           {
@@ -235,6 +248,9 @@
           ],
           "launchpad": [
             "launchpad-admin"
+          ],
+          "report-viewer": [
+            "report-viewer-admin"
           ],
           "superset": [
             "superset_admin"
@@ -793,6 +809,28 @@
           "email",
           "trino-audience"
         ]
+      },
+      {{- /* Bearer-only: report-viewer never participates in any OAuth flow of
+          its own (no login, no redirect, no service account) - it's purely a
+          resource server validating tokens minted for OTHER clients
+          (report-viewer-audience stamps aud=report-viewer onto those, ADR
+          0022). This client exists solely to own the report-viewer-admin
+          client-role namespace (#739); report-viewer-audience's client-role
+          mapper below is what actually delivers that role into
+          resource_access.report-viewer.roles on whichever client's token a
+          user holds. */}}
+      {
+        "name": "report-viewer",
+        "description": "Report-viewer client - role namespace only, no login flow (bearer-only resource server)",
+        "enabled": true,
+        "clientId": "report-viewer",
+        "bearerOnly": true,
+        "publicClient": false,
+        "standardFlowEnabled": false,
+        "implicitFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "serviceAccountsEnabled": false,
+        "protocol": "openid-connect"
       }{{- if eq (.Values.enableXnat | toString) "true" }},
       {
         "name": "xnat",
@@ -1270,6 +1308,27 @@
               "access.token.claim": "true",
               "introspection.token.claim": "true",
               "lightweight.claim": "false"
+            }
+          },
+          {{- /* #739: delivers the caller's report-viewer client roles (e.g.
+              report-viewer-admin) into resource_access.report-viewer.roles on
+              any token this scope is attached to - deliberately NOT
+              overriding claim.name (unlike every other client-role mapper in
+              this realm, which targets a client's own "groups" claim for its
+              own role-sync): report_viewer/auth.py reads the standard
+              resource_access shape, not a custom claim. */}}
+          {
+            "name": "report-viewer-roles-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "usermodel.clientRoleMapping.clientId": "report-viewer",
+              "multivalued": "true",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "false",
+              "introspection.token.claim": "true"
             }
           }
         ]
