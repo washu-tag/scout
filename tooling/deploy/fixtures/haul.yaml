@@ -1,6 +1,6 @@
 # FIXTURE ONLY -- a representative Hauler `kind: Images` manifest for
 # stamp_config.py tests (ADR 0033 build-lane format, produced by
-# tooling/manifest/haul.py render_images). All 8 images + 14 charts, with
+# tooling/manifest/haul.py render_images). Covers every image and chart, with
 # fake-but-well-formed digests (sha256 of the tagged ref) and plausible build
 # tags. Tags are DISTINCT per component so a mis-keyed stamp is caught.
 apiVersion: content.hauler.cattle.io/v1
@@ -17,14 +17,14 @@ spec:
     - name: ghcr.io/washu-tag/superset:5.0.0-scout.20260813@sha256:ad94ed51db3794a0eb2ea601edf8ee46498b24f723348ba59f6e899fdbf66285
     - name: ghcr.io/washu-tag/keycloak:26.6.4-scout.20260813@sha256:b26999150335e4051179ebe6d4fc4db82bdbb3c6072fd872aed988c12a0bdffd
     - name: ghcr.io/washu-tag/report-viewer:0.20260813.6@sha256:3109641270f1db5f108c98867c80e220f5d272e5f04b9c9525681f41229a8833
-    - name: ghcr.io/washu-tag/keycloak-fragment-reconciler:0.20260813.7@sha256:4a7e2f9c1b8d3650e2c9f4a7b1d8e3c6950f2a7d4b1c8e6395f2a7d4b1c86950
+    - name: ghcr.io/washu-tag/keycloak-fragment-reconciler:0.20260813.7@sha256:cbe1e9d2b9aee76f00084c17c31aa9bee18c43bf6d3ba8e7979fbb56ad944f82
     - name: ghcr.io/washu-tag/charts/hl7-transformer:0.20260813.11@sha256:9c40f67914068787fff9dcc74d2f60120fb0290ccb1cf3b051101785c612b63f
     - name: ghcr.io/washu-tag/charts/dcm4chee:0.20260813.12@sha256:c183b0a9f46ef0f1d2be8990da846e3338c11d0d4c69e9f9c2cc8126311ae096
     - name: ghcr.io/washu-tag/charts/hive-metastore:0.20260813.13@sha256:aabc5a60f6a07afb6612558ee17c40e7a1d1d112973a99f36931d10b7637d578
     - name: ghcr.io/washu-tag/charts/hl7-listener:0.20260813.14@sha256:993bc78638be7588cb92267495f4ea38bca6449e35a74c46a52aea463badba53
     - name: ghcr.io/washu-tag/charts/hl7log-extractor:0.20260813.15@sha256:c85ccffc6fbe2445c721b86ed349dc854c7235b8989dbd8d1766ebf39ea2fb00
     - name: ghcr.io/washu-tag/charts/keycloak-config-cli:0.20260813.16@sha256:3c7155b029ce6f386a0bf39e337b9d9b933a5900ae5f0a4a486c0df89ab64231
-    - name: ghcr.io/washu-tag/charts/keycloak-fragment-reconciler:0.20260813.17@sha256:1f4d3c8e6b2a95710c4e8d3f2b6a1c95840e7d3b2c6a95f1e8d4b3a2c6951f4d
+    - name: ghcr.io/washu-tag/charts/keycloak-fragment-reconciler:0.20260813.25@sha256:82eb9239f0774925fdf8e6afcba1f1ab8167361b500c72c5612c692b496fedbf
     - name: ghcr.io/washu-tag/charts/launchpad:0.20260813.17@sha256:22c8fbfaf685ce90d54f29005ec2960aec4e910477446252b3fb135195870fd3
     - name: ghcr.io/washu-tag/charts/open-webui-bootstrap:0.20260813.18@sha256:58d253cb338f888ac62bb4ed66aeb68946d3fd2d41b61b0f240e43dd6d304e6a
     - name: ghcr.io/washu-tag/charts/orthanc:0.20260813.19@sha256:373c4062234027effac75f38bf78dff74b8d201a3bbfb8c1333c1b6c492e1828
