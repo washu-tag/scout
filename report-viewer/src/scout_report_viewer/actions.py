@@ -2,8 +2,9 @@
 
 Report-viewer's search-detail toolbar used to hardcode every button in
 the frontend. This module proves out a backend-declared contract instead:
-a button is data (`ActionDescriptor`), filtered by the caller's role
-server-side, and rendered generically by the SPA - the same shape ADR 0034
+a button is data (`ActionDescriptor`), filtered by the caller's Keycloak
+group membership server-side, and rendered generically by the SPA - the
+same shape ADR 0034
 (#636) used for launchpad chips, adapted for actions that can be gated per
 search rather than always-static links.
 
@@ -78,7 +79,7 @@ class ActionDescriptor(BaseModel):
     weight: int = 100
     action_type: Literal["open-url", "client", "backend-call"]
     url: str | None = None
-    required_role: str | None = None
+    required_group: str | None = None
     client_handler: str | None = None
     endpoint_url: str | None = None
     invoke_token: str | None = Field(default=None, exclude=True)
@@ -195,16 +196,18 @@ _CATALOG: list[ActionDescriptor] = (
 )
 
 
-def list_actions(user_roles: frozenset[str]) -> list[ActionDescriptor]:
-    """Role-filtered, weight-sorted actions visible to this caller.
+def list_actions(user_groups: frozenset[str]) -> list[ActionDescriptor]:
+    """Group-filtered, weight-sorted actions visible to this caller.
 
     Server-side filtering only - visibility is UX, not the authorization
     boundary (ADR 0034's framing for launchpad chips, unchanged here): a
     real backend-calling action must still independently enforce the same
-    role check at its own endpoint, since a hidden action's URL is not
+    group check at its own endpoint, since a hidden action's URL is not
     itself a secret.
     """
     visible = [
-        d for d in _CATALOG if d.required_role is None or d.required_role in user_roles
+        d
+        for d in _CATALOG
+        if d.required_group is None or d.required_group in user_groups
     ]
     return sorted(visible, key=lambda d: (d.weight, d.title, d.id))

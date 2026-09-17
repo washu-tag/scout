@@ -24,11 +24,17 @@ config:
     banner = "{{ oauth2_proxy_banner }}"
     footer = "{{ server_hostname }}" # Hacky way to pass server hostname to sign_in template
     upstreams = ["static://200"]
-    # Emit X-Auth-Request-Preferred-Username on /oauth2/auth responses so
-    # Traefik's forwardAuth middleware can forward it to upstream services.
-    # Voila reads it to set X-Trino-User per ADR 0022; voila_runtime captures
-    # it from the request and threads it into spawned kernels.
+    # Emit X-Auth-Request-Preferred-Username and X-Auth-Request-Groups on
+    # /oauth2/auth responses so Traefik's forwardAuth middleware can forward
+    # them to upstream services. Voila reads the username to set
+    # X-Trino-User per ADR 0022; voila_runtime captures it from the request
+    # and threads it into spawned kernels. report-viewer reads the groups
+    # header for action-catalog visibility gating (#739) - matches
+    # "groups-mapper"'s claim.name=groups on oauth2-proxy's Keycloak client.
     set_xauthrequest = true
+    # oauth2-proxy's own default, spelled out so the claim-name coupling to
+    # the Keycloak mapper above is visible here rather than implicit.
+    oidc_groups_claim = "groups"
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true
 {% endif %}

@@ -78,15 +78,16 @@ actions:
   #
   # actionType: open-url (default if omitted) - a static link. id/title/
   # url required; weight falls back to actions.py's own field default if
-  # omitted; requiredRole gates the button behind that Keycloak client
-  # role, same as any other action.
+  # omitted; requiredGroup gates the button behind membership in that
+  # Keycloak group (checked against the caller's X-Auth-Request-Groups
+  # header, #739), same as any other action.
   #
   #   custom:
   #     - id: pacs-viewer
   #       title: Open in PACS
   #       url: https://pacs.example.org/
   #       weight: 50
-  #       requiredRole: report-viewer-admin
+  #       requiredGroup: scout-admin
   #
   # actionType: backend-call - the SPA POSTs the search's context to
   # endpointUrl (a genuinely separate, independently deployed service -

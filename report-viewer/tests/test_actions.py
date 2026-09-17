@@ -1,15 +1,20 @@
-"""Tests for issue #739's action-descriptor contract and role filtering.
+"""Tests for issue #739's action-descriptor contract and group filtering.
 
 Most of this is pure-function coverage over `actions.py` (no Postgres/JWKS
-needed). One end-to-end test drives the real `/api/searches/{id}/actions`
-endpoint through a Bearer JWT carrying a `resource_access` role claim, to
-prove auth.py's role extraction actually reaches the route - see
-test_jwt_auth.py for the JWKS-mocking pattern this borrows.
+needed). The end-to-end tests drive the real `/api/searches/{id}/actions`
+endpoint through both real auth paths: the oauth2-proxy header path (Path
+2, `X-Auth-Request-Groups`) - the only path that can actually gate what
+the SPA renders, since it's the only path the SPA's own requests take -
+and the Bearer JWT path (Path 1), which carries no group claim at all, to
+lock in that a group-gated action never becomes visible through it. See
+test_jwt_auth.py for the JWKS-mocking pattern the Bearer-path tests
+borrow.
 """
 
 from __future__ import annotations
 
 import base64
+import os
 import time
 
 import httpx
@@ -41,9 +46,12 @@ def test_default_catalog_matches_shipped_toolbar():
     assert ids == {"explain-search", "download-csv"}
 
 
+_ADMIN_GROUP = "scout-admin"
+
+
 @pytest.fixture
 def catalog_with_admin_action(monkeypatch):
-    """A temporary catalog carrying a role-gated entry, for tests that
+    """A temporary catalog carrying a group-gated entry, for tests that
     need to exercise gating without it living in the shipped default."""
     demo_catalog = [
         *actions._DEFAULT_CATALOG,
@@ -52,14 +60,14 @@ def catalog_with_admin_action(monkeypatch):
             title="Admin Only (test)",
             action_type="open-url",
             url="https://example.org/admin",
-            required_role="report-viewer-admin",
+            required_group=_ADMIN_GROUP,
         ),
     ]
     monkeypatch.setattr(actions, "_CATALOG", demo_catalog)
     return demo_catalog
 
 
-def test_list_actions_excludes_role_gated_action_without_role(
+def test_list_actions_excludes_group_gated_action_without_group(
     catalog_with_admin_action,
 ):
     ids = {a.id for a in list_actions(frozenset())}
@@ -67,13 +75,13 @@ def test_list_actions_excludes_role_gated_action_without_role(
     assert "download-csv" in ids
 
 
-def test_list_actions_includes_role_gated_action_with_role(catalog_with_admin_action):
-    ids = {a.id for a in list_actions(frozenset({"report-viewer-admin"}))}
+def test_list_actions_includes_group_gated_action_with_group(catalog_with_admin_action):
+    ids = {a.id for a in list_actions(frozenset({_ADMIN_GROUP}))}
     assert "admin-only-demo" in ids
 
 
 def test_list_actions_sorted_by_weight(catalog_with_admin_action):
-    result = list_actions(frozenset({"report-viewer-admin"}))
+    result = list_actions(frozenset({_ADMIN_GROUP}))
     weights = [a.weight for a in result]
     assert weights == sorted(weights)
 
@@ -199,7 +207,7 @@ def test_load_catalog_non_list_yaml_returns_none(tmp_path):
     assert _load_catalog_from_file(str(f)) is None
 
 
-# --- End-to-end: role claim -> auth.py -> route ---------------------------
+# --- End-to-end: group claim -> auth.py -> route ---------------------------
 
 _KID = "test-actions-key"
 _ISSUER = "http://test/realms/scout"
@@ -244,9 +252,7 @@ def install_test_jwks(keypair, monkeypatch):
     yield
 
 
-def _mint(
-    priv_pem: bytes, roles: list[str] | None = None, username: str = "carol"
-) -> str:
+def _mint(priv_pem: bytes, username: str = "carol") -> str:
     now = int(time.time())
     claims = {
         "sub": f"{username}-keycloak-uuid",
@@ -256,12 +262,22 @@ def _mint(
         "iat": now,
         "exp": now + 300,
     }
-    if roles is not None:
-        claims["resource_access"] = {settings.oidc_roles_client_id: {"roles": roles}}
     return jwt.encode(claims, priv_pem, algorithm="RS256", headers={"kid": _KID})
 
 
-def _create_search(client, token: str, fake_trino) -> str:
+def _gateway_headers(
+    username: str = "carol", groups: list[str] | None = None
+) -> dict[str, str]:
+    headers = {
+        "X-Auth-Request-Preferred-Username": username,
+        "X-Report-Viewer-Gateway": os.environ["REPORT_VIEWER_GATEWAY_SECRET"],
+    }
+    if groups is not None:
+        headers["X-Auth-Request-Groups"] = ",".join(groups)
+    return headers
+
+
+def _create_search(client, headers: dict[str, str], fake_trino) -> str:
     fake_trino(
         ["primary_report_identifier", "accession_number"],
         [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
@@ -272,18 +288,59 @@ def _create_search(client, token: str, fake_trino) -> str:
         json={
             "sql": "SELECT primary_report_identifier, accession_number FROM reports_latest"
         },
-        headers={"Authorization": f"Bearer {token}"},
+        headers=headers,
     )
     assert r.status_code == 201, r.text
     return r.json()["id"]
 
 
-def test_actions_endpoint_hides_admin_action_without_role(
+def test_actions_endpoint_hides_admin_action_without_group(
+    client, fake_trino, catalog_with_admin_action
+):
+    headers = _gateway_headers(groups=[])
+    search_id = _create_search(client, headers, fake_trino)
+
+    r = client.get(f"/api/searches/{search_id}/actions", headers=headers)
+    assert r.status_code == 200, r.text
+    ids = {a["id"] for a in r.json()}
+    assert "admin-only-demo" not in ids
+
+
+def test_actions_endpoint_shows_admin_action_with_group(
+    client, fake_trino, catalog_with_admin_action
+):
+    headers = _gateway_headers(groups=[_ADMIN_GROUP])
+    search_id = _create_search(client, headers, fake_trino)
+
+    r = client.get(f"/api/searches/{search_id}/actions", headers=headers)
+    assert r.status_code == 200, r.text
+    ids = {a["id"] for a in r.json()}
+    assert "admin-only-demo" in ids
+
+
+def test_actions_endpoint_404s_for_someone_elses_search(client, fake_trino):
+    owner_headers = _gateway_headers(username="carol")
+    search_id = _create_search(client, owner_headers, fake_trino)
+
+    other_headers = _gateway_headers(username="dave", groups=[_ADMIN_GROUP])
+    r = client.get(f"/api/searches/{search_id}/actions", headers=other_headers)
+    assert r.status_code == 404
+
+
+def test_bearer_jwt_path_never_grants_groups(
     client, keypair, fake_trino, catalog_with_admin_action
 ):
+    """The Bearer JWT path (Path 1, used by OWUI's server-side tool calls)
+    carries no group claim at all - a group-gated action must never be
+    visible through it, no matter what the token otherwise contains.
+    Locks in the architecture fix: group gating only works for the SPA's
+    own oauth2-proxy-header requests (Path 2)."""
     priv, _ = keypair
-    token = _mint(priv, roles=[])
-    search_id = _create_search(client, token, fake_trino)
+    # Same username on both paths (both default to "carol") so the search
+    # is found - the only thing under test is whether the admin action
+    # leaks through, not ownership.
+    token = _mint(priv)
+    search_id = _create_search(client, _gateway_headers(), fake_trino)
 
     r = client.get(
         f"/api/searches/{search_id}/actions",
@@ -292,35 +349,6 @@ def test_actions_endpoint_hides_admin_action_without_role(
     assert r.status_code == 200, r.text
     ids = {a["id"] for a in r.json()}
     assert "admin-only-demo" not in ids
-
-
-def test_actions_endpoint_shows_admin_action_with_role(
-    client, keypair, fake_trino, catalog_with_admin_action
-):
-    priv, _ = keypair
-    token = _mint(priv, roles=["report-viewer-admin"])
-    search_id = _create_search(client, token, fake_trino)
-
-    r = client.get(
-        f"/api/searches/{search_id}/actions",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert r.status_code == 200, r.text
-    ids = {a["id"] for a in r.json()}
-    assert "admin-only-demo" in ids
-
-
-def test_actions_endpoint_404s_for_someone_elses_search(client, keypair, fake_trino):
-    priv, _ = keypair
-    owner_token = _mint(priv, username="carol")
-    search_id = _create_search(client, owner_token, fake_trino)
-
-    other_token = _mint(priv, roles=["report-viewer-admin"], username="dave")
-    r = client.get(
-        f"/api/searches/{search_id}/actions",
-        headers={"Authorization": f"Bearer {other_token}"},
-    )
-    assert r.status_code == 404
 
 
 # --- invoke: the generic backend-call proxy --------------------------------
@@ -381,11 +409,12 @@ def test_invoke_backend_call_action_returns_url(
 ):
     priv, _ = keypair
     token = _mint(priv)
-    search_id = _create_search(client, token, fake_trino)
+    bearer_headers = {"Authorization": f"Bearer {token}"}
+    search_id = _create_search(client, bearer_headers, fake_trino)
 
     r = client.post(
         f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=bearer_headers,
     )
     assert r.status_code == 200, r.text
     assert r.json() == {"url": "https://xnat.example.org?t=123"}
@@ -402,27 +431,30 @@ def test_invoke_unknown_action_404s(
 ):
     priv, _ = keypair
     token = _mint(priv)
-    search_id = _create_search(client, token, fake_trino)
+    bearer_headers = {"Authorization": f"Bearer {token}"}
+    search_id = _create_search(client, bearer_headers, fake_trino)
 
     r = client.post(
         f"/api/searches/{search_id}/actions/does-not-exist/invoke",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=bearer_headers,
     )
     assert r.status_code == 404
 
 
 def test_invoke_non_backend_call_action_404s(
-    client, keypair, fake_trino, catalog_with_admin_action
+    client, fake_trino, catalog_with_admin_action
 ):
     """open-url (and client) actions aren't invokable - they're static or
-    page-local, there's nothing for the proxy to call."""
-    priv, _ = keypair
-    token = _mint(priv, roles=["report-viewer-admin"])
-    search_id = _create_search(client, token, fake_trino)
+    page-local, there's nothing for the proxy to call. Uses the
+    group-header path (not Bearer) since the action under test is
+    group-gated and only that path can make it visible in the first
+    place."""
+    headers = _gateway_headers(groups=[_ADMIN_GROUP])
+    search_id = _create_search(client, headers, fake_trino)
 
     r = client.post(
         f"/api/searches/{search_id}/actions/admin-only-demo/invoke",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=headers,
     )
     assert r.status_code == 404
 
@@ -438,10 +470,11 @@ def test_invoke_backend_call_target_error_returns_502(
 
     priv, _ = keypair
     token = _mint(priv)
-    search_id = _create_search(client, token, fake_trino)
+    bearer_headers = {"Authorization": f"Bearer {token}"}
+    search_id = _create_search(client, bearer_headers, fake_trino)
 
     r = client.post(
         f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=bearer_headers,
     )
     assert r.status_code == 502
