@@ -30,6 +30,18 @@ TOKEN_PATH = SA_DIR / "token"
 CA_PATH = SA_DIR / "ca.crt"
 NAMESPACE_PATH = SA_DIR / "namespace"
 
+# Bounds an ordinary request end to end. Too short for a watch, which passes
+# its own read timeout and takes STREAM_SETUP_TIMEOUT_SECONDS for the rest.
+REQUEST_TIMEOUT_SECONDS = 30.0
+# Every phase of a streaming request except the read: connecting, sending, and
+# waiting for a pooled connection are all quick or broken.
+STREAM_SETUP_TIMEOUT_SECONDS = 10.0
+# How much of an error body to carry into the exception message.
+ERROR_EXCERPT_CHARS = 500
+# Matches the Events API's own limit on a message, so reporting an outcome
+# cannot fail validation on the length of a detail string.
+MAX_EVENT_MESSAGE_CHARS = 1024
+
 
 class ApiError(RuntimeError):
     def __init__(self, status: int, message: str):
@@ -73,7 +85,7 @@ def value_of(secret: dict | None, key: str) -> str | None:
 
 
 class Client:
-    def __init__(self, timeout: float = 30.0):
+    def __init__(self, timeout: float = REQUEST_TIMEOUT_SECONDS):
         host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
         port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
         self.base = f"https://{host}:{port}"
@@ -100,7 +112,7 @@ class Client:
         except httpx.HTTPError as exc:
             raise TransportError(f"{method} {path}: {exc}") from exc
         if response.status_code >= 400:
-            raise ApiError(response.status_code, response.text[:500])
+            raise ApiError(response.status_code, response.text[:ERROR_EXCERPT_CHARS])
         if not response.content:
             return {}
         return response.json()
@@ -120,18 +132,25 @@ class Client:
     ) -> Iterator[Iterator[str]]:
         """A long-lived streaming GET, for the watch.
 
-        Takes its own timeout because the client's 30s read timeout would abort
-        an idle watch. Callers should still pass one: with none, a half-open
-        connection blocks until the kernel gives up, which is hours.
+        Takes its own read timeout because the client's would abort an idle
+        watch. Callers should still pass one: with none, a half-open connection
+        blocks until the kernel gives up, which is hours.
         """
-        timeout = httpx.Timeout(connect=10.0, read=read_timeout, write=10.0, pool=10.0)
+        timeout = httpx.Timeout(
+            connect=STREAM_SETUP_TIMEOUT_SECONDS,
+            read=read_timeout,
+            write=STREAM_SETUP_TIMEOUT_SECONDS,
+            pool=STREAM_SETUP_TIMEOUT_SECONDS,
+        )
         try:
             with self._http.stream(
                 "GET", f"{self.base}{path}", headers=self._headers(), timeout=timeout
             ) as response:
                 if response.status_code >= 400:
                     response.read()
-                    raise ApiError(response.status_code, response.text[:500])
+                    raise ApiError(
+                        response.status_code, response.text[:ERROR_EXCERPT_CHARS]
+                    )
                 yield response.iter_lines()
         except httpx.HTTPError as exc:
             raise TransportError(f"GET {path}: {exc}") from exc
@@ -205,7 +224,7 @@ class Client:
                 "resourceVersion": meta.get("resourceVersion"),
             },
             "reason": reason,
-            "message": message[:1024],
+            "message": message[:MAX_EVENT_MESSAGE_CHARS],
             "type": event_type,
             "source": {"component": component},
             "firstTimestamp": timestamp,
