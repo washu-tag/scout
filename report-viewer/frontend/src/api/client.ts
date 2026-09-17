@@ -109,7 +109,7 @@ export interface ActionDescriptor {
   weight: number;
   action_type: 'open-url' | 'client' | 'backend-call';
   url: string | null;
-  required_role: string | null;
+  required_group: string | null;
   client_handler: string | null;
 }
 

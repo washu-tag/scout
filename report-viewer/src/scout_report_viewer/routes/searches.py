@@ -488,7 +488,7 @@ async def get_search_actions(
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> list[ActionDescriptor]:
-    """Issue #739 PoC: role-filtered toolbar actions for this search.
+    """Issue #739 PoC: group-filtered toolbar actions for this search.
 
     Owner-scoped like the sibling endpoints even though the static catalog
     doesn't yet key off search content - a real action (e.g. a future
@@ -499,7 +499,7 @@ async def get_search_actions(
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return list_actions(user.roles)
+    return list_actions(user.groups)
 
 
 @router.post(
@@ -517,15 +517,16 @@ async def invoke_search_action(
     does - it forwards the search's context to the action's own
     endpoint_url (a separately deployed service, e.g. xnat-explore-poc)
     and relays back whatever result URL it returns. Looked up through
-    list_actions(user.roles), not the raw catalog, so a role-gated action
-    the caller can't even see can't be invoked either - visibility is UX,
-    but the boundary is still enforced here too (ADR 0034's framing).
+    list_actions(user.groups), not the raw catalog, so a group-gated
+    action the caller can't even see can't be invoked either - visibility
+    is UX, but the boundary is still enforced here too (ADR 0034's
+    framing).
     """
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-    action = next((a for a in list_actions(user.roles) if a.id == action_id), None)
+    action = next((a for a in list_actions(user.groups) if a.id == action_id), None)
     if (
         action is None
         or action.action_type != "backend-call"

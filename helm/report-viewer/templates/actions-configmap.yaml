@@ -45,7 +45,7 @@ data:
       action_type: open-url
       url: {{ required "actions.custom entries need a url" .url | quote }}
       {{- end }}
-      {{- if .requiredRole }}
-      required_role: {{ .requiredRole | quote }}
+      {{- if .requiredGroup }}
+      required_group: {{ .requiredGroup | quote }}
       {{- end }}
     {{- end }}

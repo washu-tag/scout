@@ -4,11 +4,16 @@
    path (forwards `__oauth_token__`) and by anything else that wants to
    present a real end-user token. Validates signature + exp + iss + aud
    (`aud=report-viewer`, stamped by the `report-viewer-audience` client
-   scope).
-2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`) - the
-   ingress path. Trusted only when the request also carries the
+   scope). Carries no group claim - see `User.groups` below.
+2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`,
+   `X-Auth-Request-Groups`) - the ingress path, used by the SPA's own
+   browser-side requests. Trusted only when the request also carries the
    `X-Report-Viewer-Gateway` secret that Traefik injects, so a
-   pod-to-pod request (OWUI, Prometheus) can't forge the username.
+   pod-to-pod request (OWUI, Prometheus) can't forge either header - and
+   Traefik's forwardAuth always overwrites both with oauth2-proxy's
+   server-computed `/oauth2/auth` response, so a client can't forge them
+   either even without the gateway secret (see
+   ansible/roles/oauth2-proxy/tasks/deploy.yaml).
 
 Both populate the same `User(sub=...)` model. Downstream code never
 needs to know which path produced the identity. The user JWT is not
@@ -36,13 +41,12 @@ log = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class User:
     sub: str  # owner_sub stored on the search row; also sent as X-Trino-User
-    # Issue #739 PoC: Keycloak client roles (resource_access.<client>.roles),
-    # populated only on the Bearer JWT path. The oauth2-proxy header path
-    # (Path 2 below) carries no role/group claim today - Traefik's
-    # forwardAuth only forwards X-Auth-Request-Preferred-Username - so
-    # role-gated features are scoped to the JWT-bearing surface (the OWUI
-    # embed) until that's addressed separately.
-    roles: frozenset[str] = frozenset()
+    # Issue #739: Keycloak group membership, populated only on the
+    # oauth2-proxy header path (Path 2) - the only path the SPA's own
+    # browser-side requests take, and therefore the only path that can
+    # gate what the SPA renders. The Bearer JWT path (Path 1) carries no
+    # group claim and always yields an empty set here.
+    groups: frozenset[str] = frozenset()
 
 
 def _gateway_ok(header: str | None) -> bool:
@@ -119,21 +123,19 @@ def _validate_jwt(token: str) -> User | None:
     if not sub:
         log.info("bearer rejected: no preferred_username/sub")
         return None
-    # Issue #739 PoC: client roles for report-viewer-owned role-gated
-    # features (e.g. an admin-only action button), read the same way
-    # Keycloak's standard "roles" client scope shapes them
-    # (resource_access.<client>.roles). report-viewer has no Keycloak
-    # client of its own yet - populating this for real is separate,
-    # deferred work; a caller with no such claim just gets no roles.
-    resource_access = claims.get("resource_access") or {}
-    client_claims = resource_access.get(settings.oidc_roles_client_id) or {}
-    roles = frozenset(client_claims.get("roles") or [])
-    return User(sub=sub, roles=roles)
+    return User(sub=sub)
+
+
+def _parse_groups(header: str | None) -> frozenset[str]:
+    if not header:
+        return frozenset()
+    return frozenset(g.strip() for g in header.split(",") if g.strip())
 
 
 async def get_current_user(
     authorization: str | None = Header(default=None),
     x_auth_request_preferred_username: str | None = Header(default=None),
+    x_auth_request_groups: str | None = Header(default=None),
     x_report_viewer_gateway: str | None = Header(default=None),
 ) -> User:
     # Path 1: Bearer JWT (highest trust; carries the real user identity).
@@ -152,9 +154,16 @@ async def get_current_user(
             detail="bearer token validation failed",
         )
 
-    # Path 2: oauth2-proxy header, trusted only with Traefik's shared secret.
+    # Path 2: oauth2-proxy headers, trusted only with Traefik's shared
+    # secret - both headers are gated by the same check since Traefik's
+    # forwardAuth overwrites both from oauth2-proxy's response regardless
+    # (see module docstring), but the gateway secret also stops a pod that
+    # bypasses Traefik entirely from forging either one.
     if x_auth_request_preferred_username and _gateway_ok(x_report_viewer_gateway):
-        return User(sub=x_auth_request_preferred_username)
+        return User(
+            sub=x_auth_request_preferred_username,
+            groups=_parse_groups(x_auth_request_groups),
+        )
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
