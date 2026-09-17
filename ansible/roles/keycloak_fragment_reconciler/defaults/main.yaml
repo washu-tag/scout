@@ -25,8 +25,11 @@ keycloak_fragment_reconciler_tier_roles:
   - scout-user
   - scout-admin
 
-# Empty list `[]` watches every namespace
-keycloak_fragment_reconciler_watched_namespaces: []
+# Namespace names, or the lone value `ALL` for every namespace -- a pluggable
+# app can land in one this role does not know about. An empty list watches
+# nothing and installs no ClusterRole.
+keycloak_fragment_reconciler_watched_namespaces:
+  - ALL
 
 # How often to re-read everything and find + repair drift.
 # Set to -1 to never resync, only write changes that were observed.

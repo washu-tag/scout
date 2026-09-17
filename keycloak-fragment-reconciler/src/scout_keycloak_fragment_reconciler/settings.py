@@ -10,6 +10,10 @@ ENV_PREFIX = "KEYCLOAK_FRAGMENT_RECONCILER_"
 # The label that makes a ConfigMap a fragment, mirroring ADR 0034's chip label.
 FRAGMENT_LABEL = "keycloak.scout.xnat.org/fragment"
 
+# The one watched_namespaces entry that is not a namespace name. Kubernetes
+# namespace names are lowercase, so it cannot collide with a real one.
+WATCH_ALL = "ALL"
+
 # pydantic-settings JSON-decodes list-typed fields out of the environment
 # before validators run, and raises if that fails. These take the
 # comma-separated form a Helm template renders naturally instead.
@@ -38,8 +42,12 @@ class Settings(BaseSettings):
 
     # --- Discovery ------------------------------------------------------
     fragment_label: str = FRAGMENT_LABEL
-    # Empty means every namespace. A read filter, never a permission boundary --
-    # the grant is cluster-wide either way. Garbage collection is scoped to the
+    # Namespace names, or the lone value `ALL` for every namespace. Empty means
+    # none, and is the default so that an unconfigured install reconciles
+    # nothing rather than everything -- the chart withholds the cluster read
+    # grant to match, so this is the one setting that is a permission boundary
+    # as well as a read filter. Once non-empty it is only a read filter, the
+    # grant being cluster-wide either way. Garbage collection is scoped to the
     # same list, so narrowing it leaves the clients it stops covering alone
     # rather than reading them as deleted.
     watched_namespaces: CommaList = []
@@ -69,11 +77,10 @@ class Settings(BaseSettings):
     def _split_list(cls, value: object) -> object:
         """Accept a comma-separated string, which is what a chart renders.
 
-        An empty string is the empty list, not `['']` -- one empty namespace
-        name would match nothing and silently disable discovery. A JSON-looking
-        value is refused rather than split, because splitting it yields
-        plausible-looking junk that surfaces much later as a role that never
-        matches.
+        An empty string is the empty list, not `['']` -- an entry no namespace
+        or role can ever match. A JSON-looking value is refused rather than
+        split, because splitting it yields plausible-looking junk that surfaces
+        much later as a role that never matches.
         """
         if isinstance(value, str):
             if value.strip().startswith("["):
@@ -84,12 +91,28 @@ class Settings(BaseSettings):
             return [part.strip() for part in value.split(",") if part.strip()]
         return value
 
+    @field_validator("watched_namespaces")
+    @classmethod
+    def _all_stands_alone(cls, value: list[str]) -> list[str]:
+        """`ALL,foo` is a contradiction, and reading it as either half is a
+        guess at which one the operator meant."""
+        if WATCH_ALL in value and len(value) > 1:
+            raise ValueError(
+                f"{WATCH_ALL} means every namespace, so it cannot be combined "
+                f"with namespace names (got {','.join(value)!r})"
+            )
+        return value
+
     @property
     def label_selector(self) -> str:
         return f"{self.fragment_label}=true"
 
+    @property
+    def watches_all(self) -> bool:
+        return WATCH_ALL in self.watched_namespaces
+
     def watches(self, namespace: str) -> bool:
-        return not self.watched_namespaces or namespace in self.watched_namespaces
+        return self.watches_all or namespace in self.watched_namespaces
 
     def __init__(self, **values: object) -> None:
         # A misconfigured pod should name the wrong variable and stop, not

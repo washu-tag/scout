@@ -32,10 +32,14 @@ tierRoles:
 # Required. A fragment's redirect URIs and app URL must sit under this host.
 serverHostname: ''
 
-# Namespaces to read fragments from; empty means all. A read filter, never a
-# permission boundary -- the ClusterRole is cluster-wide either way. Garbage
-# collection is scoped to the same list, so narrowing this leaves the clients
-# it stops covering alone rather than reading them as deleted.
+# Namespaces to read fragments from, or the lone value `ALL` for every
+# namespace. Empty is the default and means none: no ClusterRole is created, so
+# the chart alone installs a reconciler that can read nothing and leaves the
+# realm untouched. Scout's deploy lanes set `ALL`. Once non-empty this is a read
+# filter rather than a permission boundary -- the ClusterRole is cluster-wide
+# either way, RBAC having no way to express a label selector. Garbage collection
+# is scoped to the same list, so narrowing it leaves the clients it stops
+# covering alone rather than reading them as deleted.
 watchedNamespaces: []
 
 reconcile:

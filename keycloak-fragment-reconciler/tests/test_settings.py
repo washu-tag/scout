@@ -59,16 +59,37 @@ class TestTheChartsEnvironment:
         assert s.dry_run is False
         assert s.label_selector == f"{FRAGMENT_LABEL}=true"
 
-    def test_an_empty_allowlist_watches_everything(self, env):
+    def test_an_empty_allowlist_watches_nothing(self, env):
+        """The chart's default, and the reason it creates no ClusterRole:
+        installing the chart alone must not reconcile a realm."""
         env()
         s = RequiredSettings()
+        assert not s.watches_all
+        assert not s.watches("anything")
+        assert not s.watches("")
+
+    def test_an_empty_allowlist_is_not_a_list_with_one_empty_name(self, env):
+        """`[""]` reads as configured-and-narrowed rather than unset, which is
+        the difference between a warning at startup and silence."""
+        env()
+        assert RequiredSettings().watched_namespaces == []
+
+    def test_all_watches_everything(self, env):
+        """What both deploy lanes set. `ALL` is not a legal namespace name --
+        they are lowercase -- so it cannot shadow a real one."""
+        env(WATCHED_NAMESPACES="ALL")
+        s = RequiredSettings()
+        assert s.watches_all
         assert s.watches("anything")
         assert s.watches("")
 
-    def test_an_empty_allowlist_is_not_a_list_with_one_empty_name(self, env):
-        """`[""]` would match no namespace and silently disable discovery."""
-        env()
-        assert RequiredSettings().watched_namespaces == []
+    def test_all_is_case_sensitive(self, env):
+        """`all` is a namespace name, and a plausible typo for the sentinel.
+        Reading it as the sentinel would widen the scope on a typo."""
+        env(WATCHED_NAMESPACES="all")
+        s = RequiredSettings()
+        assert not s.watches_all
+        assert not s.watches("kube-system")
 
     def test_a_populated_allowlist_narrows(self, env):
         env(WATCHED_NAMESPACES="scout-demo, xnat ")
@@ -76,6 +97,14 @@ class TestTheChartsEnvironment:
         assert s.watched_namespaces == ["scout-demo", "xnat"]
         assert s.watches("xnat")
         assert not s.watches("kube-system")
+
+    def test_all_cannot_be_mixed_with_namespace_names(self, env):
+        """Either half is a guess at what the operator meant, and guessing
+        wide is a silent scope widening."""
+        env(WATCHED_NAMESPACES="ALL,xnat")
+        with pytest.raises(SystemExit) as exit_info:
+            RequiredSettings()
+        assert f"{ENV_PREFIX}WATCHED_NAMESPACES" in str(exit_info.value)
 
 
 class TestRequiredFields:
@@ -143,7 +172,13 @@ class TestMetricsAreWellFormed:
 
     def reconciler(self, k8s) -> Reconciler:
         return Reconciler(
-            Settings(server_hostname=HOSTNAME, client_secret="x"), k8s, FakeKeycloak()
+            Settings(
+                server_hostname=HOSTNAME,
+                client_secret="x",
+                watched_namespaces=["ALL"],
+            ),
+            k8s,
+            FakeKeycloak(),
         )
 
     def series(self, reconciler) -> list[str]:

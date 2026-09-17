@@ -663,11 +663,28 @@ class TestNamespaceAllowlist:
 
         assert {c["clientId"] for c in kc.clients.values()} == {"hello"}
 
+    def test_emptying_the_allowlist_orphans_nothing(self, settings, k8s, kc):
+        """Empty is the chart's default, so this is the state a values file
+        that stops setting `watchedNamespaces` falls into. Reading nothing
+        must not read as everything having been deleted -- that would take out
+        every fragment client in the realm on a config edit."""
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        settings.watched_namespaces = []
+
+        for _ in range(3):
+            snapshot = reconciler.take_snapshot()
+            reconciler.collect(snapshot, now=1_000_000.0)
+
+        assert kc.find_client("hello") is not None
+        assert not [w for w in kc.writes if w.startswith("delete_client")]
+
     def test_an_unwatched_namespace_does_not_orphan_its_client(self, settings, k8s, kc):
         """Narrowing the allowlist must not read as the fragments it stops
-        covering having been deleted. The allowlist is documented as a read
-        filter, so an operator trimming it to reduce API reads would otherwise
-        delete the Keycloak clients of every app outside the new scope."""
+        covering having been deleted. Once non-empty the allowlist is
+        documented as a read filter, so an operator trimming it to reduce API
+        reads would otherwise delete the Keycloak clients of every app outside
+        the new scope."""
         reconciler = Reconciler(settings, k8s, kc)
         reconciler.reconcile_once()
         settings.watched_namespaces = ["somewhere-else"]
