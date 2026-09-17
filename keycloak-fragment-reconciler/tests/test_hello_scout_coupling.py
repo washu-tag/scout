@@ -127,3 +127,19 @@ class TestAvailabilityFloor:
         """Per-app `resourceNames`-scoped grants replace a standing one."""
         rbac = (OWN_CHART / "templates" / "rbac.yaml").read_text(encoding="utf-8")
         assert "resources: ['secrets']" not in rbac
+
+    def test_the_cluster_read_is_gated_on_watched_namespaces(self):
+        """The chart's default watches nothing, and must grant nothing to
+        match: `helm install` with no values may not produce a pod holding a
+        cluster-wide ConfigMap read. The ServiceAccount stays unconditional,
+        since the Deployment runs as it and apps bind to it by name."""
+        rbac = (OWN_CHART / "templates" / "rbac.yaml").read_text(encoding="utf-8")
+        before, _, gated = rbac.partition("{{- if .Values.watchedNamespaces }}")
+        assert gated, "the ClusterRole is no longer conditional"
+        assert "kind: ServiceAccount" in before
+        assert "kind: ClusterRole\n" in gated
+        assert "kind: ClusterRoleBinding" in gated
+
+    def test_the_chart_default_watches_nothing(self):
+        values = (OWN_CHART / "values.yaml").read_text(encoding="utf-8")
+        assert "\nwatchedNamespaces: []\n" in values

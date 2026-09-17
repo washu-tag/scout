@@ -302,6 +302,9 @@ def settings() -> Settings:
         client_secret="test",
         server_hostname=HOSTNAME,
         tier_roles=TIERS,
+        # What both deploy lanes set. The field's own default is empty, which
+        # reconciles nothing, so every test would pass vacuously.
+        watched_namespaces=["ALL"],
         orphan_grace_seconds=300,
         resync_seconds=300,
     )

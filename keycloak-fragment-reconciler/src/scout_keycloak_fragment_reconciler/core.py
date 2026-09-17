@@ -144,6 +144,12 @@ class Reconciler:
     def take_snapshot(self) -> Snapshot:
         """An authoritative LIST, parsed and arbitrated."""
         snapshot = Snapshot()
+        # Watching nothing is configured, not broken: the chart grants no
+        # cluster read in that case, so asking would only be a 403 every pass.
+        # Left incomplete, which is what stops GC from reading the absence of
+        # fragments as their deletion.
+        if not self.settings.watched_namespaces:
+            return snapshot
         try:
             items = self.k8s.list_configmaps(self.settings.label_selector)
         except ApiError as exc:
@@ -553,12 +559,14 @@ class Reconciler:
     def _in_watch_scope(self, client: dict) -> bool:
         """Whether the fragment that produced a client is one we read.
 
-        With no allowlist every namespace is in scope, so this is only ever a
-        question once an operator has narrowed it -- at which point a client
-        we cannot attribute to a watched namespace is one we must not judge.
-        An absent or malformed source stamp fails closed for the same reason.
+        With `ALL` every namespace is in scope, so this is only ever a question
+        once an operator has narrowed it -- at which point a client we cannot
+        attribute to a watched namespace is one we must not judge. An absent or
+        malformed source stamp fails closed for the same reason, and so does an
+        empty allowlist: watching nothing must never read as every client's
+        fragment having been deleted.
         """
-        if not self.settings.watched_namespaces:
+        if self.settings.watches_all:
             return True
         namespace = translate.source_of(client).partition("/")[0]
         if not namespace or not self.settings.watches(namespace):

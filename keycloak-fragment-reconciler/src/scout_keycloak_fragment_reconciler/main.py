@@ -46,17 +46,34 @@ def main() -> int:
         metrics=lambda: metrics.render(reconciler),
     )
 
-    threading.Thread(
-        target=watch.run_forever,
-        args=(k8s, settings.label_selector, wake, reconciler.witness_deletion),
-        name="fragment-watch",
-        daemon=True,
-    ).start()
+    # No watched namespaces means no cluster read grant either, so the watch
+    # would retry a 403 forever. Running on is deliberate: the process still
+    # serves health and metrics, and the realm is left exactly as it is.
+    if settings.watched_namespaces:
+        threading.Thread(
+            target=watch.run_forever,
+            args=(k8s, settings.label_selector, wake, reconciler.witness_deletion),
+            name="fragment-watch",
+            daemon=True,
+        ).start()
+    else:
+        log.warning(
+            "%sWATCHED_NAMESPACES is empty: no fragments will be read and no "
+            "clients created or deleted. Set it to ALL, or to a "
+            "comma-separated list of namespaces.",
+            ENV_PREFIX,
+        )
+
+    if settings.watches_all:
+        scope = "every namespace"
+    else:
+        scope = ", ".join(settings.watched_namespaces) or "no namespaces"
 
     log.info(
-        "reconciling fragments labelled %s into realm %s at %s "
+        "reconciling fragments labelled %s in %s into realm %s at %s "
         "(resync %ss, orphan grace %ss)",
         settings.label_selector,
+        scope,
         settings.realm,
         settings.keycloak_url,
         settings.resync_seconds,

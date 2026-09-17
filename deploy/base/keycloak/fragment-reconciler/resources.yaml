@@ -50,8 +50,11 @@ spec:
       realm: '${keycloak_realm_name}'
     # Fragments' redirect URIs and app URLs are constrained to this host.
     serverHostname: '${server_hostname}'
-    # Empty: read fragments from every namespace, since a pluggable app can land
-    # in one this artifact does not know about. A read filter either way -- the
-    # ClusterRole is cluster-wide regardless, and garbage collection is scoped
-    # to the same list, so narrowing it never reads as a deletion.
-    watchedNamespaces: []
+    # Read fragments from every namespace, since a pluggable app can land in one
+    # this artifact does not know about. Set, rather than left at the chart's
+    # empty default, because empty means read nothing and grant nothing. A read
+    # filter either way -- the ClusterRole is cluster-wide regardless, and
+    # garbage collection is scoped to the same list, so narrowing it never reads
+    # as a deletion.
+    watchedNamespaces:
+      - ALL
