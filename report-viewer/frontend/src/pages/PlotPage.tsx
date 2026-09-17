@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { friendlyError, getPlot, getPlotMeta, getPlotProgress } from '../api/client';
 import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
 import { setHeight as setIframeHeight } from '../iframeHeight';
 import { buildDiscussPlotPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
-import { paginationBtn } from './searchDetail/styles';
+import { compactBtn, paginationBtn } from './searchDetail/styles';
 import { chartTheme } from './chartTheme';
 
 // The chart sizes itself to its content and the iframe follows, rather than
@@ -253,11 +253,16 @@ export default function PlotPage() {
     () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false,
   );
 
+  const PLOT_KEY = ['plot', plotId];
   const plot = useQuery({
-    queryKey: ['plot', plotId],
-    queryFn: () => getPlot(plotId),
+    queryKey: PLOT_KEY,
+    queryFn: ({ signal }) => getPlot(plotId, signal),
     enabled: !!plotId,
   });
+
+  // Cancelling aborts the fetch, which the server turns into a Trino cancel.
+  const queryClient = useQueryClient();
+  const [cancelled, setCancelled] = useState(false);
 
   // Postgres-only, so the chrome and Explain panel do not wait on the rows.
   const meta = useQuery({
@@ -390,8 +395,41 @@ export default function PlotPage() {
             flex: '0 0 auto',
           }}
         >
-          {showLoading && !plot.error && (
-            <QueryProgressInline {...loadingState} doneLabel="Chart loaded" />
+          {cancelled && !plot.data ? (
+            <>
+              <span style={{ color: 'var(--rv-muted)', fontSize: '0.7rem' }}>
+                Cancelled · {loadingState.seconds}s
+              </span>
+              <button
+                type="button"
+                style={compactBtn}
+                onClick={() => {
+                  setCancelled(false);
+                  plot.refetch();
+                }}
+              >
+                Retry
+              </button>
+            </>
+          ) : (
+            showLoading &&
+            !plot.error && (
+              <>
+                <QueryProgressInline {...loadingState} doneLabel="Chart loaded" />
+                {!plot.data && (
+                  <button
+                    type="button"
+                    style={compactBtn}
+                    onClick={() => {
+                      setCancelled(true);
+                      queryClient.cancelQueries({ queryKey: PLOT_KEY });
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </>
+            )
           )}
           {plot.data?.rows.length === 0 && (
             <span
@@ -442,7 +480,22 @@ export default function PlotPage() {
               borderRadius: 4,
             }}
           >
-            <LoadingSpinner show minHeight={CONTINUOUS_HEIGHT} />
+            {cancelled ? (
+              <div
+                style={{
+                  minHeight: CONTINUOUS_HEIGHT,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--rv-muted)',
+                  fontSize: '0.8rem',
+                }}
+              >
+                Query cancelled. Retry to load this chart.
+              </div>
+            ) : (
+              <LoadingSpinner show minHeight={CONTINUOUS_HEIGHT} />
+            )}
           </div>
         )}
         <div

@@ -197,8 +197,8 @@ export async function getReport(reportId: string, idColumn: string): Promise<Rep
 
 // The whole cohort in one request (lean columns, capped server-side); the SPA
 // sorts/filters/paginates it client-side. Report text loads per-row on expand.
-export function getSearchRows(searchId: string): Promise<RowsResponse> {
-  return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows`);
+export function getSearchRows(searchId: string, signal?: AbortSignal): Promise<RowsResponse> {
+  return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows`, { signal });
 }
 
 export type PlotDetail = {
@@ -214,8 +214,8 @@ export function getPlotMeta(plotId: string): Promise<PlotMeta> {
   return api<PlotMeta>(`/api/plots/${encodeURIComponent(plotId)}/meta`);
 }
 
-export function getPlot(plotId: string): Promise<PlotDetail> {
-  return api<PlotDetail>(`/api/plots/${encodeURIComponent(plotId)}`);
+export function getPlot(plotId: string, signal?: AbortSignal): Promise<PlotDetail> {
+  return api<PlotDetail>(`/api/plots/${encodeURIComponent(plotId)}`, { signal });
 }
 
 export interface PlotMeta {

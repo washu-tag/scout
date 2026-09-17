@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createColumnHelper,
   flexRender,
@@ -34,7 +34,7 @@ import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
-import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, paginationBtn } from './searchDetail/styles';
+import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
 
 const COLUMNS_CONFIG: Array<{
   field: string;
@@ -102,11 +102,16 @@ export default function SearchDetailPage() {
   });
 
   // One fetch of the whole cohort; sort/filter/paginate happen client-side.
+  const ROWS_KEY = ['search', searchId, 'rows'];
   const rowsQ = useQuery({
-    queryKey: ['search', searchId, 'rows'],
-    queryFn: () => getSearchRows(searchId),
+    queryKey: ROWS_KEY,
+    queryFn: ({ signal }) => getSearchRows(searchId, signal),
     enabled: !!searchId,
   });
+
+  // Cancelling aborts the fetch, which the server turns into a Trino cancel.
+  const queryClient = useQueryClient();
+  const [cancelled, setCancelled] = useState(false);
 
   const fetchProgress = useCallback(() => getSearchProgress(searchId), [searchId]);
   const loadingState = useLoadingProgress(!rowsQ.data && rowsQ.isLoading, fetchProgress);
@@ -248,8 +253,41 @@ export default function SearchDetailPage() {
           flex: '0 0 auto',
         }}
       >
-        {showLoading && !rowsQ.error && (
-          <QueryProgressInline {...loadingState} doneLabel="Reports loaded" />
+        {cancelled && !rowsQ.data ? (
+          <>
+            <span style={{ color: 'var(--rv-muted)', fontSize: '0.7rem' }}>
+              Cancelled · {loadingState.seconds}s
+            </span>
+            <button
+              type="button"
+              style={compactBtn}
+              onClick={() => {
+                setCancelled(false);
+                rowsQ.refetch();
+              }}
+            >
+              Retry
+            </button>
+          </>
+        ) : (
+          showLoading &&
+          !rowsQ.error && (
+            <>
+              <QueryProgressInline {...loadingState} doneLabel="Reports loaded" />
+              {!rowsQ.data && (
+                <button
+                  type="button"
+                  style={compactBtn}
+                  onClick={() => {
+                    setCancelled(true);
+                    queryClient.cancelQueries({ queryKey: ROWS_KEY });
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </>
+          )
         )}
         <span style={{ flex: 1 }} />
         {
@@ -454,7 +492,22 @@ export default function SearchDetailPage() {
                 )}
               </tbody>
             </table>
-            {!rowsQ.data && <LoadingSpinner show={showLoading} fill />}
+            {!rowsQ.data && !cancelled && <LoadingSpinner show={showLoading} fill />}
+            {!rowsQ.data && cancelled && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--rv-muted)',
+                  fontSize: '0.8rem',
+                }}
+              >
+                Query cancelled. Retry to load these reports.
+              </div>
+            )}
           </div>
           <div
             style={{
