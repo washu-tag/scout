@@ -716,13 +716,21 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Pre-import only the images each side deploys (common: keycloak, launchpad;
-      # per-side pushes gate on matrix.side).
+      # Pre-import only the images each side deploys (common: keycloak,
+      # keycloak-fragment-reconciler, launchpad; per-side pushes gate on
+      # matrix.side).
       - name: 'Push image to k3s - keycloak'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: keycloak
           image-name: keycloak
+      # Not gated on matrix.side: both sides run the auth playbook, which
+      # deploys the reconciler unconditionally.
+      - name: 'Push image to k3s - keycloak-fragment-reconciler'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: keycloak-fragment-reconciler
+          image-name: keycloak-fragment-reconciler
       - name: 'Push image to k3s - launchpad'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
