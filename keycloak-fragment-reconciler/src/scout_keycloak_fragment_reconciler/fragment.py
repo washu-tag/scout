@@ -89,6 +89,32 @@ class ClientSpec(BaseModel):
     # tier role -> the fragment's own roles to compose into it.
     grants: dict[str, list[str]] = Field(default_factory=dict)
 
+    @property
+    def app_origin(self) -> str:
+        """`appUrl` reduced to a web origin: scheme://host[:port].
+
+        `webOrigins` is compared against a browser's `Origin` header, which is
+        an origin and never carries a path, so a path-bearing or even just
+        slash-terminated `appUrl` used verbatim could only ever fail to match --
+        and Keycloak validates redirect URIs but not web origins, so it would
+        accept the value and silently never match it. The base realm's own
+        clients carry the bare site origin for the same reason, including the
+        ones served under a path.
+
+        Falls back to the raw value when there is no host to build from, which
+        `check_site_rules` rejects moments later; deciding that here would mean
+        raising from a property.
+        """
+        parsed = urllib.parse.urlparse(self.app_url)
+        try:
+            port = parsed.port
+        except ValueError:
+            return self.app_url
+        if not parsed.hostname:
+            return self.app_url
+        host = f"{parsed.hostname}:{port}" if port else parsed.hostname
+        return f"{parsed.scheme}://{host}"
+
     @model_validator(mode="after")
     def _check_role_claim(self) -> ClientSpec:
         if self.role_claim in RESERVED_CLAIMS:
@@ -171,6 +197,11 @@ def check_site_rules(client: ClientSpec, *, hostname: str, tiers: list[str]) -> 
                 f"{field} {raw!r} points at {host}, which is outside the site's "
                 f"own domain ({hostname})"
             )
+    # Only appUrl: a redirect URI legitimately carries one, but appUrl is a base
+    # URL that becomes a web origin and a post-logout redirect, and a query
+    # string is meaningless in both.
+    if urllib.parse.urlparse(client.app_url).query:
+        raise FragmentError(f"appUrl {client.app_url!r} must not carry a query string")
     for tier in client.grants:
         if tier not in tiers:
             raise FragmentError(

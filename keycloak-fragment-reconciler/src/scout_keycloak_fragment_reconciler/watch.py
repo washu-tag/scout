@@ -134,8 +134,10 @@ def run_forever(
             log.info("the fragment watch stopped with the process")
         else:
             # Nothing else should end this thread. If something does, the
-            # reconciler keeps working off the resync floor and the only clue
-            # is here.
+            # reconciler is left with only its periodic resync -- and with
+            # `resync_seconds: -1` there is no periodic resync, so nothing will
+            # wake it at all. Either way this line is the only clue.
             log.error(
-                "the fragment watch has stopped; changes now wait out the resync floor"
+                "the fragment watch has stopped; changes now wait out the "
+                "periodic resync, or are not noticed at all if it is disabled"
             )

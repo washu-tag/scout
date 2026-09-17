@@ -39,12 +39,17 @@ class Settings(BaseSettings):
     # --- Discovery ------------------------------------------------------
     fragment_label: str = FRAGMENT_LABEL
     # Empty means every namespace. A read filter, never a permission boundary --
-    # the grant is cluster-wide either way.
+    # the grant is cluster-wide either way. Garbage collection is scoped to the
+    # same list, so narrowing it leaves the clients it stops covering alone
+    # rather than reading them as deleted.
     watched_namespaces: CommaList = []
 
     # --- Timing ---------------------------------------------------------
-    # The authoritative pass, and the only one that may infer an orphan. -1
-    # disables it, leaving witnessed deletions as the only GC trigger.
+    # How often to re-read everything and repair what nothing reported: a
+    # rotated credential, an admin-console edit, a reaped tier edge. -1 removes
+    # the timer entirely and parks on the watch, so the realm is only ever
+    # re-read when a fragment changes -- an orphan's grace period still comes
+    # due, but drift is not looked for until something wakes the loop.
     resync_seconds: int = 300
     # Absence tolerated before a fragment's client is deleted. Held in memory,
     # so a restart restarts the clock -- a floor rather than a guarantee. Bias
