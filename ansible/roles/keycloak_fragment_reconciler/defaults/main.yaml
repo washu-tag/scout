@@ -28,13 +28,21 @@ keycloak_fragment_reconciler_tier_roles:
   - scout-user
   - scout-admin
 
-# Empty watches every namespace. A read filter, not a permission boundary.
+# Empty watches every namespace. A read filter, not a permission boundary, and
+# garbage collection is scoped to it too: narrowing this does not delete the
+# clients it stops covering.
 keycloak_fragment_reconciler_watched_namespaces: []
 
+# How often to re-read everything and repair drift nothing reported. -1 removes
+# the timer and parks on the fragment watch.
 keycloak_fragment_reconciler_resync_seconds: 300
 keycloak_fragment_reconciler_orphan_grace_seconds: 300
 keycloak_fragment_reconciler_dry_run: false
 keycloak_fragment_reconciler_log_level: INFO
+
+# Serves /healthz, /readyz and /metrics. No ingress; the Prometheus scrape job
+# in roles/prometheus reaches it in-cluster.
+keycloak_fragment_reconciler_port: 8080
 
 keycloak_fragment_reconciler_resources_default:
   requests:

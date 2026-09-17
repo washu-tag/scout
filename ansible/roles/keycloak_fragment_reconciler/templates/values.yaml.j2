@@ -28,4 +28,7 @@ reconcile:
 
 logLevel: '{{ keycloak_fragment_reconciler_log_level }}'
 
+service:
+  port: {{ keycloak_fragment_reconciler_port }}
+
 resources: {{ keycloak_fragment_reconciler_resources_default | combine(keycloak_fragment_reconciler_resources | default({}), recursive=true) | to_json }}
