@@ -67,9 +67,10 @@ hl7_batcher_enabled: true
 hl7_batcher_max_poll_records: 1000
 hl7_batcher_poll_timeout_ms: 30000
 # Ceiling on how long a batch stays open. Without it a slow but unbroken feed never idles, so
-# nothing flushes until the record cap and a batch can stay open for hours. Above the cap's
-# fill time at production rates, so it only bites on slow feeds.
-hl7_batcher_batching_interval_ms: 600000
+# nothing flushes until the record cap and a batch can stay open for hours. Set well inside the
+# 30m window the batcher-stalled alert measures, while preempting the record cap as rarely as
+# possible - on the production feed the cap still wins for most of the day.
+hl7_batcher_batching_interval_ms: 1200000
 
 # Batcher resource configuration
 hl7_batcher_cpu_request: 100m
