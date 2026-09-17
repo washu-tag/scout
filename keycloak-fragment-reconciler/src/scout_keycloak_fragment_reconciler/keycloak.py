@@ -38,6 +38,12 @@ TIMEOUT_SECONDS = 15.0
 # Re-authenticate this long before the token expires, so a slow call cannot
 # land on the far side of the boundary.
 EXPIRY_MARGIN_SECONDS = 30.0
+# Assumed token lifetime when the token endpoint omits `expires_in`. Must stay
+# comfortably clear of EXPIRY_MARGIN_SECONDS, which is subtracted from it: at
+# or below the margin, every call would re-authenticate.
+DEFAULT_TOKEN_LIFETIME_SECONDS = 60.0
+# How much of an error body to carry into the exception message.
+ERROR_EXCERPT_CHARS = 400
 
 
 class KeycloakError(RuntimeError):
@@ -91,13 +97,13 @@ class Admin:
             raise KeycloakError(
                 response.status_code,
                 f"client_credentials refused for {self.client_id}: "
-                f"{response.text[:200]}",
+                f"{response.text[:ERROR_EXCERPT_CHARS]}",
             )
         payload = response.json()
         self._token = payload.get("access_token", "")
         self._expires_at = (
             time.monotonic()
-            + float(payload.get("expires_in", 60))
+            + float(payload.get("expires_in", DEFAULT_TOKEN_LIFETIME_SECONDS))
             - EXPIRY_MARGIN_SECONDS
         )
         if not self._token:
@@ -129,7 +135,9 @@ class Admin:
     def _request(self, method: str, path: str, *, json: object = None) -> object:
         response = self._call(method, self._admin(path), json=json)
         if response.status_code >= 400:
-            raise KeycloakError(response.status_code, response.text[:400])
+            raise KeycloakError(
+                response.status_code, response.text[:ERROR_EXCERPT_CHARS]
+            )
         if not response.content:
             return None
         return response.json()

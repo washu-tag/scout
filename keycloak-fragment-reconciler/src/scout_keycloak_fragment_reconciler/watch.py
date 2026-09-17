@@ -29,7 +29,10 @@ MAX_BACKOFF_SECONDS = 300.0
 # should have. Without both, a half-open connection is a doorbell that has
 # silently stopped ringing until the kernel notices, which is hours.
 SERVER_TIMEOUT_SECONDS = 300
-READ_TIMEOUT_SECONDS = SERVER_TIMEOUT_SECONDS + 30
+# How long past the server's own deadline to keep waiting, so a close that is
+# merely slow does not read as a dropped connection.
+READ_TIMEOUT_MARGIN_SECONDS = 30
+READ_TIMEOUT_SECONDS = SERVER_TIMEOUT_SECONDS + READ_TIMEOUT_MARGIN_SECONDS
 
 # Called with (namespace, name) for a deletion this watch saw with its own eyes.
 Witness = Callable[[str, str], None]

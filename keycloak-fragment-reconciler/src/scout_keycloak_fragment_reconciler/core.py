@@ -753,6 +753,8 @@ class Reconciler:
 # --- scheduling ---------------------------------------------------------
 
 MINIMUM_WAIT = 5.0
+# How long to wait before re-testing a precondition we do not own.
+TIER_RETRY_SECONDS = 30.0
 
 
 def next_wait(reconciler: Reconciler) -> float | None:
@@ -764,11 +766,11 @@ def next_wait(reconciler: Reconciler) -> float | None:
 
     - Preconditions we do not own. `check_tiers` fails while the base realm is
       still being applied, which is the normal state during a fresh deploy. The
-      whole service is idle until it passes, so retry in 30s rather than at the
-      resync interval -- but never in a tight loop, because the failure is
-      usually somebody else's deploy still running. This retry survives
-      `resync_seconds: -1`: it is startup, not a resync, and a pass that fails
-      `check_tiers` reads nothing and concludes nothing.
+      whole service is idle until it passes, so retry on `TIER_RETRY_SECONDS`
+      rather than at the resync interval -- but never in a tight loop, because
+      the failure is usually somebody else's deploy still running. This retry
+      survives `resync_seconds: -1`: it is startup, not a resync, and a pass
+      that fails `check_tiers` reads nothing and concludes nothing.
     - A grace period that has to expire. `witness_deletion` books a deadline
       past the grace period so a witnessed absence is re-confirmed from a fresh
       authoritative read rather than taken on the watch's word, and `collect`
@@ -792,7 +794,7 @@ def next_wait(reconciler: Reconciler) -> float | None:
     settings = reconciler.settings
     floor = float(settings.resync_seconds) if settings.resync_seconds > 0 else None
     if not reconciler.tiers_present:
-        return min(filter(None, [floor, 30.0]))
+        return min(filter(None, [floor, TIER_RETRY_SECONDS]))
     deadline = reconciler.next_deadline()
     if deadline is None:
         return floor
