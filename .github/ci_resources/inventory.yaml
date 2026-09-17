@@ -220,8 +220,6 @@ k3s_cluster:
     keycloak_superset_svc_client_secret: ci-secret-svc-superset
     keycloak_voila_svc_client_secret: ci-secret-svc-voila
     keycloak_report_viewer_svc_client_secret: ci-secret-svc-report-viewer
-    # The realm-fragment reconciler's own admin client (ADR 0037). Referenced
-    # unconditionally by the realm template, like the three above.
     keycloak_fragment_reconciler_svc_client_secret: ci-secret-svc-fragment-reconciler
 
     # OPA bundle writer/reader (ADR 0021). Same shape as s3_lake_*
