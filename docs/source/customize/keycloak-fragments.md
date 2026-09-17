@@ -101,9 +101,14 @@ subjects:
     namespace: scout-core
 ```
 
-The ServiceAccount name and namespace above are a stable contract; the `resourceNames`
-list is what keeps the grant to your one Secret. Omit this and your fragment is rejected
-for an unreadable `secretRef` — the symptom to look for if a client never appears.
+The ServiceAccount name above is a stable contract; the `resourceNames` list is what keeps
+the grant to your one Secret. Omit this and your fragment is rejected for an unreadable
+`secretRef` — the symptom to look for if a client never appears.
+
+The namespace is wherever the reconciler runs, which is Scout's Keycloak namespace —
+`scout-core` by default, and whatever your site set if it overrides namespaces. A
+RoleBinding naming a namespace the reconciler is not in grants nothing and presents
+exactly like a missing one.
 
 A credential rotation is picked up on the next periodic pass rather than immediately,
 because `resourceNames` can scope a `get` but not a `watch`.
@@ -115,21 +120,27 @@ because `resourceNames` can scope a `get` but not a `watch`.
 | `clientId` | The Keycloak client id. Must not collide with an existing client. |
 | `displayName` | Shown in the Keycloak admin console. |
 | `description` | Optional. Free text. |
-| `appUrl` | Your service's base URL. Becomes the web origin and post-logout redirect. |
+| `appUrl` | Your service's base URL. Becomes the post-logout redirect as written, and the web origin reduced to `scheme://host[:port]`. |
 | `redirectUris` | Where Keycloak may send a user back after login. Name each one in full. |
 | `roles` | Optional. The role vocabulary your app understands. |
 | `roleClaim` | Optional. Which token claim carries those roles; defaults to `groups`. Set it only if your service reads roles from somewhere else. |
 | `secretRef` | `name`, and optionally `key`, of the Secret holding your credential. |
 | `grants` | Optional. Which of your roles each Scout tier confers. |
 
-Four rules, each a rejection rather than a warning:
+Five rules, each a rejection rather than a warning:
 
 - **`redirectUris` and `appUrl` must be `https` and under your site's own domain.** No
   wildcards, no credentials in the URL. Unconstrained, a redirect URI is a way to have
   Keycloak hand a user's token to an arbitrary host.
+- **`appUrl` must not carry a query string.** It is a base URL, and a query is meaningless
+  in both things it becomes. A `redirectUris` entry may carry one.
 - **`grants` may only name roles your own fragment declares.**
 - **`grants` may only target Scout's tier roles** (`scout-user`, `scout-admin`).
 - **`roleClaim` may not be a standard claim** like `sub`, `aud`, or `resource_access`.
+
+`appUrl` may carry a path — an app served under `/my-service` is fine. Only the derived
+web origin drops it, because a browser's `Origin` header is an origin and never carries
+one.
 
 ## What a fragment cannot say, on purpose
 
@@ -142,6 +153,23 @@ effect always did.
 
 Your service's OIDC client must therefore send a PKCE code challenge; every maintained
 OIDC library can, and most do by default.
+
+### Client scopes are set once
+
+The client scopes Scout assigns are applied when your client is created and are immutable
+afterwards. Keycloak applies the scope lists on client creation and ignores them on
+client update — there are
+[separate endpoints](https://www.keycloak.org/docs-api/latest/rest-api/index.html#_clients)
+for changing them, and Keycloak has
+[declined](https://github.com/keycloak/keycloak/issues/24920) to make the update path
+honour them. Scout therefore does not reconcile them: it cannot repair a change made
+elsewhere, and trying would rewrite your client on every pass without ever fixing
+anything.
+
+In practice this only matters if someone edits the scopes in the admin console. They will
+stay edited, and Scout will not report it. Deleting the client — which means removing your
+fragment, waiting for the client to be collected, then re-adding it — is what restores
+them.
 
 Unknown fields are an error, not a warning: a misspelled `redirectUrls` fails the whole
 document rather than quietly creating a client with no redirect URIs.
