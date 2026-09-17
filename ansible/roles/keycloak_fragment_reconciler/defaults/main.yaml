@@ -12,8 +12,6 @@ keycloak_fragment_reconciler_helm_release_name: keycloak-fragment-reconciler
 # Image
 keycloak_fragment_reconciler_image_repository: ghcr.io/washu-tag/keycloak-fragment-reconciler
 keycloak_fragment_reconciler_image_tag: latest
-# Right for an immutable release tag. A site on a mutable tag wants Always, or
-# nodes keep serving whichever build they cached first.
 keycloak_fragment_reconciler_image_pull_policy: IfNotPresent
 
 # The clientId and secret key are both the token the realm var-substitutes, so
@@ -22,19 +20,16 @@ keycloak_fragment_reconciler_client_id: fragment_reconciler_svc
 keycloak_fragment_reconciler_secret_name: keycloak-client-secrets
 keycloak_fragment_reconciler_secret_key: fragment_reconciler_svc
 
-# Must match the roles the base realm declares -- and the base realm must
-# declare them without a `composites` key, or a realm apply reaps every grant.
+# Must match the roles the base realm declares
 keycloak_fragment_reconciler_tier_roles:
   - scout-user
   - scout-admin
 
-# Empty watches every namespace. A read filter, not a permission boundary, and
-# garbage collection is scoped to it too: narrowing this does not delete the
-# clients it stops covering.
+# Empty list `[]` watches every namespace
 keycloak_fragment_reconciler_watched_namespaces: []
 
-# How often to re-read everything and repair drift nothing reported. -1 removes
-# the timer and parks on the fragment watch.
+# How often to re-read everything and find + repair drift.
+# Set to -1 to never resync, only write changes that were observed.
 keycloak_fragment_reconciler_resync_seconds: 300
 keycloak_fragment_reconciler_orphan_grace_seconds: 300
 keycloak_fragment_reconciler_dry_run: false
