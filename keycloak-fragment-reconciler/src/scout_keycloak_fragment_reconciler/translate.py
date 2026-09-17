@@ -72,7 +72,8 @@ def client_representation(spec: ClientSpec, *, secret: str, source: str) -> dict
         "directAccessGrantsEnabled": False,
         "serviceAccountsEnabled": False,
         "redirectUris": list(spec.redirect_uris),
-        "webOrigins": [spec.app_url],
+        # The origin, not the URL: see `ClientSpec.app_origin`.
+        "webOrigins": [spec.app_origin],
         "attributes": attributes,
         "defaultClientScopes": list(DEFAULT_CLIENT_SCOPES),
         "optionalClientScopes": list(OPTIONAL_CLIENT_SCOPES),
@@ -125,6 +126,13 @@ def tier_edges(spec: ClientSpec) -> dict[str, list[str]]:
 
 # Fields `client_representation` is authoritative for. Anything else Keycloak
 # returns is left alone; comparing it would make every pass a write.
+#
+# The client-scope lists are deliberately absent. Keycloak applies them on
+# create and ignores them on update -- `ClientResource.updateClient` never
+# calls `updateClientScopes` -- so managing them would detect drift it could
+# never repair and rewrite the client on every pass forever. They are set once
+# at creation and are immutable thereafter; see the scopes note in
+# `docs/source/customize/keycloak-fragments.md`.
 MANAGED_FIELDS = (
     "name",
     "description",
@@ -138,8 +146,6 @@ MANAGED_FIELDS = (
     "serviceAccountsEnabled",
     "redirectUris",
     "webOrigins",
-    "defaultClientScopes",
-    "optionalClientScopes",
 )
 
 # Attributes we set. A live client may carry others, which are left alone.

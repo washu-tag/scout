@@ -19,7 +19,7 @@ from conftest import (
 )
 
 from scout_keycloak_fragment_reconciler import core
-from scout_keycloak_fragment_reconciler.core import REJECTED, Reconciler
+from scout_keycloak_fragment_reconciler.core import APPLIED, REJECTED, Reconciler
 
 
 class TestConvergence:
@@ -248,6 +248,48 @@ class TestIsolation:
         assert "hello" in {c["clientId"] for c in kc.clients.values()}
         assert "FragmentInvalid" in k8s.reasons()
 
+    def test_a_broken_sibling_document_protects_the_other_client(
+        self, reconciler, kc, k8s
+    ):
+        """A typo in one document must not collect the client another document
+        in the same ConfigMap declared. The broken document cannot say which
+        clientId it was about, so any unclaimed client from that source might
+        be the one it meant -- one sibling parsing says nothing about it."""
+        item = k8s.get_configmap("demo", "hello-keycloak")
+        item["data"]["second.yaml"] = fragment_text("second")
+        k8s.configmaps = [item]
+        k8s.add_secret("second-secret", name="second-keycloak-client")
+        reconciler.reconcile_once()
+        assert {c["clientId"] for c in kc.clients.values()} == {"hello", "second"}
+
+        item["data"]["second.yaml"] = "{{{ not yaml at all"
+        for now in (0.0, reconciler.settings.orphan_grace_seconds + 1):
+            snapshot = reconciler.take_snapshot()
+            reconciler.collect(snapshot, now=now)
+
+        assert kc.find_client("second") is not None
+        assert not [w for w in kc.writes if w.startswith("delete_client")]
+
+    def test_a_repaired_sibling_document_releases_the_protection(
+        self, reconciler, kc, k8s
+    ):
+        """The protection is presence-of-a-broken-document, not permanence:
+        once every document parses and none declares the client, it collects.
+        This is how removing one client out of several works."""
+        item = k8s.get_configmap("demo", "hello-keycloak")
+        item["data"]["second.yaml"] = fragment_text("second")
+        k8s.configmaps = [item]
+        k8s.add_secret("second-secret", name="second-keycloak-client")
+        reconciler.reconcile_once()
+
+        del item["data"]["second.yaml"]
+        for now in (0.0, reconciler.settings.orphan_grace_seconds + 1):
+            snapshot = reconciler.take_snapshot()
+            reconciler.collect(snapshot, now=now)
+
+        assert kc.find_client("second") is None
+        assert kc.find_client("hello") is not None
+
     def test_an_unknown_apiversion_is_skipped_whole(self, reconciler, kc, k8s):
         k8s.add_fragment(
             fragment_text().replace("v1alpha1", "v99"),
@@ -422,16 +464,75 @@ class TestGarbageCollection:
         deadline = reconciler.next_deadline()
         assert deadline is not None and 0 < deadline <= 301
 
-    def test_resync_disabled_still_collects_via_the_recheck(self, settings, k8s, kc):
-        """With `resync_seconds: -1` the scheduled re-check is the only thing
-        that will ever fire, so the wait must be driven by it."""
+    def test_resync_disabled_means_no_timer_at_all(self, settings, k8s, kc):
+        """-1 must not degrade to a long timer. A periodic pass concludes a
+        fragment is gone with nothing having reported it gone, which is the
+        inference -1 exists to refuse, so idle has to mean parked on the
+        watch."""
         settings.resync_seconds = -1
         reconciler = Reconciler(settings, k8s, kc)
         reconciler.reconcile_once()
-        assert core.next_wait(reconciler) == 3600.0
+        assert core.next_wait(reconciler) is None
 
         reconciler.witness_deletion("demo", "hello-keycloak")
-        assert core.next_wait(reconciler) <= 301
+        deadline = core.next_wait(reconciler)
+        assert deadline is not None and deadline <= 301
+
+    def test_resync_disabled_still_collects_an_edited_away_client(
+        self, settings, k8s, kc, monkeypatch
+    ):
+        """Dropping one client from a fragment that stays put is a MODIFIED
+        event, so nothing witnesses a deletion and there is no timer behind it.
+        The grace period still has to come due, which means the pass that
+        started the clock has to book the wake that finishes it.
+
+        Driven through the real scheduler: each iteration is a pass, and the
+        clock advances by exactly the wait `next_wait` asked for. If it ever
+        returns None here, the loop would park forever.
+        """
+        settings.resync_seconds = -1
+        item = k8s.get_configmap("demo", "hello-keycloak")
+        item["data"]["second.yaml"] = fragment_text("second")
+        k8s.configmaps = [item]
+        k8s.add_secret("second-secret", name="second-keycloak-client")
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        assert kc.find_client("second") is not None
+
+        clock = [0.0]
+        monkeypatch.setattr(core.time, "monotonic", lambda: clock[0])
+        del item["data"]["second.yaml"]
+
+        waits = []
+        for _ in range(8):
+            snapshot = reconciler.take_snapshot()
+            reconciler.collect(snapshot, now=clock[0])
+            if kc.find_client("second") is None:
+                break
+            wait = core.next_wait(reconciler)
+            if wait is None:
+                break
+            waits.append(wait)
+            clock[0] += wait
+
+        assert (
+            kc.find_client("second") is None
+        ), f"never collected; the loop stopped after waits {waits}"
+        assert kc.find_client("hello") is not None
+
+    def test_a_grace_period_in_progress_books_its_own_wake(self, settings, k8s, kc):
+        """The mechanism behind the above, asserted directly: a pass that
+        starts an orphan's grace clock must leave a deadline behind it."""
+        settings.resync_seconds = -1
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        k8s.remove_fragment()
+
+        snapshot = reconciler.take_snapshot()
+        reconciler.collect(snapshot, now=0.0)
+
+        assert "hello" in reconciler.first_absent_at
+        assert reconciler.next_deadline() is not None
 
 
 class TestDriftIsAnAnomaly:
@@ -503,6 +604,45 @@ class TestArbitration:
         assert rejected[0].source == "other/rival"
         assert "demo/hello-keycloak" in rejected[0].detail
 
+    def test_one_configmap_claiming_a_clientid_twice_names_both_documents(
+        self, reconciler, kc, k8s
+    ):
+        """A duplicate inside one artifact is the author's to fix, and the
+        cross-fragment tie-break cannot resolve it: its tie-breaker is which
+        source owns the client, which says nothing about which of that source's
+        documents should win. So it must be reported, not silently resolved by
+        sort order -- and each rejection needs its own document label, or the
+        two outcomes collide as one metric series."""
+        item = k8s.get_configmap("demo", "hello-keycloak")
+        item["data"]["dupe.yaml"] = fragment_text()
+        k8s.configmaps = [item]
+
+        reconciler.reconcile_once()
+
+        assert kc.writes == []
+        rejected = [o for o in reconciler.snapshot.outcomes if o.status == REJECTED]
+        assert len(rejected) == 2
+        assert {o.document for o in rejected} == {"dupe.yaml", "fragment.yaml"}
+        for outcome in rejected:
+            others = {"dupe.yaml", "fragment.yaml"} - {outcome.document}
+            assert others.pop() in outcome.detail
+
+    def test_a_duplicate_does_not_block_another_fragments_claim(
+        self, reconciler, kc, k8s
+    ):
+        """The disqualified source is out of contention, so a well-formed rival
+        is then the only claimant and applies normally."""
+        item = k8s.get_configmap("demo", "hello-keycloak")
+        item["data"]["dupe.yaml"] = fragment_text()
+        k8s.configmaps = [item]
+        k8s.add_fragment(fragment_text(), namespace="other", name="rival")
+        k8s.add_secret("rival-secret", namespace="other", name="hello-keycloak-client")
+
+        reconciler.reconcile_once()
+
+        applied = [o for o in reconciler.snapshot.outcomes if o.status == APPLIED]
+        assert [o.source for o in applied] == ["other/rival"]
+
 
 class TestDryRun:
     def test_dry_run_performs_no_writes(self, settings, k8s, kc):
@@ -524,18 +664,39 @@ class TestNamespaceAllowlist:
         assert {c["clientId"] for c in kc.clients.values()} == {"hello"}
 
     def test_an_unwatched_namespace_does_not_orphan_its_client(self, settings, k8s, kc):
-        """Narrowing the allowlist after a fragment was applied should not read
-        as that fragment having been deleted -- but it does, and it must be the
-        grace period that covers the mistake rather than an immediate delete."""
+        """Narrowing the allowlist must not read as the fragments it stops
+        covering having been deleted. The allowlist is documented as a read
+        filter, so an operator trimming it to reduce API reads would otherwise
+        delete the Keycloak clients of every app outside the new scope."""
         reconciler = Reconciler(settings, k8s, kc)
         reconciler.reconcile_once()
         settings.watched_namespaces = ["somewhere-else"]
 
-        snapshot = reconciler.take_snapshot()
-        reconciler.collect(snapshot, now=1000.0)
+        # Well past any grace period: the client is not a candidate at all, so
+        # no amount of waiting turns it into one.
+        for _ in range(3):
+            snapshot = reconciler.take_snapshot()
+            reconciler.collect(snapshot, now=1_000_000.0)
 
         assert kc.find_client("hello") is not None
-        assert "hello" in reconciler.first_absent_at
+        assert "hello" not in reconciler.first_absent_at
+        assert not [w for w in kc.writes if w.startswith("delete_client")]
+
+    def test_narrowing_the_allowlist_still_collects_what_it_covers(
+        self, settings, k8s, kc
+    ):
+        """The scope check must not disable GC for the namespaces still in it,
+        or the fix for the above would trade one silent failure for another."""
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        settings.watched_namespaces = ["demo"]
+        k8s.remove_fragment()
+
+        snapshot = reconciler.take_snapshot()
+        reconciler.collect(snapshot, now=0.0)
+        reconciler.collect(snapshot, now=settings.orphan_grace_seconds + 1)
+
+        assert kc.find_client("hello") is None
 
 
 @pytest.mark.parametrize(

@@ -1,8 +1,11 @@
 """The reconcile loop: snapshot, arbitrate, apply, collect.
 
-Two triggers with different powers. The watch rings a bell and may name a
-deletion it witnessed; the periodic LIST is the only authoritative read, and
-the only one allowed to infer that a fragment is *gone*.
+Every pass starts from its own authoritative LIST; the watch only ever rings a
+bell, and may name a deletion it witnessed. So what distinguishes the triggers
+is not what a pass may conclude but what prompted it: a periodic pass can find
+drift nothing reported, and can conclude a fragment is gone without anything
+having said so. `resync_seconds: -1` is an operator declining that second
+power, and it removes the timer rather than lengthening it.
 
 Apply order per fragment is chosen so every prefix is inert: a client with no
 roles yields an empty claim and the app 403s. Tier edges go last, because an
@@ -38,6 +41,9 @@ class Claim:
     namespace: str
     configmap: str
     spec: ClientSpec
+    # The ConfigMap `data` key it came from, so two documents in one ConfigMap
+    # are distinguishable in an outcome and in a metric label set.
+    document: str = ""
 
     @property
     def source(self) -> str:
@@ -77,10 +83,11 @@ class Snapshot:
     # passed validation. A fragment edited into invalidity still says which
     # client it is about, and that client must not be collected.
     seen_client_ids: set[str] = field(default_factory=set)
-    # Sources that produced at least one valid claim. A source present but
-    # producing nothing is broken rather than emptied, so its silence is not
-    # "this app no longer wants its client".
-    healthy_sources: set[str] = field(default_factory=set)
+    # Sources with at least one document that did not parse. Such a document
+    # cannot say which clientId it was about, so any unclaimed client from that
+    # source might be the one it meant. Tracked per source rather than per
+    # document because the association is exactly what was lost.
+    unparsable_sources: set[str] = field(default_factory=set)
 
 
 class Reconciler:
@@ -179,6 +186,7 @@ class Reconciler:
             try:
                 document: Fragment = parse(text)
             except FragmentError as exc:
+                snapshot.unparsable_sources.add(source)
                 snapshot.outcomes.append(
                     Outcome(source, "", INVALID, str(exc), document=key)
                 )
@@ -194,11 +202,18 @@ class Reconciler:
                     )
                 except FragmentError as exc:
                     snapshot.outcomes.append(
-                        Outcome(source, spec.client_id, INVALID, str(exc))
+                        Outcome(source, spec.client_id, INVALID, str(exc), document=key)
                     )
                     continue
-                snapshot.healthy_sources.add(source)
-                claims.append(Claim(namespace, name, spec))
+                if spec.app_origin != spec.app_url:
+                    log.debug(
+                        "%s: webOrigins for %s is the origin %s, from appUrl %s",
+                        source,
+                        spec.client_id,
+                        spec.app_origin,
+                        spec.app_url,
+                    )
+                claims.append(Claim(namespace, name, spec, document=key))
         return claims
 
     def _arbitrate(
@@ -210,7 +225,10 @@ class Reconciler:
         Tier edges need no arbitration: the composites POST is additive, so two
         fragments writing into the same tier role cannot clobber each other.
         """
-        for client_id, claims in contenders.items():
+        for client_id, all_claims in contenders.items():
+            claims = self._reject_duplicates(client_id, all_claims, snapshot)
+            if not claims:
+                continue
             if len(claims) == 1:
                 snapshot.claims[client_id] = claims[0]
                 continue
@@ -234,6 +252,7 @@ class Reconciler:
                             REJECTED,
                             f"clientId is also claimed by "
                             f"{', '.join(s for s in sources if s != claim.source)}",
+                            document=claim.document,
                         )
                     )
                 continue
@@ -246,8 +265,52 @@ class Reconciler:
                             client_id,
                             REJECTED,
                             f"clientId already belongs to {incumbent}",
+                            document=claim.document,
                         )
                     )
+
+    def _reject_duplicates(
+        self, client_id: str, claims: list[Claim], snapshot: Snapshot
+    ) -> list[Claim]:
+        """Drop claims from any source that names one clientId twice.
+
+        Two documents in one ConfigMap claiming the same clientId is a mistake
+        inside a single artifact, and the author can see both halves of it. The
+        cross-fragment tie-break below cannot help: its tie-breaker is which
+        source already owns the client, which says nothing about which of that
+        source's own documents should win. Rejecting both names the conflict
+        where it can be fixed instead of silently applying whichever sorted
+        first.
+        """
+        by_source: dict[str, list[Claim]] = {}
+        for claim in claims:
+            by_source.setdefault(claim.source, []).append(claim)
+        kept = []
+        for source, from_source in by_source.items():
+            if len(from_source) == 1:
+                kept.extend(from_source)
+                continue
+            documents = sorted(claim.document for claim in from_source)
+            log.error(
+                "%s declares clientId %s in more than one document (%s); "
+                "all of them are rejected until exactly one does",
+                source,
+                client_id,
+                ", ".join(documents),
+            )
+            for claim in from_source:
+                others = [d for d in documents if d != claim.document]
+                snapshot.outcomes.append(
+                    Outcome(
+                        source,
+                        client_id,
+                        REJECTED,
+                        "this ConfigMap also declares this clientId in "
+                        f"{', '.join(others)}",
+                        document=claim.document,
+                    )
+                )
+        return kept
 
     def _incumbent_source(self, client_id: str) -> str:
         try:
@@ -348,7 +411,8 @@ class Reconciler:
 
         A read rather than stored state. The Secret is not watched -- a
         `resourceNames`-scoped `get` cannot back one -- so a rotation is noticed
-        on the next resync.
+        on the next pass, which under `resync_seconds: -1` means the next time
+        a fragment changes rather than within a bounded interval.
         """
         try:
             return self.admin.client_secret(uuid) != secret
@@ -448,33 +512,60 @@ class Reconciler:
     def _is_orphan(self, client_id: str, client: dict, snapshot: Snapshot) -> bool:
         """Whether a stamped client has actually been abandoned.
 
-        Three questions, all of which must fail:
+        Four questions, all of which must fail:
 
+        0. Could this pass have seen the fragment at all? Absence only means
+           "removed" within the watch scope; outside it, absence means "not
+           looked at". Without this, narrowing the allowlist reads as every
+           out-of-scope app having been deleted.
         1. Does a valid fragment claim this clientId? Keying on the clientId
            rather than the source is what makes a fragment rename an ordinary
            update, with no window where the client is absent.
         2. Did any fragment *name* it, even one that failed validation? A typo
            is not a request for deletion.
-        3. Is the producing ConfigMap still present and still broken? A fragment
-           whose every document fails to parse cannot say which client it was
-           about, so its presence is the only signal left. Once it parses again
-           and no longer declares the client, the client becomes collectable --
-           which is how removing one client out of several works.
+        3. Is the producing ConfigMap still present with a document that will
+           not parse? Such a document cannot say which client it was about, so
+           it might be the one that declared this client -- and one sibling
+           document parsing says nothing about the broken one. Once every
+           document parses again and none declares the client, it becomes
+           collectable, which is how removing one client out of several works.
         """
+        if not self._in_watch_scope(client):
+            return False
         if client_id in snapshot.claims or client_id in snapshot.seen_client_ids:
             return False
         source = translate.source_of(client)
         if (
             source
             and source in snapshot.objects
-            and source not in snapshot.healthy_sources
+            and source in snapshot.unparsable_sources
         ):
             log.warning(
                 "client %s is unclaimed, but its fragment %s is still present "
-                "and failing validation; keeping the client until the fragment "
-                "is fixed or removed",
+                "with a document that does not parse; keeping the client until "
+                "the fragment is fixed or removed",
                 client_id,
                 source,
+            )
+            return False
+        return True
+
+    def _in_watch_scope(self, client: dict) -> bool:
+        """Whether the fragment that produced a client is one we read.
+
+        With no allowlist every namespace is in scope, so this is only ever a
+        question once an operator has narrowed it -- at which point a client
+        we cannot attribute to a watched namespace is one we must not judge.
+        An absent or malformed source stamp fails closed for the same reason.
+        """
+        if not self.settings.watched_namespaces:
+            return True
+        namespace = translate.source_of(client).partition("/")[0]
+        if not namespace or not self.settings.watches(namespace):
+            log.debug(
+                "client %s came from outside the watched namespaces; "
+                "not a GC candidate",
+                client.get("clientId", "(unknown)"),
             )
             return False
         return True
@@ -500,14 +591,21 @@ class Reconciler:
         for client_id, client in orphans.items():
             since = self.first_absent_at.setdefault(client_id, now)
             waited = now - since
-            if waited < self.settings.orphan_grace_seconds:
+            remaining = self.settings.orphan_grace_seconds - waited
+            if remaining > 0:
                 log.info(
                     "client %s (from %s) has no fragment; deleting in %.0fs "
                     "unless it comes back",
                     client_id,
                     translate.source_of(client) or "an unknown fragment",
-                    self.settings.orphan_grace_seconds - waited,
+                    remaining,
                 )
+                # Book the wake that will actually delete it. The grace clock
+                # starts at the first pass that saw the client absent, which is
+                # necessarily later than the deletion `witness_deletion` booked
+                # its re-check from, so that re-check lands just short of the
+                # grace period and would otherwise be the last wake there is.
+                self._schedule_recheck(client_id, remaining)
                 continue
             self._delete(client)
 
@@ -539,8 +637,9 @@ class Reconciler:
         pass, which re-confirms absence from a fresh authoritative read rather
         than from the watch's word.
         """
-        deadline = time.monotonic() + self.settings.orphan_grace_seconds + 1
-        self._pending_recheck[f"{namespace}/{name}"] = deadline
+        self._schedule_recheck(
+            f"{namespace}/{name}", self.settings.orphan_grace_seconds + 1
+        )
         log.info(
             "witnessed %s/%s deleted; re-checking in %ss",
             namespace,
@@ -548,8 +647,24 @@ class Reconciler:
             self.settings.orphan_grace_seconds + 1,
         )
 
+    def _schedule_recheck(self, key: str, seconds: float) -> None:
+        """Book a one-shot pass, keeping the soonest if one is already booked.
+
+        Keyed by source for a witnessed deletion and by clientId for an orphan
+        mid-grace; the two cannot collide, because a clientId may not contain
+        the slash a source always has.
+        """
+        deadline = time.monotonic() + seconds
+        existing = self._pending_recheck.get(key)
+        if existing is None or deadline < existing:
+            self._pending_recheck[key] = deadline
+
     def next_deadline(self) -> float | None:
-        """Seconds until the soonest scheduled re-check, if any."""
+        """Seconds until the soonest scheduled re-check, if any.
+
+        Expired entries are dropped as they are read: each books one pass, and
+        that pass either acts or books the next one from what it found.
+        """
         if not self._pending_recheck:
             return None
         now = time.monotonic()
@@ -632,21 +747,47 @@ class Reconciler:
 MINIMUM_WAIT = 5.0
 
 
-def next_wait(reconciler: Reconciler) -> float:
-    """How long to sleep when no watch event arrives.
+def next_wait(reconciler: Reconciler) -> float | None:
+    """How long to sleep when no watch event arrives, or None to sleep until one.
 
-    A scheduled orphan re-check can be sooner than the resync floor, and with
-    the floor disabled it is the only thing that will ever fire.
+    The watch handles everything an app *does*; this timer exists for the three
+    things no watch event will ever tell us about, and each wants a different
+    interval:
+
+    - Preconditions we do not own. `check_tiers` fails while the base realm is
+      still being applied, which is the normal state during a fresh deploy. The
+      whole service is idle until it passes, so retry in 30s rather than at the
+      resync interval -- but never in a tight loop, because the failure is
+      usually somebody else's deploy still running. This retry survives
+      `resync_seconds: -1`: it is startup, not a resync, and a pass that fails
+      `check_tiers` reads nothing and concludes nothing.
+    - A grace period that has to expire. `witness_deletion` books a deadline
+      past the grace period so a witnessed absence is re-confirmed from a fresh
+      authoritative read rather than taken on the watch's word, and `collect`
+      books one for an orphan it is still waiting out. Either can legitimately
+      be sooner than the resync interval, hence the `MINIMUM_WAIT` clamp: a
+      grace period of 0 must not become a spin.
+    - Drift nobody reported. A credential rotated in the Secret, a field
+      changed in the admin console, a tier edge reaped by a realm re-apply --
+      none produces a ConfigMap event, so only a periodic pass finds them. That
+      pass is `resync_seconds`.
+
+    `resync_seconds: -1` removes that third wake and returns None, parking on
+    the watch indefinitely. Not a bounded-but-long wake: a periodic pass is a
+    pass that concludes a fragment is gone without anything having reported it
+    gone, which is the inference an operator who sets -1 is refusing. Idle here
+    means genuinely idle -- nothing is re-read until the watch rings or a grace
+    period comes due -- so drift goes unrepaired until something else wakes us,
+    which is the trade -1 asks for. A SIGTERM sets `wake` too, so parking
+    indefinitely still exits promptly.
     """
     settings = reconciler.settings
     floor = float(settings.resync_seconds) if settings.resync_seconds > 0 else None
     if not reconciler.tiers_present:
-        # Retryable, and the usual cause is the base realm not being applied
-        # yet. Check back sooner than the floor, but not in a tight loop.
         return min(filter(None, [floor, 30.0]))
     deadline = reconciler.next_deadline()
     if deadline is None:
-        return floor if floor else 3600.0
+        return floor
     if floor is None:
         return max(deadline, MINIMUM_WAIT)
     return min(floor, max(deadline, MINIMUM_WAIT))
@@ -662,7 +803,10 @@ def run_forever(reconciler: Reconciler, wake: threading.Event) -> None:
             # Never let one bad pass end the loop: the clients already in the
             # realm keep working, and the next pass is a fresh read.
             log.exception("reconcile pass failed; the realm stays as it is")
-        if wake.wait(next_wait(reconciler)):
+        wait = next_wait(reconciler)
+        if wait is None:
+            log.debug("no periodic resync and nothing pending; waiting on the watch")
+        if wake.wait(wait):
             wake.clear()
             # One watch event per object written, so let a burst land together.
             shutdown.sleep(settings.debounce_seconds)

@@ -213,6 +213,40 @@ class TestRedirectUrisAreConstrained:
                 )
             )
 
+    def test_an_app_url_query_string_is_rejected(self):
+        """appUrl is a base URL that becomes a web origin and a post-logout
+        redirect; a query is meaningless in both. A redirect URI may carry
+        one, so this check is appUrl's alone."""
+        spec = parsed(
+            fragment_text().replace(
+                f"appUrl: https://hello.{HOSTNAME}",
+                f"appUrl: https://hello.{HOSTNAME}/?next=/x",
+            )
+        )
+        with pytest.raises(FragmentError, match="query string"):
+            check(spec)
+
+    def test_a_redirect_uri_query_string_is_allowed(self):
+        spec = parsed(
+            fragment_text().replace(
+                f"https://hello.{HOSTNAME}/auth/callback",
+                f"https://hello.{HOSTNAME}/auth/callback?mode=oidc",
+            )
+        )
+        check(spec)
+
+    def test_an_app_url_path_is_allowed(self):
+        """An app served under a path is legitimate; only the derived web
+        origin drops it."""
+        spec = parsed(
+            fragment_text().replace(
+                f"appUrl: https://hello.{HOSTNAME}",
+                f"appUrl: https://hello.{HOSTNAME}/myapp",
+            )
+        )
+        check(spec)
+        assert spec.app_origin == f"https://hello.{HOSTNAME}"
+
 
 class TestRoleClaimIsConstrained:
     """A role mapper aimed at a standard claim overwrites what the platform

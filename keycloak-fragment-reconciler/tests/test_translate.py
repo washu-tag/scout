@@ -179,6 +179,44 @@ class TestDrift:
         assert merged["some.operator.note"] == "keep me"
         assert merged[translate.STAMP_ATTRIBUTE] == "true"
 
+    @pytest.mark.parametrize("field", ["defaultClientScopes", "optionalClientScopes"])
+    def test_client_scopes_are_not_drift(self, field):
+        """Keycloak applies the scope lists on create and ignores them on
+        update, so managing them would detect drift it could never repair and
+        rewrite the client on every pass forever."""
+        desired = rendered(fragment_text())["client"]
+        live = {**desired, field: ["profile"]}
+        assert translate.client_drift(live, desired) == []
+        assert field not in translate.MANAGED_FIELDS
+
+
+class TestWebOrigins:
+    """`webOrigins` is matched against a browser's `Origin` header, which is an
+    origin and never carries a path. Keycloak validates redirect URIs but not
+    web origins, so a URL here is accepted and then silently never matches."""
+
+    @pytest.mark.parametrize(
+        "app_url, expected",
+        [
+            (f"https://app.{HOSTNAME}", f"https://app.{HOSTNAME}"),
+            (f"https://app.{HOSTNAME}/", f"https://app.{HOSTNAME}"),
+            (f"https://app.{HOSTNAME}/deep/path", f"https://app.{HOSTNAME}"),
+            (f"https://app.{HOSTNAME}:8443/x", f"https://app.{HOSTNAME}:8443"),
+        ],
+    )
+    def test_the_origin_is_derived_from_the_app_url(self, app_url, expected):
+        text = MINIMAL.replace(f"https://minimal.{HOSTNAME}\n", f"{app_url}\n")
+        client = rendered(text)["client"]
+        assert client["webOrigins"] == [expected]
+
+    def test_the_post_logout_redirect_keeps_the_full_url(self):
+        """Unlike an origin, a post-logout redirect is matched as a URI and the
+        app controls both sides, so the path belongs there."""
+        app_url = f"https://app.{HOSTNAME}/deep/path"
+        text = MINIMAL.replace(f"https://minimal.{HOSTNAME}\n", f"{app_url}\n")
+        client = rendered(text)["client"]
+        assert client["attributes"]["post.logout.redirect.uris"] == app_url
+
 
 class TestMapperDrift:
     def test_absent_is_written(self):
