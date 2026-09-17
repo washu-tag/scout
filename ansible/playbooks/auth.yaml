@@ -6,7 +6,4 @@
   roles:
     - role: keycloak
     - role: oauth2-proxy
-    # After keycloak because it needs the base realm's tier roles, and after
-    # oauth2-proxy because it waits on readiness -- a reconciler that will not
-    # start should not hold up the edge gate every login goes through.
     - role: keycloak_fragment_reconciler
