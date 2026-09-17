@@ -2,7 +2,7 @@
 #
 # The steady-state publish-haul job (in ci.yaml) carries unchanged components
 # from the previous haul, but the FIRST haul has no predecessor, and the publish
-# job only pushes CHANGED images, so no normal run ever has all 9 fresh. This
+# job only pushes CHANGED images, so no normal run ever has all fresh. This
 # dispatch resolves every image's current digest, signs it, and builds + publishes
 # the first full haul so subsequent builds have a predecessor to carry from.
 #
@@ -92,7 +92,7 @@ jobs:
           set -euo pipefail
           echo "VERSION=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           # The OCI charts (in components.txt since #618) aren't published until
-          # seed-charts.yaml runs, so the first haul seeds ONLY the 9 images and has
+          # seed-charts.yaml runs, so the first haul seeds ONLY the images and has
           # no predecessor to carry charts from. Render the images-only subset; the
           # charts/ repos would else fail resolve_refs closed ("neither rebuilt nor
           # carried"). seed-charts then carries these images and folds the charts in.
