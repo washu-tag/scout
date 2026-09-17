@@ -92,7 +92,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max(trino_metadata_DiscoveryNodeManager_ActiveNodeCount{namespace=~\"$namespace\"})",
+          "expr": "count(count by (pod) (java_lang_Memory_HeapMemoryUsage_used{namespace=~\"$namespace\", pod=~\"trino-worker.*\"}))",
           "legendFormat": "Active Nodes",
           "range": true,
           "refId": "A"
@@ -544,7 +544,7 @@
           },
           "editorMode": "code",
           "expr": "trino_execution_QueryManager_RunningQueries{namespace=~\"$namespace\"}",
-          "legendFormat": "Running",
+          "legendFormat": "{{namespace}} Running",
           "range": true,
           "refId": "A"
         },
@@ -555,7 +555,7 @@
           },
           "editorMode": "code",
           "expr": "trino_execution_QueryManager_QueuedQueries{namespace=~\"$namespace\"}",
-          "legendFormat": "Queued",
+          "legendFormat": "{{namespace}} Queued",
           "range": true,
           "refId": "B"
         }
@@ -666,7 +666,7 @@
           },
           "editorMode": "code",
           "expr": "increase(trino_execution_QueryManager_CompletedQueries_TotalCount{namespace=~\"$namespace\"}[2m])",
-          "legendFormat": "Completed",
+          "legendFormat": "{{namespace}} Completed",
           "range": true,
           "refId": "A"
         },
@@ -676,8 +676,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "clamp_min(sum(increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[2m])) - sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[2m]) or vector(0)), 0)",
-          "legendFormat": "Failed",
+          "expr": "clamp_min(sum by (namespace) (increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[2m])) - sum by (namespace) (increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[2m]) or vector(0)), 0)",
+          "legendFormat": "{{namespace}} Failed",
           "range": true,
           "refId": "B"
         },
@@ -687,8 +687,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[2m]) or vector(0))",
-          "legendFormat": "Canceled",
+          "expr": "sum by (namespace) (increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[2m]) or vector(0))",
+          "legendFormat": "{{namespace}} Canceled",
           "range": true,
           "refId": "C"
         }
@@ -783,7 +783,7 @@
           },
           "editorMode": "code",
           "expr": "trino_execution_QueryManager_ExecutionTime_AllTime_P50{namespace=~\"$namespace\"} / 1000",
-          "legendFormat": "p50",
+          "legendFormat": "{{namespace}} p50",
           "range": true,
           "refId": "A"
         },
@@ -794,7 +794,7 @@
           },
           "editorMode": "code",
           "expr": "trino_execution_QueryManager_ExecutionTime_AllTime_P95{namespace=~\"$namespace\"} / 1000",
-          "legendFormat": "p95",
+          "legendFormat": "{{namespace}} p95",
           "range": true,
           "refId": "B"
         },
@@ -805,7 +805,7 @@
           },
           "editorMode": "code",
           "expr": "trino_execution_QueryManager_ExecutionTime_AllTime_P99{namespace=~\"$namespace\"} / 1000",
-          "legendFormat": "p99",
+          "legendFormat": "{{namespace}} p99",
           "range": true,
           "refId": "C"
         }
@@ -899,8 +899,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "clamp_min(sum(increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) - sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[5m]) or vector(0)), 0) / (sum(increase(trino_execution_QueryManager_CompletedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) + sum(increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) - sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[5m]) or vector(0)) + 0.001)",
-          "legendFormat": "Failure Rate",
+          "expr": "clamp_min(sum by (namespace) (increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) - sum by (namespace) (increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[5m]) or vector(0)), 0) / (sum by (namespace) (increase(trino_execution_QueryManager_CompletedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) + sum by (namespace) (increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m])) - sum by (namespace) (increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[5m]) or vector(0)) + 0.001)",
+          "legendFormat": "{{namespace}} Failure Rate",
           "range": true,
           "refId": "A"
         }
@@ -1008,7 +1008,7 @@
           },
           "editorMode": "code",
           "expr": "trino_memory_ClusterMemoryPool_TotalDistributedBytes{namespace=~\"$namespace\"}",
-          "legendFormat": "Total",
+          "legendFormat": "{{namespace}} Total",
           "range": true,
           "refId": "A"
         },
@@ -1019,7 +1019,7 @@
           },
           "editorMode": "code",
           "expr": "trino_memory_ClusterMemoryPool_FreeDistributedBytes{namespace=~\"$namespace\"}",
-          "legendFormat": "Free",
+          "legendFormat": "{{namespace}} Free",
           "range": true,
           "refId": "B"
         },
@@ -1030,7 +1030,7 @@
           },
           "editorMode": "code",
           "expr": "trino_memory_ClusterMemoryPool_ReservedDistributedBytes{namespace=~\"$namespace\"}",
-          "legendFormat": "Reserved",
+          "legendFormat": "{{namespace}} Reserved",
           "range": true,
           "refId": "C"
         }
@@ -1134,7 +1134,7 @@
           },
           "editorMode": "code",
           "expr": "1 - (trino_memory_ClusterMemoryPool_FreeDistributedBytes{namespace=~\"$namespace\"} / trino_memory_ClusterMemoryPool_TotalDistributedBytes{namespace=~\"$namespace\"})",
-          "legendFormat": "Memory Utilization",
+          "legendFormat": "{{namespace}} Memory Utilization",
           "range": true,
           "refId": "A"
         }
@@ -1241,8 +1241,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "trino_failuredetector_HeartbeatFailureDetector_ActiveCount{namespace=~\"$namespace\"}",
-          "legendFormat": "Active Workers",
+          "expr": "count by (namespace) (count by (namespace, pod) (java_lang_Memory_HeapMemoryUsage_used{namespace=~\"$namespace\", pod=~\"trino-worker.*\"}))",
+          "legendFormat": "{{namespace}} Active Workers",
           "range": true,
           "refId": "A"
         },
@@ -1253,7 +1253,7 @@
           },
           "editorMode": "code",
           "expr": "trino_memory_ClusterMemoryManager_TotalAvailableProcessors{namespace=~\"$namespace\"}",
-          "legendFormat": "Total Processors",
+          "legendFormat": "{{namespace}} Total Processors",
           "range": true,
           "refId": "B"
         }
@@ -1443,7 +1443,7 @@
           },
           "editorMode": "code",
           "expr": "trino_execution_executor_dedicated_ThreadPerDriverTaskExecutor_TotalRunningSplits{namespace=~\"$namespace\"}",
-          "legendFormat": "Running Splits",
+          "legendFormat": "{{pod}} running splits",
           "range": true,
           "refId": "A"
         },
@@ -1454,7 +1454,7 @@
           },
           "editorMode": "code",
           "expr": "trino_execution_executor_dedicated_ThreadPerDriverTaskExecutor_TotalPendingLeafSplits{namespace=~\"$namespace\"}",
-          "legendFormat": "Pending Splits",
+          "legendFormat": "{{pod}} pending splits",
           "range": true,
           "refId": "B"
         }
@@ -1892,13 +1892,333 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"trino-(coordinator|worker).*\", container!=\"\"}[5m])) / max(trino_memory_ClusterMemoryManager_TotalAvailableProcessors{namespace=~\"$namespace\"})",
-          "legendFormat": "CPU in use",
+          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"trino-(coordinator|worker).*\", container!=\"\"}[5m])) / max by (namespace) (trino_memory_ClusterMemoryManager_TotalAvailableProcessors{namespace=~\"$namespace\"})",
+          "legendFormat": "{{namespace}} CPU in use",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "Cluster CPU in Use (of processors Trino sees)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
+      "id": 105,
+      "panels": [],
+      "title": "S3 IO",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 58
+      },
+      "id": 50,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum by (pod) (rate(io_trino_filesystem_s3_S3FileSystemStats_GetObject_Calls_TotalCount{namespace=~\"$namespace\"}[5m]))",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "S3 GetObject Calls",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 58
+      },
+      "id": 51,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (namespace) (io_trino_filesystem_s3_S3FileSystemStats_GetObject_Latency_OneMinute_P50{namespace=~\"$namespace\"})",
+          "legendFormat": "{{namespace}} P50",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (namespace) (io_trino_filesystem_s3_S3FileSystemStats_GetObject_Latency_OneMinute_P95{namespace=~\"$namespace\"})",
+          "legendFormat": "{{namespace}} P95",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (namespace) (io_trino_filesystem_s3_S3FileSystemStats_GetObject_Latency_OneMinute_P99{namespace=~\"$namespace\"})",
+          "legendFormat": "{{namespace}} P99",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "title": "S3 GetObject Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 58
+      },
+      "id": 52,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum by (pod) (rate(io_trino_filesystem_s3_S3FileSystemStats_GetObject_Failures_TotalCount{namespace=~\"$namespace\"}[5m]))",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "S3 GetObject Failures",
       "type": "timeseries"
     }
   ],
