@@ -17,19 +17,25 @@ data:
   # empty catalog, not a missing/broken one, so disabling every action
   # here does not fall back to re-enabling the built-in defaults.
   catalog.yaml: |
-    {{- if .Values.actions.explainSearch }}
+    {{- if .Values.actions.explainSearch.enabled }}
     - id: explain-search
       title: Explain Search
       weight: 5
       action_type: client
       client_handler: explain-search
+      {{- if .Values.actions.explainSearch.requiredGroup }}
+      required_group: {{ .Values.actions.explainSearch.requiredGroup | quote }}
+      {{- end }}
     {{- end }}
-    {{- if .Values.actions.downloadCsv }}
+    {{- if .Values.actions.downloadCsv.enabled }}
     - id: download-csv
       title: Download CSV
       weight: 10
       action_type: client
       client_handler: download-csv
+      {{- if .Values.actions.downloadCsv.requiredGroup }}
+      required_group: {{ .Values.actions.downloadCsv.requiredGroup | quote }}
+      {{- end }}
     {{- end }}
     {{- range .Values.actions.custom }}
     - id: {{ required "actions.custom entries need an id" .id | quote }}

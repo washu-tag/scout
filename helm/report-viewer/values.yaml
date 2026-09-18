@@ -68,11 +68,21 @@ resources:
 # Issue #739 PoC: search-detail toolbar actions, rendered into a
 # ConfigMap and mounted at /app/action-catalog/catalog.yaml (matches
 # scout_report_viewer.config.Settings.action_catalog_path's default).
-# Disabling one just omits it from the rendered catalog - see
-# templates/actions-configmap.yaml.
+# explainSearch/downloadCsv are objects, not plain booleans, specifically
+# so a site can override just `enabled` or `requiredGroup` on one of them
+# (Helm deep-merges map values) without needing to fully restate the
+# other, or anything in `custom` - unlike `custom`, which is a list and
+# therefore replaced wholesale by any site override, not merged.
 actions:
-  explainSearch: true
-  downloadCsv: true
+  explainSearch:
+    enabled: true
+    # Keycloak group required to see this button, checked against the
+    # caller's X-Auth-Request-Groups header (#739). Empty = visible to
+    # every authenticated user.
+    requiredGroup: ''
+  downloadCsv:
+    enabled: true
+    requiredGroup: ''
   # Site-admin-authorable buttons - no report-viewer code change or image
   # rebuild needed, just a values change + helm upgrade. Two shapes:
   #
