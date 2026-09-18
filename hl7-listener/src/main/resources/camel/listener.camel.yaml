@@ -1,41 +1,50 @@
 # MLLP listener route: accept HL7 v2 over MLLP, parse, key by message control id, and
 # publish to Kafka. Config values are Camel property placeholders resolved at runtime from
 # environment variables set on the Deployment (see the hl7-listener Ansible role).
-
-# Archive frames HAPI can't parse instead of dropping them. onException has to precede the
-# route or the context won't start.
 #
-# Only HL7Exception: a Kafka failure must still fail the exchange so MLLP NAKs and the sender
-# queues (ADR 0028).
-#
-# Parsing needs MSH-12, acknowledgement needs 10 MSH fields. Under 10 the frame is archived
-# here and the exchange then fails because Camel can't build a response, so the sender sees
-# nothing and may retransmit. Predates this handler: a NAK needs the same header an ACK does.
-- onException:
-    exception:
-      - ca.uhn.hl7v2.HL7Exception
-    handled:
-      constant: 'true'
-    steps:
-      - log:
-          message: 'Unparseable HL7 frame from ${header.CamelMllpRemoteAddress}, archiving raw: ${exception.message}'
-          loggingLevel: WARN
-      # Body is still what MLLP delivered; unmarshal throws before replacing it. No
-      # kafka.KEY, so the archive entry is named unknown-<exchangeId>.hl7.
-      - to:
-          uri: 'kafka:{{kafka.hl7.topic}}?brokers={{kafka.brokers}}'
-      # Handled exchanges aren't counted as failed, so count these separately.
-      - to:
-          uri: 'micrometer:counter:hl7.dead.letter'
-
+# Canonical YAML DSL (camel validate normalize); Camel 4.22 warns on the compact form.
 - route:
     id: hl7Listener
     from:
-      uri: 'mllp://0.0.0.0:{{hl7.listener.port}}'
+      uri: mllp
+      parameters:
+        hostname: 0.0.0.0
+        port: '{{hl7.listener.port}}'
       steps:
+        # Route-scoped handler: archive frames HAPI can't parse instead of dropping them.
+        #
+        # Only HL7Exception: a Kafka failure must still fail the exchange so MLLP NAKs and the
+        # sender queues (ADR 0028).
+        #
+        # Parsing needs MSH-12, acknowledgement needs 10 MSH fields. Under 10 the frame is
+        # archived here and the exchange then fails because Camel can't build a response, so the
+        # sender sees nothing and may retransmit. Predates this handler: a NAK needs the same
+        # header an ACK does.
+        - onException:
+            exception:
+              - ca.uhn.hl7v2.HL7Exception
+            handled:
+              constant:
+                expression: 'true'
+            steps:
+              - log:
+                  message: 'Unparseable HL7 frame from ${header.CamelMllpRemoteAddress}, archiving raw: ${exception.message}'
+                  loggingLevel: WARN
+              # Body is still what MLLP delivered; unmarshal throws before replacing it. No key
+              # header is set, so the archive entry is named unknown-<exchangeId>.hl7.
+              - to:
+                  uri: kafka
+                  parameters:
+                    topic: '{{kafka.hl7.topic}}'
+                    brokers: '{{kafka.brokers}}'
+              # Handled exchanges aren't counted as failed, so count these separately.
+              - to:
+                  uri: micrometer
+                  parameters:
+                    metricsType: counter
+                    metricsName: hl7.dead.letter
         - log:
             message: 'Received HL7 message from ${header.CamelMllpRemoteAddress}'
-            loggingLevel: INFO
         # Validation off so bronze captures a message even when it violates HAPI's
         # version-conformance rules; with it on, those were answered MSA|AE and lost.
         - unmarshal:
@@ -43,13 +52,17 @@
               validate: false
         - log:
             message: 'Parsed HL7 message: controlId=${header.CamelHL7MessageControl}, type=${header.CamelHL7TriggerEvent}, version=${header.CamelHL7VersionId}'
-            loggingLevel: INFO
+        # CamelKafkaKey is KafkaConstants.KEY (was kafka.KEY before 4.18.3), so a Camel bump
+        # can invalidate this literal. Hl7BatchZipper warns if the key stops arriving.
         - setHeader:
-            name: kafka.KEY
+            name: CamelKafkaKey
             expression:
-              header: CamelHL7MessageControl
+              header:
+                expression: CamelHL7MessageControl
         - to:
-            uri: 'kafka:{{kafka.hl7.topic}}?brokers={{kafka.brokers}}'
+            uri: kafka
+            parameters:
+              topic: '{{kafka.hl7.topic}}'
+              brokers: '{{kafka.brokers}}'
         - log:
-            message: 'Sent to Kafka: topic={{kafka.hl7.topic}}, key=${header.kafka.KEY}'
-            loggingLevel: INFO
+            message: 'Sent to Kafka: topic={{kafka.hl7.topic}}, key=${header.CamelHL7MessageControl}'

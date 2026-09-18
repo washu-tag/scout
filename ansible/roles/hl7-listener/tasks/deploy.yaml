@@ -29,6 +29,16 @@
   vars:
     ns: '{{ strimzi_operator_namespace }}'
 
+# Applied before the operator so a new release never runs against an older schema. The
+# CRD changes are additive, so the running operator is unaffected until it is upgraded below.
+- name: Apply Strimzi CRDs
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
+  kubernetes.core.k8s:
+    state: present
+    src: '{{ strimzi_crds_url }}'
+
 # Deploy Strimzi Kafka operator to scout-operators namespace
 # Operator watches scout-extractor namespace where Kafka resources are deployed
 - name: Deploy Strimzi Kafka operator

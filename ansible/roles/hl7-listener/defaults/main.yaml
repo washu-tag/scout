@@ -6,6 +6,10 @@
 hl7_listener_namespace: '{{ scout_extractor_namespace }}'
 strimzi_operator_namespace: '{{ scout_operators_namespace }}'
 
+# Helm keeps CRDs in the chart's crds/ dir, which it only installs and never upgrades,
+# so the operator's CRDs are applied separately from the release bundle.
+strimzi_crds_url: 'https://github.com/strimzi/strimzi-kafka-operator/releases/download/{{ strimzi_operator_version }}/strimzi-crds-{{ strimzi_operator_version }}.yaml'
+
 # Kafka configuration
 kafka_cluster_name: kafka
 kafka_replicas: 1
@@ -54,13 +58,19 @@ hl7_listener_image_tag: latest
 hl7_batcher_name: hl7-batcher
 hl7_batcher_enabled: true
 
-# Batching (Camel Kafka batching consumer): a batch closes at max_poll_records OR after
-# poll_timeout_ms of inactivity, then it is zipped and uploaded to S3 in one O(n) pass. Sized
+# Batching (Camel Kafka batching consumer): a batch closes at max_poll_records, after
+# poll_timeout_ms of inactivity, or at batching_interval_ms, whichever comes first; it is then
+# zipped and uploaded to S3 in one O(n) pass. Sized
 # for the production feed (~200K messages/day, bursty): size dominates at volume (~1000-message
 # zips), the timeout flushes partial batches during lulls. poll_timeout_ms doubles as the Kafka
 # poll timeout, so keep it well under max.poll.interval.ms (5 min).
 hl7_batcher_max_poll_records: 1000
 hl7_batcher_poll_timeout_ms: 30000
+# Ceiling on how long a batch stays open. Without it a slow but unbroken feed never idles, so
+# nothing flushes until the record cap and a batch can stay open for hours. Set well inside the
+# 30m window the batcher-stalled alert measures, while preempting the record cap as rarely as
+# possible - on the production feed the cap still wins for most of the day.
+hl7_batcher_batching_interval_ms: 1200000
 
 # Batcher resource configuration
 hl7_batcher_cpu_request: 100m
@@ -87,7 +97,9 @@ hl7_test_sender_name: hl7-test-sender
 # Flip to true in inventory only for an isolated smoke test.
 hl7_test_sender_enabled: false
 hl7_test_sender_period: 5000
-hl7_test_sender_cpu_request: 50m
-hl7_test_sender_cpu_limit: 200m
-hl7_test_sender_memory_request: 128Mi
-hl7_test_sender_memory_limit: 256Mi
+# Same size as the listener and batcher: all three run the same Spring Boot image, and
+# startup is CPU-bound - below 500m it cannot clear the 150s startup probe.
+hl7_test_sender_cpu_request: 100m
+hl7_test_sender_cpu_limit: 500m
+hl7_test_sender_memory_request: 256Mi
+hl7_test_sender_memory_limit: 512Mi

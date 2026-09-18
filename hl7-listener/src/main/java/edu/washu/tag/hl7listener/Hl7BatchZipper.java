@@ -50,11 +50,16 @@ public class Hl7BatchZipper implements Processor {
         Map<Integer, KafkaManualCommit> commits = new HashMap<>();
 
         int written = 0;
+        int keyless = 0;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(buffer)) {
             for (Exchange child : batch) {
                 Message message = child.getMessage();
-                String key = message.getHeader("kafka.KEY", "unknown", String.class);
+                String key = message.getHeader(KafkaConstants.KEY, String.class);
+                if (key == null) {
+                    key = "unknown";
+                    keyless++;
+                }
                 byte[] body = message.getBody(byte[].class);
                 if (body != null && body.length > 0) {
                     zip.putNextEntry(new ZipEntry(key + "-" + child.getExchangeId() + ".hl7"));
@@ -78,6 +83,12 @@ public class Hl7BatchZipper implements Processor {
                     commits.put(partition, commit);
                 }
             }
+        }
+        if (keyless > 0) {
+            // Camel renamed this header once already (kafka.KEY -> CamelKafkaKey at 4.18.3).
+            // If it vanishes wholesale, the route is setting a name this Camel no longer reads.
+            LOG.warn("{} of {} records had no {} header; entries named unknown-<exchangeId>.hl7",
+                    keyless, batch.size(), KafkaConstants.KEY);
         }
         exchange.getIn().setBody(buffer.toByteArray());
         exchange.setProperty(BATCH_COMMITS, new ArrayList<>(commits.values()));

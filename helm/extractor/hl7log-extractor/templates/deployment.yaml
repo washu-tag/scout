@@ -63,7 +63,17 @@ spec:
               subPath: application.yaml
           {{- with .Values.env }}
           env:
-            {{- toYaml . | nindent 12 }}
+            {{- /* Quote value so a Flux-substituted boolean-ish cluster-var renders as a
+                   string (K8s env is string-only; kustomize drops the source quotes). */ -}}
+            {{- range . }}
+            - name: {{ .name }}
+              {{- if hasKey . "valueFrom" }}
+              valueFrom:
+                {{- toYaml .valueFrom | nindent 16 }}
+              {{- else }}
+              value: {{ .value | quote }}
+              {{- end }}
+            {{- end }}
           {{- end }}
           {{- with .Values.envFrom }}
           envFrom:

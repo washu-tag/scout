@@ -28,14 +28,14 @@ def checkstyleVersion = "13.4.2"
 // CVE-2026-54291 (HIGH, SCRAM channel-binding downgrade, fixed 42.7.12).
 ext['postgresql.version'] = '42.7.13'
 
-// TODO: Remove once Spring Boot manages netty >= 4.2.16.Final.
+// TODO: Remove once Spring Boot manages netty >= 4.2.17.Final.
 // Overrides the Spring Boot BOM's pinned 4.2.12.Final to address a running
 // series of netty HIGH CVEs: the 4.2.13 batch (CVE-2026-42577 through -42587),
 // the 4.2.15 batch (CVE-2026-44249, -44892, -44894, -45416, -45674, -47691),
-// and the 4.2.16 batch (CVE-2026-55831, -55833, -56745, -56816, -59901) across
-// netty-handler, netty-codec-http, -http3, -compression, -classes-quic, and
-// -resolver-dns.
-ext['netty.version'] = '4.2.16.Final'
+// the 4.2.16 batch (CVE-2026-55831, -55833, -56745, -56816, -59901), and
+// CVE-2026-75595 (CRITICAL, netty-handler) across netty-handler, netty-codec-http,
+// -http3, -compression, -classes-quic, and -resolver-dns.
+ext['netty.version'] = '4.2.17.Final'
 
 // TODO: Remove once Spring Boot manages jackson-databind >= 2.21.4 / 3.1.4.
 // Overrides the Spring Boot BOM's pinned Jackson lines to address

@@ -36,6 +36,18 @@ updates:
     open-pull-requests-limit: 0
 
   - package-ecosystem: 'gradle'
+    directory: '/hl7-listener'
+    schedule:
+      interval: 'weekly'
+    # Conventional-Commit titles (chore(deps): ...) so bot PRs pass PR Title Lint.
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: 'gradle'
     directory: '/keycloak/event-listener'
     schedule:
       interval: 'weekly'
