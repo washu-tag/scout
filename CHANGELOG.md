@@ -1,5 +1,30 @@
 # Changelog
 
+## [5.0.0](https://github.com/washu-tag/scout/compare/v4.3.0...v5.0.0) (2026-09-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **keycloak:** Swap realm source from ansible to chart + do not render client secrets into template ([#732](https://github.com/washu-tag/scout/issues/732))
+
+### Features
+
+* **deploy:** Postgres-only data tier (RDS in aws) + Temporal on Postgres ([#719](https://github.com/washu-tag/scout/issues/719)) ([3f9fddf](https://github.com/washu-tag/scout/commit/3f9fddf7810cb8b1b58798892ca96680a310ea4a))
+* **keycloak:** Swap realm source from ansible to chart + do not render client secrets into template ([#732](https://github.com/washu-tag/scout/issues/732)) ([864e091](https://github.com/washu-tag/scout/commit/864e0915a7424c3cb069ee55ca312ba11905987f))
+
+
+### Bug Fixes
+
+* **chat:** fix dropped tool calls and untyped charts, and move legend wiring server-side ([#736](https://github.com/washu-tag/scout/issues/736)) ([63161d2](https://github.com/washu-tag/scout/commit/63161d2c7f4cd03468112d3f200f63c6422ee1a9))
+* **ci:** scan every image on the release PR ([#726](https://github.com/washu-tag/scout/issues/726)) ([fb2f3f7](https://github.com/washu-tag/scout/commit/fb2f3f76f620caf3fe3a39f36e753114dd84b11e))
+* **ci:** skip verify-cosign-pubkey on Dependabot PRs ([#728](https://github.com/washu-tag/scout/issues/728)) ([93c6720](https://github.com/washu-tag/scout/commit/93c6720f1ba763b241a04e441686159c5feb55a6))
+* **hl7-listener:** Kafka record keys and unbounded batch cadence, on Spring Boot 4 / Camel 4.22 ([#742](https://github.com/washu-tag/scout/issues/742)) ([0844b56](https://github.com/washu-tag/scout/commit/0844b567add3c1c64a319bc79ea4fc72574b7575))
+* **keycloak:** request SSE-S3 when publishing the OPA bundle to AWS S3 ([#747](https://github.com/washu-tag/scout/issues/747)) ([1c3d92a](https://github.com/washu-tag/scout/commit/1c3d92a1bd3b575a6cf0011fad500010ee20a7e5))
+* **orthanc:** omit spec.postgresql when no cluster parameters are set ([#738](https://github.com/washu-tag/scout/issues/738)) ([1e4caf7](https://github.com/washu-tag/scout/commit/1e4caf7cf85cab5631240a6f390edcaeb8359b37))
+* remediate fixable Trivy CVEs across extractor, scout-notebook, and report-viewer images ([10c0bf6](https://github.com/washu-tag/scout/commit/10c0bf6f9056867a129f0ca71235de9f95967f41))
+* remediate fixable Trivy CVEs across five images ([#744](https://github.com/washu-tag/scout/issues/744)) ([10c0bf6](https://github.com/washu-tag/scout/commit/10c0bf6f9056867a129f0ca71235de9f95967f41))
+* two aws-mode deploy blockers (chart env quoting + OPA bundle IRSA) ([#741](https://github.com/washu-tag/scout/issues/741)) ([0333369](https://github.com/washu-tag/scout/commit/0333369be83d32ca0b9dc8ecc840a286f0a02600))
+
 ## [4.3.0](https://github.com/washu-tag/scout/compare/v4.2.0...v4.3.0) (2026-09-08)
 
 
