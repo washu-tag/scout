@@ -561,18 +561,14 @@ class TestDriftIsAnAnomaly:
         assert kc.edges("scout-user") == {"hello-user"}
         assert any("composites" in r.message for r in caplog.records)
 
-    def test_a_deletion_is_logged_at_error(self, reconciler, kc, k8s, caplog):
+    def test_a_deletion_waits_out_the_grace_period(self, reconciler, kc, k8s):
         reconciler.reconcile_once()
         k8s.remove_fragment()
         snapshot = reconciler.take_snapshot()
         # Two calls: the first starts the clock, the second finds it elapsed.
         reconciler.collect(snapshot, now=1000.0)
-        with caplog.at_level(logging.ERROR):
-            reconciler.collect(snapshot, now=1000.0 + 301)
-        assert any(
-            r.levelno >= logging.ERROR and "deleting client" in r.getMessage()
-            for r in caplog.records
-        )
+        assert kc.find_client("hello") is not None
+        reconciler.collect(snapshot, now=1000.0 + 301)
         assert kc.find_client("hello") is None
 
 
