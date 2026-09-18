@@ -619,8 +619,7 @@ class Reconciler:
 
     def _delete(self, client: dict) -> None:
         client_id = client["clientId"]
-        # At error: this is the one irreversible thing the service does.
-        log.error(
+        log.warning(
             "deleting client %s (from %s): its fragment has been absent for "
             "longer than the grace period",
             client_id,
@@ -732,6 +731,15 @@ class Reconciler:
                 continue
             self._reported[key] = current
             good = outcome.status == APPLIED
+            # Under the same change-only gate as the Event, so a resync that
+            # found nothing new stays silent.
+            (log.info if good else log.warning)(
+                "%s: %s is %s%s",
+                outcome.source,
+                outcome.subject,
+                outcome.status,
+                f" -- {outcome.detail}" if outcome.detail else "",
+            )
             self.k8s.emit_event(
                 involved=involved,
                 reason={
