@@ -386,8 +386,7 @@ class Tools:
                 done=True,
             )
             return self._error_text(exc, "Error reading chart")
-        n = len(plot.get("rows") or [])
-        await self._emit(__event_emitter__, f"Chart data ready ({n} rows)", done=True)
+        await self._emit(__event_emitter__, "Chart data ready", done=True)
         return self._render_chart_data(plot)
 
     async def scout_query_sql(
@@ -430,8 +429,7 @@ class Tools:
                 __event_emitter__, self._status_error(exc, "Query failed"), done=True
             )
             return self._error_text(exc, "Error running query")
-        n = len(agg.get("rows", []))
-        await self._emit(__event_emitter__, f"Query complete ({n} rows)", done=True)
+        await self._emit(__event_emitter__, "Query complete", done=True)
         return self._format_aggregate(agg)
 
     async def _fetch_owui_file(self, file_id: str) -> tuple[bytes, str] | str:
@@ -587,8 +585,7 @@ class Tools:
                 __event_emitter__, self._status_error(exc, "Query failed"), done=True
             )
             return self._error_text(exc, "Error running query")
-        n = len(agg.get("rows", []))
-        await self._emit(__event_emitter__, f"Query complete ({n} rows)", done=True)
+        await self._emit(__event_emitter__, "Query complete", done=True)
         return self._format_aggregate(agg)
 
     async def scout_get_reports(
