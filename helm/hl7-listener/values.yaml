@@ -57,6 +57,7 @@ batcher:
   groupId: hl7-batcher
   maxPollRecords: 1000
   pollTimeoutMs: 30000
+  batchingIntervalMs: 1200000
   s3:
     bucket: hl7-raw
     region: us-east-1
