@@ -19,6 +19,7 @@ import logging
 import threading
 import time
 import contextlib
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import date, datetime, time as _time
 from decimal import Decimal
@@ -38,6 +39,11 @@ T = TypeVar("T")
 
 class ClientDisconnected(Exception):
     """The HTTP caller went away while its query was still running."""
+
+
+# Separate from asyncio's default pool, which the scans themselves occupy: a
+# cancel queued behind them would wait on the query it is meant to end.
+_CANCEL_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="trino-cancel")
 
 
 class QueryHandle:
@@ -305,8 +311,8 @@ async def cancel_on_disconnect(
     if task in done:
         return task.result()
     try:
-        # Issues DELETE /v1/query/{id}, so run it off the event loop.
-        await asyncio.to_thread(handle.cancel)
+        # Issues DELETE /v1/query/{id}, so keep it off the event loop.
+        await asyncio.get_running_loop().run_in_executor(_CANCEL_POOL, handle.cancel)
     except Exception:
         log.debug("trino cancel failed (ignored)", exc_info=True)
     with contextlib.suppress(Exception):
