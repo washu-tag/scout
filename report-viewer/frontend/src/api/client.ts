@@ -95,6 +95,20 @@ export function getSearch(searchId: string): Promise<SearchMeta> {
   return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
 }
 
+// Issue #628 PoC.
+export interface ExportToSupersetResponse {
+  dataset_id: number;
+  explore_url: string;
+  dashboard_url: string | null;
+}
+
+export function exportSearchToSuperset(searchId: string): Promise<ExportToSupersetResponse> {
+  return api<ExportToSupersetResponse>(
+    `/api/searches/${encodeURIComponent(searchId)}/export-to-superset`,
+    { method: 'POST' },
+  );
+}
+
 export interface FilterState {
   patient_age?: { min?: string; max?: string };
   message_dt?: { min?: string; max?: string };

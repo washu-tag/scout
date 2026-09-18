@@ -17,6 +17,7 @@ import {
 import {
   activeFilterCount,
   downloadCsv,
+  exportSearchToSuperset,
   filterRows,
   friendlyError,
   getSearch,
@@ -83,6 +84,11 @@ export default function SearchDetailPage() {
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const colPickerRef = useRef<HTMLDivElement>(null);
+  // Issue #628 PoC.
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportedLink, setExportedLink] = useState<string | null>(null);
+  const [copyFailed, setCopyFailed] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
@@ -622,6 +628,57 @@ export default function SearchDetailPage() {
               </button>
               <button
                 type="button"
+                disabled={exporting}
+                onClick={async () => {
+                  setExporting(true);
+                  setExportError(null);
+                  setExportedLink(null);
+                  try {
+                    const result = await exportSearchToSuperset(searchId);
+                    const url = result.dashboard_url ?? result.explore_url;
+                    // Always attempt the real navigation first. Superset's
+                    // ingress now sends Cross-Origin-Opener-Policy:
+                    // same-origin-allow-popups (see
+                    // ansible/roles/traefik/tasks/main.yaml's
+                    // popup-friendly-security-headers), so this works even
+                    // from report-viewer's OWUI-embedded iframe. A blocked
+                    // popup doesn't throw a catchable error though - the
+                    // browser just silently drops it - so there's no
+                    // reliable way to detect failure and decide whether to
+                    // fall back. Always also copy the link and show it, as
+                    // a visible "in case that didn't open" affordance
+                    // (relevant for any future export target that doesn't
+                    // send this header).
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      setCopyFailed(false);
+                    } catch {
+                      // Sandboxed iframes often lack allow-clipboard-write.
+                      // Still show the link below, just don't claim it was
+                      // copied when it wasn't.
+                      setCopyFailed(true);
+                    }
+                    setExportedLink(url);
+                  } catch (err) {
+                    setExportError(friendlyError(err, 'exporting this cohort'));
+                  } finally {
+                    setExporting(false);
+                  }
+                }}
+                style={paginationBtn}
+                title="PoC: create a private Superset dashboard scoped to this cohort"
+              >
+                {exporting ? 'Exporting…' : 'Export to Superset'}
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   const next = !iframeExpanded;
                   setIframeExpanded(next);
@@ -643,6 +700,18 @@ export default function SearchDetailPage() {
                 {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
               </button>
             </div>
+            {exportError && (
+              <p style={{ color: 'var(--rv-danger)', margin: '0.25rem 0 0' }}>{exportError}</p>
+            )}
+            {exportedLink && (
+              <p style={{ margin: '0.25rem 0 0' }}>
+                A new tab should have opened.{' '}
+                {copyFailed
+                  ? "Couldn't copy the link automatically, though"
+                  : "Its link is also copied to your clipboard"}
+                , in case it didn't: <code>{exportedLink}</code>
+              </p>
+            )}
           </div>
         )
       )}
