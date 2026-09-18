@@ -58,8 +58,6 @@ class MinioBundleUploaderTest {
 
     @Test
     void aws_upload_requests_sse_s3() {
-        // An SCP can deny s3:PutObject unless the request carries
-        // x-amz-server-side-encryption; the bucket default does not satisfy it.
         new MinioBundleUploader(s3, "bucket", "scout/bundle.tar.gz", true)
                 .upload(new byte[] {1, 2, 3});
 
@@ -70,8 +68,6 @@ class MinioBundleUploaderTest {
 
     @Test
     void minio_upload_omits_sse_header() {
-        // MinIO SSE-S3 depends on tenant configuration, so the header is not
-        // sent there; this preserves the pre-existing on-prem behaviour.
         new MinioBundleUploader(s3, "bucket", "scout/bundle.tar.gz", false)
                 .upload(new byte[] {1, 2, 3});
 

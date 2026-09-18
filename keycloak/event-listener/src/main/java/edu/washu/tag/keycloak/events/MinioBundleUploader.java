@@ -42,12 +42,9 @@ final class MinioBundleUploader implements AutoCloseable {
     private final String bucket;
     private final String objectKey;
     /**
-     * Whether to request SSE-S3 on upload. Only for real AWS S3: some
-     * organizations attach an SCP denying s3:PutObject unless the request
-     * carries x-amz-server-side-encryption, and a bucket's default encryption
-     * does NOT satisfy that -- the policy inspects the request header, not the
-     * resulting object. MinIO deployments are left alone, since SSE-S3 there
-     * depends on how the tenant was configured.
+     * AWS only. An SCP can deny s3:PutObject without an
+     * x-amz-server-side-encryption header, and a bucket default does not satisfy
+     * it. Not set for MinIO, where SSE-S3 depends on tenant config.
      */
     private final boolean requestSse;
 
@@ -79,11 +76,7 @@ final class MinioBundleUploader implements AutoCloseable {
         this.requestSse = isAwsS3(endpoint);
     }
 
-    /**
-     * True when the client talks to real AWS S3: either no endpoint override
-     * (SDK default) or an explicit *.amazonaws.com endpoint, which aws-mode
-     * deployments set because an empty value is not always accepted upstream.
-     */
+    /** Real AWS S3: no endpoint override, or an explicit *.amazonaws.com one. */
     private static boolean isAwsS3(URI endpoint) {
         if (endpoint == null) {
             return true;
@@ -99,8 +92,7 @@ final class MinioBundleUploader implements AutoCloseable {
         this(s3, bucket, objectKey, false);
     }
 
-    // As above, with explicit control over the SSE request header so the
-    // AWS-vs-MinIO behaviour can be asserted.
+    // As above, with the SSE header forced on or off so both paths are testable.
     MinioBundleUploader(S3Client s3, String bucket, String objectKey, boolean requestSse) {
         this.s3 = s3;
         this.bucket = bucket;
