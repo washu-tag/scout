@@ -295,3 +295,38 @@ def test_progress_is_scoped_to_one_attempt(client, auth_headers, fake_trino):
     finally:
         progress.finish(old_key)
         progress.finish(new_key)
+
+
+def test_a_cancel_while_the_query_starts_is_reapplied(monkeypatch):
+    """The driver ignores cancel() until the query has an id, so a disconnect
+    landing inside execute() must be re-applied once it returns."""
+    from scout_report_viewer import trino_client
+
+    handle = trino_client.QueryHandle()
+    started = False
+    cancels, fetched = [], []
+
+    class FakeCursor:
+        def __init__(self, **_):
+            self.description = [("n",)]
+
+        def execute(self, sql, params=None):
+            nonlocal started
+            handle.cancel()
+            started = True
+
+        def fetchall(self):
+            fetched.append(True)
+            return [[1]]
+
+        def cancel(self):
+            cancels.append(started)
+
+    _fake_trino_conn(monkeypatch, FakeCursor)
+
+    with pytest.raises(trino_client.ClientDisconnected):
+        asyncio.run(trino_client.execute("SELECT 1", user="alice", handle=handle))
+
+    # Cancelled once the query had an id, and never fetched.
+    assert True in cancels
+    assert fetched == []

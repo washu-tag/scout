@@ -60,6 +60,11 @@ class QueryHandle:
             self._cancel = cancel
             return True
 
+    @property
+    def cancelled(self) -> bool:
+        with self._lock:
+            return self._cancelled
+
     def disarm(self) -> None:
         with self._lock:
             self._cancel = None
@@ -205,6 +210,11 @@ def _execute_sync(
                 cur.execute(sql, params)
             else:
                 cur.execute(sql)
+            # The driver ignores cancel() until the query has an id, so a
+            # cancel from the window above has to be re-applied here.
+            if handle is not None and handle.cancelled:
+                cur.cancel()
+                raise ClientDisconnected
             rows = cur.fetchall()
             columns = [d[0] for d in cur.description] if cur.description else []
             return columns, rows
