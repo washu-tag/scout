@@ -20,6 +20,12 @@ from fastapi import FastAPI, Header, HTTPException, Request
 
 from .config import settings
 
+# No handler exists until this runs - unlike report-viewer's
+# logging_setup.configure(), this PoC has no structured-JSON logging
+# infrastructure, so a plain getLogger(__name__) call goes nowhere
+# (Python's root logger has no handler by default; uvicorn only
+# configures its own "uvicorn"/"uvicorn.access" loggers, not this one).
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger(__name__)
 
 app = FastAPI()
