@@ -29,6 +29,8 @@ export function useLoadingProgress(
       const startedAt = Date.now();
       setDone(false);
       setProgress(null);
+      setSeconds(0);
+      wasShown.current = false;
       const showTimer = setTimeout(() => {
         wasShown.current = true;
         setShow(true);
