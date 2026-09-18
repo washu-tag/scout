@@ -290,7 +290,7 @@ export default function SearchDetailPage() {
                   style={compactBtn}
                   onClick={() => {
                     setCancelled(true);
-                    queryClient.cancelQueries({ queryKey: ROWS_KEY });
+                    queryClient.cancelQueries({ queryKey: ROWS_KEY, exact: true });
                   }}
                 >
                   Cancel

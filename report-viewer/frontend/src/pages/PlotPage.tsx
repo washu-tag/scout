@@ -253,6 +253,7 @@ export default function PlotPage() {
     () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false,
   );
 
+  // A prefix of the meta key, so filters on it need `exact`.
   const PLOT_KEY = ['plot', plotId];
   // Set per attempt so a retry polls its own progress, not the attempt it replaced.
   const progressId = useRef('');
@@ -430,7 +431,7 @@ export default function PlotPage() {
                     style={compactBtn}
                     onClick={() => {
                       setCancelled(true);
-                      queryClient.cancelQueries({ queryKey: PLOT_KEY });
+                      queryClient.cancelQueries({ queryKey: PLOT_KEY, exact: true });
                     }}
                   >
                     Cancel
