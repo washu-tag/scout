@@ -41,6 +41,7 @@ final class MinioBundleUploader implements AutoCloseable {
     private final S3Client s3;
     private final String bucket;
     private final String objectKey;
+
     /**
      * AWS only. An SCP can deny s3:PutObject without an
      * x-amz-server-side-encryption header, and a bucket default does not satisfy
@@ -76,15 +77,6 @@ final class MinioBundleUploader implements AutoCloseable {
         this.requestSse = isAwsS3(endpoint);
     }
 
-    /** Real AWS S3: no endpoint override, or an explicit *.amazonaws.com one. */
-    private static boolean isAwsS3(URI endpoint) {
-        if (endpoint == null) {
-            return true;
-        }
-        String host = endpoint.getHost();
-        return host != null && host.endsWith(".amazonaws.com");
-    }
-
     // Package-private test seam: inject a (mock) S3Client so the
     // upload() success/failure -> boolean contract can be exercised without a
     // live S3 endpoint. Mirrors the factory's enableForTest seam.
@@ -98,6 +90,15 @@ final class MinioBundleUploader implements AutoCloseable {
         this.bucket = bucket;
         this.objectKey = objectKey;
         this.requestSse = requestSse;
+    }
+
+    /** Real AWS S3: no endpoint override, or an explicit *.amazonaws.com one. */
+    private static boolean isAwsS3(URI endpoint) {
+        if (endpoint == null) {
+            return true;
+        }
+        String host = endpoint.getHost();
+        return host != null && host.endsWith(".amazonaws.com");
     }
 
     /**
