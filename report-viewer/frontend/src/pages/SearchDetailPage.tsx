@@ -570,11 +570,11 @@ export default function SearchDetailPage() {
                 whiteSpace: 'nowrap',
               }}
             >
-              {meta.isLoading
-                ? 'Loading…'
-                : meta.error
-                  ? 'Failed to load metadata'
-                  : `${total.toLocaleString()} rows`}
+              {meta.error
+                ? 'Failed to load metadata'
+                : rowsQ.data
+                  ? `${total.toLocaleString()} rows`
+                  : ''}
             </span>
             {/* visibility (not mount) so the row doesn't reflow on fetch. */}
             <span
