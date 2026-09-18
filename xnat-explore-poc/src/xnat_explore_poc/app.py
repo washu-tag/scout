@@ -13,11 +13,14 @@ the backend actually ran, not just served a static link.
 from __future__ import annotations
 
 import hmac
+import logging
 import time
 
 from fastapi import FastAPI, Header, HTTPException, Request
 
 from .config import settings
+
+log = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -40,9 +43,22 @@ async def invoke(
         or not hmac.compare_digest(x_report_viewer_action_token, settings.invoke_token)
     ):
         raise HTTPException(status_code=401, detail="unauthorized")
-    # The request body (search_id/sql/username - see report-viewer's
-    # ActionInvokeRequest) is intentionally unused. A real "Explore in
-    # XNAT" action would use it to resolve or create the matching XNAT
-    # project/session and link straight there.
-    await request.json()
+    # The cohort itself (search_id/sql/username/reports/cohort_truncated -
+    # see report-viewer's invoke_search_action) is otherwise unused - a
+    # real "Explore in XNAT" action would use `reports` (concrete
+    # primary_report_identifier/accession_number pairs, not the raw sql)
+    # to resolve or create the matching XNAT project/session and link
+    # straight there. Logged here purely so an operator can confirm the
+    # real cohort crossed the wire end to end, not just a plausible-looking
+    # request shape.
+    body = await request.json()
+    reports = body.get("reports") or []
+    log.info(
+        "invoke: search_id=%s username=%s reports=%d truncated=%s ids=%s",
+        body.get("search_id"),
+        body.get("username"),
+        len(reports),
+        body.get("cohort_truncated"),
+        reports,
+    )
     return {"url": f"{settings.xnat_base_url}?t={int(time.time())}"}
