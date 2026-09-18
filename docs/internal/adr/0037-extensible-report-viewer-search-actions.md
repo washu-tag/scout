@@ -38,8 +38,10 @@ Two decisions, layered on top of each other.
 `ActionDescriptor` (`report-viewer/src/scout_report_viewer/actions.py`): `id`, `title`,
 `weight`, `action_type`, `url`, `required_group`, `client_handler`, `endpoint_url`,
 `invoke_token` (`Field(exclude=True)`, never round-trips to the browser). The chart
-renders today's two real buttons plus any site-admin-authored `actions.custom` entries
-into a ConfigMap mounted directly into the pod at `settings.action_catalog_path`, read
+renders today's two built-in buttons — each independently toggleable and group-gateable
+via its own `actions.explainSearch`/`actions.downloadCsv` object (`enabled`,
+`requiredGroup`) — plus any site-admin-authored `actions.custom` entries, into a
+ConfigMap mounted directly into the pod at `settings.action_catalog_path`, read
 once at process start — the same "core chips ride a chart-rendered ConfigMap" delivery
 ADR 0034 uses for the launchpad's *own* tiles, deliberately not attempting that ADR's
 cross-namespace sidecar-discovery increment here (every action today ships from
@@ -126,6 +128,11 @@ checking never had a reachable code path.
   change (`actions.custom`) plus `helm upgrade` — no report-viewer code change or image
   rebuild. `client` actions still need a source change; there is structurally no values
   field for one.
+- `explainSearch`/`downloadCsv` are objects (`enabled`, `requiredGroup`), not plain
+  booleans, deliberately kept out of `actions.custom` — Helm deep-merges map values but
+  replaces list values wholesale, so a site overriding `actions.custom` to add one
+  action would otherwise have to fully restate every built-in it wants kept, or silently
+  lose it. Toggling or gating a built-in stays a single targeted override either way.
 - `requiredGroup: <keycloak-group>` is the entire gating surface. The reverse — finer
   gating than group membership — has no path today; a future need has to invent a new
   mechanism, not extend this one.
