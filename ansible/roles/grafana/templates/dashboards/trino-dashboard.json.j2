@@ -93,12 +93,23 @@
           },
           "editorMode": "code",
           "expr": "count(count by (pod) (java_lang_Memory_HeapMemoryUsage_used{namespace=~\"$namespace\", pod=~\"trino-worker.*\"}))",
-          "legendFormat": "Active Nodes",
+          "legendFormat": "active",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max(trino_memory_ClusterMemoryPool_BlockedNodes{namespace=~\"$namespace\"})",
+          "legendFormat": "blocked",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Active Workers",
+      "title": "Workers (active / blocked)",
       "type": "stat"
     },
     {
@@ -394,10 +405,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
               }
             ]
           },
@@ -411,10 +418,10 @@
         "x": 20,
         "y": 1
       },
-      "id": 6,
+      "id": 7,
       "options": {
         "colorMode": "value",
-        "graphMode": "none",
+        "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
@@ -435,13 +442,13 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max(trino_memory_ClusterMemoryPool_BlockedNodes{namespace=~\"$namespace\"})",
-          "legendFormat": "Blocked",
+          "expr": "sum(increase(trino_execution_QueryManager_CanceledQueries_TotalCount{namespace=~\"$namespace\"}[5m]) or vector(0))",
+          "legendFormat": "Cancelled (5m)",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Blocked Nodes",
+      "title": "Cancelled (5m)",
       "type": "stat"
     },
     {
