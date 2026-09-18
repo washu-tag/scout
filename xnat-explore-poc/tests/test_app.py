@@ -42,3 +42,26 @@ def test_invoke_returns_url_with_timestamp():
     assert body["url"].startswith("https://xnat.test?t=")
     ts = body["url"].split("t=")[1]
     assert ts.isdigit()
+
+
+def test_invoke_logs_the_received_cohort(caplog):
+    reports = [
+        {"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"},
+        {"primary_report_identifier": "s3://x/2", "accession_number": None},
+    ]
+    with caplog.at_level("INFO"):
+        r = client.post(
+            "/invoke",
+            json={
+                "search_id": "s_x",
+                "username": "carol",
+                "reports": reports,
+                "cohort_truncated": False,
+            },
+            headers={"X-Report-Viewer-Action-Token": "test-token"},
+        )
+    assert r.status_code == 200
+    [record] = [rec for rec in caplog.records if "invoke:" in rec.message]
+    assert "reports=2" in record.message
+    assert "s3://x/1" in record.message
+    assert "ACC1" in record.message

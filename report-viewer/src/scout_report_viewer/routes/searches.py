@@ -534,6 +534,47 @@ async def invoke_search_action(
     ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
+    # Resolve the cohort to concrete per-report identifiers rather than
+    # handing the target the raw sql - a real App shouldn't need Trino
+    # access (or report-viewer's own OPA-authorized query path, ADR 0020)
+    # just to find out what it was invoked for. primary_report_identifier
+    # is the unique per-report key (one row per ingested HL7 message,
+    # required on every saved search); accession_number rides along as a
+    # secondary, nullable, non-unique correlation field - it can repeat
+    # across reports (a study read in parts) or be absent, so it can't
+    # stand in as the identifier. Same cap as GET /rows, for the same
+    # reason: a bound already agreed on for "the whole cohort in one
+    # response," not a new one invented for this endpoint.
+    source_sql = ds["sql"]
+    uploaded_ids = ds.get("uploaded_ids")
+    cap = settings.max_cohort_rows
+    ids_sql = (
+        f"SELECT s.primary_report_identifier, s.accession_number "
+        f"FROM ({source_sql}) s LIMIT {cap + 1}"
+    )
+    try:
+        with metrics.time_trino("invoke_cohort_ids"):
+            # safe: source_sql is persisted validated SQL; ids bind via ?
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            _cols, id_rows = await trino_client.execute(
+                ids_sql,
+                user=user.sub,
+                params=[uploaded_ids] if uploaded_ids else None,
+            )
+    except Exception as exc:
+        raise _rows_query_error(exc, "invoke cohort ids") from exc
+
+    cohort_truncated = len(id_rows) > cap
+    if cohort_truncated:
+        id_rows = id_rows[:cap]
+    reports = [
+        {
+            "primary_report_identifier": r["primary_report_identifier"],
+            "accession_number": r.get("accession_number"),
+        }
+        for r in id_rows
+    ]
+
     headers = {}
     if action.invoke_token:
         headers["X-Report-Viewer-Action-Token"] = action.invoke_token
@@ -541,7 +582,13 @@ async def invoke_search_action(
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
                 action.endpoint_url,
-                json={"search_id": search_id, "sql": ds["sql"], "username": user.sub},
+                json={
+                    "search_id": search_id,
+                    "sql": ds["sql"],
+                    "username": user.sub,
+                    "reports": reports,
+                    "cohort_truncated": cohort_truncated,
+                },
                 headers=headers,
             )
         resp.raise_for_status()

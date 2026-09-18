@@ -63,12 +63,19 @@ Three `action_type` values, matched to what the SPA can do with a click:
   currently loaded/filtered rows). Structurally not authorable via `actions.custom` — a
   handler has to exist in the frontend first.
 - **`backend-call`** — the SPA POSTs to
-  `/api/searches/{id}/actions/{action_id}/invoke`; report-viewer forwards the search's
-  context to `endpoint_url` (a genuinely separate, independently-deployed service — the
-  "Apps" tier from #595) and relays back whatever `{"url": ...}` it returns, then hands
-  that off to the same `open-url` handling. report-viewer never inspects what the target
-  service actually does — only that it returns a safe `http(s)` URL. `invoke_token`, if
-  set, is forwarded as `X-Report-Viewer-Action-Token`. `xnat-explore-poc`
+  `/api/searches/{id}/actions/{action_id}/invoke`; report-viewer resolves the search's
+  saved `sql` to concrete `{primary_report_identifier, accession_number}` pairs (one row
+  per report, same `max_cohort_rows` cap as `GET /rows`; `accession_number` rides along
+  as a nullable, non-unique correlation field, not an identifier — it can repeat across
+  reports or be absent) and forwards those, not the raw SQL, to `endpoint_url` (a
+  genuinely separate, independently-deployed service — the "Apps" tier from #595). It
+  relays back whatever `{"url": ...}` the target returns, then hands that off to the
+  same `open-url` handling. report-viewer never inspects what the target service
+  actually does with the cohort — only that it returns a safe `http(s)` URL. Resolving
+  server-side, rather than handing the target raw SQL, means the target never needs
+  Trino access or its own OPA-authorized query path (ADR 0020) to find out what it was
+  invoked for. `invoke_token`, if set, is forwarded as `X-Report-Viewer-Action-Token`.
+  `xnat-explore-poc`
   (`xnat-explore-poc/`, `helm/xnat-explore-poc/`) is the reference implementation: a
   deliberately fake FastAPI service with its own Helm chart and a NetworkPolicy
   restricting ingress to report-viewer's namespace, deployed independently of any

@@ -412,6 +412,13 @@ def test_invoke_backend_call_action_returns_url(
     bearer_headers = {"Authorization": f"Bearer {token}"}
     search_id = _create_search(client, bearer_headers, fake_trino)
 
+    fake_trino(
+        ["primary_report_identifier", "accession_number"],
+        [
+            {"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"},
+            {"primary_report_identifier": "s3://x/2", "accession_number": None},
+        ],
+    )
     r = client.post(
         f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
         headers=bearer_headers,
@@ -419,11 +426,17 @@ def test_invoke_backend_call_action_returns_url(
     assert r.status_code == 200, r.text
     assert r.json() == {"url": "https://xnat.example.org?t=123"}
 
-    # Forwarded the shared secret and search context, never the token
-    # itself back to the caller.
+    # Forwarded the shared secret and the resolved cohort - concrete
+    # per-report ids, not the raw sql alone - never the token itself back
+    # to the caller.
     call = _FakeAsyncClient.last_call
     assert call["headers"]["X-Report-Viewer-Action-Token"] == "test-invoke-token"
     assert call["json"]["search_id"] == search_id
+    assert call["json"]["reports"] == [
+        {"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"},
+        {"primary_report_identifier": "s3://x/2", "accession_number": None},
+    ]
+    assert call["json"]["cohort_truncated"] is False
 
 
 def test_invoke_unknown_action_404s(
@@ -473,6 +486,29 @@ def test_invoke_backend_call_target_error_returns_502(
     bearer_headers = {"Authorization": f"Bearer {token}"}
     search_id = _create_search(client, bearer_headers, fake_trino)
 
+    fake_trino(
+        ["primary_report_identifier", "accession_number"],
+        [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
+    )
+    r = client.post(
+        f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
+        headers=bearer_headers,
+    )
+    assert r.status_code == 502
+
+
+def test_invoke_cohort_id_query_failure_returns_502(
+    client, keypair, fake_trino, catalog_with_backend_call_action
+):
+    """The cohort-id lookup failing is fatal, same as GET /rows - a
+    backend-call action that can't resolve its own cohort shouldn't
+    silently invoke with an empty one."""
+    priv, _ = keypair
+    token = _mint(priv)
+    bearer_headers = {"Authorization": f"Bearer {token}"}
+    search_id = _create_search(client, bearer_headers, fake_trino)
+
+    fake_trino.error("some trino error")
     r = client.post(
         f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
         headers=bearer_headers,
