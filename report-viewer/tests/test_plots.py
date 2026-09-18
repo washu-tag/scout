@@ -123,8 +123,9 @@ def test_a_csv_chart_re_runs_bound_to_the_uploaded_ids(
     fake_trino(["modality", "n"], [{"modality": "MR", "n": 2}])
     assert client.get(f"/api/plots/{plot_id}", headers=auth_headers).status_code == 200
 
+    # Creation probes once, then the view re-runs it.
     create_sql, create_params = fake_trino.calls[0]
-    view_sql, view_params = fake_trino.calls[2]
+    view_sql, view_params = fake_trino.calls[1]
     # Deduped, and bound rather than interpolated.
     assert create_params == [["ACC1", "ACC2"]]
     assert view_params == [["ACC1", "ACC2"]]
@@ -248,7 +249,6 @@ def test_an_untyped_channel_inside_a_layer_is_refused(client, auth_headers, fake
 def test_a_value_only_channel_needs_no_type(client, auth_headers, fake_trino):
     """`opacity` carries a condition and a value, never a field - leave it alone."""
     fake_trino(["modality", "n"], [{"modality": "CT", "n": 1}])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "params": [
@@ -271,7 +271,6 @@ def test_a_value_only_channel_needs_no_type(client, auth_headers, fake_trino):
 def test_a_sort_by_another_field_needs_no_type(client, auth_headers, fake_trino):
     """`sort` nests a field inside a channel; only the channel itself is checked."""
     fake_trino(["modality", "n"], [{"modality": "CT", "n": 1}])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "encoding": {
@@ -296,7 +295,6 @@ def test_a_spec_that_fails_to_render_is_refused(client, auth_headers, fake_trino
 
 def test_a_field_not_in_the_query_columns_is_refused(client, auth_headers, fake_trino):
     fake_trino(["modality", "n"], [])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "encoding": {
@@ -311,7 +309,6 @@ def test_a_field_not_in_the_query_columns_is_refused(client, auth_headers, fake_
 
 def test_a_field_that_is_a_heavy_column_is_refused(client, auth_headers, fake_trino):
     fake_trino(["modality", "report_text"], [])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "encoding": {
@@ -328,7 +325,6 @@ def test_an_aggregate_transform_output_field_is_allowed(
     client, auth_headers, fake_trino
 ):
     fake_trino(["modality", "n"], [])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "transform": [{"aggregate": [{"op": "sum", "field": "n", "as": "total"}]}],

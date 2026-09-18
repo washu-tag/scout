@@ -128,15 +128,15 @@ def test_progress_is_not_visible_to_another_user(client, auth_headers, fake_trin
     from scout_report_viewer import progress
 
     dsid = _make_search(client, auth_headers, fake_trino)
-    progress.report(f"search:{dsid}:alice", {"state": "RUNNING"})
+    key = f"search:{dsid}:alice:tok1"
+    progress.report(key, {"state": "RUNNING"})
     try:
         bob = {**auth_headers, "X-Auth-Request-Preferred-Username": "bob"}
-        assert client.get(f"/api/searches/{dsid}/progress", headers=bob).json() == {}
-        assert client.get(
-            f"/api/searches/{dsid}/progress", headers=auth_headers
-        ).json() == {"state": "RUNNING"}
+        url = f"/api/searches/{dsid}/progress?progress_id=tok1"
+        assert client.get(url, headers=bob).json() == {}
+        assert client.get(url, headers=auth_headers).json() == {"state": "RUNNING"}
     finally:
-        progress.finish(f"search:{dsid}:alice")
+        progress.finish(key)
 
 
 def _fake_trino_conn(monkeypatch, cursor_cls):
@@ -181,13 +181,13 @@ def test_a_disconnected_client_cancels_the_query(monkeypatch):
             await asyncio.to_thread(started.wait, 5)
             return {"type": "http.disconnect"}
 
-        work = trino_client.execute("SELECT 1", user="alice", progress_key="k")
+        handle = trino_client.QueryHandle()
+        work = trino_client.execute("SELECT 1", user="alice", handle=handle)
         with pytest.raises(trino_client.ClientDisconnected):
-            await trino_client.cancel_on_disconnect(receive, work, "k")
+            await trino_client.cancel_on_disconnect(receive, work, handle)
 
     asyncio.run(scenario())
     assert cancelled.is_set()
-    assert trino_client._cancels == {}
 
 
 def test_a_finished_query_is_not_cancelled(monkeypatch):
@@ -216,10 +216,82 @@ def test_a_finished_query_is_not_cancelled(monkeypatch):
             await asyncio.Event().wait()
             raise AssertionError("unreachable")
 
-        work = trino_client.execute("SELECT 1", user="alice", progress_key="k")
-        return await trino_client.cancel_on_disconnect(receive, work, "k")
+        handle = trino_client.QueryHandle()
+        work = trino_client.execute("SELECT 1", user="alice", handle=handle)
+        return await trino_client.cancel_on_disconnect(receive, work, handle)
 
     columns, rows = asyncio.run(scenario())
     assert rows == [{"n": 1}]
     assert cancels == []
-    assert trino_client._cancels == {}
+
+
+def test_a_cancel_that_beats_the_cursor_skips_the_query(monkeypatch):
+    """The cursor is created on a worker thread, so a disconnect can land
+    first. Cancelling a cursor with no query id yet does nothing, so the query
+    must not be started at all."""
+    from scout_report_viewer import trino_client
+
+    executed = []
+
+    class FakeCursor:
+        def __init__(self, **_):
+            self.description = [("n",)]
+
+        def execute(self, sql, params=None):
+            executed.append(sql)
+
+        def fetchall(self):
+            return [[1]]
+
+        def cancel(self):
+            pass
+
+    _fake_trino_conn(monkeypatch, FakeCursor)
+    handle = trino_client.QueryHandle()
+    handle.cancel()
+
+    with pytest.raises(trino_client.ClientDisconnected):
+        asyncio.run(trino_client.execute("SELECT 1", user="alice", handle=handle))
+
+    assert executed == []
+
+
+def test_handles_do_not_share_cancel_state():
+    """Two requests for the same search run concurrently after Cancel then
+    Retry, so cancelling one must not touch the other."""
+    from scout_report_viewer import trino_client
+
+    first, second = [], []
+    a, b = trino_client.QueryHandle(), trino_client.QueryHandle()
+    a.arm(lambda: first.append(True))
+    b.arm(lambda: second.append(True))
+
+    a.cancel()
+
+    assert first == [True]
+    assert second == []
+
+
+def test_progress_is_scoped_to_one_attempt(client, auth_headers, fake_trino):
+    """A retry must not read the stats of the attempt it replaced."""
+    from scout_report_viewer import progress
+
+    dsid = _make_search(client, auth_headers, fake_trino)
+    old_key = f"search:{dsid}:alice:old"
+    new_key = f"search:{dsid}:alice:new"
+    progress.report(old_key, {"state": "RUNNING", "processedRows": 10})
+    progress.report(new_key, {"state": "RUNNING", "processedRows": 20})
+    try:
+        base = f"/api/searches/{dsid}/progress"
+        assert client.get(f"{base}?progress_id=new", headers=auth_headers).json() == {
+            "state": "RUNNING",
+            "processedRows": 20,
+        }
+        # A token the store has never seen reports nothing, rather than someone
+        # else's query.
+        assert client.get(f"{base}?progress_id=zzz", headers=auth_headers).json() == {}
+        assert client.get(base, headers=auth_headers).json() == {}
+        assert client.get(f"{base}?progress_id=bad!", headers=auth_headers).json() == {}
+    finally:
+        progress.finish(old_key)
+        progress.finish(new_key)

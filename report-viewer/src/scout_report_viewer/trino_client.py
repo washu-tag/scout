@@ -40,9 +40,36 @@ class ClientDisconnected(Exception):
     """The HTTP caller went away while its query was still running."""
 
 
-# Cursors of in-flight queries, keyed like the progress store.
-_cancels: dict[str, Callable[[], None]] = {}
-_cancels_lock = threading.Lock()
+class QueryHandle:
+    """Cancel hook for a single query. One per request, so concurrent queries
+    for the same search cannot clobber each other, and a cancel arriving before
+    the cursor exists still takes effect once it does."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._cancel: Callable[[], None] | None = None
+        self._cancelled = False
+
+    def arm(self, cancel: Callable[[], None]) -> bool:
+        """Called from the Trino worker thread once the cursor exists. False
+        means the caller already went away, so the query must not be started:
+        cancelling a cursor that has no query id yet is a no-op."""
+        with self._lock:
+            if self._cancelled:
+                return False
+            self._cancel = cancel
+            return True
+
+    def disarm(self) -> None:
+        with self._lock:
+            self._cancel = None
+
+    def cancel(self) -> None:
+        with self._lock:
+            self._cancelled = True
+            cancel = self._cancel
+        if cancel is not None:
+            cancel()
 
 
 _REFRESH_BEFORE_EXPIRY_FRACTION = 5
@@ -160,6 +187,7 @@ def _execute_sync(
     user: str | None,
     params: list | tuple | None,
     progress_key: str | None = None,
+    handle: QueryHandle | None = None,
 ) -> tuple[list[str], list[list[Any]]]:
     with _connect(user) as conn:
         cur = conn.cursor(
@@ -169,9 +197,8 @@ def _execute_sync(
                 else None
             )
         )
-        if progress_key:
-            with _cancels_lock:
-                _cancels[progress_key] = cur.cancel
+        if handle is not None and not handle.arm(cur.cancel):
+            raise ClientDisconnected
         try:
             # Driver requires None or non-empty sequence for params (asserts on type).
             if params:
@@ -182,9 +209,8 @@ def _execute_sync(
             columns = [d[0] for d in cur.description] if cur.description else []
             return columns, rows
         finally:
-            if progress_key:
-                with _cancels_lock:
-                    _cancels.pop(progress_key, None)
+            if handle is not None:
+                handle.disarm()
 
 
 def _normalize(value: Any) -> Any:
@@ -226,6 +252,7 @@ async def execute(
     user: str | None = None,
     params: list | tuple | None = None,
     progress_key: str | None = None,
+    handle: QueryHandle | None = None,
 ) -> tuple[list[str], list[dict[str, Any]]]:
     """Run `sql` against Trino. `params` is bound positionally (`?`).
 
@@ -239,7 +266,7 @@ async def execute(
     """
     try:
         columns, raw_rows = await asyncio.to_thread(
-            _execute_sync, sql, user, params, progress_key
+            _execute_sync, sql, user, params, progress_key, handle
         )
     finally:
         if progress_key:
@@ -254,7 +281,7 @@ async def execute(
 async def cancel_on_disconnect(
     receive: Callable[[], Awaitable[Mapping[str, Any]]],
     work: Awaitable[T],
-    progress_key: str,
+    handle: QueryHandle,
 ) -> T:
     """Stop `work` at Trino if the caller goes away. ASGI pushes
     `http.disconnect`, and the worker thread cannot be interrupted, so
@@ -267,7 +294,11 @@ async def cancel_on_disconnect(
     watcher.cancel()
     if task in done:
         return task.result()
-    await _cancel_query(progress_key)
+    try:
+        # Issues DELETE /v1/query/{id}, so run it off the event loop.
+        await asyncio.to_thread(handle.cancel)
+    except Exception:
+        log.debug("trino cancel failed (ignored)", exc_info=True)
     with contextlib.suppress(Exception):
         await task
     raise ClientDisconnected
@@ -280,18 +311,6 @@ async def _wait_for_disconnect(
         message = await receive()
         if message.get("type") == "http.disconnect":
             return
-
-
-async def _cancel_query(progress_key: str) -> None:
-    with _cancels_lock:
-        cancel = _cancels.get(progress_key)
-    if cancel is None:
-        return
-    try:
-        # Issues DELETE /v1/query/{id}, so run it off the event loop.
-        await asyncio.to_thread(cancel)
-    except Exception:
-        log.debug("trino cancel failed (ignored)", exc_info=True)
 
 
 async def stream(

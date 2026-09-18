@@ -22,6 +22,7 @@ import {
   getSearch,
   getSearchProgress,
   getSearchRows,
+  newProgressId,
   type FilterState,
 } from '../api/client';
 import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
@@ -103,9 +104,14 @@ export default function SearchDetailPage() {
 
   // One fetch of the whole cohort; sort/filter/paginate happen client-side.
   const ROWS_KEY = ['search', searchId, 'rows'];
+  // Set per attempt so a retry polls its own progress, not the attempt it replaced.
+  const progressId = useRef('');
   const rowsQ = useQuery({
     queryKey: ROWS_KEY,
-    queryFn: ({ signal }) => getSearchRows(searchId, signal),
+    queryFn: ({ signal }) => {
+      progressId.current = newProgressId();
+      return getSearchRows(searchId, progressId.current, signal);
+    },
     enabled: !!searchId,
   });
 
@@ -113,7 +119,11 @@ export default function SearchDetailPage() {
   const queryClient = useQueryClient();
   const [cancelled, setCancelled] = useState(false);
 
-  const fetchProgress = useCallback(() => getSearchProgress(searchId), [searchId]);
+  const fetchProgress = useCallback(
+    () =>
+      progressId.current ? getSearchProgress(searchId, progressId.current) : Promise.resolve({}),
+    [searchId],
+  );
   const loadingState = useLoadingProgress(!rowsQ.data && rowsQ.isLoading, fetchProgress);
   const showLoading = loadingState.show;
 

@@ -5,6 +5,7 @@ In-process and best-effort: a restart or a second replica is a cache miss.
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 from typing import Any
@@ -22,6 +23,16 @@ _FIELDS = (
     "processedBytes",
     "progressPercentage",
 )
+
+
+# Client supplied, and it becomes a dict key, so bound the charset and length.
+_TOKEN_RE = re.compile(r"[A-Za-z0-9-]{1,64}\Z")
+
+
+def valid_token(token: str | None) -> str | None:
+    """One token per query attempt, so a retry cannot overwrite the stats of
+    the attempt it replaced."""
+    return token if token and _TOKEN_RE.match(token) else None
 
 
 def report(key: str, stats: dict[str, Any]) -> None:

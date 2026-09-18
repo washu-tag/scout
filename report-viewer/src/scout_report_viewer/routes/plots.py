@@ -24,6 +24,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Query,
     Request,
     UploadFile,
     status,
@@ -152,8 +153,8 @@ def _wrap_sql(sql: str) -> str:
     return sql.rstrip().rstrip(";")
 
 
-def _progress_key(plot_id: str, user_sub: str) -> str:
-    return f"plot:{plot_id}:{user_sub}"
+def _progress_key(plot_id: str, user_sub: str, token: str) -> str:
+    return f"plot:{plot_id}:{user_sub}:{token}"
 
 
 def _clean_spec(raw_spec: Any) -> dict[str, Any]:
@@ -520,6 +521,7 @@ async def create_plot_from_file(
 async def get_plot(
     plot_id: str,
     request: Request,
+    progress_id: str | None = Query(default=None),
     user: User = Depends(get_current_user),
     store: PlotStore = Depends(get_plot_store),
 ) -> PlotDetail:
@@ -534,7 +536,9 @@ async def get_plot(
     cap = settings.max_cohort_rows
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
     all_sql = f"SELECT s.* FROM ({plot['sql']}) s LIMIT {cap + 1}"
-    progress_key = _progress_key(plot_id, user.sub)
+    token = progress.valid_token(progress_id)
+    progress_key = _progress_key(plot_id, user.sub, token) if token else None
+    handle = trino_client.QueryHandle()
     try:
         with metrics.time_trino("plot_rows"):
             # safe: plot["sql"] is persisted validated SQL; ids bind via ?
@@ -546,8 +550,9 @@ async def get_plot(
                     user=user.sub,
                     params=[uploaded_ids] if uploaded_ids else None,
                     progress_key=progress_key,
+                    handle=handle,
                 ),
-                progress_key,
+                handle,
             )
     except trino_client.ClientDisconnected:
         raise HTTPException(status_code=499, detail="client disconnected")
@@ -598,8 +603,13 @@ async def get_plot_meta(
 @router.get("/{plot_id}/progress")
 async def get_plot_progress(
     plot_id: str,
+    progress_id: str | None = Query(default=None),
     user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Live Trino stats for this user's in-flight chart query, polled by
-    the SPA's loading indicator. Empty when no query is running."""
-    return progress.get(_progress_key(plot_id, user.sub)) or {}
+    """Live Trino stats for the chart query started with the same
+    `progress_id`, polled by the SPA's loading indicator. Empty when that
+    query is not running."""
+    token = progress.valid_token(progress_id)
+    if token is None:
+        return {}
+    return progress.get(_progress_key(plot_id, user.sub, token)) or {}

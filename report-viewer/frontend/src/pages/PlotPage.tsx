@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { friendlyError, getPlot, getPlotMeta, getPlotProgress } from '../api/client';
+import { friendlyError, getPlot, getPlotMeta, getPlotProgress, newProgressId } from '../api/client';
 import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
 import { setHeight as setIframeHeight } from '../iframeHeight';
 import { buildDiscussPlotPrompt } from '../chat';
@@ -254,9 +254,14 @@ export default function PlotPage() {
   );
 
   const PLOT_KEY = ['plot', plotId];
+  // Set per attempt so a retry polls its own progress, not the attempt it replaced.
+  const progressId = useRef('');
   const plot = useQuery({
     queryKey: PLOT_KEY,
-    queryFn: ({ signal }) => getPlot(plotId, signal),
+    queryFn: ({ signal }) => {
+      progressId.current = newProgressId();
+      return getPlot(plotId, progressId.current, signal);
+    },
     enabled: !!plotId,
   });
 
@@ -271,7 +276,10 @@ export default function PlotPage() {
     enabled: !!plotId,
   });
 
-  const fetchProgress = useCallback(() => getPlotProgress(plotId), [plotId]);
+  const fetchProgress = useCallback(
+    () => (progressId.current ? getPlotProgress(plotId, progressId.current) : Promise.resolve({})),
+    [plotId],
+  );
   const loadingState = useLoadingProgress(!plot.data && plot.isLoading, fetchProgress);
   const showLoading = loadingState.show;
 
