@@ -481,7 +481,7 @@ export default function PlotPage() {
             This chart could not be drawn: {renderError}
           </p>
         )}
-        {showLoading && !plot.data && (
+        {showLoading && !plot.data && !plot.error && (
           /* `fit` autosize makes CONTINUOUS_HEIGHT the whole SVG, not the plot. */
           <div
             style={{

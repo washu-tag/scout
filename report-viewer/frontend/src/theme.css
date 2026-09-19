@@ -90,12 +90,6 @@ div.vega-embed .vega-actions {
   right: 6px;
 }
 
-@keyframes rvSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 button {
   cursor: pointer;
 }

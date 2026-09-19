@@ -502,7 +502,9 @@ export default function SearchDetailPage() {
                 )}
               </tbody>
             </table>
-            {!rowsQ.data && !cancelled && <LoadingSpinner show={showLoading} fill />}
+            {!rowsQ.data && !cancelled && !rowsQ.error && (
+              <LoadingSpinner show={showLoading} fill />
+            )}
             {!rowsQ.data && cancelled && (
               <div
                 style={{

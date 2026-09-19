@@ -178,7 +178,7 @@ export function LoadingSpinner({
           borderRadius: '50%',
           border: '3px solid var(--rv-surface-2)',
           borderTopColor: 'var(--rv-accent)',
-          animation: 'rvSpin 0.8s linear infinite',
+          animation: 'scoutSpin 0.8s linear infinite',
         }}
       />
     </div>
