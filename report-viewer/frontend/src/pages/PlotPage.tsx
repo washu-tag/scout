@@ -277,6 +277,8 @@ export default function PlotPage() {
     enabled: !!plotId,
   });
 
+  const explain = meta.data ?? plot.data;
+
   const fetchProgress = useCallback(
     () => (progressId.current ? getPlotProgress(plotId, progressId.current) : Promise.resolve({})),
     [plotId],
@@ -519,7 +521,7 @@ export default function PlotPage() {
             borderRadius: 4,
           }}
         />
-        {!renderError && (meta.data?.sql_explanation || meta.data?.sql) && (
+        {!renderError && (explain?.sql_explanation || explain?.sql) && (
           <div
             style={{
               display: 'flex',
@@ -554,10 +556,10 @@ export default function PlotPage() {
           </div>
         )}
       </div>
-      {sqlModalOpen && meta.data && (
+      {sqlModalOpen && explain && (
         <ExplainSqlModal
-          explanation={meta.data.sql_explanation}
-          sql={meta.data.sql}
+          explanation={explain.sql_explanation}
+          sql={explain.sql}
           highlightTerms={[]}
           highlightDiagnosis={[]}
           onClose={() => setSqlModalOpen(false)}
