@@ -67,13 +67,19 @@ RESULT_ROWS = Histogram(
 
 
 @contextmanager
-def time_trino(op: str) -> Iterator[None]:
+def time_trino(
+    op: str, cancelled: type[BaseException] | tuple[type[BaseException], ...] = ()
+) -> Iterator[None]:
     # Hand-rolled instead of Histogram.time() so failures don't count as ok:
     # `.time()` observes on __exit__ regardless of exception.
     start = time.monotonic()
     outcome = "ok"
     try:
         yield
+    except cancelled:
+        # A user walking away is not a failure. Empty tuple matches nothing.
+        outcome = "cancelled"
+        raise
     except Exception:
         outcome = "error"
         raise

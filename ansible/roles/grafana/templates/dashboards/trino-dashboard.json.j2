@@ -92,7 +92,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "count(count by (pod) (java_lang_Memory_HeapMemoryUsage_used{namespace=~\"$namespace\", pod=~\"trino-worker.*\"}))",
+          "expr": "count(count by (pod) (java_lang_Memory_HeapMemoryUsage_used{namespace=~\"$namespace\", pod=~\"trino(-rw)?-worker.*\"}))",
           "legendFormat": "active",
           "range": true,
           "refId": "A"
@@ -1248,7 +1248,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "count by (namespace) (count by (namespace, pod) (java_lang_Memory_HeapMemoryUsage_used{namespace=~\"$namespace\", pod=~\"trino-worker.*\"}))",
+          "expr": "count by (namespace) (count by (namespace, pod) (java_lang_Memory_HeapMemoryUsage_used{namespace=~\"$namespace\", pod=~\"trino(-rw)?-worker.*\"}))",
           "legendFormat": "{{namespace}} Active Workers",
           "range": true,
           "refId": "A"
@@ -1568,7 +1568,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"trino-worker.*\", container!=\"\"}[5m]))",
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"trino(-rw)?-worker.*\", container=~\"trino-(coordinator|worker)\"}[5m]))",
           "legendFormat": "{{pod}} used",
           "range": true,
           "refId": "A"
@@ -1579,7 +1579,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (pod) (kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"trino-worker.*\", resource=\"cpu\"})",
+          "expr": "sum by (pod) (kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"trino(-rw)?-worker.*\", container=~\"trino-(coordinator|worker)\", resource=\"cpu\"})",
           "legendFormat": "{{pod}} request",
           "range": true,
           "refId": "B"
@@ -1590,7 +1590,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (pod) (kube_pod_container_resource_limits{namespace=~\"$namespace\", pod=~\"trino-worker.*\", resource=\"cpu\"})",
+          "expr": "sum by (pod) (kube_pod_container_resource_limits{namespace=~\"$namespace\", pod=~\"trino(-rw)?-worker.*\", container=~\"trino-(coordinator|worker)\", resource=\"cpu\"})",
           "legendFormat": "{{pod}} limit",
           "range": true,
           "refId": "C"
@@ -1686,7 +1686,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(container_cpu_cfs_throttled_periods_total{namespace=~\"$namespace\", pod=~\"trino-(coordinator|worker).*\"}[5m]) / rate(container_cpu_cfs_periods_total{namespace=~\"$namespace\", pod=~\"trino-(coordinator|worker).*\"}[5m])",
+          "expr": "rate(container_cpu_cfs_throttled_periods_total{namespace=~\"$namespace\", pod=~\"trino(-rw)?-(coordinator|worker).*\", container=~\"trino-(coordinator|worker)\"}[5m]) / rate(container_cpu_cfs_periods_total{namespace=~\"$namespace\", pod=~\"trino(-rw)?-(coordinator|worker).*\", container=~\"trino-(coordinator|worker)\"}[5m])",
           "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
@@ -1781,7 +1781,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"trino-coordinator.*\", container!=\"\"}[5m]))",
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"trino(-rw)?-coordinator.*\", container=~\"trino-(coordinator|worker)\"}[5m]))",
           "legendFormat": "{{pod}} used",
           "range": true,
           "refId": "A"
@@ -1792,7 +1792,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (pod) (kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"trino-coordinator.*\", resource=\"cpu\"})",
+          "expr": "sum by (pod) (kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"trino(-rw)?-coordinator.*\", container=~\"trino-(coordinator|worker)\", resource=\"cpu\"})",
           "legendFormat": "{{pod}} request",
           "range": true,
           "refId": "B"
@@ -1803,7 +1803,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (pod) (kube_pod_container_resource_limits{namespace=~\"$namespace\", pod=~\"trino-coordinator.*\", resource=\"cpu\"})",
+          "expr": "sum by (pod) (kube_pod_container_resource_limits{namespace=~\"$namespace\", pod=~\"trino(-rw)?-coordinator.*\", container=~\"trino-(coordinator|worker)\", resource=\"cpu\"})",
           "legendFormat": "{{pod}} limit",
           "range": true,
           "refId": "C"
@@ -1899,7 +1899,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"trino-(coordinator|worker).*\", container!=\"\"}[5m])) / max by (namespace) (trino_memory_ClusterMemoryManager_TotalAvailableProcessors{namespace=~\"$namespace\"})",
+          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"trino(-rw)?-(coordinator|worker).*\", container=~\"trino-(coordinator|worker)\"}[5m])) / max by (namespace) (trino_memory_ClusterMemoryManager_TotalAvailableProcessors{namespace=~\"$namespace\"})",
           "legendFormat": "{{namespace}} CPU in use",
           "range": true,
           "refId": "A"

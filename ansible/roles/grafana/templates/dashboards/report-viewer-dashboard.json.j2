@@ -319,6 +319,13 @@
           "expr": "sum by (op) (rate(scout_report_viewer_trino_query_duration_seconds_count{result=\"error\"}[5m]))",
           "legendFormat": "{{op}} errors",
           "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
+          "expr": "sum by (op) (rate(scout_report_viewer_trino_query_duration_seconds_count{result=\"cancelled\"}[5m]))",
+          "legendFormat": "{{op}} cancelled",
+          "refId": "C"
         }
       ],
       "title": "Trino ops/s by op (error overlay)",

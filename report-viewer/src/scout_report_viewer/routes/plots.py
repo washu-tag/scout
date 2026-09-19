@@ -540,7 +540,7 @@ async def get_plot(
     progress_key = _progress_key(plot_id, user.sub, token) if token else None
     handle = trino_client.QueryHandle()
     try:
-        with metrics.time_trino("plot_rows"):
+        with metrics.time_trino("plot_rows", cancelled=trino_client.ClientDisconnected):
             # safe: plot["sql"] is persisted validated SQL; ids bind via ?
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             _cols, rows = await trino_client.cancel_on_disconnect(
