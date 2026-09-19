@@ -6,3 +6,4 @@
   roles:
     - role: keycloak
     - role: oauth2-proxy
+    - role: keycloak_fragment_reconciler

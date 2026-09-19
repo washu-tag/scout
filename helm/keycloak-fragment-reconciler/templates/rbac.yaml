@@ -1,0 +1,53 @@
+{{/*
+ConfigMaps are cluster-wide because RBAC cannot express a label selector: once
+`watchedNamespaces` is set at all, it narrows what is read, never what is
+granted. `patch` is absent on purpose -- a fragment arrives on a Flux- or
+Helm-managed object, so writing status back onto one starts a revert loop.
+
+Secrets are absent entirely: each app's chart grants access to its own
+credential, scoped by `resourceNames`.
+
+The ServiceAccount is unconditional, both because the Deployment runs as it and
+because apps bind their credential to it by name; the cluster read is not, so
+the default values install a reconciler holding no cluster permissions at all.
+*/}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "reconciler.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "reconciler.labels" . | nindent 4 }}
+{{- if .Values.watchedNamespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "reconciler.clusterName" . }}
+  labels:
+    {{- include "reconciler.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ['']
+    resources: ['configmaps']
+    verbs: ['get', 'list', 'watch']
+  # Written into whichever namespace the fragment came from, so the grant
+  # cannot be narrower.
+  - apiGroups: ['', 'events.k8s.io']
+    resources: ['events']
+    verbs: ['create', 'patch']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "reconciler.clusterName" . }}
+  labels:
+    {{- include "reconciler.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "reconciler.clusterName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "reconciler.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

@@ -1,0 +1,108 @@
+{{/*
+One replica, strategy Recreate, no leader election. Two reconcilers writing the
+same realm objects is the failure this service exists to avoid, and `Recreate`
+is what stops a rolling update from briefly running two; the in-memory orphan
+grace clock assumes one process for the same reason. An outage here is only ever
+a delay, so there is nothing worth trading that for.
+*/}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reconciler.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "reconciler.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "reconciler.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- /*
+      Scrape annotations rather than a scrape job in the Prometheus config:
+      both deploy lanes discover pods by these annotations, so one place
+      covers both, and `drift_repairs_total` is the signal that the base
+      realm's tier roles are reaping fragment grants -- which presents to
+      users as app roles that come and go, not as an outage, so nobody will
+      think to go looking for it.
+      */}}
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: {{ .Values.service.port | quote }}
+        prometheus.io/path: '/metrics'
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "reconciler.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "reconciler.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: reconciler
+          image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_KEYCLOAK_URL
+              value: {{ .Values.keycloak.url | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_REALM
+              value: {{ .Values.keycloak.realm | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_CLIENT_ID
+              value: {{ .Values.keycloak.clientId | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keycloak.existingSecret }}
+                  key: {{ .Values.keycloak.existingSecretKey }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_SERVER_HOSTNAME
+              value: {{ required "serverHostname is required: fragments' redirect URIs are validated against it" .Values.serverHostname | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_TIER_ROLES
+              value: {{ join "," .Values.tierRoles | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_WATCHED_NAMESPACES
+              value: {{ join "," .Values.watchedNamespaces | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_RESYNC_SECONDS
+              value: {{ .Values.reconcile.resyncSeconds | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_ORPHAN_GRACE_SECONDS
+              value: {{ .Values.reconcile.orphanGraceSeconds | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_DRY_RUN
+              value: {{ .Values.reconcile.dryRun | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_PORT
+              value: {{ .Values.service.port | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_LOG_LEVEL
+              value: {{ .Values.logLevel | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          {{/*
+            Liveness asks only whether the process is up; readiness asks
+            whether the tier realm roles exist. The other way round, a Keycloak
+            outage would crashloop this pod for no benefit.
+          */}}
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

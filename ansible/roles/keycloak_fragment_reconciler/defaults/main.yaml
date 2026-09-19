@@ -1,0 +1,50 @@
+---
+# Keycloak fragment reconciler (ADR 0037)
+# User-configurable settings belong in inventory.yaml
+
+# Alongside Keycloak, whose keycloak-client-secrets Secret holds its credential.
+keycloak_fragment_reconciler_namespace: '{{ keycloak_namespace }}'
+
+# Helm
+keycloak_fragment_reconciler_helm_chart_ref: '{{ scout_repo_dir }}/helm/keycloak-fragment-reconciler'
+keycloak_fragment_reconciler_helm_release_name: keycloak-fragment-reconciler
+
+# Image
+keycloak_fragment_reconciler_image_repository: ghcr.io/washu-tag/keycloak-fragment-reconciler
+keycloak_fragment_reconciler_image_tag: latest
+keycloak_fragment_reconciler_image_pull_policy: IfNotPresent
+
+# The clientId and secret key are both the token the realm var-substitutes, so
+# neither is a free choice. See helm/keycloak-config-cli/files/scout-realm.json.
+keycloak_fragment_reconciler_client_id: fragment_reconciler_svc
+keycloak_fragment_reconciler_secret_name: keycloak-client-secrets
+keycloak_fragment_reconciler_secret_key: fragment_reconciler_svc
+
+# Must match the roles the base realm declares
+keycloak_fragment_reconciler_tier_roles:
+  - scout-user
+  - scout-admin
+
+# Namespace names, or the lone value `ALL` for every namespace -- a pluggable
+# app can land in one this role does not know about. An empty list watches
+# nothing and installs no ClusterRole.
+keycloak_fragment_reconciler_watched_namespaces:
+  - ALL
+
+# How often to re-read everything and find + repair drift.
+# Set to -1 to never resync, only write changes that were observed.
+keycloak_fragment_reconciler_resync_seconds: 300
+keycloak_fragment_reconciler_orphan_grace_seconds: 300
+keycloak_fragment_reconciler_dry_run: false
+keycloak_fragment_reconciler_log_level: INFO
+
+# Serves /healthz, /readyz and /metrics. No ingress; the Prometheus scrape job
+# in roles/prometheus reaches it in-cluster.
+keycloak_fragment_reconciler_port: 8080
+
+keycloak_fragment_reconciler_resources_default:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    memory: 256Mi

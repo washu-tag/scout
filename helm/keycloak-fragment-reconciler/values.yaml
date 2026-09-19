@@ -1,0 +1,91 @@
+---
+nameOverride: ''
+fullnameOverride: ''
+
+image:
+  repository: ghcr.io/washu-tag/keycloak-fragment-reconciler
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Public contract: every app names this in a RoleBinding so the reconciler can
+# read that app's client credential. Renaming it breaks every installed
+# fragment, visible only as a rejection for an unreadable secretRef.
+serviceAccount:
+  name: scout-keycloak-fragment-reconciler
+
+keycloak:
+  # In-cluster, so plain http. Not the browser-facing URL.
+  url: http://keycloak-service:8080
+  realm: scout
+  clientId: fragment_reconciler_svc
+  # The Secret config-cli already consumes, under the key the realm
+  # var-substitutes: one value, one writer, no copy.
+  existingSecret: keycloak-client-secrets
+  existingSecretKey: fragment_reconciler_svc
+
+# The realm roles a fragment's `grants` may name. An allowlist: otherwise a
+# fragment could target `default-roles-scout` and reach every user.
+tierRoles:
+  - scout-user
+  - scout-admin
+
+# Required. A fragment's redirect URIs and app URL must sit under this host.
+serverHostname: ''
+
+# Namespaces to read fragments from, or the lone value `ALL` for every
+# namespace. Empty is the default and means none: no ClusterRole is created, so
+# the chart alone installs a reconciler that can read nothing and leaves the
+# realm untouched. Scout's deploy lanes set `ALL`. Once non-empty this is a read
+# filter rather than a permission boundary -- the ClusterRole is cluster-wide
+# either way, RBAC having no way to express a label selector. Garbage collection
+# is scoped to the same list, so narrowing it leaves the clients it stops
+# covering alone rather than reading them as deleted.
+watchedNamespaces: []
+
+reconcile:
+  # How often to re-read everything and repair what nothing reported: a
+  # rotated credential, an admin-console edit, a tier edge reaped by a realm
+  # re-apply. -1 removes the timer entirely and parks on the fragment watch, so
+  # the realm is only re-read when a fragment changes. An orphan's grace period
+  # still comes due either way; what -1 gives up is finding drift unprompted.
+  resyncSeconds: 300
+  # How long a fragment must be absent before its client is deleted. Held in
+  # memory, so a restart restarts the clock -- a floor, not a guarantee.
+  orphanGraceSeconds: 300
+  # Log every write and perform none of them.
+  dryRun: false
+
+logLevel: INFO
+
+service:
+  type: ClusterIP
+  # Serves /healthz, /readyz and /metrics. Also the port the scrape annotations
+  # on the pod advertise.
+  port: 8080
+
+# Merged over the prometheus.io scrape annotations the Deployment always sets.
+podAnnotations: {}
+
+# replicas and autoscaling are deliberately absent: two writers on the same
+# realm objects is the failure this service is designed against, so the
+# Deployment is fixed at one replica with strategy Recreate. If HA is ever
+# wanted, the answer is leader election, not replicas.
+
+resources:
+  requests: { cpu: 10m, memory: 64Mi }
+  limits: { memory: 256Mi }
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  fsGroup: 65532
+  seccompProfile: { type: RuntimeDefault }
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: ['ALL'] }
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

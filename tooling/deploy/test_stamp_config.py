@@ -31,6 +31,7 @@ EXPECTED_CHART_PLACEHOLDERS = {
     "hive-metastore",
     "scout-dashboards",
     "keycloak-config-cli",
+    "keycloak-fragment-reconciler",
     "launchpad",
 }
 
@@ -66,8 +67,14 @@ def test_every_placeholder_stamped_and_clean(haul, copy_deploy):
     assert len(ch_stamps) == 1
     assert ch_stamps[0].tag == ch
 
-    # 8 charts + 4 values-image tags + 2 inline images + 1 hash
-    assert len(stamps) == 15
+    # No stamp kind beyond the ones asserted above. Coverage of the tree itself
+    # is verify_clean's job, so this needs no per-component count.
+    assert {s.kind for s in stamps} == {
+        "chart-version",
+        "config-hash",
+        "image-values-tag",
+        "image-inline",
+    }
 
 
 def test_hl7_transformer_both_image_literals_move(haul, copy_deploy):
