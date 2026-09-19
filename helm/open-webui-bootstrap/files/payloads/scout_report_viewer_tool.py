@@ -39,14 +39,18 @@ _VIEWER_NOTE = (
     "used match_terms or match_diagnoses, an evidence table with "
     "excerpts and matched diagnoses is included too. "
     "The full results are shown to the user in a search viewer above "
-    "this message, alongside any charts you drew this turn. "
-    "The user can sort, filter, and explore the full results there. "
+    "this message, alongside any charts you drew this turn, where they "
+    "can sort, filter, and explore them. "
     "Call this tool at most once per turn; a second call replaces this "
     "viewer. "
-    "Do not restate the tables or the SQL. "
-    "Use the sample and evidence to confirm your query and reply "
-    "with insights, follow-up queries, pattern observations, "
-    "refinement suggestions, etc."
+    "Do not restate the tables or the SQL. Use the sample and evidence "
+    "to confirm the query ran as intended, then reply with what the "
+    "search includes and excludes, possible refinements, and "
+    "clinically relevant follow-up questions, queries or charts worth "
+    "running. "
+    "A chart or aggregate you run next is about this cohort unless the "
+    "user says otherwise: reuse this search's SQL rather than querying "
+    "the whole table again."
 )
 
 
@@ -111,14 +115,18 @@ class Tools:
           the ID predicate. When omitted, a default projection is used.
 
         :param sql: SQL mode: full Trino query. File mode: optional
-            custom SQL with `{{cohort}}` placeholder.
-        :param match_terms: Clinical text terms. Populates the
-            `excerpt` field on each evidence row and highlights the
-            terms in the row-expand viewer.
+            custom SQL with `{{cohort}}` placeholder. To narrow an
+            earlier search, paste its SQL verbatim and add clauses;
+            do not rewrite its regex or negation blocks.
+        :param match_terms: Clinical text terms. Display and evidence
+            only: these do not filter rows, your `sql` does that.
+            Populates the `excerpt` field on each evidence row and
+            highlights the terms in the row-expand viewer.
         :param match_diagnoses: ICD codes or code prefixes (e.g.
-            `R91`, `R91.1`, `J18%`). Populates `matched_diagnoses` on
-            each evidence row and lights up matching chips in the
-            row-expand viewer.
+            `R91`, `R91.1`, `J18%`). Display and evidence only: these do
+            not filter rows. Populates `matched_diagnoses` on each
+            evidence row and lights up matching chips in the row-expand
+            viewer.
         :param sql_explanation: One- to three-sentence plain-language
             description of what the SQL matches. Surfaced in the
             "About this search" panel for the user.
@@ -313,10 +321,12 @@ class Tools:
         return (
             f"{rendered} "
             f"(columns: {', '.join(plot.get('columns') or [])}). "
-            "Do not restate the data, do not add a table, and do not write a "
-            "vega code fence. Reply with a short interpretation only, in "
-            "one reply covering every chart and viewer you rendered this "
-            "turn.\n\n"
+            "You cannot see the chart's rows/data or the Vega-Lite spec. "
+            "Call scout_get_chart_data to read chart data for your reasoning. "
+            "Otherwise do not assume the chart's values are what you expect. "
+            "Describe what you plotted and anything about the query that may "
+            "be relevant for a user to understand the chart. "
+            "Do not add a data table or write a vega code fence.\n\n"
             f"Internal chart handle: {plot['id']}."
         )
 
@@ -733,7 +743,9 @@ class Tools:
 
         parts = [
             f"SQL ran across {len(columns)} columns. The viewer holds the full "
-            "result. You do not have a row count, do not state one."
+            f"result. Below is a sample of {len(sample)} rows in scan order, so you "
+            "know the result's shape: not a random sample and not a summary of the "
+            "cohort. You do not have a row count, do not state one."
         ]
 
         if sample and columns:
