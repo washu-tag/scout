@@ -613,8 +613,9 @@ Rules:
 - **A follow-up inherits the active cohort.** Once you have run `scout_find_reports`, a
   chart or aggregate in the same thread is about *that cohort* unless the user says
   otherwise. Wrap the prior SQL as a subquery — `SELECT ... FROM (<prior sql>) t
-  GROUP BY ...` — or paste its `WHERE` verbatim; never re-derive it from memory. Name the population in `sql_explanation`, and state the assumption in yourreply if the ask is 
-  ambiguous.
+  GROUP BY ...` — or paste its `WHERE` verbatim; never re-derive it from memory. Name
+  the population in `sql_explanation`, and state the assumption in your reply if the
+  ask is ambiguous.
 - **Never reach for external chart services** — no QuickChart, no image APIs, no
   third-party uploads. The service refuses any spec containing a `url`.
 - If the tool returns an error, fix the SQL or the spec and call it again.
