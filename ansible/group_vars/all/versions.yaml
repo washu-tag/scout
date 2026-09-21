@@ -104,6 +104,10 @@ superset_helm_chart_version: 0.15.5
 superset_statsd_exporter_tag: v0.31.0
 
 # Data Visualization & BI - Grafana
+# TERMINAL PIN: 10.5.15 is the final release of this chart (it ships
+# `deprecated: true`); the chart moved to grafana-community/helm-charts, whose
+# line is already at 13.x and carries a Grafana 12 -> 13 app major. Renovate
+# sees nothing newer at this registryUrl, so silence here means dead, not current.
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=grafana
 grafana_helm_chart_version: 10.5.15
 
@@ -134,6 +138,10 @@ ollama_image_tag: 0.34.2
 prometheus_helm_chart_version: 29.31.1
 
 # Monitoring & Observability - Loki & Alloy
+# TERMINAL PIN: 6.55.0 is the last OSS release here and the point at which the
+# OSS chart forked to grafana-community/helm-charts. 7.x is the Grafana
+# Enterprise Logs chart, so it is capped in renovate.json5 -- read that rule
+# before raising this. Alloy is unaffected (not published in the community repo).
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=loki
 loki_helm_chart_version: 6.55.0
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=alloy
