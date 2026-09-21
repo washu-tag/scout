@@ -18,9 +18,22 @@ async def test_header_path_trusted_with_gateway_secret(monkeypatch):
     user = await get_current_user(
         authorization=None,
         x_auth_request_preferred_username="alice",
+        x_auth_request_groups=None,
         x_report_viewer_gateway="s3cret",
     )
     assert user.sub == "alice"
+    assert user.groups == frozenset()
+
+
+async def test_header_path_parses_groups(monkeypatch):
+    monkeypatch.setattr(settings, "gateway_secret", "s3cret")
+    user = await get_current_user(
+        authorization=None,
+        x_auth_request_preferred_username="alice",
+        x_auth_request_groups="scout-admin, scout-user,,",
+        x_report_viewer_gateway="s3cret",
+    )
+    assert user.groups == frozenset({"scout-admin", "scout-user"})
 
 
 @pytest.mark.parametrize("gateway", [None, "", "wrong", "\xff"])
