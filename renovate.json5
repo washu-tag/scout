@@ -83,6 +83,22 @@
       "matchDepNames": ["dcm4che/slapd-dcm4chee"],
       "allowedVersions": "/^2\\.6\\.\\d+-35\\.\\d+$/"
     },
+    // Loki chart 7.0.0 (2026-03-16) is not a technical major: grafana/loki's
+    // chart became Grafana-Enterprise-Logs-only and the OSS chart forked to
+    // grafana-community/helm-charts at 6.55.0. On 7.x, `loki.image.tag` is
+    // frozen at the last OSS build (3.6.11) while appVersion tracks GEL, so
+    // taking the bump silently moves Scout onto the Enterprise line and stops
+    // the OSS image from ever advancing. Cap at 6.x until the migration to the
+    // community chart happens (which repoints registryUrl here + the repo URL
+    // in roles/loki/defaults, at which point this cap must be raised or removed
+    // -- the community line is already at 18.x).
+    {
+      "matchDepNames": ["loki"],
+      "allowedVersions": "/^6\\./",
+      "prBodyNotes": [
+        "**Chart-fork reminder:** This chart is capped at 6.x on purpose. 7.x is the Grafana Enterprise Logs chart; OSS Loki moved to [grafana-community/helm-charts](https://github.com/grafana-community/helm-charts). Do not raise the cap without repointing `loki_helm_repo_url` in `ansible/roles/loki/defaults/main.yaml` and the `registryUrl` in the versions.yaml annotation."
+      ]
+    },
     {
       "matchDepNames": ["cass-operator"],
       "prBodyNotes": [
