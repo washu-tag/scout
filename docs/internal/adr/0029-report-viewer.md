@@ -13,6 +13,18 @@ spec is sanitized server-side before it's persisted or rendered, and the fronten
 renders it in CSP-safe mode, consistent with this ADR's existing iframe security
 posture.
 
+**Addendum** (2026-09-21):
+
+- **No create-time `COUNT(*)`.** Creating a search or a chart ran a COUNT beside the
+  query it was about to render, so every create scanned the cohort twice. Both counts
+  have been removed and are no longer returned to the LLM, halving the work a create
+  does and so the time the user waits on it.
+- **Cancel on client disconnect.** A cohort or chart fetch can be cancelled by the
+  user, and an abandoned query (a closed browser tab, say) is now cancelled
+  automatically.
+- **Live progress.** A loading indicator displays the Trino stats for an in-flight
+  query.
+
 ## Context
 
 Scout's chat surface (Open WebUI) is an effective natural-language entry point for cohort building. Researchers describe what they want, an LLM translates it to Trino SQL against the Delta Lake radiology reports, and a cohort emerges through follow-up questions. The chat context is not designed for large-data interaction though. Dumping thousands of rows into the LLM's window blows its context budget and produces worse answers on the next turn. Rendering the same rows as chat markdown gives researchers a text surface but no browse, sort, filter, or export affordances, and it still puts the payload into the model's context.
