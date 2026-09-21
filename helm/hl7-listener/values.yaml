@@ -67,8 +67,7 @@ batcher:
     forcePathStyle: true
     # false on MinIO (static keys); true on AWS (IRSA via the default credentials provider).
     useDefaultCredentialsProvider: false
-    # true on AWS: an SCP or bucket policy can deny PutObject without an SSE
-    # request header. false on MinIO, where SSE depends on tenant config.
+    # true on AWS (an SCP can deny PutObject without an SSE header); false on MinIO.
     useSseS3: false
     # Mount static access/secret-key env from the secret (MinIO). false on AWS (IRSA).
     staticCredentials: true
