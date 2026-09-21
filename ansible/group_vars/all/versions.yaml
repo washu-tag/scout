@@ -114,7 +114,7 @@ open_webui_helm_chart_version: 16.6.0
 # renovate: datasource=docker depName=ghcr.io/open-webui/open-webui
 open_webui_image_tag: 0.11.4
 # renovate: datasource=docker depName=ollama/ollama
-ollama_image_tag: 0.24.0
+ollama_image_tag: 0.34.2
 
 # Monitoring & Observability - Prometheus
 # Deployed chart is prometheus-community/prometheus (NOT kube-prometheus-stack);
