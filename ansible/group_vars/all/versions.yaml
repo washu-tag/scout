@@ -131,7 +131,7 @@ ollama_image_tag: 0.34.2
 # Deployed chart is prometheus-community/prometheus (NOT kube-prometheus-stack);
 # depName fixed so Renovate tracks the right chart.
 # renovate: datasource=helm registryUrl=https://prometheus-community.github.io/helm-charts depName=prometheus
-prometheus_helm_chart_version: 27.52.0
+prometheus_helm_chart_version: 29.31.1
 
 # Monitoring & Observability - Loki & Alloy
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=loki
