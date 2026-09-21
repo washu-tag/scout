@@ -32,6 +32,9 @@ loki:
       endpoint: 'minio.{{ minio_tenant_namespace }}.svc.cluster.local'
       insecure: true
       s3ForcePathStyle: true
+{% else %}
+      sse:
+        type: SSE-S3
 {% endif %}
       region: '{{ s3_region }}'
 

@@ -16,6 +16,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 
@@ -76,7 +77,7 @@ public class S3Config {
     }
 
     /**
-     * Requests SSE-S3 on PutObject. An SCP or bucket policy can deny s3:PutObject without an
+     * Requests SSE-S3 on uploads. An SCP or bucket policy can deny s3:PutObject without an
      * x-amz-server-side-encryption header, and a bucket default does not satisfy it because the
      * condition inspects the request. Registered only for real AWS S3; on S3-compatible services
      * such as MinIO, server-side encryption depends on tenant configuration.
@@ -87,9 +88,16 @@ public class S3Config {
         public SdkRequest modifyRequest(Context.ModifyRequest context,
                 ExecutionAttributes executionAttributes) {
             SdkRequest request = context.request();
-            return request instanceof PutObjectRequest put && put.serverSideEncryption() == null
-                    ? put.toBuilder().serverSideEncryption(ServerSideEncryption.AES256).build()
-                    : request;
+            if (request instanceof PutObjectRequest put && put.serverSideEncryption() == null) {
+                return put.toBuilder().serverSideEncryption(ServerSideEncryption.AES256).build();
+            }
+            // Unreachable with a sync client, but a future transfer manager or
+            // multipart threshold would otherwise start the upload bare.
+            if (request instanceof CreateMultipartUploadRequest create
+                    && create.serverSideEncryption() == null) {
+                return create.toBuilder().serverSideEncryption(ServerSideEncryption.AES256).build();
+            }
+            return request;
         }
     }
 }

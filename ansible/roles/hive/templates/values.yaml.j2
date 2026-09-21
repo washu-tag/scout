@@ -15,7 +15,7 @@ resources: {{ hive_resources_default | combine(hive_resources | default({}), rec
 env:
 {% if aws_deployment %}
   - name: HADOOP_OPTS
-    value: "-Dfs.s3a.aws.credentials.provider=com.amazonaws.auth.WebIdentityTokenCredentialsProvider -Dfs.s3a.endpoint.region={{ s3_region }} -Dfs.s3a.encryption.algorithm=SSE-S3"
+    value: "-Dfs.s3a.aws.credentials.provider=com.amazonaws.auth.WebIdentityTokenCredentialsProvider -Dfs.s3a.endpoint.region={{ s3_region }}"
 {% endif %}
   - name: HIVE_METASTORE_DRIVER
     value: 'org.postgresql.Driver'
