@@ -1,13 +1,13 @@
 """
-title: Scout Iframe Defaults
-description: Forces the report-viewer iframe-sandbox UI flags on for every user so the embedded viewer works.
+title: Scout UI Defaults
+description: Forces Scout's per-user OWUI interface settings for every user.
 """
 
-# OWUI defaults iframeSandboxAllowSameOrigin/AllowForms false per-user with no
-# admin-global override (open-webui/open-webui#18684), so this event function
-# forces them on: user.created (new users; the only auth event OWUI emits for
-# SSO) and function.enabled/updated on itself (deploy-time backfill of existing
-# users — fired when the bootstrap Job re-seeds this function, no restart needed).
+# OWUI defaults these ui.* settings per-user with no admin-global override, so
+# this event function forces them on: user.created (new users; the only auth
+# event OWUI emits for SSO) and function.enabled/updated on itself (deploy-time
+# backfill of existing users — fired when the bootstrap Job re-seeds this
+# function, no restart needed).
 # Replaces the report-viewer signup webhook + SQL backfill (ADR 0029).
 
 import logging
@@ -15,14 +15,19 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-log = logging.getLogger("scout.iframe_defaults")
+log = logging.getLogger("scout.ui_defaults")
 
 # Per-user ui.* settings the report-viewer iframe requires, all forced true.
-_REQUIRED_UI_FLAGS = ("iframeSandboxAllowSameOrigin", "iframeSandboxAllowForms")
+_IFRAME_FLAGS = {
+    "iframeSandboxAllowSameOrigin": True,
+    "iframeSandboxAllowForms": True,
+}
+
+_CHANGELOG_OFF = {"showChangelog": False}
 
 
-async def _ensure_flags(user_id: str) -> bool:
-    """Force the flags on for one user; return True iff a write happened.
+async def _ensure_settings(user_id: str, forced: dict) -> bool:
+    """Force `forced` for one user; return True iff a write happened.
 
     Rebuilds the whole `ui` sub-object because update_user_settings_by_id()
     shallow-merges only at the top level.
@@ -34,10 +39,9 @@ async def _ensure_flags(user_id: str) -> bool:
         return False
     settings = user.settings.model_dump() if user.settings else {}
     ui = dict(settings.get("ui") or {})
-    if all(ui.get(flag) is True for flag in _REQUIRED_UI_FLAGS):
+    if all(ui.get(key) is value for key, value in forced.items()):
         return False
-    for flag in _REQUIRED_UI_FLAGS:
-        ui[flag] = True
+    ui.update(forced)
     await Users.update_user_settings_by_id(user_id, {"ui": ui})
     return True
 
@@ -48,9 +52,19 @@ class Event:
             default=True,
             description="Master switch. When off, the function makes no changes.",
         )
+        show_release_notes: bool = Field(
+            default=False,
+            description="Leave the What's New modal to each admin's own Settings toggle.",
+        )
 
     def __init__(self) -> None:
         self.valves = self.Valves()
+
+    def _forced_settings(self) -> dict:
+        forced = dict(_IFRAME_FLAGS)
+        if not self.valves.show_release_notes:
+            forced.update(_CHANGELOG_OFF)
+        return forced
 
     async def event(
         self,
@@ -78,14 +92,15 @@ class Event:
         if not user_id:
             log.warning("user.created carried no user id: %s", event)
             return
-        if await _ensure_flags(user_id):
-            log.info("iframe defaults applied to new user %s", user_id)
+        if await _ensure_settings(user_id, self._forced_settings()):
+            log.info("ui defaults applied to new user %s", user_id)
 
     async def _backfill_all(self) -> None:
         # Idempotent, so no lock needed despite firing once per replica:
         # concurrent sweeps converge and only the first writes.
         from open_webui.models.users import Users  # noqa: PLC0415
 
+        forced = self._forced_settings()
         result = await Users.get_users()
         users = result.get("users", []) if isinstance(result, dict) else (result or [])
         changed = 0
@@ -93,6 +108,6 @@ class Event:
             user_id = getattr(u, "id", None)
             if user_id is None and isinstance(u, dict):
                 user_id = u.get("id")
-            if user_id and await _ensure_flags(user_id):
+            if user_id and await _ensure_settings(user_id, forced):
                 changed += 1
-        log.info("iframe defaults backfill: %d/%d users updated", changed, len(users))
+        log.info("ui defaults backfill: %d/%d users updated", changed, len(users))
