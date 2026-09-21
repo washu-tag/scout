@@ -1,0 +1,40 @@
+{{/*
+The object fragment authors forget. Without it the reconciler cannot read the
+Secret the fragment points at, and the client is never created -- look for a
+FragmentFailed event on the fragment ConfigMap.
+
+The grant travels with the app, so the reconciler holds no standing cluster-wide
+read on Secrets. `resourceNames` can scope `get` but not `watch`, which is why a
+rotated credential is picked up on the reconciler's next periodic pass rather
+than immediately.
+*/}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "example.fullname" . }}-keycloak-secret-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "example.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ['']
+    resources: ['secrets']
+    verbs: ['get']
+    resourceNames:
+      - {{ include "example.clientSecretName" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "example.fullname" . }}-keycloak-secret-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "example.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "example.fullname" . }}-keycloak-secret-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ required "reconcilerServiceAccount is required" .Values.reconcilerServiceAccount }}
+    namespace: {{ required "reconcilerNamespace is required" .Values.reconcilerNamespace }}

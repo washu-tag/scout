@@ -1,0 +1,35 @@
+---
+# Half of what makes this app pluggable (ADR 0037): the app's entire identity
+# story, shipped by the app. Nothing is added to the base realm and no Ansible
+# variable is touched. Installing this chart creates the client on the next
+# reconcile; deleting this ConfigMap removes it again.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "example.fullname" . }}-keycloak
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "example.labels" . | nindent 4 }}
+    keycloak.scout.xnat.org/fragment: 'true'
+data:
+  fragment.yaml: |
+    apiVersion: keycloak.scout.xnat.org/v1alpha1
+    kind: KeycloakFragment
+    clients:
+      - clientId: {{ .Values.clientId }}
+        displayName: {{ .Values.launchpad.title }}
+        description: Reference pluggable app; safe to uninstall
+        appUrl: https://{{ include "example.host" . }}
+        redirectUris:
+          - https://{{ include "example.host" . }}/auth/callback
+        # This app's own role vocabulary, and which Scout tier confers each.
+        # `grants` may only name roles declared just above, and may only target
+        # the tier roles scout-user and scout-admin.
+        roles:
+          - {{ .Values.clientId }}-user
+          - {{ .Values.clientId }}-admin
+        grants:
+          scout-user: [{{ .Values.clientId }}-user]
+          scout-admin: [{{ .Values.clientId }}-admin]
+        secretRef:
+          name: {{ include "example.clientSecretName" . }}
