@@ -299,6 +299,10 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   labelled `launchpad.scout.xnat.org/catalog: "true"` with the owning component (chart
   template, or `scout_common`'s `launchpad_catalog` task for Ansible roles).
   Authoring guide: `docs/source/customize/launchpad-chips.md` (ADR 0034).
+- **Add or gate a report-viewer search action** — no report-viewer code change or image
+  rebuild; a `helm/report-viewer` values change (`actions.custom`, or `enabled`/
+  `requiredGroup` on the built-ins) plus `helm upgrade`. Authoring guide:
+  `docs/source/customize/report-viewer-actions.md` (ADR 0037).
 - **Add a Superset dashboard, chart, or dataset** — export the asset YAML into
   `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`; a new
   bundle also needs its name in `scout_dashboard_bundles` in inventory. See
