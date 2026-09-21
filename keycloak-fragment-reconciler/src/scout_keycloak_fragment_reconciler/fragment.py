@@ -17,6 +17,7 @@ public client. `apiVersion` carries forward compatibility instead.
 from __future__ import annotations
 
 import urllib.parse
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
@@ -27,6 +28,8 @@ KIND = "KeycloakFragment"
 
 # Conservative on purpose: these reach admin-API URL paths and token claims.
 NAME_PATTERN = r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,62}$"
+
+Name = Annotated[str, Field(pattern=NAME_PATTERN)]
 
 # Claim names a fragment may not write into: either the token's own structure
 # or something Scout's authorization reads. `groups` is the default.
@@ -70,7 +73,7 @@ class SecretRef(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(pattern=NAME_PATTERN)
+    name: Name
     # A detail of the app's own chart rather than of the contract.
     key: str = "client-secret"
 
@@ -78,13 +81,15 @@ class SecretRef(BaseModel):
 class ClientSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    client_id: str = Field(alias="clientId", pattern=NAME_PATTERN)
+    client_id: Name = Field(alias="clientId")
     display_name: str = Field(alias="displayName", max_length=255)
     description: str = Field("", max_length=512)
     app_url: str = Field(alias="appUrl")
     redirect_uris: list[str] = Field(alias="redirectUris", min_length=1)
-    roles: list[str] = Field(default_factory=list)
-    role_claim: str = Field("groups", alias="roleClaim", pattern=NAME_PATTERN)
+    # Patterned for the same reason as clientId: a role name is interpolated
+    # into an admin-API path, where `../` would walk out of the client.
+    roles: list[Name] = Field(default_factory=list)
+    role_claim: Name = Field("groups", alias="roleClaim")
     secret_ref: SecretRef = Field(alias="secretRef")
     # tier role -> the fragment's own roles to compose into it.
     grants: dict[str, list[str]] = Field(default_factory=dict)

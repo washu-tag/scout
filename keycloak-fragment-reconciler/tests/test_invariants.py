@@ -127,6 +127,26 @@ class TestBoundedBlastRadius:
         surface = {name for name in dir(Admin) if not name.startswith("_")}
         assert not [n for n in surface if "group" in n or "user" in n]
 
+    def test_a_hostile_name_cannot_walk_out_of_its_collection(self):
+        """Structural, and the second lock behind the fragment contract.
+
+        The default `quote` leaves `/` alone and httpx resolves `..` before the
+        request goes out, so an unencoded name in a path could turn a delete
+        aimed at a fragment's own client role into one aimed at a base realm
+        tier role -- the one thing ADR 0037 says this service can never do.
+        """
+        import httpx2 as httpx
+
+        from scout_keycloak_fragment_reconciler.keycloak import _seg
+
+        hostile = "../../../roles/scout-admin"
+        url = httpx.URL(
+            f"https://kc/admin/realms/scout/clients/UUID/roles/{_seg(hostile)}"
+        )
+        assert url.raw_path.decode().startswith(
+            "/admin/realms/scout/clients/UUID/roles/"
+        )
+
     def test_tier_edges_only_name_our_own_roles(self, reconciler, kc):
         reconciler.reconcile_once()
         uuid = next(iter(kc.clients))

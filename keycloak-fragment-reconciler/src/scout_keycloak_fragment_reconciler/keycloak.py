@@ -46,6 +46,20 @@ DEFAULT_TOKEN_LIFETIME_SECONDS = 60.0
 ERROR_EXCERPT_CHARS = 400
 
 
+def _seg(value: str) -> str:
+    """One path segment, with the separators encoded rather than left to mean.
+
+    `safe=""` is the whole point: the default `quote` leaves `/` alone, and
+    httpx resolves the `..` segments that follow it before the request goes
+    out, so a name is otherwise free to walk up out of its own collection --
+    `/clients/{uuid}/roles/../../../roles/x` reaches the realm role `x`. The
+    fragment contract already rejects such a name; this is the second lock, on
+    the side that builds the URL. For a name the contract does accept this is a
+    no-op, since `.`, `-` and `_` are never encoded.
+    """
+    return urllib.parse.quote(value, safe="")
+
+
 class KeycloakError(RuntimeError):
     def __init__(self, status: int, message: str):
         super().__init__(f"keycloak admin API {status}: {message}")
@@ -159,7 +173,7 @@ class Admin:
         base realm, and creating one here would make this service a writer of
         an object it must not own.
         """
-        result = self._get_or_none(f"/roles/{urllib.parse.quote(name)}")
+        result = self._get_or_none(f"/roles/{_seg(name)}")
         return result if isinstance(result, dict) else None
 
     # --- clients --------------------------------------------------------
@@ -222,7 +236,7 @@ class Admin:
         self._request("POST", f"/clients/{uuid}/roles", json=representation)
 
     def delete_client_role(self, uuid: str, name: str) -> None:
-        self._request("DELETE", f"/clients/{uuid}/roles/{urllib.parse.quote(name)}")
+        self._request("DELETE", f"/clients/{uuid}/roles/{_seg(name)}")
 
     # --- protocol mappers -----------------------------------------------
 
@@ -251,17 +265,13 @@ class Admin:
         The per-client read, so a fragment's diff does not have to enumerate
         every other fragment's edges.
         """
-        path = f"/roles/{urllib.parse.quote(tier)}/composites/clients/{client_uuid}"
+        path = f"/roles/{_seg(tier)}/composites/clients/{client_uuid}"
         result = self._get_or_none(path)
         return list(result or [])
 
     def add_tier_edges(self, tier: str, roles: list[dict]) -> None:
         """Additive. Never replaces the set, so no fragment can clobber another."""
-        self._request(
-            "POST", f"/roles/{urllib.parse.quote(tier)}/composites", json=roles
-        )
+        self._request("POST", f"/roles/{_seg(tier)}/composites", json=roles)
 
     def remove_tier_edges(self, tier: str, roles: list[dict]) -> None:
-        self._request(
-            "DELETE", f"/roles/{urllib.parse.quote(tier)}/composites", json=roles
-        )
+        self._request("DELETE", f"/roles/{_seg(tier)}/composites", json=roles)

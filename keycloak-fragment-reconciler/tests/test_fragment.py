@@ -290,6 +290,27 @@ class TestIdentifiersAreConstrained:
                 fragment_text().replace("clientId: hello", f"clientId: {client_id!r}")
             )
 
+    @pytest.mark.parametrize(
+        "role",
+        [
+            "../../../roles/scout-admin",
+            "with/slash",
+            "has space",
+            "",
+            "a" * 64,
+        ],
+    )
+    def test_a_role_that_would_break_a_url(self, role):
+        """A role name is interpolated into an admin-API path.
+
+        `../../../roles/scout-admin` is the one that matters: the reconciler
+        deletes roles an author drops from `roles`, and those dots resolve
+        before the request leaves, turning the delete into one aimed at a base
+        realm tier role -- which this service must never be able to touch.
+        """
+        with pytest.raises(FragmentError, match="should match pattern"):
+            parse(fragment_text().replace("      - hello-user", f"      - {role!r}"))
+
     def test_duplicate_roles_are_rejected(self):
         text = fragment_text().replace("      - hello-admin", "      - hello-user")
         with pytest.raises(FragmentError, match="duplicates"):
