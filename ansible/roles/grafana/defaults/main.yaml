@@ -51,9 +51,9 @@ grafana_resources_default:
 # Plugins are downloaded and pushed to Harbor via ORAS, then pulled by init container
 grafana_plugins:
   - id: grafana-lokiexplore-app
-    version: 1.0.34
+    version: 2.5.2
   - id: grafana-metricsdrilldown-app
-    version: 1.0.29
+    version: 2.5.1
 
 # Harbor configuration for Grafana plugins (air-gapped only)
 grafana_plugins_harbor_project: grafana-plugins
