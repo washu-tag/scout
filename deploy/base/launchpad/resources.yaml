@@ -52,7 +52,7 @@ spec:
         image:
           repository: quay.io/kiwigrid/k8s-sidecar
           # renovate: datasource=docker depName=quay.io/kiwigrid/k8s-sidecar
-          tag: '2.10.1'
+          tag: '2.11.2'
     scoutEnv: '${scout_env}'
     deployerName: '${deployer_name}'
     docsUrl: '${scout_docs_url}'

@@ -111,7 +111,7 @@ grafana_helm_chart_version: 10.5.15
 # Grafana chart embeds for dashboard ConfigMap discovery.
 launchpad_sidecar_image: quay.io/kiwigrid/k8s-sidecar
 # renovate: datasource=docker depName=quay.io/kiwigrid/k8s-sidecar
-launchpad_sidecar_image_tag: 2.10.1
+launchpad_sidecar_image_tag: 2.11.2
 
 # Notebooks & Interactive Computing
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/ depName=jupyterhub
