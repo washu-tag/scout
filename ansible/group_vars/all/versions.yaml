@@ -135,7 +135,7 @@ prometheus_helm_chart_version: 29.31.1
 
 # Monitoring & Observability - Loki & Alloy
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=loki
-loki_helm_chart_version: 6.49.0
+loki_helm_chart_version: 6.55.0
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=alloy
 alloy_helm_chart_version: 1.12.1
 
