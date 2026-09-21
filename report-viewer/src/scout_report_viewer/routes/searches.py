@@ -532,9 +532,9 @@ async def get_search_rows(
             "rows_query", cancelled=trino_client.ClientDisconnected
         ):
             # safe: source_sql is persisted validated SQL; ids bind via ?
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
             columns, rows = await trino_client.cancel_on_disconnect(
                 request.receive,
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 trino_client.execute(
                     all_sql,
                     user=user.sub,
