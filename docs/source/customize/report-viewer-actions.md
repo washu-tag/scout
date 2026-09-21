@@ -49,13 +49,13 @@ actions:
       requiredGroup: scout-admin
 ```
 
-| Field          | Required | Default | Notes                                                          |
-| -------------- | -------- | ------- | --------------------------------------------------------------- |
-| `id`           | yes      | —       | Duplicate ids (against a built-in or another custom entry) reject the later one. |
-| `title`        | yes      | —       | Button label.                                                   |
-| `url`          | yes      | —       | Must be `http(s)` with a real host — `javascript:`/`data:` and similar are rejected. |
-| `weight`       | no       | `100`   | Lower renders first; ties break by title, then id.               |
-| `requiredGroup`| no       | —       | Keycloak group required to see the button (see [Gating](#gating-with-requiredgroup)). |
+| Field           | Required | Default | Notes                                                                                 |
+|-----------------|----------|---------|---------------------------------------------------------------------------------------|
+| `id`            | yes      | —       | Duplicate ids (against a built-in or another custom entry) reject the later one.      |
+| `title`         | yes      | —       | Button label.                                                                         |
+| `url`           | yes      | —       | Must be `http(s)` with a real host — `javascript:`/`data:` and similar are rejected.  |
+| `weight`        | no       | `100`   | Lower renders first; ties break by title, then id.                                    |
+| `requiredGroup` | no       | —       | Keycloak group required to see the button (see [Gating](#gating-with-requiredgroup)). |
 
 The SPA opens `url` via a real navigation, with an always-shown copy-link fallback —
 see [Popups from the chat embed](#popups-from-the-chat-embed) if the destination needs
@@ -75,19 +75,23 @@ actions:
       requiredGroup: scout-admin
 ```
 
-| Field          | Required | Default | Notes                                                          |
-| -------------- | -------- | ------- | --------------------------------------------------------------- |
-| `id`, `title`, `weight`, `requiredGroup` | — | — | Same as `open-url` above. |
-| `endpointUrl`  | yes      | —       | POSTed to when the button is clicked. Must be `http(s)` with a real host. |
-| `invokeToken`  | no       | —       | Forwarded as `X-Report-Viewer-Action-Token`. See [Securing a backend-call target](#securing-a-backend-call-target). |
-| `assertionKey` | no       | —       | Signs `X-Report-Viewer-User-Assertion`. Must be a **different** value from `invokeToken` — see below. |
+| Field                                    | Required | Default | Notes                                                                                                               |
+|------------------------------------------|----------|---------|---------------------------------------------------------------------------------------------------------------------|
+| `id`, `title`, `weight`, `requiredGroup` | —        | —       | Same as `open-url` above.                                                                                           |
+| `endpointUrl`                            | yes      | —       | POSTed to when the button is clicked. Must be `http(s)` with a real host.                                           |
+| `invokeToken`                            | no       | —       | Forwarded as `X-Report-Viewer-Action-Token`. See [Securing a backend-call target](#securing-a-backend-call-target). |
+| `assertionKey`                           | no       | —       | Signs `X-Report-Viewer-User-Assertion`. Must be a **different** value from `invokeToken` — see below.               |
 
 report-viewer POSTs `{search_id, sql, username, reports, cohort_truncated}` to
 `endpointUrl` — `reports` is the resolved cohort as
 `{primary_report_identifier, accession_number}` pairs, not just the raw SQL, capped at
-the same row limit the SPA itself uses. Your service returns `{"url": "..."}`, and the
-SPA opens it the same way as an `open-url` action. report-viewer never inspects what
-your service actually does with the cohort.
+the same row limit the SPA itself uses (`REPORT_VIEWER_MAX_COHORT_ROWS`, 50000 by
+default). `cohort_truncated` is `true` when the real cohort is larger than that cap —
+`reports` is a prefix, not the complete set, and your service should account for that
+(e.g. surface it to the user, or fail rather than silently act on a partial cohort)
+rather than assuming `reports` is always exhaustive. Your service returns
+`{"url": "..."}`, and the SPA opens it the same way as an `open-url` action.
+report-viewer never inspects what your service actually does with the cohort.
 
 There is no values field for a `client`-type action (page-specific frontend logic, like
 Download CSV) — that needs a handler already registered in report-viewer's own
