@@ -41,24 +41,28 @@ def test_invoke_requires_token():
     assert r.status_code == 401
 
 
-def test_invoke_rejects_wrong_token():
-    r = client.post(
-        "/invoke",
-        json={"search_id": "s_x"},
-        headers={"X-Report-Viewer-Action-Token": "wrong"},
-    )
+def test_invoke_rejects_wrong_token(caplog):
+    with caplog.at_level("WARNING"):
+        r = client.post(
+            "/invoke",
+            json={"search_id": "s_x"},
+            headers={"X-Report-Viewer-Action-Token": "wrong"},
+        )
     assert r.status_code == 401
+    assert "bad or missing action token" in caplog.text
 
 
-def test_invoke_requires_user_assertion():
+def test_invoke_requires_user_assertion(caplog):
     """The bearer action token alone only proves the caller knows a
     shared secret - it doesn't say who the invocation is for. Missing
     assertion must be rejected, not silently allowed through."""
-    r = client.post("/invoke", json={"search_id": "s_x"}, headers=_ACTION_HEADERS)
+    with caplog.at_level("WARNING"):
+        r = client.post("/invoke", json={"search_id": "s_x"}, headers=_ACTION_HEADERS)
     assert r.status_code == 401
+    assert "missing user assertion" in caplog.text
 
 
-def test_invoke_rejects_assertion_signed_with_wrong_key():
+def test_invoke_rejects_assertion_signed_with_wrong_key(caplog):
     """A forged assertion (e.g. signed with the leaked invoke_token
     instead of the real assertion key) must not verify."""
     now = int(time.time())
@@ -74,51 +78,59 @@ def test_invoke_rejects_assertion_signed_with_wrong_key():
         "test-token",  # the invoke token, not the assertion key
         algorithm="HS256",
     )
-    r = client.post(
-        "/invoke",
-        json={"search_id": "s_x"},
-        headers={**_ACTION_HEADERS, "X-Report-Viewer-User-Assertion": forged},
-    )
+    with caplog.at_level("WARNING"):
+        r = client.post(
+            "/invoke",
+            json={"search_id": "s_x"},
+            headers={**_ACTION_HEADERS, "X-Report-Viewer-User-Assertion": forged},
+        )
     assert r.status_code == 401
+    assert "invalid user assertion signature" in caplog.text
 
 
-def test_invoke_rejects_expired_assertion():
-    r = client.post(
-        "/invoke",
-        json={"search_id": "s_x"},
-        headers={
-            **_ACTION_HEADERS,
-            "X-Report-Viewer-User-Assertion": _assertion("s_x", exp_delta=-1),
-        },
-    )
+def test_invoke_rejects_expired_assertion(caplog):
+    with caplog.at_level("WARNING"):
+        r = client.post(
+            "/invoke",
+            json={"search_id": "s_x"},
+            headers={
+                **_ACTION_HEADERS,
+                "X-Report-Viewer-User-Assertion": _assertion("s_x", exp_delta=-1),
+            },
+        )
     assert r.status_code == 401
+    assert "user assertion expired" in caplog.text
 
 
-def test_invoke_rejects_search_id_mismatch():
+def test_invoke_rejects_search_id_mismatch(caplog):
     """A captured assertion for one search can't be replayed against a
     different one within its validity window."""
-    r = client.post(
-        "/invoke",
-        json={"search_id": "s_other"},
-        headers={
-            **_ACTION_HEADERS,
-            "X-Report-Viewer-User-Assertion": _assertion("s_x"),
-        },
-    )
+    with caplog.at_level("WARNING"):
+        r = client.post(
+            "/invoke",
+            json={"search_id": "s_other"},
+            headers={
+                **_ACTION_HEADERS,
+                "X-Report-Viewer-User-Assertion": _assertion("s_x"),
+            },
+        )
     assert r.status_code == 401
+    assert "assertion search_id=s_x != request search_id=s_other" in caplog.text
 
 
-def test_invoke_enforces_required_group(monkeypatch):
+def test_invoke_enforces_required_group(monkeypatch, caplog):
     monkeypatch.setattr(settings, "required_group", "scout-admin")
-    r = client.post(
-        "/invoke",
-        json={"search_id": "s_x"},
-        headers={
-            **_ACTION_HEADERS,
-            "X-Report-Viewer-User-Assertion": _assertion("s_x", groups=["scout-user"]),
-        },
-    )
+    with caplog.at_level("WARNING"):
+        r = client.post(
+            "/invoke",
+            json={"search_id": "s_x"},
+            headers={
+                **_ACTION_HEADERS,
+                "X-Report-Viewer-User-Assertion": _assertion("s_x", groups=["scout-user"]),
+            },
+        )
     assert r.status_code == 403
+    assert "lacks required group scout-admin" in caplog.text
 
 
 def test_invoke_allows_caller_with_required_group(monkeypatch):

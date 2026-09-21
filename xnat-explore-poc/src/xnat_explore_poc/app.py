@@ -57,11 +57,15 @@ async def invoke(
         or not x_report_viewer_action_token
         or not hmac.compare_digest(x_report_viewer_action_token, settings.invoke_token)
     ):
+        log.warning("invoke rejected: bad or missing action token")
         raise HTTPException(status_code=401, detail="unauthorized")
 
     body = await request.json()
 
     if not settings.assertion_key or not x_report_viewer_user_assertion:
+        log.warning(
+            "invoke rejected: search_id=%s missing user assertion", body.get("search_id")
+        )
         raise HTTPException(status_code=401, detail="missing user assertion")
     try:
         claims = jwt.decode(
@@ -70,16 +74,35 @@ async def invoke(
             algorithms=["HS256"],
         )
     except ExpiredSignatureError:
+        log.warning(
+            "invoke rejected: search_id=%s user assertion expired", body.get("search_id")
+        )
         raise HTTPException(status_code=401, detail="user assertion expired")
     except JWTError:
+        log.warning(
+            "invoke rejected: search_id=%s invalid user assertion signature",
+            body.get("search_id"),
+        )
         raise HTTPException(status_code=401, detail="invalid user assertion")
     # Binds the assertion to this exact request - a captured assertion
     # can't be replayed against a different search within its 60s window.
     if claims.get("search_id") != body.get("search_id"):
+        log.warning(
+            "invoke rejected: assertion search_id=%s != request search_id=%s",
+            claims.get("search_id"),
+            body.get("search_id"),
+        )
         raise HTTPException(status_code=401, detail="user assertion search_id mismatch")
     if settings.required_group and settings.required_group not in (
         claims.get("groups") or []
     ):
+        log.warning(
+            "invoke rejected: search_id=%s sub=%s groups=%s lacks required group %s",
+            body.get("search_id"),
+            claims.get("sub"),
+            claims.get("groups"),
+            settings.required_group,
+        )
         raise HTTPException(status_code=403, detail="caller lacks required group")
 
     # The cohort itself (search_id/sql/username/reports/cohort_truncated -
