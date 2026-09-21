@@ -271,6 +271,7 @@ open_webui_event_functions:
     enable_active: true
     valves:
       show_release_notes: '{{ open_webui_show_release_notes | bool | string | lower }}'
+      show_update_toast: '{{ open_webui_enable_version_update_check | bool | string | lower }}'
 
 open_webui_tool_functions:
   - id: scout_report_viewer_tool

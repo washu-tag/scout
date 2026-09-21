@@ -75,7 +75,7 @@ def _written_ui(updates, user_id):
 
 
 IFRAME = {"iframeSandboxAllowSameOrigin": True, "iframeSandboxAllowForms": True}
-FORCED = {**IFRAME, "showChangelog": False}
+FORCED = {**IFRAME, "showChangelog": False, "showUpdateToast": False}
 
 
 @pytest.mark.asyncio
@@ -105,10 +105,9 @@ async def test_own_function_enabled_backfills_all_and_preserves_prefs(
 
 
 @pytest.mark.asyncio
-async def test_show_release_notes_leaves_showchangelog_alone(
-    fake_users, event_instance
-):
+async def test_valves_on_leave_owui_settings_alone(fake_users, event_instance):
     event_instance.valves.show_release_notes = True
+    event_instance.valves.show_update_toast = True
     fake_users.store = {"unset": None, "optin": {"ui": {"showChangelog": True}}}
     await event_instance.event(
         {"subject": {"id": "me"}}, __event_name__="function.enabled", __id__="me"

@@ -23,8 +23,6 @@ _IFRAME_FLAGS = {
     "iframeSandboxAllowForms": True,
 }
 
-_CHANGELOG_OFF = {"showChangelog": False}
-
 
 async def _ensure_settings(user_id: str, forced: dict) -> bool:
     """Force `forced` for one user; return True iff a write happened.
@@ -56,6 +54,10 @@ class Event:
             default=False,
             description="Leave the What's New modal to each admin's own Settings toggle.",
         )
+        show_update_toast: bool = Field(
+            default=False,
+            description="Leave the new-version toast to each admin's own Settings toggle.",
+        )
 
     def __init__(self) -> None:
         self.valves = self.Valves()
@@ -63,7 +65,9 @@ class Event:
     def _forced_settings(self) -> dict:
         forced = dict(_IFRAME_FLAGS)
         if not self.valves.show_release_notes:
-            forced.update(_CHANGELOG_OFF)
+            forced["showChangelog"] = False
+        if not self.valves.show_update_toast:
+            forced["showUpdateToast"] = False
         return forced
 
     async def event(
