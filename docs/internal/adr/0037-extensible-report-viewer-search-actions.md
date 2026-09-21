@@ -36,8 +36,9 @@ Two decisions, layered on top of each other.
 ### Actions are declared data, rendered generically
 
 `ActionDescriptor` (`report-viewer/src/scout_report_viewer/actions.py`): `id`, `title`,
-`weight`, `action_type`, `url`, `required_group`, `client_handler`, `endpoint_url`,
-`invoke_token` (`Field(exclude=True)`, never round-trips to the browser). The chart
+`weight`, `action_type`, `url`, `required_group`, `client_handler`, `endpoint_url`. A
+`backend-call` entry's invoke token is deliberately not a field on this model at all —
+see below. The chart
 renders today's two built-in buttons — each independently toggleable and group-gateable
 via its own `actions.explainSearch`/`actions.downloadCsv` object (`enabled`,
 `requiredGroup`) — plus any site-admin-authored `actions.custom` entries, into a
@@ -69,20 +70,62 @@ Three `action_type` values, matched to what the SPA can do with a click:
   saved `sql` to concrete `{primary_report_identifier, accession_number}` pairs (one row
   per report, same `max_cohort_rows` cap as `GET /rows`; `accession_number` rides along
   as a nullable, non-unique correlation field, not an identifier — it can repeat across
-  reports or be absent) and forwards those, not the raw SQL, to `endpoint_url` (a
-  genuinely separate, independently-deployed service — the "Apps" tier from #595). It
-  relays back whatever `{"url": ...}` the target returns, then hands that off to the
-  same `open-url` handling. report-viewer never inspects what the target service
-  actually does with the cohort — only that it returns a safe `http(s)` URL. Resolving
-  server-side, rather than handing the target raw SQL, means the target never needs
-  Trino access or its own OPA-authorized query path (ADR 0020) to find out what it was
-  invoked for. `invoke_token`, if set, is forwarded as `X-Report-Viewer-Action-Token`.
-  `xnat-explore-poc`
+  reports or be absent) and forwards those alongside the raw `sql` to `endpoint_url` (a
+  genuinely separate, independently-deployed service — the "Apps" tier from #595) —
+  `sql` stays in the payload for a target that genuinely needs the query itself, not
+  just the resolved cohort. It relays back whatever `{"url": ...}` the target returns,
+  then hands that off to the same `open-url` handling. report-viewer never inspects what
+  the target service actually does with the cohort — only that it returns a safe
+  `http(s)` URL. Resolving the cohort server-side means the target never needs Trino
+  access or its own OPA-authorized query path (ADR 0020) to find out what it was invoked
+  for, even though it's also handed the raw `sql`. If an action has an invoke token,
+  it's forwarded as `X-Report-Viewer-Action-Token` — read from a Secret-backed volume
+  keyed by the action's `id` (`actions-secret.yaml`, `actions.load_invoke_token()`), not
+  from the action catalog itself: the catalog is a ConfigMap, which has no
+  access-control distinction from other application config, so secret material never
+  belongs in it. `xnat-explore-poc`
   (`xnat-explore-poc/`, `helm/xnat-explore-poc/`) is the reference implementation: a
   deliberately fake FastAPI service with its own Helm chart and a NetworkPolicy
   restricting ingress to report-viewer's namespace, deployed independently of any
   Ansible role — proving the mechanism crosses a real service boundary without doing any
-  real XNAT integration work.
+  real XNAT integration work. Its own copy of the shared invoke token is likewise a real
+  Secret, not a plain Deployment env value.
+
+### The invoke boundary independently verifies the caller, not just a shared secret
+
+`X-Report-Viewer-Action-Token` proves only that the caller knows a shared secret — it
+says nothing about which end user the call is for or what they're authorized to do.
+Without more, a target that trusts it alone is fully dependent on report-viewer's own
+`requiredGroup` check never having a bug, and anything that obtains the token (a log
+line, a captured trace, another compromised in-cluster workload) can invoke the action
+as any user with any cohort. This directly contradicts the framing above — "visibility
+is UX, not the authorization boundary... a real action must still independently enforce
+the same group check at its own endpoint" — unless the target actually has something to
+check.
+
+So `invoke_search_action` also mints `X-Report-Viewer-User-Assertion`: a short-lived
+(60s) HS256 JWT carrying `sub`, `groups`, `search_id`, and `action_id` — everything a
+target needs to make its own authorization decision, plus enough to reject a captured
+assertion replayed against a different search once its window closes.
+
+The signing key is a **second, separate** per-action secret
+(`<action_id>.assertion-key` in the same Secret-backed volume as the invoke token, set
+via `actions.custom[].assertionKey`) — never the invoke token itself. Reusing the invoke
+token as the signing key would mean anyone who obtained it (which travels on every
+`/invoke` call and can leak via logs or traces) could also forge arbitrary user/group
+claims, defeating the entire point of a signature the caller couldn't otherwise produce.
+The two secrets have different exposure profiles: the invoke token is transmitted on the
+wire on every call, while the assertion key never is — only its signature output goes
+out, which can't be reversed to recover the key. This protects against the invoke token
+leaking via an ordinary operational mistake; it does not protect against report-viewer's
+own pod or the Secret object itself being compromised, which exposes everything
+regardless of how many distinct values exist.
+
+`xnat-explore-poc`, as the reference implementation, actually verifies this rather than
+trusting the shared secret alone: signature and expiry via `assertionKey`, `search_id`
+bound to the current request, and an optional `requiredGroup` membership check against
+the asserted `groups` — demonstrating what a real App is expected to do, not just what
+report-viewer sends.
 
 ### Visibility gates on Keycloak group membership, not client roles
 
@@ -141,10 +184,12 @@ checking never had a reachable code path.
   removed without touching any of the SPA's other functionality.
 - Config drift across a rename is possible and silent: during development, an
   inventory's custom-action entry kept the old `requiredRole` key after the chart moved
-  to `requiredGroup`, and Helm's silent-ignore of unrecognized map keys turned that into
-  an *ungated* button rather than a render error. Not solved here; a candidate follow-up
-  is schema validation on `actions.custom` (`required` already guards the mandatory
-  fields, but not renamed/retired ones).
+  to `requiredGroup` (back when gating was still the client-role design described in
+  Context — itself already retired, not merely renamed), and Helm's silent-ignore of
+  unrecognized map keys turned that into an *ungated* button rather than a render error.
+  Accepted rather than guarded against: `requiredGroup` is the only gating key this
+  feature has ever shipped as a reachable mechanism, so there's no realistic path for an
+  operator to reintroduce `requiredRole` going forward.
 - The catalog is read once at process start; a ConfigMap edit needs the pod to restart
   to take effect. The chart's `checksum/actions-configmap` Deployment annotation already
   forces this on every relevant change, but there is no live re-read or TTL snapshot,
@@ -152,6 +197,14 @@ checking never had a reachable code path.
 - Cross-namespace sidecar discovery (ADR 0034's mechanism for third-party contributions)
   is not attempted here. A future need for actions contributed by a chart other than
   report-viewer's own would require that increment.
+- `X-Report-Viewer-User-Assertion` is still a symmetric shared secret under the hood,
+  same trust class as the invoke token — it protects against the invoke token leaking on
+  its own (logs, traces), not against report-viewer's pod or the Secret object itself
+  being compromised. The strictly stronger version — Keycloak mints the assertion via
+  token exchange/impersonation, targets verify against Keycloak's JWKS like report-viewer
+  already does for Path 1 — has no existing precedent to build on (the SPA's invoke calls
+  never carry a subject token to exchange) and is deferred until an App needs stronger
+  guarantees than report-viewer's own operational trust.
 
 ## Alternatives Considered
 
@@ -160,4 +213,7 @@ checking never had a reachable code path.
 | Keycloak client roles via `resource_access` (Bearer JWT), gating in the JWT-validation path | Rejected: unreachable from the SPA's own requests (`client.ts` never sends a Bearer token) — a role-gated action could never appear in the real UI for anyone |
 | A report-viewer-owned OIDC scope forcing role claims onto the oauth2-proxy session | Rejected: reinvents Keycloak's existing group-membership mapper with more moving parts, for the same header-trust guarantee the group approach gets for free |
 | Cross-namespace sidecar ConfigMap discovery (full ADR 0034 parity) | Deferred: every action today ships from report-viewer's own chart; no third-party-contribution use case yet to justify the RBAC/sidecar cost |
-| Client-side-only visibility (hide with CSS/JS, no server-side filter) | Rejected outright: the descriptor — including any `invoke_token` — would round-trip to every browser regardless of group membership |
+| Client-side-only visibility (hide with CSS/JS, no server-side filter) | Rejected outright: the full descriptor, including any secret material, would round-trip to every browser regardless of group membership |
+| `invoke_token` as an `ActionDescriptor` field (`Field(exclude=True)`), catalog stays a single ConfigMap | Rejected: `exclude=True` only stops it leaving the process over the API — it would still sit in plaintext in the catalog ConfigMap, readable by anyone with ConfigMap-read RBAC in the namespace. Moved to a Secret-backed volume keyed by action id instead |
+| Sign `X-Report-Viewer-User-Assertion` with the same value as `invoke_token` | Rejected: collapses two distinct protections into one — anyone who obtains the invoke token (which travels on every call) could forge any assertion claims they wanted, making the "independent" verification not independent at all |
+| No user assertion at all; targets trust `username` in the request body | Rejected: an unsigned string proves nothing: no target-side way to catch a bug in report-viewer's own `requiredGroup` check, and anything holding the invoke token can claim to be any user |

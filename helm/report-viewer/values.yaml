@@ -102,8 +102,17 @@ actions:
   # actionType: backend-call - the SPA POSTs the search's context to
   # endpointUrl (a genuinely separate, independently deployed service -
   # #595's "Apps" tier) and opens whatever result URL it returns.
-  # invokeToken, if set, is forwarded as X-Report-Viewer-Action-Token and
-  # never round-trips to the browser (see actions.py's ActionDescriptor).
+  # invokeToken, if set, is forwarded as X-Report-Viewer-Action-Token -
+  # proves only that the caller knows a shared secret, not who the end
+  # user is. assertionKey, if set, signs a short-lived
+  # X-Report-Viewer-User-Assertion JWT (sub/groups/search_id/action_id,
+  # 60s expiry) the target can verify independently - a DIFFERENT value
+  # from invokeToken on purpose, since invokeToken travels on every call
+  # and can leak via logs, while assertionKey never goes over the wire.
+  # Both are rendered into a Secret keyed by this entry's id
+  # (actions-secret.yaml), never into the action-catalog ConfigMap or any
+  # API response - see actions.py's load_invoke_token()/
+  # mint_user_assertion().
   #
   #   custom:
   #     - id: explore-xnat
@@ -111,6 +120,7 @@ actions:
   #       actionType: backend-call
   #       endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
   #       invokeToken: <matches xnat-explore-poc's invokeToken value>
+  #       assertionKey: <matches xnat-explore-poc's assertionKey value>
   #
   # "client" actions (page-specific logic, e.g. Download CSV) can't be
   # added this way at all - they need a handler already registered in

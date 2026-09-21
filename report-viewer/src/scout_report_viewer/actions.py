@@ -36,12 +36,14 @@ the rest of the catalog still loads (bad chip costs the chip).
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, model_validator
+from jose import jwt
+from pydantic import BaseModel, ValidationError, model_validator
 
 from .config import settings
 
@@ -69,9 +71,10 @@ class ActionDescriptor(BaseModel):
       back `{"url": "..."}`, then hands that off to the same `open-url`
       handling. report-viewer never needs to know anything about what a
       given plugin actually does - only that it returns a safe http(s)
-      URL. `invoke_token`, if set, is forwarded as `X-Report-Viewer-
-      Action-Token` and is excluded from every API response (never
-      round-trips to the browser).
+      URL. If the action has an invoke token, it's forwarded as
+      `X-Report-Viewer-Action-Token` - see `load_invoke_token()` below;
+      it is never a field on this model, so it structurally cannot
+      round-trip into an API response.
     """
 
     id: str
@@ -82,7 +85,6 @@ class ActionDescriptor(BaseModel):
     required_group: str | None = None
     client_handler: str | None = None
     endpoint_url: str | None = None
-    invoke_token: str | None = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
     def _check_action_type_fields(self) -> "ActionDescriptor":
@@ -194,6 +196,65 @@ _loaded_catalog = _load_catalog_from_file(settings.action_catalog_path)
 _CATALOG: list[ActionDescriptor] = (
     _loaded_catalog if _loaded_catalog is not None else _DEFAULT_CATALOG
 )
+
+
+def _read_action_secret(filename: str) -> str | None:
+    """Read `settings.action_tokens_path/<filename>`, or None if missing.
+
+    Read on every invoke rather than cached, so a rotation (`helm
+    upgrade` + Secret update) takes effect without a pod restart.
+    """
+    file = Path(settings.action_tokens_path) / filename
+    if not file.is_file():
+        return None
+    return file.read_text().strip() or None
+
+
+def load_invoke_token(action_id: str) -> str | None:
+    """The invoke token for `action_id`, or None if it has none.
+
+    Read from a Secret-backed volume (`actions-secret.yaml`), not the
+    action catalog itself, which lives in a ConfigMap with no
+    access-control distinction from other config. This proves only that
+    the caller knows the shared secret, not who the end user is or what
+    they're authorized for - see `mint_user_assertion` for that.
+    """
+    return _read_action_secret(action_id)
+
+
+def mint_user_assertion(
+    action_id: str, sub: str, groups: frozenset[str], search_id: str
+) -> str | None:
+    """Short-lived signed assertion of who this invoke is for, so a
+    backend-call target can independently verify identity and group
+    membership instead of trusting the bearer invoke token alone.
+
+    Signed with a SEPARATE per-action key (`<action_id>.assertion-key`),
+    never the invoke token itself: the invoke token is transmitted on
+    every call and can leak via logs/traces/support bundles, but a
+    signing key never travels over the wire - only its signature output
+    does, which can't be reversed to recover it. Reusing the invoke token
+    as the signing key would let anyone who obtained it forge whatever
+    claims they wanted, defeating the point.
+
+    None if this action has no assertion key configured - opt-in, so an
+    action that never sets one just doesn't get this header, same as
+    load_invoke_token. A 60s expiry keeps this a one-shot proof of "this
+    exact invocation is legitimate right now," not a general credential.
+    """
+    key = _read_action_secret(f"{action_id}.assertion-key")
+    if not key:
+        return None
+    now = int(time.time())
+    claims = {
+        "sub": sub,
+        "groups": sorted(groups),
+        "search_id": search_id,
+        "action_id": action_id,
+        "iat": now,
+        "exp": now + 60,
+    }
+    return jwt.encode(claims, key, algorithm="HS256")
 
 
 def list_actions(user_groups: frozenset[str]) -> list[ActionDescriptor]:

@@ -4,7 +4,10 @@
 # to the cross-namespace sidecar-discovery mechanism it uses for
 # third-party contributions (a further increment, not attempted here).
 # See scout_report_viewer/actions.py for the loader and its documented
-# graceful-degradation behavior.
+# graceful-degradation behavior. A backend-call entry's invokeToken is
+# NOT rendered here - see actions-secret.yaml; a ConfigMap has no
+# access-control distinction from other config, so secret material never
+# belongs in one.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -44,9 +47,6 @@ data:
       {{- if eq (.actionType | default "open-url") "backend-call" }}
       action_type: backend-call
       endpoint_url: {{ required (printf "actions.custom[%s]: backend-call needs an endpointUrl" .id) .endpointUrl | quote }}
-      {{- if .invokeToken }}
-      invoke_token: {{ .invokeToken | quote }}
-      {{- end }}
       {{- else }}
       action_type: open-url
       url: {{ required "actions.custom entries need a url" .url | quote }}

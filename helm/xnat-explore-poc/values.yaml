@@ -40,11 +40,27 @@ networkPolicy:
 # Bundled XNAT's browser-facing base URL - what /invoke's response points at.
 xnatBaseUrl: ''
 
-# Shared secret report-viewer sends as X-Invoke-Token. PoC only - plain
-# values-driven env var, not a Secret object, matching the earlier
-# chat-cohort-export PoC's explicitly-flagged-insecure precedent. Replace
-# with real service-to-service auth before this leaves prototype status.
+# Shared secret report-viewer sends as X-Report-Viewer-Action-Token
+# (rendered into a real Secret - see templates/secret.yaml - not a plain
+# env value). Must match the same value configured on report-viewer's
+# side for this action's actions.custom[].invokeToken. Proves only that
+# the caller knows this value, not who the end user is - see
+# assertionKey below for that.
 invokeToken: ''
+
+# Verifies X-Report-Viewer-User-Assertion, report-viewer's short-lived
+# signed claim of who an invoke is for. Must match report-viewer's
+# actions.custom[].assertionKey for this action - and must be a
+# DIFFERENT value from invokeToken, since invokeToken travels on every
+# call and can leak via logs, while this key never goes over the wire.
+assertionKey: ''
+
+# Keycloak group the asserted caller must be a member of, or empty to
+# skip this check (the assertion's signature/expiry are still verified
+# either way). Set this to whatever requiredGroup gates this action on
+# report-viewer's side - not read from there automatically, since this
+# App has no notion of report-viewer's action catalog.
+requiredGroup: ''
 
 resources:
   requests:

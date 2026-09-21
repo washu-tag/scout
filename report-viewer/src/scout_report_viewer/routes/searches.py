@@ -33,7 +33,7 @@ from fastapi import (
 )
 
 from .. import metrics, trino_client
-from ..actions import ActionDescriptor, list_actions
+from ..actions import ActionDescriptor, list_actions, load_invoke_token, mint_user_assertion
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
@@ -576,8 +576,16 @@ async def invoke_search_action(
     ]
 
     headers = {}
-    if action.invoke_token:
-        headers["X-Report-Viewer-Action-Token"] = action.invoke_token
+    invoke_token = load_invoke_token(action.id)
+    if invoke_token:
+        headers["X-Report-Viewer-Action-Token"] = invoke_token
+    # Independent, verifiable proof of who this invocation is for - the
+    # invoke token above only proves the caller knows a shared secret, not
+    # the end user's identity or group membership (see
+    # actions.mint_user_assertion's docstring).
+    user_assertion = mint_user_assertion(action.id, user.sub, user.groups, search_id)
+    if user_assertion:
+        headers["X-Report-Viewer-User-Assertion"] = user_assertion
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(

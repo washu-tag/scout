@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     # dev without the chart) falls back to actions.py's built-in defaults.
     action_catalog_path: str = "/app/action-catalog/catalog.yaml"
 
+    # Issue #739: directory of per-action invoke-token files, one per
+    # backend-call action id, mounted from a Secret (actions-secret.yaml) -
+    # kept out of the action catalog itself, which lives in a ConfigMap
+    # with no access-control distinction from other config. A missing
+    # file just means that action has no token to forward.
+    action_tokens_path: str = "/app/action-tokens"
+
     # Shared secret Traefik injects; the header path is refused unless it matches.
     gateway_secret: str = ""
 

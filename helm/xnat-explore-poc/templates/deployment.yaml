@@ -11,6 +11,9 @@ spec:
       {{- include "xnat-explore-poc.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        # Roll the pod when invokeToken/assertionKey change - env values are only read at start.
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
       labels:
         {{- include "xnat-explore-poc.labels" . | nindent 8 }}
     spec:
@@ -44,7 +47,19 @@ spec:
             - name: XNAT_EXPLORE_POC_XNAT_BASE_URL
               value: {{ required "xnatBaseUrl is required" .Values.xnatBaseUrl | quote }}
             - name: XNAT_EXPLORE_POC_INVOKE_TOKEN
-              value: {{ required "invokeToken is required" .Values.invokeToken | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "xnat-explore-poc.fullname" . }}
+                  key: invokeToken
+            - name: XNAT_EXPLORE_POC_ASSERTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "xnat-explore-poc.fullname" . }}
+                  key: assertionKey
+            {{- if .Values.requiredGroup }}
+            - name: XNAT_EXPLORE_POC_REQUIRED_GROUP
+              value: {{ .Values.requiredGroup | quote }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

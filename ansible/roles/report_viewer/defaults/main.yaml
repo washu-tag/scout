@@ -57,4 +57,5 @@ report_viewer_trino_auth_client_secret: '{{ keycloak_report_viewer_svc_client_se
 #     actionType: backend-call
 #     endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
 #     invokeToken: "{{ vault_xnat_explore_poc_invoke_token }}"
+#     assertionKey: "{{ vault_xnat_explore_poc_assertion_key }}"
 report_viewer_custom_actions: []

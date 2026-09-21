@@ -15,13 +15,31 @@ class Settings(BaseSettings):
     # Bundled XNAT's browser-facing URL - what /invoke's response points at.
     xnat_base_url: str = "https://xnat.example.org"
 
-    # Shared secret report-viewer sends as X-Report-Viewer-Action-Token.
-    # PoC only, same
-    # pattern (and same caveat) as the earlier chat-cohort-export PoC's
-    # CHAT_COHORT_EXPORT_TOKEN: authenticates only this one endpoint,
-    # replace with real service-to-service auth before this leaves
-    # prototype status.
+    # Shared secret report-viewer sends as X-Report-Viewer-Action-Token,
+    # sourced from a real Secret (helm/xnat-explore-poc/templates/secret.yaml),
+    # not a plain values-driven env var. Still a single static shared
+    # secret authenticating only this one endpoint, not real
+    # service-to-service auth (mTLS, mesh identity, OIDC client
+    # credentials) - replace before this leaves prototype status. Proves
+    # only that the caller knows this value, not who the end user is -
+    # see assertion_key below for that.
     invoke_token: str = ""
+
+    # Verifies X-Report-Viewer-User-Assertion, a short-lived JWT report-viewer
+    # signs with a key DIFFERENT from invoke_token (see actions-secret.yaml on
+    # report-viewer's side) - deliberately separate because invoke_token
+    # travels on every call and can leak via logs, while this key never goes
+    # over the wire. Required: an App that skips verifying this has no
+    # independent way to know who an invocation is actually for, and is
+    # trusting report-viewer's own gating never has a bug.
+    assertion_key: str = ""
+
+    # Keycloak group the asserted caller must be a member of, or empty to
+    # skip this check (the assertion's signature/expiry are still verified
+    # either way). Matches whatever requiredGroup this action is configured
+    # with on report-viewer's side - not read from anywhere automatically,
+    # since this App has no notion of report-viewer's action catalog.
+    required_group: str = ""
 
 
 settings = Settings()
