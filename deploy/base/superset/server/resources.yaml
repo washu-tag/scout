@@ -156,7 +156,7 @@ spec:
         - name: statsd-exporter
           # Pinned in versions.yaml (superset_statsd_exporter_tag).
           # renovate: datasource=docker depName=prom/statsd-exporter
-          image: prom/statsd-exporter:v0.29.0
+          image: prom/statsd-exporter:v0.31.0
           args:
             - --statsd.listen-udp=:9125
             - --statsd.listen-tcp=
