@@ -7,11 +7,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.core.SdkRequest;
+import software.amazon.awssdk.core.interceptor.Context;
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 
 /**
  * Configuration class for setting up the S3 client with custom endpoint.
@@ -53,6 +60,44 @@ public class S3Config {
         if (endpoint != null && !endpoint.isBlank()) {
             builder = builder.endpointOverride(URI.create(endpoint));
         }
+        if (isAwsS3(endpoint)) {
+            builder = builder.overrideConfiguration(
+                    config -> config.addExecutionInterceptor(new SseS3Interceptor()));
+        }
         return builder.build();
+    }
+
+    /** Real AWS S3: no endpoint override, or an explicit *.amazonaws.com one. */
+    static boolean isAwsS3(String endpoint) {
+        if (endpoint == null || endpoint.isBlank()) {
+            return true;
+        }
+        String host = URI.create(endpoint).getHost();
+        return host != null && host.endsWith(".amazonaws.com");
+    }
+
+    /**
+     * Requests SSE-S3 on uploads. An SCP or bucket policy can deny s3:PutObject without an
+     * x-amz-server-side-encryption header, and a bucket default does not satisfy it because the
+     * condition inspects the request. Registered only for real AWS S3; on S3-compatible services
+     * such as MinIO, server-side encryption depends on tenant configuration.
+     */
+    static final class SseS3Interceptor implements ExecutionInterceptor {
+
+        @Override
+        public SdkRequest modifyRequest(Context.ModifyRequest context,
+                ExecutionAttributes executionAttributes) {
+            SdkRequest request = context.request();
+            if (request instanceof PutObjectRequest put && put.serverSideEncryption() == null) {
+                return put.toBuilder().serverSideEncryption(ServerSideEncryption.AES256).build();
+            }
+            // Unreachable with a sync client, but a future transfer manager or
+            // multipart threshold would otherwise start the upload bare.
+            if (request instanceof CreateMultipartUploadRequest create
+                    && create.serverSideEncryption() == null) {
+                return create.toBuilder().serverSideEncryption(ServerSideEncryption.AES256).build();
+            }
+            return request;
+        }
     }
 }
