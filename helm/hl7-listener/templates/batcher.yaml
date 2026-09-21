@@ -60,6 +60,8 @@ spec:
               value: {{ .Values.batcher.s3.overrideEndpoint | quote }}
             - name: S3_FORCE_PATH_STYLE
               value: {{ .Values.batcher.s3.forcePathStyle | quote }}
+            - name: S3_USE_SSE_S3
+              value: {{ .Values.batcher.s3.useSseS3 | quote }}
             {{- if .Values.batcher.s3.staticCredentials }}
             # Static object-storage credentials (MinIO). On AWS these are omitted and
             # Camel's default credentials provider resolves IRSA from the ServiceAccount.

@@ -48,6 +48,7 @@
               overrideEndpoint: '{{s3.override.endpoint}}'
               uriEndpointOverride: '{{s3.endpoint:}}'
               forcePathStyle: '{{s3.force.path.style}}'
+              useSSES3: '{{s3.use.sse.s3}}'
               accessKey: 'RAW({{aws.access.key:}})'
               secretKey: 'RAW({{aws.secret.key:}})'
         - log:

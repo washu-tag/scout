@@ -42,3 +42,6 @@ data:
         fs.native-s3.enabled=true
         s3.region=${s3_region}
         s3.path-style-access=${s3_path_style_access}
+        # Native S3 defaults to sse.type=NONE; an SCP can deny PutObject
+        # without an SSE request header.
+        s3.sse.type=S3
