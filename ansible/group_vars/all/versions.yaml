@@ -79,7 +79,7 @@ kafka_version: 4.3.1
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
 trino_helm_chart_version: 1.42.2
 # renovate: datasource=docker depName=bitnamilegacy/jmx-exporter
-trino_jmx_exporter_version: 1.0.1
+trino_jmx_exporter_version: 1.4.0
 
 # Analytics & Query Engines - OPA (Trino access control)
 # renovate: datasource=docker depName=openpolicyagent/opa
