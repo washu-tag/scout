@@ -4,6 +4,7 @@ both hl7-transformer image literals move, and an absent haul component fails clo
 
 import hashlib
 import shutil
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,21 @@ EXPECTED_CHART_PLACEHOLDERS = {
     "launchpad",
 }
 
+# Every washu-tag values.image in deploy/base, by owning component. Counted,
+# because a component may carry more than one (superset: server + dashboards).
+EXPECTED_IMAGE_VALUES_TAGS = {
+    "hl7-transformer": 1,
+    "hl7log-extractor": 1,
+    "keycloak-fragment-reconciler": 1,
+    "superset": 2,
+}
+
+# Every washu-tag image literal written inline rather than through values.image.
+EXPECTED_INLINE_IMAGES = {
+    "hl7-transformer": 1,
+    "keycloak": 1,
+}
+
 
 @pytest.fixture
 def haul():
@@ -62,19 +78,38 @@ def test_every_placeholder_stamped_and_clean(haul, copy_deploy):
     for s in chart_stamps:
         assert s.tag == charts[s.name]
 
+    # Images: exactly the expected components, each pinned to its haul tag.
+    # verify_clean only sees a placeholder left behind, never one that vanished
+    # (a dropped `tag:`, a renamed repository), which ships that component
+    # frozen at whatever the chart defaults to -- so the set is counted here.
+    for kind, expected in (
+        ("image-values-tag", EXPECTED_IMAGE_VALUES_TAGS),
+        ("image-inline", EXPECTED_INLINE_IMAGES),
+    ):
+        img_stamps = [s for s in stamps if s.kind == kind]
+        assert Counter(s.name for s in img_stamps) == expected, kind
+        for s in img_stamps:
+            assert s.tag == images[s.name]
+
     # config-hash stamped to the truncated realm sha256.
     ch_stamps = [s for s in stamps if s.kind == "config-hash"]
     assert len(ch_stamps) == 1
     assert ch_stamps[0].tag == ch
 
-    # No stamp kind beyond the ones asserted above. Coverage of the tree itself
-    # is verify_clean's job, so this needs no per-component count.
+    # No stamp kind beyond the ones counted above, so the totals add up to the
+    # whole tree.
     assert {s.kind for s in stamps} == {
         "chart-version",
         "config-hash",
         "image-values-tag",
         "image-inline",
     }
+    assert len(stamps) == (
+        len(EXPECTED_CHART_PLACEHOLDERS)
+        + sum(EXPECTED_IMAGE_VALUES_TAGS.values())
+        + sum(EXPECTED_INLINE_IMAGES.values())
+        + 1
+    )
 
 
 def test_hl7_transformer_both_image_literals_move(haul, copy_deploy):
