@@ -216,6 +216,10 @@ class FakeK8s:
         self.list_error: ApiError | None = None
         self.secret_error: ApiError | None = None
         self.lists = 0
+        self.emit_attempts = 0
+        # How many of the next reports fail to land, as the real client
+        # reports them: swallowed, and answered with False.
+        self.emit_failures = 0
 
     # --- test helpers ---------------------------------------------------
 
@@ -293,10 +297,15 @@ class FakeK8s:
             raise self.secret_error
         return self.secrets.get((namespace, name))
 
-    def emit_event(self, *, involved, reason, message, timestamp, **kwargs) -> None:
+    def emit_event(self, *, involved, reason, message, timestamp, **kwargs) -> bool:
+        self.emit_attempts += 1
+        if self.emit_failures:
+            self.emit_failures -= 1
+            return False
         self.events.append(
             {"reason": reason, "message": message, "type": kwargs.get("event_type")}
         )
+        return True
 
 
 @pytest.fixture

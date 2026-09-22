@@ -203,11 +203,13 @@ class Client:
         event_type: str = "Normal",
         component: str = "keycloak-fragment-reconciler",
         timestamp: str,
-    ) -> None:
+    ) -> bool:
         """Report one fragment's outcome against the ConfigMap it came from.
 
         Best-effort: failing to report must never fail the reconcile it was
-        reporting on.
+        reporting on. Answers whether the report landed, because an Event is
+        the only reporting channel there is and a caller that reports on change
+        only must not remember a lost one as reported.
         """
         meta = involved.get("metadata") or {}
         namespace = meta.get("namespace") or self.namespace()
@@ -245,3 +247,5 @@ class Client:
                 meta.get("name"),
                 exc,
             )
+            return False
+        return True

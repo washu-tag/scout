@@ -932,6 +932,24 @@ class TestEventsMarkTransitions:
             "FragmentApplied",
         ]
 
+    def test_a_report_that_never_landed_is_made_again(self, reconciler, k8s):
+        """An Event is the only reporting channel, and emitting one swallows
+        its own failure, so a report that did not land must not be remembered
+        as reported: the change-only gate would then suppress it for as long as
+        the outcome stays the same, which for a broken fragment is forever."""
+        reconciler.reconcile_once()
+        k8s.secrets.clear()
+        k8s.emit_failures = 1
+
+        reconciler.reconcile_once()
+        assert "FragmentFailed" not in k8s.reasons()
+        attempts = k8s.emit_attempts
+
+        reconciler.reconcile_once()
+
+        assert k8s.emit_attempts > attempts, "the lost report was never retried"
+        assert "FragmentFailed" in k8s.reasons()
+
     def test_an_incomplete_read_publishes_nothing(self, reconciler, k8s):
         """One failed LIST must not become "every fragment is gone" to the
         metrics, nor clear the report state and re-emit the lot on recovery."""

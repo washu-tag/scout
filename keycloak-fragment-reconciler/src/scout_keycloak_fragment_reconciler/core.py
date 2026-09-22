@@ -777,7 +777,6 @@ class Reconciler:
             current = (outcome.status, outcome.detail)
             if self._reported.get(key) == current:
                 continue
-            self._reported[key] = current
             good = outcome.status == APPLIED
             # Under the same change-only gate as the Event, so a resync that
             # found nothing new stays silent.
@@ -788,7 +787,10 @@ class Reconciler:
                 outcome.status,
                 f" -- {outcome.detail}" if outcome.detail else "",
             )
-            self.k8s.emit_event(
+            # Only a report that landed counts as reported: an Event is the
+            # only channel, so remembering a lost one would suppress it until
+            # the outcome itself changes, which for a broken fragment is never.
+            if self.k8s.emit_event(
                 involved=involved,
                 reason={
                     APPLIED: "FragmentApplied",
@@ -803,7 +805,8 @@ class Reconciler:
                 ),
                 event_type="Normal" if good else "Warning",
                 timestamp=stamp,
-            )
+            ):
+                self._reported[key] = current
 
 
 # --- scheduling ---------------------------------------------------------
