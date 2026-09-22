@@ -140,27 +140,26 @@ class Admin:
             raise KeycloakError(0, "token endpoint returned no access_token")
         return self._token
 
-    def _call(self, method: str, url: str, *, json: object = None) -> httpx.Response:
-        token = self._access_token()
-        try:
-            response = self._http.request(
-                method, url, json=json, headers={"Authorization": f"Bearer {token}"}
-            )
-        except httpx.HTTPError as exc:
-            raise KeycloakError(0, f"{method} {url}: {exc}") from None
-        if response.status_code != 401:
-            return response
-        # The token went stale mid-flight; one retry with a fresh one. Not a
-        # loop: a second 401 is an authorization problem, and the usual one is
-        # roles assigned to the service-account user but filtered out of its
-        # token because they are not in the client's scope.
-        token = self._access_token(force=True)
+    def _send(
+        self, method: str, url: str, json: object, *, force_token: bool = False
+    ) -> httpx.Response:
+        token = self._access_token(force=force_token)
         try:
             return self._http.request(
                 method, url, json=json, headers={"Authorization": f"Bearer {token}"}
             )
         except httpx.HTTPError as exc:
             raise KeycloakError(0, f"{method} {url}: {exc}") from None
+
+    def _call(self, method: str, url: str, *, json: object = None) -> httpx.Response:
+        response = self._send(method, url, json)
+        if response.status_code != 401:
+            return response
+        # The token went stale mid-flight; one retry with a fresh one. Not a
+        # loop: a second 401 is an authorization problem, and the usual one is
+        # roles assigned to the service-account user but filtered out of its
+        # token because they are not in the client's scope.
+        return self._send(method, url, json, force_token=True)
 
     def _request(self, method: str, path: str, *, json: object = None) -> object:
         response = self._call(method, self._admin(path), json=json)

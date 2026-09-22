@@ -157,3 +157,41 @@ def test_a_non_json_token_body_is_a_keycloak_error():
     http = FakeHttp(token_responses=[httpx.Response(200, content=b"<html/>")])
     with pytest.raises(KeycloakError):
         admin(http)._access_token()
+
+
+def test_a_transport_failure_is_retryable():
+    http = FakeHttp(responses=[httpx.ConnectError("no route")])
+    with pytest.raises(KeycloakError) as raised:
+        admin(http).list_clients()
+    assert raised.value.status == 0
+    assert raised.value.retryable
+
+
+# --- the 401 retry ------------------------------------------------------
+
+
+def test_a_401_is_retried_once_with_a_fresh_token():
+    http = FakeHttp(
+        responses=[httpx.Response(401), httpx.Response(200, json=[{"id": "a"}])]
+    )
+    client = admin(http)
+    assert client.list_clients() == [{"id": "a"}]
+    assert len(http.requests) == 2
+    first, second = (sent.headers["Authorization"] for sent in http.requests)
+    assert first != second
+
+
+def test_a_second_401_goes_to_the_caller_rather_than_looping():
+    http = FakeHttp(responses=[httpx.Response(401), httpx.Response(401, text="nope")])
+    client = admin(http)
+    with pytest.raises(KeycloakError) as raised:
+        client.list_clients()
+    assert raised.value.status == 401
+    assert len(http.requests) == 2
+
+
+def test_a_transport_failure_on_the_retry_is_classified():
+    http = FakeHttp(responses=[httpx.Response(401), httpx.ConnectError("no route")])
+    with pytest.raises(KeycloakError) as raised:
+        admin(http).list_clients()
+    assert raised.value.status == 0
