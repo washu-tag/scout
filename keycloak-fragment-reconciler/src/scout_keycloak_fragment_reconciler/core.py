@@ -468,11 +468,13 @@ class Reconciler:
 
     def _update(self, uuid: str, live: dict, desired: dict, secret: str) -> None:
         drift = translate.client_drift(live, desired)
-        rotated = self._secret_rotated(uuid, secret)
-        if not drift and not rotated:
-            return
-        if rotated:
-            drift = [*drift, "secret"]
+        if not drift:
+            # Only asked when it is the answer: `desired` carries the
+            # credential whatever else changed, so once a field has drifted the
+            # read could not alter the write it would be deciding on.
+            if not self._secret_rotated(uuid, secret):
+                return
+            drift = ["secret"]
         body = {
             **desired,
             "id": uuid,

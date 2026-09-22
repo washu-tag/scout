@@ -116,6 +116,34 @@ class TestSteadyStateCost:
 
         assert kc.edges("scout-user") == {"hello-user", "hello-viewer"}
 
+    def test_a_certain_update_does_not_read_the_credential_back(
+        self, reconciler, kc, k8s
+    ):
+        """The read-back only decides whether an otherwise-clean client needs
+        a PUT. Once a field has drifted the PUT is going to happen and the
+        representation carries the credential either way."""
+        reconciler.reconcile_once()
+        k8s.add_fragment(fragment_text().replace("Hello Scout", "Hello Again"))
+        before = kc.calls["client_secret"]
+
+        reconciler.reconcile_once()
+
+        assert kc.calls["client_secret"] == before
+        assert "update_client:hello" in kc.writes
+        assert kc.find_client("hello")["name"] == "Hello Again"
+
+    def test_a_rotation_with_nothing_else_to_write_is_still_noticed(
+        self, reconciler, kc, k8s
+    ):
+        reconciler.reconcile_once()
+        k8s.add_secret("rotated")
+        before = kc.calls["client_secret"]
+
+        reconciler.reconcile_once()
+
+        assert kc.calls["client_secret"] == before + 1
+        assert kc.secrets[next(iter(kc.clients))] == "rotated"
+
     def test_an_unlistable_realm_is_still_applied_against(self, reconciler, kc):
         """There is not always a listing to reuse -- GC returns before it lists
         when `list_clients` fails -- so the apply falls back to fetching, and
