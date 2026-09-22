@@ -162,6 +162,45 @@ class TestResyncDisabled:
         env(RESYNC_SECONDS="-1")
         assert RequiredSettings().resync_seconds == -1
 
+    def test_zero_is_accepted(self, env):
+        """It parks on the watch exactly as -1 does."""
+        env(RESYNC_SECONDS="0")
+        assert RequiredSettings().resync_seconds == 0
+
+
+class TestBounds:
+    def exits_naming(self, env, variable: str, value: str) -> None:
+        env(**{variable: value})
+        with pytest.raises(SystemExit) as exit_info:
+            RequiredSettings()
+        assert f"{ENV_PREFIX}{variable}" in str(exit_info.value)
+
+    def test_a_resync_below_minus_one_exits_with_the_variable_name(self, env):
+        self.exits_naming(env, "RESYNC_SECONDS", "-30")
+
+    def test_a_privileged_port_exits_with_the_variable_name(self, env):
+        """The pod runs as uid 65532, so binding 80 would be a PermissionError
+        with no variable named."""
+        self.exits_naming(env, "PORT", "80")
+
+    def test_port_zero_exits_with_the_variable_name(self, env):
+        """An ephemeral port never matches the containerPort the probes hit,
+        so the pod would never go Ready."""
+        self.exits_naming(env, "PORT", "0")
+
+    def test_a_port_above_the_range_exits_with_the_variable_name(self, env):
+        self.exits_naming(env, "PORT", "70000")
+
+    def test_the_charts_port_is_accepted(self, env):
+        env(PORT="8080")
+        assert RequiredSettings().port == 8080
+
+    def test_a_negative_grace_exits_with_the_variable_name(self, env):
+        self.exits_naming(env, "ORPHAN_GRACE_SECONDS", "-1")
+
+    def test_a_negative_debounce_exits_with_the_variable_name(self, env):
+        self.exits_naming(env, "DEBOUNCE_SECONDS", "-0.5")
+
 
 class TestMetricsAreWellFormed:
     """Rendering must not raise, and no two series may share a label set.

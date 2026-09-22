@@ -58,17 +58,19 @@ class Settings(BaseSettings):
     # the timer entirely and parks on the watch, so the realm is only ever
     # re-read when a fragment changes -- an orphan's grace period still comes
     # due, but drift is not looked for until something wakes the loop.
-    resync_seconds: int = 300
+    resync_seconds: int = Field(default=300, ge=-1)
     # Absence tolerated before a fragment's client is deleted. Held in memory,
     # so a restart restarts the clock -- a floor rather than a guarantee. Bias
     # long: deleting early is an outage for a running app, while waiting leaves
     # an inert client only a departed app could have used.
-    orphan_grace_seconds: int = 300
+    orphan_grace_seconds: int = Field(default=300, ge=0)
     # A watch fires once per object written, so a burst lands together.
-    debounce_seconds: float = 2.0
+    debounce_seconds: float = Field(default=2.0, ge=0)
 
     # --- Process --------------------------------------------------------
-    port: int = 8080
+    # Non-privileged: the pod runs as uid 65532, and the probes hit a fixed
+    # containerPort, so an ephemeral 0 would never go Ready.
+    port: int = Field(default=8080, ge=1024, le=65535)
     # Log every write that would happen and perform none of them.
     dry_run: bool = False
 
