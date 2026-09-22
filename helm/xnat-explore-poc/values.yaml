@@ -36,6 +36,14 @@ networkPolicy:
   # Namespace report-viewer itself deploys into, so its pod can reach this
   # service. Set to match the report-viewer deployment.
   reportViewerNamespace: ''
+  # Narrows the namespace-level allow above to report-viewer's own pods -
+  # a bare namespaceSelector alone would let ANY pod in that namespace
+  # reach this service, not just report-viewer. Matches
+  # report-viewer.selectorLabels' app.kubernetes.io/name (stable
+  # regardless of Helm release name); only needs changing if
+  # report-viewer's chart is deployed with a nameOverride.
+  reportViewerPodSelector:
+    app.kubernetes.io/name: report-viewer
 
 # Bundled XNAT's browser-facing base URL - what /invoke's response points at.
 xnatBaseUrl: ''

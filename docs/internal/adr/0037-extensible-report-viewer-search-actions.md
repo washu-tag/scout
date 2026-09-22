@@ -88,7 +88,9 @@ Three `action_type` values, matched to what the SPA can do with a click:
   belongs in it. `xnat-explore-poc`
   (`xnat-explore-poc/`, `helm/xnat-explore-poc/`) is the reference implementation: a
   deliberately fake FastAPI service with its own Helm chart and a NetworkPolicy
-  restricting ingress to report-viewer's namespace, deployed independently of any
+  restricting ingress to report-viewer's own pods specifically (namespace plus pod
+  selector — a bare namespace match would admit any pod sharing that namespace, not
+  just report-viewer), deployed independently of any
   Ansible role — proving the mechanism crosses a real service boundary without doing any
   real XNAT integration work. Its own copy of the shared invoke token is likewise a real
   Secret, not a plain Deployment env value.
