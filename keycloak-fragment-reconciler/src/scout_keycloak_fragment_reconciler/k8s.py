@@ -63,25 +63,28 @@ class TransportError(ApiError):
         self.status = 0
 
 
-def value_of(secret: dict | None, key: str) -> str | None:
-    """One key out of a fetched Secret.
+def value_of(secret: dict | None, key: str) -> tuple[str | None, str]:
+    """One key out of a fetched Secret, or why there is no value to use.
 
-    Non-text is reported as absent, which fails closed. Raising here would reach
-    the reconcile loop and stall every other fragment.
+    Every way this fails fails closed, and each says which way it was: the
+    reason reaches the fragment's author, and the several causes want different
+    things fixed. Reported rather than raised, because raising would reach the
+    reconcile loop and stall every other fragment.
     """
     if not secret:
-        return None
-    encoded = (secret.get("data") or {}).get(key)
+        return None, "no such Secret"
+    data = secret.get("data") or {}
+    encoded = data.get(key)
     if encoded is None:
-        return None
+        present = ", ".join(sorted(data)) or "no keys"
+        return None, f"the Secret has no such key; it has {present}"
     try:
-        return base64.b64decode(encoded).decode("utf-8")
+        value = base64.b64decode(encoded).decode("utf-8")
     except (UnicodeDecodeError, binascii.Error, ValueError):
-        name = (secret.get("metadata") or {}).get("name", "(unnamed)")
-        log.warning(
-            "secret %s key %s is not UTF-8 text; treating it as absent", name, key
-        )
-        return None
+        return None, "the value is not UTF-8 text"
+    if not value:
+        return None, "the value is empty"
+    return value, ""
 
 
 class Client:

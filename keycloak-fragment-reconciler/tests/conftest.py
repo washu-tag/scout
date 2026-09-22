@@ -5,11 +5,13 @@ Both record every call, because much of the suite asserts about writes that did
 
 `FakeK8s.list_error` makes a LIST raise rather than return `[]`, which is the
 only way to test that an unreachable API is not read as "every fragment has been
-deleted".
+deleted". `secret_error` and `emit_failures` do the same for the other two reads
+whose failure the service is expected to survive.
 """
 
 from __future__ import annotations
 
+import base64
 import itertools
 
 import pytest
@@ -212,6 +214,7 @@ class FakeK8s:
         self.secrets: dict[tuple[str, str], dict] = {}
         self.events: list[dict] = []
         self.list_error: ApiError | None = None
+        self.secret_error: ApiError | None = None
         self.lists = 0
 
     # --- test helpers ---------------------------------------------------
@@ -250,17 +253,18 @@ class FakeK8s:
 
     def add_secret(
         self,
-        value: str,
+        value: str | bytes,
         *,
         namespace: str = "demo",
         name: str = "hello-keycloak-client",
         key: str = "client-secret",
     ) -> None:
-        import base64
-
+        """Takes bytes as well as text, so a value that is not UTF-8 -- one of
+        the ways a secretRef is unreadable -- is expressible."""
+        raw = value.encode() if isinstance(value, str) else value
         self.secrets[(namespace, name)] = {
             "metadata": {"namespace": namespace, "name": name},
-            "data": {key: base64.b64encode(value.encode()).decode()},
+            "data": {key: base64.b64encode(raw).decode()},
         }
 
     def reasons(self) -> list[str]:
@@ -285,6 +289,8 @@ class FakeK8s:
         return None
 
     def get_secret(self, namespace: str, name: str) -> dict | None:
+        if self.secret_error is not None:
+            raise self.secret_error
         return self.secrets.get((namespace, name))
 
     def emit_event(self, *, involved, reason, message, timestamp, **kwargs) -> None:

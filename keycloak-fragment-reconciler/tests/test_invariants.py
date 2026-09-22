@@ -21,7 +21,12 @@ from conftest import (
 )
 
 from scout_keycloak_fragment_reconciler import core, metrics
-from scout_keycloak_fragment_reconciler.core import APPLIED, REJECTED, Reconciler
+from scout_keycloak_fragment_reconciler.core import (
+    APPLIED,
+    FAILED,
+    REJECTED,
+    Reconciler,
+)
 
 
 class TestConvergence:
@@ -459,6 +464,52 @@ class TestOneWaySecretFlow:
 
         assert kc.secrets[uuid] == "rotated"
         assert "update_client:hello" in kc.writes
+
+
+class TestAnUnreadableSecretNamesItsCause:
+    """Only one of the ways a secretRef fails is an RBAC problem.
+
+    The others are in the app's own chart, so an outcome that offers the same
+    RBAC advice for all of them sends the author to a grant that is already
+    correct.
+    """
+
+    def detail(self, reconciler) -> str:
+        reconciler.reconcile_once()
+        return next(
+            o.detail for o in reconciler.snapshot.outcomes if o.status == FAILED
+        )
+
+    def test_an_absent_secret(self, reconciler, k8s):
+        k8s.secrets.clear()
+        detail = self.detail(reconciler)
+        assert "no such Secret" in detail
+        assert "resourceNames" not in detail
+
+    def test_a_key_the_secret_does_not_have(self, reconciler, k8s):
+        k8s.add_secret("hello-secret", key="clientSecret")
+        detail = self.detail(reconciler)
+        assert "no such key" in detail
+        assert "clientSecret" in detail, "the keys it does have go unnamed"
+        assert "resourceNames" not in detail
+
+    def test_an_empty_value(self, reconciler, k8s):
+        k8s.add_secret("")
+        detail = self.detail(reconciler)
+        assert "empty" in detail
+        assert "resourceNames" not in detail
+
+    def test_a_value_that_is_not_utf_8(self, reconciler, k8s):
+        k8s.add_secret(b"\xff\xfe")
+        detail = self.detail(reconciler)
+        assert "UTF-8" in detail
+        assert "resourceNames" not in detail
+
+    def test_a_secret_the_apiserver_refused(self, reconciler, k8s):
+        k8s.secret_error = ApiError(403, "forbidden")
+        detail = self.detail(reconciler)
+        assert "403" in detail
+        assert "resourceNames" in detail, "the one case the RBAC hint is for"
 
 
 class TestGarbageCollection:

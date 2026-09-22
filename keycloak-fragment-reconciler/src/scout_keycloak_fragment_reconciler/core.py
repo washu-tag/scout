@@ -365,17 +365,9 @@ class Reconciler:
     def apply(self, claim: Claim) -> Outcome:
         """One fragment's client, in the order that keeps every prefix inert."""
         spec = claim.spec
-        secret = self._read_secret(claim)
+        secret, problem = self._read_secret(claim)
         if secret is None:
-            return Outcome(
-                claim.source,
-                spec.client_id,
-                FAILED,
-                f"cannot read secretRef {spec.secret_ref.name} key "
-                f"{spec.secret_ref.key} in {claim.namespace}. The app's chart "
-                "must grant this reconciler's ServiceAccount a resourceNames-"
-                "scoped get on that Secret",
-            )
+            return Outcome(claim.source, spec.client_id, FAILED, problem)
         desired = translate.client_representation(
             spec, secret=secret, source=claim.source
         )
@@ -416,15 +408,31 @@ class Reconciler:
             return Outcome(claim.source, spec.client_id, FAILED, str(exc))
         return Outcome(claim.source, spec.client_id, APPLIED)
 
-    def _read_secret(self, claim: Claim) -> str | None:
+    def _read_secret(self, claim: Claim) -> tuple[str | None, str]:
+        """The client credential, or why it could not be read.
+
+        The reason is what the fragment's author gets, so it names which of the
+        several causes happened. Only the refusal is an RBAC problem; the rest
+        are in the app's own chart, and pointing those at a grant that is
+        already correct is a debugging session each.
+        """
         ref = claim.spec.secret_ref
+        where = f"key {ref.key} of secretRef {ref.name} in {claim.namespace}"
         try:
             secret = self.k8s.get_secret(claim.namespace, ref.name)
         except ApiError as exc:
             log.warning("reading secret %s/%s: %s", claim.namespace, ref.name, exc)
-            return None
-        value = value_of(secret, ref.key)
-        return value or None
+            hint = (
+                " The app's chart must grant this reconciler's ServiceAccount a "
+                "resourceNames-scoped get on that Secret."
+                if exc.status == 403
+                else ""
+            )
+            return None, f"cannot read {where}: {exc}.{hint}"
+        value, problem = value_of(secret, ref.key)
+        if value is None:
+            return None, f"cannot read {where}: {problem}"
+        return value, ""
 
     def _update(self, uuid: str, live: dict, desired: dict, secret: str) -> None:
         drift = translate.client_drift(live, desired)
