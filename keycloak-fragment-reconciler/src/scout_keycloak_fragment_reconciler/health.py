@@ -16,10 +16,6 @@ from .metrics import CONTENT_TYPE_LATEST
 
 log = logging.getLogger("keycloak-fragment-reconciler")
 
-# Nothing here reads a body; this bounds what we swallow before hanging up.
-MAX_BODY_BYTES = 1 << 20
-_CHUNK_BYTES = 65536
-
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
@@ -32,9 +28,6 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         log.debug("http %s", fmt % args)
 
-    def path_only(self) -> str:
-        return self.path.split("?")[0].rstrip("/") or "/"
-
     def reply(
         self, code: int, body: bytes = b"", content_type: str = "text/plain"
     ) -> None:
@@ -46,64 +39,34 @@ class Handler(BaseHTTPRequestHandler):
         if body:
             self.wfile.write(body)
 
-    def drain(self) -> None:
-        """Consume the request body, or hang up rather than mis-frame the next.
+    def response_for(self, path: str) -> tuple[int, bytes, str]:
+        if path == "/healthz":
+            return 200, b"ok", "text/plain"
+        if path == "/readyz":
+            if self.server.ready():
+                return 200, b"ready", "text/plain"
+            return 503, b"tier realm roles not found in the realm", "text/plain"
+        if path == "/metrics":
+            return 200, self.server.metrics().encode("utf-8"), CONTENT_TYPE_LATEST
+        return 404, b"not found", "text/plain"
 
-        Keep-alive connections, so an unread body is parsed as the next request
-        line.
-        """
-        if "chunked" in (self.headers.get("Transfer-Encoding") or "").lower():
-            self.close_connection = True
-            return
+    def do_GET(self):
+        path = self.path.split("?")[0].rstrip("/") or "/"
         try:
-            remaining = int(self.headers.get("Content-Length") or 0)
-        except ValueError:
-            self.close_connection = True
-            return
-        if remaining > MAX_BODY_BYTES:
-            self.close_connection = True
-            return
-        while remaining > 0:
-            chunk = self.rfile.read(min(remaining, _CHUNK_BYTES))
-            if not chunk:
-                self.close_connection = True
-                return
-            remaining -= len(chunk)
-
-
-def handler_for(
-    ready: Callable[[], bool], metrics: Callable[[], str]
-) -> type[BaseHTTPRequestHandler]:
-    class _Handler(Handler):
-        def response_for(self, path: str) -> tuple[int, bytes, str]:
-            if path == "/healthz":
-                return 200, b"ok", "text/plain"
-            if path == "/readyz":
-                if ready():
-                    return 200, b"ready", "text/plain"
-                return 503, b"tier realm roles not found in the realm", "text/plain"
-            if path == "/metrics":
-                return 200, metrics().encode("utf-8"), CONTENT_TYPE_LATEST
-            return 404, b"not found", "text/plain"
-
-        def do_GET(self):
-            self.drain()
-            path = self.path_only()
-            try:
-                code, body, content_type = self.response_for(path)
-            except Exception:
-                log.exception("GET %s failed", path)
-                code, body, content_type = 500, b"internal error", "text/plain"
-            self.reply(code, body, content_type)
-
-    return _Handler
+            code, body, content_type = self.response_for(path)
+        except Exception:
+            log.exception("GET %s failed", path)
+            code, body, content_type = 500, b"internal error", "text/plain"
+        self.reply(code, body, content_type)
 
 
 def serve(
     port: int, ready: Callable[[], bool], metrics: Callable[[], str]
 ) -> ThreadingHTTPServer:
     """Start the listener on a background thread and return it, to stop later."""
-    server = ThreadingHTTPServer(("", port), handler_for(ready, metrics))
+    server = ThreadingHTTPServer(("", port), Handler)
+    server.ready = ready
+    server.metrics = metrics
     threading.Thread(target=server.serve_forever, daemon=True).start()
     log.info("health endpoint on :%s (/healthz, /readyz, /metrics)", port)
     return server
