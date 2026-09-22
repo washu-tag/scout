@@ -7,6 +7,8 @@ naturally -- needs `NoDecode` to reach the field at all.
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
 from typing import get_origin
 
 import pytest
@@ -37,10 +39,20 @@ CHART_ENV = {
     "WATCHED_NAMESPACES": "",
     "RESYNC_SECONDS": "300",
     "ORPHAN_GRACE_SECONDS": "300",
+    "DEBOUNCE_SECONDS": "2",
     "DRY_RUN": "false",
     "PORT": "8080",
     "LOG_LEVEL": "INFO",
 }
+
+CHART_DEPLOYMENT = (
+    Path(__file__).resolve().parents[2]
+    / "helm/keycloak-fragment-reconciler/templates/deployment.yaml"
+)
+
+# The fragment label is the contract every app labels its ConfigMap against, so
+# it is a constant with a field rather than a value a site may turn.
+NOT_A_KNOB = {"FRAGMENT_LABEL"}
 
 
 @pytest.fixture
@@ -110,6 +122,29 @@ class TestTheChartsEnvironment:
         with pytest.raises(SystemExit) as exit_info:
             RequiredSettings()
         assert f"{ENV_PREFIX}WATCHED_NAMESPACES" in str(exit_info.value)
+
+
+class TestEveryFieldIsReachable:
+    """A field no lane renders is a setting no operator can set.
+
+    The chart is the only thing that writes this environment -- Ansible and
+    Flux both pass it values -- so a variable missing from the Deployment is
+    missing from every install.
+    """
+
+    def rendered(self) -> set[str]:
+        text = CHART_DEPLOYMENT.read_text(encoding="utf-8")
+        return set(re.findall(rf"{ENV_PREFIX}([A-Z0-9_]+)", text))
+
+    def test_the_chart_renders_a_variable_for_every_field(self):
+        fields = {name.upper() for name in RequiredSettings.model_fields}
+        unreachable = sorted(fields - self.rendered() - NOT_A_KNOB)
+        assert unreachable == [], f"no lane can set: {unreachable}"
+
+    def test_the_fixture_is_what_the_chart_renders(self):
+        """CHART_ENV stands in for the rendered pod, so it must not drift from
+        the template whose shapes it claims to be testing."""
+        assert self.rendered() == set(CHART_ENV)
 
 
 class TestRequiredFields:

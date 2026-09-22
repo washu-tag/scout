@@ -68,6 +68,8 @@ spec:
               value: {{ .Values.reconcile.resyncSeconds | quote }}
             - name: KEYCLOAK_FRAGMENT_RECONCILER_ORPHAN_GRACE_SECONDS
               value: {{ .Values.reconcile.orphanGraceSeconds | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_DEBOUNCE_SECONDS
+              value: {{ .Values.reconcile.debounceSeconds | quote }}
             - name: KEYCLOAK_FRAGMENT_RECONCILER_DRY_RUN
               value: {{ .Values.reconcile.dryRun | quote }}
             - name: KEYCLOAK_FRAGMENT_RECONCILER_PORT

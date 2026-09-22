@@ -56,6 +56,9 @@ reconcile:
   # How long a fragment must be absent before its client is deleted. Held in
   # memory, so a restart restarts the clock -- a floor, not a guarantee.
   orphanGraceSeconds: 300
+  # How long a woken reconciler waits before it reads. The watch fires once per
+  # object written, so this is what lets a burst of them land in one pass.
+  debounceSeconds: 2
   # Log every write and perform none of them.
   dryRun: false
 
