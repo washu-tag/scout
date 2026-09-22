@@ -58,9 +58,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p digests
-          # superset/keycloak have a real semver VERSION file (overridable). The 6
-          # Scout images are versioned "latest" in-repo, so seed the newest build-lane
-          # tag (0.YYYYMMDD.N), not :latest, or stamp_config fail-closes downstream.
+          # superset/keycloak have a real semver VERSION file (overridable). The Scout
+          # images are versioned "latest" in-repo, so seed the newest build-lane tag
+          # (0.YYYYMMDD.N), not :latest, or stamp_config fail-closes downstream.
           for name in hl7log-extractor hl7-transformer hl7-listener scout-notebook \
                       launchpad report-viewer keycloak-fragment-reconciler \
                       superset keycloak; do

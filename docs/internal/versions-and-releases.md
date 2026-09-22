@@ -168,7 +168,7 @@ Because the tag is created at the end of the workflow (after everything else suc
 
 ### Build Fails Due to a Bug
 - Version bump commit exists and is still the head of `main`; the build failed
-- Reset to dev versions has **not** happened — `reset-dev` only runs on a successful release — so `main` is stamped at `X.Y.Z` while nothing is published at that version. Everything downstream feels it: `derive-version` reads `X.Y.Z`, `check-image-exists` finds no such tag, and every PR rebuilds and rescans all eight images until this is undone.
+- Reset to dev versions has **not** happened — `reset-dev` only runs on a successful release — so `main` is stamped at `X.Y.Z` while nothing is published at that version. Everything downstream feels it: `derive-version` reads `X.Y.Z`, `check-image-exists` finds no such tag, and every PR rebuilds and rescans every image until this is undone.
 - **Recovery**, in this order:
   1. Land the fix on `main` as a normal PR.
   2. Land a commit whose message contains a line reading exactly `Reset to dev versions`. This is load-bearing: `validate` greps for it over `bump..HEAD`, and `version-bump` re-stamps only when it finds one. Without it, a re-dispatch pins straight back to the failed stamp commit and fails identically. `main` is PR-gated and only the release App bypasses that, so the line has to survive the squash — put it in the squash body: `gh pr merge <N> --squash --body "Reset to dev versions"`. Verify with `git log --grep="^Reset to dev versions$" <bump-sha>..origin/main` before continuing.
@@ -207,7 +207,7 @@ This allows safe re-runs after partial failures without manual intervention.
 
 It deliberately does not consult `validate`'s `reset_exists`. That flag is computed before `version-bump` runs, so on a re-release it reports the *previous* cycle's reset and skips the current one — which is how v4.1.0's re-release left `main` stamped at 4.1.0.
 
-While `main` is stamped, nothing is published at that version, so `check-image-exists` reports every image absent and every unrelated PR rebuilds and rescans all eight. `verify-dev-reset` is gated on the same successful release, so it does not fire here — the red release run is the only signal. Recovery is in [Build Fails Due to a Bug](#build-fails-due-to-a-bug).
+While `main` is stamped, nothing is published at that version, so `check-image-exists` reports every image absent and every unrelated PR rebuilds and rescans all of them. `verify-dev-reset` is gated on the same successful release, so it does not fire here — the red release run is the only signal. Recovery is in [Build Fails Due to a Bug](#build-fails-due-to-a-bug).
 
 ## CI Components
 
