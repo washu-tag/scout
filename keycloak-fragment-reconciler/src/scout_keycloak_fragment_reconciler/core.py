@@ -88,6 +88,10 @@ class Snapshot:
     """
 
     claims: dict[str, Claim] = field(default_factory=dict)
+    # Source -> the identity of the ConfigMap it came from, which is all that
+    # reporting an Event against it needs. Not the body: this outlives its own
+    # pass, the documents are already parsed into claims, and a Flux- or
+    # Helm-managed object carries a copy of its own manifest in an annotation.
     objects: dict[str, dict] = field(default_factory=dict)
     outcomes: list[Outcome] = field(default_factory=list)
     # Realm clients as the GC read returned them, keyed by clientId. Empty
@@ -196,7 +200,14 @@ class Reconciler:
             namespace, name = meta.get("namespace", ""), meta.get("name", "")
             if not self.settings.watches(namespace):
                 continue
-            snapshot.objects[f"{namespace}/{name}"] = item
+            snapshot.objects[f"{namespace}/{name}"] = {
+                "metadata": {
+                    "name": name,
+                    "namespace": namespace,
+                    "uid": meta.get("uid"),
+                    "resourceVersion": meta.get("resourceVersion"),
+                }
+            }
             for claim in self._read(item, snapshot):
                 contenders.setdefault(claim.spec.client_id, []).append(claim)
 

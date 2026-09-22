@@ -318,7 +318,12 @@ class FakeK8s:
             self.emit_failures -= 1
             return False
         self.events.append(
-            {"reason": reason, "message": message, "type": kwargs.get("event_type")}
+            {
+                "reason": reason,
+                "message": message,
+                "type": kwargs.get("event_type"),
+                "involved": involved,
+            }
         )
         return True
 

@@ -1110,6 +1110,39 @@ def test_a_kubernetes_list_failure_is_not_an_empty_realm(settings, kc):
     assert kc.writes == []
 
 
+class TestThePublishedSnapshotKeepsOnlyWhatItNeeds:
+    """The snapshot outlives its pass, so it holds no fragment bodies.
+
+    `self.snapshot` is pinned until the next completed pass, and under
+    `resync_seconds: -1` that pass may never come. Everything the surviving
+    copy is for -- naming an Event's involved object, and knowing which sources
+    were present -- is metadata.
+    """
+
+    def test_the_fragment_body_is_not_retained(self, reconciler, k8s):
+        item = k8s.get_configmap("demo", "hello-keycloak")
+        item["metadata"]["annotations"] = {
+            "kubectl.kubernetes.io/last-applied-configuration": "{...the whole thing}"
+        }
+        k8s.configmaps = [item]
+
+        reconciler.reconcile_once()
+
+        pinned = reconciler.snapshot.objects["demo/hello-keycloak"]
+        assert "data" not in pinned
+        assert "annotations" not in pinned["metadata"]
+
+    def test_an_event_still_names_the_object_it_reports_on(self, reconciler, k8s):
+        """What the trimmed copy has to be enough for."""
+        reconciler.reconcile_once()
+
+        meta = k8s.events[0]["involved"]["metadata"]
+        assert meta["name"] == "hello-keycloak"
+        assert meta["namespace"] == "demo"
+        assert meta["uid"] == "uid-demo-hello-keycloak"
+        assert meta["resourceVersion"] == "1"
+
+
 class TestEventsMarkTransitions:
     """Events report changes, not heartbeats.
 
