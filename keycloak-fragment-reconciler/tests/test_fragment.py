@@ -6,6 +6,8 @@ otherwise do to the realm or to somebody else's tokens.
 
 from __future__ import annotations
 
+import time
+
 import pytest
 from conftest import HOSTNAME, TIERS, fragment_text
 
@@ -16,11 +18,45 @@ from scout_keycloak_fragment_reconciler.fragment import (
     check_site_rules,
     parse,
 )
+from scout_keycloak_fragment_reconciler.yamlio import MAX_DEPTH
+
+FULLY_POPULATED = f"""
+apiVersion: {API_VERSION}
+kind: KeycloakFragment
+clients:
+  - clientId: rich
+    displayName: Rich Fragment
+    description: every field the contract has
+    appUrl: https://rich.{HOSTNAME}
+    redirectUris:
+      - https://rich.{HOSTNAME}/auth/callback
+      - https://rich.{HOSTNAME}/oauth2/callback
+    roles:
+      - rich-user
+      - rich-admin
+    roleClaim: rich.roles
+    secretRef:
+      name: rich-keycloak-client
+      key: oidc-client-secret
+    grants:
+      scout-user: [rich-user]
+      scout-admin: [rich-admin]
+"""
 
 
 def parsed(text: str | None = None):
     document = parse(text if text is not None else fragment_text())
     return document.clients[0]
+
+
+def nested_clients(depth: int) -> str:
+    """A fragment whose `clients` value nests to `depth` in total, counting
+    the document's own root mapping."""
+    brackets = depth - 1
+    return (
+        f"apiVersion: {API_VERSION}\nkind: KeycloakFragment\n"
+        f"clients: {'[' * brackets}{']' * brackets}\n"
+    )
 
 
 def with_fields(*lines: str) -> str:
@@ -417,13 +453,31 @@ class TestMalformedDocuments:
         with pytest.raises(FragmentError):
             parse(f"apiVersion: {API_VERSION}\nkind: KeycloakFragment\nclients: []")
 
-    def test_deeply_nested_yaml_does_not_escape_the_contract(self):
-        """A document nested past the interpreter's recursion limit is one
-        author's mistake, not an abort of the whole pass."""
-        depth = 60000
-        text = (
-            f"apiVersion: {API_VERSION}\nkind: KeycloakFragment\n"
-            f"clients: {'[' * depth}{']' * depth}\n"
-        )
+
+class TestNestingDepth:
+    """Nesting past the cap is one author's mistake, not an abort of the pass.
+
+    The cap only earns that if it stays out of the way of real fragments, so
+    the richest document the contract allows is pinned here too.
+    """
+
+    def test_a_fully_populated_fragment_parses(self):
+        spec = parsed(FULLY_POPULATED)
+        check(spec)
+        assert spec.description == "every field the contract has"
+        assert spec.role_claim == "rich.roles"
+        assert spec.secret_ref.key == "oidc-client-secret"
+        assert spec.grants == {
+            "scout-user": ["rich-user"],
+            "scout-admin": ["rich-admin"],
+        }
+
+    def test_one_level_past_the_cap_names_the_limit(self):
+        with pytest.raises(FragmentError, match=f"{MAX_DEPTH}-level limit"):
+            parse(nested_clients(MAX_DEPTH + 1))
+
+    def test_a_hostile_document_is_refused_promptly(self):
+        started = time.monotonic()
         with pytest.raises(FragmentError):
-            parse(text)
+            parse(nested_clients(500_000))
+        assert time.monotonic() - started < 5
