@@ -172,6 +172,36 @@ class TestRedirectUrisAreConstrained:
         with pytest.raises(FragmentError, match="outside the site's own domain"):
             check(spec)
 
+    def test_a_backslash_in_the_host_is_rejected(self):
+        """Python keeps the backslash in the hostname, so the string ends with
+        the site's domain; every browser implements the WHATWG URL Standard,
+        which reads it as a path separator and resolves the host to what
+        precedes it."""
+        spec = parsed(
+            fragment_text().replace(
+                f"https://hello.{HOSTNAME}/auth/callback",
+                f"https://evil.com\\.hello.{HOSTNAME}/cb",
+            )
+        )
+        with pytest.raises(FragmentError):
+            check(spec)
+
+    def test_a_root_dotted_host_is_the_same_host(self):
+        spec = parsed(
+            fragment_text().replace(
+                f"https://hello.{HOSTNAME}/auth/callback",
+                f"https://hello.{HOSTNAME}./cb",
+            )
+        )
+        check(spec)
+
+    def test_an_unconfigured_site_domain_matches_nothing(self):
+        """Otherwise the suffix test degenerates to `endswith('.')` and any
+        root-dotted FQDN is inside the site's own domain."""
+        spec = parsed(fragment_text().replace(f"hello.{HOSTNAME}", "evil.com."))
+        with pytest.raises(FragmentError, match="outside the site's own domain"):
+            check(spec, hostname="")
+
     def test_the_bare_site_host_is_allowed(self):
         spec = parsed(
             fragment_text().replace(

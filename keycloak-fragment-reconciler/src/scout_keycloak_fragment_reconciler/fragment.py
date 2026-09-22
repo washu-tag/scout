@@ -189,17 +189,21 @@ def _https_host(raw: str, field: str) -> str:
         raise FragmentError(f"{field} {raw!r} must not carry a URL fragment")
     if not parsed.hostname:
         raise FragmentError(f"{field} {raw!r} has no host")
+    if "\\" in parsed.hostname:
+        raise FragmentError(
+            f"{field} {raw!r} must not contain a backslash; a browser reads one "
+            "as a path separator, so the host is not what this reads as"
+        )
     return parsed.hostname
 
 
 def check_site_rules(client: ClientSpec, *, hostname: str, tiers: list[str]) -> None:
     """The checks that need site configuration, so cannot live on the model."""
-    allowed = {hostname} if hostname else set()
     for field, raw in [("appUrl", client.app_url)] + [
         ("redirectUris", uri) for uri in client.redirect_uris
     ]:
-        host = _https_host(raw, field)
-        if host not in allowed and not host.endswith(f".{hostname}"):
+        host = _https_host(raw, field).removesuffix(".")
+        if not hostname or (host != hostname and not host.endswith(f".{hostname}")):
             raise FragmentError(
                 f"{field} {raw!r} points at {host}, which is outside the site's "
                 f"own domain ({hostname})"
