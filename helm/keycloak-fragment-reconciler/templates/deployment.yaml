@@ -8,17 +8,17 @@ a delay, so there is nothing worth trading that for.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "reconciler.fullname" . }}
+  name: {{ include "keycloak-fragment-reconciler.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "reconciler.labels" . | nindent 4 }}
+    {{- include "keycloak-fragment-reconciler.labels" . | nindent 4 }}
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      {{- include "reconciler.selectorLabels" . | nindent 6 }}
+      {{- include "keycloak-fragment-reconciler.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- /*
@@ -37,9 +37,9 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "reconciler.selectorLabels" . | nindent 8 }}
+        {{- include "keycloak-fragment-reconciler.selectorLabels" . | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "reconciler.serviceAccountName" . }}
+      serviceAccountName: {{ include "keycloak-fragment-reconciler.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:

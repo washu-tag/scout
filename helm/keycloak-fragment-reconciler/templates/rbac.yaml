@@ -14,18 +14,18 @@ the default values install a reconciler holding no cluster permissions at all.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "reconciler.serviceAccountName" . }}
+  name: {{ include "keycloak-fragment-reconciler.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "reconciler.labels" . | nindent 4 }}
+    {{- include "keycloak-fragment-reconciler.labels" . | nindent 4 }}
 {{- if .Values.watchedNamespaces }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "reconciler.clusterName" . }}
+  name: {{ include "keycloak-fragment-reconciler.clusterName" . }}
   labels:
-    {{- include "reconciler.labels" . | nindent 4 }}
+    {{- include "keycloak-fragment-reconciler.labels" . | nindent 4 }}
 rules:
   - apiGroups: ['']
     resources: ['configmaps']
@@ -39,15 +39,15 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "reconciler.clusterName" . }}
+  name: {{ include "keycloak-fragment-reconciler.clusterName" . }}
   labels:
-    {{- include "reconciler.labels" . | nindent 4 }}
+    {{- include "keycloak-fragment-reconciler.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "reconciler.clusterName" . }}
+  name: {{ include "keycloak-fragment-reconciler.clusterName" . }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "reconciler.serviceAccountName" . }}
+    name: {{ include "keycloak-fragment-reconciler.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
