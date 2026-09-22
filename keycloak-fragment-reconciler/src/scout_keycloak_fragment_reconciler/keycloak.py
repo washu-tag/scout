@@ -115,11 +115,9 @@ class Admin:
             )
         payload = response.json()
         self._token = payload.get("access_token", "")
-        self._expires_at = (
-            time.monotonic()
-            + float(payload.get("expires_in", DEFAULT_TOKEN_LIFETIME_SECONDS))
-            - EXPIRY_MARGIN_SECONDS
-        )
+        now = time.monotonic()
+        lifetime = float(payload.get("expires_in", DEFAULT_TOKEN_LIFETIME_SECONDS))
+        self._expires_at = max(now, now + lifetime - EXPIRY_MARGIN_SECONDS)
         if not self._token:
             raise KeycloakError(0, "token endpoint returned no access_token")
         return self._token
