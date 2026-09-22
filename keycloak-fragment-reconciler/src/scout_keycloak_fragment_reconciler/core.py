@@ -38,6 +38,10 @@ FAILED = "failed"
 
 # How long to wait before retrying a deletion Keycloak refused.
 DELETION_RETRY_SECONDS = 30.0
+# How long a tier role found present is taken on trust. Nothing this service
+# does can remove one, so this only has to be short enough that a role deleted
+# out from under us stops being reported ready within an alerting interval.
+TIER_RECHECK_SECONDS = 600.0
 
 T = TypeVar("T")
 
@@ -120,6 +124,7 @@ class Reconciler:
         self.deletions = 0
         self.drift_repairs = 0
         self.tiers_present = False
+        self._tiers_trusted_until = 0.0
         self.last_list_ok = 0.0
         self._pending_recheck: dict[str, float] = {}
         # The last (status, detail) reported per outcome, so an Event marks a
@@ -133,7 +138,16 @@ class Reconciler:
 
         Also what `/readyz` reports: without them nothing this service creates
         would reach a user, so reporting ready would be a lie.
+
+        Once found they are taken on trust for `TIER_RECHECK_SECONDS`, because
+        the read is one GET per tier and every watch event would otherwise pay
+        for it again. Trusted, not assumed: a role removed from the base realm
+        is what the drift alarm is about, so the answer still expires. Absence
+        is never cached -- that is the state a fresh deploy sits in, and
+        noticing the realm arrive is the whole point of the retry.
         """
+        if self.tiers_present and time.monotonic() < self._tiers_trusted_until:
+            return True
         try:
             missing = [
                 name
@@ -153,6 +167,8 @@ class Reconciler:
                 self.settings.realm,
             )
         self.tiers_present = not missing
+        if self.tiers_present:
+            self._tiers_trusted_until = time.monotonic() + TIER_RECHECK_SECONDS
         return self.tiers_present
 
     # --- discovery ------------------------------------------------------

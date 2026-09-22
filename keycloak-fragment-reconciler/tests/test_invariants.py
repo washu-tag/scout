@@ -522,6 +522,47 @@ class TestIsolation:
 class TestPreconditions:
     """The tier roles must pre-exist. Absent is retryable, never repaired."""
 
+    def test_present_tier_roles_are_not_re_read_every_pass(self, reconciler, kc):
+        """Nothing this service does can remove them, so a pass that has
+        already found them does not ask again."""
+        reconciler.reconcile_once()
+        before = kc.calls["realm_role"]
+        assert before == len(TIERS)
+
+        for _ in range(3):
+            reconciler.reconcile_once()
+
+        assert kc.calls["realm_role"] == before
+        assert reconciler.tiers_present
+
+    def test_a_tier_role_deleted_under_us_is_noticed(self, reconciler, kc, monkeypatch):
+        """The cache is a rate limit, not a decision: `/readyz` reports this,
+        and a tier role that genuinely went away has to stop being reported as
+        present."""
+        clock = [1000.0]
+        monkeypatch.setattr(core.time, "monotonic", lambda: clock[0])
+        reconciler.reconcile_once()
+
+        del kc.realm_roles["scout-user"]
+        reconciler.reconcile_once()
+        assert reconciler.tiers_present, "re-read inside the interval"
+
+        clock[0] += core.TIER_RECHECK_SECONDS + 1
+        reconciler.reconcile_once()
+
+        assert not reconciler.tiers_present
+
+    def test_absent_tier_roles_are_re_read_every_pass(self, settings, k8s):
+        """Nothing caches a negative: the base realm being applied is what the
+        service is waiting for, and it has to notice promptly."""
+        kc = FakeKeycloak(tier_roles=[])
+        reconciler = Reconciler(settings, k8s, kc)
+
+        reconciler.reconcile_once()
+        reconciler.reconcile_once()
+
+        assert kc.calls["realm_role"] == 2 * len(TIERS)
+
     def test_absent_tier_roles_block_the_pass(self, settings, k8s):
         kc = FakeKeycloak(tier_roles=[])
         reconciler = Reconciler(settings, k8s, kc)
