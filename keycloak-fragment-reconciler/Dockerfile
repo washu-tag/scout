@@ -16,8 +16,14 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 COPY pyproject.toml ./
+
+# Dependencies come from pyproject.toml alone, so editing src does not re-resolve
+# them. pip check then proves the split left nothing unsatisfied.
+RUN python -c "import tomllib,pathlib;pathlib.Path('/tmp/requirements.txt').write_text(chr(10).join(tomllib.load(open('pyproject.toml','rb'))['project']['dependencies']))" \
+    && pip install -r /tmp/requirements.txt
+
 COPY src ./src
-RUN pip install .
+RUN pip install --no-deps . && pip check
 
 USER 65532:65532
 EXPOSE 8080
