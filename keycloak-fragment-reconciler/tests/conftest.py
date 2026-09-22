@@ -2,6 +2,8 @@
 
 Both record every call, because much of the suite asserts about writes that did
 *not* happen and a fake that only models state cannot answer that.
+`FakeKeycloak.calls` counts each admin operation by name, which is how the
+reads a steady-state pass is allowed to make are pinned as well.
 
 `FakeK8s.list_error` makes a LIST raise rather than return `[]`, which is the
 only way to test that an unreachable API is not read as "every fragment has been
@@ -13,6 +15,7 @@ from __future__ import annotations
 
 import base64
 import itertools
+from collections import Counter
 
 import pytest
 
@@ -72,6 +75,7 @@ class FakeKeycloak:
         # tier name -> {role id: role name}
         self.composites: dict[str, dict[str, str]] = {n: {} for n in self.realm_roles}
         self.writes: list[str] = []
+        self.calls: Counter[str] = Counter()
         self.fail_on: dict[str, KeycloakError] = {}
 
     # --- test helpers ---------------------------------------------------
@@ -80,6 +84,7 @@ class FakeKeycloak:
         return f"{prefix}-{next(self._ids)}"
 
     def _check(self, op: str) -> None:
+        self.calls[op] += 1
         if op in self.fail_on:
             raise self.fail_on[op]
 

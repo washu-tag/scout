@@ -86,6 +86,10 @@ class Snapshot:
     claims: dict[str, Claim] = field(default_factory=dict)
     objects: dict[str, dict] = field(default_factory=dict)
     outcomes: list[Outcome] = field(default_factory=list)
+    # Realm clients as the GC read returned them, keyed by clientId. Empty
+    # when there was no such read, which is why an apply falls back to
+    # fetching rather than reading absence here as the client being absent.
+    live_clients: dict[str, dict] = field(default_factory=dict)
     complete: bool = False
     # Every clientId named by a document that parsed, whether or not it then
     # passed validation. A fragment edited into invalidity still says which
@@ -388,8 +392,11 @@ class Reconciler:
         self.writes += 1
         return result
 
-    def apply(self, claim: Claim) -> Outcome:
-        """One fragment's client, in the order that keeps every prefix inert."""
+    def apply(self, claim: Claim, *, listed: dict | None = None) -> Outcome:
+        """One fragment's client, in the order that keeps every prefix inert.
+
+        `listed` is this client as the same pass already read it, if it did.
+        """
         spec = claim.spec
         secret, problem = self._read_secret(claim)
         if secret is None:
@@ -398,7 +405,7 @@ class Reconciler:
             spec, secret=secret, source=claim.source
         )
         try:
-            live = self.admin.find_client(spec.client_id)
+            live = listed or self.admin.find_client(spec.client_id)
             if live is None:
                 uuid = self._write(
                     f"create client {spec.client_id}",
@@ -663,7 +670,12 @@ class Reconciler:
         except KeycloakError as exc:
             log.warning("could not list realm clients (%s); GC skipped", exc)
             return
-        ours = {c["clientId"]: c for c in live if translate.is_ours(c)}
+        snapshot.live_clients = {c["clientId"]: c for c in live if c.get("clientId")}
+        ours = {
+            client_id: client
+            for client_id, client in snapshot.live_clients.items()
+            if translate.is_ours(client)
+        }
         orphans = {
             client_id: client
             for client_id, client in ours.items()
@@ -772,7 +784,8 @@ class Reconciler:
         # cycle rather than against its own stale state.
         self.collect(snapshot, now=time.time())
         for claim in snapshot.claims.values():
-            snapshot.outcomes.append(self.apply(claim))
+            listed = snapshot.live_clients.get(claim.spec.client_id)
+            snapshot.outcomes.append(self.apply(claim, listed=listed))
         # Publishing an incomplete snapshot would report "no fragments" rather
         # than "we could not ask": every series zeroed, and the report state
         # cleared, so recovery re-emits an Event for every fragment.

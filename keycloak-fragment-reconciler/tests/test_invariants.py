@@ -69,6 +69,41 @@ class TestConvergence:
         assert kc.writes == before
 
 
+class TestSteadyStateCost:
+    """What a pass over one unchanged fragment is allowed to read.
+
+    Call counts rather than behaviour, because every reuse here is meant to be
+    invisible: `TestConvergence` asserts the pass still converges and writes
+    nothing, and these numbers are what keeps it from reading the same thing
+    twice to get there.
+    """
+
+    def test_a_listed_client_is_not_fetched_again(self, reconciler, kc):
+        """GC lists every client in the realm in full, so the apply that
+        follows in the same pass has the representation it would fetch."""
+        reconciler.reconcile_once()
+        before = kc.calls["find_client"]
+
+        reconciler.reconcile_once()
+
+        assert kc.calls["find_client"] == before
+        assert kc.calls["list_clients"] == 2
+
+    def test_an_unlistable_realm_is_still_applied_against(self, reconciler, kc):
+        """There is not always a listing to reuse -- GC returns before it lists
+        when `list_clients` fails -- so the apply falls back to fetching, and
+        must not read the missing listing as the client being absent."""
+        reconciler.reconcile_once()
+        after_first = list(kc.writes)
+        kc.fail_on["list_clients"] = KeycloakError(503, "keycloak restarting")
+        before = kc.calls["find_client"]
+
+        reconciler.reconcile_once()
+
+        assert kc.calls["find_client"] == before + 1
+        assert kc.writes == after_first, "the client was applied as if it were new"
+
+
 class TestWriteCounters:
     """`writes` counts writes that landed; `write_attempts` counts the ones a
     pass decided to make.
