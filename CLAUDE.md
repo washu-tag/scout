@@ -273,7 +273,7 @@ the ADR itself before changing anything it covers.
 - **0033** Hauler build lane — the build manifest is a signed Hauler haul. Read before changing build-lane bundling or air-gap transport
 - **0034** launchpad catalog — chips/groups come from ConfigMaps labelled `launchpad.scout.xnat.org/catalog`, discovered at runtime. Read before adding a service tile or touching launchpad rendering
 - **0035** service-mode deploy base — one `service_mode` (aws|on-prem) var flips the storage/identity + ingress/auth edges in the `deploy/` base and `scout-config` artifact. Read before touching the aws/on-prem edge, IRSA roles, or the ALB-OIDC ingress
-- **0037** Keycloak realm fragments — an app ships its own client as a labelled ConfigMap; a reconciler owns fragment clients and their edges into two composite tier roles, config-cli owns the base realm. Read before touching `scout-realm.json`'s roles/groups, the tier roles' `composites`, or `keycloak-fragment-reconciler/`
+- **0037** Keycloak realm fragments — an app ships its own client as a labelled ConfigMap that a reconciler applies. Read before adding a client or changing `scout-realm.json`
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.
