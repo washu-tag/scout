@@ -13,6 +13,8 @@ from prometheus_client import Counter, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_fastapi_instrumentator import metrics as fastapi_metrics
 
+from .trino_client import ClientDisconnected
+
 log = logging.getLogger(__name__)
 
 SEARCHES_CREATED = Counter(
@@ -67,17 +69,14 @@ RESULT_ROWS = Histogram(
 
 
 @contextmanager
-def time_trino(
-    op: str, cancelled: type[BaseException] | tuple[type[BaseException], ...] = ()
-) -> Iterator[None]:
+def time_trino(op: str) -> Iterator[None]:
     # Hand-rolled instead of Histogram.time() so failures don't count as ok:
     # `.time()` observes on __exit__ regardless of exception.
     start = time.monotonic()
     outcome = "ok"
     try:
         yield
-    except cancelled:
-        # A user walking away is not a failure. Empty tuple matches nothing.
+    except ClientDisconnected:
         outcome = "cancelled"
         raise
     except Exception:

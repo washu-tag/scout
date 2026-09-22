@@ -528,9 +528,7 @@ async def get_search_rows(
     progress_key = _progress_key(search_id, user.sub, token) if token else None
     handle = trino_client.QueryHandle()
     try:
-        with metrics.time_trino(
-            "rows_query", cancelled=trino_client.ClientDisconnected
-        ):
+        with metrics.time_trino("rows_query"):
             # safe: source_sql is persisted validated SQL; ids bind via ?
             columns, rows = await trino_client.cancel_on_disconnect(
                 request.receive,
