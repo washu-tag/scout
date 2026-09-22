@@ -442,32 +442,9 @@ class Reconciler:
             spec, secret=secret, source=claim.source
         )
         try:
-            live = listed or self.admin.find_client(spec.client_id)
-            if live is None:
-                uuid = self._write(
-                    f"create client {spec.client_id}",
-                    partial(self.admin.create_client, desired),
-                )
-                if uuid is None:
-                    # Nothing downstream can be diffed against a client that
-                    # does not exist, so stop here rather than invent a uuid.
-                    return Outcome(
-                        claim.source, spec.client_id, APPLIED, "dry-run: would create"
-                    )
-            else:
-                if not translate.is_ours(live):
-                    # Adopting a client that already exists in the realm needs
-                    # a design of its own; until then it is not ours to touch.
-                    return Outcome(
-                        claim.source,
-                        spec.client_id,
-                        REJECTED,
-                        "a client with this clientId already exists in the realm "
-                        "and does not carry this reconciler's stamp; refusing to "
-                        "modify it",
-                    )
-                uuid = live["id"]
-                self._update(uuid, live, desired, secret)
+            uuid, stop = self._ensure_client(claim, desired, secret, listed=listed)
+            if stop is not None:
+                return stop
             roles, new_roles = self._reconcile_roles(uuid, spec)
             self._reconcile_mappers(uuid, spec)
             self._reconcile_tier_edges(uuid, spec, roles=roles, new_roles=new_roles)
@@ -476,6 +453,39 @@ class Reconciler:
             level("applying %s failed: %s", spec.client_id, exc)
             return Outcome(claim.source, spec.client_id, FAILED, str(exc))
         return Outcome(claim.source, spec.client_id, APPLIED)
+
+    def _ensure_client(
+        self, claim: Claim, desired: dict, secret: str, *, listed: dict | None
+    ) -> tuple[str, Outcome | None]:
+        """The client's uuid, or the outcome that ends the apply here.
+
+        Two of the three branches end it. A dry-run create leaves nothing for
+        anything downstream to be diffed against, and a client already in the
+        realm without this reconciler's stamp is not ours to modify: adopting
+        one needs a design of its own.
+        """
+        spec = claim.spec
+        live = listed or self.admin.find_client(spec.client_id)
+        if live is None:
+            uuid = self._write(
+                f"create client {spec.client_id}",
+                partial(self.admin.create_client, desired),
+            )
+            if uuid is None:
+                return "", Outcome(
+                    claim.source, spec.client_id, APPLIED, "dry-run: would create"
+                )
+            return uuid, None
+        if not translate.is_ours(live):
+            return "", Outcome(
+                claim.source,
+                spec.client_id,
+                REJECTED,
+                "a client with this clientId already exists in the realm and "
+                "does not carry this reconciler's stamp; refusing to modify it",
+            )
+        self._update(live["id"], live, desired, secret)
+        return live["id"], None
 
     def _read_secret(self, claim: Claim) -> tuple[str | None, str]:
         """The client credential, or why it could not be read.
