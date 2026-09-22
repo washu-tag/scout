@@ -1,0 +1,177 @@
+# Temporal DB-auth variants via valuesFrom, selected by the site var
+# temporal_db_auth (default password). Each carries the stores' user, credentials
+# and schema ownership; the shared connection settings stay inline. Both ship.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-db-auth-password
+  namespace: '${scout_extractor_namespace}'
+data:
+  # Owner role + temporal-db-secret password; the chart's schema Job manages tables.
+  values.yaml: |
+    server:
+      config:
+        persistence:
+          datastores:
+            default:
+              sql:
+                user: temporal
+                existingSecret: temporal-db-secret
+                secretKey: password
+                manageSchema: true
+            visibility:
+              sql:
+                user: temporal
+                existingSecret: temporal-db-secret
+                secretKey: password
+                manageSchema: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-db-auth-iam
+  namespace: '${scout_extractor_namespace}'
+data:
+  # RDS IAM auth (aws): server pods connect as temporal_db_user with a token that
+  # passwordCommand reads per connection (sidecar-refreshed, IRSA SA `temporal`),
+  # over verify-full TLS. The chart's schema Job shares the stores' user, so the
+  # schema step runs as the owner role instead (admintools init container below).
+  values.yaml: |
+    serviceAccount:
+      create: false
+      name: temporal
+    server:
+      config:
+        persistence:
+          datastores:
+            default:
+              sql:
+                user: '${temporal_db_user:=temporal}'
+                passwordCommand:
+                  command: /bin/cat
+                  args: [/var/run/rds-iam/token]
+                  timeout: 5s
+                tls:
+                  enabled: true
+                  caFile: /etc/rds-ca/ca.pem
+                  enableHostVerification: true
+                manageSchema: false
+            visibility:
+              sql:
+                user: '${temporal_db_user:=temporal}'
+                passwordCommand:
+                  command: /bin/cat
+                  args: [/var/run/rds-iam/token]
+                  timeout: 5s
+                tls:
+                  enabled: true
+                  caFile: /etc/rds-ca/ca.pem
+                  enableHostVerification: true
+                manageSchema: false
+      additionalInitContainers:
+        # Native sidecar; the CLI takes the region from the IRSA-injected AWS_REGION.
+        # Pinned in versions.yaml (aws_cli_image_tag); keep in lockstep.
+        - name: rds-iam-token
+          image: public.ecr.aws/aws-cli/aws-cli:2.36.40
+          restartPolicy: Always
+          command: ['/bin/sh', '-c']
+          args:
+            - |
+              umask 077
+              while :; do
+                if aws rds generate-db-auth-token --hostname "$$DB_HOST" --port "$$DB_PORT" \
+                    --username "$$DB_USER" > /var/run/rds-iam/token.tmp; then
+                  mv /var/run/rds-iam/token.tmp /var/run/rds-iam/token
+                  sleep 300
+                else
+                  sleep 10
+                fi
+              done
+          env:
+            - name: DB_HOST
+              value: '${postgres_host}'
+            - name: DB_PORT
+              value: '${db_port}'
+            - name: DB_USER
+              value: '${temporal_db_user:=temporal}'
+            - name: HOME
+              value: /tmp
+          startupProbe:
+            exec:
+              command: ['test', '-s', '/var/run/rds-iam/token']
+            periodSeconds: 2
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: rds-iam-token
+              mountPath: /var/run/rds-iam
+      additionalVolumes:
+        - name: rds-iam-token
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi
+        - name: rds-ca
+          configMap:
+            name: rds-ca-bundle
+      additionalVolumeMounts:
+        - name: rds-iam-token
+          mountPath: /var/run/rds-iam
+          readOnly: true
+        - name: rds-ca
+          mountPath: /etc/rds-ca
+          readOnly: true
+    admintools:
+      # Runs first in the pre-install/pre-upgrade schema Job (and on admintools pod
+      # start; idempotent). Pinned in versions.yaml (temporal_admin_tools_image_tag).
+      additionalInitContainers:
+        - name: manage-schema
+          image: temporalio/admin-tools:1.31.0
+          command: ['/bin/sh', '-c']
+          args:
+            - |
+              set -e
+              SQL_DATABASE=temporal temporal-sql-tool setup-schema -v 0.0
+              SQL_DATABASE=temporal temporal-sql-tool update-schema --schema-dir /etc/temporal/schema/postgresql/v12/temporal/versioned
+              SQL_DATABASE=temporal_visibility temporal-sql-tool setup-schema -v 0.0
+              SQL_DATABASE=temporal_visibility temporal-sql-tool update-schema --schema-dir /etc/temporal/schema/postgresql/v12/visibility/versioned
+          env:
+            - name: SQL_PLUGIN
+              value: postgres12
+            - name: SQL_HOST
+              value: '${postgres_host}'
+            - name: SQL_PORT
+              value: '${db_port}'
+            - name: SQL_USER
+              value: temporal
+            - name: SQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-db-secret
+                  key: password
+            - name: SQL_TLS
+              value: 'true'
+            - name: SQL_TLS_CA_FILE
+              value: /etc/rds-ca/ca.pem
+          volumeMounts:
+            - name: rds-ca
+              mountPath: /etc/rds-ca
+              readOnly: true
+      additionalVolumes:
+        - name: rds-ca
+          configMap:
+            name: rds-ca-bundle
+---
+# IRSA SA for the iam variant (rds-db:connect as temporal_db_user); unused under
+# password auth, and its role-arn is inert on-prem.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: temporal
+  namespace: '${scout_extractor_namespace}'
+  annotations:
+    eks.amazonaws.com/role-arn: '${irsa_role_prefix}-temporal'

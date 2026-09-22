@@ -106,6 +106,8 @@ server_hostname
 service_mode
 spark_sql_shuffle_partitions
 superset_db_auth
+temporal_db_auth
+temporal_db_user
 timezone
 trino_https_port
 trino_rw_endpoint_host

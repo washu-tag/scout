@@ -5,7 +5,7 @@
 # Namespace owned by scout-extractor-foundation, not declared here (avoids
 # co-ownership/prune conflicts). Frontend JWT authz + web-UI ingress/OIDC are
 # omitted (separate Keycloak-realm/auth-overlay workstream), which is why Keycloak
-# is not a dependsOn. DB password referenced by fixed name (existingSecret).
+# is not a dependsOn. DB auth is site-selected via temporal_db_auth (db-auth.yaml).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -35,6 +35,11 @@ spec:
         kind: HelmRepository
         name: temporal
         namespace: '${scout_extractor_namespace}'
+  # DB user/credentials + schema ownership come from the temporal_db_auth variant
+  # (password by default, or RDS IAM); inline values would override them.
+  valuesFrom:
+    - kind: ConfigMap
+      name: 'temporal-db-auth-${temporal_db_auth:=password}'
   values:
     # k3s/air-gapped: no docker-in-schema-job, no ES index tool (Postgres visibility).
     shims:
@@ -60,8 +65,7 @@ spec:
           defaultStore: default
           visibilityStore: visibility
           # DBs are pre-created (CNPG Database CRs on-prem, the site on aws), so
-          # createDatabase: false; the chart's schema Job owns the Temporal tables
-          # (manageSchema: true). user is the temporal CNPG role.
+          # createDatabase: false.
           datastores:
             default:
               sql:
@@ -69,11 +73,7 @@ spec:
                 databaseName: temporal
                 connectAddr: '${postgres_host}:${db_port}'
                 connectProtocol: tcp
-                user: temporal
-                existingSecret: temporal-db-secret
-                secretKey: password
                 createDatabase: false
-                manageSchema: true
                 maxConns: 20
                 maxConnLifetime: '1h'
             visibility:
@@ -82,10 +82,6 @@ spec:
                 databaseName: temporal_visibility
                 connectAddr: '${postgres_host}:${db_port}'
                 connectProtocol: tcp
-                user: temporal
-                existingSecret: temporal-db-secret
-                secretKey: password
                 createDatabase: false
-                manageSchema: true
                 maxConns: 10
                 maxConnLifetime: '1h'

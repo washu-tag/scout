@@ -56,6 +56,9 @@ temporal_version: 1.2.0
 # so the `temporal` CLI matches; Renovate bumps the pair together (renovate.json5).
 # renovate: datasource=docker depName=temporalio/admin-tools
 temporal_admin_tools_image_tag: 1.31.0
+# GitOps lane only: RDS IAM token sidecar (deploy/base/temporal/server, iam db-auth).
+# renovate: datasource=docker depName=public.ecr.aws/aws-cli/aws-cli
+aws_cli_image_tag: 2.36.40
 
 # Real-Time HL7 Ingestion - Strimzi Kafka (MLLP -> Kafka -> batcher -> MinIO).
 # The listener/batcher image is built in CI (hl7-listener/), not pinned here.

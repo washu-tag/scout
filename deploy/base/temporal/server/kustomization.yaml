@@ -2,3 +2,5 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - resources.yaml
+  # DB-auth variant ConfigMaps (both ship; the HR selects one via temporal_db_auth).
+  - db-auth.yaml

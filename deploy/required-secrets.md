@@ -44,6 +44,8 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | `s3-secret` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | hl7log-extractor + hl7-transformer (lake-writer; cloud = IRSA instead) |
 | `postgres-secret` | `DB_PASSWORD` (+ DB coords); optional RDS IAM keys (below) | extractor datasource (= the extractor role); aws hl7log-extractor `envFrom`s it too |
 | `temporal-db-secret` | `password` | Temporal server + schema Job (= the temporal CNPG role) |
+| `postgres-secret` | `DB_PASSWORD` (+ DB coords) | extractor datasource (= the extractor role) |
+| `temporal-db-secret` | `password` | Temporal server + schema Job (= the temporal owner role); under `temporal_db_auth=iam` only the schema step reads it |
 | `trino-rw-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-rw (lake-writer; cloud = IRSA instead) |
 
 ## scout-analytics (superset / opa / trino-ro)
@@ -97,6 +99,36 @@ Pods don't restart on a Secret change: roll the workload after editing the secre
 ## Not site-provided (generated in-cluster, listed so they aren't double-provisioned)
 - `trino-tls` — cert-manager `Certificate`
 - `superset-config` — rendered config (CI / chart), not credentials
+
+## RDS IAM database auth (aws, opt-in)
+A component can connect to RDS with short-lived IAM tokens instead of a password. It
+is off by default and switched per component by a site var, so a site flips one
+component at a time and rolls back by flipping it back.
+
+| component | site vars (default) | ServiceAccount (IRSA role) |
+| --- | --- | --- |
+| Temporal | `temporal_db_auth` (`password`; set `iam`), `temporal_db_user` (`temporal`; set the IAM login role) | `temporal` in `${scout_extractor_namespace}` (`${irsa_role_prefix}-temporal`) |
+
+What a site provides before it sets a component to `iam`:
+- **IRSA role**: trusts `system:serviceaccount:<namespace>:<ServiceAccount>` and allows
+  `rds-db:connect` on `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/<login role>`.
+- **ConfigMap `rds-ca-bundle`** (key `ca.pem`), in the component's namespace: the RDS CA
+  bundle for the instance's region (`https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`).
+  IAM clients use TLS with full verification, so `postgres_host` must be the instance endpoint.
+- **A login role for IAM**. Recommended: keep the owner role (e.g. `temporal`) and its password,
+  and add a separate passwordless login role that acts as the owner:
+  `CREATE ROLE temporal_iam LOGIN; GRANT temporal TO temporal_iam; GRANT rds_iam TO temporal_iam;
+  ALTER ROLE temporal_iam SET role = 'temporal';`. Sessions then run as, and create objects
+  owned by, the owner role, and the password path stays valid for rollback.
+- **Never grant `rds_iam` to a role the master user is a member of** (directly or through
+  another role, e.g. owner roles the master was granted to create databases), and never make
+  the master a member of the IAM login role. On RDS, `rds_iam` membership makes IAM auth take
+  precedence over the password, so the master would lose password login.
+
+Temporal specifics: the chart's schema Job shares the stores' user, so under `iam` the base
+runs the schema step as the owner role with `temporal-db-secret` (keep that Secret), while
+the server pods use the token. Temporal's password variant connects without TLS, so keep
+`rds.force_ssl` off until every client uses TLS.
 
 ## Notes for cloud setups
 - Provision the backing values with your IaC; keep them out of git. A typical AWS estate
