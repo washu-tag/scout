@@ -12,6 +12,8 @@ image:
 # fragment, visible only as a rejection for an unreadable secretRef.
 serviceAccount:
   name: scout-keycloak-fragment-reconciler
+  automount: true
+  annotations: {}
 
 keycloak:
   # In-cluster, so plain http. Not the browser-facing URL.

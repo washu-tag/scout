@@ -7,19 +7,10 @@ Helm-managed object, so writing status back onto one starts a revert loop.
 Secrets are absent entirely: each app's chart grants access to its own
 credential, scoped by `resourceNames`.
 
-The ServiceAccount is unconditional, both because the Deployment runs as it and
-because apps bind their credential to it by name; the cluster read is not, so
-the default values install a reconciler holding no cluster permissions at all.
+Unlike the ServiceAccount, the cluster read is conditional, so the default
+values install a reconciler holding no cluster permissions at all.
 */}}
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: {{ include "keycloak-fragment-reconciler.serviceAccountName" . }}
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "keycloak-fragment-reconciler.labels" . | nindent 4 }}
 {{- if .Values.watchedNamespaces }}
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
