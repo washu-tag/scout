@@ -108,7 +108,7 @@ class ReconcilerCollector:
             ),
             (
                 "drift_repairs_total",
-                "Tier edges re-added to a client that already existed. A "
+                "Tier edges re-added to a role that already existed. A "
                 "nonzero value usually means the base realm's tier roles "
                 "gained a `composites` key and are reaping fragment grants.",
                 float(r.drift_repairs),

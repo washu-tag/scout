@@ -410,7 +410,6 @@ class Reconciler:
                     return Outcome(
                         claim.source, spec.client_id, APPLIED, "dry-run: would create"
                     )
-                created = True
             else:
                 if not translate.is_ours(live):
                     # Adopting a client that already exists in the realm needs
@@ -424,11 +423,10 @@ class Reconciler:
                         "modify it",
                     )
                 uuid = live["id"]
-                created = False
                 self._update(uuid, live, desired, secret)
-            self._reconcile_roles(uuid, spec)
+            new_roles = self._reconcile_roles(uuid, spec)
             self._reconcile_mappers(uuid, spec)
-            self._reconcile_tier_edges(uuid, spec, created=created)
+            self._reconcile_tier_edges(uuid, spec, new_roles=new_roles)
         except KeycloakError as exc:
             level = log.warning if exc.retryable else log.error
             level("applying %s failed: %s", spec.client_id, exc)
@@ -492,7 +490,12 @@ class Reconciler:
             log.warning("could not read back client secret for %s: %s", uuid, exc)
             return False
 
-    def _reconcile_roles(self, uuid: str, spec: ClientSpec) -> None:
+    def _reconcile_roles(self, uuid: str, spec: ClientSpec) -> set[str]:
+        """Returns the roles this pass created, which tier edges then need.
+
+        A role that did not exist a moment ago cannot have had an edge to it
+        reaped, so its first grant is routine rather than drift.
+        """
         live = {role["name"] for role in self.admin.client_roles(uuid)}
         desired = {role["name"] for role in translate.role_representations(spec)}
         for name in sorted(desired - live):
@@ -506,6 +509,7 @@ class Reconciler:
                 f"remove role {name} from {spec.client_id}",
                 partial(self.admin.delete_client_role, uuid, name),
             )
+        return desired - live
 
     def _reconcile_mappers(self, uuid: str, spec: ClientSpec) -> None:
         live = self.admin.protocol_mappers(uuid)
@@ -529,20 +533,22 @@ class Reconciler:
             )
 
     def _reconcile_tier_edges(
-        self, uuid: str, spec: ClientSpec, *, created: bool
+        self, uuid: str, spec: ClientSpec, *, new_roles: set[str]
     ) -> None:
         """Last, because an edge is what makes a role reach a user.
 
-        `created` separates the two reasons an edge can be missing. On a new
-        client every edge is new, and routine. On a client that already existed,
-        these edges are ours alone -- config-cli omits `composites` on the tier
-        roles precisely so it never reconciles them -- so a missing one means
-        something else removed it, most likely a `composites` key added to the
-        base realm, which will keep reaping every fragment's grant. Hence an
-        error rather than a quiet repair.
+        `new_roles` separates the two reasons an edge can be missing. A role
+        this pass created has never had an edge, so granting it is routine. An
+        edge missing from a role that already existed is not: these edges are
+        ours alone -- config-cli omits `composites` on the tier roles precisely
+        so it never reconciles them -- so something else removed it, most
+        likely a `composites` key added to the base realm, which will keep
+        reaping every fragment's grant. Hence an error rather than a quiet
+        repair.
 
-        A newly declared grant on an existing client also reads as drift here. A
-        false alarm costs a log line; a missed one costs a silent 403.
+        A grant newly declared over a role that was already there is the one
+        genuinely ambiguous case, and still reads as drift. A false alarm costs
+        a log line; a missed one costs a silent 403.
         """
         roles_by_name = {r["name"]: r for r in self.admin.client_roles(uuid)}
         wanted = translate.tier_edges(spec)
@@ -555,15 +561,16 @@ class Reconciler:
             drop = sorted(have - want)
             if add:
                 names = ", ".join(r["name"] for r in add)
-                if not created:
+                reaped = [r["name"] for r in add if r["name"] not in new_roles]
+                if reaped:
                     self.drift_repairs += 1
                     log.error(
-                        "re-adding tier edge(s) %s -> %s on the existing client "
-                        "%s; only this reconciler writes these, so either the "
-                        "fragment just declared them or something removed them. "
-                        "If the latter, check whether the base realm's %s role "
-                        "gained a `composites` key",
-                        names,
+                        "re-adding tier edge(s) %s -> %s on the pre-existing "
+                        "role(s) of client %s; only this reconciler writes "
+                        "these, so either the fragment just declared them or "
+                        "something removed them. If the latter, check whether "
+                        "the base realm's %s role gained a `composites` key",
+                        ", ".join(reaped),
                         tier,
                         spec.client_id,
                         tier,

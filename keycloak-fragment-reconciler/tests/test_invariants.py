@@ -716,6 +716,26 @@ class TestDriftIsAnAnomaly:
         assert reconciler.drift_repairs == 0
         assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
 
+    def test_a_newly_declared_role_and_grant_is_not_an_anomaly(
+        self, reconciler, kc, k8s
+    ):
+        """An ordinary fragment upgrade: a new role, granted to a tier. The
+        role did not exist a moment ago, so no edge to it can have been reaped,
+        and the counter that says the platform is corrupt must not move."""
+        reconciler.reconcile_once()
+        k8s.add_fragment(
+            fragment_text()
+            .replace("      - hello-admin", "      - hello-admin\n      - hello-viewer")
+            .replace(
+                "scout-user: [hello-user]", "scout-user: [hello-user, hello-viewer]"
+            )
+        )
+
+        reconciler.reconcile_once()
+
+        assert kc.edges("scout-user") == {"hello-user", "hello-viewer"}
+        assert reconciler.drift_repairs == 0
+
     def test_a_reaped_edge_is_logged_at_error_and_counted(self, reconciler, kc, caplog):
         reconciler.reconcile_once()
         # What a base-realm apply with a `composites` key would do.
