@@ -33,6 +33,10 @@ def commonsCompressVersion = "1.27.1"
 // its internal Jackson under software.amazon.awssdk.thirdparty, so it
 // doesn't conflict with Keycloak's bundled Jackson.
 def awsSdkVersion = "2.44.14"
+// AWS Advanced JDBC Wrapper, shipped for sites that opt into RDS IAM database auth
+// (deploy/required-secrets.md). 4.0.1 is the version Keycloak tests and is built on
+// SDK 2.44.x, matching awsSdkVersion. Inert unless db-driver selects it.
+def awsJdbcWrapperVersion = "4.0.1"
 def junitVersion = "5.11.4"
 def mockitoVersion = "5.14.2"
 
@@ -72,6 +76,13 @@ dependencies {
         exclude group: "software.amazon.awssdk", module: "netty-nio-client"
         exclude group: "software.amazon.awssdk", module: "apache-client"
     }
+    // The wrapper declares all its deps optional; its `iam` plugin needs the rds module
+    // (RdsUtilities) to sign the auth token. Excludes mirror s3.
+    implementation("software.amazon.jdbc:aws-advanced-jdbc-wrapper:${awsJdbcWrapperVersion}")
+    implementation("software.amazon.awssdk:rds") {
+        exclude group: "software.amazon.awssdk", module: "netty-nio-client"
+        exclude group: "software.amazon.awssdk", module: "apache-client"
+    }
 
     compileOnly("org.projectlombok:lombok:1.18.38")
     annotationProcessor("org.projectlombok:lombok:1.18.38")
@@ -83,7 +94,7 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
 }
 
-// Copy all runtime-classpath deps (commons-compress + AWS SDK) into
+// Copy all runtime-classpath deps (commons-compress, AWS SDK, JDBC wrapper) into
 // build/libs/ so the Dockerfile's
 // `COPY .../build/libs/*.jar /opt/keycloak/providers/` step picks them up
 // alongside our own jar. Keycloak's own libs are compileOnly above, so
