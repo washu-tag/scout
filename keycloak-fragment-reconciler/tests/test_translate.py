@@ -243,6 +243,23 @@ class TestMapperDrift:
         assert write[0]["id"] == "m1"
         assert delete == []
 
+    @pytest.mark.parametrize(
+        "field, tampered",
+        [
+            ("protocolMapper", "oidc-hardcoded-claim-mapper"),
+            ("protocol", "saml"),
+            ("consentRequired", True),
+        ],
+    )
+    def test_a_changed_mapper_field_is_updated_in_place(self, field, tampered):
+        """A mapper whose type changed keeps its name and its config while
+        putting nothing in the token, so `config` alone is not the comparison."""
+        desired = rendered(fragment_text())["protocolMappers"]
+        live = [{**desired[0], "id": "m1", field: tampered}]
+        write, delete = translate.mapper_drift(live, desired)
+        assert [m["id"] for m in write] == ["m1"]
+        assert delete == []
+
     def test_an_undeclared_mapper_on_our_client_is_removed(self):
         """Safe because the client exists only because of this fragment."""
         desired = rendered(fragment_text())["protocolMappers"]

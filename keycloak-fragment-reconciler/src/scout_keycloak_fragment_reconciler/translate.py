@@ -148,6 +148,10 @@ MANAGED_FIELDS = (
     "webOrigins",
 )
 
+# Mapper fields `protocol_mappers` is authoritative for. `name` identifies a
+# mapper rather than describing it, and `id` is Keycloak's.
+MANAGED_MAPPER_FIELDS = ("protocol", "protocolMapper", "consentRequired", "config")
+
 # Attributes we set. A live client may carry others, which are left alone.
 MANAGED_ATTRIBUTES = (
     STAMP_ATTRIBUTE,
@@ -192,9 +196,10 @@ def merged_attributes(live: dict, desired: dict) -> dict:
 def mapper_drift(live: list[dict], desired: list[dict]) -> tuple[list[dict], list[str]]:
     """(mappers to write, mapper names to delete).
 
-    Compared on `config`, which is the whole of what a mapper does. An
-    undeclared mapper on our client is ours to remove -- the client exists only
-    because of this fragment.
+    Compared on the managed fields only: a mapper's type decides what it puts in
+    the token, so `config` is not the whole of what it does. An undeclared
+    mapper on our client is ours to remove -- the client exists only because of
+    this fragment.
     """
     by_name = {m.get("name"): m for m in live}
     write, keep = [], set()
@@ -204,7 +209,7 @@ def mapper_drift(live: list[dict], desired: list[dict]) -> tuple[list[dict], lis
         have = by_name.get(name)
         if have is None:
             write.append(want)
-        elif (have.get("config") or {}) != want["config"]:
+        elif any(have.get(f) != want.get(f) for f in MANAGED_MAPPER_FIELDS):
             write.append({**want, "id": have.get("id")})
     delete = [name for name in by_name if name and name not in keep]
     return write, delete
