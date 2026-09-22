@@ -220,11 +220,12 @@ def _https_host(raw: str, field: str) -> str:
 
 def check_site_rules(client: ClientSpec, *, hostname: str, tiers: list[str]) -> None:
     """The checks that need site configuration, so cannot live on the model."""
+    site = hostname.lower()
     for field, raw in [("appUrl", client.app_url)] + [
         ("redirectUris", uri) for uri in client.redirect_uris
     ]:
         host = _https_host(raw, field).removesuffix(".")
-        if not hostname or (host != hostname and not host.endswith(f".{hostname}")):
+        if not site or (host != site and not host.endswith(f".{site}")):
             raise FragmentError(
                 f"{field} {raw!r} points at {host}, which is outside the site's "
                 f"own domain ({hostname})"

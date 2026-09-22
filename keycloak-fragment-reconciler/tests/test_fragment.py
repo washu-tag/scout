@@ -195,6 +195,12 @@ class TestRedirectUrisAreConstrained:
         )
         check(spec)
 
+    def test_the_site_domain_is_matched_case_insensitively(self):
+        """A hostname parsed out of a URL is always lowercase, but the
+        configured site domain is free-form, so a mixed-case one would put
+        every app on the platform outside its own site."""
+        check(parsed(), hostname="Scout.Example.EDU")
+
     def test_an_unconfigured_site_domain_matches_nothing(self):
         """Otherwise the suffix test degenerates to `endswith('.')` and any
         root-dotted FQDN is inside the site's own domain."""
