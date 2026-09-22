@@ -8,11 +8,12 @@
 # `superset-env` via envFrom (CI/site Phase 3, ESO Phase 4). superset_config.py
 # os.getenv keys: DB_HOST/PORT/USER/PASS/NAME, REDIS_*, SUPERSET_SECRET_KEY,
 # KEYCLOAK_SUPERSET_CLIENT_SECRET (user OAuth), KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET
-# (Trino svc token), KEYCLOAK_TOKEN_URL, KEYCLOAK_SUPERSET_SVC_CLIENT_ID, TRINO_CA_CERT.
+# (Trino svc token), KEYCLOAK_TOKEN_URL, KEYCLOAK_SUPERSET_SVC_CLIENT_ID, TRINO_CA_CERT;
+# DB_IAM_AUTH/DB_SSLMODE/DB_SSLROOTCERT with superset_db_auth=iam (superset_rds_iam.py).
 # Other fixed-name refs (seeded by CI/site, never in git): superuser-secret (CNPG
 # basic-auth, used by DB Job); superset-valkey-auth (REDIS_PASSWORD, dashboards Job);
 # trino-tls (cert-manager CA for user-facing Trino TLS, verified by DB_CONNECTION_MUTATOR);
-# scout-logo ConfigMap (binary logo/favicon branding).
+# scout-logo ConfigMap (binary logo/favicon branding); rds-ca-bundle ConfigMap (iam only).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -120,6 +121,15 @@ spec:
     # Per-mode ingress + security-headers (ADR 0035); whole-values.yaml merge.
     - kind: ConfigMap
       name: 'superset-edge-${service_mode}'
+    # Metadata-DB auth (db-auth.yaml): volumes, plus the IRSA SA + RDS CA in iam.
+    - kind: ConfigMap
+      name: 'superset-db-auth-${superset_db_auth:=password}'
+    - kind: ConfigMap
+      name: 'superset-config-overrides-${superset_db_auth:=password}'
+      valuesKey: superset_rds_iam.py
+      targetPath: configOverrides.rds_iam
+      literal: true
+      optional: true
   values:
     # Scout custom image (build-lane-stamped at publish; literal here).
     image:
@@ -312,31 +322,4 @@ spec:
             port=9125,
             prefix='superset'
         )
-    extraVolumes:
-      - name: scout-logo
-        configMap:
-          name: scout-logo
-          defaultMode: 0644
-      - name: statsd-mapping
-        configMap:
-          name: superset-statsd-mapping
-      # CA from the trino-tls Secret; DB_CONNECTION_MUTATOR passes /etc/trino-ca/ca.crt
-      # as http_session.verify to trust Trino's self-signed cert.
-      - name: trino-ca
-        secret:
-          secretName: trino-tls
-          items:
-            - key: ca.crt
-              path: ca.crt
-    extraVolumeMounts:
-      - name: scout-logo
-        mountPath: /app/superset/static/assets/images/scout.png
-        subPath: scout.png
-        readOnly: true
-      - name: scout-logo
-        mountPath: /app/superset/static/assets/images/favicon.ico
-        subPath: favicon.ico
-        readOnly: true
-      - name: trino-ca
-        mountPath: /etc/trino-ca
-        readOnly: true
+    # extraVolumes/extraVolumeMounts: superset-db-auth-* (db-auth.yaml).

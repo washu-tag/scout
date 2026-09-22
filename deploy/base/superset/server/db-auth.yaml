@@ -1,0 +1,93 @@
+# Metadata-DB auth for Superset via valuesFrom, selected by superset_db_auth (default
+# password). iam (aws, RDS IAM auth): the IRSA `superset` ServiceAccount, the
+# site-supplied rds-ca-bundle ConfigMap at /etc/rds-ca, and the superset_rds_iam.py
+# override, which stays inert until superset-env sets DB_IAM_AUTH=true. values.yaml
+# feeds the server HR, dashboards.yaml the dashboards import Job. Each values.yaml
+# carries the full extraVolumes/extraVolumeMounts (Flux replaces lists).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: superset-db-auth-password
+  namespace: '${scout_analytics_namespace}'
+data:
+  values.yaml: |
+    extraVolumes:
+      - name: scout-logo
+        configMap:
+          name: scout-logo
+          defaultMode: 0644
+      - name: statsd-mapping
+        configMap:
+          name: superset-statsd-mapping
+      # CA from the trino-tls Secret; DB_CONNECTION_MUTATOR passes /etc/trino-ca/ca.crt
+      # as http_session.verify to trust Trino's self-signed cert.
+      - name: trino-ca
+        secret:
+          secretName: trino-tls
+          items:
+            - key: ca.crt
+              path: ca.crt
+    extraVolumeMounts:
+      - name: scout-logo
+        mountPath: /app/superset/static/assets/images/scout.png
+        subPath: scout.png
+        readOnly: true
+      - name: scout-logo
+        mountPath: /app/superset/static/assets/images/favicon.ico
+        subPath: favicon.ico
+        readOnly: true
+      - name: trino-ca
+        mountPath: /etc/trino-ca
+        readOnly: true
+  dashboards.yaml: '{}'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: superset-db-auth-iam
+  namespace: '${scout_analytics_namespace}'
+data:
+  values.yaml: |
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: '${irsa_role_prefix}-superset'
+    # Fixed: the IRSA trust and the dashboards Job both name it.
+    serviceAccountName: superset
+    extraVolumes:
+      - name: scout-logo
+        configMap:
+          name: scout-logo
+          defaultMode: 0644
+      - name: statsd-mapping
+        configMap:
+          name: superset-statsd-mapping
+      - name: trino-ca
+        secret:
+          secretName: trino-tls
+          items:
+            - key: ca.crt
+              path: ca.crt
+      - name: rds-ca
+        configMap:
+          name: rds-ca-bundle
+          optional: true
+    extraVolumeMounts:
+      - name: scout-logo
+        mountPath: /app/superset/static/assets/images/scout.png
+        subPath: scout.png
+        readOnly: true
+      - name: scout-logo
+        mountPath: /app/superset/static/assets/images/favicon.ico
+        subPath: favicon.ico
+        readOnly: true
+      - name: trino-ca
+        mountPath: /etc/trino-ca
+        readOnly: true
+      - name: rds-ca
+        mountPath: /etc/rds-ca
+        readOnly: true
+  dashboards.yaml: |
+    supersetRelease:
+      serviceAccountName: superset
+      rdsCaConfigMap: rds-ca-bundle

@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
 # Install required Python packages using uv
 RUN uv pip install --no-cache \
     authlib \
+    boto3 \
     psycopg2-binary \
     pyhive \
     trino \

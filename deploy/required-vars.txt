@@ -5,7 +5,8 @@
 # empty). Auto-derived from the ${...} vars used across deploy/ and enforced by
 # validate-deploy.yaml; regenerate with the snippet in that workflow when bases add
 # or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler
-# (Phase 5) validate a site's values against this list.
+# (Phase 5) validate a site's values against this list. A var the bases use as
+# ${var:=default} (an opt-in knob) may be omitted; the default then applies.
 acm_cert_arn
 alb_group_name
 cnpg_operator_namespace
@@ -101,6 +102,7 @@ scratch_path
 server_hostname
 service_mode
 spark_sql_shuffle_partitions
+superset_db_auth
 timezone
 trino_https_port
 trino_rw_endpoint_host

@@ -25,6 +25,9 @@ spec:
         component: dashboard-import
     spec:
       restartPolicy: Never
+      {{- with .Values.supersetRelease.serviceAccountName }}
+      serviceAccountName: {{ . }}
+      {{- end }}
       containers:
         - name: import
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -80,6 +83,11 @@ spec:
               mountPath: /etc/trino-ca
               readOnly: true
             {{- end }}
+            {{- if .Values.supersetRelease.rdsCaConfigMap }}
+            - name: rds-ca
+              mountPath: /etc/rds-ca
+              readOnly: true
+            {{- end }}
       volumes:
         - name: superset-config
           secret:
@@ -96,4 +104,10 @@ spec:
             items:
               - key: ca.crt
                 path: ca.crt
+        {{- end }}
+        {{- if .Values.supersetRelease.rdsCaConfigMap }}
+        - name: rds-ca
+          configMap:
+            name: {{ .Values.supersetRelease.rdsCaConfigMap }}
+            optional: true
         {{- end }}

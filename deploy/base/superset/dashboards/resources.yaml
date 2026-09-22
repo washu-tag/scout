@@ -8,6 +8,7 @@
 # `superset-valkey-auth`, mounts `trino-tls` to verify Trino's self-signed cert
 # during dataset validation. Namespace ${scout_analytics_namespace} + scout-charts
 # HelmRepository owned by scout-analytics-foundation (dependsOn), not redeclared.
+# superset_db_auth=iam: runs as the server's IRSA `superset` SA with the RDS CA.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -28,6 +29,11 @@ spec:
         kind: HelmRepository
         name: scout-charts
         namespace: '${scout_analytics_namespace}'
+  # Metadata-DB auth variant, shipped by superset-server (server/db-auth.yaml).
+  valuesFrom:
+    - kind: ConfigMap
+      name: 'superset-db-auth-${superset_db_auth:=password}'
+      valuesKey: dashboards.yaml
   values:
     # Superset image (same CLI + deps; build-lane-stamped, literal here, matches server).
     image:

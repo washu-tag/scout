@@ -70,6 +70,7 @@
   "server_hostname": "scout.example.edu",
   "service_mode": "on-prem",
   "spark_sql_shuffle_partitions": "200",
+  "superset_db_auth": "password",
   "timezone": "America/Chicago",
   "trino_https_port": "8443",
   "trino_rw_endpoint_port": "8080",

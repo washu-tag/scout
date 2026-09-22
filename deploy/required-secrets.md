@@ -51,7 +51,7 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | --- | --- | --- |
 | `trino-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-ro (lake-reader; cloud = IRSA instead) |
 | `trino-authz-env` | `KEYSTORE_PASSWORD`, `INTERNAL_SHARED_SECRET` | trino-ro + cert-manager (generate-once) |
-| `superset-env` | DB + Redis + OIDC client secrets + `SUPERSET_SECRET_KEY` | superset server + dashboards |
+| `superset-env` | DB + Redis + OIDC client secrets + `SUPERSET_SECRET_KEY`; RDS IAM auth: `DB_IAM_AUTH=true`, `DB_USER` = the IAM login role, optional `DB_SSLMODE` / `DB_SSLROOTCERT` (see below) | superset server + dashboards |
 | `opa-bundle-reader` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | scout-opa bundle reader |
 
 ## kube-system (oauth2-proxy)
@@ -163,3 +163,38 @@ patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
 - To stage the flip, first apply the patch with `wrapperPlugins=` (empty), without the
   `passwordSecret` removal and with `username: keycloak`. That proves the driver swap,
   re-augmentation and verify-full TLS on password auth before switching to IAM.
+Passwordless Postgres logins for the components below, each off by default behind its
+own cluster-var. Turning one on needs, per component:
+
+- **An IAM login role** next to the owner role `R`, so objects stay owned by `R` and
+  the password login still works for rollback:
+  ```sql
+  CREATE ROLE R_iam LOGIN;               -- no password
+  GRANT R TO R_iam;
+  GRANT rds_iam TO R_iam;
+  ALTER ROLE R_iam SET role = 'R';       -- sessions act as R
+  ```
+  **Never grant `rds_iam` to an owner role, or to any role the master user is a member
+  of.** RDS honours nested membership, so the master would become IAM-only and its
+  password login would be refused. Keep the master out of every `R_iam`, and since
+  Postgres 16+ makes a non-superuser creator a member of each role it creates, verify
+  rather than assume: `pg_has_role('<master>', 'rds_iam', 'MEMBER')` must be false.
+- **An IRSA role** `${irsa_role_prefix}-<suffix>` trusting the ServiceAccount below,
+  allowed `rds-db:connect` on `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/R_iam`.
+- **A `rds-ca-bundle` ConfigMap** (key `ca.pem`, the RDS CA bundle for the instance's
+  region, e.g. `https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`)
+  in the component's namespace, mounted at `/etc/rds-ca`. IAM auth requires TLS; clients
+  use `sslmode=verify-full`. The mount is optional, so a missing ConfigMap surfaces as a
+  connection error, not a stuck pod.
+
+| component | cluster-var | ServiceAccount (namespace) | IRSA suffix | login role | switch |
+| --- | --- | --- | --- | --- | --- |
+| superset (server, worker, init Job, dashboards Job) | `superset_db_auth: iam` (default `password`) | `superset` (`${scout_analytics_namespace}`) | `-superset` | `superset_iam` | `superset-env`: `DB_IAM_AUTH=true` + `DB_USER=superset_iam` |
+
+Superset: `superset_db_auth=iam` only adds the ServiceAccount, the CA mount and the
+token hook, which stays inert until `superset-env` flips. Change `DB_IAM_AUTH` and
+`DB_USER` together, then restart `superset` and `superset-worker` (pods don't roll on a
+Secret change by themselves); the init and dashboards Jobs pick it up on the next
+upgrade. Roll back by reverting those two keys. `DB_SSLMODE` (default `verify-full`) and
+`DB_SSLROOTCERT` (default `/etc/rds-ca/ca.pem`) override the TLS settings. Tokens are
+minted in `AWS_REGION` (set by the EKS pod-identity webhook), else `AWS_DEFAULT_REGION`.

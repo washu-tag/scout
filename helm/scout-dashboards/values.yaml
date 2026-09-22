@@ -28,6 +28,10 @@ supersetRelease:
   # so DB_CONNECTION_MUTATOR can verify Trino's self-signed TLS cert during
   # dataset validation. Leave empty for non-AuthZ clusters.
   trinoCaSecret: ''
+  # RDS IAM DB auth (superset_rds_iam.py): the release's IRSA ServiceAccount, and
+  # the RDS CA ConfigMap (key ca.pem) mounted at /etc/rds-ca. Empty = unset.
+  serviceAccountName: ''
+  rdsCaConfigMap: ''
 
 # Admin username dashboards are imported as. Must exist in Superset already
 # (created by the apache/superset chart's init Job).

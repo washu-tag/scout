@@ -6,6 +6,8 @@ resources:
   - resources.yaml
   # Per-mode ingress + security-headers (both modes; HR selects one via service_mode).
   - edge.yaml
+  # Metadata-DB auth variants (both ship; HR selects one via superset_db_auth).
+  - db-auth.yaml
 # Single-source the two config .py (ansible/roles/superset/files/* symlink to them);
 # HelmRelease valuesFrom deep-sets them into configOverrides. Both envsubst-clean.
 configMapGenerator:
@@ -13,6 +15,10 @@ configMapGenerator:
     files:
       - superset_trino_auth.py
       - superset_metrics.py
+  # superset_db_auth=iam only (no -password variant; the HR ref is optional).
+  - name: superset-config-overrides-iam
+    files:
+      - superset_rds_iam.py
 generatorOptions:
   # Fixed name: referenced in HelmRelease valuesFrom. Flux re-reconciles on content
   # change, so a .py edit still rolls the release.
