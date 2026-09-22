@@ -679,6 +679,28 @@ class TestArbitration:
             others = {"dupe.yaml", "fragment.yaml"} - {outcome.document}
             assert others.pop() in outcome.detail
 
+    def test_an_owners_own_duplicate_does_not_hand_its_client_to_a_rival(
+        self, reconciler, kc, k8s
+    ):
+        """Incumbency is settled before any claim is dropped. Otherwise a
+        mistake inside the owning artifact -- a chart rendering the fragment
+        twice -- leaves a rival as the only claimant standing, and the rival's
+        representation is written over the owner's client, credential and all.
+        """
+        reconciler.reconcile_once()
+        k8s.add_fragment(fragment_text(), namespace="other", name="rival")
+        k8s.add_secret("rival-secret", namespace="other", name="hello-keycloak-client")
+        reconciler.reconcile_once()
+
+        item = k8s.get_configmap("demo", "hello-keycloak")
+        item["data"]["dupe.yaml"] = fragment_text()
+        reconciler.reconcile_once()
+
+        live = kc.find_client("hello")
+        assert translate.source_of(live) == "demo/hello-keycloak"
+        assert kc.client_secret(live["id"]) == "hello-secret"
+        assert "update_client:hello" not in kc.writes
+
     def test_a_duplicate_does_not_block_another_fragments_claim(
         self, reconciler, kc, k8s
     ):

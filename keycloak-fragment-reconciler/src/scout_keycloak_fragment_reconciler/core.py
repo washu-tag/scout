@@ -231,95 +231,121 @@ class Reconciler:
         """Settle clientId uniqueness across the whole snapshot.
 
         Not answerable from one fragment, so this always runs over everything.
+
+        Incumbency is settled before any claim is dropped. A source that
+        already owns the client is the only one that may keep it, so its own
+        mistakes disqualify only itself: dropping them first would leave a
+        rival as the last claimant standing and hand it the credential.
+
         Tier edges need no arbitration: the composites POST is additive, so two
         fragments writing into the same tier role cannot clobber each other.
         """
         for client_id, all_claims in contenders.items():
-            claims = self._reject_duplicates(client_id, all_claims, snapshot)
-            if not claims:
+            if len(all_claims) == 1:
+                snapshot.claims[client_id] = all_claims[0]
                 continue
-            if len(claims) == 1:
-                snapshot.claims[client_id] = claims[0]
-                continue
-            sources = sorted(claim.source for claim in claims)
+            by_source: dict[str, list[Claim]] = {}
+            for claim in all_claims:
+                by_source.setdefault(claim.source, []).append(claim)
+
             incumbent = self._incumbent_source(client_id)
-            winner = next((c for c in claims if c.source == incumbent), None)
-            if winner is None:
-                # Both fail: picking one would be arbitrary, and the loser
-                # would retry forever against a client it cannot have.
-                log.error(
-                    "clientId %s is claimed by %s; all of them are rejected "
-                    "until exactly one claims it",
-                    client_id,
-                    ", ".join(sources),
-                )
-                for claim in claims:
-                    snapshot.outcomes.append(
-                        Outcome(
-                            claim.source,
-                            client_id,
-                            REJECTED,
-                            f"clientId is also claimed by "
-                            f"{', '.join(s for s in sources if s != claim.source)}",
-                            document=claim.document,
-                        )
-                    )
+            if incumbent in by_source:
+                for source, claims in by_source.items():
+                    if source != incumbent:
+                        self._reject_rivals(client_id, claims, incumbent, snapshot)
+                own = by_source[incumbent]
+                if len(own) == 1:
+                    snapshot.claims[client_id] = own[0]
+                else:
+                    self._reject_duplicates(client_id, own, snapshot)
                 continue
-            snapshot.claims[client_id] = winner
-            for claim in claims:
-                if claim.source != incumbent:
-                    snapshot.outcomes.append(
-                        Outcome(
-                            claim.source,
-                            client_id,
-                            REJECTED,
-                            f"clientId already belongs to {incumbent}",
-                            document=claim.document,
-                        )
-                    )
+
+            eligible = []
+            for claims in by_source.values():
+                if len(claims) == 1:
+                    eligible.append(claims[0])
+                else:
+                    self._reject_duplicates(client_id, claims, snapshot)
+            if len(eligible) == 1:
+                snapshot.claims[client_id] = eligible[0]
+            elif eligible:
+                self._reject_contested(client_id, eligible, snapshot)
 
     def _reject_duplicates(
         self, client_id: str, claims: list[Claim], snapshot: Snapshot
-    ) -> list[Claim]:
-        """Drop claims from any source that names one clientId twice.
+    ) -> None:
+        """Reject every claim from a source that names one clientId twice.
 
         Two documents in one ConfigMap claiming the same clientId is a mistake
         inside a single artifact, and the author can see both halves of it. The
-        cross-fragment tie-break below cannot help: its tie-breaker is which
-        source already owns the client, which says nothing about which of that
+        cross-fragment tie-break cannot help: its tie-breaker is which source
+        already owns the client, which says nothing about which of that
         source's own documents should win. Rejecting both names the conflict
         where it can be fixed instead of silently applying whichever sorted
         first.
         """
-        by_source: dict[str, list[Claim]] = {}
+        source = claims[0].source
+        documents = sorted(claim.document for claim in claims)
+        log.error(
+            "%s declares clientId %s in more than one document (%s); "
+            "all of them are rejected until exactly one does",
+            source,
+            client_id,
+            ", ".join(documents),
+        )
         for claim in claims:
-            by_source.setdefault(claim.source, []).append(claim)
-        kept = []
-        for source, from_source in by_source.items():
-            if len(from_source) == 1:
-                kept.extend(from_source)
-                continue
-            documents = sorted(claim.document for claim in from_source)
-            log.error(
-                "%s declares clientId %s in more than one document (%s); "
-                "all of them are rejected until exactly one does",
-                source,
-                client_id,
-                ", ".join(documents),
-            )
-            for claim in from_source:
-                others = [d for d in documents if d != claim.document]
-                snapshot.outcomes.append(
-                    Outcome(
-                        source,
-                        client_id,
-                        REJECTED,
-                        "this ConfigMap also declares this clientId in "
-                        f"{', '.join(others)}",
-                        document=claim.document,
-                    )
+            others = [d for d in documents if d != claim.document]
+            snapshot.outcomes.append(
+                Outcome(
+                    source,
+                    client_id,
+                    REJECTED,
+                    "this ConfigMap also declares this clientId in "
+                    f"{', '.join(others)}",
+                    document=claim.document,
                 )
-        return kept
+            )
+
+    def _reject_contested(
+        self, client_id: str, claims: list[Claim], snapshot: Snapshot
+    ) -> None:
+        """Reject every claim on a clientId no source already owns.
+
+        Picking one would be arbitrary, and the loser would retry forever
+        against a client it cannot have.
+        """
+        sources = sorted(claim.source for claim in claims)
+        log.error(
+            "clientId %s is claimed by %s; all of them are rejected "
+            "until exactly one claims it",
+            client_id,
+            ", ".join(sources),
+        )
+        for claim in claims:
+            snapshot.outcomes.append(
+                Outcome(
+                    claim.source,
+                    client_id,
+                    REJECTED,
+                    f"clientId is also claimed by "
+                    f"{', '.join(s for s in sources if s != claim.source)}",
+                    document=claim.document,
+                )
+            )
+
+    def _reject_rivals(
+        self, client_id: str, claims: list[Claim], incumbent: str, snapshot: Snapshot
+    ) -> None:
+        for claim in claims:
+            snapshot.outcomes.append(
+                Outcome(
+                    claim.source,
+                    client_id,
+                    REJECTED,
+                    f"clientId already belongs to {incumbent}",
+                    document=claim.document,
+                )
+            )
 
     def _incumbent_source(self, client_id: str) -> str:
         try:
