@@ -101,4 +101,4 @@ The Lake service provides the data storage foundation for Scout using a medallio
 
 **Access:** Administrators can manage users, roles, and authentication settings through the Keycloak admin console.
 
-**Learn more:** See [Authentication](../user/authentication.md) for details on the user login and approval process.
+**Learn more:** See [Authentication](../user/authentication.md) for details on the user login and approval process, and [How Authentication Works](authentication.md) for the mechanics behind it.
