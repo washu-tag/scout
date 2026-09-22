@@ -15,7 +15,7 @@ spec:
         # Roll the pod when the rendered Secret (DB URL / shared secret /
         # Trino CA) changes, since env values are only read at start.
         checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
-        # Same reasoning for the action catalog (#739 PoC) - actions.py
+        # Same reasoning for the action catalog (#739) - actions.py
         # reads it once at import time, not live-reloaded from the
         # mounted file.
         checksum/actions-configmap: {{ include (print $.Template.BasePath "/actions-configmap.yaml") . | sha256sum }}
@@ -100,7 +100,7 @@ spec:
             # for uvicorn scratch space and any transient library writes.
             - name: tmp
               mountPath: /tmp
-            # Issue #739 PoC: action-catalog ConfigMap - see
+            # Issue #739: action-catalog ConfigMap - see
             # actions-configmap.yaml and scout_report_viewer/actions.py.
             - name: action-catalog
               mountPath: /app/action-catalog

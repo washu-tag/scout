@@ -1,4 +1,4 @@
-# Issue #739 PoC: the search-detail toolbar's action catalog, mounted
+# Issue #739: the search-detail toolbar's action catalog, mounted
 # directly into the pod - the same "core chips ride a chart-rendered
 # ConfigMap" delivery ADR 0034 uses for launchpad's own tiles, as opposed
 # to the cross-namespace sidecar-discovery mechanism it uses for

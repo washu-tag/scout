@@ -95,7 +95,7 @@ export function getSearch(searchId: string): Promise<SearchMeta> {
   return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
 }
 
-// Issue #739 PoC: backend-declared, role-filtered toolbar actions.
+// Issue #739: backend-declared, group-filtered toolbar actions.
 // action_type "open-url" is handled generically (see openResult.ts);
 // "client" actions are looked up by client_handler in a small local
 // registry, since they invoke page-specific logic (e.g. building a CSV

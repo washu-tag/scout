@@ -34,7 +34,7 @@ dependencies = [
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
     "yoyo-migrations",
-    # Parses the action-catalog ConfigMap mounted by the Helm chart (#739 PoC).
+    # Parses the action-catalog ConfigMap mounted by the Helm chart (#739).
     "pyyaml",
     # Server-side render check for a saved spec, before persisting it.
     # >=1.9 defaults to Vega-Lite v6, matching the frontend and stamped schema.

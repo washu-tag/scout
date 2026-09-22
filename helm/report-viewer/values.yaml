@@ -65,7 +65,7 @@ resources:
     cpu: 2
     memory: 4Gi
 
-# Issue #739 PoC: search-detail toolbar actions, rendered into a
+# Issue #739: search-detail toolbar actions, rendered into a
 # ConfigMap and mounted at /app/action-catalog/catalog.yaml (matches
 # scout_report_viewer.config.Settings.action_catalog_path's default).
 # explainSearch/downloadCsv are objects, not plain booleans, specifically

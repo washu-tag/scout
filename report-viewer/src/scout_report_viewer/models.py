@@ -240,7 +240,7 @@ class PlotMeta(BaseModel):
 
 
 class ActionInvokeResponse(BaseModel):
-    """Issue #739 PoC: the result URL a backend-call action's own
+    """Issue #739: the result URL a backend-call action's own
     endpoint_url returned, ready for the same open/copy-fallback handling
     as an open-url action."""
 

@@ -12,8 +12,10 @@ button needs a source change, an image rebuild, and a redeploy — the same prob
 0034 solved for the launchpad's front door, showing up one level in on a specific page.
 Issue #595 ("Pluggable Apps") separately describes a tier of genuinely separate,
 independently-deployed "Apps" that Scout should be able to hand off to without knowing
-what they do. This work is a proof of concept for both: a button becomes data, and one
-kind of button can call out to a real external service.
+what they do. This work makes both real: a button becomes data, and one kind of button
+can call out to a genuinely separate service — though `xnat-explore-poc`, the example
+used to build and test that hand-off, remains a deliberately fake demo (see below), not
+itself a production Pluggable App.
 
 The harder question was gating: some buttons (an admin-only tool, a not-yet-GA
 integration) shouldn't be visible to every researcher. The first design mirrored ADR

@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
 
-    # Issue #739 PoC: path to the action-catalog YAML the Helm chart
+    # Issue #739: path to the action-catalog YAML the Helm chart
     # renders into a ConfigMap and mounts here (the same "core chips ride
     # a chart-rendered ConfigMap mounted directly into the pod" delivery
     # ADR 0034 uses for launchpad's own tiles). Missing file (e.g. local

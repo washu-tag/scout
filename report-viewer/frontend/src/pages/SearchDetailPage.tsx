@@ -105,7 +105,7 @@ export default function SearchDetailPage() {
     enabled: !!searchId,
   });
 
-  // Issue #739 PoC: backend-declared, role-filtered toolbar actions.
+  // Issue #739: backend-declared, group-filtered toolbar actions.
   const actionsQ = useQuery({
     queryKey: ['search', searchId, 'actions'],
     queryFn: () => listSearchActions(searchId),

@@ -47,7 +47,7 @@ report_viewer_trino_auth_token_url: '{{ keycloak_internal_url }}/realms/{{ keycl
 report_viewer_trino_auth_client_id: report_viewer_svc
 report_viewer_trino_auth_client_secret: '{{ keycloak_report_viewer_svc_client_secret }}'
 
-# Issue #739 PoC: site-admin-authorable action buttons (helm/report-viewer's
+# Issue #739: site-admin-authorable action buttons (helm/report-viewer's
 # actions.custom - see that chart's values.yaml for the full field
 # reference). Set from inventory.yaml, e.g.:
 #

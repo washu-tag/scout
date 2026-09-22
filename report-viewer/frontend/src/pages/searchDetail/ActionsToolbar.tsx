@@ -3,7 +3,7 @@ import { friendlyError, invokeSearchAction, type ActionDescriptor } from '../../
 import { useOpenResult } from '../../openResult';
 import { paginationBtn } from './styles';
 
-/** Issue #739 PoC: renders a backend-declared, role-filtered action list
+/** Issue #739: renders a backend-declared, group-filtered action list
  * generically.
  * - `open-url` actions are handled uniformly via `useOpenResult`.
  * - `client` actions are dispatched to a handler the page registers by

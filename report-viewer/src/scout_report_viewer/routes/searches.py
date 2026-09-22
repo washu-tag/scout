@@ -488,7 +488,7 @@ async def get_search_actions(
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> list[ActionDescriptor]:
-    """Issue #739 PoC: group-filtered toolbar actions for this search.
+    """Issue #739: group-filtered toolbar actions for this search.
 
     Owner-scoped like the sibling endpoints even though the static catalog
     doesn't yet key off search content - a real action (e.g. a future
@@ -511,7 +511,7 @@ async def invoke_search_action(
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> ActionInvokeResponse:
-    """Issue #739 PoC: generic proxy for `backend-call` actions.
+    """Issue #739: generic proxy for `backend-call` actions.
 
     report-viewer never needs to know anything about what a given plugin
     does - it forwards the search's context to the action's own

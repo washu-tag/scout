@@ -1,4 +1,4 @@
-"""Extensible per-search action buttons (issue #739 PoC).
+"""Extensible per-search action buttons (issue #739, ADR 0037).
 
 Report-viewer's search-detail toolbar used to hardcode every button in
 the frontend. This module proves out a backend-declared contract instead:
