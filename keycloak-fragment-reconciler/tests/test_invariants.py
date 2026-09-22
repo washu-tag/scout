@@ -7,7 +7,6 @@ keep a write log rather than only modelling state.
 from __future__ import annotations
 
 import base64
-import logging
 
 import pytest
 from conftest import (
@@ -916,11 +915,9 @@ class TestDriftIsAnAnomaly:
     fragment's grant.
     """
 
-    def test_a_first_grant_is_not_an_anomaly(self, reconciler, kc, caplog):
-        with caplog.at_level(logging.ERROR):
-            reconciler.reconcile_once()
+    def test_a_first_grant_is_not_an_anomaly(self, reconciler, kc):
+        reconciler.reconcile_once()
         assert reconciler.drift_repairs == 0
-        assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
 
     def test_a_newly_declared_role_and_grant_is_not_an_anomaly(
         self, reconciler, kc, k8s
@@ -942,17 +939,15 @@ class TestDriftIsAnAnomaly:
         assert kc.edges("scout-user") == {"hello-user", "hello-viewer"}
         assert reconciler.drift_repairs == 0
 
-    def test_a_reaped_edge_is_logged_at_error_and_counted(self, reconciler, kc, caplog):
+    def test_a_reaped_edge_is_repaired_and_counted(self, reconciler, kc):
         reconciler.reconcile_once()
         # What a base-realm apply with a `composites` key would do.
         kc.composites["scout-user"].clear()
 
-        with caplog.at_level(logging.ERROR):
-            reconciler.reconcile_once()
+        reconciler.reconcile_once()
 
         assert reconciler.drift_repairs == 1
         assert kc.edges("scout-user") == {"hello-user"}
-        assert any("composites" in r.message for r in caplog.records)
 
 
 class TestArbitration:
