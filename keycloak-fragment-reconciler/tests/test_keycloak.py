@@ -111,3 +111,24 @@ def test_force_re_authenticates():
     first = client._access_token()
     assert client._access_token(force=True) != first
     assert len(http.token_posts) == 2
+
+
+# --- error classification -----------------------------------------------
+
+
+def test_a_non_json_body_is_a_keycloak_error():
+    """A 2xx carrying HTML -- what an ingress in front of Keycloak answers.
+
+    The decode has to be classified like any other failure, because a bare
+    JSONDecodeError is a ValueError and escapes every handler between here and
+    the run loop, taking the rest of the pass with it.
+    """
+    http = FakeHttp(responses=[httpx.Response(200, content=b"<html/>")])
+    with pytest.raises(KeycloakError):
+        admin(http).list_clients()
+
+
+def test_a_non_json_token_body_is_a_keycloak_error():
+    http = FakeHttp(token_responses=[httpx.Response(200, content=b"<html/>")])
+    with pytest.raises(KeycloakError):
+        admin(http)._access_token()

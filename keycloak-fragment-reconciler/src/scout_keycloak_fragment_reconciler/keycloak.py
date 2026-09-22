@@ -77,6 +77,20 @@ class KeycloakError(RuntimeError):
         return self.status == 0 or self.status >= 500 or self.status in (401, 403, 429)
 
 
+def _decoded(response: httpx.Response, context: str) -> object:
+    """The body as JSON, with a decode failure classified like any other.
+
+    A `ValueError` is what an undecodable body raises, and no handler between
+    here and the run loop narrows to it, so unclassified it would end the pass
+    rather than the one fragment. Status 0 for the same reason a transport
+    failure is: the usual cause is something other than Keycloak answering.
+    """
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise KeycloakError(0, f"{context}: body is not JSON: {exc}") from None
+
+
 class Admin:
     def __init__(self, base_url: str, realm: str, client_id: str, secret: str) -> None:
         self.base = base_url.rstrip("/")
@@ -113,7 +127,9 @@ class Admin:
                 f"client_credentials refused for {self.client_id}: "
                 f"{response.text[:ERROR_EXCERPT_CHARS]}",
             )
-        payload = response.json()
+        payload = _decoded(response, "token endpoint")
+        if not isinstance(payload, dict):
+            raise KeycloakError(0, "token endpoint returned no access_token")
         self._token = payload.get("access_token", "")
         now = time.monotonic()
         lifetime = float(payload.get("expires_in", DEFAULT_TOKEN_LIFETIME_SECONDS))
@@ -152,7 +168,7 @@ class Admin:
             )
         if not response.content:
             return None
-        return response.json()
+        return _decoded(response, f"{method} {path}")
 
     def _get_or_none(self, path: str) -> object:
         try:
