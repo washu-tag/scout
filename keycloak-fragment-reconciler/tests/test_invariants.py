@@ -19,7 +19,7 @@ from conftest import (
     translate,
 )
 
-from scout_keycloak_fragment_reconciler import core
+from scout_keycloak_fragment_reconciler import core, metrics
 from scout_keycloak_fragment_reconciler.core import APPLIED, REJECTED, Reconciler
 
 
@@ -862,6 +862,25 @@ class TestEventsMarkTransitions:
             "FragmentInvalid",
             "FragmentApplied",
         ]
+
+    def test_an_incomplete_read_publishes_nothing(self, reconciler, k8s):
+        """One failed LIST must not become "every fragment is gone" to the
+        metrics, nor clear the report state and re-emit the lot on recovery."""
+        reconciler.reconcile_once()
+        applied = 'clients{state="applied"} 1.0'
+        assert applied in metrics.render(reconciler)
+        reported = dict(reconciler._reported)
+
+        k8s.list_error = TransportError("connection refused")
+        reconciler.reconcile_once()
+
+        assert applied in metrics.render(reconciler)
+        assert reconciler._reported == reported
+
+        k8s.list_error = None
+        reconciler.reconcile_once()
+
+        assert k8s.reasons() == ["FragmentApplied"]
 
     def test_a_changed_message_reports_again(self, reconciler, k8s):
         """Same status, different reason -- an author fixing one problem and

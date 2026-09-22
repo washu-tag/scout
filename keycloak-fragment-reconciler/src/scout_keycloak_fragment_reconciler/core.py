@@ -722,8 +722,12 @@ class Reconciler:
         self.collect(snapshot, now=time.time())
         for claim in snapshot.claims.values():
             snapshot.outcomes.append(self.apply(claim))
-        self.snapshot = snapshot
-        self._report(snapshot)
+        # Publishing an incomplete snapshot would report "no fragments" rather
+        # than "we could not ask": every series zeroed, and the report state
+        # cleared, so recovery re-emits an Event for every fragment.
+        if snapshot.complete:
+            self.snapshot = snapshot
+            self._report(snapshot)
         if self.writes == before:
             log.debug("nothing to do")
         else:
