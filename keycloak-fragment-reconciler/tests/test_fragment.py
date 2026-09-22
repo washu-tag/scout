@@ -243,6 +243,14 @@ class TestRedirectUrisAreConstrained:
                 )
             )
 
+    def test_duplicate_redirect_uris_are_rejected(self):
+        """Keycloak keeps them in a Set, so a repeated URI reads back
+        deduplicated and the client looks drifted on every pass."""
+        callback = f"      - https://hello.{HOSTNAME}/auth/callback"
+        text = fragment_text().replace(callback, f"{callback}\n{callback}")
+        with pytest.raises(FragmentError, match="duplicates"):
+            parse(text)
+
     def test_an_app_url_query_string_is_rejected(self):
         """appUrl is a base URL that becomes a web origin and a post-logout
         redirect; a query is meaningless in both. A redirect URI may carry

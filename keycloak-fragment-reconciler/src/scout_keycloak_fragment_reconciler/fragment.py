@@ -138,6 +138,14 @@ class ClientSpec(BaseModel):
         return self
 
     @model_validator(mode="after")
+    def _check_redirect_uris_unique(self) -> ClientSpec:
+        """Keycloak stores these in a Set, so a duplicate reads back
+        deduplicated and the client is rewritten as drifted every pass."""
+        if len(set(self.redirect_uris)) != len(self.redirect_uris):
+            raise ValueError("redirectUris contains duplicates")
+        return self
+
+    @model_validator(mode="after")
     def _check_grant_sources(self) -> ClientSpec:
         """A fragment may only grant roles it declares itself.
 
