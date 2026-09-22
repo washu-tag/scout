@@ -26,7 +26,10 @@ class Settings(BaseSettings):
     keycloak_url: str = "http://keycloak-service:8080"
     realm: str = "scout"
     client_id: str = "fragment_reconciler_svc"
-    client_secret: str = ""
+    # A path, not the value. The credential arrives as a mounted Secret, which
+    # kubelet rewrites in place when it rotates; an env var would hold whatever
+    # the pod started with until something rolled it.
+    client_secret_file: str = ""
 
     # --- What a fragment may ask for ------------------------------------
     # An allowlist, not any realm role: a fragment naming `default-roles-scout`
@@ -115,7 +118,7 @@ class RequiredSettings(Settings):
     inventing a credential. `main` uses this one.
     """
 
-    client_secret: str = Field(min_length=1)
+    client_secret_file: str = Field(min_length=1)
     server_hostname: str = Field(min_length=1)
 
 

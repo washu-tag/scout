@@ -5,6 +5,7 @@ is what stops a rolling update from briefly running two; the in-memory orphan
 grace clock assumes one process for the same reason. An outage here is only ever
 a delay, so there is nothing worth trading that for.
 */}}
+{{- $credentialDir := "/var/run/secrets/keycloak-fragment-reconciler" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -55,11 +56,8 @@ spec:
               value: {{ .Values.keycloak.realm | quote }}
             - name: KEYCLOAK_FRAGMENT_RECONCILER_CLIENT_ID
               value: {{ .Values.keycloak.clientId | quote }}
-            - name: KEYCLOAK_FRAGMENT_RECONCILER_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.keycloak.existingSecret }}
-                  key: {{ .Values.keycloak.existingSecretKey }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_CLIENT_SECRET_FILE
+              value: {{ printf "%s/%s" $credentialDir .Values.keycloak.existingSecretKey | quote }}
             - name: KEYCLOAK_FRAGMENT_RECONCILER_SERVER_HOSTNAME
               value: {{ required "serverHostname is required: fragments' redirect URIs are validated against it" .Values.serverHostname | quote }}
             - name: KEYCLOAK_FRAGMENT_RECONCILER_TIER_ROLES
@@ -94,6 +92,24 @@ spec:
             periodSeconds: 15
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: client-credential
+              mountPath: {{ $credentialDir | quote }}
+              readOnly: true
+      {{- /*
+      Mounted rather than injected as an env var, which is fixed at container
+      start: kubelet rewrites a mounted Secret in place, so a rotated
+      credential reaches the running process without a pod roll in either
+      deploy lane. One key, not the whole Secret -- keycloak-client-secrets
+      holds every service's credential.
+      */}}
+      volumes:
+        - name: client-credential
+          secret:
+            secretName: {{ .Values.keycloak.existingSecret | quote }}
+            items:
+              - key: {{ .Values.keycloak.existingSecretKey | quote }}
+                path: {{ .Values.keycloak.existingSecretKey | quote }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

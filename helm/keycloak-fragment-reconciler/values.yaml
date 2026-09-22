@@ -21,7 +21,9 @@ keycloak:
   realm: scout
   clientId: fragment_reconciler_svc
   # The Secret config-cli already consumes, under the key the realm
-  # var-substitutes: one value, one writer, no copy.
+  # var-substitutes: one value, one writer, no copy. That one key is mounted
+  # read-only and re-read on every authentication, so a rotation lands without
+  # a pod roll; the Secret's other keys are never projected into this pod.
   existingSecret: keycloak-client-secrets
   existingSecretKey: fragment_reconciler_svc
 

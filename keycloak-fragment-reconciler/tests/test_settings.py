@@ -29,7 +29,9 @@ CHART_ENV = {
     "KEYCLOAK_URL": "http://keycloak-service:8080",
     "REALM": "scout",
     "CLIENT_ID": "fragment_reconciler_svc",
-    "CLIENT_SECRET": "from-the-secret",
+    "CLIENT_SECRET_FILE": (
+        "/var/run/secrets/keycloak-fragment-reconciler/fragment_reconciler_svc"
+    ),
     "SERVER_HOSTNAME": "scout.example.edu",
     "TIER_ROLES": "scout-user,scout-admin",
     "WATCHED_NAMESPACES": "",
@@ -115,10 +117,10 @@ class TestRequiredFields:
         env()
         import os
 
-        del os.environ[ENV_PREFIX + "CLIENT_SECRET"]
+        del os.environ[ENV_PREFIX + "CLIENT_SECRET_FILE"]
         with pytest.raises(SystemExit) as exit_info:
             RequiredSettings()
-        assert f"{ENV_PREFIX}CLIENT_SECRET" in str(exit_info.value)
+        assert f"{ENV_PREFIX}CLIENT_SECRET_FILE" in str(exit_info.value)
 
     def test_a_missing_hostname_names_the_variable(self, env):
         import os
@@ -132,7 +134,7 @@ class TestRequiredFields:
     def test_plain_settings_needs_neither(self):
         """So the translator tests and golden files need no invented
         credential."""
-        assert Settings().client_secret == ""
+        assert Settings().client_secret_file == ""
 
 
 class TestOperatorErrors:
@@ -223,7 +225,6 @@ class TestMetricsAreWellFormed:
         return Reconciler(
             Settings(
                 server_hostname=HOSTNAME,
-                client_secret="x",
                 watched_namespaces=["ALL"],
             ),
             k8s,

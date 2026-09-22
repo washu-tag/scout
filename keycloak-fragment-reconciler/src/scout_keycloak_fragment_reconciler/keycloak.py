@@ -29,6 +29,7 @@ from __future__ import annotations
 import logging
 import time
 import urllib.parse
+from pathlib import Path
 
 import httpx2 as httpx
 
@@ -99,11 +100,13 @@ def _decoded(response: httpx.Response, context: str) -> object:
 
 
 class Admin:
-    def __init__(self, base_url: str, realm: str, client_id: str, secret: str) -> None:
+    def __init__(
+        self, base_url: str, realm: str, client_id: str, secret_path: str | Path
+    ) -> None:
         self.base = base_url.rstrip("/")
         self.realm = realm
         self.client_id = client_id
-        self._secret = secret
+        self._secret_path = Path(secret_path)
         self._token = ""
         self._expires_at = 0.0
         self._http = httpx.Client(timeout=TIMEOUT_SECONDS)
@@ -113,17 +116,35 @@ class Admin:
     def _admin(self, path: str) -> str:
         return f"{self.base}/admin/realms/{self.realm}{path}"
 
+    def _secret(self) -> str:
+        """The credential, re-read on every authentication.
+
+        A mounted Secret is rewritten in place when the credential rotates, so
+        the value the process started with goes stale and nothing rolls the
+        pod; `k8s.Client._headers` reads the projected service-account token
+        the same way and for the same reason. An unreadable file is classified
+        rather than raised as an `OSError`, which is no `httpx.HTTPError` and
+        would escape every handler between here and the run loop.
+        """
+        try:
+            return self._secret_path.read_text(encoding="utf-8").strip()
+        except OSError as exc:
+            raise KeycloakError(
+                0, f"client credential at {self._secret_path} is unreadable: {exc}"
+            ) from None
+
     def _access_token(self, *, force: bool = False) -> str:
         if self._token and not force and time.monotonic() < self._expires_at:
             return self._token
         url = f"{self.base}/realms/{self.realm}/protocol/openid-connect/token"
+        secret = self._secret()
         try:
             response = self._http.post(
                 url,
                 data={
                     "grant_type": "client_credentials",
                     "client_id": self.client_id,
-                    "client_secret": self._secret,
+                    "client_secret": secret,
                 },
             )
         except httpx.HTTPError as exc:

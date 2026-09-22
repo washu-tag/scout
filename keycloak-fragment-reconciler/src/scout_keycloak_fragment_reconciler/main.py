@@ -58,7 +58,7 @@ def main() -> int:
         settings.keycloak_url,
         settings.realm,
         settings.client_id,
-        settings.client_secret,
+        settings.client_secret_file,
     )
     reconciler = core.Reconciler(settings, k8s, admin)
 

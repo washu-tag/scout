@@ -15,6 +15,11 @@ roles, and after `oauth2-proxy` because it waits on readiness.
 
 Everything else has a default in `defaults/main.yaml`.
 
+The pod mounts that one key of `keycloak-client-secrets` read-only and re-reads the file
+on every authentication, so rotating the credential and re-running the playbook takes
+effect on its own — no `kubectl rollout restart`, and no other service's credential in
+this pod.
+
 ## Overriding the image
 
 `keycloak_fragment_reconciler_image_repository` defaults to the published
