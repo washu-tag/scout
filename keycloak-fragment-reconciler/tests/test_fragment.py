@@ -285,6 +285,31 @@ class TestRedirectUrisAreConstrained:
         check(spec)
         assert spec.app_origin == f"https://hello.{HOSTNAME}"
 
+    @pytest.mark.parametrize(("port", "in_origin"), [(":443", ""), (":8443", ":8443")])
+    def test_the_origin_carries_only_a_non_default_port(self, port, in_origin):
+        """A browser's `Origin` omits the scheme's default port, and
+        `webOrigins` is compared against that header verbatim."""
+        spec = parsed(
+            fragment_text().replace(
+                f"appUrl: https://hello.{HOSTNAME}",
+                f"appUrl: https://hello.{HOSTNAME}{port}",
+            )
+        )
+        check(spec)
+        assert spec.app_origin == f"https://hello.{HOSTNAME}{in_origin}"
+
+    def test_a_port_that_is_not_a_number_is_rejected(self):
+        """Otherwise there is no origin to derive and the raw appUrl is used
+        as a webOrigin instead."""
+        spec = parsed(
+            fragment_text().replace(
+                f"appUrl: https://hello.{HOSTNAME}",
+                f"appUrl: https://hello.{HOSTNAME}:abc",
+            )
+        )
+        with pytest.raises(FragmentError, match="port"):
+            check(spec)
+
 
 class TestRoleClaimIsConstrained:
     """A role mapper aimed at a standard claim overwrites what the platform

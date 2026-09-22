@@ -106,19 +106,11 @@ class ClientSpec(BaseModel):
         clients carry the bare site origin for the same reason, including the
         ones served under a path.
 
-        Falls back to the raw value when there is no host to build from, which
-        `check_site_rules` rejects moments later; deciding that here would mean
-        raising from a property.
+        Falls back to the raw value when there is no origin to build from,
+        which `check_site_rules` rejects moments later; deciding that here
+        would mean raising from a property.
         """
-        parsed = urllib.parse.urlparse(self.app_url)
-        try:
-            port = parsed.port
-        except ValueError:
-            return self.app_url
-        if not parsed.hostname:
-            return self.app_url
-        host = f"{parsed.hostname}:{port}" if port else parsed.hostname
-        return f"{parsed.scheme}://{host}"
+        return _origin(self.app_url) or self.app_url
 
     @model_validator(mode="after")
     def _check_role_claim(self) -> ClientSpec:
@@ -178,6 +170,25 @@ class Fragment(BaseModel):
         return self
 
 
+def _origin(raw: str) -> str | None:
+    """`raw` reduced to `scheme://host[:port]`, or None when it has no origin.
+
+    The scheme's default port is left out, because a browser's `Origin` header
+    omits it and an origin is matched against that header as a string.
+    """
+    parsed = urllib.parse.urlparse(raw)
+    try:
+        port = parsed.port
+    except ValueError:
+        return None
+    if not parsed.hostname:
+        return None
+    if port == {"http": 80, "https": 443}.get(parsed.scheme):
+        port = None
+    host = f"{parsed.hostname}:{port}" if port else parsed.hostname
+    return f"{parsed.scheme}://{host}"
+
+
 def _https_host(raw: str, field: str) -> str:
     """The host of an https URL, or a FragmentError naming what was wrong."""
     try:
@@ -202,6 +213,8 @@ def _https_host(raw: str, field: str) -> str:
             f"{field} {raw!r} must not contain a backslash; a browser reads one "
             "as a path separator, so the host is not what this reads as"
         )
+    if _origin(raw) is None:
+        raise FragmentError(f"{field} {raw!r} has an invalid port")
     return parsed.hostname
 
 
