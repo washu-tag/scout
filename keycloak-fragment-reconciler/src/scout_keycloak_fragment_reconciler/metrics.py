@@ -89,9 +89,17 @@ class ReconcilerCollector:
         for name, help_text, value in [
             (
                 "writes_total",
-                "Keycloak writes issued since start. A second pass over "
-                "unchanged fragments must not advance this.",
+                "Keycloak writes the admin API accepted since start. A second "
+                "pass over unchanged fragments must not advance this.",
                 float(r.writes),
+            ),
+            (
+                "write_attempts_total",
+                "Keycloak writes a pass decided to make since start, including "
+                "the ones that failed and the ones a dry run only identified. "
+                "Advancing while writes_total does not means every write is "
+                "being refused.",
+                float(r.write_attempts),
             ),
             (
                 "deletions_total",

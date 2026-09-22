@@ -17,7 +17,10 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from functools import partial
+from typing import TypeVar
 
 from . import shutdown, translate
 from .fragment import ClientSpec, Fragment, FragmentError, check_site_rules, parse
@@ -35,6 +38,8 @@ FAILED = "failed"
 
 # How long to wait before retrying a deletion Keycloak refused.
 DELETION_RETRY_SECONDS = 30.0
+
+T = TypeVar("T")
 
 
 @dataclass
@@ -103,6 +108,10 @@ class Reconciler:
         # restart restarts the clock: the grace period is a floor, not a
         # guarantee, and a restart only ever delays a deletion.
         self.first_absent_at: dict[str, float] = {}
+        # Writes this service decided to make, and the subset the admin API
+        # accepted. A converged realm advances neither; a refused write
+        # advances only the first.
+        self.write_attempts = 0
         self.writes = 0
         self.deletions = 0
         self.drift_repairs = 0
@@ -362,6 +371,23 @@ class Reconciler:
 
     # --- apply ----------------------------------------------------------
 
+    def _write(self, what: str, action: Callable[[], T]) -> T | None:
+        """Issue one write: announce it, skip it under dry-run, count it.
+
+        Every write goes through here, so neither the dry-run guard nor either
+        counter can be left off a write site. The announcement says what is
+        being attempted; that it succeeded is the write counter advancing, and
+        that it did not is the failure the caller logs.
+        """
+        self.write_attempts += 1
+        if self.settings.dry_run:
+            log.info("dry-run: would %s", what)
+            return None
+        log.info("attempting to %s", what)
+        result = action()
+        self.writes += 1
+        return result
+
     def apply(self, claim: Claim) -> Outcome:
         """One fragment's client, in the order that keeps every prefix inert."""
         spec = claim.spec
@@ -374,15 +400,16 @@ class Reconciler:
         try:
             live = self.admin.find_client(spec.client_id)
             if live is None:
-                log.info("creating client %s", spec.client_id)
-                if self.settings.dry_run:
+                uuid = self._write(
+                    f"create client {spec.client_id}",
+                    partial(self.admin.create_client, desired),
+                )
+                if uuid is None:
                     # Nothing downstream can be diffed against a client that
                     # does not exist, so stop here rather than invent a uuid.
                     return Outcome(
                         claim.source, spec.client_id, APPLIED, "dry-run: would create"
                     )
-                self.writes += 1
-                uuid = self.admin.create_client(desired)
                 created = True
             else:
                 if not translate.is_ours(live):
@@ -441,16 +468,15 @@ class Reconciler:
             return
         if rotated:
             drift = [*drift, "secret"]
-        log.info("updating client %s (%s)", desired["clientId"], ", ".join(drift))
-        if self.settings.dry_run:
-            return
         body = {
             **desired,
             "id": uuid,
             "attributes": translate.merged_attributes(live, desired),
         }
-        self.writes += 1
-        self.admin.update_client(uuid, body)
+        self._write(
+            f"update client {desired['clientId']} ({', '.join(drift)})",
+            partial(self.admin.update_client, uuid, body),
+        )
 
     def _secret_rotated(self, uuid: str, secret: str) -> bool:
         """Compare the live credential with the Secret's.
@@ -470,35 +496,37 @@ class Reconciler:
         live = {role["name"] for role in self.admin.client_roles(uuid)}
         desired = {role["name"] for role in translate.role_representations(spec)}
         for name in sorted(desired - live):
-            log.info("creating role %s on %s", name, spec.client_id)
-            if not self.settings.dry_run:
-                self.writes += 1
-                self.admin.create_client_role(uuid, {"name": name})
+            self._write(
+                f"create role {name} on {spec.client_id}",
+                partial(self.admin.create_client_role, uuid, {"name": name}),
+            )
         for name in sorted(live - desired):
             # Safe: the client exists only because of this fragment.
-            log.info("removing role %s from %s", name, spec.client_id)
-            if not self.settings.dry_run:
-                self.writes += 1
-                self.admin.delete_client_role(uuid, name)
+            self._write(
+                f"remove role {name} from {spec.client_id}",
+                partial(self.admin.delete_client_role, uuid, name),
+            )
 
     def _reconcile_mappers(self, uuid: str, spec: ClientSpec) -> None:
         live = self.admin.protocol_mappers(uuid)
         write, delete = translate.mapper_drift(live, translate.protocol_mappers(spec))
         by_name = {m.get("name"): m for m in live}
         for mapper in write:
-            log.info("writing mapper %s on %s", mapper["name"], spec.client_id)
-            if self.settings.dry_run:
-                continue
-            self.writes += 1
-            if mapper.get("id"):
-                self.admin.update_protocol_mapper(uuid, mapper["id"], mapper)
-            else:
-                self.admin.create_protocol_mapper(uuid, mapper)
+            self._write(
+                f"write mapper {mapper['name']} on {spec.client_id}",
+                (
+                    partial(
+                        self.admin.update_protocol_mapper, uuid, mapper["id"], mapper
+                    )
+                    if mapper.get("id")
+                    else partial(self.admin.create_protocol_mapper, uuid, mapper)
+                ),
+            )
         for name in delete:
-            log.info("removing mapper %s from %s", name, spec.client_id)
-            if not self.settings.dry_run:
-                self.writes += 1
-                self.admin.delete_protocol_mapper(uuid, by_name[name]["id"])
+            self._write(
+                f"remove mapper {name} from {spec.client_id}",
+                partial(self.admin.delete_protocol_mapper, uuid, by_name[name]["id"]),
+            )
 
     def _reconcile_tier_edges(
         self, uuid: str, spec: ClientSpec, *, created: bool
@@ -527,9 +555,7 @@ class Reconciler:
             drop = sorted(have - want)
             if add:
                 names = ", ".join(r["name"] for r in add)
-                if created:
-                    log.info("granting %s -> %s", names, tier)
-                else:
+                if not created:
                     self.drift_repairs += 1
                     log.error(
                         "re-adding tier edge(s) %s -> %s on the existing client "
@@ -542,16 +568,19 @@ class Reconciler:
                         spec.client_id,
                         tier,
                     )
-                if not self.settings.dry_run:
-                    self.writes += 1
-                    self.admin.add_tier_edges(tier, add)
+                self._write(
+                    f"grant {names} -> {tier}",
+                    partial(self.admin.add_tier_edges, tier, add),
+                )
             if drop:
-                log.info("revoking %s -> %s", ", ".join(drop), tier)
-                if not self.settings.dry_run:
-                    self.writes += 1
-                    self.admin.remove_tier_edges(
-                        tier, [{"id": roles_by_name[n]["id"], "name": n} for n in drop]
-                    )
+                self._write(
+                    f"revoke {', '.join(drop)} -> {tier}",
+                    partial(
+                        self.admin.remove_tier_edges,
+                        tier,
+                        [{"id": roles_by_name[n]["id"], "name": n} for n in drop],
+                    ),
+                )
 
     # --- garbage collection ---------------------------------------------
 
@@ -730,7 +759,7 @@ class Reconciler:
     def reconcile_once(self) -> None:
         if not self.check_tiers():
             return
-        before = self.writes
+        attempts, writes = self.write_attempts, self.writes
         snapshot = self.take_snapshot()
         # GC before apply, so a fragment that changed clientId resolves in one
         # cycle rather than against its own stale state.
@@ -743,10 +772,15 @@ class Reconciler:
         if snapshot.complete:
             self.snapshot = snapshot
             self._report(snapshot)
-        if self.writes == before:
+        attempted = self.write_attempts - attempts
+        if not attempted:
             log.debug("nothing to do")
         else:
-            log.info("pass complete: %s write(s)", self.writes - before)
+            log.info(
+                "pass complete: %s write(s) identified, %s made",
+                attempted,
+                self.writes - writes,
+            )
 
     def _report(self, snapshot: Snapshot) -> None:
         """Per-fragment outcome to Events, best effort, on change only.

@@ -69,6 +69,48 @@ class TestConvergence:
         assert kc.writes == before
 
 
+class TestWriteCounters:
+    """`writes` counts writes that landed; `write_attempts` counts the ones a
+    pass decided to make.
+
+    The first backs a metric whose help text promises a converged realm stops
+    advancing it, so a write Keycloak keeps refusing must not read as churn.
+    The second is what tells a pass that identified work from one that found
+    none, which is the only thing true of a dry run.
+    """
+
+    def test_a_refused_write_never_advances_the_success_counter(
+        self, settings, k8s, kc
+    ):
+        kc.fail_on["create_client"] = KeycloakError(500, "boom")
+        reconciler = Reconciler(settings, k8s, kc)
+
+        for _ in range(3):
+            reconciler.reconcile_once()
+
+        assert kc.clients == {}
+        assert reconciler.writes == 0
+        assert reconciler.write_attempts == 3
+
+    def test_a_dry_run_pass_identifies_work_without_writing(self, settings, k8s, kc):
+        """Which is what `reconcile_once` compares to decide between "nothing
+        to do" and a pass that found something, so under dry-run it cannot be
+        the writes that landed."""
+        settings.dry_run = True
+        reconciler = Reconciler(settings, k8s, kc)
+
+        reconciler.reconcile_once()
+
+        assert reconciler.writes == 0
+        assert reconciler.write_attempts > 0
+
+    def test_both_counters_are_exposed(self, reconciler):
+        reconciler.reconcile_once()
+        text = metrics.render(reconciler)
+        assert "writes_total " in text
+        assert "write_attempts_total " in text
+
+
 class TestNonAdoption:
     """Never mutate a Keycloak object lacking our stamp.
 
