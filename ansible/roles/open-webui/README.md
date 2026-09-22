@@ -134,21 +134,11 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 - **Link Sanitizer** ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md))
 
 **Event Functions** — installed and enabled on every deploy:
-- **Scout UI Defaults** — forces Scout's per-user OWUI interface settings (report-viewer iframe-sandbox flags per [ADR 0029](../../../docs/internal/adr/0029-report-viewer.md), plus `showChangelog`) on account creation and as a deploy-time backfill. The payload is the authoritative list. Values are written into each user's account, so dropping one stops the writes but does not undo them.
+- **Scout UI Defaults** — pins per-user OWUI interface settings on account creation and as a deploy-time backfill. **Required**, no opt-out: the report-viewer iframe-sandbox flags ([ADR 0029](../../../docs/internal/adr/0029-report-viewer.md)), which the viewer breaks without. **Optional**, opt out per cluster: `showChangelog` (`open_webui_show_release_notes`) and `showUpdateToast` (`open_webui_enable_version_update_check`).
 
 **PersistentConfig** — re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`), `JWT_EXPIRES_IN` (capped to `keycloak_token_lifespan`).
 
-**Other** — Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`); native context compaction on (`ENABLE_CONTEXT_COMPACTION`, replacing the former context_summarization filter); OWUI's release notes off (see below).
-
-### OWUI's release notes
-
-Upstream OWUI shows its own changelog in a modal on login (admins only) and links
-release info in Settings > About. Both off by default:
-
-| Surface | Lever |
-| --- | --- |
-| "What's New" modal on login | `open_webui_show_release_notes` |
-| "(vX available!)" link, "Check for updates", update toast | `open_webui_enable_version_update_check` |
+**Other** — Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`); native context compaction on (`ENABLE_CONTEXT_COMPACTION`, replacing the former context_summarization filter); OWUI's own release notes off (`open_webui_show_release_notes`, `open_webui_enable_version_update_check`).
 
 ### Common inventory overrides
 

@@ -74,15 +74,15 @@ def _written_ui(updates, user_id):
     return None
 
 
-IFRAME = {"iframeSandboxAllowSameOrigin": True, "iframeSandboxAllowForms": True}
-FORCED = {**IFRAME, "showChangelog": False, "showUpdateToast": False}
+REQUIRED = {"iframeSandboxAllowSameOrigin": True, "iframeSandboxAllowForms": True}
+PINNED = {**REQUIRED, "showChangelog": False, "showUpdateToast": False}
 
 
 @pytest.mark.asyncio
-async def test_user_created_writes_every_forced_setting(fake_users, event_instance):
+async def test_user_created_writes_every_pinned_setting(fake_users, event_instance):
     fake_users.store["u1"] = None
     await event_instance.event({"actor": {"id": "u1"}}, __event_name__="user.created")
-    assert _written_ui(fake_users.updates, "u1") == FORCED
+    assert _written_ui(fake_users.updates, "u1") == PINNED
 
 
 @pytest.mark.asyncio
@@ -93,14 +93,14 @@ async def test_own_function_enabled_backfills_all_and_preserves_prefs(
         "unset": None,
         "partial": {"ui": {"theme": "light"}},
         "conflicting": {"ui": {"showChangelog": True}},
-        "done": {"ui": dict(FORCED)},
+        "done": {"ui": dict(PINNED)},
     }
     await event_instance.event(
         {"subject": {"id": "me"}}, __event_name__="function.enabled", __id__="me"
     )
-    assert _written_ui(fake_users.updates, "unset") == FORCED
-    assert _written_ui(fake_users.updates, "partial") == {"theme": "light", **FORCED}
-    assert _written_ui(fake_users.updates, "conflicting") == FORCED
+    assert _written_ui(fake_users.updates, "unset") == PINNED
+    assert _written_ui(fake_users.updates, "partial") == {"theme": "light", **PINNED}
+    assert _written_ui(fake_users.updates, "conflicting") == PINNED
     assert _written_ui(fake_users.updates, "done") is None  # already correct → no write
 
 
@@ -112,8 +112,11 @@ async def test_valves_on_leave_owui_settings_alone(fake_users, event_instance):
     await event_instance.event(
         {"subject": {"id": "me"}}, __event_name__="function.enabled", __id__="me"
     )
-    assert _written_ui(fake_users.updates, "unset") == IFRAME
-    assert _written_ui(fake_users.updates, "optin") == {"showChangelog": True, **IFRAME}
+    assert _written_ui(fake_users.updates, "unset") == REQUIRED
+    assert _written_ui(fake_users.updates, "optin") == {
+        "showChangelog": True,
+        **REQUIRED,
+    }
 
 
 @pytest.mark.asyncio

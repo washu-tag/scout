@@ -1,10 +1,10 @@
 """
 title: Scout UI Defaults
-description: Forces Scout's per-user OWUI interface settings for every user.
+description: Pins Scout's per-user OWUI interface settings for every user.
 """
 
 # OWUI defaults these ui.* settings per-user with no admin-global override, so
-# this event function forces them on: user.created (new users; the only auth
+# this event function pins them: user.created (new users; the only auth
 # event OWUI emits for SSO) and function.enabled/updated on itself (deploy-time
 # backfill of existing users — fired when the bootstrap Job re-seeds this
 # function, no restart needed).
@@ -17,15 +17,15 @@ from pydantic import BaseModel, Field
 
 log = logging.getLogger("scout.ui_defaults")
 
-# Per-user ui.* settings the report-viewer iframe requires, all forced true.
-_IFRAME_FLAGS = {
+# Required: the report-viewer iframe breaks without these, so there is no opt-out.
+_REQUIRED_SETTINGS = {
     "iframeSandboxAllowSameOrigin": True,
     "iframeSandboxAllowForms": True,
 }
 
 
-async def _ensure_settings(user_id: str, forced: dict) -> bool:
-    """Force `forced` for one user; return True iff a write happened.
+async def _ensure_settings(user_id: str, pinned: dict) -> bool:
+    """Apply `pinned` to one user; return True iff a write happened.
 
     Rebuilds the whole `ui` sub-object because update_user_settings_by_id()
     shallow-merges only at the top level.
@@ -37,9 +37,9 @@ async def _ensure_settings(user_id: str, forced: dict) -> bool:
         return False
     settings = user.settings.model_dump() if user.settings else {}
     ui = dict(settings.get("ui") or {})
-    if all(ui.get(key) is value for key, value in forced.items()):
+    if all(ui.get(key) is value for key, value in pinned.items()):
         return False
-    ui.update(forced)
+    ui.update(pinned)
     await Users.update_user_settings_by_id(user_id, {"ui": ui})
     return True
 
@@ -62,13 +62,14 @@ class Event:
     def __init__(self) -> None:
         self.valves = self.Valves()
 
-    def _forced_settings(self) -> dict:
-        forced = dict(_IFRAME_FLAGS)
+    def _pinned_settings(self) -> dict:
+        """Required settings, plus the optional ones inventory has not opted out of."""
+        pinned = dict(_REQUIRED_SETTINGS)
         if not self.valves.show_release_notes:
-            forced["showChangelog"] = False
+            pinned["showChangelog"] = False
         if not self.valves.show_update_toast:
-            forced["showUpdateToast"] = False
-        return forced
+            pinned["showUpdateToast"] = False
+        return pinned
 
     async def event(
         self,
@@ -96,7 +97,7 @@ class Event:
         if not user_id:
             log.warning("user.created carried no user id: %s", event)
             return
-        if await _ensure_settings(user_id, self._forced_settings()):
+        if await _ensure_settings(user_id, self._pinned_settings()):
             log.info("ui defaults applied to new user %s", user_id)
 
     async def _backfill_all(self) -> None:
@@ -104,7 +105,7 @@ class Event:
         # concurrent sweeps converge and only the first writes.
         from open_webui.models.users import Users  # noqa: PLC0415
 
-        forced = self._forced_settings()
+        pinned = self._pinned_settings()
         result = await Users.get_users()
         users = result.get("users", []) if isinstance(result, dict) else (result or [])
         changed = 0
@@ -112,6 +113,6 @@ class Event:
             user_id = getattr(u, "id", None)
             if user_id is None and isinstance(u, dict):
                 user_id = u.get("id")
-            if user_id and await _ensure_settings(user_id, forced):
+            if user_id and await _ensure_settings(user_id, pinned):
                 changed += 1
         log.info("ui defaults backfill: %d/%d users updated", changed, len(users))
