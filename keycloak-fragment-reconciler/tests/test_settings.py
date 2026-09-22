@@ -7,7 +7,10 @@ naturally -- needs `NoDecode` to reach the field at all.
 
 from __future__ import annotations
 
+from typing import get_origin
+
 import pytest
+from pydantic_settings import NoDecode
 
 from conftest import HOSTNAME, FakeK8s, FakeKeycloak, fragment_text
 
@@ -150,11 +153,18 @@ class TestOperatorErrors:
             RequiredSettings()
         assert "not JSON" in str(exit_info.value)
 
-    def test_an_undecodable_value_is_not_a_traceback(self, env):
-        """pydantic-settings raises SettingsError before the model for
-        anything it cannot decode, and that path has to exit cleanly too."""
-        env(TIER_ROLES="fine")
-        assert RequiredSettings().tier_roles == ["fine"]
+    def test_no_field_is_json_decoded_from_the_environment(self):
+        """pydantic-settings raises SettingsError -- before the model, so
+        outside the ValidationError that names the variable -- for a complex
+        field it cannot JSON-decode. `CommaList` opts every one of them out;
+        a plain `list[str]` field would reopen that path."""
+        decoded = [
+            name
+            for name, field in RequiredSettings.model_fields.items()
+            if get_origin(field.annotation) is not None
+            and NoDecode not in field.metadata
+        ]
+        assert decoded == [], f"annotate with CommaList: {decoded}"
 
 
 class TestResyncDisabled:

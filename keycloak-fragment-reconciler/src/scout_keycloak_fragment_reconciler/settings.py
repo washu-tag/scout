@@ -3,7 +3,7 @@
 from typing import Annotated
 
 from pydantic import Field, ValidationError, field_validator
-from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict, SettingsError
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 ENV_PREFIX = "KEYCLOAK_FRAGMENT_RECONCILER_"
 
@@ -118,15 +118,11 @@ class Settings(BaseSettings):
 
     def __init__(self, **values: object) -> None:
         # A misconfigured pod should name the wrong variable and stop, not
-        # print a pydantic traceback. SettingsError is caught too, because
-        # pydantic-settings raises it before the model for anything it cannot
-        # decode out of the environment.
+        # print a pydantic traceback.
         try:
             super().__init__(**values)
         except ValidationError as exc:
             raise SystemExit("; ".join(_problems(exc))) from None
-        except SettingsError as exc:
-            raise SystemExit(f"{ENV_PREFIX}*: {exc}") from None
 
 
 class RequiredSettings(Settings):
