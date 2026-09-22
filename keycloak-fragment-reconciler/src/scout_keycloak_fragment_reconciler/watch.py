@@ -7,7 +7,9 @@ empty watch cache does not distinguish "no fragments exist" from "not synced
 yet", and the second read literally would delete every fragment client.
 
 So a missed event, a dropped connection or a stale resourceVersion cost latency
-and nothing else, which is what keeps this short of an informer.
+and nothing else, which is what keeps this short of an informer. A reconnect
+rings the bell for that reason: it cannot know what the gap swallowed, and a
+watch reopened at the collection's current version replays none of it.
 """
 
 import json
@@ -128,6 +130,7 @@ def run_forever(
                 # forward.
                 log.warning("fragment watch dropped (%s); restarting in %ss", exc, wait)
                 version = ""
+                wake.set()
                 shutdown.sleep(wait)
                 wait = min(wait * 2, MAX_BACKOFF_SECONDS)
                 continue

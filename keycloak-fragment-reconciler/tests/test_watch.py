@@ -14,10 +14,17 @@ from contextlib import contextmanager
 
 import pytest
 
-from scout_keycloak_fragment_reconciler import watch
+from scout_keycloak_fragment_reconciler import shutdown, watch
 from scout_keycloak_fragment_reconciler.k8s import ApiError
 
 SELECTOR = "keycloak.scout.xnat.org/fragment=true"
+
+
+@pytest.fixture(autouse=True)
+def _unset_shutdown():
+    shutdown.requested.clear()
+    yield
+    shutdown.requested.clear()
 
 
 def event(kind: str, name: str, version: str, namespace: str = "demo") -> str:
@@ -157,3 +164,35 @@ class TestStreamProblems:
     def test_a_transport_failure_propagates(self):
         with pytest.raises(ApiError):
             run([], error=ApiError(500, "boom"))
+
+
+class FlappingClient(FakeStreamClient):
+    """Loses the first connection, then hands back an empty stream and stops."""
+
+    def __init__(self):
+        super().__init__([])
+        self.connections = 0
+
+    @contextmanager
+    def stream(self, path: str, *, read_timeout=None):
+        self.connections += 1
+        if self.connections == 1:
+            raise ApiError(500, "connection reset by peer")
+        shutdown.requested.set()
+        yield iter(())
+
+
+class TestAReconnectMayHaveMissedSomething:
+    """A watch reopened at the collection's current version replays nothing.
+
+    Whatever happened during the outage is not redelivered, so the reconnect
+    itself has to ring the bell: with the periodic resync disabled nothing else
+    ever will, and the change waits for a pod restart.
+    """
+
+    def test_a_dropped_watch_wakes_the_reconciler(self):
+        client = FlappingClient()
+        wake = threading.Event()
+        watch.run_forever(client, SELECTOR, wake, lambda *a: None, backoff=0)
+        assert client.connections == 2, "never reconnected"
+        assert wake.is_set(), "reconnected past the gap with no reconcile pass"
