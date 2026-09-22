@@ -105,6 +105,31 @@ def test_a_live_token_is_reused():
     assert len(http.token_posts) == 1
 
 
+def test_the_refresh_margin_scales_with_the_lifetime():
+    """A tenfold lifetime buys a tenfold cache window (ADR 0024).
+
+    A margin that is a fraction of the lifetime holds for any lifespan; a
+    constant one has to be chosen against a lifespan nobody here controls.
+    """
+    short = admin(FakeHttp(expires_in=300))
+    long = admin(FakeHttp(expires_in=3000))
+    before = time.monotonic()
+    short._access_token()
+    long._access_token()
+    assert long._expires_at - before == pytest.approx(
+        10 * (short._expires_at - before), rel=1e-3
+    )
+
+
+@pytest.mark.parametrize("expires_in", [30, 5])
+def test_a_short_lived_token_is_still_cached(expires_in):
+    http = FakeHttp(expires_in=expires_in)
+    client = admin(http)
+    client._access_token()
+    client._access_token()
+    assert len(http.token_posts) == 1
+
+
 def test_force_re_authenticates():
     http = FakeHttp(expires_in=300)
     client = admin(http)

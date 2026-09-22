@@ -35,12 +35,12 @@ import httpx2 as httpx
 log = logging.getLogger("keycloak-fragment-reconciler")
 
 TIMEOUT_SECONDS = 15.0
-# Re-authenticate this long before the token expires, so a slow call cannot
-# land on the far side of the boundary.
-EXPIRY_MARGIN_SECONDS = 30.0
-# Assumed token lifetime when the token endpoint omits `expires_in`. Must stay
-# comfortably clear of EXPIRY_MARGIN_SECONDS, which is subtracted from it: at
-# or below the margin, every call would re-authenticate.
+# Re-authenticate once this fraction of the token's lifetime is left, so a slow
+# call cannot land on the far side of the boundary. A fraction, not a constant,
+# so the margin holds for whatever lifespan the realm is configured with -- the
+# policy and value Scout's other client_credentials caches use (ADR 0024).
+REFRESH_BEFORE_EXPIRY_FRACTION = 0.2
+# Assumed token lifetime when the token endpoint omits `expires_in`.
 DEFAULT_TOKEN_LIFETIME_SECONDS = 60.0
 # How much of an error body to carry into the exception message.
 ERROR_EXCERPT_CHARS = 400
@@ -133,7 +133,9 @@ class Admin:
         self._token = payload.get("access_token", "")
         now = time.monotonic()
         lifetime = float(payload.get("expires_in", DEFAULT_TOKEN_LIFETIME_SECONDS))
-        self._expires_at = max(now, now + lifetime - EXPIRY_MARGIN_SECONDS)
+        self._expires_at = max(
+            now, now + lifetime * (1.0 - REFRESH_BEFORE_EXPIRY_FRACTION)
+        )
         if not self._token:
             raise KeycloakError(0, "token endpoint returned no access_token")
         return self._token
