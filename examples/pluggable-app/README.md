@@ -1,88 +1,37 @@
 # Example Pluggable App
 
-A complete, installable Scout **pluggable app** in one Helm chart: an app that arrives with
-its own landing-page presence and its own Keycloak client, and that leaves nothing behind
-when you uninstall it. No edit to the base realm, no Ansible variable, no change to any
-Scout component.
+This code serves as a reference implementation for a Scout Pluggable App. It is a Helm chart that deploys a dummy service. The chart is where all the components live that make this a pluggable app. Those are the parts you'll need to copy and modify to create your own pluggable app.
 
-The service inside is deliberately trivial — one page, standard library only, no
-dependencies and no image to build. The chart around it is the part worth copying.
+This chart and the app is intentionally not installed in any production Scout. It can be deployed as a development aid, but its primary purpose is as a reference for pluggable app authors.
 
-Two audiences:
+## Pluggable App components
 
-- **Writing a pluggable app.** Read the two contracts below, then copy the chart and
-  replace `files/app.py` with your image.
-- **Working on Scout.** Install it as a scaffold when you need a real service behind the
-  edge gate with a real Keycloak client, then tear it down.
+All the components that make a Helm chart into a Pluggable App. For more on each of these, see the docs on [Customizing and Extending Scout](https://washu-scout.readthedocs.io/en/latest/customize/index.html).
 
-It is not a production component. Nothing deploys it, no CI job builds it, and it is
-absent from `deploy/`.
 
-## What makes it pluggable
+| File | Label | What it does |
+| -- | -- | -- |
+| `templates/launchpad-catalog.yaml`        | `launchpad.scout.xnat.org/catalog: "true"` | Puts a chip on the launchpad |
+| `templates/keycloak-fragment.yaml`        | `keycloak.scout.xnat.org/fragment: "true"` | Creates the app's Keycloak client and roles |
+| `templates/keycloak-client-secret.yaml`   | — | The Keycloak client's secret credential |
+| `templates/keycloak-reconciler-rbac.yaml` | — | Gives the reconciler service permission to read the Secret |
+| `templates/ingress.yaml`                  | — | Puts the app behind the oauth2-proxy edge gate via Traefik middleware annotations |
 
-Exactly two ConfigMaps, each discovered by a label rather than by being registered
-anywhere:
+The rest of the stuff in the chart—`deployment.yaml`, `service.yaml`, `app-configmap.yaml`, `files/app.py`—is more or less an ordinary service, with the caveat that it's a service that isn't built into a docker image and it doesn't do anything interesting.
 
-| File                                      | Contract                                   | What it does                                                                      |
-| ----------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------- |
-| `templates/launchpad-catalog.yaml`        | `launchpad.scout.xnat.org/catalog: "true"` | Puts a chip on the launchpad (ADR 0034)                                           |
-| `templates/keycloak-fragment.yaml`        | `keycloak.scout.xnat.org/fragment: "true"` | Creates the app's Keycloak client and roles (ADR 0037)                            |
-| `templates/keycloak-client-secret.yaml`   | —                                          | The client credential, which the app owns and the fragment only points at         |
-| `templates/keycloak-reconciler-rbac.yaml` | —                                          | Lets the reconciler read that one Secret. **The object authors forget**           |
-| `templates/ingress.yaml`                  | —                                          | Puts the app behind the oauth2-proxy edge gate via Traefik middleware annotations |
+### The Launchpad chip
 
-The rest — `deployment.yaml`, `service.yaml`, `app-configmap.yaml`, `files/app.py` — is an
-ordinary service, and is what you replace.
+Launchpad watches for ConfigMaps labelled with `launchpad.scout.xnat.org/catalog: "true"`, picks them up, and uses their contents to populate a Launchpad "chip" UI element. The contents of the ConfigMap need to be a `Catalog` following the instructions in [Launchpad Chips](https://washu-scout.readthedocs.io/en/latest/customize/launchpad-chips.html)
 
-The two contracts are independent. A back-end service with no UI ships only the fragment; a
-link to something outside the cluster ships only the chip.
+### The Keycloak client fragment
 
-### The chip
+The Reconciler watches for ConfigMaps labelled with `keycloak.scout.xnat.org/fragment: "true"`, picks them up, and uses their contents to create a client and roles in Scout's Keycloak realm. The contents of the ConfigMap need to be a `Fragment` following the instructions in [Authenticate Users to Your Service](https://washu-scout.readthedocs.io/en/latest/customize/service-authentication.html).
 
-The launchpad watches for labelled ConfigMaps in any namespace and picks one up within
-about ten seconds. Presentation fields fail soft: an `icon` or `tone` outside the
-documented sets falls back to the default rather than failing your install. `id`, `title`,
-and `link` are required, and a chip missing one is skipped.
+### The Keycloak client secret + RBAC grant
 
-Fields, valid icons, and valid tones: `docs/source/customize/launchpad-chips.md`.
+The `Fragment` in the ConfigMap holds the name of a Secret holding the Keycloak client's secret key. Each Pluggable App creates that Secret in its own namespace, and `templates/keycloak-reconciler-rbac.yaml` grants the Reconciler service RBAC permissions to `get` that particular Secret.
 
-### The fragment
-
-The fragment declares Scout concepts, not Keycloak objects. It is deliberately much
-narrower than Keycloak: there is no syntax for protocol mappers, client scopes, service
-accounts, the login flow, PKCE, or `fullScopeAllowed`. Those are Scout's to decide, and
-naming one is a rejection rather than a warning — unknown fields fail the whole document.
-
-The interesting field is `grants`:
-
-```yaml
-roles:
-  - example-app-user
-  - example-app-admin
-grants:
-  scout-user: [example-app-user]
-  scout-admin: [example-app-admin]
-```
-
-That says _a Scout user gets my user role; a Scout admin gets my admin role_. The app
-defines its own role vocabulary and maps Scout's two tiers onto it; it never enumerates
-people. `grants` may only name roles the fragment itself declares, and may only target
-`scout-user` and `scout-admin`.
-
-URLs are checked: `appUrl` and every entry in `redirectUris` must be `https` and under the
-site's own domain, with no wildcards.
-
-### The credential, and the grant that makes it readable
-
-The fragment carries a **reference** to a Secret, never a secret. The app creates the
-Secret in its own namespace, and `templates/keycloak-reconciler-rbac.yaml` grants the
-reconciler `get` on that one name.
-
-Leave the RBAC out and the client is silently never created. Look for a `FragmentFailed`
-event on the fragment ConfigMap.
-
-`reconcilerServiceAccount` is stable contract. `reconcilerNamespace` follows the site's
-`keycloak_namespace`, so override it if your site moved Keycloak.
+The purpose of this is to keep the Reconciler's permissions scoped to only exactly those Secrets it needs to read. We don't want it to be able to read every Secret for every service in the whole platform. But it does need to be able to read the specific Secrets for the specific Keycloak clients for Pluggable Apps. So authors of those apps need to include the RBAC which grants those permissions to the Reconciler.
 
 ## Install
 
@@ -94,26 +43,19 @@ helm install example-app examples/pluggable-app \
   --set domain=your-scout-domain.org
 ```
 
-The app is then at `https://example-app.<domain>`, and a chip for it appears on the
-launchpad.
+The app is then at `https://example-app.<domain>`, and a chip for it appears on the Launchpad.
 
-## Check that it worked
-
-The page itself reports both halves: the username the edge gate forwarded, and whether the
-client credential is mounted. For the parts the page cannot see:
+To verify the installation worked:
 
 ```bash
 # The fragment was accepted (look for FragmentApplied; FragmentInvalid,
 # FragmentRejected and FragmentFailed each say why not)
 kubectl describe cm -n scout-example example-pluggable-app-keycloak
 
-# What the reconciler made of it
+# Inspect the reconciler's logs to see if the fragment was received, 
+# read, and applied, or if an error occurred
 kubectl logs -n scout-core deploy/scout-keycloak-fragment-reconciler
 ```
-
-Then in the Keycloak admin console: the client `example-app` exists with roles
-`example-app-user` and `example-app-admin`, and the `scout-user` / `scout-admin` realm
-roles now list those as composites.
 
 ## Uninstall
 
@@ -121,48 +63,16 @@ roles now list those as composites.
 helm uninstall example-app --namespace scout-example
 ```
 
-The chip disappears within seconds. The client is garbage-collected on a later reconcile
-pass, after a grace period — the reconciler knows the client is its own because it recorded
-ownership as an attribute on the client, and it will not touch anything it did not create.
-
 ## Adapting it
 
-**As a scaffold.** Change `subdomain` and `clientId` so you do not collide with anything
-real, edit `files/app.py`, and reinstall. The pod restarts on its own when the file
-changes.
+### As a dev scaffold
+Change `subdomain` and `clientId` so you do not collide with anything real, edit `files/app.py`, and reinstall. The pod restarts on its own when the file changes.
 
-**As a template for a real app.** Rename it with the two values `clientId` and `subdomain`
-(the chip id, the Secret name and the RBAC grant all follow `clientId`), then:
+### As a template for your own Pluggable App
 
-1. Point `image.repository` and `image.tag` at your build, and drop `command`.
+1. Point `image.repository` and `image.tag` at your service's image, and drop `command`.
 2. Delete `templates/app-configmap.yaml`, the `app` volume and its mount, and the
-   `checksum/app` annotation.
+   `checksum/app` annotation. Those were only there to support the basic `app.py` service.
 3. Delete `files/`.
 
-Keep the fragment, the chip, the Secret, the RBAC, and the ingress annotations.
-
-## What this example leaves out, on purpose
-
-- **A login flow.** The app never exchanges its credential for a token, so the roles the
-  fragment declares are visible in Keycloak but nothing reads them yet. The
-  `redirectUris` entry points at a `/auth/callback` this app does not serve; it is there
-  because it is the field you will need. An app that does log users in runs a standard
-  authorization-code flow against its own client and reads its roles from the `groups`
-  claim (override with `roleClaim`).
-
-- **A NetworkPolicy.** The page trusts `X-Auth-Request-Preferred-Username`, which is only
-  sound because the edge gate is the sole route to the pod. In production that assumption
-  has to be enforced, not assumed — anything that can reach the Service directly can forge
-  the header. See `helm/voila/templates/networkpolicy.yaml` for the pattern, and ADR 0022.
-
-- **An image build.** Running the app from a ConfigMap on a stock `python:3.12-slim` keeps
-  the chart self-contained and installable with nothing built first. Real apps ship an
-  image; see `.github/workflows/ci.yaml` for what wiring one up involves.
-
-## Further reading
-
-- ADR 0034 — launchpad catalog: how chips are discovered
-- ADR 0037 — Keycloak realm fragments: why the reconciler and `keycloak-config-cli` are
-  disjoint writers, and what the fragment vocabulary deliberately cannot say
-- ADR 0022 — Trino auth and the edge-forwarded identity header
-- `docs/source/customize/launchpad-chips.md` — the chip field reference
+Keep the fragment, the chip, the Secret, the RBAC, and the ingress annotations. Use the docs to [customize your app](https://washu-scout.readthedocs.io/en/latest/customize/index.html).
