@@ -33,6 +33,9 @@ REJECTED = "rejected"
 APPLIED = "applied"
 FAILED = "failed"
 
+# How long to wait before retrying a deletion Keycloak refused.
+DELETION_RETRY_SECONDS = 30.0
+
 
 @dataclass
 class Claim:
@@ -660,6 +663,10 @@ class Reconciler:
             self.admin.delete_client(client["id"])
         except KeycloakError as exc:
             log.warning("could not delete %s: %s", client_id, exc)
+            # The wake that brought this pass here has already been consumed,
+            # so without a new one an orphan Keycloak refused once is never
+            # retried: under `resync_seconds: -1` there is no other timer.
+            self._schedule_recheck(client_id, DELETION_RETRY_SECONDS)
             return
         self.deletions += 1
         self.first_absent_at.pop(client_id, None)

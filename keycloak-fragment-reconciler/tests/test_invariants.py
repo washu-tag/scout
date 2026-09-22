@@ -13,6 +13,7 @@ import pytest
 from conftest import (
     ApiError,
     FakeKeycloak,
+    KeycloakError,
     TIERS,
     TransportError,
     fragment_text,
@@ -575,6 +576,23 @@ class TestGarbageCollection:
             kc.find_client("second") is None
         ), f"never collected; the loop stopped after waits {waits}"
         assert kc.find_client("hello") is not None
+
+    def test_a_refused_deletion_books_its_own_retry(self, settings, k8s, kc):
+        """`next_deadline` has already consumed the wake that brought the pass
+        here, so a deletion Keycloak refused has to leave a new one behind:
+        with no periodic resync it is the only thing that will retry it."""
+        settings.resync_seconds = -1
+        settings.orphan_grace_seconds = 0
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        k8s.remove_fragment()
+        kc.fail_on["delete_client"] = KeycloakError(503, "keycloak restarting")
+
+        reconciler.collect(reconciler.take_snapshot(), now=1000.0)
+
+        assert kc.find_client("hello") is not None
+        assert "hello" in reconciler.first_absent_at
+        assert core.next_wait(reconciler) is not None
 
     def test_a_grace_period_in_progress_books_its_own_wake(self, settings, k8s, kc):
         """The mechanism behind the above, asserted directly: a pass that
