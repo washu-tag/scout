@@ -14,9 +14,7 @@ try:
 except ImportError:  # pragma: no cover - PyYAML built without libyaml
     from yaml import SafeLoader as _Loader  # type: ignore[assignment]
 
-YAMLError = yaml.YAMLError
-
-__all__ = ["YAMLError", "safe_load"]
+__all__ = ["safe_load"]
 
 
 def safe_load(text: str) -> Any:
