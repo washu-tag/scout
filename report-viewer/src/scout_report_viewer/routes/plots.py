@@ -24,11 +24,13 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Query,
+    Request,
     UploadFile,
     status,
 )
 
-from .. import metrics, trino_client
+from .. import metrics, progress, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
 from ..csv_upload import (
@@ -149,6 +151,10 @@ def _add_legend_toggle(spec: dict[str, Any]) -> dict[str, Any]:
 def _wrap_sql(sql: str) -> str:
     """Strip a trailing `;` so the SQL can be nested as a subquery."""
     return sql.rstrip().rstrip(";")
+
+
+def _progress_key(plot_id: str, user_sub: str, token: str) -> str:
+    return f"plot:{plot_id}:{user_sub}:{token}"
 
 
 def _clean_spec(raw_spec: Any) -> dict[str, Any]:
@@ -383,12 +389,11 @@ async def _run_chart_query(
     op: str,
     params: list | None = None,
     hint: str = "",
-) -> tuple[list[str], int, bool]:
+) -> list[str]:
     """Run it now so a broken query fails while the model can still fix it.
-    `hint` is appended to that error. Only columns and a count are needed
-    here, so probe with LIMIT 0 instead of buffering every row."""
+    `hint` is appended to that error. Probes with LIMIT 0: emptiness and
+    truncation are reported by the view, which fetches the rows anyway."""
     probe_sql = f"SELECT s.* FROM ({sql}) s LIMIT 0"
-    count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
     try:
         with metrics.time_trino(op):
             # safe: sql is LLM-authored, wrapped as subquery; OPA is the AuthZ boundary
@@ -396,27 +401,13 @@ async def _run_chart_query(
             columns, _ = await trino_client.execute(
                 probe_sql, user=user_sub, params=params
             )
-            # safe: sql is LLM-authored, wrapped as subquery; OPA is the AuthZ boundary
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            _, count_rows = await trino_client.execute(
-                count_sql, user=user_sub, params=params
-            )
     except Exception as exc:
         log.exception("trino plot query failed")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}{hint}",
         )
-    row_count = int(count_rows[0]["n"]) if count_rows else 0
-    if row_count == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="query returned no rows, so there is nothing to chart",
-        )
-    metrics.RESULT_ROWS.labels(op=op).observe(row_count)
-    cap = settings.max_cohort_rows
-    truncated = row_count > cap
-    return columns, min(row_count, cap), truncated
+    return columns
 
 
 async def _save_chart(
@@ -425,8 +416,6 @@ async def _save_chart(
     sql: str,
     raw_spec: dict[str, Any],
     columns: list[str],
-    row_count: int,
-    truncated: bool,
     user_sub: str,
     sql_explanation: str | None,
     owui_chat_id: str | None,
@@ -450,8 +439,6 @@ async def _save_chart(
         id=plot_id,
         view_url=f"{settings.external_url.rstrip('/')}/spa/plots/{plot_id}",
         columns=[c for c in columns if c not in _HEAVY_COLS],
-        row_count=row_count,
-        truncated=truncated,
     )
 
 
@@ -464,17 +451,13 @@ async def create_plot(
     spec = _add_legend_toggle(_clean_spec(body.vega_lite_spec))
     await _validate_spec(spec)
     sql = _wrap_sql(body.sql)
-    columns, row_count, truncated = await _run_chart_query(
-        sql, user_sub=user.sub, op="plot_query"
-    )
+    columns = await _run_chart_query(sql, user_sub=user.sub, op="plot_query")
     _reject_unknown_fields(spec, columns)
     return await _save_chart(
         store,
         sql=sql,
         raw_spec=spec,
         columns=columns,
-        row_count=row_count,
-        truncated=truncated,
         user_sub=user.sub,
         sql_explanation=body.sql_explanation,
         owui_chat_id=body.owui_chat_id,
@@ -514,7 +497,7 @@ async def create_plot_from_file(
 
     predicate = f"contains(?, {quote_ident(resolved_id_column)})"
     chart_sql = substitute_cohort(sql, predicate)
-    columns, row_count, truncated = await _run_chart_query(
+    columns = await _run_chart_query(
         chart_sql,
         user_sub=user.sub,
         op="plot_query_from_file",
@@ -527,8 +510,6 @@ async def create_plot_from_file(
         sql=chart_sql,
         raw_spec=spec,
         columns=columns,
-        row_count=row_count,
-        truncated=truncated,
         user_sub=user.sub,
         sql_explanation=sql_explanation,
         owui_chat_id=owui_chat_id,
@@ -539,6 +520,8 @@ async def create_plot_from_file(
 @router.get("/{plot_id}", response_model=PlotDetail)
 async def get_plot(
     plot_id: str,
+    request: Request,
+    progress_id: str | None = Query(default=None),
     user: User = Depends(get_current_user),
     store: PlotStore = Depends(get_plot_store),
 ) -> PlotDetail:
@@ -553,15 +536,26 @@ async def get_plot(
     cap = settings.max_cohort_rows
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
     all_sql = f"SELECT s.* FROM ({plot['sql']}) s LIMIT {cap + 1}"
+    token = progress.valid_token(progress_id)
+    progress_key = _progress_key(plot_id, user.sub, token) if token else None
+    handle = trino_client.QueryHandle()
     try:
         with metrics.time_trino("plot_rows"):
             # safe: plot["sql"] is persisted validated SQL; ids bind via ?
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            _cols, rows = await trino_client.execute(
-                all_sql,
-                user=user.sub,
-                params=[uploaded_ids] if uploaded_ids else None,
+            _cols, rows = await trino_client.cancel_on_disconnect(
+                request.receive,
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                trino_client.execute(
+                    all_sql,
+                    user=user.sub,
+                    params=[uploaded_ids] if uploaded_ids else None,
+                    progress_key=progress_key,
+                    handle=handle,
+                ),
+                handle,
             )
+    except trino_client.ClientDisconnected:
+        raise HTTPException(status_code=499, detail="client disconnected")
     except Exception as exc:
         log.exception("trino plot rows failed")
         raise HTTPException(
@@ -581,3 +575,41 @@ async def get_plot(
         sql=plot["sql"],
         sql_explanation=plot["sql_explanation"],
     )
+
+
+@router.get("/{plot_id}/meta", response_model=PlotMeta)
+async def get_plot_meta(
+    plot_id: str,
+    user: User = Depends(get_current_user),
+    store: PlotStore = Depends(get_plot_store),
+) -> PlotMeta:
+    """Postgres-only metadata, so the SPA can render the chart's chrome and
+    Explain panel without waiting on `GET /{plot_id}`'s Trino query."""
+    plot = await store.get_plot(plot_id, user.sub)
+    if plot is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="chart not found"
+        )
+    return PlotMeta(
+        id=plot["id"],
+        sql=plot["sql"],
+        owner_sub=plot["owner_sub"],
+        created_at=plot["created_at"],
+        sql_explanation=plot.get("sql_explanation") or "",
+        owui_chat_id=plot.get("owui_chat_id") or "",
+    )
+
+
+@router.get("/{plot_id}/progress")
+async def get_plot_progress(
+    plot_id: str,
+    progress_id: str | None = Query(default=None),
+    user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Live Trino stats for the chart query started with the same
+    `progress_id`, polled by the SPA's loading indicator. Empty when that
+    query is not running."""
+    token = progress.valid_token(progress_id)
+    if token is None:
+        return {}
+    return progress.get(_progress_key(plot_id, user.sub, token)) or {}

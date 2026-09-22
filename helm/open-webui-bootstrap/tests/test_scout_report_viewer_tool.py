@@ -238,7 +238,6 @@ def _routing_handler():
                 json={
                     "id": f"pl_{n}",
                     "view_url": f"https://rv/spa/plots/pl_{n}",
-                    "row_count": 3,
                     "columns": ["modality", "n"],
                 },
             )
@@ -249,8 +248,8 @@ def _routing_handler():
             json={
                 "id": f"ds_{n}",
                 "view_url": f"https://rv/spa/searches/ds_{n}",
-                "count": 5,
-                "sample": [],
+                "columns": ["primary_report_identifier"],
+                "sample": [{"primary_report_identifier": "s3://bucket/1"}],
             },
         )
 

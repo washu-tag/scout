@@ -167,7 +167,6 @@ class ReadReportsResponse(BaseModel):
 
 class CreateSearchResponse(BaseModel):
     id: str
-    count: int | None
     id_column: str
     view_url: str
     columns: list[str]
@@ -221,8 +220,6 @@ class PlotResponse(BaseModel):
     id: str
     view_url: str
     columns: list[str]
-    row_count: int
-    truncated: bool
 
 
 class PlotMeta(BaseModel):

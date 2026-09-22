@@ -89,3 +89,13 @@ div.vega-embed summary {
 div.vega-embed .vega-actions {
   right: 6px;
 }
+
+button {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { friendlyError, getPlot } from '../api/client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { friendlyError, getPlot, getPlotMeta, getPlotProgress, newProgressId } from '../api/client';
+import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
 import { setHeight as setIframeHeight } from '../iframeHeight';
 import { buildDiscussPlotPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
-import { paginationBtn } from './searchDetail/styles';
+import { compactBtn, paginationBtn } from './searchDetail/styles';
 import { chartTheme } from './chartTheme';
 
 // The chart sizes itself to its content and the iframe follows, rather than
@@ -252,11 +253,38 @@ export default function PlotPage() {
     () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false,
   );
 
+  // A prefix of the meta key, so filters on it need `exact`.
+  const PLOT_KEY = ['plot', plotId];
+  // Set per attempt so a retry polls its own progress, not the attempt it replaced.
+  const progressId = useRef('');
   const plot = useQuery({
-    queryKey: ['plot', plotId],
-    queryFn: () => getPlot(plotId),
+    queryKey: PLOT_KEY,
+    queryFn: ({ signal }) => {
+      progressId.current = newProgressId();
+      return getPlot(plotId, progressId.current, signal);
+    },
     enabled: !!plotId,
   });
+
+  // Cancelling aborts the fetch, which the server turns into a Trino cancel.
+  const queryClient = useQueryClient();
+  const [cancelled, setCancelled] = useState(false);
+
+  // Postgres-only, so the chrome and Explain panel do not wait on the rows.
+  const meta = useQuery({
+    queryKey: ['plot', plotId, 'meta'],
+    queryFn: () => getPlotMeta(plotId),
+    enabled: !!plotId,
+  });
+
+  const explain = meta.data ?? plot.data;
+
+  const fetchProgress = useCallback(
+    () => (progressId.current ? getPlotProgress(plotId, progressId.current) : Promise.resolve({})),
+    [plotId],
+  );
+  const loadingState = useLoadingProgress(!plot.data && plot.isLoading, fetchProgress);
+  const showLoading = loadingState.show;
 
   const base = useMemo(
     () =>
@@ -378,16 +406,60 @@ export default function PlotPage() {
             flex: '0 0 auto',
           }}
         >
+          {cancelled && !plot.data ? (
+            <>
+              <span style={{ color: 'var(--rv-muted)', fontSize: '0.7rem' }}>
+                Cancelled · {loadingState.seconds}s
+              </span>
+              <button
+                type="button"
+                style={compactBtn}
+                onClick={() => {
+                  setCancelled(false);
+                  plot.refetch();
+                }}
+              >
+                Retry
+              </button>
+            </>
+          ) : (
+            showLoading &&
+            !plot.error && (
+              <>
+                <QueryProgressInline {...loadingState} doneLabel="Chart loaded" />
+                {!plot.data && (
+                  <button
+                    type="button"
+                    style={compactBtn}
+                    onClick={() => {
+                      setCancelled(true);
+                      queryClient.cancelQueries({ queryKey: PLOT_KEY, exact: true });
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </>
+            )
+          )}
+          {plot.data?.rows.length === 0 && (
+            <span
+              title="The query ran but returned no rows"
+              style={{ color: 'var(--rv-muted)', fontSize: '0.7rem', marginLeft: '0.6rem' }}
+            >
+              Empty result set
+            </span>
+          )}
           {plot.data?.truncated && (
             <span
               title="Narrow the query to see the full result"
-              style={{ color: 'var(--rv-muted)', fontSize: '0.7rem' }}
+              style={{ color: 'var(--rv-muted)', fontSize: '0.7rem', marginLeft: '0.6rem' }}
             >
               Chart Data Truncated
             </span>
           )}
           <span style={{ flex: 1 }} />
-          {plot.data && (
+          {
             <span
               title="Chart ID"
               style={{
@@ -399,7 +471,7 @@ export default function PlotPage() {
             >
               {plotId}
             </span>
-          )}
+          }
         </div>
         {plot.error && (
           <p style={{ color: 'var(--rv-danger)' }}>{friendlyError(plot.error, 'this chart')}</p>
@@ -409,19 +481,47 @@ export default function PlotPage() {
             This chart could not be drawn: {renderError}
           </p>
         )}
-        {!plot.data && plot.isLoading && <p style={{ color: 'var(--rv-muted)' }}>Loading chart…</p>}
+        {showLoading && !plot.data && !plot.error && (
+          /* `fit` autosize makes CONTINUOUS_HEIGHT the whole SVG, not the plot. */
+          <div
+            style={{
+              padding: '0.5rem',
+              background: 'var(--rv-surface)',
+              border: '1px solid var(--rv-border)',
+              borderRadius: 4,
+            }}
+          >
+            {cancelled ? (
+              <div
+                style={{
+                  minHeight: CONTINUOUS_HEIGHT,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--rv-muted)',
+                  fontSize: '0.8rem',
+                }}
+              >
+                Query cancelled. Retry to load this chart.
+              </div>
+            ) : (
+              <LoadingSpinner show minHeight={CONTINUOUS_HEIGHT} />
+            )}
+          </div>
+        )}
         <div
           ref={holder}
           style={{
             // Uncapped: height comes from the drawing, and the frame follows.
-            display: renderError ? 'none' : undefined,
+            // Hidden rather than unmounted: vega-embed attaches to this ref.
+            display: renderError || !plot.data ? 'none' : undefined,
             padding: '0.5rem',
             background: 'var(--rv-surface)',
             border: '1px solid var(--rv-border)',
             borderRadius: 4,
           }}
         />
-        {!renderError && (plot.data?.sql_explanation || plot.data?.sql) && (
+        {!renderError && (explain?.sql_explanation || explain?.sql) && (
           <div
             style={{
               display: 'flex',
@@ -439,6 +539,7 @@ export default function PlotPage() {
                     "Pull this chart's data into the chat and get the model's read on it.",
                 })
               }
+              disabled={!plot.data}
               style={paginationBtn}
               title="Pull this chart's data into the chat and get the model's read on it"
             >
@@ -455,10 +556,10 @@ export default function PlotPage() {
           </div>
         )}
       </div>
-      {sqlModalOpen && plot.data && (
+      {sqlModalOpen && explain && (
         <ExplainSqlModal
-          explanation={plot.data.sql_explanation}
-          sql={plot.data.sql}
+          explanation={explain.sql_explanation}
+          sql={explain.sql}
           highlightTerms={[]}
           highlightDiagnosis={[]}
           onClose={() => setSqlModalOpen(false)}
