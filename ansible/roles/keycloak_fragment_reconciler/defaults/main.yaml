@@ -14,33 +14,16 @@ keycloak_fragment_reconciler_image_repository: ghcr.io/washu-tag/keycloak-fragme
 keycloak_fragment_reconciler_image_tag: latest
 keycloak_fragment_reconciler_image_pull_policy: IfNotPresent
 
-# The clientId and secret key are both the token the realm var-substitutes, so
-# neither is a free choice. See helm/keycloak-config-cli/files/scout-realm.json.
-keycloak_fragment_reconciler_client_id: fragment_reconciler_svc
+# Where the keycloak role writes the credential. The key is the token the realm
+# var-substitutes, not a free choice; tasks/deploy.yaml checks it arrived.
 keycloak_fragment_reconciler_secret_name: keycloak-client-secrets
 keycloak_fragment_reconciler_secret_key: fragment_reconciler_svc
-
-# Must match the roles the base realm declares
-keycloak_fragment_reconciler_tier_roles:
-  - scout-user
-  - scout-admin
 
 # Namespace names, or the lone value `ALL` for every namespace -- a pluggable
 # app can land in one this role does not know about. An empty list watches
 # nothing and installs no ClusterRole.
 keycloak_fragment_reconciler_watched_namespaces:
   - ALL
-
-# How often to re-read everything and find + repair drift.
-# Set to -1 to never resync, only write changes that were observed.
-keycloak_fragment_reconciler_resync_seconds: 300
-keycloak_fragment_reconciler_orphan_grace_seconds: 300
-keycloak_fragment_reconciler_dry_run: false
-keycloak_fragment_reconciler_log_level: INFO
-
-# Serves /healthz, /readyz and /metrics. No ingress; the Prometheus scrape job
-# in roles/prometheus reaches it in-cluster.
-keycloak_fragment_reconciler_port: 8080
 
 keycloak_fragment_reconciler_resources_default:
   requests:
