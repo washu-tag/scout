@@ -351,7 +351,6 @@ def settings() -> Settings:
         keycloak_url="http://keycloak:8080",
         realm="scout",
         client_id="fragment_reconciler_svc",
-        client_secret="test",
         server_hostname=HOSTNAME,
         tier_roles=TIERS,
         # What both deploy lanes set. The field's own default is empty, which
