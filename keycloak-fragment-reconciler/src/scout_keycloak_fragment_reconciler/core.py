@@ -30,11 +30,21 @@ from .settings import Settings
 
 log = logging.getLogger("keycloak-fragment-reconciler")
 
-VALID = "valid"
 INVALID = "invalid"
 REJECTED = "rejected"
 APPLIED = "applied"
 FAILED = "failed"
+
+# The Event reason per outcome status, and the closed set of statuses. Nothing
+# defends against a status missing from here: every `Outcome` is built with one
+# of the four above, so a gap is a bug to hear about rather than to paper over
+# with a generic reason.
+EVENT_REASONS = {
+    APPLIED: "FragmentApplied",
+    INVALID: "FragmentInvalid",
+    REJECTED: "FragmentRejected",
+    FAILED: "FragmentFailed",
+}
 
 # How long to wait before retrying a deletion Keycloak refused.
 DELETION_RETRY_SECONDS = 30.0
@@ -900,12 +910,7 @@ class Reconciler:
             # the outcome itself changes, which for a broken fragment is never.
             if self.k8s.emit_event(
                 involved=involved,
-                reason={
-                    APPLIED: "FragmentApplied",
-                    INVALID: "FragmentInvalid",
-                    REJECTED: "FragmentRejected",
-                    FAILED: "FragmentFailed",
-                }.get(outcome.status, "FragmentOutcome"),
+                reason=EVENT_REASONS[outcome.status],
                 message=(
                     f"{outcome.subject}: {outcome.detail}"
                     if outcome.detail

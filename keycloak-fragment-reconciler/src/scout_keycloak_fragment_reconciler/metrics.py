@@ -32,8 +32,7 @@ class ReconcilerCollector:
 
         counts = {name: 0 for name in STATES}
         for outcome in snapshot.outcomes:
-            if outcome.status in counts:
-                counts[outcome.status] += 1
+            counts[outcome.status] += 1
         # Every state, including the ones at zero: a missing series and a zero
         # series alert differently.
         totals = GaugeMetricFamily(
@@ -64,36 +63,45 @@ class ReconcilerCollector:
             )
         yield per_client
 
-        for name, help_text, value in [
+        # One table so a new series is one row, next to the series it belongs
+        # with, rather than a choice of block to add it to.
+        for family, name, help_text, value in [
             (
+                GaugeMetricFamily,
                 "tier_roles_present",
                 "1 when every configured tier realm role exists. 0 means the "
                 "base realm has not been applied and nothing can be granted.",
                 float(r.tiers_present),
             ),
             (
+                GaugeMetricFamily,
                 "last_successful_list_timestamp_seconds",
                 "When fragments were last listed successfully. GC is skipped "
                 "on any cycle where this does not advance.",
                 r.last_list_ok,
             ),
             (
+                GaugeMetricFamily,
                 "orphans_pending",
                 "Stamped clients whose fragment is absent and whose grace "
                 "period has not yet elapsed.",
                 float(len(r.first_absent_at)),
             ),
-        ]:
-            yield GaugeMetricFamily(f"{PREFIX}_{name}", help_text, value=value)
-
-        for name, help_text, value in [
             (
+                CounterMetricFamily,
+                "deletions_total",
+                "Fragment clients deleted after their grace period.",
+                float(r.deletions),
+            ),
+            (
+                CounterMetricFamily,
                 "writes_total",
                 "Keycloak writes the admin API accepted since start. A second "
                 "pass over unchanged fragments must not advance this.",
                 float(r.writes),
             ),
             (
+                CounterMetricFamily,
                 "write_attempts_total",
                 "Keycloak writes a pass decided to make since start, including "
                 "the ones that failed and the ones a dry run only identified. "
@@ -102,11 +110,7 @@ class ReconcilerCollector:
                 float(r.write_attempts),
             ),
             (
-                "deletions_total",
-                "Fragment clients deleted after their grace period.",
-                float(r.deletions),
-            ),
-            (
+                CounterMetricFamily,
                 "drift_repairs_total",
                 "Tier edges re-added to a role that already existed. A "
                 "nonzero value usually means the base realm's tier roles "
@@ -114,7 +118,7 @@ class ReconcilerCollector:
                 float(r.drift_repairs),
             ),
         ]:
-            yield CounterMetricFamily(f"{PREFIX}_{name}", help_text, value=value)
+            yield family(f"{PREFIX}_{name}", help_text, value=value)
 
 
 def render(reconciler: Reconciler) -> str:

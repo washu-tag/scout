@@ -226,6 +226,31 @@ class TestWriteCounters:
         assert "write_attempts_total " in text
 
 
+class TestTheExposition:
+    """One table of series, and one closed set of outcome statuses."""
+
+    def test_every_series_is_exposed_with_its_declared_type(self, reconciler):
+        reconciler.reconcile_once()
+        text = metrics.render(reconciler)
+        for name, kind in [
+            ("clients", "gauge"),
+            ("client_state", "gauge"),
+            ("tier_roles_present", "gauge"),
+            ("last_successful_list_timestamp_seconds", "gauge"),
+            ("orphans_pending", "gauge"),
+            ("writes_total", "counter"),
+            ("write_attempts_total", "counter"),
+            ("deletions_total", "counter"),
+            ("drift_repairs_total", "counter"),
+        ]:
+            assert f"# TYPE {metrics.PREFIX}_{name} {kind}\n" in text
+
+    def test_every_outcome_status_has_an_event_reason(self):
+        """Neither the reporter nor the exposition defends against a status it
+        does not know, so the two tables have to agree."""
+        assert set(core.EVENT_REASONS) == set(metrics.STATES)
+
+
 class TestNonAdoption:
     """Never mutate a Keycloak object lacking our stamp.
 
