@@ -19,6 +19,7 @@ classifiers = [
 ]
 requires-python = ">= 3.10"  # delta-spark 4.x requires 3.10
 dependencies = [
+    "botocore",
     "delta-spark==4.3.0",
     "fastapi",
     "psycopg[binary]",

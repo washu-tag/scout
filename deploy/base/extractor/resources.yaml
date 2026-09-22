@@ -47,7 +47,7 @@ spec:
     service:
       type: ClusterIP
       port: 8080
-    # envFrom (s3-secret + s3-env) is mode-specific -> the edge ConfigMap.
+    # envFrom (s3-secret + s3-env; aws adds postgres-secret) is mode-specific -> the edge ConfigMap.
     env:
       - name: TZ
         value: '${timezone}'

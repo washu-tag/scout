@@ -42,7 +42,7 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | secret | keys | consumed by |
 | --- | --- | --- |
 | `s3-secret` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | hl7log-extractor + hl7-transformer (lake-writer; cloud = IRSA instead) |
-| `postgres-secret` | `DB_PASSWORD` (+ DB coords) | extractor datasource (= the extractor role) |
+| `postgres-secret` | `DB_PASSWORD` (+ DB coords); optional RDS IAM keys (below) | extractor datasource (= the extractor role); aws hl7log-extractor `envFrom`s it too |
 | `temporal-db-secret` | `password` | Temporal server + schema Job (= the temporal CNPG role) |
 | `trino-rw-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-rw (lake-writer; cloud = IRSA instead) |
 
@@ -65,6 +65,34 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 base does not ship or generate it (unlike the `oauth2-proxy-templates` ConfigMap), so a
 site must provide it as a Secret (from CI or the site repo, not the secrets manager) or
 oauth2-proxy stays in `ContainerCreating` on the missing mount.
+
+## RDS IAM database auth (aws, optional)
+Off by default: with none of the keys below set, every client keeps its role password. A
+site opts in one component at a time:
+
+- **Login roles.** Keep each owner role (e.g. `scout`) and its password. Add a separate
+  passwordless login role per owner: `CREATE ROLE scout_iam LOGIN; GRANT scout TO scout_iam;
+  GRANT rds_iam TO scout_iam; ALTER ROLE scout_iam SET role = 'scout'`, so sessions act as,
+  and objects stay owned by, the owner. Switching (and rolling back) is a username change.
+- **Never grant `rds_iam` to a role the master user is a member of**, directly or through
+  another role. RDS then refuses that login's password, and anything connecting as the
+  master (e.g. the `hive-db-init` Job) fails. Grant it only to the `*_iam` roles, and
+  never grant those to the master.
+- **CA bundle.** A site-supplied ConfigMap `rds-ca-bundle` (key `ca.pem`, the RDS CA
+  bundle for the instance's region, e.g.
+  `https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`) in each client
+  namespace. aws workloads mount it (optional) at `/etc/rds-ca`, so IAM clients use
+  `sslmode=verify-full` with `/etc/rds-ca/ca.pem`.
+- **IRSA.** The workload's role needs `rds-db:connect` on
+  `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/<login role>`.
+
+| workload (namespace) | ServiceAccount / IRSA role | switch (keys in the secret) |
+| --- | --- | --- |
+| hl7log-extractor (`scout-extractor`) | `hl7log-extractor` / `${irsa_role_prefix}-hl7log-extractor` | `postgres-secret`: `SPRING_DATASOURCE_URL` = `jdbc:aws-wrapper:postgresql://<host>:<port>/<db>?wrapperPlugins=iam&sslmode=verify-full&sslrootcert=/etc/rds-ca/ca.pem`, `SPRING_DATASOURCE_DRIVERCLASSNAME` = `software.amazon.jdbc.Driver`, `SPRING_DATASOURCE_USERNAME` = the login role. `DB_PASSWORD` stays (ignored under IAM). |
+| hl7-transformer (`scout-extractor`) | `hl7-transformer` / `${irsa_role_prefix}-hl7-transformer` | `postgres-secret`: `DB_IAM_AUTH=true`, `DB_USER` = the login role. TLS defaults to verify-full with `/etc/rds-ca/ca.pem` (`PGSSLMODE` / `PGSSLROOTCERT` override). |
+
+The two extractor workers read different username keys, so they switch independently.
+Pods don't restart on a Secret change: roll the workload after editing the secret.
 
 ## Not site-provided (generated in-cluster, listed so they aren't double-provisioned)
 - `trino-tls` — cert-manager `Certificate`
