@@ -334,3 +334,14 @@ class TestMalformedDocuments:
     def test_no_clients(self):
         with pytest.raises(FragmentError):
             parse(f"apiVersion: {API_VERSION}\nkind: KeycloakFragment\nclients: []")
+
+    def test_deeply_nested_yaml_does_not_escape_the_contract(self):
+        """A document nested past the interpreter's recursion limit is one
+        author's mistake, not an abort of the whole pass."""
+        depth = 60000
+        text = (
+            f"apiVersion: {API_VERSION}\nkind: KeycloakFragment\n"
+            f"clients: {'[' * depth}{']' * depth}\n"
+        )
+        with pytest.raises(FragmentError):
+            parse(text)

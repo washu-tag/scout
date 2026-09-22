@@ -219,7 +219,9 @@ def parse(text: str) -> Fragment:
     """One fragment document, or a FragmentError an author can act on."""
     try:
         raw = yamlio.safe_load(text)
-    except yamlio.YAMLError as exc:
+    # Broad because PyYAML cannot bound nesting depth, so a deeply nested
+    # document arrives as RecursionError: https://github.com/yaml/pyyaml/issues/895
+    except Exception as exc:
         raise FragmentError(f"not valid YAML: {exc}") from None
     if not isinstance(raw, dict):
         raise FragmentError("a fragment must be a YAML mapping")
