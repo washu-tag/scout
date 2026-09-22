@@ -135,8 +135,7 @@ def tier_edges(spec: ClientSpec) -> dict[str, list[str]]:
 # create and ignores them on update -- `ClientResource.updateClient` never
 # calls `updateClientScopes` -- so managing them would detect drift it could
 # never repair and rewrite the client on every pass forever. They are set once
-# at creation and are immutable thereafter; see the scopes note in
-# `docs/source/customize/keycloak-fragments.md`.
+# at creation and are immutable thereafter.
 MANAGED_FIELDS = (
     "name",
     "description",

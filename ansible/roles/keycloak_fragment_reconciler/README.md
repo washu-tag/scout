@@ -46,5 +46,4 @@ each app's chart grants it a `resourceNames`-scoped `get` on that app's own cred
 **The ServiceAccount name is public contract** — apps name it in a `RoleBinding`, so
 renaming it breaks every installed fragment, and it is deliberately not derived from the
 Helm release name. Apps name the namespace too, but it follows `keycloak_namespace`, so a
-site that overrides namespaces has to use its own. See
-`docs/source/customize/keycloak-fragments.md`.
+site that overrides namespaces has to use its own.
