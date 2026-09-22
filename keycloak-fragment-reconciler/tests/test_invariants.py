@@ -17,6 +17,7 @@ from conftest import (
     TIERS,
     TransportError,
     fragment_text,
+    fragment_text_without_roles,
     translate,
 )
 
@@ -143,6 +144,30 @@ class TestSteadyStateCost:
 
         assert kc.calls["client_secret"] == before + 1
         assert kc.secrets[next(iter(kc.clients))] == "rotated"
+
+    def test_a_client_with_no_roles_reads_no_tier_edges(self, reconciler, kc, k8s):
+        """An edge can only point at one of this client's own roles, so with no
+        roles every per-tier read can only come back empty."""
+        k8s.add_fragment(fragment_text_without_roles())
+
+        reconciler.reconcile_once()
+
+        assert kc.find_client("hello") is not None
+        assert kc.calls["tier_edges_for_client"] == 0
+
+    def test_dropping_every_role_still_revokes_the_edges(self, reconciler, kc, k8s):
+        """The other side of skipping that read: a client that used to have
+        roles and now declares none still has to lose its grants. Deleting the
+        role is what takes the edge with it."""
+        reconciler.reconcile_once()
+        assert kc.edges("scout-user") == {"hello-user"}
+
+        k8s.add_fragment(fragment_text_without_roles())
+        reconciler.reconcile_once()
+
+        for tier in TIERS:
+            assert kc.edges(tier) == set(), "a grant survived its role"
+        assert kc.client_roles(next(iter(kc.clients))) == []
 
     def test_an_unlistable_realm_is_still_applied_against(self, reconciler, kc):
         """There is not always a listing to reuse -- GC returns before it lists

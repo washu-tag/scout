@@ -53,6 +53,16 @@ def fragment_text(client_id: str = "hello") -> str:
     return FRAGMENT.format(client_id=client_id)
 
 
+def fragment_text_without_roles(client_id: str = "hello") -> str:
+    """The same client with nothing to grant.
+
+    Both `roles` and `grants` are optional, and a fragment may only grant roles
+    it declares, so declaring none is the only way to have no tier edges at all.
+    """
+    head = fragment_text(client_id).split("    roles:")[0]
+    return f"{head}    secretRef:\n      name: {client_id}-keycloak-client\n"
+
+
 class FakeKeycloak:
     """Enough of the admin API to reconcile against, and a write log.
 
@@ -369,5 +379,6 @@ __all__ = [
     "TIERS",
     "TransportError",
     "fragment_text",
+    "fragment_text_without_roles",
     "translate",
 ]

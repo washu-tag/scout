@@ -574,7 +574,15 @@ class Reconciler:
         A grant newly declared over a role that was already there is the one
         genuinely ambiguous case, and still reads as drift. A false alarm costs
         a log line; a missed one costs a silent 403.
+
+        A client left with no roles has nothing to diff: an edge can only point
+        at one of this client's own roles, so both sides are empty for every
+        tier. It is `roles` and not `spec` that decides, because a client that
+        used to have roles still has to lose its grants -- deleting the role is
+        what takes the edge with it, and that has already happened by here.
         """
+        if not roles:
+            return
         wanted = translate.tier_edges(spec)
         for tier in self.settings.tier_roles:
             want = set(wanted.get(tier, []))
