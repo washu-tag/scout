@@ -23,7 +23,7 @@ from scout_keycloak_fragment_reconciler import translate
 from scout_keycloak_fragment_reconciler.core import Reconciler
 from scout_keycloak_fragment_reconciler.k8s import ApiError, TransportError
 from scout_keycloak_fragment_reconciler.keycloak import KeycloakError
-from scout_keycloak_fragment_reconciler.settings import Settings
+from scout_keycloak_fragment_reconciler.settings import FRAGMENT_LABEL, Settings
 
 HOSTNAME = "scout.example.edu"
 TIERS = ["scout-user", "scout-admin"]
@@ -245,13 +245,16 @@ class FakeK8s:
         namespace: str = "demo",
         name: str = "hello-keycloak",
         key: str = "fragment.yaml",
+        labelled: bool = True,
     ) -> dict:
+        """`labelled=False` is a ConfigMap the discovery LIST cannot see."""
         item = {
             "metadata": {
                 "namespace": namespace,
                 "name": name,
                 "uid": f"uid-{namespace}-{name}",
                 "resourceVersion": "1",
+                "labels": {FRAGMENT_LABEL: "true"} if labelled else {},
             },
             "data": {key: text},
         }
@@ -295,10 +298,24 @@ class FakeK8s:
         return "scout-core"
 
     def list_configmaps(self, label_selector: str) -> list[dict]:
+        """Filters on the selector, as the API server would.
+
+        `Settings.label_selector` renders equality terms, which is all this
+        parses: a selector it cannot read would silently match everything,
+        which is the state this is here to rule out.
+        """
         self.lists += 1
         if self.list_error is not None:
             raise self.list_error
-        return [dict(c) for c in self.configmaps]
+        wanted = dict(term.split("=", 1) for term in label_selector.split(",") if term)
+        return [
+            dict(c)
+            for c in self.configmaps
+            if all(
+                (c["metadata"].get("labels") or {}).get(key) == value
+                for key, value in wanted.items()
+            )
+        ]
 
     def get_configmap(self, namespace: str, name: str) -> dict | None:
         for item in self.configmaps:

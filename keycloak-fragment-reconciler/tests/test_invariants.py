@@ -1049,6 +1049,26 @@ class TestDryRun:
         assert kc.clients == {}
 
 
+class TestTheLabelIsTheOptIn:
+    """Discovery is a labelled LIST, so an unlabelled ConfigMap is invisible.
+
+    The label is how an app volunteers a fragment. A ConfigMap that merely
+    happens to hold fragment YAML has not volunteered one, and reconciling it
+    would let anything that can write a ConfigMap in a watched namespace name a
+    client and a grant.
+    """
+
+    def test_an_unlabelled_configmap_is_not_reconciled(self, settings, k8s, kc):
+        k8s.add_fragment(fragment_text("elsewhere"), name="unlabelled", labelled=False)
+        k8s.add_secret("elsewhere-secret", name="elsewhere-keycloak-client")
+        reconciler = Reconciler(settings, k8s, kc)
+
+        reconciler.reconcile_once()
+
+        assert kc.find_client("elsewhere") is None
+        assert kc.find_client("hello") is not None, "the labelled one was skipped too"
+
+
 class TestNamespaceAllowlist:
     def test_a_fragment_outside_the_allowlist_is_not_read(self, settings, k8s, kc):
         settings.watched_namespaces = ["demo"]
