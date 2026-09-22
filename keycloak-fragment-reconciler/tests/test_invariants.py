@@ -764,6 +764,31 @@ class TestGarbageCollection:
         assert uuid in kc.clients
         assert translate.source_of(kc.clients[uuid]) == "demo/hello-keycloak-v2"
 
+    def test_every_claimed_client_was_named_first(self, reconciler, k8s):
+        """What lets the orphan check ask one question where it looks like two.
+
+        `_read` records every clientId it parses before the spec can become a
+        claim, so the named set contains the claimed set and asking about the
+        claims as well would be a restatement. If that ever stops holding, the
+        clause that is here stops protecting claimed clients.
+        """
+        k8s.add_fragment(fragment_text("second"), namespace="other", name="second")
+        k8s.add_fragment(fragment_text("hello"), namespace="other", name="rival")
+        k8s.add_fragment("{{{ not yaml at all", namespace="other", name="broken")
+        k8s.add_fragment(
+            fragment_text("third").replace(
+                "https://third.scout.example.edu/auth/callback",
+                "https://evil.example.com/steal",
+            ),
+            namespace="other",
+            name="invalid",
+        )
+
+        snapshot = reconciler.take_snapshot()
+
+        assert snapshot.claims
+        assert set(snapshot.claims) <= snapshot.seen_client_ids
+
     def test_a_witnessed_deletion_schedules_its_own_recheck(self, reconciler):
         assert reconciler.next_deadline() is None
         reconciler.witness_deletion("demo", "hello-keycloak")

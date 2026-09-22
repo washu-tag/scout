@@ -653,18 +653,20 @@ class Reconciler:
     def _is_orphan(self, client_id: str, client: dict, snapshot: Snapshot) -> bool:
         """Whether a stamped client has actually been abandoned.
 
-        Four questions, all of which must fail:
+        Three questions, all of which must fail:
 
         0. Could this pass have seen the fragment at all? Absence only means
            "removed" within the watch scope; outside it, absence means "not
            looked at". Without this, narrowing the allowlist reads as every
            out-of-scope app having been deleted.
-        1. Does a valid fragment claim this clientId? Keying on the clientId
-           rather than the source is what makes a fragment rename an ordinary
-           update, with no window where the client is absent.
-        2. Did any fragment *name* it, even one that failed validation? A typo
-           is not a request for deletion.
-        3. Is the producing ConfigMap still present with a document that will
+        1. Did any fragment *name* this clientId? Whether it went on to become
+           a claim is not asked, because `_read` records every clientId it
+           parses before the spec can become one -- so the named set contains
+           the claimed set, and a typo is not a request for deletion either.
+           Keying on the clientId rather than the source is what makes a
+           fragment rename an ordinary update, with no window where the client
+           is absent.
+        2. Is the producing ConfigMap still present with a document that will
            not parse? Such a document cannot say which client it was about, so
            it might be the one that declared this client -- and one sibling
            document parsing says nothing about the broken one. Once every
@@ -673,7 +675,7 @@ class Reconciler:
         """
         if not self._in_watch_scope(client):
             return False
-        if client_id in snapshot.claims or client_id in snapshot.seen_client_ids:
+        if client_id in snapshot.seen_client_ids:
             return False
         source = translate.source_of(client)
         if (
