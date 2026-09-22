@@ -13,11 +13,38 @@ from .settings import ENV_PREFIX, RequiredSettings
 log = logging.getLogger("keycloak-fragment-reconciler")
 
 
+def resolve_log_level(value: str) -> tuple[int, str | None]:
+    """The level to configure, and the value to complain about if there is one.
+
+    Names the logging module carries are honoured, aliases and lowercase
+    included, as is a number that is one of their values. Anything else is
+    INFO, handed back so the caller can name it once logging is up: this is the
+    one setting read before `Settings` can validate anything, and a typo in it
+    must not be the reason the process never starts.
+    """
+    levels = logging.getLevelNamesMapping()
+    name = value.strip().upper()
+    if name in levels:
+        return levels[name], None
+    if name.isdecimal() and int(name) in levels.values():
+        return int(name), None
+    return logging.INFO, value
+
+
 def main() -> int:
+    requested = os.environ.get(f"{ENV_PREFIX}LOG_LEVEL", "INFO")
+    level, unknown = resolve_log_level(requested)
     logging.basicConfig(
-        level=os.environ.get(f"{ENV_PREFIX}LOG_LEVEL", "INFO").upper(),
+        level=level,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
+    if unknown is not None:
+        log.warning(
+            "%sLOG_LEVEL=%r is not a log level, using INFO. Set one of %s.",
+            ENV_PREFIX,
+            unknown,
+            ", ".join(sorted(logging.getLevelNamesMapping())),
+        )
     # httpx2 logs every request at INFO, which buries the handful of lines that
     # say what actually changed. Raise the log level to see them.
     logging.getLogger("httpx2").setLevel(logging.WARNING)
