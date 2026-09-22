@@ -257,6 +257,25 @@
       "datasourceTemplate": "docker",
       "depNameTemplate": "starburstdata/hive",
       "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?<compatibility>-e\\.)(?<build>\\d+)$"
+    },
+    // The RDS IAM hive-metastore image (hive-metastore/) is FROM starburstdata/hive and
+    // tags itself with that version: same depName, so it bumps in the same PR.
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["hive-metastore/VERSION"],
+      "matchStrings": ["^(?<currentValue>[\\d\\.]+-e\\.\\d+)\\s*$"],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "starburstdata/hive",
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?<compatibility>-e\\.)(?<build>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["hive-metastore/Dockerfile"],
+      "matchStrings": [
+        "FROM\\s+(?<depName>starburstdata/hive):(?<currentValue>[\\d\\.]+-e\\.\\d+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?<compatibility>-e\\.)(?<build>\\d+)$"
     }
   ]
 }

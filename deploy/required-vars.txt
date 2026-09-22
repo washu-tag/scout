@@ -14,10 +14,13 @@ db_port
 delta_lake_path
 deployer_name
 extractor_data_dir
+hive_db_auth
+hive_db_user
 hive_hadoop_opts
 hive_metastore_endpoint
 hive_metastore_endpoint_readonly
 hive_namespace
+hive_readonly_db_user
 hl7_path
 hl7_raw_bucket
 hl7_transformer_cpu_limit

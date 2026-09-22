@@ -1,3 +1,8 @@
+{{- if not (has .Values.dbAuth (list "password" "iam")) }}
+{{- fail (printf "dbAuth must be password or iam, got %q" .Values.dbAuth) }}
+{{- end }}
+{{- $iam := eq .Values.dbAuth "iam" }}
+{{- $image := ternary .Values.rdsIam.image .Values.image $iam }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -38,7 +43,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ $image.repository }}:{{ $image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
@@ -60,11 +65,22 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
+          {{- $mounts := .Values.volumeMounts | default list }}
+          {{- if $iam }}
+          {{- $mounts = concat $mounts (list
+                (dict "name" "rds-ca" "mountPath" "/etc/rds-ca" "readOnly" true)
+                (dict "name" "rds-iam" "mountPath" "/opt/bin/db-connection-tester.jar" "subPath" "db-connection-tester")) }}
+          {{- end }}
+          {{- with $mounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- $env := .Values.env | default list -}}
+          {{- if $iam -}}
+          {{- /* The entrypoint only accepts org.postgresql.Driver, which rejects the wrapper
+                 URL in the metastore's pool; override it for the metastore JVM only. */ -}}
+          {{- $env = append $env (dict "name" "HIVE_METASTORE_HADOOP_OPTS" "value" "-Djavax.jdo.option.ConnectionDriverName=software.amazon.jdbc.Driver") -}}
+          {{- end -}}
           {{- if .Values.cloudEnvStubs -}}
           {{- /* Cloud-provider env the image entrypoint requires present but empty in
                  the on-prem/MinIO path; opt-in so callers don't restate them (Helm
@@ -83,7 +99,9 @@ spec:
                    env schema (string-only) rejects it. */ -}}
             {{- range . }}
             - name: {{ .name }}
-              {{- if hasKey . "valueFrom" }}
+              {{- if and $iam (eq .name "HIVE_METASTORE_JDBC_URL") }}
+              value: {{ required "rdsIam.jdbcUrl is required when dbAuth is iam" $.Values.rdsIam.jdbcUrl | quote }}
+              {{- else if hasKey . "valueFrom" }}
               valueFrom:
                 {{- toYaml .valueFrom | nindent 16 }}
               {{- else }}
@@ -95,7 +113,13 @@ spec:
           envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.volumes }}
+      {{- $volumes := .Values.volumes | default list }}
+      {{- if $iam }}
+      {{- $volumes = concat $volumes (list
+            (dict "name" "rds-ca" "configMap" (dict "name" .Values.rdsIam.caConfigMap "optional" true))
+            (dict "name" "rds-iam" "configMap" (dict "name" (printf "%s-rds-iam" (include "hive-metastore.fullname" .)) "defaultMode" 365))) }}
+      {{- end }}
+      {{- with $volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}

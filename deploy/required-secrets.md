@@ -34,7 +34,7 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 
 | secret | keys | consumed by |
 | --- | --- | --- |
-| `hive-metastore-secret` / `-readonly-secret` | `S3_SECRET_KEY`, `HIVE_METASTORE_PASSWORD` | hive-metastore Deployments |
+| `hive-metastore-secret` / `-readonly-secret` | `S3_SECRET_KEY`, `HIVE_METASTORE_PASSWORD` (ignored but must be non-empty under `hive_db_auth: iam`) | hive-metastore Deployments |
 | `minio-scout-env-configuration` | `config.env` (root creds + region/OIDC) | MinIO `Tenant.configSecret` (in-cluster MinIO only) |
 | `${s3_*}-creds` (lake r/w, loki-writer, opa-bundle r/w) | `CONSOLE_ACCESS_KEY`, `CONSOLE_SECRET_KEY` | MinIO `Tenant.users` (in-cluster MinIO only) |
 
@@ -198,3 +198,40 @@ Secret change by themselves); the init and dashboards Jobs pick it up on the nex
 upgrade. Roll back by reverting those two keys. `DB_SSLMODE` (default `verify-full`) and
 `DB_SSLROOTCERT` (default `/etc/rds-ca/ca.pem`) override the TLS settings. Tokens are
 minted in `AWS_REGION` (set by the EKS pod-identity webhook), else `AWS_DEFAULT_REGION`.
+A site on RDS can switch a component from password to IAM database auth, one at a time.
+Each switch is a cluster-var that defaults to password, so nothing changes until a site
+sets it. The component then connects as a separate IAM login role over TLS
+(`sslmode=verify-full`), using a short-lived token minted from its IRSA identity.
+
+- **Login roles.** Keep each owner role (`hive`, `hive_readonly`, ...) and its password
+  unchanged, and add a login role that acts as it, for example:
+  `CREATE ROLE hive_iam LOGIN; GRANT hive TO hive_iam; GRANT rds_iam TO hive_iam;
+  ALTER ROLE hive_iam SET role = 'hive';`. Sessions then run as, and objects stay owned
+  by, `hive`. To roll back, set the component back to password auth and the username
+  back to the owner. Keeping the owner's password in the Secret means rollback needs no
+  Secret change.
+- **Never grant `rds_iam` to a role the master user is a member of.** Membership counts
+  even when it's indirect, and it makes that login IAM-only, so the master (and
+  `hive-db-init`, which runs as `superuser-secret` over a password) would be locked out.
+  Grant `rds_iam` only to the `*_iam` login roles, and never make the master a member of
+  one.
+- **CA bundle.** Provide a ConfigMap `rds-ca-bundle` with key `ca.pem`, holding the RDS
+  CA bundle for your region (`https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`),
+  in each namespace whose components use IAM. It's mounted at `/etc/rds-ca`.
+- **IRSA.** Each workload's role needs `rds-db:connect` on
+  `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/<login role>`.
+
+hive (`${hive_namespace}`):
+
+| cluster-var | default | iam value |
+| --- | --- | --- |
+| `hive_db_auth` | `password` | `iam` (the `hive-metastore` image with the AWS JDBC wrapper, and the `jdbc:aws-wrapper` URL) |
+| `hive_db_user` | `hive` | the write login role, e.g. `hive_iam` |
+| `hive_readonly_db_user` | `hive_readonly` | the readonly login role, e.g. `hive_readonly_iam` |
+
+The write metastore's ServiceAccount `hive-metastore` uses `${irsa_role_prefix}-hive-metastore`,
+and the readonly one's (`hive-metastore-readonly`) uses its own, in both auth modes:
+`${irsa_role_prefix}-hive-metastore-readonly`. That role needs lake read access and
+`rds-db:connect` for the readonly login role only, and its trust must admit
+`system:serviceaccount:${hive_namespace}:hive-metastore-readonly`. `hive-db-init` is
+unchanged: it keeps running as the master over a password.

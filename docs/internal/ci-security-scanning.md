@@ -107,7 +107,7 @@ The `publish` and `publish-demo` jobs require `scan-images` in their `needs:` ar
 
 All actions referenced with `uses:` — first-party (`actions/*`, `github/codeql-action`) and third-party alike — are pinned to full commit SHAs (not tags) across every workflow and composite action, to prevent supply-chain attacks. (The sole exception is the internal `washu-tag/.github` reusable workflow, referenced by `@main` by design.) Dependabot's `github-actions` ecosystem in `dependabot.yml` keeps these pins current.
 
-**Images scanned** (the `&image-matrix` anchor in `ci.yaml`, shared by `build-and-upload` and `scan-images`): `hl7log-extractor`, `hl7-transformer`, `hl7-listener`, `scout-notebook`, `launchpad`, `superset`, `keycloak`, `report-viewer`.
+**Images scanned** (the `&image-matrix` anchor in `ci.yaml`, shared by `build-and-upload` and `scan-images`): `hl7log-extractor`, `hl7-transformer`, `hl7-listener`, `scout-notebook`, `launchpad`, `superset`, `keycloak`, `report-viewer`, `hive-metastore`.
 
 ### Semgrep
 
@@ -256,7 +256,7 @@ ignore {
 }
 ```
 
-`input` is one Trivy `DetectedVulnerability` (`PkgName`, `VulnerabilityID`, `Severity`, `InstalledVersion`, …); returning `true` from `ignore` drops it. Keep `.trivyignore.yaml` for individual CVEs that have per-item rationale (bundled jars, base-OS packages awaiting a rebuild); reach for `.trivyignore.rego` only when suppressing by package name is justified for every CVE that package will ever carry.
+`input` is one Trivy `DetectedVulnerability` (`PkgName`, `VulnerabilityID`, `Severity`, `InstalledVersion`, …); returning `true` from `ignore` drops it. Keep `.trivyignore.yaml` for individual CVEs that have per-item rationale (bundled jars, base-OS packages awaiting a rebuild); reach for `.trivyignore.rego` only when suppressing by package name is justified for every CVE that package will ever carry. `hive-metastore` is the one path-scoped policy: it layers jars onto an unmodified upstream image, so its policy gates only what it adds (`auxlib/`).
 
 Reproduce a scan locally with both suppressions applied:
 

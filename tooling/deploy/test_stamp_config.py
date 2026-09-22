@@ -66,8 +66,8 @@ def test_every_placeholder_stamped_and_clean(haul, copy_deploy):
     assert len(ch_stamps) == 1
     assert ch_stamps[0].tag == ch
 
-    # 8 charts + 4 values-image tags + 2 inline images + 1 hash
-    assert len(stamps) == 15
+    # 8 charts + 5 values-image tags + 2 inline images + 1 hash
+    assert len(stamps) == 16
 
 
 def test_hl7_transformer_both_image_literals_move(haul, copy_deploy):

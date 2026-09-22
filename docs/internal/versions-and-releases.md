@@ -435,6 +435,7 @@ These files track external dependency versions and should NOT be updated as part
 | `ansible/group_vars/all/versions.yaml` | External dependency versions |
 | `helm/superset/VERSION` | Apache Superset application version |
 | `keycloak/VERSION` | Keycloak application version |
+| `hive-metastore/VERSION` | starburstdata/hive base version (the RDS IAM metastore image) |
 | `helm/dcm4chee/Chart.yaml` | Optional external component |
 | `helm/orthanc/Chart.yaml` | Optional external component |
 

@@ -1,6 +1,6 @@
 # FIXTURE ONLY -- a representative Hauler `kind: Images` manifest for
 # stamp_config.py tests (ADR 0033 build-lane format, produced by
-# tooling/manifest/haul.py render_images). All 8 images + 14 charts, with
+# tooling/manifest/haul.py render_images). All 9 images + 14 charts, with
 # fake-but-well-formed digests (sha256 of the tagged ref) and plausible build
 # tags. Tags are DISTINCT per component so a mis-keyed stamp is caught.
 apiVersion: content.hauler.cattle.io/v1
@@ -17,6 +17,7 @@ spec:
     - name: ghcr.io/washu-tag/superset:5.0.0-scout.20260813@sha256:ad94ed51db3794a0eb2ea601edf8ee46498b24f723348ba59f6e899fdbf66285
     - name: ghcr.io/washu-tag/keycloak:26.6.4-scout.20260813@sha256:b26999150335e4051179ebe6d4fc4db82bdbb3c6072fd872aed988c12a0bdffd
     - name: ghcr.io/washu-tag/report-viewer:0.20260813.6@sha256:3109641270f1db5f108c98867c80e220f5d272e5f04b9c9525681f41229a8833
+    - name: ghcr.io/washu-tag/hive-metastore:0.20260813.7@sha256:e35edde8d115e46655839fb0807bc6d2f5db6c2871f229e40d16f20e01b6913b
     - name: ghcr.io/washu-tag/charts/hl7-transformer:0.20260813.11@sha256:9c40f67914068787fff9dcc74d2f60120fb0290ccb1cf3b051101785c612b63f
     - name: ghcr.io/washu-tag/charts/dcm4chee:0.20260813.12@sha256:c183b0a9f46ef0f1d2be8990da846e3338c11d0d4c69e9f9c2cc8126311ae096
     - name: ghcr.io/washu-tag/charts/hive-metastore:0.20260813.13@sha256:aabc5a60f6a07afb6612558ee17c40e7a1d1d112973a99f36931d10b7637d578

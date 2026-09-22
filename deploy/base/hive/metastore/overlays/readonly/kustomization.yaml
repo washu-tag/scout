@@ -7,7 +7,7 @@ resources:
   - ../../_base
 patches:
   # env is an atomic list (schema-less HelmRelease), so patched by index; order fixed
-  # in _base: [2]=HIVE_METASTORE_USER, [6]=S3_ACCESS_KEY.
+  # in _base: [2]=HIVE_METASTORE_USER, [7]=S3_ACCESS_KEY.
   - target:
       kind: HelmRelease
       name: hive-metastore
@@ -20,10 +20,14 @@ patches:
         value: hive-metastore-readonly
       - op: replace
         path: /spec/values/env/2/value
-        value: hive_readonly
+        value: ${hive_readonly_db_user:=hive_readonly}
       - op: replace
-        path: /spec/values/env/6/value
+        path: /spec/values/env/7/value
         value: ${s3_lake_reader}
       - op: replace
         path: /spec/values/envFrom/0/secretRef/name
         value: hive-metastore-readonly-secret
+      # Its own least-privilege IRSA role (lake read + the readonly DB user), not write's.
+      - op: replace
+        path: /spec/values/serviceAccount/annotations/eks.amazonaws.com~1role-arn
+        value: ${irsa_role_prefix}-hive-metastore-readonly

@@ -2,7 +2,7 @@
 #
 # The steady-state publish-haul job (in ci.yaml) carries unchanged components
 # from the previous haul, but the FIRST haul has no predecessor, and the publish
-# job only pushes CHANGED images, so no normal run ever has all 8 fresh. This
+# job only pushes CHANGED images, so no normal run ever has all 9 fresh. This
 # dispatch resolves every image's current digest, signs it, and builds + publishes
 # the first full haul so subsequent builds have a predecessor to carry from.
 #
@@ -58,14 +58,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p digests
-          # superset/keycloak have a real semver VERSION file (overridable). The 6
+          # superset/keycloak (overridable) and hive-metastore have a real VERSION file. The 6
           # Scout images are versioned "latest" in-repo, so seed the newest build-lane
           # tag (0.YYYYMMDD.N), not :latest, or stamp_config fail-closes downstream.
           for name in hl7log-extractor hl7-transformer hl7-listener scout-notebook \
-                      launchpad report-viewer superset keycloak; do
+                      launchpad report-viewer superset keycloak hive-metastore; do
             case "${name}" in
               superset) src="${SUPERSET_TAG:-$(cat helm/superset/VERSION)}" ;;
               keycloak) src="${KEYCLOAK_TAG:-$(cat keycloak/VERSION)}" ;;
+              hive-metastore) src="$(cat hive-metastore/VERSION)" ;;
               # newest build-lane tag (oras reuses the GHCR login + follows pagination).
               # Separate the registry call from the filter so an oras/auth failure is
               # not misreported as a missing tag.
@@ -91,7 +92,7 @@ jobs:
           set -euo pipefail
           echo "VERSION=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           # The OCI charts (in components.txt since #618) aren't published until
-          # seed-charts.yaml runs, so the first haul seeds ONLY the 8 images and has
+          # seed-charts.yaml runs, so the first haul seeds ONLY the 9 images and has
           # no predecessor to carry charts from. Render the images-only subset; the
           # charts/ repos would else fail resolve_refs closed ("neither rebuilt nor
           # carried"). seed-charts then carries these images and folds the charts in.

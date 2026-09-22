@@ -1,0 +1,14 @@
+{{- if eq .Values.dbAuth "iam" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hive-metastore.fullname" . }}-rds-iam
+  labels:
+    {{- include "hive-metastore.labels" . | nindent 4 }}
+data:
+  # Mounted over the image's startup DB check, whose bundled driver can't load the AWS
+  # JDBC wrapper (it would retry for 300s). schematool fails fast instead.
+  db-connection-tester: |
+    #!/bin/sh
+    exit 0
+{{- end }}

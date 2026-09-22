@@ -126,6 +126,21 @@ affinity: {}
 # still lists the stubs in env (e.g. the Ansible role) must not double them.
 cloudEnvStubs: false
 
+# Postgres auth: password (default; image + env as given) or iam (AWS RDS IAM database
+# auth). iam runs rdsIam.image, sets HIVE_METASTORE_JDBC_URL to rdsIam.jdbcUrl, and
+# mounts the rdsIam.caConfigMap CA bundle (key ca.pem, optional) at /etc/rds-ca.
+# HIVE_METASTORE_PASSWORD must still be non-empty; the IAM token replaces it.
+dbAuth: password
+rdsIam:
+  # The stock image plus the AWS JDBC wrapper (hive-metastore/ in the Scout repo).
+  # Empty tag -> the chart appVersion.
+  image:
+    repository: ghcr.io/washu-tag/hive-metastore
+    tag: ''
+  # e.g. jdbc:aws-wrapper:postgresql://<host>:5432/hive?wrapperPlugins=iam&sslmode=verify-full&sslrootcert=/etc/rds-ca/ca.pem
+  jdbcUrl: ''
+  caConfigMap: rds-ca-bundle
+
 env:
   - name: HIVE_METASTORE_DRIVER
     value: 'org.postgresql.Driver'

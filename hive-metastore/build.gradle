@@ -1,0 +1,63 @@
+// Jars the Dockerfile adds to the stock Hive metastore image so it can use RDS IAM
+// database auth (jdbc:aws-wrapper:postgresql with wrapperPlugins=iam). No sources:
+// copyJars resolves the runtime classpath into build/jars/.
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+def awsJdbcWrapperVersion = "4.4.0"
+// The SDK release the wrapper version above is built against.
+def awsSdkVersion = "2.46.10"
+def pgjdbcVersion = "42.7.13"
+
+dependencies {
+    implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
+    implementation("software.amazon.jdbc:aws-advanced-jdbc-wrapper:${awsJdbcWrapperVersion}")
+    // The wrapper declares its SDK deps optional: rds signs the IAM token, sts backs
+    // the web-identity (IRSA) credentials, url-connection-client is the HTTP client.
+    implementation("software.amazon.awssdk:rds")
+    implementation("software.amazon.awssdk:sts")
+    implementation("software.amazon.awssdk:url-connection-client")
+    // Replaces the base image's pgjdbc 42.2.x; the wrapper targets 42.7.
+    implementation("org.postgresql:postgresql:${pgjdbcVersion}")
+}
+
+configurations.runtimeClasspath {
+    // The SDK refuses to choose between several HTTP clients, and Hive ships slf4j.
+    exclude group: "software.amazon.awssdk", module: "apache-client"
+    exclude group: "software.amazon.awssdk", module: "apache5-client"
+    exclude group: "software.amazon.awssdk", module: "netty-nio-client"
+    exclude group: "org.slf4j"
+}
+
+tasks.register('copyJars', Copy) {
+    from configurations.runtimeClasspath
+    into layout.buildDirectory.dir('jars')
+    // The base image runs a Java 8 JRE: fail the build on any class newer than 52.
+    doLast {
+        def tooNew = []
+        destinationDir.eachFileMatch(~/.*\.jar/) { jar ->
+            new java.util.zip.ZipFile(jar).withCloseable { zip ->
+                zip.entries().findAll {
+                    it.name.endsWith('.class') && !it.name.startsWith('META-INF/') && !it.name.endsWith('module-info.class')
+                }.each { entry ->
+                    zip.getInputStream(entry).withCloseable { stream ->
+                        def header = new DataInputStream(stream)
+                        header.readInt()
+                        header.readUnsignedShort()
+                        if (header.readUnsignedShort() > 52) {
+                            tooNew << "${jar.name}!${entry.name}"
+                        }
+                    }
+                }
+            }
+        }
+        if (tooNew) {
+            throw new GradleException("classes newer than Java 8: ${tooNew.take(5)}")
+        }
+    }
+}
