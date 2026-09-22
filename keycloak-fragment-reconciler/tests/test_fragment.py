@@ -259,6 +259,19 @@ class TestRoleClaimIsConstrained:
         with pytest.raises(FragmentError, match="reserved claim"):
             parse(with_fields(f"    roleClaim: {claim}"))
 
+    @pytest.mark.parametrize(
+        "claim", ["realm_access.roles", "resource_access.trino.roles"]
+    )
+    def test_a_path_into_a_reserved_claim_is_rejected(self, claim):
+        """Keycloak splits a mapper's `claim.name` on dots and builds a nested
+        object, so a dotted name lands inside the claim it starts with."""
+        with pytest.raises(FragmentError, match="reserved claim"):
+            parse(with_fields(f"    roleClaim: {claim}"))
+
+    @pytest.mark.parametrize("claim", ["groups", "hello-roles"])
+    def test_a_name_of_its_own_is_accepted(self, claim):
+        assert parsed(with_fields(f"    roleClaim: {claim}")).role_claim == claim
+
     def test_groups_is_the_default_and_needs_no_field(self):
         assert "groups" not in RESERVED_CLAIMS
         assert "roleClaim" not in fragment_text()

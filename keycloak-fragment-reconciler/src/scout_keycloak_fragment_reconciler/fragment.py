@@ -122,10 +122,12 @@ class ClientSpec(BaseModel):
 
     @model_validator(mode="after")
     def _check_role_claim(self) -> ClientSpec:
-        if self.role_claim in RESERVED_CLAIMS:
+        root = self.role_claim.split(".", 1)[0]
+        if root in RESERVED_CLAIMS:
             raise ValueError(
-                f"roleClaim {self.role_claim!r} is a reserved claim; "
-                "a fragment may not overwrite it (omit roleClaim for 'groups')"
+                f"roleClaim {self.role_claim!r} writes into {root!r}, a reserved "
+                "claim; a fragment may not overwrite it "
+                "(omit roleClaim for 'groups')"
             )
         return self
 
