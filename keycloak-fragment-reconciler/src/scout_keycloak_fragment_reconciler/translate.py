@@ -59,8 +59,12 @@ def client_representation(spec: ClientSpec, *, secret: str, source: str) -> dict
         "enabled": True,
         "protocol": PROTOCOL,
         "publicClient": False,
+        "bearerOnly": False,
         "clientAuthenticatorType": "client-secret",
         "secret": secret,
+        # A fragment has no syntax for consent, and an app's own login prompt is
+        # not where Scout asks for it.
+        "consentRequired": False,
         "fullScopeAllowed": False,
         # The browser code flow, on for every fragment. Set explicitly rather
         # than left to Keycloak's default so that a flow turned off in the admin
@@ -139,6 +143,9 @@ MANAGED_FIELDS = (
     "enabled",
     "protocol",
     "publicClient",
+    "bearerOnly",
+    "clientAuthenticatorType",
+    "consentRequired",
     "fullScopeAllowed",
     "standardFlowEnabled",
     "implicitFlowEnabled",

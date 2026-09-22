@@ -6,8 +6,10 @@
       "scout.fragment.reconciler": "true",
       "scout.fragment.source": "demo/hello-keycloak"
     },
+    "bearerOnly": false,
     "clientAuthenticatorType": "client-secret",
     "clientId": "hello",
+    "consentRequired": false,
     "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "basic", "email"],
     "description": "the fragment demo app",
     "directAccessGrantsEnabled": false,

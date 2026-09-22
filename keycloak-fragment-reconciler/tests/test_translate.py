@@ -166,6 +166,22 @@ class TestDrift:
         live = {**desired, "fullScopeAllowed": True}
         assert "fullScopeAllowed" in translate.client_drift(live, desired)
 
+    @pytest.mark.parametrize(
+        "field, tampered",
+        [
+            ("clientAuthenticatorType", "client-jwt"),
+            ("bearerOnly", True),
+            ("consentRequired", True),
+        ],
+    )
+    def test_how_the_client_authenticates_and_consents_is_drift(self, field, tampered):
+        """Each of these breaks login or the app's `client_secret` auth while
+        leaving the secret itself intact, so nothing else would notice."""
+        desired = rendered(fragment_text())["client"]
+        assert field in desired
+        live = {**desired, field: tampered}
+        assert field in translate.client_drift(live, desired)
+
     def test_a_lost_stamp_is_drift(self):
         desired = rendered(fragment_text())["client"]
         live = {**desired, "attributes": {}}

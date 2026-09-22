@@ -6,8 +6,10 @@
       "scout.fragment.reconciler": "true",
       "scout.fragment.source": "demo/hello-keycloak"
     },
+    "bearerOnly": false,
     "clientAuthenticatorType": "client-secret",
     "clientId": "minimal",
+    "consentRequired": false,
     "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "basic", "email"],
     "description": "",
     "directAccessGrantsEnabled": false,
