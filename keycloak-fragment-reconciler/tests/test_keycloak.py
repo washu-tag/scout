@@ -195,3 +195,47 @@ def test_a_transport_failure_on_the_retry_is_classified():
     with pytest.raises(KeycloakError) as raised:
         admin(http).list_clients()
     assert raised.value.status == 0
+
+
+# --- creating a client --------------------------------------------------
+
+
+def created(location: str | None) -> httpx.Response:
+    headers = {"Location": location} if location is not None else {}
+    return httpx.Response(201, headers=headers)
+
+
+def test_the_new_uuid_comes_from_the_location_header():
+    """One round trip, and no read-back that could transiently miss."""
+    http = FakeHttp(
+        responses=[created(f"{BASE}/admin/realms/scout/clients/uuid-42")],
+    )
+    client = admin(http)
+    assert client.create_client({"clientId": "hello"}) == "uuid-42"
+    assert [sent.method for sent in http.requests] == ["POST"]
+
+
+def test_a_location_less_creation_falls_back_to_the_read_back():
+    http = FakeHttp(
+        responses=[
+            created(None),
+            httpx.Response(200, json=[{"clientId": "hello", "id": "uuid-7"}]),
+        ],
+    )
+    client = admin(http)
+    assert client.create_client({"clientId": "hello"}) == "uuid-7"
+    assert [sent.method for sent in http.requests] == ["POST", "GET"]
+
+
+def test_a_read_back_that_finds_nothing_is_an_error():
+    http = FakeHttp(responses=[created(None), httpx.Response(200, json=[])])
+    with pytest.raises(KeycloakError):
+        admin(http).create_client({"clientId": "hello"})
+
+
+def test_a_rejected_representation_surfaces_its_status():
+    http = FakeHttp(responses=[httpx.Response(400, text="bad redirectUri")])
+    with pytest.raises(KeycloakError) as raised:
+        admin(http).create_client({"clientId": "hello"})
+    assert raised.value.status == 400
+    assert not raised.value.retryable

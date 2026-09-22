@@ -60,6 +60,13 @@ def _seg(value: str) -> str:
     return urllib.parse.quote(value, safe="")
 
 
+def _uuid_from_location(location: str) -> str:
+    """The uuid a creation's `Location` header ends in, or "" if it has none."""
+    path = urllib.parse.urlparse(location).path.rstrip("/")
+    _, sep, uuid = path.rpartition("/clients/")
+    return uuid if sep and "/" not in uuid else ""
+
+
 class KeycloakError(RuntimeError):
     def __init__(self, status: int, message: str):
         super().__init__(f"keycloak admin API {status}: {message}")
@@ -161,12 +168,18 @@ class Admin:
         # token because they are not in the client's scope.
         return self._send(method, url, json, force_token=True)
 
-    def _request(self, method: str, path: str, *, json: object = None) -> object:
+    def _checked(
+        self, method: str, path: str, *, json: object = None
+    ) -> httpx.Response:
         response = self._call(method, self._admin(path), json=json)
         if response.status_code >= 400:
             raise KeycloakError(
                 response.status_code, response.text[:ERROR_EXCERPT_CHARS]
             )
+        return response
+
+    def _request(self, method: str, path: str, *, json: object = None) -> object:
+        response = self._checked(method, path, json=json)
         if not response.content:
             return None
         return _decoded(response, f"{method} {path}")
@@ -214,10 +227,15 @@ class Admin:
     def create_client(self, representation: dict) -> str:
         """Create, and return the new client's uuid.
 
-        Keycloak answers 201 with a Location header and no body, so the uuid
-        comes from a read-back rather than the response.
+        Keycloak answers 201 with no body and a Location header ending in the
+        uuid. The read-back is only for a response that carries no usable
+        Location: it costs a round trip, and it can transiently miss a client
+        that was in fact created, which would fail an apply that succeeded.
         """
-        self._request("POST", "/clients", json=representation)
+        response = self._checked("POST", "/clients", json=representation)
+        uuid = _uuid_from_location(response.headers.get("Location", ""))
+        if uuid:
+            return uuid
         created = self.find_client(representation["clientId"])
         if not created:
             raise KeycloakError(
