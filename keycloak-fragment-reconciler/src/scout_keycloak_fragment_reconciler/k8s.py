@@ -50,7 +50,8 @@ class ApiError(RuntimeError):
 
 
 class TransportError(ApiError):
-    """The request never reached an answer: DNS, connect, TLS, or a timeout.
+    """The request never reached an answer: no token to send, DNS, connect,
+    TLS, or a timeout.
 
     Status 0 collides with no HTTP status, so `exc.status == 404` still means
     exactly a 404. The distinction matters because GC may only infer an orphan
@@ -61,6 +62,23 @@ class TransportError(ApiError):
     def __init__(self, message: str):
         RuntimeError.__init__(self, f"kubernetes API unreachable: {message}")
         self.status = 0
+
+
+def _decoded(response: httpx.Response, context: str) -> dict:
+    """The body as JSON, with a decode failure classified like any other.
+
+    A `ValueError` is what an undecodable body raises, and no handler between
+    here and the run loop narrows to it, so unclassified it would end the pass
+    rather than the one fragment. It carries the answer's own status rather
+    than 0, because an answer did arrive: a garbled LIST is a read that failed,
+    not a read that could not be made.
+    """
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise ApiError(
+            response.status_code, f"{context}: body is not JSON: {exc}"
+        ) from None
 
 
 def value_of(secret: dict | None, key: str) -> tuple[str | None, str]:
@@ -103,8 +121,15 @@ class Client:
 
     def _headers(self) -> dict[str, str]:
         # Projected service-account tokens rotate; read on every call rather
-        # than caching one that expires mid-session.
-        token = TOKEN_PATH.read_text(encoding="utf-8").strip()
+        # than caching one that expires mid-session. An unreadable file is
+        # classified rather than raised as an `OSError`, which is no
+        # `httpx.HTTPError` and would escape every handler downstream.
+        try:
+            token = TOKEN_PATH.read_text(encoding="utf-8").strip()
+        except OSError as exc:
+            raise TransportError(
+                f"the service-account token at {TOKEN_PATH} is unreadable: {exc}"
+            ) from None
         return {"Authorization": f"Bearer {token}"}
 
     def request(self, method: str, path: str, *, json: object = None) -> dict:
@@ -118,7 +143,7 @@ class Client:
             raise ApiError(response.status_code, response.text[:ERROR_EXCERPT_CHARS])
         if not response.content:
             return {}
-        return response.json()
+        return _decoded(response, f"{method} {path}")
 
     def _get(self, path: str) -> dict | None:
         """A read where absence is an answer, not an error."""
