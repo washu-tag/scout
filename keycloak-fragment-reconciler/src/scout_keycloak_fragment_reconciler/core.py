@@ -184,6 +184,9 @@ class Reconciler:
         claims: list[Claim] = []
         data = item.get("data") or {}
         if not data:
+            # No document at all, so nothing says which clients this ConfigMap
+            # was about: the same epistemic state as one that will not parse.
+            snapshot.unparsable_sources.add(source)
             snapshot.outcomes.append(
                 Outcome(source, "", INVALID, "the ConfigMap has no data")
             )

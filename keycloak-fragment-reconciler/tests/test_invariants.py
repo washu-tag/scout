@@ -6,6 +6,7 @@ keep a write log rather than only modelling state.
 
 from __future__ import annotations
 
+import base64
 import logging
 
 import pytest
@@ -219,6 +220,41 @@ class TestInvalidityDoesNotRemove:
         snapshot = reconciler.take_snapshot()
         reconciler.collect(snapshot, now=1000.0)
         reconciler.collect(snapshot, now=1000.0 + 10_000)
+
+        assert kc.find_client("hello") is not None
+
+    def test_a_configmap_emptied_of_data_keeps_its_client(self, reconciler, kc, k8s):
+        """A rendering that produced no `data` says nothing about which client
+        the ConfigMap was about -- the same epistemic state as a document that
+        does not parse, so the client is kept until the fragment is fixed."""
+        reconciler.reconcile_once()
+        item = k8s.get_configmap("demo", "hello-keycloak")
+        item["data"] = {}
+        k8s.configmaps = [item]
+
+        snapshot = reconciler.take_snapshot()
+        for now in (0.0, reconciler.settings.orphan_grace_seconds + 1):
+            reconciler.collect(snapshot, now=now)
+
+        assert kc.find_client("hello") is not None
+        assert not [w for w in kc.writes if w.startswith("delete_client")]
+
+    def test_a_fragment_shipped_under_binarydata_keeps_its_client(
+        self, reconciler, kc, k8s
+    ):
+        """The same state reached the other way: the document is there, under a
+        key this service does not read, so it declares nothing it can see."""
+        reconciler.reconcile_once()
+        item = k8s.get_configmap("demo", "hello-keycloak")
+        item["binaryData"] = {
+            "fragment.yaml": base64.b64encode(fragment_text().encode()).decode()
+        }
+        del item["data"]
+        k8s.configmaps = [item]
+
+        snapshot = reconciler.take_snapshot()
+        for now in (0.0, reconciler.settings.orphan_grace_seconds + 1):
+            reconciler.collect(snapshot, now=now)
 
         assert kc.find_client("hello") is not None
 
