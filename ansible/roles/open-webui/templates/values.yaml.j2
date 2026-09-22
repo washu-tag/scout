@@ -280,6 +280,10 @@ extraEnvVars:
   - name: ENABLE_INITIAL_ADMIN_SIGNUP
     value: 'true'
 
+  # Off stops the GitHub poll behind the Settings > About link and update toast.
+  - name: ENABLE_VERSION_UPDATE_CHECK
+    value: '{{ open_webui_enable_version_update_check | bool | string | lower }}'
+
   - name: ENABLE_CONTEXT_COMPACTION
     value: '{{ open_webui_context_compaction_enabled | string | lower }}'
   - name: CONTEXT_COMPACTION_TOKEN_THRESHOLD

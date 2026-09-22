@@ -186,6 +186,10 @@ tool_server_connections: []
 # Disable Arena Model evaluation feature (per README post-deploy step 7)
 open_webui_enable_arena_models: false
 
+# OWUI's own release notes, both off by default (see README).
+open_webui_show_release_notes: false
+open_webui_enable_version_update_check: false
+
 # Default selected model in the picker for new chats. MUST match an Ollama tag
 # exactly — point this at whichever Scout Explorer variant should be the default
 # first impression. The default `gemma4-31b-long` is resident, dense, no thinking-
@@ -260,11 +264,14 @@ open_webui_filter_functions:
       internal_domains: '{{ open_webui_link_sanitizer_internal_domains }}'
 
 open_webui_event_functions:
-  - id: scout_iframe_defaults_event
-    name: Scout Iframe Defaults
-    description: Forces the report-viewer iframe-sandbox UI flags on for every user (ADR 0029).
-    source_file: scout_iframe_defaults_event.py
+  - id: scout_ui_defaults_event
+    name: Scout UI Defaults
+    description: Forces Scout's per-user OWUI interface settings for every user (ADR 0029).
+    source_file: scout_ui_defaults_event.py
     enable_active: true
+    valves:
+      show_release_notes: '{{ open_webui_show_release_notes | bool | string | lower }}'
+      show_update_toast: '{{ open_webui_enable_version_update_check | bool | string | lower }}'
 
 open_webui_tool_functions:
   - id: scout_report_viewer_tool
