@@ -7,16 +7,13 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 ENV_PREFIX = "KEYCLOAK_FRAGMENT_RECONCILER_"
 
-# The label that makes a ConfigMap a fragment, mirroring ADR 0034's chip label.
 FRAGMENT_LABEL = "keycloak.scout.xnat.org/fragment"
 
-# The one watched_namespaces entry that is not a namespace name. Kubernetes
-# namespace names are lowercase, so it cannot collide with a real one.
+# Kubernetes namespace names are lowercase, so this cannot collide with one.
 WATCH_ALL = "ALL"
 
-# pydantic-settings JSON-decodes list-typed fields out of the environment
-# before validators run, and raises if that fails. These take the
-# comma-separated form a Helm template renders naturally instead.
+# pydantic-settings JSON-decodes list-typed fields out of the environment;
+# these take the comma-separated form a Helm template renders instead.
 CommaList = Annotated[list[str], NoDecode]
 
 
@@ -32,9 +29,8 @@ class Settings(BaseSettings):
     client_secret: str = ""
 
     # --- What a fragment may ask for ------------------------------------
-    # Grant targets are checked against this list rather than against any realm
-    # role: otherwise a fragment could name `default-roles-scout` and hand its
-    # role to every user in the realm.
+    # An allowlist, not any realm role: a fragment naming `default-roles-scout`
+    # would otherwise hand its role to every user in the realm.
     tier_roles: CommaList = ["scout-user", "scout-admin"]
     # Redirect URIs and app URLs must sit under this host, or a fragment's
     # client becomes a token-exfiltration redirect.
@@ -42,36 +38,23 @@ class Settings(BaseSettings):
 
     # --- Discovery ------------------------------------------------------
     fragment_label: str = FRAGMENT_LABEL
-    # Namespace names, or the lone value `ALL` for every namespace. Empty means
-    # none, and is the default so that an unconfigured install reconciles
-    # nothing rather than everything -- the chart withholds the cluster read
-    # grant to match, so this is the one setting that is a permission boundary
-    # as well as a read filter. Once non-empty it is only a read filter, the
-    # grant being cluster-wide either way. Garbage collection is scoped to the
-    # same list, so narrowing it leaves the clients it stops covering alone
-    # rather than reading them as deleted.
+    # Namespace names, or the lone `WATCH_ALL`. Empty means none, so an
+    # unconfigured install reconciles nothing rather than everything.
     watched_namespaces: CommaList = []
 
     # --- Timing ---------------------------------------------------------
-    # How often to re-read everything and repair what nothing reported: a
-    # rotated credential, an admin-console edit, a reaped tier edge. -1 removes
-    # the timer entirely and parks on the watch, so the realm is only ever
-    # re-read when a fragment changes -- an orphan's grace period still comes
-    # due, but drift is not looked for until something wakes the loop.
+    # Drift repair for what nothing reports: a rotated credential, an
+    # admin-console edit, a reaped tier edge. Non-positive parks on the watch.
     resync_seconds: int = Field(default=300, ge=-1)
     # Absence tolerated before a fragment's client is deleted. Held in memory,
-    # so a restart restarts the clock -- a floor rather than a guarantee. Bias
-    # long: deleting early is an outage for a running app, while waiting leaves
-    # an inert client only a departed app could have used.
+    # so a restart restarts the clock -- a floor, not a guarantee.
     orphan_grace_seconds: int = Field(default=300, ge=0)
     # A watch fires once per object written, so a burst lands together.
     debounce_seconds: float = Field(default=2.0, ge=0)
 
     # --- Process --------------------------------------------------------
-    # Non-privileged: the pod runs as uid 65532, and the probes hit a fixed
-    # containerPort, so an ephemeral 0 would never go Ready.
+    # The probes hit a fixed containerPort, and the pod runs as uid 65532.
     port: int = Field(default=8080, ge=1024, le=65535)
-    # Log every write that would happen and perform none of them.
     dry_run: bool = False
 
     @field_validator("tier_roles", "watched_namespaces", mode="before")
@@ -117,8 +100,8 @@ class Settings(BaseSettings):
         return self.watches_all or namespace in self.watched_namespaces
 
     def __init__(self, **values: object) -> None:
-        # A misconfigured pod should name the wrong variable and stop, not
-        # print a pydantic traceback.
+        # A misconfigured pod should name the wrong variable, not print a
+        # pydantic traceback.
         try:
             super().__init__(**values)
         except ValidationError as exc:
