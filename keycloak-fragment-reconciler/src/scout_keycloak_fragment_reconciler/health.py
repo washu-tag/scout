@@ -75,20 +75,26 @@ def handler_for(
     ready: Callable[[], bool], metrics: Callable[[], str]
 ) -> type[BaseHTTPRequestHandler]:
     class _Handler(Handler):
+        def response_for(self, path: str) -> tuple[int, bytes, str]:
+            if path == "/healthz":
+                return 200, b"ok", "text/plain"
+            if path == "/readyz":
+                if ready():
+                    return 200, b"ready", "text/plain"
+                return 503, b"tier realm roles not found in the realm", "text/plain"
+            if path == "/metrics":
+                return 200, metrics().encode("utf-8"), CONTENT_TYPE_LATEST
+            return 404, b"not found", "text/plain"
+
         def do_GET(self):
             self.drain()
             path = self.path_only()
-            if path == "/healthz":
-                self.reply(200, b"ok")
-            elif path == "/readyz":
-                if ready():
-                    self.reply(200, b"ready")
-                else:
-                    self.reply(503, b"tier realm roles not found in the realm")
-            elif path == "/metrics":
-                self.reply(200, metrics().encode("utf-8"), CONTENT_TYPE_LATEST)
-            else:
-                self.reply(404, b"not found")
+            try:
+                code, body, content_type = self.response_for(path)
+            except Exception:
+                log.exception("GET %s failed", path)
+                code, body, content_type = 500, b"internal error", "text/plain"
+            self.reply(code, body, content_type)
 
     return _Handler
 
