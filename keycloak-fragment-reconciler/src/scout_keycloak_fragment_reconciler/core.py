@@ -431,9 +431,9 @@ class Reconciler:
                     )
                 uuid = live["id"]
                 self._update(uuid, live, desired, secret)
-            new_roles = self._reconcile_roles(uuid, spec)
+            roles, new_roles = self._reconcile_roles(uuid, spec)
             self._reconcile_mappers(uuid, spec)
-            self._reconcile_tier_edges(uuid, spec, new_roles=new_roles)
+            self._reconcile_tier_edges(uuid, spec, roles=roles, new_roles=new_roles)
         except KeycloakError as exc:
             level = log.warning if exc.retryable else log.error
             level("applying %s failed: %s", spec.client_id, exc)
@@ -497,26 +497,37 @@ class Reconciler:
             log.warning("could not read back client secret for %s: %s", uuid, exc)
             return False
 
-    def _reconcile_roles(self, uuid: str, spec: ClientSpec) -> set[str]:
-        """Returns the roles this pass created, which tier edges then need.
+    def _reconcile_roles(
+        self, uuid: str, spec: ClientSpec
+    ) -> tuple[dict[str, dict], set[str]]:
+        """Returns the client's roles by name, and the ones this pass created.
 
-        A role that did not exist a moment ago cannot have had an edge to it
-        reaped, so its first grant is routine rather than drift.
+        Tier edges are written by role id and diff against the same collection,
+        so they take this view rather than reading it again. A role created here
+        has no id until something looks, which is the one case that re-reads.
+
+        The created set separates the two reasons an edge can be missing: a role
+        that did not exist a moment ago cannot have had an edge to it reaped, so
+        its first grant is routine rather than drift.
         """
-        live = {role["name"] for role in self.admin.client_roles(uuid)}
+        live = {role["name"]: role for role in self.admin.client_roles(uuid)}
         desired = {role["name"] for role in translate.role_representations(spec)}
-        for name in sorted(desired - live):
+        created = desired - set(live)
+        for name in sorted(created):
             self._write(
                 f"create role {name} on {spec.client_id}",
                 partial(self.admin.create_client_role, uuid, {"name": name}),
             )
-        for name in sorted(live - desired):
+        for name in sorted(set(live) - desired):
             # Safe: the client exists only because of this fragment.
             self._write(
                 f"remove role {name} from {spec.client_id}",
                 partial(self.admin.delete_client_role, uuid, name),
             )
-        return desired - live
+        if created:
+            live = {role["name"]: role for role in self.admin.client_roles(uuid)}
+            return live, created
+        return {name: role for name, role in live.items() if name in desired}, created
 
     def _reconcile_mappers(self, uuid: str, spec: ClientSpec) -> None:
         live = self.admin.protocol_mappers(uuid)
@@ -540,7 +551,12 @@ class Reconciler:
             )
 
     def _reconcile_tier_edges(
-        self, uuid: str, spec: ClientSpec, *, new_roles: set[str]
+        self,
+        uuid: str,
+        spec: ClientSpec,
+        *,
+        roles: dict[str, dict],
+        new_roles: set[str],
     ) -> None:
         """Last, because an edge is what makes a role reach a user.
 
@@ -557,14 +573,13 @@ class Reconciler:
         genuinely ambiguous case, and still reads as drift. A false alarm costs
         a log line; a missed one costs a silent 403.
         """
-        roles_by_name = {r["name"]: r for r in self.admin.client_roles(uuid)}
         wanted = translate.tier_edges(spec)
         for tier in self.settings.tier_roles:
             want = set(wanted.get(tier, []))
             have = {
                 edge["name"] for edge in self.admin.tier_edges_for_client(tier, uuid)
             }
-            add = [roles_by_name[n] for n in sorted(want - have) if n in roles_by_name]
+            add = [roles[n] for n in sorted(want - have) if n in roles]
             drop = sorted(have - want)
             if add:
                 names = ", ".join(r["name"] for r in add)
@@ -592,7 +607,7 @@ class Reconciler:
                     partial(
                         self.admin.remove_tier_edges,
                         tier,
-                        [{"id": roles_by_name[n]["id"], "name": n} for n in drop],
+                        [{"id": roles[n]["id"], "name": n} for n in drop],
                     ),
                 )
 

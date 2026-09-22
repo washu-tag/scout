@@ -89,6 +89,33 @@ class TestSteadyStateCost:
         assert kc.calls["find_client"] == before
         assert kc.calls["list_clients"] == 2
 
+    def test_the_client_roles_are_read_once(self, reconciler, kc):
+        """Tier edges diff against the same collection the role reconcile
+        already read, and only re-read it when that reconcile created a role
+        whose id nothing knows yet."""
+        reconciler.reconcile_once()
+        before = kc.calls["client_roles"]
+
+        reconciler.reconcile_once()
+
+        assert kc.calls["client_roles"] - before == 1
+
+    def test_a_newly_created_role_still_gets_its_edge(self, reconciler, kc, k8s):
+        """The re-read that costs: a role created this pass has no id until
+        something looks, and an edge is written by id."""
+        reconciler.reconcile_once()
+        k8s.add_fragment(
+            fragment_text()
+            .replace("      - hello-admin", "      - hello-admin\n      - hello-viewer")
+            .replace(
+                "scout-user: [hello-user]", "scout-user: [hello-user, hello-viewer]"
+            )
+        )
+
+        reconciler.reconcile_once()
+
+        assert kc.edges("scout-user") == {"hello-user", "hello-viewer"}
+
     def test_an_unlistable_realm_is_still_applied_against(self, reconciler, kc):
         """There is not always a listing to reuse -- GC returns before it lists
         when `list_clients` fails -- so the apply falls back to fetching, and
