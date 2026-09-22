@@ -173,9 +173,6 @@ class Client:
         result = self.request("GET", f"/api/v1/configmaps?{query}")
         return result.get("items", [])
 
-    def get_configmap(self, namespace: str, name: str) -> dict | None:
-        return self._get(f"/api/v1/namespaces/{namespace}/configmaps/{name}")
-
     def collection_version(self, label_selector: str) -> str:
         """The resourceVersion to start a watch from.
 
