@@ -559,19 +559,18 @@ class TestPreconditions:
         assert kc.calls["realm_role"] == before
         assert reconciler.tiers_present
 
-    def test_a_tier_role_deleted_under_us_is_noticed(self, reconciler, kc, monkeypatch):
+    def test_a_tier_role_deleted_under_us_is_noticed(self, reconciler, kc):
         """The cache is a rate limit, not a decision: `/readyz` reports this,
         and a tier role that genuinely went away has to stop being reported as
         present."""
-        clock = [1000.0]
-        monkeypatch.setattr(core.time, "monotonic", lambda: clock[0])
         reconciler.reconcile_once()
 
         del kc.realm_roles["scout-user"]
         reconciler.reconcile_once()
         assert reconciler.tiers_present, "re-read inside the interval"
 
-        clock[0] += core.TIER_RECHECK_SECONDS + 1
+        # The recheck interval, elapsed.
+        reconciler._tiers_trusted_until -= core.TIER_RECHECK_SECONDS + 1
         reconciler.reconcile_once()
 
         assert not reconciler.tiers_present
@@ -834,7 +833,7 @@ class TestGarbageCollection:
         assert deadline is not None and deadline <= 301
 
     def test_resync_disabled_still_collects_an_edited_away_client(
-        self, settings, k8s, kc, monkeypatch
+        self, settings, k8s, kc
     ):
         """Dropping one client from a fragment that stays put is a MODIFIED
         event, so nothing witnesses a deletion and there is no timer behind it.
@@ -842,8 +841,8 @@ class TestGarbageCollection:
         started the clock has to book the wake that finishes it.
 
         Driven through the real scheduler: each iteration is a pass, and the
-        clock advances by exactly the wait `next_wait` asked for. If it ever
-        returns None here, the loop would park forever.
+        grace clock advances by exactly the wait `next_wait` asked for. If it
+        ever returns None here, the loop would park forever.
         """
         settings.resync_seconds = -1
         item = k8s.get_configmap("demo", "hello-keycloak")
@@ -855,7 +854,6 @@ class TestGarbageCollection:
         assert kc.find_client("second") is not None
 
         clock = [0.0]
-        monkeypatch.setattr(core.time, "monotonic", lambda: clock[0])
         del item["data"]["second.yaml"]
 
         waits = []
