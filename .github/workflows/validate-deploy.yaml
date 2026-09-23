@@ -80,7 +80,9 @@ jobs:
           check 0 "$H_PROP" "$H_VAL" $H --set mode=aws,sseType=NONE
           check 0 "$H_PROP" "$H_VAL" $H --set mode=on-prem,sseType=S3
           for c in "$T --set $TSET,sparkDefaults.mode=aws,sparkDefaults.sseType=KMS" "$H --set mode=aws,sseType=KMS"; do
-            if helm template t $c >/dev/null 2>&1; then echo "::error::unknown sseType rendered: $c"; fail=1; else echo "  ok   rejects KMS: ${c%% *}"; fi
+            if err=$(helm template t $c 2>&1 >/dev/null) || ! grep -q 'sseType must be' <<<"$err"; then
+              echo "::error::unknown sseType not rejected by the sseType guard: $c"; fail=1
+            else echo "  ok   rejects KMS: ${c%% *}"; fi
           done
           exit $fail
 
