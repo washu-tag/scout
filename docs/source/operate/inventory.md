@@ -990,11 +990,11 @@ xnat_site_id: scout-xnat
 # Namespace where XNAT is deployed (default: xnat)
 xnat_namespace: xnat
 
-# XNAT Helm chart version to deploy from GHCR (default: 2.0.0)
-xnat_chart_version: 2.0.0
+# XNAT Helm chart version to deploy from GHCR (default: 3.3.0)
+xnat_chart_version: 3.3.0
 
-# ghcr.io/nrgxnat/xnat image tag (default: 1.10.1-SNAPSHOT)
-xnat_image_tag: '1.10.1-SNAPSHOT'
+# ghcr.io/nrgxnat/xnat image tag (default: 1.10.1)
+xnat_image_tag: '1.10.1'
 
 # XNAT image repository. GHCR only; the Docker Hub xnatworks/xnat-web images
 # are no longer used (default: ghcr.io/nrgxnat/xnat)
