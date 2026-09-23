@@ -29,6 +29,8 @@ ingress:
       kube-system-security-headers@kubernetescrd
 ```
 
+Note that the `kube-system` part of the name is the namespace in which OAuth2 Proxy is deployed. If your site has customized that namespace, the Middleware name will be different, and you should substitute your site's OAuth2 PRoxy namespace for `kube-system`.
+
 :::{note}
 If your app requires any endpoints to be unauthenticated (e.g. favicons, any public pages), you will need to define a second Ingress for those specific paths without these middlewares. See, for example, Launchpad's [favicon-ingress.yaml](https://github.com/washu-tag/scout/tree/main/helm/launchpad/templates/favicon-ingress.yaml).
 :::
