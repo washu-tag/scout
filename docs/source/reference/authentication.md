@@ -13,6 +13,10 @@ Authentication (who you _are_) is distinct from Authorization (what you can _do_
 | OAuth2 Proxy | Sits in front of every service, sending users without a session to Keycloak, letting approved Scout users pass, and showing unapproved users a 403 page | Traefik (the reverse proxy) |
 | Each service's own Keycloak client | Defines roles that service understands | that service |
 
+:::{note}
+OAuth2 Proxy, the Traefik ingress, and the approval gate described on this page are how Scout works in its on-prem deployment mode. In aws mode, AWS ALB Ingresses authenticate users against Keycloak directly with ALB-native OIDC. There is no OAuth2 Proxy and no approval gate at the edge, so any user who can log in to the realm reaches the services. Keycloak, the per-service clients, tokens, and the groups and roles described below are the same in both modes.
+:::
+
 Here is an example diagram showing the auth flow for a request that arrives at Scout's "ingress", for a user who intends to navigate to Superset.
 
 ```

@@ -4,6 +4,16 @@ This code serves as a reference implementation for a Scout Pluggable App. It is 
 
 This chart and the app is intentionally not installed in any production Scout. It can be deployed as a development aid, but its primary purpose is as a reference for pluggable app authors.
 
+## On-prem only
+
+This chart assumes a Scout deployed in on-prem mode, where Traefik is the ingress controller and OAuth2 Proxy gates every request through Traefik forwardAuth Middlewares. Three parts of the chart depend on that:
+
+- The Middleware annotations in `values.yaml`, which put the app behind OAuth2 Proxy.
+- The `X-Auth-Request-Preferred-Username` header `files/app.py` reads, which OAuth2 Proxy sets.
+- `templates/networkpolicy.yaml`, which admits traffic only from Traefik.
+
+In aws mode, Scout's services sit behind AWS ALB Ingresses using ALB-native OIDC instead. None of those Middlewares exist and no identity header is set, so this chart's Ingress will not work there. The launchpad chip, Keycloak fragment, client Secret, and RBAC do not depend on the edge and work the same in either mode.
+
 ## Pluggable App components
 
 All the components that make a Helm chart into a Pluggable App. For more on each of these, see the docs on [Customizing and Extending Scout](https://washu-scout.readthedocs.io/en/latest/customize/index.html).

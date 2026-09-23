@@ -4,6 +4,12 @@ Your Pluggable App likely needs to authenticate Scout users and know what permis
 
 This page assumes you've read [Authentication Reference](../reference/authentication.md) first.
 
+:::{note}
+Section 1 and the identity header described there assume Scout's on-prem deployment mode, where Traefik is the ingress controller and OAuth2 Proxy is the login gate. In aws mode Scout uses AWS ALB Ingresses with ALB-native OIDC instead, and none of those Middlewares or headers exist. Everything from Section 2 onward works the same in either mode.
+
+The two modes also differ in what gets past the gate: on-prem, OAuth2 Proxy admits only approved users, but in aws mode any user who can log in to the realm is admitted. So don't rely on the gate to decide who may use your app. Authorize every user on the roles in your own token.
+:::
+
 ## Summary: What your Pluggable App needs to include
 
 | You write | Purpose |
@@ -264,7 +270,7 @@ The error statuses will be re-published every time the Reconciler resyncs and ch
 | --- | --- |
 | Client never appears in Keycloak | Missing or misnamed RBAC grant; wrong namespace in the RoleBinding |
 | `invalid_redirect_uri` at login | `redirectUris` does not exactly match your library's callback path |
-| Redirect loop, or your app never sees a login | Ingress middleware annotation missing or misordered |
+| Redirect loop, or your app never sees a login | (on-prem) Ingress middleware annotation missing or misordered |
 | `groups` claim is empty | User is in no tier you grant to, or not yet approved |
 | Administrators denied, ordinary users fine | Admin tier not granted your `-user` role |
 | `aud` mismatch validating a token | Requiring `aud` on an access token; check `azp` instead, or validate the ID token |
