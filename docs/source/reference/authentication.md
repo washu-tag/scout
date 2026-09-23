@@ -120,7 +120,7 @@ Administrators do this from the user console on the Scout launchpad. The same co
 
 ## Sessions and expiry
 
-Keycloak holds one SSO session per user; each service holds its own session on top of it. A service session must not outlive the Keycloak session that produced it, or it will hold credentials it can no longer refresh. Redeploying Keycloak ends every SSO session, so everyone logs in again.
+Keycloak holds one SSO session per user; each service holds its own session on top of it. A service session must not outlive the Keycloak session that produced it, or it will hold credentials it can no longer refresh. 
 
 ## Where authentication ends
 
