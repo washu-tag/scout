@@ -134,4 +134,4 @@ Scout's identity layer is standard OpenID Connect; nothing here is Scout-specifi
 | --- | --- |
 | [OAuth 2.0 Simplified](https://www.oauth.com/) | The friendliest walkthrough of the authorization code flow, tokens, and PKCE |
 | [How OpenID Connect Works](https://openid.net/developers/how-connect-works/) | Short, diagrammed introduction to OIDC and ID tokens |
-| [Keycloak: OIDC endpoints](https://www.keycloak.org/securing-apps/oidc-layers) | Every endpoint above, and why to validate tokens locally rather than by introspection |
+| [Keycloak: OIDC endpoints](https://www.keycloak.org/securing-apps/oidc-layers) | Keycloak's OIDC endpoints (authorization, token, JWKS, introspection, logout, and more) and the grant types it supports |
