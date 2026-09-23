@@ -54,7 +54,7 @@ kubectl describe cm -n scout-example example-pluggable-app-keycloak
 
 # Inspect the reconciler's logs to see if the fragment was received, 
 # read, and applied, or if an error occurred
-kubectl logs -n scout-core deploy/scout-keycloak-fragment-reconciler
+kubectl logs -n scout-core deploy/keycloak-fragment-reconciler
 ```
 
 ## Uninstall
