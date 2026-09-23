@@ -7,9 +7,11 @@ traefik_helm_job_timeout: 300
 
 # An upload ceiling, not a liveness check. readTimeout bounds reading the whole
 # request, body included, so multi-gigabyte uploads need far more headroom than
-# upstream's 60s default. Stalled transfers are Tomcat's job: its connector read
-# timeout is per-read, so it catches a dead client in seconds. Not 0s — Traefik
-# folds Go's header-read deadline into this same value.
+# upstream's 60s default. Entrypoint-wide — every service on websecure inherits it.
+# It is also all that bounds a half-open connection: Traefik has not routed a
+# request whose headers are still arriving, so no backend timeout can cover that.
+# Not 0s — that 60s default is the CVE-2024-28869 remediation, and Traefik folds
+# Go's header-read deadline into this same value.
 traefik_read_timeout: 4h
 
 traefik_embeddable_frame_ancestors: 'https://chat.{{ server_hostname }}'
