@@ -133,6 +133,48 @@ def test_an_empty_body_is_not_a_decode_failure(client):
     assert client(http).request("POST", "/api/v1/namespaces/demo/events") == {}
 
 
+# --- events -------------------------------------------------------------
+
+INVOLVED = {"metadata": {"namespace": "demo", "name": "hello-keycloak"}}
+
+
+def test_an_emitted_event_answers_its_name(client):
+    http = FakeHttp(
+        responses=[httpx.Response(201, json={"metadata": {"name": "hello.abc"}})]
+    )
+    name = client(http).emit_event(
+        involved=INVOLVED, reason="FragmentInvalid", message="m", timestamp="t"
+    )
+    assert name == "hello.abc"
+
+
+def test_a_lost_event_answers_none(client):
+    http = FakeHttp(responses=[httpx.Response(403, text="forbidden")])
+    name = client(http).emit_event(
+        involved=INVOLVED, reason="FragmentInvalid", message="m", timestamp="t"
+    )
+    assert name is None
+
+
+def test_a_repeat_is_a_merge_patch_of_count_and_last_timestamp(client):
+    http = FakeHttp()
+    assert client(http).repeat_event(
+        involved=INVOLVED, name="hello.abc", count=4, timestamp="t"
+    )
+    sent = http.requests[0]
+    assert sent.method == "PATCH"
+    assert sent.url.endswith("/api/v1/namespaces/demo/events/hello.abc")
+    assert sent.headers["Content-Type"] == "application/merge-patch+json"
+    assert sent.json == {"count": 4, "lastTimestamp": "t"}
+
+
+def test_a_repeat_of_an_expired_event_did_not_land(client):
+    http = FakeHttp(responses=[httpx.Response(404, text="not found")])
+    assert not client(http).repeat_event(
+        involved=INVOLVED, name="hello.abc", count=2, timestamp="t"
+    )
+
+
 # --- what an unclassified failure would cost -----------------------------
 
 

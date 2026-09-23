@@ -1,6 +1,6 @@
 """Just enough Kubernetes API for the reconciler.
 
-Deliberately not the official client. This needs four verbs on three resource
+Deliberately not the official client. This needs five verbs on three resource
 kinds, and hand-rolling them keeps the permission surface legible: every call
 the service can make is a function in this file, next to the RBAC that grants
 it.
@@ -132,10 +132,20 @@ class Client:
             ) from None
         return {"Authorization": f"Bearer {token}"}
 
-    def request(self, method: str, path: str, *, json: object = None) -> dict:
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json: object = None,
+        content_type: str | None = None,
+    ) -> dict:
+        headers = self._headers()
+        if content_type:
+            headers["Content-Type"] = content_type
         try:
             response = self._http.request(
-                method, f"{self.base}{path}", json=json, headers=self._headers()
+                method, f"{self.base}{path}", json=json, headers=headers
             )
         except httpx.HTTPError as exc:
             raise TransportError(f"{method} {path}: {exc}") from exc
@@ -216,6 +226,9 @@ class Client:
 
     # --- Events ----------------------------------------------------------
 
+    def _event_namespace(self, involved: dict) -> str:
+        return (involved.get("metadata") or {}).get("namespace") or self.namespace()
+
     def emit_event(
         self,
         *,
@@ -225,16 +238,16 @@ class Client:
         event_type: str = "Normal",
         component: str = "keycloak-fragment-reconciler",
         timestamp: str,
-    ) -> bool:
+    ) -> str | None:
         """Report one fragment's outcome against the ConfigMap it came from.
 
         Best-effort: failing to report must never fail the reconcile it was
-        reporting on. Answers whether the report landed, because an Event is
-        the only reporting channel there is and a caller that reports on change
-        only must not remember a lost one as reported.
+        reporting on. Answers the new Event's name, for `repeat_event`, or None
+        when the report did not land, so a caller never remembers a lost one as
+        reported.
         """
         meta = involved.get("metadata") or {}
-        namespace = meta.get("namespace") or self.namespace()
+        namespace = self._event_namespace(involved)
         body = {
             "apiVersion": "v1",
             "kind": "Event",
@@ -260,7 +273,9 @@ class Client:
             "count": 1,
         }
         try:
-            self.request("POST", f"/api/v1/namespaces/{namespace}/events", json=body)
+            created = self.request(
+                "POST", f"/api/v1/namespaces/{namespace}/events", json=body
+            )
         except ApiError as exc:
             log.warning(
                 "could not report %s on %s/%s: %s",
@@ -268,6 +283,29 @@ class Client:
                 namespace,
                 meta.get("name"),
                 exc,
+            )
+            return None
+        return (created.get("metadata") or {}).get("name", "")
+
+    def repeat_event(
+        self, *, involved: dict, name: str, count: int, timestamp: str
+    ) -> bool:
+        """Fold another occurrence into an existing Event, as the kubelet does.
+
+        Each write also restarts the Event's TTL. False when the write did not
+        land, including when the Event has already expired.
+        """
+        namespace = self._event_namespace(involved)
+        try:
+            self.request(
+                "PATCH",
+                f"/api/v1/namespaces/{namespace}/events/{name}",
+                json={"count": count, "lastTimestamp": timestamp},
+                content_type="application/merge-patch+json",
+            )
+        except ApiError as exc:
+            (log.debug if exc.status == 404 else log.warning)(
+                "could not repeat event %s/%s: %s", namespace, name, exc
             )
             return False
         return True

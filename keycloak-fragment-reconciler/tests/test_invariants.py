@@ -1197,11 +1197,8 @@ class TestThePublishedSnapshotKeepsOnlyWhatItNeeds:
 
 
 class TestEventsMarkTransitions:
-    """Events report changes, not heartbeats.
-
-    Each emission is its own object rather than an aggregated repeat, so
-    reporting every pass would bury a real failure under identical lines.
-    """
+    """A change is a new Event. A persisting error folds into its Event every
+    pass, so it outlives one Event TTL; "applied" is reported once."""
 
     def test_a_steady_state_reports_once(self, reconciler, k8s):
         reconciler.reconcile_once()
@@ -1209,6 +1206,7 @@ class TestEventsMarkTransitions:
         reconciler.reconcile_once()
         reconciler.reconcile_once()
         assert k8s.reasons() == ["FragmentApplied"], "reported a heartbeat"
+        assert k8s.events[0]["count"] == 1, "reported a heartbeat"
 
     def test_breaking_reports_again(self, reconciler, k8s):
         reconciler.reconcile_once()
@@ -1216,13 +1214,33 @@ class TestEventsMarkTransitions:
         reconciler.reconcile_once()
         assert k8s.reasons() == ["FragmentApplied", "FragmentInvalid"]
 
-    def test_staying_broken_does_not_repeat(self, reconciler, k8s):
-        reconciler.reconcile_once()
+    def test_staying_broken_repeats_into_the_same_event(self, reconciler, k8s):
         k8s.add_fragment("this: is not a fragment")
         reconciler.reconcile_once()
-        before = list(k8s.reasons())
         reconciler.reconcile_once()
-        assert k8s.reasons() == before
+        reconciler.reconcile_once()
+        assert k8s.reasons() == ["FragmentInvalid"]
+        assert k8s.events[0]["count"] == 3
+
+    def test_an_expired_error_event_is_started_again(self, reconciler, k8s):
+        k8s.add_fragment("this: is not a fragment")
+        reconciler.reconcile_once()
+        k8s.expire_events()
+        reconciler.reconcile_once()
+        reconciler.reconcile_once()
+        assert k8s.reasons() == ["FragmentInvalid", "FragmentInvalid"]
+        assert k8s.events[1]["count"] == 2
+
+    def test_a_lost_repeat_keeps_its_event(self, reconciler, k8s):
+        """Both the repeat and its fallback fail: the next pass must still
+        count into the original Event rather than forget it."""
+        k8s.add_fragment("this: is not a fragment")
+        reconciler.reconcile_once()
+        k8s.emit_failures = 2
+        reconciler.reconcile_once()
+        reconciler.reconcile_once()
+        assert k8s.reasons() == ["FragmentInvalid"]
+        assert k8s.events[0]["count"] == 2
 
     def test_recovering_reports_again(self, reconciler, k8s):
         reconciler.reconcile_once()

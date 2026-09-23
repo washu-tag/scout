@@ -89,6 +89,15 @@ class Outcome:
 
 
 @dataclass
+class Report:
+    """The last outcome reported for one fragment client, and its Event."""
+
+    outcome: tuple[str, str]
+    event: str
+    count: int = 1
+
+
+@dataclass
 class Snapshot:
     """What one pass believes about the world. Replaced whole by a LIST.
 
@@ -141,9 +150,9 @@ class Reconciler:
         self._tiers_trusted_until = 0.0
         self.last_list_ok = 0.0
         self._pending_recheck: dict[str, float] = {}
-        # The last (status, detail) reported per outcome, so an Event marks a
-        # transition rather than repeating every pass.
-        self._reported: dict[tuple[str, str, str], tuple[str, str]] = {}
+        # The last outcome reported per fragment client, so an Event marks a
+        # transition and a persisting error repeats into the same Event.
+        self._reported: dict[tuple[str, str, str], Report] = {}
 
     # --- preconditions --------------------------------------------------
 
@@ -877,15 +886,16 @@ class Reconciler:
             )
 
     def _report(self, snapshot: Snapshot) -> None:
-        """Per-fragment outcome to Events, best effort, on change only.
+        """Per-fragment outcome to Events, best effort.
 
         Not onto the ConfigMap: it is Flux- or Helm-managed, so a status write
-        there starts a revert loop, which is why the RBAC grants no `patch`.
+        there starts a revert loop, which is why the RBAC grants no ConfigMap
+        `patch`.
 
-        On change only because each emission is a separate object rather than an
-        aggregated repeat, so reporting every pass would bury the one
-        interesting failure under identical "applied" lines. Steady state is
-        what the metrics are for.
+        A change is a new Event. An error that persists is folded into its
+        Event every pass, so it stays visible for as long as it lasts rather
+        than for one Event TTL. "applied" is reported once: it is the steady
+        state, and steady state is what the metrics are for.
         """
         stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         # Forget anything this pass produced no outcome for, or a flap back to
@@ -903,10 +913,13 @@ class Reconciler:
                 continue
             key = (outcome.source, outcome.client_id, outcome.document)
             current = (outcome.status, outcome.detail)
-            if self._reported.get(key) == current:
+            previous = self._reported.get(key)
+            if previous and previous.outcome == current:
+                if outcome.status != APPLIED:
+                    self._repeat(key, previous, outcome, involved, stamp)
                 continue
             good = outcome.status == APPLIED
-            # Under the same change-only gate as the Event, so a resync that
+            # Under the same change-only gate as a new Event, so a resync that
             # found nothing new stays silent.
             (log.info if good else log.warning)(
                 "%s: %s is %s%s",
@@ -915,21 +928,47 @@ class Reconciler:
                 outcome.status,
                 f" -- {outcome.detail}" if outcome.detail else "",
             )
-            # Only a report that landed counts as reported: an Event is the
-            # only channel, so remembering a lost one would suppress it until
-            # the outcome itself changes, which for a broken fragment is never.
-            if self.k8s.emit_event(
-                involved=involved,
-                reason=EVENT_REASONS[outcome.status],
-                message=(
-                    f"{outcome.subject}: {outcome.detail}"
-                    if outcome.detail
-                    else f"{outcome.subject} applied"
-                ),
-                event_type="Normal" if good else "Warning",
-                timestamp=stamp,
-            ):
-                self._reported[key] = current
+            self._emit(key, outcome, involved, stamp)
+
+    def _emit(
+        self, key: tuple[str, str, str], outcome: Outcome, involved: dict, stamp: str
+    ) -> None:
+        # Only a report that landed counts as reported: remembering a lost one
+        # would suppress it until the outcome itself changes.
+        good = outcome.status == APPLIED
+        name = self.k8s.emit_event(
+            involved=involved,
+            reason=EVENT_REASONS[outcome.status],
+            message=(
+                f"{outcome.subject}: {outcome.detail}"
+                if outcome.detail
+                else f"{outcome.subject} applied"
+            ),
+            event_type="Normal" if good else "Warning",
+            timestamp=stamp,
+        )
+        if name is not None:
+            self._reported[key] = Report((outcome.status, outcome.detail), name)
+
+    def _repeat(
+        self,
+        key: tuple[str, str, str],
+        previous: Report,
+        outcome: Outcome,
+        involved: dict,
+        stamp: str,
+    ) -> None:
+        if previous.event and self.k8s.repeat_event(
+            involved=involved,
+            name=previous.event,
+            count=previous.count + 1,
+            timestamp=stamp,
+        ):
+            previous.count += 1
+            return
+        # Expired or unwritable: start a new Event. If that is lost too, the
+        # old one is still remembered and the next pass tries it again.
+        self._emit(key, outcome, involved, stamp)
 
 
 # --- scheduling ---------------------------------------------------------

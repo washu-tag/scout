@@ -329,20 +329,43 @@ class FakeK8s:
             raise self.secret_error
         return self.secrets.get((namespace, name))
 
-    def emit_event(self, *, involved, reason, message, timestamp, **kwargs) -> bool:
+    def emit_event(
+        self, *, involved, reason, message, timestamp, **kwargs
+    ) -> str | None:
         self.emit_attempts += 1
         if self.emit_failures:
             self.emit_failures -= 1
-            return False
+            return None
+        name = f"event-{len(self.events)}"
         self.events.append(
             {
+                "name": name,
                 "reason": reason,
                 "message": message,
                 "type": kwargs.get("event_type"),
                 "involved": involved,
+                "count": 1,
+                "lastTimestamp": timestamp,
             }
         )
-        return True
+        return name
+
+    def repeat_event(self, *, involved, name, count, timestamp) -> bool:
+        """False for an Event `expire_events` removed, as a 404 would be."""
+        self.emit_attempts += 1
+        if self.emit_failures:
+            self.emit_failures -= 1
+            return False
+        for event in self.events:
+            if event["name"] == name and not event.get("expired"):
+                event["count"] = count
+                event["lastTimestamp"] = timestamp
+                return True
+        return False
+
+    def expire_events(self) -> None:
+        for event in self.events:
+            event["expired"] = True
 
 
 @pytest.fixture
