@@ -38,7 +38,7 @@ The purpose of this is to keep the Reconciler's permissions scoped to only exact
 `domain` is the only required value.
 
 ```bash
-helm install example-app examples/pluggable-app \
+helm install example-app examples/on-prem-pluggable-app \
   --namespace scout-example --create-namespace \
   --set domain=your-scout-domain.org
 ```

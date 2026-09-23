@@ -14,9 +14,9 @@ This page assumes you've read [Authentication Reference](../reference/authentica
 | Role + RoleBinding | Lets Scout read that one Secret |
 | Your app's OIDC config | Establishes who the user is inside your service |
 
-## 1. Ingress
+## 1. Ingress (on-prem)
 
-If your app needs to receive any user traffic or requests, you must define an Ingress. In general the Ingress defines the subdomain your app is reachable on, and how to connect requests to whatever ports your service is listening on. Example: https://github.com/washu-tag/scout/tree/main/examples/pluggable-app/templates/ingress.yaml
+If your app needs to receive any user traffic or requests, you must define an Ingress. In general the Ingress defines the subdomain your app is reachable on, and how to connect requests to whatever ports your service is listening on. Example: https://github.com/washu-tag/scout/tree/main/examples/on-prem-pluggable-app/templates/ingress.yaml
 
 The important part for authentication is the Middleware annotations. You should include these in your chart's values file under `ingress.annotations`. This is what enables Scout's OAuth2 Proxy service to redirect all requests bound for your app to the Keycloak login system.
 
@@ -36,7 +36,7 @@ If your app requires any endpoints to be unauthenticated (e.g. favicons, any pub
 :::
 
 :::{note}
-OAuth2 Proxy adds an `X-Auth-Request-Preferred-Username` header, naming the logged-in user, to every request it lets through. If your app trusts that header, you must also ship a NetworkPolicy that only admits traffic from Traefik. Otherwise any pod in the cluster can call your Service directly and set the header to any username it likes. See the example app's [networkpolicy.yaml](https://github.com/washu-tag/scout/tree/main/examples/pluggable-app/templates/networkpolicy.yaml). As with the middleware names, the Traefik namespace is site-specific.
+OAuth2 Proxy adds an `X-Auth-Request-Preferred-Username` header, naming the logged-in user, to every request it lets through. If your app trusts that header, you must also ship a NetworkPolicy that only admits traffic from Traefik. Otherwise any pod in the cluster can call your Service directly and set the header to any username it likes. See the example app's [networkpolicy.yaml](https://github.com/washu-tag/scout/tree/main/examples/on-prem-pluggable-app/templates/networkpolicy.yaml). As with the middleware names, the Traefik namespace is site-specific.
 :::
 
 ## 2. A Fragment ConfigMap: Register a Keycloak client
@@ -74,7 +74,7 @@ data:
           scout-admin: [my-service-user, my-service-admin]
 ```
 
-See also the example pluggable app: https://github.com/washu-tag/scout/tree/main/examples/pluggable-app/templates/keycloak-fragment.yaml.
+See also the example pluggable app: https://github.com/washu-tag/scout/tree/main/examples/on-prem-pluggable-app/templates/keycloak-fragment.yaml.
 
 | Field | Meaning |
 | --- | --- |
