@@ -158,6 +158,14 @@ kubectl --context <ctx> -n xnat rollout restart statefulset/xnat
 (Or upload directly with `mc`/`kubectl cp` if you prefer a tighter loop; the init
 containers just read `s3://xnat-dev/ROOT.war` and `s3://xnat-dev/plugins/`.)
 
+## Running the REST test suite
+
+`ansible/scripts/xnat-test-mode.sh on --context <ctx>` puts the instance into a state the
+[XNAT REST test suite](https://github.com/NrgXnat/xnat-rest-tests) can drive: one
+replica, SSO auto-login off, siteUrl pointed at the port-forward, and forwards up on 8080
+(REST) and 8104 (DICOM). `off` restores all three. See the script header for why each is
+needed.
+
 ## Multi-node testing (external ActiveMQ)
 
 XNAT's per-JVM embedded broker means that if you bump `replicaCount`, each pod
