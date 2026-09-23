@@ -80,7 +80,7 @@ Access tokens carry the same claims, but check `azp` rather than `aud` on them; 
 
 ## Users, groups, tiers, and roles
 
-An administrator places each user in one Keycloak group — `scout-user` or `scout-admin`. Everything else follows from that membership by two different routes:
+An administrator approves each user into the `scout-user` Keycloak group, and promotes administrators by adding them to `scout-admin` as well. Everything else follows from those memberships by two different routes:
 
 ```
   Keycloak group
@@ -104,7 +104,7 @@ Either route ends the same way: the roles belonging to a given service appear in
 A user in a group that grants none of your service's roles arrives with an empty `groups` claim. They are authenticated; they simply hold no role.
 
 :::{warning}
-**The two tiers are siblings, not a hierarchy.** `scout-admin` does not include `scout-user`. A service that gates ordinary access on its `-user` role alone will lock out every administrator. Grant both roles to the admin tier, or test for either.
+**`scout-admin` does not include `scout-user`.** Admins promoted in the launchpad console are in both groups, but an admin added to `scout-admin` some other way, such as directly in Keycloak, may not be in `scout-user`. A service that gates ordinary access on its `-user` role alone will lock that admin out. Grant both roles to the admin tier, or test for either.
 :::
 
 Keycloak's own [roles and groups guide](https://www.keycloak.org/docs/latest/server_admin/index.html#assigning-permissions-using-roles-and-groups) covers composite roles in general terms.
@@ -113,7 +113,7 @@ Keycloak's own [roles and groups guide](https://www.keycloak.org/docs/latest/ser
 
 1. First login through the IdP creates a Keycloak account with no group membership.
 2. The user must accept the terms of use, then sees OAuth2 Proxy's "Access Not Yet Granted" page.
-3. An administrator approves their account and adds them to the `scout-user` and/or `scout-admin` groups.
+3. An administrator approves their account, which adds them to the `scout-user` group. Promoting a user to administrator adds `scout-admin` on top.
 4. Access begins on their next login.
 
 Administrators do this from the user console on the Scout launchpad. The same console sets the per-user data-access attributes described in [Data Authorization](../operate/data_authorization.md).
