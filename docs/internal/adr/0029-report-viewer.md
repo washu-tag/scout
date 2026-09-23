@@ -100,9 +100,9 @@ OWUI's `message.embeds` iframe sandbox must include `allow-same-origin` and `all
 
 These flags are per-user settings with no admin-global override (upstream open-webui#18684 unshipped), and both default to `false`, so every new researcher would hit a broken iframe until they toggled the flags manually. Scout forces them on with an OWUI Event function (see below).
 
-### OWUI iframe-defaults Event function
+### OWUI UI-defaults Event function
 
-`scout_iframe_defaults_event.py` is an OWUI 0.10 Event function seeded by the open-webui-bootstrap Job (like the filter functions). It forces `iframeSandboxAllowSameOrigin` and `iframeSandboxAllowForms` on via OWUI's own `Users` model, in-process, on two events:
+`scout_ui_defaults_event.py` is an OWUI 0.10 Event function seeded by the open-webui-bootstrap Job (like the filter functions). It forces `iframeSandboxAllowSameOrigin` and `iframeSandboxAllowForms` on via OWUI's own `Users` model, in-process, on two events:
 
 - `user.created` — on new account. Fires on a user's first OAuth login; the OWUI OAuth callback never emits `auth.login`, so `user.created` is the only signal for SSO users.
 - `function.enabled` / `function.updated` (on this function) — sweeps every existing user. Fires when the bootstrap Job re-seeds the function on each deploy, so the backfill runs at deploy time (`user.created` covers new users; there is no per-login OAuth event to lean on). Idempotent: only writes users missing the flags.

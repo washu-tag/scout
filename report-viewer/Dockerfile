@@ -11,12 +11,12 @@ RUN mkdir -p src/scout_report_viewer && cd frontend && npm run build
 # Stage 2: Python runtime.
 FROM python:3.12-slim AS base
 
-# util-linux/openssl et al. lag the Debian security fix in this base image tag
-# (CVE-2026-53615, CVE-2026-14456); pull them in explicitly until upstream
-# rebuilds. No-op once the base image catches up.
+# Debian security patches lag this base image tag; pull them in explicitly
+# until upstream rebuilds. No-op once the base image catches up.
 RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade \
         bsdutils libblkid1 liblastlog2-2 libmount1 libsmartcols1 libuuid1 login mount util-linux \
         libssl3t64 openssl openssl-provider-legacy \
+        perl-base libsqlite3-0 gzip libpcre2-8-0 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED=1 \

@@ -57,6 +57,7 @@ batcher:
   groupId: hl7-batcher
   maxPollRecords: 1000
   pollTimeoutMs: 30000
+  batchingIntervalMs: 1200000
   s3:
     bucket: hl7-raw
     region: us-east-1
@@ -66,6 +67,8 @@ batcher:
     forcePathStyle: true
     # false on MinIO (static keys); true on AWS (IRSA via the default credentials provider).
     useDefaultCredentialsProvider: false
+    # true on AWS (an SCP can deny PutObject without an SSE header); false on MinIO.
+    useSseS3: false
     # Mount static access/secret-key env from the secret (MinIO). false on AWS (IRSA).
     staticCredentials: true
     # Secret carrying the static object-storage credentials (MinIO). Provisioned

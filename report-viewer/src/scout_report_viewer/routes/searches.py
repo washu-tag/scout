@@ -5,7 +5,7 @@ which rows match is stored. Every read wraps `sql` and returns the full
 cohort; sort/filter/paginate happen client-side in the SPA.
 
 Endpoints:
-  POST /api/searches                            - save SQL, return sample + count
+  POST /api/searches                            - save SQL, return a sample
   POST /api/searches/from-file                  - upload CSV of IDs, save contains(?, col) SQL and bind the ID list on every read
   GET  /api/searches/{id}                       - metadata
   GET  /api/searches/{id}/rows                  - full cohort (lean cols) for client-side browsing
@@ -26,12 +26,14 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Query,
+    Request,
     Response,
     UploadFile,
     status,
 )
 
-from .. import metrics, trino_client
+from .. import metrics, progress, trino_client
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
@@ -135,11 +137,11 @@ async def create_search(
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> CreateSearchResponse:
-    """Save a SQL query as a search. No row materialization - runs one
-    `SELECT COUNT(*)` to cache the count, fetches a small sample for
-    the LLM, and (if match_terms or match_diagnoses is set) one
-    additional small query against reports_curated to populate per-row
-    evidence (excerpt + matched_diagnoses).
+    """Save a SQL query as a search. No row materialization - fetches a
+    small sample for the LLM, and (if match_terms or match_diagnoses is
+    set) one additional small query against reports_curated to populate
+    per-row evidence (excerpt + matched_diagnoses). An empty `sample`
+    means an empty cohort; `GET /rows` reports the real total.
 
     Refinement: when the LLM wants to narrow a search, it writes a new
     `POST /searches` call with the original conditions plus the new
@@ -165,18 +167,6 @@ async def create_search(
         )
     _assert_required_projections(columns)
     id_column = "primary_report_identifier"
-
-    count_sql = f"SELECT COUNT(*) AS n FROM ({sql}) s"
-    try:
-        with metrics.time_trino("create_count_query"):
-            # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            _cols, count_rows = await trino_client.execute(count_sql, user=user.sub)
-        row_count = int(count_rows[0]["n"]) if count_rows else 0
-    except Exception:
-        log.exception("trino count query failed")
-        # NULL (unknown), not 0, so reads can tell a failed count from empty.
-        row_count = None
 
     sample_extras: dict[str, dict[str, Any]] = {}
     if body.match_terms or body.match_diagnoses:
@@ -265,13 +255,11 @@ async def create_search(
     )
 
     metrics.SEARCHES_CREATED.inc()
-    if row_count is not None:
-        metrics.SEARCH_SIZE.observe(row_count)
     log.info(
         "search created",
         extra={
             "search_id": stored["id"],
-            "count": row_count,
+            "empty": not sample_rows,
             "id_column": id_column,
             "user_sub": user.sub,
         },
@@ -279,7 +267,6 @@ async def create_search(
 
     return CreateSearchResponse(
         id=stored["id"],
-        count=row_count,
         id_column=id_column,
         view_url=_view_url(search_id),
         columns=[c for c in columns if c not in _drop_cols],
@@ -497,6 +484,10 @@ async def delete_search(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+def _progress_key(search_id: str, user_sub: str, token: str) -> str:
+    return f"search:{search_id}:{user_sub}:{token}"
+
+
 def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
     log.exception("trino %s query failed", stage)
     return HTTPException(
@@ -508,6 +499,8 @@ def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
 @router.get("/{search_id}/rows", response_model=RowsResponse)
 async def get_search_rows(
     search_id: str,
+    request: Request,
+    progress_id: str | None = Query(default=None),
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> RowsResponse:
@@ -531,15 +524,26 @@ async def get_search_rows(
     cap = settings.max_cohort_rows
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
     all_sql = f"SELECT s.* FROM ({source_sql}) s LIMIT {cap + 1}"
+    token = progress.valid_token(progress_id)
+    progress_key = _progress_key(search_id, user.sub, token) if token else None
+    handle = trino_client.QueryHandle()
     try:
         with metrics.time_trino("rows_query"):
             # safe: source_sql is persisted validated SQL; ids bind via ?
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            columns, rows = await trino_client.execute(
-                all_sql,
-                user=user.sub,
-                params=[uploaded_ids] if uploaded_ids else None,
+            columns, rows = await trino_client.cancel_on_disconnect(
+                request.receive,
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                trino_client.execute(
+                    all_sql,
+                    user=user.sub,
+                    params=[uploaded_ids] if uploaded_ids else None,
+                    progress_key=progress_key,
+                    handle=handle,
+                ),
+                handle,
             )
+    except trino_client.ClientDisconnected:
+        raise HTTPException(status_code=499, detail="client disconnected")
     except Exception as exc:
         raise _rows_query_error(exc, "rows")
 
@@ -556,6 +560,21 @@ async def get_search_rows(
         total=len(lean_rows),
         truncated=truncated,
     )
+
+
+@router.get("/{search_id}/progress")
+async def get_search_progress(
+    search_id: str,
+    progress_id: str | None = Query(default=None),
+    user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Live Trino stats for the `/rows` query started with the same
+    `progress_id`, polled by the SPA's loading indicator. Empty when that
+    query is not running."""
+    token = progress.valid_token(progress_id)
+    if token is None:
+        return {}
+    return progress.get(_progress_key(search_id, user.sub, token)) or {}
 
 
 @router.get("/{search_id}/accessions")

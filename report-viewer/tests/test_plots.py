@@ -28,9 +28,8 @@ COHORT_SQL = (
 
 
 def _queue_chart_query(fake_trino, columns, rows):
-    """Chart creation probes for columns, then counts separately."""
+    """Chart creation probes for the columns only."""
     fake_trino(columns, rows)
-    fake_trino(["n"], [{"n": len(rows)}])
 
 
 def _create_from_file(client, auth_headers, sql=COHORT_SQL, csv=CSV):
@@ -60,21 +59,11 @@ def test_create_returns_a_view_url_and_no_chart_payload(
 ):
     _queue_chart_query(fake_trino, ["modality", "n"], [{"modality": "MR", "n": 7}])
     body = _create(client, auth_headers).json()
-    assert body["row_count"] == 1
-    assert body["truncated"] is False
     assert body["view_url"].endswith(f"/spa/plots/{body['id']}")
     assert "spec" not in body and "rows" not in body
-
-
-def test_create_caps_row_count_at_the_cohort_limit(
-    client, auth_headers, fake_trino, monkeypatch
-):
-    monkeypatch.setattr(settings, "max_cohort_rows", 3, raising=False)
-    fake_trino(["modality", "n"], [])
-    fake_trino(["n"], [{"n": 1000}])
-    body = _create(client, auth_headers).json()
-    assert body["row_count"] == 3
-    assert body["truncated"] is True
+    # Creation probes with LIMIT 0 and does not count.
+    assert "LIMIT 0" in fake_trino.calls[-1][0]
+    assert len(fake_trino.calls) == 1
 
 
 def test_viewing_a_chart_re_runs_its_sql(client, auth_headers, fake_trino):
@@ -134,8 +123,9 @@ def test_a_csv_chart_re_runs_bound_to_the_uploaded_ids(
     fake_trino(["modality", "n"], [{"modality": "MR", "n": 2}])
     assert client.get(f"/api/plots/{plot_id}", headers=auth_headers).status_code == 200
 
+    # Creation probes once, then the view re-runs it.
     create_sql, create_params = fake_trino.calls[0]
-    view_sql, view_params = fake_trino.calls[2]
+    view_sql, view_params = fake_trino.calls[1]
     # Deduped, and bound rather than interpolated.
     assert create_params == [["ACC1", "ACC2"]]
     assert view_params == [["ACC1", "ACC2"]]
@@ -259,7 +249,6 @@ def test_an_untyped_channel_inside_a_layer_is_refused(client, auth_headers, fake
 def test_a_value_only_channel_needs_no_type(client, auth_headers, fake_trino):
     """`opacity` carries a condition and a value, never a field - leave it alone."""
     fake_trino(["modality", "n"], [{"modality": "CT", "n": 1}])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "params": [
@@ -282,7 +271,6 @@ def test_a_value_only_channel_needs_no_type(client, auth_headers, fake_trino):
 def test_a_sort_by_another_field_needs_no_type(client, auth_headers, fake_trino):
     """`sort` nests a field inside a channel; only the channel itself is checked."""
     fake_trino(["modality", "n"], [{"modality": "CT", "n": 1}])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "encoding": {
@@ -307,7 +295,6 @@ def test_a_spec_that_fails_to_render_is_refused(client, auth_headers, fake_trino
 
 def test_a_field_not_in_the_query_columns_is_refused(client, auth_headers, fake_trino):
     fake_trino(["modality", "n"], [])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "encoding": {
@@ -322,7 +309,6 @@ def test_a_field_not_in_the_query_columns_is_refused(client, auth_headers, fake_
 
 def test_a_field_that_is_a_heavy_column_is_refused(client, auth_headers, fake_trino):
     fake_trino(["modality", "report_text"], [])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "encoding": {
@@ -339,7 +325,6 @@ def test_an_aggregate_transform_output_field_is_allowed(
     client, auth_headers, fake_trino
 ):
     fake_trino(["modality", "n"], [])
-    fake_trino(["n"], [{"n": 1}])
     spec = {
         "mark": "bar",
         "transform": [{"aggregate": [{"op": "sum", "field": "n", "as": "total"}]}],
@@ -514,3 +499,21 @@ def test_an_omitted_explanation_reads_back_as_empty_not_null(
     fake_trino(["modality", "n"], [{"modality": "MR", "n": 7}])
     detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
     assert detail["sql_explanation"] == ""
+
+
+def test_meta_serves_the_explain_panel_without_running_the_query(
+    client, auth_headers, fake_trino
+):
+    """The point of /meta: no Trino call, so the SPA can render the chart's
+    chrome and Explain panel while the rows query is still going."""
+    _queue_chart_query(fake_trino, ["modality", "n"], [{"modality": "MR", "n": 7}])
+    plot_id = _create(
+        client, auth_headers, explanation="Scan counts by modality."
+    ).json()["id"]
+    before = len(fake_trino.calls)
+
+    meta = client.get(f"/api/plots/{plot_id}/meta", headers=auth_headers).json()
+    assert meta["sql_explanation"] == "Scan counts by modality."
+    assert meta["sql"] == "SELECT modality, COUNT(*) n FROM t"
+    assert "rows" not in meta
+    assert len(fake_trino.calls) == before

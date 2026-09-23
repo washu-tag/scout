@@ -95,6 +95,38 @@ export function getSearch(searchId: string): Promise<SearchMeta> {
   return api<SearchMeta>(`/api/searches/${encodeURIComponent(searchId)}`);
 }
 
+// Raw Trino stats for an in-flight query; `{}` when none is running.
+export interface QueryProgress {
+  state?: string;
+  queued?: boolean;
+  processedRows?: number;
+  processedBytes?: number;
+  // Absent until Trino has scheduled the query.
+  progressPercentage?: number;
+  // Set once the query has returned, so these are the final totals.
+  done?: boolean;
+}
+
+// One id per query attempt, so a retry cannot read the stats of the attempt it
+// replaced, and two tabs on the same search stay independent.
+export function newProgressId(): string {
+  return typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function getSearchProgress(searchId: string, progressId: string): Promise<QueryProgress> {
+  return api<QueryProgress>(
+    `/api/searches/${encodeURIComponent(searchId)}/progress?progress_id=${encodeURIComponent(progressId)}`,
+  );
+}
+
+export function getPlotProgress(plotId: string, progressId: string): Promise<QueryProgress> {
+  return api<QueryProgress>(
+    `/api/plots/${encodeURIComponent(plotId)}/progress?progress_id=${encodeURIComponent(progressId)}`,
+  );
+}
+
 export interface FilterState {
   patient_age?: { min?: string; max?: string };
   message_dt?: { min?: string; max?: string };
@@ -177,8 +209,15 @@ export async function getReport(reportId: string, idColumn: string): Promise<Rep
 
 // The whole cohort in one request (lean columns, capped server-side); the SPA
 // sorts/filters/paginates it client-side. Report text loads per-row on expand.
-export function getSearchRows(searchId: string): Promise<RowsResponse> {
-  return api<RowsResponse>(`/api/searches/${encodeURIComponent(searchId)}/rows`);
+export function getSearchRows(
+  searchId: string,
+  progressId: string,
+  signal?: AbortSignal,
+): Promise<RowsResponse> {
+  return api<RowsResponse>(
+    `/api/searches/${encodeURIComponent(searchId)}/rows?progress_id=${encodeURIComponent(progressId)}`,
+    { signal },
+  );
 }
 
 export type PlotDetail = {
@@ -190,8 +229,19 @@ export type PlotDetail = {
   truncated: boolean;
 };
 
-export function getPlot(plotId: string): Promise<PlotDetail> {
-  return api<PlotDetail>(`/api/plots/${encodeURIComponent(plotId)}`);
+export function getPlotMeta(plotId: string): Promise<PlotMeta> {
+  return api<PlotMeta>(`/api/plots/${encodeURIComponent(plotId)}/meta`);
+}
+
+export function getPlot(
+  plotId: string,
+  progressId: string,
+  signal?: AbortSignal,
+): Promise<PlotDetail> {
+  return api<PlotDetail>(
+    `/api/plots/${encodeURIComponent(plotId)}?progress_id=${encodeURIComponent(progressId)}`,
+    { signal },
+  );
 }
 
 export interface PlotMeta {

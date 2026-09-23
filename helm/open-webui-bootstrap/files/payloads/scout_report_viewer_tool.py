@@ -39,14 +39,18 @@ _VIEWER_NOTE = (
     "used match_terms or match_diagnoses, an evidence table with "
     "excerpts and matched diagnoses is included too. "
     "The full results are shown to the user in a search viewer above "
-    "this message, alongside any charts you drew this turn. "
-    "The user can sort, filter, and explore the full results there. "
+    "this message, alongside any charts you drew this turn, where they "
+    "can sort, filter, and explore them. "
     "Call this tool at most once per turn; a second call replaces this "
     "viewer. "
-    "Do not restate the tables or the SQL. "
-    "Use the sample and evidence to confirm your query and reply "
-    "with insights, follow-up queries, pattern observations, "
-    "refinement suggestions, etc."
+    "Do not restate the tables or the SQL. Use the sample and evidence "
+    "to confirm the query ran as intended, then reply with what the "
+    "search includes and excludes, possible refinements, and "
+    "clinically relevant follow-up questions, queries or charts worth "
+    "running. "
+    "A chart or aggregate you run next is about this cohort unless the "
+    "user says otherwise: reuse this search's SQL rather than querying "
+    "the whole table again."
 )
 
 
@@ -67,7 +71,7 @@ class Tools:
                 "returns into the chat message."
             ),
         )
-        request_timeout_seconds: int = Field(default=120, ge=10, le=600)
+        request_timeout_seconds: int = Field(default=300, ge=10, le=600)
 
     def __init__(self) -> None:
         self.valves = self.Valves()
@@ -111,14 +115,18 @@ class Tools:
           the ID predicate. When omitted, a default projection is used.
 
         :param sql: SQL mode: full Trino query. File mode: optional
-            custom SQL with `{{cohort}}` placeholder.
-        :param match_terms: Clinical text terms. Populates the
-            `excerpt` field on each evidence row and highlights the
-            terms in the row-expand viewer.
+            custom SQL with `{{cohort}}` placeholder. To narrow an
+            earlier search, paste its SQL verbatim and add clauses;
+            do not rewrite its regex or negation blocks.
+        :param match_terms: Clinical text terms. Display and evidence
+            only: these do not filter rows, your `sql` does that.
+            Populates the `excerpt` field on each evidence row and
+            highlights the terms in the row-expand viewer.
         :param match_diagnoses: ICD codes or code prefixes (e.g.
-            `R91`, `R91.1`, `J18%`). Populates `matched_diagnoses` on
-            each evidence row and lights up matching chips in the
-            row-expand viewer.
+            `R91`, `R91.1`, `J18%`). Display and evidence only: these do
+            not filter rows. Populates `matched_diagnoses` on each
+            evidence row and lights up matching chips in the row-expand
+            viewer.
         :param sql_explanation: One- to three-sentence plain-language
             description of what the SQL matches. Surfaced in the
             "About this search" panel for the user.
@@ -165,19 +173,15 @@ class Tools:
             )
             return self._error_text(exc, "Error fetching reports")
 
-        count = created.get("count")
-        if count == 0:
+        if not created.get("sample"):
             await self._emit(__event_emitter__, "No matching reports", done=True)
             return (
                 "No reports matched. Try scouting the data or broadening the criteria."
             )
 
-        found = (
-            f"Found {count:,} matching reports"
-            if count is not None
-            else "Found matching reports"
+        await self._emit(
+            __event_emitter__, "Found matching reports, opening viewer", done=True
         )
-        await self._emit(__event_emitter__, found, done=True)
 
         await self._emit_embed(
             __event_emitter__,
@@ -299,8 +303,7 @@ class Tools:
             if isinstance(exc, SessionExpiredError):
                 return error
             return f"{error}\n\nFix the SQL or the spec and call scout_chart_sql again."
-        n = plot.get("row_count", 0)
-        await self._emit(__event_emitter__, "Chart ready", done=True)
+        await self._emit(__event_emitter__, "Chart created", done=True)
         evicted = await self._emit_embed(
             __event_emitter__,
             plot["view_url"],
@@ -316,12 +319,14 @@ class Tools:
             else "Chart rendered for the user above this message"
         )
         return (
-            f"{rendered} ({n} data points over "
-            f"{', '.join(plot.get('columns') or [])}). "
-            "Do not restate the data, do not add a table, and do not write a "
-            "vega code fence. Reply with a short interpretation only, in "
-            "one reply covering every chart and viewer you rendered this "
-            "turn.\n\n"
+            f"{rendered} "
+            f"(columns: {', '.join(plot.get('columns') or [])}). "
+            "You cannot see the chart's rows/data or the Vega-Lite spec. "
+            "Call scout_get_chart_data to read chart data for your reasoning. "
+            "Otherwise do not assume the chart's values are what you expect. "
+            "Describe what you plotted and anything about the query that may "
+            "be relevant for a user to understand the chart. "
+            "Do not add a data table or write a vega code fence.\n\n"
             f"Internal chart handle: {plot['id']}."
         )
 
@@ -391,8 +396,7 @@ class Tools:
                 done=True,
             )
             return self._error_text(exc, "Error reading chart")
-        n = len(plot.get("rows") or [])
-        await self._emit(__event_emitter__, f"Chart data ready ({n} rows)", done=True)
+        await self._emit(__event_emitter__, "Chart data ready", done=True)
         return self._render_chart_data(plot)
 
     async def scout_query_sql(
@@ -435,8 +439,7 @@ class Tools:
                 __event_emitter__, self._status_error(exc, "Query failed"), done=True
             )
             return self._error_text(exc, "Error running query")
-        n = len(agg.get("rows", []))
-        await self._emit(__event_emitter__, f"Query complete ({n} rows)", done=True)
+        await self._emit(__event_emitter__, "Query complete", done=True)
         return self._format_aggregate(agg)
 
     async def _fetch_owui_file(self, file_id: str) -> tuple[bytes, str] | str:
@@ -592,8 +595,7 @@ class Tools:
                 __event_emitter__, self._status_error(exc, "Query failed"), done=True
             )
             return self._error_text(exc, "Error running query")
-        n = len(agg.get("rows", []))
-        await self._emit(__event_emitter__, f"Query complete ({n} rows)", done=True)
+        await self._emit(__event_emitter__, "Query complete", done=True)
         return self._format_aggregate(agg)
 
     async def scout_get_reports(
@@ -733,16 +735,18 @@ class Tools:
         """Sample table + evidence table (omitted if every row's
         excerpt is null and matched_diagnoses is empty). Both keyed by
         id_column so they align visually."""
-        count = created.get("count")
         columns: list[str] = created.get("columns") or []
         sample: list[dict] = created.get("sample") or []
         evidence: list[dict] = created.get("evidence") or []
         sid = created.get("id") or ""
         id_column = created.get("id_column") or ""
 
-        cnt = f"{count:,}" if isinstance(count, int) else "an unknown number of"
-        rows_word = "row" if count == 1 else "rows"
-        parts = [f"SQL matched {cnt} {rows_word} across {len(columns)} columns."]
+        parts = [
+            f"SQL ran across {len(columns)} columns. The viewer holds the full "
+            f"result. Below is a sample of {len(sample)} rows in scan order, so you "
+            "know the result's shape: not a random sample and not a summary of the "
+            "cohort. You do not have a row count, do not state one."
+        ]
 
         if sample and columns:
             parts.append("")

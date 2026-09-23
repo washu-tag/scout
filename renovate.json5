@@ -97,13 +97,14 @@
     },
     // Strimzi only supports a fixed set of Kafka broker versions per operator
     // release (#692: Renovate bumped kafka_version to 4.3.1, which
-    // strimzi_operator_version 1.1.0 doesn't support). allowedVersions pins
-    // apache/kafka to 1.1.0's actual supported set (4.2.0, 4.2.1, 4.3.0) so
-    // Renovate can't propose an incompatible bump; the reminders on both
-    // sides cover updating that regex when the operator itself bumps.
+    // strimzi_operator_version 1.1.0 didn't support). allowedVersions pins
+    // apache/kafka to the pinned operator's supported set - currently 1.2.0's
+    // (4.2.0, 4.2.1, 4.3.0, 4.3.1) - so Renovate can't propose an incompatible
+    // bump; the reminders on both sides cover updating that regex when the
+    // operator itself bumps.
     {
       "matchDepNames": ["apache/kafka"],
-      "allowedVersions": "/^4\\.2\\.\\d+$|^4\\.3\\.0$/",
+      "allowedVersions": "/^4\\.2\\.\\d+$|^4\\.3\\.[01]$/",
       "prBodyNotes": [
         "**Reminder:** Check that `strimzi_operator_version` in `versions.yaml` supports this Kafka version. See the [Strimzi supported versions matrix](https://strimzi.io/downloads/)."
       ]

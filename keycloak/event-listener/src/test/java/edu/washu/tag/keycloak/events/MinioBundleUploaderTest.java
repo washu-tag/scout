@@ -1,17 +1,23 @@
 package edu.washu.tag.keycloak.events;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 
 /**
  * Tests upload()'s success/failure -> boolean contract — the value the
@@ -48,5 +54,25 @@ class MinioBundleUploaderTest {
         when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                 .thenThrow(new RuntimeException("connection reset"));
         assertFalse(uploader.upload(new byte[] {1, 2, 3}));
+    }
+
+    @Test
+    void aws_upload_requests_sse_s3() {
+        new MinioBundleUploader(s3, "bucket", "scout/bundle.tar.gz", true)
+                .upload(new byte[] {1, 2, 3});
+
+        ArgumentCaptor<PutObjectRequest> req = forClass(PutObjectRequest.class);
+        verify(s3).putObject(req.capture(), any(RequestBody.class));
+        assertEquals(ServerSideEncryption.AES256, req.getValue().serverSideEncryption());
+    }
+
+    @Test
+    void minio_upload_omits_sse_header() {
+        new MinioBundleUploader(s3, "bucket", "scout/bundle.tar.gz", false)
+                .upload(new byte[] {1, 2, 3});
+
+        ArgumentCaptor<PutObjectRequest> req = forClass(PutObjectRequest.class);
+        verify(s3).putObject(req.capture(), any(RequestBody.class));
+        assertNull(req.getValue().serverSideEncryption());
     }
 }
