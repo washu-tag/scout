@@ -2,7 +2,7 @@
 
 Your Pluggable App likely needs to authenticate Scout users and know what permissions they have been assigned so you can decide what they're authorized to do in your app. This document will explain how to integrate with the Scout systems designed to enable you to do that.
 
-This page assumes you've read [How Authentication Works](../reference/authentication.md) first.
+This page assumes you've read [Authentication Reference](../reference/authentication.md) first.
 
 ## Summary: What your Pluggable App needs to include
 
