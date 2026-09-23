@@ -61,6 +61,7 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
     static final String ENV_SECRET_KEY = "KC_OPA_BUNDLE_S3_SECRET_KEY";
     static final String ENV_REALM = "KC_OPA_BUNDLE_REALM";
     static final String ENV_DEBOUNCE_MS = "KC_OPA_BUNDLE_DEBOUNCE_MS";
+    static final String ENV_SSE_TYPE = "KC_OPA_BUNDLE_S3_SSE_TYPE";
 
     private static final long DEFAULT_DEBOUNCE_MS = 1_000L;
     private static final long INITIAL_PUBLISH_DELAY_MS = 5_000L;
@@ -114,9 +115,10 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
         String region = orDefault(System.getenv(ENV_REGION), "us-east-1");
         realmName = orDefault(System.getenv(ENV_REALM), "scout");
         debounceMs = parseLong(System.getenv(ENV_DEBOUNCE_MS), DEFAULT_DEBOUNCE_MS);
+        String sseType = orDefault(System.getenv(ENV_SSE_TYPE), "NONE");
 
         uploader = new MinioBundleUploader(endpointUri, bucket, objectKey,
-                accessKey, secretKey, region);
+                accessKey, secretKey, region, sseType);
         scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "opa-bundle-publisher");
             t.setDaemon(true);
@@ -125,9 +127,9 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
         enabled = true;
         String credMode = (StringUtil.isBlank(accessKey) || StringUtil.isBlank(secretKey))
                 ? "default-chain (e.g. IRSA)" : "static";
-        log.infof("OPA bundle publisher enabled: endpoint=%s bucket=%s object=%s realm=%s creds=%s",
+        log.infof("OPA bundle publisher enabled: endpoint=%s bucket=%s object=%s realm=%s creds=%s sse=%s",
                 StringUtil.isBlank(endpoint) ? "(SDK default)" : endpoint,
-                bucket, objectKey, realmName, credMode);
+                bucket, objectKey, realmName, credMode, sseType);
     }
 
     @Override

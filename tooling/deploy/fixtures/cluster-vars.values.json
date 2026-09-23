@@ -58,6 +58,7 @@
   "s3_opa_bundle_writer": "opa-bundle-writer",
   "s3_path_style_access": "true",
   "s3_region": "us-east-1",
+  "s3_sse_type": "NONE",
   "scout_analytics_namespace": "scout-analytics",
   "scout_core_namespace": "scout-core",
   "scout_data_namespace": "scout-data",

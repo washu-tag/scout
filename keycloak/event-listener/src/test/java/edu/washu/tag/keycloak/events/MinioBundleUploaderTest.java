@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.net.URI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -64,6 +65,18 @@ class MinioBundleUploaderTest {
         ArgumentCaptor<PutObjectRequest> req = forClass(PutObjectRequest.class);
         verify(s3).putObject(req.capture(), any(RequestBody.class));
         assertEquals(ServerSideEncryption.AES256, req.getValue().serverSideEncryption());
+    }
+
+    @Test
+    void requestSse_only_for_aws_with_s3() {
+        URI minio = URI.create("http://minio.minio-scout");
+        URI aws = URI.create("https://s3.us-east-1.amazonaws.com");
+        assertTrue(MinioBundleUploader.requestSse(null, "S3"));
+        assertTrue(MinioBundleUploader.requestSse(aws, "s3"));
+        assertFalse(MinioBundleUploader.requestSse(null, "NONE"));
+        assertFalse(MinioBundleUploader.requestSse(null, null));
+        assertFalse(MinioBundleUploader.requestSse(null, "KMS"));
+        assertFalse(MinioBundleUploader.requestSse(minio, "S3"));
     }
 
     @Test

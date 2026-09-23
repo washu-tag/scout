@@ -115,8 +115,11 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
-# Service mode (ADR 0011). aws mounts a core-site.xml adding the IRSA provider, region and SSE-S3.
+# Service mode (ADR 0011). aws mounts a core-site.xml adding the IRSA provider and region.
 mode: on-prem
+# aws only. S3 adds an SSE-S3 header (an SCP or bucket policy may demand one); NONE sends
+# none, so the bucket default (SSE-S3 or SSE-KMS) applies.
+sseType: NONE
 # Follows the Hadoop version the image ships.
 coreSitePath: /opt/hadoop-3.3.6/etc/hadoop/core-site.xml
 

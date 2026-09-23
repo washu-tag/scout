@@ -10,6 +10,9 @@ on:
       - tooling/deploy/**
       # The realm config-cli imports + the config-hash it is stamped from live here.
       - helm/keycloak-config-cli/**
+      # The per-mode S3A SSE render guard below.
+      - helm/hive-metastore/**
+      - helm/extractor/hl7-transformer/**
       - .github/workflows/validate-deploy.yaml
       # OPA data-doc drift guard reads the Ansible source; re-run on those too.
       - ansible/roles/opa/defaults/main.yaml
@@ -49,6 +52,31 @@ jobs:
               echo "::error file=$d::kustomize build failed for $d"; fail=1
             fi
           done < <(find deploy/base -name kustomization.yaml -exec dirname {} \; | sort)
+          exit $fail
+
+      - name: S3A SSE renders only for aws + s3_sse_type=S3
+        run: |
+          set -euo pipefail
+          # #750 shipped an invalid S3A value (SSE-S3) that only failed on a live cluster.
+          T=helm/extractor/hl7-transformer; H=helm/hive-metastore
+          TSET="sparkDefaults.enabled=true,sparkDefaults.hiveMetastoreUri=thrift://h:9083,sparkDefaults.warehouseDir=s3a://b/d,sparkDefaults.s3Endpoint=http://m"
+          fail=0
+          check() {  # <want: 1|0> <helm template args...>
+            want=$1; shift
+            out=$(helm template t "$@")
+            got=$(grep -cE 'fs\.s3a\.encryption\.algorithm( |</name>)' <<<"$out" || true)
+            [ "$got" = "$want" ] && echo "  ok   want=$want $*" || { echo "::error::want $want AES256 line(s), got $got: $*"; fail=1; }
+            [ "$want" = 0 ] || grep -qE 'AES256' <<<"$out" || { echo "::error::no AES256 value: $*"; fail=1; }
+          }
+          check 1 $T --set "$TSET,sparkDefaults.mode=aws,sparkDefaults.sseType=S3"
+          check 0 $T --set "$TSET,sparkDefaults.mode=aws,sparkDefaults.sseType=NONE"
+          check 0 $T --set "$TSET,sparkDefaults.mode=on-prem,sparkDefaults.sseType=S3"
+          check 1 $H --set mode=aws,sseType=S3
+          check 0 $H --set mode=aws,sseType=NONE
+          check 0 $H --set mode=on-prem,sseType=S3
+          for c in "$T --set $TSET,sparkDefaults.mode=aws,sparkDefaults.sseType=KMS" "$H --set mode=aws,sseType=KMS"; do
+            if helm template t $c >/dev/null 2>&1; then echo "::error::unknown sseType rendered: $c"; fail=1; else echo "  ok   rejects KMS: ${c%% *}"; fi
+          done
           exit $fail
 
       - name: required-vars covers every substitution

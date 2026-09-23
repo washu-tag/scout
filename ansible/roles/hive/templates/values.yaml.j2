@@ -5,6 +5,7 @@ fullnameOverride: '{{ hive_fullname_override | default("") }}'
 
 {% if aws_deployment %}
 mode: aws
+sseType: '{{ s3_sse_type }}'
 serviceAccount:
   create: false
   automount: true

@@ -38,7 +38,11 @@ other `${var}`. How each mode delta is expressed depends on its shape:
    the aws S3A credentials provider + SSE via core-site.xml, and the IRSA
    `serviceAccount.annotations` role-arn, inert off-EKS) and the extractor's chart-owned
    `sparkDefaults.mode: '${service_mode}'` (the chart then emits the WebIdentity provider
-   + virtual-host S3 in aws).
+   + virtual-host S3 in aws). `s3_sse_type` is the same shape across every AWS writer
+   (extractor, transformer, hive, trino-rw, the Keycloak OPA publisher): `S3` sends an
+   SSE-S3 header for sites whose SCP or bucket policy demands one; `NONE` (the default)
+   sends none, so the bucket default applies. An explicit header overrides an SSE-KMS
+   bucket default, which is why it is opt-in.
 
 2. **Config-block deltas: a per-mode edge ConfigMap, selected by name via `valuesFrom`.**
    Where the difference is conditional *lines or blocks* a scalar cannot express, list
@@ -159,8 +163,8 @@ analytics apps) stays mode-agnostic; only the edge moves.
   ingress edge set, once that lands). The first `aws`-mode consumer is a cloud cluster, set via a
   gitops change (its cluster-vars + IRSA/ESO secrets), not in this repo.
 - The **storage edge is implemented** (hive value-class; trino + extractor config-block).
-  `service_mode`, `lake_reader_role_arn`, `lake_writer_role_arn`, and `s3_path_style_access`
-  join the `required-vars` contract; `validate-deploy` renders both
+  `service_mode`, `irsa_role_prefix`, `s3_path_style_access` and `s3_sse_type` join the
+  `required-vars` contract; `validate-deploy` renders both
   modes so neither rots (only one is exercised on any given cluster).
 - Completing the `aws` branch was **real per-chart work, not a values toggle**, and it
   surfaced two latent bugs in the Ansible `aws_deployment` path that were fixed rather than

@@ -23,6 +23,7 @@ spec:
   values:
     replicaCount: 1
     mode: '${service_mode}'
+    sseType: '${s3_sse_type:=NONE}'
     image:
       repository: starburstdata/hive
       pullPolicy: IfNotPresent
