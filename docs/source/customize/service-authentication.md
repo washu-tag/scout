@@ -151,20 +151,20 @@ This part is somewhat beyond the scope of this document. You'll need to know how
 | Issuer | `https://keycloak.<scout-host>/realms/scout` |
 | Redirect URI | your library's callback path |
 
-The redirect URI is the easiest value to get wrong. It can be different for every service, usually depending on the underlying OIDC library used. For example, here are some of the redirect paths (relative) used in Scout's core services.
+The redirect URI is the easiest value to get wrong. It can be different for every service, usually depending on the underlying OIDC library used. For example, here are some of the redirect paths used in Scout's core services.
 
 | Application | Callback path |
 | --- | --- |
-| next-auth (launchpad) | `/api/auth/callback/keycloak` |
-| Flask-AppBuilder (Superset) | `/oauth-authorized/keycloak` |
-| Grafana | `/login/generic_oauth` |
-| JupyterHub | `/hub/oauth_callback` |
-| Open WebUI | `/oauth/oidc/callback` |
-| MinIO | `/oauth_callback` |
-| Temporal | `/auth/sso/callback` |
-| XNAT | `/openid-login` |
+| next-auth (launchpad) | `https://<scout host>/api/auth/callback/keycloak` |
+| Flask-AppBuilder (Superset) | `https://<scout host>/oauth-authorized/keycloak` |
+| Grafana | `https://<scout host>/login/generic_oauth` |
+| JupyterHub | `https://<scout host>/hub/oauth_callback` |
+| Open WebUI | `https://<scout host>/oauth/oidc/callback` |
+| MinIO | `https://<scout host>/oauth_callback` |
+| Temporal | `https://<scout host>/auth/sso/callback` |
+| XNAT | `https://<scout host>/openid-login` |
 
-You'll need to find yours in your library's docs. When you include it in the Fragment's `redirectUris` it must be the absolute path.
+You'll need to find yours in your library's docs. When you include it in the Fragment's `redirectUris` be sure to write it as the full URL with `https` (as in `https://<scout host>/<you app's path>`), or it will be rejected.
 
 For a complete example, see [`launchpad/src/lib/auth.ts`](https://github.com/washu-tag/scout/blob/main/launchpad/src/lib/auth.ts), which is how Launchpad configures its `next-auth` library.
 
