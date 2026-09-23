@@ -135,4 +135,3 @@ Scout's identity layer is standard OpenID Connect; nothing here is Scout-specifi
 | [OAuth 2.0 Simplified](https://www.oauth.com/) | The friendliest walkthrough of the authorization code flow, tokens, and PKCE |
 | [How OpenID Connect Works](https://openid.net/developers/how-connect-works/) | Short, diagrammed introduction to OIDC and ID tokens |
 | [Keycloak: OIDC endpoints](https://www.keycloak.org/securing-apps/oidc-layers) | Every endpoint above, and why to validate tokens locally rather than by introspection |
-| [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) | PKCE, which Scout requires of every application client |
