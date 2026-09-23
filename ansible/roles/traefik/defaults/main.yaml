@@ -5,14 +5,22 @@
 # Timeout for waiting on Traefik Helm jobs (in seconds)
 traefik_helm_job_timeout: 300
 
-# An upload ceiling, not a liveness check. readTimeout bounds reading the whole
-# request, body included, so multi-gigabyte uploads need far more headroom than
-# upstream's 60s default. Entrypoint-wide — every service on websecure inherits it.
-# It is also all that bounds a half-open connection: Traefik has not routed a
-# request whose headers are still arriving, so no backend timeout can cover that.
-# Not 0s — that 60s default is the CVE-2024-28869 remediation, and Traefik folds
-# Go's header-read deadline into this same value.
-traefik_read_timeout: 4h
+# A second HTTPS entrypoint for upload-heavy routers. readTimeout bounds reading a
+# whole request, body included, so a multi-gigabyte upload needs far more than
+# upstream's 60s default — but it is entrypoint-wide, so raising it on websecure
+# would widen the unauthenticated slowloris window for every Scout service. Routers
+# that need the headroom bind to this entrypoint instead and websecure keeps the
+# upstream default, which is the CVE-2024-28869 remediation.
+#
+# Sized to the slowest upload we intend to support, not set to 0s: with headers still
+# arriving Traefik has not routed anywhere, so no backend timeout can bound a
+# half-open connection and this value is the only thing that does. Traefik folds Go's
+# header-read deadline into it as well.
+traefik_upload_read_timeout: 1h
+# Container port for that entrypoint, and the port it is published on. Must not
+# collide with web (8000), websecure (8443), traefik (8080) or metrics (9100).
+traefik_upload_entrypoint_port: 8444
+traefik_upload_entrypoint_exposed_port: 9443
 
 traefik_embeddable_frame_ancestors: 'https://chat.{{ server_hostname }}'
 # Inventory requirements depend on tls_mode:

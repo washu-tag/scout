@@ -66,6 +66,11 @@ ingress:
     # NB: XNAT's own UI frames same-origin pages, so it uses the -sameorigin
     # headers (frame-ancestors 'self') rather than the global 'none'/DENY, which
     # would trip "violates frame-ancestors 'none'" in the browser.
+    # Both entrypoints: websecure serves the UI on the standard port, uploads adds a
+    # listener whose read deadline fits a multi-gigabyte body (traefik_upload_read_timeout).
+    # A site that wants large uploads on the standard URL points its upstream proxy for
+    # this host at the uploads port rather than websecure.
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure,uploads
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd,

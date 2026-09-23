@@ -94,13 +94,31 @@
           # We want to turn those off.
           globalArguments: []
           ports:
+            # asDefault on web/websecure is what keeps `uploads` out of the set that an
+            # Ingress binds to when it names no entrypoint: Traefik treats every
+            # entrypoint as default until at least one is marked, so without this the
+            # uploads listener would serve every Scout router, not just the ones that
+            # opt in. NB the chart nests TLS under http, not directly under the port.
             websecure:
-              tls:
-                enabled: true
+              asDefault: true
+              http:
+                tls:
+                  enabled: true
+            uploads:
+              port: {{ traefik_upload_entrypoint_port }}
+              exposedPort: {{ traefik_upload_entrypoint_exposed_port }}
+              protocol: TCP
+              asDefault: false
+              expose:
+                default: true
+              http:
+                tls:
+                  enabled: true
               transport:
                 respondingTimeouts:
-                  readTimeout: '{{ traefik_read_timeout }}'
+                  readTimeout: '{{ traefik_upload_read_timeout }}'
             web:
+              asDefault: true
               redirections:
                 entryPoint:
                   to: websecure
