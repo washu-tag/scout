@@ -88,7 +88,7 @@ A bit more on `roles` and `grants`, since this is an important piece to understa
 
 The `secretRef` in the Fragment needs to point to a Secret that exists on the cluster. You can create it within your app's chart, though it can be better to manage Secrets outside of helm charts. However it comes to be, you reference it by name in your Fragment. 
 
-Its value will be used as your app's Keycloak client's secret. That is what Keycloak will use when signing the tokens it creates for your app. Your app's service will also need to know this secret value so it is able to validate the signature on the tokens.
+Its value will be used as your app's Keycloak client's secret. Both Keycloak and your app's service will need to know this secret value so your app is able to exchange a login code for tokens.
 
 ```yaml
 apiVersion: v1
