@@ -137,7 +137,7 @@ subjects:
 
 **Important notes**:
 
-- The RoleBinding's `subjects` section is _not_ adjustable. The `ServiceAccount` name should be `scout-keycloak-fragment-reconciler` and the `namespace` should be `scout-core` exactly as written. 
+- The RoleBinding's `subjects` section is _not_ adjustable. The `ServiceAccount` name should be `scout-keycloak-fragment-reconciler` and the `namespace` should be whatever namespace your site installed Keycloak into, which is `scout-core` by default.
 - The role can be named whatever you want, so long as it does not conflict with an existing role, and you match up the Role's `metadata.name` with the RoleBinding's `roleRef.name`.
 
 ## 3. Configure your app's OIDC client
