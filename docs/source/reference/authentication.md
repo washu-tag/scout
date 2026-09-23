@@ -72,6 +72,8 @@ Tokens are JSON Web Tokens: signed, not encrypted. An abridged ID token:
 | `groups` | The roles the user holds **in this service** — see below. |
 | `iss`, `aud`, `exp` | Verification, not identity. |
 
+Access tokens carry the same claims, but check `azp` rather than `aud` on them; see [validating tokens](../customize/service-authentication.md#4-read-the-token-and-act-on-roles).
+
 :::{warning}
 `groups` holds *role* names, not Keycloak group names. The claim is named `groups` for historical reasons and is populated per-service; see the next section.
 :::

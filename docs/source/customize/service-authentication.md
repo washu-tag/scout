@@ -183,15 +183,33 @@ The Fragment syntax is deliberately a subset of what Keycloak's clients can conf
 
 ## 4. Read the token and act on roles
 
-Inside your app, when a request comes in you will get a bearer token in the `Authorization` header. This contains the **Access Token**. Your app needs to send this to Keycloak to ensure the user is logged in, and Keycloak will respond with an **ID Token**. 
+After login, Keycloak redirects the user back to your redirect URI with an authorization code. Your app's backend then exchanges that code, along with the app's client secret, at Keycloak's token endpoint. Keycloak responds with an **ID Token**, an **Access Token**, and a **Refresh Token**. Your app should validate the ID token (and maybe the access token) and read the user's roles from it to make authorization decisions.
 
-It will typically be easier if you let some library validate the access token for you and handle the login. If you decide to validate the access token yourself, this is a rough outline of what you need to do:
+It will typically be easier if you let some library validate the tokens for you and handle the login. If you decide to validate them yourself, you'll need to do some things the same way for both access and ID tokens:
 
 1. Read `kid` from the token header.
 2. Fetch the matching key from the JWKS endpoint, and cache it.
 3. Check the algorithm against your own allowlist — never trust the token's `alg`.
 4. Verify the signature.
-5. Verify `iss`, `aud`, and `exp`.
+5. Verify `iss` and `exp`.
+
+There are additional steps you can do which vary between access and ID tokens.
+
+### ID tokens
+
+Every app receives an ID token at login. In addition to the steps above:
+
+- Verify `aud` contains your client ID. If `aud` names more than one client, also verify `azp` is your client ID.
+- Verify `nonce` matches the one you sent, if you sent one.
+
+### Access tokens
+
+You only need to validate access tokens if your app accepts them in an `Authorization: Bearer` header, for instance from your own frontend calling your API. In addition to the steps above:
+
+- Verify `typ` is `Bearer`, so that an ID token presented as a bearer token is rejected.
+- Verify `azp` is your client ID. Do not require `aud` to be your client ID; Keycloak only includes your client ID in an access token's `aud` when the user holds one of your roles.
+
+Alternatively, you can send the access token to Keycloak's introspection endpoint rather than validating it locally. That costs a request per check, but catches sessions that have been revoked before the token expires.
 
 This advice should, of course, be treated with a huge degree of skepticism. Your app's security relies on proper handling of these tokens, so you should definitely not take this doc's word as final and authoritative on how to do that. Scout can provide you the tokens, but what you do with them is ultimately your responsibility.
 
@@ -199,7 +217,7 @@ See Keycloak's docs on [OIDC endpoints](https://www.keycloak.org/securing-apps/o
 
 ### Users and administrators
 
-When you get the ID token back from Keycloak, now the user is Authenticated and you can make Authorization decisions. Roles will arrive in the token under whatever claim you specified as `roleClaim` in the Fragment; if you left this with the default value the roles are in the `groups` claim. 
+Once you have validated the token, the user is Authenticated and you can make Authorization decisions. Roles will arrive under whatever claim you specified as `roleClaim` in the Fragment; if you left this with the default value the roles are in the `groups` claim. The claim is written into the ID token, the access token, and the userinfo response, so read it from whichever your library gives you.
 
 The role values belong to your app. They are whatever you defined in the `roles` section of the Fragment. Your app must define what they mean. Note that it is possible for the token to contain no claim or an empty claim, which means the user has no roles assigned for your app.
 
@@ -241,7 +259,7 @@ The error statuses will be re-published every time the Reconciler resyncs and ch
 | Redirect loop, or your app never sees a login | Ingress middleware annotation missing or misordered |
 | `groups` claim is empty | User is in no tier you grant to, or not yet approved |
 | Administrators denied, ordinary users fine | Admin tier not granted your `-user` role |
-| `aud` mismatch validating a token | Validating an access token rather than the ID token |
+| `aud` mismatch validating a token | Requiring `aud` on an access token; check `azp` instead, or validate the ID token |
 | PKCE error from Keycloak | Your library is not sending an `S256` code challenge |
 
 ### Removal
