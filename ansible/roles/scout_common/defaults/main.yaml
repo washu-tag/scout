@@ -361,6 +361,12 @@ xnat_plugins_default:
           openid.keycloak.pkceEnabled: 'true'
           openid.keycloak.usernamePattern: '[preferred_username]'
           openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
+          # Skip the login page when the user already has a Keycloak session (prompt=none).
+          openid.keycloak.autoLogin: 'true'
+          # Log out through oauth2-proxy, as the other Scout services do: it clears the edge
+          # session and ends the Keycloak one. XNAT's idle timeout also lands here, so it
+          # ends the whole Scout session, not only XNAT's.
+          openid.keycloak.logoutUri: '{{ oauth2_proxy_signout_url }}'
 
 # Combined list the xnat role's templates/tasks iterate. xnat_plugins is
 # operator-supplied (defaulted to [] inline here).

@@ -810,7 +810,8 @@
           "https://xnat.$(env:server_hostname)"
         ],
         "attributes": {
-          "pkce.code.challenge.method": "S256"
+          "pkce.code.challenge.method": "S256",
+          "post.logout.redirect.uris": "https://xnat.$(env:server_hostname)/app/template/Login.vm"
         },
         "protocolMappers": [
           {

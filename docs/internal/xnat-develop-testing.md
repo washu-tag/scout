@@ -97,9 +97,9 @@ build instead:
 
 ```yaml
 xnat_dev_plugins:
-  - ~/XNAT/openid-auth-plugin/build/libs/openid-auth-plugin-1.6.0-SNAPSHOT-xpl.jar
+  - ~/XNAT/openid-auth-plugin/build/libs/openid-auth-plugin-1.7.0-SNAPSHOT-xpl.jar
   - ~/XNAT/container-service/build/libs/container-service-3.8.1-fat.jar
-xnat_plugins_default: []          # drop the coordinate-resolved openid 1.5.0
+xnat_plugins_default: []          # drop the coordinate-resolved openid release
 xnat_plugins:
   - name: openid-sso-config
     source: { type: none }        # config only — no jar installed
