@@ -1,6 +1,8 @@
 # Per-mode storage/identity for the extractor workers via valuesFrom (ADR 0035):
-# on-prem = hostPath logs + s3-secret; aws = IRSA lake-writer SA + emptyDir, s3-secret
-# dropped. Each carries the full envFrom + volumes (Flux replaces lists). Both ship.
+# on-prem = hostPath logs + s3-secret + s3-env; aws = IRSA lake-writer SA + emptyDir, no
+# s3-secret or s3-env (an empty AWS_ENDPOINT_URL is an SDK v2 endpoint override that breaks
+# every S3 and STS call; the IRSA webhook sets AWS_REGION). Each carries the full envFrom +
+# volumes (Flux replaces lists). Both ship.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -36,9 +38,6 @@ data:
       create: true
       annotations:
         eks.amazonaws.com/role-arn: '${irsa_role_prefix}-hl7log-extractor'
-    envFrom:
-      - configMapRef:
-          name: s3-env
     volumes:
       - name: data
         emptyDir: {}
@@ -85,8 +84,6 @@ data:
       annotations:
         eks.amazonaws.com/role-arn: '${irsa_role_prefix}-hl7-transformer'
     envFrom:
-      - configMapRef:
-          name: s3-env
       - secretRef:
           name: postgres-secret
     volumes:
