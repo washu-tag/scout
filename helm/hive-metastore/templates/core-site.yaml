@@ -18,7 +18,7 @@ data:
       </property>
       <property>
         <name>fs.s3a.endpoint.region</name>
-        <value>{{ required "s3Region is required when mode=aws" .Values.s3Region }}</value>
+        <value>${env.REGION}</value>
       </property>
       <!-- An SCP or bucket policy can deny PutObject without an SSE header. AES256 = SSE-S3. -->
       <property>

@@ -16,7 +16,7 @@ spec:
       {{- $aws := eq .Values.mode "aws" }}
       {{- $podAnnotations := .Values.podAnnotations | default dict }}
       {{- if $aws }}
-      {{- /* subPath mounts never refresh, so roll the pod when core-site changes. */}}
+      {{- /* Hadoop reads core-site at startup; roll the pod on change. */}}
       {{- $podAnnotations = merge (dict "checksum/core-site" (include (print $.Template.BasePath "/core-site.yaml") . | sha256sum)) $podAnnotations }}
       {{- end }}
       {{- with $podAnnotations }}

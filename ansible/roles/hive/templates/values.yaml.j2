@@ -4,6 +4,7 @@ image:
 fullnameOverride: '{{ hive_fullname_override | default("") }}'
 
 {% if aws_deployment %}
+mode: aws
 serviceAccount:
   create: false
   automount: true
@@ -11,11 +12,6 @@ serviceAccount:
 {% endif %}
 
 resources: {{ hive_resources_default | combine(hive_resources | default({}), recursive=true) | to_json }}
-
-{% if aws_deployment %}
-mode: aws
-s3Region: '{{ s3_region }}'
-{% endif %}
 
 env:
   - name: HIVE_METASTORE_DRIVER

@@ -115,12 +115,8 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
-# Service mode (ADR 0011). aws mounts a core-site.xml over the image's empty one with what
-# its hive-site.xml template can't express: the IRSA web-identity provider and SSE-S3.
-# on-prem adds nothing; MinIO creds reach S3A through env.
+# Service mode (ADR 0011). aws mounts a core-site.xml adding the IRSA provider, region and SSE-S3.
 mode: on-prem
-# Required when mode=aws.
-s3Region: ''
 # Follows the Hadoop version the image ships.
 coreSitePath: /opt/hadoop-3.3.6/etc/hadoop/core-site.xml
 
