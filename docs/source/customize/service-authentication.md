@@ -252,7 +252,7 @@ The error statuses will be re-published every time the Reconciler resyncs and ch
 1. Your Fragment was correctly applied, but it has been long enough that the Event was cleaned up. In that case you should be able to see your app's client in the Keycloak Admin UI.
 2. Your Fragment was not picked up by the Reconciler at all. That probably means the Reconciler could not find your ConfigMap in the first place. Check you've labelled it with exactly `keycloak.scout.xnat.org/fragment: "true"`. Without that label your ConfigMap is invisible to the Reconciler and nothing ever knows that it exists.
 
-\* The Reconciler by default is set up to resync every 300 seconds. But if it is set up with `resync_seconds: -1`, it never periodically resyncs. That means the error states will also only show up once and be cleaned up after one hour.
+\* The Reconciler by default is set up to resync every 300 seconds. But if it is set up with `resyncSeconds: -1`, it never periodically resyncs. That means the error states will also only show up once and be cleaned up after one hour.
 
 ### Symptoms
 
