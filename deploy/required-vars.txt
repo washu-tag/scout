@@ -6,7 +6,8 @@
 # validate-deploy.yaml; regenerate with the snippet in that workflow when bases add
 # or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler
 # (Phase 5) validate a site's values against this list. A var the bases use as
-# ${var:=default} (an opt-in knob) may be omitted; the default then applies.
+# ${var:=default} (an opt-in knob) may be left out of cluster-vars, and Flux applies
+# the default; gen_cluster_vars.py checks the exact set, so its values still list it.
 acm_cert_arn
 alb_group_name
 cnpg_operator_namespace

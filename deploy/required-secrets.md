@@ -110,15 +110,19 @@ What a site provides before it switches a component (all inert until then):
   GRANT R TO R_iam;
   ALTER ROLE R_iam SET role = 'R';   -- sessions act as R
   GRANT rds_iam TO R_iam;
-  SELECT pg_has_role('<master>', 'rds_iam', 'MEMBER');  -- must be false, else ROLLBACK
-  COMMIT;
+  DO $$ BEGIN
+    IF pg_has_role('<master>', 'rds_iam', 'MEMBER') THEN
+      RAISE EXCEPTION 'the master would reach rds_iam';
+    END IF;
+  END $$;
+  COMMIT;                            -- after a failed check this rolls back
   ```
 - **Never grant `rds_iam` to a role the master user is a member of** (typically the owner
   roles), and never make the master a member of an `R_iam`. RDS makes any login that
   reaches `rds_iam`, even through nested membership, IAM-only, so the master would lose its
   password login (and `hive-db-init`, which runs as the master, would fail). On PostgreSQL
-  16+ the role that runs `CREATE ROLE` becomes a member of the new role, so run the check
-  rather than assume it.
+  16+ the role that runs `CREATE ROLE` becomes a member of the new role, which the check
+  catches.
 - **A ConfigMap `rds-ca-bundle`** (key `ca.pem`: the RDS CA bundle for the instance's
   region, `https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`) in each
   namespace with a switched client. It is mounted (optional) at `/etc/rds-ca` and clients
@@ -220,4 +224,5 @@ refused). The server pods then run as the `temporal` ServiceAccount (shipped in 
 unused under password) with a token sidecar (`public.ecr.aws/aws-cli/aws-cli`, pinned as
 `aws_cli_image_tag`, not in the haul) whose file `passwordCommand` reads for each new
 connection, over verify-full TLS. The chart's schema Job shares the stores' user, so the
-schema step runs as the owner role with `temporal-db-secret` instead; keep that Secret.
+schema step runs as the owner role with `temporal-db-secret` instead; keep that Secret, and
+keep the owner's password login when retiring the other owners' passwords.
