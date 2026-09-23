@@ -30,6 +30,6 @@ data:
           - {{ .Values.clientId }}-admin
         grants:
           scout-user: [{{ .Values.clientId }}-user]
-          scout-admin: [{{ .Values.clientId }}-admin]
+          scout-admin: [{{ .Values.clientId }}-user, {{ .Values.clientId }}-admin]
         secretRef:
           name: {{ include "example.clientSecretName" . }}
