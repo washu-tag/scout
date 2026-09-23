@@ -13,11 +13,8 @@ serviceAccount:
 resources: {{ hive_resources_default | combine(hive_resources | default({}), recursive=true) | to_json }}
 
 {% if aws_deployment %}
-# -D in HADOOP_OPTS never reaches S3A; the chart mounts these as core-site.xml.
-coreSite:
-  fs.s3a.aws.credentials.provider: com.amazonaws.auth.WebIdentityTokenCredentialsProvider
-  fs.s3a.endpoint.region: '{{ s3_region }}'
-  fs.s3a.encryption.algorithm: AES256
+mode: aws
+s3Region: '{{ s3_region }}'
 {% endif %}
 
 env:

@@ -115,10 +115,13 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
-# Hadoop properties rendered into a core-site.xml mounted over the image's empty one,
-# for fs.s3a.* keys the image's hive-site.xml template has no placeholder for (e.g. SSE).
-# Empty mounts nothing. The path follows the image's Hadoop version.
-coreSite: {}
+# Service mode (ADR 0011). aws mounts a core-site.xml over the image's empty one with what
+# its hive-site.xml template can't express: the IRSA web-identity provider and SSE-S3.
+# on-prem adds nothing; MinIO creds reach S3A through env.
+mode: on-prem
+# Required when mode=aws.
+s3Region: ''
+# Follows the Hadoop version the image ships.
 coreSitePath: /opt/hadoop-3.3.6/etc/hadoop/core-site.xml
 
 nodeSelector: {}

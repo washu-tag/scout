@@ -2,8 +2,8 @@
 # the hive DB as the `hive` owner over the -rw endpoint; S3 creds = lake-writer.
 # Mode-parameterized via cluster-vars (ADR 0035): on-prem sets s3_path_style_access=true
 # + a MinIO endpoint/key; aws sets path-style=false, empty endpoint/key, and
-# irsa_role_prefix-hive-metastore for the IRSA ServiceAccount. The aws S3A credentials
-# provider + SSE come from the hive-metastore-edge-aws ConfigMap (../edge.yaml).
+# irsa_role_prefix-hive-metastore for the IRSA ServiceAccount; `mode` makes the chart
+# add the aws S3A credentials provider + SSE.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -21,11 +21,10 @@ spec:
         kind: HelmRepository
         name: scout-charts
         namespace: '${hive_namespace}'
-  valuesFrom:
-    - kind: ConfigMap
-      name: 'hive-metastore-edge-${service_mode}'
   values:
     replicaCount: 1
+    mode: '${service_mode}'
+    s3Region: '${s3_region}'
     image:
       repository: starburstdata/hive
       pullPolicy: IfNotPresent

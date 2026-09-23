@@ -1,16 +1,29 @@
-{{- with .Values.coreSite }}
+{{- if not (has .Values.mode (list "on-prem" "aws")) }}
+{{- fail (printf "mode must be \"on-prem\" or \"aws\", got %q" .Values.mode) }}
+{{- end }}
+{{- if eq .Values.mode "aws" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "hive-metastore.fullname" $ }}-core-site
+  name: {{ include "hive-metastore.coreSiteName" . }}
   labels:
-    {{- include "hive-metastore.labels" $ | nindent 4 }}
+    {{- include "hive-metastore.labels" . | nindent 4 }}
 data:
   core-site.xml: |
     <?xml version="1.0" encoding="UTF-8"?>
     <configuration>
-    {{- range $name, $value := . }}
-      <property><name>{{ $name }}</name><value>{{ $value }}</value></property>
-    {{- end }}
+      <property>
+        <name>fs.s3a.aws.credentials.provider</name>
+        <value>com.amazonaws.auth.WebIdentityTokenCredentialsProvider</value>
+      </property>
+      <property>
+        <name>fs.s3a.endpoint.region</name>
+        <value>{{ required "s3Region is required when mode=aws" .Values.s3Region }}</value>
+      </property>
+      <!-- An SCP or bucket policy can deny PutObject without an SSE header. AES256 = SSE-S3. -->
+      <property>
+        <name>fs.s3a.encryption.algorithm</name>
+        <value>AES256</value>
+      </property>
     </configuration>
 {{- end }}

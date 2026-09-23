@@ -34,7 +34,8 @@ other `${var}`. How each mode delta is expressed depends on its shape:
 1. **Value-class deltas: inline `${var}`, the chart branches.** Where the difference is a
    scalar the chart already conditions on, it is a plain cluster-var in the HelmRelease
    values and the chart does the conditional. envsubst just passes the string, no extra
-   machinery. Applied to hive (`S3_PATH_STYLE_ACCESS`, `HADOOP_OPTS`, and the IRSA
+   machinery. Applied to hive (`S3_PATH_STYLE_ACCESS`, the chart-owned `mode` that adds
+   the aws S3A credentials provider + SSE via core-site.xml, and the IRSA
    `serviceAccount.annotations` role-arn, inert off-EKS) and the extractor's chart-owned
    `sparkDefaults.mode: '${service_mode}'` (the chart then emits the WebIdentity provider
    + virtual-host S3 in aws).
@@ -158,8 +159,8 @@ analytics apps) stays mode-agnostic; only the edge moves.
   ingress edge set, once that lands). The first `aws`-mode consumer is a cloud cluster, set via a
   gitops change (its cluster-vars + IRSA/ESO secrets), not in this repo.
 - The **storage edge is implemented** (hive value-class; trino + extractor config-block).
-  `service_mode`, `lake_reader_role_arn`, `lake_writer_role_arn`, `s3_path_style_access`,
-  and `hive_hadoop_opts` join the `required-vars` contract; `validate-deploy` renders both
+  `service_mode`, `lake_reader_role_arn`, `lake_writer_role_arn`, and `s3_path_style_access`
+  join the `required-vars` contract; `validate-deploy` renders both
   modes so neither rots (only one is exercised on any given cluster).
 - Completing the `aws` branch was **real per-chart work, not a values toggle**, and it
   surfaced two latent bugs in the Ansible `aws_deployment` path that were fixed rather than
