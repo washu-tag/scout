@@ -9,6 +9,8 @@ metadata:
   namespace: '${scout_analytics_namespace}'
   annotations:
     alb.ingress.kubernetes.io/target-type: ip
+    # / redirects to login, so the default check never sees a 200.
+    alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/certificate-arn: ${acm_cert_arn}
