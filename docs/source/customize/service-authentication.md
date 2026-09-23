@@ -35,6 +35,10 @@ Note that the `kube-system` part of the name is the namespace in which OAuth2 Pr
 If your app requires any endpoints to be unauthenticated (e.g. favicons, any public pages), you will need to define a second Ingress for those specific paths without these middlewares. See, for example, Launchpad's [favicon-ingress.yaml](https://github.com/washu-tag/scout/tree/main/helm/launchpad/templates/favicon-ingress.yaml).
 :::
 
+:::{note}
+OAuth2 Proxy adds an `X-Auth-Request-Preferred-Username` header, naming the logged-in user, to every request it lets through. If your app trusts that header, you must also ship a NetworkPolicy that only admits traffic from Traefik. Otherwise any pod in the cluster can call your Service directly and set the header to any username it likes. See the example app's [networkpolicy.yaml](https://github.com/washu-tag/scout/tree/main/examples/pluggable-app/templates/networkpolicy.yaml). As with the middleware names, the Traefik namespace is site-specific.
+:::
+
 ## 2. A Fragment ConfigMap: Register a Keycloak client
 
 In order for your app to be able to integrate with Scout's login system, you will need to define a Keycloak client for your app. Keycloak is how Scout manages user logins and service-level auth; see [Authentication Reference](../reference/authentication.md) for a more in-depth reference.

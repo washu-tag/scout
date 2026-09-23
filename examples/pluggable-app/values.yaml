@@ -58,6 +58,12 @@ ingress:
       kube-system-oauth2-proxy-error@kubernetescrd, kube-system-oauth2-proxy-auth@kubernetescrd,
       kube-system-security-headers@kubernetescrd
 
+# Admits traffic only from Traefik, so the identity header can't be forged by
+# other pods. `traefikNamespace` is where the site runs Traefik.
+networkPolicy:
+  enabled: true
+  traefikNamespace: kube-system
+
 service:
   type: ClusterIP
   port: 8080
