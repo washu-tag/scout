@@ -23,5 +23,5 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{- define "example.clientSecretName" -}}
-{{- printf "%s-keycloak-client" .Values.clientId -}}
+{{- .Values.existingSecret | default (printf "%s-keycloak-client" .Values.clientId) -}}
 {{- end }}

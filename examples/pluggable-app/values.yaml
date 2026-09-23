@@ -14,20 +14,19 @@ clientId: example-app
 domain: ''
 subdomain: example-app
 
-# The realm the app's client belongs to, and the browser-facing Keycloak URL
-# users are redirected to. Only needed once the app runs its own login flow --
-# this example does not, so `keycloakUrl` is unset and unused.
-realm: scout
-keycloakUrl: ''
-
 # The fragment reconciler's ServiceAccount, which reconciler-rbac.yaml grants
 # read access to this app's client credential. The name is stable contract; the
 # namespace follows the site's `keycloak_namespace`.
 reconcilerServiceAccount: scout-keycloak-fragment-reconciler
 reconcilerNamespace: scout-core
 
-# The client credential. Left empty, the chart generates one on first install
-# and preserves it across upgrades.
+# The client credential. Prefer creating the Secret outside the chart and naming
+# it in `existingSecret`, which must hold the credential under `client-secret`;
+# the chart then creates no Secret of its own. Otherwise the chart creates one
+# from `clientSecret`, or generates a value if that is empty. Once the chart's
+# Secret exists it takes precedence, so setting `clientSecret` after the first
+# install is silently ignored.
+existingSecret: ''
 clientSecret: ''
 
 # A stock image plus the app file from `files/`, so this chart installs with
