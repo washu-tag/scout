@@ -14,6 +14,7 @@ db_port
 delta_lake_path
 deployer_name
 extractor_data_dir
+extractor_db_auth
 hive_db_auth
 hive_db_user
 hive_hadoop_opts

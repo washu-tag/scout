@@ -45,9 +45,9 @@ def get_db_connection_args():
             "user": os.getenv("DB_USER"),
         }
         if _iam_auth:
-            _connection_args["sslmode"] = os.getenv("PGSSLMODE", "verify-full")
+            _connection_args["sslmode"] = os.getenv("DB_SSLMODE", "verify-full")
             _connection_args["sslrootcert"] = os.getenv(
-                "PGSSLROOTCERT", "/etc/rds-ca/ca.pem"
+                "DB_SSLROOTCERT", "/etc/rds-ca/ca.pem"
             )
         else:
             _connection_args["password"] = os.getenv("DB_PASSWORD")

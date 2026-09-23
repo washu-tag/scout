@@ -20,7 +20,7 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 | --- | --- | --- |
 | `superuser-secret` | `username`, `password` | CNPG `Cluster.superuserSecret` |
 | `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor,temporal}` | `username`, `password` | CNPG managed roles |
-| `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role; `keycloak_iam` under [RDS IAM auth](#rds-iam-database-auth-aws-opt-in)) |
+| `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role; its IAM login role under [RDS IAM auth](#rds-iam-database-auth-aws-opt-in)) |
 | `keycloak-admin-secret` | `username`, `password` | Keycloak bootstrap admin + config-cli |
 | `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names) |
 | `valkey-auth` | `password`, `password-file` | Valkey chart + exporter |
@@ -34,7 +34,7 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 
 | secret | keys | consumed by |
 | --- | --- | --- |
-| `hive-metastore-secret` / `-readonly-secret` | `S3_SECRET_KEY`, `HIVE_METASTORE_PASSWORD` (ignored but must be non-empty under `hive_db_auth: iam`) | hive-metastore Deployments |
+| `hive-metastore-secret` / `-readonly-secret` | `S3_SECRET_KEY`, `HIVE_METASTORE_PASSWORD` (still non-empty under `hive_db_auth: iam`, where the token replaces it) | hive-metastore Deployments |
 | `minio-scout-env-configuration` | `config.env` (root creds + region/OIDC) | MinIO `Tenant.configSecret` (in-cluster MinIO only) |
 | `${s3_*}-creds` (lake r/w, loki-writer, opa-bundle r/w) | `CONSOLE_ACCESS_KEY`, `CONSOLE_SECRET_KEY` | MinIO `Tenant.users` (in-cluster MinIO only) |
 
@@ -42,10 +42,8 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | secret | keys | consumed by |
 | --- | --- | --- |
 | `s3-secret` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | hl7log-extractor + hl7-transformer (lake-writer; cloud = IRSA instead) |
-| `postgres-secret` | `DB_PASSWORD` (+ DB coords); optional RDS IAM keys (below) | extractor datasource (= the extractor role); aws hl7log-extractor `envFrom`s it too |
-| `temporal-db-secret` | `password` | Temporal server + schema Job (= the temporal CNPG role) |
-| `postgres-secret` | `DB_PASSWORD` (+ DB coords) | extractor datasource (= the extractor role) |
-| `temporal-db-secret` | `password` | Temporal server + schema Job (= the temporal owner role); under `temporal_db_auth=iam` only the schema step reads it |
+| `postgres-secret` | `DB_PASSWORD` (+ DB coords); optional [RDS IAM auth](#rds-iam-database-auth-aws-opt-in) keys | extractor datasource (= the extractor role) |
+| `temporal-db-secret` | `password` | Temporal server + schema Job (= the temporal CNPG role); only the schema step under `temporal_db_auth: iam` |
 | `trino-rw-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-rw (lake-writer; cloud = IRSA instead) |
 
 ## scout-analytics (superset / opa / trino-ro)
@@ -53,7 +51,7 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | --- | --- | --- |
 | `trino-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-ro (lake-reader; cloud = IRSA instead) |
 | `trino-authz-env` | `KEYSTORE_PASSWORD`, `INTERNAL_SHARED_SECRET` | trino-ro + cert-manager (generate-once) |
-| `superset-env` | DB + Redis + OIDC client secrets + `SUPERSET_SECRET_KEY`; RDS IAM auth: `DB_IAM_AUTH=true`, `DB_USER` = the IAM login role, optional `DB_SSLMODE` / `DB_SSLROOTCERT` (see below) | superset server + dashboards |
+| `superset-env` | DB + Redis + OIDC client secrets + `SUPERSET_SECRET_KEY`; optional [RDS IAM auth](#rds-iam-database-auth-aws-opt-in) keys | superset server + dashboards |
 | `opa-bundle-reader` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | scout-opa bundle reader |
 
 ## kube-system (oauth2-proxy)
@@ -68,67 +66,9 @@ base does not ship or generate it (unlike the `oauth2-proxy-templates` ConfigMap
 site must provide it as a Secret (from CI or the site repo, not the secrets manager) or
 oauth2-proxy stays in `ContainerCreating` on the missing mount.
 
-## RDS IAM database auth (aws, optional)
-Off by default: with none of the keys below set, every client keeps its role password. A
-site opts in one component at a time:
-
-- **Login roles.** Keep each owner role (e.g. `scout`) and its password. Add a separate
-  passwordless login role per owner: `CREATE ROLE scout_iam LOGIN; GRANT scout TO scout_iam;
-  GRANT rds_iam TO scout_iam; ALTER ROLE scout_iam SET role = 'scout'`, so sessions act as,
-  and objects stay owned by, the owner. Switching (and rolling back) is a username change.
-- **Never grant `rds_iam` to a role the master user is a member of**, directly or through
-  another role. RDS then refuses that login's password, and anything connecting as the
-  master (e.g. the `hive-db-init` Job) fails. Grant it only to the `*_iam` roles, and
-  never grant those to the master.
-- **CA bundle.** A site-supplied ConfigMap `rds-ca-bundle` (key `ca.pem`, the RDS CA
-  bundle for the instance's region, e.g.
-  `https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`) in each client
-  namespace. aws workloads mount it (optional) at `/etc/rds-ca`, so IAM clients use
-  `sslmode=verify-full` with `/etc/rds-ca/ca.pem`.
-- **IRSA.** The workload's role needs `rds-db:connect` on
-  `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/<login role>`.
-
-| workload (namespace) | ServiceAccount / IRSA role | switch (keys in the secret) |
-| --- | --- | --- |
-| hl7log-extractor (`scout-extractor`) | `hl7log-extractor` / `${irsa_role_prefix}-hl7log-extractor` | `postgres-secret`: `SPRING_DATASOURCE_URL` = `jdbc:aws-wrapper:postgresql://<host>:<port>/<db>?wrapperPlugins=iam&sslmode=verify-full&sslrootcert=/etc/rds-ca/ca.pem`, `SPRING_DATASOURCE_DRIVERCLASSNAME` = `software.amazon.jdbc.Driver`, `SPRING_DATASOURCE_USERNAME` = the login role. `DB_PASSWORD` stays (ignored under IAM). |
-| hl7-transformer (`scout-extractor`) | `hl7-transformer` / `${irsa_role_prefix}-hl7-transformer` | `postgres-secret`: `DB_IAM_AUTH=true`, `DB_USER` = the login role. TLS defaults to verify-full with `/etc/rds-ca/ca.pem` (`PGSSLMODE` / `PGSSLROOTCERT` override). |
-
-The two extractor workers read different username keys, so they switch independently.
-Pods don't restart on a Secret change: roll the workload after editing the secret.
-
 ## Not site-provided (generated in-cluster, listed so they aren't double-provisioned)
 - `trino-tls` — cert-manager `Certificate`
 - `superset-config` — rendered config (CI / chart), not credentials
-
-## RDS IAM database auth (aws, opt-in)
-A component can connect to RDS with short-lived IAM tokens instead of a password. It
-is off by default and switched per component by a site var, so a site flips one
-component at a time and rolls back by flipping it back.
-
-| component | site vars (default) | ServiceAccount (IRSA role) |
-| --- | --- | --- |
-| Temporal | `temporal_db_auth` (`password`; set `iam`), `temporal_db_user` (`temporal`; set the IAM login role) | `temporal` in `${scout_extractor_namespace}` (`${irsa_role_prefix}-temporal`) |
-
-What a site provides before it sets a component to `iam`:
-- **IRSA role**: trusts `system:serviceaccount:<namespace>:<ServiceAccount>` and allows
-  `rds-db:connect` on `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/<login role>`.
-- **ConfigMap `rds-ca-bundle`** (key `ca.pem`), in the component's namespace: the RDS CA
-  bundle for the instance's region (`https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`).
-  IAM clients use TLS with full verification, so `postgres_host` must be the instance endpoint.
-- **A login role for IAM**. Recommended: keep the owner role (e.g. `temporal`) and its password,
-  and add a separate passwordless login role that acts as the owner:
-  `CREATE ROLE temporal_iam LOGIN; GRANT temporal TO temporal_iam; GRANT rds_iam TO temporal_iam;
-  ALTER ROLE temporal_iam SET role = 'temporal';`. Sessions then run as, and create objects
-  owned by, the owner role, and the password path stays valid for rollback.
-- **Never grant `rds_iam` to a role the master user is a member of** (directly or through
-  another role, e.g. owner roles the master was granted to create databases), and never make
-  the master a member of the IAM login role. On RDS, `rds_iam` membership makes IAM auth take
-  precedence over the password, so the master would lose password login.
-
-Temporal specifics: the chart's schema Job shares the stores' user, so under `iam` the base
-runs the schema step as the owner role with `temporal-db-secret` (keep that Secret), while
-the server pods use the token. Temporal's password variant connects without TLS, so keep
-`rds.force_ssl` off until every client uses TLS.
 
 ## Notes for cloud setups
 - Provision the backing values with your IaC; keep them out of git. A typical AWS estate
@@ -154,37 +94,69 @@ the server pods use the token. Temporal's password variant connects without TLS,
   XNAT client once its key exists.
 
 ## RDS IAM database auth (aws, opt-in)
-An aws site can move Postgres clients to passwordless RDS IAM auth, one component at a
-time. Nothing in the base turns it on: a client keeps its password login until the site
-flips it as below.
+An aws site whose Postgres is RDS can move clients to passwordless IAM database auth, one
+component at a time. Nothing changes until the site opts in: each cluster-var below
+defaults to password auth, and the Secret keys are optional. A switched client logs in as
+a separate IAM login role with a short-lived token minted from its IRSA identity, over
+verified TLS.
 
-- **Login roles.** For each owner role `R` whose client flips, create a separate login role
-  `R_iam` with no password, and point the client's username at it:
-  `CREATE ROLE R_iam LOGIN; GRANT R TO R_iam; GRANT rds_iam TO R_iam; ALTER ROLE R_iam SET role = 'R';`.
-  Sessions then act as `R`, so objects stay owned by `R`. `R` keeps its password during the
-  cutover, so rollback is switching the client's username back to `R`.
-- **Never grant `rds_iam` to a role the RDS master user is a member of** (the owner roles,
-  typically), and never make the master a member of an `R_iam`. RDS makes any login role
-  that reaches `rds_iam` through membership IAM-only, so the master would lose its password
-  login. `SELECT pg_has_role('<master>', 'rds_iam', 'MEMBER')` must stay false.
-- **TLS.** RDS accepts IAM tokens over TLS only. Clients use `sslmode=verify-full` against a
-  site-provided ConfigMap `rds-ca-bundle` (key `ca.pem`: the regional RDS bundle for the
-  instance's region, e.g. `https://truststore.pki.rds.amazonaws.com/us-east-1/us-east-1-bundle.pem`)
-  in each namespace with a flipped client, mounted at `/etc/rds-ca`.
-- **IRSA.** The client's ServiceAccount role needs `rds-db:connect` on
-  `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/R_iam`.
+What a site provides before it switches a component (all inert until then):
 
-| client | login role | ServiceAccount (namespace) | flip |
-| --- | --- | --- | --- |
-| Keycloak | `keycloak_iam` | `keycloak-opa-bundle-writer` (`${keycloak_namespace}`) | `keycloak-db-secret` `username: keycloak_iam` + the CR patch below |
+- **An IAM login role per owner role `R`.** Keep `R` and its password, so objects stay
+  owned by `R` and rollback is switching the client's username back:
+  ```sql
+  BEGIN;
+  CREATE ROLE R_iam LOGIN;           -- no password
+  GRANT R TO R_iam;
+  ALTER ROLE R_iam SET role = 'R';   -- sessions act as R
+  GRANT rds_iam TO R_iam;
+  SELECT pg_has_role('<master>', 'rds_iam', 'MEMBER');  -- must be false, else ROLLBACK
+  COMMIT;
+  ```
+- **Never grant `rds_iam` to a role the master user is a member of** (typically the owner
+  roles), and never make the master a member of an `R_iam`. RDS makes any login that
+  reaches `rds_iam`, even through nested membership, IAM-only, so the master would lose its
+  password login (and `hive-db-init`, which runs as the master, would fail). On PostgreSQL
+  16+ the role that runs `CREATE ROLE` becomes a member of the new role, so run the check
+  rather than assume it.
+- **A ConfigMap `rds-ca-bundle`** (key `ca.pem`: the RDS CA bundle for the instance's
+  region, `https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`) in each
+  namespace with a switched client. It is mounted (optional) at `/etc/rds-ca` and clients
+  use `sslmode=verify-full` against `/etc/rds-ca/ca.pem`, so `postgres_host` must be the
+  instance endpoint. A missing ConfigMap shows up as a TLS error at connect time.
+- **An IRSA role per workload** (table) that trusts
+  `system:serviceaccount:<namespace>:<ServiceAccount>` and allows `rds-db:connect` on
+  `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/<login role>`. The Python
+  clients and the Temporal sidecar mint tokens in `AWS_REGION` (set by the EKS pod identity
+  webhook), else `AWS_DEFAULT_REGION`; the Java clients (AWS Advanced JDBC Wrapper, with
+  `wrapperPlugins=iam` kept explicit) take it from the RDS hostname.
+
+| component (namespace) | cluster-vars (default) | ServiceAccount / IRSA role | login role | switch |
+| --- | --- | --- | --- | --- |
+| Keycloak (`${keycloak_namespace}`) | none | `keycloak-opa-bundle-writer` / `${irsa_role_prefix}-opa-bundle-writer` | `keycloak_iam` | `keycloak-db-secret` `username` + the CR patch below |
+| Superset: server, worker, init-db + dashboards Jobs (`${scout_analytics_namespace}`) | `superset_db_auth` (`password`) | `superset` / `${irsa_role_prefix}-superset` | `superset_iam` | `superset-env`: `DB_IAM_AUTH=true` + `DB_USER` |
+| hive-metastore (`${hive_namespace}`) | `hive_db_auth` (`password`), `hive_db_user` (`hive`) | `hive-metastore` / `${irsa_role_prefix}-hive-metastore` | `hive_iam` | the cluster-vars |
+| hive-metastore-readonly (`${hive_namespace}`) | `hive_db_auth`, `hive_readonly_db_user` (`hive_readonly`) | `hive-metastore-readonly` / `${irsa_role_prefix}-hive-metastore-readonly` | `hive_readonly_iam` | the cluster-vars |
+| hl7log-extractor (`${scout_extractor_namespace}`) | `extractor_db_auth` (`password`) | `hl7log-extractor` / `${irsa_role_prefix}-hl7log-extractor` | `<postgres_user>_iam` | `postgres-secret`: `SPRING_DATASOURCE_URL`, `_DRIVERCLASSNAME`, `_USERNAME` |
+| hl7-transformer (`${scout_extractor_namespace}`) | `extractor_db_auth` | `hl7-transformer` / `${irsa_role_prefix}-hl7-transformer` | `<postgres_user>_iam` | `postgres-secret`: `DB_IAM_AUTH=true` + `DB_USER` |
+| Temporal: server + schema step (`${scout_extractor_namespace}`) | `temporal_db_auth` (`password`), `temporal_db_user` (`temporal`) | `temporal` / `${irsa_role_prefix}-temporal` | `temporal_iam` | the cluster-vars |
+
+A `*_db_auth: iam` var switches hive and Temporal outright; for Superset and the extractor
+workers it only prepares the pods (ServiceAccount, CA mount, token hook) and the Secret keys
+switch them. Per component: IRSA role, login role and CA ConfigMap first, then the
+cluster-vars, then the Secret keys. Pods don't restart on a Secret change, so restart the
+workload after editing one. Roll back in reverse; the owner role's password still works.
+Superset and hl7-transformer also read optional `DB_SSLMODE` (default `verify-full`) and
+`DB_SSLROOTCERT` (default `/etc/rds-ca/ca.pem`) from their Secret. Keep `rds.force_ssl` off
+until every client uses TLS: Temporal's password variant connects without it.
 
 ### Keycloak
-The scout keycloak image ships the AWS Advanced JDBC Wrapper and the SDK `rds` module in
-`providers/`, unused unless `db-driver` selects the wrapper. `db-driver` is a build-time
-option, so the CR also needs `startOptimized: false`: Keycloak re-augments at each start
-(a few seconds; `/opt/keycloak/lib` must stay writable, as in the stock image). Left on
+The scout keycloak image ships the AWS Advanced JDBC Wrapper in `providers/`, unused unless
+`db-driver` selects it. `db-driver` is a build-time option, so the CR also needs
+`startOptimized: false` (Keycloak re-augments at each start, a few seconds); left on
 `--optimized`, a changed `db-driver` makes Keycloak exit at startup. Append this JSON6902
-patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
+patch to the `keycloak-instance` Flux Kustomization's `spec.patches`, in the same change as
+`keycloak-db-secret` `username: keycloak_iam` (either one alone fails the login):
 
 ```yaml
 - target: {kind: Keycloak, name: keycloak}
@@ -202,7 +174,7 @@ patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
       value: {name: db-driver, value: software.amazon.jdbc.Driver}
     - op: add
       path: /spec/unsupported/podTemplate/spec/volumes
-      value: [{name: rds-ca, configMap: {name: rds-ca-bundle}}]
+      value: [{name: rds-ca, configMap: {name: rds-ca-bundle, optional: true}}]
     - op: add
       path: /spec/unsupported/podTemplate/spec/containers
       value: [{name: keycloak, volumeMounts: [{name: rds-ca, mountPath: /etc/rds-ca, readOnly: true}]}]
@@ -210,88 +182,42 @@ patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
 
 - `db.url` overrides the CR's host/port/database. `${postgres_host}` resolves in that
   Kustomization's postBuild (write `$${postgres_host}` if the manifest carrying the patch is
-  itself substituted). The wrapper takes the token's region from the RDS hostname; set
-  `iamHost`/`iamRegion` only when connecting through a CNAME.
-- Keep `wrapperPlugins=iam` explicit: the wrapper's default plugins target Aurora failover and
-  open extra monitoring connections (on Aurora add `failover2`, as Keycloak's docs advise).
-- The pod runs as `keycloak-opa-bundle-writer`, so the `rds-db:connect` grant for
-  `keycloak_iam` goes on that SA's role (`${irsa_role_prefix}-opa-bundle-writer`), next to its
-  OPA-bundle S3 grant. The wrapper uses the SDK default credential chain (web identity).
-- Land the `username: keycloak_iam` flip and the patch together; either one alone fails the
-  login. The `password` key in `keycloak-db-secret` goes unused; keep it until the cutover
-  soaks, so rollback is dropping the patch and restoring `username: keycloak`.
-- To stage the flip, first apply the patch with `wrapperPlugins=` (empty), without the
+  itself substituted). Set `iamHost`/`iamRegion` in the URL only when connecting through a
+  CNAME.
+- To stage it, apply the patch first with `wrapperPlugins=` (empty), without the
   `passwordSecret` removal and with `username: keycloak`. That proves the driver swap,
-  re-augmentation and verify-full TLS on password auth before switching to IAM.
-Passwordless Postgres logins for the components below, each off by default behind its
-own cluster-var. Turning one on needs, per component:
+  re-augmentation and verify-full TLS on password auth. Roll back by dropping the patch and
+  restoring `username: keycloak`.
 
-- **An IAM login role** next to the owner role `R`, so objects stay owned by `R` and
-  the password login still works for rollback:
-  ```sql
-  CREATE ROLE R_iam LOGIN;               -- no password
-  GRANT R TO R_iam;
-  GRANT rds_iam TO R_iam;
-  ALTER ROLE R_iam SET role = 'R';       -- sessions act as R
-  ```
-  **Never grant `rds_iam` to an owner role, or to any role the master user is a member
-  of.** RDS honours nested membership, so the master would become IAM-only and its
-  password login would be refused. Keep the master out of every `R_iam`, and since
-  Postgres 16+ makes a non-superuser creator a member of each role it creates, verify
-  rather than assume: `pg_has_role('<master>', 'rds_iam', 'MEMBER')` must be false.
-- **An IRSA role** `${irsa_role_prefix}-<suffix>` trusting the ServiceAccount below,
-  allowed `rds-db:connect` on `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/R_iam`.
-- **A `rds-ca-bundle` ConfigMap** (key `ca.pem`, the RDS CA bundle for the instance's
-  region, e.g. `https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`)
-  in the component's namespace, mounted at `/etc/rds-ca`. IAM auth requires TLS; clients
-  use `sslmode=verify-full`. The mount is optional, so a missing ConfigMap surfaces as a
-  connection error, not a stuck pod.
+### Superset
+`superset_db_auth: iam` creates the `superset` ServiceAccount and runs the server, worker,
+init-db Job and dashboards import Job as it, mounts the CA and loads a `do_connect` hook that
+stays inert until `superset-env` sets `DB_IAM_AUTH=true`. Change `DB_IAM_AUTH` and
+`DB_USER` together, then restart `superset` and `superset-worker`; the Jobs pick it up on
+the next upgrade.
 
-| component | cluster-var | ServiceAccount (namespace) | IRSA suffix | login role | switch |
-| --- | --- | --- | --- | --- | --- |
-| superset (server, worker, init Job, dashboards Job) | `superset_db_auth: iam` (default `password`) | `superset` (`${scout_analytics_namespace}`) | `-superset` | `superset_iam` | `superset-env`: `DB_IAM_AUTH=true` + `DB_USER=superset_iam` |
+### Hive metastores
+`hive_db_auth: iam` runs both metastores on `ghcr.io/washu-tag/hive-metastore` (the stock
+image plus the AWS JDBC wrapper) with a `jdbc:aws-wrapper` URL; set the user vars in the
+same change. `HIVE_METASTORE_PASSWORD` stays non-empty (the token replaces it), so rollback
+is a cluster-var flip. The readonly metastore uses its own role,
+`${irsa_role_prefix}-hive-metastore-readonly`, in both auth modes: create it (lake read,
+plus `rds-db:connect` for the readonly login role) before upgrading. `hive-db-init` is
+unchanged and keeps running as the master over a password.
 
-Superset: `superset_db_auth=iam` only adds the ServiceAccount, the CA mount and the
-token hook, which stays inert until `superset-env` flips. Change `DB_IAM_AUTH` and
-`DB_USER` together, then restart `superset` and `superset-worker` (pods don't roll on a
-Secret change by themselves); the init and dashboards Jobs pick it up on the next
-upgrade. Roll back by reverting those two keys. `DB_SSLMODE` (default `verify-full`) and
-`DB_SSLROOTCERT` (default `/etc/rds-ca/ca.pem`) override the TLS settings. Tokens are
-minted in `AWS_REGION` (set by the EKS pod-identity webhook), else `AWS_DEFAULT_REGION`.
-A site on RDS can switch a component from password to IAM database auth, one at a time.
-Each switch is a cluster-var that defaults to password, so nothing changes until a site
-sets it. The component then connects as a separate IAM login role over TLS
-(`sslmode=verify-full`), using a short-lived token minted from its IRSA identity.
+### Extractor workers
+`extractor_db_auth: iam` mounts the CA on both workers and lets `postgres-secret` override
+hl7log-extractor's datasource. Each worker then switches on its own keys:
+- hl7log-extractor: `SPRING_DATASOURCE_URL` =
+  `jdbc:aws-wrapper:postgresql://<host>:<port>/<db>?wrapperPlugins=iam&sslmode=verify-full&sslrootcert=/etc/rds-ca/ca.pem`,
+  `SPRING_DATASOURCE_DRIVERCLASSNAME` = `software.amazon.jdbc.Driver`,
+  `SPRING_DATASOURCE_USERNAME` = the login role. Keep `DB_PASSWORD` present (ignored).
+- hl7-transformer: `DB_IAM_AUTH=true` and `DB_USER` = the login role.
 
-- **Login roles.** Keep each owner role (`hive`, `hive_readonly`, ...) and its password
-  unchanged, and add a login role that acts as it, for example:
-  `CREATE ROLE hive_iam LOGIN; GRANT hive TO hive_iam; GRANT rds_iam TO hive_iam;
-  ALTER ROLE hive_iam SET role = 'hive';`. Sessions then run as, and objects stay owned
-  by, `hive`. To roll back, set the component back to password auth and the username
-  back to the owner. Keeping the owner's password in the Secret means rollback needs no
-  Secret change.
-- **Never grant `rds_iam` to a role the master user is a member of.** Membership counts
-  even when it's indirect, and it makes that login IAM-only, so the master (and
-  `hive-db-init`, which runs as `superuser-secret` over a password) would be locked out.
-  Grant `rds_iam` only to the `*_iam` login roles, and never make the master a member of
-  one.
-- **CA bundle.** Provide a ConfigMap `rds-ca-bundle` with key `ca.pem`, holding the RDS
-  CA bundle for your region (`https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem`),
-  in each namespace whose components use IAM. It's mounted at `/etc/rds-ca`.
-- **IRSA.** Each workload's role needs `rds-db:connect` on
-  `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/<login role>`.
-
-hive (`${hive_namespace}`):
-
-| cluster-var | default | iam value |
-| --- | --- | --- |
-| `hive_db_auth` | `password` | `iam` (the `hive-metastore` image with the AWS JDBC wrapper, and the `jdbc:aws-wrapper` URL) |
-| `hive_db_user` | `hive` | the write login role, e.g. `hive_iam` |
-| `hive_readonly_db_user` | `hive_readonly` | the readonly login role, e.g. `hive_readonly_iam` |
-
-The write metastore's ServiceAccount `hive-metastore` uses `${irsa_role_prefix}-hive-metastore`,
-and the readonly one's (`hive-metastore-readonly`) uses its own, in both auth modes:
-`${irsa_role_prefix}-hive-metastore-readonly`. That role needs lake read access and
-`rds-db:connect` for the readonly login role only, and its trust must admit
-`system:serviceaccount:${hive_namespace}:hive-metastore-readonly`. `hive-db-init` is
-unchanged: it keeps running as the master over a password.
+### Temporal
+Set `temporal_db_auth: iam` and `temporal_db_user` together (a token for the owner role is
+refused). The server pods then run as the `temporal` ServiceAccount (shipped in both modes,
+unused under password) with a token sidecar (`public.ecr.aws/aws-cli/aws-cli`, pinned as
+`aws_cli_image_tag`, not in the haul) whose file `passwordCommand` reads for each new
+connection, over verify-full TLS. The chart's schema Job shares the stores' user, so the
+schema step runs as the owner role with `temporal-db-secret` instead; keep that Secret.

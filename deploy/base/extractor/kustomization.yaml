@@ -4,3 +4,5 @@ resources:
   - resources.yaml
   # Per-mode edge ConfigMaps (both modes; each HR selects one via service_mode).
   - edge.yaml
+  # Ingest-DB auth variants (both ship; each HR selects one via extractor_db_auth).
+  - db-auth.yaml

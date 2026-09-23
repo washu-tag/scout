@@ -1,7 +1,6 @@
 # Per-mode storage/identity for the extractor workers via valuesFrom (ADR 0035):
 # on-prem = hostPath logs + s3-secret; aws = IRSA lake-writer SA + emptyDir, s3-secret
 # dropped. Each carries the full envFrom + volumes (Flux replaces lists). Both ship.
-# aws also mounts the optional rds-ca-bundle ConfigMap for RDS IAM auth (required-secrets.md).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -32,7 +31,6 @@ metadata:
   namespace: '${scout_extractor_namespace}'
 data:
   # IRSA lake-writer SA; s3-secret dropped (static keys can't shadow the role).
-  # postgres-secret lets a site override SPRING_DATASOURCE_* (e.g. for RDS IAM auth).
   values.yaml: |
     serviceAccount:
       create: true
@@ -41,21 +39,12 @@ data:
     envFrom:
       - configMapRef:
           name: s3-env
-      - secretRef:
-          name: postgres-secret
     volumes:
       - name: data
         emptyDir: {}
-      - name: rds-ca
-        configMap:
-          name: rds-ca-bundle
-          optional: true
     volumeMounts:
       - name: data
         mountPath: /data
-        readOnly: true
-      - name: rds-ca
-        mountPath: /etc/rds-ca
         readOnly: true
 ---
 apiVersion: v1
@@ -103,14 +92,7 @@ data:
     volumes:
       - name: data
         emptyDir: {}
-      - name: rds-ca
-        configMap:
-          name: rds-ca-bundle
-          optional: true
     volumeMounts:
       - name: data
         mountPath: /data
-        readOnly: true
-      - name: rds-ca
-        mountPath: /etc/rds-ca
         readOnly: true

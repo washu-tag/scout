@@ -45,10 +45,11 @@ until CI switches `deploy-and-test` to deploy from it. See
      (MinIO, the Traefik Middlewares, oauth2-proxy, the ALB Ingresses) → the mode
      set `modes/{aws,on-prem}/`, since `${var}` can't add/drop a document and a flux
      path isn't substituted.
-- **Per-component opt-ins** (e.g. RDS IAM DB auth, see `required-secrets.md`) reuse the
-  `valuesFrom` trick keyed on a defaulted site var
-  (`temporal-db-auth-${temporal_db_auth:=password}`): unset renders today's values, and a
-  site flips one component at a time.
+- **Per-component opt-ins** (e.g. RDS IAM DB auth, see `required-secrets.md`) key on a
+  defaulted site var, so unset renders today's values and a site flips one component at a
+  time. Same split as above: a scalar a Scout chart branches on (hive `dbAuth`), else a
+  `valuesFrom` ConfigMap (`temporal-db-auth-${temporal_db_auth:=password}`; also superset,
+  extractor).
 
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared

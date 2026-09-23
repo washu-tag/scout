@@ -39,6 +39,11 @@ spec:
   valuesFrom:
     - kind: ConfigMap
       name: 'hl7log-extractor-edge-${service_mode}'
+    # Ingest-DB auth (db-auth.yaml): extractor_db_auth=iam adds the RDS CA mount and
+    # envFrom postgres-secret (SPRING_DATASOURCE_* overrides).
+    - kind: ConfigMap
+      name: 'extractor-db-auth-${extractor_db_auth:=password}'
+      valuesKey: hl7log-extractor.yaml
   values:
     # Image repo/tag build-lane-stamped at config-artifact publish; placeholder here.
     image:
@@ -47,7 +52,7 @@ spec:
     service:
       type: ClusterIP
       port: 8080
-    # envFrom (s3-secret + s3-env; aws adds postgres-secret) is mode-specific -> the edge ConfigMap.
+    # envFrom (s3-secret + s3-env) is mode-specific -> the edge ConfigMap.
     env:
       - name: TZ
         value: '${timezone}'
@@ -134,6 +139,10 @@ spec:
   valuesFrom:
     - kind: ConfigMap
       name: 'hl7-transformer-edge-${service_mode}'
+    # Ingest-DB auth (db-auth.yaml): extractor_db_auth=iam adds the RDS CA mount.
+    - kind: ConfigMap
+      name: 'extractor-db-auth-${extractor_db_auth:=password}'
+      valuesKey: hl7-transformer.yaml
   values:
     # Image repo/tag build-lane-stamped at config-artifact publish; placeholder here.
     image:

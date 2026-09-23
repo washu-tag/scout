@@ -21,8 +21,8 @@ def fresh_db_env(monkeypatch):
     for name in (
         *DB_ENV,
         "DB_IAM_AUTH",
-        "PGSSLMODE",
-        "PGSSLROOTCERT",
+        "DB_SSLMODE",
+        "DB_SSLROOTCERT",
         "AWS_REGION",
         "AWS_DEFAULT_REGION",
         "AWS_PROFILE",
@@ -89,10 +89,10 @@ def test_iam_auth_mints_a_token_per_connection(monkeypatch, rds_client, value):
     )
 
 
-def test_iam_tls_settings_follow_libpq_env(monkeypatch, rds_client):
+def test_iam_tls_overrides(monkeypatch, rds_client):
     monkeypatch.setenv("DB_IAM_AUTH", "true")
-    monkeypatch.setenv("PGSSLMODE", "require")
-    monkeypatch.setenv("PGSSLROOTCERT", "/certs/bundle.pem")
+    monkeypatch.setenv("DB_SSLMODE", "require")
+    monkeypatch.setenv("DB_SSLROOTCERT", "/certs/bundle.pem")
 
     args = db.get_db_connection_args()
 

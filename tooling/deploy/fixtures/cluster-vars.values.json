@@ -7,6 +7,7 @@
   "db_port": "5432",
   "deployer_name": "WashU",
   "extractor_data_dir": "/mnt/hl7-logs",
+  "extractor_db_auth": "password",
   "hive_db_auth": "password",
   "hive_db_user": "hive",
   "hive_hadoop_opts": "",

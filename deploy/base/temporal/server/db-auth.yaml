@@ -118,6 +118,7 @@ data:
         - name: rds-ca
           configMap:
             name: rds-ca-bundle
+            optional: true
       additionalVolumeMounts:
         - name: rds-iam-token
           mountPath: /var/run/rds-iam
@@ -165,6 +166,7 @@ data:
         - name: rds-ca
           configMap:
             name: rds-ca-bundle
+            optional: true
 ---
 # IRSA SA for the iam variant (rds-db:connect as temporal_db_user); unused under
 # password auth, and its role-arn is inert on-prem.

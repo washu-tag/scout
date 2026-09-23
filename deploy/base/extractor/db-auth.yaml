@@ -1,0 +1,55 @@
+# Ingest-DB auth for the extractor workers via valuesFrom, selected by extractor_db_auth
+# (default password), layered over the edge ConfigMap. iam (aws, RDS IAM auth) mounts the
+# site's rds-ca-bundle at /etc/rds-ca and lets postgres-secret override SPRING_DATASOURCE_*.
+# Each workload then switches through its postgres-secret keys (required-secrets.md).
+# The iam lists restate the aws edge's (Flux replaces lists); keep them in step.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: extractor-db-auth-password
+  namespace: '${scout_extractor_namespace}'
+data:
+  hl7log-extractor.yaml: '{}'
+  hl7-transformer.yaml: '{}'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: extractor-db-auth-iam
+  namespace: '${scout_extractor_namespace}'
+data:
+  hl7log-extractor.yaml: |
+    envFrom:
+      - configMapRef:
+          name: s3-env
+      - secretRef:
+          name: postgres-secret
+    volumes:
+      - name: data
+        emptyDir: {}
+      - name: rds-ca
+        configMap:
+          name: rds-ca-bundle
+          optional: true
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
+      - name: rds-ca
+        mountPath: /etc/rds-ca
+        readOnly: true
+  hl7-transformer.yaml: |
+    volumes:
+      - name: data
+        emptyDir: {}
+      - name: rds-ca
+        configMap:
+          name: rds-ca-bundle
+          optional: true
+    volumeMounts:
+      - name: data
+        mountPath: /data
+        readOnly: true
+      - name: rds-ca
+        mountPath: /etc/rds-ca
+        readOnly: true
