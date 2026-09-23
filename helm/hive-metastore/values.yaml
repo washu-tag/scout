@@ -115,6 +115,12 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
+# Hadoop properties rendered into a core-site.xml mounted over the image's empty one,
+# for fs.s3a.* keys the image's hive-site.xml template has no placeholder for (e.g. SSE).
+# Empty mounts nothing. The path follows the image's Hadoop version.
+coreSite: {}
+coreSitePath: /opt/hadoop-3.3.6/etc/hadoop/core-site.xml
+
 nodeSelector: {}
 
 tolerations: []

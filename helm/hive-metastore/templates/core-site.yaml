@@ -1,0 +1,16 @@
+{{- with .Values.coreSite }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hive-metastore.fullname" $ }}-core-site
+  labels:
+    {{- include "hive-metastore.labels" $ | nindent 4 }}
+data:
+  core-site.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+    {{- range $name, $value := . }}
+      <property><name>{{ $name }}</name><value>{{ $value }}</value></property>
+    {{- end }}
+    </configuration>
+{{- end }}

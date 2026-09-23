@@ -1,0 +1,23 @@
+# Per-mode metastore values via valuesFrom (ADR 0035), shared by both releases. Lives
+# here, not in _base, so the two overlays don't each emit it.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hive-metastore-edge-on-prem
+  namespace: '${hive_namespace}'
+data:
+  # MinIO endpoint + keys reach S3A through the image's hive-site.xml env placeholders.
+  values.yaml: '{}'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hive-metastore-edge-aws
+  namespace: '${hive_namespace}'
+data:
+  # IRSA creds, and SSE so the metastore's own mkdirs pass an SSE-enforcing SCP.
+  values.yaml: |
+    coreSite:
+      fs.s3a.aws.credentials.provider: com.amazonaws.auth.WebIdentityTokenCredentialsProvider
+      fs.s3a.endpoint.region: '${s3_region}'
+      fs.s3a.encryption.algorithm: AES256

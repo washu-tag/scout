@@ -13,7 +13,6 @@ db_port
 delta_lake_path
 deployer_name
 extractor_data_dir
-hive_hadoop_opts
 hive_metastore_endpoint
 hive_metastore_endpoint_readonly
 hive_namespace

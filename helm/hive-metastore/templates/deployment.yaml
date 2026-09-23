@@ -13,7 +13,12 @@ spec:
       {{- include "hive-metastore.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- $podAnnotations := .Values.podAnnotations | default dict }}
+      {{- if .Values.coreSite }}
+      {{- /* subPath mounts never refresh, so roll the pod when core-site changes. */}}
+      {{- $podAnnotations = merge (dict "checksum/core-site" (toJson .Values.coreSite | sha256sum)) $podAnnotations }}
+      {{- end }}
+      {{- with $podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -60,7 +65,11 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
+          {{- $volumeMounts := .Values.volumeMounts | default list }}
+          {{- if .Values.coreSite }}
+          {{- $volumeMounts = append $volumeMounts (dict "name" "core-site" "mountPath" .Values.coreSitePath "subPath" "core-site.xml" "readOnly" true) }}
+          {{- end }}
+          {{- with $volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -95,7 +104,11 @@ spec:
           envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.volumes }}
+      {{- $volumes := .Values.volumes | default list }}
+      {{- if .Values.coreSite }}
+      {{- $volumes = append $volumes (dict "name" "core-site" "configMap" (dict "name" (printf "%s-core-site" (include "hive-metastore.fullname" .)))) }}
+      {{- end }}
+      {{- with $volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}

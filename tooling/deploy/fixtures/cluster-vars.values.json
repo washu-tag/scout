@@ -7,7 +7,6 @@
   "db_port": "5432",
   "deployer_name": "WashU",
   "extractor_data_dir": "/mnt/hl7-logs",
-  "hive_hadoop_opts": "",
   "hive_namespace": "scout-data",
   "hl7_raw_bucket": "hl7-raw",
   "hl7_transformer_cpu_limit": "4",
