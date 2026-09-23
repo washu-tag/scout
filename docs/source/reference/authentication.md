@@ -10,7 +10,7 @@ Authentication (who you _are_) is distinct from Authorization (what you can _do_
 | --- | --- | --- |
 | Your institution's identity provider | The ultimate source of your identity, and where your password gets checked | Keycloak |
 | Keycloak | A single-sign-on (SSO) service installed within Scout. Federates to the IdP, holds Scout accounts, issues tokens | Every Scout service |
-| OAuth2 Proxy | Sits in front of every service, letting approved Scout users pass and redirecting unapproved users back to Keycloak | Traefik (the reverse proxy) |
+| OAuth2 Proxy | Sits in front of every service, sending users without a session to Keycloak, letting approved Scout users pass, and showing unapproved users a 403 page | Traefik (the reverse proxy) |
 | Each service's own Keycloak client | Defines roles that service understands | that service |
 
 Here is an example diagram showing the auth flow for a request that arrives at Scout's "ingress", for a user who intends to navigate to Superset.
@@ -23,17 +23,17 @@ Here is an example diagram showing the auth flow for a request that arrives at S
   Traefik ingress
      │
      │  2  ForwardAuth ──────────────────────────►  OAuth2 Proxy
-     │                                                   │
-     │         ┌──── no session yet ───────────────────── ┘
-     │         ▼
+     │                                                │      ▲
+     │         ┌──── no session yet ──────────────────┘      │ token
+     │         ▼                                             │
      │      Keycloak  ──►  your institution's IdP  ──►  Keycloak
-     │         │                                           │
-     │         └──── 3  approved?  (oauth2-proxy-user) ──── ┘
+     │
+     │         3  OAuth2 Proxy: approved?  (oauth2-proxy-user role)
      │                       │
      │            ┌──────────┴───────────┐
      │          yes                     no
      ▼            │                      │
-  4  request reaches Superset     "Registration Pending"
+  4  request reaches Superset     403 "Access Not Yet Granted"
               │
               │  5  Superset runs its own OIDC login against its own
               │     Keycloak client and receives a token naming its roles
@@ -43,7 +43,7 @@ Here is an example diagram showing the auth flow for a request that arrives at S
 
 The first step for a request to any Scout service is to redirect to OAuth2 Proxy to check if the request has an active logged-in session, then redirect to Keycloak for login if necessary.
 
-Keycloak sends that login request to whatever Identity Provider (IdP) is configured for your site, typically one managed by your institution. You log in with the IdP and Keycloak gets back information about your user. Keycloak then checks if your user account is approved to use Scout. Up to this point there has been no decision made about _what_ your user is allowed to do, simply _who_ you are and whether you can be on Scout at all.
+Keycloak sends that login request to whatever Identity Provider (IdP) is configured for your site, typically one managed by your institution. You log in with the IdP and Keycloak gets back information about your user, then hands a token back to OAuth2 Proxy. OAuth2 Proxy checks whether that token carries the `oauth2-proxy-user` role, which marks an account as approved to use Scout. If it doesn't, OAuth2 Proxy serves its own 403 "Access Not Yet Granted" page. Up to this point there has been no decision made about _what_ your user is allowed to do, simply _who_ you are and whether you can be on Scout at all.
 
 After this, the request gets redirected back to its original service. That service wants to know what you're allowed to do so redirects your request back to Keycloak for login. At this point, Keycloak knows you're already logged in and does know who you are, so it creates an authorization code for that service which rides along with your request. Once the authorized request hits the service's backend, it exchanges the auth code for a token containing your relevant permissions. The service knows how to read those permissions and knows what that means according to its own internal data and permissions model, so grants your user access to the relevant data.
 
@@ -112,7 +112,7 @@ Keycloak's own [roles and groups guide](https://www.keycloak.org/docs/latest/ser
 ## Becoming a Scout user
 
 1. First login through the IdP creates a Keycloak account with no group membership.
-2. The user must accept the terms of use, then sees "Registration Pending".
+2. The user must accept the terms of use, then sees OAuth2 Proxy's "Access Not Yet Granted" page.
 3. An administrator approves their account and adds them to the `scout-user` and/or `scout-admin` groups.
 4. Access begins on their next login.
 
