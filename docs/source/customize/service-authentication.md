@@ -149,9 +149,11 @@ This part is somewhat beyond the scope of this document. You'll need to know how
 | Value | Where it comes from |
 | --- | --- |
 | Client ID | `clientId` in your fragment |
-| Client secret | the Secret you created in step 2 |
+| Client secret | This is the secret value that you created and wrote into a Secret in [the client secret section](#the-client-secret). |
 | Issuer | `https://keycloak.<scout-host>/realms/scout` |
 | Redirect URI | your library's callback path |
+
+The best practice with the client secret is to configure your app's Service to mount the Secret into the Pod and have your app read it from the environment, not to pass it through the helm values.
 
 The redirect URI is the easiest value to get wrong. It can be different for every service, usually depending on the underlying OIDC library used. For example, here are some of the redirect paths used in Scout's core services.
 
