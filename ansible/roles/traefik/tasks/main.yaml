@@ -94,7 +94,6 @@
           # We want to turn those off.
           globalArguments: []
           ports:
-            # NB the chart nests TLS under http, not directly under the port.
             websecure:
               http:
                 tls:
