@@ -4,9 +4,9 @@ Secret the fragment points at, and the client is never created -- look for a
 FragmentFailed event on the fragment ConfigMap.
 
 The grant travels with the app, so the reconciler holds no standing cluster-wide
-read on Secrets. `resourceNames` can scope `get` but not `watch`, which is why a
-rotated credential is picked up on the reconciler's next periodic pass rather
-than immediately.
+read on Secrets. It is `get` only: the reconciler reads the Secret by name on
+each pass rather than watching it, so a rotated credential is picked up on the
+next periodic pass rather than immediately.
 */}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
