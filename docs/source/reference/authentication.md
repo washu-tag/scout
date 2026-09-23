@@ -2,7 +2,7 @@
 
 This is an admin- or developer-focused doc on the mechanisms behind authentication. For the steps to get a user account, see [Authentication](../user/authentication.md).
 
-Authentication (who you _are_) is distinct from Authorization (what you can _do_ or _see_). This page covers the former; for the latter see ([Data Authorization](../user/data_authorization.md)).
+Authentication (who you _are_) is distinct from Authorization (what you can _do_ or _see_). This page covers the former; for the latter see [Data Authorization](../user/data_authorization.md).
 
 ## The pieces
 
