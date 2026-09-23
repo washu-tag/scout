@@ -72,7 +72,7 @@ Tokens are JSON Web Tokens: signed, not encrypted. An abridged ID token:
 | `groups` | The roles the user holds **in this service** — see below. |
 | `iss`, `aud`, `exp` | Verification, not identity. |
 
-Access tokens carry the same claims, but check `azp` rather than `aud` on them; see [validating tokens](../customize/service-authentication.md#4-read-the-token-and-act-on-roles).
+Access tokens carry the same identity and role claims, but check `azp` rather than `aud` on them; see [validating tokens](../customize/service-authentication.md#4-read-the-token-and-act-on-roles).
 
 :::{warning}
 `groups` holds *role* names, not Keycloak group names. The claim is named `groups` for historical reasons and is populated per-service; see the next section.
@@ -120,7 +120,7 @@ Administrators do this from the user console on the Scout launchpad. The same co
 
 ## Sessions and expiry
 
-Keycloak holds one SSO session per user; each service holds its own session on top of it. A service session must not outlive the Keycloak session that produced it, or it will hold credentials it can no longer refresh. 
+Keycloak holds one SSO session per user; each service holds its own session on top of it. A service session must not outlive the Keycloak session that produced it, or it will hold credentials it can no longer refresh.
 
 ## Where authentication ends
 

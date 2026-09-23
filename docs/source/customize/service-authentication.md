@@ -29,7 +29,7 @@ ingress:
       kube-system-security-headers@kubernetescrd
 ```
 
-Note that the `kube-system` part of the name is the namespace in which OAuth2 Proxy is deployed. If your site has customized that namespace, the Middleware name will be different, and you should substitute your site's OAuth2 PRoxy namespace for `kube-system`.
+Note that the `kube-system` part of the name is the namespace in which OAuth2 Proxy is deployed. If your site has customized that namespace, the Middleware name will be different, and you should substitute your site's OAuth2 Proxy namespace for `kube-system`.
 
 :::{note}
 If your app requires any endpoints to be unauthenticated (e.g. favicons, any public pages), you will need to define a second Ingress for those specific paths without these middlewares. See, for example, Launchpad's [favicon-ingress.yaml](https://github.com/washu-tag/scout/tree/main/helm/launchpad/templates/favicon-ingress.yaml).
@@ -153,7 +153,7 @@ This part is somewhat beyond the scope of this document. You'll need to know how
 | Issuer | `https://keycloak.<scout-host>/realms/scout` |
 | Redirect URI | your library's callback path |
 
-The best practice with the client secret is to configure your app's Service to mount the Secret into the Pod and have your app read it from the environment, not to pass it through the helm values.
+The best practice with the client secret is to configure your app's Deployment mount the Secret as a Volume or into an environment variable, not to pass the value directly to your app through the helm chart's values.
 
 The redirect URI is the easiest value to get wrong. It can be different for every service, usually depending on the underlying OIDC library used. For example, here are some of the redirect paths used in Scout's core services.
 
@@ -211,7 +211,7 @@ Every app receives an ID token at login. In addition to the steps above:
 You only need to validate access tokens if your app accepts them in an `Authorization: Bearer` header, for instance from your own frontend calling your API. In addition to the steps above:
 
 - Verify `typ` is `Bearer`, so that an ID token presented as a bearer token is rejected.
-- Verify `azp` is your client ID. Do not require `aud` to be your client ID; Keycloak only includes your client ID in an access token's `aud` when the user holds one of your roles.
+- Verify `azp` is your client ID. Do not check `aud`: Keycloak never lists a client in the `aud` of its own access tokens, so a check requiring your client ID there will reject every token.
 
 Alternatively, you can send the access token to Keycloak's introspection endpoint rather than validating it locally. That costs a request per check, but catches sessions that have been revoked before the token expires.
 
