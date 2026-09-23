@@ -54,6 +54,7 @@
 - name: Create S3 configmap
   kubernetes.core.k8s:
     state: present
+    force: true # replace, so keys dropped from data (the aws endpoint keys) go away
     definition:
       apiVersion: v1
       kind: ConfigMap

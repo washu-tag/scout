@@ -83,8 +83,8 @@ keycloak_version: 26.6.4
 
 # Analytics & Query Engines - Hive
 # regex versioning restricts to the plain multi-arch tags (loose ranked -x64/-arm64 above).
-# renovate: datasource=docker depName=starburstdata/hive versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?<compatibility>-e\.)(?<build>\d+)$
 # A new Hadoop in the image moves helm/hive-metastore coreSitePath.
+# renovate: datasource=docker depName=starburstdata/hive versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?<compatibility>-e\.)(?<build>\d+)$
 hive_image_tag: 3.1.3-e.15
 
 # Data Visualization & BI - Superset

@@ -69,14 +69,12 @@ class MinioBundleUploaderTest {
 
     @Test
     void requestSse_only_for_aws_with_s3() {
-        URI minio = URI.create("http://minio.minio-scout");
-        URI aws = URI.create("https://s3.us-east-1.amazonaws.com");
         assertTrue(MinioBundleUploader.requestSse(null, "S3"));
-        assertTrue(MinioBundleUploader.requestSse(aws, "s3"));
+        assertTrue(MinioBundleUploader.requestSse(URI.create("https://s3.us-east-1.amazonaws.com"), "s3"));
         assertFalse(MinioBundleUploader.requestSse(null, "NONE"));
         assertFalse(MinioBundleUploader.requestSse(null, null));
         assertFalse(MinioBundleUploader.requestSse(null, "KMS"));
-        assertFalse(MinioBundleUploader.requestSse(minio, "S3"));
+        assertFalse(MinioBundleUploader.requestSse(URI.create("http://minio.minio-scout"), "S3"));
     }
 
     @Test

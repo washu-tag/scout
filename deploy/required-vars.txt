@@ -2,7 +2,7 @@
 # below in the `cluster-vars` ConfigMap that the Flux Kustomizations reference via
 # postBuild.substituteFrom. Run the kustomize-controller with
 # StrictPostBuildSubstitutions so a missing key fails the build; without it a missing
-# key renders empty (a few vars carry a ${var:=default}). Auto-derived from the ${...} vars used across deploy/ and enforced by
+# key renders empty. s3_sse_type is the exception: it defaults to NONE. Auto-derived from the ${...} vars used across deploy/ and enforced by
 # validate-deploy.yaml; regenerate with the snippet in that workflow when bases add
 # or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler
 # (Phase 5) validate a site's values against this list.

@@ -64,7 +64,8 @@ public class S3Config {
         if (endpoint != null && !endpoint.isBlank()) {
             builder = builder.endpointOverride(URI.create(endpoint));
         }
-        if (isAwsS3(endpoint) && requestsSse(sseType)) {
+        boolean sse = requestsSse(sseType);  // validate on every endpoint, not just AWS
+        if (isAwsS3(endpoint) && sse) {
             builder = builder.overrideConfiguration(
                     config -> config.addExecutionInterceptor(new SseS3Interceptor()));
         }

@@ -93,11 +93,15 @@ final class MinioBundleUploader implements AutoCloseable {
         this.requestSse = requestSse;
     }
 
+    boolean requestsSse() {
+        return requestSse;
+    }
+
     /** SSE-S3 header only for real AWS S3 and sseType S3 (case-insensitive). */
     static boolean requestSse(URI endpoint, String sseType) {
         if (sseType != null && !sseType.isBlank() && !sseType.equalsIgnoreCase("S3")
                 && !sseType.equalsIgnoreCase("NONE")) {
-            log.warnf("Unknown OPA bundle SSE type '%s' (expected S3 or NONE); sending no SSE header",
+            log.errorf("Unknown OPA bundle SSE type '%s' (expected S3 or NONE); sending no SSE header",
                     sseType);
         }
         return isAwsS3(endpoint) && "S3".equalsIgnoreCase(sseType);

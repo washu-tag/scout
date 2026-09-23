@@ -185,9 +185,8 @@ analytics apps) stays mode-agnostic; only the edge moves.
   fixed-response; Superset ALB-OIDC). Adds `acm_cert_arn` + `alb_group_name` to the
   contract and `alb-oidc-keycloak` (the oauth2-proxy client's id + secret, which the ALB reads for OIDC) to
   the site-seeded secrets; scheme comes from the `alb`/`alb-internal` IngressClassParams
-  (Layer-0, which override the per-ingress annotation on EKS Auto). Only Superset +
-  Keycloak are covered so far (the base's public components); jupyter, launchpad, and
-  monitoring follow as those components land in the base.
+  (Layer-0, which override the per-ingress annotation on EKS Auto). Covers Superset,
+  Keycloak and launchpad; jupyter and monitoring follow as they land in the base.
 
 ## Related
 

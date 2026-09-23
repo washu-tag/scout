@@ -142,10 +142,11 @@ def spark_activity_session(
             # (not a phantom success, not a retryable failure). Do NOT touch health_file.
             raise CancelledError("Activity cancelled during Spark work") from e
         # Not cancelled: a genuine Spark connectivity failure marks the pod unhealthy so
-        # k8s restarts it. Py4JJavaError subclasses Py4JError but is a JVM-side failure
-        # (e.g. S3 AccessDenied): the gateway is fine, so it goes to Temporal's retries.
+        # k8s restarts it. Py4JJavaError subclasses Py4JError but, once a session exists,
+        # is a JVM-side failure (e.g. S3 AccessDenied) for Temporal's retries.
         if isinstance(e, ConnectionError) or (
-            isinstance(e, Py4JError) and not isinstance(e, Py4JJavaError)
+            isinstance(e, Py4JError)
+            and (spark is None or not isinstance(e, Py4JJavaError))
         ):
             activity.logger.error("Spark error in %s. Marking pod unhealthy.", app_name)
             try:

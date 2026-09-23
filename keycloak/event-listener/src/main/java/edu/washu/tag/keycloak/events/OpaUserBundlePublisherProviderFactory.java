@@ -127,9 +127,9 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
         enabled = true;
         String credMode = (StringUtil.isBlank(accessKey) || StringUtil.isBlank(secretKey))
                 ? "default-chain (e.g. IRSA)" : "static";
-        log.infof("OPA bundle publisher enabled: endpoint=%s bucket=%s object=%s realm=%s creds=%s sse=%s",
+        log.infof("OPA bundle publisher enabled: endpoint=%s bucket=%s object=%s realm=%s creds=%s sse-header=%s",
                 StringUtil.isBlank(endpoint) ? "(SDK default)" : endpoint,
-                bucket, objectKey, realmName, credMode, sseType);
+                bucket, objectKey, realmName, credMode, uploader.requestsSse() ? "AES256" : "none");
     }
 
     @Override

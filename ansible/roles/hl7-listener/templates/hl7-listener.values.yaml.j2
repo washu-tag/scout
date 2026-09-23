@@ -34,7 +34,7 @@ batcher:
     overrideEndpoint: {{ (aws_deployment | bool) | ternary("false", "true") }}
     forcePathStyle: {{ (aws_deployment | bool) | ternary("false", "true") }}
     useDefaultCredentialsProvider: {{ (aws_deployment | bool) | ternary("true", "false") }}
-    useSseS3: {{ ((aws_deployment | bool) and s3_sse_type == 'S3') | ternary("true", "false") }}
+    useSseS3: {{ ((aws_deployment | bool) and (s3_sse_type | upper) == 'S3') | ternary("true", "false") }}
     staticCredentials: {{ (aws_deployment | bool) | ternary("false", "true") }}
     secretName: '{{ hl7_batcher_name }}-s3-creds'
     accessKeyKey: aws-access-key

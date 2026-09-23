@@ -111,6 +111,22 @@ def test_jvm_side_error_leaves_the_worker_polling(health_file):
     on_spark_failure.assert_not_called()
 
 
+def test_jvm_error_building_the_session_marks_the_pod_unhealthy(health_file):
+    """No session means the JVM itself is broken, whatever py4j calls the error."""
+    on_spark_failure = mock.Mock()
+
+    with pytest.raises(Py4JJavaError):
+        _run_in_session(
+            lambda spark: None,
+            health_file=health_file,
+            on_spark_failure=on_spark_failure,
+            session_error=_JvmSideError(),
+        )
+
+    assert "AccessDeniedException" in health_file.read_text()
+    on_spark_failure.assert_called_once_with()
+
+
 def test_cancellation_does_not_stop_the_worker(health_file):
     """A Temporal cancel that lands mid-Spark surfaces as whatever the torn-down py4j
     call raises (issue #458), so it can look exactly like an unreachable JVM. Spark is

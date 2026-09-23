@@ -1,10 +1,19 @@
 package edu.washu.tag.extractor.hl7log.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
 class IngestHl7LogWorkflowInputParserPathTest {
+
+    @Test
+    void isAbsolute_localAbsoluteAndS3Uris() {
+        assertTrue(IngestHl7LogWorkflowInputParser.isAbsolute("/abs/a.log"));
+        assertTrue(IngestHl7LogWorkflowInputParser.isAbsolute("s3://b/a.log"));
+        assertFalse(IngestHl7LogWorkflowInputParser.isAbsolute("relative/a.log"));
+    }
 
     @Test
     void resolveLogPath_absoluteAndS3Uris_areUsedAsIs() {

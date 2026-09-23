@@ -5,8 +5,8 @@
 # Fixed-name secrets seeded by CI/site or SOPS/ESO, NEVER in git: postgres-secret
 # (ingest DB creds; transformer envFrom + extractor SPRING_DATASOURCE_PASSWORD),
 # s3-secret (lake writer AWS creds). Modality map is chart-owned (no ConfigMap).
-# S3 connection env below is non-secret and on-prem only (see edge.yaml); creds ride the
-# s3-secret.
+# S3 connection env below is non-secret and consumed on-prem only (the aws edges skip it,
+# see edge.yaml); creds ride the s3-secret.
 apiVersion: v1
 kind: ConfigMap
 metadata:
