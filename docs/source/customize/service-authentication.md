@@ -6,13 +6,13 @@ This page assumes you've read [Authentication Reference](../reference/authentica
 
 ## Summary: What your Pluggable App needs to include
 
-| | You write | Purpose |
-| --- | --- | --- |
-| 1 | Ingress annotation | Puts your service behind the platform login gate |
-| 2 | Fragment ConfigMap | Asks Scout to create your Keycloak client and roles |
-| 3 | Secret | The client credential, which you generate |
-| 4 | Role + RoleBinding | Lets Scout read that one Secret |
-| 5 | Your app's OIDC config | Establishes who the user is inside your service |
+| You write | Purpose |
+| --- | --- |
+| Ingress annotation | Puts your service behind the platform login gate |
+| Fragment ConfigMap | Asks Scout to create your Keycloak client and roles |
+| Secret | The client credential, which you generate |
+| Role + RoleBinding | Lets Scout read that one Secret |
+| Your app's OIDC config | Establishes who the user is inside your service |
 
 ## 1. Ingress
 
