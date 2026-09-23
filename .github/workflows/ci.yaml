@@ -54,6 +54,7 @@ jobs:
       # no base to diff on a manual run, so the input is OR'd in here rather than fed to it).
       image_build: ${{ steps.filter.outputs.image_build == 'true' || github.event.inputs.rebuild_images == 'true' }}
       e2e: ${{ steps.filter.outputs.e2e }}
+      release_pr: ${{ steps.filter.outputs.release_pr }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       hl7-listener: ${{ steps.filter.outputs.hl7-listener }}
@@ -101,6 +102,12 @@ jobs:
             # lives in that image's filter, not here.
             image_build:
               - '.github/actions/docker-build-cache/**'
+            # release-please's PR is the only thing that touches the manifest, so this
+            # is an exact "this is the release PR" signal (release-dispatch.yaml keys off
+            # the same file). It turns on scan-published, so a CVE fails the release PR
+            # rather than the stamped commit after it.
+            release_pr:
+              - '.release-please-manifest.json'
             hl7log-extractor:
               - 'extractor/hl7log-extractor/**'
               - 'linting_java_checkstyle.xml'
@@ -167,20 +174,21 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
           cache: 'gradle'
       - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
   verify-cosign-pubkey:
-    # The repo-root cosign.pub is the published mirror of the public half of
-    # COSIGN_PRIVATE_KEY. It's an unchecked mirror otherwise: derive the real key
-    # and diff it, so a stale key (a rotation that didn't refresh the file) or the
-    # authoring placeholder fails here, red and self-announcing, instead of
-    # verification silently breaking for every consumer in the field. Standalone
-    # (no paths filter) so rotation drift is caught even when cosign.pub is
-    # untouched; same-repo PRs have the secret.
+    # cosign.pub in the repo root is the public half of COSIGN_PRIVATE_KEY, and
+    # nothing else checks it: derive the key and diff, so a missed rotation or the
+    # authoring placeholder fails here instead of breaking verification downstream.
+    # No paths filter, since the file goes stale without being touched.
+    # Skipped on Dependabot PRs: those runs only get Dependabot secrets, so
+    # COSIGN_PRIVATE_KEY is empty. The push to main still runs it. Checking the
+    # event too, since the auto-merge push actor is also dependabot[bot].
+    if: ${{ github.event_name != 'pull_request' || github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -253,7 +261,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -273,7 +281,7 @@ jobs:
       # Spark 4.1.x runs on Java 17 or 21; use the repo default JAVA_VERSION (21) like
       # every other Java job. Spark/Delta versions are read from the package's
       # pyproject.toml, so this job pins no versions.
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -327,9 +335,12 @@ jobs:
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v
-      - name: 'Unit tests: Open WebUI iframe-defaults event function'
+      - name: 'Unit tests: Open WebUI ui-defaults event function'
         shell: bash
-        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_scout_iframe_defaults_event.py -v
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_scout_ui_defaults_event.py -v
+      - name: 'Unit tests: Open WebUI report-viewer tool'
+        shell: bash
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_scout_report_viewer_tool.py -v
       - name: 'Unit tests: report-viewer'
         shell: bash
         env:
@@ -386,10 +397,13 @@ jobs:
         run: cd ansible/roles/scout_common && molecule test -s default
   scan-images:
     runs-on: ubuntu-latest
-    needs: build-and-upload
+    needs: [changes, build-and-upload]
     if: ${{ !cancelled() && needs.build-and-upload.result == 'success' }}
     permissions:
       contents: read
+      # An image that build-and-upload did not rebuild is scanned from the
+      # registry instead; packages are private, so the pull needs a token.
+      packages: read
       security-events: write
     strategy:
       fail-fast: false
@@ -403,6 +417,7 @@ jobs:
         with:
           image-name: ${{ matrix.image-name }}
           subproject: ${{ matrix.subproject }}
+          scan-published: ${{ needs.changes.outputs.release_pr }}
         continue-on-error: ${{ matrix.allow-failure == true }}
   deploy-and-test-e2e:
     runs-on: ubuntu-latest
@@ -499,7 +514,7 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
       - name: 'Set up Java for Gradle cache warming'
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}

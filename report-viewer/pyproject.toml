@@ -34,6 +34,9 @@ dependencies = [
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
     "yoyo-migrations",
+    # Server-side render check for a saved spec, before persisting it.
+    # >=1.9 defaults to Vega-Lite v6, matching the frontend and stamped schema.
+    "vl-convert-python>=1.9.0",
 ]
 
 [project.optional-dependencies]

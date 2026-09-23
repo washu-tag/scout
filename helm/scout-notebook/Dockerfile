@@ -2,9 +2,9 @@ FROM quay.io/jupyter/scipy-notebook:python-3.13.14
 
 # Platform packages + Jupyter extensions via mamba. Everything else
 # (torch, transformers, scikit-learn, etc.) is user-installed via the
-# package proxy. gitpython and jupyterlab are pinned above the scipy-notebook
-# base to clear Trivy HIGH findings (GitPython >=3.1.57, JupyterLab >=4.6.2);
-# drop the pins once a newer base ships them.
+# package proxy. gitpython, jupyterlab, and jupyter_server are pinned above
+# the scipy-notebook base to clear Trivy findings; drop the pins once a
+# newer base ships them.
 RUN mamba install -y -n base \
     trino-python-client \
     voila \
@@ -12,8 +12,9 @@ RUN mamba install -y -n base \
     jupyterlab-nvdashboard \
     jupyter-resource-usage \
     nb_conda_kernels \
-    'gitpython>=3.1.57' \
+    'gitpython>=3.1.59' \
     'jupyterlab>=4.6.2' \
+    'jupyter_server>=2.21.0' \
     && mamba clean -afy \
     && fix-permissions "${CONDA_DIR}" \
     && fix-permissions "/home/${NB_USER}"

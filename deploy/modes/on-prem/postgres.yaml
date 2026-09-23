@@ -1,6 +1,7 @@
-# postgres DAG: operator (L1) then Cluster (L2a), split so the Cluster CR never
-# reconciles before the CNPG CRDs exist. Both consume OCIRepository scout-config
-# and the cluster-vars ConfigMap for ${...} substitutions.
+# on-prem postgres: self-hosted CNPG (ADR 0036). Operator (L1) then the Cluster as the
+# mode-agnostic `postgres-ready` gate (L2a), split so the Cluster never reconciles before
+# the CNPG CRDs exist. aws provides postgres-ready as an inert marker (managed RDS) instead
+# (../aws). DB consumers dependsOn postgres-ready in both modes.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -21,13 +22,11 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: scout-operators-foundation
-  # No healthChecks block: Flux ignores it under wait:true (wait already health-checks
-  # everything). CR gates below use healthCheckExprs, like the other operators.
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: postgres-cluster
+  name: postgres-ready
   namespace: flux-system
 spec:
   interval: 30m
@@ -45,19 +44,15 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars
-  # `current` only, no `failed`: CNPG reports Ready=False / applied=false during
-  # NORMAL transients (cold initdb, single-instance restart, owner-role-before-
-  # Database first-pass race). Flux evaluates failed first and fail-fasts, so a
-  # `failed` expr keyed on those would abort the wait and (no retryInterval) block
-  # dependents for the full 30m interval. Let the 10m timeout be the only failure
-  # path (CNPG's own Flux-example pattern).
+  # `current` only, no `failed`: CNPG reports Ready=False during NORMAL transients (cold
+  # initdb, single-instance restart, owner-role-before-Database race); a `failed` expr would
+  # fail-fast and block dependents for the full interval. Let the 10m timeout be the only
+  # failure path. Gate on Databases too (status.applied) so a dependent never runs before
+  # its DB/owner role exists.
   healthCheckExprs:
     - apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
       current: status.conditions.exists(e, e.type == 'Ready' && e.status == 'True')
-    # Gate on Databases too (status.applied): CNPG reconciles roles + Database CRs
-    # AFTER Cluster Ready, so without this a dependent (or the hive/db grant Job)
-    # could run before its DB/owner role exists.
     - apiVersion: postgresql.cnpg.io/v1
       kind: Database
       current: has(status.applied) && status.applied == true

@@ -31,14 +31,8 @@ def required():
 
 
 def test_sizing_computations_exact(values):
-    """The 6 jvm_memory_to_k8s sizings, to exact strings."""
+    """The 2 jvm_memory_to_k8s sizings, to exact strings."""
     d = derive(values)
-    # cassandra_max_heap=2G: request x1, limit x2
-    assert d["cassandra_memory_request"] == "2Gi"
-    assert d["cassandra_memory_limit"] == "4Gi"
-    # elasticsearch_max_heap=512M: request x2, limit x8 (per tasks/deploy.yaml)
-    assert d["elasticsearch_memory_request"] == "1Gi"
-    assert d["elasticsearch_memory_limit"] == "4Gi"
     # hl7_transformer_spark_memory=1G: request x1, limit x4
     assert d["hl7_transformer_memory_request"] == "1Gi"
     assert d["hl7_transformer_memory_limit"] == "4Gi"
@@ -83,15 +77,6 @@ def test_string_composites_exact(values):
     assert d["keycloak_realm_url"] == "https://keycloak.scout.example.edu/realms/scout"
     assert d["keycloak_internal_url"] == "http://keycloak-service.scout-core:8080"
     assert d["trino_rw_endpoint_host"] == "trino-rw.scout-extractor"
-
-
-def test_system_logger_is_valid_json(values):
-    """cassandra_system_logger_resources is a valid flow-JSON scalar of the whole dict."""
-    d = derive(values)
-    parsed = json.loads(d["cassandra_system_logger_resources"])
-    assert parsed == values["cassandra_system_logger_resources_default"]
-    assert parsed["requests"]["memory"] == "128Mi"
-    assert parsed["limits"]["memory"] == "256Mi"
 
 
 def test_output_key_set_equals_required_vars(values, required):

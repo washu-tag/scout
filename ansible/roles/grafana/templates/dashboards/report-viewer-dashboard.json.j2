@@ -319,6 +319,13 @@
           "expr": "sum by (op) (rate(scout_report_viewer_trino_query_duration_seconds_count{result=\"error\"}[5m]))",
           "legendFormat": "{{op}} errors",
           "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
+          "editorMode": "code",
+          "expr": "sum by (op) (rate(scout_report_viewer_trino_query_duration_seconds_count{result=\"cancelled\"}[5m]))",
+          "legendFormat": "{{op}} cancelled",
+          "refId": "C"
         }
       ],
       "title": "Trino ops/s by op (error overlay)",
@@ -422,7 +429,7 @@
           "unit": "short"
         }
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 36 },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 36 },
       "id": 501,
       "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false }, "tooltip": { "mode": "single", "sort": "none" } },
       "pluginVersion": "11",
@@ -436,38 +443,6 @@
         }
       ],
       "title": "Search creation rate",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "spanNulls": true },
-          "unit": "short"
-        }
-      },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 36 },
-      "id": 502,
-      "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "pluginVersion": "11",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(scout_report_viewer_search_size_rows_bucket[15m])))",
-          "legendFormat": "p50",
-          "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus_datasource_01" },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(scout_report_viewer_search_size_rows_bucket[15m])))",
-          "legendFormat": "p95",
-          "refId": "B"
-        }
-      ],
-      "title": "Saved-search size at create (p50 / p95)",
       "type": "timeseries"
     },
     {

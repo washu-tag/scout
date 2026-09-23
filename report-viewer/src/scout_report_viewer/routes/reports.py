@@ -17,6 +17,7 @@ from ..csv_upload import (
     dedup_ids,
     guard_upload_size,
     parse_csv_ids,
+    quote_ident,
     substitute_cohort,
 )
 from ..models import (
@@ -82,15 +83,9 @@ async def query_from_file(
     guard_upload_size(raw)
     assert_cohort_placeholder(sql)
     ids, resolved_id_column, column_inferred = parse_csv_ids(raw, id_column)
-    cleaned = dedup_ids(ids)
+    cleaned = dedup_ids(ids, resolved_id_column)
 
-    sql_column = resolved_id_column
-    if not sql_column.replace("_", "").isalnum():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"unsafe id_column: {sql_column!r}",
-        )
-    col_q = f'"{sql_column}"'
+    col_q = quote_ident(resolved_id_column)
 
     # All IDs are bound; the custom SQL's own predicate decides what matches.
     predicate = f"contains(?, {col_q})"

@@ -30,7 +30,7 @@ spec:
     passwordSecret:
       name: keycloak-db-secret
       key: password
-    host: '${postgres_cluster_name}-rw.${postgres_cluster_namespace}'
+    host: '${postgres_host}'
     database: keycloak
     port: 5432
   http:

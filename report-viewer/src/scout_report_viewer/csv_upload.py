@@ -1,12 +1,13 @@
 """Shared helpers for endpoints that ingest a researcher-supplied CSV
-of identifiers - `/api/searches/from-file` and `/api/reports/query/from-file`.
+of identifiers - `/api/searches/from-file`, `/api/reports/query/from-file`,
+and `/api/plots/from-file`.
 
-Both endpoints share the same parse + dedup + column-resolve pipeline
+They share the same parse + dedup + column-resolve pipeline
 and the same `{{cohort}}` placeholder substitution for LLM-authored
 custom SQL. The parse produces a normalized ID list; substitute_cohort
 lets each endpoint plug its own bound `contains(?, col)` predicate into
-the LLM's SQL, and a persisted search stores the ID list so every later
-read re-binds it.
+the LLM's SQL, and a persisted search or chart stores the ID list so
+every later read re-binds it.
 """
 
 from __future__ import annotations
@@ -30,6 +31,16 @@ COHORT_PLACEHOLDER = "{{cohort}}"
 # CSV uploads default here and match the raw id columns; history / resolved
 # patient IDs need explicit SQL over reports_curated / an epic view.
 DEFAULT_FROM_FILE_TABLE = "reports_latest"
+
+
+# Identifiers can't be param-bound in Trino; values always are.
+def quote_ident(name: str) -> str:
+    if not name.replace("_", "").isalnum():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"unsafe identifier: {name!r}",
+        )
+    return f'"{name}"'
 
 
 def guard_upload_size(raw: bytes) -> None:
@@ -96,7 +107,7 @@ def parse_csv_ids(
     return ids, id_column, column_inferred
 
 
-def dedup_ids(ids: list[str]) -> list[str]:
+def dedup_ids(ids: list[str], id_column: str = "ID") -> list[str]:
     seen: set[str] = set()
     cleaned: list[str] = []
     for s in ids:
@@ -108,8 +119,9 @@ def dedup_ids(ids: list[str]) -> list[str]:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=(
-                f"submitted ID list exceeds cap ({MAX_UPLOAD_IDS}); "
-                f"narrow the upload."
+                f"CSV holds {len(cleaned):,} unique {id_column} values, over "
+                f"the {MAX_UPLOAD_IDS:,} cap. Filter it to fewer rows and "
+                f"upload it again."
             ),
         )
     if not cleaned:

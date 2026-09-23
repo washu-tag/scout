@@ -5,6 +5,14 @@
 **Decision Owner**: TAG Team
 **Supersedes**: Open WebUI's Trino-access parts of ADR 0019, ADR 0020, and ADR 0022 (the MCP Trino tool, openwebui_mcp_svc, and the interim PASSWORD authenticator)
 
+**Addendum** (2026-09-03): Adds a fourth and fifth tool, `scout_chart_sql` and
+`scout_get_chart_data` (`/api/plots` routes), which persist a SQL query and Vega-Lite
+spec to a new `plots` table and return a `view_url` that iframes a chart instead of a
+table of reports — the same just-in-time re-run pattern as `scout_find_reports`. The
+spec is sanitized server-side before it's persisted or rendered, and the frontend
+renders it in CSP-safe mode, consistent with this ADR's existing iframe security
+posture.
+
 ## Context
 
 Scout's chat surface (Open WebUI) is an effective natural-language entry point for cohort building. Researchers describe what they want, an LLM translates it to Trino SQL against the Delta Lake radiology reports, and a cohort emerges through follow-up questions. The chat context is not designed for large-data interaction though. Dumping thousands of rows into the LLM's window blows its context budget and produces worse answers on the next turn. Rendering the same rows as chat markdown gives researchers a text surface but no browse, sort, filter, or export affordances, and it still puts the payload into the model's context.
@@ -92,9 +100,9 @@ OWUI's `message.embeds` iframe sandbox must include `allow-same-origin` and `all
 
 These flags are per-user settings with no admin-global override (upstream open-webui#18684 unshipped), and both default to `false`, so every new researcher would hit a broken iframe until they toggled the flags manually. Scout forces them on with an OWUI Event function (see below).
 
-### OWUI iframe-defaults Event function
+### OWUI UI-defaults Event function
 
-`scout_iframe_defaults_event.py` is an OWUI 0.10 Event function seeded by the open-webui-bootstrap Job (like the filter functions). It forces `iframeSandboxAllowSameOrigin` and `iframeSandboxAllowForms` on via OWUI's own `Users` model, in-process, on two events:
+`scout_ui_defaults_event.py` is an OWUI 0.10 Event function seeded by the open-webui-bootstrap Job (like the filter functions). It forces `iframeSandboxAllowSameOrigin` and `iframeSandboxAllowForms` on via OWUI's own `Users` model, in-process, on two events:
 
 - `user.created` — on new account. Fires on a user's first OAuth login; the OWUI OAuth callback never emits `auth.login`, so `user.created` is the only signal for SSO users.
 - `function.enabled` / `function.updated` (on this function) — sweeps every existing user. Fires when the bootstrap Job re-seeds the function on each deploy, so the backfill runs at deploy time (`user.created` covers new users; there is no per-login OAuth event to lean on). Idempotent: only writes users missing the flags.

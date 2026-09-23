@@ -25,6 +25,36 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
+The ConfigMap the realm documents are published to, and the Job mounts.
+
+Upstream publishes them as a Secret (<fullname>-config-realms, overridable with
+existingConfigSecret). The realm document names its credentials as
+`$(env:...)` and carries none of them, so it does not have to be a Secret, and
+as a ConfigMap it can be read and diffed like any other config. The name is
+fixed rather than release-derived so a reader outside the chart can find it.
+*/}}
+{{- define "keycloak-config-cli.realmConfigMap" -}}
+keycloak-base-realm
+{{- end }}
+
+{{/*
+The default Trino AuthZ dimensions. Here rather than in values.yaml so Helm's
+map coalesce cannot merge them back into a site's own set.
+*/}}
+{{- define "keycloak-config-cli.trinoAttributeFiltersDefault" -}}
+allowed_facilities:
+  column: sending_facility
+{{- end }}
+
+{{- define "keycloak-config-cli.trinoAttributeFilters" -}}
+{{- if .Values.trinoAttributeFilters -}}
+{{- toYaml .Values.trinoAttributeFilters -}}
+{{- else -}}
+{{- include "keycloak-config-cli.trinoAttributeFiltersDefault" . -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "keycloak-config-cli.chart" -}}

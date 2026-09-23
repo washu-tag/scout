@@ -7,7 +7,8 @@ or more plugins, behind oauth2-proxy, using the off-the-shelf
 
 When `enable_xnat` is false the playbook end_plays before this role runs, so
 nothing XNAT is created — and the Keycloak realm omits the `xnat` client and the
-`xnat-access` role (gated in `scout-realm.json.j2`).
+`xnat-access` role (gated on the realm's `enableXnat` value in
+`helm/keycloak-config-cli/files/scout-realm.json`).
 
 > **Toggle-off caveat:** flipping `enable_xnat` from true back to false deletes
 > the `xnat` Keycloak client on the next `make install-auth` (keycloak-config-cli

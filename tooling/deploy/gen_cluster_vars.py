@@ -11,10 +11,9 @@ the four nested resource/parameter dicts are flattened here, plus a few Ansible
 intermediates read only to feed composites). See fixtures/cluster-vars.values.json.
 
 Derived keys mirror these Ansible sources (verified against the cited files):
-sizing via jvm_memory_to_k8s (cassandra/elasticsearch/hl7-transformer request+limit
-multipliers per tasks/deploy.yaml, NOT the stale defaults); postgres_parameters.* /
+sizing via jvm_memory_to_k8s (hl7-transformer request+limit multipliers per
+tasks/deploy.yaml, NOT the stale defaults); postgres_parameters.* /
 postgres_resources_default.* / hl7log_extractor_resources_default.* flattenings;
-cassandra_system_logger_resources = the whole default dict as a flow-JSON scalar;
 and the string composites (hive_metastore_endpoint[_readonly], delta_lake_path,
 scratch_path, hl7_path, keycloak_realm_url, keycloak_internal_url,
 trino_rw_endpoint_host).
@@ -59,14 +58,6 @@ def derive(values: dict) -> dict:
 
     # sizing: JVM heap -> K8s memory (multipliers per the Ansible tasks/templates,
     # NOT the stale defaults comments)
-    out["cassandra_memory_request"] = jvm_memory_to_k8s(values["cassandra_max_heap"], 1)
-    out["cassandra_memory_limit"] = jvm_memory_to_k8s(values["cassandra_max_heap"], 2)
-    out["elasticsearch_memory_request"] = jvm_memory_to_k8s(
-        values["elasticsearch_max_heap"], 2
-    )
-    out["elasticsearch_memory_limit"] = jvm_memory_to_k8s(
-        values["elasticsearch_max_heap"], 8
-    )
     out["hl7_transformer_memory_request"] = jvm_memory_to_k8s(
         values["hl7_transformer_spark_memory"], 1
     )
@@ -102,13 +93,6 @@ def derive(values: dict) -> dict:
     out["hl7log_extractor_resources_requests_memory"] = str(hr["requests"]["memory"])
     out["hl7log_extractor_resources_limits_cpu"] = str(hr["limits"]["cpu"])
     out["hl7log_extractor_resources_limits_memory"] = str(hr["limits"]["memory"])
-
-    # WHOLE default dict as a flow-JSON scalar, so
-    # `systemLoggerResources: ${cassandra_system_logger_resources}` renders as a
-    # valid YAML flow mapping after envsubst.
-    out["cassandra_system_logger_resources"] = json.dumps(
-        values["cassandra_system_logger_resources_default"]
-    )
 
     # string composites (reproduced from the cited Ansible definitions)
     out["hive_metastore_endpoint"] = "thrift://{}.{}:9083".format(
@@ -156,8 +140,8 @@ def check(data: dict, required: list) -> tuple:
 
 
 def _yaml_double_quoted(value) -> str:
-    """YAML double-quoted scalar for an arbitrary string (values may contain
-    ``://``, braces, and the JSON quotes of the system-logger scalar)."""
+    """YAML double-quoted scalar for an arbitrary string (endpoint values contain
+    ``://``); backslashes and quotes are escaped defensively."""
     s = str(value).replace("\\", "\\\\").replace('"', '\\"')
     return '"{}"'.format(s)
 

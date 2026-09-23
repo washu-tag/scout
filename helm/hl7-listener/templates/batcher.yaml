@@ -40,10 +40,14 @@ spec:
               value: {{ .Values.kafka.batchesTopic | quote }}
             - name: HL7_BATCHER_GROUP_ID
               value: {{ .Values.batcher.groupId | quote }}
+            # int64: Helm parses values-file numbers as float64, and Go renders larger ones in
+            # scientific notation (1200000 -> "1.2e+06"), which Camel cannot parse.
             - name: HL7_BATCHER_MAX_POLL_RECORDS
-              value: {{ .Values.batcher.maxPollRecords | quote }}
+              value: {{ .Values.batcher.maxPollRecords | int64 | quote }}
             - name: HL7_BATCHER_POLL_TIMEOUT_MS
-              value: {{ .Values.batcher.pollTimeoutMs | quote }}
+              value: {{ .Values.batcher.pollTimeoutMs | int64 | quote }}
+            - name: HL7_BATCHER_BATCHING_INTERVAL_MS
+              value: {{ .Values.batcher.batchingIntervalMs | int64 | quote }}
             - name: S3_BUCKET
               value: {{ .Values.batcher.s3.bucket | quote }}
             - name: S3_ENDPOINT
@@ -56,6 +60,8 @@ spec:
               value: {{ .Values.batcher.s3.overrideEndpoint | quote }}
             - name: S3_FORCE_PATH_STYLE
               value: {{ .Values.batcher.s3.forcePathStyle | quote }}
+            - name: S3_USE_SSE_S3
+              value: {{ .Values.batcher.s3.useSseS3 | quote }}
             {{- if .Values.batcher.s3.staticCredentials }}
             # Static object-storage credentials (MinIO). On AWS these are omitted and
             # Camel's default credentials provider resolves IRSA from the ServiceAccount.

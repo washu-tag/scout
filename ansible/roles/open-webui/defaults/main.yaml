@@ -186,6 +186,10 @@ tool_server_connections: []
 # Disable Arena Model evaluation feature (per README post-deploy step 7)
 open_webui_enable_arena_models: false
 
+# OWUI's own release notes, both off by default (see README).
+open_webui_show_release_notes: false
+open_webui_enable_version_update_check: false
+
 # Default selected model in the picker for new chats. MUST match an Ollama tag
 # exactly — point this at whichever Scout Explorer variant should be the default
 # first impression. The default `gemma4-31b-long` is resident, dense, no thinking-
@@ -260,11 +264,14 @@ open_webui_filter_functions:
       internal_domains: '{{ open_webui_link_sanitizer_internal_domains }}'
 
 open_webui_event_functions:
-  - id: scout_iframe_defaults_event
-    name: Scout Iframe Defaults
-    description: Forces the report-viewer iframe-sandbox UI flags on for every user (ADR 0029).
-    source_file: scout_iframe_defaults_event.py
+  - id: scout_ui_defaults_event
+    name: Scout UI Defaults
+    description: Forces Scout's per-user OWUI interface settings for every user (ADR 0029).
+    source_file: scout_ui_defaults_event.py
     enable_active: true
+    valves:
+      show_release_notes: '{{ open_webui_show_release_notes | bool | string | lower }}'
+      show_update_toast: '{{ open_webui_enable_version_update_check | bool | string | lower }}'
 
 open_webui_tool_functions:
   - id: scout_report_viewer_tool
@@ -273,7 +280,7 @@ open_webui_tool_functions:
     source_file: scout_report_viewer_tool.py
     valves:
       report_viewer_internal_url: 'http://report-viewer.{{ report_viewer_namespace | default(chatbot_namespace) }}:8000'
-      request_timeout_seconds: 120
+      request_timeout_seconds: 300
 
 # ----------------------------------------------------------------------------
 # Scout Explorer custom model UI config
@@ -351,13 +358,18 @@ open_webui_scout_default_suggestion_prompts:
 #   - terminal:          shell access — same risks, broader blast radius
 #   - vision:            unused by Scout (no images in the data)
 # Capabilities not listed here keep their OWUI default (true): file_context,
-# file_upload, citations, status_updates.
+# file_upload, status_updates.
+#   - citations: Scout bypasses OWUI's RAG (native function-calling inlines
+#     schema docs into the system prompt instead), so there are never any
+#     sources to cite; leaving this on just renders an empty "No sources
+#     found" pill on every turn.
 open_webui_scout_default_capabilities:
   vision: false
   web_search: false
   image_generation: false
   code_interpreter: false
   terminal: false
+  citations: false
 
 # Builtin tools (OWUI 0.9.x) — per-category enable/disable for the helper
 # functions OWUI auto-injects into a model's tool list under native function-

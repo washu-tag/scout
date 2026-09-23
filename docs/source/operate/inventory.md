@@ -987,9 +987,6 @@ The remaining XNAT variables have sane defaults and only need to be set to overr
 # Site config seeded on XNAT's first boot (skips the setup wizard).
 xnat_site_id: scout-xnat
 
-# Keycloak clientId for the XNAT client (default: xnat)
-keycloak_xnat_client_id: xnat
-
 # Namespace where XNAT is deployed (default: xnat)
 xnat_namespace: xnat
 

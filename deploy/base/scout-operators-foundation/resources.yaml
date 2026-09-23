@@ -1,5 +1,5 @@
 # Per-namespace foundation (ADR 0031): sole owner of the ${scout_operators_namespace}
-# Namespace, shared by the CNPG, MinIO, and ECK operators (all resolve to
+# Namespace, shared by the CNPG and MinIO operators (all resolve to
 # scout_operators_namespace). Co-declaring it across their prune:true Kustomizations would
 # let a mistimed prune cascade-delete the namespace, so each dependsOn this foundation.
 apiVersion: v1

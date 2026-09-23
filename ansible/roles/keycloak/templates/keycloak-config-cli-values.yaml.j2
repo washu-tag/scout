@@ -1,0 +1,73 @@
+---
+# Values for the keycloak-config-cli release.
+#
+# The realm itself is the chart's own files/scout-realm.json, which helm renders
+# from the values below -- this lane keeps no copy of the document and no second
+# templating pass. The GitOps lane installs the same chart and the same file;
+# the two differ only in where these values come from.
+image:
+  repository: '{{ keycloak_config_cli_image }}'
+  tag: '{{ keycloak_config_cli_image_tag }}'
+
+realmName: '{{ keycloak_realm_name }}'
+
+lifespans:
+  ssoSession: '{{ keycloak_token_lifespan }}'
+  accessToken: '{{ keycloak_access_token_lifespan }}'
+  temporalToken: '{{ keycloak_temporal_token_lifespan }}'
+  minioToken: '{{ keycloak_minio_token_lifespan }}'
+  trinoServiceToken: '{{ keycloak_trino_svc_token_lifespan }}'
+
+enableXnat: '{{ enable_xnat | default(false) | bool | lower }}'
+
+# A configured client id is what enables a broker in this lane, so the chart
+# takes the conclusion rather than re-deriving it from a credential.
+github:
+  enabled: '{{ (keycloak_gh_client_id | default("", true) | length > 0) | lower }}'
+microsoft:
+  enabled: '{{ (keycloak_microsoft_client_id | default("", true) | length > 0) | lower }}'
+defaultProvider: '{{ keycloak_default_provider }}'
+
+# The chart takes one comma-separated string; this lane carries a list.
+albOidcHosts: '{{ keycloak_alb_oidc_hosts | join(",") }}'
+
+oauth2ProxySubdomain: '{{ oauth2_proxy_subdomain }}'
+
+termsLocalizations:
+  {{ keycloak_terms_localizations | to_nice_yaml(indent=2) | indent(2) }}
+
+trinoAttributeFilters:
+  {{ trino_attribute_filters | to_nice_yaml(indent=2) | indent(2) }}
+
+smtp:
+  host: '{{ keycloak_smtp_host }}'
+  port: '{{ keycloak_smtp_port }}'
+  from: '{{ keycloak_smtp_from }}'
+  fromDisplayName: '{{ keycloak_smtp_from_display_name }}'
+  replyTo: '{{ keycloak_smtp_reply_to }}'
+  replyToDisplayName: '{{ keycloak_smtp_reply_to_display_name }}'
+  envelopeFrom: '{{ keycloak_smtp_envelope_from }}'
+  auth: '{{ keycloak_smtp_auth }}'
+  ssl: '{{ keycloak_smtp_ssl }}'
+  starttls: '{{ keycloak_smtp_starttls }}'
+  debug: '{{ keycloak_smtp_debug }}'
+
+env:
+  KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
+  KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
+  # Every client URL in the realm is written against this (the GitOps lane has
+  # done so since ADR 0031); it is site configuration, not a secret.
+  server_hostname: '{{ server_hostname }}'
+  # Without var-substitution the `$(env:...)` tokens are installed verbatim as
+  # client credentials and redirect URIs. managed.*=no-delete matches the
+  # GitOps lane.
+  SPRING_APPLICATION_JSON: >-
+    {"import":{"var-substitution":{"enabled":true},"managed":{"client":"no-delete","client-scope":"no-delete","client-scope-mapping":"no-delete","scope-mapping":"no-delete","role":"no-delete","group":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","required-action":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
+
+# The client and IdP secrets the realm names as `$(env:...)`, reaching
+# config-cli's environment in bulk.
+envFrom:
+  - secretRef:
+      name: keycloak-client-secrets
+
+existingSecret: keycloak-admin-secret

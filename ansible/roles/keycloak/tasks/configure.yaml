@@ -16,19 +16,79 @@
     quiet: true
   when: enable_xnat | default(false) | bool
 
-- name: Create Secret for Scout Keycloak Realm
+- name: Assemble the Keycloak client secrets
+  no_log: true
+  ansible.builtin.set_fact:
+    keycloak_client_secrets: "{{ lookup('template', 'keycloak-client-secrets.yaml.j2') | from_yaml }}"
+
+# An undefined variable already fails the template above. An empty one would
+# not: config-cli substitutes it, and the client ends up with a blank
+# credential rather than a broken deploy. Catch that here, where the operator
+# is still watching.
+- name: Validate no Keycloak client secret is empty
+  ansible.builtin.assert:
+    that: keycloak_empty_client_secrets | length == 0
+    fail_msg: >
+      Empty Keycloak client secret(s): {{ keycloak_empty_client_secrets | join(', ') }}.
+      These name keys of the keycloak-client-secrets Secret; each comes from a
+      keycloak_* variable in your inventory.yaml. An empty value would be
+      installed as the client's credential.
+    quiet: true
+  vars:
+    keycloak_empty_client_secrets: >-
+      {{ keycloak_client_secrets | dict2items | rejectattr('value') | map(attribute='key') | list }}
+
+# The realm JSON carries `$(env:...)` tokens and no credentials. The
+# credentials live here, and reach config-cli through the Job environment.
+- name: Create Secret for Keycloak client secrets
   delegate_to: localhost
   no_log: true
   kubernetes.core.k8s:
     state: present
+    apply: true
     namespace: '{{ keycloak_namespace }}'
     definition:
       apiVersion: v1
       kind: Secret
       metadata:
-        name: keycloak-config
-      data:
-        scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
+        name: keycloak-client-secrets
+      data: '{{ keycloak_client_secrets }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    keycloak_config_cli_values: "{{ lookup('template', 'keycloak-config-cli-values.yaml.j2') | from_yaml }}"
+
+# keycloak_config_hash is applied to the job to force helm to render it
+# whenever the underlying realm or secrets have changed.
+# (helm-diff would be able to tell that the realm JSON has changed and would
+# make helm render the job, but it can't see when the secrets have changed since
+# they are applied outside the chart.)
+- name: Stamp the values with a config hash
+  ansible.builtin.set_fact:
+    keycloak_config_cli_values: >-
+      {{ keycloak_config_cli_values
+         | combine({'annotations': {'config-hash': keycloak_config_hash}}) }}
+  vars:
+    keycloak_config_hash: >-
+      {{ (lookup('file', keycloak_config_cli_helm_chart_ref ~ '/files/scout-realm.json')
+          ~ (keycloak_config_cli_values | to_json)
+          ~ (keycloak_client_secrets | dictsort | to_json))
+         | hash("sha256") | truncate(8, True, "") }}
+
+# TEMPORARY -- drop this after the next major release.
+#
+# The realm used to be published as a Secret with every client credential
+# inlined in it. Nothing writes or reads it now, so an upgraded site would keep
+# a dump of its pre-rotation credentials in the namespace forever.
+- name: Remove the superseded realm Secret
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Secret
+    namespace: '{{ keycloak_namespace }}'
+    name: keycloak-config
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Run Keycloak Config CLI
@@ -42,14 +102,4 @@
     helm_chart_create_namespace: true
     helm_chart_wait: true
     helm_chart_timeout: '5m'
-    helm_chart_values:
-      image:
-        repository: '{{ keycloak_config_cli_image }}'
-        tag: '{{ keycloak_config_cli_image_tag }}'
-      existingConfigSecret: 'keycloak-config'
-      annotations: # Hash the realm config to force re-deploy on changes
-        config-hash: '{{ lookup("template", "scout-realm.json.j2") | hash("sha256") | truncate(8, True, "") }}'
-      env:
-        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
-        KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
-      existingSecret: keycloak-admin-secret
+    helm_chart_values: '{{ keycloak_config_cli_values }}'

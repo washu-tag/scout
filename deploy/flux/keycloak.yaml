@@ -43,7 +43,7 @@ spec:
   dependsOn:
     - name: scout-core-foundation
     - name: keycloak-operator
-    - name: postgres-cluster
+    - name: postgres-ready
   healthCheckExprs:
     - apiVersion: k8s.keycloak.org/v2beta1
       kind: Keycloak

@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 
 /**
  * Uploads bundle bytes to an S3-compatible bucket (MinIO or AWS S3) via
@@ -41,6 +42,13 @@ final class MinioBundleUploader implements AutoCloseable {
     private final String bucket;
     private final String objectKey;
 
+    /**
+     * AWS only. An SCP can deny s3:PutObject without an
+     * x-amz-server-side-encryption header, and a bucket default does not satisfy
+     * it. Not set for MinIO, where SSE-S3 depends on tenant config.
+     */
+    private final boolean requestSse;
+
     MinioBundleUploader(URI endpoint, String bucket, String objectKey,
                         String accessKey, String secretKey, String region) {
         this.bucket = bucket;
@@ -66,15 +74,31 @@ final class MinioBundleUploader implements AutoCloseable {
         }
 
         this.s3 = builder.build();
+        this.requestSse = isAwsS3(endpoint);
     }
 
     // Package-private test seam: inject a (mock) S3Client so the
     // upload() success/failure -> boolean contract can be exercised without a
     // live S3 endpoint. Mirrors the factory's enableForTest seam.
     MinioBundleUploader(S3Client s3, String bucket, String objectKey) {
+        this(s3, bucket, objectKey, false);
+    }
+
+    // As above, with the SSE header forced on or off so both paths are testable.
+    MinioBundleUploader(S3Client s3, String bucket, String objectKey, boolean requestSse) {
         this.s3 = s3;
         this.bucket = bucket;
         this.objectKey = objectKey;
+        this.requestSse = requestSse;
+    }
+
+    /** Real AWS S3: no endpoint override, or an explicit *.amazonaws.com one. */
+    private static boolean isAwsS3(URI endpoint) {
+        if (endpoint == null) {
+            return true;
+        }
+        String host = endpoint.getHost();
+        return host != null && host.endsWith(".amazonaws.com");
     }
 
     /**
@@ -84,13 +108,14 @@ final class MinioBundleUploader implements AutoCloseable {
      */
     boolean upload(byte[] body) {
         try {
-            s3.putObject(
-                    PutObjectRequest.builder()
-                            .bucket(bucket)
-                            .key(objectKey)
-                            .contentType("application/gzip")
-                            .build(),
-                    RequestBody.fromBytes(body));
+            PutObjectRequest.Builder req = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(objectKey)
+                    .contentType("application/gzip");
+            if (requestSse) {
+                req.serverSideEncryption(ServerSideEncryption.AES256);
+            }
+            s3.putObject(req.build(), RequestBody.fromBytes(body));
             log.infof("Published OPA bundle to s3://%s/%s (%d bytes)",
                     bucket, objectKey, body.length);
             return true;
