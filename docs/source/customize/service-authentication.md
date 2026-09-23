@@ -37,7 +37,7 @@ If your app requires any endpoints to be unauthenticated (e.g. favicons, any pub
 
 ## 2. A Fragment ConfigMap: Register a Keycloak client
 
-In order for your app to be able to integrate with Scout's login system, you will need to define a Keycloak client for your app. Keycloak is how Scout manages user logins and service-level auth; see [Authentication](../reference/authentication.md) for a more in-depth reference.
+In order for your app to be able to integrate with Scout's login system, you will need to define a Keycloak client for your app. Keycloak is how Scout manages user logins and service-level auth; see [Authentication Reference](../reference/authentication.md) for a more in-depth reference.
 
 The Scout Reconciler service will create the Keycloak client on your behalf. All you need to do is publish a ConfigMap which has the label `keycloak.scout.xnat.org/fragment: 'true'`, and which contains in its `data` a `KeycloakFragment` shaped like this:
 
