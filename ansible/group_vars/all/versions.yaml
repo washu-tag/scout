@@ -50,9 +50,14 @@ keycloak_config_cli_image_tag: 6.5.1-26.5.5
 # Databases & Data Storage - MinIO
 # renovate: datasource=helm registryUrl=https://operator.min.io depName=operator
 minio_version: 7.1.1
-minio_client_image: quay.io/minio/mc
-# renovate: datasource=docker depName=quay.io/minio/mc
-minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
+# Server and client come from the PGSTY Silo fork: MinIO archived the community
+# edition and no longer serves its images.
+minio_image: docker.io/pgsty/silo
+# renovate: datasource=docker depName=pgsty/silo versioning=regex:^RELEASE\.(?<major>\d{4})-(?<minor>\d{2})-(?<patch>\d{2})T\d{2}-\d{2}-\d{2}Z$
+minio_image_tag: RELEASE.2026-09-16T00-00-00Z
+minio_client_image: docker.io/pgsty/mc
+# renovate: datasource=docker depName=pgsty/mc versioning=regex:^RELEASE\.(?<major>\d{4})-(?<minor>\d{2})-(?<patch>\d{2})T\d{2}-\d{2}-\d{2}Z$
+minio_client_image_tag: RELEASE.2026-09-16T00-00-00Z
 
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal

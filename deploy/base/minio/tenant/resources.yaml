@@ -33,6 +33,11 @@ spec:
   values:
     tenant:
       name: '${minio_tenant_name}'
+      # Pinned in versions.yaml (minio_image[_tag], Renovate-tracked). Literal mirror,
+      # upstream image not stamped; keep in lockstep.
+      image:
+        repository: docker.io/pgsty/silo
+        tag: RELEASE.2026-09-16T00-00-00Z
       configSecret:
         name: minio-scout-env-configuration
         existingSecret: true
@@ -111,6 +116,32 @@ spec:
             ${oauth2_proxy_namespace}-oauth2-proxy-error@kubernetescrd,
             ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
             kube-system-security-headers@kubernetescrd
+---
+# Console API without oauth2-proxy-error: the console UI detects a lapsed login by
+# parsing its API's JSON 401, which the error rewrite would replace with the sign-in
+# page. Mirrors the Ansible role's console API Ingress.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: '${minio_tenant_name}-console-api'
+  namespace: '${minio_tenant_namespace}'
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
+      kube-system-security-headers@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: 'minio.${server_hostname}'
+      http:
+        paths:
+          - path: /api/
+            pathType: Prefix
+            backend:
+              service:
+                name: '${minio_tenant_name}-console'
+                port:
+                  name: http-console
 ---
 # IAM policy documents, projected into the bootstrap Job at /policies/<name>.json.
 apiVersion: v1
@@ -230,7 +261,7 @@ spec:
         - name: mc
           # Pinned in versions.yaml (minio_client_image[_tag], Renovate-tracked). Literal
           # mirror, upstream image not stamped; keep in lockstep.
-          image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+          image: docker.io/pgsty/mc:RELEASE.2026-09-16T00-00-00Z
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
