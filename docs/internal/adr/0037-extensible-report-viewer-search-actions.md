@@ -86,7 +86,7 @@ Three `action_type` values, matched to what the SPA can do with a click:
   from the action catalog itself: the catalog is a ConfigMap, which has no
   access-control distinction from other application config, so secret material never
   belongs in it. `xnat-explore-poc`
-  (`xnat-explore-poc/`, `helm/xnat-explore-poc/`) is the reference implementation: a
+  (`examples/xnat-explore-poc/`, including its `helm/` subdirectory) is the reference implementation: a
   deliberately fake FastAPI service with its own Helm chart and a NetworkPolicy
   restricting ingress to report-viewer's own pods specifically (namespace plus pod
   selector — a bare namespace match would admit any pod sharing that namespace, not
@@ -209,6 +209,12 @@ checking never had a reachable code path.
   already does for Path 1 — has no existing precedent to build on (the SPA's invoke calls
   never carry a subject token to exchange) and is deferred until an App needs stronger
   guarantees than report-viewer's own operational trust.
+- `xnat-explore-poc` lives under `examples/xnat-explore-poc/` (source and chart together,
+  the chart in a nested `helm/`), matching the `examples/` convention issue #595's own
+  reference implementation (`examples/pluggable-app/`, a different Pluggable Apps tier —
+  a front-door app with its own Keycloak client and launchpad chip, not a backend-call
+  target) established. Both live as siblings under `examples/`, excluded from e2e as
+  reference material rather than deployed components.
 
 ## Alternatives Considered
 

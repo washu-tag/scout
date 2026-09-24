@@ -132,7 +132,7 @@ random secrets and store them as real Kubernetes Secrets on your service's side,
 plain values or Deployment env literals — the same reasoning applies to your service as
 to report-viewer's own chart.
 
-`xnat-explore-poc` (`xnat-explore-poc/`, `helm/xnat-explore-poc/`) is a reference
+`xnat-explore-poc` (`examples/xnat-explore-poc/`, including its `helm/` subdirectory) is a reference
 implementation of all of this: a deliberately fake backend that verifies the token, the
 assertion, and an optional required group, purely to demonstrate the contract. Read it
 before building a real target.
