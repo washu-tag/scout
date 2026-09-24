@@ -237,6 +237,7 @@ the ADR itself before changing anything it covers.
 - **0034** launchpad catalog — chips/groups come from ConfigMaps labelled `launchpad.scout.xnat.org/catalog`, discovered at runtime. Read before adding a service tile or touching launchpad rendering
 - **0035** service-mode deploy base — one `service_mode` (aws|on-prem) var flips the storage/identity + ingress/auth edges in the `deploy/` base and `scout-config` artifact. Read before touching the aws/on-prem edge, IRSA roles, or the ALB-OIDC ingress
 - **0037** Keycloak realm fragments — an app ships its own client as a labelled ConfigMap that a reconciler applies. Read before adding a client or changing `scout-realm.json`
+- **0038** pluggable monitoring — Pluggable Apps get logs, metrics, and sidecar-discovered dashboards from any namespace; alert rules and datasources are deferred. Read before adding a Pluggable App's monitoring or making alerts/datasources pluggable
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.
