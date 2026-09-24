@@ -8,7 +8,6 @@ prometheus_helm_repo_url: https://prometheus-community.github.io/helm-charts
 prometheus_helm_chart_name: prometheus
 
 # Storage configuration
-prometheus_storage_size: 10Gi
 prometheus_storage_class: ''
 
 # Resource configuration (dev defaults - CI friendly)
