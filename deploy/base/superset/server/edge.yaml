@@ -3,6 +3,8 @@
 # aws: chart ingress off (the ALB serves), ADR-0012 headers app-side via Talisman.
 # SCOUT_LOGOUT_URL: oauth2-proxy sign-out on-prem; Keycloak end-session on aws (there is
 # no oauth2-proxy), also expiring the ALB session cookies so the next request re-auths.
+# aws returns to Superset's own host: the launchpad's session outlives this logout, so
+# landing there looks signed in (the realm registers every ALB-OIDC host for this).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -38,7 +40,7 @@ data:
       enabled: false
     configOverrides:
       logout: |
-        SCOUT_LOGOUT_URL = 'https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/logout?client_id=oauth2-proxy&post_logout_redirect_uri=https://${server_hostname}'
+        SCOUT_LOGOUT_URL = 'https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/logout?client_id=oauth2-proxy&post_logout_redirect_uri=https://superset.${server_hostname}/'
         SCOUT_LOGOUT_EXPIRE_COOKIES = [f'AWSELBAuthSessionCookie-{i}' for i in range(4)]
       security_headers: |
         TALISMAN_ENABLED = True

@@ -315,24 +315,32 @@
         "clientId": "oauth2-proxy",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:oauth2_proxy)",
+        {{- $albHosts := list }}
+        {{- range splitList "," (.Values.albOidcHosts | default "") }}{{- if trim . }}{{- $albHosts = append $albHosts (trim .) }}{{- end }}{{- end }}
         "redirectUris": [
-          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/callback"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
-          "https://{{ $h }}/oauth2/idpresponse"{{- end }}{{- end }}
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/callback"{{- range $albHosts }},
+          "https://{{ . }}/oauth2/idpresponse"{{- end }}
         ],
         "webOrigins": [
-          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
-          "https://{{ $h }}"{{- end }}{{- end }}
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)"{{- range $albHosts }},
+          "https://{{ . }}"{{- end }}
         ],
+        {{- /* Each ALB-OIDC host is also a post-logout target, so an app's logout can
+            return to its own host. Exact hosts with a path wildcard: Keycloak 26
+            rejects host wildcards. */}}
         "attributes": {
-          "post.logout.redirect.uris": "https://$(env:server_hostname)"
+          "post.logout.redirect.uris": "https://$(env:server_hostname){{- range $albHosts }}##https://{{ . }}/*{{- end }}"
         },
+        {{- /* report-viewer-audience: ALBs reuse this client, and report-viewer accepts
+            the access token they forward only with aud=report-viewer. */}}
         "defaultClientScopes": [
           "web-origins",
           "acr",
           "profile",
           "roles",
           "basic",
-          "email"
+          "email",
+          "report-viewer-audience"
         ],
         "optionalClientScopes": [
           "address",
@@ -859,7 +867,8 @@
           "https://xnat.$(env:server_hostname)"
         ],
         "attributes": {
-          "pkce.code.challenge.method": "S256"
+          "pkce.code.challenge.method": "S256",
+          "post.logout.redirect.uris": "https://xnat.$(env:server_hostname)/app/template/Login.vm"
         },
         "protocolMappers": [
           {
@@ -1015,8 +1024,10 @@
     {{- if eq (.Values.github.enabled | toString) "true" }}{{- $idps = append $idps "github" }}{{- end }}
     {{- if eq (.Values.microsoft.enabled | toString) "true" }}{{- $idps = append $idps "microsoft" }}{{- end }}
     {{- /* Only meaningful once something is brokered: a site with no external IdP
-           logs in against the realm itself, and defaultProvider names nothing. */}}
-    {{- if and $idps (not (has .Values.defaultProvider $idps)) }}{{- fail (printf "keycloak realm: defaultProvider %q is not an enabled IdP (github.enabled=%v microsoft.enabled=%v)" .Values.defaultProvider .Values.github.enabled .Values.microsoft.enabled) }}{{- end }}
+           logs in against the realm itself, and defaultProvider names nothing. Empty
+           means no auto-redirect: the redirector skips a blank value, so the login
+           page lists every enabled IdP (kc_idp_hint still works). */}}
+    {{- if and $idps .Values.defaultProvider (not (has .Values.defaultProvider $idps)) }}{{- fail (printf "keycloak realm: defaultProvider %q is not an enabled IdP (github.enabled=%v microsoft.enabled=%v); set it to \"\" to show the login page instead" .Values.defaultProvider .Values.github.enabled .Values.microsoft.enabled) }}{{- end }}
     "authenticatorConfig": [
       {
         "alias": "default-provider",

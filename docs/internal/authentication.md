@@ -192,7 +192,63 @@ keycloak_microsoft_tenant_id: 'your-tenant-id'
 For development deployments, you can create a new OAuth app in in Github for Keycloak to use:
 https://github.com/organizations/your-org-here/settings/applications
 
+`keycloak_default_provider` names the IdP that Keycloak redirects every login to. Set it to `''` to turn the redirect off. The Keycloak login page then lists every enabled IdP, and an app can still pick one with `kc_idp_hint`. Use it when brokering more than one IdP. It also lets a sign-out stick: with the redirect on, an upstream IdP that keeps its own session (GitHub, Entra ID) signs the user straight back in.
+
 Other Keycloak-supported identity providers can be added in the future. Each provider has different required configuration fields (e.g., Microsoft requires a `tenant_id` beyond the standard `client_id` and `client_secret`), so adding new providers could require additional inventory variables.
+
+**Additional OIDC identity providers (GitOps deploy)**:
+The realm chart imports every document under its `config` value, so a site can broker another OIDC IdP without changing the realm. Put an `inline` document in the optional `keycloak-config-cli-site-values` ConfigMap (see [deploy/README.md](../../deploy/README.md)):
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config-cli-site-values
+  namespace: scout-core # the site's keycloak namespace
+  labels:
+    reconcile.fluxcd.io/watch: Enabled
+data:
+  values.yaml: |
+    config:
+      site-idp-partner:
+        inline:
+          realm: scout
+          identityProviders:
+            - alias: partner
+              displayName: Partner SSO
+              providerId: oidc
+              enabled: true
+              trustEmail: true
+              config:
+                clientId: $(env:partner_client_id)
+                clientSecret: $(env:partner_client_secret)
+                clientAuthMethod: client_secret_basic
+                issuer: https://idp.example.org
+                authorizationUrl: https://idp.example.org/authorize
+                tokenUrl: https://idp.example.org/token
+                jwksUrl: https://idp.example.org/jwks
+                useJwksUrl: 'true'
+                validateSignature: 'true'
+                defaultScope: openid email profile
+                pkceEnabled: 'true'
+                pkceMethod: S256
+                syncMode: IMPORT
+          identityProviderMappers:
+            - name: username-from-sub
+              identityProviderAlias: partner
+              identityProviderMapper: oidc-username-idp-mapper
+              config:
+                template: partner-${CLAIM.sub}
+                target: LOCAL
+                syncMode: INHERIT
+```
+
+- Add the credential keys the document names (`partner_client_id`, `partner_client_secret`) to `keycloak-client-secrets` before the import runs. config-cli fails the whole realm import on an unresolved `$(env:...)`. With the `reconcile.fluxcd.io/watch` label the import re-runs as soon as the ConfigMap changes, which can beat an ExternalSecret writing the new keys in the same change; add the keys first or skip the label.
+- A site document is only safe while the chart keeps every `managed.*` setting at `no-delete` (the default here). config-cli keeps one remote state per realm, so with `full` a partial document (for example one client) would delete every entity of that type it does not list.
+- Set `keycloak_default_provider: ''` so the new IdP's button is reachable. The ConfigMap can't override it, because the HelmRelease's own `values` win on overlap.
+- To keep same-email users from different IdPs as separate accounts, rather than offering to link them, also set `duplicateEmailsAllowed: true` at the top of the document, with `loginWithEmailAllowed: false` (an email no longer names one user).
+- A Flux Kustomization with `postBuild` substitution rewrites `${CLAIM.sub}` (and fails on the dotted name). Apply the ConfigMap from one without `postBuild`, or escape it as `$${CLAIM.sub}`.
+- Users who sign in through the new IdP go through the same [approval workflow](#user-approval-workflow) as any other new user.
 
 **Keycloak Client Secrets** (one for each Scout service):
 ```yaml

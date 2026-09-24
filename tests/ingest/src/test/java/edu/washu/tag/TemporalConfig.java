@@ -2,7 +2,8 @@ package edu.washu.tag;
 
 public class TemporalConfig {
 
-    private String temporalUrl = "temporal-frontend.scout-extractor.svc:7233";
+    // Internal frontend: skips the public frontend's JWT authz, like the workers.
+    private String temporalUrl = "temporal-internal-frontend.scout-extractor.svc:7236";
 
     public String getTemporalUrl() {
         return temporalUrl;

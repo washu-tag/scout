@@ -36,6 +36,16 @@ until CI switches `deploy-and-test` to deploy from it. See
 - **Secrets by fixed name only** — bases reference them (e.g. `superuser-secret`);
   values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git. The
   full contract (names, keys, per-mode materialization) is in `required-secrets.md`.
+- **Site realm values** go in an optional `keycloak-config-cli-site-values` ConfigMap
+  (key `values.yaml`) in `${keycloak_namespace}`, which the keycloak-config-cli
+  HelmRelease reads through `valuesFrom`. It carries realm chart values a scalar can't,
+  such as a `trinoAttributeFilters` pick-list or extra IdP documents under `config`
+  (`docs/internal/authentication.md`). The HelmRelease's own `values` win on overlap.
+  Label it `reconcile.fluxcd.io/watch: Enabled` so an edit re-runs the import without
+  waiting for the interval. With the label the import re-runs as soon as the ConfigMap
+  changes, which can beat an ExternalSecret writing new `$(env:...)` keys in the same
+  change, and one unresolved variable fails the whole import; add new keys first or
+  skip the label.
 - **Service-mode (`aws` vs `on-prem`, ADR 0035) picks a mechanism by the shape of the
   delta**, so the three-way split is one rule, not ad hoc:
   1. *scalar diff* → an inline `${var}` the chart branches on (e.g. hive

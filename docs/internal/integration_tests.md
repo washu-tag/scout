@@ -18,7 +18,7 @@ attempt to load a default config in a `local.json`. The JSON configuration corre
 * `sparkConfig`: a dictionary that is passed as-is to spark in order to connect to the delta lake.
 * `postgresConfig`: an [object](../../tests/ingest/src/test/java/edu/washu/tag/DatabaseConfig.java) defining `url`, `username`, and `password` with which to connect to Scout's postgres instance.
 * `temporalConfig`: an optional [object](../../tests/ingest/src/test/java/edu/washu/tag/TemporalConfig.java) allowing overriding of some properties used in communicating with temporal. Child properties are:
-    * `temporalUrl`: in-cluster URL with which the tests can access temporal. Defaults to `temporal-frontend.temporal.svc:7233`.
+    * `temporalUrl`: in-cluster URL with which the tests can access temporal. Defaults to the internal frontend, `temporal-internal-frontend.scout-extractor.svc:7236`, which skips the public frontend's JWT authorization.
     * `ingestJobInput`: an [object](../../tests/ingest/src/test/java/edu/washu/tag/model/IngestJobInput.java) passed to temporal to launch ingest.
 
 ## To run on a dev cluster

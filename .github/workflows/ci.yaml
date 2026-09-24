@@ -194,10 +194,11 @@ jobs:
     # nothing else checks it: derive the key and diff, so a missed rotation or the
     # authoring placeholder fails here instead of breaking verification downstream.
     # No paths filter, since the file goes stale without being touched.
-    # Skipped on Dependabot PRs: those runs only get Dependabot secrets, so
-    # COSIGN_PRIVATE_KEY is empty. The push to main still runs it. Checking the
-    # event too, since the auto-merge push actor is also dependabot[bot].
-    if: ${{ github.event_name != 'pull_request' || github.actor != 'dependabot[bot]' }}
+    # Skipped on Dependabot and fork PRs: Dependabot runs only get Dependabot
+    # secrets and fork runs get none, so COSIGN_PRIVATE_KEY is empty. The push to
+    # main still runs it. Checking the event too, since the auto-merge push actor
+    # is also dependabot[bot].
+    if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1619,9 +1620,9 @@ jobs:
           set -euo pipefail
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
           # Fixed-name Secrets the bases reference (superuser-secret, the five
-          # cnpg-role-* companions, s3/keycloak/superset/hive) are SOPS/ESO in
-          # production (Phase 4); seed from CI secrets here. Placeholder -- wire the
-          # concrete `kubectl create secret` calls when enabled.
+          # cnpg-role-* companions, s3/keycloak/superset/hive, temporal-web-oidc) are
+          # SOPS/ESO in production (Phase 4); seed from CI secrets here. Placeholder --
+          # wire the concrete `kubectl create secret` calls when enabled.
           # cluster-vars for postBuild substitution:
           python3 tooling/deploy/gen_cluster_vars.py \
             --values .github/ci_resources/cluster-vars.values.json \
