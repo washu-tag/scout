@@ -3,8 +3,8 @@
 # User-configurable settings are in inventory.yaml
 
 # Helm configuration
-loki_helm_repo_name: grafana
-loki_helm_repo_url: https://grafana.github.io/helm-charts
+loki_helm_repo_name: grafana-community
+loki_helm_repo_url: https://grafana-community.github.io/helm-charts
 loki_helm_timeout: 5m
 
 # Storage configuration

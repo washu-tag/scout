@@ -46,7 +46,7 @@ serviceAccount:
   create: false
   name: '{{ loki_writer_service_account_name }}'
 {% endif %}
-deploymentMode: SingleBinary
+deploymentMode: Monolithic
 
 singleBinary:
   replicas: 1
