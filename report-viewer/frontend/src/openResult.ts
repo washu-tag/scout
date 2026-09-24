@@ -19,8 +19,8 @@ function _execCommandCopy(text: string): boolean {
 export interface OpenResultState {
   opening: boolean;
   error: string | null;
-  copiedLink: string | null;
-  copyFailed: boolean;
+  resultLink: string | null;
+  copied: boolean;
 }
 
 /** Open a result URL from any action button, reusably.
@@ -32,9 +32,8 @@ export interface OpenResultState {
  * sandboxed iframe" (relevant when report-viewer is embedded in OWUI's
  * chat). A blocked popup doesn't throw a catchable error - the browser
  * silently drops it - so there's no reliable signal to decide whether a
- * fallback is needed; always also copy the link and expose it, so the
- * caller can render an "in case that didn't open" affordance
- * unconditionally.
+ * fallback is needed; always expose the link afterward so the caller can
+ * render an "open this manually" affordance unconditionally.
  *
  * Whether the popup actually succeeds is controlled by the destination's
  * own Cross-Origin-Opener-Policy response header, not anything this hook
@@ -47,6 +46,14 @@ export interface OpenResultState {
  * ansible/roles/traefik/tasks/main.yaml for the full writeup). A
  * destination that hasn't opted into unsafe-none will always fall
  * through to the copy-link affordance when embedded this way.
+ *
+ * Copying is a separate, explicit `copyLink` call rather than something
+ * `open` does automatically: `document.execCommand('copy')` only succeeds
+ * within a synchronous user gesture, and callers that resolve `open()`
+ * after an `await` (e.g. a backend-call action's invoke request) no
+ * longer have one by the time `open` returns. `copyLink` must be invoked
+ * directly from a click handler, with no `await` ahead of it in that
+ * handler, so its own click supplies the gesture.
  *
  * The copy itself uses `document.execCommand('copy')`, not
  * `navigator.clipboard` - same reasoning and precedent as
@@ -61,12 +68,12 @@ export function useOpenResult() {
   const [state, setState] = useState<OpenResultState>({
     opening: false,
     error: null,
-    copiedLink: null,
-    copyFailed: false,
+    resultLink: null,
+    copied: false,
   });
 
   const open = useCallback(async (url: string) => {
-    setState({ opening: true, error: null, copiedLink: null, copyFailed: false });
+    setState({ opening: true, error: null, resultLink: null, copied: false });
     try {
       const link = document.createElement('a');
       link.href = url;
@@ -76,17 +83,25 @@ export function useOpenResult() {
       link.click();
       document.body.removeChild(link);
 
-      const copyFailed = !_execCommandCopy(url);
-      setState({ opening: false, error: null, copiedLink: url, copyFailed });
+      setState({ opening: false, error: null, resultLink: url, copied: false });
     } catch (err) {
       setState({
         opening: false,
         error: err instanceof Error ? err.message : 'Failed to open link',
-        copiedLink: null,
-        copyFailed: false,
+        resultLink: null,
+        copied: false,
       });
     }
   }, []);
 
-  return { ...state, open };
+  // Call directly from a click handler - see the doc comment above.
+  const copyLink = useCallback((url: string) => {
+    const ok = _execCommandCopy(url);
+    setState((s) => ({ ...s, copied: ok }));
+    if (ok) {
+      setTimeout(() => setState((s) => ({ ...s, copied: false })), 1500);
+    }
+  }, []);
+
+  return { ...state, open, copyLink };
 }

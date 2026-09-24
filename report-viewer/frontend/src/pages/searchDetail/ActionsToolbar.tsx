@@ -32,7 +32,7 @@ export function ActionsToolbar({
   // action agree on scope (see api/client.ts's invokeSearchAction).
   visibleReportIds: string[];
 }) {
-  const { opening, error, copiedLink, copyFailed, open } = useOpenResult();
+  const { opening, error, resultLink, copied, open, copyLink } = useOpenResult();
   const [invokingId, setInvokingId] = useState<string | null>(null);
   const [invokeError, setInvokeError] = useState<string | null>(null);
 
@@ -100,14 +100,13 @@ export function ActionsToolbar({
       {(error || invokeError) && (
         <p style={{ color: 'var(--rv-danger)', margin: '0.25rem 0 0' }}>{error || invokeError}</p>
       )}
-      {copiedLink && (
+      {resultLink && (
         <p style={{ margin: '0.25rem 0 0' }}>
-          A new tab should have opened.{' '}
-          {copyFailed
-            ? "Couldn't copy the link automatically, though"
-            : 'Its link is also copied to your clipboard'}
-          {", in case it didn't: "}
-          <code>{copiedLink}</code>
+          Opened in a new tab. If it didn't open, copy this link and open it manually:{' '}
+          <code>{resultLink}</code>{' '}
+          <button type="button" onClick={() => copyLink(resultLink)} style={paginationBtn}>
+            {copied ? 'Copied' : 'Copy link'}
+          </button>
         </p>
       )}
     </>
