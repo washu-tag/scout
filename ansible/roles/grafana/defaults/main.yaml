@@ -3,8 +3,8 @@
 # User-configurable settings are in inventory.yaml
 
 # Helm configuration
-grafana_helm_repo_name: grafana
-grafana_helm_repo_url: https://grafana.github.io/helm-charts
+grafana_helm_repo_name: grafana-community
+grafana_helm_repo_url: https://grafana-community.github.io/helm-charts
 grafana_helm_chart_name: grafana
 
 # Storage configuration
