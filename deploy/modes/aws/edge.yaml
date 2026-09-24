@@ -23,6 +23,6 @@ spec:
   dependsOn:
     - name: keycloak-instance
     - name: superset-server
-    - name: scout-extractor-foundation  # temporal-alb and its RBAC land in that namespace
+    - name: scout-extractor-foundation # temporal-alb and its RBAC land in that namespace
     # Not temporal-server: its UI exits until keycloak-alb (built here) serves OIDC
     # discovery, so waiting on it would deadlock a fresh install.
