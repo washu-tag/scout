@@ -4,7 +4,9 @@
    path (forwards `__oauth_token__`) and by anything else that wants to
    present a real end-user token. Validates signature + exp + iss + aud
    (`aud=report-viewer`, stamped by the `report-viewer-audience` client
-   scope).
+   scope). Behind a proxy that authenticates the browser itself and
+   forwards the user's access token in a header (AWS ALB OIDC), setting
+   `forwarded_token_header` validates that token the same way.
 2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`) - the
    ingress path. Trusted only when the request also carries the
    `X-Report-Viewer-Gateway` secret that Traefik injects, so a
@@ -23,7 +25,7 @@ import hmac
 import logging
 from dataclasses import dataclass
 
-from fastapi import Header, HTTPException, status
+from fastapi import Header, HTTPException, Request, status
 from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError
 
@@ -116,12 +118,15 @@ def _validate_jwt(token: str) -> str | None:
 
 
 async def get_current_user(
+    request: Request,
     authorization: str | None = Header(default=None),
     x_auth_request_preferred_username: str | None = Header(default=None),
     x_report_viewer_gateway: str | None = Header(default=None),
 ) -> User:
     # Path 1: Bearer JWT (highest trust; carries the real user identity).
     token = _bearer_token(authorization)
+    if not token and settings.forwarded_token_header:
+        token = request.headers.get(settings.forwarded_token_header) or None
     if token:
         # JWKS fetch on cache miss is blocking; keep it off the event loop.
         sub = await asyncio.to_thread(_validate_jwt, token)

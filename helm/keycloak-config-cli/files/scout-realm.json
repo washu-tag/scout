@@ -308,13 +308,16 @@
         "attributes": {
           "post.logout.redirect.uris": "https://$(env:server_hostname){{- range $h := (splitList "," (.Values.albOidcHosts | default "")) }}{{- $h = trim $h }}{{- if $h }}##https://{{ $h }}/*{{- end }}{{- end }}"
         },
+        {{- /* report-viewer-audience: ALBs reuse this client, and report-viewer accepts
+            the access token they forward only with aud=report-viewer. */}}
         "defaultClientScopes": [
           "web-origins",
           "acr",
           "profile",
           "roles",
           "basic",
-          "email"
+          "email",
+          "report-viewer-audience"
         ],
         "optionalClientScopes": [
           "address",

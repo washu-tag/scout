@@ -217,6 +217,48 @@ def test_hs256_token_is_rejected_by_allowlist():
         assert r.status_code == 401
 
 
+_FWD = "X-Amzn-Oidc-Accesstoken"
+
+
+def _post_with(headers: dict[str, str]):
+    with TestClient(create_app()) as client:
+        return client.post("/api/searches", json={"sql": "SELECT 1"}, headers=headers)
+
+
+def test_forwarded_token_authenticates_when_configured(keypair, monkeypatch):
+    priv, _ = keypair
+    monkeypatch.setattr(settings, "forwarded_token_header", _FWD)
+    r = _post_with({_FWD: _mint(priv)})
+    assert r.status_code != 401, r.text
+
+
+def test_forwarded_token_ignored_when_unconfigured(keypair):
+    priv, _ = keypair
+    assert settings.forwarded_token_header == ""
+    assert _post_with({_FWD: _mint(priv)}).status_code == 401
+
+
+def test_invalid_forwarded_token_does_NOT_fall_through_to_header(keypair, monkeypatch):
+    priv, _ = keypair
+    monkeypatch.setattr(settings, "forwarded_token_header", _FWD)
+    r = _post_with(
+        {
+            _FWD: _mint(priv, aud="oauth2-proxy"),
+            "X-Auth-Request-Preferred-Username": "alice",
+            "X-Report-Viewer-Gateway": settings.gateway_secret,
+        }
+    )
+    assert r.status_code == 401
+    assert "bearer" in r.text.lower()
+
+
+def test_bearer_takes_precedence_over_forwarded_token(keypair, monkeypatch):
+    priv, _ = keypair
+    monkeypatch.setattr(settings, "forwarded_token_header", _FWD)
+    r = _post_with({"Authorization": f"Bearer {_mint(priv)}", _FWD: "not-a-jwt"})
+    assert r.status_code != 401, r.text
+
+
 def test_settings_rejects_jwks_url_without_issuer(monkeypatch):
     """Startup guard: if REPORT_VIEWER_OIDC_JWKS_URL is configured but
     REPORT_VIEWER_OIDC_ISSUER is empty, Settings() must refuse to
