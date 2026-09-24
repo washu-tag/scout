@@ -1,0 +1,47 @@
+---
+# The keycloak role writes the credential; this only checks the key reached the
+# Secret. Without the check the pod starts, authenticates as nobody, and applies
+# no fragments, with nothing in any log pointing here.
+- name: Read the Keycloak client secrets
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: '{{ keycloak_fragment_reconciler_secret_name }}'
+    namespace: '{{ keycloak_fragment_reconciler_namespace }}'
+  register: keycloak_fragment_reconciler_secret
+  no_log: true
+
+- name: Validate the reconciler's credential reached the Secret
+  ansible.builtin.assert:
+    that:
+      - keycloak_fragment_reconciler_secret.resources | length > 0
+      - keycloak_fragment_reconciler_secret_key in
+        (keycloak_fragment_reconciler_secret.resources[0].data | default({}))
+    fail_msg: >
+      Secret {{ keycloak_fragment_reconciler_secret_name }} in
+      {{ keycloak_fragment_reconciler_namespace }} has no
+      {{ keycloak_fragment_reconciler_secret_key }} key. Set
+      keycloak_fragment_reconciler_svc_client_secret in your inventory.yaml (use
+      vault encryption) and re-run the keycloak role, which is what writes it.
+      Example: openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    keycloak_fragment_reconciler_helm_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+- name: Deploy the Keycloak fragment reconciler
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ keycloak_fragment_reconciler_helm_release_name }}'
+    helm_chart_ref: '{{ keycloak_fragment_reconciler_helm_chart_ref }}'
+    helm_chart_namespace: '{{ keycloak_fragment_reconciler_namespace }}'
+    helm_chart_values_files:
+      - '{{ scout_repo_dir }}/helm/keycloak-fragment-reconciler/values.yaml'
+    helm_chart_values: '{{ keycloak_fragment_reconciler_helm_values }}'
+    # Readiness means the tier realm roles were found, so this waits for the
+    # realm apply to have landed.
+    helm_chart_wait: true
+    helm_chart_timeout: 5m
