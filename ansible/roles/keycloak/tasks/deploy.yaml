@@ -11,23 +11,20 @@
   environment:
     K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
   block:
-    - name: Apply Keycloak CRD
+    # Every CRD in the vendored release: the set changes between releases (26.7 added
+    # the OIDC and SAML client CRDs, without which its operator refuses to start).
+    - name: Apply Keycloak CRDs
       no_log: true
       kubernetes.core.k8s:
         state: present
-        src: '{{ keycloak_crd_url }}'
-
-    - name: Apply Keycloak KeycloakRealmImport CRD
-      no_log: true
-      kubernetes.core.k8s:
-        state: present
-        src: '{{ keycloak_realmimport_crd_url }}'
+        src: '{{ item }}'
+      loop: "{{ query('fileglob', keycloak_operator_dir ~ '/*.k8s.keycloak.org-v1.yml') | sort }}"
 
     - name: Apply Keycloak Operator
       no_log: true
       kubernetes.core.k8s:
         state: present
-        src: '{{ keycloak_operator_url }}'
+        src: '{{ keycloak_operator_dir }}/kubernetes.yml'
         namespace: '{{ keycloak_namespace }}'
 
 - name: Override Keycloak operator image pull policy
