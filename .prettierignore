@@ -1,5 +1,9 @@
 helm/**/*.yaml
 !helm/**/*values.yaml
+# examples/ charts are also Go-templated, same reasoning as helm/** above.
+examples/**/*.yaml
+!examples/**/*values.yaml
+examples/**/files/**
 report-viewer/**/static/assets/**
 report-viewer/**/dist/**
 report-viewer/**/build/**

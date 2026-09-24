@@ -19,7 +19,9 @@ landing_client = TestClient(landing_app)
 _ACTION_HEADERS = {"X-Report-Viewer-Action-Token": "test-token"}
 
 
-def _assertion(search_id: str, sub: str = "carol", groups=None, exp_delta: int = 60) -> str:
+def _assertion(
+    search_id: str, sub: str = "carol", groups=None, exp_delta: int = 60
+) -> str:
     now = int(time.time())
     claims = {
         "sub": sub,
@@ -56,7 +58,9 @@ def test_landing_page_renders_reports_and_user():
 
 
 def test_landing_page_escapes_user():
-    r = landing_client.get("/", params={"reports": "1", "user": "<script>alert(1)</script>"})
+    r = landing_client.get(
+        "/", params={"reports": "1", "user": "<script>alert(1)</script>"}
+    )
     assert r.status_code == 200
     assert "<script>" not in r.text
     assert "&lt;script&gt;" in r.text
@@ -152,7 +156,9 @@ def test_invoke_enforces_required_group(monkeypatch, caplog):
             json={"search_id": "s_x"},
             headers={
                 **_ACTION_HEADERS,
-                "X-Report-Viewer-User-Assertion": _assertion("s_x", groups=["scout-user"]),
+                "X-Report-Viewer-User-Assertion": _assertion(
+                    "s_x", groups=["scout-user"]
+                ),
             },
         )
     assert r.status_code == 403

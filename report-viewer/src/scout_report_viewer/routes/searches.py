@@ -33,7 +33,12 @@ from fastapi import (
 )
 
 from .. import metrics, trino_client
-from ..actions import ActionDescriptor, list_actions, load_invoke_token, mint_user_assertion
+from ..actions import (
+    ActionDescriptor,
+    list_actions,
+    load_invoke_token,
+    mint_user_assertion,
+)
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings

@@ -30,7 +30,9 @@ from .config import settings
 # infrastructure, so a plain getLogger(__name__) call goes nowhere
 # (Python's root logger has no handler by default; uvicorn only
 # configures its own "uvicorn"/"uvicorn.access" loggers, not this one).
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+)
 log = logging.getLogger(__name__)
 
 # Two separate FastAPI apps, not one app on two ports: /invoke must be
@@ -91,7 +93,8 @@ async def invoke(
 
     if not settings.assertion_key or not x_report_viewer_user_assertion:
         log.warning(
-            "invoke rejected: search_id=%s missing user assertion", body.get("search_id")
+            "invoke rejected: search_id=%s missing user assertion",
+            body.get("search_id"),
         )
         raise HTTPException(status_code=401, detail="missing user assertion")
     try:
@@ -102,7 +105,8 @@ async def invoke(
         )
     except ExpiredSignatureError:
         log.warning(
-            "invoke rejected: search_id=%s user assertion expired", body.get("search_id")
+            "invoke rejected: search_id=%s user assertion expired",
+            body.get("search_id"),
         )
         raise HTTPException(status_code=401, detail="user assertion expired")
     except JWTError:
