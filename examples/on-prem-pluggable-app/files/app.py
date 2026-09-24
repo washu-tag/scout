@@ -4,17 +4,17 @@ Replace this with your real app. The chart around it is the part worth copying.
 """
 
 import html
+import logging
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 
 PORT = int(os.environ.get("PORT", "8080"))
-CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "(unset)")
-SECRET_FILE = Path(os.environ.get("KEYCLOAK_CLIENT_SECRET_FILE", ""))
 
 # oauth2-proxy sets this at the ingress (ADR 0022). It is worth trusting only
 # because the edge gate is the sole route to this pod.
 USER_HEADER = "X-Auth-Request-Preferred-Username"
+
+log = logging.getLogger("example-app")
 
 PAGE = """<!doctype html>
 <meta charset="utf-8"><title>Example Pluggable App</title>
@@ -31,23 +31,8 @@ client. Nothing in the Scout base realm mentions it.</p>
   <dt>Signed in as</dt>
   <dd><code>{user}</code>, from the <code>{header}</code> header the
       oauth2-proxy edge gate put on this request</dd>
-  <dt>Keycloak client</dt>
-  <dd><code>{client}</code>, created from the fragment in this chart</dd>
-  <dt>Client secret</dt>
-  <dd>{secret}</dd>
 </dl>
 """
-
-
-def secret_status() -> str:
-    """Report whether the credential the fragment points at actually landed."""
-    try:
-        mounted = bool(SECRET_FILE.read_text(encoding="utf-8").strip())
-    except OSError:
-        return f"not readable at <code>{html.escape(str(SECRET_FILE))}</code>"
-    if not mounted:
-        return "mounted but empty"
-    return f"mounted at <code>{html.escape(str(SECRET_FILE))}</code>"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -57,11 +42,12 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/healthz":
             body, content_type = b"ok", "text/plain; charset=utf-8"
         else:
+            user = self.headers.get(USER_HEADER)
+            if user is None:
+                log.warning("%s requested without %s header", self.path, USER_HEADER)
             body = PAGE.format(
-                user=html.escape(self.headers.get(USER_HEADER, "(header absent)")),
+                user=html.escape(user or "(header absent)"),
                 header=USER_HEADER,
-                client=html.escape(CLIENT_ID),
-                secret=secret_status(),
             ).encode()
             content_type = "text/html; charset=utf-8"
         self.send_response(200)
@@ -71,6 +57,19 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def log_request(self, code="-", size="-"):
+        level = logging.DEBUG if self.path == "/healthz" else logging.INFO
+        user = self.headers.get(USER_HEADER, "-")
+        log.log(level, '"%s" %s user=%s', self.requestline, code, user)
+
+    def log_message(self, format, *args):  # noqa: A002
+        log.warning("%s - %s", self.address_string(), format % args)
+
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
+    log.info("listening on :%s", PORT)
     ThreadingHTTPServer(("", PORT), Handler).serve_forever()

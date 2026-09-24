@@ -38,6 +38,9 @@ image:
   pullPolicy: IfNotPresent
 command: ['python', '/app/app.py']
 
+# DEBUG also logs the /healthz probes.
+logLevel: INFO
+
 launchpad:
   # Presentation only. `icon` and `tone` must come from the sets in
   # docs/source/customize/launchpad-chips.md; an invalid value silently
