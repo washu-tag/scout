@@ -1,0 +1,33 @@
+# Per-mode Temporal UI ingress via valuesFrom (ADR 0035). on-prem: the chart's Traefik
+# web ingress + the oauth2-proxy/security-headers middleware chain (ADR 0012), as the
+# Ansible role renders it. aws: chart ingress off; the ALB
+# (edge-aws/temporal-ingress.yaml) serves the host with ALB-native OIDC.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-edge-on-prem
+  namespace: '${scout_extractor_namespace}'
+data:
+  values.yaml: |
+    web:
+      ingress:
+        enabled: true
+        className: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: >-
+            ${oauth2_proxy_namespace}-oauth2-proxy-error@kubernetescrd,
+            ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
+            kube-system-security-headers@kubernetescrd
+        hosts:
+          - 'temporal.${server_hostname}'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-edge-aws
+  namespace: '${scout_extractor_namespace}'
+data:
+  values.yaml: |
+    web:
+      ingress:
+        enabled: false

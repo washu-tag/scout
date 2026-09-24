@@ -27,7 +27,7 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 | `launchpad-keycloak-secret` | `client-secret` | launchpad OIDC login (pod-side; = the realm's `launchpad_client` value, not that key) |
 | `launchpad-nextauth-secret` | `secret` | launchpad next-auth session signing (generate-once) |
 | `opa-bundle-writer` | `access-key`, `secret-key` | Keycloak OPA bundle publisher (on-prem: MinIO creds; aws: present with **empty** values, else they shadow IRSA) |
-| `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on launchpad (also in `${scout_analytics_namespace}` for superset); the `oauth2-proxy` client |
+| `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on launchpad (also in `${scout_analytics_namespace}` for superset and `${scout_extractor_namespace}` for the Temporal UI); the `oauth2-proxy` client |
 
 ## scout-data (minio / hive)
 **Mode-specific.** Cloud uses AWS S3 + IRSA (no access-key Secrets); the MinIO-user
@@ -41,12 +41,14 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | `minio-scout-env-configuration` | `config.env` (root creds + region/OIDC) | MinIO `Tenant.configSecret` (in-cluster MinIO only) |
 | `${s3_*}-creds` (lake r/w, loki-writer, opa-bundle r/w) | `CONSOLE_ACCESS_KEY`, `CONSOLE_SECRET_KEY` | MinIO `Tenant.users` (in-cluster MinIO only) |
 
-## scout-extractor (extractor / trino-rw)
+## scout-extractor (extractor / temporal / trino-rw)
 | secret | keys | consumed by |
 | --- | --- | --- |
 | `s3-secret` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | hl7log-extractor + hl7-transformer (lake-writer; cloud = IRSA instead) |
 | `postgres-secret` | `DB_PASSWORD` (+ DB coords) | extractor datasource (= the extractor role) |
 | `temporal-db-secret` | `password` | Temporal server + schema Job (= the temporal CNPG role) |
+| `temporal-web-oidc` | `client-secret` | Temporal UI OIDC login, both modes (= the realm's `temporal` value in `keycloak-client-secrets`) |
+| `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on the Temporal UI (see scout-core) |
 | `trino-rw-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-rw (lake-writer; cloud = IRSA instead) |
 
 ## scout-analytics (superset / opa / trino-ro)
