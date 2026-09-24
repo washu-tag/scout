@@ -76,9 +76,9 @@ github:
 microsoft:
   enabled: 'false'
 defaultProvider: github
-# Comma-separated full ALB-OIDC hostnames the oauth2-proxy client accepts
-# /oauth2/idpresponse from, and as post-logout targets (AWS sites, e.g.
-# superset.<domain>). On-prem uses the oauth2-proxy callback the realm builds from
+# Comma-separated full ALB-OIDC hostnames (AWS sites, e.g. superset.<domain>). The
+# oauth2-proxy client accepts /oauth2/idpresponse and post-logout redirects (any path)
+# on each. On-prem uses the oauth2-proxy callback the realm builds from
 # server_hostname, so this can stay empty.
 albOidcHosts: ''
 # Subdomain oauth2-proxy is served on; the realm registers its callback and

@@ -110,8 +110,8 @@ authorization listener, SELECT-only DB role).
 - Rotating a `keycloak-client-secrets` value does not by itself re-run the config-cli
   import (the Job reads it via `envFrom` by name); it applies on the next realm/chart
   upgrade, or force it with `flux reconcile hr keycloak-config-cli -n <ns>`.
-- Every enabled component's key must be present. config-cli leaves an unresolved
-  `$(env:...)` as literal text, so a missing key would set that client's secret to a
-  guessable placeholder. Provision `keycloak-client-secrets` fail-closed (an
-  ExternalSecret that errors if a source key is absent), and only enable an IdP or the
-  XNAT client once its key exists.
+- Every enabled component's key must be present. config-cli fails the whole realm
+  import on an unresolved `$(env:...)` (`undefined-is-error` defaults to true), so a
+  missing key blocks every realm change. Provision `keycloak-client-secrets`
+  fail-closed (an ExternalSecret that errors if a source key is absent), and only enable
+  an IdP or the XNAT client once its key exists.

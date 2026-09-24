@@ -241,7 +241,7 @@ data:
                 syncMode: INHERIT
 ```
 
-- Add the credential keys the document names (`partner_client_id`, `partner_client_secret`) to `keycloak-client-secrets` before the import runs. config-cli leaves a missing `$(env:...)` as literal text.
+- Add the credential keys the document names (`partner_client_id`, `partner_client_secret`) to `keycloak-client-secrets` before the import runs. config-cli fails the whole realm import on an unresolved `$(env:...)`.
 - Set `keycloak_default_provider: ''` so the new IdP's button is reachable. The ConfigMap can't override it, because the HelmRelease's own `values` win on overlap.
 - To keep same-email users from different IdPs as separate accounts, rather than offering to link them, also set `duplicateEmailsAllowed: true` at the top of the document, with `loginWithEmailAllowed: false` (an email no longer names one user).
 - A Flux Kustomization with `postBuild` substitution rewrites `${CLAIM.sub}` (and fails on the dotted name). Apply the ConfigMap from one without `postBuild`, or escape it as `$${CLAIM.sub}`.
