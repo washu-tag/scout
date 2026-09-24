@@ -1574,9 +1574,9 @@ jobs:
           set -euo pipefail
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
           # Fixed-name Secrets the bases reference (superuser-secret, the five
-          # cnpg-role-* companions, s3/keycloak/superset/hive) are SOPS/ESO in
-          # production (Phase 4); seed from CI secrets here. Placeholder -- wire the
-          # concrete `kubectl create secret` calls when enabled.
+          # cnpg-role-* companions, s3/keycloak/superset/hive, temporal-web-oidc) are
+          # SOPS/ESO in production (Phase 4); seed from CI secrets here. Placeholder --
+          # wire the concrete `kubectl create secret` calls when enabled.
           # cluster-vars for postBuild substitution:
           python3 tooling/deploy/gen_cluster_vars.py \
             --values .github/ci_resources/cluster-vars.values.json \

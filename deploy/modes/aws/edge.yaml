@@ -1,6 +1,7 @@
 # aws ingress/auth edge: public ALB-native-OIDC Ingresses (keycloak un-gated +
-# admin fixed-response; superset ALB-OIDC) + the LBC secret-reader RBAC. dependsOn
-# the app Kustomizations so the backing Services exist before the ALB provisions.
+# admin fixed-response; superset, launchpad and temporal ALB-OIDC) + the LBC
+# secret-reader RBAC. dependsOn the app Kustomizations so the backing Services exist
+# before the ALB provisions.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -22,3 +23,4 @@ spec:
   dependsOn:
     - name: keycloak-instance
     - name: superset-server
+    - name: temporal-server

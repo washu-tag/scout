@@ -1,0 +1,44 @@
+# Public ALB for the Temporal UI, ALB-native OIDC against the scout realm (oauth2-proxy
+# client, creds in alb-oidc-keycloak). The ALB only admits realm members; the UI's own
+# OIDC login plus frontend JWT authz (temporal HelmRelease) keep workflow access to
+# holders of the temporal client roles, as on-prem. Security headers are the UI's own
+# (CSP, nosniff, frame options; no HSTS) since the ALB can't inject ADR 0012's.
+# NOTE: a site must list temporal.${server_hostname} in keycloak_alb_oidc_hosts, or
+# login fails on redirect_uri mismatch.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: temporal-alb
+  namespace: '${scout_extractor_namespace}'
+  annotations:
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: ${acm_cert_arn}
+    alb.ingress.kubernetes.io/group.name: ${alb_group_name}
+    alb.ingress.kubernetes.io/auth-type: oidc
+    alb.ingress.kubernetes.io/auth-on-unauthenticated-request: authenticate
+    alb.ingress.kubernetes.io/auth-scope: 'openid email profile'
+    alb.ingress.kubernetes.io/auth-session-timeout: '28800'
+    alb.ingress.kubernetes.io/auth-idp-oidc: |
+      {
+        "Issuer": "${keycloak_realm_url}",
+        "AuthorizationEndpoint": "${keycloak_realm_url}/protocol/openid-connect/auth",
+        "TokenEndpoint": "${keycloak_realm_url}/protocol/openid-connect/token",
+        "UserInfoEndpoint": "${keycloak_realm_url}/protocol/openid-connect/userinfo",
+        "SecretName": "alb-oidc-keycloak"
+      }
+spec:
+  ingressClassName: alb
+  rules:
+    - host: 'temporal.${server_hostname}'
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: temporal-web
+                port:
+                  number: 8080
