@@ -232,9 +232,9 @@ def test_forwarded_token_authenticates_when_configured(keypair, monkeypatch):
     assert r.status_code != 401, r.text
 
 
-def test_forwarded_token_ignored_when_unconfigured(keypair):
+def test_forwarded_token_ignored_when_unconfigured(keypair, monkeypatch):
     priv, _ = keypair
-    assert settings.forwarded_token_header == ""
+    monkeypatch.setattr(settings, "forwarded_token_header", "")
     assert _post_with({_FWD: _mint(priv)}).status_code == 401
 
 

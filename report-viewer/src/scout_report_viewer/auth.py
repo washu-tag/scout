@@ -126,7 +126,7 @@ async def get_current_user(
     # Path 1: Bearer JWT (highest trust; carries the real user identity).
     token = _bearer_token(authorization)
     if not token and settings.forwarded_token_header:
-        token = request.headers.get(settings.forwarded_token_header) or None
+        token = request.headers.get(settings.forwarded_token_header)
     if token:
         # JWKS fetch on cache miss is blocking; keep it off the event loop.
         sub = await asyncio.to_thread(_validate_jwt, token)
