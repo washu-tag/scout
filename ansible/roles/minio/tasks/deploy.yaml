@@ -117,6 +117,37 @@
         users: '{{ minio_credentials }}'
       ingress: '{{ minio_ingress_config }}'
 
+# The console UI detects a lapsed login by parsing its API's JSON 401, and
+# oauth2-proxy-error would replace that body with the sign-in page. /api/ keeps
+# the auth check but skips the rewrite.
+- name: Create MinIO console API Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: '{{ minio_tenant_name }}-console-api'
+        namespace: '{{ minio_tenant_namespace }}'
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: >-
+            kube-system-oauth2-proxy-auth@kubernetescrd,
+            kube-system-security-headers@kubernetescrd
+      spec:
+        ingressClassName: traefik
+        rules:
+          - host: '{{ minio_ingress_config.console.host }}'
+            http:
+              paths:
+                - path: /api/
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: '{{ minio_tenant_name }}-console'
+                      port:
+                        name: http-console
+  when: minio_ingress_config.console.enabled | default(false)
+
 - name: Wait for MinIO StatefulSet to exist
   kubernetes.core.k8s_info:
     api_version: apps/v1
