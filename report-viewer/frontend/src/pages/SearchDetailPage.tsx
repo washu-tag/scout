@@ -236,14 +236,19 @@ export default function SearchDetailPage() {
   // The currently client-side-filtered rows' ids, forwarded to backend-call
   // actions (see ActionsToolbar) so they agree with what downloadCsv already
   // exports on what "these studies" means, rather than silently reaching
-  // past an active filter to the whole saved search.
+  // past an active filter to the whole saved search. Derived from `data`
+  // (the already-filtered dataset), not `table.getPrePaginationRowModel()`:
+  // useReactTable returns the same table-instance reference across renders
+  // (it mutates in place), so memoizing on `[table]` would only ever run
+  // once and freeze at whatever was loaded on the first render. Sorting
+  // doesn't change which rows are present, only their order, so `data` is
+  // an equivalent - and reactive - source for this set.
   const visibleReportIds = useMemo(
     () =>
-      table
-        .getPrePaginationRowModel()
-        .rows.map((r) => r.original.primary_report_identifier)
+      data
+        .map((row) => row.primary_report_identifier)
         .filter((id): id is string => typeof id === 'string'),
-    [table],
+    [data],
   );
 
   return (
