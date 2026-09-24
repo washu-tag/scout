@@ -136,6 +136,9 @@ spark:
 sparkDefaults:
   enabled: false
   mode: on-prem
+  # aws only. S3 sends an SSE-S3 header (an SCP or bucket policy may demand one);
+  # NONE sends none, so the bucket default (SSE-S3 or SSE-KMS) applies.
+  sseType: NONE
   shufflePartitions: 200
   hiveMetastoreUri: ''
   warehouseDir: ''

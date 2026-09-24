@@ -465,6 +465,9 @@ maven_proxy_url: >-
      else '' }}
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
 s3_endpoint: "{{ aws_deployment | ternary('', 'http://minio.' ~ minio_tenant_namespace) }}"
+# AWS writers: S3 sends an SSE-S3 header (set it where an SCP or bucket policy demands
+# one); NONE sends none, so the bucket default (SSE-S3 or SSE-KMS) applies.
+s3_sse_type: NONE
 hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'
 hive_metastore_endpoint_readonly: 'thrift://{{ hive_metastore_instance_readonly }}.{{ hive_namespace }}:9083'
 server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'

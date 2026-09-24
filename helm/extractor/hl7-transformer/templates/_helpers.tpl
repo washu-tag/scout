@@ -77,10 +77,16 @@ rather than inlining the keys here, so no credentials live in the ConfigMap.
 {{- fail (printf "sparkDefaults.mode must be \"on-prem\" or \"aws\", got %q" $s.mode) -}}
 {{- end -}}
 {{- $aws := eq $s.mode "aws" -}}
+{{- $sse := upper (default "NONE" $s.sseType) -}}
+{{- if not (has $sse (list "S3" "NONE")) -}}
+{{- fail (printf "sparkDefaults.sseType must be \"S3\" or \"NONE\", got %q" $s.sseType) -}}
+{{- end -}}
 {{- if $aws }}
 spark.hadoop.fs.s3a.aws.credentials.provider software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
-# An SCP or bucket policy can deny PutObject without an SSE request header.
-spark.hadoop.fs.s3a.encryption.algorithm SSE-S3
+{{- if eq $sse "S3" }}
+# AES256 is S3A's name for SSE-S3; "SSE-S3" is rejected as an unknown method.
+spark.hadoop.fs.s3a.encryption.algorithm AES256
+{{- end }}
 {{- else }}
 spark.hadoop.fs.s3a.endpoint {{ required "sparkDefaults.s3Endpoint is required when sparkDefaults.mode=on-prem" $s.s3Endpoint }}
 spark.hadoop.fs.s3a.aws.credentials.provider software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider

@@ -3,7 +3,8 @@
 # ingress's namespace, or ALB-OIDC ingress events report the Secret "is forbidden".
 # alb-oidc-keycloak is a fixed-name secret contract, site-seeded via ESO (clientID +
 # clientSecret of the Keycloak OIDC client); the AWS LBC can't read across namespaces,
-# so each ALB-OIDC namespace gets its own copy + this Role.
+# so each ALB-OIDC namespace gets its own copy + this Role: analytics (superset)
+# and core (launchpad).
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -20,6 +21,31 @@ kind: RoleBinding
 metadata:
   name: alb-oidc-secret-reader
   namespace: '${scout_analytics_namespace}'
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: alb-oidc-secret-reader
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: eks:managed
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: alb-oidc-secret-reader
+  namespace: '${scout_core_namespace}'
+rules:
+  - apiGroups: ['']
+    resources: ['secrets']
+    resourceNames: ['alb-oidc-keycloak']
+    verbs: ['get']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: alb-oidc-secret-reader
+  namespace: '${scout_core_namespace}'
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

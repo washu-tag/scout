@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from delta.tables import DeltaTable
-from py4j.protocol import Py4JError
+from py4j.protocol import Py4JError, Py4JJavaError
 from pyspark.sql import SparkSession, Column, DataFrame, Window
 from pyspark.sql import functions as F
 from s3fs import S3FileSystem
@@ -111,8 +111,8 @@ def spark_activity_session(
         - if cancelled: do *not* touch ``health_file``; re-raise as a Temporal
           ``CancelledError`` so the activity is recorded Cancelled — never a phantom
           success, never a retryable failure;
-        - else on a genuine Spark connectivity failure (``Py4JError`` /
-          ``ConnectionError``): append the message to ``health_file`` (marking the pod
+        - else on a genuine Spark connectivity failure (``Py4JError`` other than
+          ``Py4JJavaError``, or ``ConnectionError``): append the message to ``health_file`` (marking the pod
           unhealthy so k8s restarts it), invoke ``on_spark_failure``, and re-raise;
         - else (any other error, including a genuine ``TimeoutError``): re-raise so
           Temporal's retry policy fires;
@@ -142,8 +142,12 @@ def spark_activity_session(
             # (not a phantom success, not a retryable failure). Do NOT touch health_file.
             raise CancelledError("Activity cancelled during Spark work") from e
         # Not cancelled: a genuine Spark connectivity failure marks the pod unhealthy so
-        # k8s restarts it.
-        if isinstance(e, (Py4JError, ConnectionError)):
+        # k8s restarts it. Py4JJavaError subclasses Py4JError but, once a session exists,
+        # is a JVM-side failure (e.g. S3 AccessDenied) for Temporal's retries.
+        if isinstance(e, ConnectionError) or (
+            isinstance(e, Py4JError)
+            and (spark is None or not isinstance(e, Py4JJavaError))
+        ):
             activity.logger.error("Spark error in %s. Marking pod unhealthy.", app_name)
             try:
                 message = str(e)

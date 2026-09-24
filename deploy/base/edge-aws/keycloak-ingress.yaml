@@ -11,6 +11,8 @@ metadata:
   namespace: '${keycloak_namespace}'
   annotations:
     alb.ingress.kubernetes.io/target-type: ip
+    # / redirects to the admin console; /health/* is only on the management port.
+    alb.ingress.kubernetes.io/healthcheck-path: /realms/${keycloak_realm_name}
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/certificate-arn: ${acm_cert_arn}

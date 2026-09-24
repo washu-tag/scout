@@ -1,0 +1,35 @@
+{{- if not (has .Values.mode (list "on-prem" "aws")) }}
+{{- fail (printf "mode must be \"on-prem\" or \"aws\", got %q" .Values.mode) }}
+{{- end }}
+{{- $sse := upper (default "NONE" .Values.sseType) }}
+{{- if not (has $sse (list "S3" "NONE")) }}
+{{- fail (printf "sseType must be \"S3\" or \"NONE\", got %q" .Values.sseType) }}
+{{- end }}
+{{- if eq .Values.mode "aws" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hive-metastore.coreSiteName" . }}
+  labels:
+    {{- include "hive-metastore.labels" . | nindent 4 }}
+data:
+  core-site.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+      <property>
+        <name>fs.s3a.aws.credentials.provider</name>
+        <value>com.amazonaws.auth.WebIdentityTokenCredentialsProvider</value>
+      </property>
+      <property>
+        <name>fs.s3a.endpoint.region</name>
+        <value>${env.REGION}</value>
+      </property>
+      {{- if eq $sse "S3" }}
+      <!-- AES256 is S3A's name for SSE-S3. -->
+      <property>
+        <name>fs.s3a.encryption.algorithm</name>
+        <value>AES256</value>
+      </property>
+      {{- end }}
+    </configuration>
+{{- end }}

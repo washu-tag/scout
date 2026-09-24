@@ -59,8 +59,8 @@ spec:
     # Hacky env-into-pod path until the operator supports it; the SPI reads these (ADR 0021).
     - name: scout-url
       value: '${server_hostname}'
-    # aws: empty -> SDK-default S3 via IRSA; on-prem: in-cluster MinIO. Must match the
-    # OPA reader's endpoint (opa-edge-on-prem) so writer + reader hit the same store.
+    # aws: the regional S3 endpoint (e.g. https://s3.<region>.amazonaws.com; IRSA creds);
+    # on-prem: in-cluster MinIO. Must match the OPA reader's endpoint (opa-edge-on-prem).
     - name: opa-bundle-s3-endpoint
       value: '${opa_bundle_s3_endpoint}'
     - name: opa-bundle-s3-bucket
@@ -69,6 +69,8 @@ spec:
       value: '${opa_bundle_object_key}'
     - name: opa-bundle-s3-region
       value: '${s3_region}'
+    - name: opa-bundle-s3-sse-type
+      value: '${s3_sse_type:=NONE}'
     - name: opa-bundle-realm
       value: '${keycloak_realm_name}'
     # aws: opa-bundle-writer is site-seeded EMPTY so the blank-check falls through to

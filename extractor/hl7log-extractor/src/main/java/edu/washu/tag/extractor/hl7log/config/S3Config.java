@@ -39,6 +39,10 @@ public class S3Config {
     @Value("${s3.path-style-access:false}")
     private boolean pathStyleAccess;
 
+    /** S3 requests SSE-S3 on uploads; NONE (default) leaves the bucket default to apply. */
+    @Value("${s3.sse-type:NONE}")
+    private String sseType;
+
     /**
      * Creates an S3 client bean. Endpoint and path-style access are configured independently
      * so the same code targets real AWS S3 (no overrides) or an S3-compatible service like MinIO
@@ -60,7 +64,8 @@ public class S3Config {
         if (endpoint != null && !endpoint.isBlank()) {
             builder = builder.endpointOverride(URI.create(endpoint));
         }
-        if (isAwsS3(endpoint)) {
+        boolean sse = requestsSse(sseType);  // validate on every endpoint, not just AWS
+        if (isAwsS3(endpoint) && sse) {
             builder = builder.overrideConfiguration(
                     config -> config.addExecutionInterceptor(new SseS3Interceptor()));
         }
@@ -77,10 +82,25 @@ public class S3Config {
     }
 
     /**
+     * Parses s3.sse-type. An explicit header overrides a bucket's SSE-KMS default, so it is
+     * opt-in for sites whose SCP or bucket policy requires one.
+     */
+    static boolean requestsSse(String sseType) {
+        if (sseType == null || sseType.isBlank() || sseType.equalsIgnoreCase("NONE")) {
+            return false;
+        }
+        if (sseType.equalsIgnoreCase("S3")) {
+            return true;
+        }
+        throw new IllegalArgumentException("s3.sse-type must be S3 or NONE, got: " + sseType);
+    }
+
+    /**
      * Requests SSE-S3 on uploads. An SCP or bucket policy can deny s3:PutObject without an
      * x-amz-server-side-encryption header, and a bucket default does not satisfy it because the
-     * condition inspects the request. Registered only for real AWS S3; on S3-compatible services
-     * such as MinIO, server-side encryption depends on tenant configuration.
+     * condition inspects the request. Registered only for real AWS S3 with s3.sse-type=S3; on
+     * S3-compatible services such as MinIO, server-side encryption depends on tenant
+     * configuration.
      */
     static final class SseS3Interceptor implements ExecutionInterceptor {
 

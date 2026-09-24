@@ -41,7 +41,6 @@ data:
     faviconPublicRoute:
       enabled: false
     auth:
-      # aws uses ALB-native OIDC, not oauth2-proxy, so suppress the chart's
-      # oauth2-proxy sign-out URL (its default is a placeholder host). The
-      # deployment gates the env on truthiness, so '' omits it.
-      oauth2ProxySignOutUrl: ''
+      # aws has no oauth2-proxy (ALB-native OIDC): end the Keycloak session instead,
+      # else the live SSO session signs the user straight back in.
+      oauth2ProxySignOutUrl: 'https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/logout?client_id=oauth2-proxy&post_logout_redirect_uri=https://${server_hostname}'

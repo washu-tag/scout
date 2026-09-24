@@ -3,6 +3,7 @@ package edu.washu.tag.extractor.hl7log.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,25 @@ class S3ConfigTest {
     void isAwsS3_s3CompatibleEndpoint_returnsFalse() {
         assertFalse(S3Config.isAwsS3("http://minio.storage.svc:9000"));
         assertFalse(S3Config.isAwsS3("http://localhost:9000"));
+    }
+
+    @Test
+    void requestsSse_s3_returnsTrue() {
+        assertTrue(S3Config.requestsSse("S3"));
+        assertTrue(S3Config.requestsSse("s3"));
+    }
+
+    @Test
+    void requestsSse_noneOrUnset_returnsFalse() {
+        assertFalse(S3Config.requestsSse("NONE"));
+        assertFalse(S3Config.requestsSse("none"));
+        assertFalse(S3Config.requestsSse(""));
+        assertFalse(S3Config.requestsSse(null));
+    }
+
+    @Test
+    void requestsSse_unknownValue_throws() {
+        assertThrows(IllegalArgumentException.class, () -> S3Config.requestsSse("KMS"));
     }
 
     @Test
