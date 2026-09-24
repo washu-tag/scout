@@ -23,8 +23,6 @@ spec:
   dependsOn:
     - name: scout-extractor-foundation
     - name: postgres-ready
-    # The web UI exits when OIDC discovery for the realm fails.
-    - name: keycloak-realm
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

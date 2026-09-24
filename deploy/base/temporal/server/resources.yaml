@@ -28,6 +28,13 @@ spec:
   # The chart's schema-setup Jobs (setup-schema + update-schema on both Postgres
   # stores) run at install and take a while.
   timeout: 15m
+  # The web UI waits on keycloak-alb (edge-aws) for OIDC discovery; retry instead of stalling.
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
   # Pinned in versions.yaml (temporal_version), Renovate-tracked there. Literal
   # mirror, not stamped (stamper covers only Scout charts); keep in lockstep.
   chart:
