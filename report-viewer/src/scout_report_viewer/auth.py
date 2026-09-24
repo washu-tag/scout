@@ -15,6 +15,16 @@
    either even without the gateway secret (see
    ansible/roles/oauth2-proxy/tasks/deploy.yaml).
 
+   ON-PREM ONLY: this entire path depends on Traefik forwardAuth
+   Middleware CRDs, which do not exist in aws-mode clusters at all (ADR
+   0035 - aws mode has no Traefik, ingress is ALB-native OIDC instead,
+   with no per-role/group gate). In aws mode, neither header is ever
+   set, so Path 2 always falls through to "authentication required" -
+   the SPA's own requests (and therefore the entire browser-facing UI,
+   not just group-gated actions) cannot authenticate at all until an
+   aws-mode edge is designed for report-viewer. See ADR 0037's Known
+   Limitations.
+
 Both populate the same `User(sub=...)` model. Downstream code never
 needs to know which path produced the identity. The user JWT is not
 forwarded to Trino. `trino_client` uses the `report_viewer_svc` service

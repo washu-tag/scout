@@ -216,6 +216,31 @@ checking never had a reachable code path.
   target) established. Both live as siblings under `examples/`, excluded from e2e as
   reference material rather than deployed components.
 
+## Known Limitations
+
+**This entire feature is on-prem only.** Every piece of it — visibility gating,
+`requiredGroup`, the `X-Auth-Request-Groups`/`X-Auth-Request-Preferred-Username` headers,
+the `X-Report-Viewer-Gateway` trust chain — depends on Path 2 (`auth.py`), which depends
+entirely on Traefik's forwardAuth Middleware and oauth2-proxy. Per ADR 0035, an aws-mode
+cluster has no Traefik at all: ingress there is ALB-native OIDC, with no per-role/group
+gate and no forwardAuth headers. In aws mode, Path 2 never authenticates anyone — the SPA
+issues the exact same requests it always does, they just never carry the headers Path 2
+needs, and every one of them falls through to 401. This isn't specific to group-gating:
+report-viewer's *entire* browser-facing UI (the search-detail toolbar, the results grid,
+everything the embedded iframe in chat renders) is unreachable in aws mode today, since
+none of it has ever had an authenticated path other than Path 2. report-viewer also has
+no aws-mode Ingress at all yet (ADR 0035's Consequences list only Superset and Keycloak
+as landed so far).
+
+Closing this gap is real, undesigned work, not a small tweak: an aws-mode edge for
+report-viewer would need some other way to deliver verified identity and group
+membership to Path 2 (or a Path 3) - most plausibly ALB's forwarded `x-amzn-oidc-data`
+JWT, which could carry a `groups` claim the same way Keycloak already stamps one for
+oauth2-proxy, but nothing here has been designed or built for that. Until then,
+report-viewer (and everything in this ADR) should be treated as on-prem-only, the same
+caveat PR #755's `examples/pluggable-app` carries for its own Traefik/oauth2-proxy
+dependency.
+
 ## Alternatives Considered
 
 | Option | Verdict |

@@ -13,6 +13,17 @@ config into a Deployment annotation), so changes take effect within the normal p
 restart window — seconds, not the launchpad's ~10-second sidecar propagation, but not
 instant either.
 
+```{warning}
+**This entire feature — and report-viewer's browser-facing UI in general — is on-prem
+only.** Visibility, `requiredGroup`, and every button in the toolbar depend on
+report-viewer's oauth2-proxy/Traefik forwardAuth header path, which does not exist in
+aws-mode clusters (ADR 0035: no Traefik, ALB-native OIDC instead, no per-group gate).
+If you're deploying report-viewer in aws mode, none of this will authenticate at all —
+not just gated buttons, the whole embedded cohort-browsing UI. ADR 0037 records why this
+mechanism was built this way; it does not track whether an aws-mode edge has since been
+added; check current deployment docs for that.
+```
+
 ## Toggling and gating the built-in buttons
 
 Explain Search and Download CSV are always in the catalog unless disabled:
