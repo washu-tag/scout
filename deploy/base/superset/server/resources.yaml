@@ -266,8 +266,10 @@ spec:
             @expose('/logout/', methods=['GET', 'POST'])
             def logout(self):
                 super().logout()
-                # Per-mode, from the superset-edge-* ConfigMap (edge.yaml).
-                resp = redirect(current_app.config['SCOUT_LOGOUT_URL'])
+                # Per-mode, from the superset-edge-* ConfigMap (edge.yaml); a site that
+                # replaces those ConfigMaps falls back to the on-prem sign-out.
+                resp = redirect(current_app.config.get(
+                    'SCOUT_LOGOUT_URL', 'https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/sign_out'))
                 for cookie in current_app.config.get('SCOUT_LOGOUT_EXPIRE_COOKIES', []):
                     resp.delete_cookie(cookie)
                 return resp
