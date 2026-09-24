@@ -13,10 +13,13 @@ the backend actually ran, not just served a static link.
 from __future__ import annotations
 
 import hmac
+import html
 import logging
 import time
+from urllib.parse import quote
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError
 
@@ -30,15 +33,39 @@ from .config import settings
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger(__name__)
 
-app = FastAPI()
+# Two separate FastAPI apps, not one app on two ports: /invoke must be
+# structurally unreachable from the public listener, not just
+# NetworkPolicy-restricted. A single app object serving both ports would
+# expose /invoke on the public one too, since FastAPI doesn't restrict
+# routes by which port a request arrived on.
+invoke_app = FastAPI()
+landing_app = FastAPI()
 
 
-@app.get("/healthz")
+@invoke_app.get("/healthz")
+@landing_app.get("/healthz")
 def healthz() -> dict:
     return {"status": "ok"}
 
 
-@app.post("/invoke")
+_LANDING_PAGE = """\
+<!doctype html>
+<html>
+<head><title>xnat-explore-poc (fake)</title></head>
+<body>
+<p>Cohort of {reports} reports received for {user}.</p>
+<p>This is not a real XNAT integration - see xnat-explore-poc/src/xnat_explore_poc/app.py.</p>
+</body>
+</html>
+"""
+
+
+@landing_app.get("/", response_class=HTMLResponse)
+def landing(reports: str = "0", user: str = "") -> str:
+    return _LANDING_PAGE.format(reports=html.escape(reports), user=html.escape(user))
+
+
+@invoke_app.post("/invoke")
 async def invoke(
     request: Request,
     # Matches report-viewer's own ActionDescriptor.invoke_token forwarding
@@ -124,4 +151,17 @@ async def invoke(
         len(reports),
         body.get("cohort_truncated"),
     )
-    return {"url": f"{settings.xnat_base_url}?t={int(time.time())}"}
+    # Points at our own landing page (landing_app, a separate public port -
+    # see module docstring), not a real XNAT deployment - self-hosted
+    # specifically so this demo doesn't need a real XNAT Ingress's COOP
+    # header changed just to prove the popup mechanism works end to end.
+    # sub/reports-count are safe to put in a URL (unlike the report
+    # identifiers themselves - see the PHI-adjacent note above): neither
+    # is used for any authorization decision here, only display, and both
+    # already appear in this service's own logs today.
+    sub = claims.get("sub") or ""
+    url = (
+        f"{settings.landing_base_url}/"
+        f"?reports={len(reports)}&user={quote(sub)}&t={int(time.time())}"
+    )
+    return {"url": url}

@@ -29,6 +29,9 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+            - name: landing
+              containerPort: {{ .Values.landingPage.port }}
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthz
@@ -44,8 +47,10 @@ spec:
           env:
             - name: XNAT_EXPLORE_POC_PORT
               value: {{ .Values.service.port | quote }}
-            - name: XNAT_EXPLORE_POC_XNAT_BASE_URL
-              value: {{ required "xnatBaseUrl is required" .Values.xnatBaseUrl | quote }}
+            - name: XNAT_EXPLORE_POC_LANDING_PAGE_PORT
+              value: {{ .Values.landingPage.port | quote }}
+            - name: XNAT_EXPLORE_POC_LANDING_BASE_URL
+              value: {{ required "landingBaseUrl is required" .Values.landingBaseUrl | quote }}
             - name: XNAT_EXPLORE_POC_INVOKE_TOKEN
               valueFrom:
                 secretKeyRef:

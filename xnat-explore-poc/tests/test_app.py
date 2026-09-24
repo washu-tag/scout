@@ -5,15 +5,16 @@ import time
 
 os.environ.setdefault("XNAT_EXPLORE_POC_INVOKE_TOKEN", "test-token")
 os.environ.setdefault("XNAT_EXPLORE_POC_ASSERTION_KEY", "test-assertion-key")
-os.environ.setdefault("XNAT_EXPLORE_POC_XNAT_BASE_URL", "https://xnat.test")
+os.environ.setdefault("XNAT_EXPLORE_POC_LANDING_BASE_URL", "https://xnat-demo.test")
 
 from fastapi.testclient import TestClient
 from jose import jwt
 
-from xnat_explore_poc.app import app
+from xnat_explore_poc.app import invoke_app, landing_app
 from xnat_explore_poc.config import settings
 
-client = TestClient(app)
+client = TestClient(invoke_app)
+landing_client = TestClient(landing_app)
 
 _ACTION_HEADERS = {"X-Report-Viewer-Action-Token": "test-token"}
 
@@ -34,6 +35,31 @@ def _assertion(search_id: str, sub: str = "carol", groups=None, exp_delta: int =
 def test_healthz():
     r = client.get("/healthz")
     assert r.status_code == 200
+
+
+def test_landing_healthz():
+    r = landing_client.get("/healthz")
+    assert r.status_code == 200
+
+
+def test_invoke_not_reachable_on_landing_app():
+    """/invoke must be structurally absent from the public listener, not
+    just NetworkPolicy-restricted - the two are separate FastAPI apps."""
+    r = landing_client.post("/invoke", json={"search_id": "s_x"})
+    assert r.status_code == 404
+
+
+def test_landing_page_renders_reports_and_user():
+    r = landing_client.get("/", params={"reports": "7", "user": "carol"})
+    assert r.status_code == 200
+    assert "Cohort of 7 reports received for carol." in r.text
+
+
+def test_landing_page_escapes_user():
+    r = landing_client.get("/", params={"reports": "1", "user": "<script>alert(1)</script>"})
+    assert r.status_code == 200
+    assert "<script>" not in r.text
+    assert "&lt;script&gt;" in r.text
 
 
 def test_invoke_requires_token():
@@ -157,8 +183,8 @@ def test_invoke_returns_url_with_timestamp():
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["url"].startswith("https://xnat.test?t=")
-    ts = body["url"].split("t=")[1]
+    assert body["url"].startswith("https://xnat-demo.test/?reports=0&user=carol&t=")
+    ts = body["url"].rsplit("t=", 1)[1]
     assert ts.isdigit()
 
 

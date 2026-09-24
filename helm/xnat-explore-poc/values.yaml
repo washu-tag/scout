@@ -29,8 +29,28 @@ securityContext:
 service:
   port: 8000
 
-# In-cluster only - called by report-viewer's backend-call proxy, never by
-# a browser. No Ingress, no oauth2-proxy/Traefik middleware needed.
+# The public landing page /invoke's response points at - see
+# src/xnat_explore_poc/app.py's module comment for why this is a separate
+# port/app from the internal one above, not just a second route on it.
+landingPage:
+  port: 8080
+  ingress:
+    className: traefik
+    # COOP: unsafe-none is required for this page to open as a popup from
+    # OWUI's sandboxed chat embed - see
+    # ansible/roles/traefik/tasks/main.yaml's security-headers-sameorigin-popups
+    # for the full spec citation. Self-hosting this page (rather than
+    # pointing at a real XNAT deployment) means the demo doesn't need a
+    # real XNAT Ingress's COOP header changed just to prove the popup
+    # mechanism works end to end.
+    annotations:
+      traefik.ingress.kubernetes.io/router.middlewares: >-
+        kube-system-security-headers-sameorigin-popups@kubernetescrd
+    host: ''
+
+# The invoke port is in-cluster only - called by report-viewer's
+# backend-call proxy, never by a browser. The landing page port is public
+# instead (see landingPage above), and needs its own allow rule below.
 networkPolicy:
   enabled: true
   # Namespace report-viewer itself deploys into, so its pod can reach this
@@ -44,9 +64,14 @@ networkPolicy:
   # report-viewer's chart is deployed with a nameOverride.
   reportViewerPodSelector:
     app.kubernetes.io/name: report-viewer
+  # Namespace Traefik itself runs in - allowed to reach the landing page
+  # port only (see networkpolicy.yaml).
+  traefikNamespace: kube-system
 
-# Bundled XNAT's browser-facing base URL - what /invoke's response points at.
-xnatBaseUrl: ''
+# This service's own public base URL (e.g. https://xnat-explore-poc-demo.<host>,
+# matching landingPage.ingress.host below) - what /invoke's response points
+# at. Self-hosted rather than a real XNAT URL - see landingPage above.
+landingBaseUrl: ''
 
 # Shared secret report-viewer sends as X-Report-Viewer-Action-Token
 # (rendered into a real Secret - see templates/secret.yaml - not a plain

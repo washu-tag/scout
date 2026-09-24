@@ -1,7 +1,12 @@
 {{- if .Values.networkPolicy.enabled }}
-# In-cluster only: no Ingress exists for this service at all (it's never
-# called by a browser), so the only legitimate caller is report-viewer's
-# own backend-call proxy.
+# The invoke port (service.port) is in-cluster only: no Ingress exists for
+# it (it's never called by a browser), so the only legitimate caller is
+# report-viewer's own backend-call proxy. The landing page port
+# (landingPage.port) is deliberately public - see landing-ingress.yaml -
+# so it needs its own allow rule for Traefik, below. Selecting this pod
+# for Ingress at all means any port with no matching rule here is denied
+# by default, so the landing port's rule isn't optional once this policy
+# exists.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -25,4 +30,14 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .Values.service.port }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.traefikNamespace | quote }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: {{ .Values.landingPage.port }}
 {{- end }}

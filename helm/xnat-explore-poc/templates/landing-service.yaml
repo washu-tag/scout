@@ -1,0 +1,19 @@
+# The public landing page /invoke's response points at - see
+# src/xnat_explore_poc/app.py's module comment for why this is a separate
+# Service/port from the internal invoke-only one (service.yaml), not just
+# a second route on it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "xnat-explore-poc.fullname" . }}-landing
+  labels:
+    {{- include "xnat-explore-poc.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.landingPage.port }}
+      targetPort: landing
+      protocol: TCP
+      name: landing
+  selector:
+    {{- include "xnat-explore-poc.selectorLabels" . | nindent 4 }}

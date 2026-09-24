@@ -10,10 +10,22 @@ class Settings(BaseSettings):
     )
 
     host: str = "0.0.0.0"
+    # Internal-only: /invoke and /healthz. NetworkPolicy-restricted to
+    # report-viewer's own pod - never fronted by an Ingress.
     port: int = 8000
+    # Public: the landing page /invoke's response points at, plus its own
+    # /healthz. Fronted by an Ingress with the COOP: unsafe-none middleware,
+    # since it's opened as a popup from OWUI's sandboxed chat embed (#739).
+    # A separate port/app from the internal one (see app.py) so the public
+    # listener structurally cannot reach /invoke at all, regardless of
+    # NetworkPolicy - not just a defense-in-depth label.
+    landing_page_port: int = 8080
 
-    # Bundled XNAT's browser-facing URL - what /invoke's response points at.
-    xnat_base_url: str = "https://xnat.example.org"
+    # This service's own public base URL (e.g. https://xnat-explore-poc-demo.<host>) -
+    # what /invoke's response points at. Self-hosted specifically so this
+    # PoC doesn't need to touch a real XNAT deployment's own Ingress/COOP
+    # config just to demonstrate the popup mechanism end to end.
+    landing_base_url: str = "http://localhost:8080"
 
     # Shared secret report-viewer sends as X-Report-Viewer-Action-Token,
     # sourced from a real Secret (helm/xnat-explore-poc/templates/secret.yaml),
