@@ -1,0 +1,12 @@
+---
+# Only here so the example needs no image build. A real app ships its code in
+# its image and deletes this file.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "example.fullname" . }}-source
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "example.labels" . | nindent 4 }}
+data:
+{{ (.Files.Glob "files/*.py").AsConfig | indent 2 }}

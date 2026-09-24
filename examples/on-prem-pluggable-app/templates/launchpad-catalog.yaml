@@ -1,0 +1,23 @@
+---
+# The other half (ADR 0034): the app's presence on the landing page, shipped by
+# the app. The launchpad discovers this ConfigMap by its label, from any
+# namespace, within about ten seconds.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "example.fullname" . }}-launchpad
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "example.labels" . | nindent 4 }}
+    launchpad.scout.xnat.org/catalog: 'true'
+data:
+  apps.yaml: |
+    apiVersion: launchpad.scout.xnat.org/v1alpha1
+    kind: Catalog
+    chips:
+      - id: {{ .Values.clientId }}
+        title: {{ .Values.launchpad.title }}
+        description: {{ .Values.launchpad.description }}
+        icon: {{ .Values.launchpad.icon }}
+        tone: {{ .Values.launchpad.tone }}
+        link: { subdomain: {{ .Values.subdomain }} }

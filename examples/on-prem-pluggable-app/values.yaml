@@ -1,0 +1,86 @@
+---
+# Everything an app must know about itself to plug into Scout. Renaming the app
+# is two edits here, `clientId` and `subdomain`; everything else follows.
+
+nameOverride: ''
+fullnameOverride: ''
+
+# The app's identity in Keycloak and in the launchpad. Must be unique across the
+# realm: the reconciler rejects a fragment whose clientId is already taken.
+clientId: example-app
+
+# Where the app answers, as `<subdomain>.<domain>`. `domain` has no default
+# because only the site knows it; pass it at install time.
+domain: ''
+subdomain: example-app
+
+# The fragment reconciler's ServiceAccount, which reconciler-rbac.yaml grants
+# read access to this app's client credential. The name is stable contract; the
+# namespace follows the site's `keycloak_namespace`.
+reconcilerServiceAccount: scout-keycloak-fragment-reconciler
+reconcilerNamespace: scout-core
+
+# The client credential. Prefer creating the Secret outside the chart and naming
+# it in `existingSecret`, which must hold the credential under `client-secret`;
+# the chart then creates no Secret of its own. Otherwise the chart creates one
+# from `clientSecret`, or generates a value if that is empty. Once the chart's
+# Secret exists it takes precedence, so setting `clientSecret` after the first
+# install is silently ignored.
+existingSecret: ''
+clientSecret: ''
+
+# A stock image plus the app file from `files/`, so this chart installs with
+# nothing built first. Point this at your own build when you have one, and drop
+# the ConfigMap mount from deployment.yaml.
+image:
+  repository: python
+  tag: 3.12-slim
+  pullPolicy: IfNotPresent
+command: ['python', '/app/app.py']
+
+# DEBUG also logs the /healthz probes.
+logLevel: INFO
+
+launchpad:
+  # Presentation only. `icon` and `tone` must come from the sets in
+  # docs/source/customize/launchpad-chips.md; an invalid value silently
+  # falls back to the default rather than failing the install.
+  title: Example Pluggable App
+  description: Reference app for the launchpad chip and Keycloak fragment contracts
+  icon: puzzle
+  tone: slate
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    # The edge gate. Without these middlewares the app is reachable
+    # unauthenticated and the identity header it reads is absent.
+    traefik.ingress.kubernetes.io/router.middlewares:
+      kube-system-oauth2-proxy-error@kubernetescrd, kube-system-oauth2-proxy-auth@kubernetescrd,
+      kube-system-security-headers@kubernetescrd
+
+# Admits traffic only from Traefik, so the identity header can't be forged by
+# other pods. `traefikNamespace` is where the site runs Traefik.
+networkPolicy:
+  enabled: true
+  traefikNamespace: kube-system
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  requests: { cpu: 10m, memory: 32Mi }
+  limits: { memory: 128Mi }
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  fsGroup: 65532
+  seccompProfile: { type: RuntimeDefault }
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: ['ALL'] }

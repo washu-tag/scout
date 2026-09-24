@@ -1,5 +1,8 @@
 helm/**/*.yaml
 !helm/**/*values.yaml
+# Charts under examples/ are Helm templates too, so they get the same treatment
+examples/**/*.yaml
+!examples/**/*values.yaml
 report-viewer/**/static/assets/**
 report-viewer/**/dist/**
 report-viewer/**/build/**
@@ -7,3 +10,4 @@ report-viewer/**/build/**
 deploy/base/keycloak/operator/upstream/
 # Helm chart files/ assets are templated (helm tpl); not parseable as JSON/YAML
 helm/**/files/**
+examples/**/files/**

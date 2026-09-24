@@ -87,14 +87,17 @@ jobs:
         with:
           predicate-quantifier: 'some-with-excludes'
           filters: |
-            # Run the deploy/smoke e2e unless the PR touches only docs, markdown, or
-            # non-ci workflow files (some-with-excludes makes '!' subtractive). ci.yaml is
-            # kept in scope (the exclude spares it): it wires the e2e, so a PR editing it
-            # must revalidate. e2e machinery under .github/actions + .github/ci_resources runs too.
+            # Run the deploy/smoke e2e unless the PR touches only docs, markdown,
+            # examples, or non-ci workflow files (some-with-excludes makes '!'
+            # subtractive). ci.yaml is kept in scope (the exclude spares it): it wires
+            # the e2e, so a PR editing it must revalidate. e2e machinery under
+            # .github/actions + .github/ci_resources runs too. examples/ is reference
+            # material -- nothing deploys it, so it cannot change what the e2e covers.
             e2e:
               - '**'
               - '!docs/**'
               - '!**/*.md'
+              - '!examples/**'
               - '!.github/workflows/!(ci.yaml)'
             # Only the shared build action changes what EVERY image's build does, so only
             # it forces a full rebuild+rescan. Editing ci.yaml or the scan/import/publish/
@@ -357,6 +360,9 @@ jobs:
       - name: 'Unit tests: keycloak-fragment-reconciler'
         shell: bash
         run: cd keycloak-fragment-reconciler && pip install -e '.[test]' && pytest -v
+      - name: 'Example pluggable app: fragment passes the reconciler'
+        shell: bash
+        run: .github/scripts/check-example-fragment.py
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
