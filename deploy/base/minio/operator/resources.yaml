@@ -19,6 +19,7 @@ spec:
   chart:
     spec:
       chart: operator
+      # renovate: datasource=helm registryUrl=https://operator.min.io depName=operator
       version: '7.1.1'
       sourceRef:
         kind: HelmRepository

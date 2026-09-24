@@ -17,6 +17,7 @@ patches:
           serverPort: 9081
           exporter:
             enabled: true
+            # renovate: datasource=docker depName=bitnamilegacy/jmx-exporter
             image: bitnamilegacy/jmx-exporter:1.0.1
             pullPolicy: IfNotPresent
             port: 5556

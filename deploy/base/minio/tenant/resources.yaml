@@ -23,6 +23,8 @@ spec:
   chart:
     spec:
       chart: tenant
+      # Released with the operator chart, so it tracks the operator's versions.yaml entry.
+      # renovate: datasource=helm registryUrl=https://operator.min.io depName=operator
       version: '7.1.1'
       sourceRef:
         kind: HelmRepository

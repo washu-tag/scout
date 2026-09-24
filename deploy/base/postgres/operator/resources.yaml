@@ -19,6 +19,7 @@ spec:
   chart:
     spec:
       chart: cloudnative-pg
+      # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/ depName=cloudnative-pg
       version: '0.28.3'
       sourceRef:
         kind: HelmRepository

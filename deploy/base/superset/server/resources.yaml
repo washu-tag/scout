@@ -96,6 +96,7 @@ spec:
   chart:
     spec:
       chart: superset
+      # renovate: datasource=helm registryUrl=https://apache.github.io/superset depName=superset
       version: '0.15.5'
       sourceRef:
         kind: HelmRepository
@@ -154,6 +155,7 @@ spec:
       extraContainers:
         - name: statsd-exporter
           # Pinned in versions.yaml (superset_statsd_exporter_tag).
+          # renovate: datasource=docker depName=prom/statsd-exporter
           image: prom/statsd-exporter:v0.29.0
           args:
             - --statsd.listen-udp=:9125

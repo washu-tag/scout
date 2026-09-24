@@ -30,6 +30,7 @@ spec:
   chart:
     spec:
       chart: temporal
+      # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
       version: '1.2.0'
       sourceRef:
         kind: HelmRepository

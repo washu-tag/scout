@@ -160,7 +160,8 @@
     }
   ],
 
-  // Only manage versions.yaml (leave npm/pip/gradle to Dependabot)
+  // Only the custom regex managers below: versions.yaml and the files that
+  // mirror it (leave npm/pip/gradle to Dependabot)
   "enabledManagers": ["custom.regex"],
 
   "customManagers": [
@@ -172,6 +173,25 @@
         //   # renovate: datasource=helm registryUrl=https://... depName=chart/name
         //   some_version: ~1.2.3
         "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+(?:registryUrl=(?<registryUrl>[^\\s]+)\\s+)?depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n[a-z0-9_]+(?:_version|_tag|_image_tag):\\s*[~']?(?<currentValue>[^\\s']+)"
+      ]
+    },
+    // deploy/ bases keep third-party pins as literals in git (the stamper
+    // rewrites only Scout's own charts and images, ADR 0031). Each literal
+    // mirror of a versions.yaml pin carries the same `# renovate:`
+    // annotation on the line above it; Renovate groups updates by depName,
+    // so versions.yaml and its deploy/ mirrors bump in one PR.
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["deploy/**/*.yaml"],
+      "matchStrings": [
+        // Chart version or values image tag:
+        //   # renovate: datasource=helm registryUrl=https://... depName=chart
+        //   version: '1.2.3'   (or   tag: '1.2.3')
+        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+(?:registryUrl=(?<registryUrl>[^\\s]+)\\s+)?depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n\\s*(?:version|tag):\\s*['\"]?(?<currentValue>[^\\s'\"]+)",
+        // Inline image reference:
+        //   # renovate: datasource=docker depName=org/image
+        //   image: org/image:1.2.3
+        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n\\s*image:\\s*['\"]?[^\\s'\"@]+:(?<currentValue>[^\\s'\"@]+)"
       ]
     },
     // Keycloak version is also baked into two non-yaml files that need
