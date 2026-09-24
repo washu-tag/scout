@@ -1,0 +1,33 @@
+---
+# Keycloak fragment reconciler (ADR 0037)
+# User-configurable settings belong in inventory.yaml
+
+# Alongside Keycloak, whose keycloak-client-secrets Secret holds its credential.
+keycloak_fragment_reconciler_namespace: '{{ keycloak_namespace }}'
+
+# Helm
+keycloak_fragment_reconciler_helm_chart_ref: '{{ scout_repo_dir }}/helm/keycloak-fragment-reconciler'
+keycloak_fragment_reconciler_helm_release_name: keycloak-fragment-reconciler
+
+# Image
+keycloak_fragment_reconciler_image_repository: ghcr.io/washu-tag/keycloak-fragment-reconciler
+keycloak_fragment_reconciler_image_tag: latest
+keycloak_fragment_reconciler_image_pull_policy: IfNotPresent
+
+# Where the keycloak role writes the credential. The key is the token the realm
+# var-substitutes, not a free choice; tasks/deploy.yaml checks it arrived.
+keycloak_fragment_reconciler_secret_name: keycloak-client-secrets
+keycloak_fragment_reconciler_secret_key: fragment_reconciler_svc
+
+# Namespace names, or the lone value `ALL` for every namespace -- a pluggable
+# app can land in one this role does not know about. An empty list watches
+# nothing and installs no ClusterRole.
+keycloak_fragment_reconciler_watched_namespaces:
+  - ALL
+
+keycloak_fragment_reconciler_resources_default:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    memory: 256Mi

@@ -80,6 +80,8 @@ traefik.ingress.kubernetes.io/router.middlewares: >
 
 Add this middleware stack to any new service ingress to enable authentication with OAuth2 Proxy.
 
+`oauth2-proxy-error` rewrites every 401 on the route, including 401s the service itself returns. The MinIO console's UI reads its API's JSON 401 to detect a lapsed login, so `minio.{server_hostname}/api/` has its own Ingress with `oauth2-proxy-auth` only.
+
 ## Components
 
 ### Keycloak
