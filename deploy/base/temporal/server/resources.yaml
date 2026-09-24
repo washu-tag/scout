@@ -28,10 +28,11 @@ spec:
   # The chart's schema-setup Jobs (setup-schema + update-schema on both Postgres
   # stores) run at install and take a while.
   timeout: 15m
-  # The web UI waits on keycloak-alb (edge-aws) for OIDC discovery; retry instead of stalling.
+  # The web UI exits until OIDC discovery at the realm answers (keycloak-alb via edge-aws on
+  # aws, keycloak-instance on-prem), so a fresh install keeps retrying instead of stalling.
   install:
     remediation:
-      retries: 3
+      retries: -1
   upgrade:
     remediation:
       retries: 3
