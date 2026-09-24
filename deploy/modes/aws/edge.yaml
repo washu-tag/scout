@@ -24,4 +24,4 @@ spec:
     - name: keycloak-instance
     - name: superset-server
     # Not temporal-server: its UI exits until keycloak-alb (built here) serves OIDC
-    # discovery, so that edge would deadlock a fresh install.
+    # discovery, so waiting on it would deadlock a fresh install.
