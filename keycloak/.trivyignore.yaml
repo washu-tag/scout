@@ -10,3 +10,10 @@ vulnerabilities:
   # netty client, so this is upstream only). Fixed in netty 4.1.137.Final, but no
   # Keycloak image ships it yet; drop this on the next base bump that carries it.
   - id: CVE-2026-75595 # io.netty:netty-handler 4.1.136.Final
+  # bcprov-jdk18on (Keycloak bundles Bouncy Castle for its own X.509/crypto
+  # operations). Fixed upstream in bcprov-jdk18on 1.85, but no Keycloak release
+  # bundles it yet - confirmed still present even on keycloak/keycloak's main
+  # branch and the current 26.7.4 tag (keycloak/keycloak#52971, #52973 as of
+  # 2026-09). Drop these on the next base bump that carries it.
+  - id: CVE-2026-8763 # org.bouncycastle:bcprov-jdk18on 1.84 - name constraints bypass
+  - id: CVE-2026-13506 # org.bouncycastle:bcprov-jdk18on 1.84 - ASN.1 nesting-depth DoS

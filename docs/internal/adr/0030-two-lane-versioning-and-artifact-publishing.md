@@ -139,16 +139,35 @@ flowchart LR
 - A published chart gets `version` = the tag of the build publishing it,
   and `appVersion` = the tag of the build that produced the chart's
   primary image, read from the manifest. Both are set by `helm package` at
-  packaging time; the `Chart.yaml` in the tree keeps a placeholder that is
-  never published, and no commit ever edits it.
+  packaging time; the `Chart.yaml` in the tree keeps a placeholder
+  (`0.0.0-dev`, or `latest` on Scout-image charts) that is never published,
+  and no commit ever edits it. A publish-time check
+  (`.github/scripts/assert-chart-not-latest.sh`, run in every packaging
+  lane) fails the build if a packaged chart still carries a placeholder in a
+  field it publishes, so a chart not wired into the stamping cannot ship a
+  non-resolving default.
 - Charts that deploy Scout-built images default their image tag to
   `.Chart.AppVersion`. Because `appVersion` names the image's actual
   producing build, that tag always exists in the registry — even when the
   chart and the image last changed in different builds. Chart and image
   move as one unit.
-- Charts that wrap third-party images (loki, orthanc, dcm4chee,
-  keycloak-config-cli) keep explicit image references; their `appVersion`
-  carries no coupling meaning.
+- Charts that wrap a third-party image whose version is pinned in a single
+  Renovate-tracked source get their `appVersion` stamped from that source at
+  packaging time and default their image tag to `.Chart.AppVersion`, so the
+  pin lives in exactly one place rather than a hand-mirrored copy per chart.
+  The sources are `ansible/group_vars/all/versions.yaml` (scout-opa,
+  hive-metastore, temporal-bootstrap, keycloak-config-cli) and
+  `helm/superset/VERSION` (scout-dashboards). This tightens this ADR's
+  original "keep explicit image references, appVersion carries no coupling
+  meaning": a mirrored tag drifts from the Renovate pin, which is how
+  keycloak-config-cli's chart claimed `6.4.0-26` while every deploy ran
+  `6.5.1-26.5.5`.
+- Charts whose `appVersion` is a genuine upstream version with no
+  single-sourced image coupling keep it in `Chart.yaml` and set their image
+  tag explicitly: voila (the Voilà release — its scout-notebook image is a
+  build-tagged Scout image, stamped separately), dcm4chee, and orthanc.
+  open-webui-bootstrap discovers its image at deploy time and omits
+  `appVersion` entirely.
 - Scout-built images that deploy through upstream charts (the
   xnat-plugin-installer under the XNAT chart, keycloak via its operator
   resource) are referenced in the deployment base's values and stamped
