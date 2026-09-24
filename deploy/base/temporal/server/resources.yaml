@@ -7,9 +7,8 @@
 #
 # Auth matches the Ansible temporal_oidc_enabled default: frontend JWT authz on the
 # realm `temporal` client's `permissions` claim, plus the UI's own OIDC login with that
-# client (secret from the fixed-name temporal-web-oidc Secret). Workers, bootstrap and
-# admintools use the internal frontend, which skips authz. Web ingress is mode-selected
-# via temporal-edge-${service_mode} (edge.yaml).
+# client (secret from the fixed-name temporal-web-oidc Secret). Web ingress is
+# mode-selected via temporal-edge-${service_mode} (edge.yaml).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
