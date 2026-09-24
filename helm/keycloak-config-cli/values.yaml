@@ -67,15 +67,19 @@ lifespans:
 # Provision the XNAT client, role, and group binding.
 enableXnat: 'false'
 # Identity providers (creds come via envFrom; see required-secrets.md). The browser
-# flow redirects to defaultProvider.
+# flow redirects to defaultProvider, which must be an enabled one. Empty turns the
+# redirect off: the Keycloak login page lists every enabled IdP, which a site brokering
+# more than one needs, and a logout then sticks even while the upstream IdP keeps its
+# own session. More OIDC IdPs are extra `config` documents (see below).
 github:
   enabled: 'true'
 microsoft:
   enabled: 'false'
 defaultProvider: github
 # Comma-separated full ALB-OIDC hostnames the oauth2-proxy client accepts
-# /oauth2/idpresponse from (AWS sites, e.g. superset.<domain>). On-prem uses the
-# oauth2-proxy callback the realm builds from server_hostname, so this can stay empty.
+# /oauth2/idpresponse from, and as post-logout targets (AWS sites, e.g.
+# superset.<domain>). On-prem uses the oauth2-proxy callback the realm builds from
+# server_hostname, so this can stay empty.
 albOidcHosts: ''
 # Subdomain oauth2-proxy is served on; the realm registers its callback and
 # sign-out URIs against it.
@@ -136,6 +140,11 @@ existingSecrets:
 # `inline` is a structure, for a test or a one-off. Adding either here merges
 # with this default and imports both; to replace it, set `scout-realm: null`
 # alongside.
+#
+# A site adds another OIDC IdP the same way: an `inline` document for the realm
+# with its identityProviders (+ mappers), naming its credentials as $(env:...)
+# keys that the envFrom Secret also carries. docs/internal/authentication.md has
+# an example.
 config:
   scout-realm:
     file: files/scout-realm.json

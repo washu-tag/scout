@@ -311,7 +311,7 @@ k3s_cluster:
     keycloak_bootstrap_admin_user: admin
     keycloak_bootstrap_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # IDP configuration (pick at least one)
-    keycloak_default_provider: github # 'github' or 'microsoft'
+    keycloak_default_provider: github # 'github', 'microsoft', or '' (login page lists every IdP)
     keycloak_gh_client_id: 'your-github-client'
     keycloak_gh_client_secret: 'your-github-secret'
     keycloak_microsoft_client_id: 'your-microsoft-client'
