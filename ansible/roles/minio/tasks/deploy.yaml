@@ -76,6 +76,9 @@
     helm_chart_values:
       tenant:
         name: '{{ minio_tenant_name }}'
+        image:
+          repository: '{{ minio_image }}'
+          tag: '{{ minio_image_tag }}'
         configSecret:
           name: "{{ minio_env_secret_name | default('minio-env-configuration') }}"
           existingSecret: true

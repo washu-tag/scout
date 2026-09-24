@@ -31,6 +31,11 @@ spec:
   values:
     tenant:
       name: '${minio_tenant_name}'
+      # Pinned in versions.yaml (minio_image[_tag], Renovate-tracked). Literal mirror,
+      # upstream image not stamped; keep in lockstep.
+      image:
+        repository: docker.io/pgsty/silo
+        tag: RELEASE.2026-09-16T00-00-00Z
       configSecret:
         name: minio-scout-env-configuration
         existingSecret: true
@@ -228,7 +233,7 @@ spec:
         - name: mc
           # Pinned in versions.yaml (minio_client_image[_tag], Renovate-tracked). Literal
           # mirror, upstream image not stamped; keep in lockstep.
-          image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+          image: docker.io/pgsty/mc:RELEASE.2026-09-16T00-00-00Z
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
