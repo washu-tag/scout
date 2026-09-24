@@ -73,3 +73,29 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: keycloak-instance
+---
+# Fragment reconciler (ADR 0037). dependsOn keycloak-realm on three counts: the
+# tier realm roles it treats as preconditions and never creates, its own
+# service-account principal, and the scout-charts HelmRepository the realm base
+# owns. Nothing dependsOn this in turn -- an app's fragment client appearing late
+# is that app's problem, not the platform's, so it gates no one.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: keycloak-fragment-reconciler
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/keycloak/fragment-reconciler
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: keycloak-realm

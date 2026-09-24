@@ -25,9 +25,11 @@ until CI switches `deploy-and-test` to deploy from it. See
 
 ## Conventions
 - **Site scalars are `${var}` postBuild substitutions** from a `cluster-vars`
-  ConfigMap (namespaces, storage classes/sizes, endpoints). The kustomize-controller
-  runs with `StrictPostBuildSubstitutions`, so an undefined `${var}` fails the
-  build rather than rendering empty.
+  ConfigMap (namespaces, storage classes/sizes, endpoints). Run the
+  kustomize-controller with `StrictPostBuildSubstitutions` so an undefined `${var}`
+  fails the build; without it the var renders empty. aws sites set `s3_sse_type` to
+  `S3` when an SCP or bucket policy requires an SSE header on writes, else `NONE`
+  (bucket default, which keeps an SSE-KMS default intact).
 - **Chart/image refs** are stamped from the build-lane haul at config-artifact
   publish (placeholder in git, concrete only in the published artifact). Upstream
   chart versions are pinned in `versions.yaml` + Renovate-tracked.
@@ -46,32 +48,24 @@ until CI switches `deploy-and-test` to deploy from it. See
      set `modes/{aws,on-prem}/`, since `${var}` can't add/drop a document and a flux
      path isn't substituted.
 
+## Site prerequisites (Layer 0)
+Not in the artifact; a site provides them before reconciling it: cert-manager with the
+`scout-internal-ca` ClusterIssuer, External Secrets Operator + a `ClusterSecretStore`
+(cloud), and on aws the `alb` IngressClass/IngressClassParams plus the IRSA roles in
+`required-secrets.md`. A site that seeds secrets from a Kustomization the artifact
+`dependsOn` must pre-create the scout namespaces; the artifact's copies carry
+`kustomize.toolkit.fluxcd.io/prune: disabled`, and so should the site's.
+
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared
 `Kustomization` DAG plus one per-mode set, acyclic): postgres, minio, hive, temporal
-(on Postgres), extractor, valkey, keycloak (+ realm), oauth2-proxy, opa, trino
-(ro+rw), superset (+ dashboards).
+(on Postgres), extractor, valkey, keycloak (+ realm + fragment reconciler),
+oauth2-proxy, opa, trino (ro+rw), superset (+ dashboards), launchpad.
 
-Remaining components: jupyter, report-viewer, monitoring, launchpad, and the
-feature Components (chat/voila/xnat/data-generator/gpu).
+Also shipped: launchpad and the aws ingress edge. Remaining components: jupyter,
+report-viewer, monitoring, and the feature Components (chat/voila/xnat/data-generator/gpu).
 
-Pre-deploy fixes (deferred; all gated on the build lane being live, which is where
-Scout-chart versions get stamped):
-1. **Per-namespace foundation base**: several `prune: true` Kustomizations
-   co-declare the same `Namespace` *and* the same `scout-charts` / upstream
-   `HelmRepository` in a shared namespace. This is wider than it looks: Ansible's
-   per-component namespace vars (`hive_namespace`, `extractor_namespace`,
-   `trino_namespace`, ...) alias down to a handful of real namespaces
-   (scout-extractor, scout-analytics, ...), so once `cluster-vars` maps them
-   faithfully many more bases resolve to the same `Namespace` than a
-   pre-substitution scan shows. Two Kustomizations owning one `Namespace` means a
-   prune in either cascades-deletes it (and everything in it) out from under the
-   other. Fix: a `base/<namespace>/foundation/` per real namespace that declares
-   the `Namespace` + shared `HelmRepository`s once, owned by one foundational
-   Kustomization every component in that namespace `dependsOn`; component bases set
-   `namespace:` and drop those objects. Needs the Ansible namespace-default map to
-   collapse the aliased vars correctly.
-2. **Config-artifact publish job** stamps the Scout charts' `0.0.0` placeholders
-   with real published versions (from the haul).
-3. **`deploy-and-test` switch** to deploy the ingest slice via Flux (ingest suite
-   = gate).
+Done since the scaffold: the per-namespace foundation bases (`base/scout-*-foundation`,
+one owner per Namespace + shared HelmRepository) and the config-artifact publish job
+(stamps the Scout charts' `0.0.0` placeholders from the haul). Remaining: the
+**`deploy-and-test` switch** to deploy the ingest slice via Flux (ingest suite = gate).

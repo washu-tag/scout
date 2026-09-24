@@ -1,6 +1,8 @@
 # Per-mode ingress + security-headers for Superset via valuesFrom (ADR 0035). on-prem:
 # Traefik chart ingress + the oauth2-proxy/security-headers middleware chain (ADR 0012).
 # aws: chart ingress off (the ALB serves), ADR-0012 headers app-side via Talisman.
+# SCOUT_LOGOUT_URL: oauth2-proxy sign-out on-prem; Keycloak end-session on aws (there is
+# no oauth2-proxy), also expiring the ALB session cookies so the next request re-auths.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -19,6 +21,9 @@ data:
       path: /
       hosts:
         - 'superset.${server_hostname}'
+    configOverrides:
+      logout: |
+        SCOUT_LOGOUT_URL = 'https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/sign_out'
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -32,6 +37,9 @@ data:
     ingress:
       enabled: false
     configOverrides:
+      logout: |
+        SCOUT_LOGOUT_URL = 'https://keycloak.${server_hostname}/realms/${keycloak_realm_name}/protocol/openid-connect/logout?client_id=oauth2-proxy&post_logout_redirect_uri=https://${server_hostname}'
+        SCOUT_LOGOUT_EXPIRE_COOKIES = [f'AWSELBAuthSessionCookie-{i}' for i in range(4)]
       security_headers: |
         TALISMAN_ENABLED = True
         TALISMAN_CONFIG = {

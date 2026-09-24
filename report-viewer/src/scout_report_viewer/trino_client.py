@@ -18,18 +18,69 @@ import json
 import logging
 import threading
 import time
+import contextlib
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import date, datetime, time as _time
 from decimal import Decimal
-from typing import Any, AsyncIterator, Iterator
+from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, Mapping, TypeVar
 
 import httpx
 from trino.auth import JWTAuthentication
 from trino.dbapi import connect as trino_connect
 
+from . import progress
 from .config import settings
 
 log = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+
+class ClientDisconnected(Exception):
+    """The HTTP caller went away while its query was still running."""
+
+
+# Separate from asyncio's default pool, which the scans themselves occupy: a
+# cancel queued behind them would wait on the query it is meant to end.
+_CANCEL_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="trino-cancel")
+
+
+class QueryHandle:
+    """Cancel hook for a single query. One per request, so concurrent queries
+    for the same search cannot clobber each other, and a cancel arriving before
+    the cursor exists still takes effect once it does."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._cancel: Callable[[], None] | None = None
+        self._cancelled = False
+
+    def arm(self, cancel: Callable[[], None]) -> bool:
+        """Called from the Trino worker thread once the cursor exists. False
+        means the caller already went away, so the query must not be started:
+        cancelling a cursor that has no query id yet is a no-op."""
+        with self._lock:
+            if self._cancelled:
+                return False
+            self._cancel = cancel
+            return True
+
+    @property
+    def cancelled(self) -> bool:
+        with self._lock:
+            return self._cancelled
+
+    def disarm(self) -> None:
+        with self._lock:
+            self._cancel = None
+
+    def cancel(self) -> None:
+        with self._lock:
+            self._cancelled = True
+            cancel = self._cancel
+        if cancel is not None:
+            cancel()
 
 
 _REFRESH_BEFORE_EXPIRY_FRACTION = 5
@@ -143,18 +194,39 @@ def _connect(user: str | None) -> Iterator[Any]:
 
 
 def _execute_sync(
-    sql: str, user: str | None, params: list | tuple | None
+    sql: str,
+    user: str | None,
+    params: list | tuple | None,
+    progress_key: str | None = None,
+    handle: QueryHandle | None = None,
 ) -> tuple[list[str], list[list[Any]]]:
     with _connect(user) as conn:
-        cur = conn.cursor()
-        # Driver requires None or non-empty sequence for params (asserts on type).
-        if params:
-            cur.execute(sql, params)
-        else:
-            cur.execute(sql)
-        rows = cur.fetchall()
-        columns = [d[0] for d in cur.description] if cur.description else []
-        return columns, rows
+        cur = conn.cursor(
+            stats_callback=(
+                (lambda stats: progress.report(progress_key, stats))
+                if progress_key
+                else None
+            )
+        )
+        if handle is not None and not handle.arm(cur.cancel):
+            raise ClientDisconnected
+        try:
+            # Driver requires None or non-empty sequence for params (asserts on type).
+            if params:
+                cur.execute(sql, params)
+            else:
+                cur.execute(sql)
+            # The driver ignores cancel() until the query has an id, so a
+            # cancel from the window above has to be re-applied here.
+            if handle is not None and handle.cancelled:
+                cur.cancel()
+                raise ClientDisconnected
+            rows = cur.fetchall()
+            columns = [d[0] for d in cur.description] if cur.description else []
+            return columns, rows
+        finally:
+            if handle is not None:
+                handle.disarm()
 
 
 def _normalize(value: Any) -> Any:
@@ -195,20 +267,66 @@ async def execute(
     sql: str,
     user: str | None = None,
     params: list | tuple | None = None,
+    progress_key: str | None = None,
+    handle: QueryHandle | None = None,
 ) -> tuple[list[str], list[dict[str, Any]]]:
     """Run `sql` against Trino. `params` is bound positionally (`?`).
+
+    With `progress_key`, live Trino stats are published there for the
+    duration of the query (see `progress`).
 
     Lists/tuples bind as Trino ARRAY values, so prefer
     `WHERE contains(?, col)` over `WHERE col IN (...)` for matching a
     column against a caller-supplied list (the driver doesn't expand
     list params into IN-clauses).
     """
-    columns, raw_rows = await asyncio.to_thread(_execute_sync, sql, user, params)
+    try:
+        columns, raw_rows = await asyncio.to_thread(
+            _execute_sync, sql, user, params, progress_key, handle
+        )
+    finally:
+        if progress_key:
+            progress.finish(progress_key)
     dict_rows = [
         {col: _normalize(raw_rows[i][j]) for j, col in enumerate(columns)}
         for i in range(len(raw_rows))
     ]
     return columns, dict_rows
+
+
+async def cancel_on_disconnect(
+    receive: Callable[[], Awaitable[Mapping[str, Any]]],
+    work: Awaitable[T],
+    handle: QueryHandle,
+) -> T:
+    """Stop `work` at Trino if the caller goes away. ASGI pushes
+    `http.disconnect`, and the worker thread cannot be interrupted, so
+    cancelling the query itself is the only way to end the scan."""
+    task = asyncio.ensure_future(work)
+    watcher = asyncio.ensure_future(_wait_for_disconnect(receive))
+    done, _pending = await asyncio.wait(
+        {task, watcher}, return_when=asyncio.FIRST_COMPLETED
+    )
+    watcher.cancel()
+    if task in done:
+        return task.result()
+    try:
+        # Issues DELETE /v1/query/{id}, so keep it off the event loop.
+        await asyncio.get_running_loop().run_in_executor(_CANCEL_POOL, handle.cancel)
+    except Exception:
+        log.debug("trino cancel failed (ignored)", exc_info=True)
+    with contextlib.suppress(Exception):
+        await task
+    raise ClientDisconnected
+
+
+async def _wait_for_disconnect(
+    receive: Callable[[], Awaitable[Mapping[str, Any]]],
+) -> None:
+    while True:
+        message = await receive()
+        if message.get("type") == "http.disconnect":
+            return
 
 
 async def stream(

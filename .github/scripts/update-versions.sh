@@ -110,6 +110,11 @@ update_file "ansible/roles/hl7-listener/defaults/main.yaml" \
     "\\1 $DOCKER_TAG" \
     "hl7_listener_image_tag"
 
+update_file "ansible/roles/keycloak_fragment_reconciler/defaults/main.yaml" \
+    "^(keycloak_fragment_reconciler_image_tag:) .+$" \
+    "\\1 $DOCKER_TAG" \
+    "keycloak_fragment_reconciler_image_tag"
+
 echo ""
 echo "Python packages..."
 update_file "extractor/hl7-transformer/pyproject.toml" \
@@ -122,11 +127,19 @@ update_file "report-viewer/pyproject.toml" \
     "\\1$PYTHON_VERSION\\2" \
     "pyproject.toml version"
 
+update_file "keycloak-fragment-reconciler/pyproject.toml" \
+    '^(version = ")[^"]+(")'  \
+    "\\1$PYTHON_VERSION\\2" \
+    "pyproject.toml version"
+
 echo "$DOCKER_TAG" > "extractor/hl7-transformer/VERSION"
 echo "  - VERSION file: extractor/hl7-transformer/VERSION"
 
 echo "$DOCKER_TAG" > "report-viewer/VERSION"
 echo "  - VERSION file: report-viewer/VERSION"
+
+echo "$DOCKER_TAG" > "keycloak-fragment-reconciler/VERSION"
+echo "  - VERSION file: keycloak-fragment-reconciler/VERSION"
 
 echo ""
 echo "Gradle build files..."
@@ -162,72 +175,17 @@ update_file "tests/auth/package.json" \
     "\\1$DOCKER_TAG\\2" \
     "auth tests package.json version"
 
+# Chart.yaml is NOT stamped: `helm package --version` (all charts) and
+# --app-version (Scout-image and upstream-wrapping charts, from chart-app-version.sh)
+# set both at publish time in ci.yaml and release.yaml, so the placeholders never
+# ship. launchpad and report-viewer fall through to .Chart.AppVersion for their
+# image tag.
+#
+# voila is the exception. Its appVersion is Voila's own version, not a Scout image
+# version, so the AppVersion fallback would resolve scout-notebook:0.5.11. Its
+# image.tag stays stamped until that conflation is untangled.
 echo ""
-echo "Helm charts (Scout applications - version + appVersion)..."
-for chart in helm/launchpad/Chart.yaml \
-             helm/report-viewer/Chart.yaml \
-             helm/extractor/hl7-transformer/Chart.yaml \
-             helm/extractor/hl7log-extractor/Chart.yaml \
-             helm/hl7-listener/Chart.yaml; do
-    update_file "$chart" \
-        "^(version:) .+$" \
-        "\\1 $HELM_VERSION" \
-        "chart version"
-    update_file "$chart" \
-        '^(appVersion: ")[^"]+(")'  \
-        "\\1$DOCKER_TAG\\2" \
-        "chart appVersion"
-done
-
-echo ""
-echo "Helm charts (external applications - version only)..."
-update_file "helm/hive-metastore/Chart.yaml" \
-    "^(version:) .+$" \
-    "\\1 $HELM_VERSION" \
-    "hive-metastore chart version"
-
-update_file "helm/voila/Chart.yaml" \
-    "^(version:) .+$" \
-    "\\1 $HELM_VERSION" \
-    "voila chart version"
-
-update_file "helm/keycloak-config-cli/Chart.yaml" \
-    "^(version:) .+$" \
-    "\\1 $HELM_VERSION" \
-    "keycloak-config-cli chart version"
-
-update_file "helm/scout-dashboards/Chart.yaml" \
-    "^(version:) .+$" \
-    "\\1 $HELM_VERSION" \
-    "scout-dashboards chart version"
-
-update_file "helm/open-webui-bootstrap/Chart.yaml" \
-    "^(version:) .+$" \
-    "\\1 $HELM_VERSION" \
-    "open-webui-bootstrap chart version"
-
-update_file "helm/scout-opa/Chart.yaml" \
-    "^(version:) .+$" \
-    "\\1 $HELM_VERSION" \
-    "scout-opa chart version"
-
-update_file "helm/temporal-bootstrap/Chart.yaml" \
-    "^(version:) .+$" \
-    "\\1 $HELM_VERSION" \
-    "temporal-bootstrap chart version"
-
-echo ""
-echo "Helm values.yaml files (image.tag)..."
-update_file "helm/launchpad/values.yaml" \
-    "^(  tag:) .+$" \
-    "\\1 $DOCKER_TAG" \
-    "launchpad image.tag"
-
-update_file "helm/report-viewer/values.yaml" \
-    "^(  tag:) .+$" \
-    "\\1 $DOCKER_TAG" \
-    "report-viewer image.tag"
-
+echo "Helm values.yaml (voila image.tag -- see note above)..."
 update_file "helm/voila/values.yaml" \
     "^(  tag:) .+$" \
     "\\1 $DOCKER_TAG" \

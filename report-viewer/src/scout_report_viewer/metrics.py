@@ -13,6 +13,8 @@ from prometheus_client import Counter, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_fastapi_instrumentator import metrics as fastapi_metrics
 
+from .trino_client import ClientDisconnected
+
 log = logging.getLogger(__name__)
 
 SEARCHES_CREATED = Counter(
@@ -50,7 +52,7 @@ _ROW_COUNT_BUCKETS = (
 
 SEARCH_SIZE = Histogram(
     "scout_report_viewer_search_size_rows",
-    "Row count of each search, from the COUNT(*) computed at create time.",
+    "Row count of each CSV-imported search, from its create-time COUNT(*).",
     buckets=_ROW_COUNT_BUCKETS,
 )
 
@@ -74,6 +76,9 @@ def time_trino(op: str) -> Iterator[None]:
     outcome = "ok"
     try:
         yield
+    except ClientDisconnected:
+        outcome = "cancelled"
+        raise
     except Exception:
         outcome = "error"
         raise

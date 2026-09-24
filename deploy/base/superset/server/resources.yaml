@@ -219,7 +219,7 @@ spec:
         from superset.security import SupersetSecurityManager
         from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
         from superset.exceptions import SupersetSecurityException
-        from flask import g, redirect, session
+        from flask import current_app, g, redirect, session
         import logging
         OAUTH_PROVIDERS = OPENID_PROVIDERS = [
             {
@@ -266,7 +266,13 @@ spec:
             @expose('/logout/', methods=['GET', 'POST'])
             def logout(self):
                 super().logout()
-                return redirect('https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/sign_out')
+                # Per-mode, from the superset-edge-* ConfigMap (edge.yaml); a site that
+                # replaces those ConfigMaps falls back to the on-prem sign-out.
+                resp = redirect(current_app.config.get(
+                    'SCOUT_LOGOUT_URL', 'https://${oauth2_proxy_subdomain}.${server_hostname}/oauth2/sign_out'))
+                for cookie in current_app.config.get('SCOUT_LOGOUT_EXPIRE_COOKIES', []):
+                    resp.delete_cookie(cookie)
+                return resp
         class KeycloakSecurityManager(SupersetSecurityManager):
             """
             Create a new SecurityManager that uses the KeycloakOAuthView and Keycloak role mapping

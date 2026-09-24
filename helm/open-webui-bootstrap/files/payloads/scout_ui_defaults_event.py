@@ -1,13 +1,13 @@
 """
-title: Scout Iframe Defaults
-description: Forces the report-viewer iframe-sandbox UI flags on for every user so the embedded viewer works.
+title: Scout UI Defaults
+description: Pins Scout's per-user OWUI interface settings for every user.
 """
 
-# OWUI defaults iframeSandboxAllowSameOrigin/AllowForms false per-user with no
-# admin-global override (open-webui/open-webui#18684), so this event function
-# forces them on: user.created (new users; the only auth event OWUI emits for
-# SSO) and function.enabled/updated on itself (deploy-time backfill of existing
-# users — fired when the bootstrap Job re-seeds this function, no restart needed).
+# OWUI defaults these ui.* settings per-user with no admin-global override, so
+# this event function pins them: user.created (new users; the only auth
+# event OWUI emits for SSO) and function.enabled/updated on itself (deploy-time
+# backfill of existing users — fired when the bootstrap Job re-seeds this
+# function, no restart needed).
 # Replaces the report-viewer signup webhook + SQL backfill (ADR 0029).
 
 import logging
@@ -15,14 +15,17 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-log = logging.getLogger("scout.iframe_defaults")
+log = logging.getLogger("scout.ui_defaults")
 
-# Per-user ui.* settings the report-viewer iframe requires, all forced true.
-_REQUIRED_UI_FLAGS = ("iframeSandboxAllowSameOrigin", "iframeSandboxAllowForms")
+# Required: the report-viewer iframe breaks without these, so there is no opt-out.
+_REQUIRED_SETTINGS = {
+    "iframeSandboxAllowSameOrigin": True,
+    "iframeSandboxAllowForms": True,
+}
 
 
-async def _ensure_flags(user_id: str) -> bool:
-    """Force the flags on for one user; return True iff a write happened.
+async def _ensure_settings(user_id: str, pinned: dict) -> bool:
+    """Apply `pinned` to one user; return True iff a write happened.
 
     Rebuilds the whole `ui` sub-object because update_user_settings_by_id()
     shallow-merges only at the top level.
@@ -34,10 +37,9 @@ async def _ensure_flags(user_id: str) -> bool:
         return False
     settings = user.settings.model_dump() if user.settings else {}
     ui = dict(settings.get("ui") or {})
-    if all(ui.get(flag) is True for flag in _REQUIRED_UI_FLAGS):
+    if all(ui.get(key) is value for key, value in pinned.items()):
         return False
-    for flag in _REQUIRED_UI_FLAGS:
-        ui[flag] = True
+    ui.update(pinned)
     await Users.update_user_settings_by_id(user_id, {"ui": ui})
     return True
 
@@ -48,9 +50,26 @@ class Event:
             default=True,
             description="Master switch. When off, the function makes no changes.",
         )
+        show_release_notes: bool = Field(
+            default=False,
+            description="Leave the What's New modal to each admin's own Settings toggle.",
+        )
+        show_update_toast: bool = Field(
+            default=False,
+            description="Leave the new-version toast to each admin's own Settings toggle.",
+        )
 
     def __init__(self) -> None:
         self.valves = self.Valves()
+
+    def _pinned_settings(self) -> dict:
+        """Required settings, plus the optional ones inventory has not opted out of."""
+        pinned = dict(_REQUIRED_SETTINGS)
+        if not self.valves.show_release_notes:
+            pinned["showChangelog"] = False
+        if not self.valves.show_update_toast:
+            pinned["showUpdateToast"] = False
+        return pinned
 
     async def event(
         self,
@@ -78,14 +97,15 @@ class Event:
         if not user_id:
             log.warning("user.created carried no user id: %s", event)
             return
-        if await _ensure_flags(user_id):
-            log.info("iframe defaults applied to new user %s", user_id)
+        if await _ensure_settings(user_id, self._pinned_settings()):
+            log.info("ui defaults applied to new user %s", user_id)
 
     async def _backfill_all(self) -> None:
         # Idempotent, so no lock needed despite firing once per replica:
         # concurrent sweeps converge and only the first writes.
         from open_webui.models.users import Users  # noqa: PLC0415
 
+        pinned = self._pinned_settings()
         result = await Users.get_users()
         users = result.get("users", []) if isinstance(result, dict) else (result or [])
         changed = 0
@@ -93,6 +113,6 @@ class Event:
             user_id = getattr(u, "id", None)
             if user_id is None and isinstance(u, dict):
                 user_id = u.get("id")
-            if user_id and await _ensure_flags(user_id):
+            if user_id and await _ensure_settings(user_id, pinned):
                 changed += 1
-        log.info("iframe defaults backfill: %d/%d users updated", changed, len(users))
+        log.info("ui defaults backfill: %d/%d users updated", changed, len(users))

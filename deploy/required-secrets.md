@@ -18,14 +18,16 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 ## scout-core (postgres / keycloak / valkey)
 | secret | keys | consumed by |
 | --- | --- | --- |
-| `superuser-secret` | `username`, `password` | CNPG `Cluster.superuserSecret` |
-| `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor,temporal}` | `username`, `password` | CNPG managed roles |
+| `superuser-secret` | `username`, `password` | CNPG `Cluster.superuserSecret` (on-prem only) |
+| `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor,temporal}` | `username`, `password` | CNPG managed roles (on-prem only) |
 | `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role) |
 | `keycloak-admin-secret` | `username`, `password` | Keycloak bootstrap admin + config-cli |
-| `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names) |
+| `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`, `fragment_reconciler_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names). `fragment_reconciler_svc` is also read pod-side by the fragment reconciler, which is the one key with a second consumer |
 | `valkey-auth` | `password`, `password-file` | Valkey chart + exporter |
 | `launchpad-keycloak-secret` | `client-secret` | launchpad OIDC login (pod-side; = the realm's `launchpad_client` value, not that key) |
 | `launchpad-nextauth-secret` | `secret` | launchpad next-auth session signing (generate-once) |
+| `opa-bundle-writer` | `access-key`, `secret-key` | Keycloak OPA bundle publisher (on-prem: MinIO creds; aws: present with **empty** values, else they shadow IRSA) |
+| `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on launchpad (also in `${scout_analytics_namespace}` for superset); the `oauth2-proxy` client |
 
 ## scout-data (minio / hive)
 **Mode-specific.** Cloud uses AWS S3 + IRSA (no access-key Secrets); the MinIO-user
@@ -34,7 +36,8 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 
 | secret | keys | consumed by |
 | --- | --- | --- |
-| `hive-metastore-secret` / `-readonly-secret` | `S3_SECRET_KEY`, `HIVE_METASTORE_PASSWORD` | hive-metastore Deployments |
+| `hive-metastore-secret` / `-readonly-secret` | `S3_SECRET_KEY`, `HIVE_METASTORE_PASSWORD` | hive-metastore Deployments (aws: `S3_SECRET_KEY` present but empty) |
+| `superuser-secret` | `username`, `password` | `hive-db-init` grant Job (both modes; aws = the RDS master) |
 | `minio-scout-env-configuration` | `config.env` (root creds + region/OIDC) | MinIO `Tenant.configSecret` (in-cluster MinIO only) |
 | `${s3_*}-creds` (lake r/w, loki-writer, opa-bundle r/w) | `CONSOLE_ACCESS_KEY`, `CONSOLE_SECRET_KEY` | MinIO `Tenant.users` (in-cluster MinIO only) |
 
@@ -52,7 +55,9 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | `trino-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-ro (lake-reader; cloud = IRSA instead) |
 | `trino-authz-env` | `KEYSTORE_PASSWORD`, `INTERNAL_SHARED_SECRET` | trino-ro + cert-manager (generate-once) |
 | `superset-env` | DB + Redis + OIDC client secrets + `SUPERSET_SECRET_KEY` | superset server + dashboards |
-| `opa-bundle-reader` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | scout-opa bundle reader |
+| `superset-valkey-auth` | `REDIS_PASSWORD` | scout-dashboards import Job |
+| `opa-bundle-reader` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | scout-opa bundle reader (on-prem only; aws = IRSA) |
+| `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on superset (see scout-core) |
 
 ## kube-system (oauth2-proxy)
 | secret | keys | consumed by |
@@ -69,6 +74,24 @@ oauth2-proxy stays in `ContainerCreating` on the missing mount.
 ## Not site-provided (generated in-cluster, listed so they aren't double-provisioned)
 - `trino-tls` — cert-manager `Certificate`
 - `superset-config` — rendered config (CI / chart), not credentials
+
+## aws mode: IRSA roles
+Each aws-edge ServiceAccount is annotated `${irsa_role_prefix}-<suffix>`; the site's IaC
+creates the role with a trust for exactly that `namespace:serviceaccount`. Where a bucket
+defaults to SSE-KMS, each role also needs `kms:Decrypt` (+ `kms:GenerateDataKey` to write).
+
+| role suffix | namespace | ServiceAccount | S3 access |
+| --- | --- | --- | --- |
+| `-hive-metastore` | `${hive_namespace}` | `hive-metastore` | lake read/write |
+| `-trino` | `${scout_analytics_namespace}` | `trino` | lake read |
+| `-trino-rw` | `${scout_extractor_namespace}` | `trino-rw` | lake read/write |
+| `-hl7log-extractor` | `${scout_extractor_namespace}` | `hl7log-extractor` | HL7 source read; lake + scratch read/write |
+| `-hl7-transformer` | `${scout_extractor_namespace}` | `hl7-transformer` | lake read/write; scratch read |
+| `-opa-bundle-writer` | `${keycloak_namespace}` | `keycloak-opa-bundle-writer` | OPA bundle bucket write |
+| `-opa-bundle-reader` | `${scout_analytics_namespace}` | `opa-trino` | OPA bundle bucket read |
+
+`hive-metastore-readonly` carries the writer annotation but does no S3 I/O (no storage
+authorization listener, SELECT-only DB role).
 
 ## Notes for cloud setups
 - Provision the backing values with your IaC; keep them out of git. A typical AWS estate

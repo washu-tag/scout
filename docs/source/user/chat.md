@@ -67,9 +67,11 @@ When you ask a question, Scout Chat:
 
 A cohort search (`scout_find_reports`) renders the report viewer, an interactive table above the reply. Aggregate questions are answered in the reply itself, without the viewer.
 
+The AI sees the SQL it wrote and a handful of sample rows, not the whole cohort and not the values in a chart it drew. To have it comment on the data, ask: it can count, group, read individual reports, chart something about the cohort, or read a chart's data back with **Discuss in Chat**.
+
 ### Working with Search Results
 
-The report viewer fetches the whole cohort each time you open a chat, which can take a while for a complex query. Once it has loaded, sorting, paging, and filtering all happen in your browser and are fast.
+The report viewer fetches the whole cohort each time you open a chat, which can take a while for a complex query. While it loads, you get the query's state, how much it has read so far, and the elapsed time, plus a **Cancel** button that stops the query at the database. **Retry** runs the query again. Once the cohort has loaded, sorting, paging, and filtering all happen in your browser and are fast.
 
 ![Report viewer embedded in chat](../images/ScoutReportViewer.png)
 
@@ -128,7 +130,8 @@ Plot the age distribution for this cohort
 
 The AI writes the SQL and a Vega-Lite chart, which renders inline in the reply. Like a 
 cohort search, the chart re-runs its query each time you open it, so it reflects current 
-data rather than a snapshot from when it was created.
+data rather than a snapshot from when it was created, and it shows the same progress 
+indicator and **Cancel** button while it loads.
 
 ![Chart rendered in chat](../images/ScoutChatCharting.png)
 
@@ -171,7 +174,7 @@ User: What's the age distribution?
 Chat: [Shows breakdown by age group]
 
 User: Filter to just CT angiography studies
-Chat: [Shows 892 patients with CTA studies mentioning PE]
+Chat: [Opens a new search in the viewer, narrowed to CTA studies]
 ```
 
 ### Specify Date Ranges

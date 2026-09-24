@@ -134,11 +134,11 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 - **Link Sanitizer** ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md))
 
 **Event Functions** — installed and enabled on every deploy:
-- **Scout Iframe Defaults** — forces the report-viewer iframe-sandbox UI flags on for every user ([ADR 0029](../../../docs/internal/adr/0029-report-viewer.md)).
+- **Scout UI Defaults** — pins per-user OWUI interface settings on account creation and as a deploy-time backfill. **Required**, no opt-out: the report-viewer iframe-sandbox flags ([ADR 0029](../../../docs/internal/adr/0029-report-viewer.md)), which the viewer breaks without. **Optional**, opt out per cluster: `showChangelog` (`open_webui_show_release_notes`) and `showUpdateToast` (`open_webui_enable_version_update_check`).
 
 **PersistentConfig** — re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`), `JWT_EXPIRES_IN` (capped to `keycloak_token_lifespan`).
 
-**Other** — Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`); native context compaction on (`ENABLE_CONTEXT_COMPACTION`, replacing the former context_summarization filter).
+**Other** — Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`); native context compaction on (`ENABLE_CONTEXT_COMPACTION`, replacing the former context_summarization filter); OWUI's own release notes off (`open_webui_show_release_notes`, `open_webui_enable_version_update_check`).
 
 ### Common inventory overrides
 
@@ -227,7 +227,7 @@ kubectl exec -n scout-analytics deploy/ollama -- ollama list
 - **Open WebUI Docs**: https://docs.openwebui.com/
 - **Scout Query Prompt**: `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`
 - **Link Sanitizer Filter**: `helm/open-webui-bootstrap/files/payloads/link_sanitizer_filter.py`
-- **Scout Iframe Defaults (Event function)**: `helm/open-webui-bootstrap/files/payloads/scout_iframe_defaults_event.py`
+- **Scout UI Defaults (Event function)**: `helm/open-webui-bootstrap/files/payloads/scout_ui_defaults_event.py`
 - **ADRs**:
   - [ADR 0009: Content Security Policy](../../../docs/internal/adr/0009-open-webui-content-security-policy.md)
   - [ADR 0010: Link Exfiltration Filter](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)

@@ -1,6 +1,6 @@
 helm/**/*.yaml
 !helm/**/*values.yaml
-# examples/ charts are also Go-templated, same reasoning as helm/** above.
+# Charts under examples/ are Helm templates too, so they get the same treatment
 examples/**/*.yaml
 !examples/**/*values.yaml
 examples/**/files/**

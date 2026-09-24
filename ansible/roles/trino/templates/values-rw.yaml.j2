@@ -90,7 +90,7 @@ catalogs:
     s3.path-style-access=true
 {% else %}
     s3.path-style-access=false
-    s3.sse.type=S3
+    s3.sse.type={{ s3_sse_type | upper }}
 {% endif %}
 
 # Restrict ingress to trino-rw pods. The chart automatically allows

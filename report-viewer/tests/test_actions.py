@@ -330,7 +330,6 @@ def _create_search(client, headers: dict[str, str], fake_trino) -> str:
         ["primary_report_identifier", "accession_number"],
         [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
     )
-    fake_trino(["n"], [{"n": 1}])
     r = client.post(
         "/api/searches",
         json={
