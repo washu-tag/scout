@@ -61,10 +61,12 @@ ingress:
       kube-system-security-headers@kubernetescrd
 
 # Admits traffic only from Traefik, so the identity header can't be forged by
-# other pods. `traefikNamespace` is where the site runs Traefik.
+# other pods, and from Prometheus to scrape /metrics. `traefikNamespace` and
+# `prometheusNamespace` are where the site runs each.
 networkPolicy:
   enabled: true
   traefikNamespace: kube-system
+  prometheusNamespace: scout-monitoring
 
 service:
   type: ClusterIP
