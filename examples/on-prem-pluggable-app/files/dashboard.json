@@ -1,0 +1,93 @@
+{
+  "uid": "example-pluggable-app",
+  "title": "Example Pluggable App",
+  "tags": ["example-pluggable-app"],
+  "editable": false,
+  "schemaVersion": 39,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Prometheus",
+        "type": "datasource",
+        "query": "prometheus",
+        "hide": 2
+      },
+      {
+        "name": "loki",
+        "label": "Loki",
+        "type": "datasource",
+        "query": "loki",
+        "hide": 2
+      },
+      {
+        "name": "namespace",
+        "label": "Namespace",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "query": {
+          "query": "label_values(example_app_page_views_total, namespace)",
+          "refId": "namespace"
+        },
+        "refresh": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Page views since last restart",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum(example_app_page_views_total{namespace=\"$namespace\"})",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Page views",
+      "description": "Views in each bar's time bucket: 5 minutes, or longer when zoomed out.",
+      "gridPos": { "x": 6, "y": 0, "w": 18, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "interval": "5m",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "custom": { "drawStyle": "bars", "fillOpacity": 80 }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "round(sum(increase(example_app_page_views_total{namespace=\"$namespace\"}[$__interval])))",
+          "legendFormat": "page views"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "logs",
+      "title": "Logs",
+      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 12 },
+      "datasource": { "type": "loki", "uid": "${loki}" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "${loki}" },
+          "expr": "{namespace=\"$namespace\"}"
+        }
+      ]
+    }
+  ]
+}
