@@ -211,7 +211,7 @@ exactly 1 per node (a jump of 2+ on one subscription = that node got it twice).
 ## Notes
 
 - **Air-gapped.** Air-gap-safe: artifacts come from in-cluster MinIO, and all
-  images (`busybox` + `quay.io/minio/mc` in the staging pod, the
+  images (`busybox` + `docker.io/pgsty/mc` in the staging pod, the
   `public.ecr.aws/aws-cli/aws-cli` runtime puller, `ghcr.io/nrgxnat/xnat-web`)
   pull through the Harbor mirror. No registry push, no `url`-source plugins.
 - **First-run caveat.** The staging step uses `kubernetes.core.k8s_cp` (a
