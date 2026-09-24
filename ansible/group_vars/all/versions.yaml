@@ -28,6 +28,11 @@ cassandra_server_version: 5.0.8
 # Databases & Data Storage - PostgreSQL
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/ depName=cloudnative-pg
 cnpg_version: 0.28.3
+# Server image for the CNPG cluster. The psql Jobs run the same image, so client and
+# server always match.
+postgres_image: ghcr.io/cloudnative-pg/postgresql
+# renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=regex:^(?<major>\d+)\.(?<minor>\d+)-(?<compatibility>system-trixie)$
+postgres_image_tag: 18.3-system-trixie
 
 # Databases & Data Storage - Valkey
 # renovate: datasource=helm registryUrl=https://valkey-io.github.io/valkey-helm/ depName=valkey
@@ -79,7 +84,7 @@ opa_image_tag: 1.16.2
 # Renovate customManager also bumps keycloak/VERSION + keycloak/Dockerfile FROM in
 # the same PR (with an SPI-compat reminder); see renovate.json5.
 # renovate: datasource=docker depName=quay.io/keycloak/keycloak
-keycloak_version: 26.6.4
+keycloak_version: 26.7.2
 
 # Analytics & Query Engines - Hive
 # regex versioning restricts to the plain multi-arch tags (loose ranked -x64/-arm64 above).

@@ -45,3 +45,5 @@ jobs:
           RENOVATE_ONBOARDING: 'false'
           RENOVATE_REQUIRE_CONFIG: optional
           RENOVATE_REPOSITORIES: '["washu-tag/scout"]'
+          # postUpgradeTasks in renovate.json5 may run only this (Keycloak operator re-vendor).
+          RENOVATE_ALLOWED_COMMANDS: '["^python3 tooling/deploy/vendor_keycloak_operator\\.py$"]'

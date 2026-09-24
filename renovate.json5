@@ -132,6 +132,11 @@
     // adorsys doesn't publish a tag per Keycloak point release.
     // Grouping puts both bumps in one PR so the reviewer can check
     // the compat suffix without bouncing between two PRs.
+    //
+    // postUpgradeTasks re-vendors the Keycloak Operator + CRDs into deploy/ at
+    // the branch's (already bumped) keycloak_version, so the operator ships in
+    // the same PR. The command must match RENOVATE_ALLOWED_COMMANDS in
+    // .github/workflows/renovate.yaml.
     {
       "matchDepNames": [
         "quay.io/keycloak/keycloak",
@@ -139,6 +144,11 @@
         "adorsys/keycloak-config-cli"
       ],
       "groupName": "Keycloak server + config-cli",
+      "postUpgradeTasks": {
+        "commands": ["python3 tooling/deploy/vendor_keycloak_operator.py"],
+        "fileFilters": ["deploy/base/keycloak/operator/upstream/**"],
+        "executionMode": "branch"
+      },
       "prBodyNotes": [
         "**SPI compatibility reminder:** Validate the custom SPIs in `keycloak/event-listener/` still compile and the integration tests pass against the new Keycloak version. The eventsListener and required-action SPIs are marked internal (KC-SERVICES0047) and have had compatibility breaks at major-version boundaries. Affected providers: `opa-user-bundle-publisher` (ADR 0021), `user-approval-email`, `ScoutTermsRequiredAction`.",
         "**Version-coupling reminder:** When the Keycloak server bumps, `keycloak_config_cli_image_tag` should also bump to a tag whose Keycloak-compat suffix matches. E.g. server `26.7.0` → cli tag `*-26.7.0`. Adorsys publishes tags at https://hub.docker.com/r/adorsys/keycloak-config-cli/tags — pick the highest cli version with a matching Keycloak-compat tail. If no matching cli tag exists yet, hold the server bump until one is published; otherwise realm imports may fail on schema-mismatch."
@@ -157,6 +167,13 @@
       "prBodyNotes": [
         "**Version-coupling reminder:** `open_webui_image_tag` must equal the Open WebUI chart's appVersion (the deployed server), which the open-webui-bootstrap Job reuses for ORM/bcrypt lockstep. When the chart bumps, set the image tag to the chart's new appVersion."
       ]
+    },
+    // A new Postgres major is a database major upgrade, which needs planning;
+    // keep Renovate on the running major. To move majors, change
+    // postgres_image_tag and this regex together.
+    {
+      "matchDepNames": ["ghcr.io/cloudnative-pg/postgresql"],
+      "allowedVersions": "/^18\\./"
     }
   ],
 
@@ -188,10 +205,10 @@
         //   # renovate: datasource=helm registryUrl=https://... depName=chart
         //   version: '1.2.3'   (or   tag: '1.2.3')
         "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+(?:registryUrl=(?<registryUrl>[^\\s]+)\\s+)?depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n\\s*(?:version|tag):\\s*['\"]?(?<currentValue>[^\\s'\"]+)",
-        // Inline image reference:
+        // Inline image reference (CNPG's Cluster calls it imageName):
         //   # renovate: datasource=docker depName=org/image
         //   image: org/image:1.2.3
-        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n\\s*image:\\s*['\"]?[^\\s'\"@]+:(?<currentValue>[^\\s'\"@]+)"
+        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n\\s*(?:image|imageName):\\s*['\"]?[^\\s'\"@]+:(?<currentValue>[^\\s'\"@]+)"
       ]
     },
     // Keycloak version is also baked into two non-yaml files that need
