@@ -23,4 +23,5 @@ spec:
   dependsOn:
     - name: keycloak-instance
     - name: superset-server
-    - name: temporal-server
+    # Not temporal-server: its UI exits until keycloak-alb (built here) serves OIDC
+    # discovery, so that edge would deadlock a fresh install.
