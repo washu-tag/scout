@@ -1,8 +1,8 @@
 # Write metastore — serves Trino RW + data ingestion (Delta writes). Connects to
 # the hive DB as the `hive` owner over the -rw endpoint; S3 creds = lake-writer.
 # Mode-parameterized via cluster-vars (ADR 0035): on-prem sets s3_path_style_access=true
-# + a MinIO endpoint/key; aws sets path-style=false, empty endpoint/key, the WebIdentity
-# hive_hadoop_opts, and irsa_role_prefix-hive-metastore for the IRSA ServiceAccount.
+# + a MinIO endpoint/key; aws sets path-style=false, empty endpoint/key, and
+# irsa_role_prefix-hive-metastore for the IRSA ServiceAccount; `mode` adds aws S3A creds + SSE.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -22,6 +22,8 @@ spec:
         namespace: '${hive_namespace}'
   values:
     replicaCount: 1
+    mode: '${service_mode}'
+    sseType: '${s3_sse_type:=NONE}'
     image:
       repository: starburstdata/hive
       pullPolicy: IfNotPresent
@@ -68,8 +70,6 @@ spec:
         value: hive
       - name: HIVE_METASTORE_WAREHOUSE_DIR
         value: '${delta_lake_path}'
-      - name: HADOOP_OPTS
-        value: '${hive_hadoop_opts}'
       - name: S3_PATH_STYLE_ACCESS
         value: '${s3_path_style_access}'
       - name: S3_ENDPOINT

@@ -49,6 +49,10 @@ vulnerabilities:
   - id: CVE-2026-24281 # zookeeper 3.9.4
   - id: CVE-2026-24308 # zookeeper 3.9.4
   - id: CVE-2025-67721 # aircompressor 2.0.2
+  # ReDoS in JLine's interactive built-in `grep` (a REPL command). Spark bundles
+  # jline 3.29.0 for spark-shell and hadoop-client-runtime shades 3.9.0; the
+  # headless worker never starts a REPL, and neither upstream has moved yet.
+  - id: CVE-2026-77422 # org.jline:jline-builtins 3.29.0 (Spark) / 3.9.0 (shaded in hadoop-client-runtime)
   # lz4-java 1.8.1 was published to Maven Central as pom-only (no jar), so
   # the fixed version is not installable anywhere, including upstream
   - id: CVE-2025-12183 # lz4-java 1.8.0

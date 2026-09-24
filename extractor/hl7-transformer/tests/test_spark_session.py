@@ -14,7 +14,7 @@ the classification branch, not any Spark work.
 from unittest import mock
 
 import pytest
-from py4j.protocol import Py4JError
+from py4j.protocol import Py4JError, Py4JJavaError
 from temporalio.exceptions import CancelledError
 from temporalio.testing import ActivityEnvironment
 
@@ -82,6 +82,49 @@ def test_ordinary_activity_failure_leaves_the_worker_polling(health_file):
 
     assert health_file.read_text() == ""
     on_spark_failure.assert_not_called()
+
+
+class _JvmSideError(Py4JJavaError):
+    """A Py4JJavaError without a live gateway (the real one stringifies via py4j)."""
+
+    def __init__(self):
+        Exception.__init__(self, "java.nio.file.AccessDeniedException")
+
+    def __str__(self):
+        return "java.nio.file.AccessDeniedException"
+
+
+def test_jvm_side_error_leaves_the_worker_polling(health_file):
+    """A Py4JJavaError (S3 AccessDenied, bad SQL) means the gateway answered: the
+    pod is fine, so it is the retry policy's business, not a restart."""
+    on_spark_failure = mock.Mock()
+
+    def body(spark):
+        raise _JvmSideError()
+
+    with pytest.raises(Py4JJavaError):
+        _run_in_session(
+            body, health_file=health_file, on_spark_failure=on_spark_failure
+        )
+
+    assert health_file.read_text() == ""
+    on_spark_failure.assert_not_called()
+
+
+def test_jvm_error_building_the_session_marks_the_pod_unhealthy(health_file):
+    """No session means the JVM itself is broken, whatever py4j calls the error."""
+    on_spark_failure = mock.Mock()
+
+    with pytest.raises(Py4JJavaError):
+        _run_in_session(
+            lambda spark: None,
+            health_file=health_file,
+            on_spark_failure=on_spark_failure,
+            session_error=_JvmSideError(),
+        )
+
+    assert "AccessDeniedException" in health_file.read_text()
+    on_spark_failure.assert_called_once_with()
 
 
 def test_cancellation_does_not_stop_the_worker(health_file):

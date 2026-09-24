@@ -52,6 +52,7 @@ config:
       endpoint: '{{ s3_endpoint }}'
       region: '{{ s3_region }}'
       path-style-access: {{ (not aws_deployment) | string | lower }}
+      sse-type: '{{ s3_sse_type }}'
     spring:
       datasource:
         url: '{{ jdbc_url }}/{{ ingest_postgres_table_name }}'

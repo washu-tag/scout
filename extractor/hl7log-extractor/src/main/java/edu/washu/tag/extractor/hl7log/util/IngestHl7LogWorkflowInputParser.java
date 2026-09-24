@@ -107,12 +107,9 @@ public class IngestHl7LogWorkflowInputParser {
             // Explicit log path input takes precedence
             // We will use the log paths as-is if they are absolute, or resolve them against the logs root path
             logPaths = new ArrayList<>();
-            Path logsRoot = hasLogsRootPathInput ? Path.of(logsRootPath) : null;
             for (String logPath : input.logPaths().split(",")) {
-                if (logPath.startsWith("/")) {
-                    logPaths.add(logPath);
-                } else if (hasLogsRootPathInput) {
-                    logPaths.add(logsRoot.resolve(logPath).toString());
+                if (isAbsolute(logPath) || hasLogsRootPathInput) {
+                    logPaths.add(resolveLogPath(logsRootPath, logPath));
                 } else {
                     relativeLogPathsWithoutRoot.add(logPath);
                 }
@@ -174,5 +171,23 @@ public class IngestHl7LogWorkflowInputParser {
         if (!messages.isEmpty()) {
             throw ApplicationFailure.newNonRetryableFailure(String.join("; ", messages), "type");
         }
+    }
+
+    static boolean isAbsolute(String logPath) {
+        return logPath.startsWith("/") || FileHandler.isS3Uri(logPath);
+    }
+
+    /**
+     * Absolute paths and s3:// URIs are used as-is; anything else is joined onto logsRootPath,
+     * a local directory or an s3:// prefix. Path.resolve would mangle either s3:// form.
+     */
+    static String resolveLogPath(String logsRootPath, String logPath) {
+        if (isAbsolute(logPath)) {
+            return logPath;
+        }
+        if (FileHandler.isS3Uri(logsRootPath)) {
+            return logsRootPath.replaceAll("/+$", "") + "/" + logPath;
+        }
+        return Path.of(logsRootPath).resolve(logPath).toString();
     }
 }

@@ -6,8 +6,8 @@ kind: Kustomization
 resources:
   - ../../_base
 patches:
-  # env is an atomic list (schema-less HelmRelease), so patched by index; order fixed
-  # in _base: [2]=HIVE_METASTORE_USER, [6]=S3_ACCESS_KEY.
+  # env is an atomic list (schema-less HelmRelease), so patched by index; the test ops
+  # fail the build if _base's order shifts instead of overwriting the wrong var.
   - target:
       kind: HelmRelease
       name: hive-metastore
@@ -18,9 +18,15 @@ patches:
       - op: replace
         path: /spec/values/fullnameOverride
         value: hive-metastore-readonly
+      - op: test
+        path: /spec/values/env/2/name
+        value: HIVE_METASTORE_USER
       - op: replace
         path: /spec/values/env/2/value
         value: hive_readonly
+      - op: test
+        path: /spec/values/env/6/name
+        value: S3_ACCESS_KEY
       - op: replace
         path: /spec/values/env/6/value
         value: ${s3_lake_reader}

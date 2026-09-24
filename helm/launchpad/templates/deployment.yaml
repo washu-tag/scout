@@ -105,7 +105,7 @@ spec:
         - name: catalog-sidecar
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: '{{ .Values.catalog.discovery.image.repository }}:{{ .Values.catalog.discovery.image.tag }}'
+          image: '{{ .Values.catalog.discovery.image.repository }}:{{ required "catalog.discovery.image.tag must be set (see values.yaml)" .Values.catalog.discovery.image.tag }}'
           imagePullPolicy: {{ .Values.catalog.discovery.image.pullPolicy }}
           env:
             # The discovery label is the publisher/sidecar contract (ADR

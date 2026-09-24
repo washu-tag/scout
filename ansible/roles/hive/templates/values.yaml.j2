@@ -4,6 +4,8 @@ image:
 fullnameOverride: '{{ hive_fullname_override | default("") }}'
 
 {% if aws_deployment %}
+mode: aws
+sseType: '{{ s3_sse_type }}'
 serviceAccount:
   create: false
   automount: true
@@ -13,10 +15,6 @@ serviceAccount:
 resources: {{ hive_resources_default | combine(hive_resources | default({}), recursive=true) | to_json }}
 
 env:
-{% if aws_deployment %}
-  - name: HADOOP_OPTS
-    value: "-Dfs.s3a.aws.credentials.provider=com.amazonaws.auth.WebIdentityTokenCredentialsProvider -Dfs.s3a.endpoint.region={{ s3_region }}"
-{% endif %}
   - name: HIVE_METASTORE_DRIVER
     value: 'org.postgresql.Driver'
   - name: HIVE_METASTORE_JDBC_URL

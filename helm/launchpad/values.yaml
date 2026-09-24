@@ -19,10 +19,11 @@ catalog:
     namespace: ALL
     image:
       repository: quay.io/kiwigrid/k8s-sidecar
-      # Placeholder, matching the app image convention: Ansible injects the
-      # pinned, Renovate-monitored version from group_vars/all/versions.yaml
-      # (launchpad_sidecar_image_tag, ADR 0015).
-      tag: latest
+      # Required, not defaulted (the template errors if unset). Ansible and the
+      # deploy base set it from versions.yaml (launchpad_sidecar_image_tag, ADR
+      # 0015), the single Renovate-tracked source; a bare `helm install` must pass
+      # --set. chart-app-version.sh drives only the main image, via appVersion.
+      tag: ''
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -46,7 +47,10 @@ docsUrl: ''
 
 image:
   repository: ghcr.io/washu-tag/launchpad
-  tag: latest
+  # Empty falls through to .Chart.AppVersion, which helm package stamps at publish
+  # time (ADR 0030 section 2). Ansible sets this explicitly; the GitOps deploy base
+  # does not pin it and relies on the stamped appVersion (deploy/base/launchpad).
+  tag: ''
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

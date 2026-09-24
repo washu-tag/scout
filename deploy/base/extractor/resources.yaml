@@ -5,7 +5,8 @@
 # Fixed-name secrets seeded by CI/site or SOPS/ESO, NEVER in git: postgres-secret
 # (ingest DB creds; transformer envFrom + extractor SPRING_DATASOURCE_PASSWORD),
 # s3-secret (lake writer AWS creds). Modality map is chart-owned (no ConfigMap).
-# S3 connection env below is non-secret; creds ride the s3-secret.
+# S3 connection env below is non-secret and consumed on-prem only (the aws edges skip it,
+# see edge.yaml); creds ride the s3-secret.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -90,6 +91,7 @@ spec:
           endpoint: '${s3_endpoint}'
           region: '${s3_region}'
           path-style-access: '${s3_path_style_access}'
+          sse-type: '${s3_sse_type:=NONE}'
         spring:
           datasource:
             url: 'jdbc:postgresql://${postgres_host}:${db_port}/${ingest_postgres_table_name}'
@@ -217,3 +219,4 @@ spec:
       warehouseDir: '${delta_lake_path}'
       s3Region: '${s3_region}'
       s3Endpoint: '${s3_endpoint}'
+      sseType: '${s3_sse_type:=NONE}'

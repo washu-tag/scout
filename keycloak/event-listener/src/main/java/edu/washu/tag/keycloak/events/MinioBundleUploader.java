@@ -43,14 +43,15 @@ final class MinioBundleUploader implements AutoCloseable {
     private final String objectKey;
 
     /**
-     * AWS only. An SCP can deny s3:PutObject without an
+     * AWS with sseType S3 only. An SCP can deny s3:PutObject without an
      * x-amz-server-side-encryption header, and a bucket default does not satisfy
-     * it. Not set for MinIO, where SSE-S3 depends on tenant config.
+     * it; but an explicit header also overrides an SSE-KMS bucket default, so it
+     * is opt-in. Never set for MinIO, where SSE-S3 depends on tenant config.
      */
     private final boolean requestSse;
 
     MinioBundleUploader(URI endpoint, String bucket, String objectKey,
-                        String accessKey, String secretKey, String region) {
+                        String accessKey, String secretKey, String region, String sseType) {
         this.bucket = bucket;
         this.objectKey = objectKey;
 
@@ -74,7 +75,7 @@ final class MinioBundleUploader implements AutoCloseable {
         }
 
         this.s3 = builder.build();
-        this.requestSse = isAwsS3(endpoint);
+        this.requestSse = requestSse(endpoint, sseType);
     }
 
     // Package-private test seam: inject a (mock) S3Client so the
@@ -90,6 +91,20 @@ final class MinioBundleUploader implements AutoCloseable {
         this.bucket = bucket;
         this.objectKey = objectKey;
         this.requestSse = requestSse;
+    }
+
+    boolean requestsSse() {
+        return requestSse;
+    }
+
+    /** SSE-S3 header only for real AWS S3 and sseType S3 (case-insensitive). */
+    static boolean requestSse(URI endpoint, String sseType) {
+        if (sseType != null && !sseType.isBlank() && !sseType.equalsIgnoreCase("S3")
+                && !sseType.equalsIgnoreCase("NONE")) {
+            log.errorf("Unknown OPA bundle SSE type '%s' (expected S3 or NONE); sending no SSE header",
+                    sseType);
+        }
+        return isAwsS3(endpoint) && "S3".equalsIgnoreCase(sseType);
     }
 
     /** Real AWS S3: no endpoint override, or an explicit *.amazonaws.com one. */
