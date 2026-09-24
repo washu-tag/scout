@@ -1,4 +1,4 @@
-# ADR 0037: Extensible Report-Viewer Search Actions
+# ADR 0038: Extensible Report-Viewer Search Actions
 
 **Date:** 2026-09
 **Status:** Accepted

@@ -1,7 +1,7 @@
 # xnat-explore-poc
 
 A reference implementation of a report-viewer `backend-call` search action
-(issue #739 / [ADR 0037](../../docs/internal/adr/0037-extensible-report-viewer-search-actions.md)).
+(issue #739 / [ADR 0038](../../docs/internal/adr/0038-extensible-report-viewer-search-actions.md)).
 It is **not a real XNAT integration** — no XNAT REST calls, no project/subject/experiment
 correlation. Its only job is to prove and document the contract a real "Apps" tier target
 (issue #595) must implement: verify the caller, resolve the forwarded cohort, and return a
@@ -12,7 +12,7 @@ for the full authoring guide this app implements.
 > **On-prem only.** Like the report-viewer action mechanism itself, this reference app
 > assumes Traefik + oauth2-proxy fronting report-viewer (ADR 0035). It has no bearing on
 > aws-mode deployments — see report-viewer's own on-prem-only warnings in
-> `report_viewer/auth.py` and ADR 0037's Known Limitations.
+> `report_viewer/auth.py` and ADR 0038's Known Limitations.
 
 ## What it does
 

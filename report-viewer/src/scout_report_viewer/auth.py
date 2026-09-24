@@ -22,7 +22,7 @@
    set, so Path 2 always falls through to "authentication required" -
    the SPA's own requests (and therefore the entire browser-facing UI,
    not just group-gated actions) cannot authenticate at all until an
-   aws-mode edge is designed for report-viewer. See ADR 0037's Known
+   aws-mode edge is designed for report-viewer. See ADR 0038's Known
    Limitations.
 
 Both populate the same `User(sub=...)` model. Downstream code never

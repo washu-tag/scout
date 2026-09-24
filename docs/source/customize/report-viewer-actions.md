@@ -19,7 +19,7 @@ only.** Visibility, `requiredGroup`, and every button in the toolbar depend on
 report-viewer's oauth2-proxy/Traefik forwardAuth header path, which does not exist in
 aws-mode clusters (ADR 0035: no Traefik, ALB-native OIDC instead, no per-group gate).
 If you're deploying report-viewer in aws mode, none of this will authenticate at all —
-not just gated buttons, the whole embedded cohort-browsing UI. ADR 0037 records why this
+not just gated buttons, the whole embedded cohort-browsing UI. ADR 0038 records why this
 mechanism was built this way; it does not track whether an aws-mode edge has since been
 added; check current deployment docs for that.
 ```
@@ -215,5 +215,5 @@ kubectl get configmap -n scout-analytics report-viewer-actions -o jsonpath='{.da
 
 ## Reference
 
-- Design and rationale: ADR 0037 in the Scout repository
-  (`docs/internal/adr/0037-extensible-report-viewer-search-actions.md`).
+- Design and rationale: ADR 0038 in the Scout repository
+  (`docs/internal/adr/0038-extensible-report-viewer-search-actions.md`).
