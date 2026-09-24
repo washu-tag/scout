@@ -132,11 +132,6 @@
     // adorsys doesn't publish a tag per Keycloak point release.
     // Grouping puts both bumps in one PR so the reviewer can check
     // the compat suffix without bouncing between two PRs.
-    //
-    // postUpgradeTasks re-vendors the Keycloak Operator + CRDs into deploy/ at
-    // the branch's (already bumped) keycloak_version, so the operator ships in
-    // the same PR. The command must match RENOVATE_ALLOWED_COMMANDS in
-    // .github/workflows/renovate.yaml.
     {
       "matchDepNames": [
         "quay.io/keycloak/keycloak",
@@ -144,14 +139,6 @@
         "adorsys/keycloak-config-cli"
       ],
       "groupName": "Keycloak server + config-cli",
-      "postUpgradeTasks": {
-        "commands": ["python3 tooling/deploy/vendor_keycloak_operator.py"],
-        "fileFilters": [
-          "deploy/base/keycloak/operator/upstream/**",
-          "deploy/base/keycloak/operator/kustomization.yaml"
-        ],
-        "executionMode": "branch"
-      },
       "prBodyNotes": [
         "**SPI compatibility reminder:** Validate the custom SPIs in `keycloak/event-listener/` still compile and the integration tests pass against the new Keycloak version. The eventsListener and required-action SPIs are marked internal (KC-SERVICES0047) and have had compatibility breaks at major-version boundaries. Affected providers: `opa-user-bundle-publisher` (ADR 0021), `user-approval-email`, `ScoutTermsRequiredAction`.",
         "**Version-coupling reminder:** When the Keycloak server bumps, `keycloak_config_cli_image_tag` should also bump to a tag whose Keycloak-compat suffix matches. E.g. server `26.7.0` → cli tag `*-26.7.0`. Adorsys publishes tags at https://hub.docker.com/r/adorsys/keycloak-config-cli/tags — pick the highest cli version with a matching Keycloak-compat tail. If no matching cli tag exists yet, hold the server bump until one is published; otherwise realm imports may fail on schema-mismatch."

@@ -8,8 +8,7 @@ matches by depName. This check catches a copy edited by hand, as ``keycloak/Dock
 was in #706.
 
 Versions are extracted with ``renovate.json5``'s own customManagers patterns, so any file
-Renovate tracks is checked. The vendored Keycloak Operator is checked as well: Renovate
-re-vendors it rather than matching it.
+Renovate tracks is checked.
 
 Usage: check_version_copies.py [REPO_ROOT]   (default: this repository)
 """
@@ -24,7 +23,6 @@ from collections import defaultdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-KEYCLOAK_OPERATOR = "deploy/base/keycloak/operator/upstream/kubernetes.yml"
 
 
 def strip_json5(text: str) -> str:
@@ -55,7 +53,7 @@ def _python_regex(pattern: str) -> re.Pattern:
 
 
 def collect(repo: Path = REPO) -> dict[str, list[tuple[str, str]]]:
-    """depName -> [(file, version)] for every copy Renovate tracks, plus the vendored operator."""
+    """depName -> [(file, version)] for every copy Renovate tracks."""
     config = json.loads(strip_json5((repo / "renovate.json5").read_text()))
     copies: dict[str, list[tuple[str, str]]] = defaultdict(list)
     for manager in config.get("customManagers", []):
@@ -75,14 +73,6 @@ def collect(repo: Path = REPO) -> dict[str, list[tuple[str, str]]]:
                             copies[dep].append(
                                 (str(path.relative_to(repo)), groups["currentValue"])
                             )
-    operator = repo / KEYCLOAK_OPERATOR
-    if operator.exists():
-        m = re.search(
-            r"image:\s*quay\.io/keycloak/keycloak-operator:(\S+)", operator.read_text()
-        )
-        if m:
-            # The operator releases with the server, so it tracks the server's version.
-            copies["quay.io/keycloak/keycloak"].append((KEYCLOAK_OPERATOR, m.group(1)))
     return copies
 
 

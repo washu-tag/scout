@@ -12,9 +12,8 @@ keycloak_image_tag: '{{ keycloak_version }}'
 # Air-gapped artifact configuration
 keycloak_artifact_download_timeout: 300
 
-# Keycloak Operator + CRDs, vendored into the deploy/ base at keycloak_version by
-# tooling/deploy/vendor_keycloak_operator.py. Both lanes apply these same files.
-keycloak_operator_dir: '{{ scout_repo_dir }}/deploy/base/keycloak/operator/upstream'
+# Keycloak Operator + CRDs, from the release at keycloak_version
+keycloak_operator_url: 'https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/{{ keycloak_version }}/kubernetes'
 
 # Keycloak Config CLI
 keycloak_config_cli_helm_chart_ref: '{{ scout_repo_dir }}/helm/keycloak-config-cli'
