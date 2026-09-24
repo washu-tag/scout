@@ -197,6 +197,8 @@
         value: '{{ opa_bundle_object_key }}'
       - name: opa-bundle-s3-region
         value: '{{ s3_region }}'
+      - name: opa-bundle-s3-sse-type
+        value: '{{ s3_sse_type }}'
       - name: opa-bundle-realm
         value: '{{ keycloak_realm_name }}'
       - name: opa-bundle-s3-access-key

@@ -1,8 +1,8 @@
 # Required cluster-vars (Phase 3, ADR 0031). A site/CI must provide every key
 # below in the `cluster-vars` ConfigMap that the Flux Kustomizations reference via
-# postBuild.substituteFrom. The kustomize-controller runs with
-# StrictPostBuildSubstitutions, so a missing key fails the build (never renders
-# empty). Auto-derived from the ${...} vars used across deploy/ and enforced by
+# postBuild.substituteFrom. Run the kustomize-controller with
+# StrictPostBuildSubstitutions so a missing key fails the build; without it a missing
+# key renders empty. s3_sse_type is the exception: it defaults to NONE. Auto-derived from the ${...} vars used across deploy/ and enforced by
 # validate-deploy.yaml; regenerate with the snippet in that workflow when bases add
 # or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler
 # (Phase 5) validate a site's values against this list.
@@ -13,7 +13,6 @@ db_port
 delta_lake_path
 deployer_name
 extractor_data_dir
-hive_hadoop_opts
 hive_metastore_endpoint
 hive_metastore_endpoint_readonly
 hive_namespace
@@ -89,6 +88,7 @@ s3_opa_bundle_reader
 s3_opa_bundle_writer
 s3_path_style_access
 s3_region
+s3_sse_type
 scout_analytics_namespace
 scout_core_namespace
 scout_data_namespace

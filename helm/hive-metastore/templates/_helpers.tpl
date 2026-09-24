@@ -60,3 +60,10 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Name of the aws-mode core-site ConfigMap.
+*/}}
+{{- define "hive-metastore.coreSiteName" -}}
+{{- include "hive-metastore.fullname" . }}-core-site
+{{- end }}
