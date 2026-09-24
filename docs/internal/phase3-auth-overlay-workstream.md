@@ -25,8 +25,7 @@ login. It should be built and reviewed on its own, spike-first.
    the auth work (see below).
 
 Items 2 and 3 landed ahead of item 1: the realm already ships the `temporal` client
-unconditionally, so they did not need the decomposition. `temporal-server` now
-depends on `keycloak-realm`.
+unconditionally, so they did not need the decomposition.
 
 ## Ground truth (what makes this tractable and what makes it risky)
 

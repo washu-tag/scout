@@ -67,10 +67,7 @@ lifespans:
 # Provision the XNAT client, role, and group binding.
 enableXnat: 'false'
 # Identity providers (creds come via envFrom; see required-secrets.md). The browser
-# flow redirects to defaultProvider, which must be an enabled one. Empty turns the
-# redirect off: the Keycloak login page lists every enabled IdP, which a site brokering
-# more than one needs, and a logout then sticks even while the upstream IdP keeps its
-# own session. More OIDC IdPs are extra `config` documents (see below).
+# flow redirects to defaultProvider (an enabled IdP); empty shows the login page with every IdP.
 github:
   enabled: 'true'
 microsoft:
@@ -141,10 +138,7 @@ existingSecrets:
 # with this default and imports both; to replace it, set `scout-realm: null`
 # alongside.
 #
-# A site adds another OIDC IdP the same way: an `inline` document for the realm
-# with its identityProviders (+ mappers), naming its credentials as $(env:...)
-# keys that the envFrom Secret also carries. docs/internal/authentication.md has
-# an example.
+# A site IdP is one more inline document (docs/internal/authentication.md).
 config:
   scout-realm:
     file: files/scout-realm.json

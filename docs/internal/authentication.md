@@ -241,7 +241,7 @@ data:
                 syncMode: INHERIT
 ```
 
-- Add the credential keys the document names (`partner_client_id`, `partner_client_secret`) to `keycloak-client-secrets` before the import runs. config-cli fails the whole realm import on an unresolved `$(env:...)`.
+- Add the credential keys the document names (`partner_client_id`, `partner_client_secret`) to `keycloak-client-secrets` before the import runs. config-cli fails the whole realm import on an unresolved `$(env:...)`. With the `reconcile.fluxcd.io/watch` label the import re-runs as soon as the ConfigMap changes, which can beat an ExternalSecret writing the new keys in the same change; add the keys first or skip the label.
 - Set `keycloak_default_provider: ''` so the new IdP's button is reachable. The ConfigMap can't override it, because the HelmRelease's own `values` win on overlap.
 - To keep same-email users from different IdPs as separate accounts, rather than offering to link them, also set `duplicateEmailsAllowed: true` at the top of the document, with `loginWithEmailAllowed: false` (an email no longer names one user).
 - A Flux Kustomization with `postBuild` substitution rewrites `${CLAIM.sub}` (and fails on the dotted name). Apply the ConfigMap from one without `postBuild`, or escape it as `$${CLAIM.sub}`.
