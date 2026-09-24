@@ -22,10 +22,15 @@ export function ActionsToolbar({
   searchId,
   actions,
   clientHandlers,
+  visibleReportIds,
 }: {
   searchId: string;
   actions: ActionDescriptor[];
   clientHandlers: Record<string, () => void>;
+  // The caller's currently client-side-filtered rows' primary_report_identifier
+  // values - forwarded to backend-call actions so a filtered view and the
+  // action agree on scope (see api/client.ts's invokeSearchAction).
+  visibleReportIds: string[];
 }) {
   const { opening, error, copiedLink, copyFailed, open } = useOpenResult();
   const [invokingId, setInvokingId] = useState<string | null>(null);
@@ -35,7 +40,7 @@ export function ActionsToolbar({
     setInvokingId(action.id);
     setInvokeError(null);
     try {
-      const result = await invokeSearchAction(searchId, action.id);
+      const result = await invokeSearchAction(searchId, action.id, visibleReportIds);
       await open(result.url);
     } catch (err) {
       setInvokeError(friendlyError(err, `running "${action.title}"`));

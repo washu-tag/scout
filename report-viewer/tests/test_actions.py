@@ -502,6 +502,61 @@ def test_invoke_backend_call_action_returns_url(
     assert call["json"]["cohort_truncated"] is False
 
 
+def test_invoke_backend_call_action_filters_to_visible_report_ids(
+    client, keypair, fake_trino, catalog_with_backend_call_action
+):
+    """The SPA's currently client-side-filtered rows narrow what gets
+    forwarded, so a filtered view and the action agree on scope instead
+    of the action silently reaching past an active filter."""
+    priv, _ = keypair
+    token = _mint(priv)
+    bearer_headers = {"Authorization": f"Bearer {token}"}
+    search_id = _create_search(client, bearer_headers, fake_trino)
+
+    fake_trino(
+        ["primary_report_identifier", "accession_number"],
+        [
+            {"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"},
+            {"primary_report_identifier": "s3://x/2", "accession_number": "ACC2"},
+        ],
+    )
+    r = client.post(
+        f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
+        headers=bearer_headers,
+        json={"visible_report_ids": ["s3://x/1"]},
+    )
+    assert r.status_code == 200, r.text
+    call = _FakeAsyncClient.last_call
+    assert call["json"]["reports"] == [
+        {"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"},
+    ]
+
+
+def test_invoke_backend_call_action_ignores_unauthorized_visible_ids(
+    client, keypair, fake_trino, catalog_with_backend_call_action
+):
+    """A submitted id that isn't in the Trino-resolved cohort (tampered
+    request, stale client state) is silently dropped, never forwarded -
+    the submitted ids are never trusted on their own."""
+    priv, _ = keypair
+    token = _mint(priv)
+    bearer_headers = {"Authorization": f"Bearer {token}"}
+    search_id = _create_search(client, bearer_headers, fake_trino)
+
+    fake_trino(
+        ["primary_report_identifier", "accession_number"],
+        [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
+    )
+    r = client.post(
+        f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
+        headers=bearer_headers,
+        json={"visible_report_ids": ["s3://not-in-cohort"]},
+    )
+    assert r.status_code == 200, r.text
+    call = _FakeAsyncClient.last_call
+    assert call["json"]["reports"] == []
+
+
 def test_invoke_unknown_action_404s(
     client, keypair, fake_trino, catalog_with_backend_call_action
 ):

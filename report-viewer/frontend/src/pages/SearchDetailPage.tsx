@@ -233,6 +233,19 @@ export default function SearchDetailPage() {
   const lastPage = table.getPageCount() || 1;
   const pageIndex = table.getState().pagination.pageIndex;
 
+  // The currently client-side-filtered rows' ids, forwarded to backend-call
+  // actions (see ActionsToolbar) so they agree with what downloadCsv already
+  // exports on what "these studies" means, rather than silently reaching
+  // past an active filter to the whole saved search.
+  const visibleReportIds = useMemo(
+    () =>
+      table
+        .getPrePaginationRowModel()
+        .rows.map((r) => r.original.primary_report_identifier)
+        .filter((id): id is string => typeof id === 'string'),
+    [table],
+  );
+
   return (
     <div
       style={{
@@ -601,6 +614,7 @@ export default function SearchDetailPage() {
               </div>
               <ActionsToolbar
                 searchId={searchId}
+                visibleReportIds={visibleReportIds}
                 // "Explain Search" is chart-configurable (see
                 // helm/report-viewer/templates/actions-configmap.yaml)
                 // but its per-search visibility (nothing to explain yet)

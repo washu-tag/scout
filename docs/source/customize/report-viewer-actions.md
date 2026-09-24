@@ -104,6 +104,15 @@ rather than assuming `reports` is always exhaustive. Your service returns
 `{"url": "..."}`, and the SPA opens it the same way as an `open-url` action.
 report-viewer never inspects what your service actually does with the cohort.
 
+`reports` reflects whatever the SPA is currently showing, not necessarily the whole
+saved search: if the user has active client-side filters on the results grid, the SPA
+sends only the currently-visible rows' ids, and report-viewer intersects that against
+the real (Trino-resolved) cohort before forwarding — an id the SPA submits that isn't
+actually part of the search is silently dropped, never trusted on its own. Clicking a
+backend-call button always means "these studies" — whatever's currently filtered — the
+same scope Download CSV already exports, not "the entire search" regardless of what's
+on screen.
+
 There is no values field for a `client`-type action (page-specific frontend logic, like
 Download CSV) — that needs a handler already registered in report-viewer's own
 frontend, so it structurally can't be added through chart values.

@@ -56,6 +56,7 @@ from ..ids import new_search_id
 from ..logging_setup import scrub_for_log
 from ..models import (
     SEARCH_REQUIRED_COLUMNS,
+    ActionInvokeRequest,
     ActionInvokeResponse,
     CreateFromFileResponse,
     CreateSearchRequest,
@@ -513,6 +514,7 @@ async def get_search_actions(
 async def invoke_search_action(
     search_id: str,
     action_id: str,
+    body: ActionInvokeRequest | None = None,
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> ActionInvokeResponse:
@@ -526,6 +528,14 @@ async def invoke_search_action(
     action the caller can't even see can't be invoked either - visibility
     is UX, but the boundary is still enforced here too (ADR 0034's
     framing).
+
+    `body.visible_report_ids`, if given, narrows the forwarded cohort to
+    that subset - the SPA sends its currently client-side-filtered rows
+    (the same set Download CSV already exports), so a filtered view and
+    a backend-call action agree on what "these studies" means instead of
+    the action silently reaching past an active filter to the whole
+    saved search. Optional and defaulted to None so an older caller
+    sending no body still gets the full cohort, unchanged.
     """
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
@@ -579,6 +589,17 @@ async def invoke_search_action(
         }
         for r in id_rows
     ]
+
+    if body is not None and body.visible_report_ids is not None:
+        # Intersect against the just-resolved, Trino-authorized cohort -
+        # never trust the submitted ids on their own. An id the caller
+        # sends that isn't in `reports` (tampered request, stale client
+        # state) is silently dropped rather than forwarded unverified;
+        # it was never going to be in the caller's own search either way.
+        visible = set(body.visible_report_ids)
+        reports = [
+            r for r in reports if r["primary_report_identifier"] in visible
+        ]
 
     headers = {}
     invoke_token = load_invoke_token(action.id)

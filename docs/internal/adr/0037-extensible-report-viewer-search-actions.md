@@ -72,7 +72,11 @@ Three `action_type` values, matched to what the SPA can do with a click:
   saved `sql` to concrete `{primary_report_identifier, accession_number}` pairs (one row
   per report, same `max_cohort_rows` cap as `GET /rows`; `accession_number` rides along
   as a nullable, non-unique correlation field, not an identifier — it can repeat across
-  reports or be absent) and forwards those alongside the raw `sql` to `endpoint_url` (a
+  reports or be absent), optionally intersected against a caller-supplied
+  `visible_report_ids` (the SPA's currently client-side-filtered rows, the same set
+  Download CSV already exports — a submitted id outside the resolved cohort is silently
+  dropped, never trusted on its own), and forwards those alongside the raw `sql` to
+  `endpoint_url` (a
   genuinely separate, independently-deployed service — the "Apps" tier from #595) —
   `sql` stays in the payload for a target that genuinely needs the query itself, not
   just the resolved cohort. It relays back whatever `{"url": ...}` the target returns,
