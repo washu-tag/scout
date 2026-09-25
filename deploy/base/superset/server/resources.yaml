@@ -144,6 +144,10 @@ spec:
         # it into the Redis URLs); real REDIS_PASSWORD comes from superset-env, so
         # this placeholder is never used.
         redis_password: 'placeholder'
+      env:
+        # Idle keep-alive seconds (run-server.sh default 2); keep above the fronting
+        # proxy's idle timeout (Traefik 90s, AWS ALB 60s) so the proxy closes first.
+        GUNICORN_KEEPALIVE: '120'
       resources:
         requests:
           cpu: 250m

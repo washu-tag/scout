@@ -54,6 +54,8 @@ supersetNode:
     redis_password: "placeholder"
     redis_cache_db: "0"
     redis_celery_db: "0"
+  env:
+    GUNICORN_KEEPALIVE: "{{ superset_gunicorn_keepalive }}"
   resources: {{ superset_resources_default | combine(superset_resources | default({}), recursive=true) | to_json }}
   extraContainers:
     - name: statsd-exporter

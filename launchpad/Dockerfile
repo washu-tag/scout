@@ -55,6 +55,9 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+# Idle keep-alive in ms (Node default 5000); keep above the fronting proxy's idle
+# timeout (Traefik 90s, AWS ALB 60s by default) so the proxy closes idle connections first.
+ENV KEEP_ALIVE_TIMEOUT=120000
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
