@@ -92,6 +92,10 @@ open_webui_storage_class: ''
 # it to reach Keycloak over HTTPS. Off on envs with public certs.
 open_webui_trust_traefik_ca: false
 
+# Uvicorn idle keep-alive (seconds). Keep above the fronting proxy's idle timeout
+# (Traefik 90s, AWS ALB 60s by default) so the proxy closes idle connections first.
+open_webui_uvicorn_timeout_keep_alive: 120
+
 # PostgreSQL configuration
 open_webui_postgres_user: openwebui
 # REQUIRED: Must be set in inventory.yaml (use vault encryption)
