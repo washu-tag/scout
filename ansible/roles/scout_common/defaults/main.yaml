@@ -368,6 +368,21 @@ xnat_plugins_default:
           openid.keycloak.idToken.typCheck.expectedTypes: ID
           openid.keycloak.usernamePattern: '[preferred_username]'
           openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
+          # Accept a Keycloak access token as Authorization: Bearer, so a script or
+          # notebook can call XNAT's REST API with the caller's own Scout identity
+          # instead of a shared credential. The token must be addressed to XNAT and
+          # carry the access role; both gates reject rather than fall through.
+          openid.keycloak.bearer.enabled: 'true'
+          openid.keycloak.bearer.audCheck.enabled: 'true'
+          openid.keycloak.audCheck.acceptedAudiences: xnat
+          openid.keycloak.bearer.typCheck.expectedTypes: Bearer
+          openid.keycloak.bearer.roleCheck.enabled: 'true'
+          openid.keycloak.bearer.roleCheck.rolePath: resource_access.xnat.roles
+          openid.keycloak.bearer.roleCheck.requiredRoles: xnat-access
+          # An API caller has no way to complete the first-login flow, so a token for
+          # someone with no XNAT account is refused rather than silently provisioning
+          # one; they sign in through the browser once first.
+          openid.keycloak.bearer.forceUserCreate: 'false'
           # Skip the login page when the user already has a Keycloak session (prompt=none).
           openid.keycloak.autoLogin: 'true'
           # Log out through oauth2-proxy, as the other Scout services do: it clears the edge
