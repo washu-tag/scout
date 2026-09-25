@@ -795,6 +795,36 @@ installations (the import Job is one-way; drop unwanted assets via the
 Superset UI). For site-specific dashboards see the README in
 `helm/scout-dashboards/`.
 
+#### Report Viewer
+
+Report-viewer requires two secrets with no default — the deploy fails without them:
+
+```yaml
+report_viewer_db_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+report_viewer_gateway_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+The search-detail toolbar (Explain Search, Download CSV, and any site-added buttons) is
+also configured from inventory: gate a built-in to a Keycloak group or disable it, and
+add custom buttons of your own.
+
+```yaml
+report_viewer_explain_search:
+  requiredGroup: scout-admin
+report_viewer_download_csv:
+  enabled: false
+report_viewer_custom_actions:
+  - id: pacs-viewer
+    title: Open in PACS
+    url: https://pacs.example.org/
+    requiredGroup: scout-admin
+```
+
+See [Add or Gate a Report-Viewer Search Action](../customize/report-viewer-actions.md)
+for the full field reference, including the `backend-call` action type and its
+two-secret auth scheme. This feature — and report-viewer's browser-facing UI in
+general — only works in on-prem mode (ADR 0035).
+
 #### Ollama Models
 
 Specify which AI models to pull automatically:
