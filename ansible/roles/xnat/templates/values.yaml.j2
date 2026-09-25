@@ -225,13 +225,16 @@ extraConfig:
 {% endfor %}
 {% endif %}
 
-{# --- extraVolumes: prefs-init + file-config Secrets. Plugin jar Secrets and the
-     installer's CA are declared on the plugins/pluginInstaller values above, so
-     the chart mounts those itself. --#}
+{# --- extraVolumes: prefs-init/-override + file-config Secrets. Plugin jar Secrets
+     and the installer's CA are declared on the plugins/pluginInstaller values above,
+     so the chart mounts those itself. --#}
 extraVolumes:
   - name: prefs-init
     secret:
       secretName: xnat-prefs-init
+  - name: prefs-override
+    secret:
+      secretName: xnat-prefs-override
 {% for p in xnat_plugins_all %}
 {% for c in p.config | default([]) if c.mechanism == 'file' %}
   - name: cfg-{{ p.name }}-{{ loop.index }}
@@ -246,6 +249,9 @@ extraVolumeMounts:
   - name: prefs-init
     mountPath: /data/xnat/home/config/prefs-init.ini
     subPath: prefs-init.ini
+  - name: prefs-override
+    mountPath: /data/xnat/home/config/prefs-override.ini
+    subPath: prefs-override.ini
 {% for p in xnat_plugins_all %}
 {% for c in p.config | default([]) if c.mechanism == 'file' %}
   - name: cfg-{{ p.name }}-{{ loop.index }}

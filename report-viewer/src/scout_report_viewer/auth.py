@@ -4,7 +4,10 @@
    path (forwards `__oauth_token__`) and by anything else that wants to
    present a real end-user token. Validates signature + exp + iss + aud
    (`aud=report-viewer`, stamped by the `report-viewer-audience` client
-   scope). Carries no group claim - see `User.groups` below.
+   scope). Carries no group claim - see `User.groups` below. Behind a
+   proxy that authenticates the browser itself and forwards the user's
+   access token in a header (AWS ALB OIDC), setting `forwarded_token_header`
+   validates that token the same way.
 2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`,
    `X-Auth-Request-Groups`) - the ingress path, used by the SPA's own
    browser-side requests. Trusted only when the request also carries the
@@ -21,9 +24,11 @@
    with no per-role/group gate). In aws mode, neither header is ever
    set, so Path 2 always falls through to "authentication required" -
    the SPA's own requests (and therefore the entire browser-facing UI,
-   not just group-gated actions) cannot authenticate at all until an
-   aws-mode edge is designed for report-viewer. See ADR 0038's Known
-   Limitations.
+   not just group-gated actions) cannot authenticate at all in aws mode
+   unless the edge is configured to forward the browser's own token via
+   `forwarded_token_header` (Path 1). That still carries no group claim,
+   so group-gated actions stay invisible either way - only Path 2 can
+   ever populate `User.groups`. See ADR 0038's Known Limitations.
 
 Both populate the same `User(sub=...)` model. Downstream code never
 needs to know which path produced the identity. The user JWT is not
@@ -38,7 +43,7 @@ import hmac
 import logging
 from dataclasses import dataclass
 
-from fastapi import Header, HTTPException, status
+from fastapi import Header, HTTPException, Request, status
 from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError
 
@@ -143,6 +148,7 @@ def _parse_groups(header: str | None) -> frozenset[str]:
 
 
 async def get_current_user(
+    request: Request,
     authorization: str | None = Header(default=None),
     x_auth_request_preferred_username: str | None = Header(default=None),
     x_auth_request_groups: str | None = Header(default=None),
@@ -150,6 +156,8 @@ async def get_current_user(
 ) -> User:
     # Path 1: Bearer JWT (highest trust; carries the real user identity).
     token = _bearer_token(authorization)
+    if not token and settings.forwarded_token_header:
+        token = request.headers.get(settings.forwarded_token_header)
     if token:
         # JWKS fetch on cache miss is blocking; keep it off the event loop.
         user = await asyncio.to_thread(_validate_jwt, token)

@@ -310,7 +310,9 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   bundle also needs its name in `scout_dashboard_bundles` in inventory. See
   `helm/scout-dashboards/README.md`.
 - **Update a dependency version** — `ansible/group_vars/all/versions.yaml`, with a
-  `# renovate:` annotation so CVE monitoring picks it up (ADR 0015), then redeploy.
+  `# renovate:` annotation so CVE monitoring picks it up (ADR 0015), then redeploy. A
+  `deploy/` base that mirrors the pin carries the same annotation, so Renovate bumps both,
+  and CI fails if the copies differ.
 - **Add a CI-built image or service** — wiring `.github/workflows/ci.yaml` only covers
   `main`. The release path must be wired too (`.github/scripts/update-versions.sh`, the
   `SCOUT_VERSIONED_IMAGES` / `UPSTREAM_VERSIONED_IMAGES` lists in

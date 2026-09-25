@@ -51,6 +51,7 @@ spec:
         enabled: true
         image:
           repository: quay.io/kiwigrid/k8s-sidecar
+          # renovate: datasource=docker depName=quay.io/kiwigrid/k8s-sidecar
           tag: '2.10.1'
     scoutEnv: '${scout_env}'
     deployerName: '${deployer_name}'
@@ -65,5 +66,5 @@ spec:
       existingNextAuthSecret: launchpad-nextauth-secret
       # 8h SSO lifetime: the next-auth cookie can't outlive the refresh token it carries.
       sessionMaxAge: 28800
-      # oauth2ProxySignOutUrl is on-prem only (oauth2-proxy has no aws counterpart);
-      # it is set in the launchpad-edge-on-prem ConfigMap (edge.yaml).
+      # oauth2ProxySignOutUrl is per mode (edge.yaml): oauth2-proxy sign-out on-prem,
+      # Keycloak end-session on aws.

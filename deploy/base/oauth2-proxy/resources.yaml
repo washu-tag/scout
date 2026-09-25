@@ -39,6 +39,7 @@ spec:
   chart:
     spec:
       chart: oauth2-proxy
+      # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
       version: '10.6.2'
       sourceRef:
         kind: HelmRepository

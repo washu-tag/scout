@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     # Shared secret Traefik injects; the header path is refused unless it matches.
     gateway_secret: str = ""
 
+    # Header an authenticating proxy forwards the user's access token in (an AWS
+    # ALB sends X-Amzn-Oidc-Accesstoken); validated like a Bearer. Empty disables.
+    forwarded_token_header: str = ""
+
     # Chat origin the SPA postMessages to (iframe height + Discuss/Refine).
     # Rendered into GET /api/config; empty disables cross-frame messaging.
     chat_origin: str = ""

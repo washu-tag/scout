@@ -3,9 +3,12 @@
 # visibility on SQL, so no Cassandra/Elasticsearch). Both stores resolve to
 # ${postgres_host} (CNPG on-prem, RDS on aws), so dependsOn postgres-ready.
 # Namespace owned by scout-extractor-foundation, not declared here (avoids
-# co-ownership/prune conflicts). Frontend JWT authz + web-UI ingress/OIDC are
-# omitted (separate Keycloak-realm/auth-overlay workstream), which is why Keycloak
-# is not a dependsOn. DB password referenced by fixed name (existingSecret).
+# co-ownership/prune conflicts). DB password referenced by fixed name (existingSecret).
+#
+# Auth matches the Ansible temporal_oidc_enabled default: frontend JWT authz on the
+# realm `temporal` client's `permissions` claim, plus the UI's own OIDC login with that
+# client (secret from the fixed-name temporal-web-oidc Secret). Web ingress is
+# mode-selected via temporal-edge-${service_mode} (edge.yaml).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -25,16 +28,28 @@ spec:
   # The chart's schema-setup Jobs (setup-schema + update-schema on both Postgres
   # stores) run at install and take a while.
   timeout: 15m
+  # The web UI exits until OIDC discovery at the realm answers (keycloak-alb via edge-aws on
+  # aws, keycloak-instance on-prem), so a fresh install keeps retrying instead of stalling.
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    remediation:
+      retries: 3
   # Pinned in versions.yaml (temporal_version), Renovate-tracked there. Literal
   # mirror, not stamped (stamper covers only Scout charts); keep in lockstep.
   chart:
     spec:
       chart: temporal
+      # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
       version: '1.2.0'
       sourceRef:
         kind: HelmRepository
         name: temporal
         namespace: '${scout_extractor_namespace}'
+  valuesFrom:
+    - kind: ConfigMap
+      name: 'temporal-edge-${service_mode}'
   values:
     # k3s/air-gapped: no docker-in-schema-job, no ES index tool (Postgres visibility).
     shims:
@@ -56,6 +71,14 @@ spec:
       config:
         namespaces:
           create: true
+        authorization:
+          jwtKeyProvider:
+            keySourceURIs:
+              - '${keycloak_internal_url}/realms/${keycloak_realm_name}/protocol/openid-connect/certs'
+            refreshInterval: 1m
+          permissionsClaimName: permissions
+          authorizer: default
+          claimMapper: default
         persistence:
           defaultStore: default
           visibilityStore: visibility
@@ -89,3 +112,21 @@ spec:
                 manageSchema: true
                 maxConns: 10
                 maxConnLifetime: '1h'
+    web:
+      additionalEnv:
+        - name: TEMPORAL_AUTH_ENABLED
+          value: 'true'
+        - name: TEMPORAL_AUTH_PROVIDER_URL
+          value: '${keycloak_realm_url}'
+        - name: TEMPORAL_AUTH_CLIENT_ID
+          value: temporal
+        - name: TEMPORAL_AUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: temporal-web-oidc
+              key: client-secret
+        - name: TEMPORAL_AUTH_CALLBACK_URL
+          value: 'https://temporal.${server_hostname}/auth/sso/callback'
+        # The UI splits this on commas.
+        - name: TEMPORAL_AUTH_SCOPES
+          value: openid,email,profile

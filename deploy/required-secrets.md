@@ -22,12 +22,12 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 | `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor,temporal}` | `username`, `password` | CNPG managed roles (on-prem only) |
 | `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role) |
 | `keycloak-admin-secret` | `username`, `password` | Keycloak bootstrap admin + config-cli |
-| `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`, `fragment_reconciler_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names). `fragment_reconciler_svc` is also read pod-side by the fragment reconciler, which is the one key with a second consumer |
+| `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`, `fragment_reconciler_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`); any keys a site IdP document names (`deploy/README.md`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names). `fragment_reconciler_svc` is also read pod-side by the fragment reconciler, which is the one key with a second consumer |
 | `valkey-auth` | `password`, `password-file` | Valkey chart + exporter |
 | `launchpad-keycloak-secret` | `client-secret` | launchpad OIDC login (pod-side; = the realm's `launchpad_client` value, not that key) |
 | `launchpad-nextauth-secret` | `secret` | launchpad next-auth session signing (generate-once) |
 | `opa-bundle-writer` | `access-key`, `secret-key` | Keycloak OPA bundle publisher (on-prem: MinIO creds; aws: present with **empty** values, else they shadow IRSA) |
-| `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on launchpad (also in `${scout_analytics_namespace}` for superset); the `oauth2-proxy` client |
+| `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on launchpad (also in `${scout_analytics_namespace}` for superset and `${scout_extractor_namespace}` for the Temporal UI); the `oauth2-proxy` client |
 
 ## scout-data (minio / hive)
 **Mode-specific.** Cloud uses AWS S3 + IRSA (no access-key Secrets); the MinIO-user
@@ -41,12 +41,14 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | `minio-scout-env-configuration` | `config.env` (root creds + region/OIDC) | MinIO `Tenant.configSecret` (in-cluster MinIO only) |
 | `${s3_*}-creds` (lake r/w, loki-writer, opa-bundle r/w) | `CONSOLE_ACCESS_KEY`, `CONSOLE_SECRET_KEY` | MinIO `Tenant.users` (in-cluster MinIO only) |
 
-## scout-extractor (extractor / trino-rw)
+## scout-extractor (extractor / temporal / trino-rw)
 | secret | keys | consumed by |
 | --- | --- | --- |
 | `s3-secret` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | hl7log-extractor + hl7-transformer (lake-writer; cloud = IRSA instead) |
 | `postgres-secret` | `DB_PASSWORD` (+ DB coords) | extractor datasource (= the extractor role) |
 | `temporal-db-secret` | `password` | Temporal server + schema Job (= the temporal CNPG role) |
+| `temporal-web-oidc` | `client-secret` | Temporal UI OIDC login, both modes (= the realm's `temporal` value in `keycloak-client-secrets`) |
+| `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on the Temporal UI (see scout-core) |
 | `trino-rw-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-rw (lake-writer; cloud = IRSA instead) |
 
 ## scout-analytics (superset / opa / trino-ro)
@@ -110,8 +112,8 @@ authorization listener, SELECT-only DB role).
 - Rotating a `keycloak-client-secrets` value does not by itself re-run the config-cli
   import (the Job reads it via `envFrom` by name); it applies on the next realm/chart
   upgrade, or force it with `flux reconcile hr keycloak-config-cli -n <ns>`.
-- Every enabled component's key must be present. config-cli leaves an unresolved
-  `$(env:...)` as literal text, so a missing key would set that client's secret to a
-  guessable placeholder. Provision `keycloak-client-secrets` fail-closed (an
-  ExternalSecret that errors if a source key is absent), and only enable an IdP or the
-  XNAT client once its key exists.
+- Every enabled component's key must be present. config-cli fails the whole realm
+  import on an unresolved `$(env:...)` (`undefined-is-error` defaults to true), so a
+  missing key blocks every realm change. Provision `keycloak-client-secrets`
+  fail-closed (an ExternalSecret that errors if a source key is absent), and only enable
+  an IdP or the XNAT client once its key exists.
