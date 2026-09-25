@@ -11,7 +11,7 @@ keycloak_fragment_reconciler_helm_release_name: keycloak-fragment-reconciler
 
 # Image
 keycloak_fragment_reconciler_image_repository: ghcr.io/washu-tag/keycloak-fragment-reconciler
-keycloak_fragment_reconciler_image_tag: 5.0.0
+keycloak_fragment_reconciler_image_tag: latest
 keycloak_fragment_reconciler_image_pull_policy: IfNotPresent
 
 # Where the keycloak role writes the credential. The key is the token the realm

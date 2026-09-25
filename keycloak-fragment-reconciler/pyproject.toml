@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scout-keycloak-fragment-reconciler"
-version = "5.0.0"
+version = "0.0.dev0"
 description = "Reconciles Keycloak realm fragments published by pluggable apps into the Scout realm"
 requires-python = ">=3.12"
 dependencies = [
