@@ -5,6 +5,18 @@
 # Timeout for waiting on Traefik Helm jobs (in seconds)
 traefik_helm_job_timeout: 300
 
+# An upload ceiling, not a liveness check. readTimeout bounds reading a whole
+# request, body included, so a multi-gigabyte upload needs far more than upstream's
+# 60s default. Entrypoint-wide, and an entrypoint is a listener: Traefik has not
+# read the Host header yet when the deadline starts, so this cannot be scoped to
+# one service and every route on websecure inherits it.
+#
+# That widens the window for an unauthenticated half-open connection, which nothing
+# else bounds - with headers still arriving Traefik has not routed anywhere, so no
+# backend timeout applies. Hence sized to the slowest upload we intend to support
+# rather than a round number, and not 0s, which is the CVE-2024-28869 shape.
+traefik_read_timeout: 1h
+
 traefik_embeddable_frame_ancestors: 'https://chat.{{ server_hostname }}'
 # Inventory requirements depend on tls_mode:
 #
