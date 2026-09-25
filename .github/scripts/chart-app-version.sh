@@ -66,7 +66,7 @@ from_versions_yaml() {
 }
 
 case "$CHART" in
-    hl7-transformer|hl7log-extractor|hl7-listener|launchpad|report-viewer)
+    hl7-transformer|hl7log-extractor|hl7-listener|launchpad|report-viewer|keycloak-fragment-reconciler)
         scout_image_tag "$CHART" ;;
     scout-opa)            from_versions_yaml opa_image_tag ;;
     hive-metastore)       from_versions_yaml hive_image_tag ;;

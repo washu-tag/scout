@@ -70,6 +70,25 @@
       "ssl": "{{ .Values.smtp.ssl }}"
     },
     "roles": {
+      {{- /* The two service tiers (ADR 0037). Deliberately no `composites` key:
+          an omitted key means keycloak-config-cli never reconciles the edge
+          list, leaving the fragment reconciler as its single writer. Declaring
+          one here makes config-cli replace the whole set on the next realm
+          apply, dropping every fragment's grant. */}}
+      "realm": [
+        {
+          "name": "scout-user",
+          "description": "Scout user tier; app client roles compose into this",
+          "clientRole": false,
+          "attributes": {}
+        },
+        {
+          "name": "scout-admin",
+          "description": "Scout admin tier; app client roles compose into this",
+          "clientRole": false,
+          "attributes": {}
+        }
+      ],
       "client": {
         "oauth2-proxy": [
           {
@@ -226,6 +245,7 @@
             `policy: [consoleAdmin]` attribute. Its value now lives as a MinIO
             client role, granted below. No group in this realm carries attributes. */}}
         "attributes": {},
+        "realmRoles": ["scout-admin"],
         "clientRoles": {
           "oauth2-proxy": [
             "oauth2-proxy-user"
@@ -262,6 +282,7 @@
       },
       {
         "name": "scout-user",
+        "realmRoles": ["scout-user"],
         "clientRoles": {
           "oauth2-proxy": [
             "oauth2-proxy-user"
@@ -294,24 +315,32 @@
         "clientId": "oauth2-proxy",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:oauth2_proxy)",
+        {{- $albHosts := list }}
+        {{- range splitList "," (.Values.albOidcHosts | default "") }}{{- if trim . }}{{- $albHosts = append $albHosts (trim .) }}{{- end }}{{- end }}
         "redirectUris": [
-          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/callback"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
-          "https://{{ $h }}/oauth2/idpresponse"{{- end }}{{- end }}
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/callback"{{- range $albHosts }},
+          "https://{{ . }}/oauth2/idpresponse"{{- end }}
         ],
         "webOrigins": [
-          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)"{{- range $h := (splitList "," .Values.albOidcHosts) }}{{- $h = trim $h }}{{- if $h }},
-          "https://{{ $h }}"{{- end }}{{- end }}
+          "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)"{{- range $albHosts }},
+          "https://{{ . }}"{{- end }}
         ],
+        {{- /* Each ALB-OIDC host is also a post-logout target, so an app's logout can
+            return to its own host. Exact hosts with a path wildcard: Keycloak 26
+            rejects host wildcards. */}}
         "attributes": {
-          "post.logout.redirect.uris": "https://$(env:server_hostname)"
+          "post.logout.redirect.uris": "https://$(env:server_hostname){{- range $albHosts }}##https://{{ . }}/*{{- end }}"
         },
+        {{- /* report-viewer-audience: ALBs reuse this client, and report-viewer accepts
+            the access token they forward only with aud=report-viewer. */}}
         "defaultClientScopes": [
           "web-origins",
           "acr",
           "profile",
           "roles",
           "basic",
-          "email"
+          "email",
+          "report-viewer-audience"
         ],
         "optionalClientScopes": [
           "address",
@@ -793,6 +822,34 @@
           "email",
           "trino-audience"
         ]
+      },
+      {{- /* The fragment reconciler's principal (ADR 0037). Its three
+          realm-management roles are granted on the service-account user under
+          `users` below *and* put into this client's scope under
+          `clientScopeMappings`; both are required, because the admin API
+          authorizes from token claims and `fullScopeAllowed: false` would
+          otherwise filter them out. */}}
+      {
+        "name": "fragment_reconciler_svc",
+        "description": "Service principal for the Keycloak fragment reconciler (ADR 0037)",
+        "enabled": true,
+        "fullScopeAllowed": false,
+        "clientId": "fragment_reconciler_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "$(env:fragment_reconciler_svc)",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email"
+        ]
       }{{- if eq (.Values.enableXnat | toString) "true" }},
       {
         "name": "xnat",
@@ -810,7 +867,8 @@
           "https://xnat.$(env:server_hostname)"
         ],
         "attributes": {
-          "pkce.code.challenge.method": "S256"
+          "pkce.code.challenge.method": "S256",
+          "post.logout.redirect.uris": "https://xnat.$(env:server_hostname)/app/template/Login.vm"
         },
         "protocolMappers": [
           {
@@ -845,6 +903,40 @@
           "offline_access"
         ]
       }{{- end }}
+    ],
+    {{- /* The only `users` entry this realm has, and the only one it should
+        grow: Scout's people come from the approval workflow (ADR 0025), not
+        from here. A service account's roles are not expressible on a client, so
+        the grant has to go on the auto-created service-account user.
+
+        This does not endanger the workflow's users. keycloak-config-cli has no
+        `import.managed.user` setting and no delete path for users at all, so
+        only the user named here is ever touched.
+
+        Three details that are easy to get wrong:
+
+        - `realmRoles` is deliberately absent. A listed `realmRoles` is
+          reconciled as a whole set, so a partial one strips
+          `default-roles-scout`.
+        - both `username` and `serviceAccountClientId` are given, because
+          identifying the user by the latter alone has misassigned roles
+          (adorsys/keycloak-config-cli#1011).
+        - the `clientRoles` grant is additive only: config-cli never removes a
+          role from one of Keycloak's default clients, so dropping one from the
+          list below will not revoke it. */}}
+    "users": [
+      {
+        "username": "service-account-fragment_reconciler_svc",
+        "enabled": true,
+        "serviceAccountClientId": "fragment_reconciler_svc",
+        "clientRoles": {
+          "realm-management": [
+            "manage-clients",
+            "view-realm",
+            "manage-realm"
+          ]
+        }
+      }
     ],
     "identityProviders": [
         {{- if eq (.Values.github.enabled | toString) "true" }}
@@ -932,8 +1024,10 @@
     {{- if eq (.Values.github.enabled | toString) "true" }}{{- $idps = append $idps "github" }}{{- end }}
     {{- if eq (.Values.microsoft.enabled | toString) "true" }}{{- $idps = append $idps "microsoft" }}{{- end }}
     {{- /* Only meaningful once something is brokered: a site with no external IdP
-           logs in against the realm itself, and defaultProvider names nothing. */}}
-    {{- if and $idps (not (has .Values.defaultProvider $idps)) }}{{- fail (printf "keycloak realm: defaultProvider %q is not an enabled IdP (github.enabled=%v microsoft.enabled=%v)" .Values.defaultProvider .Values.github.enabled .Values.microsoft.enabled) }}{{- end }}
+           logs in against the realm itself, and defaultProvider names nothing. Empty
+           means no auto-redirect: the redirector skips a blank value, so the login
+           page lists every enabled IdP (kc_idp_hint still works). */}}
+    {{- if and $idps .Values.defaultProvider (not (has .Values.defaultProvider $idps)) }}{{- fail (printf "keycloak realm: defaultProvider %q is not an enabled IdP (github.enabled=%v microsoft.enabled=%v); set it to \"\" to show the login page instead" .Values.defaultProvider .Values.github.enabled .Values.microsoft.enabled) }}{{- end }}
     "authenticatorConfig": [
       {
         "alias": "default-provider",
@@ -1187,6 +1281,17 @@
         {
           "client": "minio",
           "roles": ["consoleAdmin"]
+        }
+      ],
+      {{- /* Not a self-mapping like the rest: these are Keycloak's own
+          `realm-management` roles, placed in the reconciler's scope. Without
+          this its token carries no admin roles and every write 403s while
+          authentication keeps working, so the symptom points nowhere near
+          here. */}}
+      "realm-management": [
+        {
+          "client": "fragment_reconciler_svc",
+          "roles": ["manage-clients", "view-realm", "manage-realm"]
         }
       ]{{- if eq (.Values.enableXnat | toString) "true" }},
       "xnat": [

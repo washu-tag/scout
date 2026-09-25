@@ -1,6 +1,7 @@
 # Phase 3 follow-up: the auth-overlay workstream (Keycloak realm decomposition + Temporal authz/web)
 
-Status: NOT started. Deferred out of the Phase 3 `deploy/` base sweep on purpose.
+Status: items 2 and 3 are done; items 1 and 4 are NOT started. Deferred out of the
+Phase 3 `deploy/` base sweep on purpose.
 This is the "item #9" from the Phase 3 completion plan. It is a single cohesive
 workstream, not a grab-bag, and it is gated on a spike that needs a live cluster.
 
@@ -19,16 +20,12 @@ login. It should be built and reviewed on its own, spike-first.
    that does not run those features does not carry their OIDC clients.
 2. Temporal frontend JWT authorization (the `authorization.authorizer: default`
    block the Ansible role renders in `values.yaml.j2`).
-3. Temporal web UI ingress + OIDC (also rendered by the Ansible role, omitted from
-   the `deploy/base/temporal/server` base today).
+3. Temporal web UI ingress + OIDC (also rendered by the Ansible role).
 4. The optional Temporal `ScheduledReportIngest` cron. This one is independent of
    the auth work (see below).
 
-Items 2 and 3 depend on item 1: `deploy/base/temporal/server/resources.yaml` states
-plainly that the frontend authz and web-UI OIDC are "Keycloak-realm decomposition +
-site-edge auth-overlay work, a separate workstream," which is why Keycloak is
-deliberately not a `dependsOn` of the temporal-server layer. They cannot land ahead
-of the realm decision.
+Items 2 and 3 landed ahead of item 1: the realm already ships the `temporal` client
+unconditionally, so they did not need the decomposition.
 
 ## Ground truth (what makes this tractable and what makes it risky)
 
@@ -84,9 +81,6 @@ Only after the spike:
   base key always and the feature keys per site (mirroring the Ansible `enable_xnat`
   gate).
 - Set the proven `import.managed.*` values on the keycloak-config-cli HelmRelease.
-- Add the Temporal frontend JWT authz + web-UI ingress/OIDC to
-  `deploy/base/temporal/server` and make Keycloak a `dependsOn` of that layer once
-  the realm provides the temporal client.
 
 ## The one piece that does not need the spike
 

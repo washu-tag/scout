@@ -1,0 +1,6 @@
+{# Unlike prefs-init.ini (first boot only), XNAT re-applies this file on every restart,
+   so it holds on an already-initialized instance and reverts an admin-UI change. #}
+[siteConfig]
+{# The Scout-wide SSO session. With openid auto-login, XNAT's idle timeout logs the user
+   out of Scout (logoutUri), so XNAT's 15-minute default would end that session early. #}
+sessionTimeout={{ keycloak_token_lifespan }} seconds

@@ -110,6 +110,11 @@ update_file "ansible/roles/hl7-listener/defaults/main.yaml" \
     "\\1 $DOCKER_TAG" \
     "hl7_listener_image_tag"
 
+update_file "ansible/roles/keycloak_fragment_reconciler/defaults/main.yaml" \
+    "^(keycloak_fragment_reconciler_image_tag:) .+$" \
+    "\\1 $DOCKER_TAG" \
+    "keycloak_fragment_reconciler_image_tag"
+
 echo ""
 echo "Python packages..."
 update_file "extractor/hl7-transformer/pyproject.toml" \
@@ -122,11 +127,19 @@ update_file "report-viewer/pyproject.toml" \
     "\\1$PYTHON_VERSION\\2" \
     "pyproject.toml version"
 
+update_file "keycloak-fragment-reconciler/pyproject.toml" \
+    '^(version = ")[^"]+(")'  \
+    "\\1$PYTHON_VERSION\\2" \
+    "pyproject.toml version"
+
 echo "$DOCKER_TAG" > "extractor/hl7-transformer/VERSION"
 echo "  - VERSION file: extractor/hl7-transformer/VERSION"
 
 echo "$DOCKER_TAG" > "report-viewer/VERSION"
 echo "  - VERSION file: report-viewer/VERSION"
+
+echo "$DOCKER_TAG" > "keycloak-fragment-reconciler/VERSION"
+echo "  - VERSION file: keycloak-fragment-reconciler/VERSION"
 
 echo ""
 echo "Gradle build files..."

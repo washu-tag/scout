@@ -44,6 +44,13 @@ spec:
         kind: HelmRepository
         name: scout-charts
         namespace: '${keycloak_namespace}'
+  # Optional site realm values (deploy/README.md): pick-lists, extra IdP documents.
+  # spec.values below wins on overlap.
+  valuesFrom:
+    - kind: ConfigMap
+      name: keycloak-config-cli-site-values
+      valuesKey: values.yaml
+      optional: true
   values:
     # Upstream config-cli image, pinned in versions.yaml (keycloak_config_cli_image[_tag]).
     image:
@@ -55,7 +62,7 @@ spec:
     # albOidcHosts is the comma-separated full ALB-OIDC host list (AWS sites; empty
     # on-prem, which uses the oauth2-proxy callback the realm builds from server_hostname).
     # Token lifespans, SMTP, terms localizations, and trino AuthZ attributes use
-    # the chart defaults (site overlay overrides them; see values.yaml). realmName
+    # the chart defaults (the site values ConfigMap overrides them). realmName
     # and oauth2ProxySubdomain must match what the rest of the lane substitutes.
     realmName: '${keycloak_realm_name}'
     oauth2ProxySubdomain: '${oauth2_proxy_subdomain}'

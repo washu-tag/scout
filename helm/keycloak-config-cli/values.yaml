@@ -71,15 +71,16 @@ lifespans:
 # Provision the XNAT client, role, and group binding.
 enableXnat: 'false'
 # Identity providers (creds come via envFrom; see required-secrets.md). The browser
-# flow redirects to defaultProvider.
+# flow redirects to defaultProvider (an enabled IdP); empty shows the login page with every IdP.
 github:
   enabled: 'true'
 microsoft:
   enabled: 'false'
 defaultProvider: github
-# Comma-separated full ALB-OIDC hostnames the oauth2-proxy client accepts
-# /oauth2/idpresponse from (AWS sites, e.g. superset.<domain>). On-prem uses the
-# oauth2-proxy callback the realm builds from server_hostname, so this can stay empty.
+# Comma-separated full ALB-OIDC hostnames (AWS sites, e.g. superset.<domain>). The
+# oauth2-proxy client accepts /oauth2/idpresponse and post-logout redirects (any path)
+# on each. On-prem uses the oauth2-proxy callback the realm builds from
+# server_hostname, so this can stay empty.
 albOidcHosts: ''
 # Subdomain oauth2-proxy is served on; the realm registers its callback and
 # sign-out URIs against it.
@@ -140,6 +141,8 @@ existingSecrets:
 # `inline` is a structure, for a test or a one-off. Adding either here merges
 # with this default and imports both; to replace it, set `scout-realm: null`
 # alongside.
+#
+# A site IdP is one more inline document (docs/internal/authentication.md).
 config:
   scout-realm:
     file: files/scout-realm.json
