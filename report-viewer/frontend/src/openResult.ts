@@ -103,5 +103,10 @@ export function useOpenResult() {
     }
   }, []);
 
-  return { ...state, open, copyLink };
+  // Closes the result-link modal without affecting `opening`/`error`.
+  const dismiss = useCallback(() => {
+    setState((s) => ({ ...s, resultLink: null, copied: false }));
+  }, []);
+
+  return { ...state, open, copyLink, dismiss };
 }

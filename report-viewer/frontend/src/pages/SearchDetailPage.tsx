@@ -556,36 +556,48 @@ export default function SearchDetailPage() {
               marginTop: '0.75rem',
               fontSize: '0.85rem',
               flex: '0 0 auto',
-              flexWrap: 'wrap',
+              // ActionsToolbar is the only child sized to shrink (it has its
+              // own minWidth: 0) and manages its own custom-action overflow
+              // internally via a "More" dropdown - everything else here
+              // keeps its natural size, so nowrap means this row never
+              // wraps a button to a second line (#739 demo feedback).
+              flexWrap: 'nowrap',
             }}
           >
             <button
               type="button"
               onClick={() => table.previousPage()}
               disabled={!rowsQ.data || !table.getCanPreviousPage()}
-              style={paginationBtn}
+              style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Prev
             </button>
-            <span style={{ whiteSpace: 'nowrap' }}>
+            <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
               {pageIndex + 1} / {lastPage}
             </span>
             <button
               type="button"
               onClick={() => table.nextPage()}
               disabled={!rowsQ.data || !table.getCanNextPage()}
-              style={paginationBtn}
+              style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Next
             </button>
-            <span style={{ marginLeft: '0.4rem', color: 'var(--rv-muted)', whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                marginLeft: '0.4rem',
+                color: 'var(--rv-muted)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
               Per page:
             </span>
             <select
               value={pagination.pageSize}
               onChange={(e) => table.setPageSize(Number(e.target.value))}
               disabled={!rowsQ.data}
-              style={{ fontSize: '0.85rem' }}
+              style={{ fontSize: '0.85rem', flexShrink: 0 }}
             >
               <option value={50}>50</option>
               <option value={100}>100</option>
@@ -597,6 +609,7 @@ export default function SearchDetailPage() {
                 color: 'var(--rv-muted)',
                 fontSize: '0.75rem',
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               {meta.error
@@ -619,6 +632,7 @@ export default function SearchDetailPage() {
                 borderTopColor: '#ea580c',
                 animation: 'scoutSpin 0.8s linear infinite',
                 display: 'inline-block',
+                flexShrink: 0,
               }}
             />
             <span style={{ flex: 1 }} />
@@ -633,8 +647,9 @@ export default function SearchDetailPage() {
                       background: 'var(--rv-accent)',
                       color: '#fff',
                       borderColor: 'var(--rv-accent)',
+                      flexShrink: 0,
                     }
-                  : paginationBtn
+                  : { ...paginationBtn, flexShrink: 0 }
               }
               title="Filter rows"
             >
@@ -642,7 +657,7 @@ export default function SearchDetailPage() {
                 ? `Filters (${activeFilterCount(appliedFilters)})`
                 : 'Filters'}
             </button>
-            <div ref={colPickerRef} style={{ position: 'relative' }}>
+            <div ref={colPickerRef} style={{ position: 'relative', flexShrink: 0 }}>
               <button
                 type="button"
                 disabled={!rowsQ.data}
@@ -736,6 +751,7 @@ export default function SearchDetailPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 padding: '0.2rem 0.35rem',
+                flexShrink: 0,
               }}
             >
               {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
