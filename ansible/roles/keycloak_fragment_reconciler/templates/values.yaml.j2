@@ -1,0 +1,21 @@
+# Keycloak fragment reconciler Helm values - rendered from Ansible (ADR 0037).
+# Only what the site decides; the rest is left to the chart's own values.yaml,
+# which also documents why replicas is not settable.
+image:
+  repository: '{{ keycloak_fragment_reconciler_image_repository }}'
+  tag: '{{ keycloak_fragment_reconciler_image_tag }}'
+  pullPolicy: '{{ keycloak_fragment_reconciler_image_pull_policy }}'
+
+keycloak:
+  url: '{{ keycloak_internal_url }}'
+  realm: '{{ keycloak_realm_name }}'
+  existingSecret: '{{ keycloak_fragment_reconciler_secret_name }}'
+  existingSecretKey: '{{ keycloak_fragment_reconciler_secret_key }}'
+
+# Fragments' redirect URIs and app URLs are constrained to this host.
+serverHostname: '{{ server_hostname }}'
+
+watchedNamespaces:
+  {{ keycloak_fragment_reconciler_watched_namespaces | to_nice_yaml(indent=2) | indent(2) }}
+
+resources: {{ keycloak_fragment_reconciler_resources_default | combine(keycloak_fragment_reconciler_resources | default({}), recursive=true) | to_json }}

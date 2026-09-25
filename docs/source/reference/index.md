@@ -1,11 +1,11 @@
 # Reference
 
-Reference material shared across audiences — the report data schema, Scout's
-backend architecture, and supporting database schemas.
+Reference material shared across audiences.
 
 ```{toctree}
 :maxdepth: 1
 dataschema
 architecture
+authentication
 ingest_status_db
 ```

@@ -1,0 +1,7 @@
+---
+apiVersion: v2
+name: example-pluggable-app
+description: Reference pluggable app - registers its own launchpad chip and Keycloak client (ADRs 0034, 0037)
+type: application
+version: 0.0.0-dev
+appVersion: 'latest'

@@ -60,6 +60,18 @@ updates:
     open-pull-requests-limit: 0
 
   - package-ecosystem: 'pip'
+    directory: '/keycloak-fragment-reconciler'
+    schedule:
+      interval: 'weekly'
+    # Conventional-Commit titles (chore(deps): ...) so bot PRs pass PR Title Lint.
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: 'pip'
     directory: '/report-viewer'
     schedule:
       interval: 'weekly'

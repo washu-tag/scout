@@ -1,0 +1,286 @@
+"""The admin client's plumbing: token caching, error classification, retry.
+
+Everything here drives a fake `_http` rather than a server, but the responses
+are real `httpx.Response` objects, so `.json()`, `.content`, `.text` and
+`.headers` behave exactly as they do in production -- which is the point, since
+what is under test is how this module reacts to those.
+
+The clock is never monkeypatched. Expiries are asserted against a
+`time.monotonic()` reading taken in the test, or against each other.
+"""
+
+from __future__ import annotations
+
+import itertools
+import time
+from collections.abc import Callable
+from pathlib import Path
+from typing import NamedTuple
+
+import httpx2 as httpx
+import pytest
+
+from scout_keycloak_fragment_reconciler.keycloak import Admin, KeycloakError
+
+BASE = "http://keycloak:8080"
+TOKEN_URL = f"{BASE}/realms/scout/protocol/openid-connect/token"
+SECRET = "secret"
+
+
+class Sent(NamedTuple):
+    method: str
+    url: str
+    json: object
+    headers: dict
+
+
+class FakeHttp:
+    """Scripted responses, and a log of every request that produced one.
+
+    `responses` is consumed in order; an exhausted script answers 200 with an
+    empty list, so a test only has to spell out the responses it cares about.
+    """
+
+    def __init__(
+        self,
+        *,
+        expires_in: float = 300,
+        responses: list | None = None,
+        token_responses: list | None = None,
+    ) -> None:
+        self.expires_in = expires_in
+        self.responses = list(responses or [])
+        self.token_responses = list(token_responses or [])
+        self.token_posts: list[dict] = []
+        self.requests: list[Sent] = []
+        self._minted = itertools.count(1)
+
+    def post(self, url: str, data: dict | None = None) -> httpx.Response:
+        self.token_posts.append({"url": url, "data": data or {}})
+        if self.token_responses:
+            return self.token_responses.pop(0)
+        return httpx.Response(
+            200,
+            json={
+                "access_token": f"tok-{next(self._minted)}",
+                "expires_in": self.expires_in,
+            },
+        )
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        json: object = None,
+        headers: dict | None = None,
+    ) -> httpx.Response:
+        self.requests.append(Sent(method, url, json, dict(headers or {})))
+        if not self.responses:
+            return httpx.Response(200, json=[])
+        nxt = self.responses.pop(0)
+        if isinstance(nxt, Exception):
+            raise nxt
+        return nxt
+
+
+@pytest.fixture
+def credential(tmp_path: Path) -> Path:
+    """The credential as the pod sees it: a file in a mounted Secret."""
+    path = tmp_path / "fragment_reconciler_svc"
+    path.write_text(SECRET, encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def admin(credential: Path) -> Callable[[FakeHttp], Admin]:
+    def build(http: FakeHttp) -> Admin:
+        client = Admin(BASE, "scout", "fragment_reconciler_svc", credential)
+        client._http = http
+        return client
+
+    return build
+
+
+# --- the credential -----------------------------------------------------
+
+
+def test_a_rotated_credential_reaches_the_next_token_request(admin, credential):
+    """kubelet rewrites a mounted Secret in place and nothing rolls the pod.
+
+    A credential read once at startup leaves the process authenticating with
+    the value it booted with, which 401s until someone restarts it by hand.
+    """
+    http = FakeHttp()
+    client = admin(http)
+    client._access_token()
+    credential.write_text("rotated", encoding="utf-8")
+    client._access_token(force=True)
+    assert [post["data"]["client_secret"] for post in http.token_posts] == [
+        SECRET,
+        "rotated",
+    ]
+
+
+def test_an_unreadable_credential_is_a_retryable_keycloak_error(admin, credential):
+    """An `OSError` is no `httpx.HTTPError`, so unclassified it would escape
+    every handler between here and the run loop."""
+    credential.unlink()
+    with pytest.raises(KeycloakError) as raised:
+        admin(FakeHttp())._access_token()
+    assert raised.value.status == 0
+    assert raised.value.retryable
+
+
+# --- token cache --------------------------------------------------------
+
+
+@pytest.mark.parametrize("expires_in", [300, 30, 5, 0])
+def test_expiry_never_lands_in_the_past(admin, expires_in):
+    http = FakeHttp(expires_in=expires_in)
+    client = admin(http)
+    before = time.monotonic()
+    client._access_token()
+    assert client._expires_at >= before
+
+
+def test_a_live_token_is_reused(admin):
+    http = FakeHttp(expires_in=300)
+    client = admin(http)
+    assert client._access_token() == client._access_token()
+    assert len(http.token_posts) == 1
+
+
+def test_the_refresh_margin_scales_with_the_lifetime(admin):
+    """A tenfold lifetime buys a tenfold cache window (ADR 0024).
+
+    A margin that is a fraction of the lifetime holds for any lifespan; a
+    constant one has to be chosen against a lifespan nobody here controls.
+    """
+    short = admin(FakeHttp(expires_in=300))
+    long = admin(FakeHttp(expires_in=3000))
+    before = time.monotonic()
+    short._access_token()
+    long._access_token()
+    assert long._expires_at - before == pytest.approx(
+        10 * (short._expires_at - before), rel=1e-3
+    )
+
+
+@pytest.mark.parametrize("expires_in", [30, 5])
+def test_a_short_lived_token_is_still_cached(admin, expires_in):
+    http = FakeHttp(expires_in=expires_in)
+    client = admin(http)
+    client._access_token()
+    client._access_token()
+    assert len(http.token_posts) == 1
+
+
+def test_force_re_authenticates(admin):
+    http = FakeHttp(expires_in=300)
+    client = admin(http)
+    first = client._access_token()
+    assert client._access_token(force=True) != first
+    assert len(http.token_posts) == 2
+
+
+# --- error classification -----------------------------------------------
+
+
+def test_a_non_json_body_is_a_keycloak_error(admin):
+    """A 2xx carrying HTML -- what an ingress in front of Keycloak answers.
+
+    The decode has to be classified like any other failure, because a bare
+    JSONDecodeError is a ValueError and escapes every handler between here and
+    the run loop, taking the rest of the pass with it.
+    """
+    http = FakeHttp(responses=[httpx.Response(200, content=b"<html/>")])
+    with pytest.raises(KeycloakError):
+        admin(http).list_clients()
+
+
+def test_a_non_json_token_body_is_a_keycloak_error(admin):
+    http = FakeHttp(token_responses=[httpx.Response(200, content=b"<html/>")])
+    with pytest.raises(KeycloakError):
+        admin(http)._access_token()
+
+
+def test_a_transport_failure_is_retryable(admin):
+    http = FakeHttp(responses=[httpx.ConnectError("no route")])
+    with pytest.raises(KeycloakError) as raised:
+        admin(http).list_clients()
+    assert raised.value.status == 0
+    assert raised.value.retryable
+
+
+# --- the 401 retry ------------------------------------------------------
+
+
+def test_a_401_is_retried_once_with_a_fresh_token(admin):
+    http = FakeHttp(
+        responses=[httpx.Response(401), httpx.Response(200, json=[{"id": "a"}])]
+    )
+    client = admin(http)
+    assert client.list_clients() == [{"id": "a"}]
+    assert len(http.requests) == 2
+    first, second = (sent.headers["Authorization"] for sent in http.requests)
+    assert first != second
+
+
+def test_a_second_401_goes_to_the_caller_rather_than_looping(admin):
+    http = FakeHttp(responses=[httpx.Response(401), httpx.Response(401, text="nope")])
+    client = admin(http)
+    with pytest.raises(KeycloakError) as raised:
+        client.list_clients()
+    assert raised.value.status == 401
+    assert len(http.requests) == 2
+
+
+def test_a_transport_failure_on_the_retry_is_classified(admin):
+    http = FakeHttp(responses=[httpx.Response(401), httpx.ConnectError("no route")])
+    with pytest.raises(KeycloakError) as raised:
+        admin(http).list_clients()
+    assert raised.value.status == 0
+
+
+# --- creating a client --------------------------------------------------
+
+
+def created(location: str | None) -> httpx.Response:
+    headers = {"Location": location} if location is not None else {}
+    return httpx.Response(201, headers=headers)
+
+
+def test_the_new_uuid_comes_from_the_location_header(admin):
+    """One round trip, and no read-back that could transiently miss."""
+    http = FakeHttp(
+        responses=[created(f"{BASE}/admin/realms/scout/clients/uuid-42")],
+    )
+    client = admin(http)
+    assert client.create_client({"clientId": "hello"}) == "uuid-42"
+    assert [sent.method for sent in http.requests] == ["POST"]
+
+
+def test_a_location_less_creation_falls_back_to_the_read_back(admin):
+    http = FakeHttp(
+        responses=[
+            created(None),
+            httpx.Response(200, json=[{"clientId": "hello", "id": "uuid-7"}]),
+        ],
+    )
+    client = admin(http)
+    assert client.create_client({"clientId": "hello"}) == "uuid-7"
+    assert [sent.method for sent in http.requests] == ["POST", "GET"]
+
+
+def test_a_read_back_that_finds_nothing_is_an_error(admin):
+    http = FakeHttp(responses=[created(None), httpx.Response(200, json=[])])
+    with pytest.raises(KeycloakError):
+        admin(http).create_client({"clientId": "hello"})
+
+
+def test_a_rejected_representation_surfaces_its_status(admin):
+    http = FakeHttp(responses=[httpx.Response(400, text="bad redirectUri")])
+    with pytest.raises(KeycloakError) as raised:
+        admin(http).create_client({"clientId": "hello"})
+    assert raised.value.status == 400
+    assert not raised.value.retryable
