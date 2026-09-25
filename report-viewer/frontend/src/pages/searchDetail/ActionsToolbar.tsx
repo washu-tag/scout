@@ -11,10 +11,6 @@ import { paginationBtn } from './styles';
 // they're never worth hiding).
 const BUILTIN_ACTION_IDS = new Set(['explain-search', 'download-csv']);
 
-// Matches the row's own 0.5rem gap at the default 16px root font size -
-// used by the fit calculation below, which works in raw pixels.
-const GAP_PX = 8;
-
 /** Issue #739: renders a backend-declared, group-filtered action list
  * generically.
  * - `open-url` actions are handled uniformly via `useOpenResult`.
@@ -63,10 +59,12 @@ export function ActionsToolbar({
   const customIdsKey = customs.map((a) => a.id).join(',');
 
   const rowRef = useRef<HTMLDivElement>(null);
+  const builtinsRef = useRef<HTMLDivElement>(null);
   const proberRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const moreProberRef = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const [visibleCustomCount, setVisibleCustomCount] = useState(customs.length);
+  const hasBuiltins = builtins.length > 0;
 
   // Recomputes how many customs fit whenever the row is resized (window
   // resize, iframe expand/contract, sidebar toggle, ...) or the action
@@ -75,7 +73,17 @@ export function ActionsToolbar({
     const row = rowRef.current;
     if (!row) return;
     const recompute = () => {
-      const available = row.clientWidth;
+      // Read the actual computed gap rather than assuming a px value for
+      // the row's `gap: '0.5rem'` - correct regardless of root font-size.
+      const gapPx = parseFloat(getComputedStyle(row).columnGap) || 0;
+      // row.clientWidth is the WHOLE row's width, builtins included - the
+      // builtins are always rendered first and always visible, so their
+      // measured width (plus the one gap between them and whatever comes
+      // next) has to come out of the budget before deciding how many
+      // customs fit, or this overcounts by exactly the builtins' width.
+      const builtinsWidth = builtinsRef.current?.offsetWidth ?? 0;
+      const boundaryGap = hasBuiltins && customs.length > 0 ? gapPx : 0;
+      const available = row.clientWidth - builtinsWidth - boundaryGap;
       const moreWidth = moreProberRef.current?.offsetWidth ?? 0;
       let used = 0;
       let fit = 0;
@@ -84,9 +92,11 @@ export function ActionsToolbar({
         const hasMoreAfter = i + 1 < customs.length;
         // Reserve room for the "More" button unless this is the last
         // custom action - no point reserving space for a dropdown that
-        // would end up empty.
-        const reserve = hasMoreAfter ? moreWidth + GAP_PX : 0;
-        const next = used + (fit > 0 ? GAP_PX : 0) + width;
+        // would end up empty. Safe: if an earlier item's own check passed
+        // with this same reserve subtracted, that already guarantees
+        // room for "More" later if this last item doesn't fit after all.
+        const reserve = hasMoreAfter ? moreWidth + gapPx : 0;
+        const next = used + (fit > 0 ? gapPx : 0) + width;
         if (next + reserve > available) break;
         used = next;
         fit++;
@@ -98,7 +108,7 @@ export function ActionsToolbar({
     ro.observe(row);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customIdsKey]);
+  }, [customIdsKey, hasBuiltins]);
 
   // Outside-click/Escape dismiss - mirrors the column-picker's dismiss
   // effect in SearchDetailPage.tsx.
@@ -145,7 +155,7 @@ export function ActionsToolbar({
             handler();
             if (closeMenuOnClick) setMoreOpen(false);
           }}
-          style={paginationBtn}
+          style={{ ...paginationBtn, flexShrink: 0 }}
           title={action.title}
         >
           {action.title}
@@ -162,7 +172,7 @@ export function ActionsToolbar({
             void handleBackendCall(action);
             if (closeMenuOnClick) setMoreOpen(false);
           }}
-          style={paginationBtn}
+          style={{ ...paginationBtn, flexShrink: 0 }}
           title={action.title}
         >
           {invokingId === action.id ? `${action.title}…` : action.title}
@@ -178,7 +188,7 @@ export function ActionsToolbar({
           if (action.url) open(action.url);
           if (closeMenuOnClick) setMoreOpen(false);
         }}
-        style={paginationBtn}
+        style={{ ...paginationBtn, flexShrink: 0 }}
         title={action.title}
       >
         {action.title}
@@ -198,13 +208,22 @@ export function ActionsToolbar({
         style={{
           display: 'flex',
           flexWrap: 'nowrap',
-          overflow: 'hidden',
+          // No overflow: hidden here - the fit calculation above only ever
+          // renders builtins + however many customs actually fit + "More",
+          // so this row should never genuinely overflow. overflow: hidden
+          // would also clip the "More" dropdown panel below, since it's a
+          // DOM descendant of this row - position: absolute only escapes
+          // this row's normal flow, not its ancestor's overflow clipping.
           gap: '0.5rem',
           alignItems: 'center',
           minWidth: 0,
         }}
       >
-        {builtins.map((a) => renderAction(a, false))}
+        {hasBuiltins && (
+          <div ref={builtinsRef} style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+            {builtins.map((a) => renderAction(a, false))}
+          </div>
+        )}
         {visibleCustoms.map((a) => renderAction(a, false))}
         {overflowCustoms.length > 0 && (
           <div ref={moreRef} style={{ position: 'relative', flexShrink: 0 }}>
