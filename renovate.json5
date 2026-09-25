@@ -144,6 +144,14 @@
         "**Version-coupling reminder:** When the Keycloak server bumps, `keycloak_config_cli_image_tag` should also bump to a tag whose Keycloak-compat suffix matches. E.g. server `26.7.0` → cli tag `*-26.7.0`. Adorsys publishes tags at https://hub.docker.com/r/adorsys/keycloak-config-cli/tags — pick the highest cli version with a matching Keycloak-compat tail. If no matching cli tag exists yet, hold the server bump until one is published; otherwise realm imports may fail on schema-mismatch."
       ]
     },
+    // Server copies only, so the link renders with the server's versions; the config-cli
+    // upgrade in the same PR would render a wrong one.
+    {
+      "matchDepNames": ["quay.io/keycloak/keycloak"],
+      "prBodyNotes": [
+        "**Operator-manifest reminder:** The Keycloak Operator and its CRDs come from the keycloak-k8s-resources release at the new tag, which this diff doesn't show. Check the [release diff](https://github.com/keycloak/keycloak-k8s-resources/compare/{{{currentValue}}}...{{{newValue}}}) for objects it drops or renames: Flux prunes those, except CRDs."
+      ]
+    },
     {
       "matchDepNames": ["temporal", "temporalio/admin-tools"],
       "groupName": "Temporal chart + admin-tools",

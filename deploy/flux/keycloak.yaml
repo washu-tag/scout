@@ -38,6 +38,18 @@ spec:
     kind: GitRepository
     name: keycloak-k8s-resources
   targetNamespace: ${keycloak_namespace}
+  # Flux never prunes the CRDs: deleting one deletes every resource of its kind, the Keycloak
+  # CR included, so a CRD a release drops stays until removed by hand.
+  patches:
+    - target:
+        kind: CustomResourceDefinition
+      patch: |
+        apiVersion: apiextensions.k8s.io/v1
+        kind: CustomResourceDefinition
+        metadata:
+          name: any
+          annotations:
+            kustomize.toolkit.fluxcd.io/prune: disabled
   postBuild:
     substituteFrom:
       - kind: ConfigMap
