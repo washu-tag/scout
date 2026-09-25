@@ -40,6 +40,10 @@ env:
   KEYCLOAK_URL: http://keycloak:8080
   KEYCLOAK_USER: admin
   IMPORT_PATH: /config/
+  # Wait for Keycloak before importing: an operator upgrade or image change restarts it
+  # while this post-upgrade hook runs. Under Helm's 5m hook timeout, with import time.
+  KEYCLOAK_AVAILABILITYCHECK_ENABLED: 'true'
+  KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 240s
 
 # Pulled into the Job env in bulk (e.g. a client-secrets Secret whose keys are the
 # $(env:...) names the realm var-substitutes).

@@ -11,23 +11,27 @@
   environment:
     K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
   block:
-    - name: Apply Keycloak CRD
-      no_log: true
-      kubernetes.core.k8s:
-        state: present
-        src: '{{ keycloak_crd_url }}'
+    # The release's own kustomization.yml lists its files. The set changes between
+    # releases: 26.7 added the OIDC and SAML client CRDs, and its operator won't start
+    # without them.
+    - name: Read the Keycloak Operator release's file list
+      ansible.builtin.uri:
+        url: '{{ keycloak_operator_url }}/kustomization.yml'
+        return_content: true
+      register: keycloak_operator_release
 
-    - name: Apply Keycloak KeycloakRealmImport CRD
+    - name: Apply Keycloak CRDs
       no_log: true
       kubernetes.core.k8s:
         state: present
-        src: '{{ keycloak_realmimport_crd_url }}'
+        src: '{{ keycloak_operator_url }}/{{ item }}'
+      loop: "{{ (keycloak_operator_release.content | from_yaml).resources | reject('equalto', 'kubernetes.yml') | list }}"
 
     - name: Apply Keycloak Operator
       no_log: true
       kubernetes.core.k8s:
         state: present
-        src: '{{ keycloak_operator_url }}'
+        src: '{{ keycloak_operator_url }}/kubernetes.yml'
         namespace: '{{ keycloak_namespace }}'
 
 - name: Override Keycloak operator image pull policy

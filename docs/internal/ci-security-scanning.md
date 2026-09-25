@@ -161,7 +161,7 @@ CVE PRs are created automatically. All other available updates are listed on the
 - `dependencyDashboard: true` — creates a "Dependency Dashboard" GitHub issue listing all detected dependencies, available updates, and OSV vulnerability summary
 - `prConcurrentLimit: 5` — limits concurrent open PRs
 - `automerge: false` — all updates require human review
-- `enabledManagers: ["custom.regex"]` — only manages `versions.yaml`; standard ecosystems are handled by Dependabot
+- `enabledManagers: ["custom.regex"]` — only the custom regex managers (`versions.yaml` and the files that mirror it); standard ecosystems are handled by Dependabot
 
 **Authentication:** Uses a dedicated GitHub App (`scout-renovate`) via `RENOVATE_APP_ID` and `RENOVATE_APP_PRIVATE_KEY` repository secrets. The app needs Contents (R/W), Issues (R/W), Pull requests (R/W), and Metadata (R) permissions.
 
@@ -171,6 +171,10 @@ CVE PRs are created automatically. All other available updates are listed on the
 # renovate: datasource=helm registryUrl=https://example.com/charts depName=my-chart
 my_chart_version: ~1.2.0
 ```
+
+**Mirrors in `deploy/`:** the GitOps bases keep third-party versions as literals, so a pin that also appears under `deploy/` needs the same `# renovate:` comment directly above its `version:`, `tag:`, `image:` or `imageName:` line. Renovate groups updates by `depName`, so `versions.yaml` and its `deploy/` copies bump in one PR.
+
+**Keeping copies in sync:** the `tooling/versions` check in CI fails when copies of a pinned version disagree, so a hand edit to one copy (as in #706) is caught at review.
 
 See `renovate.json5` for the full regex pattern and ADR 0015 for the design decision.
 
