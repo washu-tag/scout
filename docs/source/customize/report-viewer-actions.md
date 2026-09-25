@@ -13,6 +13,32 @@ config into a Deployment annotation), so changes take effect within the normal p
 restart window — seconds, not the launchpad's ~10-second sidecar propagation, but not
 instant either.
 
+If report-viewer is deployed through this repo's Ansible role (the normal path — see
+`ansible/roles/report_viewer`), configure this from `inventory.yaml` rather than editing
+`helm/report-viewer/values.yaml` directly:
+
+```yaml
+# inventory.yaml
+report_viewer_explain_search:
+  requiredGroup: scout-admin
+report_viewer_download_csv:
+  enabled: false
+report_viewer_custom_actions:
+  - id: pacs-viewer
+    title: Open in PACS
+    url: https://pacs.example.org/
+    requiredGroup: scout-admin
+```
+
+`report_viewer_explain_search`/`report_viewer_download_csv` are deep-merged onto chart
+defaults (set only the field you're changing); `report_viewer_custom_actions` is passed
+through as-is (it's a list, so it fully replaces the default empty list, not merged
+per-entry). Every field shown below under `actions.*` in this guide is the same field
+name whether it's set through one of these inventory variables or directly in
+`values.yaml` — the rest of this guide describes the underlying chart shape those
+variables render into. See `ansible/inventory.example.yaml` for a commented-out example
+block, including the custom-action secrets shape.
+
 ```{warning}
 **This entire feature — and report-viewer's browser-facing UI in general — is on-prem
 only.** Visibility, `requiredGroup`, and every button in the toolbar depend on

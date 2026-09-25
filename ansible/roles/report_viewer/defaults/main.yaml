@@ -59,3 +59,19 @@ report_viewer_trino_auth_client_secret: '{{ keycloak_report_viewer_svc_client_se
 #     invokeToken: "{{ vault_xnat_explore_poc_invoke_token }}"
 #     assertionKey: "{{ vault_xnat_explore_poc_assertion_key }}"
 report_viewer_custom_actions: []
+
+# Gating for the two built-in actions (helm/report-viewer's
+# actions.explainSearch/actions.downloadCsv). Deep-merged with an
+# inventory.yaml override, so a site only needs to set the field it wants
+# to change, e.g.:
+#
+# report_viewer_explain_search:
+#   requiredGroup: scout-admin
+# report_viewer_download_csv:
+#   enabled: false
+report_viewer_explain_search_default:
+  enabled: true
+  requiredGroup: ''
+report_viewer_download_csv_default:
+  enabled: true
+  requiredGroup: ''

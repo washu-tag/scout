@@ -7,11 +7,15 @@ image:
 
 resources: {{ report_viewer_resources_default | combine(report_viewer_resources | default({}), recursive=true) | to_json }}
 
-# Issue #739 PoC: site-admin-authorable action buttons. Empty by default;
-# see helm/report-viewer/values.yaml for the exact per-entry field shape
-# (open-url vs backend-call) and report_viewer_custom_actions' own
-# comment for the inventory.yaml override shape.
+# Issue #739: site-admin-authorable action buttons. `custom` is empty by
+# default; see helm/report-viewer/values.yaml for the exact per-entry
+# field shape (open-url vs backend-call) and report_viewer_custom_actions'
+# own comment for the inventory.yaml override shape. explainSearch/
+# downloadCsv gate the two built-ins - see report_viewer_explain_search/
+# report_viewer_download_csv's defaults for the inventory.yaml override shape.
 actions:
+  explainSearch: {{ report_viewer_explain_search_default | combine(report_viewer_explain_search | default({}), recursive=true) | to_json }}
+  downloadCsv: {{ report_viewer_download_csv_default | combine(report_viewer_download_csv | default({}), recursive=true) | to_json }}
   custom: {{ report_viewer_custom_actions | to_json }}
 
 env:

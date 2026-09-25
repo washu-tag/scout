@@ -301,8 +301,9 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   template, or `scout_common`'s `launchpad_catalog` task for Ansible roles).
   Authoring guide: `docs/source/customize/launchpad-chips.md` (ADR 0034).
 - **Add or gate a report-viewer search action** — no report-viewer code change or image
-  rebuild; a `helm/report-viewer` values change (`actions.custom`, or `enabled`/
-  `requiredGroup` on the built-ins) plus `helm upgrade`. Authoring guide:
+  rebuild; an `inventory.yaml` change (`report_viewer_custom_actions`,
+  `report_viewer_explain_search`/`report_viewer_download_csv`) plus a redeploy, which
+  renders through to `helm/report-viewer`'s `actions.*` values. Authoring guide:
   `docs/source/customize/report-viewer-actions.md` (ADR 0038).
 - **Add a Superset dashboard, chart, or dataset** — export the asset YAML into
   `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`; a new

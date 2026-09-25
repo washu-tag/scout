@@ -761,6 +761,22 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     report_viewer_db_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     report_viewer_gateway_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # Gate the built-in toolbar buttons to a Keycloak group, or disable one
+    # entirely. Either key is optional; only set what you want to change.
+    # report_viewer_explain_search:
+    #   requiredGroup: scout-admin
+    # report_viewer_download_csv:
+    #   enabled: false
+    # Site-authored custom toolbar buttons - see
+    # docs/source/customize/report-viewer-actions.md for the full guide.
+    # report_viewer_custom_actions:
+    #   - id: explore-xnat
+    #     title: Explore in XNAT
+    #     actionType: backend-call
+    #     endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
+    #     invokeToken: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    #     assertionKey: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    #     requiredGroup: scout-admin
 
     #---------------------------------------------------------------------------
     # data-generator
