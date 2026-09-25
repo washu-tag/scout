@@ -7,10 +7,6 @@ jupyter_helm_repo_name: jupyterhub
 jupyter_helm_repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
 jupyter_helm_chart_name: jupyterhub
 
-# configurable-http-proxy idle keep-alive (milliseconds). Keep above the fronting proxy's
-# idle timeout (Traefik 90s, AWS ALB 60s by default) so the proxy closes idle connections first.
-jupyter_proxy_keep_alive_timeout: 120000
-
 # Storage configuration
 jupyter_hub_storage_size: 1Gi
 jupyter_singleuser_storage_size: 10Gi

@@ -34,10 +34,6 @@ superset_pool_size: 30
 superset_pool_max_overflow: 30
 superset_pool_timeout: 60
 
-# Gunicorn idle keep-alive (seconds). Keep above the fronting proxy's idle timeout
-# (Traefik 90s, AWS ALB 60s by default) so the proxy closes idle connections first.
-superset_gunicorn_keepalive: 120
-
 # PostgreSQL configuration
 superset_postgres_user: superset
 superset_postgres_password: changeme

@@ -232,10 +232,6 @@ extraEnvVars:
   - name: WEBUI_URL
     value: 'https://chat.{{ server_hostname }}'
 
-  # start.sh passes no --timeout-keep-alive, so uvicorn reads it from this (default 5s).
-  - name: UVICORN_TIMEOUT_KEEP_ALIVE
-    value: '{{ open_webui_uvicorn_timeout_keep_alive }}'
-
   # Enable role management
   - name: ENABLE_OAUTH_ROLE_MANAGEMENT
     value: 'true'

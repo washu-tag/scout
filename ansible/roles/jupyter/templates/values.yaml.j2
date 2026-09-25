@@ -1,9 +1,6 @@
 proxy:
   service:
     type: ClusterIP
-  chp:
-    extraCommandLineFlags:
-      - '--keep-alive-timeout={{ jupyter_proxy_keep_alive_timeout }}'
 
 hub:
   resources: {{ jupyter_hub_resources_default | combine(jupyter_hub_resources | default({}), recursive=true) | to_json }}
