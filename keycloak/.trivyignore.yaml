@@ -17,3 +17,8 @@ vulnerabilities:
   # 2026-09). Drop these on the next base bump that carries it.
   - id: CVE-2026-8763 # org.bouncycastle:bcprov-jdk18on 1.84 - name constraints bypass
   - id: CVE-2026-13506 # org.bouncycastle:bcprov-jdk18on 1.84 - ASN.1 nesting-depth DoS
+  # freemarker (Keycloak's templating engine for emails/themes). Fixed
+  # upstream in freemarker 2.3.35, but no Keycloak release bundles it yet -
+  # confirmed still present on the current 26.7.4 tag as of 2026-09. Drop
+  # this on the next base bump that carries it.
+  - id: CVE-2026-84939 # org.freemarker:freemarker 2.3.32
