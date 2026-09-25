@@ -186,7 +186,9 @@ analytics apps) stays mode-agnostic; only the edge moves.
   contract and `alb-oidc-keycloak` (the oauth2-proxy client's id + secret, which the ALB reads for OIDC) to
   the site-seeded secrets; scheme comes from the `alb`/`alb-internal` IngressClassParams
   (Layer-0, which override the per-ingress annotation on EKS Auto). Covers Superset,
-  Keycloak and launchpad; jupyter and monitoring follow as they land in the base.
+  Keycloak, launchpad and the Temporal UI (behind its own OIDC login and frontend JWT
+  authz, as on-prem, so realm membership alone does not grant workflow access); jupyter
+  and monitoring follow as they land in the base.
 
 ## Related
 

@@ -1,0 +1,24 @@
+# Orchestrator chip (ADR 0034), the same document the Ansible temporal role publishes.
+# The /auth/sso path is load-bearing: a link to the bare subdomain lands on the UI
+# without starting its OIDC login.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-launchpad
+  namespace: '${scout_extractor_namespace}'
+  labels:
+    launchpad.scout.xnat.org/catalog: 'true'
+data:
+  apps.yaml: |
+    apiVersion: launchpad.scout.xnat.org/v1alpha1
+    kind: Catalog
+    chips:
+      - id: orchestrator
+        title: Orchestrator
+        description: Ingestion and characterization workflows
+        icon: temporal
+        tone: cyan
+        link: { subdomain: temporal, path: /auth/sso }
+        group: admin
+        weight: 30
+        audience: admin

@@ -2,3 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - resources.yaml
+  # Per-mode web ingress (both modes; the HR selects one via service_mode).
+  - edge.yaml
+  - catalog.yaml
