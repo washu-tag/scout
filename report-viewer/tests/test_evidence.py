@@ -260,3 +260,10 @@ def test_a_nested_predicate_is_left_alone() -> None:
     out, has_evidence = with_evidence(sql)
     assert has_evidence is False
     assert out == sql
+
+
+def test_highlights_cover_the_column_the_viewer_renders() -> None:
+    """The row panel shows report_text, so a section-only offset marks nothing."""
+    expression = highlight_hits_expression(CANONICAL)
+    assert expression is not None
+    assert expression.count("ROW('report_text'") >= 2

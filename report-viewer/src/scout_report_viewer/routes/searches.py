@@ -120,7 +120,6 @@ def _assert_required_projections(columns: list[str]) -> None:
         )
 
 
-
 def _view_url(search_id: str) -> str:
     return f"{settings.external_url.rstrip('/')}/spa/searches/{search_id}"
 

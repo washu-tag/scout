@@ -407,11 +407,21 @@ def highlight_hits_expression(sql: str) -> str | None:
     Trino does the matching, so the offsets come from the same engine that
     selected the rows. Meant for a single-report read, where one extra pass per
     pattern is free; it would be wasteful across a whole cohort.
+
+    Emitted for every text column the viewer can render, not just the one a
+    predicate named: the row panel shows `report_text`, and an offset into
+    `report_section_impression` means nothing there.
     """
     plan = build_plan(sql)
     if plan is None:
         return None
-    arrays = " || ".join(
-        _hits_for_leaf(leaf) for leaf in (*plan.positives, *plan.vetoes)
-    )
+    leaves: list[TextLeaf] = []
+    for leaf in (*plan.positives, *plan.vetoes):
+        for column in dict.fromkeys((leaf.column, "report_text")):
+            candidate = TextLeaf(
+                column=column, pattern=leaf.pattern, negated=leaf.negated
+            )
+            if candidate not in leaves:
+                leaves.append(candidate)
+    arrays = " || ".join(_hits_for_leaf(leaf) for leaf in leaves)
     return f"CAST({arrays} AS JSON)"
