@@ -1,4 +1,4 @@
-from pydantic import model_validator
+from pydantic import PositiveInt, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     log_level: str = "info"
+    # Idle keep-alive seconds; keep above the fronting proxy's idle timeout (Traefik
+    # 90s, AWS ALB 60s by default) so the proxy closes idle connections first.
+    timeout_keep_alive: PositiveInt = 120
 
     external_url: str
 
