@@ -4,6 +4,16 @@
   gather_facts: false
   environment: '{{ cluster_k8s_environment }}'
   roles:
+    # Cassandra and Elasticsearch boot concurrently; Temporal needs both.
     - role: cassandra
+      vars:
+        cassandra_wait_for_ready: false
     - role: elasticsearch
-    - role: temporal
+  tasks:
+    - name: Wait for Cassandra
+      ansible.builtin.include_role:
+        name: cassandra
+        tasks_from: wait
+    - name: Install Temporal
+      ansible.builtin.include_role:
+        name: temporal
