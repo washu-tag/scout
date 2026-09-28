@@ -21,10 +21,12 @@ spec:
       restartPolicy: Never
       containers:
         - name: psql
-          image: postgres:16
+          # Same image as the CNPG cluster (postgres_image[_tag]), so psql matches the server.
+          # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=regex:^(?<major>\d+)\.(?<minor>\d+)-(?<compatibility>system-trixie)$
+          image: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
           securityContext:
             runAsNonRoot: true
-            runAsUser: 999
+            runAsUser: 26
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:

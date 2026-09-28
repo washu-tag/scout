@@ -62,6 +62,7 @@
         namespace: '{{ postgres_cluster_namespace }}'
       spec:
         instances: 1
+        imageName: '{{ postgres_image }}:{{ postgres_image_tag }}'
         storage:
           storageClass: '{{ postgres_storage_class | default(omit, true) }}'
           size: '{{ postgres_storage_size }}'

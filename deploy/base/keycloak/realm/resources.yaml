@@ -55,6 +55,7 @@ spec:
     # Upstream config-cli image, pinned in versions.yaml (keycloak_config_cli_image[_tag]).
     image:
       repository: docker.io/adorsys/keycloak-config-cli
+      # renovate: datasource=docker depName=adorsys/keycloak-config-cli versioning=loose
       tag: 6.5.1-26.5.5
     # Scout realm config (cluster-vars; arrive as strings, the realm gates on eq "true").
     # enableXnat provisions the XNAT client/role; github/microsoft toggle the IdPs;

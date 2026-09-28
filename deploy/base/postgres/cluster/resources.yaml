@@ -17,6 +17,9 @@ metadata:
   namespace: '${postgres_cluster_namespace}'
 spec:
   instances: 1
+  # postgres_image[_tag] in versions.yaml; the psql Jobs run the same image.
+  # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=regex:^(?<major>\d+)\.(?<minor>\d+)-(?<compatibility>system-trixie)$
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
   storage:
     size: '${postgres_storage_size}'
   resources:

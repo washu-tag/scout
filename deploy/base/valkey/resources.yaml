@@ -26,6 +26,7 @@ spec:
   chart:
     spec:
       chart: valkey
+      # renovate: datasource=helm registryUrl=https://valkey-io.github.io/valkey-helm/ depName=valkey
       version: '0.9.4'
       sourceRef:
         kind: HelmRepository

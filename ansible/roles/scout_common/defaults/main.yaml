@@ -359,8 +359,21 @@ xnat_plugins_default:
           openid.keycloak.givenNameProperty: given_name
           openid.keycloak.familyNameProperty: family_name
           openid.keycloak.pkceEnabled: 'true'
+          # Validate the ID token rather than trusting what came back from the flow:
+          # check it was issued by our realm, verify its signature against the realm's
+          # published keys, and reject a token of the wrong type presented as an ID token.
+          openid.keycloak.issuer: '{{ keycloak_realm_url }}'
+          openid.keycloak.jwksUri: '{{ keycloak_oidc_certs_url }}'
+          openid.keycloak.typCheck.enabled: 'true'
+          openid.keycloak.idToken.typCheck.expectedTypes: ID
           openid.keycloak.usernamePattern: '[preferred_username]'
           openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
+          # Skip the login page when the user already has a Keycloak session (prompt=none).
+          openid.keycloak.autoLogin: 'true'
+          # Log out through oauth2-proxy, as the other Scout services do: it clears the edge
+          # session and ends the Keycloak one. XNAT's idle timeout also lands here, which is
+          # why the xnat role pins that timeout to the SSO lifetime (prefs-override.ini).
+          openid.keycloak.logoutUri: '{{ oauth2_proxy_signout_url }}'
 
 # Combined list the xnat role's templates/tasks iterate. xnat_plugins is
 # operator-supplied (defaulted to [] inline here).

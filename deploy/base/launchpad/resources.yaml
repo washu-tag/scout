@@ -51,6 +51,7 @@ spec:
         enabled: true
         image:
           repository: quay.io/kiwigrid/k8s-sidecar
+          # renovate: datasource=docker depName=quay.io/kiwigrid/k8s-sidecar
           tag: '2.10.1'
     scoutEnv: '${scout_env}'
     deployerName: '${deployer_name}'

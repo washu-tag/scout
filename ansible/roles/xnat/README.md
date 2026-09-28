@@ -30,8 +30,9 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
    chart dir to deploy unpublished edits.)
 2. **Secrets** (`create_secrets.yaml`): all Secrets are created by Ansible and
    referenced by name in the templated values — the chart owns no Secrets. This
-   includes the first-boot `xnat-prefs-init`, per-plugin config Secrets, and any
-   Pattern-A jar Secrets.
+   includes the first-boot `xnat-prefs-init`, the every-boot `xnat-prefs-override`
+   (which pins the session timeout to the Scout SSO lifetime), per-plugin config
+   Secrets, and any Pattern-A jar Secrets.
 3. **Values** (`templates/values.yaml.j2`): templated from inventory, including
    the generated `plugins` / `authplugins` / `extraConfig` / `extraVolumes` blocks
    derived from `xnat_plugins_all`. The role writes no `initContainers` of its

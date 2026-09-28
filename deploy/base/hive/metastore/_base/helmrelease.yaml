@@ -29,6 +29,7 @@ spec:
       pullPolicy: IfNotPresent
       # hive_image_tag in versions.yaml (Renovate-tracked, regex-pinned to the
       # plain multi-arch tags). Overrides the chart appVersion.
+      # renovate: datasource=docker depName=starburstdata/hive versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?<compatibility>-e\.)(?<build>\d+)$
       tag: '3.1.3-e.15'
     fullnameOverride: hive-metastore
     # aws: IRSA SA via ${irsa_role_prefix}-hive-metastore. on-prem has no IRSA webhook, so the empty

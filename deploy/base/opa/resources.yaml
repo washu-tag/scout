@@ -40,6 +40,7 @@ spec:
     # mirror (upstream image, not stamped); keep in lockstep with versions.yaml.
     image:
       repository: openpolicyagent/opa
+      # renovate: datasource=docker depName=openpolicyagent/opa
       tag: '1.16.2'
       pullPolicy: IfNotPresent
     resources:

@@ -950,6 +950,8 @@ Even with the Extension Manager disabled, users with terminal access can still r
 
 XNAT is an optional service, gated by `enable_xnat` (default `false`) and deployed with `make install-xnat` (or as part of `make all`). It is installed using the `xnat-openid-auth-plugin` for auth, which runs an authorization-code flow against Keycloak (callback `/openid-login`); XNAT still sits behind oauth2-proxy as the edge approval gate, the same posture as every other Scout service.
 
+A user who already has a Scout session lands in XNAT without seeing its login page, and logging out of XNAT signs them out of Scout. XNAT's user session timeout is pinned to `keycloak_token_lifespan`, the Scout-wide session length (8 hours by default), and reapplied every time XNAT starts, so change that variable rather than the setting in XNAT's admin UI.
+
 When `enable_xnat` is `false`, **nothing** XNAT is created — no namespace, no deploy, and the Keycloak realm omits the `xnat` client and the `xnat-access` role (mapped onto the `scout-user` group). Set it to enable the feature:
 
 ```yaml
@@ -990,11 +992,11 @@ xnat_site_id: scout-xnat
 # Namespace where XNAT is deployed (default: xnat)
 xnat_namespace: xnat
 
-# XNAT Helm chart version to deploy from GHCR (default: 2.0.0)
-xnat_chart_version: 2.0.0
+# XNAT Helm chart version to deploy from GHCR (default: 3.3.0)
+xnat_chart_version: 3.3.0
 
-# ghcr.io/nrgxnat/xnat image tag (default: 1.10.1-SNAPSHOT)
-xnat_image_tag: '1.10.1-SNAPSHOT'
+# ghcr.io/nrgxnat/xnat image tag (default: 1.10.1)
+xnat_image_tag: '1.10.1'
 
 # XNAT image repository. GHCR only; the Docker Hub xnatworks/xnat-web images
 # are no longer used (default: ghcr.io/nrgxnat/xnat)

@@ -97,9 +97,9 @@ build instead:
 
 ```yaml
 xnat_dev_plugins:
-  - ~/XNAT/openid-auth-plugin/build/libs/openid-auth-plugin-1.6.0-SNAPSHOT-xpl.jar
+  - ~/XNAT/openid-auth-plugin/build/libs/openid-auth-plugin-1.7.0-SNAPSHOT-xpl.jar
   - ~/XNAT/container-service/build/libs/container-service-3.8.1-fat.jar
-xnat_plugins_default: []          # drop the coordinate-resolved openid 1.5.0
+xnat_plugins_default: []          # drop the coordinate-resolved openid release
 xnat_plugins:
   - name: openid-sso-config
     source: { type: none }        # config only — no jar installed
@@ -157,6 +157,14 @@ kubectl --context <ctx> -n xnat rollout restart statefulset/xnat
 
 (Or upload directly with `mc`/`kubectl cp` if you prefer a tighter loop; the init
 containers just read `s3://xnat-dev/ROOT.war` and `s3://xnat-dev/plugins/`.)
+
+## Running the REST test suite
+
+`ansible/scripts/xnat-test-mode.sh on --context <ctx>` puts the instance into a state the
+[XNAT REST test suite](https://github.com/NrgXnat/xnat-rest-tests) can drive: one
+replica, SSO auto-login off, siteUrl pointed at the port-forward, and forwards up on 8080
+(REST) and 8104 (DICOM). `off` restores all three. See the script header for why each is
+needed.
 
 ## Multi-node testing (external ActiveMQ)
 

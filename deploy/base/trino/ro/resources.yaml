@@ -84,6 +84,7 @@ spec:
   chart:
     spec:
       chart: trino
+      # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
       version: '1.42.2'
       sourceRef:
         kind: HelmRepository
