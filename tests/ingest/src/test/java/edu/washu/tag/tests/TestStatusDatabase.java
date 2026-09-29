@@ -468,8 +468,7 @@ public class TestStatusDatabase extends BaseTest {
         cleanupHl7FilesForLog(logPath, date);
 
         // First attempt: bogus hl7OutputPath causes the zip upload to fail. The activity's
-        // catch block writes placeholder hl7_file_path rows before throwing. One attempt is
-        // enough to write them; retrying would only wait out the backoff.
+        // catch block writes placeholder hl7_file_path rows before throwing.
         temporalClient.launchIngest(
             new IngestJobInput()
                 .setLogPaths(logPath)

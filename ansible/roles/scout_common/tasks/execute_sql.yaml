@@ -16,7 +16,6 @@
 - name: Configure DB connection string
   ansible.builtin.set_fact:
     psql_connection: 'host={{ db_host }} port={{ db_port }} dbname={{ psql_dbname }} user={{ psql_user }} sslmode={{ psql_sslmode }}'
-    # Nanoseconds: concurrent plays can target the same db within one second.
     psql_job_name: "psql-{{ (psql_dbname | lower | regex_replace('[^a-z0-9-]', '-') | truncate(30, true, '') | regex_replace('^-+', '') | regex_replace('-+$', '')) | default('db', true) }}-{{ lookup('pipe', 'date +%s%N') }}"
 
 - name: Verify SQL script input
