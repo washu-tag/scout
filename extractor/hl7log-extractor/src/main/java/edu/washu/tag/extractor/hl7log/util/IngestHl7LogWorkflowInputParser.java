@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 public class IngestHl7LogWorkflowInputParser {
 
     private static final Logger logger = LoggerFactory.getLogger(IngestHl7LogWorkflowInputParser.class);
-    private static final int DEFAULT_SPLIT_AND_UPLOAD_MAX_ATTEMPTS = 5;
 
     /**
      * Parse and validate input.
@@ -57,7 +56,7 @@ public class IngestHl7LogWorkflowInputParser {
         Integer splitAndUploadTimeout = DefaultArgs.getSplitAndUploadTimeout(input.splitAndUploadTimeout());
         Integer splitAndUploadHeartbeatTimeout = DefaultArgs.getSplitAndUploadHeartbeatTimeout(input.splitAndUploadHeartbeatTimeout());
         Integer splitAndUploadConcurrency = DefaultArgs.getSplitAndUploadConcurrency(input.splitAndUploadConcurrency());
-        Integer splitAndUploadMaxAttempts = Optional.ofNullable(input.splitAndUploadMaxAttempts()).orElse(DEFAULT_SPLIT_AND_UPLOAD_MAX_ATTEMPTS);
+        Integer splitAndUploadMaxAttempts = DefaultArgs.getSplitAndUploadMaxAttempts(input.splitAndUploadMaxAttempts());
 
         // Do we have values?
         boolean hasLogPathsInput = input.logPaths() != null && !input.logPaths().isBlank();

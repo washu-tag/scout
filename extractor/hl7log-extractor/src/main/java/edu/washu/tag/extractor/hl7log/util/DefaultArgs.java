@@ -17,6 +17,7 @@ public class DefaultArgs {
     private static Integer splitAndUploadTimeout;
     private static Integer splitAndUploadHeartbeatTimeout;
     private static Integer splitAndUploadConcurrency;
+    private static Integer splitAndUploadMaxAttempts;
     private static String reportTableName;
     private static Integer deltaIngestTimeout;
 
@@ -138,6 +139,26 @@ public class DefaultArgs {
      */
     public static Integer getSplitAndUploadConcurrency(Integer input) {
         return getValueOrDefault(input, splitAndUploadConcurrency);
+    }
+
+    /**
+     * Split and upload activity maximum attempts.
+     *
+     * @param splitAndUploadMaxAttempts The input value for split and upload maximum attempts.
+     */
+    @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadMaxAttempts}")
+    public void setSplitAndUploadMaxAttempts(Integer splitAndUploadMaxAttempts) {
+        DefaultArgs.splitAndUploadMaxAttempts = splitAndUploadMaxAttempts;
+    }
+
+    /**
+     * Split and upload activity maximum attempts.
+     *
+     * @param input The input value for split and upload maximum attempts.
+     * @return The split and upload maximum attempts value or the default.
+     */
+    public static Integer getSplitAndUploadMaxAttempts(Integer input) {
+        return getValueOrDefault(input, splitAndUploadMaxAttempts);
     }
 
     /**

@@ -64,6 +64,8 @@ class IngestHl7LogWorkflowInputParserTest {
     private Integer defaultSplitAndUploadHeartbeatTimeout;
     @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadConcurrency}")
     private Integer defaultSplitAndUploadConcurrency;
+    @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadMaxAttempts}")
+    private Integer defaultSplitAndUploadMaxAttempts;
 
     @Test
     void testParseInput_nonScheduled_defaultsOnly(IngestHl7LogWorkflowInputParserTestWorkflow workflow) {
@@ -114,7 +116,7 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
         assertEquals(defaultSplitAndUploadHeartbeatTimeout, parsedInput.splitAndUploadHeartbeatTimeout());
         assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
-        assertEquals(5, parsedInput.splitAndUploadMaxAttempts());
+        assertEquals(defaultSplitAndUploadMaxAttempts, parsedInput.splitAndUploadMaxAttempts());
     }
 
     @Test
