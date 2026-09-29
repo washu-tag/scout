@@ -267,3 +267,12 @@ def test_highlights_cover_the_column_the_viewer_renders() -> None:
     expression = highlight_hits_expression(CANONICAL)
     assert expression is not None
     assert expression.count("ROW('report_text'") >= 2
+
+
+def test_occurrence_index_is_cast_to_integer() -> None:
+    """SEQUENCE yields BIGINT but regexp_position's occurrence arg is INTEGER.
+    Without the cast Trino rejects the whole expression and marks vanish."""
+    expression = highlight_hits_expression(CANONICAL)
+    assert expression is not None
+    assert "CAST(i AS INTEGER)" in expression
+    assert ", 1, i)" not in expression

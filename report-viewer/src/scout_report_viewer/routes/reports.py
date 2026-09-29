@@ -225,27 +225,46 @@ async def _highlight_expression(
         return None
 
 
+def _one_hit(h: Any) -> Highlight | None:
+    """One hit, however Trino encoded the row.
+
+    A named ROW casts to a JSON object on most versions and to a positional
+    array on others, so accept both rather than lose every mark to the shape.
+    Positions are 1-based; the frontend slices from 0.
+    """
+    if isinstance(h, dict):
+        field, pos, length, polarity = (
+            h.get("field"),
+            h.get("pos"),
+            h.get("len"),
+            h.get("polarity"),
+        )
+    elif isinstance(h, (list, tuple)) and len(h) >= 4:
+        field, pos, length, polarity = h[0], h[1], h[2], h[3]
+    else:
+        return None
+    if not field or not isinstance(pos, int) or not isinstance(length, int):
+        return None
+    if pos < 1 or length < 1:
+        return None
+    return Highlight(
+        field=str(field),
+        start=pos - 1,
+        end=pos - 1 + length,
+        polarity=str(polarity or "positive"),
+    )
+
+
 def _parse_hits(rows: list[dict[str, Any]]) -> list[list[Highlight]]:
-    """Trino positions are 1-based; the frontend slices from 0."""
     out: list[list[Highlight]] = []
     for row in rows:
         raw = row.get(_HITS_COLUMN)
         try:
             parsed = json.loads(raw) if isinstance(raw, str) else (raw or [])
-            out.append(
-                [
-                    Highlight(
-                        field=h["field"],
-                        start=h["pos"] - 1,
-                        end=h["pos"] - 1 + h["len"],
-                        polarity=h["polarity"],
-                    )
-                    for h in parsed
-                    if h.get("pos", 0) > 0 and h.get("len", 0) > 0
-                ]
-            )
+            hits = [h for h in (_one_hit(x) for x in parsed) if h is not None]
         except Exception:
             # An unexpected encoding costs the marks, not the report.
             log.exception("highlight parse failed (non-fatal)")
-            out.append([])
+            hits = []
+        out.append(hits)
     return out

@@ -97,3 +97,16 @@ def test_query_from_file_no_validation_binds_all_ids(auth_headers, fake_trino):
     query_sql, params = fake_trino.calls[0]
     assert 'contains(?, "accession_number")' in query_sql
     assert params == [["ACC1"]]
+
+
+def test_hits_parse_from_either_json_encoding() -> None:
+    """A named ROW casts to a JSON object on some Trino versions and a
+    positional array on others; neither should lose the marks."""
+    from scout_report_viewer.routes.reports import _one_hit
+
+    obj = _one_hit({"field": "report_text", "pos": 4, "len": 6, "polarity": "negative"})
+    arr = _one_hit(["report_text", 4, 6, "negative"])
+    assert obj == arr
+    assert obj is not None and (obj.start, obj.end) == (3, 9)
+    assert _one_hit({"field": "x", "pos": 0, "len": 6}) is None
+    assert _one_hit("junk") is None

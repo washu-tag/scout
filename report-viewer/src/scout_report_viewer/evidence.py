@@ -390,7 +390,7 @@ def _hits_for_leaf(leaf: TextLeaf) -> str:
     polarity = "negative" if leaf.negated else "positive"
     element = (
         f"CAST(ROW({_lit(leaf.column)}, "
-        f"REGEXP_POSITION({col}, {_lit(leaf.pattern)}, 1, i), "
+        f"REGEXP_POSITION({col}, {_lit(leaf.pattern)}, 1, CAST(i AS INTEGER)), "
         f"LENGTH({all_matches}[i]), {_lit(polarity)}) AS {_HIT_ROW})"
     )
     # sequence(1, 0) counts *down* in Trino, so the empty case needs its own arm.
