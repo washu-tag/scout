@@ -40,28 +40,6 @@ Services are reachable under `external_url` via Traefik (launchpad at `/`, other
 
 ## Project Structure
 
-```
-ansible/              # Deployment: playbooks/ (one per component), roles/, filter_plugins/
-                      #   scout_common/     shared defaults, tasks, filters
-                      #   group_vars/all/versions.yaml   all pinned component versions
-                      #   inventory.yaml    site config (created from inventory.example.yaml)
-helm/                 # Chart configurations and Scout-authored charts
-extractor/
-  hl7log-extractor/   # Java/Gradle: Temporal workflow + activities, log → bronze
-  hl7-transformer/    # Python/PySpark package `hl7scout`: HL7 → Delta silver
-hl7-listener/         # Java/Gradle: Camel MLLP listener + Kafka batcher (ADR 0028)
-report-viewer/        # Python FastAPI + React frontend/ (ADR 0029)
-launchpad/            # Next.js: landing page + /admin/users console (ADR 0025)
-sdk/python/           # The `scout` SDK used by notebooks and Voila
-keycloak/             # Keycloak image + event-listener/ SPI (OPA bundles, scout-users API)
-policy/trino/         # OPA Rego policy for Trino authorization
-analytics/notebooks/  # Notebooks shipped to JupyterHub
-tooling/              # CI tooling (manifest/ = build-manifest schema + reader/writer)
-docs/                 # source/ = user docs, internal/ = developer docs + adr/
-tests/                # ingest/ auth/ data-authorization/ network/ (see docs/internal/integration_tests.md)
-orchestrator/         # Docs only: how to launch workflows from the Temporal CLI
-```
-
 Note the workflow code lives in `extractor/hl7log-extractor`, not `orchestrator/`.
 
 ## Data Schema
@@ -117,10 +95,6 @@ and the role README is the authoritative list.
 
 ### Local Development
 
-- Java/Gradle (`extractor/hl7log-extractor`, `hl7-listener`): `./gradlew build`
-- Python (`extractor/hl7-transformer`, `report-viewer`, `sdk/python`): `pytest`
-- `launchpad`: `npm install && npm run dev`
-
 Pre-commit hooks are documented in `docs/internal/precommit.md`; Ansible role tests use
 Molecule (`docs/internal/molecule_ansible_testing.md`).
 
@@ -168,21 +142,8 @@ the logs from every service. Provisioned dashboards live in
 that directory (`docs/internal/grafana-dashboards-and-alerts.md`). Workflow-level ingest
 detail is in the Temporal UI.
 
-## Troubleshooting
-
-```bash
-kubectl get pods -A                          # what's unhealthy
-kubectl logs -n <namespace> <pod> [-f]       # service logs (also in Loki)
-kubectl describe pod -n <namespace> <pod>    # events, scheduling failures
-```
-
-Then: Grafana dashboards for metrics, Grafana > Explore > Loki for aggregated logs, the
-Temporal UI for workflow execution detail.
-
 ## Testing
 
-- Python unit tests: `pytest` in `extractor/hl7-transformer`, `report-viewer`, `sdk/python`
-- Java: `./gradlew test` in `extractor/hl7log-extractor`, `hl7-listener`
 - Integration/e2e under `tests/`: `ingest/` (Gradle, end-to-end Temporal ingestion),
   `auth/` (Playwright, oauth2-proxy + Keycloak), `data-authorization/` (in-cluster Job,
   the Keycloak → OPA → Trino AuthZ pipeline), `network/` (NetworkPolicy checks). See
@@ -315,7 +276,3 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   at its last `main` build.
 - **Write Ansible tasks using `kubernetes.core`** — follow the kubeconfig conventions in
   `docs/internal/ansible_roles.md` (they differ for cluster vs jump-node execution).
-
-## License
-
-See `LICENSE`.
