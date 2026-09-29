@@ -99,6 +99,7 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             null,
             null,
+            null,
             null
         );
 
@@ -113,6 +114,28 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
         assertEquals(defaultSplitAndUploadHeartbeatTimeout, parsedInput.splitAndUploadHeartbeatTimeout());
         assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
+        assertEquals(5, parsedInput.splitAndUploadMaxAttempts());
+    }
+
+    @Test
+    void testParseInput_splitAndUploadMaxAttemptsOverride(IngestHl7LogWorkflowInputParserTestWorkflow workflow) {
+        IngestHl7LogWorkflowInput input = new IngestHl7LogWorkflowInput(
+            null,
+            "/nondefault/path/to/logs",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+            null,
+            null,
+            null,
+            null
+        );
+
+        assertEquals(1, workflow.parseInput(input, null).splitAndUploadMaxAttempts());
     }
 
     @Test
@@ -120,6 +143,7 @@ class IngestHl7LogWorkflowInputParserTest {
         String date = "arbitrary-date";
         IngestHl7LogWorkflowInput input = new IngestHl7LogWorkflowInput(
             date,
+            null,
             null,
             null,
             null,
@@ -186,6 +210,7 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             null,
             null,
+            null,
             null
         );
 
@@ -220,6 +245,7 @@ class IngestHl7LogWorkflowInputParserTest {
             date,
             logsRootPath,
             String.join(",", ignoredLogPaths),
+            null,
             null,
             null,
             null,
@@ -267,6 +293,7 @@ class IngestHl7LogWorkflowInputParserTest {
             timeout,
             heartbeatTimeout,
             concurrency,
+            null,
             null,
             null,
             null,

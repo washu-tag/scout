@@ -468,11 +468,13 @@ public class TestStatusDatabase extends BaseTest {
         cleanupHl7FilesForLog(logPath, date);
 
         // First attempt: bogus hl7OutputPath causes the zip upload to fail. The activity's
-        // catch block writes placeholder hl7_file_path rows before throwing.
+        // catch block writes placeholder hl7_file_path rows before throwing. One attempt is
+        // enough to write them; retrying would only wait out the backoff.
         temporalClient.launchIngest(
             new IngestJobInput()
                 .setLogPaths(logPath)
-                .setHl7OutputPath("s3://scout-duplicate-key-test-nonexistent/hl7"),
+                .setHl7OutputPath("s3://scout-duplicate-key-test-nonexistent/hl7")
+                .setSplitAndUploadMaxAttempts(1),
             false
         );
 
