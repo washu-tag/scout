@@ -128,12 +128,12 @@ k3s_cluster:
     trino_worker_count: 1
     trino_worker_max_heap: 512M
     trino_coordinator_max_heap: 512M
-    # RW Trino kept on so the NetworkPolicy tests have a real
-    # service to probe, but slimmed hard: half the default CPU,
-    # half the heap, and no jmx-exporter sidecar (nothing scrapes
-    # trino-rw metrics in smoke-test). The combined save is enough
-    # for the seed/test Jobs to fit on the 4-CPU runner alongside
-    # the full Scout stack.
+    trino_coordinator_cpu_limit: 4
+    trino_worker_cpu_limit: 4
+    # RW Trino kept on so the NetworkPolicy tests have a real service to
+    # probe, with small requests, half the heap, and no jmx-exporter sidecar
+    # so the seed/test Jobs still schedule on the 4-CPU runner. Limits stay
+    # high: Trino startup is CPU-bound and the node is otherwise idle.
     trino_rw_coordinator_max_heap: 256M
     trino_rw_worker_max_heap: 256M
     trino_rw_coordinator_resources:
@@ -141,14 +141,14 @@ k3s_cluster:
         cpu: 50m
         memory: 256Mi
       limits:
-        cpu: 500m
+        cpu: 4
         memory: 1Gi
     trino_rw_worker_resources:
       requests:
         cpu: 50m
         memory: 256Mi
       limits:
-        cpu: 500m
+        cpu: 4
         memory: 1Gi
     trino_rw_jmx_enabled: false
 
@@ -176,6 +176,8 @@ k3s_cluster:
     # small test data — each shuffle spawns 200 tasks, most processing
     # zero rows, and scheduling overhead dominates.
     spark_sql_shuffle_partitions: 8
+    hl7_transformer_spark_extra_conf:
+      spark.databricks.delta.snapshotPartitions: 4
 
     # The deploy_and_test CI job exercises the full ingest workflow but
     # doesn't deploy the trino playbook, so trino-rw isn't available. Disable
@@ -305,4 +307,7 @@ k3s_cluster:
     hl7_transformer_spark_memory: 1G
     cassandra_init_heap: 1G
     cassandra_max_heap: 1G
+    cassandra_additional_jvm_opts:
+      - '-Dcassandra.skip_wait_for_gossip_to_settle=0'
+      - '-Dcassandra.ring_delay_ms=100'
     elasticsearch_max_heap: 256M

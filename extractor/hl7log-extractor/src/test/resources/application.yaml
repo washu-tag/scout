@@ -32,6 +32,7 @@ scout:
       splitAndUploadTimeout: 480
       splitAndUploadHeartbeatTimeout: 30
       splitAndUploadConcurrency: 150
+      splitAndUploadMaxAttempts: 5
     ingestHl7ToDeltaLake:
       deltaIngestTimeout: 60
       reportTableName: 'reports'

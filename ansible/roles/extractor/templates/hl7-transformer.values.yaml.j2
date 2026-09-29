@@ -104,6 +104,7 @@ sparkDefaults:
   s3Region: "{{ s3_region | default('us-east-1') }}"
   s3Endpoint: "{{ s3_endpoint }}"
   sseType: "{{ s3_sse_type }}"
+  extraConf: {{ hl7_transformer_spark_extra_conf | to_json }}
 {% if modality_map_source_file %}
 # Custom modality-map override: pass the full CSV so the chart renders it instead
 # of its bundled default (files/modality_mapping_codes.csv). Unset by default, so

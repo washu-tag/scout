@@ -1,0 +1,5 @@
+---
+- name: Wait for Cassandra to be ready
+  command: 'kubectl -n {{ scout_extractor_namespace }} wait --for=condition=Ready --timeout=600s cassandradatacenter/{{ cassandra_datacenter_name }}'
+  register: cassandra_ready
+  changed_when: false
