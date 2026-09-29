@@ -108,7 +108,6 @@ spec:
               splitAndUploadTimeout: ${hl7log_extractor_timeout}
               splitAndUploadHeartbeatTimeout: ${hl7log_extractor_heartbeat_timeout}
               splitAndUploadConcurrency: ${hl7log_extractor_concurrency}
-              splitAndUploadMaxAttempts: ${hl7log_extractor_max_attempts}
             ingestHl7ToDeltaLake:
               deltaIngestTimeout: ${hl7_transformer_timeout}
               deriveDeltaTablesTimeout: ${hl7_transformer_derive_timeout}

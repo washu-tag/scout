@@ -15,6 +15,7 @@ public class IngestJobInput {
     // for tests that don't assert on it. Tests that need mapping (e.g.
     // testLongitudinalPatientIds) must explicitly setCreateMapping(true).
     private Boolean createMapping = false;
+    private Integer splitAndUploadMaxAttempts;
 
     public String getHl7OutputPath() {
         return hl7OutputPath;
@@ -67,6 +68,15 @@ public class IngestJobInput {
 
     public IngestJobInput setCreateMapping(Boolean createMapping) {
         this.createMapping = createMapping;
+        return this;
+    }
+
+    public Integer getSplitAndUploadMaxAttempts() {
+        return splitAndUploadMaxAttempts;
+    }
+
+    public IngestJobInput setSplitAndUploadMaxAttempts(Integer splitAndUploadMaxAttempts) {
+        this.splitAndUploadMaxAttempts = splitAndUploadMaxAttempts;
         return this;
     }
 

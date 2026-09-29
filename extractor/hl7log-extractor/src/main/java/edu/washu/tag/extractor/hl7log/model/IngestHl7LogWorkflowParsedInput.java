@@ -13,6 +13,7 @@ import java.util.List;
  * @param splitAndUploadTimeout The timeout for the split and upload job in minutes.
  * @param splitAndUploadHeartbeatTimeout The heartbeat timeout for the split and upload job in minutes.
  * @param splitAndUploadConcurrency How many logs we should process before continuing as new.
+ * @param splitAndUploadMaxAttempts Maximum attempts for each split and upload activity.
  */
 public record IngestHl7LogWorkflowParsedInput(
     List<String> logPaths,
@@ -22,5 +23,6 @@ public record IngestHl7LogWorkflowParsedInput(
     String hl7OutputPath,
     Integer splitAndUploadTimeout,
     Integer splitAndUploadHeartbeatTimeout,
-    Integer splitAndUploadConcurrency
+    Integer splitAndUploadConcurrency,
+    Integer splitAndUploadMaxAttempts
 ) {}

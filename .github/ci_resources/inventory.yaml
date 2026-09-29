@@ -176,9 +176,6 @@ k3s_cluster:
     # small test data — each shuffle spawns 200 tasks, most processing
     # zero rows, and scheduling overhead dominates.
     spark_sql_shuffle_partitions: 8
-    # testStatusDbHl7OutputPathFailureRetry fails its first ingest on purpose;
-    # don't wait out split-and-upload retries.
-    hl7log_extractor_max_attempts: 1
     hl7_transformer_spark_extra_conf:
       spark.databricks.delta.snapshotPartitions: 4
 
