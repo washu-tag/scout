@@ -144,7 +144,7 @@ public class DefaultArgs {
     /**
      * Split and upload activity maximum attempts.
      *
-     * @param splitAndUploadMaxAttempts The input value for split and upload maximum attempts.
+     * @param splitAndUploadMaxAttempts The configured split and upload maximum attempts.
      */
     @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadMaxAttempts}")
     public void setSplitAndUploadMaxAttempts(Integer splitAndUploadMaxAttempts) {
@@ -154,11 +154,10 @@ public class DefaultArgs {
     /**
      * Split and upload activity maximum attempts.
      *
-     * @param input The input value for split and upload maximum attempts.
-     * @return The split and upload maximum attempts value or the default.
+     * @return The configured split and upload maximum attempts.
      */
-    public static Integer getSplitAndUploadMaxAttempts(Integer input) {
-        return getValueOrDefault(input, splitAndUploadMaxAttempts);
+    public static Integer getSplitAndUploadMaxAttempts() {
+        return splitAndUploadMaxAttempts;
     }
 
     /**

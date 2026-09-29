@@ -472,8 +472,7 @@ public class TestStatusDatabase extends BaseTest {
         temporalClient.launchIngest(
             new IngestJobInput()
                 .setLogPaths(logPath)
-                .setHl7OutputPath("s3://scout-duplicate-key-test-nonexistent/hl7")
-                .setSplitAndUploadMaxAttempts(1),
+                .setHl7OutputPath("s3://scout-duplicate-key-test-nonexistent/hl7"),
             false
         );
 

@@ -70,6 +70,7 @@ config:
           splitAndUploadTimeout: {{ hl7log_extractor_timeout | default(480) }}
           splitAndUploadHeartbeatTimeout: {{ hl7log_extractor_heartbeat_timeout | default(30) }}
           splitAndUploadConcurrency: {{ hl7log_extractor_concurrency | default(150) }}
+          splitAndUploadMaxAttempts: {{ hl7log_extractor_max_attempts | default(5) }}
         ingestHl7ToDeltaLake:
           deltaIngestTimeout: {{ hl7_transformer_timeout | default(480) }}
           reportTableName: '{{ report_delta_table_name }}'

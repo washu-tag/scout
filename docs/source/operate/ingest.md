@@ -23,7 +23,6 @@ the component HL7 messages to MinIO. At a minimum, this is roughly the time to p
 file and updating the database. (Note also: the temporal client only sends the heartbeats to the server periodically; in between sends, it queues up
 heartbeats internally and could coalesce or drop heartbeats if they are too frequent.) Ansible equivalent: `hl7log_extractor_heartbeat_timeout`
 - `splitAndUploadConcurrency`: number of HL7 listener log files to process concurrently. Ansible equivalent: `hl7log_extractor_concurrency`
-- `splitAndUploadMaxAttempts`: maximum attempts for each split-and-upload activity before it is marked failed. Defaults to 5.
 - The hl7-transformer expects the modality mapping file at `/config/modality_mapping_codes.csv`, which is the source of the `modality` column in the Delta Lake table.
    The hl7-transformer chart bundles a default modality mapping file (`helm/extractor/hl7-transformer/files/modality_mapping_codes.csv`) and mounts it as a Kubernetes ConfigMap at this location, so a map change ships as a chart version bump.
    To use a custom mapping, set `modality_map_source_file` in the inventory to a CSV path on the Ansible controller (Ansible passes it to the chart as an override), then redeploy.

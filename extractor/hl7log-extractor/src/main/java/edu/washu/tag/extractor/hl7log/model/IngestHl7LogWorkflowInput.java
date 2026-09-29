@@ -12,7 +12,6 @@ package edu.washu.tag.extractor.hl7log.model;
  * @param splitAndUploadTimeout The timeout for the split and upload job in minutes.
  * @param splitAndUploadHeartbeatTimeout The heartbeat timeout for the split and upload job in minutes.
  * @param splitAndUploadConcurrency How many logs we should process before continuing as new.
- * @param splitAndUploadMaxAttempts Maximum attempts for each split and upload activity. Defaults to 5.
  * @param reportTableName Name of the report table to be created in Delta Lake.
  * @param deltaIngestTimeout The timeout for the delta lake ingest job in minutes.
  * @param createMapping Whether to derive the report-patient mapping table and the epic views that depend on it.
@@ -29,14 +28,12 @@ public record IngestHl7LogWorkflowInput(
         Integer splitAndUploadTimeout,
         Integer splitAndUploadHeartbeatTimeout,
         Integer splitAndUploadConcurrency,
-        Integer splitAndUploadMaxAttempts,
         String reportTableName,
         Integer deltaIngestTimeout,
         Boolean createMapping,
         ContinueIngestWorkflow continued
 ) {
     public static IngestHl7LogWorkflowInput EMPTY = new IngestHl7LogWorkflowInput(
-        null,
         null,
         null,
         null,
