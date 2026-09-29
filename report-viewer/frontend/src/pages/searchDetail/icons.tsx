@@ -38,8 +38,8 @@ export function ContractIcon() {
   );
 }
 
-// Evidence chips. Each kind carries a glyph as well as a colour so the grid
-// still reads in greyscale and under any form of colour blindness.
+// The negation glyph, so a contradicted row is marked by shape as well as
+// colour and still reads in greyscale.
 function EvidenceGlyph(props: { children: React.ReactNode }) {
   return (
     <svg
@@ -56,23 +56,6 @@ function EvidenceGlyph(props: { children: React.ReactNode }) {
     >
       {props.children}
     </svg>
-  );
-}
-
-export function TextEvidenceIcon() {
-  return (
-    <EvidenceGlyph>
-      <path d="M4 2h5l3 3v9H4z" />
-      <path d="M9 2v3h3M6 8h4M6 11h4" />
-    </EvidenceGlyph>
-  );
-}
-
-export function CodeEvidenceIcon() {
-  return (
-    <EvidenceGlyph>
-      <path d="M3 4h10M3 8h10M3 12h10" />
-    </EvidenceGlyph>
   );
 }
 

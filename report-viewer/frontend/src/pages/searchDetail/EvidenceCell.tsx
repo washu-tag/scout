@@ -1,8 +1,7 @@
-import { CodeEvidenceIcon, NegationIcon, TextEvidenceIcon } from './icons';
+import { NegationIcon } from './icons';
 
-// Why a row is in the cohort, as chips. Colour is Scout's chart blue plus a
-// neutral and a danger, never red against green, and every chip carries a
-// glyph so the column survives greyscale and colour blindness.
+// Why a row is in the cohort, as chips. Each chip shares its colour with the
+// mark it produces in the report, so a yellow chip means yellow marks on open.
 type Kind = 'text' | 'code' | 'negative';
 
 const chip: React.CSSProperties = {
@@ -19,23 +18,20 @@ const chip: React.CSSProperties = {
   border: '1px solid',
 };
 
-const KIND: Record<Kind, { style: React.CSSProperties; icon: () => React.ReactElement }> = {
-  text: {
-    style: {
-      background: 'var(--rv-accent-soft)',
-      borderColor: 'var(--rv-accent)',
-      color: 'var(--rv-fg)',
-    },
-    icon: TextEvidenceIcon,
-  },
-  code: {
-    style: {
-      background: 'var(--rv-surface-2)',
-      borderColor: 'var(--rv-border)',
-      color: 'var(--rv-muted)',
-    },
-    icon: CodeEvidenceIcon,
-  },
+// Text and a code are both reasons the row qualifies, so they share a colour
+// and the glyph tells them apart. Red is only for text that contradicts.
+const POSITIVE: React.CSSProperties = {
+  background: 'var(--rv-ev-positive-soft)',
+  borderColor: 'var(--rv-ev-positive)',
+  color: 'var(--rv-ev-positive)',
+};
+
+// Only the negation carries a glyph. A code and a phrase already look
+// nothing alike, and red plus a triangle double-encodes the one state a
+// reviewer must not miss.
+const KIND: Record<Kind, { style: React.CSSProperties; icon?: () => React.ReactElement }> = {
+  text: { style: POSITIVE },
+  code: { style: POSITIVE },
   negative: {
     style: {
       background: 'var(--rv-danger-soft)',
@@ -50,7 +46,7 @@ function Chip(props: { kind: Kind; text: string; title: string }) {
   const { style, icon: Icon } = KIND[props.kind];
   return (
     <span title={props.title} style={{ ...chip, ...style }}>
-      <Icon />
+      {Icon ? <Icon /> : null}
       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{props.text}</span>
     </span>
   );

@@ -59,12 +59,16 @@ export function RowDetail(props: { row: Record<string, unknown> }) {
           style={
             excluded
               ? {
-                  background: '#ffd7d5',
-                  color: '#222',
+                  background: 'var(--rv-danger-soft)',
+                  color: 'var(--rv-danger)',
                   padding: '0 1px',
-                  textDecoration: 'underline wavy #b35',
+                  textDecoration: 'underline wavy currentColor',
                 }
-              : { background: '#fff3a3', color: '#222', padding: '0 1px' }
+              : {
+                  background: 'var(--rv-ev-positive-soft)',
+                  color: 'var(--rv-ev-positive)',
+                  padding: '0 1px',
+                }
           }
         >
           {text.slice(h.start, h.end)}
@@ -191,7 +195,7 @@ export function RowDetail(props: { row: Record<string, unknown> }) {
                     gap: '0.35rem',
                     padding: '0.15rem 0.4rem',
                     borderRadius: 3,
-                    background: positive ? '#fff3a3' : 'var(--rv-surface-2)',
+                    background: positive ? 'var(--rv-ev-positive-soft)' : 'var(--rv-surface-2)',
                     border: positive ? '1px solid #d6b500' : '1px solid var(--rv-border)',
                     fontSize: '0.72rem',
                     color: positive ? '#222' : 'var(--rv-fg)',

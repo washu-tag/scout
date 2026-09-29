@@ -91,6 +91,13 @@ const DEFAULT_COLUMNS = COLUMNS_CONFIG.filter((c) => !c.defaultHidden).map((c) =
 // check against, while a text match shows the reviewer its own phrase.
 const REVIEW_ORDER = ['diagnosis_code', 'text'];
 
+/** The phrase the chip shows, so equal evidence sorts together. */
+function evidenceText(row: Row): string {
+  return String(
+    row.ev_negative_span || row.ev_positive_span || row.ev_dx_codes || '',
+  ).toLowerCase();
+}
+
 function reviewRank(row: Row): number {
   if (row.ev_negative_span) return 0;
   // Unknown outranks everything explained: we could not say why it is here.
@@ -153,19 +160,6 @@ export default function SearchDetailPage() {
   useEffect(() => {
     setExpanded({});
   }, [rowsQ.data]);
-
-  // Reveal the hidden patient_mpi column for legacy cohorts whose only
-  // identifier is the mpi (rows with an mpi but no epic_mrn).
-  const autoMpiSearchRef = useRef<string | null>(null);
-  useEffect(() => {
-    const rows = rowsQ.data?.rows;
-    if (!rows || autoMpiSearchRef.current === searchId) return;
-    autoMpiSearchRef.current = searchId;
-    const blank = (v: unknown) => v == null || v === '';
-    if (rows.some((r) => blank(r.epic_mrn) && !blank(r.patient_mpi))) {
-      setColumnVisibility((v) => ({ ...v, patient_mpi: true }));
-    }
-  }, [rowsQ.data, searchId]);
 
   useEffect(() => {
     if (!colPickerOpen) return;
@@ -230,7 +224,9 @@ export default function SearchDetailPage() {
           },
           sortingFn:
             c.kind === 'evidence'
-              ? (a, b) => reviewRank(a.original) - reviewRank(b.original)
+              ? (a, b) =>
+                  reviewRank(a.original) - reviewRank(b.original) ||
+                  evidenceText(a.original).localeCompare(evidenceText(b.original))
               : 'auto',
           meta: { align: c.align, mono: c.mono },
         }),
