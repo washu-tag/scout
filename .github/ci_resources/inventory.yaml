@@ -176,6 +176,8 @@ k3s_cluster:
     # small test data — each shuffle spawns 200 tasks, most processing
     # zero rows, and scheduling overhead dominates.
     spark_sql_shuffle_partitions: 8
+    hl7_transformer_spark_extra_conf:
+      spark.databricks.delta.snapshotPartitions: 4
 
     # The deploy_and_test CI job exercises the full ingest workflow but
     # doesn't deploy the trino playbook, so trino-rw isn't available. Disable
