@@ -114,6 +114,8 @@ and the role README is the authoritative list.
 - `enable_xnat` — XNAT imaging platform (`ansible/roles/xnat/README.md`, ADR 0026). When
   false, nothing XNAT is created, including its Keycloak client — so toggling back to
   false orphans provisioned XNAT users.
+- `enable_hl7_listener` — real-time HL7 listener stack: Strimzi Kafka, MLLP listener,
+  batcher (ADR 0028). Also gates `make install-hl7-listener`.
 
 ### Local Development
 
