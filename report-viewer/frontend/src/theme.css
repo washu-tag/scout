@@ -24,6 +24,7 @@ body {
   --rv-border: #e2e2e2;
   --rv-accent: #4477aa;
   --rv-danger: #b00;
+  --rv-danger-soft: #fdeaea;
   --rv-success: #1a7a3a;
 
   /* Column profile bars. */
@@ -45,6 +46,7 @@ body {
     --rv-border: #3a3a3a;
     --rv-accent: #5b9bd5;
     --rv-danger: #ff6b6b;
+    --rv-danger-soft: #4a2b2b;
     --rv-success: #3fbf6a;
 
     /* Column profile bars dark. */

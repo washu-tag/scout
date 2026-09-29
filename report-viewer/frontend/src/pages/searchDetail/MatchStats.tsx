@@ -11,6 +11,8 @@ const TOP_N = 8;
 
 const muted: React.CSSProperties = { color: 'var(--rv-muted)', fontSize: '0.78rem' };
 
+const num: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
+
 function Bar(props: { rows: Tally[]; total: number; label: (s: string) => string }) {
   return (
     <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.78rem' }}>
@@ -105,11 +107,49 @@ export function MatchStats(props: { rows: Record<string, unknown>[] }) {
 
       <Bar rows={s.sources} total={s.total} label={(k) => SOURCE_LABEL[k] ?? k} />
 
-      {s.excluded > 0 && (
-        <p style={{ margin: '0.5rem 0 0', lineHeight: 1.4, ...muted }}>
-          <strong style={{ color: 'var(--rv-danger)' }}>{s.excluded.toLocaleString()} rows</strong>{' '}
-          also carry negative evidence and are flagged for review.
-        </p>
+      {s.crosstab.length > 0 && (
+        <table
+          style={{
+            borderCollapse: 'collapse',
+            marginTop: '0.6rem',
+            fontSize: '0.76rem',
+          }}
+        >
+          <thead>
+            <tr style={muted}>
+              <th />
+              <th style={{ padding: '0 0.6rem', fontWeight: 500, textAlign: 'right' }}>clean</th>
+              <th style={{ padding: '0 0.6rem', fontWeight: 500, textAlign: 'right' }}>
+                has negative
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {s.crosstab.map((r) => (
+              <tr key={r.source}>
+                <td style={{ padding: '1px 0.6rem 1px 0', whiteSpace: 'nowrap' }}>
+                  {SOURCE_LABEL[r.source] ?? r.source}
+                </td>
+                <td style={{ padding: '1px 0.6rem', textAlign: 'right', ...num }}>
+                  {r.clean.toLocaleString()}
+                </td>
+                <td
+                  // Admitted by a code while its own report text disagrees.
+                  style={{
+                    padding: '1px 0.6rem',
+                    textAlign: 'right',
+                    ...num,
+                    ...(r.source === 'diagnosis_code' && r.negative > 0
+                      ? { color: 'var(--rv-danger)', fontWeight: 600 }
+                      : {}),
+                  }}
+                >
+                  {r.negative.toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
 
       <Phrases title="Positive evidence" rows={s.positiveSpans} distinct={s.distinctPositive} />

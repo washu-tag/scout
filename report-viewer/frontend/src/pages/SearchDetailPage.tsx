@@ -35,7 +35,7 @@ import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
-import { EvidenceChip } from './searchDetail/EvidenceChip';
+import { EvidenceCell } from './searchDetail/EvidenceCell';
 import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
 
 const COLUMNS_CONFIG: Array<{
@@ -47,7 +47,7 @@ const COLUMNS_CONFIG: Array<{
   mono?: boolean;
   kind?: 'date' | 'evidence';
 }> = [
-  { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true },
+  { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true, defaultHidden: true },
   {
     field: 'resolved_epic_mrn',
     title: 'Resolved MRN',
@@ -66,15 +66,16 @@ const COLUMNS_CONFIG: Array<{
   { field: 'accession_number', title: 'Accession', width: 85, mono: true },
   { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
   { field: 'modality', title: 'Modality', width: 60 },
-  { field: 'service_name', title: 'Service', width: 180 },
+  { field: 'service_name', title: 'Service', width: 130 },
   { field: 'sending_facility', title: 'Facility', width: 120, defaultHidden: true },
-  { field: 'patient_age', title: 'Age', width: 50, align: 'right' },
-  { field: 'sex', title: 'Sex', width: 40, align: 'center' },
+  { field: 'patient_age', title: 'Age', width: 50, align: 'right', defaultHidden: true },
+  { field: 'sex', title: 'Sex', width: 40, align: 'center', defaultHidden: true },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
-  // Why each row is in the cohort, derived from the search SQL itself.
-  // Only the source chip shows by default -- the grid is already tight, and
-  // the column picker exposes the spans for anyone auditing a cohort.
-  { field: 'ev_source', title: 'Matched on', width: 105, kind: 'evidence' },
+  // One column for why the row is in the cohort: the matched phrase, the code
+  // that admitted it, and any negation. The raw spans stay available in the
+  // column picker for anyone auditing a cohort.
+  { field: 'ev_source', title: 'Evidence', width: 260, kind: 'evidence' },
+  { field: 'ev_dx_codes', title: 'DX codes', width: 100, defaultHidden: true },
   { field: 'ev_positive_span', title: 'Positive evidence', width: 200, defaultHidden: true },
   { field: 'ev_negative_span', title: 'Negative evidence', width: 200, defaultHidden: true },
 ];
@@ -224,13 +225,7 @@ export default function SearchDetailPage() {
           size: c.width,
           cell: (info) => {
             if (c.kind === 'date') return fmtDate(info.getValue());
-            if (c.kind === 'evidence')
-              return (
-                <EvidenceChip
-                  source={info.getValue()}
-                  negativeSpan={info.row.original['ev_negative_span']}
-                />
-              );
+            if (c.kind === 'evidence') return <EvidenceCell row={info.row.original} />;
             return fmtCell(info.getValue());
           },
           sortingFn:
