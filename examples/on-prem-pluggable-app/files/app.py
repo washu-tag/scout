@@ -6,6 +6,7 @@ Replace this with your real app. The chart around it is the part worth copying.
 import html
 import logging
 import os
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(os.environ.get("PORT", "8080"))
@@ -15,6 +16,9 @@ PORT = int(os.environ.get("PORT", "8080"))
 USER_HEADER = "X-Auth-Request-Preferred-Username"
 
 log = logging.getLogger("example-app")
+
+page_views = 0
+page_views_lock = threading.Lock()
 
 PAGE = """<!doctype html>
 <meta charset="utf-8"><title>Example Pluggable App</title>
@@ -39,9 +43,19 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def do_GET(self):  # noqa: N802
+        global page_views
         if self.path == "/healthz":
             body, content_type = b"ok", "text/plain; charset=utf-8"
+        elif self.path == "/metrics":
+            body = (
+                "# HELP example_app_page_views_total Pages served.\n"
+                "# TYPE example_app_page_views_total counter\n"
+                f"example_app_page_views_total {page_views}\n"
+            ).encode()
+            content_type = "text/plain; version=0.0.4; charset=utf-8"
         else:
+            with page_views_lock:
+                page_views += 1
             user = self.headers.get(USER_HEADER)
             if user is None:
                 log.warning("%s requested without %s header", self.path, USER_HEADER)
@@ -58,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def log_request(self, code="-", size="-"):
-        level = logging.DEBUG if self.path == "/healthz" else logging.INFO
+        level = logging.DEBUG if self.path in ("/healthz", "/metrics") else logging.INFO
         user = self.headers.get(USER_HEADER, "-")
         log.log(level, '"%s" %s user=%s', self.requestline, code, user)
 
