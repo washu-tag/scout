@@ -55,6 +55,16 @@ export function buildFilterPrompt(searchId: string, filters: FilterState): strin
   if (filters.sending_facility) {
     clauses.push(`sending_facility contains "${filters.sending_facility}"`);
   }
+  // ev_* are viewer columns, so send the predicate they stand for instead.
+  if (filters.ev_dx_codes) {
+    clauses.push(`a diagnosis code matching "${filters.ev_dx_codes}"`);
+  }
+  if (filters.ev_positive_span) {
+    clauses.push(`report text containing "${filters.ev_positive_span}"`);
+  }
+  if (filters.ev_has_negative === false) {
+    clauses.push('no phrase in the report text ruling the finding out');
+  }
   if (clauses.length === 0) return null;
   return `Refine search ${searchId}. Filter rows where ${clauses.join(', ')}.`;
 }

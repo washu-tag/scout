@@ -1,14 +1,22 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import { activeFilterCount, type FilterState } from '../../api/client';
+import { activeFilterCount, type EvCategory, type FilterState } from '../../api/client';
 import { Modal } from '../../Modal';
 import { paginationBtn } from './styles';
 
 const SEX_OPTIONS = ['M', 'F', 'U'] as const;
 
+const EV_SOURCE_LABEL: Record<EvCategory, string> = {
+  text_and_code: 'text + code',
+  text: 'text only',
+  diagnosis_code: 'code only',
+  unknown: 'unexplained',
+};
+
 export function FiltersModal(props: {
   initial: FilterState;
   availableColumns: string[];
   modalityOptions?: string[];
+  evidenceOptions?: string[];
   onApply: (next: FilterState) => void;
   onRefineInChat: (next: FilterState) => void;
   onClose: () => void;
@@ -24,6 +32,11 @@ export function FiltersModal(props: {
     return Array.from(new Set([...base, ...(staged.modality ?? [])])).sort();
   }, [props.modalityOptions, staged.modality]);
 
+  const evidenceChoices = useMemo<string[]>(() => {
+    const base = props.evidenceOptions ?? [];
+    return Array.from(new Set([...base, ...(staged.ev_source ?? [])]));
+  }, [props.evidenceOptions, staged.ev_source]);
+
   const setAgeBound = (which: 'min' | 'max', value: string) =>
     setStaged((s) => ({
       ...s,
@@ -34,7 +47,7 @@ export function FiltersModal(props: {
       ...s,
       message_dt: { ...s.message_dt, [which]: value || undefined },
     }));
-  const toggleEnum = (col: 'sex' | 'modality', value: string) =>
+  const toggleEnum = (col: 'sex' | 'modality' | 'ev_source', value: string) =>
     setStaged((s) => {
       const cur = new Set(s[col] ?? []);
       if (cur.has(value)) cur.delete(value);
@@ -43,7 +56,13 @@ export function FiltersModal(props: {
       return { ...s, [col]: next.length > 0 ? next : undefined };
     });
   const setStringField = (
-    col: 'service_name' | 'epic_mrn' | 'patient_mpi' | 'accession_number' | 'sending_facility',
+    col:
+      | 'service_name'
+      | 'epic_mrn'
+      | 'patient_mpi'
+      | 'accession_number'
+      | 'sending_facility'
+      | 'ev_dx_codes',
     value: string,
   ) => setStaged((s) => ({ ...s, [col]: value || undefined }));
 
@@ -146,6 +165,41 @@ export function FiltersModal(props: {
               onChange={(v) => setStringField('sending_facility', v)}
             />
           </FieldRow>
+        )}
+
+        {has('ev_source') && (
+          <>
+            <FieldRow label="Matched on">
+              <CheckboxRow
+                options={evidenceChoices}
+                selected={staged.ev_source ?? []}
+                onToggle={(v) => toggleEnum('ev_source', v)}
+                label={(v) => EV_SOURCE_LABEL[v as EvCategory] ?? v}
+              />
+            </FieldRow>
+            <FieldRow label="Dx code">
+              <TextInput
+                value={staged.ev_dx_codes ?? ''}
+                onChange={(v) => setStringField('ev_dx_codes', v)}
+              />
+            </FieldRow>
+            <FieldRow label="Negation">
+              <select
+                value={staged.ev_has_negative === undefined ? '' : String(staged.ev_has_negative)}
+                onChange={(e) =>
+                  setStaged((s) => ({
+                    ...s,
+                    ev_has_negative: e.target.value === '' ? undefined : e.target.value === 'true',
+                  }))
+                }
+                style={{ fontSize: '0.85rem', padding: '0.25rem' }}
+              >
+                <option value="">Any</option>
+                <option value="true">Report text rules it out</option>
+                <option value="false">No contradicting text</option>
+              </select>
+            </FieldRow>
+          </>
         )}
 
         <div style={{ marginTop: '1rem' }}>
@@ -269,6 +323,7 @@ function CheckboxRow(props: {
   options: readonly string[];
   selected: string[];
   onToggle: (value: string) => void;
+  label?: (value: string) => string;
 }) {
   const set = new Set(props.selected);
   return (
@@ -285,7 +340,7 @@ function CheckboxRow(props: {
           }}
         >
           <input type="checkbox" checked={set.has(opt)} onChange={() => props.onToggle(opt)} />
-          {opt}
+          {props.label ? props.label(opt) : opt}
         </label>
       ))}
     </div>

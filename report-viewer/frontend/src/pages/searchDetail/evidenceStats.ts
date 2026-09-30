@@ -1,11 +1,13 @@
 // Match stats over the loaded cohort. The SPA already holds every row, so this
 // is a reduce rather than a second query, and the counts are exact.
 
+import { EV_CATEGORIES, collapse, evidenceCategory, type EvCategory } from '../../api/client';
+
 type Row = Record<string, unknown>;
 
 export type Tally = { label: string; count: number };
 
-export type Category = 'text_and_code' | 'text' | 'diagnosis_code' | 'unknown';
+export type Category = EvCategory;
 
 export type EvidenceStats = {
   total: number;
@@ -27,8 +29,6 @@ export function hasEvidence(rows: Row[]): boolean {
   return rows.length > 0 && rows[0]['ev_source'] !== undefined;
 }
 
-const CATEGORIES: Category[] = ['text_and_code', 'text', 'diagnosis_code', 'unknown'];
-
 export function evidenceStats(rows: Row[]): EvidenceStats {
   const include = new Map<string, number>();
   const exclude = new Map<string, number>();
@@ -41,20 +41,10 @@ export function evidenceStats(rows: Row[]): EvidenceStats {
   };
 
   for (const row of rows) {
-    // An empty string is as unexplained as a null and must not render blank.
-    const source = String(row['ev_source'] ?? '').trim();
-    const category: Category = CATEGORIES.includes(source as Category)
-      ? (source as Category)
-      : 'unknown';
-
-    // Collapse whitespace so the same phrase wrapped across lines tallies once.
-    const inc = String(row['ev_positive_span'] ?? '')
-      .replace(/\s+/g, ' ')
-      .trim();
+    const category = evidenceCategory(row);
+    const inc = collapse(row['ev_positive_span']);
     if (inc) include.set(inc, (include.get(inc) ?? 0) + 1);
-    const neg = String(row['ev_negative_span'] ?? '')
-      .replace(/\s+/g, ' ')
-      .trim();
+    const neg = collapse(row['ev_negative_span']);
     if (neg) {
       exclude.set(neg, (exclude.get(neg) ?? 0) + 1);
       excluded += 1;
@@ -67,7 +57,7 @@ export function evidenceStats(rows: Row[]): EvidenceStats {
   return {
     total: rows.length,
     excluded,
-    breakdown: CATEGORIES.map((category) => ({ category, ...tally[category] })).filter(
+    breakdown: EV_CATEGORIES.map((category) => ({ category, ...tally[category] })).filter(
       (r) => r.clean + r.negative > 0,
     ),
     positiveSpans: rankedInclude,

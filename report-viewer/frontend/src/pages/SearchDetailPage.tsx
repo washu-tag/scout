@@ -15,8 +15,10 @@ import {
   type PaginationState,
 } from '@tanstack/react-table';
 import {
+  EV_CATEGORIES,
   activeFilterCount,
   downloadCsv,
+  evidenceCategory,
   filterRows,
   friendlyError,
   getSearch,
@@ -30,12 +32,14 @@ import { buildFilterPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
 import { RowDetail } from './searchDetail/RowDetail';
 import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
+import { EvidenceFilterChips } from './searchDetail/EvidenceFilterChips';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { EvidenceCell } from './searchDetail/EvidenceCell';
+import { hasEvidence } from './searchDetail/evidenceStats';
 import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
 
 const COLUMNS_CONFIG: Array<{
@@ -187,6 +191,14 @@ export default function SearchDetailPage() {
       if (v != null && v !== '') set.add(String(v));
     }
     return Array.from(set).sort();
+  }, [rowsQ.data]);
+
+  // Strongest first, not alphabetical, to match the chip row.
+  const evidenceOptions = useMemo(() => {
+    const present = new Set(
+      (rowsQ.data?.rows ?? []).map((r) => evidenceCategory(r as Record<string, unknown>)),
+    );
+    return EV_CATEGORIES.filter((c) => present.has(c));
   }, [rowsQ.data]);
 
   // The profile row sticks below the header, so it needs the header's actual
@@ -537,6 +549,13 @@ export default function SearchDetailPage() {
               </div>
             )}
           </div>
+          {hasEvidence(rowsQ.data?.rows ?? []) && (
+            <EvidenceFilterChips
+              rows={rowsQ.data?.rows ?? []}
+              filters={appliedFilters}
+              onChange={setAppliedFilters}
+            />
+          )}
           <div
             style={{
               display: 'flex',
@@ -740,6 +759,10 @@ export default function SearchDetailPage() {
           sql={meta.data?.sql ?? ''}
           executedSql={meta.data?.executed_sql ?? ''}
           rows={rowsQ.data?.rows ?? []}
+          onFilter={(patch) => {
+            setAppliedFilters((f) => ({ ...f, ...patch }));
+            setSqlModalOpen(false);
+          }}
           onClose={() => setSqlModalOpen(false)}
         />
       )}
@@ -748,6 +771,7 @@ export default function SearchDetailPage() {
           initial={appliedFilters}
           availableColumns={available}
           modalityOptions={modalityOptions}
+          evidenceOptions={evidenceOptions}
           onApply={(next) => {
             setAppliedFilters(next);
             setFiltersModalOpen(false);
