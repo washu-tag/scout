@@ -155,6 +155,7 @@ export function ActionsToolbar({
             handler();
             if (closeMenuOnClick) setMoreOpen(false);
           }}
+          className="scout-toolbar-btn"
           style={{ ...paginationBtn, flexShrink: 0 }}
           title={action.title}
         >
@@ -172,6 +173,7 @@ export function ActionsToolbar({
             void handleBackendCall(action);
             if (closeMenuOnClick) setMoreOpen(false);
           }}
+          className="scout-toolbar-btn"
           style={{ ...paginationBtn, flexShrink: 0 }}
           title={action.title}
         >
@@ -188,6 +190,7 @@ export function ActionsToolbar({
           if (action.url) open(action.url);
           if (closeMenuOnClick) setMoreOpen(false);
         }}
+        className="scout-toolbar-btn"
         style={{ ...paginationBtn, flexShrink: 0 }}
         title={action.title}
       >
@@ -230,6 +233,7 @@ export function ActionsToolbar({
             <button
               type="button"
               onClick={() => setMoreOpen((v) => !v)}
+              className="scout-toolbar-btn"
               style={paginationBtn}
               title="More actions"
             >
