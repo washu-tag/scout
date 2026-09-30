@@ -1,7 +1,7 @@
 import { NegationIcon } from './icons';
 
 // Why a row is in the cohort, as chips. Each chip shares its colour with the
-// mark it produces in the report, so a yellow chip means yellow marks on open.
+// mark it produces in the report, so a chip predicts what an open row shows.
 type Kind = 'text' | 'code' | 'negative';
 
 const chip: React.CSSProperties = {
@@ -18,8 +18,8 @@ const chip: React.CSSProperties = {
   border: '1px solid',
 };
 
-// Text and a code are both reasons the row qualifies, so they share a colour
-// and the glyph tells them apart. Red is only for text that contradicts.
+// Text and a code are both reasons the row qualifies, so they share a colour.
+// Red is only for text that contradicts.
 const POSITIVE: React.CSSProperties = {
   background: 'var(--rv-ev-positive-soft)',
   borderColor: 'var(--rv-ev-positive)',
@@ -52,8 +52,6 @@ function Chip(props: { kind: Kind; text: string; title: string }) {
   );
 }
 
-const MAX_CHIPS = 2;
-
 export function EvidenceCell(props: { row: Record<string, unknown> }) {
   const str = (k: string) => String(props.row[k] ?? '').trim();
   const positive = str('ev_positive_span');
@@ -62,9 +60,17 @@ export function EvidenceCell(props: { row: Record<string, unknown> }) {
   const source = str('ev_source');
 
   const chips: Array<{ kind: Kind; text: string; title: string }> = [];
-  // The code is the evidence when no text arm admitted the row, so it leads.
-  if (source === 'diagnosis_code' && codes) {
-    chips.push({ kind: 'code', text: codes, title: `Admitted by diagnosis code ${codes}` });
+  // Shown whenever codes matched, not only when they admitted the row: text
+  // and a code agreeing is the strongest evidence a row has.
+  if (codes) {
+    chips.push({
+      kind: 'code',
+      text: codes,
+      title:
+        source === 'diagnosis_code'
+          ? `Admitted by diagnosis code ${codes}`
+          : `Also carries diagnosis code ${codes}`,
+    });
   }
   if (positive) {
     chips.push({ kind: 'text', text: positive, title: `Report text matched: ${positive}` });
@@ -88,18 +94,11 @@ export function EvidenceCell(props: { row: Record<string, unknown> }) {
     );
   }
 
-  const shown = chips.slice(0, MAX_CHIPS);
-  const hidden = chips.length - shown.length;
   return (
     <span style={{ display: 'inline-flex', gap: 4, maxWidth: '100%', alignItems: 'center' }}>
-      {shown.map((c, i) => (
+      {chips.map((c, i) => (
         <Chip key={i} {...c} />
       ))}
-      {hidden > 0 && (
-        <span style={{ color: 'var(--rv-muted)', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
-          +{hidden}
-        </span>
-      )}
     </span>
   );
 }

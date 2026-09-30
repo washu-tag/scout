@@ -25,8 +25,7 @@ export function RowDetail(props: { row: Record<string, unknown> }) {
   });
 
   const highlights = reportQ.data?.highlights ?? [];
-  // Diagnosis chips light up from the codes the query actually filtered on,
-  // read out of its own predicates rather than a model-supplied list.
+  // The codes the query itself filtered on, not every code on the report.
   const matchedCodes = new Set(
     String(props.row['ev_dx_codes'] ?? '')
       .split(',')
@@ -34,9 +33,8 @@ export function RowDetail(props: { row: Record<string, unknown> }) {
       .filter(Boolean),
   );
 
-  // Offsets index the exact string this response returned, so a mark cannot
-  // land on the wrong characters. Negative spans embed the positive phrase, so
-  // they win any overlap and the whole ruled-out phrase reads as one mark.
+  // Negative spans embed the positive phrase, so sorting longest-first lets
+  // them win any overlap and the whole ruled-out phrase reads as one mark.
   const applyOffsets = (text: string, field: string, hits: Highlight[]): ReactNode => {
     const ordered = hits
       .filter((h) => h.field === field && h.start < h.end && h.end <= text.length)
@@ -196,16 +194,16 @@ export function RowDetail(props: { row: Record<string, unknown> }) {
                     padding: '0.15rem 0.4rem',
                     borderRadius: 3,
                     background: positive ? 'var(--rv-ev-positive-soft)' : 'var(--rv-surface-2)',
-                    border: positive ? '1px solid #d6b500' : '1px solid var(--rv-border)',
+                    border: `1px solid ${positive ? 'var(--rv-ev-positive)' : 'var(--rv-border)'}`,
                     fontSize: '0.72rem',
-                    color: positive ? '#222' : 'var(--rv-fg)',
+                    color: positive ? 'var(--rv-ev-positive)' : 'var(--rv-fg)',
                     fontWeight: positive ? 600 : 400,
                   }}
                 >
                   <code
                     style={{
                       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                      color: positive ? '#7a5a00' : 'var(--rv-accent)',
+                      color: positive ? 'var(--rv-ev-positive)' : 'var(--rv-accent)',
                     }}
                   >
                     {String(d.diagnosis_code ?? '')}
@@ -243,8 +241,6 @@ export function RowDetail(props: { row: Record<string, unknown> }) {
             const field = TEXT_FIELDS.find((f) => reportQ.data?.[f]) ?? 'report_text';
             const text = String(reportQ.data?.[field] ?? '');
             if (!text) return <em style={{ color: 'var(--rv-muted)' }}>(empty)</em>;
-            // Offsets when the search supplied them; the literal-term path
-            // still covers CSV cohorts and searches with no text predicate.
             return applyOffsets(text, field, highlights);
           })()}
         </div>

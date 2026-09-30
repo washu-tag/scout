@@ -150,7 +150,7 @@ def test_source_reports_one_text_axis() -> None:
 
 
 def test_the_diagnosis_arm_is_evaluated_not_assumed() -> None:
-    """An unexplained row reads unknown rather than blaming a code that may
+    """A row no arm explains reads NULL rather than blaming a code that may
     not have matched."""
     out, _ = with_evidence(CANONICAL)
     assert "CARDINALITY(FILTER(diagnoses" in out
@@ -276,3 +276,17 @@ def test_occurrence_index_is_cast_to_integer() -> None:
     assert expression is not None
     assert "CAST(i AS INTEGER)" in expression
     assert ", 1, i)" not in expression
+
+
+def test_source_names_text_and_code_when_both_matched() -> None:
+    out, _ = with_evidence(CANONICAL)
+    source = next(
+        e
+        for e in sqlglot.parse_one(out, dialect="trino").expressions
+        if e.alias_or_name == "ev_source"
+    )
+    rendered = source.sql(dialect="trino")
+    for value in ("'text_and_code'", "'text'", "'diagnosis_code'"):
+        assert value in rendered
+    # text_and_code must be tested first, or the text arm swallows it.
+    assert rendered.index("'text_and_code'") < rendered.index("'text'")

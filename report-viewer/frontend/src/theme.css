@@ -26,12 +26,11 @@ body {
   --rv-danger: #b00;
   --rv-danger-soft: #fdeaea;
 
-  /* Match evidence. The chip and the mark in the report share a colour, so a
-     yellow chip means yellow marks when the row is opened. Text and code are
-     both reasons a row qualifies, so they share a colour and the glyph tells
-     them apart; red is reserved for text that contradicts the row. */
-  --rv-ev-positive: #7a5c00;
-  --rv-ev-positive-soft: #fff3a3;
+  /* Match evidence. Chips and the marks in the report share these, so a chip
+     colour predicts the mark colour. Text and code are both reasons a row
+     qualifies and share one colour; red is only for contradicting text. */
+  --rv-ev-positive: #1d4e75;
+  --rv-ev-positive-soft: #d6e6f7;
   --rv-success: #1a7a3a;
 
   /* Column profile bars. */
@@ -55,8 +54,8 @@ body {
     --rv-danger: #ff6b6b;
     --rv-danger-soft: #4a2b2b;
 
-    --rv-ev-positive: #f0d97a;
-    --rv-ev-positive-soft: #4a4020;
+    --rv-ev-positive: #9fc9ee;
+    --rv-ev-positive-soft: #26415c;
     --rv-success: #3fbf6a;
 
     /* Column profile bars dark. */

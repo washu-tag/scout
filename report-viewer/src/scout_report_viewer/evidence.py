@@ -284,27 +284,37 @@ def _admitted(plan: EvidencePlan, pos: TextLeaf) -> str:
 
 
 def build_evidence_columns(plan: EvidencePlan) -> str:
-    source_arms = "\n    ".join(
-        f"WHEN {_admitted(plan, p)} THEN {_lit(TEXT_LABEL)}" for p in plan.positives
-    )
-    include_arms = "\n    ".join(
-        f"WHEN {_admitted(plan, p)} THEN REGEXP_EXTRACT({p.column}, {_lit(p.pattern)})"
-        for p in plan.positives
-    )
-    # Evaluate the diagnosis arm rather than assuming it. Anything that matches
-    # nothing is NULL, surfaced as "unknown", which is honest about a predicate
-    # we failed to model instead of blaming a code that may not have matched.
+    admitted = [f"({_admitted(plan, p)})" for p in plan.positives]
+    any_text = " OR ".join(admitted)
+
     if plan.dx_patterns:
         matching = " OR ".join(
             f"d.diagnosis_code LIKE {_lit(p)}" for p in plan.dx_patterns
         )
-        source_else = (
-            f"CASE WHEN CARDINALITY(FILTER(diagnoses, d -> {matching})) > 0"
-            f" THEN {_lit('diagnosis_code')} ELSE NULL END"
+        matched_codes = f"FILTER(diagnoses, d -> {matching})"
+        has_code = f"CARDINALITY({matched_codes}) > 0"
+        dx_codes = (
+            f"ARRAY_JOIN(TRANSFORM({matched_codes}, d -> d.diagnosis_code), ', ')"
         )
     else:
-        source_else = "NULL"
+        has_code = "false"
+        dx_codes = "CAST(NULL AS VARCHAR)"
 
+    # text_and_code must precede text, which would otherwise swallow it. NULL
+    # means nothing we modelled matched, which is honest about a predicate we
+    # failed to classify rather than blaming a code that may not have matched.
+    arms = []
+    if plan.dx_patterns:
+        arms.append(f"WHEN ({any_text}) AND {has_code} THEN {_lit('text_and_code')}")
+    arms.append(f"WHEN ({any_text}) THEN {_lit('text')}")
+    if plan.dx_patterns:
+        arms.append(f"WHEN {has_code} THEN {_lit('diagnosis_code')}")
+    source = "CASE\n    " + "\n    ".join(arms) + "\n    ELSE NULL\n  END"
+
+    include_arms = "\n    ".join(
+        f"WHEN {_admitted(plan, p)} THEN REGEXP_EXTRACT({p.column}, {_lit(p.pattern)})"
+        for p in plan.positives
+    )
     if plan.vetoes:
         exclude_arms = "\n    ".join(
             f"WHEN {_matches(v)} THEN REGEXP_EXTRACT({v.column}, {_lit(v.pattern)})"
@@ -314,19 +324,8 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
     else:
         exclude = "CAST(NULL AS VARCHAR)"
 
-    if plan.dx_patterns:
-        matching = " OR ".join(
-            f"d.diagnosis_code LIKE {_lit(p)}" for p in plan.dx_patterns
-        )
-        dx_codes = (
-            f"ARRAY_JOIN(TRANSFORM(FILTER(diagnoses, d -> {matching}),"
-            f" d -> d.diagnosis_code), ', ')"
-        )
-    else:
-        dx_codes = "CAST(NULL AS VARCHAR)"
-
     return (
-        f"  , CASE\n    {source_arms}\n    ELSE {source_else}\n  END AS ev_source\n"
+        f"  , {source} AS ev_source\n"
         f"  , CASE\n    {include_arms}\n    ELSE NULL\n  END AS ev_positive_span\n"
         f"  , {exclude} AS ev_negative_span\n"
         f"  , {dx_codes} AS ev_dx_codes\n"

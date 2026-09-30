@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { evidenceStats, type Tally } from './evidenceStats';
 
-const SOURCE_LABEL: Record<string, string> = {
-  text: 'Report text',
-  diagnosis_code: 'Diagnosis code',
-  unknown: 'Unknown',
+const CATEGORY_LABEL: Record<string, string> = {
+  text_and_code: 'Report text and code',
+  text: 'Report text only',
+  diagnosis_code: 'Diagnosis code only',
+  unknown: 'Unexplained',
 };
 
 const TOP_N = 8;
@@ -12,46 +13,6 @@ const TOP_N = 8;
 const muted: React.CSSProperties = { color: 'var(--rv-muted)', fontSize: '0.78rem' };
 
 const num: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
-
-function Bar(props: { rows: Tally[]; total: number; label: (s: string) => string }) {
-  return (
-    <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.78rem' }}>
-      <tbody>
-        {props.rows.map((r) => (
-          <tr key={r.label}>
-            <td style={{ padding: '1px 0.5rem 1px 0', whiteSpace: 'nowrap' }}>
-              {props.label(r.label)}
-            </td>
-            <td style={{ padding: '1px 0', width: '100%' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  height: 8,
-                  borderRadius: 2,
-                  background: 'var(--rv-accent)',
-                  width: `${props.total === 0 ? 0 : (r.count / props.total) * 100}%`,
-                  minWidth: r.count > 0 ? 2 : 0,
-                  verticalAlign: 'middle',
-                }}
-              />
-            </td>
-            <td
-              style={{
-                padding: '1px 0 1px 0.5rem',
-                textAlign: 'right',
-                fontVariantNumeric: 'tabular-nums',
-                whiteSpace: 'nowrap',
-                ...muted,
-              }}
-            >
-              {r.count} ({props.total === 0 ? 0 : Math.round((r.count / props.total) * 100)}%)
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
 
 function Phrases(props: { title: string; rows: Tally[]; distinct: number }) {
   if (props.rows.length === 0) return null;
@@ -105,52 +66,42 @@ export function MatchStats(props: { rows: Record<string, unknown>[] }) {
         predicates. Compare between searches to see what a reworded question changed.
       </p>
 
-      <Bar rows={s.sources} total={s.total} label={(k) => SOURCE_LABEL[k] ?? k} />
-
-      {s.crosstab.length > 0 && (
-        <table
-          style={{
-            borderCollapse: 'collapse',
-            marginTop: '0.6rem',
-            fontSize: '0.76rem',
-          }}
-        >
-          <thead>
-            <tr style={muted}>
-              <th />
-              <th style={{ padding: '0 0.6rem', fontWeight: 500, textAlign: 'right' }}>clean</th>
-              <th style={{ padding: '0 0.6rem', fontWeight: 500, textAlign: 'right' }}>
-                has negative
-              </th>
+      <table style={{ borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+        <thead>
+          <tr style={muted}>
+            <th />
+            <th style={{ padding: '0 0.6rem', fontWeight: 500, textAlign: 'right' }}>clean</th>
+            <th style={{ padding: '0 0.6rem', fontWeight: 500, textAlign: 'right' }}>
+              has negative
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {s.breakdown.map((r) => (
+            <tr key={r.category}>
+              <td style={{ padding: '1px 0.6rem 1px 0', whiteSpace: 'nowrap' }}>
+                {CATEGORY_LABEL[r.category] ?? r.category}
+              </td>
+              <td style={{ padding: '1px 0.6rem', textAlign: 'right', ...num }}>
+                {r.clean.toLocaleString()}
+              </td>
+              <td
+                // A code admitted the row while its own report text disagrees.
+                style={{
+                  padding: '1px 0.6rem',
+                  textAlign: 'right',
+                  ...num,
+                  ...(r.category === 'diagnosis_code' && r.negative > 0
+                    ? { color: 'var(--rv-danger)', fontWeight: 600 }
+                    : {}),
+                }}
+              >
+                {r.negative.toLocaleString()}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {s.crosstab.map((r) => (
-              <tr key={r.source}>
-                <td style={{ padding: '1px 0.6rem 1px 0', whiteSpace: 'nowrap' }}>
-                  {SOURCE_LABEL[r.source] ?? r.source}
-                </td>
-                <td style={{ padding: '1px 0.6rem', textAlign: 'right', ...num }}>
-                  {r.clean.toLocaleString()}
-                </td>
-                <td
-                  // Admitted by a code while its own report text disagrees.
-                  style={{
-                    padding: '1px 0.6rem',
-                    textAlign: 'right',
-                    ...num,
-                    ...(r.source === 'diagnosis_code' && r.negative > 0
-                      ? { color: 'var(--rv-danger)', fontWeight: 600 }
-                      : {}),
-                  }}
-                >
-                  {r.negative.toLocaleString()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
 
       <Phrases title="Positive evidence" rows={s.positiveSpans} distinct={s.distinctPositive} />
       <Phrases title="Negative evidence" rows={s.negativeSpans} distinct={s.distinctNegative} />

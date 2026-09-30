@@ -89,7 +89,7 @@ const DEFAULT_COLUMNS = COLUMNS_CONFIG.filter((c) => !c.defaultHidden).map((c) =
 
 // Least self-evidencing first: a code-only row has no text in the report to
 // check against, while a text match shows the reviewer its own phrase.
-const REVIEW_ORDER = ['diagnosis_code', 'text'];
+const REVIEW_ORDER = ['diagnosis_code', 'text', 'text_and_code'];
 
 /** The phrase the chip shows, so equal evidence sorts together. */
 function evidenceText(row: Row): string {
