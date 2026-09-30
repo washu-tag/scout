@@ -239,9 +239,11 @@ export function ActionsToolbar({
               <div
                 style={{
                   position: 'absolute',
-                  top: '100%',
+                  // Opens upward, like "Columns ▾" - this row can sit at
+                  // the bottom of a height-constrained iframe.
+                  bottom: '100%',
                   right: 0,
-                  marginTop: 4,
+                  marginBottom: 4,
                   background: 'var(--rv-surface)',
                   border: '1px solid var(--rv-border)',
                   borderRadius: 4,
