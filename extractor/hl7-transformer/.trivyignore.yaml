@@ -3,8 +3,6 @@
 # when a newer Spark 4.1.x image is adoptable — currently gated on PyPI
 # delta-spark, whose latest (4.3.0) pins pyspark<=4.1.1.
 vulnerabilities:
-  # Ubuntu base not yet rebuilt with openssl 3.0.2-0ubuntu1.25
-  - id: CVE-2026-45447 # openssl/libssl3 3.0.2-0ubuntu1.23 → 3.0.2-0ubuntu1.25
   # linux-libc-dev kernel-header CVEs are suppressed by package name in
   # .trivyignore.rego (Trivy ignore-policy), not enumerated here — see #478.
   # netty 4.2.7 family bundled by Spark (plus copies shaded into the

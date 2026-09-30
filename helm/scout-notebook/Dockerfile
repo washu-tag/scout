@@ -1,8 +1,14 @@
 FROM quay.io/jupyter/scipy-notebook:python-3.13.14
 
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends --only-upgrade openssl libssl3t64 \
+    && rm -rf /var/lib/apt/lists/*
+USER ${NB_UID}
+
 # Platform packages + Jupyter extensions via mamba. Everything else
 # (torch, transformers, scikit-learn, etc.) is user-installed via the
-# package proxy. gitpython, jupyterlab, and jupyter_server are pinned above
+# package proxy. gitpython, jupyterlab, jupyter_server, and pyjwt are pinned above
 # the scipy-notebook base to clear Trivy findings; drop the pins once a
 # newer base ships them.
 RUN mamba install -y -n base \
@@ -15,6 +21,7 @@ RUN mamba install -y -n base \
     'gitpython>=3.1.59' \
     'jupyterlab>=4.6.2' \
     'jupyter_server>=2.21.0' \
+    'pyjwt>=2.14.0' \
     && mamba clean -afy \
     && fix-permissions "${CONDA_DIR}" \
     && fix-permissions "/home/${NB_USER}"
