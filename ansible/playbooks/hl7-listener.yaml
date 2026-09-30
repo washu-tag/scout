@@ -2,6 +2,10 @@
 - name: Install HL7 Listener (Strimzi Kafka + Camel on Spring Boot)
   hosts: server
   gather_facts: false
+  pre_tasks:
+    - name: Skip if HL7 listener not enabled
+      ansible.builtin.meta: end_play
+      when: not (enable_hl7_listener | default(false) | bool)
   environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: hl7-listener

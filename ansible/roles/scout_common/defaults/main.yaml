@@ -282,6 +282,7 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
+enable_hl7_listener: false
 
 # When false, nothing XNAT is created (no namespace/deploy; the Keycloak realm
 # omits the xnat client + xnat-access role). keycloak_xnat_client_secret is only

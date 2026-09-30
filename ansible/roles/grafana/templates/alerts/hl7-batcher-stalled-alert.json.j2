@@ -72,7 +72,7 @@
             }
           ],
           "noDataState": "OK",
-          "execErrState": "Error",
+          "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
             "description": "The HL7 listener is receiving messages but the batcher has consumed none for 30 minutes. Kafka lag is building; un-batched messages risk aging out of retention before reaching MinIO bronze.",
