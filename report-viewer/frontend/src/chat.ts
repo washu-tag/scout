@@ -56,8 +56,8 @@ export function buildFilterPrompt(searchId: string, filters: FilterState): strin
     clauses.push(`sending_facility contains "${filters.sending_facility}"`);
   }
   // ev_* are viewer columns, so send the predicate they stand for instead.
-  if (filters.ev_dx_codes) {
-    clauses.push(`a diagnosis code matching "${filters.ev_dx_codes}"`);
+  if (filters.ev_dx_codes?.length) {
+    clauses.push(`a diagnosis code matching "${filters.ev_dx_codes.join('", "')}"`);
   }
   if (filters.ev_positive_span) {
     clauses.push(`report text containing "${filters.ev_positive_span}"`);

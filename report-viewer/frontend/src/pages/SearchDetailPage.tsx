@@ -5,14 +5,13 @@ import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
-  getExpandedRowModel,
   getSortedRowModel,
   getPaginationRowModel,
   useReactTable,
   type SortingState,
-  type ExpandedState,
   type VisibilityState,
   type PaginationState,
+  type RowSelectionState,
 } from '@tanstack/react-table';
 import {
   EV_CATEGORIES,
@@ -30,7 +29,6 @@ import {
 import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
 import { buildFilterPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
-import { RowDetail } from './searchDetail/RowDetail';
 import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
 import { EvidenceFilterChips } from './searchDetail/EvidenceFilterChips';
 import { FiltersModal } from './searchDetail/FiltersModal';
@@ -40,7 +38,8 @@ import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { EvidenceCell } from './searchDetail/EvidenceCell';
 import { hasEvidence } from './searchDetail/evidenceStats';
-import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
+import { ReviewPanel } from './searchDetail/ReviewPanel';
+import { ROW_ACTIVE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
 
 const COLUMNS_CONFIG: Array<{
   field: string;
@@ -75,11 +74,12 @@ const COLUMNS_CONFIG: Array<{
   { field: 'patient_age', title: 'Age', width: 50, align: 'right', defaultHidden: true },
   { field: 'sex', title: 'Sex', width: 40, align: 'center', defaultHidden: true },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
+  { field: 'ev_dx_codes', title: 'DX codes', width: 100, defaultHidden: true },
+  { field: 'ev_dx_text', title: 'DX text', width: 180, defaultHidden: true },
   // One column for why the row is in the cohort: the matched phrase, the code
   // that admitted it, and any negation. The raw spans stay available in the
   // column picker for anyone auditing a cohort.
   { field: 'ev_source', title: 'Evidence', width: 260, kind: 'evidence' },
-  { field: 'ev_dx_codes', title: 'DX codes', width: 100, defaultHidden: true },
   { field: 'ev_positive_span', title: 'Positive evidence', width: 200, defaultHidden: true },
   { field: 'ev_negative_span', title: 'Negative evidence', width: 200, defaultHidden: true },
 ];
@@ -121,11 +121,13 @@ export default function SearchDetailPage() {
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const colPickerRef = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
   );
   const [iframeExpanded, setIframeExpanded] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [reviewAt, setReviewAt] = useState<number | null>(null);
+  const anchorRef = useRef<number | null>(null);
   const appliedFiltersKey = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
 
   const meta = useQuery({
@@ -159,10 +161,10 @@ export default function SearchDetailPage() {
   const loadingState = useLoadingProgress(!rowsQ.data && rowsQ.isLoading, fetchProgress);
   const showLoading = loadingState.show;
 
-  // Expansion is keyed by row id (primary_report_identifier); clear on a new
-  // cohort fetch so a fresh search doesn't inherit stale expansions.
+  // A fresh cohort must not inherit a selection or an open reader.
   useEffect(() => {
-    setExpanded({});
+    setRowSelection({});
+    setReviewAt(null);
   }, [rowsQ.data]);
 
   useEffect(() => {
@@ -254,29 +256,73 @@ export default function SearchDetailPage() {
     [rowsQ.data, appliedFiltersKey],
   );
 
+  const SELECT_W = 28;
+
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, expanded, columnVisibility, pagination },
+    state: { sorting, columnVisibility, pagination, rowSelection },
     onSortingChange: (updater) => {
       setSorting(updater);
       setPagination((p) => ({ ...p, pageIndex: 0 }));
     },
-    onExpandedChange: setExpanded,
     onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
     onPaginationChange: setPagination,
-    // Stable id so an expanded row tracks the right report across
-    // client-side sort/filter/paginate.
+    // Stable id so selection survives client-side sort/filter/paginate.
     getRowId: (row: Row, index) =>
       row.primary_report_identifier != null ? String(row.primary_report_identifier) : String(index),
-    getRowCanExpand: () => true,
     getCoreRowModel: getCoreRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     columnResizeMode: 'onChange',
     defaultColumn: { minSize: 40 },
   });
+
+  // Sorted, not paginated: the queue spans the whole filtered cohort.
+  const ordered = table.getSortedRowModel().rows;
+  const selectedIds = useMemo(
+    () => new Set(Object.keys(rowSelection).filter((id) => rowSelection[id])),
+    [rowSelection],
+  );
+  const queue = useMemo(
+    () => (selectedIds.size > 0 ? ordered.filter((r) => selectedIds.has(r.id)) : ordered),
+    [ordered, selectedIds],
+  );
+  const pageSize = pagination.pageSize;
+
+  const openReview = (rowId: string) => {
+    const at = queue.findIndex((r) => r.id === rowId);
+    setReviewAt(at === -1 ? 0 : at);
+  };
+
+  // Follow the reader, so closing the panel lands where they stopped.
+  const goToReview = (next: number) => {
+    setReviewAt(next);
+    const row = queue[next];
+    if (!row) return;
+    const at = ordered.findIndex((r) => r.id === row.id);
+    if (at >= 0) setPagination((p) => ({ ...p, pageIndex: Math.floor(at / pageSize) }));
+  };
+
+  // Shift-click fills from the last box ticked, in display order.
+  const selectRange = (rowId: string, shift: boolean) => {
+    const at = ordered.findIndex((r) => r.id === rowId);
+    if (at < 0) return;
+    const anchor = anchorRef.current;
+    if (shift && anchor !== null) {
+      const [lo, hi] = anchor < at ? [anchor, at] : [at, anchor];
+      setRowSelection((prev) => {
+        const next = { ...prev };
+        for (let i = lo; i <= hi; i++) next[ordered[i].id] = true;
+        return next;
+      });
+    } else {
+      anchorRef.current = at;
+      setRowSelection((prev) => ({ ...prev, [rowId]: !prev[rowId] }));
+    }
+  };
 
   const total = data.length;
   const lastPage = table.getPageCount() || 1;
@@ -361,6 +407,9 @@ export default function SearchDetailPage() {
             flexDirection: 'column',
             flex: '1 1 auto',
             minHeight: 0,
+            // Containing block for the review panel; unlike the table box
+            // below, this one does not scroll.
+            position: 'relative',
           }}
         >
           {rowsQ.data?.truncated && (
@@ -404,6 +453,35 @@ export default function SearchDetailPage() {
               <thead>
                 {table.getHeaderGroups().map((hg, hgIndex) => (
                   <tr key={hg.id} ref={hgIndex === 0 ? headerRowRef : undefined}>
+                    <th
+                      style={{
+                        width: SELECT_W,
+                        padding: '0.3rem 0 0.3rem 0.45rem',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 2,
+                        background: 'var(--rv-surface-2)',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label="Select all filtered rows"
+                        title="Select every filtered row"
+                        checked={selectedIds.size > 0 && selectedIds.size === ordered.length}
+                        ref={(el) => {
+                          if (el)
+                            el.indeterminate =
+                              selectedIds.size > 0 && selectedIds.size < ordered.length;
+                        }}
+                        onChange={() =>
+                          setRowSelection(
+                            selectedIds.size === ordered.length
+                              ? {}
+                              : Object.fromEntries(ordered.map((r) => [r.id, true])),
+                          )
+                        }
+                      />
+                    </th>
                     {hg.headers.map((header) => {
                       const colMeta = header.column.columnDef.meta as
                         | { align?: 'right' | 'center' }
@@ -463,23 +541,36 @@ export default function SearchDetailPage() {
                     rows={data}
                     dateFields={dateFields}
                     stickyTop={headerHeight}
+                    leadWidth={SELECT_W}
                   />
                 )}
               </thead>
               <tbody>
                 {table.getRowModel().rows.map((row) => {
-                  const isExpanded = row.getIsExpanded();
+                  const active = reviewAt !== null && queue[reviewAt]?.id === row.id;
                   return (
                     <React.Fragment key={row.id}>
                       <tr
-                        className={isExpanded ? undefined : 'scout-row'}
-                        onClick={() => row.toggleExpanded()}
+                        className={active ? undefined : 'scout-row'}
+                        onClick={() => openReview(row.id)}
                         style={{
                           borderBottom: '1px solid var(--rv-border)',
                           cursor: 'pointer',
-                          background: isExpanded ? ROW_ACTIVE_BG : 'transparent',
+                          background: active ? ROW_ACTIVE_BG : 'transparent',
                         }}
                       >
+                        <td
+                          style={{ width: SELECT_W, padding: '0.3rem 0 0.3rem 0.45rem' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            aria-label="Select report"
+                            checked={row.getIsSelected()}
+                            onChange={() => undefined}
+                            onClick={(e) => selectRange(row.id, e.shiftKey)}
+                          />
+                        </td>
                         {row.getVisibleCells().map((cell) => {
                           const colMeta = cell.column.columnDef.meta as
                             | { align?: 'right' | 'center'; mono?: boolean }
@@ -504,15 +595,6 @@ export default function SearchDetailPage() {
                           );
                         })}
                       </tr>
-                      {isExpanded && (
-                        <tr style={{ background: DETAIL_ZONE_BG }}>
-                          <td colSpan={row.getVisibleCells().length} style={{ padding: 0 }}>
-                            <div style={{ padding: '0.75rem 1rem' }}>
-                              <RowDetail row={row.original} />
-                            </div>
-                          </td>
-                        </tr>
-                      )}
                     </React.Fragment>
                   );
                 })}
@@ -630,6 +712,25 @@ export default function SearchDetailPage() {
               }}
             />
             <span style={{ flex: 1 }} />
+            {selectedIds.size > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setReviewAt(0)}
+                  style={{
+                    ...paginationBtn,
+                    background: 'var(--rv-accent)',
+                    color: '#fff',
+                    borderColor: 'var(--rv-accent)',
+                  }}
+                >
+                  Review {selectedIds.size.toLocaleString()}
+                </button>
+                <button type="button" onClick={() => setRowSelection({})} style={paginationBtn}>
+                  Clear
+                </button>
+              </>
+            )}
             <button
               type="button"
               disabled={!rowsQ.data}
@@ -751,6 +852,20 @@ export default function SearchDetailPage() {
               {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
             </button>
           </div>
+          {reviewAt !== null && queue.length > 0 && (
+            <ReviewPanel
+              queue={queue.map((r) => r.original)}
+              index={Math.min(reviewAt, queue.length - 1)}
+              selectedCount={selectedIds.size}
+              isSelected={!!queue[reviewAt]?.getIsSelected()}
+              onIndex={goToReview}
+              onToggleSelect={() => {
+                const row = queue[reviewAt];
+                if (row) setRowSelection((prev) => ({ ...prev, [row.id]: !prev[row.id] }));
+              }}
+              onClose={() => setReviewAt(null)}
+            />
+          )}
         </div>
       }
       {sqlModalOpen && (

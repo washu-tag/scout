@@ -52,7 +52,13 @@ SOURCE_ORDER = (
 # internally which column the span is read from.
 TEXT_LABEL = "text"
 
-EV_COLUMNS = ("ev_source", "ev_positive_span", "ev_negative_span", "ev_dx_codes")
+EV_COLUMNS = (
+    "ev_source",
+    "ev_positive_span",
+    "ev_negative_span",
+    "ev_dx_codes",
+    "ev_dx_text",
+)
 
 MAX_TEXT_LEAVES = 24
 
@@ -71,12 +77,14 @@ class EvidencePlan:
     veto_for: dict[TextLeaf, TextLeaf] = field(default_factory=dict)
     #: parsed-section columns with a positive, i.e. what report_text falls back from
     section_columns: set[str] = field(default_factory=set)
-    #: LIKE patterns the query matches diagnosis_code against
-    dx_patterns: list[str] = field(default_factory=list)
+    #: the query's own `any_match(diagnoses, ...)` tests, verbatim
+    dx_tests: list[str] = field(default_factory=list)
+    #: lambda from the first of those, for listing which codes matched
+    dx_lambda: str | None = None
 
     @property
     def has_dx_axis(self) -> bool:
-        return bool(self.dx_patterns)
+        return bool(self.dx_tests)
 
 
 def _names_in(node: exp.Expression) -> set[str]:
@@ -127,20 +135,26 @@ def _regexp_like_parts(node: exp.Expression) -> tuple[str, str] | None:
     return column, pattern_node.this
 
 
-def _dx_patterns(where: exp.Expression) -> list[str]:
-    """LIKE patterns applied to diagnosis_code, sorted for a stable rewrite.
+def _dx_axis(where: exp.Expression) -> tuple[list[str], str | None]:
+    """The query's `any_match(diagnoses, ...)` tests and the first lambda.
 
-    Replaces the model-supplied match_diagnoses: these are the codes the query
-    actually filters on, not the ones it said it would.
+    Reused verbatim rather than re-derived from the LIKE patterns inside.
+    A diagnosis axis may test `diagnosis_code_text`, or several columns at
+    once, and rebuilding it from the patterns silently dropped everything
+    that was not a bare `diagnosis_code LIKE`.
     """
-    out: list[str] = []
-    for like in where.find_all(exp.Like):
-        subject, pattern = like.this, like.expression
-        if not isinstance(pattern, exp.Literal) or not pattern.is_string:
+    tests: list[str] = []
+    lam: str | None = None
+    for call in where.find_all(exp.Anonymous):
+        if call.name.lower() != "any_match" or len(call.expressions) != 2:
             continue
-        if "diagnosis_code" in _names_in(subject) and pattern.this not in out:
-            out.append(pattern.this)
-    return sorted(out)
+        subject, body = call.expressions
+        if "diagnoses" not in _names_in(subject):
+            continue
+        tests.append(call.sql(dialect=DIALECT))
+        if lam is None and isinstance(body, exp.Lambda):
+            lam = body.sql(dialect=DIALECT)
+    return tests, lam
 
 
 def _unsupported(select: exp.Select) -> str | None:
@@ -213,7 +227,8 @@ def build_plan(sql: str) -> EvidencePlan | None:
     if where is None:
         return None
 
-    plan = EvidencePlan(dx_patterns=_dx_patterns(where))
+    dx_tests, dx_lambda = _dx_axis(where)
+    plan = EvidencePlan(dx_tests=dx_tests, dx_lambda=dx_lambda)
     seen: set[TextLeaf] = set()
     nodes: list[tuple[exp.Expression, TextLeaf]] = []
     # find_all, not walk: walk's yield shape changed between sqlglot majors.
@@ -287,28 +302,29 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
     admitted = [f"({_admitted(plan, p)})" for p in plan.positives]
     any_text = " OR ".join(admitted)
 
-    if plan.dx_patterns:
-        matching = " OR ".join(
-            f"d.diagnosis_code LIKE {_lit(p)}" for p in plan.dx_patterns
-        )
-        matched_codes = f"FILTER(diagnoses, d -> {matching})"
-        has_code = f"CARDINALITY({matched_codes}) > 0"
-        dx_codes = (
-            f"ARRAY_JOIN(TRANSFORM({matched_codes}, d -> d.diagnosis_code), ', ')"
-        )
+    if plan.dx_tests:
+        has_code = " OR ".join(f"({t})" for t in plan.dx_tests)
     else:
         has_code = "false"
+    if plan.dx_lambda:
+        matched = f"FILTER(diagnoses, {plan.dx_lambda})"
+        dx_codes = f"ARRAY_JOIN(TRANSFORM({matched}, x -> x.diagnosis_code), ', ')"
+        # A code can be admitted by its text, so the code alone does not say
+        # why the row is here.
+        dx_text = f"ARRAY_JOIN(TRANSFORM({matched}, x -> x.diagnosis_code_text), ', ')"
+    else:
         dx_codes = "CAST(NULL AS VARCHAR)"
+        dx_text = "CAST(NULL AS VARCHAR)"
 
     # text_and_code must precede text, which would otherwise swallow it. NULL
     # means nothing we modelled matched, which is honest about a predicate we
     # failed to classify rather than blaming a code that may not have matched.
     arms = []
-    if plan.dx_patterns:
-        arms.append(f"WHEN ({any_text}) AND {has_code} THEN {_lit('text_and_code')}")
+    if plan.dx_tests:
+        arms.append(f"WHEN ({any_text}) AND ({has_code}) THEN {_lit('text_and_code')}")
     arms.append(f"WHEN ({any_text}) THEN {_lit('text')}")
-    if plan.dx_patterns:
-        arms.append(f"WHEN {has_code} THEN {_lit('diagnosis_code')}")
+    if plan.dx_tests:
+        arms.append(f"WHEN ({has_code}) THEN {_lit('diagnosis_code')}")
     source = "CASE\n    " + "\n    ".join(arms) + "\n    ELSE NULL\n  END"
 
     include_arms = "\n    ".join(
@@ -329,6 +345,7 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
         f"  , CASE\n    {include_arms}\n    ELSE NULL\n  END AS ev_positive_span\n"
         f"  , {exclude} AS ev_negative_span\n"
         f"  , {dx_codes} AS ev_dx_codes\n"
+        f"  , {dx_text} AS ev_dx_text\n"
     )
 
 

@@ -156,7 +156,7 @@ export interface FilterState {
   accession_number?: string;
   sending_facility?: string;
   ev_source?: EvCategory[];
-  ev_dx_codes?: string;
+  ev_dx_codes?: string[];
   ev_has_negative?: boolean;
   /** Exact, not substring, so a click from the stats panel selects its own tally. */
   ev_positive_span?: string;
@@ -319,7 +319,9 @@ export function filterRows(
   const dtMin = f.message_dt?.min || null;
   const dtMax = f.message_dt?.max || null;
   const evSet = f.ev_source && f.ev_source.length ? new Set<string>(f.ev_source) : null;
-  const dx = f.ev_dx_codes?.trim().toLowerCase() || null;
+  const dx = f.ev_dx_codes?.length
+    ? f.ev_dx_codes.map((c) => c.trim().toLowerCase()).filter(Boolean)
+    : null;
   const posSpan = f.ev_positive_span ?? null;
   const negSpan = f.ev_negative_span ?? null;
   const has = (v: unknown, q: string) =>
@@ -335,7 +337,7 @@ export function filterRows(
     if (sexSet && !sexSet.has(String(r.sex))) return false;
     if (modSet && !modSet.has(String(r.modality))) return false;
     if (evSet && !evSet.has(evidenceCategory(r))) return false;
-    if (dx && !has(r.ev_dx_codes, dx)) return false;
+    if (dx && !dx.some((c) => has(r.ev_dx_codes, c) || has(r.ev_dx_text, c))) return false;
     if (posSpan !== null && collapse(r.ev_positive_span) !== posSpan) return false;
     if (negSpan !== null && collapse(r.ev_negative_span) !== negSpan) return false;
     if (f.ev_has_negative !== undefined) {

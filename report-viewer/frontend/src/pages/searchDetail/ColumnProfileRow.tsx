@@ -431,11 +431,14 @@ export function ColumnProfileRow({
   rows,
   dateFields,
   stickyTop,
+  leadWidth,
 }: {
   columns: Column<Row, unknown>[];
   rows: Row[];
   dateFields: ReadonlySet<string>;
   stickyTop: number;
+  /** Width of the selection gutter, which has no column to profile. */
+  leadWidth?: number;
 }) {
   // getVisibleLeafColumns() is a new array every render, so a useMemo on it
   // would recompute every sort and page click. Cache per column instead.
@@ -451,8 +454,17 @@ export function ColumnProfileRow({
     return profile;
   };
 
+  const gutter: React.CSSProperties = {
+    background: 'var(--rv-surface-2)',
+    boxShadow: 'inset 0 -1px 0 var(--rv-border)',
+    position: 'sticky',
+    top: stickyTop,
+    zIndex: 1,
+  };
+
   return (
     <tr>
+      {leadWidth !== undefined && <td style={{ ...gutter, width: leadWidth }} />}
       {columns.map((col) => {
         const profile = profileFor(col);
         return (

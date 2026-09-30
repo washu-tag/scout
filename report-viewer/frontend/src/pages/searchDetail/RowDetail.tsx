@@ -13,7 +13,7 @@ const TEXT_FIELDS = [
   'report_section_findings',
 ] as const;
 
-export function RowDetail(props: { row: Record<string, unknown> }) {
+export function RowDetail(props: { row: Record<string, unknown>; wide?: boolean }) {
   const requestPrompt = useChatPrompt();
   const { searchId } = useParams<{ searchId: string }>();
   const reportId = String(props.row['primary_report_identifier'] ?? '');
@@ -235,6 +235,9 @@ export function RowDetail(props: { row: Record<string, unknown> }) {
             padding: '0.4rem 0.6rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
             fontSize: '0.74rem',
+            // report_text is hard-wrapped at ingest (one line per OBX), so
+            // ask for the columns those lines need rather than re-wrapping.
+            ...(props.wide ? { minWidth: '76ch', overflowX: 'auto' } : {}),
           }}
         >
           {(() => {

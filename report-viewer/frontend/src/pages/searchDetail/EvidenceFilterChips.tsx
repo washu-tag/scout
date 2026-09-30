@@ -111,11 +111,21 @@ export function EvidenceFilterChips(props: {
     patch({ ev_source: list.length > 0 ? list : undefined });
   };
 
+  // Codes accumulate like the categories do: a row matching any of them stays.
+  const toggleCode = (code: string) => {
+    const cur = (f.ev_dx_codes ?? []).filter((c) => c.toLowerCase() !== code.toLowerCase());
+    const next = cur.length === (f.ev_dx_codes ?? []).length ? [...cur, code] : cur;
+    patch({ ev_dx_codes: next.length > 0 ? next : undefined });
+  };
+
   const selected = new Set(f.ev_source ?? []);
-  const codeFilter = f.ev_dx_codes?.trim().toLowerCase() ?? '';
+  const codeFilter = new Set((f.ev_dx_codes ?? []).map((c) => c.trim().toLowerCase()));
   const spanChips = [f.ev_positive_span, f.ev_negative_span];
   const anyActive =
-    selected.size > 0 || !!codeFilter || f.ev_has_negative !== undefined || spanChips.some(Boolean);
+    selected.size > 0 ||
+    codeFilter.size > 0 ||
+    f.ev_has_negative !== undefined ||
+    spanChips.some(Boolean);
 
   if (facets.categories.length === 0) return null;
 
@@ -133,6 +143,18 @@ export function EvidenceFilterChips(props: {
         Matched on
       </span>
 
+      {facets.codes.slice(0, MAX_CODES).map(([code, count]) => (
+        <Pill
+          key={code}
+          label={code}
+          count={count}
+          tone="positive"
+          active={codeFilter.has(code.toLowerCase())}
+          title={`Show rows carrying diagnosis code ${code}`}
+          onClick={() => toggleCode(code)}
+        />
+      ))}
+
       {facets.categories.map(([category, count]) => (
         <Pill
           key={category}
@@ -142,20 +164,6 @@ export function EvidenceFilterChips(props: {
           active={selected.has(category)}
           title={`Show only rows the query admitted on ${CATEGORY_LABEL[category]}`}
           onClick={() => toggleCategory(category)}
-        />
-      ))}
-
-      {facets.codes.slice(0, MAX_CODES).map(([code, count]) => (
-        <Pill
-          key={code}
-          label={code}
-          count={count}
-          tone="positive"
-          active={codeFilter === code.toLowerCase()}
-          title={`Show only rows carrying diagnosis code ${code}`}
-          onClick={() =>
-            patch({ ev_dx_codes: codeFilter === code.toLowerCase() ? undefined : code })
-          }
         />
       ))}
 

@@ -57,6 +57,7 @@ export function EvidenceCell(props: { row: Record<string, unknown> }) {
   const positive = str('ev_positive_span');
   const negative = str('ev_negative_span');
   const codes = str('ev_dx_codes');
+  const codeText = str('ev_dx_text');
   const source = str('ev_source');
 
   const chips: Array<{ kind: Kind; text: string; title: string }> = [];
@@ -66,10 +67,14 @@ export function EvidenceCell(props: { row: Record<string, unknown> }) {
     chips.push({
       kind: 'code',
       text: codes,
-      title:
+      title: [
         source === 'diagnosis_code'
           ? `Admitted by diagnosis code ${codes}`
           : `Also carries diagnosis code ${codes}`,
+        codeText,
+      ]
+        .filter(Boolean)
+        .join(' - '),
     });
   }
   if (positive) {

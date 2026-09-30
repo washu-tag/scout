@@ -76,6 +76,11 @@ def test_where_clause_is_untouched() -> None:
     assert out.endswith(CANONICAL[CANONICAL.index("FROM reports_latest") :])
 
 
+def test_dx_text_travels_with_the_code() -> None:
+    out, _ = with_evidence(CANONICAL)
+    assert "x.diagnosis_code_text), ', ') AS ev_dx_text" in out
+
+
 def test_adds_exactly_the_evidence_columns() -> None:
     before = select_aliases(CANONICAL)
     out, _ = with_evidence(CANONICAL)
@@ -153,7 +158,7 @@ def test_the_diagnosis_arm_is_evaluated_not_assumed() -> None:
     """A row no arm explains reads NULL rather than blaming a code that may
     not have matched."""
     out, _ = with_evidence(CANONICAL)
-    assert "CARDINALITY(FILTER(diagnoses" in out
+    assert "ANY_MATCH(diagnoses" in out
     assert "ELSE 'diagnosis_code'" not in out
 
 
@@ -290,3 +295,25 @@ def test_source_names_text_and_code_when_both_matched() -> None:
         assert value in rendered
     # text_and_code must be tested first, or the text arm swallows it.
     assert rendered.index("'text_and_code'") < rendered.index("'text'")
+
+
+def test_diagnosis_axis_is_reused_not_rebuilt_from_its_like_patterns() -> None:
+    """A row admitted on diagnosis_code_text read as unexplained, because the
+    axis was rebuilt as `diagnosis_code LIKE` and dropped every other test."""
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%' "
+        "OR LOWER(d.diagnosis_code_text) LIKE '%pulmonary embolism%') "
+        "OR REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)embolism')"
+    )
+    out, has_evidence = with_evidence(sql)
+    assert has_evidence
+    assert "diagnosis_code_text" in out
+    # The whole axis decides the arm, so I27.82 titled "pulmonary embolism"
+    # lands in diagnosis_code rather than falling through to NULL.
+    source = next(
+        e
+        for e in sqlglot.parse_one(out, dialect="trino").expressions
+        if e.alias_or_name == "ev_source"
+    ).sql(dialect="trino")
+    assert "LOWER(d.diagnosis_code_text) LIKE '%pulmonary embolism%'" in source
