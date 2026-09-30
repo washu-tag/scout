@@ -6,27 +6,28 @@ import { hasEvidence } from './evidenceStats';
 export function ExplainSqlModal(props: {
   explanation: string;
   sql: string;
+  executedSql?: string;
   rows: Record<string, unknown>[];
   onClose: () => void;
 }) {
   const showStats = hasEvidence(props.rows);
   // Gate on the SQL: match_terms is a model-supplied hint it can omit.
   const matchesText = /REGEXP_LIKE/i.test(props.sql);
-  const [copied, setCopied] = useState(false);
-  const onCopySql = () => {
-    if (!props.sql) return;
+  const [copied, setCopied] = useState('');
+  const copy = (label: string, text: string) => () => {
+    if (!text) return;
     // execCommand is deprecated but unavoidable: navigator.clipboard is
     // blocked by OWUI's artifact-iframe Permissions-Policy.
     const ta = document.createElement('textarea');
-    ta.value = props.sql;
+    ta.value = text;
     ta.style.position = 'fixed';
     ta.style.opacity = '0';
     document.body.appendChild(ta);
     ta.select();
     try {
       document.execCommand('copy');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setCopied(label);
+      setTimeout(() => setCopied(''), 1500);
     } finally {
       document.body.removeChild(ta);
     }
@@ -62,67 +63,94 @@ export function ExplainSqlModal(props: {
             the matching.
           </p>
         )}
-        <div style={{ fontWeight: 600, marginBottom: '0.35rem', fontSize: '0.85rem' }}>SQL</div>
-        <div style={{ position: 'relative' }}>
-          <pre
-            style={{
-              background: 'var(--rv-surface-2)',
-              border: '1px solid var(--rv-border)',
-              borderRadius: 3,
-              padding: '0.6rem 0.75rem',
-              paddingRight: '2.25rem',
-              fontSize: '0.74rem',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              // The model may emit the whole statement on one line; wrap, and break inside long regexes.
-              whiteSpace: 'pre-wrap',
-              overflowWrap: 'anywhere',
-              overflowX: 'auto',
-              maxHeight: '18rem',
-              overflowY: 'auto',
-              margin: 0,
-            }}
-          >
-            {props.sql || '(no SQL recorded)'}
-          </pre>
-          <button
-            type="button"
-            onClick={onCopySql}
-            disabled={!props.sql}
-            title={props.sql ? 'Copy SQL to clipboard' : 'No SQL to copy'}
-            aria-label={copied ? 'SQL copied' : 'Copy SQL'}
-            style={{
-              position: 'absolute',
-              top: 5,
-              right: 5,
-              width: 26,
-              height: 26,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0,
-              border: '1px solid transparent',
-              background: 'transparent',
-              borderRadius: 3,
-              cursor: props.sql ? 'pointer' : 'not-allowed',
-              color: copied ? 'var(--rv-success)' : 'var(--rv-muted)',
-              opacity: props.sql ? 1 : 0.4,
-            }}
-            onMouseEnter={(e) => {
-              if (!props.sql) return;
-              e.currentTarget.style.background = 'var(--rv-surface-2)';
-              e.currentTarget.style.borderColor = 'var(--rv-border)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.borderColor = 'transparent';
-            }}
-          >
-            {copied ? <CheckIcon /> : <CopyIcon />}
-          </button>
-        </div>
         {showStats && <MatchStats rows={props.rows} />}
+        <SqlSection
+          label="LLM generated SQL"
+          sql={props.sql || '(no SQL recorded)'}
+          copied={copied === 'assistant'}
+          onCopy={copy('assistant', props.sql)}
+        />
+        {props.executedSql && (
+          <SqlSection
+            label="Evaluated SQL"
+            sql={props.executedSql}
+            copied={copied === 'executed'}
+            onCopy={copy('executed', props.executedSql)}
+          />
+        )}
       </div>
     </Modal>
+  );
+}
+
+function SqlSection(props: { label: string; sql: string; copied: boolean; onCopy: () => void }) {
+  return (
+    <details style={{ marginTop: '0.75rem' }}>
+      <summary
+        style={{
+          cursor: 'pointer',
+          fontWeight: 600,
+          fontSize: '0.85rem',
+          marginBottom: '0.35rem',
+        }}
+      >
+        {props.label}
+      </summary>
+      <div style={{ position: 'relative' }}>
+        <pre
+          style={{
+            background: 'var(--rv-surface-2)',
+            border: '1px solid var(--rv-border)',
+            borderRadius: 3,
+            padding: '0.6rem 0.75rem',
+            paddingRight: '2.25rem',
+            fontSize: '0.74rem',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            // The model may emit the whole statement on one line; wrap, and break inside long regexes.
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'anywhere',
+            overflowX: 'auto',
+            maxHeight: '18rem',
+            overflowY: 'auto',
+            margin: 0,
+          }}
+        >
+          {props.sql}
+        </pre>
+        <button
+          type="button"
+          onClick={props.onCopy}
+          title="Copy SQL to clipboard"
+          aria-label={props.copied ? 'SQL copied' : 'Copy SQL'}
+          style={{
+            position: 'absolute',
+            top: 5,
+            right: 5,
+            width: 26,
+            height: 26,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
+            border: '1px solid transparent',
+            background: 'transparent',
+            borderRadius: 3,
+            cursor: 'pointer',
+            color: props.copied ? 'var(--rv-success)' : 'var(--rv-muted)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--rv-surface)';
+            e.currentTarget.style.borderColor = 'var(--rv-border)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = 'transparent';
+          }}
+        >
+          {props.copied ? <CheckIcon /> : <CopyIcon />}
+        </button>
+      </div>
+    </details>
   );
 }
 

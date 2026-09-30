@@ -129,10 +129,13 @@ def _wrap_sql(sql: str) -> str:
     return sql.rstrip().rstrip(";")
 
 
-def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
+def _meta_from_row(r: dict[str, Any], *, with_executed: bool = False) -> SearchMeta:
+    # Off by default: the list view shows no sql, so parsing every row is waste.
+    scored, rewritten = with_evidence(r["sql"]) if with_executed else ("", False)
     return SearchMeta(
         id=r["id"],
         sql=r["sql"],
+        executed_sql=scored if rewritten else "",
         owner_sub=r["owner_sub"],
         created_at=r["created_at"],
         match_terms=r.get("match_terms") or [],
@@ -428,16 +431,7 @@ async def get_search_meta(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="search not found",
         )
-    return SearchMeta(
-        id=ds["id"],
-        sql=ds["sql"],
-        owner_sub=ds["owner_sub"],
-        created_at=ds["created_at"],
-        match_terms=ds.get("match_terms") or [],
-        match_diagnoses=ds.get("match_diagnoses") or [],
-        sql_explanation=ds.get("sql_explanation") or "",
-        owui_chat_id=ds.get("owui_chat_id") or "",
-    )
+    return _meta_from_row(ds, with_executed=True)
 
 
 @router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)

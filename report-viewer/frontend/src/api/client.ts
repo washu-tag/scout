@@ -65,6 +65,7 @@ export interface SearchMeta {
   sql: string;
   owner_sub: string;
   created_at: string;
+  executed_sql: string;
   match_terms: string[];
   match_diagnoses: string[];
   sql_explanation: string;

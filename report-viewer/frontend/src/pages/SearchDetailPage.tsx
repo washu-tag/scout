@@ -738,6 +738,7 @@ export default function SearchDetailPage() {
         <ExplainSqlModal
           explanation={meta.data?.sql_explanation ?? ''}
           sql={meta.data?.sql ?? ''}
+          executedSql={meta.data?.executed_sql ?? ''}
           rows={rowsQ.data?.rows ?? []}
           onClose={() => setSqlModalOpen(false)}
         />

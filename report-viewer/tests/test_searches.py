@@ -314,3 +314,39 @@ def test_query_from_file_returns_rows_and_substitutes_cohort(
         {"modality": "CT", "n": 5},
         {"modality": "MR", "n": 3},
     ]
+
+
+def test_search_meta_exposes_the_executed_sql() -> None:
+    """The rewrite happens server-side, so the viewer cannot show what really
+    ran unless the metadata carries it."""
+    from datetime import datetime, timezone
+
+    from scout_report_viewer.routes.searches import _meta_from_row
+
+    row = {
+        "id": "s1",
+        "sql": (
+            "SELECT primary_report_identifier FROM reports_latest "
+            "WHERE REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)stroke')"
+        ),
+        "owner_sub": "u1",
+        "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+    }
+    assert _meta_from_row(row).executed_sql == ""
+    executed = _meta_from_row(row, with_executed=True).executed_sql
+    assert "ev_positive_span" in executed
+    assert executed.endswith(row["sql"][row["sql"].index("FROM reports_latest") :])
+
+
+def test_search_meta_executed_sql_is_empty_when_nothing_to_explain() -> None:
+    from datetime import datetime, timezone
+
+    row = {
+        "id": "s2",
+        "sql": "SELECT primary_report_identifier FROM reports_latest WHERE modality = 'MR'",
+        "owner_sub": "u1",
+        "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+    }
+    from scout_report_viewer.routes.searches import _meta_from_row
+
+    assert _meta_from_row(row, with_executed=True).executed_sql == ""

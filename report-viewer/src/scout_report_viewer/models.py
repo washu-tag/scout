@@ -176,6 +176,8 @@ class CreateSearchResponse(BaseModel):
 class SearchMeta(BaseModel):
     id: str
     sql: str
+    # The sql as rewritten to project evidence. Empty when there is none.
+    executed_sql: str = ""
     owner_sub: str
     created_at: datetime
     match_terms: list[str] = []
