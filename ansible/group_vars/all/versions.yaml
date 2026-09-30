@@ -150,7 +150,7 @@ nexus_helm_chart_version: 5.22.0
 
 # GPU Support
 # renovate: datasource=helm registryUrl=https://nvidia.github.io/gpu-operator depName=gpu-operator
-gpu_operator_version: v25.10.1
+gpu_operator_version: v26.7.1
 
 # Medical Imaging - DCM4CHEE
 # dcm4che-tools = the toolkit (populate Job's storescu), separate from the arc family below.
