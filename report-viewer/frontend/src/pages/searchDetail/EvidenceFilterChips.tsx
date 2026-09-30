@@ -24,8 +24,6 @@ const CATEGORY_LABEL: Record<EvCategory, string> = {
   unknown: 'unexplained',
 };
 
-const MAX_CODES = 6;
-
 type Tone = 'positive' | 'negative' | 'neutral';
 
 function tones(tone: Tone, active: boolean): React.CSSProperties {
@@ -82,20 +80,14 @@ export function EvidenceFilterChips(props: {
 }) {
   const facets = useMemo(() => {
     const categories = new Map<EvCategory, number>();
-    const codes = new Map<string, number>();
     let negative = 0;
     for (const row of props.rows) {
       const c = evidenceCategory(row);
       categories.set(c, (categories.get(c) ?? 0) + 1);
       if (collapse(row['ev_negative_span'])) negative += 1;
-      for (const code of collapse(row['ev_dx_codes']).split(',')) {
-        const t = code.trim();
-        if (t) codes.set(t, (codes.get(t) ?? 0) + 1);
-      }
     }
     return {
       categories: [...categories.entries()].sort((a, b) => b[1] - a[1]),
-      codes: [...codes.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
       negative,
     };
   }, [props.rows]);
@@ -111,21 +103,9 @@ export function EvidenceFilterChips(props: {
     patch({ ev_source: list.length > 0 ? list : undefined });
   };
 
-  // Codes accumulate like the categories do: a row matching any of them stays.
-  const toggleCode = (code: string) => {
-    const cur = (f.ev_dx_codes ?? []).filter((c) => c.toLowerCase() !== code.toLowerCase());
-    const next = cur.length === (f.ev_dx_codes ?? []).length ? [...cur, code] : cur;
-    patch({ ev_dx_codes: next.length > 0 ? next : undefined });
-  };
-
   const selected = new Set(f.ev_source ?? []);
-  const codeFilter = new Set((f.ev_dx_codes ?? []).map((c) => c.trim().toLowerCase()));
   const spanChips = [f.ev_positive_span, f.ev_negative_span];
-  const anyActive =
-    selected.size > 0 ||
-    codeFilter.size > 0 ||
-    f.ev_has_negative !== undefined ||
-    spanChips.some(Boolean);
+  const anyActive = selected.size > 0 || f.ev_has_negative !== undefined || spanChips.some(Boolean);
 
   if (facets.categories.length === 0) return null;
 
@@ -142,18 +122,6 @@ export function EvidenceFilterChips(props: {
       <span style={{ color: 'var(--rv-muted)', fontSize: '0.7rem', marginRight: '0.15rem' }}>
         Matched on
       </span>
-
-      {facets.codes.slice(0, MAX_CODES).map(([code, count]) => (
-        <Pill
-          key={code}
-          label={code}
-          count={count}
-          tone="positive"
-          active={codeFilter.has(code.toLowerCase())}
-          title={`Show rows carrying diagnosis code ${code}`}
-          onClick={() => toggleCode(code)}
-        />
-      ))}
 
       {facets.categories.map(([category, count]) => (
         <Pill
@@ -226,7 +194,6 @@ export function EvidenceFilterChips(props: {
           onClick={() =>
             patch({
               ev_source: undefined,
-              ev_dx_codes: undefined,
               ev_has_negative: undefined,
               ev_positive_span: undefined,
               ev_negative_span: undefined,

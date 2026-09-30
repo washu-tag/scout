@@ -47,7 +47,18 @@ const COLUMNS_CONFIG: Array<{
   align?: 'right' | 'center';
   mono?: boolean;
   kind?: 'date' | 'evidence';
+  /** Header text when the column is too narrow for its full name. */
+  shortTitle?: string;
 }> = [
+  // A status gutter, so it leads: scanning the left edge is the point.
+  {
+    field: 'ev_source',
+    title: 'Evidence',
+    shortTitle: 'Ev',
+    width: 46,
+    align: 'center',
+    kind: 'evidence',
+  },
   { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true, defaultHidden: true },
   {
     field: 'resolved_epic_mrn',
@@ -72,12 +83,6 @@ const COLUMNS_CONFIG: Array<{
   { field: 'patient_age', title: 'Age', width: 50, align: 'right', defaultHidden: true },
   { field: 'sex', title: 'Sex', width: 40, align: 'center', defaultHidden: true },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
-  { field: 'ev_dx_codes', title: 'DX codes', width: 100, defaultHidden: true },
-  { field: 'ev_dx_text', title: 'DX text', width: 180, defaultHidden: true },
-  // One column for why the row is in the cohort: the matched phrase, the code
-  // that admitted it, and any negation. The raw spans stay available in the
-  // column picker for anyone auditing a cohort.
-  { field: 'ev_source', title: 'Evidence', width: 260, kind: 'evidence' },
   { field: 'ev_positive_span', title: 'Positive evidence', width: 200, defaultHidden: true },
   { field: 'ev_negative_span', title: 'Negative evidence', width: 200, defaultHidden: true },
 ];
@@ -216,7 +221,7 @@ export default function SearchDetailPage() {
       COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
         columnHelper.accessor((row: Row) => row[c.field], {
           id: c.field,
-          header: c.title,
+          header: c.shortTitle ?? c.title,
           size: c.width,
           cell: (info) => {
             if (c.kind === 'date') return fmtDate(info.getValue());
@@ -229,7 +234,7 @@ export default function SearchDetailPage() {
                   reviewRank(a.original) - reviewRank(b.original) ||
                   evidenceText(a.original).localeCompare(evidenceText(b.original))
               : 'auto',
-          meta: { align: c.align, mono: c.mono },
+          meta: { align: c.align, mono: c.mono, label: c.title },
         }),
       ),
     [available],
@@ -698,7 +703,7 @@ export default function SearchDetailPage() {
                         checked={col.getIsVisible()}
                         onChange={col.getToggleVisibilityHandler()}
                       />
-                      {String(col.columnDef.header ?? col.id)}
+                      {(col.columnDef.meta as { label?: string } | undefined)?.label ?? col.id}
                     </label>
                   ))}
                 </div>
