@@ -9,6 +9,7 @@ def main() -> None:
         host=settings.host,
         port=settings.port,
         log_level=settings.log_level,
+        timeout_keep_alive=settings.timeout_keep_alive,
     )
 
 

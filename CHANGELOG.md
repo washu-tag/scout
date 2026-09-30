@@ -1,5 +1,49 @@
 # Changelog
 
+## [5.0.0](https://github.com/washu-tag/scout/compare/v4.3.0...v5.0.0) (2026-09-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **versions:** the CNPG cluster now pins ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie. If a cluster's spec.imageName isn't an 18.x-system-trixie image (clusters created under CNPG 1.27.0 or earlier run 16.x or 17.x on Debian bullseye), upgrade it to 18 before deploying this: CNPG doesn't support the cross-distribution major upgrade the pin would request.
+* **keycloak:** Swap realm source from ansible to chart + do not render client secrets into template ([#732](https://github.com/washu-tag/scout/issues/732))
+
+### Features
+
+* **aws:** Keycloak IdP chooser, per-host logout, realm site-values hook, Temporal UI auth parity, report-viewer forwarded token ([#762](https://github.com/washu-tag/scout/issues/762)) ([5288d30](https://github.com/washu-tag/scout/commit/5288d306862d04541d36f3469a2c8230cb5de339))
+* **deploy:** Postgres-only data tier (RDS in aws) + Temporal on Postgres ([#719](https://github.com/washu-tag/scout/issues/719)) ([3f9fddf](https://github.com/washu-tag/scout/commit/3f9fddf7810cb8b1b58798892ca96680a310ea4a))
+* **keycloak:** Swap realm source from ansible to chart + do not render client secrets into template ([#732](https://github.com/washu-tag/scout/issues/732)) ([864e091](https://github.com/washu-tag/scout/commit/864e0915a7424c3cb069ee55ca312ba11905987f))
+* **reconciler:** Add keycloak fragment reconciler service ([#745](https://github.com/washu-tag/scout/issues/745)) ([335b954](https://github.com/washu-tag/scout/commit/335b9549b6f6bcf5bad18978336caf03c87c10ca))
+* **versions:** keep every copy of a pinned version in sync ([#761](https://github.com/washu-tag/scout/issues/761)) ([a09db6f](https://github.com/washu-tag/scout/commit/a09db6f7dd7bc52e41170d2791ce083f1278355c)), closes [#748](https://github.com/washu-tag/scout/issues/748)
+* **xnat:** turn on openid auto-login and unified logout, bump XNAT versions ([#754](https://github.com/washu-tag/scout/issues/754)) ([3ab646c](https://github.com/washu-tag/scout/commit/3ab646c5cdccb2f0273ec7106314d01e9d65d9fc))
+
+
+### Bug Fixes
+
+* **aws:** working aws-mode ingest, per-site S3 SSE, logout and ALB health checks ([#758](https://github.com/washu-tag/scout/issues/758)) ([f0e8b57](https://github.com/washu-tag/scout/commit/f0e8b57a9406259758c3c86fe012d33fd390c9ae))
+* **chat:** fix dropped tool calls and untyped charts, and move legend wiring server-side ([#736](https://github.com/washu-tag/scout/issues/736)) ([63161d2](https://github.com/washu-tag/scout/commit/63161d2c7f4cd03468112d3f200f63c6422ee1a9))
+* **ci:** scan every image on the release PR ([#726](https://github.com/washu-tag/scout/issues/726)) ([fb2f3f7](https://github.com/washu-tag/scout/commit/fb2f3f76f620caf3fe3a39f36e753114dd84b11e))
+* **ci:** skip verify-cosign-pubkey on Dependabot PRs ([#728](https://github.com/washu-tag/scout/issues/728)) ([93c6720](https://github.com/washu-tag/scout/commit/93c6720f1ba763b241a04e441686159c5feb55a6))
+* **hl7-listener:** Kafka record keys and unbounded batch cadence, on Spring Boot 4 / Camel 4.22 ([#742](https://github.com/washu-tag/scout/issues/742)) ([0844b56](https://github.com/washu-tag/scout/commit/0844b567add3c1c64a319bc79ea4fc72574b7575))
+* **keycloak:** request SSE-S3 when publishing the OPA bundle to AWS S3 ([#747](https://github.com/washu-tag/scout/issues/747)) ([1c3d92a](https://github.com/washu-tag/scout/commit/1c3d92a1bd3b575a6cf0011fad500010ee20a7e5))
+* **keycloak:** suppress bcprov-jdk18on CVEs pending upstream Keycloak fix ([#757](https://github.com/washu-tag/scout/issues/757)) ([bc82b92](https://github.com/washu-tag/scout/commit/bc82b92c04ac17f25c77e29da63e78098c65ec25))
+* **keycloak:** suppress freemarker CVE, no fix upstream yet ([#764](https://github.com/washu-tag/scout/issues/764)) ([a3b485d](https://github.com/washu-tag/scout/commit/a3b485dbe93b66775857dbeb1369aa962f44be2b))
+* **minio:** pull the server and client images from the PGSTY Silo fork ([#759](https://github.com/washu-tag/scout/issues/759)) ([eefa283](https://github.com/washu-tag/scout/commit/eefa2832b6618bfd0548f5e6ce9435c46b861630))
+* **open-webui:** turn off OWUI release notes, bump owui and ollama ([#751](https://github.com/washu-tag/scout/issues/751)) ([8ed3597](https://github.com/washu-tag/scout/commit/8ed359709d03fc464c78ae926b01fcd9a3ecaf6a))
+* **orthanc:** omit spec.postgresql when no cluster parameters are set ([#738](https://github.com/washu-tag/scout/issues/738)) ([1e4caf7](https://github.com/washu-tag/scout/commit/1e4caf7cf85cab5631240a6f390edcaeb8359b37))
+* **release:** set chart version and appVersion at package time, not in Chart.yaml ([#729](https://github.com/washu-tag/scout/issues/729)) ([51387dc](https://github.com/washu-tag/scout/commit/51387dcad7ed807ed7eef0d636cad292993f4d83))
+* remediate fixable Trivy CVEs across extractor, scout-notebook, and report-viewer images ([10c0bf6](https://github.com/washu-tag/scout/commit/10c0bf6f9056867a129f0ca71235de9f95967f41))
+* remediate fixable Trivy CVEs across five images ([#744](https://github.com/washu-tag/scout/issues/744)) ([10c0bf6](https://github.com/washu-tag/scout/commit/10c0bf6f9056867a129f0ca71235de9f95967f41))
+* **s3:** request SSE-S3 on the remaining AWS S3 write paths ([#750](https://github.com/washu-tag/scout/issues/750)) ([0179c8e](https://github.com/washu-tag/scout/commit/0179c8eb45135bda9a05d9b8b3bcfd5be7690fcd))
+* **scout-notebook:** pin jupyter_server above base to clear trivy finding ([#753](https://github.com/washu-tag/scout/issues/753)) ([7e5fd1f](https://github.com/washu-tag/scout/commit/7e5fd1f23af3af1af874adf93a8ef3e5dabeb0a3))
+* **traefik:** raise websecure readTimeout to 1h to allow large uploads to XNAT over http ([#691](https://github.com/washu-tag/scout/issues/691)) ([b1cb70e](https://github.com/washu-tag/scout/commit/b1cb70e97c919904fefb4cb122e39a92aeae70f0))
+* two aws-mode deploy blockers (chart env quoting + OPA bundle IRSA) ([#741](https://github.com/washu-tag/scout/issues/741)) ([0333369](https://github.com/washu-tag/scout/commit/0333369be83d32ca0b9dc8ecc840a286f0a02600))
+
+
+### Performance Improvements
+
+* **report-viewer:** drop the count scan, add progress bar, and cancel and abandoned queries ([#749](https://github.com/washu-tag/scout/issues/749)) ([72bb900](https://github.com/washu-tag/scout/commit/72bb900102ce75e8a12e8d28aed0488725b13a1e))
+
 ## [4.3.0](https://github.com/washu-tag/scout/compare/v4.2.0...v4.3.0) (2026-09-08)
 
 

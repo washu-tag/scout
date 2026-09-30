@@ -467,23 +467,6 @@ jobs:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: 'Free up disk space'
-        shell: bash
-        run: |
-          echo "Disk space before cleanup:"
-          df -h
-
-          echo "Removing unnecessary tools to free up disk space..."
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/swift
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          sudo apt-get clean
-          docker system prune -af --volumes
-
-          echo "Disk space after cleanup:"
-          df -h
       - name: 'Prepare inventory.yaml'
         shell: bash
         run: |
@@ -502,6 +485,25 @@ jobs:
         # roles/trino/templates/password.db.j2 shells out to `htpasswd -bnBC 10`;
         # ubuntu-latest doesn't ship it.
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends apache2-utils
+      - name: 'Set up Java for Gradle cache warming'
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: ${{ ENV.JAVA_DIST }}
+          java-version: ${{ ENV.JAVA_VERSION }}
+          cache: 'gradle'
+      # Resolves ingest test deps for the in-cluster --offline test Job, in the
+      # background during the deploy; "Wait for Gradle cache warming" joins it.
+      - name: 'Start Gradle cache warming'
+        shell: bash
+        run: |
+          (if bash -c '
+            set -e
+            (cd tests/ingest && ./gradlew --no-daemon --console=plain testClasses resolveTestDeps)
+            sudo mkdir -p /mnt/scout-gradle-cache
+            sudo cp -a "${HOME}/.gradle/." /mnt/scout-gradle-cache/
+            sudo chmod -R a+rwX /mnt/scout-gradle-cache
+            rm -rf tests/ingest/build tests/ingest/.gradle  # keep pod mount a clean checkout
+          ' >/tmp/gradle-warm.log 2>&1; then echo 0; else echo 1; fi >/tmp/gradle-warm.rc) </dev/null >/dev/null 2>&1 &
       - name: 'Install k3s'
         shell: bash
         run: |
@@ -529,37 +531,21 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/postgres.yaml
-      - name: 'Install lake'
+      - name: 'Install lake + orchestrator'
         shell: bash
         run: |
-          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/lake.yaml
+          cd ansible && bash ../.github/scripts/run-playbooks.sh "lake+orchestrator"
           sudo -E kubectl describe pod -l v1.min.io/tenant=minio-scout -n scout-data
-      - name: 'Install orchestrator'
-        shell: bash
-        run: |
-          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/orchestrator.yaml
       - name: 'Install extractor'
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
-      - name: 'Set up Java for Gradle cache warming'
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: ${{ ENV.JAVA_DIST }}
-          java-version: ${{ ENV.JAVA_VERSION }}
-          cache: 'gradle'
-      - name: 'Warm Gradle cache for ingest tests'
+      - name: 'Wait for Gradle cache warming'
         shell: bash
-        # Resolve ingest test deps (Spark4 graph + Gradle dist) on the runner
-        # (setup-java caches them), then hand a world-writable copy to the
-        # in-cluster test Job so it runs --offline. Removes the ~5 min cold
-        # download from the timed "Run tests" step.
         run: |
-          (cd tests/ingest && ./gradlew --no-daemon --console=plain testClasses resolveTestDeps)
-          sudo mkdir -p /mnt/scout-gradle-cache
-          sudo cp -a "${HOME}/.gradle/." /mnt/scout-gradle-cache/
-          sudo chmod -R a+rwX /mnt/scout-gradle-cache
-          rm -rf tests/ingest/build tests/ingest/.gradle  # keep pod mount a clean checkout
+          while [ ! -f /tmp/gradle-warm.rc ]; do sleep 5; done
+          cat /tmp/gradle-warm.log
+          exit "$(cat /tmp/gradle-warm.rc)"
       - name: 'Run tests'
         shell: bash
         run: |
@@ -660,31 +646,17 @@ jobs:
           - side: analytics
             subdomains: superset,chat,keycloak,auth,minio,report-viewer
             san_extra: ''
-            playbooks: k3s traefik postgres valkey auth lake trino superset chatbot report-viewer launchpad
+            # '+' runs playbooks concurrently (.github/scripts/run-playbooks.sh)
+            playbooks: k3s traefik postgres valkey auth+lake trino superset+chatbot+report-viewer+launchpad
             netpol_include: '--include trino-rw,opa-trino,report-viewer-ingress'
           - side: notebooks
             # testuser.jupyter is the per-user singleuser pod ingress
             subdomains: jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
             san_extra: ',DNS:*.jupyter.scout.test'
-            playbooks: k3s traefik postgres valkey auth lake trino voila jupyter monitor launchpad
+            playbooks: k3s traefik postgres valkey auth+lake trino voila+jupyter+monitor+launchpad
             netpol_include: '--include trino-rw,opa-trino,voila-ingress'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: 'Free up disk space'
-        shell: bash
-        run: |
-          echo "Disk space before cleanup:"
-          df -h
-          echo "Removing unnecessary tools to free up disk space..."
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/swift
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          sudo apt-get clean
-          docker system prune -af --volumes
-          echo "Disk space after cleanup:"
-          df -h
       - name: 'Generate TLS certificates and configure /etc/hosts'
         shell: bash
         env:
@@ -789,11 +761,7 @@ jobs:
         env:
           PLAYBOOKS: ${{ matrix.playbooks }}
         run: |
-          cd ansible
-          for playbook in $PLAYBOOKS; do
-            echo "=== Deploying $playbook ==="
-            sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
-          done
+          cd ansible && bash ../.github/scripts/run-playbooks.sh "$PLAYBOOKS"
       - name: 'Service health checks'
         shell: bash
         env:

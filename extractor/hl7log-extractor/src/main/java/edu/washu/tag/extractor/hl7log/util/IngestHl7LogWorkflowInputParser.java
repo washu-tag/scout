@@ -56,6 +56,7 @@ public class IngestHl7LogWorkflowInputParser {
         Integer splitAndUploadTimeout = DefaultArgs.getSplitAndUploadTimeout(input.splitAndUploadTimeout());
         Integer splitAndUploadHeartbeatTimeout = DefaultArgs.getSplitAndUploadHeartbeatTimeout(input.splitAndUploadHeartbeatTimeout());
         Integer splitAndUploadConcurrency = DefaultArgs.getSplitAndUploadConcurrency(input.splitAndUploadConcurrency());
+        Integer splitAndUploadMaxAttempts = DefaultArgs.getSplitAndUploadMaxAttempts(input.splitAndUploadMaxAttempts());
 
         // Do we have values?
         boolean hasLogPathsInput = input.logPaths() != null && !input.logPaths().isBlank();
@@ -89,7 +90,8 @@ public class IngestHl7LogWorkflowInputParser {
                 hl7OutputPath,
                 splitAndUploadTimeout,
                 splitAndUploadHeartbeatTimeout,
-                splitAndUploadConcurrency
+                splitAndUploadConcurrency,
+                splitAndUploadMaxAttempts
             );
         } else if (isScheduledRun) {
             // We are in a scheduled run without a root path. This is an error.
@@ -132,7 +134,8 @@ public class IngestHl7LogWorkflowInputParser {
             hl7OutputPath,
             splitAndUploadTimeout,
             splitAndUploadHeartbeatTimeout,
-            splitAndUploadConcurrency
+            splitAndUploadConcurrency,
+            splitAndUploadMaxAttempts
         );
     }
 

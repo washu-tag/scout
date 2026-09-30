@@ -26,6 +26,9 @@ All the components that make a Helm chart into a Pluggable App. For more on each
 | `templates/keycloak-client-secret.yaml`   | — | The Keycloak client's secret credential |
 | `templates/keycloak-reconciler-rbac.yaml` | — | Gives the reconciler service permission to read the Secret |
 | `templates/ingress.yaml`                  | — | Puts the app behind the oauth2-proxy edge gate via Traefik middleware annotations |
+| `templates/deployment.yaml`               | `prometheus.io/*` pod annotations | Has Prometheus scrape the app's `/metrics` |
+| `templates/networkpolicy.yaml`            | — | Admits Traefik, and Prometheus for scraping |
+| `templates/grafana-dashboard.yaml`        | `grafana_dashboard: "1"` | Adds the dashboard in `files/dashboard.json` to Grafana |
 
 The rest of the stuff in the chart—`deployment.yaml`, `service.yaml`, `app-configmap.yaml`, `files/app.py`—is more or less an ordinary service, with the caveat that it's a service that isn't built into a docker image and it doesn't do anything interesting.
 
@@ -42,6 +45,14 @@ The Reconciler watches for ConfigMaps labelled with `keycloak.scout.xnat.org/fra
 The `Fragment` in the ConfigMap holds the name of a Secret holding the Keycloak client's secret key. Each Pluggable App creates that Secret in its own namespace, and `templates/keycloak-reconciler-rbac.yaml` grants the Reconciler service RBAC permissions to `get` that particular Secret.
 
 The purpose of this is to keep the Reconciler's permissions scoped to only exactly those Secrets it needs to read. We don't want it to be able to read every Secret for every service in the whole platform. But it does need to be able to read the specific Secrets for the specific Keycloak clients for Pluggable Apps. So authors of those apps need to include the RBAC which grants those permissions to the Reconciler.
+
+### Metrics
+
+Prometheus scrapes any pod annotated with `prometheus.io/scrape: "true"`, at the port and path in `prometheus.io/port` and `prometheus.io/path`. The NetworkPolicy has to let the Prometheus server in too, or the scrape is silently blocked and the target shows as down. See [Monitoring](https://washu-scout.readthedocs.io/en/latest/customize/monitoring.html).
+
+### The Grafana dashboard
+
+Grafana watches every namespace for ConfigMaps labelled `grafana_dashboard: "1"` and loads each data key as a dashboard in the `Scout` folder. `files/dashboard.json` is ordinary dashboard JSON as exported from Grafana. Its data key and `uid` are prefixed with the app's name so they can't collide with Scout's own dashboards or another app's. Deleting the ConfigMap removes the dashboard.
 
 ## Install
 
@@ -83,6 +94,6 @@ Change `subdomain` and `clientId` so you do not collide with anything real, edit
 1. Point `image.repository` and `image.tag` at your service's image, and drop `command`.
 2. Delete `templates/app-configmap.yaml`, the `app` volume and its mount, and the
    `checksum/app` annotation. Those were only there to support the basic `app.py` service.
-3. Delete `files/`.
+3. Delete `files/app.py`, and replace `files/dashboard.json` with your own dashboard.
 
 Keep the fragment, the chip, the Secret, the RBAC, and the ingress annotations. Use the docs to [customize your app](https://washu-scout.readthedocs.io/en/latest/customize/index.html).

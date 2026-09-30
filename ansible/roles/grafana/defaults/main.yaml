@@ -3,8 +3,8 @@
 # User-configurable settings are in inventory.yaml
 
 # Helm configuration
-grafana_helm_repo_name: grafana
-grafana_helm_repo_url: https://grafana.github.io/helm-charts
+grafana_helm_repo_name: grafana-community
+grafana_helm_repo_url: https://grafana-community.github.io/helm-charts
 grafana_helm_chart_name: grafana
 
 # Storage configuration
@@ -51,9 +51,9 @@ grafana_resources_default:
 # Plugins are downloaded and pushed to Harbor via ORAS, then pulled by init container
 grafana_plugins:
   - id: grafana-lokiexplore-app
-    version: 1.0.34
+    version: 2.5.2
   - id: grafana-metricsdrilldown-app
-    version: 1.0.29
+    version: 2.5.1
 
 # Harbor configuration for Grafana plugins (air-gapped only)
 grafana_plugins_harbor_project: grafana-plugins
@@ -61,5 +61,5 @@ grafana_plugins_harbor_robot_name: robot$grafana-plugin-puller
 
 # ORAS image for plugin push/pull operations
 # This image is pulled through Harbor's ghcr proxy in air-gapped mode
-oras_version: 1.3.0
+oras_version: 1.3.4
 oras_image: ghcr.io/oras-project/oras

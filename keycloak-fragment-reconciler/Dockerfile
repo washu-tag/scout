@@ -6,6 +6,7 @@ FROM ${BASE_IMAGE}
 # until upstream rebuilds. No-op once the base image catches up.
 RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade \
         perl-base libsqlite3-0 gzip libpcre2-8-0 \
+        openssl libssl3t64 openssl-provider-legacy \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED=1 \

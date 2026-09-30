@@ -10,6 +10,10 @@ cassandra_datacenter_name: dc1
 cassandra_cluster_name: cassandra-cluster
 cassandra_init_heap: 1G
 cassandra_max_heap: 2G
+cassandra_additional_jvm_opts: []
+
+# false: don't block on Ready; include tasks_from: wait later
+cassandra_wait_for_ready: true
 
 # Resource configuration (dev defaults - CI friendly)
 # Memory: requests = max_heap, limits = 2x max_heap to account for off-heap memory and OS cache

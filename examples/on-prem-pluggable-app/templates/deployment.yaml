@@ -19,6 +19,9 @@ spec:
         # Restart when the app file changes, since a ConfigMap update alone
         # would not. A real app gets this from its image tag instead.
         checksum/app: {{ (.Files.Glob "files/*.py").AsConfig | sha256sum }}
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: {{ .Values.service.port | quote }}
+        prometheus.io/path: /metrics
     spec:
       automountServiceAccountToken: false
       securityContext:

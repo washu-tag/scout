@@ -11,7 +11,10 @@
     "spark.hadoop.fs.s3a.path.style.access": "true",
     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
     "spark.hadoop.hive.metastore.uris": "thrift://hive-metastore.scout-data:9083",
-    "spark.sql.warehouse.dir": "s3a://ci-lake/delta"
+    "spark.sql.warehouse.dir": "s3a://ci-lake/delta",
+    "spark.master": "local[4]",
+    "spark.sql.shuffle.partitions": "4",
+    "spark.databricks.delta.snapshotPartitions": "4"
   },
   "postgresConfig": {
     "url": "jdbc:postgresql://postgresql-cluster-r.scout-core:5432/ingest",

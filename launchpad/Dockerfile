@@ -55,6 +55,9 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+# Idle keep-alive in ms (Node default 5000); keep above the proxy idle timeout (Traefik 90s, ALB 60s).
+# Cost: a connection busy at SIGTERM stays open, so a terminating pod can run to its grace period.
+ENV KEEP_ALIVE_TIMEOUT=120000
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
