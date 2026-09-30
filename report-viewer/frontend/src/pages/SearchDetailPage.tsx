@@ -568,6 +568,7 @@ export default function SearchDetailPage() {
               type="button"
               onClick={() => table.previousPage()}
               disabled={!rowsQ.data || !table.getCanPreviousPage()}
+              className="scout-toolbar-btn"
               style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Prev
@@ -579,6 +580,7 @@ export default function SearchDetailPage() {
               type="button"
               onClick={() => table.nextPage()}
               disabled={!rowsQ.data || !table.getCanNextPage()}
+              className="scout-toolbar-btn"
               style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Next
@@ -651,6 +653,11 @@ export default function SearchDetailPage() {
                     }
                   : { ...paginationBtn, flexShrink: 0 }
               }
+              // Only the inactive style gets the generic hover/active
+              // treatment - it turns the background gray, which would wash
+              // out the white-on-accent-blue text once a filter is applied.
+              // The accent background already signals state on its own.
+              className={activeFilterCount(appliedFilters) > 0 ? undefined : 'scout-toolbar-btn'}
               title="Filter rows"
             >
               {activeFilterCount(appliedFilters) > 0
@@ -662,6 +669,7 @@ export default function SearchDetailPage() {
                 type="button"
                 disabled={!rowsQ.data}
                 onClick={() => setColPickerOpen((v) => !v)}
+                className="scout-toolbar-btn"
                 style={paginationBtn}
                 title="Show/hide columns"
               >
@@ -746,6 +754,7 @@ export default function SearchDetailPage() {
                 iframeExpanded ? 'Shrink viewer back to compact size' : 'Grow viewer for more room'
               }
               aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
+              className="scout-toolbar-btn"
               style={{
                 ...paginationBtn,
                 display: 'inline-flex',
