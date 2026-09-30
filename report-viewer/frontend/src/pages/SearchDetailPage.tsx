@@ -11,13 +11,10 @@ import {
   type SortingState,
   type VisibilityState,
   type PaginationState,
-  type RowSelectionState,
 } from '@tanstack/react-table';
 import {
-  EV_CATEGORIES,
   activeFilterCount,
   downloadCsv,
-  evidenceCategory,
   filterRows,
   friendlyError,
   getSearch,
@@ -30,6 +27,7 @@ import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '.
 import { buildFilterPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
 import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
+import { AppliedFilterChips } from './searchDetail/AppliedFilterChips';
 import { EvidenceFilterChips } from './searchDetail/EvidenceFilterChips';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
@@ -125,9 +123,7 @@ export default function SearchDetailPage() {
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
   );
   const [iframeExpanded, setIframeExpanded] = useState(false);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [reviewAt, setReviewAt] = useState<number | null>(null);
-  const anchorRef = useRef<number | null>(null);
   const appliedFiltersKey = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
 
   const meta = useQuery({
@@ -163,7 +159,6 @@ export default function SearchDetailPage() {
 
   // A fresh cohort must not inherit a selection or an open reader.
   useEffect(() => {
-    setRowSelection({});
     setReviewAt(null);
   }, [rowsQ.data]);
 
@@ -193,14 +188,6 @@ export default function SearchDetailPage() {
       if (v != null && v !== '') set.add(String(v));
     }
     return Array.from(set).sort();
-  }, [rowsQ.data]);
-
-  // Strongest first, not alphabetical, to match the chip row.
-  const evidenceOptions = useMemo(() => {
-    const present = new Set(
-      (rowsQ.data?.rows ?? []).map((r) => evidenceCategory(r as Record<string, unknown>)),
-    );
-    return EV_CATEGORIES.filter((c) => present.has(c));
   }, [rowsQ.data]);
 
   // The profile row sticks below the header, so it needs the header's actual
@@ -256,19 +243,15 @@ export default function SearchDetailPage() {
     [rowsQ.data, appliedFiltersKey],
   );
 
-  const SELECT_W = 28;
-
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnVisibility, pagination, rowSelection },
+    state: { sorting, columnVisibility, pagination },
     onSortingChange: (updater) => {
       setSorting(updater);
       setPagination((p) => ({ ...p, pageIndex: 0 }));
     },
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    enableRowSelection: true,
     onPaginationChange: setPagination,
     // Stable id so selection survives client-side sort/filter/paginate.
     getRowId: (row: Row, index) =>
@@ -280,48 +263,14 @@ export default function SearchDetailPage() {
     defaultColumn: { minSize: 40 },
   });
 
-  // Sorted, not paginated: the queue spans the whole filtered cohort.
-  const ordered = table.getSortedRowModel().rows;
-  const selectedIds = useMemo(
-    () => new Set(Object.keys(rowSelection).filter((id) => rowSelection[id])),
-    [rowSelection],
-  );
-  const queue = useMemo(
-    () => (selectedIds.size > 0 ? ordered.filter((r) => selectedIds.has(r.id)) : ordered),
-    [ordered, selectedIds],
-  );
+  // Sorted, not paginated: the reader walks the whole filtered cohort.
+  const queue = table.getSortedRowModel().rows;
   const pageSize = pagination.pageSize;
-
-  const openReview = (rowId: string) => {
-    const at = queue.findIndex((r) => r.id === rowId);
-    setReviewAt(at === -1 ? 0 : at);
-  };
 
   // Follow the reader, so closing the panel lands where they stopped.
   const goToReview = (next: number) => {
     setReviewAt(next);
-    const row = queue[next];
-    if (!row) return;
-    const at = ordered.findIndex((r) => r.id === row.id);
-    if (at >= 0) setPagination((p) => ({ ...p, pageIndex: Math.floor(at / pageSize) }));
-  };
-
-  // Shift-click fills from the last box ticked, in display order.
-  const selectRange = (rowId: string, shift: boolean) => {
-    const at = ordered.findIndex((r) => r.id === rowId);
-    if (at < 0) return;
-    const anchor = anchorRef.current;
-    if (shift && anchor !== null) {
-      const [lo, hi] = anchor < at ? [anchor, at] : [at, anchor];
-      setRowSelection((prev) => {
-        const next = { ...prev };
-        for (let i = lo; i <= hi; i++) next[ordered[i].id] = true;
-        return next;
-      });
-    } else {
-      anchorRef.current = at;
-      setRowSelection((prev) => ({ ...prev, [rowId]: !prev[rowId] }));
-    }
+    if (queue[next]) setPagination((p) => ({ ...p, pageIndex: Math.floor(next / pageSize) }));
   };
 
   const total = data.length;
@@ -407,9 +356,6 @@ export default function SearchDetailPage() {
             flexDirection: 'column',
             flex: '1 1 auto',
             minHeight: 0,
-            // Containing block for the review panel; unlike the table box
-            // below, this one does not scroll.
-            position: 'relative',
           }}
         >
           {rowsQ.data?.truncated && (
@@ -429,206 +375,177 @@ export default function SearchDetailPage() {
               narrow the cohort.
             </div>
           )}
-          <div
-            style={{
-              overflowX: 'auto',
-              overflowY: 'auto',
-              flex: '1 1 auto',
-              minHeight: 0,
-              position: 'relative',
-              background: 'var(--rv-surface)',
-              border: '1px solid var(--rv-border)',
-              borderRadius: 4,
-            }}
-          >
-            <table
+          {/* Containing block for the review panel. The box inside scrolls,
+              so anchoring to it would scroll the panel away with the rows. */}
+          <div style={{ position: 'relative', flex: '1 1 auto', minHeight: 0 }}>
+            <div
               style={{
-                borderCollapse: 'collapse',
-                fontSize: '0.85rem',
-                width: '100%',
-                // Fixed layout so column-resize widths actually render.
-                tableLayout: 'fixed',
+                position: 'absolute',
+                inset: 0,
+                overflowX: 'auto',
+                overflowY: 'auto',
+                background: 'var(--rv-surface)',
+                border: '1px solid var(--rv-border)',
+                borderRadius: 4,
               }}
             >
-              <thead>
-                {table.getHeaderGroups().map((hg, hgIndex) => (
-                  <tr key={hg.id} ref={hgIndex === 0 ? headerRowRef : undefined}>
-                    <th
-                      style={{
-                        width: SELECT_W,
-                        padding: '0.3rem 0 0.3rem 0.45rem',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 2,
-                        background: 'var(--rv-surface-2)',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        aria-label="Select all filtered rows"
-                        title="Select every filtered row"
-                        checked={selectedIds.size > 0 && selectedIds.size === ordered.length}
-                        ref={(el) => {
-                          if (el)
-                            el.indeterminate =
-                              selectedIds.size > 0 && selectedIds.size < ordered.length;
-                        }}
-                        onChange={() =>
-                          setRowSelection(
-                            selectedIds.size === ordered.length
-                              ? {}
-                              : Object.fromEntries(ordered.map((r) => [r.id, true])),
-                          )
-                        }
-                      />
-                    </th>
-                    {hg.headers.map((header) => {
-                      const colMeta = header.column.columnDef.meta as
-                        | { align?: 'right' | 'center' }
-                        | undefined;
-                      const sorted = header.column.getIsSorted();
-                      const isResizing = header.column.getIsResizing();
-                      return (
-                        <th
-                          key={header.id}
-                          onClick={header.column.getToggleSortingHandler()}
-                          style={{
-                            textAlign: colMeta?.align ?? 'left',
-                            padding: '0.35rem 0.45rem',
-                            fontSize: '0.78rem',
-                            fontWeight: 600,
-                            color: 'var(--rv-muted)',
-                            background: 'var(--rv-surface-2)',
-                            // border-collapse: collapse + sticky drops
-                            // border-bottom on scroll; box-shadow survives.
-                            boxShadow: 'inset 0 -1px 0 var(--rv-border)',
-                            whiteSpace: 'nowrap',
-                            width: header.getSize(),
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                            position: 'sticky',
-                            top: 0,
-                            zIndex: 1,
-                          }}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {sorted === 'asc' ? ' ↑' : sorted === 'desc' ? ' ↓' : ''}
-                          <div
-                            className="scout-col-resize"
-                            onMouseDown={header.getResizeHandler()}
-                            onTouchStart={header.getResizeHandler()}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              position: 'absolute',
-                              right: 0,
-                              top: 0,
-                              bottom: 0,
-                              width: 8,
-                              cursor: 'col-resize',
-                              userSelect: 'none',
-                              touchAction: 'none',
-                              ...(isResizing ? { borderRight: '2px solid var(--rv-accent)' } : {}),
-                            }}
-                          />
-                        </th>
-                      );
-                    })}
-                  </tr>
-                ))}
-                {!!rowsQ.data && (
-                  <ColumnProfileRow
-                    columns={table.getVisibleLeafColumns()}
-                    rows={data}
-                    dateFields={dateFields}
-                    stickyTop={headerHeight}
-                    leadWidth={SELECT_W}
-                  />
-                )}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map((row) => {
-                  const active = reviewAt !== null && queue[reviewAt]?.id === row.id;
-                  return (
-                    <React.Fragment key={row.id}>
-                      <tr
-                        className={active ? undefined : 'scout-row'}
-                        onClick={() => openReview(row.id)}
-                        style={{
-                          borderBottom: '1px solid var(--rv-border)',
-                          cursor: 'pointer',
-                          background: active ? ROW_ACTIVE_BG : 'transparent',
-                        }}
-                      >
-                        <td
-                          style={{ width: SELECT_W, padding: '0.3rem 0 0.3rem 0.45rem' }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="checkbox"
-                            aria-label="Select report"
-                            checked={row.getIsSelected()}
-                            onChange={() => undefined}
-                            onClick={(e) => selectRange(row.id, e.shiftKey)}
-                          />
-                        </td>
-                        {row.getVisibleCells().map((cell) => {
-                          const colMeta = cell.column.columnDef.meta as
-                            | { align?: 'right' | 'center'; mono?: boolean }
-                            | undefined;
-                          return (
-                            <td
-                              key={cell.id}
-                              style={{
-                                padding: '0.3rem 0.45rem',
-                                fontSize: '0.78rem',
-                                textAlign: colMeta?.align ?? 'left',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                fontFamily: colMeta?.mono
-                                  ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
-                                  : 'inherit',
-                              }}
-                            >
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    </React.Fragment>
-                  );
-                })}
-                {table.getRowModel().rows.length === 0 && !!rowsQ.data && (
-                  <tr>
-                    <td
-                      colSpan={table.getVisibleFlatColumns().length}
-                      style={{ padding: '1rem', textAlign: 'center', color: 'var(--rv-muted)' }}
-                    >
-                      {activeFilterCount(appliedFilters) > 0
-                        ? 'No rows match your filters.'
-                        : 'No reports in this search.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            {!rowsQ.data && !cancelled && !rowsQ.error && (
-              <LoadingSpinner show={showLoading} fill />
-            )}
-            {!rowsQ.data && cancelled && (
-              <div
+              <table
                 style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--rv-muted)',
-                  fontSize: '0.8rem',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.85rem',
+                  width: '100%',
+                  // Fixed layout so column-resize widths actually render.
+                  tableLayout: 'fixed',
                 }}
               >
-                Query cancelled. Retry to load these reports.
-              </div>
+                <thead>
+                  {table.getHeaderGroups().map((hg, hgIndex) => (
+                    <tr key={hg.id} ref={hgIndex === 0 ? headerRowRef : undefined}>
+                      {hg.headers.map((header) => {
+                        const colMeta = header.column.columnDef.meta as
+                          | { align?: 'right' | 'center' }
+                          | undefined;
+                        const sorted = header.column.getIsSorted();
+                        const isResizing = header.column.getIsResizing();
+                        return (
+                          <th
+                            key={header.id}
+                            onClick={header.column.getToggleSortingHandler()}
+                            style={{
+                              textAlign: colMeta?.align ?? 'left',
+                              padding: '0.35rem 0.45rem',
+                              fontSize: '0.78rem',
+                              fontWeight: 600,
+                              color: 'var(--rv-muted)',
+                              background: 'var(--rv-surface-2)',
+                              // border-collapse: collapse + sticky drops
+                              // border-bottom on scroll; box-shadow survives.
+                              boxShadow: 'inset 0 -1px 0 var(--rv-border)',
+                              whiteSpace: 'nowrap',
+                              width: header.getSize(),
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 1,
+                            }}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {sorted === 'asc' ? ' ↑' : sorted === 'desc' ? ' ↓' : ''}
+                            <div
+                              className="scout-col-resize"
+                              onMouseDown={header.getResizeHandler()}
+                              onTouchStart={header.getResizeHandler()}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: 'absolute',
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: 8,
+                                cursor: 'col-resize',
+                                userSelect: 'none',
+                                touchAction: 'none',
+                                ...(isResizing
+                                  ? { borderRight: '2px solid var(--rv-accent)' }
+                                  : {}),
+                              }}
+                            />
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                  {!!rowsQ.data && (
+                    <ColumnProfileRow
+                      columns={table.getVisibleLeafColumns()}
+                      rows={data}
+                      dateFields={dateFields}
+                      stickyTop={headerHeight}
+                    />
+                  )}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.map((row) => {
+                    const active = reviewAt !== null && queue[reviewAt]?.id === row.id;
+                    return (
+                      <React.Fragment key={row.id}>
+                        <tr
+                          className={active ? undefined : 'scout-row'}
+                          onClick={() => setReviewAt(queue.findIndex((q) => q.id === row.id))}
+                          style={{
+                            borderBottom: '1px solid var(--rv-border)',
+                            cursor: 'pointer',
+                            background: active ? ROW_ACTIVE_BG : 'transparent',
+                          }}
+                        >
+                          {row.getVisibleCells().map((cell) => {
+                            const colMeta = cell.column.columnDef.meta as
+                              | { align?: 'right' | 'center'; mono?: boolean }
+                              | undefined;
+                            return (
+                              <td
+                                key={cell.id}
+                                style={{
+                                  padding: '0.3rem 0.45rem',
+                                  fontSize: '0.78rem',
+                                  textAlign: colMeta?.align ?? 'left',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  fontFamily: colMeta?.mono
+                                    ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
+                                    : 'inherit',
+                                }}
+                              >
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
+                  {table.getRowModel().rows.length === 0 && !!rowsQ.data && (
+                    <tr>
+                      <td
+                        colSpan={table.getVisibleFlatColumns().length}
+                        style={{ padding: '1rem', textAlign: 'center', color: 'var(--rv-muted)' }}
+                      >
+                        {activeFilterCount(appliedFilters) > 0
+                          ? 'No rows match your filters.'
+                          : 'No reports in this search.'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {!rowsQ.data && !cancelled && !rowsQ.error && (
+                <LoadingSpinner show={showLoading} fill />
+              )}
+              {!rowsQ.data && cancelled && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--rv-muted)',
+                    fontSize: '0.8rem',
+                  }}
+                >
+                  Query cancelled. Retry to load these reports.
+                </div>
+              )}
+            </div>
+            {reviewAt !== null && queue.length > 0 && (
+              <ReviewPanel
+                queue={queue.map((r) => r.original)}
+                index={Math.min(reviewAt, queue.length - 1)}
+                onIndex={goToReview}
+                onClose={() => setReviewAt(null)}
+              />
             )}
           </div>
           {hasEvidence(rowsQ.data?.rows ?? []) && (
@@ -638,6 +555,12 @@ export default function SearchDetailPage() {
               onChange={setAppliedFilters}
             />
           )}
+          <AppliedFilterChips
+            filters={appliedFilters}
+            shown={data.length}
+            total={rowsQ.data?.rows.length ?? 0}
+            onChange={setAppliedFilters}
+          />
           <div
             style={{
               display: 'flex',
@@ -712,25 +635,6 @@ export default function SearchDetailPage() {
               }}
             />
             <span style={{ flex: 1 }} />
-            {selectedIds.size > 0 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setReviewAt(0)}
-                  style={{
-                    ...paginationBtn,
-                    background: 'var(--rv-accent)',
-                    color: '#fff',
-                    borderColor: 'var(--rv-accent)',
-                  }}
-                >
-                  Review {selectedIds.size.toLocaleString()}
-                </button>
-                <button type="button" onClick={() => setRowSelection({})} style={paginationBtn}>
-                  Clear
-                </button>
-              </>
-            )}
             <button
               type="button"
               disabled={!rowsQ.data}
@@ -852,20 +756,6 @@ export default function SearchDetailPage() {
               {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
             </button>
           </div>
-          {reviewAt !== null && queue.length > 0 && (
-            <ReviewPanel
-              queue={queue.map((r) => r.original)}
-              index={Math.min(reviewAt, queue.length - 1)}
-              selectedCount={selectedIds.size}
-              isSelected={!!queue[reviewAt]?.getIsSelected()}
-              onIndex={goToReview}
-              onToggleSelect={() => {
-                const row = queue[reviewAt];
-                if (row) setRowSelection((prev) => ({ ...prev, [row.id]: !prev[row.id] }));
-              }}
-              onClose={() => setReviewAt(null)}
-            />
-          )}
         </div>
       }
       {sqlModalOpen && (
@@ -886,7 +776,6 @@ export default function SearchDetailPage() {
           initial={appliedFilters}
           availableColumns={available}
           modalityOptions={modalityOptions}
-          evidenceOptions={evidenceOptions}
           onApply={(next) => {
             setAppliedFilters(next);
             setFiltersModalOpen(false);

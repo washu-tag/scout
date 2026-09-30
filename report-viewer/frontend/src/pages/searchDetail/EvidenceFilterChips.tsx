@@ -168,15 +168,29 @@ export function EvidenceFilterChips(props: {
       ))}
 
       {facets.negative > 0 && (
-        <Pill
-          label="has negative"
-          count={facets.negative}
-          tone="negative"
-          icon
-          active={f.ev_has_negative === true}
-          title="Show only rows whose report text also rules the finding out"
-          onClick={() => patch({ ev_has_negative: f.ev_has_negative === true ? undefined : true })}
-        />
+        <>
+          <Pill
+            label="has negative"
+            count={facets.negative}
+            tone="negative"
+            icon
+            active={f.ev_has_negative === true}
+            title="Show only rows whose report text also rules the finding out"
+            onClick={() =>
+              patch({ ev_has_negative: f.ev_has_negative === true ? undefined : true })
+            }
+          />
+          <Pill
+            label="clean"
+            count={props.rows.length - facets.negative}
+            tone="positive"
+            active={f.ev_has_negative === false}
+            title="Show only rows with no contradicting text"
+            onClick={() =>
+              patch({ ev_has_negative: f.ev_has_negative === false ? undefined : false })
+            }
+          />
+        </>
       )}
 
       {/* Arrive by clicking a phrase in the stats panel; these are the way out. */}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { CloseIcon } from '../../Modal';
 import { RowDetail } from './RowDetail';
 import { paginationBtn } from './styles';
 
@@ -8,13 +9,10 @@ type Row = Record<string, unknown>;
 export function ReviewPanel(props: {
   queue: Row[];
   index: number;
-  selectedCount: number;
-  isSelected: boolean;
   onIndex: (next: number) => void;
-  onToggleSelect: () => void;
   onClose: () => void;
 }) {
-  const { queue, index, onIndex, onToggleSelect, onClose } = props;
+  const { queue, index, onIndex, onClose } = props;
   const row = queue[index];
 
   const step = useCallback(
@@ -29,13 +27,12 @@ export function ReviewPanel(props: {
       if (e.key === 'Escape') onClose();
       else if (e.key === 'ArrowDown' || e.key === 'j') step(1);
       else if (e.key === 'ArrowUp' || e.key === 'k') step(-1);
-      else if (e.key === 'x') onToggleSelect();
       else return;
       e.preventDefault();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [step, onClose, onToggleSelect]);
+  }, [step, onClose]);
 
   if (!row) return null;
 
@@ -94,23 +91,35 @@ export function ReviewPanel(props: {
           >
             ›
           </button>
-          <label
+          <span style={{ flex: 1 }} />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            title="Close (Esc)"
             style={{
+              width: 26,
+              height: 26,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.25rem',
+              justifyContent: 'center',
+              padding: 0,
+              border: '1px solid transparent',
+              background: 'transparent',
+              borderRadius: 3,
               cursor: 'pointer',
-              marginLeft: '0.4rem',
-              whiteSpace: 'nowrap',
+              color: 'var(--rv-muted)',
             }}
-            title="Select this report (x)"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--rv-surface-2)';
+              e.currentTarget.style.borderColor = 'var(--rv-border)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = 'transparent';
+            }}
           >
-            <input type="checkbox" checked={props.isSelected} onChange={onToggleSelect} />
-            {props.selectedCount > 0 ? `${props.selectedCount} selected` : 'select'}
-          </label>
-          <span style={{ flex: 1 }} />
-          <button type="button" onClick={onClose} style={paginationBtn} title="Close (Esc)">
-            Close
+            <CloseIcon />
           </button>
         </header>
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0.6rem 0.8rem' }}>
