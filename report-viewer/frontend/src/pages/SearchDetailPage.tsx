@@ -648,16 +648,20 @@ export default function SearchDetailPage() {
                       ...paginationBtn,
                       background: 'var(--rv-accent)',
                       color: '#fff',
-                      borderColor: 'var(--rv-accent)',
                       flexShrink: 0,
                     }
                   : { ...paginationBtn, flexShrink: 0 }
               }
-              // Only the inactive style gets the generic hover/active
-              // treatment - it turns the background gray, which would wash
-              // out the white-on-accent-blue text once a filter is applied.
-              // The accent background already signals state on its own.
-              className={activeFilterCount(appliedFilters) > 0 ? undefined : 'scout-toolbar-btn'}
+              // The active/accent style keeps paginationBtn's own border
+              // (not accent-colored, so it's an actual visible outline
+              // against the blue fill) and gets a border/brightness-only
+              // hover variant - changing the background would wash out the
+              // white text.
+              className={
+                activeFilterCount(appliedFilters) > 0
+                  ? 'scout-toolbar-btn-accent'
+                  : 'scout-toolbar-btn'
+              }
               title="Filter rows"
             >
               {activeFilterCount(appliedFilters) > 0
