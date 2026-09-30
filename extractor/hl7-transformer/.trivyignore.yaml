@@ -66,6 +66,7 @@ vulnerabilities:
   # distinct from Delta Lake, which is 4.3.0)
   - id: CVE-2026-54512 # jackson-databind
   - id: CVE-2026-54513 # jackson-databind
+  - id: CVE-2026-68497 # jackson-databind 2.19.2/2.20.0 (branch-4.1 still pins 2.21.2)
   # jetty-http shaded inside hadoop-client-runtime and spark-core; the fix
   # exists only in jetty 12, which neither upstream has moved to
   - id: CVE-2026-2332 # jetty-http (shaded in hadoop-client-runtime, spark-core)
