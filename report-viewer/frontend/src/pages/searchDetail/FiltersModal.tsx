@@ -154,45 +154,6 @@ export function FiltersModal(props: {
               />
             </FieldRow>
           )}
-
-          {has('ev_source') && (
-            <>
-              <FieldRow label="Dx code">
-                <TextInput
-                  value={(staged.ev_dx_codes ?? []).join(', ')}
-                  placeholder="contains, comma for any of…"
-                  onChange={(v) =>
-                    setStaged((s) => {
-                      const list = v
-                        .split(',')
-                        .map((c) => c.trim())
-                        .filter(Boolean);
-                      return { ...s, ev_dx_codes: list.length > 0 ? list : undefined };
-                    })
-                  }
-                />
-              </FieldRow>
-              {(staged.ev_positive_span || staged.ev_negative_span) && (
-                <FieldRow label="Phrase" span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                    {staged.ev_positive_span && (
-                      <SpanChip
-                        text={staged.ev_positive_span}
-                        onClear={() => setStaged((s) => ({ ...s, ev_positive_span: undefined }))}
-                      />
-                    )}
-                    {staged.ev_negative_span && (
-                      <SpanChip
-                        negative
-                        text={staged.ev_negative_span}
-                        onClear={() => setStaged((s) => ({ ...s, ev_negative_span: undefined }))}
-                      />
-                    )}
-                  </div>
-                </FieldRow>
-              )}
-            </>
-          )}
         </div>
 
         <div
@@ -245,45 +206,6 @@ export function FiltersModal(props: {
         </div>
       </div>
     </Modal>
-  );
-}
-
-/** Set by clicking a phrase in the stats panel, and matched exactly, so it is
- *  shown to be removed rather than typed. */
-function SpanChip(props: { text: string; negative?: boolean; onClear: () => void }) {
-  const tone = props.negative ? 'var(--rv-danger)' : 'var(--rv-ev-positive)';
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        padding: '1px 4px 1px 8px',
-        borderRadius: 999,
-        border: `1px solid ${tone}`,
-        color: tone,
-        fontSize: '0.72rem',
-        maxWidth: '100%',
-      }}
-    >
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{props.text}</span>
-      <button
-        type="button"
-        onClick={props.onClear}
-        aria-label={`Remove phrase filter ${props.text}`}
-        style={{
-          border: 'none',
-          background: 'transparent',
-          color: 'inherit',
-          cursor: 'pointer',
-          padding: '0 2px',
-          fontSize: '0.85rem',
-          lineHeight: 1,
-        }}
-      >
-        x
-      </button>
-    </span>
   );
 }
 

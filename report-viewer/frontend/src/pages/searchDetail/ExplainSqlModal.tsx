@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import type { FilterState } from '../../api/client';
 import { Modal } from '../../Modal';
 import { MatchStats } from './MatchStats';
 import { hasEvidence } from './evidenceStats';
@@ -9,7 +8,6 @@ export function ExplainSqlModal(props: {
   sql: string;
   executedSql?: string;
   rows: Record<string, unknown>[];
-  onFilter?: (patch: Partial<FilterState>) => void;
   onClose: () => void;
 }) {
   const showStats = hasEvidence(props.rows);
@@ -65,7 +63,7 @@ export function ExplainSqlModal(props: {
             the matching.
           </p>
         )}
-        {showStats && <MatchStats rows={props.rows} onFilter={props.onFilter} />}
+        {showStats && <MatchStats rows={props.rows} />}
         <SqlSection
           label="LLM generated SQL"
           sql={props.sql || '(no SQL recorded)'}

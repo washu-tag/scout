@@ -1,9 +1,24 @@
 // Match stats over the loaded cohort. The SPA already holds every row, so this
 // is a reduce rather than a second query, and the counts are exact.
 
-import { EV_CATEGORIES, collapse, evidenceCategory, type EvCategory } from '../../api/client';
-
 type Row = Record<string, unknown>;
+
+const EV_CATEGORIES = ['text_and_code', 'text', 'diagnosis_code', 'unknown'] as const;
+
+type EvCategory = (typeof EV_CATEGORIES)[number];
+
+// An empty ev_source is as unexplained as a missing one.
+function evidenceCategory(row: Row): EvCategory {
+  const s = String(row['ev_source'] ?? '').trim();
+  return (EV_CATEGORIES as readonly string[]).includes(s) ? (s as EvCategory) : 'unknown';
+}
+
+// Collapsed so a phrase wrapped across report lines matches one tally.
+function collapse(v: unknown): string {
+  return String(v ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 export type Tally = { label: string; count: number };
 
@@ -11,8 +26,7 @@ export type Category = EvCategory;
 
 export type EvidenceStats = {
   total: number;
-  excluded: number;
-  breakdown: { category: Category; clean: number; negative: number }[];
+  breakdown: { category: Category; rows: number; negative: number }[];
   positiveSpans: Tally[];
   distinctPositive: number;
   negativeSpans: Tally[];
@@ -32,12 +46,11 @@ export function hasEvidence(rows: Row[]): boolean {
 export function evidenceStats(rows: Row[]): EvidenceStats {
   const include = new Map<string, number>();
   const exclude = new Map<string, number>();
-  let excluded = 0;
-  const tally: Record<Category, { clean: number; negative: number }> = {
-    text_and_code: { clean: 0, negative: 0 },
-    text: { clean: 0, negative: 0 },
-    diagnosis_code: { clean: 0, negative: 0 },
-    unknown: { clean: 0, negative: 0 },
+  const tally: Record<Category, { rows: number; negative: number }> = {
+    text_and_code: { rows: 0, negative: 0 },
+    text: { rows: 0, negative: 0 },
+    diagnosis_code: { rows: 0, negative: 0 },
+    unknown: { rows: 0, negative: 0 },
   };
 
   for (const row of rows) {
@@ -47,18 +60,17 @@ export function evidenceStats(rows: Row[]): EvidenceStats {
     const neg = collapse(row['ev_negative_span']);
     if (neg) {
       exclude.set(neg, (exclude.get(neg) ?? 0) + 1);
-      excluded += 1;
+      tally[category].negative += 1;
     }
-    tally[category][neg ? 'negative' : 'clean'] += 1;
+    tally[category].rows += 1;
   }
 
   const rankedInclude = rank(include);
   const rankedExclude = rank(exclude);
   return {
     total: rows.length,
-    excluded,
     breakdown: EV_CATEGORIES.map((category) => ({ category, ...tally[category] })).filter(
-      (r) => r.clean + r.negative > 0,
+      (r) => r.rows > 0,
     ),
     positiveSpans: rankedInclude,
     distinctPositive: rankedInclude.length,
