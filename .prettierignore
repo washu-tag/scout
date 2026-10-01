@@ -3,9 +3,9 @@ helm/**/*.yaml
 # Charts under examples/ are Helm templates too, so they get the same treatment
 examples/**/*.yaml
 !examples/**/*values.yaml
-examples/**/files/**
 report-viewer/**/static/assets/**
 report-viewer/**/dist/**
 report-viewer/**/build/**
 # Helm chart files/ assets are templated (helm tpl); not parseable as JSON/YAML
 helm/**/files/**
+examples/**/files/**
