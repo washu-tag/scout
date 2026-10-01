@@ -67,11 +67,11 @@ const COLUMNS_CONFIG: Array<{
   { field: 'message_dt', title: 'Date', width: 118, kind: 'date' },
   { field: 'modality', title: 'Modality', width: 48 },
   { field: 'service_name', title: 'Service', width: 148 },
-  { field: 'ev_source', title: 'Matched on', width: 248, kind: 'evidence' },
   { field: 'sending_facility', title: 'Facility', width: 120, defaultHidden: true },
   { field: 'patient_age', title: 'Age', width: 50, align: 'right', defaultHidden: true },
   { field: 'sex', title: 'Sex', width: 40, align: 'center', defaultHidden: true },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
+  { field: 'ev_source', title: 'Matched on', width: 248, kind: 'evidence' },
 ];
 
 type Row = Record<string, unknown>;
@@ -566,7 +566,14 @@ export default function SearchDetailPage() {
             >
               Prev
             </button>
-            <span style={{ whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                whiteSpace: 'nowrap',
+                fontVariantNumeric: 'tabular-nums',
+                minWidth: 72,
+                textAlign: 'center',
+              }}
+            >
               {pageIndex + 1} / {lastPage}
             </span>
             <button
@@ -596,6 +603,8 @@ export default function SearchDetailPage() {
                 color: 'var(--rv-muted)',
                 fontSize: '0.75rem',
                 whiteSpace: 'nowrap',
+                fontVariantNumeric: 'tabular-nums',
+                minWidth: 78,
               }}
             >
               {meta.error
