@@ -612,7 +612,7 @@ async def invoke_search_action(
             )
         resp.raise_for_status()
     except httpx.HTTPError as exc:
-        log.exception("action %s invoke failed", action_id)
+        log.exception("action %s invoke failed", scrub_for_log(action_id))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"action invoke failed: {exc}",

@@ -166,7 +166,7 @@ async def invoke(
         _scrub_for_log(claims.get("sub")),
         _scrub_list_for_log(claims.get("groups")),
         len(reports),
-        body.get("cohort_truncated"),
+        _scrub_for_log(body.get("cohort_truncated")),
     )
     # Points at our own landing page (landing_app, a separate public port -
     # see module docstring), not a real XNAT deployment - self-hosted
