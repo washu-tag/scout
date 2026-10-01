@@ -35,6 +35,24 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+
+def _scrub_for_log(v: object) -> object:
+    """Strip CR/LF from a string (or each string in a list) before it
+    lands in a log message.
+
+    Unlike report-viewer's own JSON-formatted logs (see its
+    logging_setup.scrub_for_log - json.dumps already escapes control
+    chars there, making this redundant), this service's plain-text
+    logging.basicConfig format has nothing else stopping an
+    attacker-controlled value (search_id, sub, groups - all reachable
+    with just a leaked invokeToken, before the user assertion is even
+    checked) from forging a fake-looking subsequent log line."""
+    if isinstance(v, str):
+        return v.replace("\r", "").replace("\n", "")
+    if isinstance(v, list):
+        return [_scrub_for_log(item) for item in v]
+    return v
+
 # Two separate FastAPI apps, not one app on two ports: /invoke must be
 # structurally unreachable from the public listener, not just
 # NetworkPolicy-restricted. A single app object serving both ports would
@@ -94,7 +112,7 @@ async def invoke(
     if not settings.assertion_key or not x_report_viewer_user_assertion:
         log.warning(
             "invoke rejected: search_id=%s missing user assertion",
-            body.get("search_id"),
+            _scrub_for_log(body.get("search_id")),
         )
         raise HTTPException(status_code=401, detail="missing user assertion")
     try:
@@ -106,13 +124,13 @@ async def invoke(
     except ExpiredSignatureError:
         log.warning(
             "invoke rejected: search_id=%s user assertion expired",
-            body.get("search_id"),
+            _scrub_for_log(body.get("search_id")),
         )
         raise HTTPException(status_code=401, detail="user assertion expired")
     except JWTError:
         log.warning(
             "invoke rejected: search_id=%s invalid user assertion signature",
-            body.get("search_id"),
+            _scrub_for_log(body.get("search_id")),
         )
         raise HTTPException(status_code=401, detail="invalid user assertion")
     # Binds the assertion to this exact request - a captured assertion
@@ -120,8 +138,8 @@ async def invoke(
     if claims.get("search_id") != body.get("search_id"):
         log.warning(
             "invoke rejected: assertion search_id=%s != request search_id=%s",
-            claims.get("search_id"),
-            body.get("search_id"),
+            _scrub_for_log(claims.get("search_id")),
+            _scrub_for_log(body.get("search_id")),
         )
         raise HTTPException(status_code=401, detail="user assertion search_id mismatch")
     if settings.required_group and settings.required_group not in (
@@ -129,9 +147,9 @@ async def invoke(
     ):
         log.warning(
             "invoke rejected: search_id=%s sub=%s groups=%s lacks required group %s",
-            body.get("search_id"),
-            claims.get("sub"),
-            claims.get("groups"),
+            _scrub_for_log(body.get("search_id")),
+            _scrub_for_log(claims.get("sub")),
+            _scrub_for_log(claims.get("groups")),
             settings.required_group,
         )
         raise HTTPException(status_code=403, detail="caller lacks required group")
@@ -149,9 +167,9 @@ async def invoke(
     reports = body.get("reports") or []
     log.info(
         "invoke: search_id=%s sub=%s groups=%s reports=%d truncated=%s",
-        body.get("search_id"),
-        claims.get("sub"),
-        claims.get("groups"),
+        _scrub_for_log(body.get("search_id")),
+        _scrub_for_log(claims.get("sub")),
+        _scrub_for_log(claims.get("groups")),
         len(reports),
         body.get("cohort_truncated"),
     )

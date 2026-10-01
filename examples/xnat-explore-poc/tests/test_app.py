@@ -222,3 +222,22 @@ def test_invoke_logs_cohort_count_not_identifiers(caplog):
     assert "sub=carol" in record.message
     assert "s3://x/1" not in record.message
     assert "ACC1" not in record.message
+
+
+def test_invoke_scrubs_newlines_from_logged_search_id(caplog):
+    """search_id is logged before the user assertion is even checked, so
+    it's reachable with just a leaked invokeToken (no valid assertion
+    needed to reach this line). This service's logs are plain text, not
+    report-viewer's own JSON format - CR/LF must be stripped here or an
+    attacker-controlled value could forge a fake subsequent log line."""
+    malicious_search_id = "s_x\nWARNING xnat_explore_poc.app: forged line"
+    with caplog.at_level("WARNING"):
+        r = client.post(
+            "/invoke",
+            json={"search_id": malicious_search_id},
+            headers=_ACTION_HEADERS,
+        )
+    assert r.status_code == 401
+    [record] = [rec for rec in caplog.records if "missing user assertion" in rec.message]
+    assert "\n" not in record.message
+    assert "forged line" in record.message
