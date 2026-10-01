@@ -128,6 +128,23 @@ export function getPlotProgress(plotId: string, progressId: string): Promise<Que
   );
 }
 
+export const EV_CATEGORIES = ['text_and_code', 'text', 'diagnosis_code', 'unknown'] as const;
+
+export type EvCategory = (typeof EV_CATEGORIES)[number];
+
+// An empty ev_source is as unexplained as a missing one.
+export function evidenceCategory(row: Record<string, unknown>): EvCategory {
+  const s = String(row['ev_source'] ?? '').trim();
+  return (EV_CATEGORIES as readonly string[]).includes(s) ? (s as EvCategory) : 'unknown';
+}
+
+// Collapsed so a phrase wrapped across report lines matches one tally.
+export function collapse(v: unknown): string {
+  return String(v ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export interface FilterState {
   patient_age?: { min?: string; max?: string };
   message_dt?: { min?: string; max?: string };
@@ -138,6 +155,11 @@ export interface FilterState {
   patient_mpi?: string;
   accession_number?: string;
   sending_facility?: string;
+  ev_source?: EvCategory[];
+  ev_has_negative?: boolean;
+  /** Exact, not substring, so a click from the stats panel selects its own tally. */
+  ev_positive_span?: string;
+  ev_negative_span?: string;
 }
 
 export function activeFilterCount(f: FilterState): number {
@@ -151,6 +173,10 @@ export function activeFilterCount(f: FilterState): number {
   if (f.patient_mpi && f.patient_mpi.length > 0) n++;
   if (f.accession_number && f.accession_number.length > 0) n++;
   if (f.sending_facility && f.sending_facility.length > 0) n++;
+  if (f.ev_source && f.ev_source.length > 0) n++;
+  if (f.ev_has_negative !== undefined) n++;
+  if (f.ev_positive_span) n++;
+  if (f.ev_negative_span) n++;
   return n;
 }
 
@@ -290,6 +316,9 @@ export function filterRows(
   const ageMax = f.patient_age?.max ? Number(f.patient_age.max) : null;
   const dtMin = f.message_dt?.min || null;
   const dtMax = f.message_dt?.max || null;
+  const evSet = f.ev_source && f.ev_source.length ? new Set<string>(f.ev_source) : null;
+  const posSpan = f.ev_positive_span ?? null;
+  const negSpan = f.ev_negative_span ?? null;
 
   const has = (v: unknown, q: string) =>
     String(v ?? '')
@@ -303,6 +332,12 @@ export function filterRows(
     if (fac && !has(r.sending_facility, fac)) return false;
     if (sexSet && !sexSet.has(String(r.sex))) return false;
     if (modSet && !modSet.has(String(r.modality))) return false;
+    if (evSet && !evSet.has(evidenceCategory(r))) return false;
+    if (posSpan !== null && collapse(r.ev_positive_span) !== posSpan) return false;
+    if (negSpan !== null && collapse(r.ev_negative_span) !== negSpan) return false;
+    if (f.ev_has_negative !== undefined) {
+      if ((collapse(r.ev_negative_span) !== '') !== f.ev_has_negative) return false;
+    }
     if (ageMin !== null || ageMax !== null) {
       const raw = r.patient_age;
       if (raw == null || raw === '') return false;

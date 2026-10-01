@@ -1,24 +1,9 @@
 // Match stats over the loaded cohort. The SPA already holds every row, so this
 // is a reduce rather than a second query, and the counts are exact.
 
+import { EV_CATEGORIES, collapse, evidenceCategory, type EvCategory } from '../../api/client';
+
 type Row = Record<string, unknown>;
-
-const EV_CATEGORIES = ['text_and_code', 'text', 'diagnosis_code', 'unknown'] as const;
-
-type EvCategory = (typeof EV_CATEGORIES)[number];
-
-// An empty ev_source is as unexplained as a missing one.
-function evidenceCategory(row: Row): EvCategory {
-  const s = String(row['ev_source'] ?? '').trim();
-  return (EV_CATEGORIES as readonly string[]).includes(s) ? (s as EvCategory) : 'unknown';
-}
-
-// Collapsed so a phrase wrapped across report lines matches one tally.
-function collapse(v: unknown): string {
-  return String(v ?? '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 export type Tally = { label: string; count: number };
 

@@ -27,11 +27,13 @@ import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '.
 import { buildFilterPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
 import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
+import { EvidenceFilterChips } from './searchDetail/EvidenceFilterChips';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
+import { hasEvidence } from './searchDetail/evidenceStats';
 import { ReviewPanel } from './searchDetail/ReviewPanel';
 import { ROW_ACTIVE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
 
@@ -70,8 +72,8 @@ const COLUMNS_CONFIG: Array<{
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
   // Evidence is off by default: the report panel shows it in context and the
   // Explain Search panel tallies it. These are here for auditing a cohort.
-  { field: 'ev_dx_codes', title: 'DX codes', width: 100, defaultHidden: true },
-  { field: 'ev_dx_text', title: 'DX text', width: 180, defaultHidden: true },
+  { field: 'ev_dx_codes', title: 'Diagnosis codes', width: 110, defaultHidden: true },
+  { field: 'ev_dx_text', title: 'Diagnosis text', width: 180, defaultHidden: true },
   { field: 'ev_source', title: 'Matched on', width: 110, kind: 'evidence', defaultHidden: true },
   { field: 'ev_positive_span', title: 'Matched phrase', width: 200, defaultHidden: true },
   { field: 'ev_negative_span', title: 'Negated phrase', width: 200, defaultHidden: true },
@@ -542,6 +544,13 @@ export default function SearchDetailPage() {
               />
             )}
           </div>
+          {hasEvidence(rowsQ.data?.rows ?? []) && (
+            <EvidenceFilterChips
+              rows={rowsQ.data?.rows ?? []}
+              filters={appliedFilters}
+              onChange={setAppliedFilters}
+            />
+          )}
           <div
             style={{
               display: 'flex',
@@ -745,6 +754,10 @@ export default function SearchDetailPage() {
           sql={meta.data?.sql ?? ''}
           executedSql={meta.data?.executed_sql ?? ''}
           rows={rowsQ.data?.rows ?? []}
+          onFilter={(patch) => {
+            setAppliedFilters((f) => ({ ...f, ...patch }));
+            setSqlModalOpen(false);
+          }}
           onClose={() => setSqlModalOpen(false)}
         />
       )}
