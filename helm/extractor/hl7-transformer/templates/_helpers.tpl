@@ -97,10 +97,9 @@ spark.hadoop.fs.s3a.endpoint.region {{ $s.s3Region }}
 spark.sql.ansi.enabled false
 spark.databricks.delta.schema.autoMerge.enabled true
 spark.databricks.delta.merge.repartitionBeforeWrite.enabled true
-# Each streaming micro-batch MERGEs into the derivative tables several times; without these,
-# every MERGE adds a shuffle's worth of small files and reads of those tables slow to minutes.
+# Without this, each MERGE writes one file per input partition and the
+# derivative tables fragment into thousands of tiny files that slow every read.
 spark.databricks.delta.optimizeWrite.enabled true
-spark.databricks.delta.autoCompact.enabled true
 spark.databricks.delta.constraints.allowUnenforcedNotNull.enabled true
 spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
 spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog

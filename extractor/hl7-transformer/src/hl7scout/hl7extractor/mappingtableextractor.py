@@ -109,6 +109,8 @@ class MappingTableExtractor:
             df = self.process_stage_3(df)
             self.process_stage_4(df)
             self.process_stage_5()
+            # The stages above MERGE up to five times; compact like the latest table does.
+            self.spark.sql(f"OPTIMIZE {self.table_name}")
             activity.logger.info("Mapping table derivation complete")
         finally:
             self.postprocess()

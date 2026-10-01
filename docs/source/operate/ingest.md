@@ -55,10 +55,12 @@ Alternatively, you can launch an ingestion job by clicking the "Start Workflow" 
 
 ## Delta table file counts
 
-The hl7-transformer writes with Delta optimized writes and auto-compaction enabled, so each MERGE produces few files and small files are compacted as they accumulate. Tables written by earlier versions can hold thousands of small files, most visibly `<report table>_report_patient_mapping`. Every `*_epic_view` reads that table twice, so queries through those views (Superset dashboards included) slow to minutes. Compact such a table once from a Trino with write access to the lake:
+The hl7-transformer writes with Delta optimized writes and compacts the patient mapping table after each batch, so ingest no longer fragments it. Tables written by earlier versions can hold thousands of small files, most visibly `<report_delta_table_name>_report_patient_mapping` (`reports_report_patient_mapping` with the default name). Every `*_epic_view` (curated, latest and dx) reads that table twice, so queries through those views, Superset dashboards included, slow to minutes.
+
+The next ingest compacts it. To compact it sooner, run this from the extractor's read-write Trino (`trino-rw`) while no ingest is running, since an OPTIMIZE that lands during an ingest can fail that batch's MERGE (Temporal retries it):
 
 ```sql
-ALTER TABLE delta.default.reports_report_patient_mapping EXECUTE optimize
+ALTER TABLE delta.default.<report_delta_table_name>_report_patient_mapping EXECUTE optimize
 ```
 
-On a 100,000-report ingest this took the mapping table from 4,405 files to one and a count over `reports_latest_epic_view` from about four minutes to about ten seconds.
+On a 100,000-report ingest this took the mapping table from 4,405 files to one and a count over `reports_latest_epic_view` from about four minutes to about ten seconds. Compaction leaves the replaced files in the bucket until a Delta `VACUUM` removes them.
