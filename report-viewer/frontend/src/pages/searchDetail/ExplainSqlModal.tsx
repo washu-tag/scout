@@ -61,8 +61,7 @@ export function ExplainSqlModal(props: {
             <strong>Text matching is approximate.</strong> Reports were picked by matching words in
             the report text, so unusual phrasing can be missed and a mention meant to be ruled out
             can slip through. A language model writes these patterns, so be specific about what you
-            want, and expect results to shift a little if you ask again. The SQL below is what did
-            the matching.
+            want, and expect results to shift a little if you ask again.
           </p>
         )}
         {showStats && <MatchStats rows={props.rows} onFilter={props.onFilter} />}

@@ -137,13 +137,24 @@ export function EvidenceFilterChips(props: {
 
       {facets.negative > 0 && (
         <Pill
-          label="negated phrase"
-          count={facets.negative}
+          label={f.ev_has_negative === false ? 'no negated phrase' : 'negated phrase'}
+          count={
+            f.ev_has_negative === false ? props.rows.length - facets.negative : facets.negative
+          }
           tone="negative"
-          icon
-          active={f.ev_has_negative === true}
-          title="Show only rows whose report text also rules the finding out"
-          onClick={() => patch({ ev_has_negative: f.ev_has_negative === true ? undefined : true })}
+          icon={f.ev_has_negative !== false}
+          active={f.ev_has_negative !== undefined}
+          title="Click to keep only these, again to exclude them, again to clear"
+          onClick={() =>
+            patch({
+              ev_has_negative:
+                f.ev_has_negative === undefined
+                  ? true
+                  : f.ev_has_negative === true
+                    ? false
+                    : undefined,
+            })
+          }
         />
       )}
 

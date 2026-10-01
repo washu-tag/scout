@@ -125,7 +125,8 @@ export function MatchStats(props: {
                 )}
               </td>
               <td style={{ padding: '1px 0.6rem', textAlign: 'right', ...num }}>
-                {r.rows.toLocaleString()}
+                {r.rows.toLocaleString()}{' '}
+                <span style={muted}>{s.total ? Math.round((r.rows / s.total) * 100) : 0}%</span>
               </td>
               <td
                 // A code admitted the row while its own report text disagrees.

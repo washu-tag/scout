@@ -162,6 +162,8 @@ export interface FilterState {
   ev_negative_span?: string;
 }
 
+/** Dialog filters only. The chip row shows its own, so counting them here
+ *  would point at a dialog that cannot clear them. */
 export function activeFilterCount(f: FilterState): number {
   let n = 0;
   if (f.patient_age && (f.patient_age.min || f.patient_age.max)) n++;
@@ -173,10 +175,6 @@ export function activeFilterCount(f: FilterState): number {
   if (f.patient_mpi && f.patient_mpi.length > 0) n++;
   if (f.accession_number && f.accession_number.length > 0) n++;
   if (f.sending_facility && f.sending_facility.length > 0) n++;
-  if (f.ev_source && f.ev_source.length > 0) n++;
-  if (f.ev_has_negative !== undefined) n++;
-  if (f.ev_positive_span) n++;
-  if (f.ev_negative_span) n++;
   return n;
 }
 
