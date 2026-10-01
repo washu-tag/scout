@@ -43,3 +43,4 @@ spec:
   dependsOn:
     - name: scout-data-foundation
     - name: minio-operator
+    - name: secrets-ready # config.env + the per-user creds

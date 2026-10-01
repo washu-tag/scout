@@ -8,5 +8,12 @@ configMapGenerator:
     files:
       - error.html
       - sign_in.html
+# The sign-in logo, byte-exact from the Ansible role's files/scout.jpg (Ansible names
+# the key logo.png too). A static asset, not a credential.
+secretGenerator:
+  - name: oauth2-proxy-logo
+    type: Opaque
+    files:
+      - logo.png=scout.jpg
 generatorOptions:
   disableNameSuffixHash: true

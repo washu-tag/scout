@@ -1,0 +1,103 @@
+# hive (the grant Job's superuser copy + both metastores) and the in-cluster MinIO
+# tenant (root config + the per-user credentials the operator and bootstrap Job read).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: superuser-secret
+  namespace: ${hive_namespace}
+type: kubernetes.io/basic-auth
+stringData:
+  username: postgres
+  password: ${sq}${postgres_superuser_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hive-metastore-secret
+  namespace: ${hive_namespace}
+type: Opaque
+stringData:
+  HIVE_METASTORE_PASSWORD: ${sq}${hive_postgres_password}${sq}
+  S3_SECRET_KEY: ${sq}${s3_lake_writer_secret}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hive-metastore-readonly-secret
+  namespace: ${hive_namespace}
+type: Opaque
+stringData:
+  HIVE_METASTORE_PASSWORD: ${sq}${hive_readonly_postgres_password}${sq}
+  S3_SECRET_KEY: ${sq}${s3_lake_reader_secret}${sq}
+---
+# The MinIO operator strips one pair of outer quotes and the bootstrap Job sources this
+# file with sh, so single-quoted values read the same under both. A multi-line string
+# stays a literal block through re-serialization, so these quotes are not dropped.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-scout-env-configuration
+  namespace: ${minio_tenant_namespace}
+type: Opaque
+stringData:
+  config.env: |
+    export MINIO_ROOT_USER='${s3_username:=minio}'
+    export MINIO_ROOT_PASSWORD='${s3_password}'
+    export MINIO_REGION_NAME='${s3_region}'
+    export MINIO_REGION='${s3_region}'
+    export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM='${keycloak_realm_url}/.well-known/openid-configuration'
+    export MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM='minio'
+    export MINIO_IDENTITY_OPENID_CLIENT_SECRET_PRIMARY_IAM='${keycloak_minio_client_secret}'
+    export MINIO_IDENTITY_OPENID_SCOPES_PRIMARY_IAM='openid'
+    export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC_PRIMARY_IAM='on'
+    export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC='on'
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${s3_lake_reader}-creds
+  namespace: ${minio_tenant_namespace}
+type: Opaque
+stringData:
+  CONSOLE_ACCESS_KEY: ${sq}${s3_lake_reader}${sq}
+  CONSOLE_SECRET_KEY: ${sq}${s3_lake_reader_secret}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${s3_lake_writer}-creds
+  namespace: ${minio_tenant_namespace}
+type: Opaque
+stringData:
+  CONSOLE_ACCESS_KEY: ${sq}${s3_lake_writer}${sq}
+  CONSOLE_SECRET_KEY: ${sq}${s3_lake_writer_secret}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${s3_loki_writer}-creds
+  namespace: ${minio_tenant_namespace}
+type: Opaque
+stringData:
+  CONSOLE_ACCESS_KEY: ${sq}${s3_loki_writer}${sq}
+  CONSOLE_SECRET_KEY: ${sq}${s3_loki_writer_secret}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${s3_opa_bundle_writer}-creds
+  namespace: ${minio_tenant_namespace}
+type: Opaque
+stringData:
+  CONSOLE_ACCESS_KEY: ${sq}${s3_opa_bundle_writer}${sq}
+  CONSOLE_SECRET_KEY: ${sq}${s3_opa_bundle_writer_secret}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${s3_opa_bundle_reader}-creds
+  namespace: ${minio_tenant_namespace}
+type: Opaque
+stringData:
+  CONSOLE_ACCESS_KEY: ${sq}${s3_opa_bundle_reader}${sq}
+  CONSOLE_SECRET_KEY: ${sq}${s3_opa_bundle_reader_secret}${sq}

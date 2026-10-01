@@ -37,6 +37,7 @@ spec:
   dependsOn:
     - name: scout-core-foundation
     - name: postgres-operator
+    - name: secrets-ready # superuser + cnpg-role-* Secrets
   sourceRef:
     kind: OCIRepository
     name: scout-config

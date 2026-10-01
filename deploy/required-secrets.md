@@ -7,8 +7,12 @@ values. A site materializes each one; how depends on the deployment mode:
   secrets manager (AWS Secrets Manager under a site-chosen prefix, e.g. `/scout/*`),
   and External Secrets Operator pulls them in via a `ClusterSecretStore`. Values are
   never in git.
-- **Air-gapped / on-prem**: SOPS-encrypted Secrets committed to the site repo,
-  decrypted by Flux's kustomize-controller (ADR 0031 §3).
+- **Air-gapped / on-prem**: the artifact renders every Secret below from
+  `base/secrets-on-prem`, filling it from **one** site Secret, `scout-secret-values` in
+  `flux-system`, whose keys are listed in `required-secret-values.txt`. By default the
+  site keeps it SOPS-encrypted in its repo and Flux's kustomize-controller decrypts it
+  (ADR 0031 §3); any backend that writes the same Secret works. See
+  [On-prem: the values Secret](#on-prem-the-values-secret).
 
 Names and keys are the same in both modes; only materialization differs, **except the
 object-store credentials**, which are mode-specific (see `scout-data` below). This is
@@ -18,11 +22,12 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 ## scout-core (postgres / keycloak / valkey)
 | secret | keys | consumed by |
 | --- | --- | --- |
-| `superuser-secret` | `username`, `password` | CNPG `Cluster.superuserSecret` (on-prem only) |
-| `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor,temporal}` | `username`, `password` | CNPG managed roles (on-prem only) |
+| `superuser-secret` | `username`, `password` | CNPG `Cluster.superuserSecret` (on-prem only; `username` is exactly `postgres`) |
+| `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor,temporal}` | `username`, `password` | CNPG managed roles (on-prem only; `username` equals the role name: `hive`, `hive_readonly`, `keycloak`, `superset`, `${postgres_user}`, `temporal`) |
 | `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role) |
 | `keycloak-admin-secret` | `username`, `password` | Keycloak bootstrap admin + config-cli |
-| `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`, `fragment_reconciler_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`); any keys a site IdP document names (`deploy/README.md`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names). `fragment_reconciler_svc` is also read pod-side by the fragment reconciler, which is the one key with a second consumer |
+| `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`, `fragment_reconciler_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names). `fragment_reconciler_svc` is also read pod-side by the fragment reconciler, which is the one key with a second consumer |
+| `keycloak-client-secrets-site` | any keys a site IdP document names (`deploy/README.md`) | config-cli realm import, **optional**. Read before `keycloak-client-secrets`, which wins on a name clash, so don't reuse its key names |
 | `valkey-auth` | `password`, `password-file` | Valkey chart + exporter |
 | `launchpad-keycloak-secret` | `client-secret` | launchpad OIDC login (pod-side; = the realm's `launchpad_client` value, not that key) |
 | `launchpad-nextauth-secret` | `secret` | launchpad next-auth session signing (generate-once) |
@@ -61,21 +66,74 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | `opa-bundle-reader` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | scout-opa bundle reader (on-prem only; aws = IRSA) |
 | `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on superset (see scout-core) |
 
-## kube-system (oauth2-proxy)
+## kube-system (oauth2-proxy, on-prem only)
 | secret | keys | consumed by |
 | --- | --- | --- |
 | `oauth2-proxy` | `client-id`, `client-secret`, `cookie-secret` | oauth2-proxy (cookie-secret generate-once) |
 | `oauth2-proxy-redis` | `redis-password` | oauth2-proxy session store (= valkey password) |
-| `oauth2-proxy-logo` | `logo.png` | oauth2-proxy sign-in page, **non-optional** volume mount |
 
-`oauth2-proxy-logo` is a static asset (the ~158 KB sign-in logo), not a credential: the
-base does not ship or generate it (unlike the `oauth2-proxy-templates` ConfigMap), so a
-site must provide it as a Secret (from CI or the site repo, not the secrets manager) or
-oauth2-proxy stays in `ContainerCreating` on the missing mount.
+## Not site-provided (generated in-cluster or shipped, listed so they aren't double-provisioned)
+- `trino-tls`: cert-manager `Certificate`
+- `superset-config`: rendered config (CI / chart), not credentials
+- `oauth2-proxy-logo`: the sign-in logo, a `secretGenerator` in `base/oauth2-proxy`
+- `${postgres_cluster_name}-{ca,server,replication,app}`: minted by the CNPG operator
 
-## Not site-provided (generated in-cluster, listed so they aren't double-provisioned)
-- `trino-tls` — cert-manager `Certificate`
-- `superset-config` — rendered config (CI / chart), not credentials
+## On-prem: the values Secret
+`scout-secret-values` (Secret, `flux-system`) holds every key in
+`required-secret-values.txt`: 32 required values, `s3_username` (optional, default
+`minio`), and six conditional ones that are required only while their realm flag is
+`"true"` (`keycloak_xnat_client_secret` with `keycloak_enable_xnat`; the two
+`keycloak_gh_*` with `keycloak_github_enabled`; the three `keycloak_microsoft_*` with
+`keycloak_microsoft_enabled`). The `secrets-ready` Kustomization substitutes it, with
+`cluster-vars`, into the 35 Secrets above; postgres, MinIO and valkey wait on it.
+
+Generate it with `tooling/deploy/gen_secret_values.py --values <site values JSON>
+--cluster-vars-values <the gen_cluster_vars.py --values file>`, then encrypt the output
+(e.g. `sops --encrypt --encrypted-regex '^(data|stringData)$'`). The tool fails closed,
+never prints a value, and enforces the rules that keep a value intact through Flux:
+- no `'`, no line break, control or format character, and no leading or trailing
+  whitespace. The templates single-quote each value; Flux drops LF and folds CR to a
+  space; CNPG and MinIO trim what the apps read untrimmed;
+- `valkey_password` is printable ASCII without `"` or `\` (it is embedded in the
+  exporter's `password-file` JSON);
+- MinIO: `s3_password` and each `s3_*_secret` at least 8 characters, `s3_username` 3;
+- `oauth2_proxy_cookie_secret` is 16, 24 or 32 bytes, raw or base64url-encoded;
+- `hive_namespace` differs from `postgres_cluster_namespace` (each gets a
+  `superuser-secret`).
+
+It labels the Secret `reconcile.fluxcd.io/watch: Enabled`, so an edit re-renders the
+Secrets at once, and annotates it `kustomize.toolkit.fluxcd.io/substitute: disabled`, so a
+site Kustomization with `postBuild` never expands `${...}` inside a value. Requires Flux
+2.9.6 or later (kustomize-controller v1.9.6, which keeps Secret-sourced values out of apply
+errors) with `StrictPostBuildSubstitutions`, so a missing key fails the gate instead of
+rendering empty.
+
+Keys the templates assemble from several inputs:
+- `superset-env` holds 17 keys; 12 are not secret (DB and Redis coordinates, the
+  service client ID, the token URL, `TRINO_CA_CERT`).
+- `minio-scout-env-configuration` `config.env` carries the Ansible role's ten `export`
+  lines, single-quoted, with the MinIO OIDC block always on.
+- `valkey-auth` `password-file` is `{"redis://localhost:6379": "<valkey_password>"}`.
+
+**Rotation.** Most values are re-applied on the next render, but on-prem has no
+Reloader, so env consumers need a restart. CNPG re-sets role and superuser passwords
+itself (`cnpg.io/reload`); a client secret needs a realm re-import (`flux reconcile hr
+keycloak-config-cli`) and an app restart; MinIO needs a tenant restart and a
+`bootstrap-minio-iam` re-run. Three values are persisted and must not change casually:
+`keycloak_bootstrap_admin_password` (change it in Keycloak first), `superset_secret`
+(`superset re-encrypt-secrets` with the old key) and `trino_keystore_password`
+(re-issue `trino-tls`).
+
+**Adopting an Ansible site.** Copy each value from the live cluster Secrets and
+cross-check the vault. Postgres may hold an older password than the vault, and CNPG
+`ALTER`s every role to the seeded value on its first reconcile. A vault value made with
+`encrypt_string` from a pipe ends in a newline, which the tool rejects: strip it, and
+treat a stripped persisted value (above) as a rotation.
+Annotate the four chart-owned Secrets (`launchpad-keycloak-secret`,
+`launchpad-nextauth-secret`, `superset-env`, `oauth2-proxy`) with
+`helm.sh/resource-policy: keep` before Flux takes over their releases, or the first
+upgrade deletes them; the templates carry the annotation from then on. The base fixes
+the database role names, so rename any role an inventory renamed.
 
 ## aws mode: IRSA roles
 Each aws-edge ServiceAccount is annotated `${irsa_role_prefix}-<suffix>`; the site's IaC

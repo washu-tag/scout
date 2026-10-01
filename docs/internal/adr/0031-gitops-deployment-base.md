@@ -14,11 +14,12 @@
 - **Upgrades are pull requests** to a small per-site configuration repo.
   Renovate proposes the version bump with the changelog attached; a human
   merges; `git revert` rolls back.
-- **Secrets live SOPS-encrypted in the site repo** by default — rotating
-  one is a PR. Cloud estates instead pull from an external secrets manager
-  (External Secrets Operator, e.g. AWS Secrets Manager); sites whose policy
-  forbids secrets in git keep the current Ansible/vault path for secret
-  material only.
+- **Secrets live SOPS-encrypted in the site repo** by default, as one
+  values Secret that Secret templates in the base expand into the
+  fixed-name Secrets; rotating one is a PR. Cloud estates instead pull from
+  an external secrets manager (External Secrets Operator, e.g. AWS Secrets
+  Manager); sites whose policy forbids secrets in git fill the same values
+  Secret from their vault.
 - **Air-gapped sites**: every Scout air gap today is "soft" — the cluster
   has no internet access but reaches a staging node with outbound access.
   The cluster watches one signed artifact in the staging registry (its
@@ -144,23 +145,33 @@ import is already a Helm-hooked Job and doesn't change.
 The base references Secrets by fixed name only. They materialize one of
 three ways:
 
-- **Default for on-prem, from cutover: SOPS-encrypted Secrets committed to
-  the site repo**, decrypted natively by Flux's kustomize-controller. The
-  `.sops.yaml` recipients are the cluster's age key and a site operations
-  key, so operators can edit files and the cluster can decrypt them.
-  Rotating a secret is a PR like any other change. What remains for
-  Ansible: generate the cluster key at bootstrap, keep a recovery copy in
-  the Ansible vault (one escrowed secret instead of fifty managed ones),
-  and run the one-time vault-to-SOPS migration when the site repo is
-  seeded. Dev clusters adopt this first (implementation plan, phase 4) and
-  prove it for a full phase before any on-prem site depends on it.
+- **Default for on-prem, from cutover: one SOPS-encrypted values Secret
+  committed to the site repo**, decrypted natively by Flux's
+  kustomize-controller. The config artifact carries the on-prem Secret
+  templates; the site supplies only the values, as a single
+  `scout-secret-values` Secret whose keys the artifact lists in
+  `required-secret-values.txt`. A `secrets-ready` Kustomization renders
+  the fixed-name Secrets from it, ahead of everything that reads them.
+  Names, keys, types and lifecycle metadata therefore version with the
+  base: a release that adds a Secret or a key ships its template, and the
+  site adds one value. The `.sops.yaml` recipients are the cluster's age
+  key and a site operations key, so operators can edit the file and the
+  cluster can decrypt it. Rotating a secret is a PR like any other change.
+  What remains for Ansible: generate the cluster key at bootstrap, keep a
+  recovery copy in the Ansible vault (one escrowed secret instead of fifty
+  managed ones), and run the one-time vault-to-SOPS migration when the
+  site repo is seeded. Dev clusters adopt this first (implementation plan,
+  phase 4) and prove it for a full phase before any on-prem site depends
+  on it.
 - **Cloud**: External Secrets Operator or equivalent, unchanged.
 - **Fallback**: some hospital environments prohibit secrets in git,
   encrypted or not — a policy Scout doesn't get to overrule. Those sites
-  keep the current Ansible/vault materialization for secret material only.
-  They are the one place two owners persist, with a bright line: Flux owns
-  configuration, Ansible owns secret material and nodes, and no resource
-  is writable by both.
+  write the same `scout-secret-values` Secret from their vault instead
+  (External Secrets Operator, or Ansible writing that one object), so the
+  templates and everything downstream are identical. They are the one place
+  two owners persist, with a bright line: Flux owns configuration and the
+  rendered Secrets, the vault side owns that one values object and the
+  nodes, and no resource is writable by both.
 
 Key custody: a committed encrypted secret is in git history forever, so a
 leaked cluster key exposes that history retroactively. Site repos are
@@ -500,7 +511,26 @@ release that adds a required variable fails the Renovate bump PR with the
 missing key named, before anything reaches a cluster. The staging
 reconciler runs the same validation for air-gapped sites. The strict
 substitution gate above is the backstop at converge time; this check is
-the front door at review time.
+the front door at review time. `required-secret-values.txt` is the same
+contract for the on-prem values Secret; SOPS leaves key names in
+plaintext, so site CI can check those without the decryption key.
+
+**Secret values through substitution.** The on-prem Secret templates fill
+from `scout-secret-values` by `postBuild` substitution, which has sharp
+edges for credentials. kustomize-controller re-serializes each resource
+before substituting, so quotes written in a template are dropped and a
+value is re-typed or truncated (`0123` becomes 83, `a #b` becomes `a`).
+Each placeholder is therefore written `${sq}${value}${sq}`, with `sq` an
+inline single quote on the `secrets-ready` Kustomization. Values must be
+single lines with no `'`, control characters or edge whitespace (Flux
+drops LF and folds CR; CNPG and MinIO trim), and must not share a key with
+`cluster-vars`, since a key in two substitution sources is silently
+shadowed. `tooling/deploy/gen_secret_values.py` enforces these rules when
+it generates the Secret, and CI renders the templates through Flux's own
+build path with fixture and adversarial values. Build-stage errors are
+never masked, and kustomize-controller keeps Secret-sourced values out of
+apply errors only from v1.9.6 (Flux 2.9.6), so on-prem sites run Flux 2.9.6
+or later.
 
 **Bill of materials (BOM).** The BOM is the list of every third-party
 image a Scout deployment pulls. It feeds the release manifest (ADR 0030),
@@ -557,7 +587,7 @@ site-repo/
 ├── overlays/               # structured settings: values files, patches
 │   └── trino-values.yaml   #   e.g. trino_attribute_filters
 └── secrets/                # SOPS-encrypted (default posture)
-    └── *.enc.yaml
+    └── scout-secret-values.enc.yaml
 ```
 
 ## Appendix C: developer inner-loop workflows

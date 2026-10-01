@@ -130,9 +130,10 @@ upgrade has been performed end-to-end by merging a Renovate PR.
 
 - Bootstrap Ansible: Flux install; generate the cluster age key and keep a
   recovery copy in the Ansible vault; one-time vault→SOPS secret migration
-  (SOPS is the default; Ansible/vault materialization only where
-  governance bans secrets in git); one-time site-repo seeding from
-  `inventory.yaml` (write-once).
+  into the one `scout-secret-values` Secret the base's templates expand
+  (SOPS is the default; where governance bans secrets in git, the vault
+  fills that same Secret); one-time site-repo seeding from `inventory.yaml`
+  (write-once).
 - Staging reconciler for air-gapped sites (validate required vars →
   package the site overlay → sign → push), with its CI harness (packaging,
   validation, signature verification) before it gatekeeps an upgrade.
