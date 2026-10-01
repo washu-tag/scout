@@ -204,7 +204,13 @@ export function ActionsToolbar({
 
   return (
     <div
-      style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}
+      style={{
+        flex: '1 1 auto',
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.25rem',
+      }}
     >
       <div
         ref={rowRef}

@@ -584,9 +584,7 @@ async def invoke_search_action(
         # state) is silently dropped rather than forwarded unverified;
         # it was never going to be in the caller's own search either way.
         visible = set(body.visible_report_ids)
-        reports = [
-            r for r in reports if r["primary_report_identifier"] in visible
-        ]
+        reports = [r for r in reports if r["primary_report_identifier"] in visible]
 
     headers = {}
     invoke_token = load_invoke_token(action.id)
