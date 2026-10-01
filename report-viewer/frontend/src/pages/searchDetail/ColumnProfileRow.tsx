@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Column } from '@tanstack/react-table';
+import { collapse } from '../../api/client';
 import { profileColumn, type Profile, type Segment } from './columnStats';
 
 type Row = Record<string, unknown>;
@@ -10,12 +11,15 @@ type Row = Record<string, unknown>;
 const RAMP = ['var(--rv-profile-1)', 'var(--rv-profile-2)', 'var(--rv-profile-3)'];
 // Aggregates, not values, so neither sits on the ramp.
 const OTHER_FILL = 'var(--rv-profile-other)';
+// Outside the ramp: a contradiction is not a rank.
+const NEGATED_FILL = 'var(--rv-danger)';
 const EMPTY_FILL = 'var(--rv-profile-empty)';
 
 const BAR_H = 18;
 const GAP = 2;
 // Sex reads better as a part of a whole than as a length.
 const PIE_FIELD = 'sex';
+const MATCHED_ON = 'ev_source';
 // One bucket per ~6px so bars never go sub-pixel.
 const PX_PER_BUCKET = 6;
 
@@ -359,7 +363,15 @@ function Chip({ text, muted }: { text: string; muted?: boolean }) {
   );
 }
 
-function ProfileCell({ profile, field }: { profile: Profile; field: string }) {
+function ProfileCell({
+  profile,
+  field,
+  negated,
+}: {
+  profile: Profile;
+  field: string;
+  negated?: ReadonlySet<string>;
+}) {
   if (profile.kind === 'none') {
     return (
       <div style={{ textAlign: 'center' }}>
@@ -398,8 +410,12 @@ function ProfileCell({ profile, field }: { profile: Profile; field: string }) {
         ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
       ];
     } else {
+      let rank = 0;
       parts = [
-        ...segments.map((s, i) => ({ ...s, fill: RAMP[Math.min(i, RAMP.length - 1)] })),
+        ...segments.map((seg) => ({
+          ...seg,
+          fill: negated?.has(seg.label) ? NEGATED_FILL : RAMP[Math.min(rank++, RAMP.length - 1)],
+        })),
         ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: OTHER_FILL }] : []),
         ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
       ];
@@ -437,6 +453,21 @@ export function ColumnProfileRow({
   dateFields: ReadonlySet<string>;
   stickyTop: number;
 }) {
+  // The cell renders chips, not the raw category, so profile the same value
+  // they lead with: the negation, else the matched phrase, else the diagnosis.
+  const matchedOn = useMemo(
+    () =>
+      rows.map((r) => ({
+        [MATCHED_ON]:
+          collapse(r.ev_negative_span) || collapse(r.ev_positive_span) || collapse(r.ev_dx_codes),
+      })),
+    [rows],
+  );
+  const negatedLabels = useMemo(
+    () => new Set(rows.map((r) => collapse(r.ev_negative_span)).filter(Boolean)),
+    [rows],
+  );
+
   // getVisibleLeafColumns() is a new array every render, so a useMemo on it
   // would recompute every sort and page click. Cache per column instead.
   const cache = useMemo(() => new Map<string, Profile>(), [rows, dateFields]);
@@ -445,7 +476,8 @@ export function ColumnProfileRow({
     const key = `${col.id}:${buckets}`;
     let profile = cache.get(key);
     if (!profile) {
-      profile = profileColumn(col.id, rows, dateFields.has(col.id), buckets);
+      const source = col.id === MATCHED_ON ? matchedOn : rows;
+      profile = profileColumn(col.id, source, dateFields.has(col.id), buckets);
       cache.set(key, profile);
     }
     return profile;
@@ -470,7 +502,11 @@ export function ColumnProfileRow({
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <ProfileCell profile={profile} field={col.id} />
+              <ProfileCell
+                profile={profile}
+                field={col.id}
+                negated={col.id === MATCHED_ON ? negatedLabels : undefined}
+              />
             </div>
           </td>
         );
