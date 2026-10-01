@@ -37,14 +37,11 @@ log = logging.getLogger(__name__)
 
 
 def _scrub_for_log(v):
-    """Strip CR/LF from a string before it lands in a log message - no
-    JSON formatter here to do it for us (unlike report-viewer's own
-    logging_setup.scrub_for_log, which this mirrors exactly). Recursing
-    into itself for list values was enough extra complexity that CodeQL
-    stopped recognizing this as a sanitizer - see _scrub_list_for_log."""
-    if isinstance(v, str):
-        return v.replace("\r", "").replace("\n", "")
-    return v
+    """Strip CR/LF before a value lands in a log message - no JSON
+    formatter here to do it for us. body.get(...) is untyped (raw JSON,
+    no Pydantic model), so CodeQL can't rule out a non-str reaching
+    here - no isinstance branch, so there's no unsanitized path out."""
+    return str(v).replace("\r", "").replace("\n", "")
 
 
 def _scrub_list_for_log(items):
