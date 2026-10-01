@@ -33,6 +33,7 @@ import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
+import { EvidenceCell } from './searchDetail/EvidenceCell';
 import { hasEvidence } from './searchDetail/evidenceStats';
 import { ReviewPanel } from './searchDetail/ReviewPanel';
 import { ROW_ACTIVE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
@@ -46,7 +47,7 @@ const COLUMNS_CONFIG: Array<{
   mono?: boolean;
   kind?: 'date' | 'evidence';
 }> = [
-  { field: 'accession_number', title: 'Accession', width: 85, mono: true },
+  { field: 'accession_number', title: 'Accession', width: 76, mono: true },
   { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true, defaultHidden: true },
   {
     field: 'resolved_epic_mrn',
@@ -63,20 +64,14 @@ const COLUMNS_CONFIG: Array<{
     mono: true,
     defaultHidden: true,
   },
-  { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
-  { field: 'modality', title: 'Modality', width: 60 },
+  { field: 'message_dt', title: 'Date', width: 82, kind: 'date' },
+  { field: 'modality', title: 'Modality', width: 48 },
   { field: 'service_name', title: 'Service', width: 130 },
+  { field: 'ev_source', title: 'Matched on', width: 270, kind: 'evidence' },
   { field: 'sending_facility', title: 'Facility', width: 120, defaultHidden: true },
   { field: 'patient_age', title: 'Age', width: 50, align: 'right', defaultHidden: true },
   { field: 'sex', title: 'Sex', width: 40, align: 'center', defaultHidden: true },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
-  // Evidence is off by default: the report panel shows it in context and the
-  // Explain Search panel tallies it. These are here for auditing a cohort.
-  { field: 'ev_dx_codes', title: 'Diagnosis codes', width: 110, defaultHidden: true },
-  { field: 'ev_dx_text', title: 'Diagnosis text', width: 180, defaultHidden: true },
-  { field: 'ev_source', title: 'Matched on', width: 110, kind: 'evidence', defaultHidden: true },
-  { field: 'ev_positive_span', title: 'Matched phrase', width: 200, defaultHidden: true },
-  { field: 'ev_negative_span', title: 'Negated phrase', width: 200, defaultHidden: true },
 ];
 
 type Row = Record<string, unknown>;
@@ -217,6 +212,7 @@ export default function SearchDetailPage() {
           size: c.width,
           cell: (info) => {
             if (c.kind === 'date') return fmtDate(info.getValue());
+            if (c.kind === 'evidence') return <EvidenceCell row={info.row.original} />;
             return fmtCell(info.getValue());
           },
           sortingFn:

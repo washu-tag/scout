@@ -2,10 +2,11 @@ import { useMemo } from 'react';
 import type { EvCategory, FilterState } from '../../api/client';
 import { evidenceStats, type Tally } from './evidenceStats';
 
+// Not "code": diagnosis_code_text can admit a row without a code matching.
 const CATEGORY_LABEL: Record<string, string> = {
-  text_and_code: 'Report text and code',
+  text_and_code: 'Report text and diagnosis',
   text: 'Report text only',
-  diagnosis_code: 'Diagnosis code only',
+  diagnosis_code: 'Diagnosis only',
   unknown: 'Unexplained',
 };
 

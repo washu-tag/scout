@@ -18,9 +18,9 @@ const pill: React.CSSProperties = {
 };
 
 const CATEGORY_LABEL: Record<EvCategory, string> = {
-  text_and_code: 'text + code',
-  text: 'text only',
-  diagnosis_code: 'code only',
+  text_and_code: 'text + diagnosis',
+  text: 'report text',
+  diagnosis_code: 'diagnosis',
   unknown: 'unexplained',
 };
 
