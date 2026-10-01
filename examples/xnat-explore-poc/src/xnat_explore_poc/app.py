@@ -36,22 +36,19 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def _scrub_for_log(v: object) -> object:
-    """Strip CR/LF from a string (or each string in a list) before it
-    lands in a log message.
-
-    Unlike report-viewer's own JSON-formatted logs (see its
-    logging_setup.scrub_for_log - json.dumps already escapes control
-    chars there, making this redundant), this service's plain-text
-    logging.basicConfig format has nothing else stopping an
-    attacker-controlled value (search_id, sub, groups - all reachable
-    with just a leaked invokeToken, before the user assertion is even
-    checked) from forging a fake-looking subsequent log line."""
+def _scrub_for_log(v):
+    """Strip CR/LF from a string before it lands in a log message - no
+    JSON formatter here to do it for us (unlike report-viewer's own
+    logging_setup.scrub_for_log, which this mirrors exactly). Recursing
+    into itself for list values was enough extra complexity that CodeQL
+    stopped recognizing this as a sanitizer - see _scrub_list_for_log."""
     if isinstance(v, str):
         return v.replace("\r", "").replace("\n", "")
-    if isinstance(v, list):
-        return [_scrub_for_log(item) for item in v]
     return v
+
+
+def _scrub_list_for_log(items):
+    return [_scrub_for_log(item) for item in items or []]
 
 
 # Two separate FastAPI apps, not one app on two ports: /invoke must be
@@ -150,7 +147,7 @@ async def invoke(
             "invoke rejected: search_id=%s sub=%s groups=%s lacks required group %s",
             _scrub_for_log(body.get("search_id")),
             _scrub_for_log(claims.get("sub")),
-            _scrub_for_log(claims.get("groups")),
+            _scrub_list_for_log(claims.get("groups")),
             settings.required_group,
         )
         raise HTTPException(status_code=403, detail="caller lacks required group")
@@ -170,7 +167,7 @@ async def invoke(
         "invoke: search_id=%s sub=%s groups=%s reports=%d truncated=%s",
         _scrub_for_log(body.get("search_id")),
         _scrub_for_log(claims.get("sub")),
-        _scrub_for_log(claims.get("groups")),
+        _scrub_list_for_log(claims.get("groups")),
         len(reports),
         body.get("cohort_truncated"),
     )
