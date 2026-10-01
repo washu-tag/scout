@@ -52,3 +52,13 @@ Alternatively, you can launch an ingestion job by clicking the "Start Workflow" 
 3. For "Workflow Type", specify `IngestHl7LogWorkflow`.
 4. For Input > Data, provide your input parameters, e.g. `{"logsRootPath": "/data/hl7", "reportTableName": "test_reports"}`.
 5. For Input > Encoding, select `json/plain`.
+
+## Delta table file counts
+
+The hl7-transformer writes with Delta optimized writes and auto-compaction enabled, so each MERGE produces few files and small files are compacted as they accumulate. Tables written by earlier versions can hold thousands of small files, most visibly `<report table>_report_patient_mapping`. Every `*_epic_view` reads that table twice, so queries through those views (Superset dashboards included) slow to minutes. Compact such a table once from a Trino with write access to the lake:
+
+```sql
+ALTER TABLE delta.default.reports_report_patient_mapping EXECUTE optimize
+```
+
+On a 100,000-report ingest this took the mapping table from 4,405 files to one and a count over `reports_latest_epic_view` from about four minutes to about ten seconds.
