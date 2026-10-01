@@ -238,6 +238,8 @@ def test_invoke_scrubs_newlines_from_logged_search_id(caplog):
             headers=_ACTION_HEADERS,
         )
     assert r.status_code == 401
-    [record] = [rec for rec in caplog.records if "missing user assertion" in rec.message]
+    [record] = [
+        rec for rec in caplog.records if "missing user assertion" in rec.message
+    ]
     assert "\n" not in record.message
     assert "forged line" in record.message

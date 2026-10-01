@@ -53,6 +53,7 @@ def _scrub_for_log(v: object) -> object:
         return [_scrub_for_log(item) for item in v]
     return v
 
+
 # Two separate FastAPI apps, not one app on two ports: /invoke must be
 # structurally unreachable from the public listener, not just
 # NetworkPolicy-restricted. A single app object serving both ports would

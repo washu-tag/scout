@@ -19,7 +19,7 @@ export function ResultLinkModal(props: {
       <div style={{ fontSize: '0.9rem' }}>
         <h3 style={{ margin: '0 2rem 0.75rem 0', fontSize: '1rem' }}>Opened in a new tab</h3>
         <p style={{ margin: '0 0 0.75rem', color: 'var(--rv-muted)', lineHeight: 1.5 }}>
-          If it didn't open, copy this link and open it manually:
+          If it didn&apos;t open, copy this link and open it manually:
         </p>
         <div style={{ position: 'relative' }}>
           <pre
