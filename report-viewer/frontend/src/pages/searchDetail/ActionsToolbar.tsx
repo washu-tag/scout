@@ -205,6 +205,7 @@ export function ActionsToolbar({
   return (
     <div
       style={{
+        position: 'relative',
         flex: '1 1 auto',
         minWidth: 0,
         display: 'flex',
@@ -276,10 +277,13 @@ export function ActionsToolbar({
       <div
         aria-hidden="true"
         style={{
-          // height: 0 + overflow: hidden (not position: absolute) collapses
-          // this to zero visible/layout height while still laying out its
-          // children horizontally at their natural width, with no
-          // dependency on some ancestor's positioning context.
+          // position: absolute takes this out of the column's normal flow
+          // entirely - as a regular flex child (even at height: 0) it still
+          // consumed the column's `gap`, which shifted the visible button
+          // row up by half that gap once the whole column got vertically
+          // centered by the outer toolbar row (a real ~2px misalignment
+          // this caused). The parent has position: relative for this.
+          position: 'absolute',
           visibility: 'hidden',
           pointerEvents: 'none',
           height: 0,
