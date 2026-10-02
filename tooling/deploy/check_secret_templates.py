@@ -256,7 +256,20 @@ def check_metadata() -> list:
     return problems
 
 
-def check_coverage(cluster_vars: dict) -> list:
+def split_namespaces(cluster_vars: dict) -> dict:
+    """Give every namespace var its own value, so a Secret templated into the wrong one
+    can't hide behind the fixture, which maps several of them to one namespace."""
+    return {
+        k: (
+            "ns-" + k[: -len("_namespace")].replace("_", "-")
+            if k.endswith("_namespace")
+            else v
+        )
+        for k, v in cluster_vars.items()
+    }
+
+
+def check_coverage(cluster_vars: dict, label: str) -> list:
     """Every (namespace, name[, key]) a base on the on-prem Flux paths references is
     provided, and every template has a consumer."""
     refs = collections.defaultdict(set)  # (ns, name) -> {(key or None, where)}
@@ -351,8 +364,8 @@ def check_coverage(cluster_vars: dict) -> list:
     ]
     if not problems:
         print(
-            "  ok   all {} templates have a consumer; every on-prem Secret ref is provided".format(
-                len(templated)
+            "  ok   [{}] all {} templates have a consumer; every on-prem Secret ref is provided".format(
+                label, len(templated)
             )
         )
     return problems
@@ -406,7 +419,8 @@ def main() -> None:
     problems += check_render(hostile(env), "hostile")
     problems += check_strict(env)
     problems += check_metadata()
-    problems += check_coverage(cluster_vars)
+    problems += check_coverage(cluster_vars, "fixture")
+    problems += check_coverage(split_namespaces(cluster_vars), "split namespaces")
     problems += check_cnpg_roles(env)
     for p in problems:
         print("::error::" + p)
