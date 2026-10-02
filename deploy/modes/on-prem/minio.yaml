@@ -43,3 +43,7 @@ spec:
   dependsOn:
     - name: scout-data-foundation
     - name: minio-operator
+    - name: secrets-ready # config.env + the per-user creds
+    # MinIO's IAM waits for the realm's OpenID discovery while minio_oidc_enabled is on
+    # (Ansible's order: auth before lake).
+    - name: keycloak-realm

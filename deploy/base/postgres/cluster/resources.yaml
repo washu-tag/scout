@@ -34,21 +34,22 @@ spec:
     name: superuser-secret
   postgresql:
     # Only memory/connection knobs vary per env; the rest are a fixed profile
-    # matching the Ansible role defaults.
+    # matching the Ansible role defaults. The CRD takes strings, and Flux drops template
+    # quotes before substituting, so ${sq} quotes the substituted values.
     parameters:
-      max_connections: '${postgres_max_connections}'
-      shared_buffers: '${postgres_shared_buffers}'
-      effective_cache_size: '${postgres_effective_cache_size}'
-      maintenance_work_mem: '${postgres_maintenance_work_mem}'
+      max_connections: ${sq}${postgres_max_connections}${sq}
+      shared_buffers: ${sq}${postgres_shared_buffers}${sq}
+      effective_cache_size: ${sq}${postgres_effective_cache_size}${sq}
+      maintenance_work_mem: ${sq}${postgres_maintenance_work_mem}${sq}
       checkpoint_completion_target: '0.9'
-      wal_buffers: '${postgres_wal_buffers}'
-      default_statistics_target: '${postgres_default_statistics_target}'
+      wal_buffers: ${sq}${postgres_wal_buffers}${sq}
+      default_statistics_target: ${sq}${postgres_default_statistics_target}${sq}
       random_page_cost: '4'
       effective_io_concurrency: '1'
-      work_mem: '${postgres_work_mem}'
+      work_mem: ${sq}${postgres_work_mem}${sq}
       huge_pages: 'try'
-      min_wal_size: '${postgres_min_wal_size}'
-      max_wal_size: '${postgres_max_wal_size}'
+      min_wal_size: ${sq}${postgres_min_wal_size}${sq}
+      max_wal_size: ${sq}${postgres_max_wal_size}${sq}
       max_worker_processes: '4'
       max_parallel_workers_per_gather: '2'
       max_parallel_workers: '4'
