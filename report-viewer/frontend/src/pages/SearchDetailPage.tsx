@@ -65,13 +65,13 @@ const COLUMNS_CONFIG: Array<{
     defaultHidden: true,
   },
   { field: 'message_dt', title: 'Date', width: 118, kind: 'date' },
-  { field: 'modality', title: 'Modality', width: 48 },
-  { field: 'service_name', title: 'Service', width: 148 },
+  { field: 'modality', title: 'Modality', width: 84 },
+  { field: 'service_name', title: 'Service', width: 162 },
   { field: 'sending_facility', title: 'Facility', width: 120, defaultHidden: true },
   { field: 'patient_age', title: 'Age', width: 50, align: 'right', defaultHidden: true },
   { field: 'sex', title: 'Sex', width: 40, align: 'center', defaultHidden: true },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
-  { field: 'ev_source', title: 'Matched on', width: 248, kind: 'evidence' },
+  { field: 'ev_source', title: 'Matched on', width: 214, kind: 'evidence' },
 ];
 
 type Row = Record<string, unknown>;
@@ -156,6 +156,15 @@ export default function SearchDetailPage() {
   // A fresh cohort must not inherit a selection or an open reader.
   useEffect(() => {
     setReviewAt(null);
+  }, [rowsQ.data]);
+
+  // Without evidence the default view is four columns, which reads as thin
+  // for a plain "latest reports" search; the demographics fill it out.
+  useEffect(() => {
+    const columns = rowsQ.data?.columns;
+    if (!columns) return;
+    const bare = !columns.includes('ev_source');
+    setColumnVisibility((v) => ({ ...v, patient_age: bare, sex: bare }));
   }, [rowsQ.data]);
 
   useEffect(() => {
