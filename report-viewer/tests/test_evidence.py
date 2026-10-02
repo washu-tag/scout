@@ -107,9 +107,6 @@ def test_include_span_reads_the_column_its_pattern_matched() -> None:
         # A scope regex describes no part of the report body.
         "SELECT primary_report_identifier FROM reports_latest "
         "WHERE REGEXP_LIKE(service_name, '(?i)chest')",
-        # Diagnosis-only cohorts are exact; there is nothing to explain.
-        "SELECT primary_report_identifier FROM reports_latest "
-        "WHERE any_match(diagnoses, d -> d.diagnosis_code LIKE 'C71%')",
         # Extra columns would change what counts as a duplicate.
         "SELECT DISTINCT primary_report_identifier FROM reports_latest "
         "WHERE REGEXP_LIKE(report_text, '(?is)stroke')",
@@ -317,3 +314,37 @@ def test_diagnosis_axis_is_reused_not_rebuilt_from_its_like_patterns() -> None:
         if e.alias_or_name == "ev_source"
     ).sql(dialect="trino")
     assert "LOWER(d.diagnosis_code_text) LIKE '%pulmonary embolism%'" in source
+
+
+DX_ONLY = (
+    "SELECT primary_report_identifier, accession_number FROM reports_latest WHERE "
+    "any_match(diagnoses, d -> d.diagnosis_code LIKE 'J1%') "
+    "AND REGEXP_LIKE(service_name, '(?i)chest')"
+)
+
+
+def test_a_diagnosis_only_cohort_still_gets_evidence() -> None:
+    """A scope-only regexp is not a text axis, and the query is still explainable
+    by the codes it matched."""
+    out, has_evidence = with_evidence(DX_ONLY)
+    assert has_evidence
+    assert select_aliases(out)[-len(EV_COLUMNS) :] == list(EV_COLUMNS)
+    assert "x.diagnosis_code), ', ') AS ev_dx_codes" in out
+
+
+def test_a_diagnosis_only_cohort_claims_no_text() -> None:
+    out, _ = with_evidence(DX_ONLY)
+    source = next(
+        e
+        for e in sqlglot.parse_one(out, dialect="trino").expressions
+        if e.alias_or_name == "ev_source"
+    ).sql(dialect="trino")
+    assert "'diagnosis_code'" in source
+    for value in ("'text'", "'text_and_code'"):
+        assert value not in source
+    assert "CAST(NULL AS VARCHAR) AS ev_positive_span" in with_evidence(DX_ONLY)[0]
+
+
+def test_no_text_leaves_means_no_highlight_expression() -> None:
+    """An empty concatenation would be invalid SQL, not an empty result."""
+    assert highlight_hits_expression(DX_ONLY) is None

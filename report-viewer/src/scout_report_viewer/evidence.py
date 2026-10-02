@@ -206,7 +206,8 @@ def _sibling_veto(
 
 def build_plan(sql: str) -> EvidencePlan | None:
     """Classify the WHERE predicates worth surfacing, or None to leave the SQL alone."""
-    if not sql or "regexp_like" not in sql.lower():
+    lowered = sql.lower() if sql else ""
+    if "regexp_like" not in lowered and "any_match" not in lowered:
         return None
     try:
         tree = sqlglot.parse_one(sql, dialect=DIALECT)
@@ -247,7 +248,7 @@ def build_plan(sql: str) -> EvidencePlan | None:
         seen.add(leaf)
         (plan.vetoes if leaf.negated else plan.positives).append(leaf)
 
-    if not plan.positives:
+    if not plan.positives and not plan.has_dx_axis:
         return None
     if len(seen) > MAX_TEXT_LEAVES:
         log.info("evidence: %d text predicates exceeds cap; skipping", len(seen))
@@ -320,17 +321,22 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
     # means nothing we modelled matched, which is honest about a predicate we
     # failed to classify rather than blaming a code that may not have matched.
     arms = []
-    if plan.dx_tests:
+    if plan.dx_tests and any_text:
         arms.append(f"WHEN ({any_text}) AND ({has_code}) THEN {_lit('text_and_code')}")
-    arms.append(f"WHEN ({any_text}) THEN {_lit('text')}")
+    if any_text:
+        arms.append(f"WHEN ({any_text}) THEN {_lit('text')}")
     if plan.dx_tests:
         arms.append(f"WHEN ({has_code}) THEN {_lit('diagnosis_code')}")
     source = "CASE\n    " + "\n    ".join(arms) + "\n    ELSE NULL\n  END"
 
-    include_arms = "\n    ".join(
-        f"WHEN {_admitted(plan, p)} THEN REGEXP_EXTRACT({p.column}, {_lit(p.pattern)})"
-        for p in plan.positives
-    )
+    if plan.positives:
+        include_arms = "\n    ".join(
+            f"WHEN {_admitted(plan, p)} THEN REGEXP_EXTRACT({p.column}, {_lit(p.pattern)})"
+            for p in plan.positives
+        )
+        include = f"CASE\n    {include_arms}\n    ELSE NULL\n  END"
+    else:
+        include = "CAST(NULL AS VARCHAR)"
     if plan.vetoes:
         exclude_arms = "\n    ".join(
             f"WHEN {_matches(v)} THEN REGEXP_EXTRACT({v.column}, {_lit(v.pattern)})"
@@ -342,7 +348,7 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
 
     return (
         f"  , {source} AS ev_source\n"
-        f"  , CASE\n    {include_arms}\n    ELSE NULL\n  END AS ev_positive_span\n"
+        f"  , {include} AS ev_positive_span\n"
         f"  , {exclude} AS ev_negative_span\n"
         f"  , {dx_codes} AS ev_dx_codes\n"
         f"  , {dx_text} AS ev_dx_text\n"
@@ -439,5 +445,7 @@ def highlight_hits_expression(sql: str) -> str | None:
             )
             if candidate not in leaves:
                 leaves.append(candidate)
+    if not leaves:
+        return None
     arrays = " || ".join(_hits_for_leaf(leaf) for leaf in leaves)
     return f"CAST({arrays} AS JSON)"
