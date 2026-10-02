@@ -30,7 +30,7 @@ import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../Quer
 import { EvidenceFilterChips } from './searchDetail/EvidenceFilterChips';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
-import { ContractIcon, ExpandIcon } from './searchDetail/icons';
+import { ContractIcon, ExpandIcon, PopOutIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { EvidenceCell } from './searchDetail/EvidenceCell';
@@ -75,6 +75,10 @@ const COLUMNS_CONFIG: Array<{
 ];
 
 type Row = Record<string, unknown>;
+
+// Cannot change for the life of the page. Both controls act on the embedding
+// iframe, so neither means anything in a standalone tab.
+const embedded = window.parent !== window;
 
 const columnHelper = createColumnHelper<Row>();
 
@@ -730,26 +734,46 @@ export default function SearchDetailPage() {
             >
               Download CSV
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                const next = !iframeExpanded;
-                setIframeExpanded(next);
-                setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
-              }}
-              title={
-                iframeExpanded ? 'Shrink viewer back to compact size' : 'Grow viewer for more room'
-              }
-              aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
-              style={{
-                ...paginationBtn,
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '0.2rem 0.35rem',
-              }}
-            >
-              {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
-            </button>
+            {embedded && (
+              <button
+                type="button"
+                onClick={() => window.open(window.location.href, '_blank', 'noopener')}
+                title="Open this cohort in a new tab"
+                aria-label="Open in a new tab"
+                style={{
+                  ...paginationBtn,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0.2rem 0.35rem',
+                }}
+              >
+                <PopOutIcon />
+              </button>
+            )}
+            {embedded && (
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !iframeExpanded;
+                  setIframeExpanded(next);
+                  setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
+                }}
+                title={
+                  iframeExpanded
+                    ? 'Shrink viewer back to compact size'
+                    : 'Grow viewer for more room'
+                }
+                aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
+                style={{
+                  ...paginationBtn,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0.2rem 0.35rem',
+                }}
+              >
+                {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
+              </button>
+            )}
           </div>
         </div>
       }
