@@ -12,7 +12,7 @@ helm_diff_plugin_version: 'v3.15.13'
 
 # Databases & Data Storage - Elasticsearch
 # renovate: datasource=helm registryUrl=https://helm.elastic.co depName=eck-operator
-eck_operator_version: 3.2.0
+eck_operator_version: 3.5.0
 # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
 elasticsearch_version: 9.2.3
 
