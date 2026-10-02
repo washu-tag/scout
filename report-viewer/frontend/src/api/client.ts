@@ -178,6 +178,17 @@ export function activeFilterCount(f: FilterState): number {
   return n;
 }
 
+/** Any filter at all, chips included, unlike the dialog-only badge count. */
+export function anyFilterActive(f: FilterState): boolean {
+  return (
+    activeFilterCount(f) > 0 ||
+    !!f.ev_source?.length ||
+    f.ev_has_negative !== undefined ||
+    !!f.ev_positive_span ||
+    !!f.ev_negative_span
+  );
+}
+
 export interface ReportDetail {
   source_file: string | null;
   message_control_id: string | null;

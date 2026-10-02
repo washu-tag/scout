@@ -14,6 +14,7 @@ import {
 } from '@tanstack/react-table';
 import {
   activeFilterCount,
+  anyFilterActive,
   downloadCsv,
   filterRows,
   friendlyError,
@@ -119,7 +120,7 @@ export default function SearchDetailPage() {
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
   );
   const [iframeExpanded, setIframeExpanded] = useState(false);
-  const [reviewAt, setReviewAt] = useState<number | null>(null);
+  const [reviewId, setReviewId] = useState<string | null>(null);
   const appliedFiltersKey = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
 
   const meta = useQuery({
@@ -155,7 +156,7 @@ export default function SearchDetailPage() {
 
   // A fresh cohort must not inherit a selection or an open reader.
   useEffect(() => {
-    setReviewAt(null);
+    setReviewId(null);
   }, [rowsQ.data]);
 
   // Without evidence the default view is four columns, which reads as thin
@@ -272,10 +273,16 @@ export default function SearchDetailPage() {
   const queue = table.getSortedRowModel().rows;
   const pageSize = pagination.pageSize;
 
+  // Tracked by id: the chip row stays clickable while the panel is open, and
+  // a filter reshuffles the queue under a stored position.
+  const reviewAt = reviewId === null ? -1 : queue.findIndex((r) => r.id === reviewId);
+
   // Follow the reader, so closing the panel lands where they stopped.
   const goToReview = (next: number) => {
-    setReviewAt(next);
-    if (queue[next]) setPagination((p) => ({ ...p, pageIndex: Math.floor(next / pageSize) }));
+    const row = queue[next];
+    if (!row) return;
+    setReviewId(row.id);
+    setPagination((p) => ({ ...p, pageIndex: Math.floor(next / pageSize) }));
   };
 
   const total = data.length;
@@ -472,12 +479,12 @@ export default function SearchDetailPage() {
                 </thead>
                 <tbody>
                   {table.getRowModel().rows.map((row) => {
-                    const active = reviewAt !== null && queue[reviewAt]?.id === row.id;
+                    const active = reviewId === row.id;
                     return (
                       <React.Fragment key={row.id}>
                         <tr
                           className={active ? undefined : 'scout-row'}
-                          onClick={() => setReviewAt(queue.findIndex((q) => q.id === row.id))}
+                          onClick={() => setReviewId(row.id)}
                           style={{
                             borderBottom: '1px solid var(--rv-border)',
                             cursor: 'pointer',
@@ -517,7 +524,7 @@ export default function SearchDetailPage() {
                         colSpan={table.getVisibleFlatColumns().length}
                         style={{ padding: '1rem', textAlign: 'center', color: 'var(--rv-muted)' }}
                       >
-                        {activeFilterCount(appliedFilters) > 0
+                        {anyFilterActive(appliedFilters)
                           ? 'No rows match your filters.'
                           : 'No reports in this search.'}
                       </td>
@@ -544,12 +551,12 @@ export default function SearchDetailPage() {
                 </div>
               )}
             </div>
-            {reviewAt !== null && queue.length > 0 && (
+            {reviewAt >= 0 && (
               <ReviewPanel
                 queue={queue.map((r) => r.original)}
-                index={Math.min(reviewAt, queue.length - 1)}
+                index={reviewAt}
                 onIndex={goToReview}
-                onClose={() => setReviewAt(null)}
+                onClose={() => setReviewId(null)}
               />
             )}
           </div>

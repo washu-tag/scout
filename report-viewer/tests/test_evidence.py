@@ -468,3 +468,11 @@ def test_an_ungated_veto_gets_no_guard() -> None:
     )
     out, _ = with_evidence(sql)
     assert "TRIM(" not in out
+
+
+def test_highlights_respect_the_blank_section_guard() -> None:
+    """A HISTORY line must not mark a row the query admitted on its impression."""
+    expression = highlight_hits_expression(CANONICAL)
+    assert expression is not None
+    # One guarded arm for the report_text positive, one for its veto.
+    assert expression.count("IF(COALESCE(TRIM(") == 2
