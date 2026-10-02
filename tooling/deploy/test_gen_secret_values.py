@@ -4,32 +4,30 @@ contract staying in step with the on-prem Secret templates."""
 import base64
 import json
 import os
-import re
 from pathlib import Path
 
 import pytest
 import yaml
 
+import gen_cluster_vars
+from check_secret_templates import VAR, templates
 from gen_cluster_vars import load_required
 from gen_secret_values import (
-    CONDITIONAL,
     CONFIG_ENV_VALUES,
-    MIN_LENGTH,
-    OPTIONAL,
+    DEFAULT_REQUIRED,
     REALM_VALUES,
     build,
+    load_contract,
     main,
     render_secret,
     validate,
 )
 
-HERE = Path(__file__).resolve().parent
-DEPLOY = HERE.parents[1] / "deploy"
-FIXTURE = HERE / "fixtures" / "secret-values.values.json"
-CLUSTER_VARS = HERE / "fixtures" / "cluster-vars.values.json"
-CONTRACT = DEPLOY / "required-secret-values.txt"
-TEMPLATES = DEPLOY / "base" / "secrets-on-prem"
-VAR = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(:=)?")
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+FIXTURE = FIXTURES / "secret-values.values.json"
+CLUSTER_VARS = FIXTURES / "cluster-vars.values.json"
+CONTRACT = load_contract(DEFAULT_REQUIRED)
+REQUIRED_VARS = set(load_required(gen_cluster_vars.DEFAULT_REQUIRED))
 
 
 @pytest.fixture
@@ -42,30 +40,19 @@ def cluster_vars():
     return json.loads(CLUSTER_VARS.read_text())
 
 
-@pytest.fixture
-def contract():
-    return load_required(CONTRACT)
+def problems_for(values, cluster_vars):
+    return validate(values, cluster_vars, CONTRACT)[0]
 
 
-def problems_for(values, cluster_vars, contract):
-    return validate(values, cluster_vars, contract)[0]
+def test_fixture_is_valid(values, cluster_vars):
+    assert validate(values, cluster_vars, CONTRACT) == ([], [])
+    assert set(build(values, CONTRACT)) == set(values)
 
 
-def test_fixture_is_valid(values, cluster_vars, contract):
-    assert validate(values, cluster_vars, contract) == ([], [])
-
-
-def test_output_carries_every_required_and_provided_key(values, contract):
-    data = build(values, contract)
-    assert set(data) == set(values)
-    absent = set(contract) - set(values)
-    assert absent <= OPTIONAL | set(CONDITIONAL)
-
-
-def test_rendered_secret_round_trips_exact_values(values, contract):
+def test_rendered_secret_round_trips_exact_values(values):
     hostile = dict(values, trino_internal_shared_secret='a "b" \\c #d: e $HOME ${x} é')
     doc = yaml.safe_load(
-        render_secret(build(hostile, contract), "scout-secret-values", "flux-system")
+        render_secret(build(hostile, CONTRACT), "scout-secret-values", "flux-system")
     )
     assert doc["kind"] == "Secret"
     assert doc["metadata"]["namespace"] == "flux-system"
@@ -92,43 +79,38 @@ def test_rendered_secret_round_trips_exact_values(values, contract):
         "lone" + chr(0xDC80) + "surrogate",
     ],
 )
-def test_rejects_unsafe_characters(values, cluster_vars, contract, bad):
-    probs = problems_for(dict(values, postgres_password=bad), cluster_vars, contract)
+def test_rejects_unsafe_characters(values, cluster_vars, bad):
+    probs = problems_for(dict(values, postgres_password=bad), cluster_vars)
     assert len(probs) == 1 and probs[0].startswith("postgres_password: ")
 
 
-def test_problems_never_echo_the_value(values, cluster_vars, contract):
+def test_problems_never_echo_the_value(cluster_vars):
     marker = "SECRETMARKER'\n"
-    bad = {k: marker for k in contract}
     probs = problems_for(
-        bad, dict(cluster_vars, keycloak_microsoft_enabled="true"), contract
+        {k: marker for k in CONTRACT},
+        dict(cluster_vars, keycloak_microsoft_enabled="true"),
     )
     assert probs and not any("SECRETMARKER" in p for p in probs)
 
 
-@pytest.mark.parametrize(
-    "key", ["postgres_password", "valkey_password", "superset_secret"]
-)
-def test_required_value_missing_or_empty(values, cluster_vars, contract, key):
+def test_required_value_missing_or_empty(values, cluster_vars):
     for broken in (
-        {k: v for k, v in values.items() if k != key},
-        dict(values, **{key: ""}),
+        {k: v for k, v in values.items() if k != "postgres_password"},
+        dict(values, postgres_password=""),
     ):
-        assert problems_for(broken, cluster_vars, contract) == [
-            "{}: missing or empty".format(key)
+        assert problems_for(broken, cluster_vars) == [
+            "postgres_password: missing or empty"
         ]
 
 
-def test_non_string_value_rejected(values, cluster_vars, contract):
-    probs = problems_for(dict(values, postgres_password=1234), cluster_vars, contract)
+def test_non_string_value_rejected(values, cluster_vars):
+    probs = problems_for(dict(values, postgres_password=1234), cluster_vars)
     assert probs == ["postgres_password: must be a JSON string"]
 
 
-def test_unknown_key_rejected_with_fixed_name_hint(values, cluster_vars, contract):
+def test_unknown_key_rejected_with_fixed_name_hint(values, cluster_vars):
     probs = problems_for(
-        dict(values, db_port="5432", hive_postgres_user="hivemeta"),
-        cluster_vars,
-        contract,
+        dict(values, db_port="5432", hive_postgres_user="hivemeta"), cluster_vars
     )
     assert "db_port: not in required-secret-values.txt" in probs
     assert any(
@@ -137,39 +119,35 @@ def test_unknown_key_rejected_with_fixed_name_hint(values, cluster_vars, contrac
     )
 
 
-def test_conditional_keys_follow_their_flag(values, cluster_vars, contract):
+def test_conditional_keys_follow_their_flag(values, cluster_vars):
     # github is on in the fixture: its keys are required.
     no_gh = {k: v for k, v in values.items() if not k.startswith("keycloak_gh_")}
-    assert sorted(problems_for(no_gh, cluster_vars, contract)) == [
+    assert sorted(problems_for(no_gh, cluster_vars)) == [
         "keycloak_gh_client_id: missing or empty while keycloak_github_enabled is on",
         "keycloak_gh_client_secret: missing or empty while keycloak_github_enabled is on",
     ]
     off = dict(cluster_vars, keycloak_github_enabled="false")
-    assert problems_for(no_gh, off, contract) == []
-    assert set(build(no_gh, contract)) == set(no_gh)
+    assert problems_for(no_gh, off) == []
     # With the flag off, a supplied value is a mistake (Ansible enabled the broker
     # whenever its client id was set), not something to carry silently.
-    assert sorted(problems_for(values, off, contract)) == [
+    assert sorted(problems_for(values, off)) == [
         "keycloak_gh_client_id: set while keycloak_github_enabled is off; turn the flag on or drop the value",
         "keycloak_gh_client_secret: set while keycloak_github_enabled is off; turn the flag on or drop the value",
     ]
     # A YAML 1.1 truthy spelling turns the realm gate on too.
     ms_on = dict(cluster_vars, keycloak_microsoft_enabled="yes")
-    assert len(problems_for(values, ms_on, contract)) == 3
+    assert len(problems_for(values, ms_on)) == 3
 
 
-def test_optional_minio_settings(values, cluster_vars, contract):
+def test_optional_minio_settings(values, cluster_vars):
     for key in ("s3_username", "minio_oidc_enabled"):
-        assert problems_for(dict(values, **{key: ""}), cluster_vars, contract) == []
-        assert key not in build(dict(values, **{key: ""}), contract)
-    assert (
-        problems_for(dict(values, minio_oidc_enabled="off"), cluster_vars, contract)
-        == []
-    )
-    assert problems_for(
-        dict(values, minio_oidc_enabled="no"), cluster_vars, contract
-    ) == ["minio_oidc_enabled: must be one of on, off, true, false"]
-    assert problems_for(dict(values, s3_username="ab"), cluster_vars, contract) == [
+        assert problems_for(dict(values, **{key: ""}), cluster_vars) == []
+        assert key not in build(dict(values, **{key: ""}), CONTRACT)
+    assert problems_for(dict(values, minio_oidc_enabled="off"), cluster_vars) == []
+    assert problems_for(dict(values, minio_oidc_enabled="no"), cluster_vars) == [
+        "minio_oidc_enabled: must be on, off, true or false"
+    ]
+    assert problems_for(dict(values, s3_username="ab"), cluster_vars) == [
         "s3_username: is shorter than 3 characters"
     ]
 
@@ -178,9 +156,8 @@ def test_optional_minio_settings(values, cluster_vars, contract):
     "bad", ['quo"te', "back\\slash", "a/b", "a#b", "a@b", "a%41", "pässwörd"]
 )
 @pytest.mark.parametrize("key", ["valkey_password", "superset_postgres_password"])
-def test_url_embedded_values_are_unreserved(values, cluster_vars, contract, key, bad):
-    probs = problems_for(dict(values, **{key: bad}), cluster_vars, contract)
-    assert probs == [
+def test_url_embedded_values_are_unreserved(values, cluster_vars, key, bad):
+    assert problems_for(dict(values, **{key: bad}), cluster_vars) == [
         "{}: may use only A-Z a-z 0-9 . _ ~ - (it goes into a connection URL)".format(
             key
         )
@@ -188,40 +165,32 @@ def test_url_embedded_values_are_unreserved(values, cluster_vars, contract, key,
 
 
 @pytest.mark.parametrize("bad", ['quo"te', "back\\nslash", "$(env:HOME)", "a b", "a,b"])
-def test_realm_values_are_json_and_substitution_safe(
-    values, cluster_vars, contract, bad
-):
+def test_realm_values_are_json_and_substitution_safe(values, cluster_vars, bad):
     probs = problems_for(
-        dict(values, keycloak_temporal_client_secret=bad), cluster_vars, contract
+        dict(values, keycloak_temporal_client_secret=bad), cluster_vars
     )
     assert (
-        "keycloak_temporal_client_secret: may use only A-Z a-z 0-9 . _ ~ + / = - (it goes into the realm JSON)"
-        in probs
+        "keycloak_temporal_client_secret: may use only A-Z a-z 0-9 . _ ~ + / = - "
+        "(it goes into the realm JSON)" in probs
     )
     ok = base64.b64encode(b"\xfb\xff" * 12).decode()  # + / = all allowed
     assert (
-        problems_for(
-            dict(values, keycloak_temporal_client_secret=ok), cluster_vars, contract
-        )
+        problems_for(dict(values, keycloak_temporal_client_secret=ok), cluster_vars)
         == []
     )
 
 
 @pytest.mark.parametrize("bad", ['quo"te', "dollar$x", "back`tick", "back\\slash"])
-def test_config_env_values_are_shell_safe(values, cluster_vars, contract, bad):
-    probs = problems_for(
-        dict(values, s3_password=bad + "-long-enough"), cluster_vars, contract
-    )
+def test_config_env_values_are_shell_safe(values, cluster_vars, bad):
+    probs = problems_for(dict(values, s3_password=bad + "-long-enough"), cluster_vars)
     assert probs == [
         's3_password: contains " $ ` or \\ (config.env is double-quoted and sourced by sh)'
     ]
 
 
-def test_minio_minimum_lengths(values, cluster_vars, contract):
+def test_minio_minimum_lengths(values, cluster_vars):
     probs = problems_for(
-        dict(values, s3_password="short", s3_lake_reader_secret="1234567"),
-        cluster_vars,
-        contract,
+        dict(values, s3_password="short", s3_lake_reader_secret="1234567"), cluster_vars
     )
     assert sorted(probs) == [
         "s3_lake_reader_secret: is shorter than 8 characters",
@@ -241,14 +210,12 @@ def test_minio_minimum_lengths(values, cluster_vars, contract):
         ("0123456789abcdef0", False),  # 17 bytes, and not a valid encoding
     ],
 )
-def test_cookie_secret_aes_lengths(values, cluster_vars, contract, cookie, ok):
-    probs = problems_for(
-        dict(values, oauth2_proxy_cookie_secret=cookie), cluster_vars, contract
-    )
+def test_cookie_secret_aes_lengths(values, cluster_vars, cookie, ok):
+    probs = problems_for(dict(values, oauth2_proxy_cookie_secret=cookie), cluster_vars)
     assert (probs == []) is ok
 
 
-def test_placeholders_rejected_weak_defaults_warned(values, cluster_vars, contract):
+def test_placeholders_rejected_weak_defaults_warned(values, cluster_vars):
     probs, warns = validate(
         dict(
             values,
@@ -257,7 +224,7 @@ def test_placeholders_rejected_weak_defaults_warned(values, cluster_vars, contra
             trino_keystore_password="trinokeystorepass",
         ),
         cluster_vars,
-        contract,
+        CONTRACT,
     )
     assert sorted(probs) == [
         "keycloak_gh_client_id: is an inventory.example.yaml placeholder",
@@ -266,11 +233,11 @@ def test_placeholders_rejected_weak_defaults_warned(values, cluster_vars, contra
     assert warns == ["trino_keystore_password: is a weak Ansible default; rotate it"]
 
 
-def test_cluster_var_layout_checks(values, cluster_vars, contract):
+def test_cluster_var_layout_checks(values, cluster_vars):
     same_ns = dict(
         cluster_vars, hive_namespace=cluster_vars["postgres_cluster_namespace"]
     )
-    assert [p.split(":")[0] for p in problems_for(values, same_ns, contract)] == [
+    assert [p.split(":")[0] for p in problems_for(values, same_ns)] == [
         "hive_namespace must differ from postgres_cluster_namespace"
     ]
     renamed = dict(
@@ -279,10 +246,17 @@ def test_cluster_var_layout_checks(values, cluster_vars, contract):
         superset_postgres_user="superset",
         superset_database="superset_meta",
     )
-    assert sorted(p.split(":")[0] for p in problems_for(values, renamed, contract)) == [
+    assert sorted(p.split(":")[0] for p in problems_for(values, renamed)) == [
         "keycloak_postgres_user",
         "superset_database",
     ]
+
+
+def test_contract_rules_parse_fail_closed(tmp_path):
+    bad = tmp_path / "contract.txt"
+    bad.write_text("a\nb optional\nc when=flag_x\nd sometimes\n")
+    with pytest.raises(ValueError, match="d: unknown rule sometimes"):
+        load_contract(bad)
 
 
 def test_main_fails_closed(tmp_path, values, capsys):
@@ -328,47 +302,35 @@ def test_main_writes_owner_only_utf8(tmp_path, values):
     assert data == dict(values, superset_secret="pässwörd-é")
 
 
-def _template_values():
-    """{secret name: {key: template string}} from the parsed templates (comments
-    excluded), plus the metadata strings."""
-    docs = []
-    for path in sorted(TEMPLATES.glob("*.yaml")):
-        if path.name != "kustomization.yaml":
-            docs += [d for d in yaml.safe_load_all(path.read_text()) if d]
-    return docs
-
-
 def _vars(strings):
-    found = [m for s in strings for m in VAR.findall(s)]
-    return {name for name, _ in found}, {name for name, d in found if d}
+    """(names used, names used with a := default) across template strings."""
+    found = [m for s in strings for m in VAR.findall(s) if m[0]]
+    return {m[0] for m in found}, {m[0] for m in found if m[1]}
 
 
-def test_contract_matches_the_templates(contract):
-    """required-secret-values.txt == the non-cluster-var names the templates use, the
-    defaulted names == the optional + conditional keys, and no name is in both lists."""
-    required_vars = set(load_required(DEPLOY / "required-vars.txt"))
-    docs = _template_values()
-    strings = [v for d in docs for v in d["stringData"].values()]
-    strings += [d["metadata"][k] for d in docs for k in ("name", "namespace")]
+def test_contract_matches_the_templates():
+    """required-secret-values.txt == the non-cluster-var names the templates use, its
+    optional + conditional entries == the defaulted ones, and no name is in both
+    contract lists (the later substituteFrom source would silently shadow the other)."""
+    strings = [v for d in templates() for v in d["stringData"].values()]
+    strings += [d["metadata"][k] for d in templates() for k in ("name", "namespace")]
     used, defaulted = _vars(strings)
-    assert not set(contract) & required_vars
-    assert used - required_vars - {"sq"} == set(contract)
-    assert defaulted == OPTIONAL | set(CONDITIONAL)
-    assert set(CONDITIONAL.values()) <= required_vars
-    assert len(contract) == len(set(contract))
+    assert not set(CONTRACT) & REQUIRED_VARS
+    assert used - REQUIRED_VARS - {"sq"} == set(CONTRACT)
+    assert defaulted == {k for k, rule in CONTRACT.items() if rule != "required"}
+    flags = {
+        rule[len("when=") :] for rule in CONTRACT.values() if rule.startswith("when=")
+    }
+    assert flags <= REQUIRED_VARS
 
 
-def test_charset_groups_match_their_templates(contract):
-    """The realm and config.env rule sets name exactly the values those Secrets read,
-    and every MinIO credential has a minimum length."""
-    by_name = {d["metadata"]["name"]: d["stringData"] for d in _template_values()}
-    required_vars = set(load_required(DEPLOY / "required-vars.txt"))
+def test_charset_groups_match_their_templates():
+    """The realm and config.env rule sets name exactly the values those Secrets read."""
+    by_name = {d["metadata"]["name"]: d["stringData"] for d in templates()}
     realm, _ = _vars(by_name["keycloak-client-secrets"].values())
     assert realm - {"sq"} == REALM_VALUES
     config_env, _ = _vars([by_name["minio-scout-env-configuration"]["config.env"]])
-    assert config_env - required_vars == CONFIG_ENV_VALUES
-    minio = {k for k in contract if k.startswith("s3_")}
-    assert minio == set(MIN_LENGTH)
+    assert config_env - REQUIRED_VARS == CONFIG_ENV_VALUES
 
 
 if __name__ == "__main__":

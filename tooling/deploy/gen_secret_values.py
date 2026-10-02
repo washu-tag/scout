@@ -2,29 +2,13 @@
 """Generate the ``scout-secret-values`` Secret for an on-prem site (ADR 0031 section 3).
 
 The on-prem ``secrets-ready`` Kustomization substitutes this one Secret into every
-fixed-name Secret under ``deploy/base/secrets-on-prem``, so it must carry each key in
-``deploy/required-secret-values.txt`` with a value that survives Flux substitution
-unchanged. Reads the site's plaintext values (a flat JSON object of strings) and its
-cluster-vars values (the ``gen_cluster_vars.py --values`` file, for the feature flags
-and namespaces), validates them, and emits the Secret ready to encrypt with SOPS or to
-hand to another backend.
-
-Fail closed, and never echo a value: a problem names the key and the rule only.
-Every value must be a string with no ', no line break, control or format character,
-and no leading or trailing whitespace. The templates single-quote each value; Flux
-strips LF and folds CR to a space; CNPG and MinIO trim what the apps read untrimmed.
-Values a consumer pastes into a larger string get a narrower character set:
-
-- the keycloak-client-secrets values: A-Z a-z 0-9 . _ ~ + / = - (config-cli
-  substitutes them into the realm JSON before parsing it);
-- valkey_password, superset_postgres_password: A-Z a-z 0-9 . _ ~ - (the superset
-  chart builds connection URLs from them; valkey's also sits in a JSON file);
-- the config.env inputs: no " $ ` or \\ (double-quoted, and sourced by sh).
-
-Plus MinIO's minimum lengths, oauth2-proxy's cookie-secret sizes, and the realm
-flags: a conditional key is required while its flag is on and rejected while it is
-off. Absent or empty optional and disabled-conditional keys are left out, so the
-templates' defaults apply. Dependency-free (stdlib only).
+fixed-name Secret under ``deploy/base/secrets-on-prem``. Reads the site's plaintext
+values (a flat JSON object of strings) and its cluster-vars values (the
+``gen_cluster_vars.py --values`` file, for the realm flags and namespaces), checks
+them against ``deploy/required-secret-values.txt`` and the value rules listed in
+``deploy/required-secrets.md``, and emits the Secret ready to encrypt with SOPS or to
+hand to another backend. Fails closed and never echoes a value: a problem names the
+key and the rule only. Dependency-free (stdlib only).
 """
 
 from __future__ import annotations
@@ -39,23 +23,10 @@ import sys
 import unicodedata
 from pathlib import Path
 
-from gen_cluster_vars import load_required, yaml_double_quoted
+from gen_cluster_vars import yaml_double_quoted
 
 _REPO = Path(__file__).resolve().parents[2]
 DEFAULT_REQUIRED = _REPO / "deploy" / "required-secret-values.txt"
-
-# Required (non-empty) only when this cluster-var flag is on.
-CONDITIONAL = {
-    "keycloak_xnat_client_secret": "keycloak_enable_xnat",
-    "keycloak_gh_client_id": "keycloak_github_enabled",
-    "keycloak_gh_client_secret": "keycloak_github_enabled",
-    "keycloak_microsoft_client_id": "keycloak_microsoft_enabled",
-    "keycloak_microsoft_client_secret": "keycloak_microsoft_enabled",
-    "keycloak_microsoft_tenant_id": "keycloak_microsoft_enabled",
-}
-# The templates default them (MinIO root user minio, OpenID on).
-OPTIONAL = {"s3_username", "minio_oidc_enabled"}
-BOOLEANS = {"minio_oidc_enabled": ("on", "off", "true", "false")}
 
 # keycloak-client-secrets: config-cli substitutes these into the realm JSON.
 REALM_VALUES = {
@@ -71,7 +42,12 @@ REALM_VALUES = {
     "keycloak_voila_svc_client_secret",
     "keycloak_report_viewer_svc_client_secret",
     "keycloak_fragment_reconciler_svc_client_secret",
-    *CONDITIONAL,
+    "keycloak_xnat_client_secret",
+    "keycloak_gh_client_id",
+    "keycloak_gh_client_secret",
+    "keycloak_microsoft_client_id",
+    "keycloak_microsoft_client_secret",
+    "keycloak_microsoft_tenant_id",
 }
 # The superset chart pastes these into redis:// and postgresql:// URLs.
 URL_VALUES = {"valkey_password", "superset_postgres_password"}
@@ -81,17 +57,6 @@ CONFIG_ENV_VALUES = {
     "s3_password",
     "keycloak_minio_client_secret",
     "minio_oidc_enabled",
-}
-
-# MinIO rejects shorter root and user credentials.
-MIN_LENGTH = {
-    "s3_username": 3,
-    "s3_password": 8,
-    "s3_lake_reader_secret": 8,
-    "s3_lake_writer_secret": 8,
-    "s3_loki_writer_secret": 8,
-    "s3_opa_bundle_reader_secret": 8,
-    "s3_opa_bundle_writer_secret": 8,
 }
 
 # ansible/inventory.example.yaml placeholders, never real credentials (its generated
@@ -121,9 +86,33 @@ FIXED_NAMES = {
 _BAD_CATEGORIES = {"Cc", "Cf", "Cs", "Cn", "Zl", "Zp"}
 
 
+def load_contract(path) -> dict:
+    """{name: rule} from required-secret-values.txt; rule is "required", "optional"
+    or "when=<cluster-var flag>"."""
+    contract = {}
+    for ln in Path(path).read_text().splitlines():
+        if not ln.strip() or ln.lstrip().startswith("#"):
+            continue
+        name, *rules = ln.split()
+        rule = " ".join(rules) or "required"
+        if rule not in ("required", "optional") and not re.fullmatch(
+            r"when=[A-Za-z_][A-Za-z0-9_]*", rule
+        ):
+            raise ValueError("{}: unknown rule {}".format(name, rule))
+        contract[name] = rule
+    return contract
+
+
 def flag_on(value) -> bool:
     """A cluster-var flag as the realm reads it: YAML 1.1 truthy after substitution."""
     return str(value).strip().lower() in ("true", "yes", "on", "y")
+
+
+def min_length(key: str) -> int:
+    """MinIO's minimums: 3 for the root user, 8 for its password and user secrets."""
+    if key == "s3_username":
+        return 3
+    return 8 if key.startswith("s3_") else 0
 
 
 def cookie_secret_ok(value: str) -> bool:
@@ -159,18 +148,18 @@ def value_problems(key: str, value: str) -> list:
         out.append(
             'contains " $ ` or \\ (config.env is double-quoted and sourced by sh)'
         )
-    if len(value) < MIN_LENGTH.get(key, 0):
-        out.append("is shorter than {} characters".format(MIN_LENGTH[key]))
+    if len(value) < min_length(key):
+        out.append("is shorter than {} characters".format(min_length(key)))
     if key == "oauth2_proxy_cookie_secret" and not cookie_secret_ok(value):
         out.append("must be 16, 24 or 32 bytes, raw or base64url-encoded")
-    if key in BOOLEANS and value not in BOOLEANS[key]:
-        out.append("must be one of {}".format(", ".join(BOOLEANS[key])))
+    if key == "minio_oidc_enabled" and value not in ("on", "off", "true", "false"):
+        out.append("must be on, off, true or false")
     if value in EXAMPLE_PLACEHOLDERS or value.startswith("$("):
         out.append("is an inventory.example.yaml placeholder")
     return out
 
 
-def validate(values: dict, cluster_vars: dict, contract: list) -> tuple:
+def validate(values: dict, cluster_vars: dict, contract: dict) -> tuple:
     """(problems, warnings) for a site's secret values. Messages never include a value."""
     problems, warnings = [], []
     for key in sorted(set(values) - set(contract)):
@@ -180,12 +169,12 @@ def validate(values: dict, cluster_vars: dict, contract: list) -> tuple:
             else ""
         )
         problems.append("{}: not in required-secret-values.txt{}".format(key, hint))
-    for key in contract:
+    for key, rule in contract.items():
         value = values.get(key)
-        flag = CONDITIONAL.get(key)
+        flag = rule[len("when=") :] if rule.startswith("when=") else None
         on = flag is not None and flag_on(cluster_vars.get(flag, ""))
         if value is None or value == "":
-            if flag is None and key not in OPTIONAL:
+            if rule == "required":
                 problems.append("{}: missing or empty".format(key))
             elif on:
                 problems.append("{}: missing or empty while {} is on".format(key, flag))
@@ -219,7 +208,7 @@ def validate(values: dict, cluster_vars: dict, contract: list) -> tuple:
     return problems, warnings
 
 
-def build(values: dict, contract: list) -> dict:
+def build(values: dict, contract: dict) -> dict:
     """The Secret data: every contract key with a non-empty value."""
     return {key: values[key] for key in contract if values.get(key)}
 
@@ -291,10 +280,10 @@ def main(argv=None) -> None:
     try:
         values = load_json(args.values)
         cluster_vars = load_json(args.cluster_vars_values)
+        contract = load_contract(args.required_secret_values)
     except (OSError, ValueError) as exc:
-        sys.stderr.write("cannot read the values: {}\n".format(exc))
+        sys.stderr.write("cannot read the inputs: {}\n".format(exc))
         raise SystemExit(1)
-    contract = load_required(args.required_secret_values)
 
     problems, warnings = validate(values, cluster_vars, contract)
     for w in warnings:

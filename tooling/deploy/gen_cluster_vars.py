@@ -40,9 +40,10 @@ DEFAULT_REQUIRED = _REPO / "deploy" / "required-vars.txt"
 
 
 def load_required(path) -> list:
-    """Ordered list of required var names (blank lines and # comments dropped)."""
+    """Ordered list of required var names: the first word of each line, blank lines
+    and # comments dropped."""
     return [
-        ln.strip()
+        ln.split()[0]
         for ln in Path(path).read_text().splitlines()
         if ln.strip() and not ln.lstrip().startswith("#")
     ]

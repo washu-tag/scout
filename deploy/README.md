@@ -39,10 +39,9 @@ until CI switches `deploy-and-test` to deploy from it. See
 - **Secrets by fixed name only** — bases reference them (e.g. `superuser-secret`);
   values are never in git. aws sites materialize them (External Secrets Operator).
   On-prem, `base/secrets-on-prem` renders them from one site `scout-secret-values`
-  Secret whose keys are listed in `required-secret-values.txt`; each placeholder there is
-  written `${sq}${value}${sq}`, because kustomize-controller re-serializes before it
-  substitutes and would drop quotes written in the template. The full contract (names,
-  keys, per-mode materialization, value rules) is in `required-secrets.md`.
+  Secret whose keys are listed in `required-secret-values.txt`; its placeholders use the
+  `${sq}${value}${sq}` quoting explained there. The full contract (names, keys,
+  per-mode materialization, value rules) is in `required-secrets.md`.
 - **Site realm values** go in an optional `keycloak-config-cli-site-values` ConfigMap
   (key `values.yaml`) in `${keycloak_namespace}`, which the keycloak-config-cli
   HelmRelease reads through `valuesFrom`. It carries realm chart values a scalar can't,

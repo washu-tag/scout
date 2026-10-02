@@ -81,21 +81,19 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 
 ## On-prem: the values Secret
 `scout-secret-values` (Secret, `flux-system`) holds the keys in
-`required-secret-values.txt`: 32 required values; two optional MinIO settings,
-`s3_username` (default `minio`) and `minio_oidc_enabled` (default `on`; `off` where
-MinIO can't reach a trusted Keycloak, as on a self-signed CI cluster); and six
-conditional ones, present exactly while their realm flag is `"true"`
-(`keycloak_xnat_client_secret` with `keycloak_enable_xnat`; the two `keycloak_gh_*` with
-`keycloak_github_enabled`; the three `keycloak_microsoft_*` with
-`keycloak_microsoft_enabled`). The `secrets-ready` Kustomization substitutes it, with
-`cluster-vars`, into the 35 Secrets above; postgres, MinIO and valkey wait on it.
+`required-secret-values.txt`. Its annotations mark the optional MinIO settings
+(`s3_username`, default `minio`; `minio_oidc_enabled`, default `on`, `off` where MinIO
+can't trust Keycloak's certificate) and the conditional keys, set exactly while their
+realm flag is `"true"`. The `secrets-ready` Kustomization substitutes it, with
+`cluster-vars`, into the Secrets above; postgres, MinIO and valkey wait on it. Flux must
+meet the on-prem floor in `deploy/README.md`, or a missing required key renders empty.
 
 Generate it with `tooling/deploy/gen_secret_values.py --values <site values JSON>
 --cluster-vars-values <the gen_cluster_vars.py --values file>`, then encrypt the output
 (e.g. `sops --encrypt --encrypted-regex '^(data|stringData)$'`). The tool fails closed,
-never prints a value, and enforces the rules that keep a value intact through Flux and
-its consumers. Another backend must enforce the same rules; running the tool's
-validation on the values first is the simplest way.
+never prints a value, and enforces these rules, which keep a value intact through Flux
+and its consumers. Another backend must apply them too; running the tool's validation on
+the values first is the simplest way.
 - no `'`, no line break, control or format character, and no leading or trailing
   whitespace. The templates single-quote each value; Flux drops LF and folds CR to a
   space; CNPG and MinIO trim what the apps read untrimmed;
@@ -114,18 +112,15 @@ validation on the values first is the simplest way.
 - `hive_namespace` differs from `postgres_cluster_namespace` (each gets a
   `superuser-secret`).
 
-It labels the Secret `reconcile.fluxcd.io/watch: Enabled`, so an edit re-renders the
-Secrets at once, and annotates it `kustomize.toolkit.fluxcd.io/substitute: disabled`, so a
-site Kustomization with `postBuild` never expands `${...}` inside a value. Requires Flux
-2.9.6 or later (kustomize-controller v1.9.6, which keeps Secret-sourced values out of apply
-errors) with `StrictPostBuildSubstitutions`, so a missing required key fails the gate
-instead of rendering empty.
+The tool labels the Secret `reconcile.fluxcd.io/watch: Enabled`, so an edit re-renders
+the Secrets at once, and annotates it `kustomize.toolkit.fluxcd.io/substitute: disabled`,
+so a site Kustomization with `postBuild` never expands `${...}` inside a value.
 
 Keys the templates assemble from several inputs:
-- `superset-env` holds 17 keys; 12 are not secret (DB and Redis coordinates, the
-  service client ID, the token URL, `TRINO_CA_CERT`).
-- `minio-scout-env-configuration` `config.env` carries the Ansible role's ten `export`
-  lines, double-quoted, plus `MINIO_IDENTITY_OPENID_ENABLE_PRIMARY_IAM` from
+- `superset-env` also carries the non-secret DB and Redis coordinates, the service client
+  ID, the token URL and `TRINO_CA_CERT`.
+- `minio-scout-env-configuration` `config.env` carries the Ansible role's `export` lines,
+  double-quoted, plus `MINIO_IDENTITY_OPENID_ENABLE_PRIMARY_IAM` from
   `minio_oidc_enabled` (Ansible omitted the OIDC lines instead).
 - `valkey-auth` `password-file` is `{"redis://localhost:6379": "<valkey_password>"}`.
 
@@ -133,22 +128,22 @@ Keys the templates assemble from several inputs:
 Reloader, so env consumers need a restart. CNPG re-sets role and superuser passwords
 itself (`cnpg.io/reload`); a client secret needs a realm re-import (`flux reconcile hr
 keycloak-config-cli -n <keycloak namespace> --force`) and an app restart; MinIO needs a
-tenant restart and a `bootstrap-minio-iam` re-run. Three values are persisted and must not change casually:
-`keycloak_bootstrap_admin_password` (change it in Keycloak first), `superset_secret`
-(`superset re-encrypt-secrets` with the old key) and `trino_keystore_password`
-(re-issue `trino-tls`).
+tenant restart and a `bootstrap-minio-iam` re-run. Three values are persisted and must
+not change casually: `keycloak_bootstrap_admin_password` (change it in Keycloak first),
+`superset_secret` (`superset re-encrypt-secrets` with the old key) and
+`trino_keystore_password` (re-issue `trino-tls`).
 
 **Adopting an Ansible site.** Copy each value from the live cluster Secrets and
 cross-check the vault. Postgres may hold an older password than the vault, and CNPG
 `ALTER`s every role to the seeded value on its first reconcile. A vault value made with
 `encrypt_string` from a pipe ends in a newline, which the tool rejects: strip it, and
-treat a stripped persisted value (above) as a rotation.
-Four Secrets were chart-owned under Ansible (`launchpad-keycloak-secret`,
-`launchpad-nextauth-secret`, `superset-env`, `oauth2-proxy`): their templates carry
-`helm.sh/resource-policy: keep`, and `secrets-ready` reconciles before those releases,
-so Helm keeps them when Flux takes the releases over. The base fixes the database role
-and database names, so rename any an inventory renamed, and rotate a `valkey_password`
-or `superset_postgres_password` outside the URL-safe set first.
+treat a stripped persisted value (above) as a rotation. Four Secrets were chart-owned
+under Ansible (`launchpad-keycloak-secret`, `launchpad-nextauth-secret`, `superset-env`,
+`oauth2-proxy`): their templates carry `helm.sh/resource-policy: keep`, and
+`secrets-ready` reconciles before those releases, so Helm keeps them when Flux takes the
+releases over. The base fixes the database role and database names, so rename any an
+inventory renamed, and rotate a `valkey_password` or `superset_postgres_password`
+outside the URL-safe set first.
 
 ## aws mode: IRSA roles
 Each aws-edge ServiceAccount is annotated `${irsa_role_prefix}-<suffix>`; the site's IaC
