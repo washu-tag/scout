@@ -463,12 +463,19 @@ export function ColumnProfileRow({
 }) {
   // The cell renders chips, not the raw category, so profile the same value
   // they lead with: the negation, else the matched phrase, else the diagnosis.
+  // A report can match several diagnoses, and each gets its own entry so the
+  // codes rank individually; the bar is then a share of matches, not of rows.
   const matchedOn = useMemo(
     () =>
-      rows.map((r) => ({
-        [MATCHED_ON]:
-          collapse(r.ev_negative_span) || collapse(r.ev_positive_span) || collapse(r.ev_dx_codes),
-      })),
+      rows.flatMap((r) => {
+        const leading = collapse(r.ev_negative_span) || collapse(r.ev_positive_span);
+        if (leading) return [{ [MATCHED_ON]: leading }];
+        const codes = collapse(r.ev_dx_codes)
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean);
+        return codes.length ? codes.map((c) => ({ [MATCHED_ON]: c })) : [{ [MATCHED_ON]: '' }];
+      }),
     [rows],
   );
   const negatedLabels = useMemo(
