@@ -27,7 +27,7 @@ cassandra_server_version: 5.0.8
 
 # Databases & Data Storage - PostgreSQL
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/ depName=cloudnative-pg
-cnpg_version: 0.28.3
+cnpg_version: 0.29.0
 # Server image for the CNPG cluster. The psql Jobs run the same image, so client and
 # server always match.
 postgres_image: ghcr.io/cloudnative-pg/postgresql
