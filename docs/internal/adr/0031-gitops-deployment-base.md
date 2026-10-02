@@ -155,15 +155,16 @@ three ways:
   Names, keys, types and lifecycle metadata therefore version with the
   base: a release that adds a Secret or a key ships its template, and the
   site adds one value. The `.sops.yaml` recipients are the cluster's age
-  key and a site operations key, so operators can edit the file and the
-  cluster can decrypt it. Rotating a secret is a PR like any other change.
-  What remains for Ansible: generate the cluster key at bootstrap, keep a
-  recovery copy in the Ansible vault (one escrowed secret instead of fifty
-  managed ones), and run the one-time vault-to-SOPS migration when the
-  site repo is seeded. The cloud dev clusters run External Secrets
-  Operator instead, so the consumer-side CI proof (with a per-run key on
-  every main build) and an on-prem lab prove this path for a full phase
-  before any on-prem site depends on it.
+  key, an age key per site operator and an offline recovery key, so
+  operators can edit the file, the cluster can decrypt it, and losing
+  every online key is recoverable. Rotating a secret is a PR like any
+  other change. What remains for Ansible: generate the cluster key at
+  bootstrap, keep a recovery copy in the Ansible vault (one escrowed
+  secret instead of fifty managed ones), and run the one-time
+  vault-to-SOPS migration when the site repo is seeded. The cloud dev
+  clusters run External Secrets Operator instead, so the consumer-side CI
+  proof (with a per-run key on every main build) and an on-prem lab prove
+  this path for a full phase before any on-prem site depends on it.
 - **Cloud**: External Secrets Operator or equivalent, unchanged.
 - **Fallback**: some hospital environments prohibit secrets in git,
   encrypted or not — a policy Scout doesn't get to overrule. Those sites
