@@ -11,8 +11,13 @@ type Row = Record<string, unknown>;
 const RAMP = ['var(--rv-profile-1)', 'var(--rv-profile-2)', 'var(--rv-profile-3)'];
 // Aggregates, not values, so neither sits on the ramp.
 const OTHER_FILL = 'var(--rv-profile-other)';
-// Outside the ramp: a contradiction is not a rank.
-const NEGATED_FILL = 'var(--rv-danger)';
+// A parallel ramp, so negated segments rank among themselves rather than
+// flattening into one indistinguishable block.
+const NEGATED_RAMP = [
+  'var(--rv-profile-neg-1)',
+  'var(--rv-profile-neg-2)',
+  'var(--rv-profile-neg-3)',
+];
 const EMPTY_FILL = 'var(--rv-profile-empty)';
 
 const BAR_H = 18;
@@ -411,10 +416,13 @@ function ProfileCell({
       ];
     } else {
       let rank = 0;
+      let negRank = 0;
       parts = [
         ...segments.map((seg) => ({
           ...seg,
-          fill: negated?.has(seg.label) ? NEGATED_FILL : RAMP[Math.min(rank++, RAMP.length - 1)],
+          fill: negated?.has(seg.label)
+            ? NEGATED_RAMP[Math.min(negRank++, NEGATED_RAMP.length - 1)]
+            : RAMP[Math.min(rank++, RAMP.length - 1)],
         })),
         ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: OTHER_FILL }] : []),
         ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),

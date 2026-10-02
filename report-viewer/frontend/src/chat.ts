@@ -19,22 +19,8 @@ export function chatUrl(chatId: string): string {
 // subdomain doesn't satisfy. Filling the composer avoids the
 // per-click confirmation dialog.
 export function submitChatPrompt(text: string): void {
-  const target = chatWindow();
-  if (!target || !_chatOrigin) return;
-  target.postMessage({ type: 'input:prompt', text }, _chatOrigin);
-}
-
-// Embedded, the chat is our parent. Popped out, it is the opener's parent:
-// the opener is the artifact iframe, same origin as us, so we can reach
-// through it to the chat window itself rather than relaying.
-function chatWindow(): Window | null {
-  if (window.parent !== window) return window.parent;
-  try {
-    const opener = window.opener as Window | null;
-    return opener && opener.parent !== opener ? opener.parent : null;
-  } catch {
-    return null;
-  }
+  if (window.parent === window || !_chatOrigin) return;
+  window.parent.postMessage({ type: 'input:prompt', text }, _chatOrigin);
 }
 
 export function buildFilterPrompt(searchId: string, filters: FilterState): string | null {

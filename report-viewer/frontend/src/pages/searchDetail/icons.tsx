@@ -59,25 +59,6 @@ function EvidenceGlyph(props: { children: React.ReactNode }) {
   );
 }
 
-export function PopOutIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width="13"
-      height="13"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M13 9v3.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5H7" />
-      <path d="M10 3h3v3M13 3 8 8" />
-    </svg>
-  );
-}
-
 export function NegationIcon() {
   return (
     <EvidenceGlyph>

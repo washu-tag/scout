@@ -127,17 +127,7 @@ export function MatchStats(props: {
               <td style={{ padding: '1px 0.6rem', textAlign: 'right', ...num }}>
                 {r.rows.toLocaleString()}
               </td>
-              <td
-                // A code admitted the row while its own report text disagrees.
-                style={{
-                  padding: '1px 0.6rem',
-                  textAlign: 'right',
-                  ...num,
-                  ...(r.category === 'diagnosis_code' && r.negative > 0
-                    ? { color: 'var(--rv-danger)', fontWeight: 600 }
-                    : {}),
-                }}
-              >
+              <td style={{ padding: '1px 0.6rem', textAlign: 'right', ...num }}>
                 {r.negative.toLocaleString()}
               </td>
             </tr>

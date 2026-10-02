@@ -37,6 +37,10 @@ body {
   --rv-profile-1: #4477aa;
   --rv-profile-2: #7ba8d2;
   --rv-profile-3: #cfe3f5;
+  /* Negated segments step like the blues, so rank reads the same either side. */
+  --rv-profile-neg-1: #b03434;
+  --rv-profile-neg-2: #d48989;
+  --rv-profile-neg-3: #f5d6d6;
   --rv-profile-other: #808080;
   --rv-profile-empty: #b4b4b4;
 }
@@ -62,6 +66,9 @@ body {
     --rv-profile-1: #4a7ba4;
     --rv-profile-2: #77aed8;
     --rv-profile-3: #cfe6fa;
+    --rv-profile-neg-1: #b85a5a;
+    --rv-profile-neg-2: #d99191;
+    --rv-profile-neg-3: #f2cfcf;
     --rv-profile-other: #b0b0b0;
     --rv-profile-empty: #787878;
   }
