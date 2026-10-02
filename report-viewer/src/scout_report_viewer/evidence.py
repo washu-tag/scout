@@ -16,6 +16,7 @@ Every failure path returns the original SQL.
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, field
 
 import sqlglot
@@ -65,22 +66,30 @@ MAX_TEXT_LEAVES = 24
 
 @dataclass(frozen=True)
 class TextLeaf:
+    #: the representative body column, for ordering and highlight placement
     column: str
     pattern: str
     negated: bool
+    #: the subject the query tests, which may wrap or span columns
+    subject: str = ""
+
+    @property
+    def tested(self) -> str:
+        return self.subject or f"COALESCE({self.column}, '')"
 
 
 @dataclass
 class EvidencePlan:
     positives: list[TextLeaf] = field(default_factory=list)
     vetoes: list[TextLeaf] = field(default_factory=list)
-    veto_for: dict[TextLeaf, TextLeaf] = field(default_factory=dict)
-    #: blank-section tests the query itself conjoins with a report_text positive
-    guard_for: dict[TextLeaf, frozenset[str]] = field(default_factory=dict)
+    veto_for: dict[TextLeaf, list[TextLeaf]] = field(default_factory=dict)
+    #: blank-section tests the query conjoins with a report_text leaf, one set
+    #: per arm it appears under
+    guard_for: dict[TextLeaf, list[frozenset[str]]] = field(default_factory=dict)
     #: the query's own `any_match(diagnoses, ...)` tests, verbatim
     dx_tests: list[str] = field(default_factory=list)
-    #: lambda from the first of those, for listing which codes matched
-    dx_lambda: str | None = None
+    #: their lambdas, for listing which codes matched
+    dx_lambdas: list[str] = field(default_factory=list)
 
     @property
     def has_dx_axis(self) -> bool:
@@ -145,16 +154,33 @@ def _is_negated(node: exp.Expression) -> bool:
     report A as the reason for a row the query admitted for lacking B.
     """
     negated = False
+    child: exp.Expression = node
     parent = node.parent
     while parent is not None:
-        if isinstance(parent, exp.Not):
+        if isinstance(parent, exp.Not) or _compares_false(parent, child):
             negated = not negated
-        parent = parent.parent
+        child, parent = parent, parent.parent
     return negated
 
 
-def _regexp_like_parts(node: exp.Expression) -> tuple[str, str] | None:
-    """(column, pattern) when `node` is a REGEXP_LIKE over a body column."""
+def _compares_false(parent: exp.Expression, child: exp.Expression) -> bool:
+    """`x = FALSE` and `x <> TRUE`, which negate without a NOT."""
+    if not isinstance(parent, (exp.EQ, exp.NEQ)):
+        return False
+    other = parent.expression if parent.this is child else parent.this
+    if not isinstance(other, exp.Boolean):
+        return False
+    return other.this is isinstance(parent, exp.NEQ)
+
+
+#: an inline flag group at the start that already sets case-insensitivity,
+#: which every templated pattern has; a flag part way in is still folded, and
+#: the resulting duplicate is harmless
+_LEADING_I = re.compile(r"\(\?[a-zA-Z]*i[a-zA-Z]*\)")
+
+
+def _regexp_like_parts(node: exp.Expression) -> tuple[str, str, str] | None:
+    """(column, pattern, subject) when `node` is a REGEXP_LIKE over body text."""
     if isinstance(node, exp.RegexpLike):
         subject, pattern_node = node.this, node.expression
     elif isinstance(node, exp.Anonymous) and node.name.lower() == "regexp_like":
@@ -170,15 +196,18 @@ def _regexp_like_parts(node: exp.Expression) -> tuple[str, str] | None:
     column = _text_column_of(subject)
     if column is None:
         return None
+    # Tested verbatim, so a wrapper or a second column cannot be lost. The
+    # highlight still reads the raw column, so LOWER() folds into the pattern
+    # there; a leading (?i) is a no-op on the templated (?is) patterns.
     pattern = pattern_node.this
-    # LOWER(x) ~ 'p' is x ~ '(?i)p'. Rewriting it keeps the span and the
-    # offsets reading the column as written instead of a folded copy.
-    if "(?i" not in pattern and any(subject.find_all(exp.Lower, exp.Upper)):
+    if any(subject.find_all(exp.Lower, exp.Upper)) and not _LEADING_I.match(pattern):
         pattern = "(?i)" + pattern
-    return column, pattern
+    return column, pattern, subject.sql(dialect=DIALECT)
 
 
-def _dx_axis(where: exp.Expression) -> tuple[list[str], str | None]:
+def _dx_axis(
+    where: exp.Expression, select: exp.Expression
+) -> tuple[list[str], list[str]]:
     """The query's `any_match(diagnoses, ...)` tests and the first lambda.
 
     Reused verbatim rather than re-derived from the LIKE patterns inside.
@@ -187,9 +216,13 @@ def _dx_axis(where: exp.Expression) -> tuple[list[str], str | None]:
     that was not a bare `diagnosis_code LIKE`.
     """
     tests: list[str] = []
-    lam: str | None = None
+    lambdas: list[str] = []
     for call in where.find_all(exp.Anonymous):
         if call.name.lower() != "any_match" or len(call.expressions) != 2:
+            continue
+        # Only the outer query's own predicates, as for the text leaves: a
+        # subquery alias copied into this SELECT is not in scope there.
+        if _enclosing_select(call) is not select:
             continue
         subject, body = call.expressions
         if "diagnoses" not in _names_in(subject):
@@ -199,9 +232,9 @@ def _dx_axis(where: exp.Expression) -> tuple[list[str], str | None]:
         if _is_negated(call):
             continue
         tests.append(call.sql(dialect=DIALECT))
-        if lam is None and isinstance(body, exp.Lambda):
-            lam = body.sql(dialect=DIALECT)
-    return tests, lam
+        if isinstance(body, exp.Lambda):
+            lambdas.append(body.sql(dialect=DIALECT))
+    return tests, lambdas
 
 
 def _unsupported(select: exp.Select) -> str | None:
@@ -236,12 +269,12 @@ def _conjoined_ids(node: exp.Expression) -> set[int]:
     return {id(n) for n in node.find_all(exp.Expression)}
 
 
-def _sibling_veto(
+def _sibling_vetoes(
     node: exp.Expression,
     leaf: TextLeaf,
     nodes: list[tuple[exp.Expression, TextLeaf]],
-) -> TextLeaf | None:
-    """The veto guarding this positive: nearest negated sibling on the same column.
+) -> list[TextLeaf]:
+    """The vetoes guarding this positive: negated siblings on the same column.
 
     `(A AND NOT A_veto) AND (B AND NOT B_veto)` puts each positive next to its
     own veto, so widening out from the innermost enclosing AND finds the right
@@ -253,18 +286,21 @@ def _sibling_veto(
     ancestor: exp.Expression | None = node
     while ancestor is not None:
         if isinstance(ancestor, exp.Or):
-            return None
+            return []
         if isinstance(ancestor, exp.And):
             within = _conjoined_ids(ancestor)
-            for other, other_leaf in nodes:
-                if (
-                    other_leaf.negated
-                    and other_leaf.column == leaf.column
-                    and id(other) in within
-                ):
-                    return other_leaf
+            # Every one of them, since NOT (v1 OR v2) rules out both.
+            found = [
+                other_leaf
+                for other, other_leaf in nodes
+                if other_leaf.negated
+                and other_leaf.column == leaf.column
+                and id(other) in within
+            ]
+            if found:
+                return list(dict.fromkeys(found))
         ancestor = ancestor.parent
-    return None
+    return []
 
 
 def build_plan(sql: str) -> EvidencePlan | None:
@@ -291,8 +327,8 @@ def build_plan(sql: str) -> EvidencePlan | None:
     if where is None:
         return None
 
-    dx_tests, dx_lambda = _dx_axis(where)
-    plan = EvidencePlan(dx_tests=dx_tests, dx_lambda=dx_lambda)
+    dx_tests, dx_lambdas = _dx_axis(where, tree)
+    plan = EvidencePlan(dx_tests=dx_tests, dx_lambdas=dx_lambdas)
     seen: set[TextLeaf] = set()
     nodes: list[tuple[exp.Expression, TextLeaf]] = []
     # find_all, not walk: walk's yield shape changed between sqlglot majors.
@@ -304,14 +340,23 @@ def build_plan(sql: str) -> EvidencePlan | None:
         parts = _regexp_like_parts(node)
         if parts is None:
             continue
-        leaf = TextLeaf(column=parts[0], pattern=parts[1], negated=_is_negated(node))
+        leaf = TextLeaf(
+            column=parts[0],
+            pattern=parts[1],
+            negated=_is_negated(node),
+            subject=parts[2],
+        )
         nodes.append((node, leaf))
+        # Before the dedupe: the same leaf can appear under different guards.
+        if leaf.column == "report_text":
+            guard = frozenset(_blank_section_guard(node))
+            arms = plan.guard_for.setdefault(leaf, [])
+            if guard not in arms:
+                arms.append(guard)
         if leaf in seen:
             continue
         seen.add(leaf)
         (plan.vetoes if leaf.negated else plan.positives).append(leaf)
-        if leaf.column == "report_text":
-            plan.guard_for.setdefault(leaf, frozenset(_blank_section_guard(node)))
 
     if not plan.positives and not plan.has_dx_axis:
         return None
@@ -322,9 +367,9 @@ def build_plan(sql: str) -> EvidencePlan | None:
     for node, leaf in nodes:
         if leaf.negated:
             continue
-        veto = _sibling_veto(node, leaf, nodes)
-        if veto is not None:
-            plan.veto_for.setdefault(leaf, veto)
+        vetoes = _sibling_vetoes(node, leaf, nodes)
+        if vetoes:
+            plan.veto_for.setdefault(leaf, vetoes)
 
     def source_rank(leaf: TextLeaf) -> int:
         return (
@@ -343,7 +388,7 @@ def _lit(value: str) -> str:
 
 
 def _matches(leaf: TextLeaf) -> str:
-    return f"REGEXP_LIKE(COALESCE({leaf.column}, ''), {_lit(leaf.pattern)})"
+    return f"REGEXP_LIKE({leaf.tested}, {_lit(leaf.pattern)})"
 
 
 def _guard_parts(plan: EvidencePlan, leaf: TextLeaf) -> list[str]:
@@ -351,12 +396,17 @@ def _guard_parts(plan: EvidencePlan, leaf: TextLeaf) -> list[str]:
 
     The templated report_text arm only applies when no section parsed, so
     dropping it would read a HISTORY mention as the reason for a row the
-    query admitted on its impression.
+    query admitted on its impression. One arm is enough, so several are ORed.
     """
-    return [
-        f"COALESCE(TRIM({col}), '') = ''"
-        for col in sorted(plan.guard_for.get(leaf, ()))
+    arms = plan.guard_for.get(leaf, [])
+    # An unguarded occurrence admits on its own, so no arm may be required.
+    if not arms or any(not arm for arm in arms):
+        return []
+    rendered = [
+        " AND ".join(f"COALESCE(TRIM({col}), '') = ''" for col in sorted(arm))
+        for arm in arms
     ]
+    return [rendered[0]] if len(rendered) == 1 else ["(" + " OR ".join(rendered) + ")"]
 
 
 def _fires(plan: EvidencePlan, veto: TextLeaf) -> str:
@@ -365,9 +415,7 @@ def _fires(plan: EvidencePlan, veto: TextLeaf) -> str:
 
 def _admitted(plan: EvidencePlan, pos: TextLeaf) -> str:
     parts = [_matches(pos)]
-    veto = plan.veto_for.get(pos)
-    if veto is not None:
-        parts.append(f"NOT {_matches(veto)}")
+    parts.extend(f"NOT {_matches(v)}" for v in plan.veto_for.get(pos, ()))
     parts.extend(_guard_parts(plan, pos))
     return "(" + " AND ".join(parts) + ")"
 
@@ -380,8 +428,9 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
         has_code = " OR ".join(f"({t})" for t in plan.dx_tests)
     else:
         has_code = "false"
-    if plan.dx_lambda:
-        matched = f"FILTER(diagnoses, {plan.dx_lambda})"
+    if plan.dx_lambdas:
+        matched = " || ".join(f"FILTER(diagnoses, {lam})" for lam in plan.dx_lambdas)
+        matched = f"ARRAY_DISTINCT({matched})" if len(plan.dx_lambdas) > 1 else matched
         dx_codes = f"ARRAY_JOIN(TRANSFORM({matched}, x -> x.diagnosis_code), ', ')"
         # A code can be admitted by its text, so the code alone does not say
         # why the row is here.
@@ -404,7 +453,7 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
 
     if plan.positives:
         include_arms = "\n    ".join(
-            f"WHEN {_admitted(plan, p)} THEN REGEXP_EXTRACT({p.column}, {_lit(p.pattern)})"
+            f"WHEN {_admitted(plan, p)} THEN REGEXP_EXTRACT({p.tested}, {_lit(p.pattern)})"
             for p in plan.positives
         )
         include = f"CASE\n    {include_arms}\n    ELSE NULL\n  END"
@@ -412,7 +461,7 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
         include = "CAST(NULL AS VARCHAR)"
     if plan.vetoes:
         exclude_arms = "\n    ".join(
-            f"WHEN {_fires(plan, v)} THEN REGEXP_EXTRACT({v.column}, {_lit(v.pattern)})"
+            f"WHEN {_fires(plan, v)} THEN REGEXP_EXTRACT({v.tested}, {_lit(v.pattern)})"
             for v in plan.vetoes
         )
         exclude = f"CASE\n    {exclude_arms}\n    ELSE NULL\n  END"

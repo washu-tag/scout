@@ -86,6 +86,7 @@ export function MatchStats(props: {
   onFilter?: (patch: Partial<FilterState>) => void;
 }) {
   const s = useMemo(() => evidenceStats(props.rows), [props.rows]);
+  const unexplained = s.breakdown.find((r) => r.category === 'unknown')?.rows ?? 0;
 
   return (
     <div style={{ marginTop: '1rem' }}>
@@ -96,6 +97,13 @@ export function MatchStats(props: {
         Counted from the {s.total.toLocaleString()} loaded rows, using the search SQL&apos;s own
         predicates. Compare between searches to see what a reworded question changed.
       </p>
+      {unexplained > 0 && (
+        <p style={{ margin: '0 0 0.5rem', lineHeight: 1.4, ...muted }}>
+          {unexplained.toLocaleString()} rows read as unexplained. The search matched them, but it
+          wrote that condition in a way this panel could not attribute, so no phrase or code is
+          shown for them.
+        </p>
+      )}
 
       <table style={{ borderCollapse: 'collapse', fontSize: '0.78rem' }}>
         <thead>

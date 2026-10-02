@@ -31,7 +31,7 @@ import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../Quer
 import { EvidenceFilterChips } from './searchDetail/EvidenceFilterChips';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
-import { ContractIcon, ExpandIcon, PopOutIcon } from './searchDetail/icons';
+import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { EvidenceCell } from './searchDetail/EvidenceCell';
@@ -120,7 +120,7 @@ export default function SearchDetailPage() {
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
   );
   const [iframeExpanded, setIframeExpanded] = useState(false);
-  const [reviewId, setReviewId] = useState<string | null>(null);
+  const [review, setReview] = useState<{ id: string; at: number } | null>(null);
   const appliedFiltersKey = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
 
   const meta = useQuery({
@@ -156,17 +156,20 @@ export default function SearchDetailPage() {
 
   // A fresh cohort must not inherit a selection or an open reader.
   useEffect(() => {
-    setReviewId(null);
+    setReview(null);
   }, [rowsQ.data]);
 
   // Without evidence the default view is four columns, which reads as thin
   // for a plain "latest reports" search; the demographics fill it out.
+  // Once per search, so hiding them again survives a refetch.
+  const demographicsFor = useRef<string | null>(null);
   useEffect(() => {
     const columns = rowsQ.data?.columns;
-    if (!columns) return;
+    if (!columns || demographicsFor.current === searchId) return;
+    demographicsFor.current = searchId;
     const bare = !columns.includes('ev_source');
     setColumnVisibility((v) => ({ ...v, patient_age: bare, sex: bare }));
-  }, [rowsQ.data]);
+  }, [rowsQ.data, searchId]);
 
   useEffect(() => {
     if (!colPickerOpen) return;
@@ -273,15 +276,20 @@ export default function SearchDetailPage() {
   const queue = table.getSortedRowModel().rows;
   const pageSize = pagination.pageSize;
 
-  // Tracked by id: the chip row stays clickable while the panel is open, and
-  // a filter reshuffles the queue under a stored position.
-  const reviewAt = reviewId === null ? -1 : queue.findIndex((r) => r.id === reviewId);
+  // Position first, since report ids repeat on a row-per-diagnosis cohort;
+  // the id only re-finds the row after a filter reshuffles the queue.
+  const reviewAt =
+    review === null
+      ? -1
+      : queue[review.at]?.id === review.id
+        ? review.at
+        : queue.findIndex((r) => r.id === review.id);
 
   // Follow the reader, so closing the panel lands where they stopped.
   const goToReview = (next: number) => {
     const row = queue[next];
     if (!row) return;
-    setReviewId(row.id);
+    setReview({ id: row.id, at: next });
     setPagination((p) => ({ ...p, pageIndex: Math.floor(next / pageSize) }));
   };
 
@@ -478,13 +486,14 @@ export default function SearchDetailPage() {
                   )}
                 </thead>
                 <tbody>
-                  {table.getRowModel().rows.map((row) => {
-                    const active = reviewId === row.id;
+                  {table.getRowModel().rows.map((row, onPage) => {
+                    const at = pageIndex * pageSize + onPage;
+                    const active = reviewAt === at;
                     return (
                       <React.Fragment key={row.id}>
                         <tr
                           className={active ? undefined : 'scout-row'}
-                          onClick={() => setReviewId(row.id)}
+                          onClick={() => setReview({ id: row.id, at })}
                           style={{
                             borderBottom: '1px solid var(--rv-border)',
                             cursor: 'pointer',
@@ -556,7 +565,7 @@ export default function SearchDetailPage() {
                 queue={queue.map((r) => r.original)}
                 index={reviewAt}
                 onIndex={goToReview}
-                onClose={() => setReviewId(null)}
+                onClose={() => setReview(null)}
               />
             )}
           </div>
@@ -749,22 +758,6 @@ export default function SearchDetailPage() {
             >
               Download CSV
             </button>
-            {embedded && (
-              <button
-                type="button"
-                onClick={() => window.open(window.location.href, '_blank', 'noopener')}
-                title="Open this cohort in a new tab"
-                aria-label="Open in a new tab"
-                style={{
-                  ...paginationBtn,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '0.2rem 0.35rem',
-                }}
-              >
-                <PopOutIcon />
-              </button>
-            )}
             {embedded && (
               <button
                 type="button"

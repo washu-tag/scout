@@ -57,7 +57,7 @@ def test_classifies_each_source_and_pairs_its_veto() -> None:
         "report_text",
     ]
     for pos in plan.positives:
-        veto = plan.veto_for[pos]
+        (veto,) = plan.veto_for[pos]
         assert veto.negated and veto.column == pos.column
         assert veto.pattern.endswith("(?:glioblastoma|gbm)")
 
@@ -89,14 +89,16 @@ def test_adds_exactly_the_evidence_columns() -> None:
     assert after[len(before) :] == list(EV_COLUMNS)
 
 
-def test_include_span_reads_the_column_its_pattern_matched() -> None:
+def test_include_span_reads_the_subject_its_pattern_matched() -> None:
+    """Each arm as the query wrote it: the sections are COALESCEd, report_text
+    is not."""
     out, _ = with_evidence(CANONICAL)
-    for column in (
-        "report_section_impression",
-        "report_section_findings",
+    for subject in (
+        "COALESCE(report_section_impression, '')",
+        "COALESCE(report_section_findings, '')",
         "report_text",
     ):
-        assert f"REGEXP_EXTRACT({column}," in out
+        assert f"REGEXP_EXTRACT({subject}," in out
 
 
 @pytest.mark.parametrize(
@@ -170,10 +172,13 @@ def test_each_positive_pairs_with_the_veto_in_its_own_and() -> None:
     )
     plan = build_plan(sql)
     assert plan is not None
-    pairing = {pos.pattern: veto.pattern for pos, veto in plan.veto_for.items()}
+    pairing = {
+        pos.pattern: [v.pattern for v in vetoes]
+        for pos, vetoes in plan.veto_for.items()
+    }
     assert pairing == {
-        "(?is)nodule": "(?is)no[^.;:]*nodule",
-        "(?is)emphysema": "(?is)no[^.;:]*emphysema",
+        "(?is)nodule": ["(?is)no[^.;:]*nodule"],
+        "(?is)emphysema": ["(?is)no[^.;:]*emphysema"],
     }
 
 
@@ -371,11 +376,14 @@ def test_a_veto_does_not_cross_an_or_branch() -> None:
     )
     plan = build_plan(sql)
     assert plan is not None
-    pairing = {pos.pattern: veto.pattern for pos, veto in plan.veto_for.items()}
-    assert pairing == {"(?is)a": "(?is)no a"}
+    pairing = {
+        pos.pattern: [v.pattern for v in vetoes]
+        for pos, vetoes in plan.veto_for.items()
+    }
+    assert pairing == {"(?is)a": ["(?is)no a"]}
 
 
-def test_a_lower_wrapped_subject_becomes_a_case_insensitive_pattern() -> None:
+def test_a_wrapped_subject_is_tested_as_written() -> None:
     """Dropping the wrapper tested the raw column case-sensitively, so a row
     the query admitted on "Pneumonia" got no span."""
     sql = (
@@ -383,19 +391,26 @@ def test_a_lower_wrapped_subject_becomes_a_case_insensitive_pattern() -> None:
         "WHERE REGEXP_LIKE(LOWER(report_text), 'pneumonia')"
     )
     out, _ = with_evidence(sql)
-    assert "'(?i)pneumonia'" in out
-    assert "REGEXP_EXTRACT(report_text, '(?i)pneumonia')" in out
+    assert "REGEXP_LIKE(LOWER(report_text), '(?i)pneumonia')" in out
+    assert "REGEXP_EXTRACT(LOWER(report_text), '(?i)pneumonia')" in out
+    # The highlight reads the raw column, so it needs the folded pattern.
     expression = highlight_hits_expression(sql)
     assert expression is not None and "'(?i)pneumonia'" in expression
 
 
 def test_an_inline_flag_is_not_doubled() -> None:
-    sql = (
+    """Only skipped when the pattern already sets i, so a flag part way in
+    still gets the fold."""
+    lead, _ = with_evidence(
         "SELECT primary_report_identifier FROM reports_latest "
         "WHERE REGEXP_LIKE(LOWER(report_text), '(?is)pneumonia')"
     )
-    out, _ = with_evidence(sql)
-    assert "(?i)(?is)" not in out
+    assert "(?i)(?is)" not in lead
+    mid, _ = with_evidence(
+        "SELECT primary_report_identifier FROM reports_latest "
+        "WHERE REGEXP_LIKE(LOWER(report_text), 'abc(?i)def')"
+    )
+    assert "'(?i)abc(?i)def'" in mid
 
 
 def test_a_not_over_a_group_negates_everything_inside_it() -> None:
@@ -443,7 +458,7 @@ def test_an_excluded_code_set_is_not_a_diagnosis_axis(axis: str) -> None:
     plan = build_plan(sql)
     assert plan is not None
     assert plan.dx_tests == ["ANY_MATCH(diagnoses, d -> d.diagnosis_code LIKE 'I26%')"]
-    assert plan.dx_lambda == "d -> d.diagnosis_code LIKE 'I26%'"
+    assert plan.dx_lambdas == ["d -> d.diagnosis_code LIKE 'I26%'"]
     assert "'Z%'" not in with_evidence(sql)[0].split("FROM reports_latest")[0]
 
 
@@ -454,7 +469,7 @@ def test_the_report_text_veto_keeps_its_blank_section_guard() -> None:
     arm = next(
         line
         for line in out.splitlines()
-        if "WHEN (REGEXP_LIKE(COALESCE(report_text," in line and "no|without" in line
+        if "WHEN (REGEXP_LIKE(report_text," in line and "no|without" in line
     )
     assert "COALESCE(TRIM(report_section_impression), '') = ''" in arm
     assert "COALESCE(TRIM(report_section_findings), '') = ''" in arm
@@ -476,3 +491,126 @@ def test_highlights_are_not_blank_section_guarded() -> None:
     expression = highlight_hits_expression(CANONICAL)
     assert expression is not None
     assert "TRIM(" not in expression
+
+
+def test_a_subquery_diagnosis_test_stays_in_its_subquery() -> None:
+    """Copying an alias the outer SELECT cannot see makes Trino reject the
+    rewrite, so the cohort scans twice."""
+    sql = (
+        "SELECT r.primary_report_identifier FROM reports_latest r WHERE "
+        "REGEXP_LIKE(r.report_text, '(?is)stroke') AND EXISTS ("
+        "SELECT 1 FROM reports_latest r2 WHERE r2.epic_mrn = r.epic_mrn "
+        "AND any_match(r2.diagnoses, d -> d.diagnosis_code LIKE 'I63%'))"
+    )
+    plan = build_plan(sql)
+    assert plan is not None
+    assert plan.dx_tests == []
+    assert "r2." not in with_evidence(sql)[0].split("FROM reports_latest")[0]
+
+
+def test_every_diagnosis_axis_contributes_its_codes() -> None:
+    """Taking only the first left a row matching the second with no codes."""
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "any_match(diagnoses, d -> d.diagnosis_code LIKE 'J1%') "
+        "OR any_match(diagnoses, d -> d.diagnosis_code LIKE 'J2%')"
+    )
+    out, _ = with_evidence(sql)
+    assert "'J1%') || FILTER(diagnoses, d -> d.diagnosis_code LIKE 'J2%')" in out
+
+
+@pytest.mark.parametrize(
+    ("spelling", "negated"),
+    [
+        ("REGEXP_LIKE(report_text, '(?is)no a') = false", True),
+        ("REGEXP_LIKE(report_text, '(?is)no a') <> true", True),
+        ("REGEXP_LIKE(report_text, '(?is)no a') IS NOT TRUE", True),
+        ("REGEXP_LIKE(report_text, '(?is)no a') = true", False),
+    ],
+)
+def test_negation_without_a_not(spelling: str, negated: bool) -> None:
+    """Read as a positive, the ruled-out phrase became the row's evidence."""
+    plan = build_plan(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        f"REGEXP_LIKE(report_text, '(?is)a') AND {spelling}"
+    )
+    assert plan is not None
+    assert [v.pattern for v in plan.vetoes] == (["(?is)no a"] if negated else [])
+
+
+def test_every_veto_under_one_not_guards_the_positive() -> None:
+    """NOT (v1 OR v2) rules out both, so an arm testing only v1 can report the
+    positive phrase for a row that branch would have rejected."""
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "(REGEXP_LIKE(report_section_impression, '(?is)a') "
+        " AND NOT (REGEXP_LIKE(report_section_impression, '(?is)no a') "
+        "       OR REGEXP_LIKE(report_section_impression, '(?is)ruled out a'))) "
+        "OR REGEXP_LIKE(report_section_findings, '(?is)b')"
+    )
+    plan = build_plan(sql)
+    assert plan is not None
+    positive = next(p for p in plan.positives if p.pattern == "(?is)a")
+    assert sorted(v.pattern for v in plan.veto_for[positive]) == [
+        "(?is)no a",
+        "(?is)ruled out a",
+    ]
+    arm = next(
+        line for line in with_evidence(sql)[0].splitlines() if "THEN 'text'" in line
+    )
+    assert arm.count("NOT REGEXP_LIKE") == 2
+
+
+def test_a_not_over_a_group_guards_with_both_its_leaves() -> None:
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_section_impression, '(?is)tumor') "
+        "AND NOT (REGEXP_LIKE(report_section_impression, '(?is)benign') "
+        "AND REGEXP_LIKE(report_section_impression, '(?is)cyst'))"
+    )
+    out, _ = with_evidence(sql)
+    arm = next(line for line in out.splitlines() if "THEN 'text'" in line)
+    assert arm.count("NOT REGEXP_LIKE") == 2
+
+
+@pytest.mark.parametrize(
+    "subject",
+    [
+        "COALESCE(report_section_impression, report_text)",
+        "report_section_impression || ' ' || report_section_findings",
+    ],
+)
+def test_a_subject_spanning_columns_is_tested_whole(subject: str) -> None:
+    """Testing one column out of it left every row admitted through the other
+    reading as unexplained."""
+    sql = f"SELECT primary_report_identifier FROM reports_latest WHERE REGEXP_LIKE({subject}, '(?is)stroke')"
+    out, _ = with_evidence(sql)
+    assert f"REGEXP_LIKE({subject}, '(?is)stroke')" in out
+    assert f"REGEXP_EXTRACT({subject}, '(?is)stroke')" in out
+
+
+def test_two_blank_section_arms_are_ored() -> None:
+    """Keeping only the first made rows admitted by the second unexplained."""
+    out, _ = with_evidence(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "(COALESCE(TRIM(report_section_impression), '') = '' "
+        " AND REGEXP_LIKE(report_text, '(?is)s')) "
+        "OR (COALESCE(TRIM(report_section_findings), '') = '' "
+        " AND REGEXP_LIKE(report_text, '(?is)s'))"
+    )
+    arm = next(line for line in out.splitlines() if "THEN 'text'" in line)
+    assert "OR COALESCE(TRIM(report_section_findings), '') = ''" in arm
+
+
+def test_an_unguarded_arm_drops_the_guard_entirely() -> None:
+    """That occurrence admits on its own, so requiring another arm's guard
+    leaves rows it matched reading as unexplained."""
+    out, _ = with_evidence(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_section_impression, '(?is)x') "
+        "OR (COALESCE(TRIM(report_section_impression), '') = '' "
+        " AND REGEXP_LIKE(report_text, '(?is)a')) "
+        "OR (REGEXP_LIKE(report_text, '(?is)a') AND modality = 'CT')"
+    )
+    arm = next(line for line in out.splitlines() if "THEN 'text'" in line)
+    assert "TRIM(" not in arm

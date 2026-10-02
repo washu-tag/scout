@@ -163,7 +163,10 @@ export function EvidenceFilterChips(props: {
         <Pill
           label={`"${f.ev_positive_span}"`}
           count={
-            props.rows.filter((r) => collapse(r['ev_positive_span']) === f.ev_positive_span).length
+            props.rows.filter(
+              (r) =>
+                collapse(r['ev_positive_span']).toLowerCase() === f.ev_positive_span?.toLowerCase(),
+            ).length
           }
           tone="positive"
           active
@@ -175,7 +178,10 @@ export function EvidenceFilterChips(props: {
         <Pill
           label={`"${f.ev_negative_span}"`}
           count={
-            props.rows.filter((r) => collapse(r['ev_negative_span']) === f.ev_negative_span).length
+            props.rows.filter(
+              (r) =>
+                collapse(r['ev_negative_span']).toLowerCase() === f.ev_negative_span?.toLowerCase(),
+            ).length
           }
           tone="negative"
           icon
