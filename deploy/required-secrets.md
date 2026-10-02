@@ -91,8 +91,11 @@ meet the on-prem floor in `deploy/README.md`, or a missing required key renders 
 Generate it with `tooling/deploy/gen_secret_values.py --values <site values JSON>
 --cluster-vars-values <the gen_cluster_vars.py --values file> -o <file>`, then encrypt
 that owner-only file in place (e.g. `sops --encrypt --in-place --encrypted-regex
-'^(data|stringData)$'`). The tool fails closed, never prints a value, and enforces these
-rules, which keep a value intact through Flux and its consumers. Another backend must apply them too; running the tool's validation on
+'^(data|stringData)$'`). The Kustomization that applies it must set `spec.decryption`:
+without it, kustomize-controller v1.9.6 applies the file unchanged, ciphertext as the
+values, and `secrets-ready` copies that ciphertext into every Secret above. The tool fails
+closed, never prints a value, and enforces these rules, which keep a value intact through
+Flux and its consumers. Another backend must apply them too; running the tool's validation on
 the values first is the simplest way.
 - no `'`, no line break, control or format character, and no leading or trailing
   whitespace. The templates single-quote each value; Flux drops LF and folds CR to a
