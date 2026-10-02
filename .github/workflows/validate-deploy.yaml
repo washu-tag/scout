@@ -102,15 +102,15 @@ jobs:
       - name: Contract lists cover every substitution
         run: |
           python3 - <<'PY'
-          import re, glob, subprocess, sys, yaml
+          import os, re, glob, subprocess, sys, yaml
           # kustomize-controller substitutes each Flux Kustomization's BUILT output from
           # that Kustomization's own postBuild sources, and StrictPostBuildSubstitutions
           # fails on anything else. So check every Kustomization's rendered path against
           # exactly its sources: cluster-vars (required-vars.txt), the on-prem
           # scout-secret-values Secret (required-secret-values.txt) and inline
-          # `substitute` keys. Unbraced $NAME is matched too, with $$ the literal-$
-          # escape -- how runtime shell vars like $HIVE_PW / $MINIO_ROOT_USER slipped
-          # through before. A secret value used outside the secrets gate fails here.
+          # `substitute` keys. A secret value used outside the secrets gate fails here.
+          # Unbraced $NAME is matched too, though current Flux leaves it literal, so
+          # runtime shell vars like $HIVE_PW stay $$-escaped (the literal-$ escape).
           def names(path):
               return {l.strip() for l in open(path) if l.strip() and not l.lstrip().startswith("#")}
           CV, SV = ("ConfigMap", "cluster-vars"), ("Secret", "scout-secret-values")
@@ -133,16 +133,19 @@ jobs:
               # Kustomization, from cluster-vars.
               errs += [f"{f}: {m} is not in required-vars.txt" for m in sorted(used(text) - lists[CV])]
               for d in yaml.safe_load_all(text):
-                  if not d or d["kind"] != "Kustomization" or not d["spec"]["path"].startswith("./base/"):
+                  # Only Kustomizations rendering the scout-config artifact (not, e.g.,
+                  # keycloak-operator from its upstream GitRepository).
+                  if not d or d["kind"] != "Kustomization" or d["spec"]["sourceRef"]["name"] != "scout-config":
                       continue
-                  name, path, pb = d["metadata"]["name"], d["spec"]["path"], d["spec"].get("postBuild", {})
+                  name, pb = d["metadata"]["name"], d["spec"].get("postBuild", {})
+                  path = os.path.normpath(d["spec"]["path"].lstrip("/"))
                   declared = set(pb.get("substitute", {}))
                   for s in pb.get("substituteFrom", []):
                       if (s["kind"], s["name"]) not in lists:
                           errs.append(f"{name}: substituteFrom {s['kind']}/{s['name']} has no contract list")
                       declared |= lists.get((s["kind"], s["name"]), set())
                   if path not in rendered:
-                      rendered[path] = subprocess.run(["kustomize", "build", "deploy/" + path[2:]],
+                      rendered[path] = subprocess.run(["kustomize", "build", "deploy/" + path],
                                                       capture_output=True, text=True, check=True).stdout
                   u = used(rendered[path]); seen |= u
                   errs += [f"{name} ({path}) uses {m}, which none of its postBuild sources declares"

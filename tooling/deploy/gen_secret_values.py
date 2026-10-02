@@ -13,13 +13,17 @@ Fail closed, and never echo a value: a problem names the key and the rule only.
 Every value must be a string with no ', no line break, control or format character,
 and no leading or trailing whitespace. The templates single-quote each value; Flux
 strips LF and folds CR to a space; CNPG and MinIO trim what the apps read untrimmed.
-On top of that:
+Values a consumer pastes into a larger string get a narrower character set:
 
-- valkey_password: printable ASCII without " or \\ (it is embedded in a JSON file);
-- MinIO: s3_password and each s3_*_secret at least 8 characters, s3_username 3;
-- oauth2_proxy_cookie_secret: 16, 24 or 32 bytes, raw or base64url-decoded.
+- the keycloak-client-secrets values: A-Z a-z 0-9 . _ ~ + / = - (config-cli
+  substitutes them into the realm JSON before parsing it);
+- valkey_password, superset_postgres_password: A-Z a-z 0-9 . _ ~ - (the superset
+  chart builds connection URLs from them; valkey's also sits in a JSON file);
+- the config.env inputs: no " $ ` or \\ (double-quoted, and sourced by sh).
 
-Absent or empty optional and disabled-conditional keys are left out, so the
+Plus MinIO's minimum lengths, oauth2-proxy's cookie-secret sizes, and the realm
+flags: a conditional key is required while its flag is on and rejected while it is
+off. Absent or empty optional and disabled-conditional keys are left out, so the
 templates' defaults apply. Dependency-free (stdlib only).
 """
 
@@ -29,6 +33,7 @@ import argparse
 import base64
 import binascii
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -48,8 +53,35 @@ CONDITIONAL = {
     "keycloak_microsoft_client_secret": "keycloak_microsoft_enabled",
     "keycloak_microsoft_tenant_id": "keycloak_microsoft_enabled",
 }
-# The template defaults it (MINIO_ROOT_USER minio).
-OPTIONAL = {"s3_username"}
+# The templates default them (MinIO root user minio, OpenID on).
+OPTIONAL = {"s3_username", "minio_oidc_enabled"}
+BOOLEANS = {"minio_oidc_enabled": ("on", "off", "true", "false")}
+
+# keycloak-client-secrets: config-cli substitutes these into the realm JSON.
+REALM_VALUES = {
+    "keycloak_oauth2_proxy_client_secret",
+    "keycloak_superset_client_secret",
+    "keycloak_superset_svc_client_secret",
+    "keycloak_jupyterhub_client_secret",
+    "keycloak_grafana_client_secret",
+    "keycloak_temporal_client_secret",
+    "keycloak_launchpad_client_secret",
+    "keycloak_minio_client_secret",
+    "keycloak_open_webui_client_secret",
+    "keycloak_voila_svc_client_secret",
+    "keycloak_report_viewer_svc_client_secret",
+    "keycloak_fragment_reconciler_svc_client_secret",
+    *CONDITIONAL,
+}
+# The superset chart pastes these into redis:// and postgresql:// URLs.
+URL_VALUES = {"valkey_password", "superset_postgres_password"}
+# minio-scout-env-configuration config.env, double-quoted and sourced by sh.
+CONFIG_ENV_VALUES = {
+    "s3_username",
+    "s3_password",
+    "keycloak_minio_client_secret",
+    "minio_oidc_enabled",
+}
 
 # MinIO rejects shorter root and user credentials.
 MIN_LENGTH = {
@@ -62,7 +94,8 @@ MIN_LENGTH = {
     "s3_opa_bundle_writer_secret": 8,
 }
 
-# ansible/inventory.example.yaml placeholders, never real IdP credentials.
+# ansible/inventory.example.yaml placeholders, never real credentials (its generated
+# values are $(openssl ...) commands, caught by prefix).
 EXAMPLE_PLACEHOLDERS = {
     "your-github-client",
     "your-github-secret",
@@ -73,18 +106,19 @@ EXAMPLE_PLACEHOLDERS = {
 # Ansible role defaults a site may still run: keep them at adoption, rotate after.
 WEAK_DEFAULTS = {"changeme", "changeme-nextauth-secret", "trinokeystorepass"}
 
-# Ansible could rename these DB roles; the base fixes the names, so a renamed role
-# must be renamed back in Postgres before cutover.
-FIXED_ROLE_NAMES = {
+# Ansible inventory vars that could rename a DB role or database the base fixes; a
+# renamed one must be renamed back in Postgres before cutover.
+FIXED_NAMES = {
     "hive_postgres_user": "hive",
     "hive_readonly_postgres_user": "hive_readonly",
     "keycloak_postgres_user": "keycloak",
     "superset_postgres_user": "superset",
+    "superset_database": "superset",
 }
 
-# Line and paragraph separators, controls (LF, CR, tab, DEL, ...) and invisible
-# format characters (zero-width space, BOM).
-_BAD_CATEGORIES = {"Cc", "Cf", "Zl", "Zp"}
+# Controls (LF, CR, tab, DEL, ...), invisible format characters (zero-width space,
+# BOM), surrogates, unassigned code points (U+FFFF) and line/paragraph separators.
+_BAD_CATEGORIES = {"Cc", "Cf", "Cs", "Cn", "Zl", "Zp"}
 
 
 def flag_on(value) -> bool:
@@ -115,16 +149,24 @@ def value_problems(key: str, value: str) -> list:
         out.append("contains a line break, control or format character")
     if value != value.strip():
         out.append("has leading or trailing whitespace")
-    if key == "valkey_password" and (
-        not re.fullmatch(r"[ -~]*", value) or '"' in value or "\\" in value
-    ):
-        out.append('must be printable ASCII without " or \\ (embedded in JSON)')
+    if key in REALM_VALUES and not re.fullmatch(r"[A-Za-z0-9._~+/=-]+", value):
+        out.append(
+            "may use only A-Z a-z 0-9 . _ ~ + / = - (it goes into the realm JSON)"
+        )
+    if key in URL_VALUES and not re.fullmatch(r"[A-Za-z0-9._~-]+", value):
+        out.append("may use only A-Z a-z 0-9 . _ ~ - (it goes into a connection URL)")
+    if key in CONFIG_ENV_VALUES and any(c in value for c in '"$`\\'):
+        out.append(
+            'contains " $ ` or \\ (config.env is double-quoted and sourced by sh)'
+        )
     if len(value) < MIN_LENGTH.get(key, 0):
         out.append("is shorter than {} characters".format(MIN_LENGTH[key]))
     if key == "oauth2_proxy_cookie_secret" and not cookie_secret_ok(value):
         out.append("must be 16, 24 or 32 bytes, raw or base64url-encoded")
-    if value in EXAMPLE_PLACEHOLDERS:
-        out.append("is the inventory.example.yaml placeholder")
+    if key in BOOLEANS and value not in BOOLEANS[key]:
+        out.append("must be one of {}".format(", ".join(BOOLEANS[key])))
+    if value in EXAMPLE_PLACEHOLDERS or value.startswith("$("):
+        out.append("is an inventory.example.yaml placeholder")
     return out
 
 
@@ -133,19 +175,26 @@ def validate(values: dict, cluster_vars: dict, contract: list) -> tuple:
     problems, warnings = [], []
     for key in sorted(set(values) - set(contract)):
         hint = (
-            " (the base fixes this role name; rename the role before cutover)"
-            if key in FIXED_ROLE_NAMES
+            " (the base fixes this name; rename it before cutover)"
+            if key in FIXED_NAMES
             else ""
         )
         problems.append("{}: not in required-secret-values.txt{}".format(key, hint))
     for key in contract:
         value = values.get(key)
+        flag = CONDITIONAL.get(key)
+        on = flag is not None and flag_on(cluster_vars.get(flag, ""))
         if value is None or value == "":
-            flag = CONDITIONAL.get(key)
             if flag is None and key not in OPTIONAL:
                 problems.append("{}: missing or empty".format(key))
-            elif flag and flag_on(cluster_vars.get(flag, "")):
+            elif on:
                 problems.append("{}: missing or empty while {} is on".format(key, flag))
+            continue
+        if flag is not None and not on:
+            problems.append(
+                "{}: set while {} is off; turn the flag on or drop the "
+                "value".format(key, flag)
+            )
             continue
         if not isinstance(value, str):
             problems.append("{}: must be a JSON string".format(key))
@@ -153,11 +202,11 @@ def validate(values: dict, cluster_vars: dict, contract: list) -> tuple:
         problems.extend("{}: {}".format(key, p) for p in value_problems(key, value))
         if value in WEAK_DEFAULTS:
             warnings.append("{}: is a weak Ansible default; rotate it".format(key))
-    for var, name in FIXED_ROLE_NAMES.items():
+    for var, name in FIXED_NAMES.items():
         if var in cluster_vars and str(cluster_vars[var]) != name:
             problems.append(
-                "{}: the base fixes this role name to {}; rename the role "
-                "before cutover".format(var, name)
+                "{}: the base fixes this name to {}; rename it before "
+                "cutover".format(var, name)
             )
     hive_ns = cluster_vars.get("hive_namespace")
     if hive_ns is not None and hive_ns == cluster_vars.get(
@@ -197,6 +246,24 @@ def render_secret(data: dict, name: str, namespace: str) -> str:
     return "\n".join(lines) + "\n"
 
 
+def load_json(path) -> dict:
+    """A JSON object read as UTF-8, rejecting duplicate keys rather than keeping the last."""
+
+    def no_duplicates(pairs):
+        keys = [k for k, _ in pairs]
+        dups = sorted({k for k in keys if keys.count(k) > 1})
+        if dups:
+            raise ValueError("duplicate keys: {}".format(", ".join(dups)))
+        return dict(pairs)
+
+    data = json.loads(
+        Path(path).read_text(encoding="utf-8"), object_pairs_hook=no_duplicates
+    )
+    if not isinstance(data, dict):
+        raise ValueError("not a JSON object")
+    return data
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -221,8 +288,12 @@ def main(argv=None) -> None:
     ap.add_argument("-o", "--output", default="", help="output path (default: stdout)")
     args = ap.parse_args(argv)
 
-    values = json.loads(Path(args.values).read_text())
-    cluster_vars = json.loads(Path(args.cluster_vars_values).read_text())
+    try:
+        values = load_json(args.values)
+        cluster_vars = load_json(args.cluster_vars_values)
+    except (OSError, ValueError) as exc:
+        sys.stderr.write("cannot read the values: {}\n".format(exc))
+        raise SystemExit(1)
     contract = load_required(args.required_secret_values)
 
     problems, warnings = validate(values, cluster_vars, contract)
@@ -236,7 +307,11 @@ def main(argv=None) -> None:
 
     text = render_secret(build(values, contract), args.name, args.namespace)
     if args.output:
-        Path(args.output).write_text(text, encoding="utf-8")
+        # Plaintext credentials: owner-only, also when the file already exists.
+        fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
     else:
         sys.stdout.write(text)
 

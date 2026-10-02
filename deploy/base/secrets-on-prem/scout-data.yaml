@@ -30,9 +30,10 @@ stringData:
   HIVE_METASTORE_PASSWORD: ${sq}${hive_readonly_postgres_password}${sq}
   S3_SECRET_KEY: ${sq}${s3_lake_reader_secret}${sq}
 ---
-# The MinIO operator strips one pair of outer quotes and the bootstrap Job sources this
-# file with sh, so single-quoted values read the same under both. A multi-line string
-# stays a literal block through re-serialization, so these quotes are not dropped.
+# Four readers parse config.env: the operator, its sidecar (strips only double quotes),
+# the MinIO server (strips one quote pair) and the bootstrap Job (sh). Double quotes
+# read the same under all four for values without " $ ` or backslash. A multi-line
+# string stays a literal block through re-serialization, so these quotes survive.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -41,16 +42,17 @@ metadata:
 type: Opaque
 stringData:
   config.env: |
-    export MINIO_ROOT_USER='${s3_username:=minio}'
-    export MINIO_ROOT_PASSWORD='${s3_password}'
-    export MINIO_REGION_NAME='${s3_region}'
-    export MINIO_REGION='${s3_region}'
-    export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM='${keycloak_realm_url}/.well-known/openid-configuration'
-    export MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM='minio'
-    export MINIO_IDENTITY_OPENID_CLIENT_SECRET_PRIMARY_IAM='${keycloak_minio_client_secret}'
-    export MINIO_IDENTITY_OPENID_SCOPES_PRIMARY_IAM='openid'
-    export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC_PRIMARY_IAM='on'
-    export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC='on'
+    export MINIO_ROOT_USER="${s3_username:=minio}"
+    export MINIO_ROOT_PASSWORD="${s3_password}"
+    export MINIO_REGION_NAME="${s3_region}"
+    export MINIO_REGION="${s3_region}"
+    export MINIO_IDENTITY_OPENID_ENABLE_PRIMARY_IAM="${minio_oidc_enabled:=on}"
+    export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM="${keycloak_realm_url}/.well-known/openid-configuration"
+    export MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM="minio"
+    export MINIO_IDENTITY_OPENID_CLIENT_SECRET_PRIMARY_IAM="${keycloak_minio_client_secret}"
+    export MINIO_IDENTITY_OPENID_SCOPES_PRIMARY_IAM="openid"
+    export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC_PRIMARY_IAM="on"
+    export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC="on"
 ---
 apiVersion: v1
 kind: Secret

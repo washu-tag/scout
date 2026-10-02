@@ -47,7 +47,8 @@ until CI switches `deploy-and-test` to deploy from it. See
   (key `values.yaml`) in `${keycloak_namespace}`, which the keycloak-config-cli
   HelmRelease reads through `valuesFrom`. It carries realm chart values a scalar can't,
   such as a `trinoAttributeFilters` pick-list or extra IdP documents under `config`
-  (`docs/internal/authentication.md`). The HelmRelease's own `values` win on overlap.
+  (`docs/internal/authentication.md`), whose credentials go in the optional
+  `keycloak-client-secrets-site` Secret. The HelmRelease's own `values` win on overlap.
   Label it `reconcile.fluxcd.io/watch: Enabled` so an edit re-runs the import without
   waiting for the interval. With the label the import re-runs as soon as the ConfigMap
   changes, which can beat an ExternalSecret writing new `$(env:...)` keys in the same

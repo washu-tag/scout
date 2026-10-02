@@ -7,11 +7,12 @@ values. A site materializes each one; how depends on the deployment mode:
   secrets manager (AWS Secrets Manager under a site-chosen prefix, e.g. `/scout/*`),
   and External Secrets Operator pulls them in via a `ClusterSecretStore`. Values are
   never in git.
-- **Air-gapped / on-prem**: the artifact renders every Secret below from
-  `base/secrets-on-prem`, filling it from **one** site Secret, `scout-secret-values` in
-  `flux-system`, whose keys are listed in `required-secret-values.txt`. By default the
-  site keeps it SOPS-encrypted in its repo and Flux's kustomize-controller decrypts it
-  (ADR 0031 §3); any backend that writes the same Secret works. See
+- **Air-gapped / on-prem**: the artifact renders the Secrets below (all but the
+  optional `keycloak-client-secrets-site`) from `base/secrets-on-prem`, filling them
+  from **one** site Secret, `scout-secret-values` in `flux-system`, whose keys are listed
+  in `required-secret-values.txt`. By default the site keeps it SOPS-encrypted in its
+  repo and Flux's kustomize-controller decrypts it (ADR 0031 §3); another backend can
+  write the same Secret if it applies the same value rules. See
   [On-prem: the values Secret](#on-prem-the-values-secret).
 
 Names and keys are the same in both modes; only materialization differs, **except the
@@ -79,25 +80,37 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 - `${postgres_cluster_name}-{ca,server,replication,app}`: minted by the CNPG operator
 
 ## On-prem: the values Secret
-`scout-secret-values` (Secret, `flux-system`) holds every key in
-`required-secret-values.txt`: 32 required values, `s3_username` (optional, default
-`minio`), and six conditional ones that are required only while their realm flag is
-`"true"` (`keycloak_xnat_client_secret` with `keycloak_enable_xnat`; the two
-`keycloak_gh_*` with `keycloak_github_enabled`; the three `keycloak_microsoft_*` with
+`scout-secret-values` (Secret, `flux-system`) holds the keys in
+`required-secret-values.txt`: 32 required values; two optional MinIO settings,
+`s3_username` (default `minio`) and `minio_oidc_enabled` (default `on`; `off` where
+MinIO can't reach a trusted Keycloak, as on a self-signed CI cluster); and six
+conditional ones, present exactly while their realm flag is `"true"`
+(`keycloak_xnat_client_secret` with `keycloak_enable_xnat`; the two `keycloak_gh_*` with
+`keycloak_github_enabled`; the three `keycloak_microsoft_*` with
 `keycloak_microsoft_enabled`). The `secrets-ready` Kustomization substitutes it, with
 `cluster-vars`, into the 35 Secrets above; postgres, MinIO and valkey wait on it.
 
 Generate it with `tooling/deploy/gen_secret_values.py --values <site values JSON>
 --cluster-vars-values <the gen_cluster_vars.py --values file>`, then encrypt the output
 (e.g. `sops --encrypt --encrypted-regex '^(data|stringData)$'`). The tool fails closed,
-never prints a value, and enforces the rules that keep a value intact through Flux:
+never prints a value, and enforces the rules that keep a value intact through Flux and
+its consumers. Another backend must enforce the same rules; running the tool's
+validation on the values first is the simplest way.
 - no `'`, no line break, control or format character, and no leading or trailing
   whitespace. The templates single-quote each value; Flux drops LF and folds CR to a
   space; CNPG and MinIO trim what the apps read untrimmed;
-- `valkey_password` is printable ASCII without `"` or `\` (it is embedded in the
-  exporter's `password-file` JSON);
+- the `keycloak-client-secrets` values use only `A-Z a-z 0-9 . _ ~ + / = -`, because
+  config-cli substitutes them into the realm JSON before parsing it;
+- `valkey_password` and `superset_postgres_password` use only `A-Z a-z 0-9 . _ ~ -`,
+  because the superset chart builds connection URLs from them (and valkey's also sits
+  in the exporter's `password-file` JSON);
+- the `config.env` inputs contain no `"`, `$`, backtick or backslash (the file is
+  double-quoted and sourced by sh);
 - MinIO: `s3_password` and each `s3_*_secret` at least 8 characters, `s3_username` 3;
 - `oauth2_proxy_cookie_secret` is 16, 24 or 32 bytes, raw or base64url-encoded;
+- a conditional key is set exactly while its flag is on. The templates default these
+  keys to empty, so strict substitution can't catch a flag turned on without its
+  values: re-run the tool whenever a flag changes;
 - `hive_namespace` differs from `postgres_cluster_namespace` (each gets a
   `superuser-secret`).
 
@@ -105,21 +118,22 @@ It labels the Secret `reconcile.fluxcd.io/watch: Enabled`, so an edit re-renders
 Secrets at once, and annotates it `kustomize.toolkit.fluxcd.io/substitute: disabled`, so a
 site Kustomization with `postBuild` never expands `${...}` inside a value. Requires Flux
 2.9.6 or later (kustomize-controller v1.9.6, which keeps Secret-sourced values out of apply
-errors) with `StrictPostBuildSubstitutions`, so a missing key fails the gate instead of
-rendering empty.
+errors) with `StrictPostBuildSubstitutions`, so a missing required key fails the gate
+instead of rendering empty.
 
 Keys the templates assemble from several inputs:
 - `superset-env` holds 17 keys; 12 are not secret (DB and Redis coordinates, the
   service client ID, the token URL, `TRINO_CA_CERT`).
 - `minio-scout-env-configuration` `config.env` carries the Ansible role's ten `export`
-  lines, single-quoted, with the MinIO OIDC block always on.
+  lines, double-quoted, plus `MINIO_IDENTITY_OPENID_ENABLE_PRIMARY_IAM` from
+  `minio_oidc_enabled` (Ansible omitted the OIDC lines instead).
 - `valkey-auth` `password-file` is `{"redis://localhost:6379": "<valkey_password>"}`.
 
 **Rotation.** Most values are re-applied on the next render, but on-prem has no
 Reloader, so env consumers need a restart. CNPG re-sets role and superuser passwords
 itself (`cnpg.io/reload`); a client secret needs a realm re-import (`flux reconcile hr
-keycloak-config-cli`) and an app restart; MinIO needs a tenant restart and a
-`bootstrap-minio-iam` re-run. Three values are persisted and must not change casually:
+keycloak-config-cli -n <keycloak namespace> --force`) and an app restart; MinIO needs a
+tenant restart and a `bootstrap-minio-iam` re-run. Three values are persisted and must not change casually:
 `keycloak_bootstrap_admin_password` (change it in Keycloak first), `superset_secret`
 (`superset re-encrypt-secrets` with the old key) and `trino_keystore_password`
 (re-issue `trino-tls`).
@@ -129,11 +143,12 @@ cross-check the vault. Postgres may hold an older password than the vault, and C
 `ALTER`s every role to the seeded value on its first reconcile. A vault value made with
 `encrypt_string` from a pipe ends in a newline, which the tool rejects: strip it, and
 treat a stripped persisted value (above) as a rotation.
-Annotate the four chart-owned Secrets (`launchpad-keycloak-secret`,
-`launchpad-nextauth-secret`, `superset-env`, `oauth2-proxy`) with
-`helm.sh/resource-policy: keep` before Flux takes over their releases, or the first
-upgrade deletes them; the templates carry the annotation from then on. The base fixes
-the database role names, so rename any role an inventory renamed.
+Four Secrets were chart-owned under Ansible (`launchpad-keycloak-secret`,
+`launchpad-nextauth-secret`, `superset-env`, `oauth2-proxy`): their templates carry
+`helm.sh/resource-policy: keep`, and `secrets-ready` reconciles before those releases,
+so Helm keeps them when Flux takes the releases over. The base fixes the database role
+and database names, so rename any an inventory renamed, and rotate a `valkey_password`
+or `superset_postgres_password` outside the URL-safe set first.
 
 ## aws mode: IRSA roles
 Each aws-edge ServiceAccount is annotated `${irsa_role_prefix}-<suffix>`; the site's IaC
@@ -169,7 +184,7 @@ authorization listener, SELECT-only DB role).
   be created once and stored, not rotated casually (some are consumed at TLS-issue time).
 - Rotating a `keycloak-client-secrets` value does not by itself re-run the config-cli
   import (the Job reads it via `envFrom` by name); it applies on the next realm/chart
-  upgrade, or force it with `flux reconcile hr keycloak-config-cli -n <ns>`.
+  upgrade, or force it with `flux reconcile hr keycloak-config-cli -n <ns> --force`.
 - Every enabled component's key must be present. config-cli fails the whole realm
   import on an unresolved `$(env:...)` (`undefined-is-error` defaults to true), so a
   missing key blocks every realm change. Provision `keycloak-client-secrets`
