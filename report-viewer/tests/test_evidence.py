@@ -445,3 +445,26 @@ def test_an_excluded_code_set_is_not_a_diagnosis_axis(axis: str) -> None:
     assert plan.dx_tests == ["ANY_MATCH(diagnoses, d -> d.diagnosis_code LIKE 'I26%')"]
     assert plan.dx_lambda == "d -> d.diagnosis_code LIKE 'I26%'"
     assert "'Z%'" not in with_evidence(sql)[0].split("FROM reports_latest")[0]
+
+
+def test_the_report_text_veto_keeps_its_blank_section_guard() -> None:
+    """The query only rules out on report_text when no section parsed, so a
+    HISTORY line must not flag a row admitted on its impression."""
+    out, _ = with_evidence(CANONICAL)
+    arm = next(
+        line
+        for line in out.splitlines()
+        if "WHEN (REGEXP_LIKE(COALESCE(report_text," in line and "no|without" in line
+    )
+    assert "COALESCE(TRIM(report_section_impression), '') = ''" in arm
+    assert "COALESCE(TRIM(report_section_findings), '') = ''" in arm
+
+
+def test_an_ungated_veto_gets_no_guard() -> None:
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_text, '(?is)stroke') "
+        "AND NOT REGEXP_LIKE(report_text, '(?is)no stroke')"
+    )
+    out, _ = with_evidence(sql)
+    assert "TRIM(" not in out

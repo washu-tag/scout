@@ -129,7 +129,9 @@ def _blank_section_guard(node: exp.Expression) -> set[str]:
     """
     found: set[str] = set()
     ancestor = node.parent
-    while isinstance(ancestor, (exp.Paren, exp.And)):
+    # Through NOT too: a veto sits under one, in the same conjunction as the
+    # positive it guards.
+    while isinstance(ancestor, (exp.Paren, exp.And, exp.Not)):
         if isinstance(ancestor, exp.And):
             found |= _blank_sections_in(ancestor)
         ancestor = ancestor.parent
@@ -308,7 +310,7 @@ def build_plan(sql: str) -> EvidencePlan | None:
             continue
         seen.add(leaf)
         (plan.vetoes if leaf.negated else plan.positives).append(leaf)
-        if not leaf.negated and leaf.column == "report_text":
+        if leaf.column == "report_text":
             plan.guard_for.setdefault(leaf, frozenset(_blank_section_guard(node)))
 
     if not plan.positives and not plan.has_dx_axis:
@@ -344,17 +346,29 @@ def _matches(leaf: TextLeaf) -> str:
     return f"REGEXP_LIKE(COALESCE({leaf.column}, ''), {_lit(leaf.pattern)})"
 
 
+def _guard_parts(plan: EvidencePlan, leaf: TextLeaf) -> list[str]:
+    """The blank-section conditions the query conjoins with `leaf`.
+
+    The templated report_text arm only applies when no section parsed, so
+    dropping it would read a HISTORY mention as the reason for a row the
+    query admitted on its impression.
+    """
+    return [
+        f"COALESCE(TRIM({col}), '') = ''"
+        for col in sorted(plan.guard_for.get(leaf, ()))
+    ]
+
+
+def _fires(plan: EvidencePlan, veto: TextLeaf) -> str:
+    return "(" + " AND ".join([_matches(veto), *_guard_parts(plan, veto)]) + ")"
+
+
 def _admitted(plan: EvidencePlan, pos: TextLeaf) -> str:
     parts = [_matches(pos)]
     veto = plan.veto_for.get(pos)
     if veto is not None:
         parts.append(f"NOT {_matches(veto)}")
-    # Mirrors the templated report_text fallback, which only applies when no
-    # section parsed. Keeping it stops a HISTORY mention being reported as the
-    # reason for a row the query admitted on its diagnosis code.
-    guard = plan.guard_for.get(pos)
-    if guard:
-        parts.extend(f"COALESCE(TRIM({col}), '') = ''" for col in sorted(guard))
+    parts.extend(_guard_parts(plan, pos))
     return "(" + " AND ".join(parts) + ")"
 
 
@@ -398,7 +412,7 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
         include = "CAST(NULL AS VARCHAR)"
     if plan.vetoes:
         exclude_arms = "\n    ".join(
-            f"WHEN {_matches(v)} THEN REGEXP_EXTRACT({v.column}, {_lit(v.pattern)})"
+            f"WHEN {_fires(plan, v)} THEN REGEXP_EXTRACT({v.column}, {_lit(v.pattern)})"
             for v in plan.vetoes
         )
         exclude = f"CASE\n    {exclude_arms}\n    ELSE NULL\n  END"
