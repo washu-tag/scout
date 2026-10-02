@@ -18,9 +18,18 @@ export type EvidenceStats = {
   distinctNegative: number;
 };
 
-function rank(counts: Map<string, number>): Tally[] {
+// Case-insensitive patterns mean "Stroke" and "stroke" arrive as separate
+// spans. One bucket per phrase, first spelling labels it, so CVA stays CVA.
+function rank(values: string[]): Tally[] {
+  const counts = new Map<string, number>();
+  const labels = new Map<string, string>();
+  for (const value of values) {
+    const key = value.toLowerCase();
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+    if (!labels.has(key)) labels.set(key, value);
+  }
   return [...counts.entries()]
-    .map(([label, count]) => ({ label, count }))
+    .map(([key, count]) => ({ label: labels.get(key) ?? key, count }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
@@ -29,8 +38,8 @@ export function hasEvidence(rows: Row[]): boolean {
 }
 
 export function evidenceStats(rows: Row[]): EvidenceStats {
-  const include = new Map<string, number>();
-  const exclude = new Map<string, number>();
+  const include: string[] = [];
+  const exclude: string[] = [];
   const tally: Record<Category, { rows: number; negative: number }> = {
     text_and_code: { rows: 0, negative: 0 },
     text: { rows: 0, negative: 0 },
@@ -41,10 +50,10 @@ export function evidenceStats(rows: Row[]): EvidenceStats {
   for (const row of rows) {
     const category = evidenceCategory(row);
     const inc = collapse(row['ev_positive_span']);
-    if (inc) include.set(inc, (include.get(inc) ?? 0) + 1);
+    if (inc) include.push(inc);
     const neg = collapse(row['ev_negative_span']);
     if (neg) {
-      exclude.set(neg, (exclude.get(neg) ?? 0) + 1);
+      exclude.push(neg);
       tally[category].negative += 1;
     }
     tally[category].rows += 1;

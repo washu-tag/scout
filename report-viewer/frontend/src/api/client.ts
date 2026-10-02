@@ -315,8 +315,8 @@ export function filterRows(
   const dtMin = f.message_dt?.min || null;
   const dtMax = f.message_dt?.max || null;
   const evSet = f.ev_source && f.ev_source.length ? new Set<string>(f.ev_source) : null;
-  const posSpan = f.ev_positive_span ?? null;
-  const negSpan = f.ev_negative_span ?? null;
+  const posSpan = f.ev_positive_span?.toLowerCase() ?? null;
+  const negSpan = f.ev_negative_span?.toLowerCase() ?? null;
 
   const has = (v: unknown, q: string) =>
     String(v ?? '')
@@ -331,8 +331,8 @@ export function filterRows(
     if (sexSet && !sexSet.has(String(r.sex))) return false;
     if (modSet && !modSet.has(String(r.modality))) return false;
     if (evSet && !evSet.has(evidenceCategory(r))) return false;
-    if (posSpan !== null && collapse(r.ev_positive_span) !== posSpan) return false;
-    if (negSpan !== null && collapse(r.ev_negative_span) !== negSpan) return false;
+    if (posSpan !== null && collapse(r.ev_positive_span).toLowerCase() !== posSpan) return false;
+    if (negSpan !== null && collapse(r.ev_negative_span).toLowerCase() !== negSpan) return false;
     if (f.ev_has_negative !== undefined) {
       if ((collapse(r.ev_negative_span) !== '') !== f.ev_has_negative) return false;
     }

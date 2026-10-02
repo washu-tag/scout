@@ -359,3 +359,17 @@ def test_no_blank_section_guard_when_the_query_did_not_ask_for_one() -> None:
     )
     out, _ = with_evidence(sql)
     assert "TRIM(" not in out
+
+
+def test_a_veto_does_not_cross_an_or_branch() -> None:
+    """Borrowing the other arm's veto reports rows the query admitted as ruled out."""
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "((REGEXP_LIKE(report_section_impression, '(?is)a') "
+        "AND NOT REGEXP_LIKE(report_section_impression, '(?is)no a')) "
+        "OR REGEXP_LIKE(report_section_impression, '(?is)b')) AND year = 2026"
+    )
+    plan = build_plan(sql)
+    assert plan is not None
+    pairing = {pos.pattern: veto.pattern for pos, veto in plan.veto_for.items()}
+    assert pairing == {"(?is)a": "(?is)no a"}

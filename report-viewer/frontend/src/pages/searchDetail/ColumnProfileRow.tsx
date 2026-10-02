@@ -420,7 +420,7 @@ function ProfileCell({
       parts = [
         ...segments.map((seg) => ({
           ...seg,
-          fill: negated?.has(seg.label)
+          fill: negated?.has(seg.label.toLowerCase())
             ? NEGATED_RAMP[Math.min(negRank++, NEGATED_RAMP.length - 1)]
             : RAMP[Math.min(rank++, RAMP.length - 1)],
         })),
@@ -465,21 +465,25 @@ export function ColumnProfileRow({
   // they lead with: the negation, else the matched phrase, else the diagnosis.
   // A report can match several diagnoses, and each gets its own entry so the
   // codes rank individually; the bar is then a share of matches, not of rows.
-  const matchedOn = useMemo(
-    () =>
-      rows.flatMap((r) => {
-        const leading = collapse(r.ev_negative_span) || collapse(r.ev_positive_span);
-        if (leading) return [{ [MATCHED_ON]: leading }];
-        const codes = collapse(r.ev_dx_codes)
-          .split(',')
-          .map((c) => c.trim())
-          .filter(Boolean);
-        return codes.length ? codes.map((c) => ({ [MATCHED_ON]: c })) : [{ [MATCHED_ON]: '' }];
-      }),
-    [rows],
-  );
+  const matchedOn = useMemo(() => {
+    const values = rows.flatMap((r) => {
+      const leading = collapse(r.ev_negative_span) || collapse(r.ev_positive_span);
+      if (leading) return [leading];
+      const codes = collapse(r.ev_dx_codes)
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+      return codes.length ? codes : [''];
+    });
+    // Folded like the stats panel, so one phrase is one segment.
+    const label = new Map<string, string>();
+    for (const v of values) {
+      if (v && !label.has(v.toLowerCase())) label.set(v.toLowerCase(), v);
+    }
+    return values.map((v) => ({ [MATCHED_ON]: v ? (label.get(v.toLowerCase()) ?? v) : '' }));
+  }, [rows]);
   const negatedLabels = useMemo(
-    () => new Set(rows.map((r) => collapse(r.ev_negative_span)).filter(Boolean)),
+    () => new Set(rows.map((r) => collapse(r.ev_negative_span).toLowerCase()).filter(Boolean)),
     [rows],
   );
 

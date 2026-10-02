@@ -206,6 +206,17 @@ def _enclosing_select(node: exp.Expression) -> exp.Expression | None:
     return None
 
 
+def _conjoined_ids(node: exp.Expression) -> set[int]:
+    """Nodes reachable from `node` without crossing a disjunction."""
+    if isinstance(node, exp.Paren):
+        return _conjoined_ids(node.this)
+    if isinstance(node, exp.And):
+        return _conjoined_ids(node.this) | _conjoined_ids(node.expression)
+    if isinstance(node, exp.Or):
+        return set()
+    return {id(n) for n in node.find_all(exp.Expression)}
+
+
 def _sibling_veto(
     node: exp.Expression,
     leaf: TextLeaf,
@@ -216,11 +227,16 @@ def _sibling_veto(
     `(A AND NOT A_veto) AND (B AND NOT B_veto)` puts each positive next to its
     own veto, so widening out from the innermost enclosing AND finds the right
     one. Keying on column alone would hand B whichever veto came first.
+
+    The walk stops at a disjunction: a veto in the other arm of an OR does not
+    constrain this positive.
     """
     ancestor: exp.Expression | None = node
     while ancestor is not None:
+        if isinstance(ancestor, exp.Or):
+            return None
         if isinstance(ancestor, exp.And):
-            within = set(id(n) for n in ancestor.find_all(exp.Expression))
+            within = _conjoined_ids(ancestor)
             for other, other_leaf in nodes:
                 if (
                     other_leaf.negated
