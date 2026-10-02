@@ -89,7 +89,7 @@ opa_image_tag: 1.16.2
 # Renovate customManager also bumps keycloak/VERSION + keycloak/Dockerfile FROM in
 # the same PR (with an SPI-compat reminder); see renovate.json5.
 # renovate: datasource=docker depName=quay.io/keycloak/keycloak
-keycloak_version: 26.7.2
+keycloak_version: 26.8.0
 
 # Analytics & Query Engines - Hive
 # regex versioning restricts to the plain multi-arch tags (loose ranked -x64/-arm64 above).
