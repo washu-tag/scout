@@ -14,7 +14,7 @@ spec:
   url: https://github.com/keycloak/keycloak-k8s-resources
   ref:
     # renovate: datasource=docker depName=quay.io/keycloak/keycloak
-    tag: 26.7.2
+    tag: 26.8.0
   ignore: |
     /*
     !/kubernetes/
