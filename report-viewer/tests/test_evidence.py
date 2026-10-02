@@ -396,3 +396,30 @@ def test_an_inline_flag_is_not_doubled() -> None:
     )
     out, _ = with_evidence(sql)
     assert "(?i)(?is)" not in out
+
+
+def test_a_not_over_a_group_negates_everything_inside_it() -> None:
+    """Reading only the immediate parent reported an excluded phrase as the
+    reason a row qualified."""
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_section_impression, '(?is)tumor') "
+        "AND NOT (REGEXP_LIKE(report_section_impression, '(?is)benign') "
+        "AND REGEXP_LIKE(report_section_impression, '(?is)cyst'))"
+    )
+    plan = build_plan(sql)
+    assert plan is not None
+    assert [p.pattern for p in plan.positives] == ["(?is)tumor"]
+    assert sorted(v.pattern for v in plan.vetoes) == ["(?is)benign", "(?is)cyst"]
+
+
+def test_two_nots_cancel() -> None:
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "NOT (REGEXP_LIKE(report_text, '(?is)a') "
+        "AND NOT REGEXP_LIKE(report_text, '(?is)b'))"
+    )
+    plan = build_plan(sql)
+    assert plan is not None
+    assert [p.pattern for p in plan.positives] == ["(?is)b"]
+    assert [v.pattern for v in plan.vetoes] == ["(?is)a"]

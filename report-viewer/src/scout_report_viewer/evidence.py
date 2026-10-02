@@ -137,10 +137,18 @@ def _blank_section_guard(node: exp.Expression) -> set[str]:
 
 
 def _is_negated(node: exp.Expression) -> bool:
+    """Whether an odd number of NOTs encloses `node`.
+
+    `NOT (A AND B)` negates both, so reading only the immediate parent would
+    report A as the reason for a row the query admitted for lacking B.
+    """
+    negated = False
     parent = node.parent
-    while isinstance(parent, exp.Paren):
+    while parent is not None:
+        if isinstance(parent, exp.Not):
+            negated = not negated
         parent = parent.parent
-    return isinstance(parent, exp.Not)
+    return negated
 
 
 def _regexp_like_parts(node: exp.Expression) -> tuple[str, str] | None:
