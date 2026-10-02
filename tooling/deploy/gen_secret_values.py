@@ -274,7 +274,12 @@ def main(argv=None) -> None:
     ap.add_argument(
         "--namespace", default="flux-system", help="Secret metadata.namespace"
     )
-    ap.add_argument("-o", "--output", default="", help="output path (default: stdout)")
+    ap.add_argument(
+        "-o",
+        "--output",
+        required=True,
+        help="file to write; created owner-only (plaintext credentials never go to stdout)",
+    )
     args = ap.parse_args(argv)
 
     try:
@@ -295,14 +300,11 @@ def main(argv=None) -> None:
         raise SystemExit(1)
 
     text = render_secret(build(values, contract), args.name, args.namespace)
-    if args.output:
-        # Plaintext credentials: owner-only, also when the file already exists.
-        fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(text)
-    else:
-        sys.stdout.write(text)
+    # Plaintext credentials: owner-only, also when the file already exists.
+    fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(text)
 
 
 if __name__ == "__main__":

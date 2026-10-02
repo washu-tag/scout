@@ -260,12 +260,23 @@ def test_contract_rules_parse_fail_closed(tmp_path):
 
 
 def test_main_fails_closed(tmp_path, values, capsys):
+    out = tmp_path / "scout-secret-values.yaml"
     bad = tmp_path / "values.json"
     bad.write_text(json.dumps(dict(values, postgres_password="x'y")))
     with pytest.raises(SystemExit) as exc:
-        main(["--values", str(bad), "--cluster-vars-values", str(CLUSTER_VARS)])
+        main(
+            [
+                "--values",
+                str(bad),
+                "--cluster-vars-values",
+                str(CLUSTER_VARS),
+                "-o",
+                str(out),
+            ]
+        )
     assert exc.value.code == 1
     assert "postgres_password: contains '" in capsys.readouterr().err
+    assert not out.exists()
 
     # A hand-merged file with a key twice must not silently keep the last one.
     dup = tmp_path / "dup.json"
@@ -273,7 +284,16 @@ def test_main_fails_closed(tmp_path, values, capsys):
         '{"postgres_password": "live-value-1", "postgres_password": "stale-2"}'
     )
     with pytest.raises(SystemExit):
-        main(["--values", str(dup), "--cluster-vars-values", str(CLUSTER_VARS)])
+        main(
+            [
+                "--values",
+                str(dup),
+                "--cluster-vars-values",
+                str(CLUSTER_VARS),
+                "-o",
+                str(out),
+            ]
+        )
     err = capsys.readouterr().err
     assert "duplicate keys: postgres_password" in err and "live-value" not in err
 
@@ -286,7 +306,7 @@ def test_main_writes_owner_only_utf8(tmp_path, values):
     )
     out = tmp_path / "scout-secret-values.yaml"
     out.write_text("stale")
-    os.chmod(out, 0o644)
+    os.chmod(out, 0o640)  # pre-existing and group-readable: the tool must tighten it
     main(
         [
             "--values",
