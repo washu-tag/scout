@@ -18,7 +18,7 @@ elasticsearch_version: 9.2.3
 
 # Databases & Data Storage - Cassandra
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
-cert_manager_version: v1.20.3
+cert_manager_version: v1.21.2
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
 cass_operator_version: 0.66.0
 # Managed by cass-operator (pulls k8ssandra/cass-management-api).
