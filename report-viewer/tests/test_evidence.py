@@ -348,3 +348,14 @@ def test_a_diagnosis_only_cohort_claims_no_text() -> None:
 def test_no_text_leaves_means_no_highlight_expression() -> None:
     """An empty concatenation would be invalid SQL, not an empty result."""
     assert highlight_hits_expression(DX_ONLY) is None
+
+
+def test_no_blank_section_guard_when_the_query_did_not_ask_for_one() -> None:
+    """Synthesising it rejects rows the WHERE admitted, which read as unexplained."""
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_section_impression, '(?is)x') "
+        "OR REGEXP_LIKE(report_text, '(?is)y')"
+    )
+    out, _ = with_evidence(sql)
+    assert "TRIM(" not in out

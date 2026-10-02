@@ -75,8 +75,8 @@ class EvidencePlan:
     positives: list[TextLeaf] = field(default_factory=list)
     vetoes: list[TextLeaf] = field(default_factory=list)
     veto_for: dict[TextLeaf, TextLeaf] = field(default_factory=dict)
-    #: parsed-section columns with a positive, i.e. what report_text falls back from
-    section_columns: set[str] = field(default_factory=set)
+    #: blank-section tests the query itself conjoins with a report_text positive
+    guard_for: dict[TextLeaf, frozenset[str]] = field(default_factory=dict)
     #: the query's own `any_match(diagnoses, ...)` tests, verbatim
     dx_tests: list[str] = field(default_factory=list)
     #: lambda from the first of those, for listing which codes matched
@@ -106,6 +106,34 @@ def _text_column_of(node: exp.Expression) -> str | None:
         if hit
         else None
     )
+
+
+def _blank_sections_in(node: exp.Expression) -> set[str]:
+    """Text columns `node` requires to be blank, descending conjunctions only."""
+    if isinstance(node, exp.Paren):
+        return _blank_sections_in(node.this)
+    if isinstance(node, exp.And):
+        return _blank_sections_in(node.this) | _blank_sections_in(node.expression)
+    if isinstance(node, exp.EQ):
+        right = node.expression
+        if isinstance(right, exp.Literal) and right.is_string and right.this == "":
+            return _names_in(node.this) & TEXT_COLUMNS
+    return set()
+
+
+def _blank_section_guard(node: exp.Expression) -> set[str]:
+    """Blank-section tests the query conjoins with `node`.
+
+    Read from the predicate rather than assumed: synthesising this guard
+    rejects rows the WHERE admitted, which read back as unexplained.
+    """
+    found: set[str] = set()
+    ancestor = node.parent
+    while isinstance(ancestor, (exp.Paren, exp.And)):
+        if isinstance(ancestor, exp.And):
+            found |= _blank_sections_in(ancestor)
+        ancestor = ancestor.parent
+    return found
 
 
 def _is_negated(node: exp.Expression) -> bool:
@@ -247,6 +275,8 @@ def build_plan(sql: str) -> EvidencePlan | None:
             continue
         seen.add(leaf)
         (plan.vetoes if leaf.negated else plan.positives).append(leaf)
+        if not leaf.negated and leaf.column == "report_text":
+            plan.guard_for.setdefault(leaf, frozenset(_blank_section_guard(node)))
 
     if not plan.positives and not plan.has_dx_axis:
         return None
@@ -268,9 +298,6 @@ def build_plan(sql: str) -> EvidencePlan | None:
             else len(SOURCE_ORDER)
         )
 
-    plan.section_columns = {
-        p.column for p in plan.positives if p.column != "report_text"
-    }
     plan.positives.sort(key=source_rank)
     plan.vetoes.sort(key=source_rank)
     return plan
@@ -289,13 +316,12 @@ def _admitted(plan: EvidencePlan, pos: TextLeaf) -> str:
     veto = plan.veto_for.get(pos)
     if veto is not None:
         parts.append(f"NOT {_matches(veto)}")
-    # report_text is the templated fallback, reachable only when no section
-    # parsed. Without this guard a HISTORY mention would be reported as the
-    # reason for a row the query actually admitted on its diagnosis code.
-    if pos.column == "report_text" and plan.section_columns:
-        parts.extend(
-            f"COALESCE(TRIM({col}), '') = ''" for col in sorted(plan.section_columns)
-        )
+    # Mirrors the templated report_text fallback, which only applies when no
+    # section parsed. Keeping it stops a HISTORY mention being reported as the
+    # reason for a row the query admitted on its diagnosis code.
+    guard = plan.guard_for.get(pos)
+    if guard:
+        parts.extend(f"COALESCE(TRIM({col}), '') = ''" for col in sorted(guard))
     return "(" + " AND ".join(parts) + ")"
 
 
