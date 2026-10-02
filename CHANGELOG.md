@@ -1,5 +1,25 @@
 # Changelog
 
+## [5.1.0](https://github.com/washu-tag/scout/compare/v5.0.0...v5.1.0) (2026-10-02)
+
+
+### Features
+
+* **monitoring:** add monitoring for pluggable apps ([#770](https://github.com/washu-tag/scout/issues/770)) ([fbb2db0](https://github.com/washu-tag/scout/commit/fbb2db00b1aca006b7e5782224634187fcd37ed0))
+
+
+### Bug Fixes
+
+* **hl7-listener:** deploy with make all, quiet spurious alerts ([#774](https://github.com/washu-tag/scout/issues/774)) ([c0718fb](https://github.com/washu-tag/scout/commit/c0718fb4d473f045b7104d22220f3550de48ed13))
+* keep backend keep-alive above reverse-proxy idle timeouts ([#766](https://github.com/washu-tag/scout/issues/766)) ([401db85](https://github.com/washu-tag/scout/commit/401db8545b709871b7c72db3868e195c9eb3688b))
+* **security:** address jackson-databind CVE-2026-68497 ([#777](https://github.com/washu-tag/scout/issues/777)) ([c328313](https://github.com/washu-tag/scout/commit/c32831387352cfdb4e6aedae140bf8a8a47086af))
+* **security:** upgrade openssl and pyjwt to clear new Trivy findings ([#780](https://github.com/washu-tag/scout/issues/780)) ([5c59868](https://github.com/washu-tag/scout/commit/5c59868434f30df79bdf2da53eb0c6078ba3a750))
+
+
+### Performance Improvements
+
+* speed up CI deploy and ingest-test jobs ([#773](https://github.com/washu-tag/scout/issues/773)) ([77d43c0](https://github.com/washu-tag/scout/commit/77d43c024248a8c250e470c31fd71583dfe9e835))
+
 ## [5.0.0](https://github.com/washu-tag/scout/compare/v4.3.0...v5.0.0) (2026-09-25)
 
 
