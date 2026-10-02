@@ -160,7 +160,12 @@ def _regexp_like_parts(node: exp.Expression) -> tuple[str, str] | None:
     column = _text_column_of(subject)
     if column is None:
         return None
-    return column, pattern_node.this
+    pattern = pattern_node.this
+    # LOWER(x) ~ 'p' is x ~ '(?i)p'. Rewriting it keeps the span and the
+    # offsets reading the column as written instead of a folded copy.
+    if "(?i" not in pattern and any(subject.find_all(exp.Lower, exp.Upper)):
+        pattern = "(?i)" + pattern
+    return column, pattern
 
 
 def _dx_axis(where: exp.Expression) -> tuple[list[str], str | None]:

@@ -373,3 +373,26 @@ def test_a_veto_does_not_cross_an_or_branch() -> None:
     assert plan is not None
     pairing = {pos.pattern: veto.pattern for pos, veto in plan.veto_for.items()}
     assert pairing == {"(?is)a": "(?is)no a"}
+
+
+def test_a_lower_wrapped_subject_becomes_a_case_insensitive_pattern() -> None:
+    """Dropping the wrapper tested the raw column case-sensitively, so a row
+    the query admitted on "Pneumonia" got no span."""
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest "
+        "WHERE REGEXP_LIKE(LOWER(report_text), 'pneumonia')"
+    )
+    out, _ = with_evidence(sql)
+    assert "'(?i)pneumonia'" in out
+    assert "REGEXP_EXTRACT(report_text, '(?i)pneumonia')" in out
+    expression = highlight_hits_expression(sql)
+    assert expression is not None and "'(?i)pneumonia'" in expression
+
+
+def test_an_inline_flag_is_not_doubled() -> None:
+    sql = (
+        "SELECT primary_report_identifier FROM reports_latest "
+        "WHERE REGEXP_LIKE(LOWER(report_text), '(?is)pneumonia')"
+    )
+    out, _ = with_evidence(sql)
+    assert "(?i)(?is)" not in out
