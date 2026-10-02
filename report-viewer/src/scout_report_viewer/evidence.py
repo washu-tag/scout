@@ -478,7 +478,7 @@ def with_evidence(sql: str) -> tuple[str, bool]:
 _HIT_ROW = "ROW(field VARCHAR, pos INTEGER, len INTEGER, polarity VARCHAR)"
 
 
-def _hits_for_leaf(plan: EvidencePlan, leaf: TextLeaf) -> str:
+def _hits_for_leaf(leaf: TextLeaf) -> str:
     """Every match of one pattern as ROWs of (field, 1-based pos, length)."""
     col = f"COALESCE({leaf.column}, '')"
     all_matches = f"REGEXP_EXTRACT_ALL({col}, {_lit(leaf.pattern)})"
@@ -488,16 +488,14 @@ def _hits_for_leaf(plan: EvidencePlan, leaf: TextLeaf) -> str:
         f"REGEXP_POSITION({col}, {_lit(leaf.pattern)}, 1, CAST(i AS INTEGER)), "
         f"LENGTH({all_matches}[i]), {_lit(polarity)}) AS {_HIT_ROW})"
     )
+    # Offsets into the string the panel renders, so no blank-section guard:
+    # the section arms reuse report_text to place their own marks there.
     empty = f"CAST(ARRAY[] AS ARRAY({_HIT_ROW}))"
     # sequence(1, 0) counts *down* in Trino, so the empty case needs its own arm.
-    hits = (
+    return (
         f"IF(CARDINALITY({all_matches}) = 0, {empty},"
         f" TRANSFORM(SEQUENCE(1, CARDINALITY({all_matches})), i -> {element}))"
     )
-    guard = _guard_parts(plan, leaf)
-    if guard:
-        hits = f"IF({' AND '.join(guard)}, {hits}, {empty})"
-    return hits
 
 
 def highlight_hits_expression(sql: str) -> str | None:
@@ -524,5 +522,5 @@ def highlight_hits_expression(sql: str) -> str | None:
                 leaves.append(candidate)
     if not leaves:
         return None
-    arrays = " || ".join(_hits_for_leaf(plan, leaf) for leaf in leaves)
+    arrays = " || ".join(_hits_for_leaf(leaf) for leaf in leaves)
     return f"CAST({arrays} AS JSON)"

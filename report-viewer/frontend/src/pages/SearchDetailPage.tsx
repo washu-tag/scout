@@ -590,7 +590,7 @@ export default function SearchDetailPage() {
               style={{
                 whiteSpace: 'nowrap',
                 fontVariantNumeric: 'tabular-nums',
-                minWidth: 72,
+                minWidth: 46,
                 textAlign: 'center',
               }}
             >
@@ -624,7 +624,6 @@ export default function SearchDetailPage() {
                 fontSize: '0.75rem',
                 whiteSpace: 'nowrap',
                 fontVariantNumeric: 'tabular-nums',
-                minWidth: 78,
               }}
             >
               {meta.error
