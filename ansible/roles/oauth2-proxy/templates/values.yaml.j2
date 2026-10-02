@@ -29,6 +29,19 @@ config:
     # Voila reads it to set X-Trino-User per ADR 0022; voila_runtime captures
     # it from the request and threads it into spawned kernels.
     set_xauthrequest = true
+{% if enable_xnat | default(false) | bool %}
+    # XNAT accepts bearer tokens for its REST API, and forwardAuth would otherwise
+    # reject them at the edge before XNAT ever saw one. A token still has to verify
+    # against the realm and carry oauth2-proxy-user, so this admits Scout users
+    # holding a valid token, not anonymous callers.
+    #
+    # The audience is why this is scoped: oauth2-proxy checks aud against its own
+    # client id, and an XNAT token carries aud=xnat. It gates every host on this
+    # edge, not just XNAT, so a token minted for XNAT also satisfies forwardAuth
+    # elsewhere -- each service's own authorization is what stops it there.
+    skip_jwt_bearer_tokens = true
+    oidc_extra_audiences = ["xnat"]
+{% endif %}
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true
 {% endif %}
