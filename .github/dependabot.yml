@@ -19,90 +19,198 @@ updates:
         patterns:
           - '*'
 
-  # Gradle: security PRs only (open-pull-requests-limit: 0 disables routine
-  # version updates but still allows security updates), per ADR 0015.
-  # Requires resolved deps in the GitHub dependency graph — see
+  # Base images Renovate bumps (keycloak, superset) are excluded here.
+  - package-ecosystem: 'docker'
+    directories:
+      - '/extractor/hl7-transformer'
+      - '/extractor/hl7log-extractor'
+      - '/helm/scout-notebook'
+      - '/hl7-listener'
+      - '/keycloak'
+      - '/keycloak-fragment-reconciler'
+      - '/launchpad'
+      - '/report-viewer'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: 'quay.io/keycloak/keycloak'
+    groups:
+      docker-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  # Resolved deps reach the dependency graph via
   # .github/workflows/gradle-dependency-submission.yaml.
   - package-ecosystem: 'gradle'
     directory: '/extractor/hl7log-extractor'
     schedule:
       interval: 'weekly'
-    # Conventional-Commit titles (chore(deps): ...) so bot PRs pass PR Title Lint.
     commit-message:
       prefix: 'chore'
       include: 'scope'
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 0
+    groups:
+      gradle-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
 
   - package-ecosystem: 'gradle'
     directory: '/hl7-listener'
     schedule:
       interval: 'weekly'
-    # Conventional-Commit titles (chore(deps): ...) so bot PRs pass PR Title Lint.
     commit-message:
       prefix: 'chore'
       include: 'scope'
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 0
+    groups:
+      gradle-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
 
+  # Renovate bumps the Keycloak deps together with the Keycloak image.
   - package-ecosystem: 'gradle'
     directory: '/keycloak/event-listener'
     schedule:
       interval: 'weekly'
-    # Conventional-Commit titles (chore(deps): ...) so bot PRs pass PR Title Lint.
     commit-message:
       prefix: 'chore'
       include: 'scope'
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 0
+    ignore:
+      - dependency-name: 'org.keycloak:*'
+    groups:
+      gradle-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: 'gradle'
+    directory: '/tests/ingest'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      gradle-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: 'pip'
+    directory: '/extractor/hl7-transformer'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      pip-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
 
   - package-ecosystem: 'pip'
     directory: '/keycloak-fragment-reconciler'
     schedule:
       interval: 'weekly'
-    # Conventional-Commit titles (chore(deps): ...) so bot PRs pass PR Title Lint.
     commit-message:
       prefix: 'chore'
       include: 'scope'
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 0
+    groups:
+      pip-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
 
   - package-ecosystem: 'pip'
     directory: '/report-viewer'
     schedule:
       interval: 'weekly'
-    # Conventional-Commit titles (chore(deps): ...) so bot PRs pass PR Title Lint.
     commit-message:
       prefix: 'chore'
       include: 'scope'
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 0
+    groups:
+      pip-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
 
-  - package-ecosystem: 'npm'
-    directory: '/report-viewer/frontend'
+  - package-ecosystem: 'pip'
+    directory: '/sdk/python'
     schedule:
       interval: 'weekly'
-    # Conventional-Commit titles (chore(deps): ...) so bot PRs pass PR Title Lint.
     commit-message:
       prefix: 'chore'
       include: 'scope'
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 0
+    groups:
+      pip-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
 
   - package-ecosystem: 'npm'
     directory: '/launchpad'
     schedule:
       interval: 'weekly'
-    # Conventional-Commit titles (chore(deps): ...) so bot PRs pass PR Title Lint.
     commit-message:
       prefix: 'chore'
       include: 'scope'
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 0
+    groups:
+      npm-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: 'npm'
+    directory: '/report-viewer/frontend'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      npm-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: 'npm'
+    directory: '/tests/auth'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      npm-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
