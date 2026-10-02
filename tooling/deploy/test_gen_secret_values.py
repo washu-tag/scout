@@ -306,7 +306,7 @@ def test_main_writes_owner_only_utf8(tmp_path, values):
     )
     out = tmp_path / "scout-secret-values.yaml"
     out.write_text("stale")
-    os.chmod(out, 0o640)  # pre-existing and group-readable: the tool must tighten it
+    os.chmod(out, 0o700)  # pre-existing with extra bits: the tool must set exactly 0600
     main(
         [
             "--values",
