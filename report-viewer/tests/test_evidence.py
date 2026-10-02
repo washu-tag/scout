@@ -423,3 +423,25 @@ def test_two_nots_cancel() -> None:
     assert plan is not None
     assert [p.pattern for p in plan.positives] == ["(?is)b"]
     assert [v.pattern for v in plan.vetoes] == ["(?is)a"]
+
+
+@pytest.mark.parametrize(
+    "axis",
+    [
+        "NOT any_match(diagnoses, d -> d.diagnosis_code LIKE 'Z%') "
+        "AND any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')",
+        "any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%') "
+        "AND NOT any_match(diagnoses, d -> d.diagnosis_code LIKE 'Z%')",
+    ],
+)
+def test_an_excluded_code_set_is_not_a_diagnosis_axis(axis: str) -> None:
+    """It admits nothing, so it must not claim a row or name the matched codes."""
+    sql = (
+        f"SELECT primary_report_identifier FROM reports_latest WHERE {axis} "
+        "AND REGEXP_LIKE(report_text, '(?is)embolism')"
+    )
+    plan = build_plan(sql)
+    assert plan is not None
+    assert plan.dx_tests == ["ANY_MATCH(diagnoses, d -> d.diagnosis_code LIKE 'I26%')"]
+    assert plan.dx_lambda == "d -> d.diagnosis_code LIKE 'I26%'"
+    assert "'Z%'" not in with_evidence(sql)[0].split("FROM reports_latest")[0]

@@ -192,6 +192,10 @@ def _dx_axis(where: exp.Expression) -> tuple[list[str], str | None]:
         subject, body = call.expressions
         if "diagnoses" not in _names_in(subject):
             continue
+        # An excluded code set admits nothing, so it must not claim a row or
+        # supply the lambda that lists which codes matched.
+        if _is_negated(call):
+            continue
         tests.append(call.sql(dialect=DIALECT))
         if lam is None and isinstance(body, exp.Lambda):
             lam = body.sql(dialect=DIALECT)
