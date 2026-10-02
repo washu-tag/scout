@@ -1,0 +1,57 @@
+# Issue #739: the search-detail toolbar's action catalog, mounted
+# directly into the pod - the same "core chips ride a chart-rendered
+# ConfigMap" delivery ADR 0034 uses for launchpad's own tiles, as opposed
+# to the cross-namespace sidecar-discovery mechanism it uses for
+# third-party contributions (a further increment, not attempted here).
+# See scout_report_viewer/actions.py for the loader and its documented
+# graceful-degradation behavior. A backend-call entry's invokeToken is
+# NOT rendered here - see actions-secret.yaml; a ConfigMap has no
+# access-control distinction from other config, so secret material never
+# belongs in one.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "report-viewer.fullname" . }}-actions
+  labels:
+    {{- include "report-viewer.labels" . | nindent 4 }}
+data:
+  # An entry disabled below simply isn't in this list - actions.py's
+  # loader treats an empty (or all-disabled) file as a valid, genuinely
+  # empty catalog, not a missing/broken one, so disabling every action
+  # here does not fall back to re-enabling the built-in defaults.
+  catalog.yaml: |
+    {{- if .Values.actions.explainSearch.enabled }}
+    - id: explain-search
+      title: Explain Search
+      weight: 5
+      action_type: client
+      client_handler: explain-search
+      {{- if .Values.actions.explainSearch.requiredGroup }}
+      required_group: {{ .Values.actions.explainSearch.requiredGroup | quote }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.actions.downloadCsv.enabled }}
+    - id: download-csv
+      title: Download CSV
+      weight: 10
+      action_type: client
+      client_handler: download-csv
+      {{- if .Values.actions.downloadCsv.requiredGroup }}
+      required_group: {{ .Values.actions.downloadCsv.requiredGroup | quote }}
+      {{- end }}
+    {{- end }}
+    {{- range .Values.actions.custom }}
+    - id: {{ required "actions.custom entries need an id" .id | quote }}
+      title: {{ required "actions.custom entries need a title" .title | quote }}
+      weight: {{ .weight | default 100 }}
+      {{- if eq (.actionType | default "open-url") "backend-call" }}
+      action_type: backend-call
+      endpoint_url: {{ required (printf "actions.custom[%s]: backend-call needs an endpointUrl" .id) .endpointUrl | quote }}
+      {{- else }}
+      action_type: open-url
+      url: {{ required "actions.custom entries need a url" .url | quote }}
+      {{- end }}
+      {{- if .requiredGroup }}
+      required_group: {{ .requiredGroup | quote }}
+      {{- end }}
+    {{- end }}

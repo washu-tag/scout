@@ -45,6 +45,20 @@ class Settings(BaseSettings):
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
 
+    # Issue #739: path to the action-catalog YAML the Helm chart
+    # renders into a ConfigMap and mounts here (the same "core chips ride
+    # a chart-rendered ConfigMap mounted directly into the pod" delivery
+    # ADR 0034 uses for launchpad's own tiles). Missing file (e.g. local
+    # dev without the chart) falls back to actions.py's built-in defaults.
+    action_catalog_path: str = "/app/action-catalog/catalog.yaml"
+
+    # Issue #739: directory of per-action invoke-token files, one per
+    # backend-call action id, mounted from a Secret (actions-secret.yaml) -
+    # kept out of the action catalog itself, which lives in a ConfigMap
+    # with no access-control distinction from other config. A missing
+    # file just means that action has no token to forward.
+    action_tokens_path: str = "/app/action-tokens"
+
     # Shared secret Traefik injects; the header path is refused unless it matches.
     gateway_secret: str = ""
 

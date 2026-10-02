@@ -92,11 +92,17 @@
           address: '{{ oauth2_proxy_auth_url }}'
           trustForwardHeader: true
           # Copied from oauth2-proxy's /oauth2/auth response onto the upstream
-          # request (and overwriting any client-supplied value of the same name).
+          # request (and overwriting any client-supplied value of the same name -
+          # this is what makes report-viewer's group-membership header trustworthy
+          # despite arriving as a plain header, not a signed token; see
+          # report_viewer/auth.py's _gateway_ok() for the other half of that story).
           # Voila reads X-Auth-Request-Preferred-Username for X-Trino-User
           # impersonation (ADR 0022); voila_runtime captures it per-request.
+          # report-viewer reads X-Auth-Request-Groups for action-catalog
+          # visibility gating (#739).
           authResponseHeaders:
             - X-Auth-Request-Preferred-Username
+            - X-Auth-Request-Groups
 
 - name: Install OAuth2 Proxy Error Middleware
   kubernetes.core.k8s:

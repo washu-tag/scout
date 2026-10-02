@@ -127,6 +127,48 @@ export function getPlotProgress(plotId: string, progressId: string): Promise<Que
   );
 }
 
+// Issue #739: backend-declared, group-filtered toolbar actions.
+// action_type "open-url" is handled generically (see openResult.ts);
+// "client" actions are looked up by client_handler in a small local
+// registry, since they invoke page-specific logic (e.g. building a CSV
+// from the currently loaded/filtered rows) the backend can't supply;
+// "backend-call" actions POST to invokeSearchAction below to get a
+// dynamically-computed result URL from a genuinely separate service,
+// then get the same open-url handling.
+export interface ActionDescriptor {
+  id: string;
+  title: string;
+  weight: number;
+  action_type: 'open-url' | 'client' | 'backend-call';
+  url: string | null;
+  required_group: string | null;
+  client_handler: string | null;
+}
+
+export function listSearchActions(searchId: string): Promise<ActionDescriptor[]> {
+  return api<ActionDescriptor[]>(`/api/searches/${encodeURIComponent(searchId)}/actions`);
+}
+
+// visibleReportIds narrows the invoke to the caller's currently
+// client-side-filtered rows (the same set downloadCsv already exports),
+// so a filtered view and a backend-call action agree on what "these
+// studies" means - see routes/searches.py's invoke_search_action.
+// Omit (or pass undefined) for the full, unfiltered search.
+export function invokeSearchAction(
+  searchId: string,
+  actionId: string,
+  visibleReportIds?: string[],
+): Promise<{ url: string }> {
+  return api<{ url: string }>(
+    `/api/searches/${encodeURIComponent(searchId)}/actions/${encodeURIComponent(actionId)}/invoke`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visible_report_ids: visibleReportIds ?? null }),
+    },
+  );
+}
+
 export interface FilterState {
   patient_age?: { min?: string; max?: string };
   message_dt?: { min?: string; max?: string };

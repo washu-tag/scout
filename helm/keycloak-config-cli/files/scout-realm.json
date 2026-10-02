@@ -331,6 +331,37 @@
         "attributes": {
           "post.logout.redirect.uris": "https://$(env:server_hostname){{- range $albHosts }}##https://{{ . }}/*{{- end }}"
         },
+        {{- /* #739: real Keycloak group membership (scout-admin, scout-user),
+            not a client role - every group in this realm currently only
+            grants client roles (e.g. oauth2-proxy-user, identical for both
+            scout-admin and scout-user members, so useless for telling them
+            apart). Traefik's oauth2-proxy-auth middleware forwards this as
+            X-Auth-Request-Groups (oauth2-proxy already emits it whenever
+            set_xauthrequest=true and a "groups" claim exists - the claim
+            just never existed until now); report-viewer's auth.py reads it
+            on the oauth2-proxy-header path, gated by the same
+            X-Report-Viewer-Gateway secret that already protects the
+            username header from being forged by a direct client request or
+            an in-cluster pod bypassing Traefik. full.path=false so the
+            claim carries bare group names ("scout-admin"), not paths
+            ("/scout-admin"). */}}
+        "protocolMappers": [
+          {
+            "name": "groups-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-group-membership-mapper",
+            "consentRequired": false,
+            "config": {
+              "full.path": "false",
+              "claim.name": "groups",
+              "multivalued": "true",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "introspection.token.claim": "true"
+            }
+          }
+        ],
         {{- /* report-viewer-audience: ALBs reuse this client, and report-viewer accepts
             the access token they forward only with aud=report-viewer. */}}
         "defaultClientScopes": [

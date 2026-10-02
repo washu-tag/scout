@@ -237,6 +237,7 @@ the ADR itself before changing anything it covers.
 - **0034** launchpad catalog — chips/groups come from ConfigMaps labelled `launchpad.scout.xnat.org/catalog`, discovered at runtime. Read before adding a service tile or touching launchpad rendering
 - **0035** service-mode deploy base — one `service_mode` (aws|on-prem) var flips the storage/identity + ingress/auth edges in the `deploy/` base and `scout-config` artifact. Read before touching the aws/on-prem edge, IRSA roles, or the ALB-OIDC ingress
 - **0037** Keycloak realm fragments — an app ships its own client as a labelled ConfigMap that a reconciler applies. Read before adding a client or changing `scout-realm.json`
+- **0038** report-viewer search actions — toolbar buttons are a chart-rendered action catalog, gated by Keycloak group membership (not client roles) delivered via oauth2-proxy's forwarded headers. Read before adding/gating a search-detail action or touching report-viewer's auth paths
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.
@@ -262,6 +263,11 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   labelled `launchpad.scout.xnat.org/catalog: "true"` with the owning component (chart
   template, or `scout_common`'s `launchpad_catalog` task for Ansible roles).
   Authoring guide: `docs/source/customize/launchpad-chips.md` (ADR 0034).
+- **Add or gate a report-viewer search action** — no report-viewer code change or image
+  rebuild; an `inventory.yaml` change (`report_viewer_custom_actions`,
+  `report_viewer_explain_search`/`report_viewer_download_csv`) plus a redeploy, which
+  renders through to `helm/report-viewer`'s `actions.*` values. Authoring guide:
+  `docs/source/customize/report-viewer-actions.md` (ADR 0038).
 - **Add a Superset dashboard, chart, or dataset** — export the asset YAML into
   `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`; a new
   bundle also needs its name in `scout_dashboard_bundles` in inventory. See

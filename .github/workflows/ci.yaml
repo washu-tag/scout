@@ -63,6 +63,7 @@ jobs:
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
       report-viewer: ${{ steps.filter.outputs.report-viewer }}
+      xnat-explore-poc: ${{ steps.filter.outputs.xnat-explore-poc }}
       keycloak-fragment-reconciler: ${{ steps.filter.outputs.keycloak-fragment-reconciler }}
       hl7-transformer-chart: ${{ steps.filter.outputs.hl7-transformer-chart }}
       dcm4chee-chart: ${{ steps.filter.outputs.dcm4chee-chart }}
@@ -133,6 +134,8 @@ jobs:
               - 'keycloak/**'
             report-viewer:
               - 'report-viewer/**'
+            xnat-explore-poc:
+              - 'examples/xnat-explore-poc/**'
             keycloak-fragment-reconciler:
               - 'keycloak-fragment-reconciler/**'
             hl7-transformer-chart:
@@ -250,6 +253,8 @@ jobs:
             subproject: keycloak
           - image-name: report-viewer
             subproject: report-viewer
+          - image-name: xnat-explore-poc
+            subproject: examples/xnat-explore-poc
           - image-name: keycloak-fragment-reconciler
             subproject: keycloak-fragment-reconciler
     steps:
@@ -361,6 +366,9 @@ jobs:
         env:
           REPORT_VIEWER_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/report_viewer_test
         run: cd report-viewer && pip install -e '.[dev]' && pytest -v
+      - name: 'Unit tests: xnat-explore-poc'
+        shell: bash
+        run: cd examples/xnat-explore-poc && pip install -e '.[dev]' && pytest -v
       - name: 'Unit tests: keycloak-fragment-reconciler'
         shell: bash
         run: cd keycloak-fragment-reconciler && pip install -e '.[test]' && pytest -v
@@ -1314,6 +1322,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: report-viewer
+      - name: 'Push Image - xnat-explore-poc'
+        if: needs.changes.outputs.xnat-explore-poc == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: xnat-explore-poc
       - name: 'Push Image - keycloak-fragment-reconciler'
         if: needs.changes.outputs.keycloak-fragment-reconciler == 'true'
         uses: ./.github/actions/docker-push

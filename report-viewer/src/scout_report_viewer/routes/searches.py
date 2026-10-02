@@ -20,6 +20,7 @@ import logging
 import re
 from typing import Any
 
+import httpx
 from fastapi import (
     APIRouter,
     Depends,
@@ -34,6 +35,12 @@ from fastapi import (
 )
 
 from .. import metrics, progress, trino_client
+from ..actions import (
+    ActionDescriptor,
+    list_actions,
+    load_invoke_token,
+    mint_user_assertion,
+)
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
@@ -51,6 +58,8 @@ from ..ids import new_search_id
 from ..logging_setup import scrub_for_log
 from ..models import (
     SEARCH_REQUIRED_COLUMNS,
+    ActionInvokeRequest,
+    ActionInvokeResponse,
     CreateFromFileResponse,
     CreateSearchRequest,
     CreateSearchResponse,
@@ -464,6 +473,152 @@ async def get_search_meta(
         sql_explanation=ds.get("sql_explanation") or "",
         owui_chat_id=ds.get("owui_chat_id") or "",
     )
+
+
+@router.get("/{search_id}/actions", response_model=list[ActionDescriptor])
+async def get_search_actions(
+    search_id: str,
+    user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
+) -> list[ActionDescriptor]:
+    """Issue #739: group-filtered toolbar actions for this search.
+
+    Owner-scoped like the sibling endpoints even though the static catalog
+    doesn't yet key off search content - a real action (e.g. a future
+    cohort export) will need the search to exist and be owned by the
+    caller before doing anything with it, so this establishes that shape
+    now.
+    """
+    ds = await store.get_search(search_id, owner_sub=user.sub)
+    if ds is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return list_actions(user.groups)
+
+
+@router.post(
+    "/{search_id}/actions/{action_id}/invoke", response_model=ActionInvokeResponse
+)
+async def invoke_search_action(
+    search_id: str,
+    action_id: str,
+    body: ActionInvokeRequest | None = None,
+    user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
+) -> ActionInvokeResponse:
+    """Issue #739: generic proxy for `backend-call` actions.
+
+    report-viewer never needs to know anything about what a given plugin
+    does - it forwards the search's context to the action's own
+    endpoint_url (a separately deployed service, e.g. xnat-explore-poc)
+    and relays back whatever result URL it returns. Looked up through
+    list_actions(user.groups), not the raw catalog, so a group-gated
+    action the caller can't even see can't be invoked either - visibility
+    is UX, but the boundary is still enforced here too (ADR 0034's
+    framing).
+
+    `body.visible_report_ids`, if given, narrows the forwarded cohort to
+    that subset - the SPA sends its currently client-side-filtered rows
+    (the same set Download CSV already exports), so a filtered view and
+    a backend-call action agree on what "these studies" means instead of
+    the action silently reaching past an active filter to the whole
+    saved search. Optional and defaulted to None so an older caller
+    sending no body still gets the full cohort, unchanged.
+    """
+    ds = await store.get_search(search_id, owner_sub=user.sub)
+    if ds is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    action = next((a for a in list_actions(user.groups) if a.id == action_id), None)
+    if (
+        action is None
+        or action.action_type != "backend-call"
+        or not action.endpoint_url
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    # Resolve the cohort to concrete per-report identifiers rather than
+    # handing the target the raw sql - a real App shouldn't need Trino
+    # access (or report-viewer's own OPA-authorized query path, ADR 0020)
+    # just to find out what it was invoked for. primary_report_identifier
+    # is the unique per-report key (one row per ingested HL7 message,
+    # required on every saved search); accession_number rides along as a
+    # secondary, nullable, non-unique correlation field - it can repeat
+    # across reports (a study read in parts) or be absent, so it can't
+    # stand in as the identifier. Same cap as GET /rows, for the same
+    # reason: a bound already agreed on for "the whole cohort in one
+    # response," not a new one invented for this endpoint.
+    source_sql = ds["sql"]
+    uploaded_ids = ds.get("uploaded_ids")
+    cap = settings.max_cohort_rows
+    ids_sql = (
+        f"SELECT s.primary_report_identifier, s.accession_number "
+        f"FROM ({source_sql}) s LIMIT {cap + 1}"
+    )
+    try:
+        with metrics.time_trino("invoke_cohort_ids"):
+            # safe: source_sql is persisted validated SQL; ids bind via ?
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+            _cols, id_rows = await trino_client.execute(
+                ids_sql,
+                user=user.sub,
+                params=[uploaded_ids] if uploaded_ids else None,
+            )
+    except Exception as exc:
+        raise _rows_query_error(exc, "invoke cohort ids") from exc
+
+    cohort_truncated = len(id_rows) > cap
+    if cohort_truncated:
+        id_rows = id_rows[:cap]
+    reports = [
+        {
+            "primary_report_identifier": r["primary_report_identifier"],
+            "accession_number": r.get("accession_number"),
+        }
+        for r in id_rows
+    ]
+
+    if body is not None and body.visible_report_ids is not None:
+        # Intersect against the just-resolved, Trino-authorized cohort -
+        # never trust the submitted ids on their own. An id the caller
+        # sends that isn't in `reports` (tampered request, stale client
+        # state) is silently dropped rather than forwarded unverified;
+        # it was never going to be in the caller's own search either way.
+        visible = set(body.visible_report_ids)
+        reports = [r for r in reports if r["primary_report_identifier"] in visible]
+
+    headers = {}
+    invoke_token = load_invoke_token(action.id)
+    if invoke_token:
+        headers["X-Report-Viewer-Action-Token"] = invoke_token
+    # Independent, verifiable proof of who this invocation is for - the
+    # invoke token above only proves the caller knows a shared secret, not
+    # the end user's identity or group membership (see
+    # actions.mint_user_assertion's docstring).
+    user_assertion = mint_user_assertion(action.id, user.sub, user.groups, search_id)
+    if user_assertion:
+        headers["X-Report-Viewer-User-Assertion"] = user_assertion
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                action.endpoint_url,
+                json={
+                    "search_id": search_id,
+                    "sql": ds["sql"],
+                    "username": user.sub,
+                    "reports": reports,
+                    "cohort_truncated": cohort_truncated,
+                },
+                headers=headers,
+            )
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        log.exception("action %s invoke failed", scrub_for_log(action_id))
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"action invoke failed: {exc}",
+        )
+    payload = resp.json()
+    return ActionInvokeResponse(url=payload["url"])
 
 
 @router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)

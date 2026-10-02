@@ -22,6 +22,7 @@ import {
   getSearch,
   getSearchProgress,
   getSearchRows,
+  listSearchActions,
   newProgressId,
   type FilterState,
 } from '../api/client';
@@ -32,6 +33,7 @@ import { RowDetail } from './searchDetail/RowDetail';
 import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
+import { ActionsToolbar } from './searchDetail/ActionsToolbar';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
@@ -126,6 +128,13 @@ export default function SearchDetailPage() {
   );
   const loadingState = useLoadingProgress(!rowsQ.data && rowsQ.isLoading, fetchProgress);
   const showLoading = loadingState.show;
+
+  // Issue #739: backend-declared, group-filtered toolbar actions.
+  const actionsQ = useQuery({
+    queryKey: ['search', searchId, 'actions'],
+    queryFn: () => listSearchActions(searchId),
+    enabled: !!searchId,
+  });
 
   // Expansion is keyed by row id (primary_report_identifier); clear on a new
   // cohort fetch so a fresh search doesn't inherit stale expansions.
@@ -244,6 +253,24 @@ export default function SearchDetailPage() {
   const total = data.length;
   const lastPage = table.getPageCount() || 1;
   const pageIndex = table.getState().pagination.pageIndex;
+
+  // The currently client-side-filtered rows' ids, forwarded to backend-call
+  // actions (see ActionsToolbar) so they agree with what downloadCsv already
+  // exports on what "these studies" means, rather than silently reaching
+  // past an active filter to the whole saved search. Derived from `data`
+  // (the already-filtered dataset), not `table.getPrePaginationRowModel()`:
+  // useReactTable returns the same table-instance reference across renders
+  // (it mutates in place), so memoizing on `[table]` would only ever run
+  // once and freeze at whatever was loaded on the first render. Sorting
+  // doesn't change which rows are present, only their order, so `data` is
+  // an equivalent - and reactive - source for this set.
+  const visibleReportIds = useMemo(
+    () =>
+      data
+        .map((row) => row.primary_report_identifier)
+        .filter((id): id is string => typeof id === 'string'),
+    [data],
+  );
 
   return (
     <div
@@ -529,36 +556,50 @@ export default function SearchDetailPage() {
               marginTop: '0.75rem',
               fontSize: '0.85rem',
               flex: '0 0 auto',
-              flexWrap: 'wrap',
+              // ActionsToolbar is the only child sized to shrink (it has its
+              // own minWidth: 0) and manages its own custom-action overflow
+              // internally via a "More" dropdown - everything else here
+              // keeps its natural size, so nowrap means this row never
+              // wraps a button to a second line (#739 demo feedback).
+              flexWrap: 'nowrap',
             }}
           >
             <button
               type="button"
               onClick={() => table.previousPage()}
               disabled={!rowsQ.data || !table.getCanPreviousPage()}
-              style={paginationBtn}
+              className="scout-toolbar-btn"
+              style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Prev
             </button>
-            <span style={{ whiteSpace: 'nowrap' }}>
+            <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
               {pageIndex + 1} / {lastPage}
             </span>
             <button
               type="button"
               onClick={() => table.nextPage()}
               disabled={!rowsQ.data || !table.getCanNextPage()}
-              style={paginationBtn}
+              className="scout-toolbar-btn"
+              style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Next
             </button>
-            <span style={{ marginLeft: '0.4rem', color: 'var(--rv-muted)', whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                marginLeft: '0.4rem',
+                color: 'var(--rv-muted)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
               Per page:
             </span>
             <select
               value={pagination.pageSize}
               onChange={(e) => table.setPageSize(Number(e.target.value))}
               disabled={!rowsQ.data}
-              style={{ fontSize: '0.85rem' }}
+              style={{ fontSize: '0.85rem', flexShrink: 0 }}
             >
               <option value={50}>50</option>
               <option value={100}>100</option>
@@ -570,6 +611,7 @@ export default function SearchDetailPage() {
                 color: 'var(--rv-muted)',
                 fontSize: '0.75rem',
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               {meta.error
@@ -592,6 +634,7 @@ export default function SearchDetailPage() {
                 borderTopColor: '#ea580c',
                 animation: 'scoutSpin 0.8s linear infinite',
                 display: 'inline-block',
+                flexShrink: 0,
               }}
             />
             <span style={{ flex: 1 }} />
@@ -605,9 +648,19 @@ export default function SearchDetailPage() {
                       ...paginationBtn,
                       background: 'var(--rv-accent)',
                       color: '#fff',
-                      borderColor: 'var(--rv-accent)',
+                      flexShrink: 0,
                     }
-                  : paginationBtn
+                  : { ...paginationBtn, flexShrink: 0 }
+              }
+              // The active/accent style keeps paginationBtn's own border
+              // (not accent-colored, so it's an actual visible outline
+              // against the blue fill) and gets a border/brightness-only
+              // hover variant - changing the background would wash out the
+              // white text.
+              className={
+                activeFilterCount(appliedFilters) > 0
+                  ? 'scout-toolbar-btn-accent'
+                  : 'scout-toolbar-btn'
               }
               title="Filter rows"
             >
@@ -615,11 +668,12 @@ export default function SearchDetailPage() {
                 ? `Filters (${activeFilterCount(appliedFilters)})`
                 : 'Filters'}
             </button>
-            <div ref={colPickerRef} style={{ position: 'relative' }}>
+            <div ref={colPickerRef} style={{ position: 'relative', flexShrink: 0 }}>
               <button
                 type="button"
                 disabled={!rowsQ.data}
                 onClick={() => setColPickerOpen((v) => !v)}
+                className="scout-toolbar-btn"
                 style={paginationBtn}
                 title="Show/hide columns"
               >
@@ -664,37 +718,35 @@ export default function SearchDetailPage() {
                 </div>
               )}
             </div>
-            {(meta.data?.sql_explanation || meta.data?.sql) && (
-              <button
-                type="button"
-                onClick={() => setSqlModalOpen(true)}
-                style={paginationBtn}
-                title="See what this search matches and the underlying SQL"
-              >
-                Explain Search
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                // Always include the unique id so exported rows stay identifiable
-                // even if the user hid the id/accession columns.
-                const cols = table.getVisibleLeafColumns().map((c) => c.id);
-                if (!cols.includes('primary_report_identifier')) {
-                  cols.unshift('primary_report_identifier');
-                }
-                downloadCsv(
-                  `${searchId}.csv`,
-                  cols,
-                  table.getPrePaginationRowModel().rows.map((r) => r.original),
-                );
+            <ActionsToolbar
+              searchId={searchId}
+              visibleReportIds={visibleReportIds}
+              // "Explain Search" is chart-configurable (see
+              // helm/report-viewer/templates/actions-configmap.yaml)
+              // but its per-search visibility (nothing to explain yet)
+              // stays a page-level concern, not something the generic
+              // toolbar or the backend catalog should encode.
+              actions={(actionsQ.data ?? []).filter(
+                (a) => a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
+              )}
+              clientHandlers={{
+                'explain-search': () => setSqlModalOpen(true),
+                'download-csv': () => {
+                  // Always include the unique id so exported rows stay
+                  // identifiable even if the user hid the id/accession
+                  // columns.
+                  const cols = table.getVisibleLeafColumns().map((c) => c.id);
+                  if (!cols.includes('primary_report_identifier')) {
+                    cols.unshift('primary_report_identifier');
+                  }
+                  downloadCsv(
+                    `${searchId}.csv`,
+                    cols,
+                    table.getPrePaginationRowModel().rows.map((r) => r.original),
+                  );
+                },
               }}
-              disabled={!rowsQ.data}
-              style={paginationBtn}
-              title="Download the current filtered and sorted rows as CSV"
-            >
-              Download CSV
-            </button>
+            />
             <button
               type="button"
               onClick={() => {
@@ -706,11 +758,13 @@ export default function SearchDetailPage() {
                 iframeExpanded ? 'Shrink viewer back to compact size' : 'Grow viewer for more room'
               }
               aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
+              className="scout-toolbar-btn"
               style={{
                 ...paginationBtn,
                 display: 'inline-flex',
                 alignItems: 'center',
                 padding: '0.2rem 0.35rem',
+                flexShrink: 0,
               }}
             >
               {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}

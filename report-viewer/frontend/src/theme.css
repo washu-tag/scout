@@ -70,6 +70,27 @@ body {
 tr.scout-row:hover {
   background: var(--rv-surface-2) !important;
 }
+/* !important: paginationBtn sets background/border-color inline, which
+   otherwise always wins over a plain class rule regardless of :hover. */
+.scout-toolbar-btn:hover:not(:disabled) {
+  background: var(--rv-surface-2) !important;
+  border-color: var(--rv-muted) !important;
+}
+.scout-toolbar-btn:active:not(:disabled) {
+  background: var(--rv-accent-soft) !important;
+  border-color: var(--rv-accent) !important;
+}
+/* For buttons with an always-on accent background (active Filters, Apply) -
+   changing background on hover would wash out their white text, so this
+   only ever touches border-color/brightness instead. */
+.scout-toolbar-btn-accent:hover:not(:disabled) {
+  border-color: var(--rv-fg) !important;
+  filter: brightness(1.08);
+}
+.scout-toolbar-btn-accent:active:not(:disabled) {
+  border-color: var(--rv-fg) !important;
+  filter: brightness(0.92);
+}
 
 /* vega-embed pins its action menu to the top-right corner of the drawing, hard
    against the border and on top of the plot. Inset it and fade it until the
