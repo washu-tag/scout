@@ -162,8 +162,8 @@ three ways:
   managed ones), and run the one-time vault-to-SOPS migration when the
   site repo is seeded. The cloud dev clusters run External Secrets
   Operator instead, so the consumer-side CI proof (with a per-run key on
-  every main build) and an on-prem lab prove this path before any on-prem
-  site depends on it.
+  every main build) and an on-prem lab prove this path for a full phase
+  before any on-prem site depends on it.
 - **Cloud**: External Secrets Operator or equivalent, unchanged.
 - **Fallback**: some hospital environments prohibit secrets in git,
   encrypted or not — a policy Scout doesn't get to overrule. Those sites
