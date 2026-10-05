@@ -4,4 +4,6 @@ resources:
   - resources.yaml
   # Per-mode web ingress (both modes; the HR selects one via service_mode).
   - edge.yaml
+  # UI login (oidc or none; the HR selects one via temporal_web_auth).
+  - web-auth.yaml
   - catalog.yaml

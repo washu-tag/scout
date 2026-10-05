@@ -1,0 +1,18 @@
+# The scout-config build this run deploys, verified against the run's ephemeral cosign key.
+# @REGISTRY@ and @VERSION@ are filled in at run time. insecure: the in-job registry serves
+# plain HTTP; a site's registry serves TLS.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: scout-config
+  namespace: flux-system
+spec:
+  interval: 10m
+  url: oci://@REGISTRY@/scout-config
+  insecure: true
+  ref:
+    tag: '@VERSION@'
+  verify:
+    provider: cosign
+    secretRef:
+      name: scout-cosign-pub

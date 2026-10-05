@@ -14,6 +14,9 @@ on:
       - helm/hive-metastore/**
       - helm/extractor/hl7-transformer/**
       - .github/workflows/validate-deploy.yaml
+      - .github/workflows/deploy-flux.yaml
+      - .github/ci_resources/flux/**
+      - .github/actions/install-flux/**
       # OPA data-doc drift guard reads the Ansible source; re-run on those too.
       - ansible/roles/opa/defaults/main.yaml
       - ansible/roles/scout_common/defaults/main.yaml
@@ -40,18 +43,30 @@ jobs:
           rm -f kustomize.tar.gz
           kustomize version
 
-      - name: Install flux
+      # The on-prem floor (kustomize-controller v1.9.6); export and dry-run are offline.
+      - uses: ./.github/actions/install-flux
+
+      - name: Validate the on-prem CI inputs
         run: |
           set -euo pipefail
-          # The on-prem floor (kustomize-controller v1.9.6). Only its offline
-          # `flux build --dry-run` is used, which runs the controller's substitution.
-          VER=2.9.6
-          SHA=b4d22673e9246cbd628881f1a9ef3b090085dced291e42d804555cee8e8d42c5
-          curl -sSL "https://github.com/fluxcd/flux2/releases/download/v${VER}/flux_${VER}_linux_amd64.tar.gz" -o flux.tar.gz
-          echo "${SHA}  flux.tar.gz" | sha256sum -c -
-          sudo tar xz -C /usr/local/bin -f flux.tar.gz flux
-          rm -f flux.tar.gz
-          flux version --client
+          python3 .github/ci_resources/flux/check_legs.py
+          python3 tooling/deploy/gen_cluster_vars.py \
+            --values .github/ci_resources/flux/cluster-vars.values.json \
+            --namespace flux-system > "$RUNNER_TEMP/ci-cluster-vars.yaml"
+          trap 'rm -f "$RUNNER_TEMP/ci-secret-values.yaml"' EXIT
+          python3 tooling/deploy/gen_secret_values.py \
+            --values .github/ci_resources/flux/secret-values.json \
+            --cluster-vars-values .github/ci_resources/flux/cluster-vars.values.json \
+            --namespace flux-system -o "$RUNNER_TEMP/ci-secret-values.yaml"
+
+      - name: Render the CI Flux installation
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/ci-flux-system"
+          mkdir -p "$dir"
+          cp .github/ci_resources/flux/flux-system/*.yaml "$dir/"
+          flux install --export > "$dir/gotk-components.yaml"
+          kustomize build "$dir" >/dev/null
 
       - name: Render every base
         run: |

@@ -79,6 +79,24 @@ apply it from a site Kustomization (with `decryption` for SOPS) that the Kustomi
 reconciling `./flux` and `./modes/on-prem` dependsOn. Generate it with
 `tooling/deploy/gen_secret_values.py`.
 
+Those two Kustomizations (the site roots) live in `flux-system`, next to `cluster-vars`
+and the `scout-config` source, because Flux substitutes only from its own namespace.
+Both carry `postBuild.substituteFrom: cluster-vars`, which resolves the one `${var}` in
+the Flux files themselves (keycloak-operator's `targetNamespace`), and both are siblings
+of the site Kustomization rather than its children: with `wait`, a parent that applies a
+child that dependsOn it deadlocks. The ingest CI fixture sets `minio_oidc_enabled` to
+`off` and `temporal_web_auth` to `none`, both in cluster-vars, and uses Temporal's internal
+frontend. The public frontend still requires JWT authorization; the site authentication
+and certificate path needs the platform proof. `.github/ci_resources/flux/` contains the
+roots, site artifact and CI values used by the ingest proof.
+
+A site that keeps SOPS-encrypted Secrets in git also installs
+`.github/ci_resources/flux/flux-system/sops-guard.yaml` with Flux. kustomize-controller
+v1.9.6 applies an encrypted Secret that a Kustomization without `decryption` hands it,
+ciphertext as the values (its own check runs after a step that drops the `sops` field),
+and `secrets-ready` would then copy that ciphertext into every Scout Secret. The guard is
+an admission policy that rejects any Secret whose data is SOPS ciphertext.
+
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared
 `Kustomization` DAG plus one per-mode set, acyclic): postgres, minio, hive, temporal
@@ -91,5 +109,7 @@ Remaining components: jupyter, report-viewer, monitoring, and the feature Compon
 
 Done since the scaffold: the per-namespace foundation bases (`base/scout-*-foundation`,
 one owner per Namespace + shared HelmRepository) and the config-artifact publish job
-(stamps the Scout charts' `0.0.0` placeholders from the haul). Remaining: the
-**`deploy-and-test` switch** to deploy the ingest slice via Flux (ingest suite = gate).
+(stamps the Scout charts' `0.0.0` placeholders from the haul). The on-prem Flux proof
+(`.github/workflows/deploy-flux.yaml`) stands the ingest slice up on k3s from a signed
+artifact and runs the ingest suite against it; the platform leg (every Kustomization
+Ready) is next.

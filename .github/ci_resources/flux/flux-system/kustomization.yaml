@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Flux as the on-prem proof runs it: `flux install --export` (written next to this file at
+# run time) plus the controller flags an on-prem site needs. Strict substitution fails a
+# build on an undefined ${var} instead of rendering it empty; UseHelm3Defaults keeps
+# helm-controller on the Helm 3 install/upgrade/wait behavior the charts are tested with.
+# sops-guard.yaml goes in with Flux, before any site Kustomization applies a Secret.
+resources:
+  - gotk-components.yaml
+  - sops-guard.yaml
+patches:
+  - target:
+      kind: Deployment
+      name: kustomize-controller
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --feature-gates=StrictPostBuildSubstitutions=true
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --concurrent=10
+  - target:
+      kind: Deployment
+      name: helm-controller
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --feature-gates=UseHelm3Defaults=true
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --concurrent=10
