@@ -378,11 +378,15 @@ def test_rows_fall_back_when_the_rewrite_raises(
 
     # The plan itself, not with_evidence: the guard lives inside it.
     monkeypatch.setattr(evidence, "build_plan", boom)
+    before = len(fake_trino.calls)
     fake_trino(_sample_columns(), _sample_rows())
     r = client.get(f"/api/searches/{created.json()['id']}/rows", headers=auth_headers)
     assert r.status_code == 200, r.text
     assert len(r.json()["rows"]) == 3
-    assert "ev_source" not in r.json()["columns"]
+    # One attempt only: the rewrite never ran, so there was nothing to retry.
+    sent = [sql for sql, _ in fake_trino.calls[before:]]
+    assert len(sent) == 1
+    assert "ev_source" not in sent[0]
 
 
 def test_rows_fall_back_when_trino_rejects_the_rewrite(
@@ -396,13 +400,17 @@ def test_rows_fall_back_when_trino_rejects_the_rewrite(
     )
     assert created.status_code == 201, created.text
 
+    before = len(fake_trino.calls)
     fake_trino.error()
     fake_trino(_sample_columns(), _sample_rows())
     r = client.get(f"/api/searches/{created.json()['id']}/rows", headers=auth_headers)
     assert r.status_code == 200, r.text
     assert len(r.json()["rows"]) == 3
-    # The retry drops the splice and runs what the model wrote.
-    assert "ev_source" not in fake_trino.calls[-1][0]
+    sent = [sql for sql, _ in fake_trino.calls[before:]]
+    # Scored first, then the model's own sql once Trino rejected it.
+    assert len(sent) == 2
+    assert "ev_source" in sent[0]
+    assert "ev_source" not in sent[1]
 
 
 def test_create_falls_back_when_the_rewrite_raises(
@@ -420,5 +428,8 @@ def test_create_falls_back_when_the_rewrite_raises(
     r = client.post("/api/searches", json={"sql": _SQL_SCORED}, headers=auth_headers)
     assert r.status_code == 201, r.text
     assert len(r.json()["sample"]) == 3
+    sent = [sql for sql, _ in fake_trino.calls]
+    assert len(sent) == 1
+    assert "ev_source" not in sent[0]
     for ev in r.json()["evidence"]:
         assert ev["matched_on"] is None

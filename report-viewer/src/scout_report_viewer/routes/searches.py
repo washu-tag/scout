@@ -17,6 +17,7 @@ Single-report reads go through POST /api/reports/read (see routes/reports.py).
 from __future__ import annotations
 
 import logging
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi import (
@@ -66,8 +67,10 @@ router = APIRouter(prefix="/api/searches", tags=["searches"])
 _LLM_SAMPLE_ROWS = 10
 
 
-async def _execute_or_fall_back(
-    scored: str, original: str, *, user: str, op: str, params: list[Any] | None = None
+async def _run_with_fallback(
+    run: Callable[[str], Awaitable[tuple[list[str], list[dict[str, Any]]]]],
+    scored: str,
+    original: str,
 ) -> tuple[list[str], list[dict[str, Any]], bool]:
     """Run `scored`, falling back to the sql the model actually wrote.
 
@@ -81,27 +84,20 @@ async def _execute_or_fall_back(
     cohort that would have loaded. The logs say which it was afterwards.
     """
     try:
-        with metrics.time_trino(op):
-            # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            columns, rows = await trino_client.execute(scored, user=user, params=params)
+        columns, rows = await run(scored)
         return columns, rows, scored != original
+    except trino_client.ClientDisconnected:
+        raise
     except Exception:
         if scored == original:
             raise
-        # The splice is one suspect among several: the model's own sql may be
-        # broken, or Trino may have timed out. The retry tells them apart, so
-        # claim nothing until it has run.
         log.warning(
             "scored sql failed at trino; retrying without evidence", exc_info=True
         )
         try:
-            with metrics.time_trino(op):
-                # safe: same query the model authored, unmodified
-                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-                columns, rows = await trino_client.execute(
-                    original, user=user, params=params
-                )
+            columns, rows = await run(original)
+        except trino_client.ClientDisconnected:
+            raise
         except Exception:
             log.warning("the model's own sql failed too; the rewrite was not at fault")
             raise
@@ -199,11 +195,17 @@ async def create_search(
     scored_sql, _ = with_evidence(sql)
     limit = f" s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
-        columns, sample_rows, _ = await _execute_or_fall_back(
+
+        async def run_sample(query: str) -> tuple[list[str], list[dict[str, Any]]]:
+            with metrics.time_trino("create_sample_query"):
+                # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                return await trino_client.execute(query, user=user.sub)
+
+        columns, sample_rows, _ = await _run_with_fallback(
+            run_sample,
             f"SELECT s.* FROM ({scored_sql}){limit}",
             f"SELECT s.* FROM ({sql}){limit}",
-            user=user.sub,
-            op="create_sample_query",
         )
     except Exception as exc:
         log.exception("trino sample query failed")
@@ -532,22 +534,15 @@ async def get_search_rows(
             )
 
     try:
-        columns, rows = await run(f"SELECT s.* FROM ({scored_sql}){limit}")
+        columns, rows, _ = await _run_with_fallback(
+            run,
+            f"SELECT s.* FROM ({scored_sql}){limit}",
+            f"SELECT s.* FROM ({source_sql}){limit}",
+        )
     except trino_client.ClientDisconnected:
         raise HTTPException(status_code=499, detail="client disconnected")
     except Exception as exc:
-        if scored_sql == source_sql:
-            raise _rows_query_error(exc, "rows")
-        # Projection-only, but it can still name a column the outer query does
-        # not expose. A cohort must never be lost to a reviewing aid.
-        log.exception("evidence rewrite failed at trino; retrying original sql")
-        try:
-            columns, rows = await run(f"SELECT s.* FROM ({source_sql}){limit}")
-        except trino_client.ClientDisconnected:
-            raise HTTPException(status_code=499, detail="client disconnected")
-        except Exception as retry_exc:
-            raise _rows_query_error(retry_exc, "rows")
-
+        raise _rows_query_error(exc, "rows")
     truncated = len(rows) > cap
     if truncated:
         rows = rows[:cap]

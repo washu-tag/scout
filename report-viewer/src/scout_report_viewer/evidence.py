@@ -277,38 +277,52 @@ def _conjoined_ids(node: exp.Expression) -> set[int]:
     return {id(n) for n in node.find_all(exp.Expression)}
 
 
-def _conjunction_root(node: exp.Expression) -> exp.Expression:
-    """The widest AND scope around `node`. Brackets are grouping, not a
-    boundary; a disjunction is, since the other arm admits on its own."""
-    root = node
+def _simple_negation(node: exp.Expression) -> bool:
+    """Whether `node` is vetoed outright, not as part of a compound NOT.
+
+    `NOT (v1 OR v2)` rules out each of them. `NOT (x AND v)` does not: the row
+    can be admitted with v present, so treating v as a veto hides evidence the
+    query allowed. Only brackets and disjunctions may sit in between.
+    """
+    child = node
     ancestor = node.parent
-    while isinstance(ancestor, (exp.Paren, exp.And, exp.Not)):
-        root = ancestor
-        ancestor = ancestor.parent
-    return root
+    while ancestor is not None:
+        if isinstance(ancestor, exp.Not) or _compares_false(ancestor, child):
+            return True
+        if not isinstance(ancestor, (exp.Paren, exp.Or, exp.Is)):
+            return False
+        child, ancestor = ancestor, ancestor.parent
+    return False
 
 
 def _sibling_vetoes(
     node: exp.Expression,
     nodes: list[tuple[exp.Expression, TextLeaf]],
-    cache: dict[int, list[TextLeaf]],
 ) -> list[TextLeaf]:
     """Every veto ANDed with this positive, whatever column it reads.
 
-    All of them must be false for the arm to admit the row, so none of them
-    belongs to some other positive. Cached per scope: recomputing it at each
-    level made planning quadratic in the length of the AND chain.
+    Collected from the sibling branch at each AND on the way up. A disjunction
+    passed through is transparent, because a veto ANDed onto the whole group
+    still has to be false; its own other arms are not, because they never
+    appear in a sibling branch.
     """
-    root = _conjunction_root(node)
-    key = id(root)
-    if key not in cache:
-        within = _conjoined_ids(root)
-        cache[key] = list(
-            dict.fromkeys(
-                leaf for other, leaf in nodes if leaf.negated and id(other) in within
-            )
-        )
-    return cache[key]
+    found: list[TextLeaf] = []
+    child = node
+    ancestor = node.parent
+    while ancestor is not None:
+        if isinstance(ancestor, exp.And):
+            for side in (ancestor.this, ancestor.expression):
+                if side is child:
+                    continue
+                within = _conjoined_ids(side)
+                found.extend(
+                    leaf
+                    for other, leaf in nodes
+                    if leaf.negated and id(other) in within
+                )
+        child = ancestor
+        ancestor = ancestor.parent
+    return list(dict.fromkeys(found))
 
 
 def build_plan(sql: str) -> EvidencePlan | None:
@@ -354,6 +368,8 @@ def build_plan(sql: str) -> EvidencePlan | None:
             negated=_is_negated(node),
             subject=parts[2],
         )
+        if leaf.negated and not _simple_negation(node):
+            continue
         nodes.append((node, leaf))
         # Before the dedupe: the same leaf can appear under different guards.
         if leaf.column == "report_text":
@@ -372,11 +388,10 @@ def build_plan(sql: str) -> EvidencePlan | None:
         log.info("evidence: %d text predicates exceeds cap; skipping", len(seen))
         return None
 
-    veto_cache: dict[int, list[TextLeaf]] = {}
     for node, leaf in nodes:
         if leaf.negated:
             continue
-        vetoes = _sibling_vetoes(node, nodes, veto_cache)
+        vetoes = _sibling_vetoes(node, nodes)
         if vetoes:
             plan.veto_for.setdefault(leaf, vetoes)
 
@@ -533,8 +548,10 @@ def with_evidence(sql: str) -> tuple[str, bool]:
         if rewritten is None:
             return sql, False
         return rewritten, True
-    except Exception:
-        log.exception("evidence: rewrite failed; running the original sql")
+    except Exception as exc:
+        # No traceback: a RecursionError here is a thousand frames, written
+        # again on every open, and the evidence is best effort anyway.
+        log.warning("evidence: rewrite failed (%r); running the original sql", exc)
         return sql, False
 
 
@@ -574,8 +591,8 @@ def highlight_hits_expression(sql: str) -> str | None:
     """
     try:
         plan = build_plan(sql)
-    except Exception:
-        log.exception("evidence: highlight plan failed; marking nothing")
+    except Exception as exc:
+        log.warning("evidence: highlight plan failed (%r); marking nothing", exc)
         return None
     if plan is None:
         return None

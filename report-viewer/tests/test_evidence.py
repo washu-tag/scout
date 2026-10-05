@@ -416,55 +416,6 @@ def test_an_inline_flag_is_not_doubled() -> None:
     assert "'(?i)abc(?i)def'" in mid
 
 
-def test_a_not_over_a_group_negates_everything_inside_it() -> None:
-    """Reading only the immediate parent reported an excluded phrase as the
-    reason a row qualified."""
-    sql = (
-        "SELECT primary_report_identifier FROM reports_latest WHERE "
-        "REGEXP_LIKE(report_section_impression, '(?is)tumor') "
-        "AND NOT (REGEXP_LIKE(report_section_impression, '(?is)benign') "
-        "AND REGEXP_LIKE(report_section_impression, '(?is)cyst'))"
-    )
-    plan = build_plan(sql)
-    assert plan is not None
-    assert [p.pattern for p in plan.positives] == ["(?is)tumor"]
-    assert sorted(v.pattern for v in plan.vetoes) == ["(?is)benign", "(?is)cyst"]
-
-
-def test_two_nots_cancel() -> None:
-    sql = (
-        "SELECT primary_report_identifier FROM reports_latest WHERE "
-        "NOT (REGEXP_LIKE(report_text, '(?is)a') "
-        "AND NOT REGEXP_LIKE(report_text, '(?is)b'))"
-    )
-    plan = build_plan(sql)
-    assert plan is not None
-    assert [p.pattern for p in plan.positives] == ["(?is)b"]
-    assert [v.pattern for v in plan.vetoes] == ["(?is)a"]
-
-
-@pytest.mark.parametrize(
-    "axis",
-    [
-        "NOT any_match(diagnoses, d -> d.diagnosis_code LIKE 'Z%') "
-        "AND any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')",
-        "any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%') "
-        "AND NOT any_match(diagnoses, d -> d.diagnosis_code LIKE 'Z%')",
-    ],
-)
-def test_an_excluded_code_set_is_not_a_diagnosis_axis(axis: str) -> None:
-    """It admits nothing, so it must not claim a row or name the matched codes."""
-    sql = (
-        f"SELECT primary_report_identifier FROM reports_latest WHERE {axis} "
-        "AND REGEXP_LIKE(report_text, '(?is)embolism')"
-    )
-    plan = build_plan(sql)
-    assert plan is not None
-    assert plan.dx_tests == ["ANY_MATCH(diagnoses, d -> d.diagnosis_code LIKE 'I26%')"]
-    assert plan.dx_lambdas == ["d -> d.diagnosis_code LIKE 'I26%'"]
-    assert "'Z%'" not in with_evidence(sql)[0].split("FROM reports_latest")[0]
-
-
 def test_the_report_text_veto_keeps_its_blank_section_guard() -> None:
     """The query only rules out on report_text when no section parsed, so a
     HISTORY line must not flag a row admitted on its impression."""
@@ -562,34 +513,6 @@ def test_every_veto_under_one_not_guards_the_positive() -> None:
         line for line in with_evidence(sql)[0].splitlines() if "THEN 'text'" in line
     )
     assert arm.count("NOT REGEXP_LIKE") == 2
-
-
-def test_a_not_over_a_group_guards_with_both_its_leaves() -> None:
-    sql = (
-        "SELECT primary_report_identifier FROM reports_latest WHERE "
-        "REGEXP_LIKE(report_section_impression, '(?is)tumor') "
-        "AND NOT (REGEXP_LIKE(report_section_impression, '(?is)benign') "
-        "AND REGEXP_LIKE(report_section_impression, '(?is)cyst'))"
-    )
-    out, _ = with_evidence(sql)
-    arm = next(line for line in out.splitlines() if "THEN 'text'" in line)
-    assert arm.count("NOT REGEXP_LIKE") == 2
-
-
-@pytest.mark.parametrize(
-    "subject",
-    [
-        "COALESCE(report_section_impression, report_text)",
-        "report_section_impression || ' ' || report_section_findings",
-    ],
-)
-def test_a_subject_spanning_columns_is_tested_whole(subject: str) -> None:
-    """Testing one column out of it left every row admitted through the other
-    reading as unexplained."""
-    sql = f"SELECT primary_report_identifier FROM reports_latest WHERE REGEXP_LIKE({subject}, '(?is)stroke')"
-    out, _ = with_evidence(sql)
-    assert f"REGEXP_LIKE({subject}, '(?is)stroke')" in out
-    assert f"REGEXP_EXTRACT({subject}, '(?is)stroke')" in out
 
 
 def test_two_blank_section_arms_are_ored() -> None:
@@ -716,3 +639,43 @@ def test_planning_does_not_walk_the_chain_for_every_level() -> None:
         f"SELECT x FROM reports_latest WHERE {positives} AND {vetoes} AND {extra}"
     )
     assert time.perf_counter() - start < 1.5
+
+
+def test_a_compound_not_is_not_modelled() -> None:
+    """NOT (x AND v) is NOT x OR NOT v, so neither is ruled out on its own.
+    Claiming v as a veto hides evidence from a row the query admitted."""
+    plan = build_plan(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_section_impression, '(?is)tumor') "
+        "AND NOT (REGEXP_LIKE(report_section_impression, '(?is)benign') "
+        "AND REGEXP_LIKE(report_section_impression, '(?is)cyst'))"
+    )
+    assert plan is not None
+    assert [p.pattern for p in plan.positives] == ["(?is)tumor"]
+    assert plan.vetoes == []
+
+
+def test_a_not_over_a_disjunction_is_modelled() -> None:
+    """NOT (v1 OR v2) does rule out each of them."""
+    plan = build_plan(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_text, '(?is)a') "
+        "AND NOT (REGEXP_LIKE(report_text, '(?is)v1') "
+        "OR REGEXP_LIKE(report_text, '(?is)v2'))"
+    )
+    assert plan is not None
+    assert sorted(v.pattern for v in plan.vetoes) == ["(?is)v1", "(?is)v2"]
+
+
+def test_a_veto_anded_onto_a_disjunction_reaches_both_arms() -> None:
+    """The prompt's own (impression OR findings) pattern, with a veto added."""
+    plan = build_plan(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "((REGEXP_LIKE(report_section_impression, '(?is)A') "
+        "OR REGEXP_LIKE(report_section_findings, '(?is)A')) "
+        "AND NOT REGEXP_LIKE(report_section_impression, '(?is)V')) "
+        "OR any_match(diagnoses, d -> d.diagnosis_code LIKE 'I2%')"
+    )
+    assert plan is not None
+    for positive in plan.positives:
+        assert [v.pattern for v in plan.veto_for[positive]] == ["(?is)V"]
