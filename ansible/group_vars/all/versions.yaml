@@ -155,7 +155,7 @@ gpu_operator_version: v26.7.1
 # Medical Imaging - DCM4CHEE
 # dcm4che-tools = the toolkit (populate Job's storescu), separate from the arc family below.
 # renovate: datasource=docker depName=dcm4che/dcm4che-tools
-dcm4che_tools_version: 5.33.1
+dcm4che_tools_version: 5.35.1
 
 # arc/db/ldap ship as one family (35: arc 5.35.x, db 18.x-35, slapd 2.6.x-35.x) and MUST stay
 # in step. Bounded by allowedVersions packageRules in renovate.json5 (they can't live here --
