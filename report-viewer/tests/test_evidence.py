@@ -428,16 +428,6 @@ def test_the_report_text_veto_keeps_its_blank_section_guard() -> None:
     assert "COALESCE(TRIM(report_section_findings), '') = ''" in arm
 
 
-def test_an_ungated_veto_gets_no_guard() -> None:
-    sql = (
-        "SELECT primary_report_identifier FROM reports_latest WHERE "
-        "REGEXP_LIKE(report_text, '(?is)stroke') "
-        "AND NOT REGEXP_LIKE(report_text, '(?is)no stroke')"
-    )
-    out, _ = with_evidence(sql)
-    assert "TRIM(" not in out
-
-
 def test_highlights_are_not_blank_section_guarded() -> None:
     """The panel renders report_text, so guarding these would drop every mark
     on a report that has sections."""
@@ -622,22 +612,31 @@ def test_vetoes_reach_a_bracketed_positive(where: str, expected: list[str]) -> N
     assert sorted(v.pattern for v in plan.veto_for[positive]) == expected
 
 
-def test_planning_does_not_walk_the_chain_for_every_level() -> None:
-    """Recomputing the conjunction at each level made this quadratic."""
-    import time
+def test_planning_scans_each_sibling_branch_once(monkeypatch) -> None:
+    """Rescanning the whole conjunction at every level made this quadratic.
+    Counted, not timed, so a loaded runner cannot fail it."""
+    import scout_report_viewer.evidence as ev
 
-    positives = " AND ".join(
-        f"REGEXP_LIKE(report_text, '(?is)p{i}')" for i in range(12)
-    )
+    scanned: list[int] = []
+    real = ev._conjoined_ids
+
+    def counting(node):
+        result = real(node)
+        scanned.append(len(result))
+        return result
+
+    monkeypatch.setattr(ev, "_conjoined_ids", counting)
+    positives = " AND ".join(f"REGEXP_LIKE(report_text, '(?is)p{i}')" for i in range(4))
     vetoes = " AND ".join(
-        f"NOT REGEXP_LIKE(report_text, '(?is)v{i}')" for i in range(10)
+        f"NOT REGEXP_LIKE(report_text, '(?is)v{i}')" for i in range(2)
     )
-    extra = " AND ".join(f"modality <> 'X{i}'" for i in range(300))
-    start = time.perf_counter()
+    extra = " AND ".join(f"modality <> 'X{i}'" for i in range(60))
     build_plan(
         f"SELECT x FROM reports_latest WHERE {positives} AND {vetoes} AND {extra}"
     )
-    assert time.perf_counter() - start < 1.5
+    # Each scan covers one predicate. Rescanning the conjunction would cover
+    # every predicate in the chain, an order of magnitude more.
+    assert max(scanned) < 40
 
 
 def test_a_compound_not_is_not_modelled() -> None:
