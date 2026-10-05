@@ -118,7 +118,11 @@ def _text_column_of(node: exp.Expression) -> str | None:
 
 
 def _blank_sections_in(node: exp.Expression) -> set[str]:
-    """Text columns `node` requires to be blank, descending conjunctions only."""
+    """Blank-section tests in `node`, as written, descending conjunctions only.
+
+    Kept verbatim rather than rebuilt from the column: `IS NULL` and
+    `TRIM(col) = ''` disagree on a whitespace-only section.
+    """
     if isinstance(node, exp.Paren):
         return _blank_sections_in(node.this)
     if isinstance(node, exp.And):
@@ -126,7 +130,11 @@ def _blank_sections_in(node: exp.Expression) -> set[str]:
     if isinstance(node, exp.EQ):
         right = node.expression
         if isinstance(right, exp.Literal) and right.is_string and right.this == "":
-            return _names_in(node.this) & TEXT_COLUMNS
+            if _names_in(node.this) & TEXT_COLUMNS:
+                return {node.sql(dialect=DIALECT)}
+    if isinstance(node, exp.Is) and isinstance(node.expression, exp.Null):
+        if _names_in(node.this) & TEXT_COLUMNS:
+            return {node.sql(dialect=DIALECT)}
     return set()
 
 
@@ -269,38 +277,38 @@ def _conjoined_ids(node: exp.Expression) -> set[int]:
     return {id(n) for n in node.find_all(exp.Expression)}
 
 
+def _conjunction_root(node: exp.Expression) -> exp.Expression:
+    """The widest AND scope around `node`. Brackets are grouping, not a
+    boundary; a disjunction is, since the other arm admits on its own."""
+    root = node
+    ancestor = node.parent
+    while isinstance(ancestor, (exp.Paren, exp.And, exp.Not)):
+        root = ancestor
+        ancestor = ancestor.parent
+    return root
+
+
 def _sibling_vetoes(
     node: exp.Expression,
-    leaf: TextLeaf,
     nodes: list[tuple[exp.Expression, TextLeaf]],
+    cache: dict[int, list[TextLeaf]],
 ) -> list[TextLeaf]:
-    """The vetoes guarding this positive: negated siblings on the same column.
+    """Every veto ANDed with this positive, whatever column it reads.
 
-    `(A AND NOT A_veto) AND (B AND NOT B_veto)` puts each positive next to its
-    own veto, so widening out from the innermost enclosing AND finds the right
-    one. Keying on column alone would hand B whichever veto came first.
-
-    The walk stops at a disjunction: a veto in the other arm of an OR does not
-    constrain this positive.
+    All of them must be false for the arm to admit the row, so none of them
+    belongs to some other positive. Cached per scope: recomputing it at each
+    level made planning quadratic in the length of the AND chain.
     """
-    ancestor: exp.Expression | None = node
-    while ancestor is not None:
-        if isinstance(ancestor, exp.Or):
-            return []
-        if isinstance(ancestor, exp.And):
-            within = _conjoined_ids(ancestor)
-            # Every one of them, since NOT (v1 OR v2) rules out both.
-            found = [
-                other_leaf
-                for other, other_leaf in nodes
-                if other_leaf.negated
-                and other_leaf.column == leaf.column
-                and id(other) in within
-            ]
-            if found:
-                return list(dict.fromkeys(found))
-        ancestor = ancestor.parent
-    return []
+    root = _conjunction_root(node)
+    key = id(root)
+    if key not in cache:
+        within = _conjoined_ids(root)
+        cache[key] = list(
+            dict.fromkeys(
+                leaf for other, leaf in nodes if leaf.negated and id(other) in within
+            )
+        )
+    return cache[key]
 
 
 def build_plan(sql: str) -> EvidencePlan | None:
@@ -364,10 +372,11 @@ def build_plan(sql: str) -> EvidencePlan | None:
         log.info("evidence: %d text predicates exceeds cap; skipping", len(seen))
         return None
 
+    veto_cache: dict[int, list[TextLeaf]] = {}
     for node, leaf in nodes:
         if leaf.negated:
             continue
-        vetoes = _sibling_vetoes(node, leaf, nodes)
+        vetoes = _sibling_vetoes(node, nodes, veto_cache)
         if vetoes:
             plan.veto_for.setdefault(leaf, vetoes)
 
@@ -402,10 +411,7 @@ def _guard_parts(plan: EvidencePlan, leaf: TextLeaf) -> list[str]:
     # An unguarded occurrence admits on its own, so no arm may be required.
     if not arms or any(not arm for arm in arms):
         return []
-    rendered = [
-        " AND ".join(f"COALESCE(TRIM({col}), '') = ''" for col in sorted(arm))
-        for arm in arms
-    ]
+    rendered = [" AND ".join(sorted(arm)) for arm in arms]
     return [rendered[0]] if len(rendered) == 1 else ["(" + " OR ".join(rendered) + ")"]
 
 
@@ -514,14 +520,22 @@ def rewrite(sql: str, plan: EvidencePlan) -> str | None:
 
 
 def with_evidence(sql: str) -> tuple[str, bool]:
-    """`(sql_to_run, has_evidence)`. Always returns runnable SQL."""
-    plan = build_plan(sql)
-    if plan is None:
+    """`(sql_to_run, has_evidence)`. Always returns runnable SQL.
+
+    The plan reads SQL a language model wrote, so the shapes it has to survive
+    are open ended. Anything unhandled costs the evidence, never the cohort.
+    """
+    try:
+        plan = build_plan(sql)
+        if plan is None:
+            return sql, False
+        rewritten = rewrite(sql, plan)
+        if rewritten is None:
+            return sql, False
+        return rewritten, True
+    except Exception:
+        log.exception("evidence: rewrite failed; running the original sql")
         return sql, False
-    rewritten = rewrite(sql, plan)
-    if rewritten is None:
-        return sql, False
-    return rewritten, True
 
 
 _HIT_ROW = "ROW(field VARCHAR, pos INTEGER, len INTEGER, polarity VARCHAR)"
@@ -558,7 +572,11 @@ def highlight_hits_expression(sql: str) -> str | None:
     predicate named: the row panel shows `report_text`, and an offset into
     `report_section_impression` means nothing there.
     """
-    plan = build_plan(sql)
+    try:
+        plan = build_plan(sql)
+    except Exception:
+        log.exception("evidence: highlight plan failed; marking nothing")
+        return None
     if plan is None:
         return None
     leaves: list[TextLeaf] = []

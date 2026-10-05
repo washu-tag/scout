@@ -161,8 +161,10 @@ def test_the_diagnosis_arm_is_evaluated_not_assumed() -> None:
     assert "ELSE 'diagnosis_code'" not in out
 
 
-def test_each_positive_pairs_with_the_veto_in_its_own_and() -> None:
-    """Two concepts on one column must not share a veto."""
+def test_every_veto_in_a_conjunction_guards_every_positive_in_it() -> None:
+    """All of them must be false for the arm to admit, so attaching all of
+    them is right: if another OR branch let the row in, this arm should not
+    claim it."""
     sql = (
         "SELECT primary_report_identifier FROM reports_latest WHERE "
         "(REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)nodule') "
@@ -176,9 +178,10 @@ def test_each_positive_pairs_with_the_veto_in_its_own_and() -> None:
         pos.pattern: [v.pattern for v in vetoes]
         for pos, vetoes in plan.veto_for.items()
     }
-    assert pairing == {
-        "(?is)nodule": ["(?is)no[^.;:]*nodule"],
-        "(?is)emphysema": ["(?is)no[^.;:]*emphysema"],
+    both = ["(?is)no[^.;:]*emphysema", "(?is)no[^.;:]*nodule"]
+    assert {k: sorted(v) for k, v in pairing.items()} == {
+        "(?is)nodule": both,
+        "(?is)emphysema": both,
     }
 
 
@@ -614,3 +617,102 @@ def test_an_unguarded_arm_drops_the_guard_entirely() -> None:
     )
     arm = next(line for line in out.splitlines() if "THEN 'text'" in line)
     assert "TRIM(" not in arm
+
+
+def test_an_unhandled_shape_costs_the_evidence_not_the_cohort(monkeypatch) -> None:
+    """The plan reads SQL a model wrote, so it must never raise at the caller."""
+    import scout_report_viewer.evidence as evidence
+
+    def boom(_sql: str):
+        raise RuntimeError("unhandled sql shape")
+
+    monkeypatch.setattr(evidence, "build_plan", boom)
+    assert evidence.with_evidence(CANONICAL) == (CANONICAL, False)
+    assert evidence.highlight_hits_expression(CANONICAL) is None
+
+
+def test_a_chain_of_vetoes_all_guard_the_positive() -> None:
+    """A AND NOT V1 AND NOT V2 nests, so the nearest AND holds only one."""
+    out, _ = with_evidence(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_text, '(?is)a') "
+        "AND NOT REGEXP_LIKE(report_text, '(?is)v1') "
+        "AND NOT REGEXP_LIKE(report_text, '(?is)v2')"
+    )
+    arm = next(line for line in out.splitlines() if "THEN 'text'" in line)
+    assert arm.count("NOT REGEXP_LIKE") == 2
+
+
+def test_an_is_null_section_guard_is_kept_as_written() -> None:
+    """IS NULL and TRIM(col) = '' disagree on a whitespace-only section."""
+    out, _ = with_evidence(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_section_impression, '(?is)nodule') "
+        "OR (report_section_impression IS NULL AND report_section_findings IS NULL "
+        "AND REGEXP_LIKE(report_text, '(?is)nodule') "
+        "AND NOT REGEXP_LIKE(report_text, '(?is)no nodule'))"
+    )
+    arm = next(line for line in out.splitlines() if "THEN 'text'" in line)
+    assert "report_section_impression IS NULL" in arm
+    assert "TRIM(" not in arm
+    # The veto is gated the same way, or a HISTORY line flags a sectioned row.
+    veto_arm = next(
+        line
+        for line in out.splitlines()
+        if "REGEXP_EXTRACT(report_text" in line and "no nodule" in line
+    )
+    assert "report_section_impression IS NULL" in veto_arm
+
+
+@pytest.mark.parametrize(
+    ("where", "expected"),
+    [
+        # Brackets are grouping, so a positive inside them still reaches the
+        # veto ANDed with the group.
+        (
+            "((REGEXP_LIKE(report_section_impression, '(?is)A') AND modality = 'CT') "
+            "AND NOT REGEXP_LIKE(report_section_impression, '(?is)V1')) "
+            "OR any_match(diagnoses, d -> d.diagnosis_code LIKE 'I2%')",
+            ["(?is)V1"],
+        ),
+        (
+            "((REGEXP_LIKE(report_section_impression, '(?is)A') "
+            "AND NOT REGEXP_LIKE(report_section_impression, '(?is)V1')) "
+            "AND NOT REGEXP_LIKE(report_section_impression, '(?is)V2')) "
+            "OR any_match(diagnoses, d -> d.diagnosis_code LIKE 'I2%')",
+            ["(?is)V1", "(?is)V2"],
+        ),
+        # A veto on another column still has to be false for the arm to admit.
+        (
+            "(REGEXP_LIKE(report_section_impression, '(?is)A') "
+            "AND NOT REGEXP_LIKE(report_text, '(?is)V1')) "
+            "OR any_match(diagnoses, d -> d.diagnosis_code LIKE 'I2%')",
+            ["(?is)V1"],
+        ),
+    ],
+)
+def test_vetoes_reach_a_bracketed_positive(where: str, expected: list[str]) -> None:
+    plan = build_plan(
+        f"SELECT primary_report_identifier FROM reports_latest WHERE {where}"
+    )
+    assert plan is not None
+    positive = next(p for p in plan.positives if p.pattern == "(?is)A")
+    assert sorted(v.pattern for v in plan.veto_for[positive]) == expected
+
+
+def test_planning_does_not_walk_the_chain_for_every_level() -> None:
+    """Recomputing the conjunction at each level made this quadratic."""
+    import time
+
+    positives = " AND ".join(
+        f"REGEXP_LIKE(report_text, '(?is)p{i}')" for i in range(12)
+    )
+    vetoes = " AND ".join(
+        f"NOT REGEXP_LIKE(report_text, '(?is)v{i}')" for i in range(10)
+    )
+    extra = " AND ".join(f"modality <> 'X{i}'" for i in range(300))
+    start = time.perf_counter()
+    build_plan(
+        f"SELECT x FROM reports_latest WHERE {positives} AND {vetoes} AND {extra}"
+    )
+    assert time.perf_counter() - start < 1.5

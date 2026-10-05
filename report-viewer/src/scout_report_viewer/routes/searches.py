@@ -75,6 +75,10 @@ async def _execute_or_fall_back(
     rows match, but it can still reference a column the outer query does not
     expose. A cohort must never fail to load because of a reviewing aid, so any
     error retries the original and simply returns no evidence.
+
+    Retrying on every error is deliberate: Trino does not attribute failures
+    well enough to tell ours from the model's, and guessing wrong would drop a
+    cohort that would have loaded. The logs say which it was afterwards.
     """
     try:
         with metrics.time_trino(op):
@@ -85,13 +89,23 @@ async def _execute_or_fall_back(
     except Exception:
         if scored == original:
             raise
-        log.exception("evidence rewrite failed at trino; retrying original sql")
-        with metrics.time_trino(op):
-            # safe: same query the model authored, unmodified
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            columns, rows = await trino_client.execute(
-                original, user=user, params=params
-            )
+        # The splice is one suspect among several: the model's own sql may be
+        # broken, or Trino may have timed out. The retry tells them apart, so
+        # claim nothing until it has run.
+        log.warning(
+            "scored sql failed at trino; retrying without evidence", exc_info=True
+        )
+        try:
+            with metrics.time_trino(op):
+                # safe: same query the model authored, unmodified
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                columns, rows = await trino_client.execute(
+                    original, user=user, params=params
+                )
+        except Exception:
+            log.warning("the model's own sql failed too; the rewrite was not at fault")
+            raise
+        log.warning("the evidence rewrite was at fault; cohort loaded without it")
         return columns, rows, False
 
 
@@ -185,7 +199,7 @@ async def create_search(
     scored_sql, _rewritten = with_evidence(sql)
     limit = f" s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
-        columns, sample_rows, has_evidence = await _execute_or_fall_back(
+        columns, sample_rows, _has_evidence = await _execute_or_fall_back(
             f"SELECT s.* FROM ({scored_sql}){limit}",
             f"SELECT s.* FROM ({sql}){limit}",
             user=user.sub,
