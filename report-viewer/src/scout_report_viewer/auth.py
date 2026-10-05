@@ -117,6 +117,12 @@ def _validate_jwt(token: str) -> User | None:
             algorithms=list(ALLOWED_JWT_ALGS),
             audience=settings.oidc_audience,
             issuer=settings.oidc_issuer,
+            # ID tokens issued alongside an access token (oauth2-proxy's normal
+            # code flow) carry at_hash, binding them to that specific access
+            # token. We only ever see the bearer, never its paired access
+            # token, so there's nothing to compare against - and nothing to
+            # gain from it anyway, since we already verify signature/exp/iss/aud.
+            options={"verify_at_hash": False},
         )
     except ExpiredSignatureError:
         log.info("bearer rejected: token expired")
