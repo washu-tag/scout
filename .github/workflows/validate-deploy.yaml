@@ -15,8 +15,10 @@ on:
       - helm/extractor/hl7-transformer/**
       - .github/workflows/validate-deploy.yaml
       - .github/workflows/deploy-flux.yaml
+      - .github/workflows/ci.yaml
       - .github/ci_resources/flux/**
       - .github/actions/install-flux/**
+      - .github/actions/publish-haul/**
       # OPA data-doc drift guard reads the Ansible source; re-run on those too.
       - ansible/roles/opa/defaults/main.yaml
       - ansible/roles/scout_common/defaults/main.yaml
@@ -29,6 +31,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: python3 -m pip install pytest pyyaml
+      - name: Test deployment tooling and artifact identity
+        run: python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_consumer_boundary.py
 
       - name: Install kustomize
         run: |

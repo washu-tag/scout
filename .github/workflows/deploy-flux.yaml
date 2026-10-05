@@ -1,19 +1,29 @@
 name: Deploy via Flux (on-prem)
 
-# Consumer-side proof of the GitOps lane (ADR 0031 Phase 3 exit gate): stand Scout up on
-# k3s in on-prem mode from a signed scout-config artifact through Flux, the way a site runs
-# it (SOPS-encrypted secret values, strict substitution, site roots in flux-system), then run
-# the tests/ingest suite against it. Ingest leg: the extractor's dependsOn closure; the rest
-# of the DAG is suspended.
-#
-# PROTOTYPE triggers: a push to plt/onprem-ci-proof or a dispatch, in local-artifact mode
-# (scout-config is built from this checkout and pushed to an in-job registry). The PR
-# version adds workflow_run on "Post-Commit Tasks" for main pushes (the published artifact)
-# and a pull_request self-test.
+# Consumer proof: the ingest leg runs from either the exact published config from a
+# successful upstream main build, or a clearly separate locally built PR/prototype config.
+# The workflow_run boundary is repeated in the read-only jobs and the status-only writer.
 on:
+  workflow_run:
+    workflows: [Post-Commit Tasks]
+    types: [completed]
+    branches: [main]
+  pull_request:
+    paths:
+      - deploy/**
+      - tooling/deploy/**
+      - helm/**
+      - .github/workflows/deploy-flux.yaml
+      - .github/workflows/ci.yaml
+      - .github/ci_resources/flux/**
+      - .github/actions/install-flux/**
+      - .github/actions/install-sops-age/**
+      - .github/actions/install-hauler-oras/**
+      - .github/actions/publish-haul/**
   push:
     branches:
       - plt/onprem-ci-proof
+      - codex/onprem-ci-proof-handoff
   workflow_dispatch:
     inputs:
       values:
@@ -26,27 +36,111 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Published attempts and manual runs are independent; a newer PR push supersedes its proof.
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.id || (github.event_name == 'workflow_dispatch' && github.run_id) || github.ref }}-${{ github.event.workflow_run.run_attempt || 'local' }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_run' }}
 
 env:
   JAVA_DIST: 'zulu'
   JAVA_VERSION: '21'
-  # Same scratch-disk layout as ci.yaml's e2e lane (the CI inventory templates it in).
   K3S_DATA_DIR: /mnt/k3s
   MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
-  # sops: the site default (ADR 0031 section 3). plain: the vault fallback, where External
-  # Secrets Operator or Ansible writes the same Secret outside Flux.
+  CONFIG_REPO: ghcr.io/washu-tag/manifests/scout-config
+  TESTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
   VALUES_MODE: ${{ inputs.values || 'sops' }}
 
 jobs:
+  identity:
+    name: Resolve exact published config
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.repository == 'washu-tag/scout' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == 'washu-tag/scout'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      present: ${{ steps.select.outputs.present }}
+      version: ${{ steps.validate.outputs.version }}
+      config_digest: ${{ steps.validate.outputs.config_digest }}
+      manifest_digest: ${{ steps.validate.outputs.manifest_digest }}
+    env:
+      PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+      PRODUCER_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Select the receipt for this producer attempt
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate --slurp \
+            "/repos/washu-tag/scout/actions/runs/${PRODUCER_RUN_ID}/artifacts?per_page=100" \
+            > "$RUNNER_TEMP/config-artifacts.json"
+          python3 .github/ci_resources/flux/receipt_archive.py select \
+            --listing "$RUNNER_TEMP/config-artifacts.json" \
+            --run-id "$PRODUCER_RUN_ID" --run-attempt "$PRODUCER_RUN_ATTEMPT" \
+            --revision "$TESTED_SHA" --github-output "$GITHUB_OUTPUT"
+      - name: Download only the selected receipt
+        if: steps.select.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECEIPT_ARTIFACT_ID: ${{ steps.select.outputs.artifact_id }}
+        run: |
+          set -euo pipefail
+          gh api "/repos/washu-tag/scout/actions/artifacts/${RECEIPT_ARTIFACT_ID}/zip" \
+            > "$RUNNER_TEMP/config-receipt.zip"
+          python3 .github/ci_resources/flux/receipt_archive.py extract \
+            --archive "$RUNNER_TEMP/config-receipt.zip" --output "$RUNNER_TEMP/scout-config-ref.json"
+      - name: Validate the producer identity
+        id: validate
+        if: steps.select.outputs.present == 'true'
+        run: |
+          python3 tooling/deploy/artifact_identity.py validate \
+            --receipt "$RUNNER_TEMP/scout-config-ref.json" \
+            --repository washu-tag/scout --revision "$TESTED_SHA" \
+            --run-id "$PRODUCER_RUN_ID" --run-attempt "$PRODUCER_RUN_ATTEMPT" \
+            --github-output "$GITHUB_OUTPUT"
+
   ingest:
     name: deploy-and-test-flux (ingest)
+    needs: [identity]
+    if: >-
+      always() && (
+        github.event_name != 'workflow_run' || (
+          github.repository == 'washu-tag/scout' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_repository.full_name == 'washu-tag/scout' &&
+          needs.identity.result == 'success' && needs.identity.outputs.present == 'true'
+        )
+      )
+    permissions:
+      contents: read
+    env:
+      ARTIFACT_MODE: ${{ github.event_name == 'workflow_run' && 'published' || 'local' }}
+      IDENTITY_REPOSITORY: ${{ github.event_name == 'workflow_run' && 'washu-tag/scout' || github.repository }}
+      IDENTITY_RUN_ID: ${{ github.event.workflow_run.id || github.run_id }}
+      IDENTITY_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt || github.run_attempt }}
+      RECEIPT_VERSION: ${{ needs.identity.outputs.version }}
+      RECEIPT_CONFIG_DIGEST: ${{ needs.identity.outputs.config_digest }}
+      RECEIPT_MANIFEST_DIGEST: ${{ needs.identity.outputs.manifest_digest }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -60,6 +154,15 @@ jobs:
       - uses: ./.github/actions/install-hauler-oras
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Verify the exact published config before installing the cluster
+        if: env.ARTIFACT_MODE == 'published'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp cosign.pub "$RUNNER_TEMP/cosign.pub"
+          export VERSION="$RECEIPT_VERSION" MANIFEST_DIGEST="$RECEIPT_MANIFEST_DIGEST"
+          export CONFIG_SOURCE="$CONFIG_REPO" CONFIG_DIGEST="$RECEIPT_CONFIG_DIGEST" CONFIG_INSECURE=false
+          bash .github/ci_resources/flux/verify_config.sh
       - name: Install the registry
         shell: bash
         env:
@@ -144,17 +247,20 @@ jobs:
           timeout 30 bash -c "until curl -fsS http://${NODE_IP}:5000/v2/ >/dev/null; do sleep 1; done"
           echo "CI_REGISTRY=${NODE_IP}:5000" >> "$GITHUB_ENV"
 
-      # Local-artifact mode: the same stamp + tar as ci.yaml config-artifact-publish, against
-      # the build lane's current haul, then a keyed cosign signature (no tlog) as the
-      # published artifact carries, with a key that lives for this run only.
-      - name: Build, push and sign scout-config
+      # Local mode proves proposed deploy code using a snapshot of the released haul.
+      # It does not claim to test a config published by the triggering build.
+      - name: Build, push and sign the local scout-config
+        if: env.ARTIFACT_MODE == 'local'
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          VERSION="0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
+          export VERSION
           work="$RUNNER_TEMP/config"; rm -rf "$work"; mkdir -p "$work/haul"
-          oras pull "${MANIFEST_REPO}:main" -o "$work/haul"
+          # Resolve the local prototype's released baseline once; pull only that digest.
+          MANIFEST_DIGEST="$(oras manifest fetch --descriptor "${MANIFEST_REPO}:main" | jq -er .digest)"
+          export MANIFEST_DIGEST
+          oras pull "${MANIFEST_REPO}@${MANIFEST_DIGEST}" -o "$work/haul"
           cp -r deploy "$work/config-artifact"
           python3 tooling/deploy/stamp_config.py \
             --deploy-dir "$work/config-artifact" \
@@ -162,15 +268,25 @@ jobs:
             --realm-file helm/keycloak-config-cli/files/scout-realm.json
           tar -C "$work/config-artifact" -czf "$work/scout-config.tar.gz" \
             base flux modes required-vars.txt required-secret-values.txt
-          (cd "$work" && oras push --plain-http "${CI_REGISTRY}/scout-config:${VERSION}" \
+          export CONFIG_SOURCE="${CI_REGISTRY}/scout-config" CONFIG_INSECURE=true
+          (cd "$work" && oras push --plain-http "${CONFIG_SOURCE}:${VERSION}" \
+            --export-manifest "$RUNNER_TEMP/local-config-manifest.json" \
+            --annotation "org.opencontainers.image.source=https://github.com/${IDENTITY_REPOSITORY}" \
+            --annotation "org.opencontainers.image.revision=${TESTED_SHA}" \
+            --annotation "org.opencontainers.image.version=${VERSION}" \
+            --annotation "io.scout.build.run-id=${IDENTITY_RUN_ID}" \
+            --annotation "io.scout.build.run-attempt=${IDENTITY_RUN_ATTEMPT}" \
+            --annotation "io.scout.build.manifest-digest=${MANIFEST_DIGEST}" \
             scout-config.tar.gz:application/gzip)
           COSIGN_PASSWORD="$(openssl rand -hex 16)"
           export COSIGN_PASSWORD
           (cd "$RUNNER_TEMP" && cosign generate-key-pair)
-          digest="$(oras manifest fetch --plain-http --descriptor "${CI_REGISTRY}/scout-config:${VERSION}" | jq -r .digest)"
+          CONFIG_DIGEST="sha256:$(sha256sum "$RUNNER_TEMP/local-config-manifest.json" | cut -d ' ' -f 1)"
+          export CONFIG_DIGEST
           cosign sign --key "$RUNNER_TEMP/cosign.key" --allow-http-registry \
-            --use-signing-config=false --tlog-upload=false --yes "${CI_REGISTRY}/scout-config@${digest}"
+            --use-signing-config=false --tlog-upload=false --yes "${CONFIG_SOURCE}@${CONFIG_DIGEST}"
           rm -f "$RUNNER_TEMP/cosign.key"
+          bash .github/ci_resources/flux/verify_config.sh
 
       - name: Install Flux
         shell: bash
@@ -190,8 +306,9 @@ jobs:
             | grep -q 'UseHelm3Defaults=true'
           flux check
 
-      # The site's config as a site keeps it: cluster-vars, the values Secret encrypted to
-      # an age key only the cluster holds, and the scout-config source with its verify key.
+      # The site carries cluster-vars, encrypted values, and the digest-pinned source.
+      # Bootstrap the config trust key directly from the checked-out public key (or the
+      # local ephemeral key), outside the unsigned site artifact.
       - name: Build and push the site artifact
         shell: bash
         run: |
@@ -199,10 +316,12 @@ jobs:
           site="$RUNNER_TEMP/site"; neg="$RUNNER_TEMP/negative"
           rm -rf "$site" "$neg"; mkdir -p "$site" "$neg"
           cp .github/ci_resources/flux/site/kustomization.yaml "$site/"
-          sed -e "s|@REGISTRY@|${CI_REGISTRY}|g" -e "s|@VERSION@|${VERSION}|g" \
+          sed -e "s|@CONFIG_SOURCE@|${CONFIG_SOURCE}|g" \
+            -e "s|@CONFIG_DIGEST@|${CONFIG_DIGEST}|g" \
+            -e "s|insecure: false|insecure: ${CONFIG_INSECURE}|g" \
             .github/ci_resources/flux/site/scout-config-source.yaml > "$site/scout-config-source.yaml"
           kubectl create secret generic scout-cosign-pub -n flux-system \
-            --from-file=cosign.pub="$RUNNER_TEMP/cosign.pub" --dry-run=client -o yaml > "$site/scout-cosign-pub.yaml"
+            --from-file=cosign.pub="$RUNNER_TEMP/cosign.pub"
           jq --arg d "$PWD/tests/ingest/staging_test_data" '.extractor_data_dir = $d' \
             .github/ci_resources/flux/cluster-vars.values.json > "$RUNNER_TEMP/cluster-vars.values.json"
           python3 tooling/deploy/gen_cluster_vars.py --values "$RUNNER_TEMP/cluster-vars.values.json" \
@@ -242,7 +361,7 @@ jobs:
           for a in "scout-site:$site" "ci-negative:$neg"; do
             flux push artifact "oci://${CI_REGISTRY}/${a%%:*}:${VERSION}" --path="${a#*:}" \
               --source="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
-              --revision="${VERSION}@sha1:${GITHUB_SHA}" --insecure-registry
+              --revision="${VERSION}@sha1:${TESTED_SHA}" --insecure-registry
           done
 
       - name: Reconcile the site source (decryption, verified scout-config)
@@ -255,6 +374,11 @@ jobs:
           verified="$(kubectl -n flux-system get ocirepository scout-config \
             -o jsonpath='{.status.conditions[?(@.type=="SourceVerified")].status}')"
           [ "$verified" = "True" ] || { echo "::error::scout-config is not cosign-verified"; exit 1; }
+          # Check the live source still pins the exact config verified above.
+          actual="$(kubectl -n flux-system get ocirepository scout-config -o jsonpath='{.spec.ref.digest}')"
+          [ "$actual" = "$CONFIG_DIGEST" ] || { echo "::error::Flux config digest differs from receipt"; exit 1; }
+          actual_source="$(kubectl -n flux-system get ocirepository scout-config -o jsonpath='{.spec.url}')"
+          [ "$actual_source" = "oci://${CONFIG_SOURCE}" ] || { echo "::error::Flux config repository differs from receipt"; exit 1; }
           # The values Secret holds every key in plaintext (decrypted by kustomize-controller
           # in sops mode). Counts only; no value is printed.
           kubectl -n flux-system get secret scout-secret-values -o json | python3 -c '
@@ -344,3 +468,40 @@ jobs:
           if [ "$NEGATIVE" = "failure" ]; then echo "::error::the negative cases failed (see that step)"; rc=1; fi
           if [ "$IMAGES" = "failure" ]; then echo "::error::an image comes from an unmirrored registry"; rc=1; fi
           exit $rc
+
+  published-status:
+    name: Report the published artifact proof
+    needs: [identity, ingest]
+    if: >-
+      always() &&
+      github.event_name == 'workflow_run' &&
+      github.repository == 'washu-tag/scout' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == 'washu-tag/scout' &&
+      (needs.identity.result != 'success' || needs.identity.outputs.present == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # This is the only writer. Never checkout/download artifacts or run repository code here.
+    permissions:
+      statuses: write
+    steps:
+      - name: Report against the tested producer commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRODUCER_SHA: ${{ github.event.workflow_run.head_sha }}
+          IDENTITY_RESULT: ${{ needs.identity.result }}
+          INGEST_RESULT: ${{ needs.ingest.result }}
+        run: |
+          set -euo pipefail
+          state=failure
+          description='Published config identity or Flux ingest proof failed'
+          if [ "$IDENTITY_RESULT" = success ] && [ "$INGEST_RESULT" = success ]; then
+            state=success
+            description='Exact published config passed the Flux ingest proof'
+          fi
+          gh api --method POST "/repos/washu-tag/scout/statuses/${PRODUCER_SHA}" \
+            -f state="$state" -f context='on-prem/flux-ingest' \
+            -f description="$description" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

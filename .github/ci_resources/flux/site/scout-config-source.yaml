@@ -1,6 +1,5 @@
-# The scout-config build this run deploys, verified against the run's ephemeral cosign key.
-# @REGISTRY@ and @VERSION@ are filled in at run time. insecure: the in-job registry serves
-# plain HTTP; a site's registry serves TLS.
+# The exact verified config digest; published mode consumes GHCR directly, local mode
+# consumes the ephemeral HTTP registry. No mutable tag or repack is used by Flux.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
@@ -8,10 +7,10 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  url: oci://@REGISTRY@/scout-config
-  insecure: true
+  url: oci://@CONFIG_SOURCE@
+  insecure: false # The local artifact proof changes this to true for its HTTP registry.
   ref:
-    tag: '@VERSION@'
+    digest: '@CONFIG_DIGEST@'
   verify:
     provider: cosign
     secretRef:

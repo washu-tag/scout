@@ -37,3 +37,57 @@ cp .github/ci_resources/test_config_template.json tests/ingest/src/test/resource
 sed "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml | kubectl apply -f -
 kubectl -n extractor logs -f job/ci-tests
 ```
+
+## On-prem Flux artifact proof
+
+The [Flux workflow](../../.github/workflows/deploy-flux.yaml) installs the on-prem
+ingest dependency graph on a fresh k3s runner and runs the ingest tests against it.
+It checks config signatures, secret substitution and SOPS decryption, mirrored
+image sources, and negative cases before accepting the result. The ingest graph
+does not exercise the full platform or its public authentication paths.
+
+There are two artifact modes:
+
+* **Published:** after a successful upstream `Post-Commit Tasks` push to `main`,
+  the consumer selects `scout-config-ref-<run_attempt>` from that exact producer
+  run. It checks out the producer commit, validates the receipt and signed OCI
+  manifest, and gives Flux the same config repository and digest. Only the
+  isolated status job can write `on-prem/flux-ingest` against the producer commit.
+* **Local:** deployment-related pull requests, prototype pushes, and manual runs
+  build a config from the proposed checkout and a snapshot of the released haul.
+  An ephemeral key signs this config. The same manifest/identity verifier and
+  Flux reconciliation path run, but this is not evidence that the producer
+  published a release from the proposed commit. Manual runs accept `values=sops`
+  or `values=plain`; the latter creates the values Secret directly in the cluster.
+
+The receipt is build identity metadata, not another component inventory. Hauler
+remains the component manifest owner ([ADR 0033](adr/0033-build-lane-bundling-and-airgap-transport.md)).
+Its schema records the repository, revision, producer run and attempt, version,
+haul manifest digest, and config digest. The config's signed OCI annotations must
+match all those fields. Registry locations are fixed in the workflows. Neither
+the producer's config stamping nor the published consumer resolves a moving
+`:main` tag to select this build's haul/config.
+
+Missing receipts skip the published proof (for example, a build that did not
+publish a config). Duplicate, expired, malformed, or mismatched receipts fail;
+API and download errors also fail. Reruns use a new attempt-specific receipt and
+are checked against their own signed annotations. The legacy `haul-version`
+artifact and Ansible deployment lane remain available during migration.
+
+Run the fast identity and boundary checks without a cluster:
+
+```bash
+python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_consumer_boundary.py
+```
+
+This proof is one part of the release gate. The producer still carries unchanged
+components from a previous haul; concurrent build ordering and component ancestry
+need a separate solution. The test site's OCI artifact is not yet signed, although
+the config verification key is bootstrapped outside that artifact. Complete
+disconnected dependency transport, full-platform/authentication tests, and release
+promotion remain follow-up work. The advisory commit status can be replaced by
+another attempt for the same commit; promotion must check the specific producer
+attempt and config digest, rather than this commit status alone.
+The automatic published path requires this
+workflow on the upstream default branch and a new producer receipt; a green fork
+run exercises the local mode only.

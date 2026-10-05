@@ -30,10 +30,18 @@ inputs:
   cosign-password:
     description: cosign key password.
     required: true
+outputs:
+  manifest-digest:
+    description: Digest of this invocation's signed manifest artifact.
+    value: ${{ steps.publish.outputs.manifest-digest }}
+  bundle-digest:
+    description: Digest of this invocation's signed bundle artifact.
+    value: ${{ steps.publish.outputs.bundle-digest }}
 runs:
   using: composite
   steps:
-    - shell: bash
+    - id: publish
+      shell: bash
       env:
         VERSION: ${{ inputs.version }}
         CORE_MANIFEST: ${{ inputs.core-manifest }}
@@ -42,6 +50,8 @@ runs:
         BUNDLE_REPO: ${{ inputs.bundle-repo }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosign-private-key }}
         COSIGN_PASSWORD: ${{ inputs.cosign-password }}
+        SOURCE_REPOSITORY: ${{ github.repository }}
+        SOURCE_REVISION: ${{ github.sha }}
       run: |
         set -euo pipefail
         # hauler 2.0.2 SKIPS an image it can't verify yet still exits 0, so an
@@ -57,22 +67,36 @@ runs:
           echo "::error::cosign verification incomplete: ${verified}/${expected} components verified; the haul would be missing unverified images"
           exit 1
         fi
-        manifests="${CORE_MANIFEST}:application/yaml"
+        manifests=("${CORE_MANIFEST}:application/yaml")
         if [ -n "${UPSTREAM_MANIFEST}" ]; then
           # Third-party upstream images: sync WITHOUT --key (trusted by digest, not
           # our signature) into the same store so the saved bundle is complete.
           hauler store sync -f "${UPSTREAM_MANIFEST}"
-          manifests="${manifests} ${UPSTREAM_MANIFEST}:application/yaml"
+          manifests+=("${UPSTREAM_MANIFEST}:application/yaml")
         fi
         hauler store save -f "scout-${VERSION}.tar.zst"
-        # Push both immutable :version artifacts and sign the bundle, THEN advance
-        # the :main pointers last, so :main only moves after a complete, signed
-        # publish (ordering guard: a partial failure leaves the old predecessor).
-        oras push "${MANIFEST_REPO}:${VERSION}" ${manifests}
+        # Publish both signatures before advancing either :main pointer. The two
+        # pointer updates are separate registry operations, not an atomic promotion.
+        annotations=(
+          --annotation "org.opencontainers.image.source=https://github.com/${SOURCE_REPOSITORY}"
+          --annotation "org.opencontainers.image.revision=${SOURCE_REVISION}"
+          --annotation "org.opencontainers.image.version=${VERSION}"
+        )
+        oras push "${MANIFEST_REPO}:${VERSION}" "${manifests[@]}" "${annotations[@]}" \
+          --export-manifest "$RUNNER_TEMP/haul-manifest.json"
         oras push "${BUNDLE_REPO}:${VERSION}" \
           --artifact-type application/vnd.hauler.bundle.v1+zstd \
-          "scout-${VERSION}.tar.zst:application/zstd"
+          "scout-${VERSION}.tar.zst:application/zstd" "${annotations[@]}" \
+          --export-manifest "$RUNNER_TEMP/haul-bundle.json"
+        # Hash the bytes returned by each push; resolving its tag again could select
+        # a concurrent rerun's artifact instead of the one this invocation produced.
+        manifest_digest="sha256:$(sha256sum "$RUNNER_TEMP/haul-manifest.json" | cut -d ' ' -f 1)"
+        bundle_digest="sha256:$(sha256sum "$RUNNER_TEMP/haul-bundle.json" | cut -d ' ' -f 1)"
         cosign sign --key env://COSIGN_PRIVATE_KEY \
-          --use-signing-config=false --tlog-upload=false --yes "${BUNDLE_REPO}:${VERSION}"
-        oras tag "${MANIFEST_REPO}:${VERSION}" main
-        oras tag "${BUNDLE_REPO}:${VERSION}" main
+          --use-signing-config=false --tlog-upload=false --yes "${MANIFEST_REPO}@${manifest_digest}"
+        cosign sign --key env://COSIGN_PRIVATE_KEY \
+          --use-signing-config=false --tlog-upload=false --yes "${BUNDLE_REPO}@${bundle_digest}"
+        oras tag "${MANIFEST_REPO}@${manifest_digest}" main
+        oras tag "${BUNDLE_REPO}@${bundle_digest}" main
+        echo "manifest-digest=${manifest_digest}" >> "$GITHUB_OUTPUT"
+        echo "bundle-digest=${bundle_digest}" >> "$GITHUB_OUTPUT"
