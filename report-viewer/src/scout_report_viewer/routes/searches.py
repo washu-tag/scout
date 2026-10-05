@@ -196,10 +196,10 @@ async def create_search(
     # Sample query doubles as SQL validation: errors surface here before
     # we persist anything. The LIMIT lives outside the saved sql so the
     # LLM's own LIMIT is respected on later /rows reads.
-    scored_sql, _rewritten = with_evidence(sql)
+    scored_sql, _ = with_evidence(sql)
     limit = f" s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
-        columns, sample_rows, _has_evidence = await _execute_or_fall_back(
+        columns, sample_rows, _ = await _execute_or_fall_back(
             f"SELECT s.* FROM ({scored_sql}){limit}",
             f"SELECT s.* FROM ({sql}){limit}",
             user=user.sub,
@@ -507,7 +507,7 @@ async def get_search_rows(
     # Derived per read, not stored, so the saved search stays a verbatim record
     # of what the model wrote. Falls back to the original sql for any shape it
     # cannot rewrite.
-    scored_sql, _has_evidence = with_evidence(source_sql)
+    scored_sql, _ = with_evidence(source_sql)
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
     limit = f" s LIMIT {cap + 1}"
     token = progress.valid_token(progress_id)
