@@ -61,11 +61,11 @@ minio_client_image_tag: RELEASE.2026-09-16T00-00-00Z
 
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
-temporal_version: 1.2.0
+temporal_version: 1.7.0
 # admin-tools tag must equal the Temporal server version (this chart's appVersion)
 # so the `temporal` CLI matches; Renovate bumps the pair together (renovate.json5).
 # renovate: datasource=docker depName=temporalio/admin-tools
-temporal_admin_tools_image_tag: 1.31.0
+temporal_admin_tools_image_tag: 1.32.0
 
 # Real-Time HL7 Ingestion - Strimzi Kafka (MLLP -> Kafka -> batcher -> MinIO).
 # The listener/batcher image is built in CI (hl7-listener/), not pinned here.

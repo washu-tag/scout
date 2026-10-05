@@ -42,7 +42,7 @@ spec:
     spec:
       chart: temporal
       # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
-      version: '1.2.0'
+      version: '1.7.0'
       sourceRef:
         kind: HelmRepository
         name: temporal
