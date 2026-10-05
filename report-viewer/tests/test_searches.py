@@ -433,3 +433,21 @@ def test_create_falls_back_when_the_rewrite_raises(
     assert "ev_source" not in sent[0]
     for ev in r.json()["evidence"]:
         assert ev["matched_on"] is None
+
+
+def test_create_falls_back_when_trino_rejects_the_rewrite(
+    client, auth_headers, fake_trino
+):
+    """Same guarantee as /rows: the sample query retries what the model wrote."""
+    fake_trino.error()
+    fake_trino(_sample_columns(), _sample_rows())
+    r = client.post("/api/searches", json={"sql": _SQL_SCORED}, headers=auth_headers)
+    assert r.status_code == 201, r.text
+    assert len(r.json()["sample"]) == 3
+    sent = [sql for sql, _ in fake_trino.calls]
+    # Scored first, then the model's own sql once Trino rejected it.
+    assert len(sent) == 2
+    assert "ev_source" in sent[0]
+    assert "ev_source" not in sent[1]
+    for ev in r.json()["evidence"]:
+        assert ev["matched_on"] is None
