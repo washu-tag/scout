@@ -73,10 +73,14 @@ ingress:
   className: traefik
   # embeddable-security-headers replaces the global security-headers so
   # the chat can iframe the report viewer.
+  # SPIKE (739-bearer-token-spike): oauth2-proxy-auth-report-viewer in place
+  # of the shared oauth2-proxy-auth, so SPA requests carry a real
+  # Authorization: Bearer <id_token> that auth.py's Path 1 now also reads
+  # groups from. See ansible/roles/oauth2-proxy/tasks/deploy.yaml.
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
-      kube-system-oauth2-proxy-auth@kubernetescrd,
+      kube-system-oauth2-proxy-auth-report-viewer@kubernetescrd,
       kube-system-embeddable-security-headers@kubernetescrd,
       {{ report_viewer_namespace }}-{{ report_viewer_helm_release_name }}-gateway@kubernetescrd
   host: "{{ report_viewer_host }}"

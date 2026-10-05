@@ -4,10 +4,14 @@
    path (forwards `__oauth_token__`) and by anything else that wants to
    present a real end-user token. Validates signature + exp + iss + aud
    (`aud=report-viewer`, stamped by the `report-viewer-audience` client
-   scope). Carries no group claim - see `User.groups` below. Behind a
-   proxy that authenticates the browser itself and forwards the user's
-   access token in a header (AWS ALB OIDC), setting `forwarded_token_header`
-   validates that token the same way.
+   scope). Carries a `groups` claim when the issuing client's ID token has
+   one stamped (true for oauth2-proxy's client - same `groups-mapper` that
+   feeds `X-Auth-Request-Groups` below also sets `id.token.claim=true`);
+   absent otherwise, which degrades to an empty `User.groups`, not a
+   validation failure. Behind a proxy that authenticates the browser
+   itself and forwards the user's access token in a header (AWS ALB
+   OIDC), setting `forwarded_token_header` validates that token the same
+   way.
 2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`,
    `X-Auth-Request-Groups`) - the ingress path, used by the SPA's own
    browser-side requests. Trusted only when the request also carries the
@@ -26,9 +30,10 @@
    the SPA's own requests (and therefore the entire browser-facing UI,
    not just group-gated actions) cannot authenticate at all in aws mode
    unless the edge is configured to forward the browser's own token via
-   `forwarded_token_header` (Path 1). That still carries no group claim,
-   so group-gated actions stay invisible either way - only Path 2 can
-   ever populate `User.groups`. See ADR 0038's Known Limitations.
+   `forwarded_token_header` (Path 1). Path 1 now also carries groups (see
+   above), so wiring `forwarded_token_header` in aws mode recovers
+   group-gated actions too - ADR 0038's Known Limitations should be
+   revisited once that's proven out end-to-end.
 
 Both populate the same `User(sub=...)` model. Downstream code never
 needs to know which path produced the identity. The user JWT is not
@@ -56,11 +61,10 @@ log = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class User:
     sub: str  # owner_sub stored on the search row; also sent as X-Trino-User
-    # Issue #739: Keycloak group membership, populated only on the
-    # oauth2-proxy header path (Path 2) - the only path the SPA's own
-    # browser-side requests take, and therefore the only path that can
-    # gate what the SPA renders. The Bearer JWT path (Path 1) carries no
-    # group claim and always yields an empty set here.
+    # Issue #739: Keycloak group membership. Populated by the oauth2-proxy
+    # header path (Path 2) always, and by the Bearer JWT path (Path 1)
+    # whenever the issuing client's ID token has a `groups` claim stamped
+    # (true for oauth2-proxy's own client); empty otherwise.
     groups: frozenset[str] = frozenset()
 
 
@@ -138,13 +142,22 @@ def _validate_jwt(token: str) -> User | None:
     if not sub:
         log.info("bearer rejected: no preferred_username/sub")
         return None
-    return User(sub=sub)
+    return User(sub=sub, groups=_parse_claim_groups(claims.get("groups")))
 
 
 def _parse_groups(header: str | None) -> frozenset[str]:
     if not header:
         return frozenset()
     return frozenset(g.strip() for g in header.split(",") if g.strip())
+
+
+def _parse_claim_groups(groups: object) -> frozenset[str]:
+    """Same `groups` Keycloak claim as the oauth2-proxy header path, but as
+    the JWT's native list-of-strings shape rather than a comma-joined header
+    value - the same `groups-mapper` stamps it onto the ID token too."""
+    if not isinstance(groups, list):
+        return frozenset()
+    return frozenset(g for g in groups if isinstance(g, str) and g.strip())
 
 
 async def get_current_user(

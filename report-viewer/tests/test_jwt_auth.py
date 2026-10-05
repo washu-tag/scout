@@ -17,6 +17,7 @@ from jose import jwt
 
 from scout_report_viewer import jwks
 from scout_report_viewer.app import create_app
+from scout_report_viewer.auth import _validate_jwt
 from scout_report_viewer.config import settings
 
 
@@ -257,6 +258,21 @@ def test_bearer_takes_precedence_over_forwarded_token(keypair, monkeypatch):
     monkeypatch.setattr(settings, "forwarded_token_header", _FWD)
     r = _post_with({"Authorization": f"Bearer {_mint(priv)}", _FWD: "not-a-jwt"})
     assert r.status_code != 401, r.text
+
+
+def test_bearer_with_groups_claim_populates_user_groups(keypair):
+    priv, _ = keypair
+    token = _mint(priv, groups=["scout-admin", "scout-user"])
+    user = _validate_jwt(token)
+    assert user is not None
+    assert user.groups == frozenset({"scout-admin", "scout-user"})
+
+
+def test_bearer_without_groups_claim_yields_empty_groups(keypair):
+    priv, _ = keypair
+    user = _validate_jwt(_mint(priv))
+    assert user is not None
+    assert user.groups == frozenset()
 
 
 def test_settings_rejects_jwks_url_without_issuer(monkeypatch):
