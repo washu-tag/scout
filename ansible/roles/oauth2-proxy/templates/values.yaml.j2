@@ -35,6 +35,15 @@ config:
     # oauth2-proxy's own default, spelled out so the claim-name coupling to
     # the Keycloak mapper above is visible here rather than implicit.
     oidc_groups_claim = "groups"
+    # Also emit a real Authorization: Bearer <id_token> header on /oauth2/auth
+    # responses. Safe to enable here unconditionally - Traefik's forwardAuth
+    # only copies a response header onto the real request if that specific
+    # middleware's authResponseHeaders lists it, so this has no effect on any
+    # ingress except the one(s) that explicitly opt in (see
+    # oauth2-proxy-auth-report-viewer below) - every other service's
+    # middleware still only requests the username/groups headers it already
+    # did.
+    set_authorization_header = true
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true
 {% endif %}
