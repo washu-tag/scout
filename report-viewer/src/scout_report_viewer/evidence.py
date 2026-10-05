@@ -48,9 +48,8 @@ SOURCE_ORDER = (
     "report_text",
 )
 
-# Section parsing is heuristic, so which section matched is not a claim we can
-# stand behind to a user. Reported as one text axis; SOURCE_ORDER still decides
-# internally which column the span is read from.
+# Section parsing is heuristic, so which one matched is not published.
+# SOURCE_ORDER still decides which column the span is read from.
 TEXT_LABEL = "text"
 
 EV_COLUMNS = (
@@ -181,9 +180,7 @@ def _compares_false(parent: exp.Expression, child: exp.Expression) -> bool:
     return other.this is isinstance(parent, exp.NEQ)
 
 
-#: an inline flag group at the start that already sets case-insensitivity,
-#: which every templated pattern has; a flag part way in is still folded, and
-#: the resulting duplicate is harmless
+#: an inline flag group at the start that already sets case-insensitivity
 _LEADING_I = re.compile(r"\(\?[a-zA-Z]*i[a-zA-Z]*\)")
 
 
@@ -205,8 +202,7 @@ def _regexp_like_parts(node: exp.Expression) -> tuple[str, str, str] | None:
     if column is None:
         return None
     # Tested verbatim, so a wrapper or a second column cannot be lost. The
-    # highlight still reads the raw column, so LOWER() folds into the pattern
-    # there; a leading (?i) is a no-op on the templated (?is) patterns.
+    # highlight reads the raw column, so LOWER() has to fold into the pattern.
     pattern = pattern_node.this
     if any(subject.find_all(exp.Lower, exp.Upper)) and not _LEADING_I.match(pattern):
         pattern = "(?i)" + pattern
@@ -216,12 +212,10 @@ def _regexp_like_parts(node: exp.Expression) -> tuple[str, str, str] | None:
 def _dx_axis(
     where: exp.Expression, select: exp.Expression
 ) -> tuple[list[str], list[str]]:
-    """The query's `any_match(diagnoses, ...)` tests and the first lambda.
+    """The query's `any_match(diagnoses, ...)` tests and their lambdas.
 
-    Reused verbatim rather than re-derived from the LIKE patterns inside.
-    A diagnosis axis may test `diagnosis_code_text`, or several columns at
-    once, and rebuilding it from the patterns silently dropped everything
-    that was not a bare `diagnosis_code LIKE`.
+    Reused verbatim: an axis may test `diagnosis_code_text` or several
+    columns, which rebuilding from the LIKE patterns silently dropped.
     """
     tests: list[str] = []
     lambdas: list[str] = []
@@ -301,10 +295,9 @@ def _sibling_vetoes(
 ) -> list[TextLeaf]:
     """Every veto ANDed with this positive, whatever column it reads.
 
-    Collected from the sibling branch at each AND on the way up. A disjunction
-    passed through is transparent, because a veto ANDed onto the whole group
-    still has to be false; its own other arms are not, because they never
-    appear in a sibling branch.
+    A disjunction passed through on the way up is transparent: a veto ANDed
+    onto the whole group still has to be false. Its own other arms are not,
+    since they never appear in a sibling branch.
     """
     found: list[TextLeaf] = []
     child = node
@@ -418,9 +411,8 @@ def _matches(leaf: TextLeaf) -> str:
 def _guard_parts(plan: EvidencePlan, leaf: TextLeaf) -> list[str]:
     """The blank-section conditions the query conjoins with `leaf`.
 
-    The templated report_text arm only applies when no section parsed, so
-    dropping it would read a HISTORY mention as the reason for a row the
-    query admitted on its impression. One arm is enough, so several are ORed.
+    Without them a HISTORY mention reads as the reason for a row admitted on
+    its impression. One arm is enough, so several are ORed.
     """
     arms = plan.guard_for.get(leaf, [])
     # An unguarded occurrence admits on its own, so no arm may be required.
@@ -453,16 +445,14 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
         matched = " || ".join(f"FILTER(diagnoses, {lam})" for lam in plan.dx_lambdas)
         matched = f"ARRAY_DISTINCT({matched})" if len(plan.dx_lambdas) > 1 else matched
         dx_codes = f"ARRAY_JOIN(TRANSFORM({matched}, x -> x.diagnosis_code), ', ')"
-        # A code can be admitted by its text, so the code alone does not say
-        # why the row is here.
+        # A code can be admitted by its text, so the code alone is not why.
         dx_text = f"ARRAY_JOIN(TRANSFORM({matched}, x -> x.diagnosis_code_text), ', ')"
     else:
         dx_codes = "CAST(NULL AS VARCHAR)"
         dx_text = "CAST(NULL AS VARCHAR)"
 
-    # text_and_code must precede text, which would otherwise swallow it. NULL
-    # means nothing we modelled matched, which is honest about a predicate we
-    # failed to classify rather than blaming a code that may not have matched.
+    # text_and_code must precede text, which would otherwise swallow it.
+    # NULL means nothing we modelled matched, rather than blaming a code.
     arms = []
     if plan.dx_tests and any_text:
         arms.append(f"WHEN ({any_text}) AND ({has_code}) THEN {_lit('text_and_code')}")
@@ -585,9 +575,8 @@ def highlight_hits_expression(sql: str) -> str | None:
     selected the rows. Meant for a single-report read, where one extra pass per
     pattern is free; it would be wasteful across a whole cohort.
 
-    Emitted for every text column the viewer can render, not just the one a
-    predicate named: the row panel shows `report_text`, and an offset into
-    `report_section_impression` means nothing there.
+    Emitted for every text column the viewer renders, not just the one a
+    predicate named: an offset into a section means nothing in `report_text`.
     """
     try:
         plan = build_plan(sql)

@@ -74,14 +74,11 @@ async def _run_with_fallback(
 ) -> tuple[list[str], list[dict[str, Any]], bool]:
     """Run `scored`, falling back to the sql the model actually wrote.
 
-    The evidence rewrite is a projection-only splice and cannot change which
-    rows match, but it can still reference a column the outer query does not
-    expose. A cohort must never fail to load because of a reviewing aid, so any
-    error retries the original and simply returns no evidence.
-
-    Retrying on every error is deliberate: Trino does not attribute failures
-    well enough to tell ours from the model's, and guessing wrong would drop a
-    cohort that would have loaded. The logs say which it was afterwards.
+    The splice cannot change which rows match, but it can name a column the
+    outer query does not expose, and a cohort must never be lost to a
+    reviewing aid. Retrying on every error is deliberate: Trino does not
+    attribute failures well enough to tell ours from the model's, so the logs
+    say which it was afterwards instead.
     """
     try:
         columns, rows = await run(scored)

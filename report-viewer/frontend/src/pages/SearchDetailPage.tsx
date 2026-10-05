@@ -77,8 +77,8 @@ const COLUMNS_CONFIG: Array<{
 
 type Row = Record<string, unknown>;
 
-// Cannot change for the life of the page. Both controls act on the embedding
-// iframe, so neither means anything in a standalone tab.
+// The height toggle resizes the embedding iframe, so it means nothing in a
+// standalone tab.
 const embedded = window.parent !== window;
 
 // Carried in every row but not shown as columns. Exported anyway: offline
@@ -169,9 +169,8 @@ export default function SearchDetailPage() {
     setReview(null);
   }, [rowsQ.data]);
 
-  // Without evidence the default view is four columns, which reads as thin
-  // for a plain "latest reports" search; the demographics fill it out.
-  // Once per search, so hiding them again survives a refetch.
+  // Four columns reads thin for a plain "latest reports" search. Once per
+  // search, so hiding them again survives a refetch.
   const demographicsFor = useRef<string | null>(null);
   useEffect(() => {
     const columns = rowsQ.data?.columns;

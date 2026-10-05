@@ -162,9 +162,8 @@ def test_the_diagnosis_arm_is_evaluated_not_assumed() -> None:
 
 
 def test_every_veto_in_a_conjunction_guards_every_positive_in_it() -> None:
-    """All of them must be false for the arm to admit, so attaching all of
-    them is right: if another OR branch let the row in, this arm should not
-    claim it."""
+    """All of them must be false for the arm to admit, so if another OR branch
+    let the row in, this arm should not claim it."""
     sql = (
         "SELECT primary_report_identifier FROM reports_latest WHERE "
         "(REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)nodule') "
