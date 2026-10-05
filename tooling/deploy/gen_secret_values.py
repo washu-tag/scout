@@ -4,7 +4,8 @@
 The on-prem ``secrets-ready`` Kustomization substitutes this one Secret into every
 fixed-name Secret under ``deploy/base/secrets-on-prem``. Reads the site's plaintext
 values (a flat JSON object of strings) and its cluster-vars values (the
-``gen_cluster_vars.py --values`` file, for the realm flags and namespaces), checks
+``gen_cluster_vars.py --values`` file, for the realm flags, namespaces and the MinIO
+settings config.env reads), checks
 them against ``deploy/required-secret-values.txt`` and the value rules listed in
 ``deploy/required-secrets.md``, and emits the Secret ready to encrypt with SOPS or to
 hand to another backend. Fails closed and never echoes a value: a problem names the
@@ -20,7 +21,6 @@ import json
 import os
 import re
 import sys
-import unicodedata
 from pathlib import Path
 
 from gen_cluster_vars import yaml_double_quoted
@@ -28,36 +28,12 @@ from gen_cluster_vars import yaml_double_quoted
 _REPO = Path(__file__).resolve().parents[2]
 DEFAULT_REQUIRED = _REPO / "deploy" / "required-secret-values.txt"
 
-# keycloak-client-secrets: config-cli substitutes these into the realm JSON.
-REALM_VALUES = {
-    "keycloak_oauth2_proxy_client_secret",
-    "keycloak_superset_client_secret",
-    "keycloak_superset_svc_client_secret",
-    "keycloak_jupyterhub_client_secret",
-    "keycloak_grafana_client_secret",
-    "keycloak_temporal_client_secret",
-    "keycloak_launchpad_client_secret",
-    "keycloak_minio_client_secret",
-    "keycloak_open_webui_client_secret",
-    "keycloak_voila_svc_client_secret",
-    "keycloak_report_viewer_svc_client_secret",
-    "keycloak_fragment_reconciler_svc_client_secret",
-    "keycloak_xnat_client_secret",
-    "keycloak_gh_client_id",
-    "keycloak_gh_client_secret",
-    "keycloak_microsoft_client_id",
-    "keycloak_microsoft_client_secret",
-    "keycloak_microsoft_tenant_id",
-}
-# The superset chart pastes these into redis:// and postgresql:// URLs.
+# One set for every value, safe in the single-quoted templates, the realm JSON and the
+# sourced config.env. The superset chart pastes URL_VALUES into redis:// and
+# postgresql:// URLs, so those also leave out + / =.
+SAFE_CHARS = re.compile(r"[A-Za-z0-9._~+/=-]+")
+URL_CHARS = re.compile(r"[A-Za-z0-9._~-]+")
 URL_VALUES = {"valkey_password", "superset_postgres_password"}
-# minio-scout-env-configuration config.env, double-quoted and sourced by sh.
-CONFIG_ENV_VALUES = {
-    "s3_username",
-    "s3_password",
-    "keycloak_minio_client_secret",
-    "minio_oidc_enabled",
-}
 
 # ansible/inventory.example.yaml placeholders, never real credentials (its generated
 # values are $(openssl ...) commands, caught by prefix).
@@ -80,10 +56,6 @@ FIXED_NAMES = {
     "superset_postgres_user": "superset",
     "superset_database": "superset",
 }
-
-# Controls (LF, CR, tab, DEL, ...), invisible format characters (zero-width space,
-# BOM), surrogates, unassigned code points (U+FFFF) and line/paragraph separators.
-_BAD_CATEGORIES = {"Cc", "Cf", "Cs", "Cn", "Zl", "Zp"}
 
 
 def load_contract(path) -> dict:
@@ -131,31 +103,20 @@ def cookie_secret_ok(value: str) -> bool:
 
 
 def value_problems(key: str, value: str) -> list:
+    if value in EXAMPLE_PLACEHOLDERS or value.startswith("$("):
+        return ["is an inventory.example.yaml placeholder"]
     out = []
-    if "'" in value:
-        out.append("contains ' (the templates single-quote every value)")
-    if any(unicodedata.category(c) in _BAD_CATEGORIES for c in value):
-        out.append("contains a line break, control or format character")
-    if value != value.strip():
-        out.append("has leading or trailing whitespace")
-    if key in REALM_VALUES and not re.fullmatch(r"[A-Za-z0-9._~+/=-]+", value):
-        out.append(
-            "may use only A-Z a-z 0-9 . _ ~ + / = - (it goes into the realm JSON)"
-        )
-    if key in URL_VALUES and not re.fullmatch(r"[A-Za-z0-9._~-]+", value):
-        out.append("may use only A-Z a-z 0-9 . _ ~ - (it goes into a connection URL)")
-    if key in CONFIG_ENV_VALUES and any(c in value for c in '"$`\\'):
-        out.append(
-            'contains " $ ` or \\ (config.env is double-quoted and sourced by sh)'
-        )
+    if key in URL_VALUES:
+        if not URL_CHARS.fullmatch(value):
+            out.append(
+                "may use only A-Z a-z 0-9 . _ ~ - (it goes into a connection URL)"
+            )
+    elif not SAFE_CHARS.fullmatch(value):
+        out.append("may use only A-Z a-z 0-9 . _ ~ + / = -")
     if len(value) < min_length(key):
         out.append("is shorter than {} characters".format(min_length(key)))
     if key == "oauth2_proxy_cookie_secret" and not cookie_secret_ok(value):
         out.append("must be 16, 24 or 32 bytes, raw or base64url-encoded")
-    if key == "minio_oidc_enabled" and value not in ("on", "off", "true", "false"):
-        out.append("must be on, off, true or false")
-    if value in EXAMPLE_PLACEHOLDERS or value.startswith("$("):
-        out.append("is an inventory.example.yaml placeholder")
     return out
 
 
@@ -205,6 +166,15 @@ def validate(values: dict, cluster_vars: dict, contract: dict) -> tuple:
             "hive_namespace must differ from postgres_cluster_namespace: each gets "
             "its own superuser-secret"
         )
+    # config.env reads these two cluster-vars too; the template defaults both.
+    if cluster_vars.get("s3_username"):
+        problems.extend(
+            "s3_username: {}".format(p)
+            for p in value_problems("s3_username", str(cluster_vars["s3_username"]))
+        )
+    oidc = cluster_vars.get("minio_oidc_enabled")
+    if oidc not in (None, "") and str(oidc) not in ("on", "off", "true", "false"):
+        problems.append("minio_oidc_enabled: must be on, off, true or false")
     return problems, warnings
 
 

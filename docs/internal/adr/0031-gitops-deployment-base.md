@@ -525,11 +525,11 @@ edges for credentials. kustomize-controller re-serializes each resource
 before substituting, so quotes written in a template are dropped and a
 value is re-typed or truncated (`0123` becomes 83, `a #b` becomes `a`).
 Each placeholder is therefore written `${sq}${value}${sq}`, with `sq` an
-inline single quote on the `secrets-ready` Kustomization. Values must be
-single lines with no `'`, control characters or edge whitespace (Flux
-drops LF and folds CR; CNPG and MinIO trim), with narrower character sets
-where a consumer embeds them (the realm JSON, connection URLs, the MinIO
-`config.env`), and must not share a key with `cluster-vars`, since a key in
+inline single quote on the `secrets-ready` Kustomization. Every value
+draws from one set, `A-Z a-z 0-9 . _ ~ + / = -`, which every consumer
+passes intact (the templates, Flux, the realm JSON, the MinIO
+`config.env`); values pasted into connection URLs also leave out
+`+ / =`. A value must not share a key with `cluster-vars`, since a key in
 two substitution sources is silently shadowed.
 `tooling/deploy/gen_secret_values.py` enforces these rules when it
 generates the Secret, and CI renders the templates through Flux's own

@@ -81,10 +81,8 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 
 ## On-prem: the values Secret
 `scout-secret-values` (Secret, `flux-system`) holds the keys in
-`required-secret-values.txt`. Its annotations mark the optional MinIO settings
-(`s3_username`, default `minio`; `minio_oidc_enabled`, default `on`, `off` where MinIO
-can't trust Keycloak's certificate) and the conditional keys, set exactly while their
-realm flag is `"true"`. The `secrets-ready` Kustomization substitutes it, with
+`required-secret-values.txt`. Its annotations mark the conditional keys, set exactly
+while their realm flag is `"true"`. The `secrets-ready` Kustomization substitutes it, with
 `cluster-vars`, into the Secrets above; postgres, MinIO and valkey wait on it. Flux must
 meet the on-prem floor in `deploy/README.md`, or a missing required key renders empty.
 
@@ -97,17 +95,16 @@ the values, and `secrets-ready` copies that ciphertext into every Secret above. 
 closed, never prints a value, and enforces these rules, which keep a value intact through
 Flux and its consumers. Another backend must apply them too; running the tool's validation on
 the values first is the simplest way.
-- no `'`, no line break, control or format character, and no leading or trailing
-  whitespace. The templates single-quote each value; Flux drops LF and folds CR to a
-  space; CNPG and MinIO trim what the apps read untrimmed;
-- the `keycloak-client-secrets` values use only `A-Z a-z 0-9 . _ ~ + / = -`, because
-  config-cli substitutes them into the realm JSON before parsing it;
-- `valkey_password` and `superset_postgres_password` use only `A-Z a-z 0-9 . _ ~ -`,
-  because the superset chart builds connection URLs from them (and valkey's also sits
-  in the exporter's `password-file` JSON);
-- the `config.env` inputs contain no `"`, `$`, backtick or backslash (the file is
-  double-quoted and sourced by sh);
-- MinIO: `s3_password` and each `s3_*_secret` at least 8 characters, `s3_username` 3;
+- every value uses only `A-Z a-z 0-9 . _ ~ + / = -`, which passes intact through the
+  single-quoted templates, Flux substitution, the realm JSON config-cli parses and the
+  `config.env` sh sources (`openssl rand -hex` and `-base64` output fits);
+- `valkey_password` and `superset_postgres_password` also leave out `+ / =`, because
+  the superset chart builds connection URLs from them (and valkey's also sits in the
+  exporter's `password-file` JSON);
+- MinIO: `s3_password` and each `s3_*_secret` at least 8 characters. `config.env` also
+  reads two cluster-vars: `s3_username` (default `minio`) follows the same character
+  rule with at least 3 characters, and `minio_oidc_enabled` (default `on`; `off` where
+  MinIO can't trust Keycloak's certificate) is `on`, `off`, `true` or `false`;
 - `oauth2_proxy_cookie_secret` is 16, 24 or 32 bytes, raw or base64url-encoded;
 - a conditional key is set exactly while its flag is on. The templates default these
   keys to empty, so strict substitution can't catch a flag turned on without its

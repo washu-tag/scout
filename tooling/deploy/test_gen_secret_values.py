@@ -13,9 +13,7 @@ import gen_cluster_vars
 from check_secret_templates import VAR, templates
 from gen_cluster_vars import load_required
 from gen_secret_values import (
-    CONFIG_ENV_VALUES,
     DEFAULT_REQUIRED,
-    REALM_VALUES,
     build,
     load_contract,
     main,
@@ -77,6 +75,8 @@ def test_rendered_secret_round_trips_exact_values(values):
         "line" + chr(0x2028) + "separator",
         "non" + chr(0xFFFF) + "character",
         "lone" + chr(0xDC80) + "surrogate",
+        "inner space",
+        "pässwörd",
     ],
 )
 def test_rejects_unsafe_characters(values, cluster_vars, bad):
@@ -139,16 +139,22 @@ def test_conditional_keys_follow_their_flag(values, cluster_vars):
     assert len(problems_for(values, ms_on)) == 3
 
 
-def test_optional_minio_settings(values, cluster_vars):
-    for key in ("s3_username", "minio_oidc_enabled"):
-        assert problems_for(dict(values, **{key: ""}), cluster_vars) == []
-        assert key not in build(dict(values, **{key: ""}), CONTRACT)
-    assert problems_for(dict(values, minio_oidc_enabled="off"), cluster_vars) == []
-    assert problems_for(dict(values, minio_oidc_enabled="no"), cluster_vars) == [
+def test_minio_settings_are_checked_as_cluster_vars(values, cluster_vars):
+    assert problems_for(dict(values, s3_username="minio"), cluster_vars) == [
+        "s3_username: not in required-secret-values.txt"
+    ]
+    minio = ("s3_username", "minio_oidc_enabled")
+    defaulted = {k: v for k, v in cluster_vars.items() if k not in minio}
+    assert problems_for(values, defaulted) == []
+    assert problems_for(values, dict(cluster_vars, minio_oidc_enabled="off")) == []
+    assert problems_for(values, dict(cluster_vars, minio_oidc_enabled="no")) == [
         "minio_oidc_enabled: must be on, off, true or false"
     ]
-    assert problems_for(dict(values, s3_username="ab"), cluster_vars) == [
+    assert problems_for(values, dict(cluster_vars, s3_username="ab")) == [
         "s3_username: is shorter than 3 characters"
+    ]
+    assert problems_for(values, dict(cluster_vars, s3_username='mi"nio')) == [
+        "s3_username: may use only A-Z a-z 0-9 . _ ~ + / = -"
     ]
 
 
@@ -164,28 +170,18 @@ def test_url_embedded_values_are_unreserved(values, cluster_vars, key, bad):
     ]
 
 
-@pytest.mark.parametrize("bad", ['quo"te', "back\\nslash", "$(env:HOME)", "a b", "a,b"])
-def test_realm_values_are_json_and_substitution_safe(values, cluster_vars, bad):
-    probs = problems_for(
-        dict(values, keycloak_temporal_client_secret=bad), cluster_vars
-    )
-    assert (
-        "keycloak_temporal_client_secret: may use only A-Z a-z 0-9 . _ ~ + / = - "
-        "(it goes into the realm JSON)" in probs
-    )
-    ok = base64.b64encode(b"\xfb\xff" * 12).decode()  # + / = all allowed
-    assert (
-        problems_for(dict(values, keycloak_temporal_client_secret=ok), cluster_vars)
-        == []
-    )
-
-
-@pytest.mark.parametrize("bad", ['quo"te', "dollar$x", "back`tick", "back\\slash"])
-def test_config_env_values_are_shell_safe(values, cluster_vars, bad):
-    probs = problems_for(dict(values, s3_password=bad + "-long-enough"), cluster_vars)
-    assert probs == [
-        's3_password: contains " $ ` or \\ (config.env is double-quoted and sourced by sh)'
+@pytest.mark.parametrize(
+    "bad", ['quo"te', "back\\slash", "dollar${x}", "back`tick", "a,b", "a#b", "a@b"]
+)
+@pytest.mark.parametrize(
+    "key", ["keycloak_temporal_client_secret", "s3_password", "trino_keystore_password"]
+)
+def test_every_value_uses_one_safe_set(values, cluster_vars, key, bad):
+    assert problems_for(dict(values, **{key: bad + "-long-enough"}), cluster_vars) == [
+        "{}: may use only A-Z a-z 0-9 . _ ~ + / = -".format(key)
     ]
+    ok = base64.b64encode(b"\xfb\xff" * 12).decode()  # + / = all allowed
+    assert problems_for(dict(values, **{key: ok}), cluster_vars) == []
 
 
 def test_minio_minimum_lengths(values, cluster_vars):
@@ -275,7 +271,7 @@ def test_main_fails_closed(tmp_path, values, capsys):
             ]
         )
     assert exc.value.code == 1
-    assert "postgres_password: contains '" in capsys.readouterr().err
+    assert "postgres_password: may use only" in capsys.readouterr().err
     assert not out.exists()
 
     # A hand-merged file with a key twice must not silently keep the last one.
@@ -298,19 +294,14 @@ def test_main_fails_closed(tmp_path, values, capsys):
     assert "duplicate keys: postgres_password" in err and "live-value" not in err
 
 
-def test_main_writes_owner_only_utf8(tmp_path, values):
-    utf8 = tmp_path / "values.json"
-    utf8.write_text(
-        json.dumps(dict(values, superset_secret="pässwörd-é"), ensure_ascii=False),
-        encoding="utf-8",
-    )
+def test_main_writes_owner_only(tmp_path, values):
     out = tmp_path / "scout-secret-values.yaml"
     out.write_text("stale")
-    os.chmod(out, 0o700)  # pre-existing with extra bits: the tool must set exactly 0600
+    os.chmod(out, 0o200)  # pre-existing with another mode: the tool must set 0600
     main(
         [
             "--values",
-            str(utf8),
+            str(FIXTURE),
             "--cluster-vars-values",
             str(CLUSTER_VARS),
             "-o",
@@ -318,8 +309,7 @@ def test_main_writes_owner_only_utf8(tmp_path, values):
         ]
     )
     assert os.stat(out).st_mode & 0o777 == 0o600
-    data = yaml.safe_load(out.read_text(encoding="utf-8"))["stringData"]
-    assert data == dict(values, superset_secret="pässwörd-é")
+    assert yaml.safe_load(out.read_text())["stringData"] == values
 
 
 def _vars(strings):
@@ -330,27 +320,21 @@ def _vars(strings):
 
 def test_contract_matches_the_templates():
     """required-secret-values.txt == the non-cluster-var names the templates use, its
-    optional + conditional entries == the defaulted ones, and no name is in both
-    contract lists (the later substituteFrom source would silently shadow the other)."""
+    optional + conditional entries == the defaulted ones that aren't cluster-vars, and
+    no name is in both contract lists (the later substituteFrom source would silently
+    shadow the other)."""
     strings = [v for d in templates() for v in d["stringData"].values()]
     strings += [d["metadata"][k] for d in templates() for k in ("name", "namespace")]
     used, defaulted = _vars(strings)
     assert not set(CONTRACT) & REQUIRED_VARS
     assert used - REQUIRED_VARS - {"sq"} == set(CONTRACT)
-    assert defaulted == {k for k, rule in CONTRACT.items() if rule != "required"}
+    assert defaulted - REQUIRED_VARS == {
+        k for k, rule in CONTRACT.items() if rule != "required"
+    }
     flags = {
         rule[len("when=") :] for rule in CONTRACT.values() if rule.startswith("when=")
     }
     assert flags <= REQUIRED_VARS
-
-
-def test_charset_groups_match_their_templates():
-    """The realm and config.env rule sets name exactly the values those Secrets read."""
-    by_name = {d["metadata"]["name"]: d["stringData"] for d in templates()}
-    realm, _ = _vars(by_name["keycloak-client-secrets"].values())
-    assert realm - {"sq"} == REALM_VALUES
-    config_env, _ = _vars([by_name["minio-scout-env-configuration"]["config.env"]])
-    assert config_env - REQUIRED_VARS == CONFIG_ENV_VALUES
 
 
 if __name__ == "__main__":
