@@ -1382,13 +1382,16 @@
           }
         ]
       },
-      {{- /* Adds aud=report-viewer to access tokens. Report-viewer validates
-          required-audience=report-viewer on inbound bearer tokens (ADR 0022).
-          Any client whose users call report-viewer needs this scope in
-          its default scopes. */}}
+      {{- /* Adds aud=report-viewer to access tokens, and to ID tokens too
+          (739-bearer-token-spike: oauth2-proxy's set_authorization_header
+          forwards the ID token, not the access token, so report-viewer's
+          Bearer-JWT path needs the audience there as well). Report-viewer
+          validates required-audience=report-viewer on inbound bearer
+          tokens (ADR 0022). Any client whose users call report-viewer
+          needs this scope in its default scopes. */}}
       {
         "name": "report-viewer-audience",
-        "description": "Adds aud=report-viewer to access tokens for clients calling report-viewer",
+        "description": "Adds aud=report-viewer to access and ID tokens for clients calling report-viewer",
         "protocol": "openid-connect",
         "attributes": {
           "include.in.token.scope": "false",
@@ -1402,7 +1405,7 @@
             "consentRequired": false,
             "config": {
               "included.custom.audience": "report-viewer",
-              "id.token.claim": "false",
+              "id.token.claim": "true",
               "access.token.claim": "true",
               "introspection.token.claim": "true",
               "lightweight.claim": "false"
