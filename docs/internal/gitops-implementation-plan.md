@@ -112,7 +112,8 @@ authorization suites.
   site-repo CI.
 - Secrets: the cloud dev clusters use External Secrets Operator against
   their cloud secrets manager. The on-prem SOPS path (age keys;
-  `.sops.yaml` recipients = cluster key + ops key; kustomize-controller
+  `.sops.yaml` recipients = the cluster's key, one key per site operator
+  and an offline recovery key, per ADR 0031 section 3; kustomize-controller
   decryption) is proven by the consumer-side CI proof and an on-prem lab
   instead, for a full phase before on-prem depends on it.
 - Emergency-change runbook (`flux suspend` procedure, commit-before-resume
