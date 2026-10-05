@@ -71,7 +71,9 @@ export function ExplainSqlModal(props: {
           copied={copied === 'assistant'}
           onCopy={copy('assistant', props.sql)}
         />
-        {props.executedSql && (
+        {/* Recomputed per request, so it is only what ran when the rows came
+            back scored; a rewrite Trino rejected falls back to the SQL above. */}
+        {showStats && props.executedSql && (
           <SqlSection
             label="Evaluated SQL"
             sql={props.executedSql}
