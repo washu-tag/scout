@@ -81,6 +81,16 @@ type Row = Record<string, unknown>;
 // iframe, so neither means anything in a standalone tab.
 const embedded = window.parent !== window;
 
+// Carried in every row but not shown as columns. Exported anyway: offline
+// adjudication needs the phrase, not the category it fell under.
+const EVIDENCE_EXPORT = [
+  'ev_source',
+  'ev_positive_span',
+  'ev_negative_span',
+  'ev_dx_codes',
+  'ev_dx_text',
+];
+
 const columnHelper = createColumnHelper<Row>();
 
 // Lets the empty table render its headers before the first fetch returns.
@@ -745,6 +755,10 @@ export default function SearchDetailPage() {
                 const cols = table.getVisibleLeafColumns().map((c) => c.id);
                 if (!cols.includes('primary_report_identifier')) {
                   cols.unshift('primary_report_identifier');
+                }
+                const present = new Set(rowsQ.data?.columns ?? []);
+                for (const field of EVIDENCE_EXPORT) {
+                  if (present.has(field) && !cols.includes(field)) cols.push(field);
                 }
                 downloadCsv(
                   `${searchId}.csv`,
