@@ -7,21 +7,25 @@ test the API surface and the SQL we generate, not the live cluster.
 
 from __future__ import annotations
 
+import base64
 import os
+import time
 
 # Settings() resolves at import - provide a placeholder for required vars
 # before the package gets loaded.
 os.environ.setdefault("REPORT_VIEWER_EXTERNAL_URL", "http://testserver")
-os.environ.setdefault("REPORT_VIEWER_GATEWAY_SECRET", "test-gateway-secret")
 
 from typing import Any, Callable
 
 import pytest
 import pytest_asyncio
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
+from jose import jwt
 from psycopg_pool import AsyncConnectionPool
 
-from scout_report_viewer import db, trino_client
+from scout_report_viewer import db, jwks, trino_client
 from scout_report_viewer.app import create_app
 from scout_report_viewer.config import settings
 
@@ -136,18 +140,77 @@ def client(reset_schema):
         yield c
 
 
-@pytest.fixture
-def auth_headers() -> dict[str, str]:
-    return {
-        "X-Auth-Request-Preferred-Username": "alice",
-        "X-Report-Viewer-Gateway": os.environ["REPORT_VIEWER_GATEWAY_SECRET"],
+# Shared RSA keypair + fake JWKS for every test that needs a real Bearer JWT
+# (the only auth path since Path 2 - oauth2-proxy headers + gateway secret -
+# was retired, issue #739). One signer for the whole suite so test_jwt_auth.py
+# and anything else minting tokens agree on the same kid/keys.
+TEST_KID = "test-key-1"
+TEST_ISSUER = "http://test/realms/scout"
+
+
+@pytest.fixture(scope="session")
+def keypair():
+    priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    priv_pem = priv.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    pub_numbers = priv.public_key().public_numbers()
+
+    def _b64(n: int) -> str:
+        b = n.to_bytes((n.bit_length() + 7) // 8, "big")
+        return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+    jwk = {
+        "kty": "RSA",
+        "kid": TEST_KID,
+        "alg": "RS256",
+        "use": "sig",
+        "n": _b64(pub_numbers.n),
+        "e": _b64(pub_numbers.e),
     }
+    return priv_pem, jwk
+
+
+@pytest.fixture(autouse=True)
+def install_test_jwks(keypair, monkeypatch):
+    _, jwk = keypair
+
+    class _StaticCache:
+        def get_key(self, kid):
+            return jwk if kid == TEST_KID else None
+
+    monkeypatch.setattr(jwks, "get_default", lambda url: _StaticCache())
+    monkeypatch.setattr(settings, "oidc_jwks_url", "http://test/jwks")
+    monkeypatch.setattr(settings, "oidc_issuer", TEST_ISSUER)
+    yield
+
+
+def mint_token(priv_pem: bytes, **overrides) -> str:
+    now = int(time.time())
+    claims = {
+        "sub": "alice-keycloak-uuid",
+        "preferred_username": "alice",
+        "iss": TEST_ISSUER,
+        "aud": settings.oidc_audience,
+        "iat": now,
+        "exp": now + 300,
+    }
+    claims.update(overrides)
+    return jwt.encode(claims, priv_pem, algorithm="RS256", headers={"kid": TEST_KID})
 
 
 @pytest.fixture
-def other_auth_headers() -> dict[str, str]:
+def auth_headers(keypair) -> dict[str, str]:
+    priv, _ = keypair
+    token = mint_token(priv, sub="alice-keycloak-uuid", preferred_username="alice")
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def other_auth_headers(keypair) -> dict[str, str]:
     """A second signed-in user, for cross-user access checks."""
-    return {
-        "X-Auth-Request-Preferred-Username": "bob",
-        "X-Report-Viewer-Gateway": os.environ["REPORT_VIEWER_GATEWAY_SECRET"],
-    }
+    priv, _ = keypair
+    token = mint_token(priv, sub="bob-keycloak-uuid", preferred_username="bob")
+    return {"Authorization": f"Bearer {token}"}

@@ -1,50 +1,38 @@
-"""Auth - two paths, first match wins.
+"""Auth - a single inbound path: Bearer JWT, validated against Keycloak JWKS.
 
-1. **Bearer JWT** validated against Keycloak JWKS. Used by the OWUI tool
-   path (forwards `__oauth_token__`) and by anything else that wants to
-   present a real end-user token. Validates signature + exp + iss + aud
-   (`aud=report-viewer`, stamped by the `report-viewer-audience` client
-   scope). Carries a `groups` claim when the issuing client's ID token has
-   one stamped (true for oauth2-proxy's client - same `groups-mapper` that
-   feeds `X-Auth-Request-Groups` below also sets `id.token.claim=true`);
-   absent otherwise, which degrades to an empty `User.groups`, not a
-   validation failure. Behind a proxy that authenticates the browser
-   itself and forwards the user's access token in a header (AWS ALB
-   OIDC), setting `forwarded_token_header` validates that token the same
-   way.
-2. **oauth2-proxy header** (`X-Auth-Request-Preferred-Username`,
-   `X-Auth-Request-Groups`) - the ingress path, used by the SPA's own
-   browser-side requests. Trusted only when the request also carries the
-   `X-Report-Viewer-Gateway` secret that Traefik injects, so a
-   pod-to-pod request (OWUI, Prometheus) can't forge either header - and
-   Traefik's forwardAuth always overwrites both with oauth2-proxy's
-   server-computed `/oauth2/auth` response, so a client can't forge them
-   either even without the gateway secret (see
-   ansible/roles/oauth2-proxy/tasks/deploy.yaml).
+Used by the OWUI tool path (forwards `__oauth_token__`), by the SPA's own
+browser-side requests (Traefik's report-viewer-scoped forwardAuth middleware
+injects oauth2-proxy's ID token as `Authorization: Bearer <id_token>` on every
+request through the ingress - the browser itself never sets this header, see
+`ansible/roles/oauth2-proxy/tasks/deploy.yaml`), and by anything else that
+wants to present a real end-user token. Validates signature + exp + iss + aud
+(`aud=report-viewer`, stamped by the `report-viewer-audience` client scope).
 
-   ON-PREM ONLY: this entire path depends on Traefik forwardAuth
-   Middleware CRDs, which do not exist in aws-mode clusters at all (ADR
-   0035 - aws mode has no Traefik, ingress is ALB-native OIDC instead,
-   with no per-role/group gate). In aws mode, neither header is ever
-   set, so Path 2 always falls through to "authentication required" -
-   the SPA's own requests (and therefore the entire browser-facing UI,
-   not just group-gated actions) cannot authenticate at all in aws mode
-   unless the edge is configured to forward the browser's own token via
-   `forwarded_token_header` (Path 1). Path 1 now also carries groups (see
-   above), so wiring `forwarded_token_header` in aws mode recovers
-   group-gated actions too - ADR 0038's Known Limitations should be
-   revisited once that's proven out end-to-end.
+Behind a proxy that authenticates the browser itself and forwards the user's
+access token in a header (AWS ALB OIDC), setting `forwarded_token_header`
+validates that token the same way.
 
-Both populate the same `User(sub=...)` model. Downstream code never
-needs to know which path produced the identity. The user JWT is not
-forwarded to Trino. `trino_client` uses the `report_viewer_svc` service
-principal and impersonates this `sub` via X-Trino-User (ADR 0022).
+`User.roles` comes from `resource_access.<oidc_roles_client_id>.roles` -
+Keycloak's standard client-role claim shape, delivered by a
+`report-viewer-roles-mapper` on the `report-viewer-audience` client scope
+(739-bearer-token-spike; see `helm/keycloak-config-cli/files/scout-realm.json`).
+A caller whose token carries no such claim just gets an empty set, not a
+validation failure - visibility gating degrades to "nothing gated is visible,"
+not to a 401.
+
+There used to be a second path here (oauth2-proxy's forwarded headers, trusted
+via a `X-Report-Viewer-Gateway` shared secret) for the SPA's own requests,
+back when the SPA had no way to carry a real Bearer JWT. It's retired now that
+Path 1 reaches 100% of inbound traffic, including the SPA's.
+
+The user JWT is not forwarded to Trino. `trino_client` uses the
+`report_viewer_svc` service principal and impersonates this `sub` via
+X-Trino-User (ADR 0022).
 """
 
 from __future__ import annotations
 
 import asyncio
-import hmac
 import logging
 from dataclasses import dataclass
 
@@ -61,18 +49,8 @@ log = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class User:
     sub: str  # owner_sub stored on the search row; also sent as X-Trino-User
-    # Issue #739: Keycloak group membership. Populated by the oauth2-proxy
-    # header path (Path 2) always, and by the Bearer JWT path (Path 1)
-    # whenever the issuing client's ID token has a `groups` claim stamped
-    # (true for oauth2-proxy's own client); empty otherwise.
-    groups: frozenset[str] = frozenset()
-
-
-def _gateway_ok(header: str | None) -> bool:
-    secret = settings.gateway_secret
-    if not secret or header is None:
-        return False
-    return hmac.compare_digest(header.encode(), secret.encode())
+    # Issue #739: Keycloak client roles (resource_access.report-viewer.roles).
+    roles: frozenset[str] = frozenset()
 
 
 def _bearer_token(auth_header: str | None) -> str | None:
@@ -84,13 +62,18 @@ def _bearer_token(auth_header: str | None) -> str | None:
     return None
 
 
+def _parse_resource_access_roles(claims: dict) -> frozenset[str]:
+    resource_access = claims.get("resource_access") or {}
+    client_claims = resource_access.get(settings.oidc_roles_client_id) or {}
+    return frozenset(client_claims.get("roles") or [])
+
+
 def _validate_jwt(token: str) -> User | None:
     """Validate `token` against Keycloak JWKS, return a `User` or None.
 
-    Returns None - rather than raising - on validation failure so the
-    caller can fall through to the next auth path (header, shared
-    secret). Logs at INFO so failed-then-fallback succeeds quietly while
-    repeated failures are still searchable in Loki.
+    Returns None - rather than raising - on validation failure so the caller
+    can turn it into a 401 without a traceback. Logs at INFO so this stays
+    searchable in Loki without being noisy at WARNING/ERROR.
     """
     try:
         unverified = jwt.get_unverified_header(token)
@@ -148,61 +131,26 @@ def _validate_jwt(token: str) -> User | None:
     if not sub:
         log.info("bearer rejected: no preferred_username/sub")
         return None
-    return User(sub=sub, groups=_parse_claim_groups(claims.get("groups")))
-
-
-def _parse_groups(header: str | None) -> frozenset[str]:
-    if not header:
-        return frozenset()
-    return frozenset(g.strip() for g in header.split(",") if g.strip())
-
-
-def _parse_claim_groups(groups: object) -> frozenset[str]:
-    """Same `groups` Keycloak claim as the oauth2-proxy header path, but as
-    the JWT's native list-of-strings shape rather than a comma-joined header
-    value - the same `groups-mapper` stamps it onto the ID token too."""
-    if not isinstance(groups, list):
-        return frozenset()
-    return frozenset(g for g in groups if isinstance(g, str) and g.strip())
+    return User(sub=sub, roles=_parse_resource_access_roles(claims))
 
 
 async def get_current_user(
     request: Request,
     authorization: str | None = Header(default=None),
-    x_auth_request_preferred_username: str | None = Header(default=None),
-    x_auth_request_groups: str | None = Header(default=None),
-    x_report_viewer_gateway: str | None = Header(default=None),
 ) -> User:
-    # Path 1: Bearer JWT (highest trust; carries the real user identity).
     token = _bearer_token(authorization)
     if not token and settings.forwarded_token_header:
         token = request.headers.get(settings.forwarded_token_header)
-    if token:
-        # JWKS fetch on cache miss is blocking; keep it off the event loop.
-        user = await asyncio.to_thread(_validate_jwt, token)
-        if user:
-            return user
-        # Bearer was present but invalid - 401 directly instead of falling
-        # through. If a caller bothered to send a bearer, they meant to
-        # authenticate as that user; silently downgrading to header trust
-        # would mask token-expiry bugs.
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="authentication required",
+        )
+    # JWKS fetch on cache miss is blocking; keep it off the event loop.
+    user = await asyncio.to_thread(_validate_jwt, token)
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="bearer token validation failed",
         )
-
-    # Path 2: oauth2-proxy headers, trusted only with Traefik's shared
-    # secret - both headers are gated by the same check since Traefik's
-    # forwardAuth overwrites both from oauth2-proxy's response regardless
-    # (see module docstring), but the gateway secret also stops a pod that
-    # bypasses Traefik entirely from forging either one.
-    if x_auth_request_preferred_username and _gateway_ok(x_report_viewer_gateway):
-        return User(
-            sub=x_auth_request_preferred_username,
-            groups=_parse_groups(x_auth_request_groups),
-        )
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="authentication required",
-    )
+    return user

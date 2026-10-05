@@ -124,16 +124,17 @@ def test_trino_stats_reach_the_progress_store(monkeypatch):
     }
 
 
-def test_progress_is_not_visible_to_another_user(client, auth_headers, fake_trino):
+def test_progress_is_not_visible_to_another_user(
+    client, auth_headers, other_auth_headers, fake_trino
+):
     from scout_report_viewer import progress
 
     dsid = _make_search(client, auth_headers, fake_trino)
     key = f"search:{dsid}:alice:tok1"
     progress.report(key, {"state": "RUNNING"})
     try:
-        bob = {**auth_headers, "X-Auth-Request-Preferred-Username": "bob"}
         url = f"/api/searches/{dsid}/progress?progress_id=tok1"
-        assert client.get(url, headers=bob).json() == {}
+        assert client.get(url, headers=other_auth_headers).json() == {}
         assert client.get(url, headers=auth_headers).json() == {"state": "RUNNING"}
     finally:
         progress.finish(key)

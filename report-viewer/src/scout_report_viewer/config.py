@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     oidc_jwks_url: str = ""
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
+    # Issue #739: client id whose resource_access.<id>.roles claim populates
+    # User.roles for role-gated action buttons. Must match the bearer-only
+    # "report-viewer" Keycloak client provisioned in scout-realm.json.
+    oidc_roles_client_id: str = "report-viewer"
 
     # Issue #739: path to the action-catalog YAML the Helm chart
     # renders into a ConfigMap and mounts here (the same "core chips ride
@@ -58,9 +62,6 @@ class Settings(BaseSettings):
     # with no access-control distinction from other config. A missing
     # file just means that action has no token to forward.
     action_tokens_path: str = "/app/action-tokens"
-
-    # Shared secret Traefik injects; the header path is refused unless it matches.
-    gateway_secret: str = ""
 
     # Header an authenticating proxy forwards the user's access token in (an AWS
     # ALB sends X-Amzn-Oidc-Accesstoken); validated like a Bearer. Empty disables.
