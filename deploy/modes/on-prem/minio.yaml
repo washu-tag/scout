@@ -44,6 +44,5 @@ spec:
     - name: scout-data-foundation
     - name: minio-operator
     - name: secrets-ready # config.env + the per-user creds
-    # MinIO's IAM waits for the realm's OpenID discovery while minio_oidc_enabled is on
-    # (Ansible's order: auth before lake).
-    - name: keycloak-realm
+    # No keycloak-realm edge: with OIDC on, MinIO retries the realm's discovery and
+    # bootstrap-minio-iam's `mc ready` waits for its IAM, so a first install converges.
