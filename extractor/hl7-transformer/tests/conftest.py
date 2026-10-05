@@ -47,7 +47,6 @@ def spark(tmp_path_factory):
         .config("spark.sql.ansi.enabled", "false")
         .config("spark.databricks.delta.schema.autoMerge.enabled", "true")
         .config("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "true")
-        .config("spark.databricks.delta.optimizeWrite.enabled", "true")
         .config(
             "spark.databricks.delta.constraints.allowUnenforcedNotNull.enabled", "true"
         )

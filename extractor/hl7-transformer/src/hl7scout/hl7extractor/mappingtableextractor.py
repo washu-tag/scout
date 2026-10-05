@@ -109,8 +109,6 @@ class MappingTableExtractor:
             df = self.process_stage_3(df)
             self.process_stage_4(df)
             self.process_stage_5()
-            # The stages above MERGE up to five times; compact like the latest table does.
-            self.spark.sql(f"OPTIMIZE {self.table_name}")
             activity.logger.info("Mapping table derivation complete")
         finally:
             self.postprocess()
@@ -156,7 +154,7 @@ class MappingTableExtractor:
     def merge_to_dt(self, df: DataFrame):
         merge_df_into_dt_on_column(
             DeltaTable.forName(self.spark, self.table_name),
-            df,
+            df.coalesce(1),  # insert-only MERGEs write one file per source partition
             "primary_report_identifier",
             False,
         )

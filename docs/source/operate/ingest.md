@@ -55,9 +55,9 @@ Alternatively, you can launch an ingestion job by clicking the "Start Workflow" 
 
 ## Delta table file counts
 
-The hl7-transformer writes with Delta optimized writes and compacts the patient mapping table after each batch, so ingest no longer fragments it. Tables written by earlier versions can hold thousands of small files, most visibly `<report_delta_table_name>_report_patient_mapping` (`reports_report_patient_mapping` with the default name). Every `*_epic_view` (curated, latest and dx) reads that table twice, so queries through those views, Superset dashboards included, slow to minutes.
+Ingest writes each MERGE into the patient mapping table as one file. Tables written by earlier versions can hold thousands of small files, most visibly `<report_delta_table_name>_report_patient_mapping` (`reports_report_patient_mapping` with the default name). Every `*_epic_view` (curated, latest and dx) reads that table twice, so queries through those views, Superset dashboards included, slow to minutes. Such a table stays fragmented until it is compacted.
 
-The next ingest compacts it. To compact it sooner, run this from the extractor's read-write Trino (`trino-rw`) while no ingest is running, since an OPTIMIZE that lands during an ingest can fail that batch's MERGE (Temporal retries it):
+Compact it once from the extractor's read-write Trino (`trino-rw`) while no ingest is running, since an OPTIMIZE that lands during an ingest can fail that batch's MERGE (Temporal retries it):
 
 ```sql
 ALTER TABLE delta.default.<report_delta_table_name>_report_patient_mapping EXECUTE optimize
