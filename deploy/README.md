@@ -81,14 +81,18 @@ reconciling `./flux` and `./modes/on-prem` dependsOn. Generate it with
 
 Those two Kustomizations (the site roots) live in `flux-system`, next to `cluster-vars`
 and the `scout-config` source, because Flux substitutes only from its own namespace.
-Both carry `postBuild.substituteFrom: cluster-vars`, which resolves the one `${var}` in
+The `scout-config` OCIRepository must select its `application/gzip` layer with
+`layerSelector.operation: copy`, preserving the packaged tarball. Flux's default
+extract/rearchive behavior filters media files, including the OAuth2 Proxy logo.
+Both site roots carry `postBuild.substituteFrom: cluster-vars`, which resolves the one `${var}` in
 the Flux files themselves (keycloak-operator's `targetNamespace`), and both are siblings
 of the site Kustomization rather than its children: with `wait`, a parent that applies a
 child that dependsOn it deadlocks. The ingest CI fixture sets `minio_oidc_enabled` to
 `off` and `temporal_web_auth` to `none`, both in cluster-vars, and uses Temporal's internal
-frontend. The public frontend still requires JWT authorization; the site authentication
-and certificate path needs the platform proof. `.github/ci_resources/flux/` contains the
-roots, site artifact and CI values used by the ingest proof.
+frontend. The public frontend still requires JWT authorization. The auth leg separately
+checks Keycloak, Launchpad and Trino; Temporal UI OIDC remains outside these tests.
+`.github/ci_resources/flux/` contains the roots, site artifact and CI values used by
+both legs.
 
 A site that keeps SOPS-encrypted Secrets in git also installs
 `.github/ci_resources/flux/flux-system/sops-guard.yaml` with Flux. kustomize-controller

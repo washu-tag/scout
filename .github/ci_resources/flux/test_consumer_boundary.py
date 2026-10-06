@@ -142,9 +142,11 @@ def evaluate(expression, context):
     )
     expression = (
         expression.replace("always()", "True")
+        .replace("cancelled()", repr(context.get("cancelled", False)))
         .replace("&&", " and ")
         .replace("||", " or ")
     )
+    expression = re.sub(r"!(?!=)", " not ", expression)
     return eval(
         " ".join(expression.split()), {"__builtins__": {}, "fromJSON": json.loads}, {}
     )
@@ -279,6 +281,14 @@ class WorkflowBoundaryTests(unittest.TestCase):
         self.assertEqual(set(writer["needs"]), {"identity", "deploy"})
         self.assertEqual(
             writer["steps"][0]["env"]["DEPLOY_RESULT"], "${{ needs.deploy.result }}"
+        )
+
+    def test_deployment_stops_on_cancellation_but_status_can_report_failure(self):
+        context = self.context()
+        context["cancelled"] = True
+        self.assertFalse(allows(self.workflow["jobs"]["deploy"]["if"], context))
+        self.assertTrue(
+            allows(self.workflow["jobs"]["published-status"]["if"], context)
         )
 
     def test_writer_has_no_checkout_artifact_download_or_repository_execution(self):

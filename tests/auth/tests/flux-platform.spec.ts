@@ -21,13 +21,23 @@ test.describe('Flux platform authentication', () => {
   });
 
   test('a signed-in user without scout-user approval receives 403', async ({ page }) => {
-    await signInToScout(page, launchpad, unauthorizedUser);
-    await page.waitForURL(launchpad);
-    const response = await page.reload({ waitUntil: 'domcontentloaded' });
-    expect(response?.status()).toBe(403);
-    // The app's session route is also behind the approval boundary.
-    const session = await page.request.get(`${launchpad}api/auth/session`);
-    expect(session.status()).toBe(403);
+    // OAuth2 Proxy denies the callback before saving a session or redirecting
+    // to Launchpad. Capture that original response: reloading a one-use OAuth
+    // callback could instead produce a CSRF/code error and falsely pass.
+    const callback = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        response.request().isNavigationRequest() &&
+        response.frame() === page.mainFrame() &&
+        url.origin === `https://auth.${process.env.SCOUT_HOSTNAME}` &&
+        url.pathname === '/oauth2/callback'
+      );
+    });
+    const [, response] = await Promise.all([
+      signInToScout(page, launchpad, unauthorizedUser),
+      callback,
+    ]);
+    expect(response.status()).toBe(403);
   });
 
   test('an approved user reaches Launchpad with an authenticated app session', async ({ page }) => {

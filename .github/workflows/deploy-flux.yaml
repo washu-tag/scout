@@ -123,7 +123,7 @@ jobs:
     name: deploy-and-test-flux (${{ matrix.leg }})
     needs: [identity]
     if: >-
-      always() && (
+      !cancelled() && (
         github.event_name != 'workflow_run' || (
           github.repository == 'washu-tag/scout' &&
           github.event.workflow_run.event == 'push' &&
@@ -516,7 +516,7 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
       - name: Diagnostics
-        if: failure() || steps.negative.outcome == 'failure' || steps.images.outcome == 'failure'
+        if: failure() || cancelled() || steps.negative.outcome == 'failure' || steps.images.outcome == 'failure'
         shell: bash
         run: bash .github/ci_resources/flux/diagnose.sh
       # Record each leg's requested and observed resources on the standard runner.

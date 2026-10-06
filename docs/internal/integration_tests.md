@@ -71,6 +71,9 @@ remains the component manifest owner ([ADR 0033](adr/0033-build-lane-bundling-an
 Its schema records the repository, revision, producer run and attempt, version,
 haul manifest digest, and config digest. The raw OCI manifest must match the config
 digest, and its signed annotations must match the build identity fields.
+The config source copies its `application/gzip` layer unchanged; the default Flux
+source extraction filters would otherwise remove packaged media such as the
+sign-in logo. A Kustomize build failure stops the proof promptly with diagnostics.
 Registry locations are fixed in the workflows. Neither
 the producer's config stamping nor the published consumer resolves a moving
 `:main` tag to select this build's haul/config.
