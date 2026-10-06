@@ -30,7 +30,10 @@ def main() -> None:
     mirrored = {p["public_registry"] for p in defaults["harbor_registry_proxies"]}
     pods = json.loads(
         subprocess.run(
-            ["kubectl", "get", "pods", "-A", "-o", "json"], capture_output=True, text=True, check=True
+            ["kubectl", "get", "pods", "-A", "-o", "json"],
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout
     )["items"]
     images = {}
@@ -42,14 +45,24 @@ def main() -> None:
     for image in sorted(images):
         reg = registry(image)
         mark = "ok  " if reg in mirrored else "MISS"
-        print("  {} {:22} {}  ({})".format(mark, reg, image, ", ".join(sorted(images[image]))))
+        print(
+            "  {} {:22} {}  ({})".format(
+                mark, reg, image, ", ".join(sorted(images[image]))
+            )
+        )
         if reg not in mirrored:
             bad.append(image)
     for image in bad:
-        print("::error::{} is not on a registry the staging Harbor mirrors".format(image))
+        print(
+            "::error::{} is not on a registry the staging Harbor mirrors".format(image)
+        )
     if bad:
         sys.exit(1)
-    print("{} images, all from mirrored registries ({})".format(len(images), ", ".join(sorted(mirrored))))
+    print(
+        "{} images, all from mirrored registries ({})".format(
+            len(images), ", ".join(sorted(mirrored))
+        )
+    )
 
 
 if __name__ == "__main__":

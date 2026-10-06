@@ -29,7 +29,9 @@ def main() -> None:
     problems += [
         "{}: not ciphertext".format(k)
         for k, v in sorted(leaves.items())
-        if not (isinstance(v, str) and v.startswith("ENC[AES256_GCM,") and v.endswith("]"))
+        if not (
+            isinstance(v, str) and v.startswith("ENC[AES256_GCM,") and v.endswith("]")
+        )
     ]
     # Short flags (minio_oidc_enabled: off) and the root user name are not secret and
     # match ordinary words in the file, so only look for the longer values.

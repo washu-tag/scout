@@ -29,12 +29,19 @@ def kubectl(*args, stdin=None, check=True):
 
 
 # Reasons a Kustomization reports before it has built anything (source not fetched yet).
-TRANSIENT = {"ArtifactFailed", "DependencyNotReady", "Progressing", "ProgressingWithRetry"}
+TRANSIENT = {
+    "ArtifactFailed",
+    "DependencyNotReady",
+    "Progressing",
+    "ProgressingWithRetry",
+}
 
 
 def verdict(name):
     """(status, reason, message) once the Kustomization has tried a source revision."""
-    p = kubectl("get", "kustomization", name, "-n", "flux-system", "-o", "json", check=False)
+    p = kubectl(
+        "get", "kustomization", name, "-n", "flux-system", "-o", "json", check=False
+    )
     if p.returncode:
         return None
     obj = json.loads(p.stdout)
@@ -92,11 +99,17 @@ def main() -> None:
     if r is None:
         problems.append("ci-neg-strict: no Ready verdict within {}s".format(TIMEOUT))
     else:
-        print("ci-neg-strict: Ready={} reason={}\n  {}".format(r[0], r[1], masked(r[2])))
+        print(
+            "ci-neg-strict: Ready={} reason={}\n  {}".format(r[0], r[1], masked(r[2]))
+        )
         if r[0] != "False" or want not in r[2]:
-            problems.append("ci-neg-strict: expected Ready=False naming {}".format(DROPPED))
+            problems.append(
+                "ci-neg-strict: expected Ready=False naming {}".format(DROPPED)
+            )
         if leaks(r[2]):
-            problems.append("ci-neg-strict: message quotes the values of {}".format(leaks(r[2])))
+            problems.append(
+                "ci-neg-strict: message quotes the values of {}".format(leaks(r[2]))
+            )
     created = secrets_in("kube-system", {"oauth2-proxy", "oauth2-proxy-redis"})
     if created:
         problems.append("ci-neg-strict: created Secrets {}".format(created))
@@ -105,21 +118,37 @@ def main() -> None:
     if r is None:
         problems.append("ci-neg-nodecrypt: no Ready verdict within {}s".format(TIMEOUT))
     else:
-        print("ci-neg-nodecrypt: Ready={} reason={}\n  {}".format(r[0], r[1], masked(r[2])))
+        print(
+            "ci-neg-nodecrypt: Ready={} reason={}\n  {}".format(
+                r[0], r[1], masked(r[2])
+            )
+        )
         # Rejected by the site's admission guard (flux-system/sops-guard.yaml), or by
         # kustomize-controller's own check ("<Secret> is SOPS encrypted, configuring
         # decryption is required ..."), which v1.9.6 skips (see sops-guard.yaml).
         if r[0] != "False" or not any(
             s in r[2] for s in ("reject-sops-ciphertext", "is SOPS encrypted")
         ):
-            problems.append("ci-neg-nodecrypt: expected Ready=False for a SOPS-encrypted Secret")
+            problems.append(
+                "ci-neg-nodecrypt: expected Ready=False for a SOPS-encrypted Secret"
+            )
     created = secrets_in("ci-negative")
     if created:
-        problems.append("ci-neg-nodecrypt: created Secrets {} in ci-negative".format(created))
+        problems.append(
+            "ci-neg-nodecrypt: created Secrets {} in ci-negative".format(created)
+        )
 
     # Clean up: nothing here was applied, so deleting cannot prune a real object.
     kubectl("delete", "-f", manifest, "--wait=true", "--timeout=120s", check=False)
-    kubectl("delete", "secret", "ci-neg-values", "-n", "flux-system", "--ignore-not-found", check=False)
+    kubectl(
+        "delete",
+        "secret",
+        "ci-neg-values",
+        "-n",
+        "flux-system",
+        "--ignore-not-found",
+        check=False,
+    )
 
     for p in problems:
         print("::error::" + p)
