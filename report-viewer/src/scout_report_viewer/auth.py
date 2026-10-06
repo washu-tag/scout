@@ -116,11 +116,6 @@ def _validate_jwt(token: str) -> User | None:
     except JWTError as exc:
         log.info("bearer rejected: signature/decode (%s)", exc)
         return None
-    log.info(
-        "DEBUG: aud=%s resource_access=%s",
-        claims.get("aud"),
-        claims.get("resource_access"),
-    )
     # python-jose 3.5 accepts tokens with no `aud` even when `audience=` is passed.
     aud = claims.get("aud")
     aud_list = [aud] if isinstance(aud, str) else (aud or [])
