@@ -40,9 +40,10 @@ DEFAULT_REQUIRED = _REPO / "deploy" / "required-vars.txt"
 
 
 def load_required(path) -> list:
-    """Ordered list of required var names (blank lines and # comments dropped)."""
+    """Ordered list of required var names: the first word of each line, blank lines
+    and # comments dropped."""
     return [
-        ln.strip()
+        ln.split()[0]
         for ln in Path(path).read_text().splitlines()
         if ln.strip() and not ln.lstrip().startswith("#")
     ]
@@ -139,7 +140,7 @@ def check(data: dict, required: list) -> tuple:
     return sorted(want - have), sorted(have - want)
 
 
-def _yaml_double_quoted(value) -> str:
+def yaml_double_quoted(value) -> str:
     """YAML double-quoted scalar for an arbitrary string (endpoint values contain
     ``://``); backslashes and quotes are escaped defensively."""
     s = str(value).replace("\\", "\\\\").replace('"', '\\"')
@@ -158,7 +159,7 @@ def render_configmap(data: dict, name: str, namespace: str = "") -> str:
         lines.append("  namespace: {}".format(namespace))
     lines.append("data:")
     for key in sorted(data):
-        lines.append("  {}: {}".format(key, _yaml_double_quoted(data[key])))
+        lines.append("  {}: {}".format(key, yaml_double_quoted(data[key])))
     return "\n".join(lines) + "\n"
 
 
