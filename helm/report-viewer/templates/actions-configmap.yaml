@@ -26,8 +26,8 @@ data:
       weight: 5
       action_type: client
       client_handler: explain-search
-      {{- if .Values.actions.explainSearch.requiredGroup }}
-      required_group: {{ .Values.actions.explainSearch.requiredGroup | quote }}
+      {{- if .Values.actions.explainSearch.requiredRole }}
+      required_role: {{ .Values.actions.explainSearch.requiredRole | quote }}
       {{- end }}
     {{- end }}
     {{- if .Values.actions.downloadCsv.enabled }}
@@ -36,8 +36,8 @@ data:
       weight: 10
       action_type: client
       client_handler: download-csv
-      {{- if .Values.actions.downloadCsv.requiredGroup }}
-      required_group: {{ .Values.actions.downloadCsv.requiredGroup | quote }}
+      {{- if .Values.actions.downloadCsv.requiredRole }}
+      required_role: {{ .Values.actions.downloadCsv.requiredRole | quote }}
       {{- end }}
     {{- end }}
     {{- range .Values.actions.custom }}
@@ -51,7 +51,7 @@ data:
       action_type: open-url
       url: {{ required "actions.custom entries need a url" .url | quote }}
       {{- end }}
-      {{- if .requiredGroup }}
-      required_group: {{ .requiredGroup | quote }}
+      {{- if .requiredRole }}
+      required_role: {{ .requiredRole | quote }}
       {{- end }}
     {{- end }}
