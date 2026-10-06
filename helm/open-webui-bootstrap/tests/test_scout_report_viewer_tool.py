@@ -1,4 +1,6 @@
-"""Unit tests for scout_report_viewer_tool's `_post`/`_post_multipart`.
+"""Unit tests for scout_report_viewer_tool: the auth path (forwarding the
+caller's OWUI token, and renewing it when it is missing or rejected),
+chart rendering, and per-turn embed accumulation.
 
 Run with:
     cd helm/open-webui-bootstrap
@@ -8,6 +10,8 @@ Run with:
 import asyncio
 import importlib.util
 import re
+import sys
+import types
 from pathlib import Path
 
 import httpx
@@ -38,36 +42,50 @@ def _tool_with_transport(handler, monkeypatch):
     return Tools()
 
 
-@pytest.mark.parametrize("oauth", [None, {"access_token": ""}])
-@pytest.mark.asyncio
-async def test_post_without_bearer_raises_and_skips_request(oauth, monkeypatch):
-    called = False
+def _stub_owui_sessions(monkeypatch, tokens):
+    """Stand in for OWUI's own token resolution, which `_Auth` imports at
+    call time. Each entry in `tokens` answers one lookup."""
+    pending = list(tokens)
 
-    def handler(request):
-        nonlocal called
-        called = True
-        return httpx.Response(200, json={})
+    async def get_system_oauth_token(request, user):
+        return pending.pop(0) if pending else None
 
-    tool = _tool_with_transport(handler, monkeypatch)
-    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
-        await tool._post("/api/searches", {"sql": "SELECT 1"}, oauth=oauth)
-    assert not called
+    middleware = types.ModuleType("open_webui.utils.middleware")
+    middleware.get_system_oauth_token = get_system_oauth_token
+    for name, module in (
+        ("open_webui", types.ModuleType("open_webui")),
+        ("open_webui.utils", types.ModuleType("open_webui.utils")),
+        ("open_webui.utils.middleware", middleware),
+    ):
+        monkeypatch.setitem(sys.modules, name, module)
 
 
-@pytest.mark.parametrize("oauth", [None, {"access_token": ""}])
-@pytest.mark.asyncio
-async def test_get_without_bearer_raises_and_skips_request(oauth, monkeypatch):
-    called = False
+class _Caller:
+    """Records the events a tool sends to the browser."""
 
-    def handler(request):
-        nonlocal called
-        called = True
-        return httpx.Response(200, json={})
+    def __init__(self, confirm=True):
+        self.events = []
+        self._confirm = confirm
 
-    tool = _tool_with_transport(handler, monkeypatch)
-    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
-        await tool._get("/api/plots/abc123", oauth=oauth)
-    assert not called
+    async def __call__(self, event):
+        self.events.append(event)
+        return self._confirm if event.get("type") == "confirmation" else True
+
+    def types(self):
+        return [e.get("type") for e in self.events]
+
+    def code(self):
+        return "".join(e.get("data", {}).get("code", "") for e in self.events)
+
+
+def _auth(monkeypatch, *, oauth=None, tokens=(), caller=None):
+    _stub_owui_sessions(monkeypatch, tokens)
+    return _mod._Auth(oauth, caller, object(), {"id": "user-1"})
+
+
+async def _drain_prompts():
+    """Let the fire-and-forget sign-in prompt run to completion."""
+    await asyncio.gather(*list(_mod._PENDING_PROMPTS))
 
 
 @pytest.mark.parametrize(
@@ -75,9 +93,7 @@ async def test_get_without_bearer_raises_and_skips_request(oauth, monkeypatch):
     [("tok123", "Bearer tok123"), ({"access_token": "tok456"}, "Bearer tok456")],
 )
 @pytest.mark.asyncio
-async def test_get_with_bearer_forwards_authorization_header(
-    oauth, expected, monkeypatch
-):
+async def test_post_forwards_the_callers_token(oauth, expected, monkeypatch):
     seen = {}
 
     def handler(request):
@@ -85,9 +101,293 @@ async def test_get_with_bearer_forwards_authorization_header(
         return httpx.Response(200, json={"ok": True})
 
     tool = _tool_with_transport(handler, monkeypatch)
-    result = await tool._get("/api/plots/abc123", oauth=oauth)
+    auth = _auth(monkeypatch, oauth=oauth)
+    result = await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
     assert result == {"ok": True}
     assert seen["authorization"] == expected
+
+
+@pytest.mark.parametrize(
+    "oauth,expected",
+    [("tok123", "Bearer tok123"), ({"access_token": "tok456"}, "Bearer tok456")],
+)
+@pytest.mark.asyncio
+async def test_get_forwards_the_callers_token(oauth, expected, monkeypatch):
+    seen = {}
+
+    def handler(request):
+        seen["authorization"] = request.headers.get("authorization")
+        return httpx.Response(200, json={"ok": True})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    auth = _auth(monkeypatch, oauth=oauth)
+    result = await tool._get("/api/plots/abc123", auth=auth)
+    assert result == {"ok": True}
+    assert seen["authorization"] == expected
+
+
+@pytest.mark.asyncio
+async def test_token_that_expired_mid_turn_is_refreshed_without_the_browser(
+    monkeypatch,
+):
+    """The commonest case: a multi-query answer outlives the 5-minute access
+    token OWUI resolved at the start of the turn. The session behind it is
+    fine, so re-reading OWUI's session refreshes the token and no browser
+    round trip happens."""
+    seen = []
+
+    def handler(request):
+        seen.append(request.headers.get("authorization"))
+        if len(seen) == 1:
+            return httpx.Response(401, json={"detail": "bearer token invalid"})
+        return httpx.Response(200, json={"ok": True})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    caller = _Caller()
+    auth = _auth(
+        monkeypatch,
+        oauth="expired",
+        tokens=[{"access_token": "refreshed"}],
+        caller=caller,
+    )
+
+    assert await tool._get("/api/plots/abc123", auth=auth) == {"ok": True}
+    assert seen == ["Bearer expired", "Bearer refreshed"]
+    assert caller.events == []
+
+
+@pytest.mark.parametrize("oauth", [None, {"access_token": ""}])
+@pytest.mark.asyncio
+async def test_missing_token_renews_in_the_browser_then_retries(oauth, monkeypatch):
+    """OWUI deleted the session when its refresh token turned out to belong
+    to an SSO session that already ended, so the turn starts with no token
+    at all."""
+    seen = []
+
+    def handler(request):
+        seen.append(request.headers.get("authorization"))
+        return httpx.Response(200, json={"ok": True})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    caller = _Caller()
+    # No session to read at first; the browser round trip mints one.
+    auth = _auth(
+        monkeypatch,
+        oauth=oauth,
+        tokens=[None, {"access_token": "renewed"}],
+        caller=caller,
+    )
+
+    assert await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth) == {
+        "ok": True
+    }
+    assert seen == ["Bearer renewed"]
+    assert caller.types() == ["execute"]
+    assert "/oauth/oidc/login" in caller.code()
+
+
+@pytest.mark.asyncio
+async def test_rejected_token_is_retried_with_a_renewed_one(monkeypatch):
+    seen = []
+
+    def handler(request):
+        seen.append(request.headers.get("authorization"))
+        if len(seen) == 1:
+            return httpx.Response(401, json={"detail": "bearer token invalid"})
+        return httpx.Response(200, json={"ok": True})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    auth = _auth(
+        monkeypatch,
+        oauth="stale",
+        tokens=[None, {"access_token": "renewed"}],
+        caller=_Caller(),
+    )
+
+    assert await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth) == {
+        "ok": True
+    }
+    assert seen == ["Bearer stale", "Bearer renewed"]
+
+
+@pytest.mark.asyncio
+async def test_session_renewed_by_an_earlier_call_skips_the_browser(monkeypatch):
+    """`__oauth_token__` is resolved once per turn, so a second tool call in
+    the same turn still carries the dead token - but OWUI's session is
+    already good and no second round trip is needed."""
+    seen = []
+
+    def handler(request):
+        seen.append(request.headers.get("authorization"))
+        return httpx.Response(200, json={"ok": True})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    caller = _Caller()
+    auth = _auth(
+        monkeypatch, oauth=None, tokens=[{"access_token": "renewed"}], caller=caller
+    )
+
+    await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+    assert seen == ["Bearer renewed"]
+    assert caller.events == []
+
+
+@pytest.mark.asyncio
+async def test_unrenewable_session_raises_and_offers_a_sign_in(monkeypatch):
+    """Keycloak's own session is gone, so the frame can't renew silently and
+    only an interactive sign-in is left."""
+    called = False
+
+    def handler(request):
+        nonlocal called
+        called = True
+        return httpx.Response(200, json={})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    caller = _Caller(confirm=True)
+    auth = _auth(monkeypatch, oauth=None, tokens=[None, None], caller=caller)
+
+    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
+        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+    assert not called
+    await _drain_prompts()
+    assert caller.types() == ["execute", "confirmation", "execute"]
+    assert "window.location.assign" in caller.code()
+
+
+@pytest.mark.asyncio
+async def test_declining_the_sign_in_prompt_does_not_navigate(monkeypatch):
+    tool = _tool_with_transport(lambda r: httpx.Response(200, json={}), monkeypatch)
+    caller = _Caller(confirm=False)
+    auth = _auth(monkeypatch, oauth=None, tokens=[None, None], caller=caller)
+
+    with pytest.raises(SessionExpiredError):
+        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+    await _drain_prompts()
+    assert caller.types() == ["execute", "confirmation"]
+    assert "window.location.assign" not in caller.code()
+
+
+@pytest.mark.asyncio
+async def test_the_same_token_back_is_not_a_renewal(monkeypatch):
+    """Renewal has to produce a *different* token; handing back the one that
+    was just rejected would only buy a duplicate request."""
+    seen = []
+
+    def handler(request):
+        seen.append(request.headers.get("authorization"))
+        return httpx.Response(401, json={"detail": "bearer token invalid"})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    auth = _auth(
+        monkeypatch,
+        oauth="stale",
+        tokens=[{"access_token": "stale"}, {"access_token": "stale"}],
+        caller=_Caller(),
+    )
+
+    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
+        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+    await _drain_prompts()
+    assert seen == ["Bearer stale"]
+
+
+@pytest.mark.asyncio
+async def test_renewal_is_attempted_once_per_call(monkeypatch):
+    auth = _auth(monkeypatch, oauth=None, tokens=[None, None], caller=_Caller())
+    assert await auth.renew() is None
+    assert await auth.renew() is None
+
+
+@pytest.mark.asyncio
+async def test_no_browser_channel_still_fails_cleanly(monkeypatch):
+    """Nothing to drive a renewal with - a background task, say - so report
+    the expiry rather than hanging on an event nobody will answer."""
+    called = False
+
+    def handler(request):
+        nonlocal called
+        called = True
+        return httpx.Response(200, json={})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    auth = _auth(monkeypatch, oauth=None, tokens=[None, None], caller=None)
+
+    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
+        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+    assert not called
+
+
+@pytest.mark.asyncio
+async def test_multipart_renews_on_a_missing_token(monkeypatch):
+    seen = []
+
+    def handler(request):
+        seen.append(request.headers.get("authorization"))
+        return httpx.Response(200, json={"ok": True})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    auth = _auth(
+        monkeypatch,
+        oauth=None,
+        tokens=[None, {"access_token": "renewed"}],
+        caller=_Caller(),
+    )
+
+    result = await tool._post_multipart(
+        "/api/reports/import",
+        files={"file": ("x.csv", b"a,b")},
+        data={},
+        auth=auth,
+    )
+    assert result == {"ok": True}
+    assert seen == ["Bearer renewed"]
+
+
+@pytest.mark.asyncio
+async def test_non_401_errors_are_not_treated_as_expiry(monkeypatch):
+    caller = _Caller()
+
+    def handler(request):
+        return httpx.Response(500, json={"detail": "trino unavailable"})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    auth = _auth(monkeypatch, oauth="valid-token", caller=caller)
+
+    with pytest.raises(ReportViewerServiceError, match="trino unavailable"):
+        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+    assert caller.events == []
+
+
+@pytest.mark.asyncio
+async def test_unreachable_service_is_not_treated_as_expiry(monkeypatch):
+    def handler(request):
+        raise httpx.ConnectError("refused")
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    auth = _auth(monkeypatch, oauth="valid-token", caller=_Caller())
+
+    with pytest.raises(ReportViewerServiceError, match="temporarily unavailable"):
+        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+
+
+@pytest.mark.asyncio
+async def test_timeout_is_not_retried_or_treated_as_expiry(monkeypatch):
+    """A query that ran out the clock must not run twice."""
+    calls = []
+    caller = _Caller()
+
+    def handler(request):
+        calls.append(request)
+        raise httpx.ReadTimeout("slow")
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    auth = _auth(monkeypatch, oauth="valid-token", caller=caller)
+
+    with pytest.raises(_mod.ServiceTimeoutError):
+        await tool._post("/api/plots", {"sql": "SELECT 1"}, auth=auth)
+    assert len(calls) == 1
+    assert caller.events == []
 
 
 def test_render_chart_data_includes_sql_explanation_and_rows():
@@ -108,75 +408,6 @@ def test_render_chart_data_handles_no_rows():
     plot = {"sql": "SELECT 1", "sql_explanation": "", "rows": []}
     text = Tools._render_chart_data(plot)
     assert "no rows" in text.lower()
-
-
-@pytest.mark.asyncio
-async def test_post_multipart_without_bearer_raises_and_skips_request(monkeypatch):
-    called = False
-
-    def handler(request):
-        nonlocal called
-        called = True
-        return httpx.Response(200, json={})
-
-    tool = _tool_with_transport(handler, monkeypatch)
-    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
-        await tool._post_multipart(
-            "/api/reports/import",
-            files={"file": ("x.csv", b"a,b")},
-            data={},
-            oauth=None,
-        )
-    assert not called
-
-
-@pytest.mark.parametrize(
-    "oauth,expected",
-    [("tok123", "Bearer tok123"), ({"access_token": "tok456"}, "Bearer tok456")],
-)
-@pytest.mark.asyncio
-async def test_post_with_bearer_forwards_authorization_header(
-    oauth, expected, monkeypatch
-):
-    seen = {}
-
-    def handler(request):
-        seen["authorization"] = request.headers.get("authorization")
-        return httpx.Response(200, json={"ok": True})
-
-    tool = _tool_with_transport(handler, monkeypatch)
-    result = await tool._post("/api/searches", {"sql": "SELECT 1"}, oauth=oauth)
-    assert result == {"ok": True}
-    assert seen["authorization"] == expected
-
-
-@pytest.mark.asyncio
-async def test_post_upstream_401_with_bearer_present_raises_session_expired(
-    monkeypatch,
-):
-    """This internal call never sets oauth2-proxy's trust header, so a 401
-    from report-viewer here can only mean the bearer itself was rejected
-    (e.g. a stale token OWUI hasn't refreshed yet) - same user action as a
-    missing bearer, so it gets the same friendly message."""
-
-    def handler(request):
-        return httpx.Response(401, json={"detail": "bearer token validation failed"})
-
-    tool = _tool_with_transport(handler, monkeypatch)
-    with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
-        await tool._post("/api/searches", {"sql": "SELECT 1"}, oauth="expired-token")
-
-
-@pytest.mark.asyncio
-async def test_post_upstream_non_401_error_still_raised_with_bearer_present(
-    monkeypatch,
-):
-    def handler(request):
-        return httpx.Response(500, json={"detail": "trino unavailable"})
-
-    tool = _tool_with_transport(handler, monkeypatch)
-    with pytest.raises(ReportViewerServiceError, match="trino unavailable"):
-        await tool._post("/api/searches", {"sql": "SELECT 1"}, oauth="valid-token")
 
 
 def test_error_text_omits_prefix_for_session_expired():

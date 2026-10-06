@@ -221,6 +221,10 @@ kubectl exec -n scout-analytics deploy/ollama -- ollama list
 **Authentication issues:**
 - Users must have Keycloak roles: `open-webui-user` or `open-webui-admin`
 
+**Chat reports an expired sign-in:**
+- OWUI resolves the user's token once per chat turn, so it goes stale in two ways: a turn that runs longer than the 5-minute access token (multi-query answers), and an OWUI session whose refresh token belongs to an SSO session that already ended (OWUI re-runs OIDC only once its own cookie expires, so signing back in elsewhere does not refresh it). `scout_report_viewer_tool` retries a rejected or missing token once: it re-reads OWUI's session, which refreshes an expired token, and only if that fails renews the session in a hidden frame through `/oauth/oidc/login`. It prompts for an interactive sign-in only when Keycloak's own session is gone too.
+- report-viewer logs `bearer rejected: token expired` for the first case; OWUI logs `Token refresh failed ... deleting session` for the second.
+
 ## Related Documentation
 
 - **Main Scout Docs**: https://washu-scout.readthedocs.io/
