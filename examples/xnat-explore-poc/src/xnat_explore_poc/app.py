@@ -63,6 +63,14 @@ def healthz() -> dict:
     return {"status": "ok"}
 
 
+# Issue #739 follow-up: this tab is opened from report-viewer embedded in
+# OWUI's chat iframe, which lacks allow-popups-to-escape-sandbox (ADR 0038) -
+# per the HTML sandboxing spec, that means this tab inherits OWUI's sandbox
+# flags, not just whatever lets it open at all. The static page below would
+# render fine under almost any flag set, so it can't surface that - a real
+# target (actual XNAT) needs working navigation, dialogs, and often its own
+# popups. These three probes test those specific capabilities directly,
+# reporting pass/fail in the page itself rather than requiring devtools.
 _LANDING_PAGE = """\
 <!doctype html>
 <html>
@@ -70,6 +78,54 @@ _LANDING_PAGE = """\
 <body>
 <p>Cohort of {reports} reports received for {user}.</p>
 <p>This is not a real XNAT integration - see xnat-explore-poc/src/xnat_explore_poc/app.py.</p>
+
+<hr>
+<h2>Sandbox inheritance probes (#739)</h2>
+<p>If this tab was opened from report-viewer embedded in OWUI's chat, it inherits
+   OWUI's iframe sandbox flags unless that iframe sets
+   <code>allow-popups-to-escape-sandbox</code>. These test whether a real target
+   app's ordinary behavior - navigating, showing a dialog, opening its own popup -
+   would actually work here, not just whether this tab was able to open.</p>
+
+<p><button onclick="testTopNavigation()">Test top-level navigation</button>
+   <span id="nav-result"></span></p>
+
+<p><button onclick="testModal()">Test modal dialog</button>
+   <span id="modal-result"></span></p>
+
+<p><button onclick="testNestedPopup()">Test opening a further popup</button>
+   <span id="popup-result"></span></p>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("navigated") === "true") {{
+    document.getElementById("nav-result").textContent =
+      "PASSED - navigation succeeded (allow-top-navigation is effectively present).";
+  }}
+
+  function testTopNavigation() {{
+    // A real navigation, not history.pushState - pushState doesn't require
+    // allow-top-navigation at all, so it wouldn't test anything real here.
+    const url = new URL(window.location.href);
+    url.searchParams.set("navigated", "true");
+    window.location.href = url.toString();
+  }}
+
+  function testModal() {{
+    window.alert("If you can see this dialog, allow-modals is effectively present.");
+    document.getElementById("modal-result").textContent =
+      "Button clicked - if no dialog appeared just now, it was silently blocked " +
+      "(allow-modals is absent).";
+  }}
+
+  function testNestedPopup() {{
+    const w = window.open("about:blank", "_blank");
+    document.getElementById("popup-result").textContent = w
+      ? "PASSED - a further popup opened (allow-popups is effectively present)."
+      : "FAILED - window.open() returned null (allow-popups is absent, or a " +
+        "popup blocker intervened).";
+  }}
+</script>
 </body>
 </html>
 """

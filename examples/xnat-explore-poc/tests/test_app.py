@@ -58,12 +58,15 @@ def test_landing_page_renders_reports_and_user():
 
 
 def test_landing_page_escapes_user():
+    """The page has its own legitimate <script> block (the sandbox-inheritance
+    probes, #739) - this checks the user-supplied payload specifically isn't
+    injected unescaped, not that no <script> tag exists anywhere on the page."""
     r = landing_client.get(
         "/", params={"reports": "1", "user": "<script>alert(1)</script>"}
     )
     assert r.status_code == 200
-    assert "<script>" not in r.text
-    assert "&lt;script&gt;" in r.text
+    assert "<script>alert(1)</script>" not in r.text
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in r.text
 
 
 def test_invoke_requires_token():
