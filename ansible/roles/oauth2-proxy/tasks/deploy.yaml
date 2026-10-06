@@ -135,9 +135,6 @@
             - X-Auth-Request-Preferred-Username
             - X-Auth-Request-Groups
             - Authorization
-            # DEBUG (739): temporary, for comparing access-token vs ID-token
-            # claim shape. Revert alongside pass_access_token once resolved.
-            - X-Auth-Request-Access-Token
 
 - name: Install OAuth2 Proxy Error Middleware
   kubernetes.core.k8s:

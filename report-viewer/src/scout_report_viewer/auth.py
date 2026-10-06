@@ -144,15 +144,6 @@ async def get_current_user(
     request: Request,
     authorization: str | None = Header(default=None),
 ) -> User:
-    access_token = request.headers.get("X-Auth-Request-Access-Token")
-    if access_token:
-        try:
-            log.info(
-                "DEBUG: access token claims=%s",
-                jwt.get_unverified_claims(access_token),
-            )
-        except JWTError as exc:
-            log.info("DEBUG: access token decode failed: %s", exc)
     token = _bearer_token(authorization)
     if not token and settings.forwarded_token_header:
         token = request.headers.get(settings.forwarded_token_header)
