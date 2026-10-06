@@ -37,9 +37,6 @@ jobs:
           python-version: '3.12'
       - name: Install test dependencies
         run: python3 -m pip install pytest pyyaml
-      - name: Test deployment tooling and artifact identity
-        run: python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_*.py
-
       - name: Install kustomize
         run: |
           set -euo pipefail
@@ -55,6 +52,9 @@ jobs:
 
       # The on-prem floor (kustomize-controller v1.9.6); export and dry-run are offline.
       - uses: ./.github/actions/install-flux
+
+      - name: Test deployment tooling and artifact identity
+        run: python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_*.py
 
       - name: Validate the on-prem CI inputs
         run: |

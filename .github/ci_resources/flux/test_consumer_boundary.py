@@ -1,6 +1,7 @@
 """Offline checks for producer/consumer trust boundaries and receipt archive failures."""
 
 import importlib.util
+import json
 from pathlib import Path
 import re
 import stat
@@ -137,14 +138,16 @@ def evaluate(expression, context):
         return repr(value if value != {} else None)
 
     expression = re.sub(
-        r"(?:github|needs)(?:\.[a-zA-Z_][a-zA-Z_0-9]*)+", resolve, expression
+        r"(?:github|needs|inputs)(?:\.[a-zA-Z_][a-zA-Z_0-9]*)+", resolve, expression
     )
     expression = (
         expression.replace("always()", "True")
         .replace("&&", " and ")
         .replace("||", " or ")
     )
-    return eval(" ".join(expression.split()), {"__builtins__": {}}, {})
+    return eval(
+        " ".join(expression.split()), {"__builtins__": {}, "fromJSON": json.loads}, {}
+    )
 
 
 def allows(expression, context):
@@ -185,7 +188,7 @@ class WorkflowBoundaryTests(unittest.TestCase):
             ("github.event.workflow_run.conclusion", "failure"),
             ("github.event.workflow_run.head_repository.full_name", "attacker/scout"),
         ]
-        for name in ("identity", "ingest", "published-status"):
+        for name in ("identity", "deploy", "published-status"):
             gate = self.workflow["jobs"][name]["if"]
             self.assertTrue(allows(gate, self.context()), name)
             for path, value in mutations:
@@ -198,27 +201,27 @@ class WorkflowBoundaryTests(unittest.TestCase):
                 with self.subTest(job=name, mutation=path):
                     self.assertFalse(allows(gate, context))
 
-    def test_no_receipt_skips_ingest_and_status_but_invalid_receipt_reports_failure(
+    def test_no_receipt_skips_deploy_and_status_but_invalid_receipt_reports_failure(
         self,
     ):
         context = self.context()
         context["needs"]["identity"]["outputs"]["present"] = "false"
-        for name in ("ingest", "published-status"):
+        for name in ("deploy", "published-status"):
             self.assertFalse(allows(self.workflow["jobs"][name]["if"], context))
         context["needs"]["identity"]["result"] = "failure"
-        self.assertFalse(allows(self.workflow["jobs"]["ingest"]["if"], context))
+        self.assertFalse(allows(self.workflow["jobs"]["deploy"]["if"], context))
         self.assertTrue(
             allows(self.workflow["jobs"]["published-status"]["if"], context)
         )
 
-    def test_local_events_run_ingest_without_the_writer(self):
+    def test_local_events_run_deploy_without_the_writer(self):
         for event in ("pull_request", "push", "workflow_dispatch"):
             context = self.context()
             context["github"].update(
                 event_name=event, repository="fork/scout", event={}
             )
             context["needs"]["identity"] = {"result": "skipped", "outputs": {}}
-            self.assertTrue(allows(self.workflow["jobs"]["ingest"]["if"], context))
+            self.assertTrue(allows(self.workflow["jobs"]["deploy"]["if"], context))
             self.assertFalse(allows(self.workflow["jobs"]["identity"]["if"], context))
             self.assertFalse(
                 allows(self.workflow["jobs"]["published-status"]["if"], context)
@@ -255,9 +258,32 @@ class WorkflowBoundaryTests(unittest.TestCase):
             group("workflow_run", 100, 1), group("workflow_run", 101, 2)
         )
 
+    def test_both_legs_gate_published_status_and_only_manual_runs_can_select_one(self):
+        deploy = self.workflow["jobs"]["deploy"]
+        self.assertFalse(deploy["strategy"]["fail-fast"])
+        matrix = (
+            deploy["strategy"]["matrix"]["leg"].removeprefix("${{").removesuffix("}}")
+        )
+        for event in ("workflow_run", "pull_request", "push", "workflow_dispatch"):
+            for selection in ("both", "ingest", "auth"):
+                context = self.context()
+                context["github"]["event_name"] = event
+                context["inputs"] = {"leg": selection}
+                expected = (
+                    [selection]
+                    if event == "workflow_dispatch" and selection != "both"
+                    else ["ingest", "auth"]
+                )
+                self.assertEqual(evaluate(matrix, context), expected)
+        writer = self.workflow["jobs"]["published-status"]
+        self.assertEqual(set(writer["needs"]), {"identity", "deploy"})
+        self.assertEqual(
+            writer["steps"][0]["env"]["DEPLOY_RESULT"], "${{ needs.deploy.result }}"
+        )
+
     def test_writer_has_no_checkout_artifact_download_or_repository_execution(self):
         jobs = self.workflow["jobs"]
-        self.assertEqual(jobs["ingest"]["permissions"], {"contents": "read"})
+        self.assertEqual(jobs["deploy"]["permissions"], {"contents": "read"})
         self.assertEqual(
             jobs["identity"]["permissions"], {"contents": "read", "actions": "read"}
         )
@@ -272,7 +298,7 @@ class WorkflowBoundaryTests(unittest.TestCase):
         self.assertIn("/repos/washu-tag/scout/statuses/${PRODUCER_SHA}", script["run"])
 
     def test_published_checkout_and_flux_source_keep_exact_identity(self):
-        for name in ("identity", "ingest"):
+        for name in ("identity", "deploy"):
             checkout = self.workflow["jobs"][name]["steps"][0]
             self.assertIn("github.event.workflow_run.head_sha", checkout["with"]["ref"])
             self.assertFalse(checkout["with"]["persist-credentials"])
@@ -288,7 +314,7 @@ class WorkflowBoundaryTests(unittest.TestCase):
             "${{ github.event_name != 'workflow_run' }}",
         )
 
-    def test_site_has_independent_trust_and_rejection_gates_ingest(self):
+    def test_site_has_independent_trust_and_rejection_gates_deploy(self):
         roots = list(yaml.safe_load_all((HERE / "roots-site.yaml").read_text()))
         site = next(d["spec"] for d in roots if d["kind"] == "OCIRepository")
         config = yaml.safe_load((HERE / "site/scout-config-source.yaml").read_text())[
@@ -314,7 +340,7 @@ class WorkflowBoundaryTests(unittest.TestCase):
                 "scout-config-source.yaml",
             },
         )
-        steps = self.workflow["jobs"]["ingest"]["steps"]
+        steps = self.workflow["jobs"]["deploy"]["steps"]
         negative_index = next(
             i for i, s in enumerate(steps) if s.get("id") == "site-trust-negative"
         )

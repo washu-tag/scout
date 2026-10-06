@@ -1,6 +1,6 @@
 name: Deploy via Flux (on-prem)
 
-# Consumer proof: the ingest leg runs from either the exact published config from a
+# Consumer proof: both legs run from either the exact published config from a
 # successful upstream main build, or a clearly separate locally built PR/prototype config.
 # The workflow_run boundary is repeated in the read-only jobs and the status-only writer.
 on:
@@ -13,6 +13,9 @@ on:
       - deploy/**
       - tooling/deploy/**
       - helm/**
+      - tests/auth/**
+      - tests/data-authorization/**
+      - .github/ci_resources/inventory.yaml
       - .github/workflows/deploy-flux.yaml
       - .github/workflows/ci.yaml
       - .github/ci_resources/flux/**
@@ -31,6 +34,11 @@ on:
         type: choice
         options: [sops, plain]
         default: sops
+      leg:
+        description: 'Proof to run (published builds and PRs always run both)'
+        type: choice
+        options: [both, ingest, auth]
+        default: both
 
 permissions:
   contents: read
@@ -111,8 +119,8 @@ jobs:
             --run-id "$PRODUCER_RUN_ID" --run-attempt "$PRODUCER_RUN_ATTEMPT" \
             --github-output "$GITHUB_OUTPUT"
 
-  ingest:
-    name: deploy-and-test-flux (ingest)
+  deploy:
+    name: deploy-and-test-flux (${{ matrix.leg }})
     needs: [identity]
     if: >-
       always() && (
@@ -128,6 +136,7 @@ jobs:
     permissions:
       contents: read
     env:
+      LEG: ${{ matrix.leg }}
       ARTIFACT_MODE: ${{ github.event_name == 'workflow_run' && 'published' || 'local' }}
       IDENTITY_REPOSITORY: ${{ github.event_name == 'workflow_run' && 'washu-tag/scout' || github.repository }}
       IDENTITY_RUN_ID: ${{ github.event.workflow_run.id || github.run_id }}
@@ -137,6 +146,10 @@ jobs:
       RECEIPT_MANIFEST_DIGEST: ${{ needs.identity.outputs.manifest_digest }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.leg == 'auth' && '["auth"]' || github.event_name == 'workflow_dispatch' && inputs.leg == 'ingest' && '["ingest"]' || '["ingest","auth"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -179,6 +192,7 @@ jobs:
           rm -f /tmp/registry.tar.gz
 
       - name: 'Set up Java for Gradle cache warming'
+        if: matrix.leg == 'ingest'
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: ${{ env.JAVA_DIST }}
@@ -187,6 +201,7 @@ jobs:
       # Same as the e2e lane: resolve the ingest test deps for the in-cluster --offline
       # test Job in the background; "Wait for Gradle cache warming" joins it.
       - name: 'Start Gradle cache warming'
+        if: matrix.leg == 'ingest'
         shell: bash
         run: |
           (if bash -c '
@@ -228,6 +243,23 @@ jobs:
           chmod 600 "$HOME/.kube/config"
           echo "KUBECONFIG=$HOME/.kube/config" >> "$GITHUB_ENV"
           KUBECONFIG="$HOME/.kube/config" kubectl get nodes -o wide
+
+      - name: Bootstrap authentication TLS and ingress
+        if: matrix.leg == 'auth'
+        run: bash .github/ci_resources/flux/bootstrap_auth.sh
+      - name: Set up Node for authentication tests
+        if: matrix.leg == 'auth'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: tests/auth/package-lock.json
+      - name: Install browser test dependencies
+        if: matrix.leg == 'auth'
+        working-directory: tests/auth
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
 
       - name: Start the in-job registry
         shell: bash
@@ -362,6 +394,14 @@ jobs:
           flux push artifact "oci://${CI_REGISTRY}/ci-negative:${VERSION}" --path="$neg" \
             --source="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
             --revision="${VERSION}@sha1:${TESTED_SHA}" --insecure-registry
+          if [ "$LEG" = auth ]; then
+            python3 .github/ci_resources/flux/prepare_auth_site.py \
+              --site "$site" --ca "$PLATFORM_CA_CERT" \
+              --roots .github/ci_resources/flux/roots-apps-auth.yaml \
+              --output "$RUNNER_TEMP/roots-apps.yaml"
+          else
+            cp .github/ci_resources/flux/roots-apps.yaml "$RUNNER_TEMP/roots-apps.yaml"
+          fi
           bash .github/ci_resources/flux/publish_site.sh
 
       - name: Reconcile the verified site and config sources
@@ -401,7 +441,7 @@ jobs:
 
       - name: Negative cases
         id: negative
-        continue-on-error: true # prototype: record the verdict, keep going, fail at the end
+        continue-on-error: true # collect diagnostics; Verdict still fails the job
         shell: bash
         run: |
           set -euo pipefail
@@ -410,25 +450,27 @@ jobs:
           python3 .github/ci_resources/flux/negative_cases.py "$RUNNER_TEMP/negative.yaml" \
             .github/ci_resources/flux/secret-values.json
 
-      - name: Reconcile the ingest leg
+      - name: Reconcile the selected leg
         id: reconcile
         shell: bash
         run: |
           set -euo pipefail
-          kubectl apply -f .github/ci_resources/flux/roots-apps.yaml
-          python3 .github/ci_resources/flux/wait_ready.py "$(cat .github/ci_resources/flux/ingest-kustomizations.txt)" 2700
+          kubectl apply -f "$RUNNER_TEMP/roots-apps.yaml"
+          python3 .github/ci_resources/flux/wait_ready.py "$(cat ".github/ci_resources/flux/${LEG}-kustomizations.txt")" 2700
       # An air-gapped site pulls through the staging Harbor's proxies only.
       - name: Images come from mirrored registries
         id: images
-        continue-on-error: true # prototype: record the verdict, keep going, fail at the end
+        continue-on-error: true # collect diagnostics; Verdict still fails the job
         run: python3 .github/ci_resources/flux/check_images.py
       - name: 'Wait for Gradle cache warming'
+        if: matrix.leg == 'ingest'
         shell: bash
         run: |
           while [ ! -f /tmp/gradle-warm.rc ]; do sleep 5; done
           cat /tmp/gradle-warm.log
           exit "$(cat /tmp/gradle-warm.rc)"
-      - name: 'Run tests'
+      - name: 'Run ingest tests'
+        if: matrix.leg == 'ingest'
         shell: bash
         run: |
           cp .github/ci_resources/test_config_template.json tests/ingest/src/test/resources/config/local.json
@@ -440,26 +482,44 @@ jobs:
           failure_pid=$!
           wait -n $completion_pid $failure_pid
       - name: Test Logs
-        if: always() && steps.reconcile.outcome == 'success'
+        if: always() && matrix.leg == 'ingest' && steps.reconcile.outcome == 'success'
         shell: bash
         run: kubectl -n scout-extractor logs job/ci-tests
       - name: Test Summary
         uses: test-summary/action@37b508cfee6d4d080eedd00b5bb240a6a784a6a5 # v2.6
-        if: always() && steps.reconcile.outcome == 'success'
+        if: always() && matrix.leg == 'ingest' && steps.reconcile.outcome == 'success'
         with:
           paths: 'tests/ingest/**/TEST-*.xml'
           show: 'fail, skip'
       - name: Logging (extractor)
-        if: always() && steps.reconcile.outcome == 'success'
+        if: always() && matrix.leg == 'ingest' && steps.reconcile.outcome == 'success'
         shell: bash
         run: |
           kubectl -n scout-extractor logs deployment/hl7log-extractor --tail=200
           kubectl -n scout-extractor logs deployment/hl7-transformer --tail=200
+      - name: Run authentication and data authorization tests
+        if: matrix.leg == 'auth'
+        env:
+          NODE_EXTRA_CA_CERTS: ${{ env.PLATFORM_CA_CERT }}
+        run: bash .github/ci_resources/flux/run_auth_tests.sh
+      - name: Authentication Job logs
+        if: always() && matrix.leg == 'auth' && steps.reconcile.outcome == 'success'
+        run: |
+          kubectl -n scout-data logs job/data-authz-seed --tail=200 || true
+          kubectl -n scout-analytics logs job/data-authz-tests --tail=500 || true
+      - name: Authentication browser report
+        if: always() && matrix.leg == 'auth'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-flux-auth-${{ github.run_attempt }}
+          path: tests/auth/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Diagnostics
         if: failure() || steps.negative.outcome == 'failure' || steps.images.outcome == 'failure'
         shell: bash
         run: bash .github/ci_resources/flux/diagnose.sh
-      # Sizing record for the platform leg (5c-2): what the ingest leg asked for and used.
+      # Record each leg's requested and observed resources on the standard runner.
       - name: Node capacity
         if: always() && steps.reconcile.outcome != 'skipped'
         shell: bash
@@ -481,7 +541,7 @@ jobs:
 
   published-status:
     name: Report the published artifact proof
-    needs: [identity, ingest]
+    needs: [identity, deploy]
     if: >-
       always() &&
       github.event_name == 'workflow_run' &&
@@ -502,16 +562,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PRODUCER_SHA: ${{ github.event.workflow_run.head_sha }}
           IDENTITY_RESULT: ${{ needs.identity.result }}
-          INGEST_RESULT: ${{ needs.ingest.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
         run: |
           set -euo pipefail
           state=failure
-          description='Published config identity or Flux ingest proof failed'
-          if [ "$IDENTITY_RESULT" = success ] && [ "$INGEST_RESULT" = success ]; then
+          description='Published config identity or Flux ingest/auth proof failed'
+          if [ "$IDENTITY_RESULT" = success ] && [ "$DEPLOY_RESULT" = success ]; then
             state=success
-            description='Exact published config passed the Flux ingest proof'
+            description='Exact published config passed the Flux ingest/auth proof'
           fi
           gh api --method POST "/repos/washu-tag/scout/statuses/${PRODUCER_SHA}" \
-            -f state="$state" -f context='on-prem/flux-ingest' \
+            -f state="$state" -f context='on-prem/flux-platform' \
             -f description="$description" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

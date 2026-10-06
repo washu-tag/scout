@@ -29,7 +29,7 @@ cosign verify --key "$RUNNER_TEMP/cosign.pub" --insecure-ignore-tlog=true \
   echo "CONFIG_INSECURE=$CONFIG_INSECURE"
 } >> "$GITHUB_ENV"
 {
-  echo "### Flux ingest proof: $ARTIFACT_MODE artifact"
+  echo "### Flux ${LEG:-ingest} proof: $ARTIFACT_MODE artifact"
   echo "- Repository: \`$IDENTITY_REPOSITORY\`"
   echo "- Revision: \`$TESTED_SHA\`"
   echo "- Producer run/attempt: \`$IDENTITY_RUN_ID/$IDENTITY_RUN_ATTEMPT\`"

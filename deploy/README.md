@@ -110,6 +110,8 @@ Remaining components: jupyter, report-viewer, monitoring, and the feature Compon
 Done since the scaffold: the per-namespace foundation bases (`base/scout-*-foundation`,
 one owner per Namespace + shared HelmRepository) and the config-artifact publish job
 (stamps the Scout charts' `0.0.0` placeholders from the haul). The on-prem Flux proof
-(`.github/workflows/deploy-flux.yaml`) stands the ingest slice up on k3s from a signed
-artifact and runs the ingest suite against it; the platform leg (every Kustomization
-Ready) is next.
+(`.github/workflows/deploy-flux.yaml`) deploys the ingest and authentication dependency
+closures on separate k3s runners from signed config/site artifacts. It runs ingest,
+browser sign-in/access, and data-authorization tests. Superset and the components
+listed above remain outside this CI proof; see the
+[integration test scope](../docs/internal/integration_tests.md#on-prem-flux-artifact-proof).
