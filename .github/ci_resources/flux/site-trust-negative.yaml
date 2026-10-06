@@ -1,0 +1,68 @@
+# Separate sources never receive a previously accepted artifact. The published
+# canary is only ConfigMap ci-site-negative/ci-site-trust-marker; it must not apply.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ci-site-negative
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: ci-site-wrong-key
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: oci://@REGISTRY@/ci-site-negative
+  insecure: true
+  ref:
+    digest: '@SITE_GOOD_DIGEST@'
+  verify:
+    provider: cosign
+    secretRef:
+      name: scout-site-wrong-pub
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: ci-site-wrong-key
+  namespace: flux-system
+spec:
+  interval: 1m
+  retryInterval: 10s
+  sourceRef:
+    kind: OCIRepository
+    name: ci-site-wrong-key
+  path: ./
+  targetNamespace: ci-site-negative
+  prune: false
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: ci-site-tampered
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: oci://@REGISTRY@/ci-site-negative
+  insecure: true
+  ref:
+    digest: '@SITE_TAMPERED_DIGEST@'
+  verify:
+    provider: cosign
+    secretRef:
+      name: scout-site-cosign-pub
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: ci-site-tampered
+  namespace: flux-system
+spec:
+  interval: 1m
+  retryInterval: 10s
+  sourceRef:
+    kind: OCIRepository
+    name: ci-site-tampered
+  path: ./
+  targetNamespace: ci-site-negative
+  prune: false

@@ -288,6 +288,45 @@ class WorkflowBoundaryTests(unittest.TestCase):
             "${{ github.event_name != 'workflow_run' }}",
         )
 
+    def test_site_has_independent_trust_and_rejection_gates_ingest(self):
+        roots = list(yaml.safe_load_all((HERE / "roots-site.yaml").read_text()))
+        site = next(d["spec"] for d in roots if d["kind"] == "OCIRepository")
+        config = yaml.safe_load((HERE / "site/scout-config-source.yaml").read_text())[
+            "spec"
+        ]
+        self.assertEqual(site["ref"], {"digest": "@SITE_DIGEST@"})
+        self.assertEqual(
+            site["verify"],
+            {
+                "provider": "cosign",
+                "secretRef": {"name": "scout-site-cosign-pub"},
+            },
+        )
+        self.assertEqual(config["verify"]["secretRef"]["name"], "scout-cosign-pub")
+        resources = yaml.safe_load((HERE / "site/kustomization.yaml").read_text())[
+            "resources"
+        ]
+        self.assertEqual(
+            set(resources),
+            {
+                "cluster-vars.yaml",
+                "scout-secret-values.yaml",
+                "scout-config-source.yaml",
+            },
+        )
+        steps = self.workflow["jobs"]["ingest"]["steps"]
+        negative_index = next(
+            i for i, s in enumerate(steps) if s.get("id") == "site-trust-negative"
+        )
+        ingest_index = next(
+            i for i, s in enumerate(steps) if s.get("id") == "reconcile"
+        )
+        negative = steps[negative_index]
+        self.assertLess(negative_index, ingest_index)
+        self.assertFalse(negative.get("continue-on-error", False))
+        self.assertNotIn("if", negative)  # Required in both published and local modes.
+        self.assertIn("site_trust.py negative", negative["run"])
+
 
 if __name__ == "__main__":
     unittest.main()

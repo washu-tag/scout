@@ -38,7 +38,7 @@ jobs:
       - name: Install test dependencies
         run: python3 -m pip install pytest pyyaml
       - name: Test deployment tooling and artifact identity
-        run: python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_consumer_boundary.py
+        run: python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_*.py
 
       - name: Install kustomize
         run: |

@@ -42,8 +42,8 @@ kubectl -n extractor logs -f job/ci-tests
 
 The [Flux workflow](../../.github/workflows/deploy-flux.yaml) installs the on-prem
 ingest dependency graph on a fresh k3s runner and runs the ingest tests against it.
-It checks config signatures, secret substitution and SOPS decryption, mirrored
-image sources, and negative cases before accepting the result. The ingest graph
+It checks config and site signatures, secret substitution and SOPS decryption,
+image registry allowlists, and negative cases before accepting the result. The ingest graph
 does not exercise the full platform or its public authentication paths.
 
 There are two artifact modes:
@@ -63,8 +63,9 @@ There are two artifact modes:
 The receipt is build identity metadata, not another component inventory. Hauler
 remains the component manifest owner ([ADR 0033](adr/0033-build-lane-bundling-and-airgap-transport.md)).
 Its schema records the repository, revision, producer run and attempt, version,
-haul manifest digest, and config digest. The config's signed OCI annotations must
-match all those fields. Registry locations are fixed in the workflows. Neither
+haul manifest digest, and config digest. The raw OCI manifest must match the config
+digest, and its signed annotations must match the build identity fields.
+Registry locations are fixed in the workflows. Neither
 the producer's config stamping nor the published consumer resolves a moving
 `:main` tag to select this build's haul/config.
 
@@ -74,16 +75,31 @@ API and download errors also fail. Reruns use a new attempt-specific receipt and
 are checked against their own signed annotations. The legacy `haul-version`
 artifact and Ansible deployment lane remain available during migration.
 
+The site artifact uses its own ephemeral signing key, independent of the Scout
+config key ([ADR 0031](adr/0031-gitops-deployment-base.md)). Both public keys are
+bootstrapped directly into the cluster and stay outside the site artifact. The
+workflow signs the site's exported OCI digest, verifies it with cosign, and pins
+that same digest in Flux. It checks current-generation `Ready` and `SourceVerified`
+conditions and the resolved OCI revision for both sources.
+
+Two additional negative cases use harmless ConfigMap fixtures in a separate
+namespace: a valid bundle checked with the wrong key, and the unchanged original
+signature bundle attached to modified content. The publisher checks that the
+replayed bundle is actually present and that cosign rejects the intended failures.
+Flux must reject both sources with a verification error, publish no usable
+artifact, and apply no marker. Test resources are cleaned up even after a failure.
+The test is gated before ingest deployment and exercises the modern Sigstore bundle
+format emitted by the pinned cosign version; it does not certify legacy formats.
+
 Run the fast identity and boundary checks without a cluster:
 
 ```bash
-python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_consumer_boundary.py
+python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_*.py
 ```
 
 This proof is one part of the release gate. The producer still carries unchanged
 components from a previous haul; concurrent build ordering and component ancestry
-need a separate solution. The test site's OCI artifact is not yet signed, although
-the config verification key is bootstrapped outside that artifact. Complete
+need a separate solution. Complete
 disconnected dependency transport, full-platform/authentication tests, and release
 promotion remain follow-up work. The advisory commit status can be replaced by
 another attempt for the same commit; promotion must check the specific producer

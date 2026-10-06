@@ -154,6 +154,8 @@ jobs:
       - uses: ./.github/actions/install-hauler-oras
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: 'v3.0.6'
       - name: Verify the exact published config before installing the cluster
         if: env.ARTIFACT_MODE == 'published'
         shell: bash
@@ -307,9 +309,8 @@ jobs:
           flux check
 
       # The site carries cluster-vars, encrypted values, and the digest-pinned source.
-      # Bootstrap the config trust key directly from the checked-out public key (or the
-      # local ephemeral key), outside the unsigned site artifact.
-      - name: Build and push the site artifact
+      # Both trust keys are bootstrapped directly, outside the site artifact.
+      - name: Build, sign and push the site artifact
         shell: bash
         run: |
           set -euo pipefail
@@ -358,27 +359,24 @@ jobs:
           # The no-decryption negative case's copy, in its own namespace.
           gen "$neg/ci-neg-encrypted.yaml" ci-neg-encrypted ci-negative
           encrypt "$neg/ci-neg-encrypted.yaml"
-          for a in "scout-site:$site" "ci-negative:$neg"; do
-            flux push artifact "oci://${CI_REGISTRY}/${a%%:*}:${VERSION}" --path="${a#*:}" \
-              --source="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
-              --revision="${VERSION}@sha1:${TESTED_SHA}" --insecure-registry
-          done
+          flux push artifact "oci://${CI_REGISTRY}/ci-negative:${VERSION}" --path="$neg" \
+            --source="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --revision="${VERSION}@sha1:${TESTED_SHA}" --insecure-registry
+          bash .github/ci_resources/flux/publish_site.sh
 
-      - name: Reconcile the site source (decryption, verified scout-config)
+      - name: Reconcile the verified site and config sources
         shell: bash
         run: |
           set -euo pipefail
-          sed -e "s|@REGISTRY@|${CI_REGISTRY}|g" -e "s|@VERSION@|${VERSION}|g" \
+          sed -e "s|@REGISTRY@|${CI_REGISTRY}|g" -e "s|@SITE_DIGEST@|${SITE_DIGEST}|g" \
             .github/ci_resources/flux/roots-site.yaml | kubectl apply -f -
           python3 .github/ci_resources/flux/wait_ready.py scout-site-source 600
-          verified="$(kubectl -n flux-system get ocirepository scout-config \
-            -o jsonpath='{.status.conditions[?(@.type=="SourceVerified")].status}')"
-          [ "$verified" = "True" ] || { echo "::error::scout-config is not cosign-verified"; exit 1; }
-          # Check the live source still pins the exact config verified above.
-          actual="$(kubectl -n flux-system get ocirepository scout-config -o jsonpath='{.spec.ref.digest}')"
-          [ "$actual" = "$CONFIG_DIGEST" ] || { echo "::error::Flux config digest differs from receipt"; exit 1; }
-          actual_source="$(kubectl -n flux-system get ocirepository scout-config -o jsonpath='{.spec.url}')"
-          [ "$actual_source" = "oci://${CONFIG_SOURCE}" ] || { echo "::error::Flux config repository differs from receipt"; exit 1; }
+          python3 .github/ci_resources/flux/site_trust.py positive \
+            --name scout-site --source "oci://${CI_REGISTRY}/scout-site" \
+            --digest "$SITE_DIGEST" --key scout-site-cosign-pub
+          python3 .github/ci_resources/flux/site_trust.py positive \
+            --name scout-config --source "oci://${CONFIG_SOURCE}" \
+            --digest "$CONFIG_DIGEST" --key scout-cosign-pub
           # The values Secret holds every key in plaintext (decrypted by kustomize-controller
           # in sops mode). Counts only; no value is printed.
           kubectl -n flux-system get secret scout-secret-values -o json | python3 -c '
@@ -388,6 +386,18 @@ jobs:
           print(len(d), "values in Secret flux-system/scout-secret-values,", len(enc), "still ciphertext")
           sys.exit(1 if enc else 0)
           '
+
+      - name: Reject untrusted site artifacts
+        id: site-trust-negative
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -e "s|@REGISTRY@|${CI_REGISTRY}|g" \
+            -e "s|@SITE_GOOD_DIGEST@|${SITE_GOOD_DIGEST}|g" \
+            -e "s|@SITE_TAMPERED_DIGEST@|${SITE_TAMPERED_DIGEST}|g" \
+            .github/ci_resources/flux/site-trust-negative.yaml > "$RUNNER_TEMP/site-trust-negative.yaml"
+          python3 .github/ci_resources/flux/site_trust.py negative \
+            --manifest "$RUNNER_TEMP/site-trust-negative.yaml"
 
       - name: Negative cases
         id: negative
