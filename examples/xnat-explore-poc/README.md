@@ -45,9 +45,13 @@ XNAT Ingress's COOP header changed just to prove the popup mechanism end to end.
 - **`X-Report-Viewer-Action-Token`** (`invokeToken`) — a bearer token proving the caller
   knows a shared secret. Says nothing about *which user* the call is for.
 - **`X-Report-Viewer-User-Assertion`** (`assertionKey`) — a short-lived (60s) HS256 JWT,
-  signed with a *different* secret, carrying `sub`, `groups`, `search_id`, `action_id`.
+  signed with a *different* secret, carrying `sub`, `roles`, `search_id`, `action_id`.
   `/invoke` verifies its signature, expiry, that `search_id` matches the request body
-  (anti-replay), and — if `REQUIRED_GROUP` is set — that `groups` contains it.
+  (catches a naive replay against a different search, not a deliberate one — both
+  values are visible to anyone holding the assertion), and — if `REQUIRED_ROLE` is
+  set — that `roles` contains it. Neither this nor anything else here verifies that
+  the request body's `reports` list is what report-viewer actually resolved; see the
+  customize guide linked below for what this boundary does and doesn't guarantee.
 
 `invokeToken` and `assertionKey` **must be different values** — see
 `src/xnat_explore_poc/config.py` and the customize guide's
@@ -69,7 +73,7 @@ All settings are env vars prefixed `XNAT_EXPLORE_POC_` (see `src/xnat_explore_po
 | `XNAT_EXPLORE_POC_LANDING_BASE_URL`  | `http://localhost:8080` | This app's own public base URL — what `/invoke`'s response points at.          |
 | `XNAT_EXPLORE_POC_INVOKE_TOKEN`      | `""`                    | Must match report-viewer's `actions.custom[].invokeToken` for this action.     |
 | `XNAT_EXPLORE_POC_ASSERTION_KEY`     | `""`                    | Must match `actions.custom[].assertionKey`; must differ from the invoke token. |
-| `XNAT_EXPLORE_POC_REQUIRED_GROUP`    | `""`                    | Keycloak group required in the assertion's `groups` claim, or empty to skip.   |
+| `XNAT_EXPLORE_POC_REQUIRED_ROLE`     | `""`                    | Keycloak client role required in the assertion's `roles` claim, or empty to skip. |
 
 ## Local development
 
@@ -99,7 +103,7 @@ Required `values.yaml` overrides:
 - `landingPage.ingress.host` — the bare hostname (no scheme) to serve the landing page on.
 - `networkPolicy.reportViewerNamespace` — the namespace report-viewer is deployed into.
 - `invokeToken`, `assertionKey` — generate two independent random secrets.
-- `requiredGroup` — optional, matching whatever `requiredGroup` gates this action on
+- `requiredRole` — optional, matching whatever `requiredRole` gates this action on
   report-viewer's side.
 
 Then add a matching entry to report-viewer's own `actions.custom` (see the customize

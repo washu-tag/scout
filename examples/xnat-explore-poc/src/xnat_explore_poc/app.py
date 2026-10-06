@@ -91,7 +91,7 @@ async def invoke(
     # Required, not optional: the bearer token above only proves the
     # caller knows a shared secret, not who the end user is - an App that
     # skips this has no way to independently catch a bug in
-    # report-viewer's own group-gating.
+    # report-viewer's own role-gating.
     x_report_viewer_user_assertion: str | None = Header(default=None),
 ) -> dict:
     if (
@@ -128,8 +128,20 @@ async def invoke(
             _scrub_for_log(body.get("search_id")),
         )
         raise HTTPException(status_code=401, detail="invalid user assertion")
-    # Binds the assertion to this exact request - a captured assertion
-    # can't be replayed against a different search within its 60s window.
+    # Catches a NAIVE replay - reusing a captured assertion+body wholesale
+    # against a different search without updating this field. Does NOT
+    # bind the request body to the assertion: both values here are visible
+    # to (and settable by) anyone holding the assertion, so this alone
+    # doesn't stop someone from keeping search_id matched while
+    # substituting a different `reports` list. Neither this check nor
+    # anything else in this handler verifies that `reports` is what
+    # report-viewer actually resolved - see
+    # helm/report-viewer/values.yaml's assertionKey doc comment for what
+    # this invoke boundary does and doesn't guarantee. That gap is only
+    # reachable by bypassing report-viewer entirely (network access to
+    # this endpoint plus a valid invoke token plus a captured assertion) -
+    # not through report-viewer's own UI, which never trusts
+    # client-supplied report ids.
     if claims.get("search_id") != body.get("search_id"):
         log.warning(
             "invoke rejected: assertion search_id=%s != request search_id=%s",
@@ -137,17 +149,17 @@ async def invoke(
             _scrub_for_log(body.get("search_id")),
         )
         raise HTTPException(status_code=401, detail="user assertion search_id mismatch")
-    if settings.required_group and settings.required_group not in (
-        claims.get("groups") or []
+    if settings.required_role and settings.required_role not in (
+        claims.get("roles") or []
     ):
         log.warning(
-            "invoke rejected: search_id=%s sub=%s groups=%s lacks required group %s",
+            "invoke rejected: search_id=%s sub=%s roles=%s lacks required role %s",
             _scrub_for_log(body.get("search_id")),
             _scrub_for_log(claims.get("sub")),
-            _scrub_list_for_log(claims.get("groups")),
-            settings.required_group,
+            _scrub_list_for_log(claims.get("roles")),
+            settings.required_role,
         )
-        raise HTTPException(status_code=403, detail="caller lacks required group")
+        raise HTTPException(status_code=403, detail="caller lacks required role")
 
     # The cohort itself (search_id/sql/username/reports/cohort_truncated -
     # see report-viewer's invoke_search_action) is otherwise unused - a
@@ -161,10 +173,10 @@ async def invoke(
     # cohort's contents inspectable via Loki.
     reports = body.get("reports") or []
     log.info(
-        "invoke: search_id=%s sub=%s groups=%s reports=%d truncated=%s",
+        "invoke: search_id=%s sub=%s roles=%s reports=%d truncated=%s",
         _scrub_for_log(body.get("search_id")),
         _scrub_for_log(claims.get("sub")),
-        _scrub_list_for_log(claims.get("groups")),
+        _scrub_list_for_log(claims.get("roles")),
         len(reports),
         _scrub_for_log(body.get("cohort_truncated")),
     )

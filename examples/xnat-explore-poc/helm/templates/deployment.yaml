@@ -61,9 +61,9 @@ spec:
                 secretKeyRef:
                   name: {{ include "xnat-explore-poc.fullname" . }}
                   key: assertionKey
-            {{- if .Values.requiredGroup }}
-            - name: XNAT_EXPLORE_POC_REQUIRED_GROUP
-              value: {{ .Values.requiredGroup | quote }}
+            {{- if .Values.requiredRole }}
+            - name: XNAT_EXPLORE_POC_REQUIRED_ROLE
+              value: {{ .Values.requiredRole | quote }}
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

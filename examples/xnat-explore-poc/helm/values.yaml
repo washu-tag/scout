@@ -88,12 +88,12 @@ invokeToken: ''
 # call and can leak via logs, while this key never goes over the wire.
 assertionKey: ''
 
-# Keycloak group the asserted caller must be a member of, or empty to
-# skip this check (the assertion's signature/expiry are still verified
-# either way). Set this to whatever requiredGroup gates this action on
+# Keycloak client role the asserted caller must hold, or empty to skip
+# this check (the assertion's signature/expiry are still verified either
+# way). Set this to whatever requiredRole gates this action on
 # report-viewer's side - not read from there automatically, since this
 # App has no notion of report-viewer's action catalog.
-requiredGroup: ''
+requiredRole: ''
 
 resources:
   requests:

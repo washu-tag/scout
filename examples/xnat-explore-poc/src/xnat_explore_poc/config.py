@@ -46,12 +46,12 @@ class Settings(BaseSettings):
     # trusting report-viewer's own gating never has a bug.
     assertion_key: str = ""
 
-    # Keycloak group the asserted caller must be a member of, or empty to
-    # skip this check (the assertion's signature/expiry are still verified
-    # either way). Matches whatever requiredGroup this action is configured
+    # Keycloak client role the asserted caller must hold, or empty to skip
+    # this check (the assertion's signature/expiry are still verified
+    # either way). Matches whatever requiredRole this action is configured
     # with on report-viewer's side - not read from anywhere automatically,
     # since this App has no notion of report-viewer's action catalog.
-    required_group: str = ""
+    required_role: str = ""
 
 
 settings = Settings()
