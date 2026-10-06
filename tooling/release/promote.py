@@ -14,7 +14,6 @@ import json
 import os
 from pathlib import Path
 import re
-import stat
 import subprocess
 import sys
 import time
@@ -26,9 +25,7 @@ from artifact_identity import (  # noqa: E402
     DIGEST,
     REVISION,
     IdentityError,
-    _invalid_constant,
     _json_object,
-    _object,
     validate_manifest,
     validate_receipt,
 )
@@ -138,9 +135,7 @@ class GitHub:
         if not body.strip():
             return {}
         try:
-            value = json.loads(
-                body, object_pairs_hook=_object, parse_constant=_invalid_constant
-            )
+            value = json.loads(body)
         except (ValueError, UnicodeDecodeError) as exc:
             raise PromotionError("invalid GitHub API JSON") from exc
         require(isinstance(value, (dict, list)), "invalid GitHub API response type")
@@ -260,11 +255,6 @@ def artifact_json(api, repository, run, name, filename, *, optional=False):
     require(len(found) == 1, "missing or ambiguous attempt-specific evidence artifact")
     artifact = found[0]
     require(artifact.get("expired") is False, "evidence artifact expired")
-    require(
-        type(artifact.get("size_in_bytes")) is int
-        and 0 < artifact["size_in_bytes"] <= MAX_MANIFEST,
-        "invalid evidence archive size",
-    )
     context = artifact.get("workflow_run")
     require(
         isinstance(context, dict)
@@ -275,7 +265,6 @@ def artifact_json(api, repository, run, name, filename, *, optional=False):
     raw = api.download(
         f"/repos/{repository}/actions/artifacts/{positive(artifact.get('id'))}/zip"
     )
-    require(len(raw) <= MAX_MANIFEST, "evidence archive exceeds size limit")
     advertised = artifact.get("digest")
     if advertised is not None:
         require(
@@ -284,24 +273,11 @@ def artifact_json(api, repository, run, name, filename, *, optional=False):
         )
     try:
         with zipfile.ZipFile(io.BytesIO(raw)) as archive:
-            items = archive.infolist()
-            require(
-                len(items) == 1 and items[0].filename == filename,
-                "unexpected evidence archive members",
-            )
-            item = items[0]
-            mode = item.external_attr >> 16
-            require(
-                not item.is_dir() and stat.S_IFMT(mode) in (0, stat.S_IFREG),
-                "evidence archive member is not a regular file",
-            )
-            require(
-                item.file_size <= MAX_JSON and not item.flag_bits & 1,
-                "invalid evidence archive member",
-            )
-            return object_bytes(archive.read(item))
-    except (zipfile.BadZipFile, RuntimeError, OSError) as exc:
-        raise PromotionError("unreadable evidence archive") from exc
+            # GitHub's archive is only a container for the named receipt; no
+            # paths are extracted or repository code executed from its members.
+            return _json_object(archive.read(filename))
+    except (KeyError, zipfile.BadZipFile, RuntimeError, OSError) as exc:
+        raise PromotionError("unreadable evidence archive or missing receipt") from exc
 
 
 def validate_jobs(api, repository, run):

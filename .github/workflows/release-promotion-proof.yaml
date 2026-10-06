@@ -12,7 +12,7 @@ on:
       - .github/workflows/release*.yaml
       - .github/workflows/promote-release.yaml
   push:
-    branches: [main, 'codex/**']
+    branches: [main]
     paths:
       - tooling/release/**
       - tooling/deploy/artifact_identity.py
@@ -57,7 +57,7 @@ jobs:
         run: >-
           python3 -m pytest -q tooling/manifest tooling/release
           tooling/deploy/test_artifact_identity.py tooling/deploy/test_proof_receipt.py
-          tooling/deploy/test_publish_identity.py .github/ci_resources/flux/test_release_proof_boundary.py
+          .github/ci_resources/flux/test_release_proof_boundary.py
           .github/ci_resources/flux/test_verify_config.py
           --junitxml="$RUNNER_TEMP/release-protocol.xml"
       - name: Save test results

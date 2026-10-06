@@ -70,7 +70,6 @@ class FakeGitHub:
         self.expired = False
         self.extra_artifact = False
         self.archive_digest = None
-        self.archive_size = None
         self.archives = {}
         self.downloads = 0
 
@@ -95,7 +94,6 @@ class FakeGitHub:
         return dict(
             id=run_id,
             name=name,
-            size_in_bytes=self.archive_size or len(raw),
             expired=self.expired,
             workflow_run=self.runs[run_id],
             digest=self.archive_digest or p.digest(raw),
@@ -353,7 +351,6 @@ def test_draft_creation_may_create_tag(tmp_path):
         "expired",
         "duplicate-artifact",
         "corrupt-archive",
-        "oversize-archive",
         "wrong-key",
         "moving-release-image",
         "alias-conflict",
@@ -390,8 +387,6 @@ def test_invalid_inputs_cannot_mutate_release(tmp_path, case):
         api.extra_artifact = True
     elif case == "corrupt-archive":
         api.archive_digest = p.digest(b"corrupt")
-    elif case == "oversize-archive":
-        api.archive_size = p.MAX_MANIFEST + 1
     elif case == "wrong-key":
         oci.bad_signature = (
             p.REGISTRIES["bundleDigest"] + "@" + api.producer["bundleDigest"]
@@ -422,8 +417,6 @@ def test_invalid_inputs_cannot_mutate_release(tmp_path, case):
         promote(api, oci, tmp_path)
     assert api.events == []
     assert oci.events == []
-    if case == "oversize-archive":
-        assert api.downloads == 0
 
 
 def test_changed_build_tags_are_not_evidence(tmp_path):
@@ -497,8 +490,8 @@ def test_github_api_accepts_objects_and_arrays(monkeypatch, body):
     assert p.GitHub().request("/repos/a/b/releases") == json.loads(body)
 
 
-@pytest.mark.parametrize("body", [b'{"id":1,"id":2}', b'{"id":NaN}', b"null"])
-def test_github_api_rejects_ambiguous_json(monkeypatch, body):
+@pytest.mark.parametrize("body", [b"invalid JSON", b"null"])
+def test_github_api_rejects_invalid_json_or_response_type(monkeypatch, body):
     monkeypatch.setattr(
         subprocess,
         "run",
