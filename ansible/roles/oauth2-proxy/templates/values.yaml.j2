@@ -44,6 +44,12 @@ config:
     # middleware still only requests the username/groups headers it already
     # did.
     set_authorization_header = true
+    # DEBUG (739): temporary diagnostic to compare access-token vs ID-token
+    # claim shape for the report-viewer-roles-mapper investigation. Emits
+    # X-Auth-Request-Access-Token on /oauth2/auth responses, not copied onto
+    # any upstream request by any middleware today - inert until a
+    # middleware's authResponseHeaders lists it. Revert once resolved.
+    pass_access_token = true
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true
 {% endif %}
