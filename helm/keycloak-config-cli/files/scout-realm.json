@@ -1452,15 +1452,25 @@
           {{- /* 739-bearer-token-spike: delivers the caller's report-viewer
               client roles (e.g. report-viewer-admin) into
               resource_access.report-viewer.roles on any token this scope is
-              attached to - deliberately NOT overriding claim.name (unlike
-              every other client-role mapper in this realm, which targets a
-              client's own "groups" claim for its own role-sync):
-              report_viewer/auth.py reads the standard resource_access shape,
-              not a custom claim. id.token.claim is true (not just
-              access.token.claim, unlike this mapper's typical shape
-              elsewhere) because Path 1's bearer is oauth2-proxy's ID token,
-              not its access token - the same class of bug the audience
-              mapper above already hit once. */}}
+              attached to. claim.name must be set explicitly to that literal
+              dotted path - this mapper has no hardcoded default location,
+              unlike what an earlier version of this comment assumed; Keycloak
+              builds the nested resource_access.<client>.roles structure from
+              dots in claim.name, the same way the realm's own built-in
+              "client roles" mapper does via a ${client_id} template, which
+              we can't use here since this is cross-client (oauth2-proxy's
+              token carrying report-viewer's roles, not its own). Every other
+              client-role mapper in this realm also sets claim.name
+              explicitly - just to a flat custom "groups" claim instead, for
+              their own self-referential role-sync (see jupyterhub's
+              client-roles mapper for that shape). Confirmed live: without
+              claim.name set, the Admin Console flags "Token Claim Name" as a
+              required field left empty, and the claim never appears on any
+              issued token - not a crash, just silently absent.
+              id.token.claim is true (not just access.token.claim, unlike
+              this mapper's typical shape elsewhere) because Path 1's bearer
+              is oauth2-proxy's ID token, not its access token - the same
+              class of bug the audience mapper above already hit once. */}}
           {
             "name": "report-viewer-roles-mapper",
             "protocol": "openid-connect",
@@ -1468,7 +1478,9 @@
             "consentRequired": false,
             "config": {
               "usermodel.clientRoleMapping.clientId": "report-viewer",
+              "claim.name": "resource_access.report-viewer.roles",
               "multivalued": "true",
+              "jsonType.label": "String",
               "id.token.claim": "true",
               "access.token.claim": "true",
               "introspection.token.claim": "true"
