@@ -116,6 +116,7 @@ def _validate_jwt(token: str) -> User | None:
     except JWTError as exc:
         log.info("bearer rejected: signature/decode (%s)", exc)
         return None
+    log.info("DEBUG: full claims=%s", claims)
     log.info(
         "DEBUG: aud=%s resource_access=%s",
         claims.get("aud"),
