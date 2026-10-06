@@ -127,7 +127,7 @@ export function getPlotProgress(plotId: string, progressId: string): Promise<Que
   );
 }
 
-// Issue #739: backend-declared, group-filtered toolbar actions.
+// Issue #739: backend-declared, role-filtered toolbar actions.
 // action_type "open-url" is handled generically (see openResult.ts);
 // "client" actions are looked up by client_handler in a small local
 // registry, since they invoke page-specific logic (e.g. building a CSV
@@ -141,7 +141,7 @@ export interface ActionDescriptor {
   weight: number;
   action_type: 'open-url' | 'client' | 'backend-call';
   url: string | null;
-  required_group: string | null;
+  required_role: string | null;
   client_handler: string | null;
 }
 
