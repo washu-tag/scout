@@ -22,14 +22,25 @@ integration) shouldn't be visible to every researcher. The first design mirrored
 0034's own answer for launchpad chips — Keycloak client roles, read from a Bearer JWT's
 `resource_access` claim — and went as far as provisioning a real `report-viewer` Keycloak
 client, a `report-viewer-admin` role, and a role-mapper scoped to it. Live testing then
-surfaced a fact the design had gotten wrong: report-viewer has two inbound auth paths
+surfaced a fact the design had gotten wrong: report-viewer had two inbound auth paths
 (ADR 0029) — a Bearer JWT, used only by OWUI's server-side tool calls, and an
-oauth2-proxy-forwarded header, used by every request the SPA's own frontend makes.
-Reading `frontend/src/api/client.ts`'s `api()` function confirmed it never attaches an
-`Authorization` header — every fetch the browser makes takes the header path, which
+oauth2-proxy-forwarded header, used by every request the SPA's own frontend made.
+Reading `frontend/src/api/client.ts`'s `api()` function confirmed it never attached an
+`Authorization` header — every fetch the browser made took the header path, which
 carried no role or group claim at all. A role-gated action could therefore never appear
 in the real product UI, for anyone, no matter how correctly Keycloak was configured: the
-JWT path it depended on isn't reachable from anything that renders a toolbar.
+JWT path it depended on wasn't reachable from anything that rendered a toolbar. Gating
+moved to Keycloak group membership instead, delivered over that header path.
+
+A separate effort later closed the actual gap: oauth2-proxy's `set_authorization_header`
+option, paired with a report-viewer-scoped Traefik middleware (not the shared one every
+other service uses), makes Traefik inject a real Keycloak-issued Bearer JWT on *every*
+request through report-viewer's ingress — including the SPA's own, server-side, with no
+frontend code change. That reopened client-role gating as a real option rather than the
+dead end it had been, and this ADR documents that as the final design: gating is back on
+Keycloak client roles via `resource_access`, Path 2 (the oauth2-proxy header path and its
+`X-Report-Viewer-Gateway` secret) is retired, and Bearer JWT is report-viewer's only
+inbound auth path.
 
 ## Decision
 
@@ -38,12 +49,12 @@ Two decisions, layered on top of each other.
 ### Actions are declared data, rendered generically
 
 `ActionDescriptor` (`report-viewer/src/scout_report_viewer/actions.py`): `id`, `title`,
-`weight`, `action_type`, `url`, `required_group`, `client_handler`, `endpoint_url`. A
+`weight`, `action_type`, `url`, `required_role`, `client_handler`, `endpoint_url`. A
 `backend-call` entry's invoke token is deliberately not a field on this model at all —
 see below. The chart
-renders today's two built-in buttons — each independently toggleable and group-gateable
+renders today's two built-in buttons — each independently toggleable and role-gateable
 via its own `actions.explainSearch`/`actions.downloadCsv` object (`enabled`,
-`requiredGroup`) — plus any site-admin-authored `actions.custom` entries, into a
+`requiredRole`) — plus any site-admin-authored `actions.custom` entries, into a
 ConfigMap mounted directly into the pod at `settings.action_catalog_path`, read
 once at process start — the same "core chips ride a chart-rendered ConfigMap" delivery
 ADR 0034 uses for the launchpad's *own* tiles, deliberately not attempting that ADR's
@@ -104,23 +115,35 @@ Three `action_type` values, matched to what the SPA can do with a click:
 `X-Report-Viewer-Action-Token` proves only that the caller knows a shared secret — it
 says nothing about which end user the call is for or what they're authorized to do.
 Without more, a target that trusts it alone is fully dependent on report-viewer's own
-`requiredGroup` check never having a bug, and anything that obtains the token (a log
+`requiredRole` check never having a bug, and anything that obtains the token (a log
 line, a captured trace, another compromised in-cluster workload) can invoke the action
 as any user with any cohort. This directly contradicts the framing above — "visibility
 is UX, not the authorization boundary... a real action must still independently enforce
-the same group check at its own endpoint" — unless the target actually has something to
+the same role check at its own endpoint" — unless the target actually has something to
 check.
 
 So `invoke_search_action` also mints `X-Report-Viewer-User-Assertion`: a short-lived
-(60s) HS256 JWT carrying `sub`, `groups`, `search_id`, and `action_id` — everything a
-target needs to make its own authorization decision, plus enough to reject a captured
-assertion replayed against a different search once its window closes.
+(60s) HS256 JWT carrying `sub`, `roles`, `search_id`, and `action_id` — enough for a
+target to independently check identity and role membership, plus a `search_id` match
+against the request body that catches a *naive* replay (reusing a captured
+assertion+body wholesale against a different search without updating that field). It is
+not a guarantee against a deliberate one: both the token's `search_id` and the body's are
+visible to, and settable by, anyone holding a captured assertion, so this alone doesn't
+stop someone from keeping `search_id` matched while substituting a different `reports`
+list. Nothing in this contract cryptographically binds `reports` — the actual cohort
+payload — to the assertion at all. That gap is reachable only by bypassing report-viewer
+entirely (network access to the target plus a valid invoke token plus a captured
+assertion); it is not exposed through report-viewer's own UI, which never trusts
+client-supplied report ids (`invoke_search_action`'s `visible_report_ids` only narrows
+report-viewer's own Trino-resolved cohort, never adds to it). A target wanting a
+stronger guarantee than "report-viewer's own resolution and role check are correct"
+needs to query Trino directly rather than trust this payload.
 
 The signing key is a **second, separate** per-action secret
 (`<action_id>.assertion-key` in the same Secret-backed volume as the invoke token, set
 via `actions.custom[].assertionKey`) — never the invoke token itself. Reusing the invoke
 token as the signing key would mean anyone who obtained it (which travels on every
-`/invoke` call and can leak via logs or traces) could also forge arbitrary user/group
+`/invoke` call and can leak via logs or traces) could also forge arbitrary user/role
 claims, defeating the entire point of a signature the caller couldn't otherwise produce.
 The two secrets have different exposure profiles: the invoke token is transmitted on the
 wire on every call, while the assertion key never is — only its signature output goes
@@ -131,47 +154,52 @@ regardless of how many distinct values exist.
 
 `xnat-explore-poc`, as the reference implementation, actually verifies this rather than
 trusting the shared secret alone: signature and expiry via `assertionKey`, `search_id`
-bound to the current request, and an optional `requiredGroup` membership check against
-the asserted `groups` — demonstrating what a real App is expected to do, not just what
+bound to the current request, and an optional `requiredRole` membership check against
+the asserted `roles` — demonstrating what a real App is expected to do, not just what
 report-viewer sends.
 
-### Visibility gates on Keycloak group membership, not client roles
+### Visibility gates on Keycloak client roles, delivered on a Bearer JWT
 
-`list_actions(user_groups)` filters the catalog server-side. Visibility is UX, not the
+`list_actions(user_roles)` filters the catalog server-side. Visibility is UX, not the
 authorization boundary (ADR 0034's framing, unchanged here) — a real `backend-call`
 action must still enforce its own check independently, since a hidden action's URL is
 not itself a secret.
 
-Group membership, not a client role, because it's the only claim that actually reaches
-the SPA's own requests. A genuine Keycloak Group (`scout-admin` already exists and
-already grants admin capability on several other Scout services) is surfaced through a
-new `oidc-group-membership-mapper` (`groups-mapper`) on **oauth2-proxy's own client** —
-`claim.name=groups`, `full.path=false` so the claim carries bare names (`scout-admin`),
-not paths (`/scout-admin`). oauth2-proxy is configured with `oidc_groups_claim = "groups"`
-(spelled out explicitly even though it matches oauth2-proxy's own default, so the
-coupling to the mapper's claim name is visible) and already ran with
-`set_xauthrequest = true`, so `/oauth2/auth`'s response now carries
-`X-Auth-Request-Groups`. Traefik's `oauth2-proxy-auth` forwardAuth middleware
-(`ansible/roles/oauth2-proxy/tasks/deploy.yaml`) is widened to copy that header onto the
-upstream request alongside the existing `X-Auth-Request-Preferred-Username`.
+A dedicated bearer-only `report-viewer` Keycloak client (no OAuth flow of its own — it
+exists solely to own a role namespace) carries the `report-viewer-admin` client role.
+A `report-viewer-roles-mapper` on the existing `report-viewer-audience` client scope
+delivers it into `resource_access.report-viewer.roles` on any token that scope is
+attached to — `oauth2-proxy`'s client and `open-webui`'s client both already carry that
+scope (for `aud=report-viewer`), so both the SPA's own requests and OWUI's server-side
+tool calls can carry the role claim.
 
-**Trust model.** Traefik's `authResponseHeaders` always overwrites any client-supplied
-header of the same name with the value from oauth2-proxy's own server-computed
-`/oauth2/auth` response — a request that sets `X-Auth-Request-Groups: scout-admin`
-directly gets that header replaced before report-viewer ever sees it, unless it actually
-goes through Traefik's forwardAuth and authenticates as a `scout-admin` member. The
-existing `X-Report-Viewer-Gateway` shared secret is the second half: it stops a pod that
-bypasses Traefik/oauth2-proxy entirely (hitting report-viewer's Service directly) from
-forging either header, since only Traefik's middleware injects that secret.
-`auth.py`'s `User.groups` is populated only on this oauth2-proxy header path; the Bearer
-JWT path (OWUI's server-side tool calls) always yields an empty set, so a group-gated
-action is structurally unreachable from that surface too — a deliberate scope narrowing,
-since that path's callers never render the toolbar in the first place.
+What makes the SPA's own requests reachable at all: oauth2-proxy's
+`set_authorization_header` option emits a real Keycloak-issued ID token on `/oauth2/auth`
+responses, and a report-viewer-scoped Traefik middleware
+(`oauth2-proxy-auth-report-viewer`, *not* the shared `oauth2-proxy-auth` every other
+service uses) adds `Authorization` to what it copies onto the upstream request. Every
+request through report-viewer's ingress — including the SPA's own browser fetches, which
+never set this header themselves — arrives carrying a real Bearer JWT. Two live bugs had
+to be fixed to make this actually work, not just in theory: the `report-viewer-audience`
+mapper originally only stamped `aud=report-viewer` onto access tokens
+(`id.token.claim: false`) — oauth2-proxy forwards the ID token, not the access token, so
+the audience check failed until that was flipped to `true`. And python-jose rejected the
+ID token's `at_hash` claim (binding it to its paired access token, which report-viewer
+never has) until `_validate_jwt` was told to skip that check — report-viewer already
+verifies signature/exp/iss/aud independently, so the binding adds nothing it needs.
 
-The `report-viewer` Keycloak client, its `report-viewer-admin` role, and the
-client-role protocol mapper — all provisioned earlier in this same effort, before the
-architecture problem surfaced — are removed as dead scaffolding: `resource_access`-based
-checking never had a reachable code path.
+`auth.py` has a single inbound auth path now: Bearer JWT. The oauth2-proxy-header path
+(`X-Auth-Request-Preferred-Username`/`X-Auth-Request-Groups`, gated by a
+`X-Report-Viewer-Gateway` shared secret) existed only because the SPA's own requests had
+no other way to carry an authorization claim; once they could, it was retired along with
+the secret and its Traefik middleware. `forwarded_token_header` (the aws-mode ALB path)
+is unaffected — it was already a way to get a token into this same Bearer path, not a
+separate one.
+
+The `oauth2-proxy` client's own `groups-mapper` (`oidc-group-membership-mapper`,
+`claim.name=groups`) is untouched — other services still consume
+`X-Auth-Request-Groups` off the shared `oauth2-proxy-auth` middleware. Retiring groups
+here is report-viewer-local; the realm's group plumbing for everyone else is unaffected.
 
 ## Consequences
 
@@ -179,25 +207,25 @@ checking never had a reachable code path.
   change (`actions.custom`) plus `helm upgrade` — no report-viewer code change or image
   rebuild. `client` actions still need a source change; there is structurally no values
   field for one.
-- `explainSearch`/`downloadCsv` are objects (`enabled`, `requiredGroup`), not plain
+- `explainSearch`/`downloadCsv` are objects (`enabled`, `requiredRole`), not plain
   booleans, deliberately kept out of `actions.custom` — Helm deep-merges map values but
   replaces list values wholesale, so a site overriding `actions.custom` to add one
   action would otherwise have to fully restate every built-in it wants kept, or silently
   lose it. Toggling or gating a built-in stays a single targeted override either way.
-- `requiredGroup: <keycloak-group>` is the entire gating surface. The reverse — finer
-  gating than group membership — has no path today; a future need has to invent a new
+- `requiredRole: <keycloak-client-role>` is the entire gating surface. The reverse —
+  finer gating than a single role — has no path today; a future need has to invent a new
   mechanism, not extend this one.
-- report-viewer gains one new inbound header (`X-Auth-Request-Groups`) and Keycloak
-  gains one new client protocol mapper; both are wholly owned by this feature and can be
-  removed without touching any of the SPA's other functionality.
-- Config drift across a rename is possible and silent: during development, an
-  inventory's custom-action entry kept the old `requiredRole` key after the chart moved
-  to `requiredGroup` (back when gating was still the client-role design described in
-  Context — itself already retired, not merely renamed), and Helm's silent-ignore of
-  unrecognized map keys turned that into an *ungated* button rather than a render error.
-  Accepted rather than guarded against: `requiredGroup` is the only gating key this
-  feature has ever shipped as a reachable mechanism, so there's no realistic path for an
-  operator to reintroduce `requiredRole` going forward.
+- report-viewer gains a dedicated Keycloak client (`report-viewer`, bearer-only, owns the
+  role namespace) and a second protocol mapper on `report-viewer-audience`
+  (`report-viewer-roles-mapper`); both are wholly owned by this feature and can be
+  removed without touching any of the SPA's other functionality. Nothing new is added to
+  the realm's shared `oauth2-proxy-auth` middleware or `groups-mapper` — those stay
+  exactly as every other service already depends on them.
+- Helm silently ignores unrecognized map keys, so a typo'd or stale gating key (e.g. a
+  leftover `requiredGroup` from before this reversal) renders an *ungated* button rather
+  than a config error, not a loud failure. Worth checking the rendered ConfigMap
+  (`kubectl get configmap <release>-actions -o yaml`) after any gating change, not just
+  assuming the values diff did what was intended.
 - The catalog is read once at process start; a ConfigMap edit needs the pod to restart
   to take effect. The chart's `checksum/actions-configmap` Deployment annotation already
   forces this on every relevant change, but there is no live re-read or TTL snapshot,
@@ -208,11 +236,18 @@ checking never had a reachable code path.
 - `X-Report-Viewer-User-Assertion` is still a symmetric shared secret under the hood,
   same trust class as the invoke token — it protects against the invoke token leaking on
   its own (logs, traces), not against report-viewer's pod or the Secret object itself
-  being compromised. The strictly stronger version — Keycloak mints the assertion via
-  token exchange/impersonation, targets verify against Keycloak's JWKS like report-viewer
-  already does for Path 1 — has no existing precedent to build on (the SPA's invoke calls
-  never carry a subject token to exchange) and is deferred until an App needs stronger
-  guarantees than report-viewer's own operational trust.
+  being compromised. It also doesn't bind the request body: `search_id` matching catches
+  a naive replay, not a deliberate one, and nothing here cryptographically ties the
+  `reports` payload to the assertion at all — see the invoke-boundary section above for
+  what this does and doesn't guarantee. Replacing it with Keycloak-minted tokens (token
+  exchange, verified against Keycloak's JWKS like Path 1 already is) is under active
+  discussion but not decided: a prior attempt at a similar pattern for a different
+  integration (XNAT auth, PR #410) was abandoned without merging, and token exchange
+  alone wouldn't close the request-body-binding gap either — standard token exchange has
+  no mechanism for embedding request-specific data like `search_id` into the issued
+  token, so that part of the gap is orthogonal to which party signs the token. Deferred
+  until an App needs a stronger guarantee than report-viewer's own operational
+  correctness.
 - `xnat-explore-poc` lives under `examples/xnat-explore-poc/` (source and chart together,
   the chart in a nested `helm/`), matching the `examples/` convention issue #595's own
   reference implementation (`examples/pluggable-app/`, a different Pluggable Apps tier —
@@ -222,37 +257,35 @@ checking never had a reachable code path.
 
 ## Known Limitations
 
-**This entire feature is on-prem only.** Every piece of it — visibility gating,
-`requiredGroup`, the `X-Auth-Request-Groups`/`X-Auth-Request-Preferred-Username` headers,
-the `X-Report-Viewer-Gateway` trust chain — depends on Path 2 (`auth.py`), which depends
-entirely on Traefik's forwardAuth Middleware and oauth2-proxy. Per ADR 0035, an aws-mode
-cluster has no Traefik at all: ingress there is ALB-native OIDC, with no per-role/group
-gate and no forwardAuth headers. In aws mode, Path 2 never authenticates anyone — the SPA
-issues the exact same requests it always does, they just never carry the headers Path 2
-needs, and every one of them falls through to 401. This isn't specific to group-gating:
-report-viewer's *entire* browser-facing UI (the search-detail toolbar, the results grid,
-everything the embedded iframe in chat renders) is unreachable in aws mode today, since
-none of it has ever had an authenticated path other than Path 2. report-viewer also has
-no aws-mode Ingress at all yet (ADR 0035's Consequences list only Superset and Keycloak
-as landed so far).
+**This entire feature is on-prem only**, though the reason has changed shape.
+report-viewer's single inbound path is now a Bearer JWT, validated the same way
+regardless of how the token arrives — on-prem, Traefik's report-viewer-scoped forwardAuth
+middleware injects one from oauth2-proxy on every request, including the SPA's own; in
+principle, aws mode's ALB could feed the same path via `forwarded_token_header`
+(`REPORT_VIEWER_FORWARDED_TOKEN_HEADER`, pointed at `X-Amzn-Oidc-Accesstoken`), since
+`oauth2-proxy`'s client already carries the `report-viewer-audience` scope the ALB's
+reused client would need too. What's actually missing is simpler than the old
+Traefik-dependency story: **report-viewer has no aws-mode Ingress at all yet** (ADR
+0035's Consequences list only Superset and Keycloak as landed so far). Nothing routes
+aws-mode traffic to report-viewer in the first place, so the question of whether its auth
+path would work there is untested, not just unbuilt.
 
-Closing this gap is real, undesigned work, not a small tweak: an aws-mode edge for
-report-viewer would need some other way to deliver verified identity and group
-membership to Path 2 (or a Path 3) - most plausibly ALB's forwarded `x-amzn-oidc-data`
-JWT, which could carry a `groups` claim the same way Keycloak already stamps one for
-oauth2-proxy, but nothing here has been designed or built for that. Until then,
-report-viewer (and everything in this ADR) should be treated as on-prem-only, the same
-caveat PR #755's `examples/pluggable-app` carries for its own Traefik/oauth2-proxy
-dependency.
+Closing this gap is real, undesigned work, not a small tweak: an aws-mode Ingress for
+report-viewer, wiring `forwarded_token_header`, and confirming the `report-viewer-roles-mapper`
+delivers `resource_access.report-viewer.roles` onto whatever token ALB forwards (the same
+class of "verify before trusting" bug this effort already hit twice for the on-prem
+path — the audience mapper and `at_hash` fixes described above). Until then, report-viewer
+(and everything in this ADR) should be treated as on-prem-only, the same caveat PR #755's
+`examples/pluggable-app` carries for its own Traefik/oauth2-proxy dependency.
 
 ## Alternatives Considered
 
 | Option | Verdict |
 | --- | --- |
-| Keycloak client roles via `resource_access` (Bearer JWT), gating in the JWT-validation path | Rejected: unreachable from the SPA's own requests (`client.ts` never sends a Bearer token) — a role-gated action could never appear in the real UI for anyone |
-| A report-viewer-owned OIDC scope forcing role claims onto the oauth2-proxy session | Rejected: reinvents Keycloak's existing group-membership mapper with more moving parts, for the same header-trust guarantee the group approach gets for free |
+| Keeping Keycloak group membership (the design this ADR shipped with first) | Superseded: it existed only because the SPA's own requests had no way to carry a Bearer JWT. Once Traefik could inject one on every request (739-bearer-token-spike), the reason to prefer groups over client roles — Scout's normal per-service role-vocabulary pattern — no longer applied |
 | Cross-namespace sidecar ConfigMap discovery (full ADR 0034 parity) | Deferred: every action today ships from report-viewer's own chart; no third-party-contribution use case yet to justify the RBAC/sidecar cost |
-| Client-side-only visibility (hide with CSS/JS, no server-side filter) | Rejected outright: the full descriptor, including any secret material, would round-trip to every browser regardless of group membership |
+| Client-side-only visibility (hide with CSS/JS, no server-side filter) | Rejected outright: the full descriptor, including any secret material, would round-trip to every browser regardless of role membership |
 | `invoke_token` as an `ActionDescriptor` field (`Field(exclude=True)`), catalog stays a single ConfigMap | Rejected: `exclude=True` only stops it leaving the process over the API — it would still sit in plaintext in the catalog ConfigMap, readable by anyone with ConfigMap-read RBAC in the namespace. Moved to a Secret-backed volume keyed by action id instead |
 | Sign `X-Report-Viewer-User-Assertion` with the same value as `invoke_token` | Rejected: collapses two distinct protections into one — anyone who obtains the invoke token (which travels on every call) could forge any assertion claims they wanted, making the "independent" verification not independent at all |
-| No user assertion at all; targets trust `username` in the request body | Rejected: an unsigned string proves nothing: no target-side way to catch a bug in report-viewer's own `requiredGroup` check, and anything holding the invoke token can claim to be any user |
+| No user assertion at all; targets trust `username` in the request body | Rejected: an unsigned string proves nothing: no target-side way to catch a bug in report-viewer's own `requiredRole` check, and anything holding the invoke token can claim to be any user |
+| Keycloak-minted assertion via token exchange, instead of self-signed HS256 | Deferred, not rejected: closes the "this service mints its own tokens" concern for identity/role, but doesn't close the request-body-binding gap either (standard token exchange has no mechanism for embedding `search_id` into the issued token), and a prior attempt at a similar pattern elsewhere (PR #410, XNAT auth) was abandoned without merging. See the invoke-boundary Consequences entry above |
