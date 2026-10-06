@@ -36,7 +36,7 @@ postgres_image_tag: 18.3-system-trixie
 
 # Databases & Data Storage - Valkey
 # renovate: datasource=helm registryUrl=https://valkey-io.github.io/valkey-helm/ depName=valkey
-valkey_chart_version: 0.9.4
+valkey_chart_version: 0.12.0
 
 # OAuth2 Proxy
 # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
