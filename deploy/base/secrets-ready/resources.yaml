@@ -1,0 +1,11 @@
+# Mode-agnostic `secrets-ready` gate: the name secret consumers dependsOn, provided
+# per-mode from modes/{aws,on-prem}/. aws = this inert marker (the site materializes the
+# Secrets, e.g. External Secrets Operator); on-prem = the Secret templates
+# (base/secrets-on-prem). Just gives wait:true a Ready object.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: secrets-ready
+  namespace: flux-system
+data:
+  mode: '${service_mode}'

@@ -1539,8 +1539,9 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
           set -euo pipefail
-          # Stamped bases + the required-vars contract (ADR 0031 Appendix B).
-          tar -C config-artifact -czf scout-config.tar.gz base flux modes required-vars.txt
+          # Stamped bases + the required-vars and on-prem secret-values contracts
+          # (ADR 0031 section 3, Appendix B).
+          tar -C config-artifact -czf scout-config.tar.gz base flux modes required-vars.txt required-secret-values.txt
           oras push "${CONFIG_REPO}:${VERSION}" scout-config.tar.gz:application/gzip
           cosign sign --key env://COSIGN_PRIVATE_KEY \
             --use-signing-config=false --tlog-upload=false --yes "${CONFIG_REPO}:${VERSION}"

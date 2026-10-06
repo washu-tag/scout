@@ -6,21 +6,21 @@ k3s_version: v1.36.4+k3s1
 
 # Helm 3.x until Helm 4's plugin ecosystem matures (helm-diff compat).
 # renovate: datasource=github-releases depName=helm/helm
-helm_version: v3.19.2
+helm_version: v3.22.0
 # renovate: datasource=github-releases depName=databus23/helm-diff
 helm_diff_plugin_version: 'v3.15.13'
 
 # Databases & Data Storage - Elasticsearch
 # renovate: datasource=helm registryUrl=https://helm.elastic.co depName=eck-operator
-eck_operator_version: 3.2.0
+eck_operator_version: 3.5.0
 # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
 elasticsearch_version: 9.2.3
 
 # Databases & Data Storage - Cassandra
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
-cert_manager_version: v1.20.3
+cert_manager_version: v1.21.2
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
-cass_operator_version: 0.66.0
+cass_operator_version: 0.67.2
 # Managed by cass-operator (pulls k8ssandra/cass-management-api).
 # renovate: datasource=docker depName=k8ssandra/cass-management-api extractVersion=^(?<version>\d+\.\d+\.\d+)-ubi$
 cassandra_server_version: 5.0.8
@@ -36,11 +36,11 @@ postgres_image_tag: 18.3-system-trixie
 
 # Databases & Data Storage - Valkey
 # renovate: datasource=helm registryUrl=https://valkey-io.github.io/valkey-helm/ depName=valkey
-valkey_chart_version: 0.9.4
+valkey_chart_version: 0.12.0
 
 # OAuth2 Proxy
 # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
-oauth2_proxy_chart_version: 10.6.2
+oauth2_proxy_chart_version: 10.7.0
 
 # Keycloak Config CLI
 keycloak_config_cli_image: docker.io/adorsys/keycloak-config-cli
@@ -89,7 +89,7 @@ opa_image_tag: 1.16.2
 # Renovate customManager also bumps keycloak/VERSION + keycloak/Dockerfile FROM in
 # the same PR (with an SPI-compat reminder); see renovate.json5.
 # renovate: datasource=docker depName=quay.io/keycloak/keycloak
-keycloak_version: 26.7.2
+keycloak_version: 26.8.0
 
 # Analytics & Query Engines - Hive
 # regex versioning restricts to the plain multi-arch tags (loose ranked -x64/-arm64 above).
@@ -146,7 +146,7 @@ harbor_version: 1.19.2
 
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
-nexus_helm_chart_version: 5.22.0
+nexus_helm_chart_version: 5.26.0
 
 # GPU Support
 # renovate: datasource=helm registryUrl=https://nvidia.github.io/gpu-operator depName=gpu-operator

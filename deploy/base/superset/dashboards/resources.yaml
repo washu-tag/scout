@@ -41,6 +41,8 @@ spec:
       port: '${trino_https_port}'
       scheme: https
     supersetRelease:
+      envSecret: superset-env
+      valkeyAuthSecret: superset-valkey-auth
       # Trino TLS bundle; Job mounts its ca.crt so DB_CONNECTION_MUTATOR verifies
       # Trino's self-signed cert during validation. Fixed name (CI/site), never in git.
       trinoCaSecret: trino-tls

@@ -43,3 +43,6 @@ spec:
   dependsOn:
     - name: scout-data-foundation
     - name: minio-operator
+    - name: secrets-ready # config.env + the per-user creds
+    # No keycloak-realm edge: with OIDC on, MinIO retries the realm's discovery and
+    # bootstrap-minio-iam's `mc ready` waits for its IAM, so a first install converges.
