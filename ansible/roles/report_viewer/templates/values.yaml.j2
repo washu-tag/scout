@@ -38,8 +38,6 @@ databaseUrl: "postgresql://{{ report_viewer_db_user }}:{{ report_viewer_db_passw
 
 trinoAuthClientSecret: "{{ report_viewer_trino_auth_client_secret }}"
 
-gatewaySecret: "{{ report_viewer_gateway_secret }}"
-
 {% if report_viewer_trino_ca_cert | length > 0 %}
 trinoCaCert: |
 {{ report_viewer_trino_ca_cert | indent(2, true) }}
@@ -73,14 +71,17 @@ ingress:
   className: traefik
   # embeddable-security-headers replaces the global security-headers so
   # the chat can iframe the report viewer.
-  # SPIKE (739-bearer-token-spike): oauth2-proxy-auth-report-viewer in place
-  # of the shared oauth2-proxy-auth, so SPA requests carry a real
-  # Authorization: Bearer <id_token> that auth.py's Path 1 now also reads
-  # groups from. See ansible/roles/oauth2-proxy/tasks/deploy.yaml.
+  # oauth2-proxy-auth-report-viewer in place of the shared oauth2-proxy-auth
+  # (#739): the scoped middleware adds Authorization to its forwardAuth
+  # response headers, so every request through this ingress - including
+  # the SPA's own - carries a real Authorization: Bearer <id_token> that
+  # auth.py's single Bearer-JWT path validates and reads
+  # resource_access.report-viewer.roles from. See
+  # ansible/roles/oauth2-proxy/tasks/deploy.yaml. No gateway middleware
+  # needed anymore - there's no second header-trust path left to secure.
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth-report-viewer@kubernetescrd,
-      kube-system-embeddable-security-headers@kubernetescrd,
-      {{ report_viewer_namespace }}-{{ report_viewer_helm_release_name }}-gateway@kubernetescrd
+      kube-system-embeddable-security-headers@kubernetescrd
   host: "{{ report_viewer_host }}"
