@@ -146,7 +146,7 @@ harbor_version: 1.19.2
 
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
-nexus_helm_chart_version: 5.22.0
+nexus_helm_chart_version: 5.26.0
 
 # GPU Support
 # renovate: datasource=helm registryUrl=https://nvidia.github.io/gpu-operator depName=gpu-operator
