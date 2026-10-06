@@ -123,9 +123,9 @@ def main() -> None:
                 r[0], r[1], masked(r[2])
             )
         )
-        # Rejected by the site's admission guard (flux-system/sops-guard.yaml), or by
+        # Rejected by the shipped admission guard (deploy/bootstrap/sops-guard), or by
         # kustomize-controller's own check ("<Secret> is SOPS encrypted, configuring
-        # decryption is required ..."), which v1.9.6 skips (see sops-guard.yaml).
+        # decryption is required ..."), which v1.9.6 skips for the normalized Secret fixture.
         if r[0] != "False" or not any(
             s in r[2] for s in ("reject-sops-ciphertext", "is SOPS encrypted")
         ):

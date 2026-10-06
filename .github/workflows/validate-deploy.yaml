@@ -60,13 +60,15 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/ci_resources/flux/check_legs.py
+          python3 .github/ci_resources/flux/cluster_vars.py \
+            --output "$RUNNER_TEMP/ci-cluster-vars.values.json"
           python3 tooling/deploy/gen_cluster_vars.py \
-            --values .github/ci_resources/flux/cluster-vars.values.json \
+            --values "$RUNNER_TEMP/ci-cluster-vars.values.json" \
             --namespace flux-system > "$RUNNER_TEMP/ci-cluster-vars.yaml"
           trap 'rm -f "$RUNNER_TEMP/ci-secret-values.yaml"' EXIT
           python3 tooling/deploy/gen_secret_values.py \
             --values .github/ci_resources/flux/secret-values.json \
-            --cluster-vars-values .github/ci_resources/flux/cluster-vars.values.json \
+            --cluster-vars-values "$RUNNER_TEMP/ci-cluster-vars.values.json" \
             --namespace flux-system -o "$RUNNER_TEMP/ci-secret-values.yaml"
 
       - name: Render the CI Flux installation
@@ -75,6 +77,7 @@ jobs:
           dir="$RUNNER_TEMP/ci-flux-system"
           mkdir -p "$dir"
           cp .github/ci_resources/flux/flux-system/*.yaml "$dir/"
+          cp -R deploy/bootstrap/sops-guard "$dir/sops-guard"
           flux install --export > "$dir/gotk-components.yaml"
           kustomize build "$dir" >/dev/null
 
@@ -89,7 +92,7 @@ jobs:
             else
               echo "::error file=$d::kustomize build failed for $d"; fail=1
             fi
-          done < <(find deploy/base -name kustomization.yaml -exec dirname {} \; | sort)
+          done < <(find deploy/base deploy/bootstrap -name kustomization.yaml -exec dirname {} \; | sort)
           exit $fail
 
       - name: S3A SSE renders only for aws + s3_sse_type=S3
@@ -190,7 +193,7 @@ jobs:
           while read -r d; do
             grep -qx 'kind: Component' "$d/kustomization.yaml" && continue
             kustomize build "$d" >/dev/null || { echo "::error file=$d::stamped base failed to build"; fail=1; }
-          done < <(find /tmp/stamped/base -name kustomization.yaml -exec dirname {} \; | sort)
+          done < <(find /tmp/stamped/base /tmp/stamped/bootstrap -name kustomization.yaml -exec dirname {} \; | sort)
           exit $fail
 
       - name: OPA data document matches the Ansible source

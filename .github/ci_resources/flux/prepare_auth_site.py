@@ -17,6 +17,7 @@ import yaml
 
 CA_NAME = "ci-ingress-ca"
 CA_PATH = "/etc/scout-ci-ca/ca.crt"
+OPA_RESOURCES = Path(__file__).resolve().parents[3] / "deploy/base/opa/resources.yaml"
 ATTRIBUTE_FILTERS = {
     "allowed_facilities": {"column": "sending_facility"},
     "allowed_modalities": {"column": "modality"},
@@ -38,7 +39,28 @@ def resources(request_memory, limit_memory, limit_cpu=2):
     }
 
 
-def auth_patches():
+def opa_test_data(resources_path):
+    """Keep the deployment's policy data, changing only the CI table and filters."""
+    releases = [
+        resource
+        for resource in yaml.safe_load_all(resources_path.read_text())
+        if isinstance(resource, dict)
+        and resource.get("kind") == "HelmRelease"
+        and resource.get("metadata", {}).get("name") == "scout-opa"
+    ]
+    if len(releases) != 1:
+        raise ValueError("expected one scout-opa HelmRelease")
+    data = json.loads(releases[0]["spec"]["values"]["data"]["json"])
+    if not isinstance(data, dict):
+        raise ValueError("OPA policy data must be a JSON object")
+    data["filtered_tables"] = [
+        {"catalog": "delta", "schema": "default", "table": "test_reports"}
+    ]
+    data["attribute_filters"] = ATTRIBUTE_FILTERS
+    return data
+
+
+def auth_patches(opa_resources=OPA_RESOURCES):
     """Mirror the small smoke-test fixture, retaining JWT, TLS and network policy."""
     ca_volume = {"name": CA_NAME, "configMap": {"name": CA_NAME}}
     ca_mount = {"name": CA_NAME, "mountPath": "/etc/scout-ci-ca", "readOnly": True}
@@ -55,27 +77,7 @@ def auth_patches():
                 add(f"{prefix}/resources", resources("512Mi", "2Gi", 4)),
             ]
         )
-    opa_data = {
-        "filtered_tables": [
-            {"catalog": "delta", "schema": "default", "table": "test_reports"}
-        ],
-        "baseline_hidden_tables": [
-            {
-                "catalog": "delta",
-                "schema": "default",
-                "table": "${report_delta_table_name}_report_patient_mapping",
-            },
-            {
-                "catalog": "delta",
-                "schema": "default",
-                "table": "${report_delta_table_name}_report_patient_mapping_history",
-            },
-        ],
-        "hidden_tables": [],
-        "view_owner_principals": ["trino"],
-        "attribute_filters": ATTRIBUTE_FILTERS,
-        "masked_columns": ["patient_name", "full_patient_name", "zip_or_postal_code"],
-    }
+    opa_data = opa_test_data(opa_resources)
     return {
         "apps-scout": {
             "trino-ro": [patch("HelmRelease", "trino", trino)],

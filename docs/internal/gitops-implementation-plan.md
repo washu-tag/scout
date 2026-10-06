@@ -102,6 +102,12 @@ with pods restarting only for components that changed.
 included, from the published config artifact, and passes the ingest and
 authorization suites.
 
+The current on-prem ingest/authentication proof is an intermediate milestone: its
+published mode follows the existing Ansible-gated `Post-Commit Tasks` workflow.
+It does not complete this phase. The [CI transition plan](integration_tests.md#phase-3-transition-to-flux-as-the-default)
+records the coverage and upstream acceptance gates and the required job reordering
+before Ansible deployment tests can be restricted to `ansible/**` changes.
+
 ## Phase 4 — site repos and dev cutovers
 
 *Depends on phase 3.*

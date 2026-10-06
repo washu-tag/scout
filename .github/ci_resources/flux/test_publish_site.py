@@ -13,7 +13,7 @@ SCRIPT = Path(__file__).resolve().with_name("publish_site.sh")
 
 class SiteKeyCleanupTests(unittest.TestCase):
     def test_private_keys_removed_on_partial_generation_and_bootstrap_failure(self):
-        for failure in ("second-key", "bootstrap"):
+        for failure in ("key-generation", "bootstrap"):
             with self.subTest(
                 failure=failure
             ), tempfile.TemporaryDirectory() as directory:
@@ -31,7 +31,7 @@ class SiteKeyCleanupTests(unittest.TestCase):
                         prefix = Path(sys.argv[sys.argv.index("--output-key-prefix") + 1])
                         prefix.with_suffix(".key").write_text("ephemeral private key")
                         prefix.with_suffix(".pub").write_text("ephemeral public key")
-                        if prefix.name == "wrong" and os.environ["FAIL_AT"] == "second-key":
+                        if os.environ["FAIL_AT"] == "key-generation":
                             raise SystemExit(17)
                     """,
                     "kubectl": """
@@ -69,7 +69,6 @@ class SiteKeyCleanupTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue((work / "site-trust" / "site.pub").is_file())
                 self.assertFalse((work / "site-trust" / "site.key").exists())
-                self.assertFalse((work / "site-trust" / "wrong.key").exists())
                 self.assertEqual(
                     (work / "cosign.pub").read_text(), "original config public key\n"
                 )

@@ -16,6 +16,8 @@ import tarfile
 
 import yaml
 
+from cluster_vars import load_values
+
 ROOT = Path(__file__).resolve().parents[3]
 RESOURCE = "base/extractor/resources.yaml"
 REPOSITORY = "ghcr.io/washu-tag/hl7-transformer"
@@ -60,7 +62,7 @@ def transformer_image(archive: Path) -> str:
 
 def prepare(archive: Path, output: Path) -> None:
     fixture = ROOT / ".github/ci_resources/flux"
-    values = json.loads((fixture / "cluster-vars.values.json").read_text())
+    values = load_values(ROOT)
     secrets = json.loads((fixture / "secret-values.json").read_text())
     image = transformer_image(archive)
     bucket = values["lake_bucket"]

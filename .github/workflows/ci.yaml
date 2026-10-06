@@ -1553,7 +1553,7 @@ jobs:
           set -euo pipefail
           # Stamped bases + the required-vars and on-prem secret-values contracts
           # (ADR 0031 section 3, Appendix B).
-          tar -C config-artifact -czf scout-config.tar.gz base flux modes required-vars.txt required-secret-values.txt
+          tar -C config-artifact -czf scout-config.tar.gz base bootstrap flux modes required-vars.txt required-secret-values.txt
           oras push "${CONFIG_REPO}:${VERSION}" scout-config.tar.gz:application/gzip \
             --annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
             --annotation "org.opencontainers.image.revision=${GITHUB_SHA}" \
@@ -1579,74 +1579,3 @@ jobs:
           name: scout-config-ref-${{ github.run_attempt }}
           path: ${{ runner.temp }}/scout-config-ref.json
           if-no-files-found: error
-
-  deploy-and-test-flux:
-    # The deploy switch (ADR 0031, Phase 3): stand up the ingest slice via Flux from
-    # the published scout-config artifact instead of the Ansible playbooks, then run
-    # the SAME tests/ingest suite -- the parallel proof the GitOps lane deploys what
-    # Ansible deploys. Ansible deploy-and-test stays the green gate until Phase-5
-    # cutover; this is additive.
-    # PAUSED until the config artifact is published (config-artifact-publish live)
-    # and the fixed-name Secrets + cnpg-role-* companions are seedable from CI
-    # secrets. Re-enable by restoring:
-    #   github.ref_name == 'main' && needs.config-artifact-publish.result == 'success'
-    if: false
-    runs-on: ubuntu-latest
-    needs: [config-artifact-publish]
-    permissions:
-      contents: read
-    env:
-      CONFIG_REPO: ghcr.io/washu-tag/manifests/scout-config
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install k3s + Flux (pinned, sha256-verified)
-        run: |
-          set -euo pipefail
-          # Download pinned binaries and verify sha256 before executing, so a hijacked
-          # or corrupted release asset can't run in the job (same shape as
-          # .github/actions/install-hauler-oras). No curl piped to a shell.
-          K3S_VERSION='v1.31.5+k3s1'
-          K3S_SHA256='399b87b432ce55013fa81adad572a8e4ecf56e0df97369cf02d4b8a41f039091'
-          curl -fsSL -o k3s "https://github.com/k3s-io/k3s/releases/download/${K3S_VERSION/+/%2B}/k3s"
-          echo "${K3S_SHA256}  k3s" | sha256sum -c -
-          sudo install -m 0755 k3s /usr/local/bin/k3s
-          sudo k3s server --write-kubeconfig-mode=644 &
-          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          timeout 180 bash -c 'until k3s kubectl get nodes 2>/dev/null | grep -q " Ready"; do sleep 3; done'
-          FLUX_VERSION='2.4.0'
-          FLUX_SHA256='7b70b75af20e28fc30ee66cf5372ec8d51dd466fd2ee21aa42690984de70b09b'
-          curl -fsSL -o flux.tar.gz "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}/flux_${FLUX_VERSION}_linux_amd64.tar.gz"
-          echo "${FLUX_SHA256}  flux.tar.gz" | sha256sum -c -
-          tar -xzf flux.tar.gz flux && sudo install -m 0755 flux /usr/local/bin/flux
-          flux install --components-extra=image-reflector-controller,image-automation-controller
-      - name: Seed secrets + cluster-vars + the scout-config source
-        run: |
-          set -euo pipefail
-          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          # Fixed-name Secrets the bases reference (superuser-secret, the five
-          # cnpg-role-* companions, s3/keycloak/superset/hive, temporal-web-oidc) are
-          # SOPS/ESO in production (Phase 4); seed from CI secrets here. Placeholder --
-          # wire the concrete `kubectl create secret` calls when enabled.
-          # cluster-vars for postBuild substitution:
-          python3 tooling/deploy/gen_cluster_vars.py \
-            --values .github/ci_resources/cluster-vars.values.json \
-            --namespace flux-system --name cluster-vars | kubectl apply -f -
-          # Point Flux at the published config artifact.
-          flux create source oci scout-config \
-            --url="oci://${CONFIG_REPO}" --tag=main --interval=1m
-      - name: Reconcile the ingest slice + run tests/ingest
-        run: |
-          set -euo pipefail
-          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          # Apply the Flux Kustomizations, let the DAG converge, then run the SAME
-          # ingest suite Ansible deploy-and-test runs, against the Flux-reconciled
-          # slice. Fleshed out when the artifact + secret seed land.
-          # Shared DAG (flux/ holds only the shared set now) PLUS the on-prem mode set --
-          # storage-ready=the real MinIO tenant, oauth2-proxy, the Traefik edge -- via `-k`
-          # since that dir has a kustomization.yaml. Without the on-prem set the lake
-          # consumers' dependsOn: storage-ready never resolves. The e2e cluster is on-prem k3s.
-          FLUX_DIR=config-artifact/flux; MODES_DIR=config-artifact/modes
-          [ -d "$FLUX_DIR" ] || { FLUX_DIR=deploy/flux; MODES_DIR=deploy/modes; }
-          kubectl apply -f "$FLUX_DIR"/
-          kubectl apply -k "$MODES_DIR"/on-prem
-          flux reconcile kustomization extractor --with-source --timeout=15m

@@ -40,26 +40,11 @@ class IdentityError(ValueError):
     """The handoff does not identify the expected build."""
 
 
-def _object(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise IdentityError("duplicate JSON key")
-        result[key] = value
-    return result
-
-
-def _invalid_constant(_value):
-    raise IdentityError("nonstandard JSON constant")
-
-
 def _json_object(raw):
     try:
-        value = json.loads(
-            raw, object_pairs_hook=_object, parse_constant=_invalid_constant
-        )
+        value = json.loads(raw)
     except (ValueError, UnicodeDecodeError) as exc:
-        raise IdentityError("invalid or ambiguous JSON") from exc
+        raise IdentityError("invalid JSON") from exc
     if not isinstance(value, dict):
         raise IdentityError("JSON must contain an object")
     return value

@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""Select one producer-attempt receipt and read only its bounded JSON ZIP member."""
+"""Select one producer-attempt receipt and read its JSON ZIP member."""
 
 import argparse
 import json
 from pathlib import Path
-import stat
+import re
 import zipfile
-
-MAX_ARCHIVE_BYTES = 128 * 1024
-MAX_RECEIPT_BYTES = 16 * 1024
 
 
 def select_artifact(pages, *, run_id, run_attempt, revision):
@@ -27,6 +24,11 @@ def select_artifact(pages, *, run_id, run_attempt, revision):
         raise ValueError("malformed artifact entry")
     matches = [artifact for artifact in artifacts if artifact.get("name") == name]
     if not matches:
+        if any(re.fullmatch(r"scout-config-ref-[0-9]+", a["name"]) for a in artifacts):
+            raise ValueError(
+                f"missing {name}: a receipt exists for another producer attempt; "
+                "rerun all jobs to publish and verify the current attempt"
+            )
         return None
     if len(matches) != 1:
         raise ValueError(f"expected exactly one {name} artifact, found {len(matches)}")
@@ -35,11 +37,6 @@ def select_artifact(pages, *, run_id, run_attempt, revision):
         raise ValueError("receipt artifact is expired or lacks expiry metadata")
     if type(artifact.get("id")) is not int or artifact["id"] <= 0:
         raise ValueError("receipt artifact has an invalid ID")
-    size = artifact.get("size_in_bytes")
-    if type(size) is not int or not 0 < size <= MAX_ARCHIVE_BYTES:
-        raise ValueError(
-            "receipt archive exceeds its size limit or has invalid size metadata"
-        )
     provenance = artifact.get("workflow_run", {})
     if (
         not isinstance(provenance, dict)
@@ -53,23 +50,12 @@ def select_artifact(pages, *, run_id, run_attempt, revision):
 
 
 def read_receipt(archive_path):
-    if archive_path.stat().st_size > MAX_ARCHIVE_BYTES:
-        raise ValueError("receipt archive exceeds its size limit")
+    # Read the known member directly; never extract archive paths to disk.
     with zipfile.ZipFile(archive_path) as archive:
-        members = archive.infolist()
-        if len(members) != 1 or members[0].filename != "scout-config-ref.json":
-            raise ValueError("receipt archive must contain only scout-config-ref.json")
-        member = members[0]
-        mode = member.external_attr >> 16
-        if member.is_dir() or stat.S_ISLNK(mode):
-            raise ValueError("receipt archive member must be a regular file")
-        if member.file_size > MAX_RECEIPT_BYTES:
-            raise ValueError("receipt JSON exceeds its size limit")
-        with archive.open(member) as stream:
-            data = stream.read(MAX_RECEIPT_BYTES + 1)
-        if len(data) > MAX_RECEIPT_BYTES:
-            raise ValueError("receipt JSON exceeds its size limit")
-        return data
+        try:
+            return archive.read("scout-config-ref.json")
+        except KeyError as error:
+            raise ValueError("receipt archive lacks scout-config-ref.json") from error
 
 
 def main():

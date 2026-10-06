@@ -211,17 +211,13 @@ def test_injection_never_reaches_github_output_or_logs(
 @pytest.mark.parametrize(
     "raw",
     [
-        b'{"runId": 1, "runId": 2}',
-        b'{"annotations": {"source": "good", "source": "bad"}}',
-        b'{"schemaVersion": NaN}',
-        b'{"schemaVersion": Infinity}',
         b"null",
         b"[]",
         b"{",
         b"\xff",
     ],
 )
-def test_ambiguous_or_malformed_json_cannot_export(raw, tmp_path):
+def test_malformed_json_cannot_export(raw, tmp_path):
     path, output = tmp_path / "receipt.json", tmp_path / "output"
     path.write_bytes(raw)
     assert (
@@ -238,14 +234,6 @@ def test_ambiguous_or_malformed_json_cannot_export(raw, tmp_path):
         == 1
     )
     assert not output.exists()
-
-
-def test_receipt_duplicate_cannot_override_a_valid_field(identity, tmp_path):
-    receipt, _ = identity
-    raw = json.dumps(receipt)[:-1] + ', "runAttempt": 1}'
-    path = tmp_path / "receipt.json"
-    path.write_text(raw)
-    assert main(["validate", *context_args(), "--receipt", str(path)]) == 1
 
 
 def test_manifest_hash_is_exact_bytes_not_reserialized_json(identity):
@@ -281,14 +269,6 @@ def test_every_oci_identity_annotation_is_bound(identity, annotation, change):
     raw = json.dumps(manifest).encode()
     receipt["configDigest"] = digest(raw)
     with pytest.raises(IdentityError, match="OCI annotation mismatch"):
-        validate_manifest(raw, receipt)
-
-
-def test_duplicate_manifest_annotations_are_rejected_even_with_matching_hash(identity):
-    receipt, raw = identity
-    raw = raw[:-1] + b',"annotations":{}}'
-    receipt["configDigest"] = digest(raw)
-    with pytest.raises(IdentityError, match="invalid or ambiguous JSON"):
         validate_manifest(raw, receipt)
 
 

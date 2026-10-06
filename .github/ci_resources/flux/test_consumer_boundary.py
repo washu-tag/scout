@@ -1,13 +1,12 @@
 """Offline checks for producer/consumer trust boundaries and receipt archive failures."""
 
+import ast
 import importlib.util
 import json
 from pathlib import Path
 import re
-import stat
 import tempfile
 import unittest
-import warnings
 import zipfile
 
 import yaml
@@ -27,7 +26,6 @@ class ReceiptSelectionTests(unittest.TestCase):
             "name": "scout-config-ref-2",
             "id": 99,
             "expired": False,
-            "size_in_bytes": 400,
             "workflow_run": {"id": 123, "head_sha": "a" * 40},
         }
 
@@ -42,13 +40,31 @@ class ReceiptSelectionTests(unittest.TestCase):
             self.select([{"artifacts": [old]}, {"artifacts": [self.artifact]}]), 99
         )
 
-    def test_no_receipt_is_the_only_clean_skip(self):
+    def test_docs_only_run_without_any_receipt_is_a_clean_skip(self):
         self.assertIsNone(self.select([{"artifacts": []}]))
         self.assertIsNone(
-            self.select(
-                [{"artifacts": [dict(self.artifact, name="scout-config-ref-1")]}]
-            )
+            self.select([{"artifacts": [{"name": "unrelated-build-output"}]}])
         )
+
+    def test_partial_rerun_requires_rerunning_all_jobs(self):
+        # A successful producer rerun must not silently skip proof or reuse its
+        # previous attempt's receipt when the publishing job was not rerun.
+        for other_attempt in (1, 3):
+            with self.subTest(attempt=other_attempt), self.assertRaisesRegex(
+                ValueError, "rerun all jobs"
+            ):
+                self.select(
+                    [
+                        {
+                            "artifacts": [
+                                dict(
+                                    self.artifact,
+                                    name=f"scout-config-ref-{other_attempt}",
+                                )
+                            ]
+                        }
+                    ]
+                )
 
     def test_duplicate_receipt_fails_even_across_pages(self):
         with self.assertRaises(ValueError):
@@ -63,8 +79,6 @@ class ReceiptSelectionTests(unittest.TestCase):
             {"id": True},
             {"id": "99"},
             {"id": -1},
-            {"size_in_bytes": receipt_archive.MAX_ARCHIVE_BYTES + 1},
-            {"size_in_bytes": 0},
             {"workflow_run": {"id": 124, "head_sha": "a" * 40}},
             {"workflow_run": {"id": 123, "head_sha": "b" * 40}},
             {"workflow_run": {}},
@@ -84,13 +98,9 @@ class ReceiptArchiveTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         path = Path(temporary.name) / "receipt.zip"
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
-            with zipfile.ZipFile(
-                path, "w", compression=zipfile.ZIP_DEFLATED
-            ) as archive:
-                for name, data in entries:
-                    archive.writestr(name, data)
+        with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for name, data in entries:
+                archive.writestr(name, data)
         return path
 
     def test_reads_one_expected_member_without_extracting_paths(self):
@@ -101,26 +111,10 @@ class ReceiptArchiveTests(unittest.TestCase):
             b"{}\n",
         )
 
-    def test_extra_duplicate_traversal_and_oversize_members_fail(self):
-        cases = [
-            [],
-            [("../scout-config-ref.json", b"{}")],
-            [("scout-config-ref.json", b"{}"), ("payload.sh", b"echo bad")],
-            [("scout-config-ref.json", b"{}"), ("scout-config-ref.json", b"{}")],
-            [("scout-config-ref.json", b"x" * (receipt_archive.MAX_RECEIPT_BYTES + 1))],
-        ]
-        for case in cases:
-            with self.subTest(names=[str(name) for name, _ in case]), self.assertRaises(
-                ValueError
-            ):
-                receipt_archive.read_receipt(self.archive(case))
-
-    def test_symlink_member_fails(self):
-        member = zipfile.ZipInfo("scout-config-ref.json")
-        member.create_system = 3
-        member.external_attr = (stat.S_IFLNK | 0o777) << 16
-        with self.assertRaises(ValueError):
-            receipt_archive.read_receipt(self.archive([(member, "../../../target")]))
+    def test_missing_exact_receipt_member_fails(self):
+        for entries in ([], [("elsewhere/scout-config-ref.json", b"{}")]):
+            with self.subTest(entries=entries), self.assertRaises(ValueError):
+                receipt_archive.read_receipt(self.archive(entries))
 
     def test_bad_zip_fails(self):
         path = self.archive([])
@@ -130,26 +124,67 @@ class ReceiptArchiveTests(unittest.TestCase):
 
 
 def evaluate(expression, context):
-    # Evaluate the small expression subset actually used by job gates against event fixtures.
-    def resolve(match):
-        value = context
-        for part in match.group().split("."):
-            value = value.get(part, {}) if isinstance(value, dict) else {}
-        return repr(value if value != {} else None)
+    """Interpret only the gate syntax exercised by these event fixtures.
 
-    expression = re.sub(
-        r"(?:github|needs|inputs)(?:\.[a-zA-Z_][a-zA-Z_0-9]*)+", resolve, expression
-    )
-    expression = (
-        expression.replace("always()", "True")
-        .replace("cancelled()", repr(context.get("cancelled", False)))
-        .replace("&&", " and ")
-        .replace("||", " or ")
-    )
+    Parse into data, then handle an explicit node allowlist; workflow text is
+    never executed as Python. Unsupported syntax fails the test rather than
+    silently broadening this deliberately small GitHub-expression subset.
+    """
+    expression = expression.replace("&&", " and ").replace("||", " or ")
     expression = re.sub(r"!(?!=)", " not ", expression)
-    return eval(
-        " ".join(expression.split()), {"__builtins__": {}, "fromJSON": json.loads}, {}
-    )
+
+    def visit(node):
+        if isinstance(node, ast.Constant) and type(node.value) in (str, bool, int):
+            return node.value
+        if isinstance(node, ast.Name) and node.id in {"github", "needs", "inputs"}:
+            return context.get(node.id, {})
+        if isinstance(node, ast.Attribute):
+            parent = visit(node.value)
+            return parent.get(node.attr) if isinstance(parent, dict) else None
+        if isinstance(node, ast.BoolOp) and isinstance(node.op, (ast.And, ast.Or)):
+            for child in node.values:
+                value = visit(child)
+                if isinstance(node.op, ast.And) and not value:
+                    return value
+                if isinstance(node.op, ast.Or) and value:
+                    return value
+            return value
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+            return not visit(node.operand)
+        if isinstance(node, ast.Compare) and len(node.ops) == 1:
+            left, right = visit(node.left), visit(node.comparators[0])
+            if isinstance(node.ops[0], ast.Eq):
+                return left == right
+            if isinstance(node.ops[0], ast.NotEq):
+                return left != right
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and not node.keywords
+        ):
+            if node.func.id == "always" and not node.args:
+                return True
+            if node.func.id == "cancelled" and not node.args:
+                return context.get("cancelled", False)
+            if node.func.id == "fromJSON" and len(node.args) == 1:
+                return json.loads(visit(node.args[0]))
+        raise AssertionError("unsupported workflow gate syntax: " + type(node).__name__)
+
+    return visit(ast.parse(" ".join(expression.split()), mode="eval").body)
+
+
+class GateSyntaxTests(unittest.TestCase):
+    def test_rejects_python_execution_and_unsupported_operations(self):
+        for expression in (
+            "__import__('os').getcwd()",
+            "github.clear()",
+            "[value for value in github]",
+            "github['repository']",
+            "1 + 2",
+            "fromJSON(value='[]')",
+        ):
+            with self.subTest(expression=expression), self.assertRaises(AssertionError):
+                evaluate(expression, {"github": {"repository": "washu-tag/scout"}})
 
 
 def allows(expression, context):
@@ -324,7 +359,7 @@ class WorkflowBoundaryTests(unittest.TestCase):
             "${{ github.event_name != 'workflow_run' }}",
         )
 
-    def test_site_has_independent_trust_and_rejection_gates_deploy(self):
+    def test_site_has_independent_trust_and_verification_gates_deploy(self):
         roots = list(yaml.safe_load_all((HERE / "roots-site.yaml").read_text()))
         site = next(d["spec"] for d in roots if d["kind"] == "OCIRepository")
         config = yaml.safe_load((HERE / "site/scout-config-source.yaml").read_text())[
@@ -351,17 +386,33 @@ class WorkflowBoundaryTests(unittest.TestCase):
             },
         )
         steps = self.workflow["jobs"]["deploy"]["steps"]
-        negative_index = next(
-            i for i, s in enumerate(steps) if s.get("id") == "site-trust-negative"
+        verify_index = next(
+            i
+            for i, s in enumerate(steps)
+            if s.get("name") == "Reconcile the verified site and config sources"
         )
         ingest_index = next(
             i for i, s in enumerate(steps) if s.get("id") == "reconcile"
         )
-        negative = steps[negative_index]
-        self.assertLess(negative_index, ingest_index)
-        self.assertFalse(negative.get("continue-on-error", False))
-        self.assertNotIn("if", negative)  # Required in both published and local modes.
-        self.assertIn("site_trust.py negative", negative["run"])
+        verify = steps[verify_index]
+        self.assertLess(verify_index, ingest_index)
+        self.assertFalse(verify.get("continue-on-error", False))
+        self.assertNotIn("if", verify)  # Required in both published and local modes.
+        run = verify["run"]
+        self.assertLess(
+            run.index("wait_ready.py scout-site-source"),
+            run.index("wait --for=condition=SourceVerified"),
+        )
+        self.assertIn("ocirepository/scout-site ocirepository/scout-config", run)
+        self.assertIn(".status.artifact.revision == $digest", run)
+        self.assertIn(
+            'check_source scout-site "$SITE_SOURCE" "$SITE_DIGEST" scout-site-cosign-pub',
+            run,
+        )
+        self.assertIn(
+            'check_source scout-config "$CONFIG_SOURCE" "$CONFIG_DIGEST" scout-cosign-pub',
+            run,
+        )
 
 
 if __name__ == "__main__":

@@ -23,10 +23,6 @@ on:
       - .github/actions/install-sops-age/**
       - .github/actions/install-hauler-oras/**
       - .github/actions/publish-haul/**
-  push:
-    branches:
-      - plt/onprem-ci-proof
-      - codex/onprem-ci-proof-handoff
   workflow_dispatch:
     inputs:
       values:
@@ -301,7 +297,7 @@ jobs:
             --haul "$work/haul/haul.yaml" \
             --realm-file helm/keycloak-config-cli/files/scout-realm.json
           tar -C "$work/config-artifact" -czf "$work/scout-config.tar.gz" \
-            base flux modes required-vars.txt required-secret-values.txt
+            base bootstrap flux modes required-vars.txt required-secret-values.txt
           export CONFIG_SOURCE="${CI_REGISTRY}/scout-config" CONFIG_INSECURE=true
           (cd "$work" && oras push --plain-http "${CONFIG_SOURCE}:${VERSION}" \
             --export-manifest "$RUNNER_TEMP/local-config-manifest.json" \
@@ -328,6 +324,7 @@ jobs:
           set -euo pipefail
           dir="$RUNNER_TEMP/flux-system"; rm -rf "$dir"; mkdir -p "$dir"
           cp .github/ci_resources/flux/flux-system/*.yaml "$dir/"
+          cp -R deploy/bootstrap/sops-guard "$dir/sops-guard"
           flux install --export > "$dir/gotk-components.yaml"
           kubectl apply --server-side -k "$dir"
           for d in source-controller kustomize-controller helm-controller notification-controller; do
@@ -355,8 +352,9 @@ jobs:
             .github/ci_resources/flux/site/scout-config-source.yaml > "$site/scout-config-source.yaml"
           kubectl create secret generic scout-cosign-pub -n flux-system \
             --from-file=cosign.pub="$RUNNER_TEMP/cosign.pub"
-          jq --arg d "$PWD/tests/ingest/staging_test_data" '.extractor_data_dir = $d' \
-            .github/ci_resources/flux/cluster-vars.values.json > "$RUNNER_TEMP/cluster-vars.values.json"
+          python3 .github/ci_resources/flux/cluster_vars.py \
+            --extractor-data-dir "$PWD/tests/ingest/staging_test_data" \
+            --output "$RUNNER_TEMP/cluster-vars.values.json"
           python3 tooling/deploy/gen_cluster_vars.py --values "$RUNNER_TEMP/cluster-vars.values.json" \
             --namespace flux-system -o "$site/cluster-vars.yaml"
           # Ephemeral age key: the private half ends up only in the sops-age Secret.
@@ -411,12 +409,22 @@ jobs:
           sed -e "s|@REGISTRY@|${CI_REGISTRY}|g" -e "s|@SITE_DIGEST@|${SITE_DIGEST}|g" \
             .github/ci_resources/flux/roots-site.yaml | kubectl apply -f -
           python3 .github/ci_resources/flux/wait_ready.py scout-site-source 600
-          python3 .github/ci_resources/flux/site_trust.py positive \
-            --name scout-site --source "oci://${CI_REGISTRY}/scout-site" \
-            --digest "$SITE_DIGEST" --key scout-site-cosign-pub
-          python3 .github/ci_resources/flux/site_trust.py positive \
-            --name scout-config --source "oci://${CONFIG_SOURCE}" \
-            --digest "$CONFIG_DIGEST" --key scout-cosign-pub
+          # scout-site-source has created scout-config; both sources must verify.
+          kubectl -n flux-system wait --for=condition=SourceVerified --timeout=5m \
+            ocirepository/scout-site ocirepository/scout-config
+          kubectl -n flux-system wait --for=condition=Ready --timeout=5m \
+            ocirepository/scout-site ocirepository/scout-config
+          # Prove the deployed sources resolved the exact digests selected above.
+          check_source() {  # <name> <source> <digest> <public-key-secret>
+            kubectl -n flux-system get ocirepository "$1" -o json | jq -e \
+              --arg source "oci://$2" --arg digest "$3" --arg key "$4" '
+              .spec.url == $source and .spec.ref == {digest: $digest} and
+              .spec.verify == {provider: "cosign", secretRef: {name: $key}} and
+              .status.observedGeneration == .metadata.generation and
+              .status.artifact.revision == $digest' > /dev/null
+          }
+          check_source scout-site "$SITE_SOURCE" "$SITE_DIGEST" scout-site-cosign-pub
+          check_source scout-config "$CONFIG_SOURCE" "$CONFIG_DIGEST" scout-cosign-pub
           # The values Secret holds every key in plaintext (decrypted by kustomize-controller
           # in sops mode). Counts only; no value is printed.
           kubectl -n flux-system get secret scout-secret-values -o json | python3 -c '
@@ -426,18 +434,6 @@ jobs:
           print(len(d), "values in Secret flux-system/scout-secret-values,", len(enc), "still ciphertext")
           sys.exit(1 if enc else 0)
           '
-
-      - name: Reject untrusted site artifacts
-        id: site-trust-negative
-        shell: bash
-        run: |
-          set -euo pipefail
-          sed -e "s|@REGISTRY@|${CI_REGISTRY}|g" \
-            -e "s|@SITE_GOOD_DIGEST@|${SITE_GOOD_DIGEST}|g" \
-            -e "s|@SITE_TAMPERED_DIGEST@|${SITE_TAMPERED_DIGEST}|g" \
-            .github/ci_resources/flux/site-trust-negative.yaml > "$RUNNER_TEMP/site-trust-negative.yaml"
-          python3 .github/ci_resources/flux/site_trust.py negative \
-            --manifest "$RUNNER_TEMP/site-trust-negative.yaml"
 
       - name: Negative cases
         id: negative

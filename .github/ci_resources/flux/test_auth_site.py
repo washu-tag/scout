@@ -12,6 +12,7 @@ import pytest
 import yaml
 
 import prepare_auth_site as auth
+from cluster_vars import load_values
 
 
 HERE = Path(__file__).resolve().parent
@@ -140,6 +141,43 @@ def test_fixture_filters_match_existing_ansible_ci_inventory():
     }
 
 
+def test_opa_patch_preserves_new_and_changed_deployment_policy_data(tmp_path):
+    release = yaml.safe_load(auth.OPA_RESOURCES.read_text())
+    original = json.loads(release["spec"]["values"]["data"]["json"])
+    original["baseline_hidden_tables"].append(
+        {"catalog": "delta", "schema": "private", "table": "future_sensitive_table"}
+    )
+    original["masked_columns"].append("new_sensitive_column")
+    original["future_policy"] = {"deny": ["new-restriction"]}
+    release["spec"]["values"]["data"]["json"] = json.dumps(original)
+    resources = tmp_path / "opa.yaml"
+    resources.write_text(yaml.safe_dump(release))
+    operations = json.loads(
+        auth.auth_patches(resources)["apps-scout"]["opa"][0]["patch"]
+    )
+    actual = json.loads(
+        next(p["value"] for p in operations if p["path"] == "/spec/values/data/json")
+    )
+    assert set(actual) == set(original)
+    for key in original.keys() - {"filtered_tables", "attribute_filters"}:
+        assert actual[key] == original[key]
+    assert actual["filtered_tables"] == [
+        {"catalog": "delta", "schema": "default", "table": "test_reports"}
+    ]
+    assert actual["attribute_filters"] == auth.ATTRIBUTE_FILTERS
+
+
+@pytest.mark.parametrize("copies", [0, 2])
+def test_opa_fixture_cannot_silently_select_missing_or_duplicate_release(
+    tmp_path, copies
+):
+    release = yaml.safe_load(auth.OPA_RESOURCES.read_text())
+    resources = tmp_path / "opa.yaml"
+    resources.write_text(yaml.safe_dump_all([release] * copies))
+    with pytest.raises(ValueError, match="one scout-opa"):
+        auth.auth_patches(resources)
+
+
 @pytest.mark.skipif(
     shutil.which("flux") is None,
     reason="Flux CLI required for offline controller render",
@@ -148,12 +186,14 @@ def test_real_flux_patches_keep_auth_and_dependency_controls(prepared, tmp_path)
     site, roots_path = prepared
     # Use the same full substitution set as the CI job. Both render stages run
     # strictly, so dollars introduced inside nested OPA patches are checked too.
+    merged_values = tmp_path / "cluster-vars.values.json"
+    merged_values.write_text(json.dumps(load_values()))
     generated = subprocess.run(
         [
             sys.executable,
             str(REPO / "tooling/deploy/gen_cluster_vars.py"),
             "--values",
-            str(HERE / "cluster-vars.values.json"),
+            str(merged_values),
         ],
         capture_output=True,
         text=True,
