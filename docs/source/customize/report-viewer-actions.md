@@ -3,8 +3,8 @@
 The search-detail toolbar in report-viewer (Explain Search, Download CSV, and any
 site-added buttons) is a data-driven catalog rendered by report-viewer's Helm chart.
 Adding a new link or backend-call button, or restricting an existing one to a Keycloak
-group, is a `values.yaml` change plus `helm upgrade` — no report-viewer code change or
-image rebuild.
+client role, is a `values.yaml` change plus `helm upgrade` — no report-viewer code
+change or image rebuild.
 
 Unlike the [launchpad's chip catalog](launchpad-chips.md), this isn't live runtime
 discovery: the catalog is a chart-rendered ConfigMap read once when the report-viewer
@@ -20,14 +20,14 @@ If report-viewer is deployed through this repo's Ansible role (the normal path �
 ```yaml
 # inventory.yaml
 report_viewer_explain_search:
-  requiredGroup: scout-admin
+  requiredRole: report-viewer-admin
 report_viewer_download_csv:
   enabled: false
 report_viewer_custom_actions:
   - id: pacs-viewer
     title: Open in PACS
     url: https://pacs.example.org/
-    requiredGroup: scout-admin
+    requiredRole: report-viewer-admin
 ```
 
 `report_viewer_explain_search`/`report_viewer_download_csv` are deep-merged onto chart
@@ -41,13 +41,19 @@ block, including the custom-action secrets shape.
 
 ```{warning}
 **This entire feature — and report-viewer's browser-facing UI in general — is on-prem
-only.** Visibility, `requiredGroup`, and every button in the toolbar depend on
-report-viewer's oauth2-proxy/Traefik forwardAuth header path, which does not exist in
-aws-mode clusters (ADR 0035: no Traefik, ALB-native OIDC instead, no per-group gate).
-If you're deploying report-viewer in aws mode, none of this will authenticate at all —
-not just gated buttons, the whole embedded cohort-browsing UI. ADR 0038 records why this
-mechanism was built this way; it does not track whether an aws-mode edge has since been
-added; check current deployment docs for that.
+only**, though the reason has shifted. Visibility, `requiredRole`, and every button in
+the toolbar are gated by a Bearer JWT report-viewer validates against Keycloak; Traefik's
+report-viewer-scoped forwardAuth middleware injects that bearer on every request through
+the ingress, including the SPA's own, so the auth mechanism itself no longer structurally
+depends on Traefik the way the old oauth2-proxy-header path did (ADR 0038's original
+limitation). What's still missing is simpler: **report-viewer has no aws-mode Ingress at
+all yet** (ADR 0035's Consequences list only Superset and Keycloak as landed there). If
+you're deploying report-viewer in aws mode, nothing here will be reachable at all — not
+because the auth check can't work, but because there's no ingress path for aws-mode
+traffic to reach report-viewer in the first place. Closing that gap would need its own
+aws-mode Ingress plus wiring `forwarded_token_header` to ALB's forwarded token
+(`REPORT_VIEWER_FORWARDED_TOKEN_HEADER`), which Path 1 already supports — undesigned,
+not attempted here.
 ```
 
 ## Toggling and gating the built-in buttons
@@ -58,17 +64,17 @@ Explain Search and Download CSV are always in the catalog unless disabled:
 actions:
   explainSearch:
     enabled: true
-    requiredGroup: '' # e.g. scout-admin
+    requiredRole: '' # e.g. report-viewer-admin
   downloadCsv:
     enabled: true
-    requiredGroup: ''
+    requiredRole: ''
 ```
 
-Set `enabled: false` to remove a button entirely, or `requiredGroup` to restrict it to
-members of that Keycloak group (empty means visible to every authenticated user). These
-are objects, not plain booleans, specifically so you can override just one field — Helm
-deep-merges map values, so setting `downloadCsv.requiredGroup` doesn't require restating
-`explainSearch` or anything in `custom` below.
+Set `enabled: false` to remove a button entirely, or `requiredRole` to restrict it to
+callers holding that Keycloak client role (empty means visible to every authenticated
+user). These are objects, not plain booleans, specifically so you can override just one
+field — Helm deep-merges map values, so setting `downloadCsv.requiredRole` doesn't
+require restating `explainSearch` or anything in `custom` below.
 
 ## Adding a new button: `actions.custom`
 
@@ -83,16 +89,16 @@ actions:
       title: Open in PACS
       url: https://pacs.example.org/
       weight: 50
-      requiredGroup: scout-admin
+      requiredRole: report-viewer-admin
 ```
 
-| Field           | Required | Default | Notes                                                                                 |
-|-----------------|----------|---------|---------------------------------------------------------------------------------------|
-| `id`            | yes      | —       | Duplicate ids (against a built-in or another custom entry) reject the later one.      |
-| `title`         | yes      | —       | Button label.                                                                         |
-| `url`           | yes      | —       | Must be `http(s)` with a real host — `javascript:`/`data:` and similar are rejected.  |
-| `weight`        | no       | `100`   | Lower renders first; ties break by title, then id.                                    |
-| `requiredGroup` | no       | —       | Keycloak group required to see the button (see [Gating](#gating-with-requiredgroup)). |
+| Field          | Required | Default | Notes                                                                               |
+|----------------|----------|---------|--------------------------------------------------------------------------------------|
+| `id`           | yes      | —       | Duplicate ids (against a built-in or another custom entry) reject the later one.      |
+| `title`        | yes      | —       | Button label.                                                                         |
+| `url`          | yes      | —       | Must be `http(s)` with a real host — `javascript:`/`data:` and similar are rejected.  |
+| `weight`       | no       | `100`   | Lower renders first; ties break by title, then id.                                    |
+| `requiredRole` | no       | —       | Keycloak client role required to see the button (see [Gating](#gating-with-requiredrole)). |
 
 The SPA opens `url` via a real navigation, with an always-shown copy-link fallback —
 see [Popups from the chat embed](#popups-from-the-chat-embed) if the destination needs
@@ -109,12 +115,12 @@ actions:
       endpointUrl: http://your-app.<namespace>.svc.cluster.local:8000/invoke
       invokeToken: <a generated secret>
       assertionKey: <a second, different generated secret>
-      requiredGroup: scout-admin
+      requiredRole: report-viewer-admin
 ```
 
 | Field                                    | Required | Default | Notes                                                                                                               |
 |------------------------------------------|----------|---------|---------------------------------------------------------------------------------------------------------------------|
-| `id`, `title`, `weight`, `requiredGroup` | —        | —       | Same as `open-url` above.                                                                                           |
+| `id`, `title`, `weight`, `requiredRole`  | —        | —       | Same as `open-url` above.                                                                                           |
 | `endpointUrl`                            | yes      | —       | POSTed to when the button is clicked. Must be `http(s)` with a real host.                                           |
 | `invokeToken`                            | no       | —       | Forwarded as `X-Report-Viewer-Action-Token`. See [Securing a backend-call target](#securing-a-backend-call-target). |
 | `assertionKey`                           | no       | —       | Signs `X-Report-Viewer-User-Assertion`. Must be a **different** value from `invokeToken` — see below.               |
@@ -147,7 +153,7 @@ frontend, so it structurally can't be added through chart values.
 
 `invokeToken` alone only proves your service is being called by *something* that knows
 the shared secret — it says nothing about which user the invocation is for, and
-therefore can't tell you whether report-viewer's own `requiredGroup` check is actually
+therefore can't tell you whether report-viewer's own `requiredRole` check is actually
 working. Treat it as a bare minimum: reject any request that doesn't present the
 correct token, but don't stop there.
 
@@ -155,24 +161,42 @@ If you set `assertionKey`, report-viewer also sends `X-Report-Viewer-User-Assert
 short-lived (60 second) JWT, signed with `assertionKey` using HS256, carrying:
 
 ```text
-{ "sub": "<username>", "groups": ["<group>", ...], "search_id": "<id>", "action_id": "<id>", "iat": <unix ts>, "exp": <unix ts> }
+{ "sub": "<username>", "roles": ["<role>", ...], "search_id": "<id>", "action_id": "<id>", "iat": <unix ts>, "exp": <unix ts> }
 ```
 
 Your service should verify, independently of anything report-viewer already checked:
 
 1. **Signature** — decode with your copy of `assertionKey`.
 2. **Expiry** — reject if `exp` has passed.
-3. **`search_id`** — must match the `search_id` in the request body, so a captured
-   assertion can't be replayed against a different search within its validity window.
-4. **`groups`** — if your action should be restricted, check group membership here too,
-   rather than assuming report-viewer's `requiredGroup` already enforced it. A hidden
+3. **`search_id`** — must match the `search_id` in the request body. This catches a
+   *naive* replay (reusing a captured assertion+body wholesale against a different
+   search without updating this field) — it is not a guarantee against a deliberate one:
+   both the token's and the body's `search_id` are visible to, and settable by, anyone
+   who has captured a valid assertion, so this check alone doesn't stop someone from
+   keeping `search_id` matched while substituting a different `reports` list. Nothing in
+   this contract cryptographically binds the `reports` payload itself.
+4. **`roles`** — if your action should be restricted, check role membership here too,
+   rather than assuming report-viewer's `requiredRole` already enforced it. A hidden
    button's URL is not itself a secret.
+
+**What this boundary does and doesn't guarantee.** Together, the NetworkPolicy
+restricting who can reach your service, the invoke token, and the assertion's signature
+constrain *who* can reach your endpoint and *as whom* (a fixed `sub`/`roles`, only within
+the 60-second window) — they do not additionally guarantee that the `reports` list in
+the request body is the one report-viewer actually resolved for that search. A party
+that has already obtained a valid assertion and invoke token could substitute a
+different `reports` list for the same identity. That gap is only reachable by bypassing
+report-viewer entirely — it is not exposed through the SPA's own UI, which never trusts
+client-supplied report ids (see `invoke_search_action`'s `visible_report_ids` handling,
+which only ever narrows report-viewer's own Trino-resolved cohort, never adds to it). If
+your target needs a stronger guarantee than "report-viewer's own resolution and role
+check are correct," query Trino directly instead of trusting this payload.
 
 `invokeToken` and `assertionKey` **must be different values**. `invokeToken` is
 transmitted on every call and can leak via logs, traces, or a support bundle;
 `assertionKey` never travels over the wire — only its signature output does, which
 can't be reversed to recover it. Reusing one value for both would let anyone who
-obtained the (much more exposed) invoke token forge whatever user or group claims they
+obtained the (much more exposed) invoke token forge whatever user or role claims they
 wanted, defeating the point of signing anything at all. Generate both as independent
 random secrets and store them as real Kubernetes Secrets on your service's side, not
 plain values or Deployment env literals — the same reasoning applies to your service as
@@ -180,18 +204,19 @@ to report-viewer's own chart.
 
 `xnat-explore-poc` (`examples/xnat-explore-poc/`, including its `helm/` subdirectory) is a reference
 implementation of all of this: a deliberately fake backend that verifies the token, the
-assertion, and an optional required group, purely to demonstrate the contract. Read it
+assertion, and an optional required role, purely to demonstrate the contract. Read it
 before building a real target.
 
-## Gating with `requiredGroup`
+## Gating with `requiredRole`
 
-`requiredGroup` filters what report-viewer's API returns — a non-member's response from
-`GET /api/searches/{id}/actions` simply never includes the button, and invoking a
-gated action you can't see 404s the same way a nonexistent one would. This is
-server-side filtering, checked against the caller's real Keycloak group membership
-(delivered via oauth2-proxy's `X-Auth-Request-Groups` header, which Traefik overwrites
-from its own verified session on every request — a client cannot forge it by setting
-the header directly).
+`requiredRole` filters what report-viewer's API returns — a caller without the role gets
+a `GET /api/searches/{id}/actions` response that simply never includes the button, and
+invoking a gated action you can't see 404s the same way a nonexistent one would. This is
+server-side filtering, checked against the caller's real Keycloak client role
+(`resource_access.report-viewer.roles` on the caller's Bearer JWT — Traefik's
+report-viewer-scoped forwardAuth middleware injects a Keycloak-issued bearer on every
+request through the ingress, including the SPA's own, so a client cannot forge this
+claim by setting a header directly).
 
 That said, visibility is UX, not the authorization boundary: a `backend-call` action's
 own endpoint is a real, independently reachable service, and must enforce its own check
