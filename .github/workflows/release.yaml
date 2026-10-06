@@ -13,7 +13,7 @@ on:
         type: boolean
         default: false
       skip_dev_reset:
-        description: 'Skip resetting versions back to dev after release (use for releases from non-main branches)'
+        description: 'Skip resetting versions back to dev after a successful release'
         required: false
         type: boolean
         default: false
@@ -23,22 +23,8 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  packages: write
-  pull-requests: read
+  contents: read
   actions: read
-  attestations: write
-  id-token: write
-
-env:
-  # The images update-versions.sh stamps, i.e. the ones a release retags. superset
-  # and keycloak are built from a vendored upstream and keep their upstream version,
-  # so they are published but never carry X.Y.Z.
-  SCOUT_VERSIONED_IMAGES: 'hl7log-extractor hl7-transformer hl7-listener scout-notebook launchpad report-viewer keycloak-fragment-reconciler'
-  UPSTREAM_VERSIONED_IMAGES: 'superset keycloak'
-  # The charts publish-charts packages at X.Y.Z (mirrors its matrix); the release
-  # verify step re-checks each is published before the Release is minted.
-  RELEASE_CHARTS: 'hl7-transformer dcm4chee hive-metastore hl7-listener hl7log-extractor keycloak-config-cli keycloak-fragment-reconciler launchpad open-webui-bootstrap orthanc report-viewer scout-dashboards scout-opa temporal-bootstrap voila'
 
 jobs:
   validate:
@@ -47,50 +33,79 @@ jobs:
     outputs:
       version_bump_exists: ${{ steps.check_commits.outputs.version_bump_exists }}
       version_bump_sha: ${{ steps.check_commits.outputs.version_bump_sha }}
-      release_exists: ${{ steps.check_release.outputs.release_exists }}
+      boundary_sha: ${{ steps.boundary.outputs.sha }}
       reset_exists: ${{ steps.check_commits.outputs.reset_exists }}
     steps:
       - name: Validate version format
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if ! [[ "$VERSION" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
             echo "::error::Invalid version format. Expected X.Y.Z (e.g., 2.1.0)"
             exit 1
           fi
           echo "Version format is valid: $VERSION"
 
-      - name: Generate token from GitHub App
-        id: app_token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        with:
-          client-id: ${{ secrets.RELEASE_APP_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+      - name: Require the published main release path
+        if: ${{ !inputs.dry_run }}
+        env:
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$REPO" != washu-tag/scout ] || [ "$REF" != refs/heads/main ]; then
+            echo "::error::Tested-artifact release promotion requires washu-tag/scout main. No branch versions were changed."
+            exit 1
+          fi
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - name: Check the version is not already released
+      - name: Generate the release reader token
+        if: ${{ !inputs.dry_run }}
+        id: app_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Preserve the release boundary and inspect existing releases
+        if: ${{ !inputs.dry_run }}
+        id: boundary
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
           VERSION: ${{ inputs.version }}
+          REPO: ${{ github.repository }}
         run: |
-          tag_exists=false; release_exists=false
-          git tag -l "v${VERSION}" | grep -q . && tag_exists=true
-          gh release view "v${VERSION}" >/dev/null 2>&1 && release_exists=true
-          # A tag WITHOUT a release is expected and fine: release-dispatch.yaml
-          # pre-creates the boundary tag v<version> on the merge commit so release-please
-          # can scope its changelog during the build; the GitHub Release is minted last,
-          # after image verification. It also covers resuming a release whose tag exists
-          # but whose release step had not run. Only a tag AND a release together mean
-          # the version is truly already published.
-          if [ "$tag_exists" = true ] && [ "$release_exists" = true ]; then
-            echo "::error::v${VERSION} is already released (tag and release both exist)"
-            exit 1
+          set -euo pipefail
+          if git show-ref --verify --quiet "refs/tags/v${VERSION}"; then
+            boundary=$(git rev-parse "refs/tags/v${VERSION}")
+            if [ "$(git cat-file -t "$boundary")" != commit ]; then
+              echo "::error::Release promotion requires a lightweight boundary tag; annotated tags are not rewritten."
+              exit 1
+            fi
+          else
+            boundary=$(git rev-parse HEAD)
           fi
-          echo "v${VERSION}: tag_exists=${tag_exists} release_exists=${release_exists} (proceeding)"
+          echo "sha=$boundary" >> "$GITHUB_OUTPUT"
+          # Any existing draft/public release uses the explicit recovery workflow.
+          # Repackaging charts here would change the compatibility digests already
+          # recorded by a partial promotion. API failure must not look like absence.
+          gh api --paginate --slurp "/repos/${REPO}/releases?per_page=100" \
+            > "$RUNNER_TEMP/releases.json"
+          python3 - <<'PYRELEASE'
+          import json
+          import os
+          from pathlib import Path
+
+          releases = json.loads((Path(os.environ["RUNNER_TEMP"]) / "releases.json").read_text())
+          matching = [r for page in releases for r in page if r["tag_name"] == "v" + os.environ["VERSION"]]
+          if len(matching) > 1:
+              raise SystemExit("ambiguous existing release")
+          if matching:
+              raise SystemExit("release or draft already exists; use promote-release.yaml with its original identities (or repair dev reset as documented)")
+          PYRELEASE
 
       - name: Check for existing commits
         id: check_commits
@@ -98,7 +113,7 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           # Check for version bump commit
-          VERSION_BUMP_SHA=$(git log --grep="^Update to version $VERSION$" --format="%H" | head -1)
+          VERSION_BUMP_SHA=$(git log -1 --grep="^Update to version ${VERSION//./[.]}$" --format="%H")
           if [[ -n "$VERSION_BUMP_SHA" ]]; then
             echo "Found existing version bump commit: $VERSION_BUMP_SHA"
             echo "version_bump_exists=true" >> "$GITHUB_OUTPUT"
@@ -111,7 +126,7 @@ jobs:
 
           # Check for reset commit (after version bump)
           if [[ -n "$VERSION_BUMP_SHA" ]]; then
-            RESET_SHA=$(git log --grep="^Reset to dev versions$" --format="%H" "$VERSION_BUMP_SHA..HEAD" | head -1)
+            RESET_SHA=$(git log -1 --grep="^Reset to dev versions$" --format="%H" "$VERSION_BUMP_SHA..HEAD")
             if [[ -n "$RESET_SHA" ]]; then
               echo "Found existing reset commit: $RESET_SHA"
               echo "reset_exists=true" >> "$GITHUB_OUTPUT"
@@ -123,24 +138,10 @@ jobs:
             echo "reset_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check if release exists
-        id: check_release
-        env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
-          VERSION: ${{ inputs.version }}
-        run: |
-          if gh release view "v${VERSION}" &>/dev/null; then
-            echo "Release v${VERSION} already exists"
-            echo "release_exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Release v${VERSION} does not exist"
-            echo "release_exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Preview changelog (dry run)
         if: inputs.dry_run
         env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
@@ -225,24 +226,33 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   wait-for-build:
-    name: Wait for Build
+    name: Wait for the exact published build and Flux proof
     runs-on: ubuntu-latest
+    timeout-minutes: 95
     needs: [validate, version-bump]
     # Run this job if:
     # - version-bump succeeded (new version bump commit was created), OR
     # - version-bump was skipped (version bump already exists, resuming after partial failure)
     # always() is required because GitHub Actions skips downstream jobs by default when
     # upstream jobs are skipped; without it, the 'skipped' result check would never be evaluated
-    if: ${{ !inputs.dry_run && always() && !cancelled() && (needs.version-bump.result == 'success' || needs.version-bump.result == 'skipped') }}
+    if: ${{ !inputs.dry_run && always() && !cancelled() && needs.validate.result == 'success' && (needs.version-bump.result == 'success' || needs.version-bump.result == 'skipped') }}
     outputs:
       commit_sha: ${{ steps.target.outputs.sha }}
       ci_run_id: ${{ steps.wait.outputs.run_id }}
       ci_run_attempt: ${{ steps.wait.outputs.run_attempt }}
+      consumer_run_id: ${{ steps.wait.outputs.consumer_run_id }}
+      consumer_run_attempt: ${{ steps.wait.outputs.consumer_run_attempt }}
+      build_version: ${{ steps.wait.outputs.build_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml
 
       - name: Determine target commit
         id: target
@@ -250,12 +260,11 @@ jobs:
           # Pin the release build to the version-bump (stamped) commit, not current HEAD.
           # This fixes the tag + changelog boundary: the tag can only move from the merge
           # commit to the stamp commit, so no Conventional Commit merged mid-release is
-          # dropped from a changelog. It does NOT stop a mid-release merge from overwriting
-          # the X.Y.Z images: ci.yaml's publish is changes-gated and the tag is mutable, so
-          # a merge while main is stamped still republishes over them. Closing that needs a
-          # release-in-progress lock (tracked follow-up); until then, hold merges during a
-          # release. To fold a fix into a failed release: reset + re-dispatch, so version-bump
-          # re-stamps the fixed HEAD.
+          # dropped from a changelog. Legacy X.Y.Z image tags remain mutable;
+          # promotion compares them with the signed haul and rejects a mismatch.
+          # Hold unrelated merges while main is stamped to avoid that conflict.
+          # Before a draft exists, folding in a fix requires reset + re-dispatch
+          # so version-bump re-stamps the fixed HEAD. Draft recovery never rebuilds.
           BUMP_SHA: ${{ needs.version-bump.outputs.commit_sha || needs.validate.outputs.version_bump_sha }}
         run: |
           if [ -z "${BUMP_SHA}" ]; then
@@ -264,232 +273,180 @@ jobs:
           echo "Pinning release build to ${BUMP_SHA}"
           echo "sha=${BUMP_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Wait for CI workflow
+      - name: Wait for the exact producer attempt and published Flux proof
         id: wait
         env:
           GH_TOKEN: ${{ github.token }}
           TARGET_SHA: ${{ steps.target.outputs.sha }}
-          REF_NAME: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
-          echo "Waiting for CI workflow to complete on $TARGET_SHA..."
+          python3 tooling/release/promote.py wait \
+            --repository "$REPO" --revision "$TARGET_SHA" --timeout 5400 \
+            --github-output "$GITHUB_OUTPUT"
 
-          # Poll for up to 90 minutes (180 attempts * 30s)
-          MAX_ATTEMPTS=180
-          SLEEP_SECONDS=30
-          RUN_ID=""
-
-          for ((i=1; i<=MAX_ATTEMPTS; i++)); do
-            # Find the workflow run if we haven't yet
-            if [[ -z "$RUN_ID" ]]; then
-              RUN_ID=$(gh run list \
-                --workflow=ci.yaml \
-                --branch="${REF_NAME}" \
-                --json databaseId,headSha,event \
-                --jq ".[] | select(.headSha == \"$TARGET_SHA\" and (.event == \"push\" or .event == \"workflow_dispatch\")) | .databaseId" \
-                | head -1)
-
-              if [[ -n "$RUN_ID" ]]; then
-                echo "Found workflow run: $RUN_ID"
-              else
-                echo "[$i/$MAX_ATTEMPTS] Waiting for CI workflow to start..."
-                sleep "$SLEEP_SECONDS"
-                continue
-              fi
-            fi
-
-            # Poll run status (tolerate transient API errors)
-            if ! RUN=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}"); then
-              echo "[$i/$MAX_ATTEMPTS] API error, will retry..."
-              sleep "$SLEEP_SECONDS"
-              continue
-            fi
-            RUN_ATTEMPT=$(jq -er --arg sha "$TARGET_SHA" --arg branch "$REF_NAME" \
-              --arg repo "$REPO" --argjson id "$RUN_ID" '
-              select(.id == $id and .head_sha == $sha and .head_branch == $branch
-                and .repository.full_name == $repo and .head_repository.full_name == $repo
-                and .path == ".github/workflows/ci.yaml"
-                and (.event == "push" or .event == "workflow_dispatch"))
-              | .run_attempt | select(type == "number" and . > 0 and floor == .)' <<< "$RUN")
-            STATUS=$(jq -r '.status + ":" + (.conclusion // "")' <<< "$RUN")
-            case "$STATUS" in
-              completed:success)
-                echo "CI workflow completed successfully"
-                echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-                echo "run_attempt=$RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
-                exit 0
-                ;;
-              completed:*)
-                echo "::error::CI workflow failed (status: $STATUS)"
-                echo "See: https://github.com/${REPO}/actions/runs/$RUN_ID"
-                exit 1
-                ;;
-              *)
-                echo "[$i/$MAX_ATTEMPTS] CI workflow status: $STATUS"
-                sleep "$SLEEP_SECONDS"
-                ;;
-            esac
-          done
-
-          echo "::error::Timed out waiting for CI workflow"
-          exit 1
-
-  publish:
-    name: Publish Images
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
-    needs: [wait-for-build]
-    # On main, CI's publish job pushes images. On non-main branches, CI runs but its
-    # publish job is gated to main only, so we push images here instead.
-    # always() is required because version-bump (a transitive dependency) may be skipped
-    # on re-runs, and GitHub Actions propagates skip status through the dependency graph.
+    timeout-minutes: 45
+    needs: [validate, wait-for-build]
     if: >-
-      always() && !cancelled()
-      && github.ref_name != 'main'
-      && !inputs.dry_run
+      !inputs.dry_run && always() && !cancelled()
+      && needs.validate.result == 'success'
       && needs.wait-for-build.result == 'success'
+    # Shared only by the mutation jobs, including promote-release.yaml. Do not
+    # hold this lock while waiting for the producer or consumer workflows.
+    concurrency:
+      group: scout-release-promotion
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+      packages: write
     steps:
-      - name: Checkout the tested release commit
+      - name: Record exact recovery inputs
+        env:
+          VERSION: ${{ inputs.version }}
+          COMMIT_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
+          PRODUCER_RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
+          PRODUCER_RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          CONSUMER_RUN_ID: ${{ needs.wait-for-build.outputs.consumer_run_id }}
+          CONSUMER_RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.consumer_run_attempt }}
+          BOUNDARY_SHA: ${{ needs.validate.outputs.boundary_sha }}
+        run: |
+          {
+            echo 'Recovery inputs for promote-release.yaml, preserved before chart packaging or promotion:'
+            echo ''
+            echo '| Input | Value |'
+            echo '| --- | --- |'
+            printf '| version | %s |\n' "$VERSION"
+            printf '| revision | %s |\n' "$COMMIT_SHA"
+            printf '| producer_run_id | %s |\n' "$PRODUCER_RUN_ID"
+            printf '| producer_run_attempt | %s |\n' "$PRODUCER_RUN_ATTEMPT"
+            printf '| consumer_run_id | %s |\n' "$CONSUMER_RUN_ID"
+            printf '| consumer_run_attempt | %s |\n' "$CONSUMER_RUN_ATTEMPT"
+            printf '| boundary_sha | %s |\n' "$BOUNDARY_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Checkout trusted release tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.wait-for-build.outputs.commit_sha }}
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
-      - name: Free candidate storage
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /usr/share/swift /opt/ghc
-          sudo apt-get clean
-          docker system prune -af --volumes
-      - name: Login to GitHub Container Registry
+      - uses: ./.github/actions/install-hauler-oras
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: 'v3.0.6'
+      - name: Login to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: ./.github/actions/install-hauler-oras
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-        with:
-          cosign-release: v3.0.6
-      - name: Download the selected attempt's candidate
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          github-token: ${{ github.token }}
-          run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
-          name: flux-candidate-${{ needs.wait-for-build.outputs.ci_run_attempt }}
-          path: candidate
-      - name: Download the selected attempt's canonical images
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          github-token: ${{ github.token }}
-          run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
-          name: flux-images-${{ needs.wait-for-build.outputs.ci_run_attempt }}
-          path: candidate/images
-      - name: Recheck the successful attempt and publish its tested images
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
-          RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_run_attempt }}
-          TARGET_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
-          REF_NAME: ${{ github.ref_name }}
-          RELEASE_VERSION: ${{ inputs.version }}
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-        run: |
-          VERSION="$(jq -er .version candidate/index.json)" \
-          GITHUB_SHA="$TARGET_SHA" GITHUB_RUN_ID="$RUN_ID" GITHUB_RUN_ATTEMPT="$RUN_ATTEMPT" \
-            python3 .github/scripts/copy-flux-artifacts.py publish-images --candidate candidate \
-              --release-branch "$REF_NAME" --release-version "$RELEASE_VERSION"
-
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    needs: [validate, wait-for-build, publish, publish-charts]
-    if: >-
-      !inputs.dry_run && always() && !cancelled()
-      && needs.wait-for-build.result == 'success'
-      && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
-      && needs.publish-charts.result == 'success'
-      && needs.validate.outputs.release_exists != 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Verify the release images and charts were published
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ inputs.version }}
-        # wait-for-build only proves CI went green, not that it published
-        # anything. On main the images come from ci.yaml's publish job, which
-        # pushes an image only when that image needed pushing -- so a release
-        # fixed forward on a later commit can go green having published nothing.
-        # That is how v4.1.0 got a tag and a release with no 4.1.0 images. Assert
-        # the tags exist before minting a release that claims them. Charts are gated
-        # by publish-charts's success too, but re-check here so nothing is claimed
-        # until every artifact is actually queryable (ghcr-tag-published takes the
-        # name as a path segment, so charts/<name> works unmodified).
-        run: |
-          set -euo pipefail
-          missing=()
-          for image in ${SCOUT_VERSIONED_IMAGES}; do
-            published="$(bash .github/scripts/ghcr-tag-published.sh "${image}" "${VERSION}")"
-            echo "${image}:${VERSION} published=${published}"
-            [ "${published}" = 'true' ] || missing+=("${image}")
-          done
-          for chart in ${RELEASE_CHARTS}; do
-            published="$(bash .github/scripts/ghcr-tag-published.sh "charts/${chart}" "${VERSION}")"
-            echo "charts/${chart}:${VERSION} published=${published}"
-            [ "${published}" = 'true' ] || missing+=("charts/${chart}")
-          done
-          if [ "${#missing[@]}" -gt 0 ]; then
-            echo "::error::not published at ${VERSION}: ${missing[*]}"
-            echo "::error::refusing to create release v${VERSION}. The version bump commit is preserved, so re-run the release once the artifacts publish."
-            exit 1
-          fi
-          echo "::notice::all ${VERSION} images and charts are published"
-
-      - name: Generate token from GitHub App
+          password: ${{ github.token }}
+      - name: Generate the release writer token
         id: app_token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-
-      - name: Anchor the tag to the built commit + create the release
+      - name: Require an unclaimed release before packaging compatibility charts
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
-          VERSION: ${{ inputs.version }}
           REPO: ${{ github.repository }}
-          COMMIT_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
+          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          # release-dispatch.yaml pre-creates the boundary tag v${VERSION} at the
-          # release-PR merge commit so release-please can scope its changelog during
-          # the build. Now that the built + image-verified commit exists, point the tag
-          # at it so `git checkout v${VERSION}` reproduces the released source (parity
-          # with the manual-dispatch path, where the tag does not pre-exist and we
-          # create it). gh then anchors the Release to that tag, so no --target needed.
-          # The built commit is a descendant of the merge commit and the only commit
-          # between them ("Update to version X.Y.Z") is not a Conventional Commit, so
-          # moving the tag forward does not disturb release-please's next-cycle scoping.
-          if gh api "repos/${REPO}/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
-            gh api -X PATCH "repos/${REPO}/git/refs/tags/v${VERSION}" -f sha="${COMMIT_SHA}" -F force=true
-          else
-            gh api -X POST "repos/${REPO}/git/refs" -f ref="refs/tags/v${VERSION}" -f sha="${COMMIT_SHA}"
+          # Recheck under the promotion lock: recovery may have created a draft
+          # while this workflow was waiting for its producer/proof.
+          gh api --paginate --slurp "/repos/${REPO}/releases?per_page=100" \
+            > "$RUNNER_TEMP/releases-before-charts.json"
+          if ! jq -e --arg tag "v$VERSION" \
+            '[.[][] | select(.tag_name == $tag)] | length == 0' \
+            "$RUNNER_TEMP/releases-before-charts.json" >/dev/null; then
+            echo "::error::Release or draft exists. Use promote-release.yaml; compatibility charts will not be repackaged."
+            exit 1
           fi
-          gh release create "v${VERSION}" \
-            --repo "${REPO}" \
-            --title "Scout v${VERSION}" \
-            --generate-notes
-
-          echo "::notice::Created release v${VERSION}"
+      - name: Checkout the stamped chart source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.wait-for-build.outputs.commit_sha }}
+          path: release-source
+          persist-credentials: false
+      - name: Package and sign the Ansible compatibility charts
+        working-directory: release-source
+        env:
+          VERSION: ${{ inputs.version }}
+          REGISTRY_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$REGISTRY_TOKEN" | helm registry login ghcr.io -u "$ACTOR" --password-stdin
+          # Keep this list in sync with tooling/release/promote.py. All chart
+          # writes share this job's promotion/recovery lock. The GitOps aliases
+          # remain the unmodified artifacts tested by the published Flux proof.
+          while read -r name directory; do
+            app_version="$(bash .github/scripts/chart-app-version.sh "$name" "$VERSION")"
+            app_args=()
+            if [ -n "$app_version" ]; then app_args=(--app-version "$app_version"); fi
+            helm package "$directory" --version "$VERSION" "${app_args[@]}" --destination "$RUNNER_TEMP"
+            archive="$RUNNER_TEMP/${name}-${VERSION}.tgz"
+            bash .github/scripts/assert-chart-not-latest.sh "$archive" "$name"
+            helm push "$archive" oci://ghcr.io/washu-tag/charts
+            repository="ghcr.io/washu-tag/charts/$name"
+            digest="$(oras manifest fetch --descriptor "$repository:$VERSION" | jq -r '.digest')"
+            if ! [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "::error::Release chart digest is invalid"
+              exit 1
+            fi
+            cosign sign --key env://COSIGN_PRIVATE_KEY --use-signing-config=false \
+              --tlog-upload=false --yes "$repository@$digest"
+          done <<'CHARTS'
+          hl7-transformer helm/extractor/hl7-transformer
+          dcm4chee helm/dcm4chee
+          hive-metastore helm/hive-metastore
+          hl7-listener helm/hl7-listener
+          hl7log-extractor helm/extractor/hl7log-extractor
+          keycloak-config-cli helm/keycloak-config-cli
+          launchpad helm/launchpad
+          open-webui-bootstrap helm/open-webui-bootstrap
+          orthanc helm/orthanc
+          report-viewer helm/report-viewer
+          keycloak-fragment-reconciler helm/keycloak-fragment-reconciler
+          scout-dashboards helm/scout-dashboards
+          scout-opa helm/scout-opa
+          temporal-bootstrap helm/temporal-bootstrap
+          voila helm/voila
+          CHARTS
+      - name: Promote verified digests and publish the signed release record
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+          COMMIT_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
+          PRODUCER_RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
+          PRODUCER_RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          CONSUMER_RUN_ID: ${{ needs.wait-for-build.outputs.consumer_run_id }}
+          CONSUMER_RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.consumer_run_attempt }}
+          BOUNDARY_SHA: ${{ needs.validate.outputs.boundary_sha }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          python3 tooling/release/promote.py promote \
+            --repository "$REPO" --version "$VERSION" --revision "$COMMIT_SHA" \
+            --producer-run-id "$PRODUCER_RUN_ID" --producer-run-attempt "$PRODUCER_RUN_ATTEMPT" \
+            --consumer-run-id "$CONSUMER_RUN_ID" --consumer-run-attempt "$CONSUMER_RUN_ATTEMPT" \
+            --boundary-sha "$BOUNDARY_SHA" --public-key cosign.pub \
+            --work-dir "$RUNNER_TEMP/promotion"
 
       - name: Clear the release PR's pending label
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
           REPO: ${{ github.repository }}
+          BOUNDARY_SHA: ${{ needs.validate.outputs.boundary_sha }}
         # release-please labels its release PR `autorelease: pending` and only clears
         # that label when IT creates the release -- which it never does, because
         # release-please.yaml sets skip-github-release and this lane owns the tag and
@@ -500,7 +457,8 @@ jobs:
         run: |
           set -euo pipefail
           prs="$(gh pr list --repo "${REPO}" --state merged \
-            --label 'autorelease: pending' --json number --jq '.[].number')"
+            --label 'autorelease: pending' --json number,mergeCommit | \
+            jq -r --arg boundary "$BOUNDARY_SHA" '.[] | select(.mergeCommit.oid == $boundary) | .number')"
           for pr in ${prs}; do
             gh pr edit "${pr}" --repo "${REPO}" --remove-label 'autorelease: pending'
             echo "::notice::cleared 'autorelease: pending' on #${pr}"
@@ -574,7 +532,7 @@ jobs:
   verify-dev-reset:
     name: Verify main returned to dev
     runs-on: ubuntu-latest
-    needs: [validate, version-bump, wait-for-build, publish, release, reset-dev]
+    needs: [validate, version-bump, wait-for-build, release, reset-dev]
     # Runs ONLY when the release SUCCEEDED (so tag + Release exist): main must then be
     # back at dev placeholders. If it is not, reset-dev flaked (an npm hiccup, or a push
     # rejected by a concurrent merge) and main is silently stamped, so a dev deploy would
@@ -609,156 +567,6 @@ jobs:
             [ "${attempt}" -lt 3 ] && sleep 5
           done
           echo "::error::Release v${VERSION} succeeded but ${REF_NAME} is still STAMPED (reset-dev did not complete). A dev deploy would pull v${VERSION} instead of latest. Re-dispatch will NOT help (v${VERSION} is already released); reset manually:"
-          echo "::error::  git checkout ${REF_NAME} && bash .github/scripts/update-versions.sh dev && git commit -am 'Reset to dev versions' && git push"
+          echo "::error::Confirm main still carries this release's version and follow the guarded reset procedure in docs/internal/versions-and-releases.md."
           git --no-pager diff --stat
           exit 1
-
-  publish-charts:
-    name: Publish charts at the release version
-    runs-on: ubuntu-latest
-    needs: [validate, version-bump, wait-for-build]
-    # ADR 0030: a release publishes all charts at X.Y.Z (not just the build-lane
-    # 0.YYYYMMDD.run). Chart version and appVersion are passed at package time
-    # (chart-app-version.sh); the stamped commit is checked out for voila's
-    # values.yaml image.tag, the one chart field update-versions.sh still rewrites.
-    # Runs BEFORE `release` (which needs + verifies it), so a failed chart leg blocks
-    # the Release rather than leaving it published with charts partly missing.
-    if: >-
-      !inputs.dry_run && always() && !cancelled()
-      && needs.wait-for-build.result == 'success'
-    permissions:
-      contents: read
-      packages: write
-    env:
-      REGISTRY: ghcr.io
-    strategy:
-      fail-fast: false
-      matrix:
-        chart:
-          - { name: hl7-transformer, dir: helm/extractor/hl7-transformer }
-          - { name: dcm4chee, dir: helm/dcm4chee }
-          - { name: hive-metastore, dir: helm/hive-metastore }
-          - { name: hl7-listener, dir: helm/hl7-listener }
-          - { name: hl7log-extractor, dir: helm/extractor/hl7log-extractor }
-          - { name: keycloak-config-cli, dir: helm/keycloak-config-cli }
-          - { name: launchpad, dir: helm/launchpad }
-          - { name: open-webui-bootstrap, dir: helm/open-webui-bootstrap }
-          - { name: orthanc, dir: helm/orthanc }
-          - { name: report-viewer, dir: helm/report-viewer }
-          - { name: keycloak-fragment-reconciler, dir: helm/keycloak-fragment-reconciler }
-          - { name: scout-dashboards, dir: helm/scout-dashboards }
-          - { name: scout-opa, dir: helm/scout-opa }
-          - { name: temporal-bootstrap, dir: helm/temporal-bootstrap }
-          - { name: voila, dir: helm/voila }
-    steps:
-      - name: Checkout the stamped commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.version-bump.outputs.commit_sha || needs.validate.outputs.version_bump_sha }}
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-      # cosign sign + the imagetools digest lookup below read ~/.docker/config.json,
-      # which `helm registry login` doesn't populate; without this the sign step 401s.
-      - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Package, push, and sign ${{ matrix.chart.name }} at v${{ inputs.version }}
-        env:
-          CHART_DIR: ${{ matrix.chart.dir }}
-          CHART_NAME: ${{ matrix.chart.name }}
-          VERSION: ${{ inputs.version }}
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACTOR: ${{ github.actor }}
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-        run: |
-          set -euo pipefail
-          printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
-          # No predecessor haul: a release publishes every Scout image at X.Y.Z, so
-          # Scout-image charts get X.Y.Z as their appVersion.
-          app_version="$(bash .github/scripts/chart-app-version.sh "${CHART_NAME}" "${VERSION}")"
-          helm package "${CHART_DIR}" --version "${VERSION}" \
-            ${app_version:+--app-version "${app_version}"} --destination "${RUNNER_TEMP}"
-          # No published chart may carry a placeholder in a field it publishes
-          # (ADR 0030 section 2).
-          bash .github/scripts/assert-chart-not-latest.sh \
-            "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "${CHART_NAME}"
-          helm push "${RUNNER_TEMP}/${CHART_NAME}-${VERSION}.tgz" "oci://${REGISTRY}/washu-tag/charts"
-          ref="${REGISTRY}/washu-tag/charts/${CHART_NAME}:${VERSION}"
-          digest="$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' | jq -r '.digest')"
-          [ "${digest#sha256:}" != "${digest}" ] || { echo "::error::no digest for ${CHART_NAME}"; exit 1; }
-          cosign sign --key env://COSIGN_PRIVATE_KEY --use-signing-config=false \
-            --tlog-upload=false --yes "${REGISTRY}/washu-tag/charts/${CHART_NAME}@${digest}"
-
-  alias-haul:
-    name: Alias the build haul to the release version
-    runs-on: ubuntu-latest
-    needs: [validate, wait-for-build, release]
-    # ADR 0030: a release must map to a transportable haul. The CI run wait-for-build
-    # verified already published a signed build-lane haul (0.YYYYMMDD.run) and moved
-    # :main onto it; oras-tag that exact manifest + bundle to X.Y.Z so an air-gapped
-    # site can pull the release by version. cosign signatures are digest-keyed, so the
-    # existing signature verifies through the alias -- no re-sign. main only: ci.yaml's
-    # publish-haul (which uploads the haul-version artifact this reads) runs on main, so
-    # a non-main release has no build haul to alias.
-    if: >-
-      !inputs.dry_run && always() && !cancelled()
-      && github.ref_name == 'main'
-      && needs.release.result == 'success'
-    permissions:
-      contents: read
-      packages: write
-    env:
-      MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
-      BUNDLE_REPO: ghcr.io/washu-tag/manifests/scout
-      CONFIG_REPO: ghcr.io/washu-tag/manifests/scout-config
-      RELEASE_VERSION: ${{ inputs.version }}
-      RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
-    steps:
-      # Needed so the local composite ./.github/actions/install-hauler-oras resolves.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install hauler and oras
-        uses: ./.github/actions/install-hauler-oras
-      - name: Read the build version from the release's CI run
-        id: buildver
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          # The build lane (ci.yaml publish-haul, #642) uploads haul-version on every
-          # main build. Absent only in the window before #642 is live; skip the alias
-          # with a loud warning + the manual command rather than red a release that
-          # already succeeded (alias-haul runs post-mint and can't be re-dispatched).
-          if gh run download "${RUN_ID}" --repo "${{ github.repository }}" -n haul-version -D haul-version 2>/dev/null; then
-            BUILD_VERSION="$(cat haul-version/haul-version.txt)"
-          else
-            BUILD_VERSION=""
-          fi
-          if [ -z "${BUILD_VERSION}" ]; then
-            echo "::warning::run ${RUN_ID} published no haul-version artifact (build lane not live yet?); skipping the ${RELEASE_VERSION} alias. Alias manually once it is: oras tag ${MANIFEST_REPO}:<build> ${RELEASE_VERSION} && oras tag ${BUNDLE_REPO}:<build> ${RELEASE_VERSION} && oras tag ${CONFIG_REPO}:<build> ${RELEASE_VERSION}"
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "build_version=${BUILD_VERSION}" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Alias the manifest, bundle, and config artifact to the release version
-        if: steps.buildver.outputs.found == 'true'
-        env:
-          BUILD_VERSION: ${{ steps.buildver.outputs.build_version }}
-        run: |
-          set -euo pipefail
-          # oras tag adds :${RELEASE_VERSION} onto the same digest as the build tag; the
-          # cosign signatures (digest-keyed) verify unchanged through the alias. scout-config
-          # is the GitOps deploy artifact, aliased so a site can pin scout-config:X.Y.Z.
-          oras tag "${MANIFEST_REPO}:${BUILD_VERSION}" "${RELEASE_VERSION}"
-          oras tag "${BUNDLE_REPO}:${BUILD_VERSION}" "${RELEASE_VERSION}"
-          oras tag "${CONFIG_REPO}:${BUILD_VERSION}" "${RELEASE_VERSION}"
-          echo "::notice::aliased haul + config ${BUILD_VERSION} -> ${RELEASE_VERSION}"

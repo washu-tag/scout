@@ -1,0 +1,70 @@
+name: Release promotion protocol
+
+# Disposable registry, ephemeral keys, and a GitHub API fixture. This workflow
+# cannot publish a real release or access the production signing key.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - tooling/release/**
+      - tooling/deploy/artifact_identity.py
+      - tooling/deploy/proof_receipt.py
+      - .github/workflows/release*.yaml
+      - .github/workflows/promote-release.yaml
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - tooling/release/**
+      - tooling/deploy/artifact_identity.py
+      - tooling/deploy/proof_receipt.py
+      - .github/workflows/release*.yaml
+      - .github/workflows/promote-release.yaml
+
+permissions:
+  contents: read
+
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install pytest pyyaml
+      - name: Install pinned registry and ORAS
+        env:
+          GOTOOLCHAIN: go1.27.1
+          ORAS_VERSION: '1.2.0'
+          ORAS_SHA256: '5b3f1cbb86d869eee68120b9b45b9be983f3738442f87ee5f06b00edd0bab336'
+        run: |
+          set -euo pipefail
+          go install github.com/google/go-containerregistry/cmd/registry@v0.20.6
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          curl -fsSL -o "$RUNNER_TEMP/oras.tar.gz" \
+            "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+          echo "$ORAS_SHA256  $RUNNER_TEMP/oras.tar.gz" | sha256sum -c -
+          sudo tar -xzf "$RUNNER_TEMP/oras.tar.gz" -C /usr/local/bin oras
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: 'v3.0.6'
+      - name: Prove exact identity and interrupted promotion recovery
+        env:
+          SCOUT_RELEASE_REGISTRY_PROOF: '1'
+        run: >-
+          python3 -m pytest -q tooling/manifest tooling/release
+          tooling/deploy/test_artifact_identity.py tooling/deploy/test_proof_receipt.py
+          tooling/deploy/test_publish_identity.py .github/ci_resources/flux/test_release_proof_boundary.py
+          .github/ci_resources/flux/test_verify_config.py
+          --junitxml="$RUNNER_TEMP/release-protocol.xml"
+      - name: Save test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-protocol-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-protocol.xml
+          if-no-files-found: error
+          retention-days: 90

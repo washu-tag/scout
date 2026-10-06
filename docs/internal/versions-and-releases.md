@@ -4,20 +4,23 @@ This document describes Scout's versioning strategy and the automated release wo
 
 ## Versioning Strategy
 
-Scout uses a **manual dispatch release workflow**. The workflow:
+Scout has a build lane (`0.YYYYMMDD.<run>`) and a deliberate release lane
+(`X.Y.Z`, major version at least 1). Release-please computes a version and
+changelog from Conventional Commit PR titles; a maintainer merges its release
+PR. `release-dispatch.yaml` creates a lightweight boundary tag and dispatches
+`release.yaml` on `main`. Manual dispatch of that same workflow remains available.
 
-1. **Source files maintain dev versions** - no manual version bumps for day-to-day development
-2. **Human triggers release via GitHub Actions** - specifying the version to release
-3. **Version bump commit created at release time** - the repo contains a commit with release versions
-4. **Automatic reset after release** - dev versions restored by running the update script
-5. **Tag created on success** - the version tag only exists after everything succeeds
+The release workflow keeps the version-bump/reset commits required by Ansible.
+It waits for the exact stamped build and its published Flux proof, promotes the
+verified package digests, attaches a signed release record, and publishes the
+GitHub Release last. A boundary tag or an OCI version tag alone does not mean a
+release completed. Failed releases can reserve a version number.
 
-### Key Points
-
-- Tags are created at the end of the release process, not the beginning
-- This eliminates wasted version numbers from failed releases
-- The `vX.Y.Z` tag points to the version bump commit
-- Changelog is auto-generated from PR titles since the last release
+The gate requires the producer and consumer workflows on the upstream default
+branch and a new published producer receipt. Fork/local-artifact tests exercise
+the implementation but cannot satisfy this upstream release gate. See
+[ADR 0030](adr/0030-two-lane-versioning-and-artifact-publishing.md) for the
+proposed interim promotion contract.
 
 ## Development Versions
 
@@ -33,7 +36,8 @@ For day-to-day development on `main`, all Scout components use development versi
 | Helm chart `appVersion` | `"latest"` | None (Scout apps only) |
 | Python pyproject.toml | `"0.0.dev0"` | [PEP-440](https://peps.python.org/pep-0440/) |
 
-CI publishes any changes to `main` with the `latest` Docker image tag.
+The build lane records concrete artifact digests. Legacy derived image tags
+(`latest` between releases, `X.Y.Z` while stamped) remain for Ansible compatibility.
 
 **Note on constrained versions**:
 - **Helm charts** require SemVer 2 compliant versions. `latest` is not valid; we use `0.0.0-dev`.
@@ -41,229 +45,148 @@ CI publishes any changes to `main` with the `latest` Docker image tag.
 
 ## Release Process
 
-### Overview Diagram
+### Publication order
 
-```
-Developer                    GitHub                        CI
-    |                           |                           |
-    |-- Trigger Release ------->|                           |
-    |   (workflow_dispatch)     |                           |
-    |   version: 2.1.0          |                           |
-    |                           |                           |
-    |                           |-- Release Workflow ------>|
-    |                           |                           |
-    |                           |     Validate version      |
-    |                           |     Check tag doesn't exist
-    |                           |          |                |
-    |                           |          v                |
-    |                           |     Version bump commit   |
-    |                           |     (X.Y.Z in all files)  |
-    |                           |     Push to branch        |
-    |                           |          |                |
-    |                           |          v                |
-    |                           |     Build Workflow runs   |
-    |                           |     (triggered by commit) |
-    |                           |          |                |
-    |                           |          v                |
-    |                           |     Wait for build -------+---> [Build fails]
-    |                           |          |                |           |
-    |                           |          v                |           v
-    |                           |     Publish images        |    main stays STAMPED
-    |                           |     (non-main only)       |    (bump kept for a retry)
-    |                           |          |                |
-    |                           |          v                |
-    |                           |     Create release        |
-    |                           |     (auto-gen changelog)  |
-    |                           |     Create vX.Y.Z tag     |
-    |                           |          |                |
-    |                           |          v                |
-    |                           |     Reset to dev versions |
-    |                           |     Push to branch        |
-    |                           |                           |
-    |<-- Release complete ------|                           |
-```
+1. Validate an upstream `main` release and its version. Preserve the existing
+   lightweight boundary tag, or record the dispatch commit when no tag exists.
+   Refuse an existing draft/public release and direct recovery to
+   `promote-release.yaml` before changing version files.
+2. Create or reuse `Update to version X.Y.Z`. Its exact SHA, rather than moving
+   `main`, is the target of the release build. Keep the stamp/reset scripts until
+   the Ansible cutover.
+3. Wait up to 90 minutes for that `ci.yaml` producer attempt and the corresponding
+   published `deploy-flux.yaml` proof. Validate repository, workflow, commit, run
+   and attempt metadata through GitHub's API. The proof must identify the same
+   haul-manifest, bundle and config digests and contain successful ingest and
+   authentication legs in the SOPS profile. A per-SHA status is advisory and
+   cannot authorize promotion.
+4. Under the shared promotion lock, check again that no draft/public release has
+   appeared, then package and sign the fifteen release-version Helm charts for
+   existing Ansible consumers. The producer has already published the seven
+   Scout-versioned image aliases. Promotion checks those images against the
+   signed haul and records the separately packaged chart digests; their bytes
+   are not the charts tested by the Flux proof.
+5. Revalidate evidence, verify all three package artifacts by digest and managed
+   key, and prepare `scout-release-X.Y.Z.yaml` plus
+   `scout-release-X.Y.Z.sigstore.json`. The record binds source, producer attempt,
+   consumer attempt, package digests and compatibility outputs. It references
+   the Hauler inventory rather than replacing it with another component list.
+6. Create a draft GitHub Release, attach and read back the signed record, add
+   matching `X.Y.Z` aliases to the exact manifest/bundle/config digests, and check
+   each alias. Move the lightweight source tag only from the expected boundary
+   to the tested stamped commit, without force. Publish the GitHub Release only
+   after these checks. Aliases across repositories are separate operations;
+   partial publication is resumable, not atomic.
+7. Clear the matching release PR's pending label, reset `main` to dev placeholders
+   unless `skip_dev_reset` was selected, and verify the reset. The release record
+   and its signature remain durable GitHub Release assets.
 
-> **Note**: The reset to dev versions step runs **only after the release succeeds** (`reset-dev` is gated on `needs.release.result == 'success'`). Any earlier failure leaves `main` stamped at `X.Y.Z`, deliberately, so the version bump commit survives for a retry. See [Design Decision: Reset Timing](#design-decision-reset-timing) for what that costs and how to get out of it.
+The normal release chart/promotion job and recovery job share
+`scout-release-promotion` concurrency. The producer and the release's build/proof
+wait do not hold this lock. Retain the operational hold on unrelated merges
+while `main` is stamped: legacy tags remain mutable, and a digest mismatch stops
+promotion rather than silently accepting another build.
 
-### Triggering a Release
+### Triggering a release
 
-1. **Go to GitHub Actions** → **Release** workflow
-2. **Click "Run workflow"**
-3. **Enter the version** (e.g., `2.1.0`)
-4. Optionally check **dry_run** to preview the changelog without releasing
-5. **Click "Run workflow"**
+Merge the release-please PR, or dispatch **Release** (`release.yaml`) on `main`
+with `version=X.Y.Z`. `dry_run=true` previews the changelog and makes no release
+changes. `skip_dev_reset=true` leaves the successful release stamp in place and
+requires a deliberate later reset.
 
-### What the Workflow Does
+Non-main release publication is rejected before stamping. Such branches do not
+have the trusted published producer/consumer path; their CI success cannot be
+substituted for this proof. Build-lane tests and development branches remain
+available independently.
 
-1. **Validates** the version format and checks the tag doesn't already exist
-2. **Searches git history** for an existing version bump commit (for idempotent re-runs)
-3. **Updates version files** and commits the version bump to the branch (if not already done)
-4. **Waits for the Build Workflow** to complete on HEAD (builds versioned artifacts)
-5. **Publishes Docker images** to GHCR (non-main branches only — on main, the CI workflow's publish job handles this)
-6. **Creates the GitHub release** with auto-generated changelog (if build succeeded)
-7. **Creates the `vX.Y.Z` tag** pointing at HEAD (if build succeeded)
-8. **Resets to dev versions** by running the update script and committing (always, regardless of build result)
-
-### Result
-
-- Release `v2.1.0` is published with changelog
-- Docker images tagged `2.1.0` are available
-- Tag `v2.1.0` points to the commit that was actually built and released
-- Branch is back to dev versions (unless `skip_dev_reset` was checked)
-
-### Post-Release Steps
-
-- When upgrading a site to the new release, bump its pinned docs URL to
-  match: `scout_docs_url: https://washu-scout.readthedocs.io/en/v2.1.0` in
-  that site's inventory (preprod/production in scout-inventory). Sites left
-  unpinned follow `/en/latest`, which can show docs for unreleased features.
-
-## Dry Run Mode
-
-Before releasing, you can preview what the changelog will look like:
-
-1. Trigger the Release workflow with **dry_run** checked
-2. The workflow generates and displays the changelog
-3. No commits, tags, or releases are created
-4. Review the output in the workflow logs
-
-This is useful for verifying the changelog looks correct before committing to a release.
-
-## Releasing from a Non-Main Branch
-
-The usual release procedure runs the workflow from `main`. However, if you need to create a release from a different branch (e.g., a hotfix branch for a patch release), the workflow supports this.
-
-### Steps
-
-1. Go to **GitHub Actions** → **Release** workflow
-2. In the **"Use workflow from"** dropdown, select the branch you want to release from
-3. Check **skip_dev_reset** (this prevents an unnecessary commit resetting versions back to dev, and avoids an unneeded CI run on a branch that doesn't need dev versions)
-4. Enter the version and click **"Run workflow"**
-
-The end result is the same as a normal release: a tagged `vX.Y.Z` commit on the branch, with a GitHub release and changelog.
-
-### Branch Name Requirements
-
-The release workflow pushes a version bump commit to the branch and then waits for the CI workflow to build it. The CI workflow only runs on pushes to branches matching specific patterns: `main`, `ci-**`, and `demo**`. If you run the release from a branch that doesn't match any of these patterns, the workflow will time out waiting for a CI run that never starts.
-
-To release from a non-main branch, ensure the branch name starts with `ci-` (e.g., `ci-hotfix-3.0.1`).
-
-### Image Publishing
-
-The CI workflow's `publish` job only runs on `main`. For non-main releases, the
-release workflow downloads the successful CI attempt's complete candidate and
-copies its tested image digests to GHCR with the release aliases. Branch CI
-builds every component fresh, including vendor images, so publication does not
-depend on an archive from an earlier attempt. The release checks the source,
-branch, successful attempt and requested image aliases again before writing.
-Build-lane haul/config release aliases remain available only for main releases.
-
-### Why Skip the Dev Reset?
-
-The `skip_dev_reset` option prevents the workflow from committing dev versions back to the branch after the release. This is recommended for non-main releases because it avoids an extra commit and CI run on a branch that doesn't need dev versions.
-
-Skipping the reset is a good practice for non-main releases but not strictly required.
+Before upgrading a site, update its pinned docs URL alongside its Scout release
+pin and review the release's upgrade notes. Verification and the pre-upgrade
+backup/rollback limits are described in
+[Verifying Releases](../source/operate/verifying-releases.md).
 
 ## Failure and Recovery
 
-Because the tag is created at the end of the workflow (after everything else succeeds), recovery from failures is straightforward.
+### Before a draft or release exists
 
-### Workflow Fails Before Version Bump
-- Nothing has changed
-- **Recovery**: Fix the issue, re-run the workflow
+If the failure was transient, re-dispatch the same version. The workflow reuses
+the stamped commit when no reset followed it, revalidates the producer and proof,
+and retries publication. A failed proof, missing receipt or expired evidence
+fails closed; a green status or manual tag alias is not a bypass.
 
-### Build Fails Due to a Bug
-- Version bump commit exists and is still the head of `main`; the build failed
-- Reset to dev versions has **not** happened — `reset-dev` only runs on a successful release — so `main` is stamped at `X.Y.Z` while nothing is published at that version. Everything downstream feels it: `derive-version` reads `X.Y.Z`, `check-image-exists` finds no such tag, and every PR rebuilds and rescans every image until this is undone.
-- **Recovery**, in this order:
-  1. Land the fix on `main` as a normal PR.
-  2. Land a commit whose message contains a line reading exactly `Reset to dev versions`. This is load-bearing: `validate` greps for it over `bump..HEAD`, and `version-bump` re-stamps only when it finds one. Without it, a re-dispatch pins straight back to the failed stamp commit and fails identically. `main` is PR-gated and only the release App bypasses that, so the line has to survive the squash — put it in the squash body: `gh pr merge <N> --squash --body "Reset to dev versions"`. Verify with `git log --grep="^Reset to dev versions$" <bump-sha>..origin/main` before continuing.
-  3. Re-dispatch the same version: `gh workflow run release.yaml --ref main -f version=X.Y.Z`. `validate` tolerates the orphan boundary tag, `version-bump` re-stamps the fixed HEAD, and the tag moves forward to the commit that was actually built.
+If code must change, land the fix and a reset before re-dispatching. The reset
+commit must contain a line exactly `Reset to dev versions`; validation uses it
+to distinguish a new build from a retry of the old stamp. On a protected branch,
+preserve that line in the squash commit body. Then dispatch the same version to
+stamp the fixed source. Do not use this route once a draft or public release
+already contains promotion evidence for that version.
 
-### Release Creation Fails (Rare)
-- Version bump commit exists on `main`, build succeeded, but `gh release create` failed
-- Reset has **not** happened (reset only runs when release succeeds or is skipped, not when it fails)
-- **Recovery**: Re-run the workflow. It will:
-  - Skip version bump (reuses the existing commit)
-  - Find the existing successful build
-  - Retry release creation
-  - Reset to dev versions
+### A draft, partial promotion or published release exists
 
-### Workflow Fails After Release, Before Reset
-- Release and tag exist and are valid
-- `main` still has release versions instead of dev versions
-- **Recovery**: Re-run the workflow. It detects the release exists and skips to the reset step.
+Run **Recover Release Promotion** (`promote-release.yaml`) from upstream `main`,
+providing these original identities from the release job's recovery-input
+summary or the signed release record:
 
-### Idempotent Design
+| Input | Meaning |
+|---|---|
+| `version` | The same `X.Y.Z` |
+| `revision` | Exact stamped source SHA |
+| `producer_run_id`, `producer_run_attempt` | Successful Post-Commit Tasks attempt |
+| `consumer_run_id`, `consumer_run_attempt` | Successful published Flux proof attempt |
+| `boundary_sha` | Original lightweight release-boundary commit (`boundaryRevision` in the signed record) |
 
-The workflow checks state before each step:
-- **Version bump**: Skips if a version bump commit exists AND no reset commit followed it. Creates a new bump if a reset exists (meaning we need to start fresh after a previous build failure).
-- **Release**: Skips if the GitHub release already exists.
-- **Reset**: Skips if a reset commit already exists after the version bump.
+Recovery calls the same `tooling/release/promote.py promote` implementation. It
+rechecks live GitHub evidence and signatures, accepts matching existing assets
+and aliases, and completes missing draft work. It does not rebuild, repackage,
+stamp, overwrite conflicting content or accept local-artifact proof. A complete
+published release with the same record and aliases is a no-op. A published
+release missing the signed record, expired workflow artifacts, or a different
+existing digest requires investigation; recovery does not invent replacement
+evidence. Keep the original producer and proof artifacts through release
+closeout (the workflows retain them for 90 days).
 
-This allows safe re-runs after partial failures without manual intervention.
+Use this recovery workflow rather than re-running `release.yaml`: repackaging a
+Helm chart can change its digest and conflict with an already signed release
+record. Once a release is published, treat its content as fixed and ship
+changed content under a new version.
 
-### Important Notes
+### Dev reset failed or was skipped
 
-- The **tag points to HEAD** at release time, which may be the version bump commit or a later fix commit. This ensures the tag references the exact code that was built and released.
+Recovery verifies/completes promotion but intentionally does not reset `main`.
+First check that the published release has the expected signed record and that
+no newer release is being prepared. Inspect `main` and confirm its version files
+still carry **this** release's version. If they already contain dev placeholders,
+there is nothing to reset. If they contain a different release, stop.
 
-## Reset Timing
+From a clean worktree based on current `main`, run:
 
-`reset-dev` is gated on `needs.release.result == 'success'`, so a failure anywhere earlier leaves `main` stamped at `X.Y.Z`. That is intentional: the version bump commit survives, so a retry can reuse the build that already succeeded, or re-stamp a fixed HEAD once a `Reset to dev versions` commit follows it.
+```bash
+bash .github/scripts/update-versions.sh dev
+npm --prefix launchpad install --package-lock-only
+npm --prefix tests/auth install --package-lock-only
+git diff
+```
 
-It deliberately does not consult `validate`'s `reset_exists`. That flag is computed before `version-bump` runs, so on a re-release it reports the *previous* cycle's reset and skips the current one — which is how v4.1.0's re-release left `main` stamped at 4.1.0.
-
-While `main` is stamped, nothing is published at that version, so `check-image-exists` reports every image absent and every unrelated PR rebuilds and rescans all of them. `verify-dev-reset` is gated on the same successful release, so it does not fire here — the red release run is the only signal. Recovery is in [Build Fails Due to a Bug](#build-fails-due-to-a-bug).
+Review the diff for version/reset changes only, then submit it through the
+normal protected-branch process with `Reset to dev versions` retained in the
+commit message. Verify the merged source is back at dev placeholders. Do not
+re-dispatch an already published version just to reset it.
 
 ## CI Components
 
-### 1. Build Workflow (Existing, Unchanged)
+| Component | Responsibility |
+|---|---|
+| `ci.yaml` | Build-lane artifacts, signed package and attempt-specific producer receipt |
+| `deploy-flux.yaml` | Exact published config verification, ingest/authentication tests and attempt-specific proof |
+| `release-dispatch.yaml` | Release-please boundary tag and main release dispatch |
+| `release.yaml` | Stamp, wait, compatibility charts, verified promotion, successful-release dev reset |
+| `promote-release.yaml` | Resume promotion with explicit original identities; no rebuild/reset |
+| `tooling/release/promote.py` | Shared evidence validation, signing, alias checks and draft-to-public transition |
+| `.github/scripts/update-versions.sh` | Ansible-compatible source stamping and dev reset |
 
-**File**: Existing build workflows
-
-**Triggers**: Push to `main`, `ci-**`, or `demo**` branches
-
-**Behavior**: Builds and tests artifacts. Tags are derived from version files:
-- Dev versions (`latest`, `0.0.0-dev`, etc.) → publishes with `latest` tag (main only)
-- Release versions (`2.1.0`) → publishes with `2.1.0` tag (main only)
-
-The CI workflow's `publish` job only runs on `main`. For non-main branches, the release workflow handles image publishing directly (see below).
-
-### 2. Release Workflow (New)
-
-**File**: `.github/workflows/release.yaml`
-
-**Triggers**: `workflow_dispatch` (manual)
-
-**Inputs**:
-| Input | Description | Required |
-|-------|-------------|----------|
-| `version` | Version to release (e.g., `2.1.0`) | Yes |
-| `dry_run` | Preview changelog without releasing | No (default: false) |
-| `skip_dev_reset` | Skip resetting versions back to dev after release (use for releases from non-main branches) | No (default: false) |
-
-**Responsibilities**:
-1. Validate version format and check tag doesn't exist
-2. Update version files and commit
-3. Wait for Build Workflow to complete
-4. Publish Docker images to GHCR (non-main branches only)
-5. Create GitHub release with auto-generated changelog
-6. Create version tag
-7. Reset to dev versions and commit
-
-### 3. Version Update Script
-
-**File**: `.github/scripts/update-versions.sh`
-
-Updates all version files. Supports two modes:
-
-```bash
-# Set release version
-.github/scripts/update-versions.sh 2.1.0
-
-# Reset to dev versions
-.github/scripts/update-versions.sh dev
-```
+When adding a release artifact, keep the producer path map, release chart list,
+`tooling/release/promote.py` compatibility lists and version-file tables below in
+sync. A successful core proof does not certify optional services, haul restore,
+registry relocation or cold-cache disconnected installation.
 
 ## GitHub App Setup
 
@@ -279,7 +202,7 @@ GitHub Actions workflows that need to push commits or create pull requests on pr
 
 | App | Secrets | Purpose | Permissions | Branch protection bypass |
 |-----|---------|---------|-------------|--------------------------|
-| `scout-release` | `RELEASE_APP_ID`, `RELEASE_APP_PRIVATE_KEY` | Release workflow: pushes version bump/reset commits directly to `main` | Contents: Read and write | Yes |
+| `scout-release` | `RELEASE_APP_ID`, `RELEASE_APP_PRIVATE_KEY` | Stamp/reset commits, release tag/assets, matching release-PR label cleanup | Contents: Read and write, Pull requests: Read and write | Yes |
 | `scout-copyright` | `COPYRIGHT_APP_ID`, `COPYRIGHT_APP_PRIVATE_KEY` | Copyright year workflow: pushes a feature branch and creates a PR | Contents: Read and write, Pull requests: Read and write | No |
 
 ### Creating a GitHub App
@@ -348,7 +271,11 @@ Workflows use `actions/create-github-app-token` to generate a short-lived instal
     token: ${{ steps.app_token.outputs.token }}
 ```
 
-The checkout `token` ensures `git push` uses the App's credentials. For API calls (e.g., `gh pr create`), set `GH_TOKEN`:
+The checkout `token` ensures `git push` uses the App's credentials. Promotion uses
+`GH_TOKEN` for read-only CI evidence access and `RELEASE_GH_TOKEN` for App-backed
+release/tag/asset access, including reads of private drafts, so the App does not
+need Actions permissions. Its managed
+cosign key is supplied only to the promotion job. For other API calls (e.g., `gh pr create`), set `GH_TOKEN`:
 
 ```yaml
 env:

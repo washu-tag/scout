@@ -210,6 +210,52 @@ checkouts, and the cutover removes that consumer. A leaner mode, where a
 release re-labels an existing already-tested build instead of rebuilding,
 is specified under Deferred work below.
 
+#### Proposed interim amendment: tested package promotion before Ansible cutover
+
+The on-prem release gate adds an exact-artifact promotion step while retaining
+the existing stamped source commit and dev reset for Ansible consumers. This
+amendment is proposed with the implementation; merging a fork proof does not
+establish that the upstream gate has run.
+
+- A release selects the successful `ci.yaml` run **and attempt** for its stamped
+  commit. Its schema-2 producer receipt names the haul manifest, bundle and
+  config digests. The corresponding trusted `deploy-flux.yaml` run/attempt must
+  prove that exact published config with both core ingest and authentication
+  legs. Local-artifact runs and replaceable per-SHA statuses are not release
+  authorization. The proof records its profile and values mode, rather than
+  implying optional-component or disconnected-install coverage.
+- Promote the already verified manifest, bundle and config OCI digests unchanged
+  to `X.Y.Z` aliases. Do not repackage the tested config in this interim path.
+  This narrows the deferred promotion recipe below until the Ansible cutover.
+  Continue publishing the legacy release-version images and separately packaged
+  charts; verify image aliases against the signed haul and record compatibility
+  chart digests separately from the Flux-tested package.
+- Attach deterministic `scout-release-X.Y.Z.yaml` and its managed-key cosign
+  bundle to a draft GitHub Release. The record binds release/source identity,
+  producer and consumer attempts, package digests and compatibility outputs;
+  it references the Hauler inventory, preserving ADR 0033's single inventory.
+  Verify the assets and aliases, then anchor the lightweight source tag and
+  publish the Release last. The early release-please boundary tag is retained;
+  only its expected move to the tested stamped commit is permitted, without
+  force. A draft or alias alone is not a completed release.
+- Promotion and recovery serialize their registry/release mutations, including
+  release chart packaging. Across repositories the operations are not atomic.
+  `promote-release.yaml` revalidates the original attempts and resumes matching
+  partial work without restamping or repackaging. Existing conflicting assets,
+  aliases or tags fail closed. A complete matching release is a no-op; missing
+  or expired workflow evidence is not reconstructed from a green status.
+- This gate is for the upstream `main` published path. Non-main release
+  publication is rejected before stamping. Activation requires the producer
+  and consumer on the upstream default branch plus fresh published evidence;
+  a fork-safe protocol harness does not replace that acceptance run. Artifact
+  retention and the independent signing-key trust root remain prerequisites.
+
+The signed release record certifies the stated core config proof and identity
+of the co-produced haul. It does not certify haul restore, full dependency
+inventory, registry relocation, or a cold-cache disconnected installation.
+Retiring version files and the Ansible compatibility artifacts remains part of
+the later cutover, not this amendment.
+
 ### 4. The commit type is a message to operators
 
 The Conventional Commit type in a PR title tells operators what an upgrade
