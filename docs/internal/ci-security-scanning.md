@@ -225,10 +225,12 @@ When scanners are first enabled, expect a large initial set of findings from pre
 
 The Flux proof workflow in [#808](https://github.com/washu-tag/scout/pull/808), also
 included in [#810](https://github.com/washu-tag/scout/pull/810), produces the following
-CodeQL findings. These dispositions apply only while the described boundaries hold.
-Review the current alert's source and data flow before dismissing it as **false
-positive**, and include that evidence in the dismissal comment. Keep the queries
-enabled for the rest of the codebase.
+CodeQL findings. `codeql.yml` runs the full `security-extended` suite, then uses
+[`advanced-security/filter-sarif`](https://github.com/advanced-security/filter-sarif)
+to exclude the three exact file/query pairs below before uploading results.
+Other queries in these files, and these queries in other files, remain enabled.
+The original reports are retained as `codeql-unfiltered-*` workflow artifacts for
+seven days. Analysis, filtering or upload errors fail the job.
 
 - **`actions/cache-poisoning/poisonable-step` in `deploy-flux.yaml`:** the reported
   path combines the `workflow_dispatch` trigger with a checkout of
@@ -252,13 +254,15 @@ enabled for the rest of the codebase.
   least eight characters before printing. Reassess if the helper fetches Secret
   data, diagnostics include values, or masking changes.
 
-Record the affected revision and the relevant boundary in each alert's dismissal
-comment. A dismissal can affect matching findings across branches, so reopen it
-when those assumptions stop holding. Remove an obsolete rationale when the
-affected code is removed or the query no longer reports it. Documentation changes
-alone do not dismiss alerts; an authorized repository user must use GitHub's
-[alert dismissal](https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-code-scanning-alerts/triage-alerts-in-pull-requests#dismissing-an-alert-on-your-pull-request)
-UI or API.
+These exceptions also filter future findings of the same query in the same file.
+Remove or reassess the relevant pattern when the boundaries above change; remove
+it when the upstream query is corrected or the affected code is removed. Do not
+broaden a pattern to suppress another finding without reviewing its data flow.
+
+The change takes effect on the next successful scan using this workflow. Merge
+this independently of #808/#810, then update those branches and run CodeQL again.
+It filters scan results; it does not record a manual dismissal in GitHub's alert
+history.
 
 ## Tuning and common modifications
 
