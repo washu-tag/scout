@@ -1,4 +1,4 @@
-FROM spark:4.1.1-scala2.13-java21-python3-ubuntu
+FROM spark:4.2.0-scala2.13-java21-python3-ubuntu
 
 USER root
 
@@ -16,13 +16,13 @@ WORKDIR /app
 # Delta Lake and S3A jars. hadoop-aws must match the hadoop-client version
 # bundled in the base image. The awssdk bundle must be at least the
 # aws-java-sdk-v2 version that hadoop-aws declares in hadoop-project's pom
-# (2.29.52 for 3.4.2); newer 2.x releases are compatible and carry SDK and
+# (2.35.4 for 3.5.0); newer 2.x releases are compatible and carry SDK and
 # embedded-netty CVE fixes. 2.54.19 bundles netty 4.1.138.Final, fixing
 # CVE-2026-75595 (CRITICAL, netty-handler).
 ADD --chown=spark \
-    https://repo1.maven.org/maven2/io/delta/delta-spark_4.1_2.13/4.3.0/delta-spark_4.1_2.13-4.3.0.jar \
-    https://repo1.maven.org/maven2/io/delta/delta-storage/4.3.0/delta-storage-4.3.0.jar \
-    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.4.2/hadoop-aws-3.4.2.jar \
+    https://repo1.maven.org/maven2/io/delta/delta-spark_4.2_2.13/4.4.1/delta-spark_4.2_2.13-4.4.1.jar \
+    https://repo1.maven.org/maven2/io/delta/delta-storage/4.4.1/delta-storage-4.4.1.jar \
+    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.5.0/hadoop-aws-3.5.0.jar \
     https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.54.19/bundle-2.54.19.jar \
     ${SPARK_HOME}/jars/
 

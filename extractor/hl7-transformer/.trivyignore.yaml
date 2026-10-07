@@ -1,73 +1,50 @@
-# Everything below lives in the upstream spark:4.1.1 base image (its bundled
+# Everything below lives in the upstream spark:4.2.0 base image (its bundled
 # jars or ubuntu packages). Revisit these exceptions when upgrading the
 # supported Spark/Delta pair and scanning its complete bundled classpath.
 vulnerabilities:
   # linux-libc-dev kernel-header CVEs are suppressed by package name in
   # .trivyignore.rego (Trivy ignore-policy), not enumerated here — see #478.
-  # netty 4.2.7 family bundled by Spark (plus copies shaded into the
-  # connect-repl client jars, which the worker never loads)
-  - id: CVE-2026-33870 # netty-codec-http
-  - id: CVE-2026-33871 # netty-codec-http2
-  - id: CVE-2026-42577 # netty-transport-native-epoll
-  - id: CVE-2026-42579 # netty-codec-dns
-  - id: CVE-2026-42582 # netty-codec-http3
-  - id: CVE-2026-42583 # netty-codec-compression
-  - id: CVE-2026-42584 # netty-codec-http
-  - id: CVE-2026-42587 # netty-codec-http/http2
+  # netty 4.2.13 family bundled by Spark (plus copies shaded into the
+  # yarn-shuffle and connect client jars, which the worker never loads). Our
+  # own added netty (in the AWS SDK bundle jar) is bumped to 4.1.138 in the
+  # Dockerfile; these entries cover only Spark's copies.
   - id: CVE-2026-44249 # netty-handler
-  - id: CVE-2026-44892 # netty-codec-http3
-  - id: CVE-2026-44894 # netty-codec-classes-quic
   - id: CVE-2026-45416 # netty-handler
   - id: CVE-2026-45674 # netty-resolver-dns
   - id: CVE-2026-47691 # netty-resolver-dns
-  - id: CVE-2026-48748 # netty-codec-http3
   - id: CVE-2026-50010 # netty-handler
-  - id: CVE-2026-56816 # netty-codec-http3 4.2.7 (HTTP3 transport never started by the worker)
-  # Newer netty 4.2.7 CVEs in the Spark-bundled jars (also shaded into the
-  # connect-repl client the worker never loads). Our own added netty (in the AWS
-  # SDK bundle jar) is bumped to 4.1.138 in the Dockerfile; these entries cover
-  # only Spark's un-patchable 4.2.7 copies.
-  - id: CVE-2026-55831 # netty-codec-http 4.2.7 (Spark-bundled)
-  - id: CVE-2026-55833 # netty-codec-http 4.2.7 (Spark-bundled)
-  - id: CVE-2026-56745 # netty-codec-http 4.2.7 (Spark-bundled)
-  - id: CVE-2026-59901 # netty-codec / netty-codec-compression 4.2.7 (Spark-bundled)
-  - id: CVE-2026-75595 # netty-handler 4.2.7 (Spark-bundled, x2); AWS SDK bundle's copy is fixed at 4.1.138
+  - id: CVE-2026-55831 # netty-codec-http
+  - id: CVE-2026-55833 # netty-codec-http
+  - id: CVE-2026-56745 # netty-codec-http
+  - id: CVE-2026-59901 # netty-codec-compression
+  - id: CVE-2026-75595 # netty-handler
   # HTTP/2 decompression refcount leak (direct-memory DoS). Only reachable via
   # DelegatingDecompressorFrameListener, i.e. an HTTP/2 server/client doing
   # content decompression — Spark uses netty for its own RPC/block transfer, and
   # netty-codec-http2 is only on the classpath for the connect/gRPC path the
-  # headless worker never starts. Fixed in 4.2.16, and Spark 4.1.2 (the newest
-  # tag) still ships 4.2.7, so there's nothing to adopt.
-  - id: CVE-2026-56819 # netty-codec-http2 4.2.7 (Spark-bundled)
+  # headless worker never starts. Fixed in 4.2.16.
+  - id: CVE-2026-56819 # netty-codec-http2
   # derby backs Spark's embedded metastore, which Scout doesn't use (remote
   # HMS); the advisory's 10.16.1.2 was never published to Maven Central
   - id: CVE-2022-46337 # derby 10.16.1.1
-  # zookeeper client, unused in local-mode Spark
-  - id: CVE-2026-24281 # zookeeper 3.9.4
-  - id: CVE-2026-24308 # zookeeper 3.9.4
-  - id: CVE-2025-67721 # aircompressor 2.0.2
   # ReDoS in JLine's interactive built-in `grep` (a REPL command). Spark bundles
   # jline 3.29.0 for spark-shell and hadoop-client-runtime shades 3.9.0; the
   # headless worker never starts a REPL, and neither upstream has moved yet.
   - id: CVE-2026-77422 # org.jline:jline-builtins 3.29.0 (Spark) / 3.9.0 (shaded in hadoop-client-runtime)
-  # lz4-java 1.8.1 was published to Maven Central as pom-only (no jar), so
-  # the fixed version is not installable anywhere, including upstream
-  - id: CVE-2025-12183 # lz4-java 1.8.0
-  # Shaded inside hadoop-client-runtime 3.4.2 from the selected Spark base.
-  - id: CVE-2025-52999 # jackson-core 2.12.7 (shaded in hadoop-client-runtime)
-  # jackson-databind bundled by the Apache Spark engine base image (2.19/2.20)
-  # and shaded in hadoop-client-runtime (2.12.7.1); no rebuild of the Spark
-  # 4.1.x engine line with a fixed Jackson exists yet.
+  # jackson bundled by Spark (2.21.2, also in the yarn-shuffle jar), parquet-jackson
+  # (2.19.2) and hadoop-client-runtime (2.18.6). Fixed in 2.21.7 / 2.22.3; no
+  # Spark release ships a fixed Jackson yet.
   - id: CVE-2026-54512 # jackson-databind
   - id: CVE-2026-54513 # jackson-databind
-  - id: CVE-2026-68497 # jackson-databind 2.19.2/2.20.0 (branch-4.1 still pins 2.21.2)
+  - id: CVE-2026-68497 # jackson-databind
   # Temporary upstream-bundle risk acceptance, not false positives. See
   # docs/internal/ci-security-scanning.md for exposure and removal conditions.
   - id: CVE-2026-68494
     paths:
-      - opt/spark/jars/hadoop-client-runtime-3.4.2.jar
-      - opt/spark/jars/parquet-jackson-1.16.0.jar
-      - opt/spark/jars/jackson-core-2.20.0.jar
+      - opt/spark/jars/hadoop-client-runtime-3.5.0.jar
+      - opt/spark/jars/parquet-jackson-1.17.0.jar
+      - opt/spark/jars/jackson-core-2.21.2.jar
+      - opt/spark/yarn/spark-4.2.0-yarn-shuffle.jar
     expired_at: 2026-12-01
     statement: >-
       Upstream Jackson async-parser limit bypass (GHSA-r7wm-3cxj-wff9).
@@ -75,8 +52,10 @@ vulnerabilities:
       parser. Accept residual parser DoS risk pending a supported Spark rebuild.
   - id: CVE-2026-89407
     paths:
-      - opt/spark/jars/parquet-jackson-1.16.0.jar
-      - opt/spark/jars/jackson-core-2.20.0.jar
+      - opt/spark/jars/hadoop-client-runtime-3.5.0.jar
+      - opt/spark/jars/parquet-jackson-1.17.0.jar
+      - opt/spark/jars/jackson-core-2.21.2.jar
+      - opt/spark/yarn/spark-4.2.0-yarn-shuffle.jar
     expired_at: 2026-12-01
     statement: >-
       Upstream Jackson numeric-string coercion can consume excessive CPU.
@@ -84,9 +63,10 @@ vulnerabilities:
       reachability is not ruled out. Accept this risk pending a Spark rebuild.
   - id: CVE-2026-89425
     paths:
-      - opt/spark/jars/hadoop-client-runtime-3.4.2.jar
-      - opt/spark/jars/parquet-jackson-1.16.0.jar
-      - opt/spark/jars/jackson-core-2.20.0.jar
+      - opt/spark/jars/hadoop-client-runtime-3.5.0.jar
+      - opt/spark/jars/parquet-jackson-1.17.0.jar
+      - opt/spark/jars/jackson-core-2.21.2.jar
+      - opt/spark/yarn/spark-4.2.0-yarn-shuffle.jar
     expired_at: 2026-12-01
     statement: >-
       Upstream Jackson DataInput parsing can exhaust memory on malformed tokens.
@@ -94,9 +74,10 @@ vulnerabilities:
       transitive parser DoS risk pending a supported Spark rebuild.
   - id: CVE-2026-91776
     paths:
-      - opt/spark/jars/hadoop-client-runtime-3.4.2.jar
-      - opt/spark/jars/parquet-jackson-1.16.0.jar
-      - opt/spark/jars/jackson-databind-2.20.0.jar
+      - opt/spark/jars/hadoop-client-runtime-3.5.0.jar
+      - opt/spark/jars/parquet-jackson-1.17.0.jar
+      - opt/spark/jars/jackson-databind-2.21.2.jar
+      - opt/spark/yarn/spark-4.2.0-yarn-shuffle.jar
     expired_at: 2026-12-01
     statement: >-
       Upstream Jackson retains unknown polymorphic type IDs with a fallback.
@@ -104,18 +85,19 @@ vulnerabilities:
       deserialization risk pending a supported Spark rebuild.
   - id: CVE-2026-91777
     paths:
-      - opt/spark/jars/hadoop-client-runtime-3.4.2.jar
-      - opt/spark/jars/parquet-jackson-1.16.0.jar
-      - opt/spark/jars/jackson-databind-2.20.0.jar
+      - opt/spark/jars/hadoop-client-runtime-3.5.0.jar
+      - opt/spark/jars/parquet-jackson-1.17.0.jar
+      - opt/spark/jars/jackson-databind-2.21.2.jar
+      - opt/spark/yarn/spark-4.2.0-yarn-shuffle.jar
     expired_at: 2026-12-01
     statement: >-
       Upstream Jackson identity-enabled collections can cause quadratic CPU work.
       Scout does not configure identity-enabled JSON mappings; accept residual
       transitive deserialization risk pending a supported Spark rebuild.
-  # jetty-http shaded inside hadoop-client-runtime and spark-core; the fix
-  # exists only in jetty 12, which neither upstream has moved to
-  - id: CVE-2026-2332 # jetty-http (shaded in hadoop-client-runtime, spark-core)
-  - id: CVE-2026-10050 # jetty-security 11.0.26 (shaded in spark-core; fix only in jetty 12)
+  # jetty-http shaded inside hadoop-client-runtime (jetty 9.4); the fix exists
+  # only in jetty 12, which hadoop has not moved to
+  - id: CVE-2026-2332 # jetty-http 9.4.58 (shaded in hadoop-client-runtime)
+  - id: CVE-2026-10050 # jetty-security 12.1.8 (shaded in spark-core)
   # libthrift fix is a major bump (0.16 → 0.24) coupled to Spark's hive thrift
   # client; every Spark line through master still ships 0.16.0, so there is no
   # base image to move to. The client only ever talks to our own in-cluster
