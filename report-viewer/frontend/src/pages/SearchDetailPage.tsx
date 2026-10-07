@@ -48,8 +48,9 @@ const COLUMNS_CONFIG: Array<{
   mono?: boolean;
   kind?: 'date' | 'evidence';
 }> = [
+  { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true },
+  { field: 'patient_mpi', title: 'Patient MPI', width: 90, mono: true, defaultHidden: true },
   { field: 'accession_number', title: 'Accession', width: 76, mono: true },
-  { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true, defaultHidden: true },
   {
     field: 'resolved_epic_mrn',
     title: 'Resolved MRN',
@@ -57,7 +58,6 @@ const COLUMNS_CONFIG: Array<{
     mono: true,
     defaultHidden: true,
   },
-  { field: 'patient_mpi', title: 'Patient MPI', width: 90, mono: true, defaultHidden: true },
   {
     field: 'resolved_mpi',
     title: 'Resolved MPI',
@@ -72,7 +72,7 @@ const COLUMNS_CONFIG: Array<{
   { field: 'patient_age', title: 'Age', width: 50, align: 'right', defaultHidden: true },
   { field: 'sex', title: 'Sex', width: 40, align: 'center', defaultHidden: true },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
-  { field: 'ev_source', title: 'Matched on', width: 214, kind: 'evidence' },
+  { field: 'ev_source', title: 'Matched on', width: 140, kind: 'evidence' },
 ];
 
 type Row = Record<string, unknown>;
@@ -178,6 +178,19 @@ export default function SearchDetailPage() {
     demographicsFor.current = searchId;
     const bare = !columns.includes('ev_source');
     setColumnVisibility((v) => ({ ...v, patient_age: bare, sex: bare }));
+  }, [rowsQ.data, searchId]);
+
+  // Legacy cohorts can carry an mpi and no epic_mrn, which would otherwise
+  // leave them with no visible patient identifier.
+  const autoMpiFor = useRef<string | null>(null);
+  useEffect(() => {
+    const rows = rowsQ.data?.rows;
+    if (!rows || autoMpiFor.current === searchId) return;
+    autoMpiFor.current = searchId;
+    const blank = (v: unknown) => v == null || v === '';
+    if (rows.some((r) => blank(r.epic_mrn) && !blank(r.patient_mpi))) {
+      setColumnVisibility((v) => ({ ...v, patient_mpi: true }));
+    }
   }, [rowsQ.data, searchId]);
 
   useEffect(() => {
