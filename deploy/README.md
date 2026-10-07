@@ -16,9 +16,12 @@ until CI switches `deploy-and-test` to deploy from it. See
   the ingress/auth edge (on-prem Traefik forwardAuth Middlewares vs aws ALB-native-OIDC
   Ingresses) and the inert aws storage marker. Wired by `modes/{on-prem,aws}/`, not the
   shared DAG.
+- `base/secrets-on-prem/` + `base/secrets-ready/`: per-mode too, the on-prem Secret
+  templates and the inert aws secrets marker.
 - `modes/{on-prem,aws}/` — the per-mode Flux set, a sibling of `flux/` (not nested under
-  it, so `flux/` has no subdir to recurse into): the `storage-ready` gate (inert in aws;
-  the real MinIO tenant on-prem), the ingress edge, and on-prem MinIO + oauth2-proxy.
+  it, so `flux/` has no subdir to recurse into): the `secrets-ready` gate (inert in aws;
+  the Secret templates on-prem), the `storage-ready` gate (inert in aws; the real MinIO
+  tenant on-prem), the ingress edge, and on-prem MinIO + oauth2-proxy.
   `flux/` holds only the shared set, so a site reconciles it plus exactly one mode via a
   Kustomization pointing at `./modes/${service_mode}`. The lake consumers dependsOn the
   mode-agnostic `storage-ready` name, supplied by whichever mode the site selects.
@@ -34,13 +37,17 @@ until CI switches `deploy-and-test` to deploy from it. See
   publish (placeholder in git, concrete only in the published artifact). Upstream
   chart versions are pinned in `versions.yaml` + Renovate-tracked.
 - **Secrets by fixed name only** — bases reference them (e.g. `superuser-secret`);
-  values are seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), never in git. The
-  full contract (names, keys, per-mode materialization) is in `required-secrets.md`.
+  values are never in git. aws sites materialize them (External Secrets Operator).
+  On-prem, `base/secrets-on-prem` renders them from one site `scout-secret-values`
+  Secret whose keys are listed in `required-secret-values.txt`; its placeholders use the
+  `${sq}${value}${sq}` quoting explained there. The full contract (names, keys,
+  per-mode materialization, value rules) is in `required-secrets.md`.
 - **Site realm values** go in an optional `keycloak-config-cli-site-values` ConfigMap
   (key `values.yaml`) in `${keycloak_namespace}`, which the keycloak-config-cli
   HelmRelease reads through `valuesFrom`. It carries realm chart values a scalar can't,
   such as a `trinoAttributeFilters` pick-list or extra IdP documents under `config`
-  (`docs/internal/authentication.md`). The HelmRelease's own `values` win on overlap.
+  (`docs/internal/authentication.md`), whose credentials go in the optional
+  `keycloak-client-secrets-site` Secret. The HelmRelease's own `values` win on overlap.
   Label it `reconcile.fluxcd.io/watch: Enabled` so an edit re-runs the import without
   waiting for the interval. With the label the import re-runs as soon as the ConfigMap
   changes, which can beat an ExternalSecret writing new `$(env:...)` keys in the same
@@ -66,14 +73,21 @@ Not in the artifact; a site provides them before reconciling it: cert-manager wi
 `dependsOn` must pre-create the scout namespaces; the artifact's copies carry
 `kustomize.toolkit.fluxcd.io/prune: disabled`, and so should the site's.
 
+On-prem additionally needs Flux 2.9.6 or later with `StrictPostBuildSubstitutions`,
+and the `scout-secret-values` Secret in `flux-system` before `secrets-ready` reconciles:
+apply it from a site Kustomization (with `decryption` for SOPS) that the Kustomizations
+reconciling `./flux` and `./modes/on-prem` dependsOn. Generate it with
+`tooling/deploy/gen_secret_values.py`.
+
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared
 `Kustomization` DAG plus one per-mode set, acyclic): postgres, minio, hive, temporal
 (on Postgres), extractor, valkey, keycloak (+ realm + fragment reconciler),
 oauth2-proxy, opa, trino (ro+rw), superset (+ dashboards), launchpad.
 
-Also shipped: launchpad and the aws ingress edge. Remaining components: jupyter,
-report-viewer, monitoring, and the feature Components (chat/voila/xnat/data-generator/gpu).
+Also shipped: launchpad, the aws ingress edge, and the on-prem Secret templates.
+Remaining components: jupyter, report-viewer, monitoring, and the feature Components
+(chat/voila/xnat/data-generator/gpu).
 
 Done since the scaffold: the per-namespace foundation bases (`base/scout-*-foundation`,
 one owner per Namespace + shared HelmRepository) and the config-artifact publish job

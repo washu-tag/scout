@@ -1,10 +1,15 @@
 FROM quay.io/jupyter/scipy-notebook:python-3.13.14
 
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends --only-upgrade openssl libssl3t64 \
+    && rm -rf /var/lib/apt/lists/*
+USER ${NB_UID}
+
 # Platform packages + Jupyter extensions via mamba. Everything else
 # (torch, transformers, scikit-learn, etc.) is user-installed via the
-# package proxy. gitpython, jupyterlab, and jupyter_server are pinned above
-# the scipy-notebook base to clear Trivy findings; drop the pins once a
-# newer base ships them.
+# package proxy. Security floors override vulnerable base packages; drop them
+# once a newer scipy-notebook base includes these fixes.
 RUN mamba install -y -n base \
     trino-python-client \
     voila \
@@ -13,8 +18,12 @@ RUN mamba install -y -n base \
     jupyter-resource-usage \
     nb_conda_kernels \
     'gitpython>=3.1.59' \
-    'jupyterlab>=4.6.2' \
+    'jupyterlab>=4.6.4' \
+    'notebook>=7.6.3' \
+    'urllib3>=2.8.0' \
+    'tornado>=6.5.9' \
     'jupyter_server>=2.21.0' \
+    'pyjwt>=2.14.0' \
     && mamba clean -afy \
     && fix-permissions "${CONDA_DIR}" \
     && fix-permissions "/home/${NB_USER}"

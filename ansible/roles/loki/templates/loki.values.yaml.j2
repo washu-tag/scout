@@ -46,7 +46,7 @@ serviceAccount:
   create: false
   name: '{{ loki_writer_service_account_name }}'
 {% endif %}
-deploymentMode: SingleBinary
+deploymentMode: Monolithic
 
 singleBinary:
   replicas: 1
@@ -70,31 +70,12 @@ singleBinary:
           key: AWS_SECRET_ACCESS_KEY
 {% endif %}
 
-# Zero out replica counts of other deployment modes
+# The chart defaults these to 3 and fails validation if they coexist with singleBinary
 backend:
   replicas: 0
 read:
   replicas: 0
 write:
-  replicas: 0
-
-ingester:
-  replicas: 0
-querier:
-  replicas: 0
-queryFrontend:
-  replicas: 0
-queryScheduler:
-  replicas: 0
-distributor:
-  replicas: 0
-compactor:
-  replicas: 0
-indexGateway:
-  replicas: 0
-bloomCompactor:
-  replicas: 0
-bloomGateway:
   replicas: 0
 
 # Memcached cache configuration

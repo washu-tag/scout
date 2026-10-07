@@ -5,6 +5,7 @@ USER root
 RUN set -ex; \
     apt-get update; \
     apt-get install -y python3.10-venv; \
+    apt-get install -y --only-upgrade openssl libssl3; \
     rm -rf /var/lib/apt/lists/*
 
 USER spark

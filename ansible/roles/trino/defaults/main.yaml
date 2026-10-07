@@ -69,7 +69,7 @@ trino_rw_coordinator_resources:
     cpu: 100m
     memory: '{{ trino_rw_coordinator_max_heap | jvm_memory_to_k8s }}'
   limits:
-    cpu: 500m
+    cpu: 1
     memory: '{{ trino_rw_coordinator_max_heap | jvm_memory_to_k8s(4) }}'
 
 trino_rw_worker_resources:
@@ -77,5 +77,5 @@ trino_rw_worker_resources:
     cpu: 100m
     memory: '{{ trino_rw_worker_max_heap | jvm_memory_to_k8s }}'
   limits:
-    cpu: 500m
+    cpu: 1
     memory: '{{ trino_rw_worker_max_heap | jvm_memory_to_k8s(4) }}'

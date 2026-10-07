@@ -73,7 +73,7 @@ spec:
           cpu: 100m
           memory: 512Mi
         limits:
-          cpu: 500m
+          cpu: 1
           memory: 2Gi
     worker:
       jvm:
@@ -88,7 +88,7 @@ spec:
           cpu: 100m
           memory: 1Gi
         limits:
-          cpu: 500m
+          cpu: 1
           memory: 4Gi
     # Writable Delta catalog is mode-specific (MinIO creds/endpoint on-prem vs
     # IRSA S3 in aws) -> supplied by the edge ConfigMap via valuesFrom.

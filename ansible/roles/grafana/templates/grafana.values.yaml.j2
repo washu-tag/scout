@@ -19,6 +19,8 @@ grafana.ini:
     role_attribute_strict: true
     allow_assign_grafana_admin: true
     signout_redirect_url: '{{ oauth2_proxy_signout_url }}'
+  database:
+    wal: true
   security:
     disable_gravatar: true
   server:
@@ -198,6 +200,7 @@ sidecar:
     enabled: true
     label: grafana_dashboard
     labelValue: '1'
+    searchNamespace: ALL
     provider:
       folder: Scout
   datasources:

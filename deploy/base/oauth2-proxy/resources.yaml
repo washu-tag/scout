@@ -8,16 +8,17 @@
 # (${valkey_namespace}), hence dependsOn valkey + keycloak-realm (needs the OIDC
 # clients from the realm import, not just Keycloak up).
 #
-# Fixed-name refs, seeded by CI/site (Phase 3) or SOPS/ESO (Phase 4), NEVER in git:
+# Fixed-name credential refs, rendered by the on-prem secrets-ready gate
+# (base/secrets-on-prem), NEVER in git:
 #   - oauth2-proxy (Secret): client-id / client-secret / cookie-secret (client-id
 #     public but rides the same Secret).
 #   - oauth2-proxy-redis (Secret): redis-password -- copy of the Valkey password into
 #     THIS namespace; kube-system can't read valkey-auth in ${valkey_namespace}.
-#   - oauth2-proxy-logo (Secret): logo.png -- Scout sign-in logo (158 KB, not inlined).
 # oauth2-proxy-templates ConfigMap is configMapGenerator'd from error.html/sign_in.html
 # here, byte-exact from the Ansible role's files/, docs link parameterized via
-# ${scout_docs_url}. disableNameSuffixHash keeps the name stable for the HelmRelease
-# volume ref, so a GitOps HTML edit needs a manual rollout (no files-hash podAnnotation).
+# ${scout_docs_url}; the oauth2-proxy-logo Secret is secretGenerator'd from scout.jpg.
+# disableNameSuffixHash keeps both names stable for the HelmRelease volume refs, so a
+# GitOps HTML or logo edit needs a manual rollout (no files-hash podAnnotation).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -40,7 +41,7 @@ spec:
     spec:
       chart: oauth2-proxy
       # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
-      version: '10.6.2'
+      version: '10.7.0'
       sourceRef:
         kind: HelmRepository
         name: oauth2-proxy
