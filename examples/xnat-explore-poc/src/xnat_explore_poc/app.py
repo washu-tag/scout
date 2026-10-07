@@ -68,9 +68,10 @@ def healthz() -> dict:
 # per the HTML sandboxing spec, that means this tab inherits OWUI's sandbox
 # flags, not just whatever lets it open at all. The static page below would
 # render fine under almost any flag set, so it can't surface that - a real
-# target (actual XNAT) needs working navigation, dialogs, and often its own
-# popups. These three probes test those specific capabilities directly,
-# reporting pass/fail in the page itself rather than requiring devtools.
+# target (actual XNAT) needs working navigation, dialogs, form submission,
+# and often its own popups. These probes test those specific capabilities
+# directly, reporting pass/fail in the page itself rather than requiring
+# devtools.
 _LANDING_PAGE = """\
 <!doctype html>
 <html>
@@ -84,8 +85,13 @@ _LANDING_PAGE = """\
 <p>If this tab was opened from report-viewer embedded in OWUI's chat, it inherits
    OWUI's iframe sandbox flags unless that iframe sets
    <code>allow-popups-to-escape-sandbox</code>. These test whether a real target
-   app's ordinary behavior - navigating, showing a dialog, opening its own popup -
-   would actually work here, not just whether this tab was able to open.</p>
+   app's ordinary behavior - navigating, showing a dialog, submitting a form, or
+   opening its own popup - would actually work here, not just whether this tab
+   was able to open. <code>allow-forms</code> is a separate flag from
+   <code>allow-top-navigation</code>: the latter only covers script/anchor-driven
+   navigation, not a real <code>&lt;form&gt;</code> submission, which has its own
+   gate and fails silently (no console message, unlike a blocked
+   <code>alert()</code>) when absent.</p>
 
 <p>There are two distinct navigation keywords: <code>allow-top-navigation</code>
    (unconditional) and <code>allow-top-navigation-by-user-activation</code> (only
@@ -106,6 +112,12 @@ _LANDING_PAGE = """\
 <p><button onclick="testNestedPopup()">Test opening a further popup</button>
    <span id="popup-result"></span></p>
 
+<p><form onsubmit="onFormSubmit()" method="GET" action="" style="display:inline">
+     <input type="hidden" name="form_submitted" value="1">
+     <button type="submit">Test form submission (real &lt;form&gt;, not fetch/location)</button>
+   </form>
+   <span id="form-result"></span></p>
+
 <script>
   const params = new URLSearchParams(window.location.search);
   if (params.get("navigated") === "sync") {{
@@ -118,6 +130,12 @@ _LANDING_PAGE = """\
     document.getElementById("nav-async-result").textContent =
       "PASSED even after an async gap - allow-top-navigation (the unconditional " +
       "form) is genuinely present, not just the by-user-activation variant.";
+  }}
+  if (params.get("form_submitted") === "1") {{
+    document.getElementById("form-result").textContent =
+      "PASSED - the page reloaded via a real <form> submission (distinct from " +
+      "allow-top-navigation, which only covers script/anchor-driven navigation) - " +
+      "allow-forms is present.";
   }}
 
   function testSyncNavigation() {{
@@ -152,6 +170,18 @@ _LANDING_PAGE = """\
       ? "PASSED - a further popup opened (allow-popups is effectively present)."
       : "FAILED - window.open() returned null (allow-popups is absent, or a " +
         "popup blocker intervened).";
+  }}
+
+  function onFormSubmit() {{
+    // Does not preventDefault - the real test is whether the browser's own
+    // submission algorithm is allowed to navigate afterwards, not whether this
+    // handler ran (the submit event itself doesn't require allow-forms, only
+    // the resulting navigation does). This just gives immediate feedback that
+    // the click registered, in case the submission itself is silently blocked
+    // (no error, no console message - the page just never reloads).
+    document.getElementById("form-result").textContent =
+      "Submit event fired - watching for a reload to confirm the navigation " +
+      "itself wasn't silently blocked...";
   }}
 </script>
 </body>
