@@ -42,7 +42,7 @@
                   {
                     "evaluator": {
                       "params": [
-                        1.5
+                        0
                       ],
                       "type": "gt"
                     },
@@ -74,7 +74,7 @@
           "noDataState": "OK",
           "execErrState": "KeepLast",
           "annotations": {
-            "description": "The HL7 batcher failed to archive a batch to bronze at least twice in the last 30 minutes (longer than the default batching interval, so a stuck batcher keeps it firing), usually an S3 upload timeout or error against object storage. It retries the same batch until it succeeds, so repeated failures mean it is stuck: Kafka keeps the messages until its retention expires and consumer lag grows. A single failure that succeeds on retry doesn't fire it. Check object storage reachability and the batcher logs.",
+            "description": "The HL7 batcher failed to archive a batch to bronze in the last 30 minutes (longer than the default batching interval, so a stuck batcher keeps it firing), usually an S3 upload timeout or error against object storage. It retries the same batch until it succeeds, so repeated failures mean it is stuck: Kafka keeps the messages until its retention expires and consumer lag grows. Check object storage reachability and the batcher logs.",
             "summary": "HL7 batcher exchange failures in the last 30 minutes (batches not yet archived to bronze, see runbook).",
             "runbook_url": "https://github.com/washu-tag/scout/blob/main/ansible/roles/hl7-listener/README.md#hl7-batcher-exchange-failures",
             "URL": "[% server_hostname %]"
