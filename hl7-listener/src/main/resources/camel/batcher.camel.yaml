@@ -18,6 +18,11 @@
 # that keeps failing therefore stalls the batcher (consumer lag grows, Kafka holds the records)
 # until the cause is fixed, instead of leaving gaps.
 #
+# Camel reconnects without a delay, so with a backlog a failing batch would be retried
+# back-to-back. The route-scoped onException below pauses before letting the failure through,
+# capping retries at about one per hl7.batcher.retry.delay.ms. The pause plus one upload attempt
+# must stay under Kafka's max.poll.interval.ms (5 min), or the broker evicts the consumer.
+#
 # Config values are Camel property placeholders resolved from the Deployment env.
 #
 # Canonical YAML DSL (camel validate normalize); Camel 4.22 warns on the compact form.
@@ -38,6 +43,18 @@
         pollTimeoutMs: '{{hl7.batcher.poll.timeout.ms}}'
         batchingIntervalMs: '{{hl7.batcher.batching.interval.ms}}'
       steps:
+        # Not handled: after the pause the batch still fails, so breakOnFirstError redelivers it.
+        - onException:
+            exception:
+              - java.lang.Exception
+            steps:
+              - log:
+                  message: 'Batch failed, retrying after {{hl7.batcher.retry.delay.ms:60000}} ms: ${exception.message}'
+                  loggingLevel: WARN
+              - delay:
+                  expression:
+                    constant:
+                      expression: '{{hl7.batcher.retry.delay.ms:60000}}'
         - setHeader:
             name: CamelAwsS3Key
             expression:

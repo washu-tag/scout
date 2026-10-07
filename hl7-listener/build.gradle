@@ -60,6 +60,14 @@ dependencies {
 	runtimeOnly "ca.uhn.hapi:hapi-structures-v251:${hapiVersion}"
 	runtimeOnly "ca.uhn.hapi:hapi-structures-v26:${hapiVersion}"
 	runtimeOnly "ca.uhn.hapi:hapi-structures-v27:${hapiVersion}"
+
+	// Route tests: load the YAML routes into a plain CamelContext and stub their endpoints
+	testImplementation 'org.apache.camel:camel-test-junit6'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
 }
 
 // Force patched versions of transitive libraries flagged by the image scan (Trivy). The BOMs

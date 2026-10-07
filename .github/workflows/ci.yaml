@@ -284,6 +284,9 @@ jobs:
       - name: 'Unit tests: keycloak event-listener'
         shell: bash
         run: cd keycloak/event-listener && ./gradlew test
+      - name: 'Unit tests: hl7-listener'
+        shell: bash
+        run: cd hl7-listener && ./gradlew test
   hl7-transformer-unit:
     runs-on: ubuntu-latest
     permissions:
