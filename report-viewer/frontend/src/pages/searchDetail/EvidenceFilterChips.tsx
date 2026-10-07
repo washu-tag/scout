@@ -59,6 +59,7 @@ function Pill(props: {
     <button
       type="button"
       aria-pressed={props.active}
+      className={props.active ? 'scout-toolbar-btn-accent' : 'scout-toolbar-btn'}
       title={props.title}
       onClick={props.onClick}
       style={{ ...pill, ...tones(props.tone, props.active) }}

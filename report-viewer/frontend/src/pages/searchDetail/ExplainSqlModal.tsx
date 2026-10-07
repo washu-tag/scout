@@ -76,6 +76,7 @@ export function ExplainSqlModal(props: {
         {showStats && props.executedSql && (
           <SqlSection
             label="Evaluated SQL"
+            note="The LLM generated query with columns added to show why each report matched. It returns the same reports and adds the Matched on evidence."
             sql={props.executedSql}
             copied={copied === 'executed'}
             onCopy={copy('executed', props.executedSql)}
@@ -86,7 +87,13 @@ export function ExplainSqlModal(props: {
   );
 }
 
-function SqlSection(props: { label: string; sql: string; copied: boolean; onCopy: () => void }) {
+function SqlSection(props: {
+  label: string;
+  note?: string;
+  sql: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
   return (
     <details style={{ marginTop: '0.75rem' }}>
       <summary
@@ -99,6 +106,11 @@ function SqlSection(props: { label: string; sql: string; copied: boolean; onCopy
       >
         {props.label}
       </summary>
+      {props.note && (
+        <p style={{ margin: '0 0 0.4rem', color: 'var(--rv-muted)', fontSize: '0.75rem' }}>
+          {props.note}
+        </p>
+      )}
       <div style={{ position: 'relative' }}>
         <pre
           style={{
