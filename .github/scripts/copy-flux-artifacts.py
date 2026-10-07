@@ -14,8 +14,10 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tooling/manifest"))
-from producer_plan import context  # noqa: E402
+from producer_plan import IMAGE_PATHS, context  # noqa: E402
 from build_haul import parse_predecessor  # noqa: E402
+
+VENDOR_IMAGES = ("superset", "keycloak")
 
 
 def run(*args):
@@ -131,12 +133,54 @@ def copy(row, candidate, registry=None):
             "fetch",
             "--descriptor",
             *(["--plain-http"] if registry else []),
-            target
+            target,
         )
     )
     if descriptor["digest"] != row["digest"]:
         raise ValueError("registry copy changed the tested digest")
     return repository + "@" + row["digest"]
+
+
+def require_release_attempt(index, branch, version):
+    """Allow the legacy branch publisher to copy only its still-successful CI attempt."""
+    if branch == "main":
+        raise ValueError("main images must be published by CI")
+    if not version or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
+        raise ValueError("branch release requires the requested release version")
+    ci = json.loads(
+        run("gh", "api", f"repos/{index['repository']}/actions/runs/{index['runId']}")
+    )
+    if (
+        ci.get("id") != index["runId"]
+        or ci.get("run_attempt") != index["runAttempt"]
+        or ci.get("head_sha") != index["revision"]
+        or ci.get("head_branch") != branch
+        or ci.get("repository", {}).get("full_name") != index["repository"]
+        or ci.get("head_repository", {}).get("full_name") != index["repository"]
+        or ci.get("path") != ".github/workflows/ci.yaml"
+        or ci.get("event") not in ("push", "workflow_dispatch")
+        or ci.get("status") != "completed"
+        or ci.get("conclusion") != "success"
+        or str(ci.get("run_number")) != index["version"].rsplit(".", 1)[1]
+    ):
+        raise ValueError("release CI run, revision or successful attempt changed")
+    if {row["name"] for row in index["images"]} != IMAGE_PATHS.keys() or any(
+        not row["fresh"]
+        or row["tag"] != index["version"]
+        or not re.fullmatch(
+            r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}", row.get("legacyTag") or ""
+        )
+        for row in index["images"]
+    ):
+        raise ValueError("branch release requires a complete fresh image candidate")
+    if any(
+        row["legacyTag"] != version
+        for row in index["images"]
+        if row["name"] not in VENDOR_IMAGES
+    ):
+        raise ValueError(
+            "candidate image alias differs from the requested release version"
+        )
 
 
 def sign(ref):
@@ -255,9 +299,20 @@ def main():
     parser.add_argument("--registry")
     parser.add_argument("--chart")
     parser.add_argument("--roots", type=Path)
+    parser.add_argument(
+        "--release-branch",
+        help="Recheck the selected CI attempt before a legacy branch release",
+    )
+    parser.add_argument("--release-version")
     args = parser.parse_args()
     candidate = args.candidate.resolve()
     index = load(candidate)
+    if args.release_branch is not None or args.release_version is not None:
+        if args.command != "publish-images":
+            parser.error("release-branch is only valid with publish-images")
+        if not args.release_branch:
+            parser.error("release-version requires release-branch")
+        require_release_attempt(index, args.release_branch, args.release_version)
     if args.command == "validate":
         return
     if args.command == "patch-roots":
@@ -292,9 +347,7 @@ def main():
             legacy = row.get("legacyTag")
             if legacy:
                 # Vendor aliases stay unchanged on a tooling-only rebuild.
-                advance = row["name"] not in ("superset", "keycloak") or row.get(
-                    "publishLegacy"
-                )
+                advance = row["name"] not in VENDOR_IMAGES or row.get("publishLegacy")
                 if not advance:
                     exists = run(
                         "bash",

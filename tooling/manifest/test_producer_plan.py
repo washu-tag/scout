@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -176,6 +177,139 @@ def test_divergent_history_fails_closed(history, tmp_path):
     right = commit(repo, "launchpad/right")
     with pytest.raises(ValueError, match="stale/divergent"):
         create(snapshot(tmp_path, left), repo, expected(right))
+
+
+def test_candidate_only_keeps_normal_ancestor_carry(history, tmp_path):
+    repo, base = history
+    head = commit(repo, "launchpad/change")
+    plan = create(snapshot(tmp_path, base), repo, expected(head), candidate_only=True)
+    assert plan["carry"] and len(plan["requiredFresh"]) == 2
+
+
+def test_old_branch_candidate_rebuilds_without_rolling_back_vendor_aliases(
+    history, tmp_path
+):
+    repo, old = history
+    newer = commit(repo, "helm/superset/main-only")
+    plan = create(snapshot(tmp_path, newer), repo, expected(old), candidate_only=True)
+    assert not plan["carry"] and set(plan["requiredFresh"]) == set(COMPONENTS)
+    assert not any(plan["legacy"].values())
+    # --force is never permission to publish main against a newer predecessor.
+    with pytest.raises(ValueError, match="stale/divergent"):
+        create(tmp_path / "snapshot", repo, expected(old), force=True)
+
+
+def test_divergent_candidate_only_advances_branch_local_vendor_changes(
+    history, tmp_path
+):
+    repo, base = history
+    main = commit(repo, "helm/superset/main-only")
+    run_git(repo, "checkout", "-q", "--detach", base)
+    hotfix = commit(repo, "keycloak/event-listener/hotfix")
+    plan = create(snapshot(tmp_path, main), repo, expected(hotfix), candidate_only=True)
+    assert not plan["carry"] and set(plan["requiredFresh"]) == set(COMPONENTS)
+    assert plan["legacy"] == {"superset-legacy": False, "keycloak-legacy": True}
+
+
+def test_candidate_only_does_not_hide_missing_predecessor_commit(history, tmp_path):
+    repo, head = history
+    with pytest.raises(ValueError, match="cannot establish predecessor ancestry"):
+        create(snapshot(tmp_path, "f" * 40), repo, expected(head), candidate_only=True)
+
+
+def test_candidate_only_cannot_bypass_source_validation(history, tmp_path):
+    repo, head = history
+    frozen = snapshot(tmp_path, head)
+    manifest = json.loads((frozen / "manifest.json").read_text())
+    manifest["annotations"][
+        "org.opencontainers.image.source"
+    ] = "https://github.com/other/scout"
+    (frozen / "manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="source repository mismatch"):
+        create(frozen, repo, expected(head), candidate_only=True)
+
+
+def test_candidate_only_cli_refuses_main_publication(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "tooling/manifest/producer_plan.py"),
+            "create",
+            "--snapshot",
+            str(tmp_path),
+            "--repository",
+            "washu-tag/scout",
+            "--revision",
+            "a" * 40,
+            "--run-id",
+            "123",
+            "--run-attempt",
+            "1",
+            "--version",
+            "0.20261007.123",
+            "--candidate-only",
+        ],
+        env={
+            **os.environ,
+            "GITHUB_REF": "refs/heads/main",
+            "GITHUB_EVENT_NAME": "push",
+        },
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode != 0
+    assert "cannot publish main" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "ref,event,force,wanted",
+    [
+        ("refs/heads/main", "push", "false", []),
+        ("refs/heads/ci-hotfix", "push", "false", ["--candidate-only", "--force"]),
+        (
+            "refs/heads/hotfix",
+            "workflow_dispatch",
+            "false",
+            ["--candidate-only", "--force"],
+        ),
+        ("refs/pull/808/merge", "pull_request", "false", ["--candidate-only"]),
+        ("refs/heads/main", "workflow_dispatch", "true", ["--force"]),
+    ],
+)
+def test_ci_planning_keeps_branch_release_candidates_complete(
+    tmp_path, ref, event, force, wanted
+):
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yaml").read_text())
+    script = next(
+        step["run"]
+        for step in workflow["jobs"]["changes"]["steps"]
+        if step.get("id") == "plan"
+    )
+    # Exercise the workflow's actual mode selection; the signed freeze and plan
+    # calculation have separate real-Git and registry/signature tests.
+    (tmp_path / "bash").write_text("#!/bin/sh\nexit 0\n")
+    (tmp_path / "python3").write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$ARGS_LOG"\n')
+    for name in ("bash", "python3"):
+        (tmp_path / name).chmod(0o755)
+    log = tmp_path / "args"
+    subprocess.run(
+        ["/bin/bash", "-e", "-o", "pipefail", "-c", script],
+        check=True,
+        env={
+            **os.environ,
+            "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+            "ARGS_LOG": str(log),
+            "GITHUB_REF": ref,
+            "GITHUB_EVENT_NAME": event,
+            "FORCE": force,
+            "GITHUB_OUTPUT": str(tmp_path / "output"),
+        },
+    )
+    assert [
+        arg
+        for arg in log.read_text().splitlines()
+        if arg in ("--candidate-only", "--force")
+    ] == wanted
 
 
 def test_unmarked_history_rebaselines_every_component(history, tmp_path):

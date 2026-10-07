@@ -307,6 +307,207 @@ def test_different_published_manifest_cannot_copy_or_sign_config(
     assert effects == []
 
 
+@pytest.fixture
+def branch_release(candidate, monkeypatch):
+    path, index = candidate
+    for row in index["images"]:
+        row.update(fresh=True, layout="images/" + row["name"], legacyTag="4.2.1")
+        if row["name"] in transport.VENDOR_IMAGES:
+            row["legacyTag"] = "26.0.0-scout"
+    save(candidate)
+    ci = {
+        "id": CONTEXT["runId"],
+        "run_attempt": CONTEXT["runAttempt"],
+        "head_sha": CONTEXT["revision"],
+        "head_branch": "ci-hotfix-4.2",
+        "repository": {"full_name": CONTEXT["repository"]},
+        "head_repository": {"full_name": CONTEXT["repository"]},
+        "path": ".github/workflows/ci.yaml",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "run_number": 123,
+    }
+    effects = []
+
+    def read(*args):
+        if args[0] == "gh":
+            assert args == ("gh", "api", "repos/washu-tag/scout/actions/runs/321")
+            return json.dumps(ci)
+        assert args[0] == "bash" and args[2] in transport.VENDOR_IMAGES
+        return "true"  # Existing vendor aliases must survive a tooling-only rebuild.
+
+    def copied(row, candidate):
+        effects.append(("copy", row["name"]))
+        return row["repository"] + "@" + row["digest"]
+
+    monkeypatch.setattr(transport, "run", read)
+    monkeypatch.setattr(transport, "copy", copied)
+    monkeypatch.setattr(transport, "sign", lambda ref: effects.append(("sign", ref)))
+    monkeypatch.setattr(
+        transport.subprocess, "run", lambda args, **kw: effects.append(tuple(args))
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "copy",
+            "publish-images",
+            "--candidate",
+            str(path),
+            "--release-branch",
+            "ci-hotfix-4.2",
+            "--release-version",
+            "4.2.1",
+        ],
+    )
+    return path, index, ci, effects
+
+
+@pytest.mark.parametrize("event", ["push", "workflow_dispatch"])
+def test_branch_release_copies_the_tested_images_and_preserves_vendor_aliases(
+    branch_release, event
+):
+    _, index, ci, effects = branch_release
+    ci["event"] = event
+    transport.main()
+    assert {
+        name for action, name, *rest in effects if action == "copy"
+    } == transport.IMAGE_PATHS.keys()
+    aliases = [entry for entry in effects if entry[0] == "oras"]
+    assert len(aliases) == len(index["images"]) - len(transport.VENDOR_IMAGES)
+    assert all(entry[-1] == "4.2.1" for entry in aliases)
+    assert not any(
+        entry[2].split("@")[0].rsplit("/", 1)[1] in transport.VENDOR_IMAGES
+        for entry in aliases
+    )
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("id", 322),
+        ("run_attempt", 3),
+        ("head_sha", "b" * 40),
+        ("head_branch", "main"),
+        ("repository", {"full_name": "other/scout"}),
+        ("head_repository", {"full_name": "other/scout"}),
+        ("path", ".github/workflows/unrelated.yaml"),
+        ("event", "pull_request"),
+        ("status", "in_progress"),
+        ("conclusion", "failure"),
+        ("run_number", 124),
+    ],
+)
+def test_branch_release_rejects_changed_or_unsuccessful_ci_before_writes(
+    branch_release, field, value
+):
+    _, _, ci, effects = branch_release
+    ci[field] = value
+    with pytest.raises(ValueError, match="successful attempt changed"):
+        transport.main()
+    assert effects == []
+
+
+def test_branch_release_rejects_alias_mismatch_before_any_write(branch_release):
+    path, index, _, effects = branch_release
+    next(row for row in index["images"] if row["name"] == "launchpad")[
+        "legacyTag"
+    ] = "4.2.0"
+    save((path, index))
+    with pytest.raises(ValueError, match="requested release version"):
+        transport.main()
+    assert effects == []
+
+
+def test_branch_release_rejects_carried_image_instead_of_skipping_its_release_alias(
+    branch_release,
+):
+    path, index, _, effects = branch_release
+    index["images"][0].update(fresh=False, layout=None, legacyTag=None)
+    save((path, index))
+    with pytest.raises(ValueError, match="complete fresh"):
+        transport.main()
+    assert effects == []
+
+
+def test_branch_release_does_not_treat_api_errors_as_approval(
+    branch_release, monkeypatch
+):
+    _, _, _, effects = branch_release
+
+    def failed(*args):
+        raise subprocess.CalledProcessError(1, args)
+
+    monkeypatch.setattr(transport, "run", failed)
+    with pytest.raises(subprocess.CalledProcessError):
+        transport.main()
+    assert effects == []
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        (None, None),
+        ("run_attempt", 0),
+        ("run_attempt", None),
+        ("head_sha", "b" * 40),
+        ("head_branch", "other-branch"),
+        ("path", ".github/workflows/other.yaml"),
+        ("conclusion", "failure"),
+    ],
+)
+def test_legacy_release_wait_exports_only_the_successful_checked_attempt(
+    tmp_path, field, value
+):
+    workflow = yaml.safe_load((ROOT / ".github/workflows/release.yaml").read_text())
+    script = next(
+        step["run"]
+        for step in workflow["jobs"]["wait-for-build"]["steps"]
+        if step.get("id") == "wait"
+    )
+    ci = {
+        "id": 321,
+        "run_attempt": 2,
+        "head_sha": "a" * 40,
+        "head_branch": "ci-hotfix-4.2",
+        "repository": {"full_name": "washu-tag/scout"},
+        "head_repository": {"full_name": "washu-tag/scout"},
+        "path": ".github/workflows/ci.yaml",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+    }
+    if field:
+        ci[field] = value
+    shim = tmp_path / "gh"
+    shim.write_text(
+        '#!/bin/sh\nif [ "$1" = run ]; then printf "%s\\n" 321; else printf "%s\\n" "$CI_RUN_JSON"; fi\n'
+    )
+    shim.chmod(0o755)
+    output = tmp_path / "output"
+    result = subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", script],
+        text=True,
+        capture_output=True,
+        env={
+            **os.environ,
+            "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+            "CI_RUN_JSON": json.dumps(ci),
+            "TARGET_SHA": "a" * 40,
+            "REF_NAME": "ci-hotfix-4.2",
+            "REPO": "washu-tag/scout",
+            "GITHUB_OUTPUT": str(output),
+        },
+        timeout=10,
+    )
+    if field is None:
+        assert result.returncode == 0, result.stderr
+        assert output.read_text().splitlines() == ["run_id=321", "run_attempt=2"]
+    else:
+        assert result.returncode != 0
+        assert not output.exists()
+
+
 def kustomize(resources, patches, directory):
     directory.mkdir()
     (directory / "kustomization.yaml").write_text(

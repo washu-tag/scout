@@ -118,9 +118,13 @@ producer preserve unchanged component digests while rebuilding all accumulated
 source changes. A legacy manifest without source/build provenance bootstraps a
 full rebuild without carrying any of its components or claiming ancestry. This
 migration path is no longer needed once retained predecessors all have verified
-provenance. Each consuming job requires the candidate for the same workflow
-run and attempt. Missing inputs and partial reruns fail rather than substituting
-an older candidate. Infrastructure failures are retried by rerunning all jobs.
+provenance. Main publication still rejects a non-ancestor predecessor. Non-main
+branch builds prepare every component fresh; PR candidates can also rebuild
+everything when the verified predecessor is outside their ancestry, carrying
+nothing from that predecessor. Each consuming job requires the candidate for the
+same workflow run and attempt. Missing inputs and partial reruns fail rather than
+substituting an older candidate. Infrastructure failures are retried by rerunning
+all jobs.
 
 The remaining Phase 3 cutover requires all of the following:
 

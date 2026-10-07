@@ -187,10 +187,16 @@ jobs:
         run: |
           set -euo pipefail
           bash .github/scripts/freeze-predecessor.sh predecessor
-          args=()
+          args=(--predecessor-repository washu-tag/scout)
           if [ "$FORCE" = true ]; then args+=(--force); fi
+          if [ "$GITHUB_REF" != refs/heads/main ] || [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            args+=(--candidate-only)
+            # Branch releases need every legacy image alias, including vendors.
+            # PRs retain incremental carry when their verified baseline is an ancestor.
+            if [ "$GITHUB_EVENT_NAME" != pull_request ]; then args+=(--force); fi
+          fi
           python3 tooling/manifest/producer_plan.py create --snapshot predecessor \
-            --github-output "$GITHUB_OUTPUT" --predecessor-repository washu-tag/scout "${args[@]}"
+            --github-output "$GITHUB_OUTPUT" "${args[@]}"
       - name: Save this attempt's frozen predecessor and plan
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

@@ -175,6 +175,7 @@ def create(
     expected: dict,
     force: bool = False,
     predecessor_repository: str | None = None,
+    candidate_only: bool = False,
 ) -> dict:
     source_repository = predecessor_repository or expected["repository"]
     if source_repository not in (expected["repository"], "washu-tag/scout"):
@@ -199,17 +200,29 @@ def create(
         predecessor = annotations.get("org.opencontainers.image.revision", "")
         if not re.fullmatch(r"[0-9a-f]{40}", predecessor):
             raise ValueError("predecessor has no valid source revision")
-        # Fail closed on a missing commit, descendant predecessor or divergent history.
-        # A full fetch is deliberate: a shallow checkout cannot establish this proof.
+        # Main publication requires ancestry. Candidate-only branches may instead
+        # rebuild everything when main has advanced beyond their history. A missing
+        # commit or Git error is not evidence of divergence and still fails closed.
         result = subprocess.run(
             ["git", "merge-base", "--is-ancestor", predecessor, expected["revision"]],
             cwd=checkout,
             capture_output=True,
         )
-        if result.returncode:
+        if result.returncode not in (0, 1):
+            raise ValueError("cannot establish predecessor ancestry")
+        if result.returncode == 1 and not candidate_only:
             raise ValueError(
                 "predecessor is not an ancestor of this checkout; refusing stale/divergent publish"
             )
+        # A divergent candidate rebuilds everything, but only branch-local vendor
+        # changes may advance existing legacy aliases. Main-only changes do not.
+        baseline = (
+            git("merge-base", predecessor, expected["revision"], cwd=checkout)
+            .decode()
+            .strip()
+            if result.returncode == 1
+            else predecessor
+        )
         paths = [
             p.decode()
             for p in git(
@@ -217,14 +230,16 @@ def create(
                 "--name-only",
                 "--no-renames",
                 "-z",
-                predecessor,
+                baseline,
                 expected["revision"],
                 cwd=checkout,
             ).split(b"\0")
             if p
         ]
         carry = (
-            annotations.get("io.scout.build.carry-policy") == CARRY_POLICY and not force
+            result.returncode == 0
+            and annotations.get("io.scout.build.carry-policy") == CARRY_POLICY
+            and not force
         )
     flags, publish = classify(paths, full=not carry)
     # Missing newly introduced components must be built, even when their directory
@@ -344,12 +359,23 @@ def main() -> None:
         help="Signed predecessor source; forks may use the upstream washu-tag/scout build",
     )
     parser.add_argument("--force", action="store_true")
+    parser.add_argument(
+        "--candidate-only",
+        action="store_true",
+        help="Rebuild a non-ancestor baseline instead of carrying; never for main publication",
+    )
     parser.add_argument("--github-output", type=Path)
     parser.add_argument("--digests-dir", type=Path)
     parser.add_argument(
         "--components", type=Path, default=Path("tooling/manifest/components.txt")
     )
     args = parser.parse_args()
+    if (
+        args.candidate_only
+        and os.environ.get("GITHUB_REF") == "refs/heads/main"
+        and os.environ.get("GITHUB_EVENT_NAME") != "pull_request"
+    ):
+        parser.error("candidate-only planning cannot publish main")
     expected = context(
         args.repository, args.revision, args.run_id, args.run_attempt, args.version
     )
@@ -367,6 +393,7 @@ def main() -> None:
                 expected,
                 args.force,
                 args.predecessor_repository,
+                args.candidate_only,
             )
             if args.command == "create"
             else validate(args.snapshot, expected)
