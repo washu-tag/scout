@@ -14,16 +14,17 @@ runs:
     - id: start
       shell: bash
       env:
-        REGISTRY_HOST: ${{ inputs.host }}
-        REGISTRY_VERSION: '3.1.2'
-        REGISTRY_SHA256: '40df2224d410f72ae425c3371873b078bbdbda3b8b612be9571f0e6751f3acc8'
+        # Distribution reserves REGISTRY_* for its runtime configuration.
+        SCOUT_REGISTRY_HOST: ${{ inputs.host }}
+        SCOUT_REGISTRY_VERSION: '3.1.2'
+        SCOUT_REGISTRY_SHA256: '40df2224d410f72ae425c3371873b078bbdbda3b8b612be9571f0e6751f3acc8'
       run: |
         set -euo pipefail
         work="$RUNNER_TEMP/scout-registry"
         mkdir -p "$work/data"
         curl -fsSL -o "$work/registry.tar.gz" \
-          "https://github.com/distribution/distribution/releases/download/v${REGISTRY_VERSION}/registry_${REGISTRY_VERSION}_linux_amd64.tar.gz"
-        echo "${REGISTRY_SHA256}  $work/registry.tar.gz" | sha256sum -c -
+          "https://github.com/distribution/distribution/releases/download/v${SCOUT_REGISTRY_VERSION}/registry_${SCOUT_REGISTRY_VERSION}_linux_amd64.tar.gz"
+        echo "${SCOUT_REGISTRY_SHA256}  $work/registry.tar.gz" | sha256sum -c -
         tar -xzf "$work/registry.tar.gz" -C "$work" registry
         cat > "$work/config.yaml" <<EOF
         version: 0.1
@@ -37,9 +38,9 @@ runs:
         EOF
         nohup "$work/registry" serve "$work/config.yaml" > "$work/registry.log" 2>&1 &
         for attempt in {1..30}; do
-          if curl -fsS "http://${REGISTRY_HOST}:5000/v2/" >/dev/null; then
-            echo "registry=${REGISTRY_HOST}:5000" >> "$GITHUB_OUTPUT"
-            echo "CI_REGISTRY=${REGISTRY_HOST}:5000" >> "$GITHUB_ENV"
+          if curl -fsS "http://${SCOUT_REGISTRY_HOST}:5000/v2/" >/dev/null; then
+            echo "registry=${SCOUT_REGISTRY_HOST}:5000" >> "$GITHUB_OUTPUT"
+            echo "CI_REGISTRY=${SCOUT_REGISTRY_HOST}:5000" >> "$GITHUB_ENV"
             exit 0
           fi
           sleep 1
