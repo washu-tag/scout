@@ -8,13 +8,16 @@ on:
     paths:
       - deploy/**
       - tooling/deploy/**
+      - tooling/manifest/**
+      - .github/scripts/prepare-flux-artifacts.py
+      - .github/scripts/copy-flux-artifacts.py
+      - .github/actions/start-registry/**
       # The realm config-cli imports + the config-hash it is stamped from live here.
       - helm/keycloak-config-cli/**
       # The per-mode S3A SSE render guard below.
       - helm/hive-metastore/**
       - helm/extractor/hl7-transformer/**
       - .github/workflows/validate-deploy.yaml
-      - .github/workflows/deploy-flux.yaml
       - .github/workflows/ci.yaml
       - .github/ci_resources/flux/**
       - .github/actions/install-flux/**
@@ -54,7 +57,7 @@ jobs:
       - uses: ./.github/actions/install-flux
 
       - name: Test deployment tooling and artifact identity
-        run: python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_*.py
+        run: python3 -m pytest -q tooling/manifest tooling/deploy .github/ci_resources/flux .github/scripts/test_*flux_artifacts.py
 
       - name: Validate the on-prem CI inputs
         run: |

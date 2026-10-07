@@ -8,6 +8,7 @@ from collections import Counter
 from pathlib import Path
 
 import pytest
+import yaml
 
 from stamp_config import (
     StampError,
@@ -43,6 +44,7 @@ EXPECTED_IMAGE_VALUES_TAGS = {
     "hl7log-extractor": 1,
     "keycloak-fragment-reconciler": 1,
     "superset": 2,
+    "launchpad": 1,
 }
 
 # Every washu-tag image literal written inline rather than through values.image.
@@ -72,8 +74,8 @@ def test_every_placeholder_stamped_and_clean(haul, copy_deploy):
     # No residual placeholder anywhere in the stamped copy.
     assert verify_clean(copy_deploy) == []
 
-    # Chart versions: exactly the expected set, each pinned to its haul tag.
-    chart_stamps = [s for s in stamps if s.kind == "chart-version"]
+    # Chart references: exactly the expected set, each pinned to its haul digest.
+    chart_stamps = [s for s in stamps if s.kind == "chart-digest"]
     assert {s.name for s in chart_stamps} == EXPECTED_CHART_PLACEHOLDERS
     for s in chart_stamps:
         assert s.tag == charts[s.name]
@@ -99,7 +101,7 @@ def test_every_placeholder_stamped_and_clean(haul, copy_deploy):
     # No stamp kind beyond the ones counted above, so the totals add up to the
     # whole tree.
     assert {s.kind for s in stamps} == {
-        "chart-version",
+        "chart-digest",
         "config-hash",
         "image-values-tag",
         "image-inline",
@@ -159,6 +161,84 @@ def test_config_hash_mirrors_ansible_formula():
     assert len(got) == 8
     # empty-content fallback is deterministic and non-zero.
     assert compute_config_hash("") == hashlib.sha256(b"").hexdigest()[:8]
+
+
+def test_haul_preserves_image_and_chart_digests(haul):
+    images, charts = haul
+    assert all("@sha256:" in reference for reference in images.values())
+    assert all("@sha256:" in reference for reference in charts.values())
+
+
+def test_scout_chart_sources_pin_haul_bytes_in_the_existing_owner(haul, copy_deploy):
+    images, charts = haul
+    stamp_tree(copy_deploy, images, charts, "12345678")
+    sources = []
+    releases = []
+    for path in copy_deploy.rglob("*.yaml"):
+        for doc in yaml.safe_load_all(path.read_text()):
+            if not isinstance(doc, dict):
+                continue
+            if doc.get("kind") == "OCIRepository" and doc["metadata"][
+                "name"
+            ].startswith("scout-chart-"):
+                sources.append(doc)
+            if doc.get("kind") == "HelmRelease" and "chartRef" in doc.get("spec", {}):
+                releases.append(doc)
+    assert len(sources) == len(EXPECTED_CHART_PLACEHOLDERS)
+    for source in sources:
+        chart = source["metadata"]["labels"]["scout.xnat.org/chart"]
+        assert source["spec"]["url"] == "oci://ghcr.io/washu-tag/charts/" + chart
+        assert source["spec"]["ref"] == {"digest": charts[chart].split("@", 1)[1]}
+        assert source["spec"]["layerSelector"] == {
+            "mediaType": "application/vnd.cncf.helm.chart.content.v1.tar+gzip",
+            "operation": "copy",
+        }
+    identities = {(s["metadata"]["namespace"], s["metadata"]["name"]) for s in sources}
+    assert len(releases) == len(EXPECTED_CHART_PLACEHOLDERS)
+    for release in releases:
+        ref = release["spec"]["chartRef"]
+        assert ref["kind"] == "OCIRepository"
+        assert (ref["namespace"], ref["name"]) in identities
+        assert "chart" not in release["spec"]
+
+
+def test_mutating_chart_tag_cannot_retarget_stamped_config(haul, copy_deploy):
+    images, charts = haul
+    stamp_tree(copy_deploy, images, charts, "12345678")
+    owner = copy_deploy / "base/hive/metastore/helmrepository.yaml"
+    docs = list(yaml.safe_load_all(owner.read_text()))
+    source = next(doc for doc in docs if doc["kind"] == "OCIRepository")
+    assert source["spec"]["ref"] == {
+        "digest": charts["hive-metastore"].split("@", 1)[1]
+    }
+    # Negative control: changing the source to select a same-version tag is
+    # rejected even though the HR points to an OCIRepository by name.
+    source["spec"]["ref"] = {"tag": charts["hive-metastore"].split("@", 1)[0]}
+    owner.write_text(yaml.safe_dump_all(docs))
+    assert any(
+        "chart source is not digest-pinned" in p for p in verify_clean(copy_deploy)
+    )
+
+
+def test_missing_native_chart_source_fails_closed(haul, copy_deploy):
+    images, charts = haul
+    stamp_tree(copy_deploy, images, charts, "12345678")
+    owner = copy_deploy / "base/hive/metastore/helmrepository.yaml"
+    docs = [
+        doc
+        for doc in yaml.safe_load_all(owner.read_text())
+        if doc["kind"] != "OCIRepository"
+    ]
+    owner.write_text(yaml.safe_dump_all(docs))
+    assert any("chartRef has no digest-pinned" in p for p in verify_clean(copy_deploy))
+
+
+@pytest.mark.parametrize("reference", ["0.20261007.1", "0.20261007.1@sha256:short"])
+def test_verify_clean_rejects_mutable_or_malformed_image_refs(tmp_path, reference):
+    (tmp_path / "image.yaml").write_text(
+        "image:\n  repository: ghcr.io/washu-tag/launchpad\n" f"  tag: '{reference}'\n"
+    )
+    assert any("not digest-pinned" in problem for problem in verify_clean(tmp_path))
 
 
 def test_absent_component_fails_closed(haul, copy_deploy):

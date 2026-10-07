@@ -6,9 +6,9 @@ render, with a missing-logo control that reproduces the original build failure.
 """
 
 import base64
+import importlib.util
 from pathlib import Path
 import shutil
-import shlex
 import subprocess
 import tarfile
 
@@ -20,11 +20,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 
 
-@pytest.mark.parametrize(
-    "workflow,job",
-    [("ci.yaml", "config-artifact-publish"), ("deploy-flux.yaml", "deploy")],
-)
-def test_config_source_preserves_packaged_generator_assets(tmp_path, workflow, job):
+def test_config_source_preserves_packaged_generator_assets(tmp_path):
     source = yaml.safe_load((HERE / "site/scout-config-source.yaml").read_text())
     # source-controller v1.9.6's default extract/rearchive uses sourceignore's
     # *.jpg exclusion. Copy bypasses that filter and keeps the producer tarball.
@@ -39,23 +35,18 @@ def test_config_source_preserves_packaged_generator_assets(tmp_path, workflow, j
     if not kustomize:
         pytest.skip("kustomize required; validate-deploy installs the pinned CLI")
 
-    # Exercise each workflow's actual archive inputs. Only redirect its source
-    # and output paths to the checkout and the test's temporary directory.
-    steps = yaml.safe_load((REPO / ".github/workflows" / workflow).read_text())["jobs"][
-        job
-    ]["steps"]
-    commands = [
-        shlex.split(line)
-        for step in steps
-        for line in step.get("run", "").replace("\\\n", "").splitlines()
-        if line.strip().startswith("tar -C ")
-    ]
-    assert len(commands) == 1
-    command = commands[0]
+    spec = importlib.util.spec_from_file_location(
+        "prepare_flux_artifacts", REPO / ".github/scripts/prepare-flux-artifacts.py"
+    )
+    candidate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(candidate)
+    deploy = tmp_path / "stamped-deploy"
+    shutil.copytree(REPO / "deploy", deploy)
+    images, charts = candidate.parse_haul(REPO / "tooling/deploy/fixtures/haul.yaml")
+    candidate.stamp_tree(deploy, images, charts, "12345678")
+    assert candidate.verify_clean(deploy) == []
     archive = tmp_path / "scout-config.tar.gz"
-    command[command.index("-C") + 1] = str(REPO / "deploy")
-    command[command.index("-czf") + 1] = str(archive)
-    subprocess.run(command, check=True, capture_output=True, timeout=30)
+    candidate.package_config(deploy, archive)
     extracted = tmp_path / "copied-layer"
     extracted.mkdir()
     with tarfile.open(archive, "r:gz") as bundle:
@@ -67,6 +58,34 @@ def test_config_source_preserves_packaged_generator_assets(tmp_path, workflow, j
                 assert destination.resolve().is_relative_to(extracted.resolve())
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 destination.write_bytes(bundle.extractfile(member).read())
+    assert candidate.verify_clean(extracted) == []
+
+    # The shared metastore base is rendered twice, but its chart source must have
+    # one owner. A source appended to the common HR file would fail this build.
+    hive = subprocess.run(
+        [kustomize, "build", str(extracted / "base/hive/metastore")],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert hive.returncode == 0, hive.stderr
+    hive_docs = list(yaml.safe_load_all(hive.stdout))
+    chart_sources = [doc for doc in hive_docs if doc["kind"] == "OCIRepository"]
+    assert len(chart_sources) == 1
+    source = chart_sources[0]
+    assert source["spec"]["ref"] == {
+        "digest": charts["hive-metastore"].split("@", 1)[1]
+    }
+    assert source["spec"]["layerSelector"]["operation"] == "copy"
+    releases = [doc for doc in hive_docs if doc["kind"] == "HelmRelease"]
+    assert len(releases) == 2
+    assert {doc["metadata"]["name"] for doc in releases} == {
+        "hive-metastore",
+        "hive-metastore-readonly",
+    }
+    for release in releases:
+        assert "chart" not in release["spec"]
+        assert release["spec"]["chartRef"]["name"] == source["metadata"]["name"]
     # The on-prem prerequisite must ship in the config archive, not only in CI.
     # Render the extracted base so missing packaging inputs fail this check.
     guard = subprocess.run(

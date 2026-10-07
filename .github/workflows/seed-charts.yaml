@@ -1,3 +1,6 @@
+# Legacy recovery publisher: deliberately does not advance the authoritative
+# :main carry pointer. Normal CI migrates an unmarked predecessor with a real
+# full component rebuild; never seed the corrected chain from live image tags.
 name: Seed charts
 
 # One-time go-live seed for the build-lane haul (ADR 0033).
@@ -53,7 +56,7 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
           set -euo pipefail
-          VERSION="0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
+          VERSION="0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}-seed"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           printf '%s' "${REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${ACTOR}" --password-stdin
           mkdir -p digests predecessor
@@ -112,5 +115,6 @@ jobs:
           core-manifest: haul.yaml
           manifest-repo: ${{ env.MANIFEST_REPO }}
           bundle-repo: ${{ env.BUNDLE_REPO }}
+          advance-main: 'false'
           cosign-private-key: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}

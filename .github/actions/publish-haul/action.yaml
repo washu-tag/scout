@@ -1,12 +1,12 @@
 name: Publish haul
 description: >-
   Sync a rendered Hauler manifest into a signed .tar.zst bundle and publish the
-  bundle + manifest to GHCR, advancing the :main pointers last (ADR 0033). The
+  bundle + manifest to GHCR; only a validated producer plan may advance :main. The
   core manifest is synced with cosign --key verification, fail-closed. Callers
   render the manifest(s) and install hauler/oras/cosign + log in to GHCR first.
 inputs:
   version:
-    description: Immutable version tag for the artifacts (e.g. 0.YYYYMMDD.run).
+    description: Build version tag for the artifacts (digests are authoritative).
     required: true
   core-manifest:
     description: Rendered kind:Images manifest of cosign-signed components.
@@ -21,6 +21,9 @@ inputs:
   manifest-repo:
     description: GHCR repo for the manifest artifact.
     required: true
+  manifest-layout:
+    description: Tested OCI manifest layout; copied without rebuilding when supplied.
+    default: ''
   bundle-repo:
     description: GHCR repo for the .tar.zst bundle artifact.
     required: true
@@ -30,6 +33,14 @@ inputs:
   cosign-password:
     description: cosign key password.
     required: true
+  producer-plan:
+    description: Frozen producer snapshot directory; required to mark validated carry ancestry.
+    required: false
+    default: ''
+  advance-main:
+    description: Advance the carry aliases; only the serialized main producer may opt in.
+    required: false
+    default: 'false'
 outputs:
   manifest-digest:
     description: Digest of this invocation's signed manifest artifact.
@@ -47,13 +58,22 @@ runs:
         CORE_MANIFEST: ${{ inputs.core-manifest }}
         UPSTREAM_MANIFEST: ${{ inputs.upstream-manifest }}
         MANIFEST_REPO: ${{ inputs.manifest-repo }}
+        MANIFEST_LAYOUT: ${{ inputs.manifest-layout }}
         BUNDLE_REPO: ${{ inputs.bundle-repo }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosign-private-key }}
         COSIGN_PASSWORD: ${{ inputs.cosign-password }}
         SOURCE_REPOSITORY: ${{ github.repository }}
         SOURCE_REVISION: ${{ github.sha }}
+        PRODUCER_PLAN: ${{ inputs.producer-plan }}
+        ADVANCE_MAIN: ${{ inputs.advance-main }}
       run: |
         set -euo pipefail
+        if [ -n "$PRODUCER_PLAN" ]; then
+          python3 tooling/manifest/producer_plan.py validate --snapshot "$PRODUCER_PLAN"
+        elif [ "$ADVANCE_MAIN" = true ]; then
+          echo "::error::advancing :main requires the current attempt's producer plan"
+          exit 1
+        fi
         # hauler 2.0.2 SKIPS an image it can't verify yet still exits 0, so an
         # exit-code or failure-string check fails OPEN. Fail CLOSED: require one
         # "signature verified" line per image in the core manifest (dash-anchored
@@ -81,22 +101,39 @@ runs:
           --annotation "org.opencontainers.image.source=https://github.com/${SOURCE_REPOSITORY}"
           --annotation "org.opencontainers.image.revision=${SOURCE_REVISION}"
           --annotation "org.opencontainers.image.version=${VERSION}"
+          --annotation "io.scout.build.run-id=${GITHUB_RUN_ID}"
+          --annotation "io.scout.build.run-attempt=${GITHUB_RUN_ATTEMPT}"
         )
-        oras push "${MANIFEST_REPO}:${VERSION}" "${manifests[@]}" "${annotations[@]}" \
-          --export-manifest "$RUNNER_TEMP/haul-manifest.json"
+        if [ -n "$PRODUCER_PLAN" ]; then
+          predecessor_digest="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["predecessorDigest"])' "$PRODUCER_PLAN/plan.json")"
+          annotations+=(
+            --annotation "io.scout.build.carry-policy=predecessor-v1"
+            --annotation "io.scout.build.predecessor-digest=${predecessor_digest}"
+          )
+        fi
+        if [ -n "$MANIFEST_LAYOUT" ]; then
+          manifest_digest="$(oras manifest fetch --oci-layout --descriptor "${MANIFEST_LAYOUT}:${VERSION}" | jq -er .digest)"
+          oras copy --from-oci-layout "${MANIFEST_LAYOUT}@${manifest_digest}" "${MANIFEST_REPO}:${VERSION}"
+          published_digest="$(oras manifest fetch --descriptor "${MANIFEST_REPO}:${VERSION}" | jq -er .digest)"
+          test "$published_digest" = "$manifest_digest"
+        else
+          oras push "${MANIFEST_REPO}:${VERSION}" "${manifests[@]}" "${annotations[@]}" \
+            --export-manifest "$RUNNER_TEMP/haul-manifest.json"
+          manifest_digest="sha256:$(sha256sum "$RUNNER_TEMP/haul-manifest.json" | cut -d ' ' -f 1)"
+        fi
         oras push "${BUNDLE_REPO}:${VERSION}" \
           --artifact-type application/vnd.hauler.bundle.v1+zstd \
           "scout-${VERSION}.tar.zst:application/zstd" "${annotations[@]}" \
+          --annotation "io.scout.build.manifest-digest=${manifest_digest}" \
           --export-manifest "$RUNNER_TEMP/haul-bundle.json"
-        # Hash the bytes returned by each push; resolving its tag again could select
-        # a concurrent rerun's artifact instead of the one this invocation produced.
-        manifest_digest="sha256:$(sha256sum "$RUNNER_TEMP/haul-manifest.json" | cut -d ' ' -f 1)"
         bundle_digest="sha256:$(sha256sum "$RUNNER_TEMP/haul-bundle.json" | cut -d ' ' -f 1)"
         cosign sign --key env://COSIGN_PRIVATE_KEY \
           --use-signing-config=false --tlog-upload=false --yes "${MANIFEST_REPO}@${manifest_digest}"
         cosign sign --key env://COSIGN_PRIVATE_KEY \
           --use-signing-config=false --tlog-upload=false --yes "${BUNDLE_REPO}@${bundle_digest}"
-        oras tag "${MANIFEST_REPO}@${manifest_digest}" main
-        oras tag "${BUNDLE_REPO}@${bundle_digest}" main
+        if [ "$ADVANCE_MAIN" = true ]; then
+          oras tag "${MANIFEST_REPO}@${manifest_digest}" main
+          oras tag "${BUNDLE_REPO}@${bundle_digest}" main
+        fi
         echo "manifest-digest=${manifest_digest}" >> "$GITHUB_OUTPUT"
         echo "bundle-digest=${bundle_digest}" >> "$GITHUB_OUTPUT"

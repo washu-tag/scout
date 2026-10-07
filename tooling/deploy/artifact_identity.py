@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Create and check the run-bound scout-config handoff receipt.
+"""Create and check the exact CI build output identity.
 
 This is build identity metadata, not another component manifest (ADR 0033).
-Registry locations remain fixed in the workflows. A consumer supplies trusted
+Registry locations remain fixed in the workflows. Release and CI verification supply trusted
 repository/revision/run context, then verifies the raw OCI manifest fetched by
-the receipt's digest before using the config artifact.
+the recorded digest before using the config artifact.
 """
 
 from __future__ import annotations
@@ -54,12 +54,27 @@ def _matches(pattern, value):
     return isinstance(value, str) and pattern.fullmatch(value) is not None
 
 
-def validate_receipt(receipt, *, repository, revision, run_id, run_attempt):
+def load_receipt(path):
+    """Read the receipt's JSON object; callers validate its identity fields."""
+    return _json_object(Path(path).read_bytes())
+
+
+def validate_receipt(
+    receipt, *, repository, revision, run_id, run_attempt, require_bundle=False
+):
     """Validate all fields, then bind the receipt to caller-supplied context."""
-    if not isinstance(receipt, dict) or set(receipt) != FIELDS:
+    if not isinstance(receipt, dict):
         raise IdentityError("receipt must contain exactly the schema fields")
-    if type(receipt["schemaVersion"]) is not int or receipt["schemaVersion"] != 1:
+    schema = receipt.get("schemaVersion")
+    fields = (
+        FIELDS | {"bundleDigest"} if type(schema) is int and schema == 2 else FIELDS
+    )
+    if set(receipt) != fields:
+        raise IdentityError("receipt must contain exactly the schema fields")
+    if type(schema) is not int or schema not in (1, 2):
         raise IdentityError("unsupported schemaVersion")
+    if require_bundle and schema != 2:
+        raise IdentityError("release requires schemaVersion 2 with bundleDigest")
     if not _matches(REPOSITORY, receipt["repository"]) or receipt["repository"].split(
         "/"
     )[1] in (".", ".."):
@@ -75,7 +90,10 @@ def validate_receipt(receipt, *, repository, revision, run_id, run_attempt):
         datetime.strptime(receipt["version"].split(".")[1], "%Y%m%d")
     except ValueError as exc:
         raise IdentityError("invalid version date") from exc
-    for field in ("manifestDigest", "configDigest"):
+    digests = ("manifestDigest", "configDigest")
+    if schema == 2:
+        digests += ("bundleDigest",)
+    for field in digests:
         if not _matches(DIGEST, receipt[field]):
             raise IdentityError("invalid " + field)
     expected = {
@@ -116,7 +134,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     create = commands.add_parser("create", help="write a producer receipt")
-    validate = commands.add_parser("validate", help="validate a consumer receipt")
+    validate = commands.add_parser("validate", help="validate build outputs")
     for command in (create, validate):
         command.add_argument("--repository", required=True)
         command.add_argument("--revision", required=True)
@@ -124,16 +142,18 @@ def main(argv=None):
         command.add_argument("--run-attempt", required=True, type=int)
     create.add_argument("--version", required=True)
     create.add_argument("--manifest-digest", required=True)
+    create.add_argument("--bundle-digest")
     create.add_argument("--config-digest", required=True)
     create.add_argument("--output", required=True, type=Path)
     validate.add_argument("--receipt", required=True, type=Path)
     validate.add_argument("--manifest", type=Path, help="exact raw OCI manifest bytes")
     validate.add_argument("--github-output", type=Path)
+    validate.add_argument("--require-bundle", action="store_true")
     args = parser.parse_args(argv)
     try:
         if args.command == "create":
             receipt = {
-                "schemaVersion": 1,
+                "schemaVersion": 2 if args.bundle_digest is not None else 1,
                 "repository": args.repository,
                 "revision": args.revision,
                 "runId": args.run_id,
@@ -142,14 +162,17 @@ def main(argv=None):
                 "manifestDigest": args.manifest_digest,
                 "configDigest": args.config_digest,
             }
+            if args.bundle_digest is not None:
+                receipt["bundleDigest"] = args.bundle_digest
         else:
-            receipt = _json_object(args.receipt.read_bytes())
+            receipt = load_receipt(args.receipt)
         validate_receipt(
             receipt,
             repository=args.repository,
             revision=args.revision,
             run_id=args.run_id,
             run_attempt=args.run_attempt,
+            require_bundle=args.command == "validate" and args.require_bundle,
         )
         if args.command == "create":
             args.output.write_text(
@@ -158,7 +181,7 @@ def main(argv=None):
         else:
             if args.manifest is not None:
                 validate_manifest(args.manifest.read_bytes(), receipt)
-            # All validation completes before exporting any values. These three
+            # All validation completes before exporting any values. These
             # regex-constrained scalars cannot inject GitHub output commands.
             if args.github_output is not None:
                 with args.github_output.open("a", encoding="utf-8") as output:
@@ -168,6 +191,8 @@ def main(argv=None):
                         ("manifest_digest", "manifestDigest"),
                     ):
                         output.write(name + "=" + receipt[field] + "\n")
+                    if receipt["schemaVersion"] == 2:
+                        output.write("bundle_digest=" + receipt["bundleDigest"] + "\n")
     except (IdentityError, OSError) as exc:
         # Never echo receipt contents into the runner's command-aware log.
         message = (

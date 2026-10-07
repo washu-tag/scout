@@ -19,7 +19,9 @@ HELPER = ROOT / ".github/ci_resources/flux/run_auth_tests.sh"
 DIGEST = "sha256:" + "a" * 64
 
 
-def config_archive(path, *, tag="0.20261006.123", duplicate=False, link=False):
+def config_archive(
+    path, *, tag="0.20261006.123@" + DIGEST, duplicate=False, link=False
+):
     release = {
         "kind": "HelmRelease",
         "metadata": {"name": "hl7-transformer"},
@@ -49,7 +51,9 @@ def test_render_uses_packaged_image_and_merged_warehouse(tmp_path, cluster_vars)
     auth_jobs.prepare(archive, output, cluster_vars)
     seed = json.loads((output / "seed.json").read_text())
     container = seed["spec"]["template"]["spec"]["containers"][0]
-    assert container["image"] == ("ghcr.io/washu-tag/hl7-transformer:0.20261006.123")
+    assert container["image"] == (
+        "ghcr.io/washu-tag/hl7-transformer:0.20261006.123@" + DIGEST
+    )
     env = {item["name"]: item for item in container["env"]}
     assert env["SPARK_SQL_WAREHOUSE_DIR"]["value"] == "s3a://merged-ci-lake/delta"
     assert env["AWS_SECRET_ACCESS_KEY"]["valueFrom"]["secretKeyRef"] == {
@@ -72,7 +76,19 @@ def test_render_uses_packaged_image_and_merged_warehouse(tmp_path, cluster_vars)
         assert path.stat().st_mode & 0o777 == 0o600
 
 
-@pytest.mark.parametrize("tag", ["latest", "0.0.0", "", None, "${VERSION}"])
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "latest",
+        "0.0.0",
+        "",
+        None,
+        "${VERSION}",
+        "0.20261006.123",
+        "latest@" + DIGEST,
+        "0.20261006.123@sha256:short",
+    ],
+)
 def test_unstamped_image_leaves_no_jobs(tmp_path, cluster_vars, tag):
     archive = config_archive(tmp_path / "config.tar.gz", tag=tag)
     output = tmp_path / "jobs"
@@ -198,7 +214,7 @@ def test_helper_pulls_exact_config_and_runs_scoped_suites(run_helper, insecure):
     assert browser["strict_tls"]
     seed = next(item["seed"] for item in entries if "seed" in item)
     container = seed["spec"]["template"]["spec"]["containers"][0]
-    assert container["image"].endswith(":0.20261006.123")
+    assert container["image"].endswith(":0.20261006.123@" + DIGEST)
     env = {item["name"]: item for item in container["env"]}
     assert env["SPARK_SQL_WAREHOUSE_DIR"]["value"] == "s3a://merged-ci-lake/delta"
     assert any("data-authz-tests" in item["args"] for item in entries)

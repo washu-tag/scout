@@ -51,8 +51,10 @@ def transformer_image(archive: Path) -> str:
     if (
         image.get("repository") != REPOSITORY
         or not isinstance(tag, str)
-        or tag in ("latest", "0.0.0")
-        or not re.fullmatch(r"[\w][\w.-]{0,127}", tag, flags=re.ASCII)
+        or tag.split("@", 1)[0] in ("latest", "0.0.0")
+        or not re.fullmatch(
+            r"[\w][\w.-]{0,127}@sha256:[0-9a-f]{64}", tag, flags=re.ASCII
+        )
     ):
         raise ValueError("config transformer image is not a stamped Scout image")
     return f"{REPOSITORY}:{tag}"

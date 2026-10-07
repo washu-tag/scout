@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Both artifact modes exercise the same receipt, raw-manifest, and signature checks.
-# Published mode supplies the producer's validated scalars and keeps its registry digest.
+# Verify the exact candidate config with the ephemeral CI signing key.
 set -euo pipefail
 oras_flags=()
 cosign_flags=()

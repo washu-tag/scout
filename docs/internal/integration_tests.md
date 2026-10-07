@@ -40,52 +40,61 @@ kubectl -n extractor logs -f job/ci-tests
 
 ## On-prem Flux artifact proof
 
-The [Flux workflow](../../.github/workflows/deploy-flux.yaml) installs the on-prem
-ingest and authentication dependency graphs on separate fresh k3s runners. Both
-check config and site signatures, secret substitution and SOPS decryption,
-image registry allowlists, and negative cases before accepting the result.
-The ingest leg deploys the extractor's 16-component dependency closure and runs
-its integration suite. The authentication leg deploys the 22-component closure of
-Launchpad, the on-prem edge, read-only Trino, and the Keycloak fragment reconciler.
-The checked wait lists and suspension policies must match those dependency closures.
+The [Post-Commit Tasks workflow](../../.github/workflows/ci.yaml) runs the on-prem
+Flux ingest and authentication legs alongside the Ansible deployment tests, before
+publishing build artifacts. Each leg installs its dependency graph on a fresh k3s
+runner and checks config and site signatures, secret substitution and SOPS
+decryption, image registry allowlists, and negative cases. The ingest leg deploys
+the extractor's 16-component dependency closure and runs its integration suite.
+The authentication leg deploys the 22-component closure of Launchpad, the on-prem
+edge, read-only Trino, and the Keycloak fragment reconciler. The checked wait lists
+and suspension policies must match those dependency closures.
 
-There are two artifact modes:
+The workflow freezes a signed predecessor haul and verifies that its source
+revision is an ancestor of the tested checkout. The accumulated diff determines
+which components to build from that checkout, including changes from earlier
+failed or skipped builds. Unchanged components retain the predecessor's exact
+digests. The same component catalog drives pull request and main builds.
 
-* **Published:** after a successful upstream `Post-Commit Tasks` push to `main`,
-  the consumer selects `scout-config-ref-<run_attempt>` from that exact producer
-  run. It checks out the producer commit, validates the receipt and signed OCI
-  manifest, and gives Flux the same config repository and digest. Only the
-  isolated status job can write `on-prem/flux-platform` against the producer commit,
-  and success requires both legs to pass.
-* **Local:** deployment-related pull requests and manual runs
-  build a config from the proposed checkout and a snapshot of the released haul.
-  An ephemeral key signs this config. The same manifest/identity verifier and
-  Flux reconciliation path run, but this is not evidence that the producer
-  published a release from the proposed commit. Manual runs accept `values=sops`
-  or `values=plain`; the latter creates the values Secret directly in the cluster.
-  Manual runs can also select `leg=auth` or `leg=ingest` for iteration; the default,
-  pull requests, and published builds run both.
+A preparation job assembles one candidate containing those image references,
+packaged charts, and stamped deployment config. Fresh images are pushed once to a
+disposable registry and exported as OCI layouts. Each test runner copies the
+candidate into its own registry without rebuilding images or repackaging charts
+or config. k3s uses that registry as its `ghcr.io` mirror. Stamped HelmReleases
+use native `chartRef` resources backed by `OCIRepository` sources pinned to chart
+digests. The CI site points those sources at its temporary registry while
+preserving each digest. Scout image references also retain their digests.
 
-The receipt is build identity metadata, not another component inventory. Hauler
-remains the component manifest owner ([ADR 0033](adr/0033-build-lane-bundling-and-airgap-transport.md)).
-Its schema records the repository, revision, producer run and attempt, version,
-haul manifest digest, and config digest. The raw OCI manifest must match the config
-digest, and its signed annotations must match the build identity fields.
+The candidate records the repository, revision, workflow run and attempt, version,
+and artifact digests. Every consuming job validates this identity; artifacts from
+another attempt cannot substitute for missing inputs. Both Flux legs use the
+same config digest, verified against its raw OCI manifest and build annotations,
+and signed with an ephemeral CI key. Config and site signing keys are independent.
+Hauler remains the component manifest owner
+([ADR 0033](adr/0033-build-lane-bundling-and-airgap-transport.md)).
+
+On main, publication requires both Flux legs, the Ansible tests, and the existing
+image scans and smoke tests to pass. Publication copies the candidate's OCI
+content to GHCR, verifies that the digests are unchanged, and signs it with the
+repository's release key. The haul bundle is assembled from those published
+components. The aggregate `deploy-and-test` check includes both deployment paths;
+there is no separate post-publication Flux workflow or advisory commit status.
+A green pull request run proves that candidate's deployment, without publishing
+it. A docs-only pull request can skip deployment when the accumulated plan also
+has no deployable changes.
+
 The config source copies its `application/gzip` layer unchanged; the default Flux
 source extraction filters would otherwise remove packaged media such as the
 sign-in logo. A Kustomize build failure stops the proof promptly with diagnostics.
-Registry locations are fixed in the workflows. Neither
-the producer's config stamping nor the published consumer resolves a moving
-`:main` tag to select this build's haul/config.
+After the predecessor snapshot is frozen, candidate assembly and publication do
+not resolve a moving `:main` tag to select this build's components or config.
 
-A producer run with no config receipts skips the published proof (for example,
-a docs-only build). If receipts exist for another attempt but the requested
-attempt has none, the proof fails with a request to rerun all jobs; it must not
-reuse an earlier attempt's config or report a successful skip. Duplicate, expired,
-malformed, or mismatched receipts fail, as do API and download errors. Reruns use
-a new attempt-specific receipt and are checked against their own signed
-annotations. The legacy `haul-version` artifact and Ansible deployment lane
-remain available during migration.
+For an infrastructure failure, rerun all jobs in the CI workflow so the new
+attempt builds and tests a complete candidate. Rerunning only failed jobs cannot
+reuse the previous attempt's artifacts. Manual `Post-Commit Tasks` runs accept
+`values=sops` or `values=plain`; the latter creates the values Secret directly in
+the cluster. Both modes run both Flux legs. The legacy `haul-version` artifact
+and Ansible deployment lane remain available during migration.
 
 The site artifact uses its own ephemeral signing key, independent of the Scout
 config key ([ADR 0031](adr/0031-gitops-deployment-base.md)). Both public keys are
@@ -125,7 +134,8 @@ these two dependency closures.
 Run the fast identity and boundary checks without a cluster:
 
 ```bash
-python3 -m pytest -q tooling/deploy .github/ci_resources/flux/test_*.py
+python3 -m pytest -q tooling/manifest tooling/deploy .github/ci_resources/flux \
+  .github/scripts/test_*flux_artifacts.py
 ```
 
 The certificate fixtures require OpenSSL with hostname verification (OpenSSL 3
@@ -133,16 +143,12 @@ in CI); macOS developers should put their installed OpenSSL 3 ahead of the syste
 LibreSSL on `PATH`. Install the pinned Flux CLI for the offline controller-render
 checks; those checks skip when the CLI is unavailable.
 
-This proof is one part of the release gate. The producer still carries unchanged
-components from a previous haul; concurrent build ordering and component ancestry
-need a separate solution. Complete
-disconnected dependency transport, coverage for the remaining platform services,
-and release promotion remain follow-up work. The advisory commit status can be replaced by
-another attempt for the same commit; promotion must check the specific producer
-attempt and config digest, rather than this commit status alone.
-The automatic published path requires this
-workflow on the upstream default branch and a new producer receipt; a green fork
-run exercises the local mode only.
+The producer serializes main builds from predecessor selection through config
+publication. This establishes component ancestry and binds the tested candidate
+to one workflow attempt. Complete disconnected dependency transport and coverage
+for the remaining platform services are separate milestones; these two Flux legs
+do not establish a complete air-gapped installation. Release selection and
+promotion are described in [Versions and Releases](versions-and-releases.md).
 
 ### SOPS admission guard
 
@@ -164,5 +170,5 @@ upstream regression separately before removing the workaround.
 ### Phase 3 transition to Flux as the default
 
 The current proof is a migration step. The [Phase 3 transition plan](gitops-implementation-plan.md#transition-to-flux-as-the-default)
-records the remaining coverage, upstream acceptance gates, and job reordering
-required before Flux becomes the default deployment gate.
+records the remaining coverage and upstream acceptance gates required before
+restricting the Ansible lane to changes that still need it.

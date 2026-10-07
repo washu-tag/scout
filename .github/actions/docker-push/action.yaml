@@ -1,7 +1,7 @@
 name: 'Docker push'
 description: >-
   Loads the built image tar and pushes it to ghcr at the derived tag. When a
-  build-lane version is given, also publishes an immutable 0.YYYYMMDD.<run> tag
+  build-lane version is given, also publishes a 0.YYYYMMDD.<run> tag
   and records the pushed digest for the ADR 0030 build manifest.
 inputs:
   image-name:
@@ -14,6 +14,10 @@ inputs:
       record no digest.
     required: false
     default: ''
+  push-derived:
+    description: 'Also update the legacy derived tag (false for an unchanged vendor image rebuilt into the build lane).'
+    required: false
+    default: 'true'
 outputs:
   digest:
     description: 'Registry digest (sha256:...) of the pushed image; empty when no build-lane version was given.'
@@ -24,7 +28,7 @@ runs:
     - name: Download artifact
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
-        name: ${{ inputs.image-name }}
+        name: ${{ inputs.image-name }}-attempt-${{ github.run_attempt }}
         path: ${{ runner.temp }}
     - name: Push image
       id: push
@@ -32,12 +36,15 @@ runs:
       env:
         IMAGE_NAME: ${{ inputs.image-name }}
         VERSION: ${{ inputs.version }}
+        PUSH_DERIVED: ${{ inputs.push-derived }}
       run: |
         set -euo pipefail
         # docker load prints "Loaded image: <ref>"; that ref carries the derived
         # tag baked into the tar by docker-build-cache. Push it (existing behavior).
         loaded_ref="$(docker load --input "${RUNNER_TEMP}/${IMAGE_NAME}.tar" | sed -e 's/.*: //g')"
-        docker push "${loaded_ref}"
+        if [ "$PUSH_DERIVED" = true ]; then
+          docker push "${loaded_ref}"
+        fi
 
         # No build-lane version (e.g. demo publish): derived tag only, done.
         if [ -z "${VERSION}" ]; then
@@ -45,7 +52,7 @@ runs:
           exit 0
         fi
 
-        # Also publish the immutable build-lane tag so the build manifest can pin
+        # Also publish the build-lane tag so the build manifest can pin
         # this image by name:tag@digest. It aliases the same image, so the registry
         # returns the same content digest.
         repo="${loaded_ref%:*}"
@@ -69,8 +76,9 @@ runs:
       if: inputs.version != ''
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: image-digest-${{ inputs.image-name }}
+        name: image-digest-${{ inputs.image-name }}-attempt-${{ github.run_attempt }}
         path: ${{ runner.temp }}/image-digests/${{ inputs.image-name }}.txt
+        retention-days: 90
     - name: Cleanup temp image tar
       shell: bash
       env:
