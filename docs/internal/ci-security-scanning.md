@@ -221,6 +221,45 @@ When scanners are first enabled, expect a large initial set of findings from pre
 3. **Dismiss false positives** — use "Dismiss" with a reason in the Security tab. This persists across runs.
 4. **Don't block the initial merge** — the PR-level checks prevent regressions. The existing findings are tracked in the Security tab and can be addressed over time.
 
+### CodeQL false positives in the Flux proof workflow
+
+The Flux proof workflow in [#808](https://github.com/washu-tag/scout/pull/808), also
+included in [#810](https://github.com/washu-tag/scout/pull/810), produces the following
+CodeQL findings. These dispositions apply only while the described boundaries hold.
+Review the current alert's source and data flow before dismissing it as **false
+positive**, and include that evidence in the dismissal comment. Keep the queries
+enabled for the rest of the codebase.
+
+- **`actions/cache-poisoning/poisonable-step` in `deploy-flux.yaml`:** the reported
+  path combines the `workflow_dispatch` trigger with a checkout of
+  `github.event.workflow_run.head_sha`. That SHA is available only for
+  `workflow_run`; the job requires a successful `push` to `main` in
+  `washu-tag/scout`, including a matching producer repository. Manual runs accept
+  only the values mode and test leg, and check out `github.sha`. Reassess if a
+  dispatch input can select another revision, the producer guards change, or code
+  from another source is executed in the default branch's cache context.
+- **`actions/untrusted-checkout/medium` in `deploy-flux.yaml`:** the query reports
+  the producer SHA checkout without considering the repository guard. Published
+  runs enforce the upstream main-push boundary above. PR and manual runs use
+  disposable GitHub-hosted runners and read-only repository permissions. The
+  separate status writer executes no checked-out repository code. Reassess if
+  those guards, permissions, runner isolation, or separation from the writer
+  change.
+- **`py/clear-text-logging-sensitive-data` in `negative_cases.py`:** the two calls
+  to `secrets_in()` return resource names from `kubectl get secrets -o name`, not
+  Secret values. The error annotation prints those names; the leak detector
+  reports fixture key names, and controller messages mask fixture values of at
+  least eight characters before printing. Reassess if the helper fetches Secret
+  data, diagnostics include values, or masking changes.
+
+Record the affected revision and the relevant boundary in each alert's dismissal
+comment. A dismissal can affect matching findings across branches, so reopen it
+when those assumptions stop holding. Remove an obsolete rationale when the
+affected code is removed or the query no longer reports it. Documentation changes
+alone do not dismiss alerts; an authorized repository user must use GitHub's
+[alert dismissal](https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-code-scanning-alerts/triage-alerts-in-pull-requests#dismissing-an-alert-on-your-pull-request)
+UI or API.
+
 ## Tuning and common modifications
 
 ### Suppressing a Trivy CVE
