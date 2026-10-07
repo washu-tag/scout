@@ -47,7 +47,7 @@ Note that `scout-monitoring` is the default monitoring namespace, but it may be 
 
 ## Dashboards
 
-Once your service is emitting metrics which are being collected, you'll want a way to visualize them. If you've never made a Grafana dashbaord before, see their [Create Dashboards](https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/create-dashboard/) guide. 
+Once your service is emitting metrics which are being collected, you'll want a way to visualize them. If you've never made a Grafana dashboard before, see their [Create Dashboards](https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/create-dashboard/) guide. 
 
 You can create a dashboard using Scout's Grafana UI, but it will not be saved there. Scout's Grafana only persistently displays dashboards which are written in labelled ConfigMaps in the Scout cluster. After creating the dashboard, export the JSON, and include it in a ConfigMap labelled `grafana_dashboard: "1"` in your Pluggable App's helm chart. Example:
 
