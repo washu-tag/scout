@@ -21,15 +21,63 @@ updates:
 
   # Base images Renovate bumps (keycloak, superset) are excluded here.
   - package-ecosystem: 'docker'
-    directories:
-      - '/extractor/hl7-transformer'
-      - '/extractor/hl7log-extractor'
-      - '/helm/scout-notebook'
-      - '/hl7-listener'
-      - '/keycloak'
-      - '/keycloak-fragment-reconciler'
-      - '/launchpad'
-      - '/report-viewer'
+    directory: '/extractor/hl7-transformer'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      docker:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'docker'
+    directory: '/extractor/hl7log-extractor'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      docker:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'docker'
+    directory: '/helm/scout-notebook'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      docker:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'docker'
+    directory: '/hl7-listener'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      docker:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'docker'
+    directory: '/keycloak'
     schedule:
       interval: 'weekly'
     commit-message:
@@ -40,10 +88,51 @@ updates:
     ignore:
       - dependency-name: 'quay.io/keycloak/keycloak'
     groups:
-      docker-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      docker:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'docker'
+    directory: '/keycloak-fragment-reconciler'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      docker:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'docker'
+    directory: '/launchpad'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      docker:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'docker'
+    directory: '/report-viewer'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    cooldown:
+      default-days: 7
+    groups:
+      docker:
+        patterns:
+          - '*'
 
   # Resolved deps reach the dependency graph via
   # .github/workflows/gradle-dependency-submission.yaml.
@@ -57,10 +146,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      gradle-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      gradle:
+        patterns:
+          - '*'
 
   - package-ecosystem: 'gradle'
     directory: '/hl7-listener'
@@ -72,10 +160,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      gradle-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      gradle:
+        patterns:
+          - '*'
 
   # Renovate bumps the Keycloak deps together with the Keycloak image.
   - package-ecosystem: 'gradle'
@@ -90,10 +177,9 @@ updates:
     ignore:
       - dependency-name: 'org.keycloak:*'
     groups:
-      gradle-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      gradle:
+        patterns:
+          - '*'
 
   - package-ecosystem: 'gradle'
     directory: '/tests/ingest'
@@ -105,10 +191,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      gradle-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      gradle:
+        patterns:
+          - '*'
 
   - package-ecosystem: 'pip'
     directory: '/extractor/hl7-transformer'
@@ -120,10 +205,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      pip-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      pip:
+        patterns:
+          - '*'
 
   - package-ecosystem: 'pip'
     directory: '/keycloak-fragment-reconciler'
@@ -135,10 +219,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      pip-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      pip:
+        patterns:
+          - '*'
 
   - package-ecosystem: 'pip'
     directory: '/report-viewer'
@@ -150,10 +233,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      pip-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      pip:
+        patterns:
+          - '*'
 
   - package-ecosystem: 'pip'
     directory: '/sdk/python'
@@ -165,10 +247,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      pip-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      pip:
+        patterns:
+          - '*'
 
   - package-ecosystem: 'npm'
     directory: '/launchpad'
@@ -180,10 +261,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      npm-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      npm:
+        patterns:
+          - '*'
 
   - package-ecosystem: 'npm'
     directory: '/report-viewer/frontend'
@@ -195,10 +275,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      npm-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      npm:
+        patterns:
+          - '*'
 
   - package-ecosystem: 'npm'
     directory: '/tests/auth'
@@ -210,7 +289,6 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      npm-minor-patch:
-        update-types:
-          - 'minor'
-          - 'patch'
+      npm:
+        patterns:
+          - '*'
