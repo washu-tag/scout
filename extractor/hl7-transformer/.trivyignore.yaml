@@ -36,8 +36,8 @@ vulnerabilities:
   # DelegatingDecompressorFrameListener, i.e. an HTTP/2 server/client doing
   # content decompression — Spark uses netty for its own RPC/block transfer, and
   # netty-codec-http2 is only on the classpath for the connect/gRPC path the
-  # headless worker never starts. Fixed in 4.2.16, and Spark 4.1.2 (the newest
-  # tag) still ships 4.2.7, so there's nothing to adopt.
+  # headless worker never starts. Fixed in 4.2.16; the selected Spark 4.1.1
+  # image still bundles 4.2.7.
   - id: CVE-2026-56819 # netty-codec-http2 4.2.7 (Spark-bundled)
   # derby backs Spark's embedded metastore, which Scout doesn't use (remote
   # HMS); the advisory's 10.16.1.2 was never published to Maven Central
@@ -55,12 +55,11 @@ vulnerabilities:
   - id: CVE-2025-12183 # lz4-java 1.8.0
   # Shaded inside hadoop-client-runtime 3.4.2 from the selected Spark base.
   - id: CVE-2025-52999 # jackson-core 2.12.7 (shaded in hadoop-client-runtime)
-  # jackson-databind bundled by the Apache Spark engine base image (2.19/2.20)
-  # and shaded in hadoop-client-runtime (2.12.7.1); no rebuild of the Spark
-  # 4.1.x engine line with a fixed Jackson exists yet.
+  # Jackson in the selected Spark image, including shaded Hadoop/Parquet copies.
+  # See ci-security-scanning.md for the supported-pair upgrade assessment.
   - id: CVE-2026-54512 # jackson-databind
   - id: CVE-2026-54513 # jackson-databind
-  - id: CVE-2026-68497 # jackson-databind 2.19.2/2.20.0 (branch-4.1 still pins 2.21.2)
+  - id: CVE-2026-68497 # jackson-databind 2.19.2/2.20.0
   # Temporary upstream-bundle risk acceptance, not false positives. See
   # docs/internal/ci-security-scanning.md for exposure and removal conditions.
   - id: CVE-2026-68494
