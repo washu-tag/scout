@@ -65,7 +65,7 @@ def wait_settled(name):
 
 
 def secrets_in(namespace, names=None):
-    p = kubectl("get", "secrets", "-n", namespace, "-o", "name", check=False)
+    p = kubectl("get", "secrets", "-n", namespace, "-o", "name")
     found = [l.split("/", 1)[1] for l in p.stdout.split() if l]
     return [n for n in found if names is None or n in names]
 
