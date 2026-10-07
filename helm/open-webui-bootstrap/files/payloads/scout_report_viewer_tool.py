@@ -196,7 +196,7 @@ class Tools:
     async def scout_chart_sql(
         self,
         sql: str,
-        vega_lite_spec: dict,
+        vega_lite_spec: str,
         sql_explanation: Optional[str] = None,
         file_id: Optional[str] = None,
         id_column: Optional[str] = None,
@@ -230,7 +230,8 @@ class Tools:
 
         :param sql: Trino SQL for the chart's rows, already aggregated. In
             file mode, include `{{cohort}}` exactly once.
-        :param vega_lite_spec: Vega-Lite spec with no `data` key.
+        :param vega_lite_spec: Vega-Lite spec as a JSON string, with no
+            `data` key.
         :param sql_explanation: One- to three-sentence plain-language
             description of what the chart shows, covering both the rows the
             SQL selects and what the chart does with them. Surfaced behind
@@ -255,13 +256,23 @@ class Tools:
                 return got
             fetched = got
 
-        # A spec that fails to serialize would otherwise raise past every
-        # handler below as a raw, unguided exception.
+        # str, not dict: Ollama silently drops gemma4 calls with malformed
+        # object args, but a malformed string reaches here and can be retried.
         try:
-            json.dumps(vega_lite_spec)
+            spec = (
+                json.loads(vega_lite_spec)
+                if isinstance(vega_lite_spec, str)
+                else vega_lite_spec
+            )
+            json.dumps(spec)
         except (TypeError, ValueError, RecursionError) as exc:
             return (
                 f"Error building chart: vega_lite_spec is not valid JSON ({exc}).\n\n"
+                "Fix the spec and call scout_chart_sql again."
+            )
+        if not isinstance(spec, dict):
+            return (
+                "Error building chart: vega_lite_spec must be a JSON object.\n\n"
                 "Fix the spec and call scout_chart_sql again."
             )
 
@@ -271,7 +282,7 @@ class Tools:
                 plot = await self._chart_from_file(
                     fetched=fetched,
                     sql=sql,
-                    vega_lite_spec=vega_lite_spec,
+                    vega_lite_spec=spec,
                     sql_explanation=sql_explanation,
                     id_column=id_column,
                     oauth=__oauth_token__,
@@ -282,7 +293,7 @@ class Tools:
                     "/api/plots",
                     {
                         "sql": sql,
-                        "vega_lite_spec": vega_lite_spec,
+                        "vega_lite_spec": spec,
                         "sql_explanation": sql_explanation or "",
                         "owui_chat_id": _chat_id(__metadata__),
                     },
