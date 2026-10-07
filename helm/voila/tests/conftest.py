@@ -4,7 +4,7 @@ voila_runtime and playbook_helpers import third-party modules
 (voila, jupyter_server, trino) that aren't installed in the unit-test
 environment - voila in particular pulls a large dependency tree. Stub
 them in sys.modules before the helpers are imported so the tests need
-nothing but pytest.
+only pytest and pyjwt[crypto] (voila_runtime validates JWTs).
 
 Run with: cd helm/voila && PYTHONPATH=files pytest tests/ -v
 """

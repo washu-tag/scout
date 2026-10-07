@@ -393,7 +393,7 @@ jobs:
         run: cd sdk/python && pytest tests_contract/ -v
       - name: 'Unit tests: Voila chart helpers'
         shell: bash
-        run: cd helm/voila && PYTHONPATH=files pytest tests/ -v
+        run: pip install 'pyjwt[crypto]' && cd helm/voila && PYTHONPATH=files pytest tests/ -v
       - name: 'Install OPA'
         shell: bash
         # Pinned to the deployed OPA image (opa_image_tag in versions.yaml):
