@@ -45,6 +45,34 @@ The build lane records concrete artifact digests. Legacy derived image tags
 
 ## Release Process
 
+### What changed and why
+
+The previous release workflow stamped a version, waited for Post-Commit Tasks
+(including the existing Ansible deployment tests), published release-version
+charts, and created the public GitHub Release. A separate job then added the
+release version to the haul and config artifacts. Flux testing did not gate
+release publication.
+
+The release workflow now makes the published Flux test result part of that
+decision. The maintainer still starts a release the same way, and the version
+stamp, Ansible-compatible images/charts and dev reset remain.
+
+| Change | Problem it fixes |
+|---|---|
+| Wait for both published Flux ingest and authentication tests against the stamped build. | A successful image build and Ansible deployment do not establish that the published GitOps config works. |
+| Identify the exact build attempt, test attempt and artifact digests. | A green commit status or an artifact left by an earlier retry cannot establish which package passed. |
+| Freeze the previous signed package and serialize main builds. | Concurrent builds and changes accumulated after failed builds must not produce a package assembled from the wrong predecessors. |
+| Verify release aliases and attach a signed record before making the GitHub Release public. | A release could previously appear complete before its transportable package aliases existed. The record lets operators identify the tested package later. |
+| Resume interrupted publication using the original identities. | Retrying partial publication must not silently substitute rebuilt artifacts or overwrite conflicting release content. |
+
+This is the release handoff needed before treating the GitOps package as a
+versioned on-prem distribution. It does not complete disconnected installation
+testing or replace the existing Ansible deployment path. Merging this release
+workflow into `main` makes the Flux gate mandatory for the next release; there
+is no separate activation switch. Verify a published upstream build and both
+Flux legs before starting that release. The trusted release path is now limited
+to upstream `main`.
+
 ### Publication order
 
 1. Validate an upstream `main` release and its version. Preserve the existing
@@ -108,14 +136,38 @@ backup/rollback limits are described in
 
 ### Before a draft or release exists
 
-If the failure was transient, re-dispatch the same version. The workflow reuses
-the stamped commit when no reset followed it, revalidates the producer and proof,
-and retries publication. A failed proof, missing receipt or expired evidence
-fails closed; a green status or manual tag alias is not a bypass.
+If Flux tests fail because of a runner, network or other temporary problem,
+repair that problem and choose **Re-run all jobs** on the original published
+**Deploy via Flux (on-prem)** run associated with the release build. This
+retests the same published artifacts without rebuilding them. All required jobs
+must succeed in one attempt, so **Re-run failed jobs** is insufficient. Starting
+a new manual Flux run uses locally built artifacts and cannot authorize a
+release.
 
-If code must change, land the fix and a reset before re-dispatching. The reset
-commit must contain a line exactly `Reset to dev versions`; validation uses it
-to distinguish a new build from a retry of the old stamp. On a protected branch,
+The Release workflow allows up to 90 minutes for the build and published Flux
+proof combined.
+If it is still waiting, it can accept the successful Flux retry. If it has
+already failed or timed out, re-dispatch Release with the same version after
+the Flux retry succeeds. Re-dispatching Release alone does not rerun Flux.
+
+If Post-Commit Tasks itself failed, rerun all jobs in that original build run
+first. The new successful producer attempt triggers a new published Flux run
+and requires its own proof. If a newer build has already advanced the signed
+predecessor beyond the stamped source, use the fixed-source procedure below
+instead of retrying the old producer.
+
+For a transient Release API or publication failure before a draft exists,
+re-dispatch the same version. The workflow reuses the stamped commit when no
+reset followed it and revalidates the successful build and proof. The gate has
+no override for an unrelated test outage: until a complete published proof
+succeeds, the release stays blocked. A green status or manual tag alias is not
+a bypass, and expired evidence cannot be reconstructed by re-dispatching.
+
+If application, test or workflow code must change, land the fix and a reset
+before re-dispatching. A rerun keeps the original source revision and cannot
+pick up that fix. The reset commit must contain a line exactly
+`Reset to dev versions`; validation uses it to distinguish a new build from a
+retry of the old stamp. On a protected branch,
 preserve that line in the squash commit body. Then dispatch the same version to
 stamp the fixed source. Do not use this route once a draft or public release
 already contains promotion evidence for that version.

@@ -29,7 +29,7 @@ from artifact_identity import (  # noqa: E402
     validate_manifest,
     validate_receipt,
 )
-from proof_receipt import validate_proof  # noqa: E402
+from proof_receipt import REQUIRED_JOBS as CONSUMER_JOBS, validate_proof  # noqa: E402
 
 REPOSITORY = "washu-tag/scout"
 REGISTRIES = {
@@ -42,12 +42,7 @@ CHARTS = "hl7-transformer dcm4chee hive-metastore hl7-listener hl7log-extractor 
 VERSION = re.compile(r"[1-9][0-9]*\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 MAX_JSON = 16384
 MAX_MANIFEST = 1024 * 1024
-REQUIRED_JOBS = (
-    "Resolve exact published config",
-    "deploy-and-test-flux (ingest)",
-    "deploy-and-test-flux (auth)",
-    "Record published artifact proof",
-)
+REQUIRED_JOBS = CONSUMER_JOBS + ("Record published artifact proof",)
 
 
 class PromotionError(ValueError):
