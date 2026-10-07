@@ -75,7 +75,8 @@
           "execErrState": "KeepLast",
           "annotations": {
             "description": "The HL7 listener failed exchanges in the last 15 minutes, usually because it could not write a message to Kafka. Each such message was NAKed back to the sender, which queues and resends it, so the feed is delayed rather than lost. Check the Kafka broker and the listener logs.",
-            "summary": "HL7 listener exchange failures in the last 15 minutes (messages NAKed to the sender).",
+            "summary": "HL7 listener exchange failures in the last 15 minutes (messages NAKed to the sender, see runbook).",
+            "runbook_url": "https://github.com/washu-tag/scout/blob/main/ansible/roles/hl7-listener/README.md#hl7-listener-exchange-failures",
             "URL": "[% server_hostname %]"
           },
           "labels": {},
