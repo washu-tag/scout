@@ -109,6 +109,36 @@ All actions referenced with `uses:` — first-party (`actions/*`, `github/codeql
 
 **Images scanned** (the `&image-matrix` anchor in `ci.yaml`, shared by `build-and-upload` and `scan-images`): `hl7log-extractor`, `hl7-transformer`, `hl7-listener`, `scout-notebook`, `launchpad`, `superset`, `keycloak`, `report-viewer`.
 
+#### Temporary upstream dependency exceptions
+
+Fix dependencies Scout controls using published releases. For libraries bundled
+inside upstream Spark jars or pip, use the per-image `.trivyignore.yaml` with the
+advisory ID, affected jar path or package version, rationale and expiration date.
+Do not repackage Hadoop/Parquet jars or maintain a Scout build of pip solely to
+clear the scan. Suppression accepts the stated risk; it does not patch the image.
+
+The October 2026 exceptions expire on December 1, 2026:
+
+- **Transformer Jackson:** five newer parser/deserialization DoS findings are
+  limited to the shipped Spark 4.1.1, Hadoop and Parquet jar paths. Scout reads
+  HL7 as text and does not configure the advisories' async/DataInput parsers,
+  polymorphic fallback or identity-enabled mappings directly. This is not proof
+  that every transitive path is unreachable, so ingestion DoS remains a residual
+  risk. Remove the exceptions when a supported Spark/Delta combination includes
+  fixed Jackson copies, including the shaded copies, and passes ingestion tests.
+- **Notebook pip:** pip 26.2.1 still vendors urllib3 2.7.0. The main environment
+  uses urllib3 >=2.8.0. The TLS advisory concerns HTTPS forwarding-proxy settings,
+  unlike Scout's HTTPS package-index URL; custom user proxy settings remain a risk.
+  The chunk-parser finding can exhaust pip when downloading from a malicious
+  server, so use trusted package indexes. Remove these exceptions when a released
+  pip bundles urllib3 >=2.8.0. Trivy reports the vendor from pip's embedded SBOM
+  without a path, so the exceptions match its exact package version. Keep the
+  Dockerfile's separate urllib3 floor to prevent an application copy regressing.
+
+Expiration makes these findings block CI again if upstream fixes have not been
+adopted. Reassess the affected paths and upstream releases before renewing an
+exception. Full image scans still report other packages and new advisory IDs.
+
 ### Semgrep
 
 Runs in the `security.yaml` workflow inside the official `semgrep/semgrep` container (version-pinned to avoid unexpected breakage from `latest`). Current rule packs:
