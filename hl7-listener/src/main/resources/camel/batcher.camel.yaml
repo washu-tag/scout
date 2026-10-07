@@ -20,8 +20,9 @@
 #
 # Camel reconnects without a delay, so with a backlog a failing batch would be retried
 # back-to-back. The route-scoped onException below pauses before letting the failure through,
-# capping retries at about one per hl7.batcher.retry.delay.ms. The pause plus one upload attempt
-# must stay under Kafka's max.poll.interval.ms (5 min), or the broker evicts the consumer.
+# capping retries at about one per hl7.batcher.retry.delay.ms. The pause and the upload attempt
+# both run between Kafka polls, and an upload against stalled storage can take 3 minutes to fail,
+# so maxPollIntervalMs raises Kafka's 5-minute default, past which the broker evicts the consumer.
 #
 # Config values are Camel property placeholders resolved from the Deployment env.
 #
@@ -39,6 +40,7 @@
         allowManualCommit: true
         autoCommitEnable: false
         breakOnFirstError: true
+        maxPollIntervalMs: 900000
         maxPollRecords: '{{hl7.batcher.max.poll.records}}'
         pollTimeoutMs: '{{hl7.batcher.poll.timeout.ms}}'
         batchingIntervalMs: '{{hl7.batcher.batching.interval.ms}}'
