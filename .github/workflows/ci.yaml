@@ -1720,16 +1720,6 @@ jobs:
           cosign-private-key: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}
           manifest-layout: candidate/manifest
-      - name: Surface the build version for the release lane
-        run: echo "${VERSION}" > haul-version.txt
-      # Remove this compatibility artifact when the legacy release alias job is replaced.
-      - name: Upload the build version
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: haul-version
-          overwrite: true
-          path: haul-version.txt
-          retention-days: 90
 
   config-artifact-publish:
     if: github.ref_name == 'main' && needs.publish-haul.result == 'success' && needs.publish-haul.outputs.ready == 'true'

@@ -11,14 +11,14 @@ PR. `release-dispatch.yaml` creates a lightweight boundary tag and dispatches
 `release.yaml` on `main`. Manual dispatch of that same workflow remains available.
 
 The release workflow keeps the version-bump/reset commits required by Ansible.
-It waits for the exact stamped build and its published Flux proof, promotes the
+It waits for the exact stamped build, including its Flux tests, promotes the
 verified package digests, attaches a signed release record, and publishes the
 GitHub Release last. A boundary tag or an OCI version tag alone does not mean a
 release completed. Failed releases can reserve a version number.
 
-The gate requires the producer and consumer workflows on the upstream default
-branch and a new published producer receipt. Fork/local-artifact tests exercise
-the implementation but cannot satisfy this upstream release gate. See
+The gate requires a successful upstream `main` CI attempt and its published
+artifact digests. Fork and pull-request tests exercise the same candidate path
+but cannot authorize an upstream release. See
 [ADR 0030](adr/0030-two-lane-versioning-and-artifact-publishing.md) for the
 proposed interim promotion contract.
 
@@ -45,33 +45,12 @@ The build lane records concrete artifact digests. Legacy derived image tags
 
 ## Release Process
 
-### What changed and why
-
-The previous release workflow stamped a version, waited for Post-Commit Tasks
-(including the existing Ansible deployment tests), published release-version
-charts, and created the public GitHub Release. A separate job then added the
-release version to the haul and config artifacts. Flux testing did not gate
-release publication.
-
-The release workflow now makes the published Flux test result part of that
-decision. The maintainer still starts a release the same way, and the version
-stamp, Ansible-compatible images/charts and dev reset remain.
-
-| Change | Problem it fixes |
-|---|---|
-| Wait for both published Flux ingest and authentication tests against the stamped build. | A successful image build and Ansible deployment do not establish that the published GitOps config works. |
-| Identify the exact build attempt, test attempt and artifact digests. | A green commit status or an artifact left by an earlier retry cannot establish which package passed. |
-| Freeze the previous signed package and serialize main builds. | Concurrent builds and changes accumulated after failed builds must not produce a package assembled from the wrong predecessors. |
-| Verify release aliases and attach a signed record before making the GitHub Release public. | A release could previously appear complete before its transportable package aliases existed. The record lets operators identify the tested package later. |
-| Resume interrupted publication using the original identities. | Retrying partial publication must not silently substitute rebuilt artifacts or overwrite conflicting release content. |
-
-This is the release handoff needed before treating the GitOps package as a
-versioned on-prem distribution. It does not complete disconnected installation
-testing or replace the existing Ansible deployment path. Merging this release
-workflow into `main` makes the Flux gate mandatory for the next release; there
-is no separate activation switch. Verify a published upstream build and both
-Flux legs before starting that release. The trusted release path is now limited
-to upstream `main`.
+Flux ingest and authentication tests run alongside the Ansible tests in
+Post-Commit Tasks. Publication requires both Flux legs to pass using the run's
+candidate images and config. Publication copies the tested artifacts without
+rebuilding them. The release workflow requires that same CI attempt to succeed.
+This gate covers the core on-prem profile, not disconnected installation or
+optional components.
 
 ### Publication order
 
@@ -82,12 +61,10 @@ to upstream `main`.
 2. Create or reuse `Update to version X.Y.Z`. Its exact SHA, rather than moving
    `main`, is the target of the release build. Keep the stamp/reset scripts until
    the Ansible cutover.
-3. Wait up to 90 minutes for that `ci.yaml` producer attempt and the corresponding
-   published `deploy-flux.yaml` proof. Validate repository, workflow, commit, run
-   and attempt metadata through GitHub's API. The proof must identify the same
-   haul-manifest, bundle and config digests and contain successful ingest and
-   authentication legs in the SOPS profile. A per-SHA status is advisory and
-   cannot authorize promotion.
+3. Wait up to 90 minutes for the stamped commit's `ci.yaml` attempt. Validate
+   repository, workflow, commit, run and attempt through GitHub's API. Both Flux
+   legs and package publication must succeed in that attempt; skipped jobs or
+   artifacts left by an earlier attempt cannot authorize release.
 4. Under the shared promotion lock, check again that no draft/public release has
    appeared, then package and sign the fifteen release-version Helm charts for
    existing Ansible consumers. The producer has already published the seven
@@ -97,7 +74,7 @@ to upstream `main`.
 5. Revalidate evidence, verify all three package artifacts by digest and managed
    key, and prepare `scout-release-X.Y.Z.yaml` plus
    `scout-release-X.Y.Z.sigstore.json`. The record binds source, producer attempt,
-   consumer attempt, package digests and compatibility outputs. It references
+   Flux test profile, package digests and compatibility outputs. It references
    the Hauler inventory rather than replacing it with another component list.
 6. Create a draft GitHub Release, attach and read back the signed record, add
    matching `X.Y.Z` aliases to the exact manifest/bundle/config digests, and check
@@ -110,7 +87,7 @@ to upstream `main`.
    and its signature remain durable GitHub Release assets.
 
 The normal release chart/promotion job and recovery job share
-`scout-release-promotion` concurrency. The producer and the release's build/proof
+`scout-release-promotion` concurrency. The CI producer and the release's build
 wait do not hold this lock. Retain the operational hold on unrelated merges
 while `main` is stamped: legacy tags remain mutable, and a digest mismatch stops
 promotion rather than silently accepting another build.
@@ -123,8 +100,8 @@ changes. `skip_dev_reset=true` leaves the successful release stamp in place and
 requires a deliberate later reset.
 
 Non-main release publication is rejected before stamping. Such branches do not
-have the trusted published producer/consumer path; their CI success cannot be
-substituted for this proof. Build-lane tests and development branches remain
+have the trusted upstream publication path; their CI success cannot authorize
+a release. Build-lane tests and development branches remain
 available independently.
 
 Before upgrading a site, update its pinned docs URL alongside its Scout release
@@ -136,30 +113,23 @@ backup/rollback limits are described in
 
 ### Before a draft or release exists
 
-If Flux tests fail because of a runner, network or other temporary problem,
-repair that problem and choose **Re-run all jobs** on the original published
-**Deploy via Flux (on-prem)** run associated with the release build. This
-retests the same published artifacts without rebuilding them. All required jobs
-must succeed in one attempt, so **Re-run failed jobs** is insufficient. Starting
-a new manual Flux run uses locally built artifacts and cannot authorize a
-release.
+If build, Flux or Ansible tests fail because of a temporary runner or network
+problem, repair that problem and choose **Re-run all jobs** on the original
+**Post-Commit Tasks** run. All required tests and publication jobs must succeed
+in one attempt. **Re-run failed jobs** cannot combine earlier tests with a new
+publication. A rerun can rebuild artifacts; it must test the new candidate
+before publishing that attempt's outputs.
 
-The Release workflow allows up to 90 minutes for the build and published Flux
-proof combined.
-If it is still waiting, it can accept the successful Flux retry. If it has
-already failed or timed out, re-dispatch Release with the same version after
-the Flux retry succeeds. Re-dispatching Release alone does not rerun Flux.
-
-If Post-Commit Tasks itself failed, rerun all jobs in that original build run
-first. The new successful producer attempt triggers a new published Flux run
-and requires its own proof. If a newer build has already advanced the signed
-predecessor beyond the stamped source, use the fixed-source procedure below
-instead of retrying the old producer.
+The Release workflow waits up to 90 minutes for CI. If it has already failed or
+timed out, re-dispatch Release with the same version after CI succeeds.
+Re-dispatching Release alone does not rerun CI. If a newer build has advanced
+the signed predecessor beyond the stamped source, use the fixed-source procedure
+below rather than retrying the old producer.
 
 For a transient Release API or publication failure before a draft exists,
 re-dispatch the same version. The workflow reuses the stamped commit when no
-reset followed it and revalidates the successful build and proof. The gate has
-no override for an unrelated test outage: until a complete published proof
+reset followed it and revalidates the successful CI build. The gate has
+no override for an unrelated test outage: until the required CI attempt
 succeeds, the release stays blocked. A green status or manual tag alias is not
 a bypass, and expired evidence cannot be reconstructed by re-dispatching.
 
@@ -183,17 +153,16 @@ summary or the signed release record:
 | `version` | The same `X.Y.Z` |
 | `revision` | Exact stamped source SHA |
 | `producer_run_id`, `producer_run_attempt` | Successful Post-Commit Tasks attempt |
-| `consumer_run_id`, `consumer_run_attempt` | Successful published Flux proof attempt |
 | `boundary_sha` | Original lightweight release-boundary commit (`boundaryRevision` in the signed record) |
 
 Recovery calls the same `tooling/release/promote.py promote` implementation. It
 rechecks live GitHub evidence and signatures, accepts matching existing assets
 and aliases, and completes missing draft work. It does not rebuild, repackage,
-stamp, overwrite conflicting content or accept local-artifact proof. A complete
+stamp, overwrite conflicting content or accept fork/PR evidence. A complete
 published release with the same record and aliases is a no-op. A published
 release missing the signed record, expired workflow artifacts, or a different
 existing digest requires investigation; recovery does not invent replacement
-evidence. Keep the original producer and proof artifacts through release
+evidence. Keep the original build outputs through release
 closeout (the workflows retain them for 90 days).
 
 Use this recovery workflow rather than re-running `release.yaml`: repackaging a
@@ -227,8 +196,7 @@ re-dispatch an already published version just to reset it.
 
 | Component | Responsibility |
 |---|---|
-| `ci.yaml` | Build-lane artifacts, signed package and attempt-specific producer receipt |
-| `deploy-flux.yaml` | Exact published config verification, ingest/authentication tests and attempt-specific proof |
+| `ci.yaml` | Build and test candidate artifacts, publish the signed package and attempt-specific digests |
 | `release-dispatch.yaml` | Release-please boundary tag and main release dispatch |
 | `release.yaml` | Stamp, wait, compatibility charts, verified promotion, successful-release dev reset |
 | `promote-release.yaml` | Resume promotion with explicit original identities; no rebuild/reset |
@@ -239,6 +207,13 @@ When adding a release artifact, keep the producer path map, release chart list,
 `tooling/release/promote.py` compatibility lists and version-file tables below in
 sync. A successful core proof does not certify optional services, haul restore,
 registry relocation or cold-cache disconnected installation.
+
+### Compatibility retirement
+
+The Phase 5 Ansible cutover removes the stamp/reset commits, legacy mutable image
+aliases and separately repackaged release charts. Until that cutover, these
+outputs remain available and are recorded separately from the Flux-tested
+package. See the [implementation plan](gitops-implementation-plan.md#phase-5--on-prem-cutover).
 
 ## GitHub App Setup
 

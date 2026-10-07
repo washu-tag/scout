@@ -35,7 +35,7 @@ class PublishedTagLookup(FakeGitHub):
 )
 def test_draft_invisible_to_tag_lookup_resumes_original_release(tmp_path, failure):
     source, oci = fixture()
-    api = PublishedTagLookup(source.producer, source.proof)
+    api = PublishedTagLookup(source.producer)
     if failure == "alias":
         oci.fail = p.REGISTRIES["bundleDigest"]
     else:
@@ -57,7 +57,7 @@ def test_draft_invisible_to_tag_lookup_resumes_original_release(tmp_path, failur
 
 def test_conflicting_draft_record_is_found_before_any_retry_mutation(tmp_path):
     source, oci = fixture()
-    api = PublishedTagLookup(source.producer, source.proof)
+    api = PublishedTagLookup(source.producer)
     api.fail = "publish"
     with pytest.raises(p.PromotionError, match="injected"):
         promote(api, oci, tmp_path)
@@ -70,7 +70,7 @@ def test_conflicting_draft_record_is_found_before_any_retry_mutation(tmp_path):
 
 def test_ambiguous_existing_drafts_fail_before_any_mutation(tmp_path):
     source, oci = fixture()
-    api = PublishedTagLookup(source.producer, source.proof)
+    api = PublishedTagLookup(source.producer)
     api.release = {"id": 303, "tag_name": "v" + VERSION, "draft": True}
     api.duplicate = True
     with pytest.raises(p.PromotionError, match="multiple releases"):
@@ -99,8 +99,8 @@ def test_draft_reads_use_writer_identity_but_actions_evidence_keeps_reader(monke
 
 
 class StarterGitHub(PublishedTagLookup):
-    def __init__(self, producer, proof):
-        super().__init__(producer, proof)
+    def __init__(self, producer):
+        super().__init__(producer)
         self.starters = {}
         self.fail_upload = None
         self.changed_asset = None
@@ -151,7 +151,7 @@ class StarterGitHub(PublishedTagLookup):
 @pytest.mark.parametrize("suffix", [".yaml", ".sigstore.json"])
 def test_real_failed_upload_placeholder_is_cleaned_then_resumed(tmp_path, suffix):
     source, oci = fixture()
-    api = StarterGitHub(source.producer, source.proof)
+    api = StarterGitHub(source.producer)
     api.fail_upload = suffix
     with pytest.raises(p.PromotionError, match="upload 502"):
         promote(api, oci, tmp_path)
@@ -165,14 +165,14 @@ def test_real_failed_upload_placeholder_is_cleaned_then_resumed(tmp_path, suffix
     assert api.events[-1] == "publish"
 
 
-@pytest.mark.parametrize("case", ["proof", "package", "alias", "tag", "boundary"])
+@pytest.mark.parametrize("case", ["tests", "package", "alias", "tag", "boundary"])
 def test_no_placeholder_deletion_before_complete_preflight(tmp_path, case):
     source, oci = fixture()
-    api = StarterGitHub(source.producer, source.proof)
+    api = StarterGitHub(source.producer)
     api.release = {"id": 303, "tag_name": "v" + VERSION, "draft": True}
     api.starter()
-    if case == "proof":
-        api.proof["valuesMode"] = "plain"
+    if case == "tests":
+        api.jobs[1]["conclusion"] = "failure"
     elif case == "package":
         oci.bad_signature = (
             p.REGISTRIES["bundleDigest"] + "@" + api.producer["bundleDigest"]
@@ -204,7 +204,7 @@ def test_no_placeholder_deletion_before_complete_preflight(tmp_path, case):
 )
 def test_only_exact_expected_empty_starter_is_recoverable(tmp_path, change):
     source, oci = fixture()
-    api = StarterGitHub(source.producer, source.proof)
+    api = StarterGitHub(source.producer)
     api.release = {"id": 303, "tag_name": "v" + VERSION, "draft": True}
     api.starter(**change)
     with pytest.raises(p.PromotionError):
@@ -216,7 +216,7 @@ def test_only_exact_expected_empty_starter_is_recoverable(tmp_path, change):
 
 def test_published_empty_starter_is_never_deleted(tmp_path):
     source, oci = fixture()
-    api = StarterGitHub(source.producer, source.proof)
+    api = StarterGitHub(source.producer)
     api.release = {"id": 303, "tag_name": "v" + VERSION, "draft": False}
     api.starter()
     with pytest.raises(p.PromotionError, match="recoverable draft"):
@@ -228,7 +228,7 @@ def test_published_empty_starter_is_never_deleted(tmp_path):
 
 def test_every_placeholder_is_rechecked_before_deleting_any(tmp_path):
     source, oci = fixture()
-    api = StarterGitHub(source.producer, source.proof)
+    api = StarterGitHub(source.producer)
     api.release = {"id": 303, "tag_name": "v" + VERSION, "draft": True}
     api.starter()
     api.changed_asset = api.starter(".sigstore.json")
@@ -243,7 +243,7 @@ def test_failed_placeholder_delete_can_retry_without_replacing_finished_evidence
     tmp_path,
 ):
     source, oci = fixture()
-    api = StarterGitHub(source.producer, source.proof)
+    api = StarterGitHub(source.producer)
     api.release = {"id": 303, "tag_name": "v" + VERSION, "draft": True}
     api.starter()
     api.fail_delete = api.starter(".sigstore.json")

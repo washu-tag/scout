@@ -3,12 +3,11 @@
 Scout-owned container images, OCI Helm charts, config artifacts, haul manifests
 and haul bundles are signed with [cosign](https://docs.sigstore.dev/). Releases
 published through the tested-artifact promotion gate also attach a signed release
-record that binds the exact source, producer attempt, consumer proof and package
+record that binds the exact source, CI attempt, required test profile and package
 digests. Earlier releases may not have that record; a tag alone is not equivalent
 evidence. Signing uses a **managed key** with the Sigstore transparency log
 disabled, so you verify with a single public key and **no network access** to
-Sigstore is required. This is what makes offline (air-gapped) verification
-possible; see {ref}`why-keyed` below.
+Sigstore is required. See {ref}`why-keyed` below for the chosen offline verification model.
 
 ## The public key
 
@@ -51,10 +50,9 @@ jq -e --arg version "$release_version" \
 ```
 
 The `.yaml` asset uses JSON syntax, which is valid YAML 1.2 and can be read with
-`jq`. The record identifies the producer run and attempt, the consumer run and
-attempt, and the exact manifest, bundle and config digests. Its proof scope is
-published config deployment through the core on-prem ingest/authentication
-profile. The co-produced haul is signed; its restore and disconnected dependency
+`jq`. The record identifies the CI run and attempt and the exact manifest,
+bundle and config digests. Its test scope is the core on-prem ingest/authentication
+profile, using the candidate config and images that CI published unchanged. The co-produced haul is signed; its restore and disconnected dependency
 completeness are not certified by that test. Separately packaged release-version
 charts remain listed as Ansible compatibility outputs, not as Flux-tested bytes.
 
@@ -83,8 +81,8 @@ legacy Ansible images/charts from the record's `.compatibility.images` and
 
 The Flux CI proof checks config and site signatures independently. A customer
 site must configure its own trusted site signer; the ephemeral CI site key is
-not a production trust root. The replay tests cover the modern Sigstore bundle
-format emitted by the pinned signer, not all legacy signature formats.
+not a production trust root. The release signature uses the modern Sigstore bundle format emitted by the
+pinned signer.
 
 ## Before upgrading or rolling back
 
@@ -110,11 +108,12 @@ partial set of aliases.
 (why-keyed)=
 ## Why a key, not keyless
 
-Scout signs with a managed key rather than keyless (Fulcio + Rekor) because an
-air-gapped enclave cannot reach the Sigstore certificate authority or
-transparency log. Keyed signing needs only the public key at verify time and
-works fully offline, at the cost of having to distribute (and, on rotation,
-re-distribute) that key. The rationale and the offline-verify mechanics are
+Scout uses a managed key so operators can verify artifacts with an independently
+provisioned public key and the existing Flux/Hauler toolchain. The key lifecycle
+includes escrow, rotation and redistribution. Keyless verification can also work
+offline when the signature bundle, inclusion proof and trusted roots travel with
+the artifact; see [GitHub's offline verification guide](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/verify-attestations-offline).
+That alternative is not the configured Scout trust model. The decision is
 recorded in
 [ADR 0033](https://github.com/washu-tag/scout/blob/main/docs/internal/adr/0033-build-lane-bundling-and-airgap-transport.md).
 

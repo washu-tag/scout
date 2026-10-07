@@ -85,8 +85,6 @@ def test_wait_is_read_only_and_both_mutators_require_trusted_main():
         for arg in (
             "producer-run-id",
             "producer-run-attempt",
-            "consumer-run-id",
-            "consumer-run-attempt",
             "boundary-sha",
         ):
             assert "--" + arg in call["run"]

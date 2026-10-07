@@ -226,7 +226,7 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   wait-for-build:
-    name: Wait for the exact published build and Flux proof
+    name: Wait for the exact tested and published build
     runs-on: ubuntu-latest
     timeout-minutes: 95
     needs: [validate, version-bump]
@@ -240,8 +240,6 @@ jobs:
       commit_sha: ${{ steps.target.outputs.sha }}
       ci_run_id: ${{ steps.wait.outputs.run_id }}
       ci_run_attempt: ${{ steps.wait.outputs.run_attempt }}
-      consumer_run_id: ${{ steps.wait.outputs.consumer_run_id }}
-      consumer_run_attempt: ${{ steps.wait.outputs.consumer_run_attempt }}
       build_version: ${{ steps.wait.outputs.build_version }}
     steps:
       - name: Checkout
@@ -272,7 +270,7 @@ jobs:
           echo "Pinning release build to ${BUMP_SHA}"
           echo "sha=${BUMP_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Wait for the exact producer attempt and published Flux proof
+      - name: Wait for the exact successful CI attempt
         id: wait
         env:
           GH_TOKEN: ${{ github.token }}
@@ -293,7 +291,7 @@ jobs:
       && needs.validate.result == 'success'
       && needs.wait-for-build.result == 'success'
     # Shared only by the mutation jobs, including promote-release.yaml. Do not
-    # hold this lock while waiting for the producer or consumer workflows.
+    # hold this lock while waiting for the CI workflow.
     concurrency:
       group: scout-release-promotion
       cancel-in-progress: false
@@ -308,8 +306,6 @@ jobs:
           COMMIT_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
           PRODUCER_RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
           PRODUCER_RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_run_attempt }}
-          CONSUMER_RUN_ID: ${{ needs.wait-for-build.outputs.consumer_run_id }}
-          CONSUMER_RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.consumer_run_attempt }}
           BOUNDARY_SHA: ${{ needs.validate.outputs.boundary_sha }}
         run: |
           {
@@ -321,8 +317,6 @@ jobs:
             printf '| revision | %s |\n' "$COMMIT_SHA"
             printf '| producer_run_id | %s |\n' "$PRODUCER_RUN_ID"
             printf '| producer_run_attempt | %s |\n' "$PRODUCER_RUN_ATTEMPT"
-            printf '| consumer_run_id | %s |\n' "$CONSUMER_RUN_ID"
-            printf '| consumer_run_attempt | %s |\n' "$CONSUMER_RUN_ATTEMPT"
             printf '| boundary_sha | %s |\n' "$BOUNDARY_SHA"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Checkout trusted release tooling
@@ -356,7 +350,7 @@ jobs:
         run: |
           set -euo pipefail
           # Recheck under the promotion lock: recovery may have created a draft
-          # while this workflow was waiting for its producer/proof.
+          # while this workflow was waiting for its CI build.
           gh api --paginate --slurp "/repos/${REPO}/releases?per_page=100" \
             > "$RUNNER_TEMP/releases-before-charts.json"
           if ! jq -e --arg tag "v$VERSION" \
@@ -384,7 +378,7 @@ jobs:
           printf '%s' "$REGISTRY_TOKEN" | helm registry login ghcr.io -u "$ACTOR" --password-stdin
           # Keep this list in sync with tooling/release/promote.py. All chart
           # writes share this job's promotion/recovery lock. The GitOps aliases
-          # remain the unmodified artifacts tested by the published Flux proof.
+          # remain the unmodified artifacts tested by the same CI attempt.
           while read -r name directory; do
             app_version="$(bash .github/scripts/chart-app-version.sh "$name" "$VERSION")"
             app_args=()
@@ -427,8 +421,6 @@ jobs:
           COMMIT_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
           PRODUCER_RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
           PRODUCER_RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_run_attempt }}
-          CONSUMER_RUN_ID: ${{ needs.wait-for-build.outputs.consumer_run_id }}
-          CONSUMER_RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.consumer_run_attempt }}
           BOUNDARY_SHA: ${{ needs.validate.outputs.boundary_sha }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
@@ -436,7 +428,6 @@ jobs:
           python3 tooling/release/promote.py promote \
             --repository "$REPO" --version "$VERSION" --revision "$COMMIT_SHA" \
             --producer-run-id "$PRODUCER_RUN_ID" --producer-run-attempt "$PRODUCER_RUN_ATTEMPT" \
-            --consumer-run-id "$CONSUMER_RUN_ID" --consumer-run-attempt "$CONSUMER_RUN_ATTEMPT" \
             --boundary-sha "$BOUNDARY_SHA" --public-key cosign.pub \
             --work-dir "$RUNNER_TEMP/promotion"
 

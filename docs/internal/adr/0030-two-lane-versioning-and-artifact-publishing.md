@@ -218,12 +218,12 @@ amendment is proposed with the implementation; merging a fork proof does not
 establish that the upstream gate has run.
 
 - A release selects the successful `ci.yaml` run **and attempt** for its stamped
-  commit. Its schema-2 producer receipt names the haul manifest, bundle and
-  config digests. The corresponding trusted `deploy-flux.yaml` run/attempt must
-  prove that exact published config with both core ingest and authentication
-  legs. Local-artifact runs and replaceable per-SHA statuses are not release
-  authorization. The proof records its profile and values mode, rather than
-  implying optional-component or disconnected-install coverage.
+  commit. Both core Flux ingest and authentication legs test the run's candidate
+  config and images in the SOPS profile before publication. The schema-2 build
+  output records the exact published haul manifest, bundle and config digests.
+  Release eligibility requires those tests and package publication to succeed
+  in that attempt. Fork runs, skipped tests and replaceable per-SHA statuses
+  cannot authorize release.
 - Promote the already verified manifest, bundle and config OCI digests unchanged
   to `X.Y.Z` aliases. Do not repackage the tested config in this interim path.
   This narrows the deferred promotion recipe below until the Ansible cutover.
@@ -232,7 +232,7 @@ establish that the upstream gate has run.
   chart digests separately from the Flux-tested package.
 - Attach deterministic `scout-release-X.Y.Z.yaml` and its managed-key cosign
   bundle to a draft GitHub Release. The record binds release/source identity,
-  producer and consumer attempts, package digests and compatibility outputs;
+  CI attempt, test profile, package digests and compatibility outputs;
   it references the Hauler inventory, preserving ADR 0033's single inventory.
   Verify the assets and aliases, then anchor the lightweight source tag and
   publish the Release last. The early release-please boundary tag is retained;
@@ -240,13 +240,13 @@ establish that the upstream gate has run.
   force. A draft or alias alone is not a completed release.
 - Promotion and recovery serialize their registry/release mutations, including
   release chart packaging. Across repositories the operations are not atomic.
-  `promote-release.yaml` revalidates the original attempts and resumes matching
+  `promote-release.yaml` revalidates the original attempt and resumes matching
   partial work without restamping or repackaging. Existing conflicting assets,
   aliases or tags fail closed. A complete matching release is a no-op; missing
   or expired workflow evidence is not reconstructed from a green status.
 - This gate is for the upstream `main` published path. Non-main release
-  publication is rejected before stamping. Activation requires the producer
-  and consumer on the upstream default branch plus fresh published evidence;
+  publication is rejected before stamping. Activation requires the integrated CI workflow on the upstream default branch
+  plus a successful tested-and-published build;
   a fork-safe protocol harness does not replace that acceptance run. Artifact
   retention and the independent signing-key trust root remain prerequisites.
 

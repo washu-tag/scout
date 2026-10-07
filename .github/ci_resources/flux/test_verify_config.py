@@ -12,20 +12,18 @@ import pytest
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / ".github/ci_resources/flux/verify_config.sh"
 DIGEST = "sha256:" + "a" * 64
-BUNDLE = "sha256:" + "b" * 64
 
 
-def verify(tmp_path, *, bundle=True, annotation=BUNDLE, signature_success=True):
+def verify(tmp_path, *, insecure=True, annotation=DIGEST, signature_success=True):
     annotations = {
         "org.opencontainers.image.source": "https://github.com/washu-tag/scout",
         "org.opencontainers.image.revision": "a" * 40,
         "org.opencontainers.image.version": "0.20261006.1",
         "io.scout.build.run-id": "123",
         "io.scout.build.run-attempt": "2",
-        "io.scout.build.manifest-digest": DIGEST,
     }
     if annotation is not None:
-        annotations["io.scout.build.bundle-digest"] = annotation
+        annotations["io.scout.build.manifest-digest"] = annotation
     manifest = json.dumps({"schemaVersion": 2, "annotations": annotations}).encode()
     source = tmp_path / "source.json"
     source.write_bytes(manifest)
@@ -61,7 +59,7 @@ def verify(tmp_path, *, bundle=True, annotation=BUNDLE, signature_success=True):
         "RUNNER_TEMP": str(tmp_path),
         "FAKE_MANIFEST": str(source),
         "SIGNATURE_EXIT": "0" if signature_success else "1",
-        "CONFIG_INSECURE": "false",
+        "CONFIG_INSECURE": str(insecure).lower(),
         "CONFIG_SOURCE": "ghcr.io/washu-tag/manifests/scout-config",
         "CONFIG_DIGEST": "sha256:" + hashlib.sha256(manifest).hexdigest(),
         "IDENTITY_REPOSITORY": "washu-tag/scout",
@@ -71,36 +69,32 @@ def verify(tmp_path, *, bundle=True, annotation=BUNDLE, signature_success=True):
         "VERSION": "0.20261006.1",
         "MANIFEST_DIGEST": DIGEST,
         "MANIFEST_REPO": "ghcr.io/washu-tag/manifests/scout-manifest",
-        "ARTIFACT_MODE": "published",
+        "ARTIFACT_MODE": "candidate",
         "GITHUB_ENV": str(env_file),
         "GITHUB_STEP_SUMMARY": str(tmp_path / "summary"),
     }
     env.pop("BUNDLE_DIGEST", None)
-    if bundle:
-        env["BUNDLE_DIGEST"] = BUNDLE
     result = subprocess.run(
         ["bash", str(SCRIPT)], cwd=ROOT, env=env, capture_output=True, text=True
     )
     return result, env_file
 
 
-@pytest.mark.parametrize("bundle", [False, True])
-def test_old_and_release_receipts_verify_before_environment_export(tmp_path, bundle):
-    result, env_file = verify(
-        tmp_path, bundle=bundle, annotation=BUNDLE if bundle else None
-    )
+@pytest.mark.parametrize("insecure", [False, True])
+def test_candidate_identity_and_signature_verify_before_export(tmp_path, insecure):
+    result, env_file = verify(tmp_path, insecure=insecure)
     assert result.returncode == 0, result.stderr
     receipt = json.loads((tmp_path / "scout-config-ref.json").read_text())
-    assert receipt["schemaVersion"] == (2 if bundle else 1)
-    assert receipt.get("bundleDigest") == (BUNDLE if bundle else None)
+    assert receipt["schemaVersion"] == 1
+    assert receipt["manifestDigest"] == DIGEST
     assert (tmp_path / "cosign-called").exists()
     assert "CONFIG_DIGEST=" in env_file.read_text()
 
 
 @pytest.mark.parametrize(
-    "annotation", [None, "sha256:" + "c" * 64, BUNDLE + "\ninjected=yes"]
+    "annotation", [None, "sha256:" + "c" * 64, DIGEST + "\ninjected=yes"]
 )
-def test_bundle_pairing_failure_stops_before_signature_and_environment(
+def test_manifest_pairing_failure_stops_before_signature_and_environment(
     tmp_path, annotation
 ):
     result, env_file = verify(tmp_path, annotation=annotation)

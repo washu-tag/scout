@@ -13,7 +13,6 @@ import promote as p
 
 SHA = "a" * 40
 BOUNDARY = "b" * 40
-CONSUMER_SHA = "c" * 40
 VERSION = "1.2.3"
 
 
@@ -43,19 +42,17 @@ def run(run_id, attempt, workflow, event, revision):
 class FakeGitHub:
     """A stateful server fixture; GET and mutations exercise the same protocol."""
 
-    def __init__(self, producer, proof):
+    def __init__(self, producer):
         self.producer = producer
-        self.proof = proof
         self.runs = {
             101: run(101, 2, 11, "push", SHA),
-            202: run(202, 3, 22, "workflow_run", CONSUMER_SHA),
         }
         self.jobs = [
             dict(
                 name=name,
-                run_id=202,
-                run_attempt=3,
-                head_sha=CONSUMER_SHA,
+                run_id=101,
+                run_attempt=2,
+                head_sha=SHA,
                 status="completed",
                 conclusion="success",
             )
@@ -80,15 +77,12 @@ class FakeGitHub:
         self.events.append(event)
 
     def artifact(self, run_id):
-        if run_id == 101:
-            name, filename, value = (
-                "scout-config-ref-2",
-                "scout-config-ref.json",
-                self.producer,
-            )
-        else:
-            name = "scout-release-proof-101-2-3"
-            filename, value = name + ".json", self.proof
+        assert run_id == 101
+        name, filename, value = (
+            "scout-config-ref-2",
+            "scout-config-ref.json",
+            self.producer,
+        )
         raw = zip_json(filename, value)
         self.archives[run_id] = raw
         return dict(
@@ -101,14 +95,14 @@ class FakeGitHub:
 
     def request(self, path, *, method="GET", data=None, missing_ok=False):
         tail = path.split("/repos/" + p.REPOSITORY + "/", 1)[1].split("?", 1)[0]
-        if tail in ("actions/workflows/ci.yaml", "actions/workflows/deploy-flux.yaml"):
+        if tail == "actions/workflows/ci.yaml":
             filename = tail.rsplit("/", 1)[1]
             return dict(
-                id=11 if filename == "ci.yaml" else 22,
+                id=11,
                 path=".github/workflows/" + filename,
             )
         if tail.startswith("actions/workflows/") and tail.endswith("/runs"):
-            return {"workflow_runs": [self.runs[101 if "/11/" in tail else 202]]}
+            return {"workflow_runs": [self.runs[101]]}
         if tail.startswith("actions/runs/"):
             run_id = int(tail.split("/")[2])
             if tail.endswith("/artifacts"):
@@ -244,9 +238,8 @@ def fixture():
     oci.blobs[layer_digest] = layer
     for field, repository in p.REGISTRIES.items():
         anno = dict(annotations)
-        if field == "configDigest":
+        if field in ("configDigest", "bundleDigest"):
             anno["io.scout.build.manifest-digest"] = producer["manifestDigest"]
-            anno["io.scout.build.bundle-digest"] = producer["bundleDigest"]
         manifest = {
             "schemaVersion": 2,
             "annotations": anno,
@@ -266,18 +259,7 @@ def fixture():
         oci.tags["ghcr.io/washu-tag/charts/" + name + ":" + VERSION] = p.digest(
             name.encode()
         )
-    proof = dict(
-        schemaVersion=1,
-        producer=copy.deepcopy(producer),
-        consumer=dict(
-            repository=p.REPOSITORY, runId=202, runAttempt=3, revision=CONSUMER_SHA
-        ),
-        artifactMode="published",
-        valuesMode="sops",
-        profile="onprem-core-ingest-auth",
-        legs=["ingest", "auth"],
-    )
-    return FakeGitHub(producer, proof), oci
+    return FakeGitHub(producer), oci
 
 
 def promote(api, oci, tmp_path):
@@ -289,8 +271,6 @@ def promote(api, oci, tmp_path):
         revision=SHA,
         producer_id=101,
         producer_attempt=2,
-        consumer_id=202,
-        consumer_attempt=3,
         boundary_sha=BOUNDARY,
         work_dir=tmp_path,
     )
@@ -340,9 +320,9 @@ def test_draft_creation_may_create_tag(tmp_path):
     "case",
     [
         "wrong-producer",
-        "wrong-consumer",
-        "local-proof",
-        "plain-proof",
+        "manual-producer",
+        "fork-producer",
+        "failed-producer",
         "other-digest",
         "old-schema",
         "skipped-auth",
@@ -364,21 +344,24 @@ def test_invalid_inputs_cannot_mutate_release(tmp_path, case):
     api, oci = fixture()
     if case == "wrong-producer":
         api.runs[101]["head_sha"] = "d" * 40
-    elif case == "wrong-consumer":
-        api.runs[202]["event"] = "workflow_dispatch"
-    elif case == "local-proof":
-        api.proof["artifactMode"] = "local"
-    elif case == "plain-proof":
-        api.proof["valuesMode"] = "plain"
+    elif case == "manual-producer":
+        api.runs[101]["event"] = "workflow_dispatch"
+    elif case == "fork-producer":
+        api.runs[101]["head_repository"]["full_name"] = "other/scout"
+    elif case == "failed-producer":
+        api.runs[101]["conclusion"] = "failure"
     elif case == "other-digest":
-        api.proof["producer"]["configDigest"] = p.digest(b"other")
+        reference = p.REGISTRIES["configDigest"] + "@" + api.producer["configDigest"]
+        oci.manifests[reference] += b"\n"
     elif case == "old-schema":
         api.producer["schemaVersion"] = 1
         del api.producer["bundleDigest"]
     elif case == "skipped-auth":
-        api.jobs[2]["conclusion"] = "skipped"
+        next(job for job in api.jobs if job["name"] == "deploy-and-test-flux (auth)")[
+            "conclusion"
+        ] = "skipped"
     elif case == "stale-attempt-job":
-        api.jobs[2]["run_attempt"] = 2
+        api.jobs[1]["run_attempt"] = 1
     elif case == "duplicate-job":
         api.jobs.append(copy.deepcopy(api.jobs[2]))
     elif case == "expired":
@@ -408,10 +391,9 @@ def test_invalid_inputs_cannot_mutate_release(tmp_path, case):
         manifest = json.loads(oci.manifests[reference])
         del manifest["annotations"]["io.scout.build.carry-policy"]
         raw = p.canonical(manifest)
-        # Remap receipt and proof, so the digest itself remains valid.
+        # Keep the reported digest valid while invalidating package provenance.
         sha = p.digest(raw)
         api.producer["manifestDigest"] = sha
-        api.proof["producer"]["manifestDigest"] = sha
         oci.manifests[p.REGISTRIES["manifestDigest"] + "@" + sha] = raw
     with pytest.raises((p.PromotionError, p.IdentityError)):
         promote(api, oci, tmp_path)
@@ -441,9 +423,8 @@ def test_conflicting_existing_record_is_not_overwritten(tmp_path):
 
 def test_wait_selects_explicit_attempts():
     api, _ = fixture()
-    producer, proof = p.find_evidence(api, p.REPOSITORY, SHA)
+    producer = p.find_evidence(api, p.REPOSITORY, SHA)
     assert producer["runAttempt"] == 2
-    assert proof["consumer"]["runAttempt"] == 3
 
 
 def test_notes_follow_final_tag_and_keep_manual_draft_body(tmp_path):
@@ -519,3 +500,67 @@ def test_read_and_release_credentials_are_separate(monkeypatch, tmp_path):
     github.upload("a/b", 303, tmp_path / "record")
     assert seen[0] is None
     assert seen[1]["GH_TOKEN"] == seen[2]["GH_TOKEN"] == "writer"
+
+
+@pytest.mark.parametrize("name", p.REQUIRED_JOBS)
+@pytest.mark.parametrize("conclusion", ["skipped", "failure", "cancelled"])
+def test_each_required_ci_job_must_succeed_in_the_selected_attempt(
+    tmp_path, name, conclusion
+):
+    api, oci = fixture()
+    next(job for job in api.jobs if job["name"] == name)["conclusion"] = conclusion
+    with pytest.raises(p.PromotionError, match="did not succeed"):
+        promote(api, oci, tmp_path)
+    assert api.events == [] and oci.events == []
+
+
+def test_rerun_cannot_use_the_previous_attempt_outputs(tmp_path):
+    api, oci = fixture()
+    api.producer["runAttempt"] = 1
+    with pytest.raises(p.IdentityError, match="context mismatch: runAttempt"):
+        promote(api, oci, tmp_path)
+    assert api.events == [] and oci.events == []
+
+
+def test_wait_does_not_search_other_workflows(monkeypatch):
+    api, _ = fixture()
+    request = api.request
+    paths = []
+
+    def record(path, **kwargs):
+        paths.append(path)
+        return request(path, **kwargs)
+
+    monkeypatch.setattr(api, "request", record)
+    producer = p.find_evidence(api, p.REPOSITORY, SHA)
+    assert producer["revision"] == SHA
+    assert not any("deploy-flux" in path or "workflow_run" in path for path in paths)
+    assert not any("/202/" in path for path in paths)
+
+
+@pytest.mark.parametrize(
+    "annotation,value",
+    [
+        ("io.scout.build.manifest-digest", None),
+        ("io.scout.build.manifest-digest", "sha256:" + "f" * 64),
+        ("io.scout.build.run-attempt", "1"),
+    ],
+)
+def test_signed_bundle_must_bind_the_tested_manifest_and_attempt(
+    tmp_path, annotation, value
+):
+    api, oci = fixture()
+    repository = p.REGISTRIES["bundleDigest"]
+    manifest = json.loads(
+        oci.manifests[repository + "@" + api.producer["bundleDigest"]]
+    )
+    if value is None:
+        manifest["annotations"].pop(annotation)
+    else:
+        manifest["annotations"][annotation] = value
+    raw = p.canonical(manifest)
+    api.producer["bundleDigest"] = p.digest(raw)
+    oci.manifests[repository + "@" + api.producer["bundleDigest"]] = raw
+    with pytest.raises(p.PromotionError, match="producer annotations mismatch"):
+        promote(api, oci, tmp_path)
+    assert api.events == [] and oci.events == []

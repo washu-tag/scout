@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Promote an exact, proven Scout package before publishing its GitHub Release.
 
-GitHub attempts/artifacts establish build and test provenance; managed-key OCI
-signatures establish artifact identity. The signed release record binds both.
+A successful CI attempt binds candidate tests to published digests; managed-key
+OCI signatures establish artifact identity. The release record binds both.
 Mutable build tags and commit statuses are never eligibility evidence.
 """
 from __future__ import annotations
@@ -29,7 +29,6 @@ from artifact_identity import (  # noqa: E402
     validate_manifest,
     validate_receipt,
 )
-from proof_receipt import REQUIRED_JOBS as CONSUMER_JOBS, validate_proof  # noqa: E402
 
 REPOSITORY = "washu-tag/scout"
 REGISTRIES = {
@@ -42,7 +41,13 @@ CHARTS = "hl7-transformer dcm4chee hive-metastore hl7-listener hl7log-extractor 
 VERSION = re.compile(r"[1-9][0-9]*\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 MAX_JSON = 16384
 MAX_MANIFEST = 1024 * 1024
-REQUIRED_JOBS = CONSUMER_JOBS + ("Record published artifact proof",)
+REQUIRED_JOBS = (
+    "prepare-flux-artifacts",
+    "deploy-and-test-flux (ingest)",
+    "deploy-and-test-flux (auth)",
+    "publish-haul",
+    "config-artifact-publish",
+)
 
 
 class PromotionError(ValueError):
@@ -50,7 +55,7 @@ class PromotionError(ValueError):
 
 
 class Pending(PromotionError):
-    """The selected producer/proof is still running or has not appeared."""
+    """The selected CI build is still running or has not appeared."""
 
 
 def require(ok, message):
@@ -200,17 +205,16 @@ def workflow_id(api, repository, filename):
     return positive(item.get("id"))
 
 
-def run_attempt(
-    api, repository, run_id, attempt, workflow, event, *, revision=None, completed=True
-):
+def run_attempt(api, repository, run_id, attempt, revision):
     run_id, attempt = positive(run_id), positive(attempt)
     run = api.request(f"/repos/{repository}/actions/runs/{run_id}/attempts/{attempt}")
     expected = {
         "id": run_id,
         "run_attempt": attempt,
-        "workflow_id": workflow,
-        "event": event,
+        "workflow_id": workflow_id(api, repository, "ci.yaml"),
+        "event": "push",
         "head_branch": "main",
+        "head_sha": revision,
     }
     for key, value in expected.items():
         require(
@@ -222,22 +226,13 @@ def run_attempt(
             isinstance(run.get(key), dict) and run[key].get("full_name") == repository,
             "workflow attempt repository mismatch",
         )
-    require(
-        isinstance(run.get("head_sha"), str) and REVISION.fullmatch(run["head_sha"]),
-        "invalid workflow revision",
-    )
-    if revision is not None:
-        require(
-            run["head_sha"] == revision, "workflow attempt tested a different revision"
-        )
     if run.get("status") != "completed":
         raise Pending("workflow attempt is not completed")
-    if completed:
-        require(run.get("conclusion") == "success", "workflow attempt did not succeed")
+    require(run.get("conclusion") == "success", "workflow attempt did not succeed")
     return run
 
 
-def artifact_json(api, repository, run, name, filename, *, optional=False):
+def artifact_json(api, repository, run, name, filename):
     found = [
         a
         for a in pages(
@@ -245,8 +240,6 @@ def artifact_json(api, repository, run, name, filename, *, optional=False):
         )
         if a.get("name") == name
     ]
-    if not found and optional:
-        return None
     require(len(found) == 1, "missing or ambiguous attempt-specific evidence artifact")
     artifact = found[0]
     require(artifact.get("expired") is False, "evidence artifact expired")
@@ -283,31 +276,23 @@ def validate_jobs(api, repository, run):
     )
     for name in REQUIRED_JOBS:
         matched = [job for job in jobs if job.get("name") == name]
-        require(len(matched) == 1, "missing or ambiguous required proof job")
+        require(len(matched) == 1, "missing or ambiguous required CI job")
         job = matched[0]
         require(
             job.get("run_id") == run["id"] and job.get("head_sha") == run["head_sha"],
-            "proof job belongs to a different workflow",
+            "CI job belongs to a different workflow",
         )
         require(
             job.get("run_attempt", run["run_attempt"]) == run["run_attempt"],
-            "proof job belongs to another attempt",
+            "CI job belongs to another attempt",
         )
         require(
             job.get("status") == "completed" and job.get("conclusion") == "success",
-            "required proof job did not succeed in this attempt",
+            "required CI job did not succeed in this attempt",
         )
 
 
-def evidence(
-    api,
-    repository,
-    revision,
-    producer_id,
-    producer_attempt,
-    consumer_id,
-    consumer_attempt,
-):
+def evidence(api, repository, revision, producer_id, producer_attempt):
     require(repository == REPOSITORY, "promotion is limited to the upstream repository")
     require(
         isinstance(revision, str) and REVISION.fullmatch(revision),
@@ -318,10 +303,9 @@ def evidence(
         repository,
         producer_id,
         producer_attempt,
-        workflow_id(api, repository, "ci.yaml"),
-        "push",
-        revision=revision,
+        revision,
     )
+    validate_jobs(api, repository, producer_run)
     producer = artifact_json(
         api,
         repository,
@@ -337,26 +321,7 @@ def evidence(
         run_attempt=producer_attempt,
         require_bundle=True,
     )
-    consumer_run = run_attempt(
-        api,
-        repository,
-        consumer_id,
-        consumer_attempt,
-        workflow_id(api, repository, "deploy-flux.yaml"),
-        "workflow_run",
-    )
-    validate_jobs(api, repository, consumer_run)
-    name = f"scout-release-proof-{producer_id}-{producer_attempt}-{consumer_attempt}"
-    proof = artifact_json(api, repository, consumer_run, name, name + ".json")
-    validate_proof(
-        proof,
-        producer=producer,
-        repository=repository,
-        run_id=consumer_id,
-        run_attempt=consumer_attempt,
-        revision=consumer_run["head_sha"],
-    )
-    return producer, proof
+    return producer
 
 
 def find_evidence(api, repository, revision):
@@ -364,10 +329,10 @@ def find_evidence(api, repository, revision):
         repository == REPOSITORY and REVISION.fullmatch(revision),
         "unsupported repository or revision",
     )
-    producer_workflow = workflow_id(api, repository, "ci.yaml")
+    workflow = workflow_id(api, repository, "ci.yaml")
     candidates = pages(
         api,
-        f"/repos/{repository}/actions/workflows/{producer_workflow}/runs?event=push&branch=main&head_sha={revision}",
+        f"/repos/{repository}/actions/workflows/{workflow}/runs?event=push&branch=main&head_sha={revision}",
         "workflow_runs",
     )
     candidates = [r for r in candidates if r.get("head_sha") == revision]
@@ -375,75 +340,13 @@ def find_evidence(api, repository, revision):
     if not candidates:
         raise Pending("producer run has not appeared")
     current = candidates[0]
-    producer_id, attempt = positive(current.get("id")), positive(
-        current.get("run_attempt")
-    )
-    producer_run = run_attempt(
+    return evidence(
         api,
         repository,
-        producer_id,
-        attempt,
-        producer_workflow,
-        "push",
-        revision=revision,
+        revision,
+        positive(current.get("id")),
+        positive(current.get("run_attempt")),
     )
-    producer = artifact_json(
-        api,
-        repository,
-        producer_run,
-        f"scout-config-ref-{attempt}",
-        "scout-config-ref.json",
-    )
-    validate_receipt(
-        producer,
-        repository=repository,
-        revision=revision,
-        run_id=producer_id,
-        run_attempt=attempt,
-        require_bundle=True,
-    )
-    consumer_workflow = workflow_id(api, repository, "deploy-flux.yaml")
-    created = producer_run.get("created_at")
-    require(
-        isinstance(created, str)
-        and re.fullmatch(
-            r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z", created
-        ),
-        "invalid producer creation time",
-    )
-    since = quote(">=" + created, safe="")
-    consumers = pages(
-        api,
-        f"/repos/{repository}/actions/workflows/{consumer_workflow}/runs?event=workflow_run&branch=main&created={since}",
-        "workflow_runs",
-    )
-    matches = []
-    for candidate in consumers:
-        if candidate.get("created_at", "") < producer_run.get("created_at", ""):
-            continue
-        if (
-            candidate.get("status") != "completed"
-            or candidate.get("conclusion") != "success"
-        ):
-            continue
-        consumer_id, consumer_attempt = positive(candidate.get("id")), positive(
-            candidate.get("run_attempt")
-        )
-        name = f"scout-release-proof-{producer_id}-{attempt}-{consumer_attempt}"
-        proof = artifact_json(
-            api, repository, candidate, name, name + ".json", optional=True
-        )
-        if proof is not None:
-            matches.append((consumer_id, consumer_attempt))
-    if not matches:
-        raise Pending("published artifact proof has not succeeded")
-    # More than one independently successful proof is allowed. Freeze one concrete
-    # attempt; subsequent promotion never consults a moving latest status.
-    consumer_id, consumer_attempt = max(matches)
-    producer, proof = evidence(
-        api, repository, revision, producer_id, attempt, consumer_id, consumer_attempt
-    )
-    return producer, proof
 
 
 class OCI:
@@ -563,6 +466,8 @@ def verify_package(oci, producer):
                 "io.scout.build.run-id": str(producer["runId"]),
                 "io.scout.build.run-attempt": str(producer["runAttempt"]),
             }
+            if field == "bundleDigest":
+                expected["io.scout.build.manifest-digest"] = producer["manifestDigest"]
             require(
                 isinstance(annotations, dict)
                 and all(annotations.get(k) == v for k, v in expected.items()),
@@ -628,7 +533,7 @@ def compatibility(oci, version, manifest):
     return result
 
 
-def release_record(version, producer, proof, legacy, boundary_sha):
+def release_record(version, producer, legacy, boundary_sha):
     return {
         "schemaVersion": 1,
         "kind": "ScoutRelease",
@@ -637,13 +542,18 @@ def release_record(version, producer, proof, legacy, boundary_sha):
         "revision": producer["revision"],
         "boundaryRevision": boundary_sha,
         "producer": producer,
-        "verification": proof,
+        "verification": {
+            "workflow": ".github/workflows/ci.yaml",
+            "profile": "onprem-core-ingest-auth",
+            "valuesMode": "sops",
+            "jobs": list(REQUIRED_JOBS),
+        },
         "artifacts": {
             field: repository + "@" + producer[field]
             for field, repository in REGISTRIES.items()
         },
         "compatibility": legacy,
-        "scope": "Exact published config passed the on-prem core ingest/auth proof. The co-produced haul is signed; bundle restore and disconnected completeness are not certified.",
+        "scope": "The published config and images passed the same CI attempt's on-prem core ingest/auth tests. The co-produced haul is signed; bundle restore and disconnected completeness are not certified.",
     }
 
 
@@ -744,25 +654,21 @@ def promote(
     revision,
     producer_id,
     producer_attempt,
-    consumer_id,
-    consumer_attempt,
     boundary_sha,
     work_dir,
 ):
     require(VERSION.fullmatch(version), "release version must be X.Y.Z with major >= 1")
     require(REVISION.fullmatch(boundary_sha), "invalid release boundary revision")
-    producer, proof = evidence(
+    producer = evidence(
         api,
         repository,
         revision,
         producer_id,
         producer_attempt,
-        consumer_id,
-        consumer_attempt,
     )
     manifests = verify_package(oci, producer)
     legacy = compatibility(oci, version, manifests["manifestDigest"])
-    record = canonical(release_record(version, producer, proof, legacy, boundary_sha))
+    record = canonical(release_record(version, producer, legacy, boundary_sha))
     require(len(record) <= MAX_JSON, "release record exceeds size limit")
     work_dir = Path(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -951,8 +857,6 @@ def main(argv=None):
     for name in (
         "producer-run-id",
         "producer-run-attempt",
-        "consumer-run-id",
-        "consumer-run-attempt",
     ):
         publish.add_argument("--" + name, type=int, required=True)
     publish.add_argument("--boundary-sha", required=True)
@@ -962,27 +866,25 @@ def main(argv=None):
     try:
         api = GitHub()
         if args.command == "wait":
-            require(0 <= args.timeout <= 7200, "invalid proof wait timeout")
+            require(0 <= args.timeout <= 7200, "invalid build wait timeout")
             deadline = time.monotonic() + args.timeout
             while True:
                 try:
-                    producer, proof = find_evidence(api, args.repository, args.revision)
+                    producer = find_evidence(api, args.repository, args.revision)
                     break
                 except Pending:
                     require(
                         time.monotonic() < deadline,
-                        "timed out waiting for exact published proof",
+                        "timed out waiting for the exact CI build",
                     )
                     print(
-                        "Waiting for the exact producer and published artifact proof...",
+                        "Waiting for the exact tested and published CI build...",
                         flush=True,
                     )
                     time.sleep(min(30, max(0, deadline - time.monotonic())))
             outputs = {
                 "run_id": producer["runId"],
                 "run_attempt": producer["runAttempt"],
-                "consumer_run_id": proof["consumer"]["runId"],
-                "consumer_run_attempt": proof["consumer"]["runAttempt"],
                 "build_version": producer["version"],
                 "sha": producer["revision"],
             }
@@ -999,8 +901,6 @@ def main(argv=None):
                 revision=args.revision,
                 producer_id=args.producer_run_id,
                 producer_attempt=args.producer_run_attempt,
-                consumer_id=args.consumer_run_id,
-                consumer_attempt=args.consumer_run_attempt,
                 boundary_sha=args.boundary_sha,
                 work_dir=args.work_dir,
             )

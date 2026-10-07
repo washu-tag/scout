@@ -17,7 +17,7 @@ import urllib.request
 import pytest
 
 import promote as p
-from test_promote import BOUNDARY, CONSUMER_SHA, FakeGitHub, SHA, VERSION, promote
+from test_promote import BOUNDARY, FakeGitHub, SHA, VERSION, promote
 
 pytestmark = pytest.mark.skipif(
     os.getenv("SCOUT_RELEASE_REGISTRY_PROOF") != "1",
@@ -185,28 +185,16 @@ def test_real_registry_signatures_exact_aliases_and_recovery(
         ),
     ):
         anno = dict(annotations)
-        if field == "configDigest":
+        if field in ("configDigest", "bundleDigest"):
             anno.update(
                 {
                     "io.scout.build.manifest-digest": producer["manifestDigest"],
-                    "io.scout.build.bundle-digest": producer["bundleDigest"],
                 }
             )
         producer[field] = push(
             p.REGISTRIES[field], producer["version"], payload, media, anno
         )
-    proof = dict(
-        schemaVersion=1,
-        producer=dict(producer),
-        consumer=dict(
-            repository=p.REPOSITORY, runId=202, runAttempt=3, revision=CONSUMER_SHA
-        ),
-        artifactMode="published",
-        valuesMode="sops",
-        profile="onprem-core-ingest-auth",
-        legs=["ingest", "auth"],
-    )
-    api = FakeGitHub(producer, proof)
+    api = FakeGitHub(producer)
 
     # A missing exact alias must be recognized without hiding auth/transport errors.
     assert (

@@ -22,14 +22,6 @@ on:
         description: 'Original successful producer attempt number'
         required: true
         type: string
-      consumer_run_id:
-        description: 'Published Flux proof run ID'
-        required: true
-        type: string
-      consumer_run_attempt:
-        description: 'Successful published Flux proof attempt number'
-        required: true
-        type: string
       boundary_sha:
         description: 'Original lightweight release boundary commit (40-character SHA)'
         required: true
@@ -96,8 +88,6 @@ jobs:
           COMMIT_SHA: ${{ inputs.revision }}
           PRODUCER_RUN_ID: ${{ inputs.producer_run_id }}
           PRODUCER_RUN_ATTEMPT: ${{ inputs.producer_run_attempt }}
-          CONSUMER_RUN_ID: ${{ inputs.consumer_run_id }}
-          CONSUMER_RUN_ATTEMPT: ${{ inputs.consumer_run_attempt }}
           BOUNDARY_SHA: ${{ inputs.boundary_sha }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
@@ -105,7 +95,6 @@ jobs:
           python3 tooling/release/promote.py promote \
             --repository "$REPO" --version "$VERSION" --revision "$COMMIT_SHA" \
             --producer-run-id "$PRODUCER_RUN_ID" --producer-run-attempt "$PRODUCER_RUN_ATTEMPT" \
-            --consumer-run-id "$CONSUMER_RUN_ID" --consumer-run-attempt "$CONSUMER_RUN_ATTEMPT" \
             --boundary-sha "$BOUNDARY_SHA" --public-key cosign.pub \
             --work-dir "$RUNNER_TEMP/promotion"
       - name: Clear only this release PR's pending label
