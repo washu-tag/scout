@@ -110,9 +110,12 @@ authorization suites.
   cluster-vars + components; Renovate against them (minimum version
   pinned for `OCIRepository` support); required-vars validation in
   site-repo CI.
-- SOPS from day one in these repos (age keys; `.sops.yaml` recipients =
-  cluster key + ops key; kustomize-controller decryption). Dev clusters
-  prove the secrets path for a full phase before on-prem depends on it.
+- Secrets: the cloud dev clusters use External Secrets Operator against
+  their cloud secrets manager. The on-prem SOPS path (age keys;
+  `.sops.yaml` recipients = the cluster's key, one key per site operator
+  and an offline recovery key, per ADR 0031 section 3; kustomize-controller
+  decryption) is proven by the consumer-side CI proof and an on-prem lab
+  instead, for a full phase before on-prem depends on it.
 - Emergency-change runbook (`flux suspend` procedure, commit-before-resume
   contract, prolonged-suspension alert) — written before any cluster
   depends on it.
@@ -130,9 +133,10 @@ upgrade has been performed end-to-end by merging a Renovate PR.
 
 - Bootstrap Ansible: Flux install; generate the cluster age key and keep a
   recovery copy in the Ansible vault; one-time vault→SOPS secret migration
-  (SOPS is the default; Ansible/vault materialization only where
-  governance bans secrets in git); one-time site-repo seeding from
-  `inventory.yaml` (write-once).
+  into the one `scout-secret-values` Secret the base's templates expand
+  (SOPS is the default; where governance bans secrets in git, the vault
+  fills that same Secret); one-time site-repo seeding from `inventory.yaml`
+  (write-once).
 - Staging reconciler for air-gapped sites (validate required vars →
   package the site overlay → sign → push), with its CI harness (packaging,
   validation, signature verification) before it gatekeeps an upgrade.

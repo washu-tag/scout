@@ -45,7 +45,7 @@ only**, though the reason has shifted. Visibility, `requiredRole`, and every but
 the toolbar are gated by a Bearer JWT report-viewer validates against Keycloak; Traefik's
 report-viewer-scoped forwardAuth middleware injects that bearer on every request through
 the ingress, including the SPA's own, so the auth mechanism itself no longer structurally
-depends on Traefik the way the old oauth2-proxy-header path did (ADR 0038's original
+depends on Traefik the way the old oauth2-proxy-header path did (ADR 0039's original
 limitation). What's still missing is simpler: **report-viewer has no aws-mode Ingress at
 all yet** (ADR 0035's Consequences list only Superset and Keycloak as landed there). If
 you're deploying report-viewer in aws mode, nothing here will be reachable at all — not
@@ -266,5 +266,5 @@ kubectl get configmap -n scout-analytics report-viewer-actions -o jsonpath='{.da
 
 ## Reference
 
-- Design and rationale: ADR 0038 in the Scout repository
-  (`docs/internal/adr/0038-extensible-report-viewer-search-actions.md`).
+- Design and rationale: ADR 0039 in the Scout repository
+  (`docs/internal/adr/0039-extensible-report-viewer-search-actions.md`).

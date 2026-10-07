@@ -40,6 +40,19 @@ jobs:
           rm -f kustomize.tar.gz
           kustomize version
 
+      - name: Install flux
+        run: |
+          set -euo pipefail
+          # The on-prem floor (kustomize-controller v1.9.6). Only its offline
+          # `flux build --dry-run` is used, which runs the controller's substitution.
+          VER=2.9.6
+          SHA=b4d22673e9246cbd628881f1a9ef3b090085dced291e42d804555cee8e8d42c5
+          curl -sSL "https://github.com/fluxcd/flux2/releases/download/v${VER}/flux_${VER}_linux_amd64.tar.gz" -o flux.tar.gz
+          echo "${SHA}  flux.tar.gz" | sha256sum -c -
+          sudo tar xz -C /usr/local/bin -f flux.tar.gz flux
+          rm -f flux.tar.gz
+          flux version --client
+
       - name: Render every base
         run: |
           set -euo pipefail
@@ -86,45 +99,51 @@ jobs:
           done
           exit $fail
 
-      - name: required-vars covers every substitution
+      - name: Contract lists cover every substitution
         run: |
           python3 - <<'PY'
-          import re, glob, subprocess, sys
-          # kustomize-controller runs drone/envsubst over the BUILT output,
-          # substituting ${NAME} AND unbraced $NAME (any case), with $$ the literal-$
-          # escape. So the surface is the rendered bases + flux/ files, not just
-          # braced-lowercase source tokens. Assert required-vars.txt lists every
-          # envsubst target; else it's green here but fails
-          # StrictPostBuildSubstitutions (or substitutes empty) at deploy -- how
-          # unbraced runtime shell vars like $HIVE_PW / $MINIO_ROOT_USER slipped through.
-          blob = ""
-          dirs = subprocess.run(
-              ["bash", "-c", "find deploy/base -name kustomization.yaml -exec dirname {} \\;"],
-              capture_output=True, text=True).stdout.split()
-          dirs = [d for d in dirs if "kind: Component" not in open(d + "/kustomization.yaml").read()]
-          for d in sorted(dirs):
-              blob += subprocess.run(["kustomize", "build", d],
-                                     capture_output=True, text=True).stdout + "\n"
-          # shared DAG + both mode sets (deploy/modes/{aws,on-prem}/), so aws-only edge
-          # vars (ALB, IRSA role-arns) are covered too and neither mode can rot.
-          for f in glob.glob("deploy/flux/*.yaml") + glob.glob("deploy/modes/*/*.yaml"):
-              if f.endswith("kustomization.yaml"):
-                  continue
-              blob += open(f).read() + "\n"
-          blob = blob.replace("$$", "\x00")  # drop $$-escaped literals before matching
-          used = set(re.findall(r'\$\{([A-Za-z0-9_]+)[:}]', blob))  # ${NAME} / ${NAME:-def}
-          used |= set(re.findall(r'\$([A-Za-z0-9_]+)', blob))       # unbraced $NAME
-          declared = {l.strip() for l in open("deploy/required-vars.txt")
-                      if l.strip() and not l.lstrip().startswith("#")}
-          missing = sorted(used - declared)
-          if missing:
-              print("::error::envsubst targets used in deploy/ but not in required-vars.txt.")
-              print("::error::Add them as site vars, or $$-escape runtime shell vars so Flux leaves them literal:")
-              for m in missing:
-                  print("  " + m)
+          import os, re, sys
+          sys.path.insert(0, "tooling/deploy")
+          from check_secret_templates import flux_files, kustomizations, kustomize_text
+          from gen_cluster_vars import load_required
+          # Each scout-config Kustomization's render may use only its own postBuild
+          # sources (StrictPostBuildSubstitutions fails on the rest), and the Flux files
+          # themselves only cluster-vars, which the site's parent substitutes. Unbraced
+          # $NAME is matched too, so runtime shell vars stay $$-escaped.
+          lists = {("ConfigMap", "cluster-vars"): set(load_required("deploy/required-vars.txt")),
+                   ("Secret", "scout-secret-values"): set(load_required("deploy/required-secret-values.txt"))}
+          cluster_vars = lists[("ConfigMap", "cluster-vars")]
+          def used(text):
+              text = text.replace("$$", "\x00")  # drop $$-escaped literals before matching
+              return (set(re.findall(r'\$\{([A-Za-z0-9_]+)[:}]', text))  # ${NAME} / ${NAME:=def}
+                      | set(re.findall(r'\$([A-Za-z0-9_]+)', text)))     # unbraced $NAME
+          errs, paths = [], set()
+          for mode in ("on-prem", "aws"):
+              for f in flux_files(mode):
+                  errs += [f"{os.path.relpath(f)}: {m} is not in required-vars.txt"
+                           for m in sorted(used(f.read_text()) - cluster_vars)]
+              for path, d in kustomizations(mode):
+                  name, pb = d["metadata"]["name"], d["spec"].get("postBuild", {})
+                  declared = set(pb.get("substitute", {}))
+                  for s in pb.get("substituteFrom", []):
+                      if (s["kind"], s["name"]) not in lists:
+                          errs.append(f"{name}: substituteFrom {s['kind']}/{s['name']} has no contract list")
+                      declared |= lists.get((s["kind"], s["name"]), set())
+                  paths.add(path)
+                  errs += [f"{name} ({path}) uses {m}, which none of its postBuild sources declares"
+                           for m in sorted(used(kustomize_text(path)) - declared)]
+          if errs:
+              print("::error::Add site vars to required-vars.txt (on-prem secret values to required-secret-values.txt),")
+              print("::error::or $$-escape runtime shell vars so Flux leaves them literal:")
+              for e in dict.fromkeys(errs):  # shared files repeat per mode
+                  print("::error::" + e)
               sys.exit(1)
-          print(f"required-vars.txt covers all {len(used)} envsubst targets")
+          print(f"{len(paths)} rendered Flux paths: every substitution is declared by its own sources")
           PY
+
+      - name: On-prem Secret templates render exactly through Flux
+        # Fixture values only; flux build --dry-run never reads a cluster.
+        run: python3 tooling/deploy/check_secret_templates.py
 
       - name: config-artifact tooling stamps + generates cleanly
         run: |

@@ -18,37 +18,29 @@ configurations {
     testImplementation.extendsFrom compileOnly
 }
 
-def kcVersion = "26.7.2"
-def jbossLoggingVersion = "3.6.1.Final"
+def kcVersion = "26.8.0"
 def checkstyleVersion = "13.4.2"
 // ADR 0021: OPA bundle publisher uses tar.gz as OPA's standard bundle
 // format. Commons Compress (plus its commons-codec/io/lang3 deps) is a
 // smaller surface than adding an S3 client SDK on top. Not present on
 // Keycloak's classpath by default, so it ships into providers/ via
 // the copyRuntimeDeps task below.
-def commonsCompressVersion = "1.27.1"
+def commonsCompressVersion = "1.28.0"
 // AWS SDK v2 for S3 PUT of the OPA bundle. Supports both static-key auth
 // (MinIO, via StaticCredentialsProvider) and IRSA (cloud-native AWS, via
 // DefaultCredentialsProvider's WebIdentityTokenFile path). The SDK shades
 // its internal Jackson under software.amazon.awssdk.thirdparty, so it
 // doesn't conflict with Keycloak's bundled Jackson.
-def awsSdkVersion = "2.44.14"
-def junitVersion = "5.11.4"
-def mockitoVersion = "5.14.2"
+def awsSdkVersion = "2.55.8"
+def junitVersion = "6.1.3"
+def mockitoVersion = "5.24.0"
 
 dependencies {
-    constraints {
-        // commons-compress 1.27.1 pulls commons-lang3 3.16.0, which ships into
-        // providers/ — hold it at the CVE-2025-48924 fix.
-        implementation("org.apache.commons:commons-lang3:3.18.0")
-    }
-
     // Provided by Keycloak at runtime — compileOnly so they don't ship into
     // providers/ alongside our jar and risk classloader skew.
     compileOnly("org.keycloak:keycloak-core:${kcVersion}")
     compileOnly("org.keycloak:keycloak-services:${kcVersion}")
     compileOnly("org.keycloak:keycloak-server-spi:${kcVersion}")
-    compileOnly("org.jboss.logging:jboss-logging:${jbossLoggingVersion}")
 
     // Runtime deps that ship into Keycloak's providers/ directory via
     // copyRuntimeDeps below.
@@ -73,14 +65,15 @@ dependencies {
         exclude group: "software.amazon.awssdk", module: "apache-client"
     }
 
-    compileOnly("org.projectlombok:lombok:1.18.38")
-    annotationProcessor("org.projectlombok:lombok:1.18.38")
+    compileOnly("org.projectlombok:lombok:1.18.48")
+    annotationProcessor("org.projectlombok:lombok:1.18.48")
 
-    testCompileOnly("org.projectlombok:lombok:1.18.38")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.38")
-    testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
+    testCompileOnly("org.projectlombok:lombok:1.18.48")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.48")
+    testImplementation(platform("org.junit:junit-bom:${junitVersion}"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
 }
 
 // Copy all runtime-classpath deps (commons-compress + AWS SDK) into
