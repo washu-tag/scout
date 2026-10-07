@@ -76,7 +76,7 @@ export function ExplainSqlModal(props: {
         {showStats && props.executedSql && (
           <SqlSection
             label="Evaluated SQL"
-            note="The LLM generated query with columns added to show why each report matched. It returns the same reports and adds the Matched on evidence."
+            note="The LLM generated query with added Matched on evidence columns."
             sql={props.executedSql}
             copied={copied === 'executed'}
             onCopy={copy('executed', props.executedSql)}
