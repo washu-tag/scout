@@ -446,7 +446,7 @@ def build_evidence_columns(plan: EvidencePlan) -> str:
         matched = f"ARRAY_DISTINCT({matched})" if len(plan.dx_lambdas) > 1 else matched
         dx_codes = f"ARRAY_JOIN(TRANSFORM({matched}, x -> x.diagnosis_code), ', ')"
         # A code can be admitted by its text, so the code alone is not why.
-        dx_text = f"ARRAY_JOIN(TRANSFORM({matched}, x -> x.diagnosis_code_text), ', ')"
+        dx_text = f"ARRAY_JOIN(TRANSFORM({matched}, x -> x.diagnosis_code_text), '; ')"
     else:
         dx_codes = "CAST(NULL AS VARCHAR)"
         dx_text = "CAST(NULL AS VARCHAR)"

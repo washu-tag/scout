@@ -31,8 +31,7 @@ const KIND: Record<Kind, { style: React.CSSProperties; icon?: () => React.ReactE
   code: { style: POSITIVE },
   negative: {
     style: {
-      // Clips first, down to the glyph and a few letters, so the phrase and
-      // code that admitted the row stay whole.
+      // Clips first so the matched phrase and codes stay whole.
       flexShrink: 1000,
       minWidth: '4em',
       background: 'var(--rv-danger-soft)',

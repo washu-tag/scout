@@ -81,15 +81,8 @@ type Row = Record<string, unknown>;
 // standalone tab.
 const embedded = window.parent !== window;
 
-// Carried in every row but not shown as columns. Exported anyway: offline
-// adjudication needs the phrase, not the category it fell under.
-const EVIDENCE_EXPORT = [
-  'ev_source',
-  'ev_positive_span',
-  'ev_negative_span',
-  'ev_dx_codes',
-  'ev_dx_text',
-];
+// Exported with Matched on so the CSV has the phrases, not just the category.
+const EVIDENCE_EXPORT = ['ev_positive_span', 'ev_negative_span', 'ev_dx_codes', 'ev_dx_text'];
 
 const columnHelper = createColumnHelper<Row>();
 
@@ -180,8 +173,7 @@ export default function SearchDetailPage() {
     setColumnVisibility((v) => ({ ...v, patient_age: bare, sex: bare }));
   }, [rowsQ.data, searchId]);
 
-  // Legacy cohorts can carry an mpi and no epic_mrn, which would otherwise
-  // leave them with no visible patient identifier.
+  // MPI-only legacy cohorts would otherwise show no patient ID.
   const autoMpiFor = useRef<string | null>(null);
   useEffect(() => {
     const rows = rowsQ.data?.rows;
@@ -768,9 +760,9 @@ export default function SearchDetailPage() {
                 if (!cols.includes('primary_report_identifier')) {
                   cols.unshift('primary_report_identifier');
                 }
-                const present = new Set(rowsQ.data?.columns ?? []);
-                for (const field of EVIDENCE_EXPORT) {
-                  if (present.has(field) && !cols.includes(field)) cols.push(field);
+                if (cols.includes('ev_source')) {
+                  const present = new Set(rowsQ.data?.columns ?? []);
+                  cols.push(...EVIDENCE_EXPORT.filter((f) => present.has(f)));
                 }
                 downloadCsv(
                   `${searchId}.csv`,

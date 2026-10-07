@@ -78,7 +78,7 @@ def test_where_clause_is_untouched() -> None:
 
 def test_dx_text_travels_with_the_code() -> None:
     out, _ = with_evidence(CANONICAL)
-    assert "x.diagnosis_code_text), ', ') AS ev_dx_text" in out
+    assert "x.diagnosis_code_text), '; ') AS ev_dx_text" in out
 
 
 def test_adds_exactly_the_evidence_columns() -> None:
