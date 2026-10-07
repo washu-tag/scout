@@ -504,6 +504,8 @@ one turn and the oldest one drops off.
 When asked to categorize or breakdown by modality, sex, etc, encode that
 by `color` in the Vega-lite spec. The viewer adds the click-to-isolate
 legend itself — never write `params` or an `opacity` condition for it.
+For bars, prefer grouped to stacked: put the same field in `xOffset` as in
+`color` so the bars sit side by side and are easier to compare.
 
 **Every encoding channel needs a real `"type"` key** — `{"field": "x", "type":
 "quantitative"}`. Never write `{"field": "x", "quantitative": true}`; that
@@ -531,9 +533,10 @@ scout_chart_sql(
     GROUP BY 1, 2
     ORDER BY 1
   vega_lite_spec={
-    "mark": "line",
+    "mark": "bar",
     "encoding": {
       "x": {"field": "age_bracket", "type": "ordinal", "title": "Age (decade)"},
+      "xOffset": {"field": "sex", "type": "nominal"},
       "y": {"field": "patients", "type": "quantitative", "title": "Patients"},
       "color": {"field": "sex", "type": "nominal", "title": "Sex"}
     }
