@@ -19,7 +19,7 @@ dependencies = [
     # Pin below 0.137 - that release added a `_IncludedRouter` wrapper into
     # `app.routes` which prometheus-fastapi-instrumentator 8.0.0 doesn't
     # recognize (crashes on `.path` lookup during request routing).
-    "fastapi<0.137",
+    "fastapi<0.143",
     "uvicorn[standard]",
     "httpx",
     "psycopg[binary,pool]",
