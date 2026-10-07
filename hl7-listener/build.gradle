@@ -76,10 +76,10 @@ configurations.all {
 			details.useVersion '4.2.17.Final' // CVE-2026-75595 (CRITICAL, netty-handler); bump the modules in lockstep
 			details.because 'Trivy CRITICAL'
 		} else if (g == 'com.fasterxml.jackson.core' && n in ['jackson-core', 'jackson-databind']) {
-			details.useVersion '2.22.2' // CVE-2026-68497 (HIGH, jackson-databind)
+			details.useVersion '2.22.3' // CVE-2026-68497/-89407/-89425/-91776/-91777 (HIGH, jackson-core/-databind)
 			details.because 'Trivy HIGH'
 		} else if (g == 'tools.jackson.core' && n in ['jackson-core', 'jackson-databind']) {
-			details.useVersion '3.1.6' // CVE-2026-68497 (HIGH, jackson-databind)
+			details.useVersion '3.1.7' // CVE-2026-68497/-89407/-89425/-91776/-91777 (HIGH, jackson-core/-databind)
 			details.because 'Trivy HIGH'
 		}
 	}
