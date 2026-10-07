@@ -17,7 +17,7 @@ from types import SimpleNamespace
 import jwt
 import pytest
 import voila_runtime
-from conftest import ORIGINAL_GET_RESULT
+from conftest import KERNEL_ID, ORIGINAL_GET_RESULT
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 HEADER = "X-Auth-Request-Preferred-Username"
@@ -242,3 +242,101 @@ def test_forwarded_header_without_settings_fails_import(monkeypatch):
     from voila.tornado.handler import TornadoVoilaHandler
 
     assert TornadoVoilaHandler.get is voila_runtime._voila_runtime_get
+
+
+# --- Kernel websocket: only the widgets' message types reach the kernel ---
+
+V1 = voila_runtime.V1_SUBPROTOCOL
+
+
+def _json_frame(msg_type, content=None):
+    """A legacy-protocol text frame."""
+    return json.dumps(
+        {
+            "channel": "shell",
+            "header": {"msg_type": msg_type},
+            "parent_header": {},
+            "metadata": {},
+            "content": content or {},
+        }
+    )
+
+
+def _v1_frame(msg_type, content=None, header=None):
+    """A v1-subprotocol binary frame, as Voila's frontend sends them."""
+    if header is None:
+        header = json.dumps({"msg_type": msg_type}).encode()
+    parts = [b"shell", header, b"{}", b"{}", json.dumps(content or {}).encode()]
+    offsets = [8 * (len(parts) + 2)]
+    for part in parts:
+        offsets.append(offsets[-1] + len(part))
+    table = b"".join(n.to_bytes(8, "little") for n in [len(offsets), *offsets])
+    return table + b"".join(parts)
+
+
+WIRE_FORMATS = pytest.mark.parametrize(
+    "subprotocol, frame",
+    [(None, _json_frame), (V1, _v1_frame)],
+    ids=["json-text", "v1-binary"],
+)
+
+
+@WIRE_FORMATS
+def test_widget_message_reaches_kernel(subprotocol, frame):
+    connection = voila_runtime.ScoutKernelWebsocketConnection(subprotocol)
+    message = frame("comm_msg", {"data": {"method": "update"}})
+    connection.handle_incoming_message(message)
+    assert connection.forwarded == [message]
+
+
+@WIRE_FORMATS
+def test_disallowed_message_is_dropped_and_logged(subprotocol, frame, caplog):
+    connection = voila_runtime.ScoutKernelWebsocketConnection(subprotocol)
+    message = frame("execute_request", {"code": "content-marker"})
+    with caplog.at_level(logging.WARNING, logger="voila_runtime"):
+        connection.handle_incoming_message(message)
+    assert connection.forwarded == []
+    [record] = caplog.records
+    logged = record.getMessage()
+    assert "'execute_request'" in logged and KERNEL_ID in logged
+    assert "content-marker" not in logged
+
+
+@pytest.mark.parametrize(
+    "subprotocol, message",
+    [
+        (None, "not json"),
+        (None, "[]"),
+        (None, '{"channel": "shell"}'),
+        (None, '{"header": "comm_msg"}'),
+        (None, '{"header": {"msg_type": 7}}'),
+        (None, "[" * 100_000 + "]" * 100_000),
+        (None, _v1_frame("comm_msg")),
+        (V1, _json_frame("comm_msg")),
+        (V1, b"short"),
+        # A part count far larger than the frame.
+        (V1, (2**63).to_bytes(8, "little") + _v1_frame("comm_msg")[8:]),
+        (V1, _v1_frame(None, header=b"\xff\xfe")),
+        (V1, _v1_frame(None, header=b'{"msg_type": null}')),
+    ],
+    ids=[
+        "json-not-json",
+        "json-not-object",
+        "json-no-header",
+        "json-header-not-object",
+        "json-type-not-string",
+        "json-too-deep",
+        "binary-without-v1",
+        "v1-text-frame",
+        "v1-truncated",
+        "v1-huge-part-count",
+        "v1-header-not-utf8",
+        "v1-type-null",
+    ],
+)
+def test_malformed_frame_is_dropped(subprotocol, message, caplog):
+    connection = voila_runtime.ScoutKernelWebsocketConnection(subprotocol)
+    with caplog.at_level(logging.WARNING, logger="voila_runtime"):
+        connection.handle_incoming_message(message)
+    assert connection.forwarded == []
+    assert any(KERNEL_ID in r.getMessage() for r in caplog.records)

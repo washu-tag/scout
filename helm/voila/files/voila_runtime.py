@@ -53,15 +53,24 @@ Caveat: Voila's `preheat_kernel` (off by default) starts kernels at server
 boot, outside any request context — a preheated kernel carries no username
 and the SDK falls back to anonymous. This per-request capture assumes the
 default lazy, per-render kernel spawn.
+
+Kernel websocket filter: playbook pages only need widget messages on the
+websocket to their kernel. ScoutKernelWebsocketConnection (registered via
+c.Voila.kernel_websocket_connection_class in voila.py) forwards only the
+message types the playbooks' widgets send and drops the rest.
 """
 
 import asyncio
 import contextvars
 import http.client
+import json
 import logging
 import os
 
 import jwt
+from jupyter_server.services.kernels.connection.channels import (
+    ZMQChannelsWebsocketConnection,
+)
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from voila.tornado.handler import TornadoVoilaHandler
 
@@ -176,3 +185,63 @@ class ScoutMappingKernelManager(AsyncMappingKernelManager):
             env["X_AUTH_REQUEST_PREFERRED_USERNAME"] = username
         kwargs["env"] = env
         return await super().start_kernel(**kwargs)
+
+
+# Message types the playbooks' widgets send to the kernel, pinned from observing
+# all four playbooks under Voila 0.5.12, jupyter_server 2.20 and ipywidgets 8.1.
+# comm_info_request wasn't observed: Voila's widget manager sends it on a
+# (re)connect when the kernel takes over 4s to return widget state, e.g. while a
+# callback is running. Re-check all of them after upgrading any of those.
+ALLOWED_INCOMING_MSG_TYPES = frozenset(
+    {"comm_close", "comm_info_request", "comm_msg", "comm_open", "kernel_info_request"}
+)
+
+V1_SUBPROTOCOL = "v1.kernel.websocket.jupyter.org"
+
+
+def _incoming_msg_type(ws_msg, subprotocol):
+    """Return the header msg_type of a frame from the browser, or None if unreadable.
+
+    Reads the header from the same bytes jupyter_server forwards, so the type
+    checked is the type the kernel acts on.
+    """
+    try:
+        if subprotocol == V1_SUBPROTOCOL:
+            # An 8-byte part count, then that many 8-byte offsets: channel,
+            # header, parent_header, ... A count that doesn't fit the frame is
+            # malformed.
+            count = int.from_bytes(ws_msg[:8], "little")
+            if not 3 <= count < len(ws_msg) // 8:
+                return None
+            start = int.from_bytes(ws_msg[16:24], "little")
+            end = int.from_bytes(ws_msg[24:32], "little")
+            header = json.loads(ws_msg[start:end].decode("utf-8"))
+        elif isinstance(ws_msg, str):
+            header = json.loads(ws_msg)["header"]
+        else:
+            # Legacy-protocol binary frames carry buffers. Voila's frontend
+            # negotiates v1, so only a hand-built client sends these.
+            return None
+    except (TypeError, ValueError, KeyError, RecursionError):
+        return None
+    msg_type = header.get("msg_type") if isinstance(header, dict) else None
+    return msg_type if isinstance(msg_type, str) else None
+
+
+class ScoutKernelWebsocketConnection(ZMQChannelsWebsocketConnection):
+    """Forwards only ALLOWED_INCOMING_MSG_TYPES from the browser to the kernel.
+
+    Registered via c.Voila.kernel_websocket_connection_class in voila.py."""
+
+    def handle_incoming_message(self, incoming_msg):
+        msg_type = _incoming_msg_type(incoming_msg, self.subprotocol)
+        if msg_type in ALLOWED_INCOMING_MSG_TYPES:
+            super().handle_incoming_message(incoming_msg)
+            return
+        # The type is client-supplied: %.80r escapes and truncates it. Never log
+        # the frame itself.
+        logger.warning(
+            "voila_runtime: dropped incoming kernel message of type %.80r on kernel %s",
+            msg_type,
+            self.kernel_id,
+        )

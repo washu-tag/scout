@@ -72,6 +72,29 @@ js_services_stub.kernels = js_kernels_stub
 js_stub.services = js_services_stub
 
 
+# --- ...connection.channels.ZMQChannelsWebsocketConnection (voila_runtime subclasses it) ---
+KERNEL_ID = "kernel-test-id"
+
+
+class FakeZMQChannelsWebsocketConnection:
+    kernel_id = KERNEL_ID
+
+    def __init__(self, subprotocol=None):
+        self.subprotocol = subprotocol
+        self.forwarded = []
+
+    def handle_incoming_message(self, incoming_msg):
+        # Record the frames the subclass passes on so tests can assert on them.
+        self.forwarded.append(incoming_msg)
+
+
+js_connection_stub = _stub("jupyter_server.services.kernels.connection")
+js_channels_stub = _stub("jupyter_server.services.kernels.connection.channels")
+js_channels_stub.ZMQChannelsWebsocketConnection = FakeZMQChannelsWebsocketConnection
+js_connection_stub.channels = js_channels_stub
+js_kernels_stub.connection = js_connection_stub
+
+
 # --- scout._identity.resolve_audit_user (playbook_helpers depends on it) ---
 # Stubbed as a real function reading the env, mirroring what the SDK does.
 scout_stub = _stub("scout")
