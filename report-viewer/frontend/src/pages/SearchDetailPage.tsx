@@ -416,7 +416,7 @@ export default function SearchDetailPage() {
               style={{
                 position: 'absolute',
                 inset: 0,
-                overflowX: 'auto',
+                overflowX: 'hidden',
                 overflowY: 'auto',
                 background: 'var(--rv-surface)',
                 border: '1px solid var(--rv-border)',
@@ -456,7 +456,8 @@ export default function SearchDetailPage() {
                               // border-bottom on scroll; box-shadow survives.
                               boxShadow: 'inset 0 -1px 0 var(--rv-border)',
                               whiteSpace: 'nowrap',
-                              width: header.getSize(),
+                              // Shares of the table, so columns shrink to fit instead of scrolling.
+                              width: `${(header.getSize() / table.getTotalSize()) * 100}%`,
                               cursor: 'pointer',
                               userSelect: 'none',
                               position: 'sticky',
