@@ -427,6 +427,115 @@ def test_wait_selects_explicit_attempts():
     assert producer["runAttempt"] == 2
 
 
+def wait_http(monkeypatch, tmp_path, responses, timeout=60, api=None):
+    if api is None:
+        api, _ = fixture()
+    now, calls, sleeps = [0], [], []
+
+    def sleep(seconds):
+        sleeps.append(seconds)
+        now[0] += seconds
+
+    def cli(args, **kwargs):
+        calls.append(now[0])
+        if responses:
+            code, raw = responses.pop(0)
+        elif "--include" in args:
+            code, raw = 0, b"HTTP/2.0 200 OK\n\n" + p.canonical(api.request(args[-1]))
+        else:
+            code, raw = 0, api.download(args[-1])
+        return subprocess.CompletedProcess(args, code, raw, b"not printed")
+
+    monkeypatch.setattr(subprocess, "run", cli)
+    monkeypatch.setattr(p.time, "monotonic", lambda: now[0])
+    monkeypatch.setattr(p.time, "sleep", sleep)
+    output = tmp_path / "outputs"
+    result = p.main(
+        [
+            "wait",
+            "--repository",
+            p.REPOSITORY,
+            "--revision",
+            SHA,
+            "--timeout",
+            str(timeout),
+            "--github-output",
+            str(output),
+        ]
+    )
+    return result, output, calls, sleeps
+
+
+@pytest.mark.parametrize(
+    "raw", [b"", b"HTTP/2.0 502 Bad Gateway\n\n{}", b"HTTP/2.0 503 Unavailable\n\n{}"]
+)
+def test_wait_recovers_from_transient_reads(monkeypatch, tmp_path, raw):
+    result, output, calls, sleeps = wait_http(monkeypatch, tmp_path, [(1, raw)])
+    assert result == 0
+    assert sleeps == [30] and calls[:2] == [0, 30]
+    assert "run_attempt=2\n" in output.read_text()
+    assert "sha=" + SHA in output.read_text()
+
+
+@pytest.mark.parametrize("raw", [b"", b"HTTP/2.0 502 Bad Gateway\n\n{}"])
+def test_transient_reads_cannot_extend_the_wait_deadline(monkeypatch, tmp_path, raw):
+    result, output, calls, sleeps = wait_http(
+        monkeypatch, tmp_path, [(1, raw)] * 3, timeout=35
+    )
+    assert result == 1 and not output.exists()
+    assert calls == [0, 30, 35] and sleeps == [30, 5]
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        (1, b"HTTP/2.0 401 Unauthorized\n\n{}"),
+        (1, b"HTTP/2.0 403 Forbidden\n\n{}"),
+        (4, b""),
+        (0, b"HTTP/2.0 200 OK\n\nnot JSON"),
+        (0, b'HTTP/2.0 200 OK\n\n{"id": 11, "path": "another workflow"}'),
+    ],
+)
+def test_wait_never_retries_authentication_or_invalid_evidence(
+    monkeypatch, tmp_path, response
+):
+    result, output, calls, sleeps = wait_http(monkeypatch, tmp_path, [response])
+    assert result == 1 and not output.exists()
+    assert calls == [0] and not sleeps
+
+
+@pytest.mark.parametrize("failure", ["failed-ci", "digest", "receipt-context"])
+def test_wait_rejects_failed_ci_or_invalid_artifact_without_retry(
+    monkeypatch, tmp_path, failure
+):
+    api, _ = fixture()
+    if failure == "failed-ci":
+        api.runs[101]["conclusion"] = "failure"
+    elif failure == "digest":
+        api.archive_digest = "sha256:" + "f" * 64
+    else:
+        api.producer["runAttempt"] = 1
+    result, output, calls, sleeps = wait_http(monkeypatch, tmp_path, [], api=api)
+    assert result == 1 and not output.exists()
+    assert calls and not sleeps
+
+
+@pytest.mark.parametrize("method", ["POST", "PATCH", "DELETE"])
+@pytest.mark.parametrize("raw", [b"", b"HTTP/2.0 503 Unavailable\n\n{}"])
+def test_publication_write_failures_are_not_retryable_reads(monkeypatch, method, raw):
+    calls = []
+
+    def cli(args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 1, raw, b"not printed")
+
+    monkeypatch.setattr(subprocess, "run", cli)
+    with pytest.raises(p.PromotionError) as error:
+        p.GitHub().request("/repos/a/b/releases", method=method, data={})
+    assert not isinstance(error.value, p.TransientRead)
+    assert len(calls) == 1
+
+
 def test_notes_follow_final_tag_and_keep_manual_draft_body(tmp_path):
     api, oci = fixture()
     api.fail = "generate-notes"

@@ -1,7 +1,8 @@
 """Keep publication privilege and recovery serialization around the shared gate."""
 
 from pathlib import Path
-import re
+import subprocess
+import sys
 
 import yaml
 
@@ -39,8 +40,8 @@ def test_promotion_and_compatibility_writes_share_one_recovery_lock():
     ]
     assert len(chart_steps) == 1
     chart_index, chart_step = chart_steps[0]
-    charts = re.findall(r"^([a-z0-9-]+) helm/", chart_step["run"], re.MULTILINE)
-    assert sorted(charts) == sorted(CHARTS)
+    assert 'promote.py charts > "$RUNNER_TEMP/release-charts.txt"' in chart_step["run"]
+    assert 'done < "$RUNNER_TEMP/release-charts.txt"' in chart_step["run"]
     promoter = [
         i
         for i, s in enumerate(normal["steps"])
@@ -49,6 +50,30 @@ def test_promotion_and_compatibility_writes_share_one_recovery_lock():
     assert len(promoter) == 1 and chart_index < promoter[0]
     assert "helm push" not in str(retry)
     assert "update-versions.sh" not in str(retry)
+
+
+def test_compatibility_chart_cli_uses_ci_catalog_from_any_working_directory(tmp_path):
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tooling/release/promote.py"), "charts"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    rows = [line.split() for line in result.stdout.splitlines()]
+    expected = [
+        [chart["chart-name"], chart["chart-dir"]]
+        for chart in workflow("ci.yaml")["jobs"]["publish-charts"]["strategy"][
+            "matrix"
+        ]["include"]
+    ]
+    assert rows == expected
+    assert dict(rows) == CHARTS
+    for name, directory in rows:
+        assert (
+            yaml.safe_load((ROOT / directory / "Chart.yaml").read_text())["name"]
+            == name
+        )
 
 
 def test_wait_is_read_only_and_both_mutators_require_trusted_main():

@@ -20,6 +20,8 @@ import time
 import zipfile
 from urllib.parse import quote
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "deploy"))
 from artifact_identity import (  # noqa: E402
     DIGEST,
@@ -37,7 +39,12 @@ REGISTRIES = {
     "configDigest": "ghcr.io/washu-tag/manifests/scout-config",
 }
 IMAGES = "hl7log-extractor hl7-transformer hl7-listener scout-notebook launchpad report-viewer keycloak-fragment-reconciler".split()
-CHARTS = "hl7-transformer dcm4chee hive-metastore hl7-listener hl7log-extractor keycloak-config-cli keycloak-fragment-reconciler launchpad open-webui-bootstrap orthanc report-viewer scout-dashboards scout-opa temporal-bootstrap voila".split()
+CHARTS = {
+    chart["chart-name"]: chart["chart-dir"]
+    for chart in yaml.safe_load(
+        (Path(__file__).resolve().parents[2] / ".github/workflows/ci.yaml").read_text()
+    )["jobs"]["publish-charts"]["strategy"]["matrix"]["include"]
+}
 VERSION = re.compile(r"[1-9][0-9]*\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 MAX_JSON = 16384
 MAX_MANIFEST = 1024 * 1024
@@ -56,6 +63,10 @@ class PromotionError(ValueError):
 
 class Pending(PromotionError):
     """The selected CI build is still running or has not appeared."""
+
+
+class TransientRead(PromotionError):
+    """A temporary GitHub read failure; only the bounded build wait retries it."""
 
 
 def require(ok, message):
@@ -120,9 +131,13 @@ class GitHub:
             env=self.mutation_env() if method != "GET" or release_access else None,
         )
         raw = result.stdout.replace(b"\r\n", b"\n")
+        if method == "GET" and result.returncode == 1 and not raw:
+            raise TransientRead("GitHub API read failed before receiving a response")
         match = re.match(rb"HTTP/\S+ (\d{3})[^\n]*\n", raw)
         require(match is not None, "GitHub API returned no HTTP status")
         status = int(match.group(1))
+        if method == "GET" and 500 <= status < 600:
+            raise TransientRead(f"GitHub API read failed (HTTP {status})")
         require(b"\n\n" in raw, "GitHub API response has no body boundary")
         body = raw.split(b"\n\n", 1)[1]
         if status == 404 and missing_ok:
@@ -846,6 +861,9 @@ def promote(
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser(
+        "charts", help="List compatibility chart names and source directories"
+    )
     wait = sub.add_parser("wait")
     publish = sub.add_parser("promote")
     for item in (wait, publish):
@@ -863,6 +881,10 @@ def main(argv=None):
     publish.add_argument("--public-key", type=Path, required=True)
     publish.add_argument("--work-dir", type=Path, required=True)
     args = parser.parse_args(argv)
+    if args.command == "charts":
+        for name, directory in CHARTS.items():
+            print(name, directory)
+        return 0
     try:
         api = GitHub()
         if args.command == "wait":
@@ -872,7 +894,7 @@ def main(argv=None):
                 try:
                     producer = find_evidence(api, args.repository, args.revision)
                     break
-                except Pending:
+                except (Pending, TransientRead):
                     require(
                         time.monotonic() < deadline,
                         "timed out waiting for the exact CI build",

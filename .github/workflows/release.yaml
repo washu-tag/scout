@@ -250,6 +250,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+      - run: pip install pyyaml
 
       - name: Determine target commit
         id: target
@@ -326,6 +327,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+      - run: pip install pyyaml
       - uses: ./.github/actions/install-hauler-oras
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         with:
@@ -376,9 +378,9 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "$REGISTRY_TOKEN" | helm registry login ghcr.io -u "$ACTOR" --password-stdin
-          # Keep this list in sync with tooling/release/promote.py. All chart
-          # writes share this job's promotion/recovery lock. The GitOps aliases
+          # All chart writes share this job's promotion/recovery lock. The GitOps aliases
           # remain the unmodified artifacts tested by the same CI attempt.
+          python3 ../tooling/release/promote.py charts > "$RUNNER_TEMP/release-charts.txt"
           while read -r name directory; do
             app_version="$(bash .github/scripts/chart-app-version.sh "$name" "$VERSION")"
             app_args=()
@@ -395,23 +397,7 @@ jobs:
             fi
             cosign sign --key env://COSIGN_PRIVATE_KEY --use-signing-config=false \
               --tlog-upload=false --yes "$repository@$digest"
-          done <<'CHARTS'
-          hl7-transformer helm/extractor/hl7-transformer
-          dcm4chee helm/dcm4chee
-          hive-metastore helm/hive-metastore
-          hl7-listener helm/hl7-listener
-          hl7log-extractor helm/extractor/hl7log-extractor
-          keycloak-config-cli helm/keycloak-config-cli
-          launchpad helm/launchpad
-          open-webui-bootstrap helm/open-webui-bootstrap
-          orthanc helm/orthanc
-          report-viewer helm/report-viewer
-          keycloak-fragment-reconciler helm/keycloak-fragment-reconciler
-          scout-dashboards helm/scout-dashboards
-          scout-opa helm/scout-opa
-          temporal-bootstrap helm/temporal-bootstrap
-          voila helm/voila
-          CHARTS
+          done < "$RUNNER_TEMP/release-charts.txt"
       - name: Promote verified digests and publish the signed release record
         env:
           GH_TOKEN: ${{ github.token }}

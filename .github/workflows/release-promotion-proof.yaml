@@ -8,6 +8,7 @@ on:
     paths:
       - tooling/release/**
       - tooling/deploy/artifact_identity.py
+      - .github/workflows/ci.yaml
       - .github/workflows/release*.yaml
       - .github/workflows/promote-release.yaml
   push:
@@ -15,6 +16,7 @@ on:
     paths:
       - tooling/release/**
       - tooling/deploy/artifact_identity.py
+      - .github/workflows/ci.yaml
       - .github/workflows/release*.yaml
       - .github/workflows/promote-release.yaml
 

@@ -52,6 +52,33 @@ rebuilding them. The release workflow requires that same CI attempt to succeed.
 This gate covers the core on-prem profile, not disconnected installation or
 optional components.
 
+### Overview diagram
+
+```text
+Merge release-please PR or dispatch Release on main
+                        |
+             Stamp source with X.Y.Z
+                        |
+       Build one candidate for that exact commit
+                        |
+       Ansible + Flux ingest + Flux authentication
+                        |
+           Publish the signed, tested package
+                        |
+       Verify CI attempt and package identities
+                        |
+        Package legacy release-version charts
+                        |
+       Create draft + signed record + checked aliases
+                        |
+             Publish GitHub Release
+                        |
+              Reset main to dev versions
+
+CI failure: release blocked; follow the retry/fix procedure below.
+Partial draft/promotion: recover the original identities.
+```
+
 ### Publication order
 
 1. Validate an upstream `main` release and its version. Preserve the existing
@@ -88,9 +115,8 @@ optional components.
 
 The normal release chart/promotion job and recovery job share
 `scout-release-promotion` concurrency. The CI producer and the release's build
-wait do not hold this lock. Retain the operational hold on unrelated merges
-while `main` is stamped: legacy tags remain mutable, and a digest mismatch stops
-promotion rather than silently accepting another build.
+wait do not hold this lock. Legacy tags remain mutable while `main` is stamped;
+a digest mismatch stops promotion rather than silently accepting another build.
 
 ### Triggering a release
 
@@ -98,6 +124,15 @@ Merge the release-please PR, or dispatch **Release** (`release.yaml`) on `main`
 with `version=X.Y.Z`. `dry_run=true` previews the changelog and makes no release
 changes. `skip_dev_reset=true` leaves the successful release stamp in place and
 requires a deliberate later reset.
+
+The maintainer running the release coordinates a manual hold on unrelated
+`main` merges before triggering it, through publication and the successful dev
+reset. Allow for the CI wait of up to 90 minutes plus promotion and reset time.
+After a failure, keep the hold until recovery succeeds or a coordinated reset
+abandons the stamped state; fix and reset PRs are part of that recovery. When
+using `skip_dev_reset`, arrange the reset before lifting the hold.
+Workflow concurrency serializes builds and promotions; it does not prevent
+maintainers from merging other PRs. No branch rule enforces this hold.
 
 Non-main release publication is rejected before stamping. Such branches do not
 have the trusted upstream publication path; their CI success cannot authorize
@@ -120,7 +155,9 @@ in one attempt. **Re-run failed jobs** cannot combine earlier tests with a new
 publication. A rerun can rebuild artifacts; it must test the new candidate
 before publishing that attempt's outputs.
 
-The Release workflow waits up to 90 minutes for CI. If it has already failed or
+The Release workflow waits up to 90 minutes for CI and retries temporary GitHub
+status-read failures within that deadline. Authentication failures and invalid
+evidence still fail the wait. If it has already failed or
 timed out, re-dispatch Release with the same version after CI succeeds.
 Re-dispatching Release alone does not rerun CI. If a newer build has advanced
 the signed predecessor beyond the stamped source, use the fixed-source procedure
@@ -194,6 +231,16 @@ re-dispatch an already published version just to reset it.
 
 ## CI Components
 
+Main builds are serialized. GitHub keeps one running build and one pending build
+in the group; a newer push replaces the pending run, so not every commit gets a
+completed build. The next producer includes all accumulated changes since the
+verified predecessor. A release still needs a successful build of its exact
+stamped commit; a newer commit's result cannot replace a cancelled release build.
+
+The first build after migrating an unsigned historical manifest rebuilds all
+nine images and fifteen charts, carrying no components from that manifest.
+Subsequent builds can carry unchanged digests from a verified signed predecessor.
+
 | Component | Responsibility |
 |---|---|
 | `ci.yaml` | Build and test candidate artifacts, publish the signed package and attempt-specific digests |
@@ -203,10 +250,12 @@ re-dispatch an already published version just to reset it.
 | `tooling/release/promote.py` | Shared evidence validation, signing, alias checks and draft-to-public transition |
 | `.github/scripts/update-versions.sh` | Ansible-compatible source stamping and dev reset |
 
-When adding a release artifact, keep the producer path map, release chart list,
-`tooling/release/promote.py` compatibility lists and version-file tables below in
-sync. A successful core proof does not certify optional services, haul restore,
-registry relocation or cold-cache disconnected installation.
+Release chart names and directories come from `ci.yaml`'s `publish-charts` matrix;
+packaging and verification use that same catalog. When adding an image, update
+the producer path map, the compatibility image list in
+`tooling/release/promote.py`, and version-file tables below. A successful core
+proof does not certify optional services, haul restore, registry relocation or
+cold-cache disconnected installation.
 
 ### Compatibility retirement
 

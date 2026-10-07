@@ -110,8 +110,11 @@ inside `Post-Commit Tasks` before publication. Source builds and candidate
 preparation run first. Separate Flux ingest and authentication jobs deploy the
 candidate alongside the Ansible lane. The aggregate `deploy-and-test` result
 requires both paths, and publication copies the tested images, charts and config
-without changing their digests. Pull requests exercise the same candidate path;
-there is no downstream Flux workflow or commit-status handoff.
+without changing their digests. Release promotion also requires this successful
+upstream main CI attempt, including both Flux legs; the proof is mandatory for
+release, even while Ansible remains the deployment path at existing sites.
+Pull requests exercise the same candidate path; there is no downstream Flux
+workflow or commit-status handoff.
 
 The signed predecessor snapshot, source ancestry check, and serialized main
 producer preserve unchanged component digests while rebuilding all accumulated

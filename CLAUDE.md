@@ -273,9 +273,9 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   and CI fails if the copies differ.
 - **Add a CI-built image or service** — wiring `.github/workflows/ci.yaml` only covers
   `main`. The release path must be wired too (`.github/scripts/update-versions.sh`, the
-  compatibility lists in `tooling/release/promote.py`, the chart list in
-  `.github/workflows/release.yaml`, and the tables in
+  compatibility image list in `tooling/release/promote.py` and the tables in
   `docs/internal/versions-and-releases.md`), or a tagged release ships the image frozen
   at its last `main` build.
+  Release chart names and directories are read from the existing CI chart matrix.
 - **Write Ansible tasks using `kubernetes.core`** — follow the kubeconfig conventions in
   `docs/internal/ansible_roles.md` (they differ for cluster vs jump-node execution).
