@@ -1,7 +1,7 @@
 # Stage 1: build the Vite SPA. Output lands at
 # /work/src/scout_report_viewer/static (vite.config.ts writes to
 # `../src/scout_report_viewer/static` relative to the frontend dir).
-FROM node:25-alpine AS frontend
+FROM node:26-alpine AS frontend
 WORKDIR /work
 COPY frontend/package.json frontend/package-lock.json frontend/
 RUN cd frontend && npm ci
