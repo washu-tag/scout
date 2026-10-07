@@ -278,6 +278,34 @@ path — the audience mapper and `at_hash` fixes described above). Until then, r
 (and everything in this ADR) should be treated as on-prem-only, the same caveat PR #755's
 `examples/pluggable-app` carries for its own Traefik/oauth2-proxy dependency.
 
+**A window opened from OWUI's sandboxed chat iframe inherits its sandbox flags, not
+just whatever lets it open at all.** `allow-popups` alone governs whether
+`window.open()`/an anchor click can open a new tab from a sandboxed context — it says
+nothing about what that tab can then do, since the HTML sandboxing spec propagates the
+opener's flags to the new browsing context unless the opener sets
+`allow-popups-to-escape-sandbox` (which OWUI's iframe does not). Verified against a real
+embedded popup (`examples/xnat-explore-poc`'s landing page, opened the same way "Explore
+in XNAT" does) rather than by spec-reading alone:
+
+- `allow-top-navigation` (the unconditional form, not just
+  `allow-top-navigation-by-user-activation`) is present — a target app's own
+  navigation/redirects work normally, including after an async gap (e.g. a fetch, an
+  SSO hop), not only inside the original click.
+- `allow-popups` is present — a target app can open further popups of its own.
+- `allow-modals` is **absent** — `window.alert()`/`confirm()`/`prompt()` are silently
+  swallowed (`Ignored call to 'alert()'. The document is sandboxed, and the
+  'allow-modals' keyword is not set.`). Any real target app that gates a destructive
+  action behind `confirm()`, or surfaces an error via `alert()`, will appear to do
+  nothing when the user clicks — the same "looks hung, nothing happened" failure shape
+  as a silently-blocked action, just a different root cause. XNAT itself uses native
+  dialogs in some of its own flows, so this is a live risk for any future action that
+  opens real XNAT (today's `xnat-explore-poc` demo doesn't exercise XNAT's own UI, so it
+  hasn't surfaced there).
+
+Not something Scout controls or can route around from report-viewer's side — the fix is
+OWUI's iframe adding `allow-popups-to-escape-sandbox` to its own `sandbox` attribute, a
+change in OWUI's embedding, not in this repo.
+
 ## Alternatives Considered
 
 | Option | Verdict |
