@@ -115,7 +115,7 @@ Click a row to open the report in a side panel, with the report text, patient an
 
 Matched text is highlighted in blue and negated phrases in red. Highlights reflect only the patterns in the query, so related wording the AI did not search for stays unmarked. A red highlight in a report kept by its diagnosis code is expected, but worth a closer read.
 
-![Report panel](../images/ScoutReportViewerRow.png)
+![Report panel](../images/ScoutReportViewerPanel.png)
 
 ### Viewing the SQL Query
 
