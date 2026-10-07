@@ -9,7 +9,7 @@ description = "Scout platform Python SDK for notebooks and playbooks"
 requires-python = ">= 3.10"
 dependencies = [
     "requests>=2.28",
-    "sqlalchemy>=2",
+    "sqlalchemy>=2.0.54",
     "trino>=0.330",
 ]
 
