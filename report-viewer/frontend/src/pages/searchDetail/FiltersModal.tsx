@@ -59,114 +59,96 @@ export function FiltersModal(props: {
       <div style={{ fontSize: '0.85rem' }}>
         <h3 style={{ margin: '0 2rem 0.75rem 0', fontSize: '1rem' }}>Filter rows</h3>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
-            columnGap: '1.25rem',
-          }}
-        >
-          {has('patient_age') && (
-            <FieldRow label="Age">
-              <RangeInputs
-                min={staged.patient_age?.min ?? ''}
-                max={staged.patient_age?.max ?? ''}
-                inputType="number"
-                placeholder={{ min: 'min', max: 'max' }}
-                onChange={setAgeBound}
-              />
-            </FieldRow>
-          )}
+        {has('patient_age') && (
+          <FieldRow label="Age">
+            <RangeInputs
+              min={staged.patient_age?.min ?? ''}
+              max={staged.patient_age?.max ?? ''}
+              inputType="number"
+              placeholder={{ min: 'min', max: 'max' }}
+              onChange={setAgeBound}
+            />
+          </FieldRow>
+        )}
 
-          {has('sex') && (
-            <FieldRow label="Sex">
-              <CheckboxRow
-                options={SEX_OPTIONS as readonly string[]}
-                selected={staged.sex ?? []}
-                onToggle={(v) => toggleEnum('sex', v)}
-              />
-            </FieldRow>
-          )}
+        {has('sex') && (
+          <FieldRow label="Sex">
+            <CheckboxRow
+              options={SEX_OPTIONS as readonly string[]}
+              selected={staged.sex ?? []}
+              onToggle={(v) => toggleEnum('sex', v)}
+            />
+          </FieldRow>
+        )}
 
-          {has('modality') && modalityChoices.length > 0 && (
-            <FieldRow label="Modality" span>
-              <CheckboxRow
-                options={modalityChoices}
-                selected={staged.modality ?? []}
-                onToggle={(v) => toggleEnum('modality', v)}
-              />
-            </FieldRow>
-          )}
+        {has('modality') && modalityChoices.length > 0 && (
+          <FieldRow label="Modality">
+            <CheckboxRow
+              options={modalityChoices}
+              selected={staged.modality ?? []}
+              onToggle={(v) => toggleEnum('modality', v)}
+            />
+          </FieldRow>
+        )}
 
-          {has('message_dt') && (
-            <FieldRow label="Date">
-              <RangeInputs
-                min={staged.message_dt?.min ?? ''}
-                max={staged.message_dt?.max ?? ''}
-                inputType="date"
-                placeholder={{ min: 'from', max: 'to' }}
-                onChange={setDateBound}
-              />
-            </FieldRow>
-          )}
+        {has('message_dt') && (
+          <FieldRow label="Date">
+            <RangeInputs
+              min={staged.message_dt?.min ?? ''}
+              max={staged.message_dt?.max ?? ''}
+              inputType="date"
+              placeholder={{ min: 'from', max: 'to' }}
+              onChange={setDateBound}
+            />
+          </FieldRow>
+        )}
 
-          {has('service_name') && (
-            <FieldRow label="Service">
-              <TextInput
-                value={staged.service_name ?? ''}
-                onChange={(v) => setStringField('service_name', v)}
-              />
-            </FieldRow>
-          )}
+        {has('service_name') && (
+          <FieldRow label="Service">
+            <TextInput
+              value={staged.service_name ?? ''}
+              onChange={(v) => setStringField('service_name', v)}
+            />
+          </FieldRow>
+        )}
 
-          {has('epic_mrn') && (
-            <FieldRow label="Epic MRN">
-              <TextInput
-                value={staged.epic_mrn ?? ''}
-                onChange={(v) => setStringField('epic_mrn', v)}
-              />
-            </FieldRow>
-          )}
+        {has('epic_mrn') && (
+          <FieldRow label="Epic MRN">
+            <TextInput
+              value={staged.epic_mrn ?? ''}
+              onChange={(v) => setStringField('epic_mrn', v)}
+            />
+          </FieldRow>
+        )}
 
-          {has('patient_mpi') && (
-            <FieldRow label="Patient MPI">
-              <TextInput
-                value={staged.patient_mpi ?? ''}
-                onChange={(v) => setStringField('patient_mpi', v)}
-              />
-            </FieldRow>
-          )}
+        {has('patient_mpi') && (
+          <FieldRow label="Patient MPI">
+            <TextInput
+              value={staged.patient_mpi ?? ''}
+              onChange={(v) => setStringField('patient_mpi', v)}
+            />
+          </FieldRow>
+        )}
 
-          {has('accession_number') && (
-            <FieldRow label="Accession">
-              <TextInput
-                value={staged.accession_number ?? ''}
-                onChange={(v) => setStringField('accession_number', v)}
-              />
-            </FieldRow>
-          )}
+        {has('accession_number') && (
+          <FieldRow label="Accession">
+            <TextInput
+              value={staged.accession_number ?? ''}
+              onChange={(v) => setStringField('accession_number', v)}
+            />
+          </FieldRow>
+        )}
 
-          {has('sending_facility') && (
-            <FieldRow label="Facility">
-              <TextInput
-                value={staged.sending_facility ?? ''}
-                onChange={(v) => setStringField('sending_facility', v)}
-              />
-            </FieldRow>
-          )}
-        </div>
+        {has('sending_facility') && (
+          <FieldRow label="Facility">
+            <TextInput
+              value={staged.sending_facility ?? ''}
+              onChange={(v) => setStringField('sending_facility', v)}
+            />
+          </FieldRow>
+        )}
 
-        <div
-          style={{
-            marginTop: '1rem',
-            // Pinned so Apply stays reachable without scrolling the fields.
-            position: 'sticky',
-            bottom: '-1.25rem',
-            background: 'var(--rv-surface)',
-            paddingBottom: '0.25rem',
-            boxShadow: '0 -8px 8px -8px rgba(0,0,0,0.15)',
-          }}
-        >
+        <div style={{ marginTop: '1rem' }}>
           <div style={{ fontSize: '0.72rem', color: 'var(--rv-danger)', margin: '0 0 0.5rem' }}>
             {needFilters && activeFilterCount(staged) === 0
               ? 'Select at least one filter first.'
@@ -209,7 +191,7 @@ export function FiltersModal(props: {
   );
 }
 
-function FieldRow(props: { label: string; children: ReactNode; span?: boolean }) {
+function FieldRow(props: { label: string; children: ReactNode }) {
   return (
     <div
       style={{
@@ -217,8 +199,6 @@ function FieldRow(props: { label: string; children: ReactNode; span?: boolean })
         alignItems: 'flex-start',
         gap: '0.75rem',
         padding: '0.4rem 0',
-        // Wide controls read badly in half a column.
-        ...(props.span ? { gridColumn: '1 / -1' } : {}),
       }}
     >
       <div style={{ width: 80, color: 'var(--rv-muted)', fontWeight: 600, paddingTop: '0.25rem' }}>
@@ -266,17 +246,13 @@ function RangeInputs(props: {
   );
 }
 
-function TextInput(props: {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
+function TextInput(props: { value: string; onChange: (value: string) => void }) {
   return (
     <input
       type="text"
       value={props.value}
       onChange={(e) => props.onChange(e.target.value)}
-      placeholder={props.placeholder ?? 'contains…'}
+      placeholder="contains…"
       style={{
         width: '100%',
         fontSize: '0.85rem',
