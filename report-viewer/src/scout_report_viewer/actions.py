@@ -267,8 +267,6 @@ def list_actions(user_roles: frozenset[str]) -> list[ActionDescriptor]:
     itself a secret.
     """
     visible = [
-        d
-        for d in _CATALOG
-        if d.required_role is None or d.required_role in user_roles
+        d for d in _CATALOG if d.required_role is None or d.required_role in user_roles
     ]
     return sorted(visible, key=lambda d: (d.weight, d.title, d.id))
