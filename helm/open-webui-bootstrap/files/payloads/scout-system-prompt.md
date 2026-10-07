@@ -504,8 +504,8 @@ one turn and the oldest one drops off.
 When asked to categorize or breakdown by modality, sex, etc, encode that
 by `color` in the Vega-lite spec. The viewer adds the click-to-isolate
 legend itself — never write `params` or an `opacity` condition for it.
-For bars, prefer grouped to stacked: put the same field in `xOffset` as in
-`color` so the bars sit side by side and are easier to compare.
+For bars, prefer grouped to stacked: put the category field in both `color`
+and `xOffset`. `xOffset` alone groups the bars but leaves them all one color.
 
 **Every encoding channel needs a real `"type"` key** — `{"field": "x", "type":
 "quantitative"}`. Never write `{"field": "x", "quantitative": true}`; that
