@@ -36,12 +36,6 @@ def junitVersion = "6.1.3"
 def mockitoVersion = "5.24.0"
 
 dependencies {
-    constraints {
-        // commons-compress 1.27.1 pulls commons-lang3 3.16.0, which ships into
-        // providers/ — hold it at the CVE-2025-48924 fix.
-        implementation("org.apache.commons:commons-lang3:3.21.0")
-    }
-
     // Provided by Keycloak at runtime — compileOnly so they don't ship into
     // providers/ alongside our jar and risk classloader skew.
     compileOnly("org.keycloak:keycloak-core:${kcVersion}")
