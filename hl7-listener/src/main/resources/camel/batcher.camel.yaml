@@ -11,6 +11,13 @@
 # manifest publish succeed. A crash mid-batch therefore replays the batch rather than dropping it
 # (auto-commit would advance offsets as records enter the route, before the durable write).
 #
+# breakOnFirstError=true extends that to a batch that fails without a crash (e.g. an S3 upload
+# timeout): Camel reconnects the consumer, which resumes from the last committed offset and
+# redelivers the batch. Without it Camel logs the failure, discards the batch and keeps polling,
+# and the next successful batch commits past the failed one, so it never reaches bronze. A batch
+# that keeps failing therefore stalls the batcher (consumer lag grows, Kafka holds the records)
+# until the cause is fixed, instead of leaving gaps.
+#
 # Config values are Camel property placeholders resolved from the Deployment env.
 #
 # Canonical YAML DSL (camel validate normalize); Camel 4.22 warns on the compact form.
@@ -26,6 +33,7 @@
         batching: true
         allowManualCommit: true
         autoCommitEnable: false
+        breakOnFirstError: true
         maxPollRecords: '{{hl7.batcher.max.poll.records}}'
         pollTimeoutMs: '{{hl7.batcher.poll.timeout.ms}}'
         batchingIntervalMs: '{{hl7.batcher.batching.interval.ms}}'
