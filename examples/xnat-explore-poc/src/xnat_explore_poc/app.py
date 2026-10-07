@@ -87,8 +87,18 @@ _LANDING_PAGE = """\
    app's ordinary behavior - navigating, showing a dialog, opening its own popup -
    would actually work here, not just whether this tab was able to open.</p>
 
-<p><button onclick="testTopNavigation()">Test top-level navigation</button>
-   <span id="nav-result"></span></p>
+<p>There are two distinct navigation keywords: <code>allow-top-navigation</code>
+   (unconditional) and <code>allow-top-navigation-by-user-activation</code> (only
+   inside a direct click, not after any async gap). A real app's redirects -
+   after a fetch, a setTimeout, an SSO hop through a different origin - need the
+   unconditional form. The two buttons below distinguish which one, if either,
+   is actually present.</p>
+
+<p><button onclick="testSyncNavigation()">Test navigation (synchronous, in-click)</button>
+   <span id="nav-sync-result"></span></p>
+
+<p><button onclick="testAsyncNavigation()">Test navigation (after a fetch, async)</button>
+   <span id="nav-async-result"></span></p>
 
 <p><button onclick="testModal()">Test modal dialog</button>
    <span id="modal-result"></span></p>
@@ -98,17 +108,35 @@ _LANDING_PAGE = """\
 
 <script>
   const params = new URLSearchParams(window.location.search);
-  if (params.get("navigated") === "true") {{
-    document.getElementById("nav-result").textContent =
-      "PASSED - navigation succeeded (allow-top-navigation is effectively present).";
+  if (params.get("navigated") === "sync") {{
+    document.getElementById("nav-sync-result").textContent =
+      "PASSED - succeeded inside the click. Doesn't by itself distinguish " +
+      "allow-top-navigation from the weaker allow-top-navigation-by-user-activation " +
+      "- see the async test.";
+  }}
+  if (params.get("navigated") === "async") {{
+    document.getElementById("nav-async-result").textContent =
+      "PASSED even after an async gap - allow-top-navigation (the unconditional " +
+      "form) is genuinely present, not just the by-user-activation variant.";
   }}
 
-  function testTopNavigation() {{
+  function testSyncNavigation() {{
     // A real navigation, not history.pushState - pushState doesn't require
     // allow-top-navigation at all, so it wouldn't test anything real here.
     const url = new URL(window.location.href);
-    url.searchParams.set("navigated", "true");
+    url.searchParams.set("navigated", "sync");
     window.location.href = url.toString();
+  }}
+
+  function testAsyncNavigation() {{
+    document.getElementById("nav-async-result").textContent =
+      "Fetching, then navigating after the response - this is far enough " +
+      "outside the click to no longer count as direct user activation...";
+    fetch(window.location.pathname).then(() => {{
+      const url = new URL(window.location.href);
+      url.searchParams.set("navigated", "async");
+      window.location.href = url.toString();
+    }});
   }}
 
   function testModal() {{
