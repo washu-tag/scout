@@ -78,8 +78,20 @@ The report viewer fetches the whole cohort each time you open a chat, which can 
 Click a column header to sort. Under each header is a one-line summary of that column across the whole result set, a histogram for ages and dates, a bar for categories like modality, and a pie chart for sex. The bottom toolbar handles paging, column visibility, filtering and other options.
 
 - **Explain Search** shows what the search matched, which table it read, and the SQL.
-- **Download CSV** exports your current filters, sort order, and visible columns, not the whole original search.
+- **Download CSV** exports your current filters, sort order, and visible columns, not the whole original search. If the Matched on column is visible, the export includes the matched phrases, negated phrases, and diagnosis codes.
 - **Give the table more room** with the four-arrow icon at the right end of the toolbar. Click it again to shrink back.
+
+### Why Each Report Matched
+
+The **Matched on** column shows why each report appears in the search. Scout reads the SQL the AI wrote and shows what the query matched on.
+
+- A **blue chip** is the matching report phrase or diagnosis codes.
+- A **red chip** with a warning icon is a negated phrase, such as "no nodule". A report with a matching diagnosis code may be kept even when its text rules the finding out, so these rows are worth reviewing.
+- **unexplained** means Scout could not attribute the match to a specific part of the query.
+
+The evidence covers only what the AI searched for. Reports can describe the same finding in wording the query did not anticipate. Negated phrases the AI did not search for may slip through.
+
+The pills above the table filter by match type. The **negated phrase** pill can include or exclude those rows.
 
 ### Filtering and Refining
 
@@ -89,7 +101,7 @@ The filter dialog offers age and date ranges, sex, the modalities present in you
 
 ![Filter rows dialog](../images/ScoutReportViewerFilters.png)
 
-**Apply** filters the rows in front of you. **Filter in Chat** hands the staged filters to the model to run as a new search, and **Discuss in Chat** on an expanded row does the same but for a single report.
+**Apply** filters the rows in front of you. **Filter in Chat** hands the staged filters to the model to run as a new search, and **Discuss in Chat** in the report panel does the same but for a single report.
 
 Or you can type a follow-up yourself:
 
@@ -99,13 +111,24 @@ User: Filter to just CT angiography studies
 
 ### Reading a Report
 
-Click a row to expand it. You get the report text alongside patient and study metadata, timestamps, diagnosis codes, and the lake path of the source HL7 file. Terms and diagnosis codes the model matched on are highlighted; the highlights are informational, the SQL is what selected the rows.
+Click a row to open the report in a side panel, with the report text, patient and study details, timestamps, diagnosis codes, and the lake path of the source HL7 file.
 
-![Expanded report row](../images/ScoutReportViewerRow.png)
+Matched text is highlighted in blue and negated phrases in red. Highlights reflect only the patterns in the query, so related wording the AI did not search for stays unmarked. A red highlight in a report kept by its diagnosis code is expected, but worth a closer read.
+
+![Report panel](../images/ScoutReportViewerRow.png)
 
 ### Viewing the SQL Query
 
 For cohort searches, click **Explain Search** in the report viewer. The panel describes what the search matched, names the table it read, and shows the SQL.
+
+When the search performs text matching, the panel also shows:
+
+- How many rows matched on text, diagnosis codes, or both.
+- The most common matched phrases and negated phrases. Click a phrase to filter the table to it.
+- **LLM generated SQL**, the query the AI wrote.
+- **Evaluated SQL**, the same query with the Matched on columns added. It returns the same reports.
+
+Text matching is approximate. Unusual wording can be missed, and negated mentions can slip through. Review the negated phrases before relying on a search.
 
 For other tool calls, expand the tool-call block in the reply.
 
