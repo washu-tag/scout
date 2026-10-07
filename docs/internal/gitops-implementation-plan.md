@@ -115,7 +115,10 @@ there is no downstream Flux workflow or commit-status handoff.
 
 The signed predecessor snapshot, source ancestry check, and serialized main
 producer preserve unchanged component digests while rebuilding all accumulated
-source changes. Each consuming job requires the candidate for the same workflow
+source changes. A legacy manifest without source/build provenance bootstraps a
+full rebuild without carrying any of its components or claiming ancestry. This
+migration path is no longer needed once retained predecessors all have verified
+provenance. Each consuming job requires the candidate for the same workflow
 run and attempt. Missing inputs and partial reruns fail rather than substituting
 an older candidate. Infrastructure failures are retried by rerunning all jobs.
 

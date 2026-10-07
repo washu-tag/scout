@@ -21,6 +21,7 @@ from producer_plan import (
     classify,
     context,
     create,
+    legacy_manifest,
     render,
     validate,
 )
@@ -80,6 +81,74 @@ def snapshot(tmp_path, revision, *, marked=True):
 
 def expected(revision, attempt=1):
     return context("washu-tag/scout", revision, 123, attempt, "0.20261006.2")
+
+
+LEGACY_MANIFEST = {
+    "schemaVersion": 2,
+    "mediaType": "application/vnd.oci.image.manifest.v1+json",
+    "layers": [],
+    "annotations": {"org.opencontainers.image.created": "2026-10-07T18:26:35Z"},
+}
+
+
+def test_legacy_bootstrap_requires_all_fresh_without_ancestry_or_vendor_aliases(
+    history, tmp_path
+):
+    repo, base = history
+    frozen = snapshot(tmp_path, base)
+    (frozen / "manifest.json").write_text(json.dumps(LEGACY_MANIFEST))
+    (frozen / "haul.yaml").write_text("")
+    plan = create(frozen, repo, expected(base))
+    assert plan["predecessorLegacy"] and plan["predecessorRevision"] is None
+    assert not plan["carry"] and not any(plan["legacy"].values())
+    assert plan["changedPaths"] == []
+    assert plan["publish"] and set(plan["requiredFresh"]) == set(COMPONENTS)
+    assert validate(frozen, expected(base)) == plan
+    digests = tmp_path / "digests"
+    digests.mkdir()
+    with pytest.raises(ValueError, match="cannot carry"):
+        render(
+            frozen, expected(base), digests, ROOT / "tooling/manifest/components.txt"
+        )
+    for number, repo in enumerate(COMPONENTS):
+        (digests / f"{number}.txt").write_text(f"component {repo}:0.20261006.2@{D2}\n")
+    result = render(
+        frozen, expected(base), digests, ROOT / "tooling/manifest/components.txt"
+    )
+    assert D1 not in result and result.count(D2) == len(COMPONENTS)
+    with pytest.raises(ValueError, match="rerun all jobs"):
+        validate(frozen, expected(base, attempt=2))
+
+
+def test_legacy_bootstrap_refuses_nonempty_unsigned_haul(history, tmp_path):
+    repo, base = history
+    frozen = snapshot(tmp_path, base)
+    (frozen / "manifest.json").write_text(json.dumps(LEGACY_MANIFEST))
+    with pytest.raises(ValueError, match="never carry unsigned"):
+        create(frozen, repo, expected(base))
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "org.opencontainers.image.source",
+        "org.opencontainers.image.revision",
+        "org.opencontainers.image.version",
+        "io.scout.build.run-id",
+        "io.scout.build.run-attempt",
+        "io.scout.build.carry-policy",
+    ],
+)
+def test_even_empty_provenance_cannot_claim_legacy_bootstrap(key):
+    assert not legacy_manifest({**LEGACY_MANIFEST, "annotations": {key: ""}})
+
+
+@pytest.mark.parametrize(
+    "manifest", [{}, [], {"annotations": []}, {"schemaVersion": 2}]
+)
+def test_malformed_metadata_cannot_claim_legacy_bootstrap(manifest):
+    with pytest.raises(ValueError):
+        legacy_manifest(manifest)
 
 
 def test_failed_and_replaced_pushes_are_in_accumulated_diff(history, tmp_path):
@@ -462,17 +531,26 @@ def test_planner_inventory_and_workflow_matrices_stay_in_sync():
         assert calls and all(step["with"]["advance-main"] == "false" for step in calls)
 
 
-def test_freeze_resolves_alias_once_then_uses_verified_digest(tmp_path):
+@pytest.fixture
+def freeze_tools(tmp_path):
     bindir = tmp_path / "bin"
     bindir.mkdir()
     log = tmp_path / "calls"
-    manifest = '{"annotations":{}}'
+    manifest = json.dumps(
+        {
+            **LEGACY_MANIFEST,
+            "annotations": {
+                "org.opencontainers.image.source": "https://github.com/washu-tag/scout"
+            },
+        }
+    )
     for name, script in {
         "oras": """#!/usr/bin/env python3
 import os,sys,pathlib
 args=sys.argv[1:]
 with open(os.environ['CALL_LOG'],'a') as f: f.write('oras '+ ' '.join(args)+'\\n')
 if args[:2]==['manifest','fetch']:
+    if os.environ.get('FETCH_FAILURE'): sys.exit(7)
     pathlib.Path(args[args.index('--output')+1]).write_text(os.environ['MANIFEST'])
 elif args[0]=='pull':
     pathlib.Path(args[args.index('-o')+1], 'haul.yaml').write_text('signed payload')
@@ -491,18 +569,61 @@ sys.exit(int(os.environ.get('VERIFY_FAILURE','0')))
         "CALL_LOG": str(log),
         "MANIFEST": manifest,
     }
-    script = ROOT / ".github/scripts/freeze-predecessor.sh"
+    return ROOT / ".github/scripts/freeze-predecessor.sh", env, log
+
+
+def test_freeze_resolves_alias_once_then_uses_verified_digest(tmp_path, freeze_tools):
+    script, env, log = freeze_tools
     subprocess.run(["bash", str(script), str(tmp_path / "out")], env=env, check=True)
     lines = log.read_text().splitlines()
-    digest = "sha256:" + hashlib.sha256(manifest.encode()).hexdigest()
+    digest = "sha256:" + hashlib.sha256(env["MANIFEST"].encode()).hexdigest()
     assert len(lines) == 3 and lines[0].count(":main") == 1
     assert lines[1].startswith("cosign verify") and lines[1].endswith("@" + digest)
     assert lines[2].startswith(
         "oras pull ghcr.io/washu-tag/manifests/scout-manifest@" + digest
     )
-    log.write_text("")
-    result = subprocess.run(
-        ["bash", str(script), str(tmp_path / "failed")],
-        env={**env, "VERIFY_FAILURE": "1"},
+
+
+def test_freeze_legacy_never_pulls_unsigned_haul_and_erases_stale_input(
+    tmp_path, freeze_tools
+):
+    script, env, log = freeze_tools
+    target = tmp_path / "out"
+    target.mkdir()
+    (target / "haul.yaml").write_text("untrusted existing component")
+    subprocess.run(
+        ["bash", str(script), str(target)],
+        env={**env, "MANIFEST": json.dumps(LEGACY_MANIFEST), "VERIFY_FAILURE": "1"},
+        check=True,
     )
-    assert result.returncode != 0 and "oras pull" not in log.read_text()
+    assert len(log.read_text().splitlines()) == 1
+    assert (target / "haul.yaml").read_bytes() == b""
+    assert json.loads((target / "manifest.json").read_bytes()) == LEGACY_MANIFEST
+
+
+@pytest.mark.parametrize(
+    "failure", ["signature", "network", "malformed", "partial-provenance"]
+)
+def test_freeze_errors_cannot_fall_back_to_legacy(tmp_path, freeze_tools, failure):
+    script, env, log = freeze_tools
+    if failure == "signature":
+        env["VERIFY_FAILURE"] = "1"
+    elif failure == "network":
+        env.update(FETCH_FAILURE="1", MANIFEST=json.dumps(LEGACY_MANIFEST))
+    elif failure == "malformed":
+        env["MANIFEST"] = '{"invalid"'
+    else:
+        env.update(
+            VERIFY_FAILURE="1",
+            MANIFEST=json.dumps(
+                {
+                    **LEGACY_MANIFEST,
+                    "annotations": {"io.scout.build.run-id": ""},
+                }
+            ),
+        )
+    target = tmp_path / "failed"
+    result = subprocess.run(["bash", str(script), str(target)], env=env)
+    assert result.returncode != 0
+    assert "oras pull" not in log.read_text()
+    assert not (target / "haul.yaml").exists()

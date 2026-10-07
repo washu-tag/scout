@@ -56,6 +56,13 @@ which components to build from that checkout, including changes from earlier
 failed or skipped builds. Unchanged components retain the predecessor's exact
 digests. The same component catalog drives pull request and main builds.
 
+The first build may encounter a legacy manifest with no source revision or build
+provenance. That metadata triggers a full rebuild of every image and chart; its
+haul is never pulled or carried, and no predecessor ancestry is claimed. The
+plan records only the old manifest digest for audit and preserves existing vendor
+aliases. After a signed build with provenance is published, normal verified carry
+applies. Signature, registry, and malformed-provenance failures remain fatal.
+
 A preparation job assembles one candidate containing those image references,
 packaged charts, and stamped deployment config. Fresh images are pushed once to a
 disposable registry and exported as OCI layouts. Each test runner copies the

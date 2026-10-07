@@ -142,6 +142,33 @@ def context(
     )
 
 
+def legacy_manifest(manifest: dict) -> bool:
+    """Recognize pre-provenance OCI metadata without trusting its component data."""
+    if not isinstance(manifest, dict):
+        raise ValueError("predecessor manifest must be an object")
+    annotations = manifest.get("annotations", {})
+    if not isinstance(annotations, dict):
+        raise ValueError("predecessor annotations must be an object")
+    if any(
+        key
+        in (
+            "org.opencontainers.image.source",
+            "org.opencontainers.image.revision",
+            "org.opencontainers.image.version",
+        )
+        or key.startswith("io.scout.build.")
+        for key in annotations
+    ):
+        return False
+    if (
+        manifest.get("schemaVersion") != 2
+        or manifest.get("mediaType") != "application/vnd.oci.image.manifest.v1+json"
+        or not isinstance(manifest.get("layers"), list)
+    ):
+        raise ValueError("unrecognized predecessor manifest without provenance")
+    return True
+
+
 def create(
     snapshot: Path,
     checkout: Path,
@@ -155,40 +182,50 @@ def create(
             "predecessor source repository must be this repository or upstream"
         )
     manifest = json.loads((snapshot / "manifest.json").read_bytes())
-    annotations = manifest.get("annotations", {})
-    if (
-        annotations.get("org.opencontainers.image.source")
-        != "https://github.com/" + source_repository
-    ):
-        raise ValueError("predecessor source repository mismatch")
-    predecessor = annotations.get("org.opencontainers.image.revision", "")
-    if not re.fullmatch(r"[0-9a-f]{40}", predecessor):
-        raise ValueError("predecessor has no valid source revision")
-    # Fail closed on a missing commit, descendant predecessor or divergent history.
-    # A full fetch is deliberate: a shallow checkout cannot establish this proof.
-    result = subprocess.run(
-        ["git", "merge-base", "--is-ancestor", predecessor, expected["revision"]],
-        cwd=checkout,
-        capture_output=True,
-    )
-    if result.returncode:
-        raise ValueError(
-            "predecessor is not an ancestor of this checkout; refusing stale/divergent publish"
-        )
-    paths = [
-        p.decode()
-        for p in git(
-            "diff",
-            "--name-only",
-            "--no-renames",
-            "-z",
-            predecessor,
-            expected["revision"],
+    bootstrap = legacy_manifest(manifest)
+    predecessor, paths, carry = None, [], False
+    if bootstrap:
+        if (snapshot / "haul.yaml").read_bytes():
+            raise ValueError(
+                "legacy predecessor must have an empty haul; never carry unsigned data"
+            )
+    else:
+        annotations = manifest.get("annotations", {})
+        if (
+            annotations.get("org.opencontainers.image.source")
+            != "https://github.com/" + source_repository
+        ):
+            raise ValueError("predecessor source repository mismatch")
+        predecessor = annotations.get("org.opencontainers.image.revision", "")
+        if not re.fullmatch(r"[0-9a-f]{40}", predecessor):
+            raise ValueError("predecessor has no valid source revision")
+        # Fail closed on a missing commit, descendant predecessor or divergent history.
+        # A full fetch is deliberate: a shallow checkout cannot establish this proof.
+        result = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", predecessor, expected["revision"]],
             cwd=checkout,
-        ).split(b"\0")
-        if p
-    ]
-    carry = annotations.get("io.scout.build.carry-policy") == CARRY_POLICY and not force
+            capture_output=True,
+        )
+        if result.returncode:
+            raise ValueError(
+                "predecessor is not an ancestor of this checkout; refusing stale/divergent publish"
+            )
+        paths = [
+            p.decode()
+            for p in git(
+                "diff",
+                "--name-only",
+                "--no-renames",
+                "-z",
+                predecessor,
+                expected["revision"],
+                cwd=checkout,
+            ).split(b"\0")
+            if p
+        ]
+        carry = (
+            annotations.get("io.scout.build.carry-policy") == CARRY_POLICY and not force
+        )
     flags, publish = classify(paths, full=not carry)
     # Missing newly introduced components must be built, even when their directory
     # did not change in this diff. Inventory changes normally trigger full rebuild.
@@ -212,6 +249,7 @@ def create(
         predecessorDigest=sha256(snapshot / "manifest.json"),
         predecessorRevision=predecessor,
         predecessorRepository=source_repository,
+        predecessorLegacy=bootstrap,
         predecessorHaulDigest=sha256(snapshot / "haul.yaml"),
         carry=carry,
         changedPaths=paths,
