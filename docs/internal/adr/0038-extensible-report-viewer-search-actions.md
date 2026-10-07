@@ -292,6 +292,8 @@ in XNAT" does) rather than by spec-reading alone:
   navigation/redirects work normally, including after an async gap (e.g. a fetch, an
   SSO hop), not only inside the original click.
 - `allow-popups` is present — a target app can open further popups of its own.
+- `allow-forms` is present — a real `<form>` submission (not just script/anchor-driven
+  navigation, which `allow-top-navigation` covers separately) completes normally.
 - `allow-modals` is **absent** — `window.alert()`/`confirm()`/`prompt()` are silently
   swallowed (`Ignored call to 'alert()'. The document is sandboxed, and the
   'allow-modals' keyword is not set.`). Any real target app that gates a destructive
