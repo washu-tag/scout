@@ -14,10 +14,8 @@ on:
       - .release-please-manifest.json
       - CHANGELOG.md
       - version.txt
-  # Manual escape hatch (the narrowed image_build trigger otherwise leaves no way to
-  # force one): rebuild + rescan every image even when the path filter wouldn't. Bypasses
-  # the filter via the image_build output below; publish still gates on tests, so a manual
-  # rebuild can't skip them.
+  # Force a full rebuild and rescan when requested. The frozen plan still binds
+  # every build and scan to this attempt, and publication still requires tests.
   workflow_dispatch:
     inputs:
       rebuild_images:
@@ -106,14 +104,6 @@ jobs:
               - '!**/*.md'
               - '!examples/**'
               - '!.github/workflows/!(ci.yaml)'
-            # Only the shared build action changes what EVERY image's build does, so only
-            # it forces a full rebuild+rescan. Editing ci.yaml or the scan/import/publish/
-            # version actions no longer rebuilds every image (unchanged ones are pulled), so
-            # a CI edit won't surface a fresh CVE across all images. The root .dockerignore
-            # only affects the scout-notebook build (its context is the repo root), so it
-            # lives in that image's filter, not here.
-            image_build:
-              - '.github/actions/docker-build-cache/**'
             # release-please's PR is the only thing that touches the manifest, so this
             # is an exact "this is the release PR" signal (release-dispatch.yaml keys off
             # the same file). It turns on scan-published, so a CVE fails the release PR
@@ -448,6 +438,8 @@ jobs:
   scan-images:
     runs-on: ubuntu-latest
     needs: [changes, build-and-upload]
+    env:
+      VERSION: ${{ needs.changes.outputs.version }}
     if: ${{ !cancelled() && needs.build-and-upload.result == 'success' }}
     permissions:
       contents: read
@@ -463,12 +455,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml
+      - name: Download this attempt's frozen producer plan
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: producer-plan-${{ github.run_attempt }}
+          path: predecessor
       - uses: ./.github/actions/trivy-scan-image
         with:
           image-name: ${{ matrix.image-name }}
           subproject: ${{ matrix.subproject }}
           scan-published: ${{ needs.changes.outputs.release_pr }}
-        continue-on-error: ${{ matrix.allow-failure == true }}
+          allow-vulnerabilities: ${{ matrix.allow-failure == true }}
   prepare-flux-artifacts:
     runs-on: ubuntu-latest
     needs:

@@ -520,6 +520,16 @@ def test_planner_inventory_and_workflow_matrices_stay_in_sync():
             for line in step.get("run", "").splitlines()
             if line.strip().startswith("oras pull")
         )
+    scan = next(
+        step
+        for step in jobs["scan-images"]["steps"]
+        if step.get("uses") == "./.github/actions/trivy-scan-image"
+    )
+    assert not scan.get("continue-on-error")
+    assert scan["with"]["scan-published"] == "${{ needs.changes.outputs.release_pr }}"
+    assert (
+        scan["with"]["allow-vulnerabilities"] == "${{ matrix.allow-failure == true }}"
+    )
     for name in ("bootstrap-haul", "seed-charts"):
         recovery = yaml.safe_load((ROOT / f".github/workflows/{name}.yaml").read_text())
         calls = [
@@ -627,3 +637,148 @@ def test_freeze_errors_cannot_fall_back_to_legacy(tmp_path, freeze_tools, failur
     assert result.returncode != 0
     assert "oras pull" not in log.read_text()
     assert not (target / "haul.yaml").exists()
+
+
+SCAN_ACTION = yaml.safe_load(
+    (ROOT / ".github/actions/trivy-scan-image/action.yaml").read_text()
+)["runs"]["steps"]
+
+
+def scan_mode(tmp_path, frozen, identity, scan_all):
+    (tmp_path / "predecessor").symlink_to(frozen, target_is_directory=True)
+    output = tmp_path / "scan-output"
+    step = next(step for step in SCAN_ACTION if step.get("id") == "mode")
+    result = subprocess.run(
+        ["bash", "-euo", "pipefail", "-c", step["run"]],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(ROOT / "tooling/manifest"),
+            "GITHUB_REPOSITORY": identity["repository"],
+            "GITHUB_SHA": identity["revision"],
+            "GITHUB_RUN_ID": str(identity["runId"]),
+            "GITHUB_RUN_ATTEMPT": str(identity["runAttempt"]),
+            "VERSION": identity["version"],
+            "GITHUB_OUTPUT": str(output),
+            "IMAGE_NAME": "launchpad",
+            "SCAN_PUBLISHED": str(scan_all).lower(),
+        },
+        capture_output=True,
+        text=True,
+    )
+    outputs = (
+        dict(line.split("=", 1) for line in output.read_text().splitlines())
+        if output.exists()
+        else {}
+    )
+    return result, outputs
+
+
+@pytest.mark.parametrize("scan_all", [False, True])
+def test_scan_requires_planned_archive_without_download_fallback(
+    history, tmp_path, scan_all
+):
+    repo, base = history
+    head = commit(repo, "launchpad/changed")
+    frozen = snapshot(tmp_path, base)
+    create(frozen, repo, expected(head))
+    result, outputs = scan_mode(tmp_path, frozen, expected(head), scan_all)
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"mode": "tar", "ref": ""}
+    download = next(
+        step
+        for step in SCAN_ACTION
+        if step.get("uses", "").startswith("actions/download-artifact@")
+    )
+    assert download["if"] == "steps.mode.outputs.mode == 'tar'"
+    assert (
+        download["with"]["name"]
+        == "${{ inputs.image-name }}-attempt-${{ github.run_attempt }}"
+    )
+    assert not any(step.get("continue-on-error") for step in SCAN_ACTION)
+
+
+@pytest.mark.parametrize("scan_all", [False, True])
+def test_scan_untouched_image_skips_or_uses_exact_frozen_digest(
+    history, tmp_path, scan_all
+):
+    repo, base = history
+    frozen = snapshot(tmp_path, base)
+    create(frozen, repo, expected(base))
+    result, outputs = scan_mode(tmp_path, frozen, expected(base), scan_all)
+    assert result.returncode == 0, result.stderr
+    assert outputs == (
+        {"mode": "registry", "ref": REPO + "launchpad@" + D1}
+        if scan_all
+        else {"mode": "skip", "ref": ""}
+    )
+
+
+@pytest.mark.parametrize(
+    "failure", ["missing-plan", "another-attempt", "modified-haul"]
+)
+def test_scan_plan_failure_is_not_an_untouched_image_skip(history, tmp_path, failure):
+    repo, base = history
+    frozen = snapshot(tmp_path, base)
+    identity = expected(base)
+    if failure != "missing-plan":
+        create(frozen, repo, identity)
+    if failure == "another-attempt":
+        identity = expected(base, attempt=2)
+    if failure == "modified-haul":
+        with (frozen / "haul.yaml").open("a") as out:
+            out.write("\n")
+    result, outputs = scan_mode(tmp_path, frozen, identity, False)
+    assert result.returncode != 0 and not outputs
+
+
+@pytest.mark.parametrize("advisory", [False, True])
+@pytest.mark.parametrize("report", ["clean", "vulnerable", "malformed"])
+def test_scan_advisory_policy_only_tolerates_valid_cve_results(
+    tmp_path, advisory, report
+):
+    if report == "malformed":
+        content = "not json"
+    else:
+        content = json.dumps(
+            {
+                "Results": [
+                    {
+                        "Vulnerabilities": (
+                            [
+                                {
+                                    "Severity": "HIGH",
+                                    "VulnerabilityID": "CVE-test",
+                                    "PkgName": "example",
+                                    "InstalledVersion": "1",
+                                    "FixedVersion": "2",
+                                }
+                            ]
+                            if report == "vulnerable"
+                            else []
+                        )
+                    }
+                ]
+            }
+        )
+    (tmp_path / "trivy-superset.json").write_text(content)
+    step = next(
+        step
+        for step in SCAN_ACTION
+        if step["name"] == "Gate on fixable vulnerabilities"
+    )
+    result = subprocess.run(
+        ["bash", "-euo", "pipefail", "-c", step["run"]],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "IMAGE_NAME": "superset",
+            "SEVERITY": "HIGH,CRITICAL",
+            "ALLOW_VULNERABILITIES": str(advisory).lower(),
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert (result.returncode == 0) == (
+        report == "clean" or (report == "vulnerable" and advisory)
+    )

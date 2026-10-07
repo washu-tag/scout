@@ -1,5 +1,5 @@
 name: 'Trivy Image Scan'
-description: 'Scans a Docker image for vulnerabilities: the tarball from this run, or the published image when opted in'
+description: 'Scans the planned image archive or exact frozen predecessor digest'
 inputs:
   image-name:
     description: 'Name of the image artifact'
@@ -14,83 +14,58 @@ inputs:
     default: 'CRITICAL,HIGH'
   scan-published:
     description: >-
-      When this run did not rebuild the image, scan the published tag instead of
-      skipping. Off by default so a CVE in an untouched image cannot fail an
-      unrelated PR.
+      Scan unchanged images at their frozen predecessor digest. Off by default
+      so a CVE in an untouched image cannot fail an unrelated PR.
+    required: false
+    default: 'false'
+  allow-vulnerabilities:
+    description: 'Report fixable vulnerabilities without failing; scanner and artifact errors remain fatal'
     required: false
     default: 'false'
 runs:
   using: 'composite'
   steps:
-    - name: Download image artifact
-      id: download
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-      continue-on-error: true
-      with:
-        name: ${{ inputs.image-name }}-attempt-${{ github.run_attempt }}
-        path: ${{ runner.temp }}
-
-    # No artifact means build-and-upload skipped the build. Skipping the scan
-    # there reported success having scanned nothing, which is how a CVE first
-    # surfaced on a release build.
-    - name: Decide what to scan
+    - name: Decide what to scan from the frozen plan
       id: mode
       shell: bash
       env:
-        DOWNLOADED: ${{ steps.download.outcome }}
         SCAN_PUBLISHED: ${{ inputs.scan-published }}
         IMAGE_NAME: ${{ inputs.image-name }}
       run: |
-        if [ "${DOWNLOADED}" = 'success' ]; then
-          mode=tar
-        elif [ "${SCAN_PUBLISHED}" = 'true' ]; then
-          mode=registry
-        else
-          mode=skip
-        fi
-        echo "mode=${mode}" >> "$GITHUB_OUTPUT"
-        case "${mode}" in
-          tar)      echo "${IMAGE_NAME}: scanning the image built in this run" ;;
-          registry) echo "${IMAGE_NAME}: not rebuilt here, scanning the published image" ;;
-          skip)     echo "${IMAGE_NAME}: not rebuilt here and scan-published is off, skipping" ;;
-        esac
+        python3 - <<'PY'
+        import os
+        from pathlib import Path
+        import sys
+        sys.path.insert(0, "tooling/manifest")
+        from build_haul import parse_predecessor
+        from producer_plan import REPO, context, validate
 
-    - name: Resolve the published image
-      id: published
-      if: steps.mode.outputs.mode == 'registry'
-      uses: ./.github/actions/derive-version
+        expected = context(os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_SHA"],
+                           int(os.environ["GITHUB_RUN_ID"]), int(os.environ["GITHUB_RUN_ATTEMPT"]),
+                           os.environ["VERSION"])
+        snapshot = Path("predecessor")
+        plan = validate(snapshot, expected)
+        image = os.environ["IMAGE_NAME"]
+        ref = ""
+        if plan["flags"][image]:
+            mode = "tar"
+        elif os.environ["SCAN_PUBLISHED"] == "true":
+            mode = "registry"
+            _, digest = parse_predecessor(str(snapshot / "haul.yaml"))[REPO + image]
+            ref = REPO + image + "@" + digest
+        else:
+            mode = "skip"
+        with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+            output.write(f"mode={mode}\nref={ref}\n")
+        print(f"{image}: scan mode={mode}" + (f" ({ref})" if ref else ""))
+        PY
+
+    - name: Download the required image archive
+      if: steps.mode.outputs.mode == 'tar'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
-        subproject: ${{ inputs.subproject }}
-
-    # imagetools reads ~/.docker/config.json, which the TRIVY_* env vars below
-    # do not populate.
-    - name: Log in to GHCR
-      if: steps.mode.outputs.mode == 'registry'
-      uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ github.token }}
-
-    - name: Pin the published tag to its digest
-      id: pin
-      if: steps.mode.outputs.mode == 'registry'
-      shell: bash
-      env:
-        IMAGE_NAME: ${{ inputs.image-name }}
-        VERSION: ${{ steps.published.outputs.version }}
-      run: |
-        set -euo pipefail
-        repo="ghcr.io/washu-tag/${IMAGE_NAME}"
-        digest="$(docker buildx imagetools inspect "${repo}:${VERSION}" \
-          --format '{{json .Manifest}}' | jq -r '.digest')"
-        # Fail loudly rather than fall back to scanning nothing.
-        if [ "${digest#sha256:}" = "${digest}" ]; then
-          echo "::error::could not resolve a digest for ${repo}:${VERSION}"
-          exit 1
-        fi
-        echo "ref=${repo}@${digest}" >> "$GITHUB_OUTPUT"
-        echo "${IMAGE_NAME}: ${repo}:${VERSION} -> ${digest}"
+        name: ${{ inputs.image-name }}-attempt-${{ github.run_attempt }}
+        path: ${{ runner.temp }}
 
     - name: Configure Trivy
       if: steps.mode.outputs.mode != 'skip'
@@ -121,7 +96,7 @@ runs:
         echo "--- trivy-config.yaml ---"
         cat trivy-config.yaml
 
-    - name: Run Trivy on the image built in this run (JSON — single scan)
+    - name: Run Trivy on the image built in this run (JSON, single scan)
       if: steps.mode.outputs.mode == 'tar'
       uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
       env:
@@ -135,7 +110,7 @@ runs:
         exit-code: '0'
         trivy-config: trivy-config.yaml
 
-    - name: Run Trivy on the published image (JSON — single scan)
+    - name: Run Trivy on the published image (JSON, single scan)
       if: steps.mode.outputs.mode == 'registry'
       uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
       env:
@@ -145,7 +120,7 @@ runs:
         TRIVY_USERNAME: ${{ github.actor }}
         TRIVY_PASSWORD: ${{ github.token }}
       with:
-        image-ref: ${{ steps.pin.outputs.ref }}
+        image-ref: ${{ steps.mode.outputs.ref }}
         scan-type: 'image'
         format: 'json'
         output: 'trivy-${{ inputs.image-name }}.json'
@@ -179,12 +154,18 @@ runs:
       env:
         IMAGE_NAME: ${{ inputs.image-name }}
         SEVERITY: ${{ inputs.severity }}
+        ALLOW_VULNERABILITIES: ${{ inputs.allow-vulnerabilities }}
       run: |
+        set -euo pipefail
         # Fail if any fixable vulnerability at the configured severity exists
         fixable=$(jq '[.Results[]?.Vulnerabilities[]? | select(.FixedVersion != null and .FixedVersion != "")] | length' "trivy-${IMAGE_NAME}.json")
         echo "${IMAGE_NAME}: ${fixable} fixable vulnerabilities at ${SEVERITY}"
         if [ "$fixable" -gt 0 ]; then
-          echo "::error::${IMAGE_NAME} has ${fixable} fixable vulnerabilities. Run 'trivy image <image>' locally to see details."
           jq -r '.Results[]?.Vulnerabilities[]? | select(.FixedVersion != null and .FixedVersion != "") | "\(.Severity)\t\(.VulnerabilityID)\t\(.PkgName)\t\(.InstalledVersion) → \(.FixedVersion)"' "trivy-${IMAGE_NAME}.json" | sort
-          exit 1
+          if [ "$ALLOW_VULNERABILITIES" = true ]; then
+            echo "::warning::${IMAGE_NAME} has ${fixable} fixable vulnerabilities; this image's CVE gate is advisory."
+          else
+            echo "::error::${IMAGE_NAME} has ${fixable} fixable vulnerabilities. Run 'trivy image <image>' locally to see details."
+            exit 1
+          fi
         fi
