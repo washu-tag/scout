@@ -1,4 +1,4 @@
-FROM spark:4.1.1-scala2.13-java21-python3-ubuntu
+FROM spark:4.1.2-scala2.13-java21-python3-ubuntu
 
 USER root
 
