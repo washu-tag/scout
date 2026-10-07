@@ -12,6 +12,10 @@ spec:
     # Block external resources while allowing app functionality
     # - img-src: blocks external images (quickchart.io, etc.) that could exfiltrate data
     # - connect-src: allows WebSocket and Keycloak OAuth
+    # - frame-src: report viewer, plus Keycloak so the chat tool can renew a
+    #   dead OWUI session in a hidden frame (same origin CSP already trusts
+    #   for connect-src and form-action; Keycloak's own X-Frame-Options still
+    #   stops its login page rendering there)
     # - script/style: allows inline (required by Open WebUI frontend)
     contentSecurityPolicy: >-
       default-src 'self';
@@ -20,6 +24,6 @@ spec:
       img-src 'self' data: blob:;
       font-src 'self' data:;
       connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
-      frame-src 'self' https://report-viewer.{{ server_hostname }};
+      frame-src 'self' https://report-viewer.{{ server_hostname }} {{ keycloak_base_url }};
       form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
       frame-ancestors 'none'
