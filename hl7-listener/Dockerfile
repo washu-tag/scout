@@ -1,5 +1,5 @@
 # Build the Camel-on-Spring-Boot HL7 listener application (executable bootJar).
-FROM amazoncorretto:21-alpine AS build
+FROM amazoncorretto:27-alpine AS build
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ COPY src src
 RUN ./gradlew build -x test
 
 # Use a smaller base image for the final stage
-FROM amazoncorretto:21-alpine
+FROM amazoncorretto:27-alpine
 
 # libssl3/libcrypto3 repeatedly lag Alpine's OpenSSL patches on this base image;
 # pull latest explicitly instead of waiting on a rebuild. No-op once caught up.
