@@ -36,15 +36,22 @@ def config_archive(path, *, tag="0.20261006.123", duplicate=False, link=False):
     return path
 
 
-def test_render_uses_packaged_image_and_fixture_warehouse(tmp_path):
+@pytest.fixture
+def cluster_vars(tmp_path):
+    values = tmp_path / "cluster-vars.values.json"
+    values.write_text(json.dumps({"lake_bucket": "merged-ci-lake"}))
+    return values
+
+
+def test_render_uses_packaged_image_and_merged_warehouse(tmp_path, cluster_vars):
     archive = config_archive(tmp_path / "config.tar.gz")
     output = tmp_path / "jobs"
-    auth_jobs.prepare(archive, output)
+    auth_jobs.prepare(archive, output, cluster_vars)
     seed = json.loads((output / "seed.json").read_text())
     container = seed["spec"]["template"]["spec"]["containers"][0]
     assert container["image"] == ("ghcr.io/washu-tag/hl7-transformer:0.20261006.123")
     env = {item["name"]: item for item in container["env"]}
-    assert env["SPARK_SQL_WAREHOUSE_DIR"]["value"] == "s3a://ci-lake/delta"
+    assert env["SPARK_SQL_WAREHOUSE_DIR"]["value"] == "s3a://merged-ci-lake/delta"
     assert env["AWS_SECRET_ACCESS_KEY"]["valueFrom"]["secretKeyRef"] == {
         "name": "lake-writer-creds",
         "key": "CONSOLE_SECRET_KEY",
@@ -66,11 +73,11 @@ def test_render_uses_packaged_image_and_fixture_warehouse(tmp_path):
 
 
 @pytest.mark.parametrize("tag", ["latest", "0.0.0", "", None, "${VERSION}"])
-def test_unstamped_image_leaves_no_jobs(tmp_path, tag):
+def test_unstamped_image_leaves_no_jobs(tmp_path, cluster_vars, tag):
     archive = config_archive(tmp_path / "config.tar.gz", tag=tag)
     output = tmp_path / "jobs"
     with pytest.raises(ValueError, match="stamped Scout image"):
-        auth_jobs.prepare(archive, output)
+        auth_jobs.prepare(archive, output, cluster_vars)
     assert not output.exists()
 
 
@@ -87,7 +94,7 @@ def test_archive_symlink_cannot_supply_seed_image(tmp_path):
 
 
 @pytest.fixture
-def run_helper(tmp_path):
+def run_helper(tmp_path, cluster_vars):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     archive = config_archive(tmp_path / "config.tar.gz")
@@ -190,9 +197,10 @@ def test_helper_pulls_exact_config_and_runs_scoped_suites(run_helper, insecure):
     assert browser["args"][-2:] == ["test", "flux-platform.spec.ts"]
     assert browser["strict_tls"]
     seed = next(item["seed"] for item in entries if "seed" in item)
-    assert seed["spec"]["template"]["spec"]["containers"][0]["image"].endswith(
-        ":0.20261006.123"
-    )
+    container = seed["spec"]["template"]["spec"]["containers"][0]
+    assert container["image"].endswith(":0.20261006.123")
+    env = {item["name"]: item for item in container["env"]}
+    assert env["SPARK_SQL_WAREHOUSE_DIR"]["value"] == "s3a://merged-ci-lake/delta"
     assert any("data-authz-tests" in item["args"] for item in entries)
 
 

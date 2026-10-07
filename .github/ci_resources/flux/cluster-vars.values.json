@@ -1,5 +1,5 @@
 {
-  "_comment": "CI-only overrides for tooling/deploy/fixtures/cluster-vars.values.json. cluster_vars.py merges nested dictionaries and sets extractor_data_dir to the runner checkout at runtime. Keep only values that intentionally differ from the shared fixture.",
+  "_comment": "CI-only overrides for tooling/deploy/fixtures/cluster-vars.values.json. The workflows merge these with jq and set extractor_data_dir to the runner checkout at runtime. Keep only values that intentionally differ from the shared fixture.",
   "deployer_name": "CI",
   "extractor_data_dir": "WORK_DIR/tests/ingest/staging_test_data",
   "keycloak_alb_oidc_hosts": "",

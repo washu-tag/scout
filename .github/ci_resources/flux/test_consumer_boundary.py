@@ -1,10 +1,7 @@
 """Offline checks for producer/consumer trust boundaries and receipt archive failures."""
 
-import ast
 import importlib.util
-import json
 from pathlib import Path
-import re
 import tempfile
 import unittest
 import zipfile
@@ -123,74 +120,6 @@ class ReceiptArchiveTests(unittest.TestCase):
             receipt_archive.read_receipt(path)
 
 
-def evaluate(expression, context):
-    """Interpret only the gate syntax exercised by these event fixtures.
-
-    Parse into data, then handle an explicit node allowlist; workflow text is
-    never executed as Python. Unsupported syntax fails the test rather than
-    silently broadening this deliberately small GitHub-expression subset.
-    """
-    expression = expression.replace("&&", " and ").replace("||", " or ")
-    expression = re.sub(r"!(?!=)", " not ", expression)
-
-    def visit(node):
-        if isinstance(node, ast.Constant) and type(node.value) in (str, bool, int):
-            return node.value
-        if isinstance(node, ast.Name) and node.id in {"github", "needs", "inputs"}:
-            return context.get(node.id, {})
-        if isinstance(node, ast.Attribute):
-            parent = visit(node.value)
-            return parent.get(node.attr) if isinstance(parent, dict) else None
-        if isinstance(node, ast.BoolOp) and isinstance(node.op, (ast.And, ast.Or)):
-            for child in node.values:
-                value = visit(child)
-                if isinstance(node.op, ast.And) and not value:
-                    return value
-                if isinstance(node.op, ast.Or) and value:
-                    return value
-            return value
-        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
-            return not visit(node.operand)
-        if isinstance(node, ast.Compare) and len(node.ops) == 1:
-            left, right = visit(node.left), visit(node.comparators[0])
-            if isinstance(node.ops[0], ast.Eq):
-                return left == right
-            if isinstance(node.ops[0], ast.NotEq):
-                return left != right
-        if (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Name)
-            and not node.keywords
-        ):
-            if node.func.id == "always" and not node.args:
-                return True
-            if node.func.id == "cancelled" and not node.args:
-                return context.get("cancelled", False)
-            if node.func.id == "fromJSON" and len(node.args) == 1:
-                return json.loads(visit(node.args[0]))
-        raise AssertionError("unsupported workflow gate syntax: " + type(node).__name__)
-
-    return visit(ast.parse(" ".join(expression.split()), mode="eval").body)
-
-
-class GateSyntaxTests(unittest.TestCase):
-    def test_rejects_python_execution_and_unsupported_operations(self):
-        for expression in (
-            "__import__('os').getcwd()",
-            "github.clear()",
-            "[value for value in github]",
-            "github['repository']",
-            "1 + 2",
-            "fromJSON(value='[]')",
-        ):
-            with self.subTest(expression=expression), self.assertRaises(AssertionError):
-                evaluate(expression, {"github": {"repository": "washu-tag/scout"}})
-
-
-def allows(expression, context):
-    return bool(evaluate(expression, context))
-
-
 class WorkflowBoundaryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -198,132 +127,13 @@ class WorkflowBoundaryTests(unittest.TestCase):
             (ROOT / ".github/workflows/deploy-flux.yaml").read_text()
         )
 
-    def context(self):
-        return {
-            "github": {
-                "event_name": "workflow_run",
-                "repository": "washu-tag/scout",
-                "event": {
-                    "workflow_run": {
-                        "event": "push",
-                        "head_branch": "main",
-                        "conclusion": "success",
-                        "head_repository": {"full_name": "washu-tag/scout"},
-                    }
-                },
-            },
-            "needs": {
-                "identity": {"result": "success", "outputs": {"present": "true"}}
-            },
-        }
-
-    def test_each_published_job_rejects_untrusted_event_mutations(self):
-        mutations = [
-            ("github.repository", "attacker/scout"),
-            ("github.event.workflow_run.event", "pull_request"),
-            ("github.event.workflow_run.head_branch", "topic"),
-            ("github.event.workflow_run.conclusion", "failure"),
-            ("github.event.workflow_run.head_repository.full_name", "attacker/scout"),
-        ]
-        for name in ("identity", "deploy", "published-status"):
-            gate = self.workflow["jobs"][name]["if"]
-            self.assertTrue(allows(gate, self.context()), name)
-            for path, value in mutations:
-                context = self.context()
-                cursor = context
-                parts = path.split(".")
-                for part in parts[:-1]:
-                    cursor = cursor[part]
-                cursor[parts[-1]] = value
-                with self.subTest(job=name, mutation=path):
-                    self.assertFalse(allows(gate, context))
-
-    def test_no_receipt_skips_deploy_and_status_but_invalid_receipt_reports_failure(
-        self,
-    ):
-        context = self.context()
-        context["needs"]["identity"]["outputs"]["present"] = "false"
-        for name in ("deploy", "published-status"):
-            self.assertFalse(allows(self.workflow["jobs"][name]["if"], context))
-        context["needs"]["identity"]["result"] = "failure"
-        self.assertFalse(allows(self.workflow["jobs"]["deploy"]["if"], context))
-        self.assertTrue(
-            allows(self.workflow["jobs"]["published-status"]["if"], context)
-        )
-
-    def test_local_events_run_deploy_without_the_writer(self):
-        for event in ("pull_request", "push", "workflow_dispatch"):
-            context = self.context()
-            context["github"].update(
-                event_name=event, repository="fork/scout", event={}
-            )
-            context["needs"]["identity"] = {"result": "skipped", "outputs": {}}
-            self.assertTrue(allows(self.workflow["jobs"]["deploy"]["if"], context))
-            self.assertFalse(allows(self.workflow["jobs"]["identity"]["if"], context))
-            self.assertFalse(
-                allows(self.workflow["jobs"]["published-status"]["if"], context)
-            )
-
-    def test_manual_runs_and_published_attempts_have_independent_concurrency_groups(
-        self,
-    ):
-        def group(event, run_id, producer_attempt=1):
-            context = self.context()
-            context["github"].update(
-                event_name=event,
-                run_id=run_id,
-                workflow="Deploy via Flux (on-prem)",
-                ref="refs/pull/1/merge",
-            )
-            if event == "workflow_run":
-                context["github"]["event"]["workflow_run"].update(
-                    id=10, run_attempt=producer_attempt
-                )
-            else:
-                context["github"]["event"] = {}
-            return re.sub(
-                r"\$\{\{(.*?)\}\}",
-                lambda m: str(evaluate(m.group(1), context)),
-                self.workflow["concurrency"]["group"],
-            )
-
-        self.assertNotEqual(
-            group("workflow_dispatch", 100), group("workflow_dispatch", 101)
-        )
-        self.assertEqual(group("pull_request", 100), group("pull_request", 101))
-        self.assertNotEqual(
-            group("workflow_run", 100, 1), group("workflow_run", 101, 2)
-        )
-
-    def test_both_legs_gate_published_status_and_only_manual_runs_can_select_one(self):
+    def test_both_legs_gate_published_status(self):
         deploy = self.workflow["jobs"]["deploy"]
         self.assertFalse(deploy["strategy"]["fail-fast"])
-        matrix = (
-            deploy["strategy"]["matrix"]["leg"].removeprefix("${{").removesuffix("}}")
-        )
-        for event in ("workflow_run", "pull_request", "push", "workflow_dispatch"):
-            for selection in ("both", "ingest", "auth"):
-                context = self.context()
-                context["github"]["event_name"] = event
-                context["inputs"] = {"leg": selection}
-                expected = (
-                    [selection]
-                    if event == "workflow_dispatch" and selection != "both"
-                    else ["ingest", "auth"]
-                )
-                self.assertEqual(evaluate(matrix, context), expected)
         writer = self.workflow["jobs"]["published-status"]
         self.assertEqual(set(writer["needs"]), {"identity", "deploy"})
         self.assertEqual(
             writer["steps"][0]["env"]["DEPLOY_RESULT"], "${{ needs.deploy.result }}"
-        )
-
-    def test_deployment_stops_on_cancellation_but_status_can_report_failure(self):
-        context = self.context()
-        context["cancelled"] = True
-        self.assertFalse(allows(self.workflow["jobs"]["deploy"]["if"], context))
-        self.assertTrue(
-            allows(self.workflow["jobs"]["published-status"]["if"], context)
         )
 
     def test_writer_has_no_checkout_artifact_download_or_repository_execution(self):

@@ -60,8 +60,9 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/ci_resources/flux/check_legs.py
-          python3 .github/ci_resources/flux/cluster_vars.py \
-            --output "$RUNNER_TEMP/ci-cluster-vars.values.json"
+          jq -s '.[0] * .[1] | del(._comment)' \
+            tooling/deploy/fixtures/cluster-vars.values.json \
+            .github/ci_resources/flux/cluster-vars.values.json > "$RUNNER_TEMP/ci-cluster-vars.values.json"
           python3 tooling/deploy/gen_cluster_vars.py \
             --values "$RUNNER_TEMP/ci-cluster-vars.values.json" \
             --namespace flux-system > "$RUNNER_TEMP/ci-cluster-vars.yaml"

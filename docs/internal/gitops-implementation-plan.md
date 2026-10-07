@@ -102,11 +102,42 @@ with pods restarting only for components that changed.
 included, from the published config artifact, and passes the ingest and
 authorization suites.
 
-The current on-prem ingest/authentication proof is an intermediate milestone: its
-published mode follows the existing Ansible-gated `Post-Commit Tasks` workflow.
-It does not complete this phase. The [CI transition plan](integration_tests.md#phase-3-transition-to-flux-as-the-default)
-records the coverage and upstream acceptance gates and the required job reordering
-before Ansible deployment tests can be restricted to `ansible/**` changes.
+### Transition to Flux as the default
+
+The current [on-prem proof](integration_tests.md#on-prem-flux-artifact-proof) is a
+migration step; the Phase 3 CI switch is pending. Today,
+`publish` and `publish-charts` wait for the Ansible deployment tests, then publish
+images, charts, the haul, and the config artifact. The published Flux proof starts
+only after the entire `Post-Commit Tasks` workflow succeeds. Its advisory status
+therefore cannot replace that workflow's existing Ansible gate.
+
+The follow-up cutover requires all of the following:
+
+* Maintainer acceptance of the Flux deployment contract, coverage, and required-check
+  changes, followed by successful published-mode runs on the upstream default branch.
+* Full-platform coverage required by this phase, including the remaining platform
+  services and optional-component matrix. Ingest,
+  browser authentication, and data authorization must pass against the same published
+  config digest. Provision the runner capacity needed by that matrix; keep the
+  explicitly documented GPU proof on a development cluster.
+* Proven producer ordering, artifact ancestry, and an exact producer-attempt/config
+  handoff. Test failures, absent evidence, and partial reruns must not admit promotion.
+
+Once those criteria are accepted, change the ordering together in one cutover:
+source checks and image/chart builds first; signed build-lane artifact publication
+next; Flux deployment and integration tests against those exact digests next; then
+release eligibility or promotion. Publishing candidate build artifacts must no longer
+wait on the Ansible deployment result, otherwise making Flux the gate creates a
+cycle. The proof must likewise stop waiting for completion of a workflow that would
+itself wait for that proof; use a downstream workflow after producer publication or
+an explicit job dependency in a reorganized workflow.
+
+Retain the Ansible deploy-and-test lane for `ansible/**` changes after the cutover,
+with that path signal wired through the aggregate result so an intentional skip
+is not reported as failure. Check the new required statuses on both Ansible-changing
+and unrelated commits before restricting the lane. Until this upstream cutover is
+accepted and demonstrated, preserve the current Ansible gate and label this proof
+as additional evidence.
 
 ## Phase 4 — site repos and dev cutovers
 

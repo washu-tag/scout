@@ -47,7 +47,8 @@ case "${1:-all}" in
     trap 'exit 143' TERM
     # Both artifact modes take this same path. No mutable tag or checkout image.
     oras "${oras_args[@]}" "${CONFIG_SOURCE}@${CONFIG_DIGEST}" -o "$work"
-    python3 "$script_dir/auth_jobs.py" "$work/scout-config.tar.gz" "$work/jobs"
+    python3 "$script_dir/auth_jobs.py" "$work/scout-config.tar.gz" "$work/jobs" \
+      "$RUNNER_TEMP/cluster-vars.values.json"
     kubectl -n scout-data create configmap data-authz-seed-script \
       --from-file=seed.py=tests/data-authorization/seed/seed.py \
       --dry-run=client -o yaml | kubectl apply -f -

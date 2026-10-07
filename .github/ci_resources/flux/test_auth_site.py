@@ -12,7 +12,6 @@ import pytest
 import yaml
 
 import prepare_auth_site as auth
-from cluster_vars import load_values
 
 
 HERE = Path(__file__).resolve().parent
@@ -187,7 +186,18 @@ def test_real_flux_patches_keep_auth_and_dependency_controls(prepared, tmp_path)
     # Use the same full substitution set as the CI job. Both render stages run
     # strictly, so dollars introduced inside nested OPA patches are checked too.
     merged_values = tmp_path / "cluster-vars.values.json"
-    merged_values.write_text(json.dumps(load_values()))
+    with merged_values.open("w") as output:
+        subprocess.run(
+            [
+                "jq",
+                "-s",
+                ".[0] * .[1] | del(._comment)",
+                str(REPO / "tooling/deploy/fixtures/cluster-vars.values.json"),
+                str(HERE / "cluster-vars.values.json"),
+            ],
+            stdout=output,
+            check=True,
+        )
     generated = subprocess.run(
         [
             sys.executable,

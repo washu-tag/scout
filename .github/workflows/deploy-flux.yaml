@@ -352,9 +352,10 @@ jobs:
             .github/ci_resources/flux/site/scout-config-source.yaml > "$site/scout-config-source.yaml"
           kubectl create secret generic scout-cosign-pub -n flux-system \
             --from-file=cosign.pub="$RUNNER_TEMP/cosign.pub"
-          python3 .github/ci_resources/flux/cluster_vars.py \
-            --extractor-data-dir "$PWD/tests/ingest/staging_test_data" \
-            --output "$RUNNER_TEMP/cluster-vars.values.json"
+          jq -s --arg extractor_data_dir "$PWD/tests/ingest/staging_test_data" \
+            '.[0] * .[1] | del(._comment) | .extractor_data_dir = $extractor_data_dir' \
+            tooling/deploy/fixtures/cluster-vars.values.json \
+            .github/ci_resources/flux/cluster-vars.values.json > "$RUNNER_TEMP/cluster-vars.values.json"
           python3 tooling/deploy/gen_cluster_vars.py --values "$RUNNER_TEMP/cluster-vars.values.json" \
             --namespace flux-system -o "$site/cluster-vars.yaml"
           # Ephemeral age key: the private half ends up only in the sops-age Secret.

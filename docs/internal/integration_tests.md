@@ -91,20 +91,18 @@ The site artifact uses its own ephemeral signing key, independent of the Scout
 config key ([ADR 0031](adr/0031-gitops-deployment-base.md)). Both public keys are
 bootstrapped directly into the cluster and stay outside the site artifact. The
 workflow signs the site's exported OCI digest, verifies it with cosign, and pins
-that same digest in Flux. It checks current-generation `Ready` and `SourceVerified`
-conditions and the resolved OCI revision for both sources.
-
-After the site root creates the Scout config source, the workflow waits for
-`SourceVerified` and `Ready` on both `scout-site` and `scout-config`. It also checks
-the expected repository URL, digest pin, signer key, observed generation, and
-resolved artifact revision. SOPS decryption and missing-value negative cases remain
-part of the Scout deployment contract; this proof does not duplicate Flux's own
-wrong-key or signature-replay conformance tests.
+that same digest in Flux. After the site root creates the Scout config source,
+the workflow waits for current-generation `Ready` and `SourceVerified` conditions on
+both `scout-site` and `scout-config`, and verifies each source's expected repository
+URL, digest pin, signer key, and resolved artifact revision. SOPS decryption and
+missing-value negative cases remain part of the Scout deployment contract; this
+proof does not duplicate Flux's own wrong-key or signature-replay conformance tests.
 
 The site roots, artifact inputs, and CI overrides live in
 `.github/ci_resources/flux/`. `cluster-vars.values.json` contains only the CI-specific
-overrides; `cluster_vars.py` recursively merges them with the deployment tooling's
-`tooling/deploy/fixtures/cluster-vars.values.json` baseline before validation and use.
+overrides; the workflow uses `jq` to recursively merge them with the deployment
+tooling's `tooling/deploy/fixtures/cluster-vars.values.json` baseline before
+validation and use.
 The ingest fixture sets `minio_oidc_enabled` to `off` and `temporal_web_auth` to
 `none`, and uses Temporal's internal frontend. The public frontend still requires
 JWT authorization. Temporal UI OIDC is outside these tests.
@@ -165,36 +163,6 @@ upstream regression separately before removing the workaround.
 
 ### Phase 3 transition to Flux as the default
 
-The current on-prem proof is a migration step; the Phase 3 CI switch is pending. Today,
-`publish` and `publish-charts` wait for the Ansible deployment tests, then publish
-images, charts, the haul, and the config artifact. The published Flux proof starts
-only after the entire `Post-Commit Tasks` workflow succeeds. Its advisory status
-therefore cannot replace that workflow's existing Ansible gate.
-
-The follow-up cutover requires all of the following:
-
-* Maintainer acceptance of the Flux deployment contract, coverage, and required-check
-  changes, followed by successful published-mode runs on the upstream default branch.
-* Full-platform coverage required by [Phase 3](gitops-implementation-plan.md#phase-3--the-deploy-base-and-config-artifact),
-  including the remaining platform services and optional-component matrix. Ingest,
-  browser authentication, and data authorization must pass against the same published
-  config digest. Provision the runner capacity needed by that matrix; keep the
-  explicitly documented GPU proof on a development cluster.
-* Proven producer ordering, artifact ancestry, and an exact producer-attempt/config
-  handoff. Test failures, absent evidence, and partial reruns must not admit promotion.
-
-Once those criteria are accepted, change the ordering together in one cutover:
-source checks and image/chart builds first; signed build-lane artifact publication
-next; Flux deployment and integration tests against those exact digests next; then
-release eligibility or promotion. Publishing candidate build artifacts must no longer
-wait on the Ansible deployment result, otherwise making Flux the gate creates a
-cycle. The proof must likewise stop waiting for completion of a workflow that would
-itself wait for that proof; use a downstream workflow after producer publication or
-an explicit job dependency in a reorganized workflow.
-
-Retain the Ansible deploy-and-test lane for `ansible/**` changes after the cutover,
-with that path signal wired through the aggregate result so an intentional skip
-is not reported as failure. Check the new required statuses on both Ansible-changing
-and unrelated commits before restricting the lane. Until this upstream cutover is
-accepted and demonstrated, preserve the current Ansible gate and label this proof
-as additional evidence.
+The current proof is a migration step. The [Phase 3 transition plan](gitops-implementation-plan.md#transition-to-flux-as-the-default)
+records the remaining coverage, upstream acceptance gates, and job reordering
+required before Flux becomes the default deployment gate.
