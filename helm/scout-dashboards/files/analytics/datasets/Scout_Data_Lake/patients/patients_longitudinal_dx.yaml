@@ -1,12 +1,12 @@
-table_name: patients_longitudinal
+table_name: patients_longitudinal_dx
 main_dttm_col: last_exam_dt
-description: One row per reconciled patient (scout_patient_id), with aggregates over
-  reports_latest_epic_view. Drives the patient-level charts on the Patients
-  (Longitudinal) dashboard except Distinct diagnoses per patient, which uses
-  patients_longitudinal_dx. Every COUNT is at the patient level, not the exam level.
-  First/last exam dates use the exam date when present, falling back to order then
-  HL7 message date (observation_dt alone is sparsely populated), so the dashboard date
-  filter scopes by a reliably-populated date.
+description: patients_longitudinal plus distinct_diagnoses from reports_dx_epic_view.
+  Only the Distinct diagnoses per patient chart uses it; the other patient-level
+  charts use patients_longitudinal so they don't pay for the diagnosis join. Every
+  COUNT is at the patient level, not the exam level. First/last exam dates use the
+  exam date when present, falling back to order then HL7 message date (observation_dt
+  alone is sparsely populated), so the dashboard date filter scopes by a
+  reliably-populated date.
 default_endpoint: null
 offset: 0
 cache_timeout: null
@@ -45,6 +45,14 @@ sql: |-
       MAX(resolved_mpi) AS resolved_mpi
     FROM exams
     GROUP BY scout_patient_id
+  ),
+  patient_dx AS (
+    SELECT
+      scout_patient_id,
+      COUNT(DISTINCT diagnosis_code) AS distinct_diagnoses
+    FROM delta.default.reports_dx_epic_view
+    WHERE diagnosis_code IS NOT NULL
+    GROUP BY scout_patient_id
   )
   SELECT
     p.scout_patient_id,
@@ -61,6 +69,7 @@ sql: |-
     p.sending_facility,
     p.resolved_epic_mrn,
     p.resolved_mpi,
+    COALESCE(d.distinct_diagnoses, 0) AS distinct_diagnoses,
     CASE WHEN p.exam_count = 1 THEN '1'
          WHEN p.exam_count = 2 THEN '2'
          WHEN p.exam_count BETWEEN 3 AND 5 THEN '3-5'
@@ -72,6 +81,7 @@ sql: |-
          ELSE '3+'
     END AS modality_count_bucket
   FROM patient_base p
+  LEFT JOIN patient_dx d ON p.scout_patient_id = d.scout_patient_id
 params: null
 template_params: null
 filter_select_enabled: true
@@ -79,7 +89,7 @@ fetch_values_predicate: null
 extra: null
 normalize_columns: false
 always_filter_main_dttm: false
-uuid: 5d6cdd41-c41d-439c-a4ba-e2ee12772c20
+uuid: a0e427c6-7645-402d-a3e5-87f23257a1e6
 metrics:
 - metric_name: pct_returning
   verbose_name: '% patients with 2+ exams'
@@ -88,6 +98,17 @@ metrics:
     0)
   description: Share of patients who appear in the lake with more than one exam.
   d3format: ',.1f'
+  currency: null
+  extra:
+    warning_markdown: ''
+  warning_text: null
+- metric_name: avg_distinct_diagnoses
+  verbose_name: Avg distinct diagnoses per patient
+  metric_type: null
+  expression: AVG(distinct_diagnoses)
+  description: Mean number of distinct diagnosis codes per patient (zero counted for
+    patients with no coded diagnoses).
+  d3format: ',.2f'
   currency: null
   extra:
     warning_markdown: ''
@@ -157,6 +178,18 @@ columns:
   filterable: true
   expression: null
   description: Distinct imaging modalities this patient has across their exams.
+  python_date_format: null
+  extra: {}
+- column_name: distinct_diagnoses
+  verbose_name: Distinct diagnoses
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: Distinct diagnosis codes accumulated across this patient's exams.
   python_date_format: null
   extra: {}
 - column_name: modality_count_bucket
