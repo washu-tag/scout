@@ -1,11 +1,7 @@
-# Issue #739: the search-detail toolbar's action catalog, mounted
-# directly into the pod - the same "core chips ride a chart-rendered
-# ConfigMap" delivery ADR 0034 uses for launchpad's own tiles, as opposed
-# to the cross-namespace sidecar-discovery mechanism it uses for
-# third-party contributions (a further increment, not attempted here).
-# See scout_report_viewer/actions.py for the loader and its documented
-# graceful-degradation behavior. A backend-call entry's invokeToken is
-# NOT rendered here - see actions-secret.yaml; a ConfigMap has no
+# The search-detail toolbar's action catalog - see
+# scout_report_viewer/actions.py for the loader and its graceful-
+# degradation behavior. A backend-call entry's invokeToken is NOT
+# rendered here - see actions-secret.yaml; a ConfigMap has no
 # access-control distinction from other config, so secret material never
 # belongs in one.
 apiVersion: v1

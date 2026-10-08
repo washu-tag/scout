@@ -37,15 +37,10 @@ export interface OpenResultState {
  *
  * Whether the popup actually succeeds is controlled by the destination's
  * own Cross-Origin-Opener-Policy response header, not anything this hook
- * does. When opened from within a sandboxed iframe (OWUI's chat embed)
- * without allow-popups-to-escape-sandbox - which we don't control - the
- * destination must send exactly COOP: unsafe-none; anything else
- * (including same-origin-allow-popups, easy to assume is "relaxed
- * enough" but isn't) hits the same block per the WHATWG HTML spec (see
- * security-headers-sameorigin-popups in
- * ansible/roles/traefik/tasks/main.yaml for the full writeup). A
- * destination that hasn't opted into unsafe-none will always fall
- * through to the copy-link affordance when embedded this way.
+ * does - see security-headers-sameorigin-popups in
+ * ansible/roles/traefik/tasks/main.yaml for which value is required and
+ * why. A destination that hasn't opted in will always fall through to
+ * the copy-link affordance when embedded in OWUI's sandboxed chat iframe.
  *
  * Copying is a separate, explicit `copyLink` call rather than something
  * `open` does automatically: `document.execCommand('copy')` only succeeds
@@ -103,7 +98,6 @@ export function useOpenResult() {
     }
   }, []);
 
-  // Closes the result-link modal without affecting `opening`/`error`.
   const dismiss = useCallback(() => {
     setState((s) => ({ ...s, resultLink: null, copied: false }));
   }, []);

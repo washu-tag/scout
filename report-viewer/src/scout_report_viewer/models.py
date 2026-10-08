@@ -237,19 +237,19 @@ class PlotMeta(BaseModel):
 
 
 class ActionInvokeRequest(BaseModel):
-    """Issue #739: optional filter narrowing a backend-call invoke to a
-    subset of the search's cohort - e.g. the SPA's currently
-    client-side-filtered rows, the same set Download CSV already
-    exports. None/omitted (or no request body at all) means the full
-    search, unfiltered - today's behavior."""
+    """Optional filter narrowing a backend-call invoke to a subset of the
+    search's cohort - e.g. the SPA's currently client-side-filtered rows,
+    the same set Download CSV already exports. None/omitted (or no
+    request body at all) means the full search, unfiltered - today's
+    behavior."""
 
     visible_report_ids: list[str] | None = None
 
 
 class ActionInvokeResponse(BaseModel):
-    """Issue #739: the result URL a backend-call action's own
-    endpoint_url returned, ready for the same open/copy-fallback handling
-    as an open-url action."""
+    """The result URL a backend-call action's own endpoint_url returned,
+    ready for the same open/copy-fallback handling as an open-url
+    action."""
 
     url: str
 

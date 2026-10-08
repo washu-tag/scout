@@ -5,29 +5,12 @@ import { ResultLinkModal } from './ResultLinkModal';
 import { paginationBtn } from './styles';
 
 // Explain Search and Download CSV always stay visible - only site-authored
-// actions.custom entries are eligible to collapse into "More" (#739 demo
-// feedback: an unbounded custom list wrapping the whole pagination row to
-// a second line looked broken; the built-ins are few and expected, so
-// they're never worth hiding).
+// actions.custom entries are eligible to collapse into "More" (the
+// built-ins are few and expected, so they're never worth hiding; an
+// unbounded custom list would be).
 const BUILTIN_ACTION_IDS = new Set(['explain-search', 'download-csv']);
 
-/** Issue #739: renders a backend-declared, group-filtered action list
- * generically.
- * - `open-url` actions are handled uniformly via `useOpenResult`.
- * - `client` actions are dispatched to a handler the page registers by
- *   id - report-viewer can't ship page-specific logic (e.g. building a
- *   CSV from the currently loaded/filtered rows) through a backend
- *   descriptor.
- * - `backend-call` actions POST to the action's own invoke route to get
- *   a dynamically-computed result URL from a genuinely separate service
- *   (report-viewer never needs to know what that service does), then
- *   get the same open/copy-fallback handling as open-url.
- *
- * An action naming an unregistered client handler is skipped with a
- * console diagnostic rather than breaking the toolbar - mirrors ADR
- * 0034's "bad chip costs the chip" grading for launchpad tiles.
- *
- * Custom actions that don't fit the row's available width collapse into
+/** Custom actions that don't fit the row's available width collapse into
  * a "More ▾" dropdown - same trailing-caret/floating-panel convention as
  * the page's own "Columns ▾" picker, not a new icon. Fit is measured
  * against a hidden, always-fully-rendered "prober" copy of every custom

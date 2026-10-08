@@ -481,7 +481,7 @@ async def get_search_actions(
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> list[ActionDescriptor]:
-    """Issue #739: role-filtered toolbar actions for this search.
+    """Role-filtered toolbar actions for this search.
 
     Owner-scoped like the sibling endpoints even though the static catalog
     doesn't yet key off search content - a real action (e.g. a future
@@ -505,7 +505,7 @@ async def invoke_search_action(
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> ActionInvokeResponse:
-    """Issue #739: generic proxy for `backend-call` actions.
+    """Generic proxy for `backend-call` actions.
 
     report-viewer never needs to know anything about what a given plugin
     does - it forwards the search's context to the action's own
@@ -513,8 +513,7 @@ async def invoke_search_action(
     and relays back whatever result URL it returns. Looked up through
     list_actions(user.roles), not the raw catalog, so a role-gated
     action the caller can't even see can't be invoked either - visibility
-    is UX, but the boundary is still enforced here too (ADR 0034's
-    framing).
+    is UX, but the boundary is still enforced here too.
 
     `body.visible_report_ids`, if given, narrows the forwarded cohort to
     that subset - the SPA sends its currently client-side-filtered rows
@@ -590,10 +589,8 @@ async def invoke_search_action(
     invoke_token = load_invoke_token(action.id)
     if invoke_token:
         headers["X-Report-Viewer-Action-Token"] = invoke_token
-    # Independent, verifiable proof of who this invocation is for - the
-    # invoke token above only proves the caller knows a shared secret, not
-    # the end user's identity or role membership (see
-    # actions.mint_user_assertion's docstring).
+    # Independent, verifiable proof of identity - see
+    # actions.mint_user_assertion's docstring.
     user_assertion = mint_user_assertion(action.id, user.sub, user.roles, search_id)
     if user_assertion:
         headers["X-Report-Viewer-User-Assertion"] = user_assertion

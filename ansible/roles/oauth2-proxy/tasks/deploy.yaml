@@ -92,23 +92,17 @@
           address: '{{ oauth2_proxy_auth_url }}'
           trustForwardHeader: true
           # Copied from oauth2-proxy's /oauth2/auth response onto the upstream
-          # request (and overwriting any client-supplied value of the same name -
-          # this is what makes report-viewer's group-membership header trustworthy
-          # despite arriving as a plain header, not a signed token; see
-          # report_viewer/auth.py's _gateway_ok() for the other half of that story).
+          # request (and overwriting any client-supplied value of the same name).
           # Voila reads X-Auth-Request-Preferred-Username for X-Trino-User
           # impersonation (ADR 0022); voila_runtime captures it per-request.
-          # report-viewer reads X-Auth-Request-Groups for action-catalog
-          # visibility gating (#739).
           authResponseHeaders:
             - X-Auth-Request-Preferred-Username
-            - X-Auth-Request-Groups
 
 # Scoped variant for report-viewer only - NOT referenced by any other
 # ingress. Identical to oauth2-proxy-auth above, plus Authorization in
 # authResponseHeaders, so report-viewer's own requests can carry a real,
 # Keycloak-issued Bearer token (validated by its existing _validate_jwt
-# path) instead of only the plain username/groups headers. Deliberately
+# path) instead of only the plain username header. Deliberately
 # not added to the shared oauth2-proxy-auth middleware: Traefik's
 # forwardAuth *overwrites* any client-supplied header of the same name
 # (see the comment above), and that middleware has over a dozen other
@@ -133,7 +127,6 @@
           trustForwardHeader: true
           authResponseHeaders:
             - X-Auth-Request-Preferred-Username
-            - X-Auth-Request-Groups
             - Authorization
 
 - name: Install OAuth2 Proxy Error Middleware

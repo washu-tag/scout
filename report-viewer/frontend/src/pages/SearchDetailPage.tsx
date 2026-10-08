@@ -129,7 +129,6 @@ export default function SearchDetailPage() {
   const loadingState = useLoadingProgress(!rowsQ.data && rowsQ.isLoading, fetchProgress);
   const showLoading = loadingState.show;
 
-  // Issue #739: backend-declared, group-filtered toolbar actions.
   const actionsQ = useQuery({
     queryKey: ['search', searchId, 'actions'],
     queryFn: () => listSearchActions(searchId),

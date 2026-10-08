@@ -1,36 +1,17 @@
-"""Extensible per-search action buttons (issue #739, ADR 0039).
+"""Extensible per-search action buttons (ADR 0039).
 
-Report-viewer's search-detail toolbar used to hardcode every button in
-the frontend. This module proves out a backend-declared contract instead:
-a button is data (`ActionDescriptor`), filtered by the caller's Keycloak
-client roles server-side, and rendered generically by the SPA - the
-same shape ADR 0034
-(#636) used for launchpad chips, adapted for actions that can be gated per
-search rather than always-static links.
+A toolbar button is data (`ActionDescriptor`, see below), filtered by the
+caller's Keycloak client roles server-side, and rendered generically by
+the SPA - the same chart-rendered-ConfigMap delivery and graded-degradation
+design ADR 0034 uses for launchpad chips.
 
-Discovery: `helm/report-viewer`'s chart renders a `catalog.yaml` into a
-ConfigMap and mounts it at `settings.action_catalog_path` - the same
-"core chips ride a chart-rendered ConfigMap mounted directly into the
-pod" delivery ADR 0034 uses for launchpad's *own* tiles (as opposed to
-the cross-namespace sidecar-watch mechanism it uses for third-party
-contributions, which is a further increment this doesn't attempt yet:
-this ConfigMap is owned entirely by report-viewer's own chart, read once
-at process start - a ConfigMap edit needs a pod restart to take effect,
-no live re-read/TTL snapshot yet).
-
-A site admin can add a genuinely new button - not just toggle a built-in
-one - via `values.yaml`'s `actions.custom` list, with no report-viewer
-code change or image rebuild: just a values change + `helm upgrade`.
-Both `open-url` and `backend-call` are authorable this way (see
-`ActionDescriptor` below and `helm/report-viewer/templates/actions-
-configmap.yaml`) - a `client` action needs a handler already registered
-in report-viewer's own frontend, so it structurally can't be added
-through values data alone.
-
-Graded degradation, mirroring ADR 0034: an unparseable file falls back
-to `_DEFAULT_CATALOG` entirely (bad document costs its only document);
-one invalid entry within an otherwise-valid file is skipped, logged, and
-the rest of the catalog still loads (bad chip costs the chip).
+`helm/report-viewer`'s chart renders `catalog.yaml` into a ConfigMap
+mounted at `settings.action_catalog_path`, read once at process start (a
+ConfigMap edit needs a pod restart to take effect). A site admin can add a
+new `open-url` or `backend-call` button via `values.yaml`'s
+`actions.custom`, no report-viewer code change or image rebuild needed; a
+`client` action needs a handler already registered in the frontend, so it
+can't be added through values data alone.
 """
 
 from __future__ import annotations
@@ -106,8 +87,7 @@ class ActionDescriptor(BaseModel):
 
 
 def _is_safe_action_url(url: str) -> bool:
-    """http(s) with a real host only. Mirrors ADR 0034's destination
-    validation for launchpad chips (no `javascript:`/`data:` schemes) -
+    """http(s) with a real host only (no `javascript:`/`data:` schemes) -
     catalog strings are untrusted by definition once this stops being a
     hardcoded list."""
     try:
@@ -118,11 +98,11 @@ def _is_safe_action_url(url: str) -> bool:
 
 
 # Built-in floor when no ConfigMap is mounted (local dev without the
-# chart, or the mount breaking) - ADR 0034's "never an empty page"
-# principle. Matches today's actual toolbar exactly: Explain Search and
-# Download CSV are what already ship on main, just re-expressed through
-# this contract. New demo/example actions belong in the Helm chart's
-# rendered catalog or in tests, not baked into this fallback.
+# chart, or the mount breaking), so the toolbar is never empty. Matches
+# today's actual toolbar exactly: Explain Search and Download CSV are what
+# already ship on main, just re-expressed through this contract. New
+# demo/example actions belong in the Helm chart's rendered catalog or in
+# tests, not baked into this fallback.
 _DEFAULT_CATALOG: list[ActionDescriptor] = [
     ActionDescriptor(
         id="explain-search",
@@ -172,10 +152,9 @@ def _load_catalog_from_file(path: str) -> list[ActionDescriptor] | None:
         except (TypeError, ValidationError) as exc:
             log.warning("action catalog %s: skipping entry %d (%s)", path, i, exc)
             continue
-        # Matches ADR 0034's chip rule: duplicate ids reject the later
-        # entry, so e.g. a misconfigured actions.custom id colliding with
-        # a built-in (or another custom entry) doesn't silently produce
-        # two same-keyed React list items.
+        # Duplicate ids reject the later entry, so e.g. a misconfigured
+        # actions.custom id colliding with a built-in (or another custom
+        # entry) doesn't silently produce two same-keyed React list items.
         if descriptor.id in seen_ids:
             log.warning(
                 "action catalog %s: skipping entry %d, duplicate id %r",
@@ -261,10 +240,9 @@ def list_actions(user_roles: frozenset[str]) -> list[ActionDescriptor]:
     """Role-filtered, weight-sorted actions visible to this caller.
 
     Server-side filtering only - visibility is UX, not the authorization
-    boundary (ADR 0034's framing for launchpad chips, unchanged here): a
-    real backend-calling action must still independently enforce the same
-    role check at its own endpoint, since a hidden action's URL is not
-    itself a secret.
+    boundary: a real backend-calling action must still independently
+    enforce the same role check at its own endpoint, since a hidden
+    action's URL is not itself a secret.
     """
     visible = [
         d for d in _CATALOG if d.required_role is None or d.required_role in user_roles

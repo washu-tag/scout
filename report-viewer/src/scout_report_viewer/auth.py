@@ -49,7 +49,7 @@ log = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class User:
     sub: str  # owner_sub stored on the search row; also sent as X-Trino-User
-    # Issue #739: Keycloak client roles (resource_access.report-viewer.roles).
+    # Keycloak client roles (resource_access.report-viewer.roles).
     roles: frozenset[str] = frozenset()
 
 

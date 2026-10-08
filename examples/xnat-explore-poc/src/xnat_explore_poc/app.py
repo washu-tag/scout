@@ -130,18 +130,10 @@ async def invoke(
         raise HTTPException(status_code=401, detail="invalid user assertion")
     # Catches a NAIVE replay - reusing a captured assertion+body wholesale
     # against a different search without updating this field. Does NOT
-    # bind the request body to the assertion: both values here are visible
-    # to (and settable by) anyone holding the assertion, so this alone
-    # doesn't stop someone from keeping search_id matched while
-    # substituting a different `reports` list. Neither this check nor
-    # anything else in this handler verifies that `reports` is what
-    # report-viewer actually resolved - see
-    # helm/report-viewer/values.yaml's assertionKey doc comment for what
-    # this invoke boundary does and doesn't guarantee. That gap is only
-    # reachable by bypassing report-viewer entirely (network access to
-    # this endpoint plus a valid invoke token plus a captured assertion) -
-    # not through report-viewer's own UI, which never trusts
-    # client-supplied report ids.
+    # bind the request body to the assertion - see
+    # docs/source/customize/report-viewer-actions.md's "What this boundary
+    # does and doesn't guarantee" for the full gap and why it's only
+    # reachable by bypassing report-viewer entirely.
     if claims.get("search_id") != body.get("search_id"):
         log.warning(
             "invoke rejected: assertion search_id=%s != request search_id=%s",
@@ -181,13 +173,11 @@ async def invoke(
         _scrub_for_log(body.get("cohort_truncated")),
     )
     # Points at our own landing page (landing_app, a separate public port -
-    # see module docstring), not a real XNAT deployment - self-hosted
-    # specifically so this demo doesn't need a real XNAT Ingress's COOP
-    # header changed just to prove the popup mechanism works end to end.
-    # sub/reports-count are safe to put in a URL (unlike the report
-    # identifiers themselves - see the PHI-adjacent note above): neither
-    # is used for any authorization decision here, only display, and both
-    # already appear in this service's own logs today.
+    # see module docstring and config.py's landing_page_port), not a real
+    # XNAT deployment. sub/reports-count are safe to put in a URL (unlike
+    # the report identifiers themselves - see the PHI-adjacent note
+    # above): neither is used for any authorization decision here, only
+    # display, and both already appear in this service's own logs today.
     sub = claims.get("sub") or ""
     url = (
         f"{settings.landing_base_url}/"

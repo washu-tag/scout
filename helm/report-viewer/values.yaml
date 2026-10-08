@@ -69,32 +69,26 @@ resources:
     cpu: 2
     memory: 4Gi
 
-# Issue #739: search-detail toolbar actions, rendered into a
-# ConfigMap and mounted at /app/action-catalog/catalog.yaml (matches
-# scout_report_viewer.config.Settings.action_catalog_path's default).
-# explainSearch/downloadCsv are objects, not plain booleans, specifically
-# so a site can override just `enabled` or `requiredRole` on one of them
-# (Helm deep-merges map values) without needing to fully restate the
-# other, or anything in `custom` - unlike `custom`, which is a list and
-# therefore replaced wholesale by any site override, not merged.
+# Search-detail toolbar actions, rendered into a ConfigMap and mounted at
+# /app/action-catalog/catalog.yaml. explainSearch/downloadCsv are objects,
+# not plain booleans, so a site can override just `enabled` or
+# `requiredRole` on one without restating the other (Helm deep-merges map
+# values; `custom`, being a list, is replaced wholesale by any override).
+# Full authoring guide, including what invokeToken/assertionKey do and
+# don't prove: docs/source/customize/report-viewer-actions.md.
 actions:
   explainSearch:
     enabled: true
-    # Keycloak client role required to see this button, checked against
-    # the caller's resource_access.report-viewer.roles Bearer JWT claim
-    # (#739). Empty = visible to every authenticated user.
+    # Keycloak client role required to see this button. Empty = visible
+    # to every authenticated user.
     requiredRole: ''
   downloadCsv:
     enabled: true
     requiredRole: ''
   # Site-admin-authorable buttons - no report-viewer code change or image
-  # rebuild needed, just a values change + helm upgrade. Two shapes:
-  #
-  # actionType: open-url (default if omitted) - a static link. id/title/
-  # url required; weight falls back to actions.py's own field default if
-  # omitted; requiredRole gates the button behind that Keycloak client
-  # role (checked against the caller's resource_access.report-viewer.roles
-  # Bearer JWT claim, #739), same as any other action.
+  # rebuild needed, just a values change + helm upgrade. `client` actions
+  # can't be added this way - they need a handler already registered in
+  # the frontend, so there's structurally no values field for one.
   #
   #   custom:
   #     - id: pacs-viewer
@@ -103,46 +97,12 @@ actions:
   #       weight: 50
   #       requiredRole: report-viewer-admin
   #
-  # actionType: backend-call - the SPA POSTs the search's context to
-  # endpointUrl (a genuinely separate, independently deployed service -
-  # #595's "Apps" tier) and opens whatever result URL it returns.
-  # invokeToken, if set, is forwarded as X-Report-Viewer-Action-Token -
-  # proves only that the caller knows a shared secret, not who the end
-  # user is. assertionKey, if set, signs a short-lived
-  # X-Report-Viewer-User-Assertion JWT (sub/roles/search_id/action_id,
-  # 60s expiry) the target can verify independently - a DIFFERENT value
-  # from invokeToken on purpose, since invokeToken travels on every call
-  # and can leak via logs, while assertionKey never goes over the wire.
-  # Both are rendered into a Secret keyed by this entry's id
-  # (actions-secret.yaml), never into the action-catalog ConfigMap or any
-  # API response - see actions.py's load_invoke_token()/
-  # mint_user_assertion().
-  #
-  # What this does and doesn't prove: the NetworkPolicy above, the invoke
-  # token, and the assertion's signature together constrain who can reach
-  # endpointUrl and as whom (a fixed sub/roles, only within the 60s
-  # window). None of that additionally guarantees the specific `reports`
-  # list in the request body is the one report-viewer actually resolved -
-  # a party that has already obtained a valid assertion + invoke token
-  # could substitute a different reports list for the same identity. That
-  # gap is only reachable by bypassing report-viewer entirely (it's not
-  # exposed through the SPA's own UI, which never trusts client-supplied
-  # report ids - see invoke_search_action's visible_report_ids handling).
-  # A target wanting a stronger guarantee here needs to query Trino
-  # directly rather than trust this payload.
-  #
-  #   custom:
   #     - id: explore-xnat
   #       title: Explore in XNAT
   #       actionType: backend-call
   #       endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
   #       invokeToken: <matches xnat-explore-poc's invokeToken value>
   #       assertionKey: <matches xnat-explore-poc's assertionKey value>
-  #
-  # "client" actions (page-specific logic, e.g. Download CSV) can't be
-  # added this way at all - they need a handler already registered in
-  # report-viewer's own frontend, so there's structurally no values field
-  # for one.
   custom: []
 
 # Env vars injected as REPORT_VIEWER_* - see scout_report_viewer.config.Settings.

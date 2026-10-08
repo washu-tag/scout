@@ -197,9 +197,10 @@ is unaffected — it was already a way to get a token into this same Bearer path
 separate one.
 
 The `oauth2-proxy` client's own `groups-mapper` (`oidc-group-membership-mapper`,
-`claim.name=groups`) is untouched — other services still consume
-`X-Auth-Request-Groups` off the shared `oauth2-proxy-auth` middleware. Retiring groups
-here is report-viewer-local; the realm's group plumbing for everyone else is unaffected.
+`claim.name=groups`), `oidc_groups_claim`, and `X-Auth-Request-Groups` itself were all
+introduced by this effort for the groups-based design and never had any other consumer —
+confirmed by diff against `origin/main`, where none of the three existed at all. All
+three were removed outright rather than left in place once that was confirmed.
 
 ## Consequences
 
@@ -218,9 +219,7 @@ here is report-viewer-local; the realm's group plumbing for everyone else is una
 - report-viewer gains a dedicated Keycloak client (`report-viewer`, bearer-only, owns the
   role namespace) and a second protocol mapper on `report-viewer-audience`
   (`report-viewer-roles-mapper`); both are wholly owned by this feature and can be
-  removed without touching any of the SPA's other functionality. Nothing new is added to
-  the realm's shared `oauth2-proxy-auth` middleware or `groups-mapper` — those stay
-  exactly as every other service already depends on them.
+  removed without touching any of the SPA's other functionality.
 - Helm silently ignores unrecognized map keys, so a typo'd or stale gating key (e.g. a
   leftover `requiredGroup` from before this reversal) renders an *ungated* button rather
   than a config error, not a loud failure. Worth checking the rendered ConfigMap

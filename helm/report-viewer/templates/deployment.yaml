@@ -100,14 +100,14 @@ spec:
             # for uvicorn scratch space and any transient library writes.
             - name: tmp
               mountPath: /tmp
-            # Issue #739: action-catalog ConfigMap - see
-            # actions-configmap.yaml and scout_report_viewer/actions.py.
+            # Action-catalog ConfigMap - see actions-configmap.yaml and
+            # scout_report_viewer/actions.py.
             - name: action-catalog
               mountPath: /app/action-catalog
               readOnly: true
-            # Issue #739: invoke tokens, keyed by action id as separate
-            # files - see actions-secret.yaml and routes/searches.py's
-            # invoke lookup. Kept out of action-catalog entirely.
+            # Invoke tokens, keyed by action id as separate files - see
+            # actions-secret.yaml and routes/searches.py's invoke lookup.
+            # Kept out of action-catalog entirely.
             - name: action-tokens
               mountPath: /app/action-tokens
               readOnly: true

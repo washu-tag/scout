@@ -348,37 +348,6 @@
         "attributes": {
           "post.logout.redirect.uris": "https://$(env:server_hostname){{- range $albHosts }}##https://{{ . }}/*{{- end }}"
         },
-        {{- /* #739: real Keycloak group membership (scout-admin, scout-user),
-            not a client role - every group in this realm currently only
-            grants client roles (e.g. oauth2-proxy-user, identical for both
-            scout-admin and scout-user members, so useless for telling them
-            apart). Traefik's oauth2-proxy-auth middleware forwards this as
-            X-Auth-Request-Groups (oauth2-proxy already emits it whenever
-            set_xauthrequest=true and a "groups" claim exists - the claim
-            just never existed until now); report-viewer's auth.py reads it
-            on the oauth2-proxy-header path, gated by the same
-            X-Report-Viewer-Gateway secret that already protects the
-            username header from being forged by a direct client request or
-            an in-cluster pod bypassing Traefik. full.path=false so the
-            claim carries bare group names ("scout-admin"), not paths
-            ("/scout-admin"). */}}
-        "protocolMappers": [
-          {
-            "name": "groups-mapper",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-group-membership-mapper",
-            "consentRequired": false,
-            "config": {
-              "full.path": "false",
-              "claim.name": "groups",
-              "multivalued": "true",
-              "id.token.claim": "true",
-              "access.token.claim": "true",
-              "userinfo.token.claim": "true",
-              "introspection.token.claim": "true"
-            }
-          }
-        ],
         {{- /* report-viewer-audience: ALBs reuse this client, and report-viewer accepts
             the access token they forward only with aud=report-viewer. */}}
         "defaultClientScopes": [
@@ -1352,17 +1321,14 @@
           "roles": ["consoleAdmin"]
         }
       ],
-      {{- /* 739-bearer-token-spike: not a self-mapping either (report-viewer
-          is bearer-only, it never mints its own tokens) - oauth2-proxy and
-          open-webui are the two clients whose tokens report-viewer's Path 1
-          validates (the SPA's forwarded bearer, and OWUI's server-side tool
-          calls, respectively - both carry the report-viewer-audience scope
-          and therefore report-viewer-roles-mapper), so both need this grant
-          or the mapper finds zero roles despite the user genuinely holding
-          report-viewer-admin: confirmed live, the mapper, the role, and the
-          group composition were all already correct, and resource_access
-          stayed completely absent from every issued token - on either
-          client's tokens - until this grant was added. */}}
+      {{- /* Not a self-mapping either (report-viewer is bearer-only, it
+          never mints its own tokens) - oauth2-proxy and open-webui are the
+          two clients whose tokens report-viewer's Path 1 validates (the
+          SPA's forwarded bearer, and OWUI's server-side tool calls,
+          respectively - both carry the report-viewer-audience scope and
+          therefore report-viewer-roles-mapper), so both need this grant or
+          the mapper finds zero roles despite the user genuinely holding
+          report-viewer-admin. */}}
       "report-viewer": [
         {
           "client": "oauth2-proxy",
@@ -1470,24 +1436,22 @@
               "lightweight.claim": "false"
             }
           },
-          {{- /* 739-bearer-token-spike: delivers the caller's report-viewer
-              client roles (e.g. report-viewer-admin) into
-              resource_access.report-viewer.roles on any token this scope is
-              attached to. claim.name must be set explicitly to that literal
-              dotted path - this mapper has no hardcoded default location,
-              unlike what an earlier version of this comment assumed; Keycloak
-              builds the nested resource_access.<client>.roles structure from
-              dots in claim.name, the same way the realm's own built-in
-              "client roles" mapper does via a ${client_id} template, which
-              we can't use here since this is cross-client (oauth2-proxy's
-              token carrying report-viewer's roles, not its own). Every other
+          {{- /* Delivers the caller's report-viewer client roles (e.g.
+              report-viewer-admin) into resource_access.report-viewer.roles
+              on any token this scope is attached to. claim.name must be set
+              explicitly to that literal dotted path - this mapper has no
+              hardcoded default location; Keycloak builds the nested
+              resource_access.<client>.roles structure from dots in
+              claim.name, the same way the realm's own built-in "client
+              roles" mapper does via a ${client_id} template, which we can't
+              use here since this is cross-client (oauth2-proxy's token
+              carrying report-viewer's roles, not its own). Every other
               client-role mapper in this realm also sets claim.name
               explicitly - just to a flat custom "groups" claim instead, for
               their own self-referential role-sync (see jupyterhub's
-              client-roles mapper for that shape). Confirmed live: without
-              claim.name set, the Admin Console flags "Token Claim Name" as a
-              required field left empty, and the claim never appears on any
-              issued token - not a crash, just silently absent.
+              client-roles mapper for that shape). Without claim.name set,
+              the claim never appears on any issued token - not a crash,
+              just silently absent.
               id.token.claim is true (not just access.token.claim, unlike
               this mapper's typical shape elsewhere) because Path 1's bearer
               is oauth2-proxy's ID token, not its access token - the same

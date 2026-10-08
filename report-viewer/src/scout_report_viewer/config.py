@@ -44,23 +44,21 @@ class Settings(BaseSettings):
     oidc_jwks_url: str = ""
     oidc_audience: str = "report-viewer"
     oidc_issuer: str = ""
-    # Issue #739: client id whose resource_access.<id>.roles claim populates
-    # User.roles for role-gated action buttons. Must match the bearer-only
+    # Client id whose resource_access.<id>.roles claim populates User.roles
+    # for role-gated action buttons. Must match the bearer-only
     # "report-viewer" Keycloak client provisioned in scout-realm.json.
     oidc_roles_client_id: str = "report-viewer"
 
-    # Issue #739: path to the action-catalog YAML the Helm chart
-    # renders into a ConfigMap and mounts here (the same "core chips ride
-    # a chart-rendered ConfigMap mounted directly into the pod" delivery
-    # ADR 0034 uses for launchpad's own tiles). Missing file (e.g. local
-    # dev without the chart) falls back to actions.py's built-in defaults.
+    # Path to the action-catalog YAML the Helm chart renders into a
+    # ConfigMap and mounts here. Missing file (e.g. local dev without the
+    # chart) falls back to actions.py's built-in defaults.
     action_catalog_path: str = "/app/action-catalog/catalog.yaml"
 
-    # Issue #739: directory of per-action invoke-token files, one per
-    # backend-call action id, mounted from a Secret (actions-secret.yaml) -
-    # kept out of the action catalog itself, which lives in a ConfigMap
-    # with no access-control distinction from other config. A missing
-    # file just means that action has no token to forward.
+    # Directory of per-action invoke-token files, one per backend-call
+    # action id, mounted from a Secret (actions-secret.yaml) - kept out of
+    # the action catalog itself, which lives in a ConfigMap with no
+    # access-control distinction from other config. A missing file just
+    # means that action has no token to forward.
     action_tokens_path: str = "/app/action-tokens"
 
     # Header an authenticating proxy forwards the user's access token in (an AWS
