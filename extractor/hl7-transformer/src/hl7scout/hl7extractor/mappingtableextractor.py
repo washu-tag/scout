@@ -154,7 +154,7 @@ class MappingTableExtractor:
     def merge_to_dt(self, df: DataFrame):
         merge_df_into_dt_on_column(
             DeltaTable.forName(self.spark, self.table_name),
-            df,
+            df.coalesce(1),  # insert-only MERGEs write one file per source partition
             "primary_report_identifier",
             False,
         )
