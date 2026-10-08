@@ -8,8 +8,8 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "hl7_batcher_stalled_01",
-          "title": "HL7 batcher stalled (Kafka lag building)",
+          "uid": "hl7_batcher_exchange_failures_01",
+          "title": "HL7 batcher exchange failures",
           "condition": "C",
           "data": [
             {
@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "(sum(increase(camel_exchanges_total{integration=\"hl7-listener\", eventType=\"context\"}[30m])) > 0) and (sum(increase(camel_exchanges_total{integration=\"hl7-batcher\", eventType=\"context\"}[30m])) == 0)",
+                "expr": "sum(increase(camel_exchanges_failed_total{integration=\"hl7-batcher\", eventType=\"context\"}[30m]))",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -73,11 +73,10 @@
           ],
           "noDataState": "OK",
           "execErrState": "KeepLast",
-          "for": "10m",
           "annotations": {
-            "description": "The HL7 listener is receiving messages but the batcher has consumed none for 30 minutes. Kafka lag is building; un-batched messages risk aging out of retention before reaching MinIO bronze.",
-            "summary": "HL7 batcher not consuming while the listener is receiving (Kafka lag building, see runbook).",
-            "runbook_url": "https://github.com/washu-tag/scout/blob/main/ansible/roles/hl7-listener/README.md#hl7-batcher-stalled-kafka-lag-building",
+            "description": "The HL7 batcher failed to archive a batch to bronze in the last 30 minutes (longer than the default batching interval, so a stuck batcher keeps it firing), usually an S3 upload timeout or error against object storage. It retries the same batch until it succeeds, so repeated failures mean it is stuck: Kafka keeps the messages until its retention expires and consumer lag grows. Check object storage reachability and the batcher logs.",
+            "summary": "HL7 batcher exchange failures in the last 30 minutes (batches not yet archived to bronze, see runbook).",
+            "runbook_url": "https://github.com/washu-tag/scout/blob/main/ansible/roles/hl7-listener/README.md#hl7-batcher-exchange-failures",
             "URL": "[% server_hostname %]"
           },
           "labels": {},
