@@ -20,8 +20,6 @@ from urllib.parse import quote
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from jose import JWTError, jwt
-from jose.exceptions import ExpiredSignatureError
 
 from .config import settings
 
@@ -42,10 +40,6 @@ def _scrub_for_log(v):
     no Pydantic model), so CodeQL can't rule out a non-str reaching
     here - no isinstance branch, so there's no unsanitized path out."""
     return str(v).replace("\r", "").replace("\n", "")
-
-
-def _scrub_list_for_log(items):
-    return [_scrub_for_log(item) for item in items or []]
 
 
 # Two separate FastAPI apps, not one app on two ports: /invoke must be
@@ -85,14 +79,9 @@ async def invoke(
     request: Request,
     # Matches report-viewer's own ActionDescriptor.invoke_token forwarding
     # convention (see report_viewer/routes/searches.py's invoke_search_action).
+    # The only credential this endpoint checks - see config.py's invoke_token
+    # comment for why that's enough given this endpoint's network isolation.
     x_report_viewer_action_token: str | None = Header(default=None),
-    # A signed, short-lived claim of who this invoke is actually for -
-    # see actions.mint_user_assertion's docstring on report-viewer's side.
-    # Required, not optional: the bearer token above only proves the
-    # caller knows a shared secret, not who the end user is - an App that
-    # skips this has no way to independently catch a bug in
-    # report-viewer's own role-gating.
-    x_report_viewer_user_assertion: str | None = Header(default=None),
 ) -> dict:
     if (
         not settings.invoke_token
@@ -103,55 +92,6 @@ async def invoke(
         raise HTTPException(status_code=401, detail="unauthorized")
 
     body = await request.json()
-
-    if not settings.assertion_key or not x_report_viewer_user_assertion:
-        log.warning(
-            "invoke rejected: search_id=%s missing user assertion",
-            _scrub_for_log(body.get("search_id")),
-        )
-        raise HTTPException(status_code=401, detail="missing user assertion")
-    try:
-        claims = jwt.decode(
-            x_report_viewer_user_assertion,
-            settings.assertion_key,
-            algorithms=["HS256"],
-        )
-    except ExpiredSignatureError:
-        log.warning(
-            "invoke rejected: search_id=%s user assertion expired",
-            _scrub_for_log(body.get("search_id")),
-        )
-        raise HTTPException(status_code=401, detail="user assertion expired")
-    except JWTError:
-        log.warning(
-            "invoke rejected: search_id=%s invalid user assertion signature",
-            _scrub_for_log(body.get("search_id")),
-        )
-        raise HTTPException(status_code=401, detail="invalid user assertion")
-    # Catches a NAIVE replay - reusing a captured assertion+body wholesale
-    # against a different search without updating this field. Does NOT
-    # bind the request body to the assertion - see
-    # docs/source/customize/report-viewer-actions.md's "What this boundary
-    # does and doesn't guarantee" for the full gap and why it's only
-    # reachable by bypassing report-viewer entirely.
-    if claims.get("search_id") != body.get("search_id"):
-        log.warning(
-            "invoke rejected: assertion search_id=%s != request search_id=%s",
-            _scrub_for_log(claims.get("search_id")),
-            _scrub_for_log(body.get("search_id")),
-        )
-        raise HTTPException(status_code=401, detail="user assertion search_id mismatch")
-    if settings.required_role and settings.required_role not in (
-        claims.get("roles") or []
-    ):
-        log.warning(
-            "invoke rejected: search_id=%s sub=%s roles=%s lacks required role %s",
-            _scrub_for_log(body.get("search_id")),
-            _scrub_for_log(claims.get("sub")),
-            _scrub_list_for_log(claims.get("roles")),
-            settings.required_role,
-        )
-        raise HTTPException(status_code=403, detail="caller lacks required role")
 
     # The cohort itself (search_id/sql/username/reports/cohort_truncated -
     # see report-viewer's invoke_search_action) is otherwise unused - a
@@ -164,11 +104,11 @@ async def invoke(
     # a real (correctly-sized) cohort crossed the wire, not to make the
     # cohort's contents inspectable via Loki.
     reports = body.get("reports") or []
+    sub = body.get("username") or ""
     log.info(
-        "invoke: search_id=%s sub=%s roles=%s reports=%d truncated=%s",
+        "invoke: search_id=%s sub=%s reports=%d truncated=%s",
         _scrub_for_log(body.get("search_id")),
-        _scrub_for_log(claims.get("sub")),
-        _scrub_list_for_log(claims.get("roles")),
+        _scrub_for_log(sub),
         len(reports),
         _scrub_for_log(body.get("cohort_truncated")),
     )
@@ -178,7 +118,6 @@ async def invoke(
     # the report identifiers themselves - see the PHI-adjacent note
     # above): neither is used for any authorization decision here, only
     # display, and both already appear in this service's own logs today.
-    sub = claims.get("sub") or ""
     url = (
         f"{settings.landing_base_url}/"
         f"?reports={len(reports)}&user={quote(sub)}&t={int(time.time())}"

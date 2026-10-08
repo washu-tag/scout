@@ -114,7 +114,6 @@ actions:
       actionType: backend-call
       endpointUrl: http://your-app.<namespace>.svc.cluster.local:8000/invoke
       invokeToken: <a generated secret>
-      assertionKey: <a second, different generated secret>
       requiredRole: report-viewer-admin
 ```
 
@@ -123,7 +122,6 @@ actions:
 | `id`, `title`, `weight`, `requiredRole`  | —        | —       | Same as `open-url` above.                                                                                           |
 | `endpointUrl`                            | yes      | —       | POSTed to when the button is clicked. Must be `http(s)` with a real host.                                           |
 | `invokeToken`                            | no       | —       | Forwarded as `X-Report-Viewer-Action-Token`. See [Securing a backend-call target](#securing-a-backend-call-target). |
-| `assertionKey`                           | no       | —       | Signs `X-Report-Viewer-User-Assertion`. Must be a **different** value from `invokeToken` — see below.               |
 
 report-viewer POSTs `{search_id, sql, username, reports, cohort_truncated}` to
 `endpointUrl` — `reports` is the resolved cohort as
@@ -151,61 +149,43 @@ frontend, so it structurally can't be added through chart values.
 
 ## Securing a backend-call target
 
-`invokeToken` alone only proves your service is being called by *something* that knows
-the shared secret — it says nothing about which user the invocation is for, and
-therefore can't tell you whether report-viewer's own `requiredRole` check is actually
-working. Treat it as a bare minimum: reject any request that doesn't present the
-correct token, but don't stop there.
+`invokeToken` is the only credential report-viewer sends, and the only one your service
+needs to check — reject any request that doesn't present the correct value as
+`X-Report-Viewer-Action-Token`. It proves your service is being called by *something*
+that knows the shared secret, nothing more; it doesn't carry identity or role
+information, and your service isn't expected to independently re-verify either.
 
-If you set `assertionKey`, report-viewer also sends `X-Report-Viewer-User-Assertion`: a
-short-lived (60 second) JWT, signed with `assertionKey` using HS256, carrying:
+That's sufficient specifically because of where this endpoint should live, not because
+the secret itself is strong: **your invoke endpoint must be structurally unreachable
+except from report-viewer's own pod** — no public Ingress on that port, and a
+NetworkPolicy restricting ingress to report-viewer's pod selector (see
+`examples/xnat-explore-poc/helm/values.yaml`'s `networkPolicy` block for the pattern:
+namespace + pod-label selector, not just a namespace-wide allow). Given that, the
+realistic way `invokeToken` alone could be misused — it leaking in isolation (logs,
+traces, a support bundle) to someone who *doesn't* also have a network path to your
+endpoint — doesn't actually grant an attacker anything, since the secret alone can't
+open a connection NetworkPolicy wouldn't otherwise block. report-viewer already enforces
+`requiredRole` before ever calling your endpoint
+(`scout_report_viewer.actions.list_actions`); as long as your endpoint is genuinely
+unreachable from anywhere else, there's no independent check left for your service to
+usefully add.
 
-```text
-{ "sub": "<username>", "roles": ["<role>", ...], "search_id": "<id>", "action_id": "<id>", "iat": <unix ts>, "exp": <unix ts> }
-```
+**What this boundary does and doesn't guarantee.** The invoke token plus your
+NetworkPolicy together constrain *who* can reach your endpoint at all — they say nothing
+about the specific content of a given request beyond "this came from something that
+could reach this endpoint with the right token," which in a correctly-isolated
+deployment means report-viewer itself. Report-viewer resolves the `reports` list from
+Trino server-side before sending it (`invoke_search_action`'s `visible_report_ids`
+handling only ever narrows that resolved cohort, never adds to it) — this contract
+doesn't add any further verification on top of trusting that resolution. If your target
+needs a guarantee stronger than "report-viewer's own resolution and role check are
+correct and its invoke endpoint is genuinely network-isolated," query Trino directly
+instead of trusting this payload.
 
-Your service should verify, independently of anything report-viewer already checked:
-
-1. **Signature** — decode with your copy of `assertionKey`.
-2. **Expiry** — reject if `exp` has passed.
-3. **`search_id`** — must match the `search_id` in the request body. This catches a
-   *naive* replay (reusing a captured assertion+body wholesale against a different
-   search without updating this field) — it is not a guarantee against a deliberate one:
-   both the token's and the body's `search_id` are visible to, and settable by, anyone
-   who has captured a valid assertion, so this check alone doesn't stop someone from
-   keeping `search_id` matched while substituting a different `reports` list. Nothing in
-   this contract cryptographically binds the `reports` payload itself.
-4. **`roles`** — if your action should be restricted, check role membership here too,
-   rather than assuming report-viewer's `requiredRole` already enforced it. A hidden
-   button's URL is not itself a secret.
-
-**What this boundary does and doesn't guarantee.** Together, the NetworkPolicy
-restricting who can reach your service, the invoke token, and the assertion's signature
-constrain *who* can reach your endpoint and *as whom* (a fixed `sub`/`roles`, only within
-the 60-second window) — they do not additionally guarantee that the `reports` list in
-the request body is the one report-viewer actually resolved for that search. A party
-that has already obtained a valid assertion and invoke token could substitute a
-different `reports` list for the same identity. That gap is only reachable by bypassing
-report-viewer entirely — it is not exposed through the SPA's own UI, which never trusts
-client-supplied report ids (see `invoke_search_action`'s `visible_report_ids` handling,
-which only ever narrows report-viewer's own Trino-resolved cohort, never adds to it). If
-your target needs a stronger guarantee than "report-viewer's own resolution and role
-check are correct," query Trino directly instead of trusting this payload.
-
-`invokeToken` and `assertionKey` **must be different values**. `invokeToken` is
-transmitted on every call and can leak via logs, traces, or a support bundle;
-`assertionKey` never travels over the wire — only its signature output does, which
-can't be reversed to recover it. Reusing one value for both would let anyone who
-obtained the (much more exposed) invoke token forge whatever user or role claims they
-wanted, defeating the point of signing anything at all. Generate both as independent
-random secrets and store them as real Kubernetes Secrets on your service's side, not
-plain values or Deployment env literals — the same reasoning applies to your service as
-to report-viewer's own chart.
-
-`xnat-explore-poc` (`examples/xnat-explore-poc/`, including its `helm/` subdirectory) is a reference
-implementation of all of this: a deliberately fake backend that verifies the token, the
-assertion, and an optional required role, purely to demonstrate the contract. Read it
-before building a real target.
+`xnat-explore-poc` (`examples/xnat-explore-poc/`, including its `helm/` subdirectory) is a
+reference implementation of all of this: a deliberately fake backend that checks the
+shared token and nothing else, purely to demonstrate the contract. Read it before
+building a real target.
 
 ## Gating with `requiredRole`
 
@@ -218,10 +198,12 @@ report-viewer-scoped forwardAuth middleware injects a Keycloak-issued bearer on 
 request through the ingress, including the SPA's own, so a client cannot forge this
 claim by setting a header directly).
 
-That said, visibility is UX, not the authorization boundary: a `backend-call` action's
-own endpoint is a real, independently reachable service, and must enforce its own check
-too (see [Securing a backend-call target](#securing-a-backend-call-target)) — a hidden
-button's URL was never a secret in the first place.
+For `backend-call` actions specifically, this filter is also the actual enforcement
+point, not just UX: `invoke_search_action` re-runs the same `requiredRole` check before
+ever calling your endpoint, so a caller who can't see the button can't invoke it either.
+Your service doesn't need to re-check roles itself — see
+[Securing a backend-call target](#securing-a-backend-call-target) for what it should
+check instead.
 
 ## Popups from the chat embed
 

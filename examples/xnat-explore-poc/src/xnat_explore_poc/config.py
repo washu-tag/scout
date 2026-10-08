@@ -29,26 +29,15 @@ class Settings(BaseSettings):
 
     # Shared secret report-viewer sends as X-Report-Viewer-Action-Token,
     # sourced from a real Secret (helm/xnat-explore-poc/templates/secret.yaml).
-    # Proves only that the caller knows this value, not who the end user
-    # is - see assertion_key below for that. Still a single static shared
-    # secret, not real service-to-service auth (mTLS, mesh identity, OIDC
-    # client credentials) - replace before this leaves prototype status.
+    # The only thing this endpoint checks - sufficient because /invoke is
+    # structurally unreachable except from report-viewer's own pod (see
+    # port/landing_page_port above and this chart's networkpolicy.yaml), so
+    # the realistic way this secret alone could be misused requires network
+    # access a plain leaked value doesn't grant. report-viewer itself
+    # already enforces role-gating before ever calling this endpoint
+    # (scout_report_viewer.actions.list_actions) - this App doesn't
+    # independently re-verify identity or role.
     invoke_token: str = ""
-
-    # Verifies X-Report-Viewer-User-Assertion, a short-lived JWT signed
-    # with a key DIFFERENT from invoke_token - see
-    # scout_report_viewer.actions.mint_user_assertion's docstring (on
-    # report-viewer's side) for why. Required: an App that skips verifying
-    # this has no independent way to know who an invocation is actually
-    # for.
-    assertion_key: str = ""
-
-    # Keycloak client role the asserted caller must hold, or empty to skip
-    # this check (the assertion's signature/expiry are still verified
-    # either way). Matches whatever requiredRole this action is configured
-    # with on report-viewer's side - not read from anywhere automatically,
-    # since this App has no notion of report-viewer's action catalog.
-    required_role: str = ""
 
 
 settings = Settings()

@@ -17,8 +17,8 @@ for the full authoring guide this app implements.
 ## What it does
 
 `POST /invoke` receives `{search_id, sql, username, reports, cohort_truncated}` from
-report-viewer, verifies two independent secrets (below), logs the resolved cohort size,
-and returns `{"url": "..."}` pointing at this app's own self-hosted landing page, which
+report-viewer, verifies a shared secret (below), logs the resolved cohort size, and
+returns `{"url": "..."}` pointing at this app's own self-hosted landing page, which
 renders `Cohort of N reports received for <user>`. report-viewer then opens that URL the
 same way it opens any `open-url` action.
 
@@ -40,26 +40,22 @@ XNAT Ingress's COOP header changed just to prove the popup mechanism end to end.
 
 ## Security model
 
-`/invoke` requires two independent secrets, both forwarded by report-viewer per-call:
+`/invoke` requires one shared secret, forwarded by report-viewer on every call:
 
 - **`X-Report-Viewer-Action-Token`** (`invokeToken`) — a bearer token proving the caller
-  knows a shared secret. Says nothing about *which user* the call is for.
-- **`X-Report-Viewer-User-Assertion`** (`assertionKey`) — a short-lived (60s) HS256 JWT,
-  signed with a *different* secret, carrying `sub`, `roles`, `search_id`, `action_id`.
-  `/invoke` verifies its signature, expiry, that `search_id` matches the request body
-  (catches a naive replay against a different search, not a deliberate one — both
-  values are visible to anyone holding the assertion), and — if `REQUIRED_ROLE` is
-  set — that `roles` contains it. Neither this nor anything else here verifies that
-  the request body's `reports` list is what report-viewer actually resolved; see the
-  customize guide linked below for what this boundary does and doesn't guarantee.
+  knows a shared secret. Says nothing about *which user* the call is for, and this app
+  doesn't independently re-verify identity or role - report-viewer already enforces
+  `requiredRole` before ever calling this endpoint.
 
-`invokeToken` and `assertionKey` **must be different values** — see
-`src/xnat_explore_poc/config.py` and the customize guide's
+This is sufficient only because `/invoke` is structurally unreachable except from
+report-viewer's own pod - see "What it does" above and `helm/values.yaml`'s
+`networkPolicy` block. See the customize guide's
 [Securing a backend-call target](../../docs/source/customize/report-viewer-actions.md#securing-a-backend-call-target)
-section for why reusing one for both defeats the point of signing anything.
+section for the full reasoning, including what this boundary does and doesn't
+guarantee.
 
-Neither secret should be a plain values-driven env var in a real deployment; the Helm
-chart here sources both from a Kubernetes Secret (`templates/secret.yaml`), not
+This secret should not be a plain values-driven env var in a real deployment; the Helm
+chart here sources it from a Kubernetes Secret (`templates/secret.yaml`), not
 `values.yaml` directly.
 
 ## Configuration
@@ -72,8 +68,6 @@ All settings are env vars prefixed `XNAT_EXPLORE_POC_` (see `src/xnat_explore_po
 | `XNAT_EXPLORE_POC_LANDING_PAGE_PORT` | `8080`                  | Public landing-page listener.                                                  |
 | `XNAT_EXPLORE_POC_LANDING_BASE_URL`  | `http://localhost:8080` | This app's own public base URL — what `/invoke`'s response points at.          |
 | `XNAT_EXPLORE_POC_INVOKE_TOKEN`      | `""`                    | Must match report-viewer's `actions.custom[].invokeToken` for this action.     |
-| `XNAT_EXPLORE_POC_ASSERTION_KEY`     | `""`                    | Must match `actions.custom[].assertionKey`; must differ from the invoke token. |
-| `XNAT_EXPLORE_POC_REQUIRED_ROLE`     | `""`                    | Keycloak client role required in the assertion's `roles` claim, or empty to skip. |
 
 ## Local development
 
@@ -83,12 +77,10 @@ pip install -e '.[dev]'
 pytest -v
 
 XNAT_EXPLORE_POC_INVOKE_TOKEN=dev-token \
-XNAT_EXPLORE_POC_ASSERTION_KEY=dev-assertion-key \
 python -m xnat_explore_poc
 ```
 
-This starts both listeners (`:8000` for `/invoke`, `:8080` for the landing page). Note
-`invokeToken` and `assertionKey` differ, per the security model above.
+This starts both listeners (`:8000` for `/invoke`, `:8080` for the landing page).
 
 ## Deploying
 
@@ -102,9 +94,8 @@ Required `values.yaml` overrides:
 - `landingBaseUrl` — this app's own public base URL (bare, no trailing slash).
 - `landingPage.ingress.host` — the bare hostname (no scheme) to serve the landing page on.
 - `networkPolicy.reportViewerNamespace` — the namespace report-viewer is deployed into.
-- `invokeToken`, `assertionKey` — generate two independent random secrets.
-- `requiredRole` — optional, matching whatever `requiredRole` gates this action on
-  report-viewer's side.
+- `invokeToken` — generate a random secret, matching report-viewer's
+  `actions.custom[].invokeToken` for this action.
 
 Then add a matching entry to report-viewer's own `actions.custom` (see the customize
 guide linked above) pointing `endpointUrl` at this chart's in-cluster invoke service.

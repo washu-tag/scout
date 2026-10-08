@@ -74,8 +74,8 @@ resources:
 # not plain booleans, so a site can override just `enabled` or
 # `requiredRole` on one without restating the other (Helm deep-merges map
 # values; `custom`, being a list, is replaced wholesale by any override).
-# Full authoring guide, including what invokeToken/assertionKey do and
-# don't prove: docs/source/customize/report-viewer-actions.md.
+# Full authoring guide, including what invokeToken does and doesn't
+# prove: docs/source/customize/report-viewer-actions.md.
 actions:
   explainSearch:
     enabled: true
@@ -102,7 +102,6 @@ actions:
   #       actionType: backend-call
   #       endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
   #       invokeToken: <matches xnat-explore-poc's invokeToken value>
-  #       assertionKey: <matches xnat-explore-poc's assertionKey value>
   custom: []
 
 # Env vars injected as REPORT_VIEWER_* - see scout_report_viewer.config.Settings.

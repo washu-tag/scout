@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import httpx
 import pytest
-from jose import JWTError, jwt
 from pydantic import ValidationError
 
 from scout_report_viewer import actions
@@ -22,7 +21,6 @@ from scout_report_viewer.actions import (
     _load_catalog_from_file,
     list_actions,
     load_invoke_token,
-    mint_user_assertion,
 )
 from scout_report_viewer.config import settings
 
@@ -148,40 +146,6 @@ def test_load_invoke_token_reads_and_strips_file_contents(tmp_path, monkeypatch)
     monkeypatch.setattr(settings, "action_tokens_path", str(tmp_path))
     (tmp_path / "explore-xnat").write_text("super-secret\n")
     assert load_invoke_token("explore-xnat") == "super-secret"
-
-
-def test_mint_user_assertion_missing_key_returns_none(tmp_path, monkeypatch):
-    monkeypatch.setattr(settings, "action_tokens_path", str(tmp_path))
-    assert mint_user_assertion("explore-xnat", "carol", frozenset(), "s1") is None
-
-
-def test_mint_user_assertion_signs_expected_claims(tmp_path, monkeypatch):
-    monkeypatch.setattr(settings, "action_tokens_path", str(tmp_path))
-    (tmp_path / "explore-xnat.assertion-key").write_text("assertion-secret")
-
-    token = mint_user_assertion(
-        "explore-xnat", "carol", frozenset({"role-a", "role-b"}), "s1"
-    )
-    assert token is not None
-    claims = jwt.decode(token, "assertion-secret", algorithms=["HS256"])
-    assert claims["sub"] == "carol"
-    assert claims["roles"] == ["role-a", "role-b"]
-    assert claims["search_id"] == "s1"
-    assert claims["action_id"] == "explore-xnat"
-    assert claims["exp"] - claims["iat"] == 60
-
-
-def test_mint_user_assertion_uses_separate_key_from_invoke_token(tmp_path, monkeypatch):
-    """A leaked invoke_token must not be usable to forge an assertion -
-    the two live under different filenames and are independent values."""
-    monkeypatch.setattr(settings, "action_tokens_path", str(tmp_path))
-    (tmp_path / "explore-xnat").write_text("invoke-secret")
-    (tmp_path / "explore-xnat.assertion-key").write_text("assertion-secret")
-
-    token = mint_user_assertion("explore-xnat", "carol", frozenset(), "s1")
-    assert token is not None
-    with pytest.raises(JWTError):
-        jwt.decode(token, "invoke-secret", algorithms=["HS256"])
 
 
 # --- _load_catalog_from_file: the site-admin-facing actions.custom path ---
@@ -362,12 +326,10 @@ def catalog_with_backend_call_action(monkeypatch, tmp_path):
         ),
     ]
     monkeypatch.setattr(actions, "_CATALOG", demo_catalog)
-    # invoke tokens and assertion-signing keys live in a Secret-backed
-    # volume, keyed by action id - see actions.load_invoke_token()/
-    # mint_user_assertion().
+    # Invoke tokens live in a Secret-backed volume, keyed by action id -
+    # see actions.load_invoke_token().
     monkeypatch.setattr(settings, "action_tokens_path", str(tmp_path))
     (tmp_path / "explore-xnat-demo").write_text("test-invoke-token")
-    (tmp_path / "explore-xnat-demo.assertion-key").write_text("test-assertion-key")
     monkeypatch.setattr(httpx, "AsyncClient", _FakeAsyncClient)
     _FakeAsyncClient.last_call = None
     return demo_catalog
@@ -400,16 +362,7 @@ def test_invoke_backend_call_action_returns_url(
     call = _FakeAsyncClient.last_call
     assert call["headers"]["X-Report-Viewer-Action-Token"] == "test-invoke-token"
     assert call["json"]["search_id"] == search_id
-
-    # Bearer-path caller ("carol", via _bearer_headers with no roles) still
-    # gets a verifiable assertion - signed with a DIFFERENT key from the
-    # invoke token above.
-    assertion = call["headers"]["X-Report-Viewer-User-Assertion"]
-    claims = jwt.decode(assertion, "test-assertion-key", algorithms=["HS256"])
-    assert claims["sub"] == "carol"
-    assert claims["roles"] == []
-    assert claims["search_id"] == search_id
-    assert claims["action_id"] == "explore-xnat-demo"
+    assert call["json"]["username"] == "carol-keycloak-uuid"
     assert call["json"]["reports"] == [
         {"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"},
         {"primary_report_identifier": "s3://x/2", "accession_number": None},

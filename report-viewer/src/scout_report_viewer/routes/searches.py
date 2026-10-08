@@ -35,12 +35,7 @@ from fastapi import (
 )
 
 from .. import metrics, progress, trino_client
-from ..actions import (
-    ActionDescriptor,
-    list_actions,
-    load_invoke_token,
-    mint_user_assertion,
-)
+from ..actions import ActionDescriptor, list_actions, load_invoke_token
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
@@ -589,11 +584,6 @@ async def invoke_search_action(
     invoke_token = load_invoke_token(action.id)
     if invoke_token:
         headers["X-Report-Viewer-Action-Token"] = invoke_token
-    # Independent, verifiable proof of identity - see
-    # actions.mint_user_assertion's docstring.
-    user_assertion = mint_user_assertion(action.id, user.sub, user.roles, search_id)
-    if user_assertion:
-        headers["X-Report-Viewer-User-Assertion"] = user_assertion
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(

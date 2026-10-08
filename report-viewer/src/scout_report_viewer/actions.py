@@ -17,13 +17,11 @@ can't be added through values data alone.
 from __future__ import annotations
 
 import logging
-import time
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
 
 import yaml
-from jose import jwt
 from pydantic import BaseModel, ValidationError, model_validator
 
 from .config import settings
@@ -194,55 +192,25 @@ def load_invoke_token(action_id: str) -> str | None:
 
     Read from a Secret-backed volume (`actions-secret.yaml`), not the
     action catalog itself, which lives in a ConfigMap with no
-    access-control distinction from other config. This proves only that
-    the caller knows the shared secret, not who the end user is or what
-    they're authorized for - see `mint_user_assertion` for that.
+    access-control distinction from other config. Per-action rather than
+    a single shared value, so a leaked or compromised target can't be
+    used to call a different action's endpoint.
     """
     return _read_action_secret(action_id)
-
-
-def mint_user_assertion(
-    action_id: str, sub: str, roles: frozenset[str], search_id: str
-) -> str | None:
-    """Short-lived signed assertion of who this invoke is for, so a
-    backend-call target can independently verify identity and role
-    membership instead of trusting the bearer invoke token alone.
-
-    Signed with a SEPARATE per-action key (`<action_id>.assertion-key`),
-    never the invoke token itself: the invoke token is transmitted on
-    every call and can leak via logs/traces/support bundles, but a
-    signing key never travels over the wire - only its signature output
-    does, which can't be reversed to recover it. Reusing the invoke token
-    as the signing key would let anyone who obtained it forge whatever
-    claims they wanted, defeating the point.
-
-    None if this action has no assertion key configured - opt-in, so an
-    action that never sets one just doesn't get this header, same as
-    load_invoke_token. A 60s expiry keeps this a one-shot proof of "this
-    exact invocation is legitimate right now," not a general credential.
-    """
-    key = _read_action_secret(f"{action_id}.assertion-key")
-    if not key:
-        return None
-    now = int(time.time())
-    claims = {
-        "sub": sub,
-        "roles": sorted(roles),
-        "search_id": search_id,
-        "action_id": action_id,
-        "iat": now,
-        "exp": now + 60,
-    }
-    return jwt.encode(claims, key, algorithm="HS256")
 
 
 def list_actions(user_roles: frozenset[str]) -> list[ActionDescriptor]:
     """Role-filtered, weight-sorted actions visible to this caller.
 
-    Server-side filtering only - visibility is UX, not the authorization
-    boundary: a real backend-calling action must still independently
-    enforce the same role check at its own endpoint, since a hidden
-    action's URL is not itself a secret.
+    This is the authorization boundary for backend-call actions, not just
+    visibility - invoke_search_action re-runs this same filter before
+    invoking, so a hidden action's URL being guessable doesn't matter.
+    Downstream targets aren't expected to independently re-verify the
+    caller's role: the invoke token already scopes who can reach a given
+    target's endpoint at all (see `load_invoke_token`), and the real
+    barrier against a forged call is that the endpoint is structurally
+    unreachable except from report-viewer's own pod (NetworkPolicy, no
+    public Ingress) - see the target's own deployment docs.
     """
     visible = [
         d for d in _CATALOG if d.required_role is None or d.required_role in user_roles

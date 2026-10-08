@@ -12,7 +12,7 @@ spec:
   template:
     metadata:
       annotations:
-        # Roll the pod when invokeToken/assertionKey change - env values are only read at start.
+        # Roll the pod when invokeToken changes - env values are only read at start.
         checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
       labels:
         {{- include "xnat-explore-poc.labels" . | nindent 8 }}
@@ -56,15 +56,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "xnat-explore-poc.fullname" . }}
                   key: invokeToken
-            - name: XNAT_EXPLORE_POC_ASSERTION_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "xnat-explore-poc.fullname" . }}
-                  key: assertionKey
-            {{- if .Values.requiredRole }}
-            - name: XNAT_EXPLORE_POC_REQUIRED_ROLE
-              value: {{ .Values.requiredRole | quote }}
-            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

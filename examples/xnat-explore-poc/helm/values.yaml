@@ -72,21 +72,11 @@ landingBaseUrl: ''
 
 # Shared secret report-viewer sends as X-Report-Viewer-Action-Token
 # (rendered into a real Secret - see templates/secret.yaml). Must match
-# this action's actions.custom[].invokeToken on report-viewer's side.
+# this action's actions.custom[].invokeToken on report-viewer's side. The
+# only credential this app checks - see src/xnat_explore_poc/config.py's
+# invoke_token comment for why that's sufficient given the invoke port's
+# network isolation (networkPolicy above).
 invokeToken: ''
-
-# Verifies X-Report-Viewer-User-Assertion. Must match report-viewer's
-# actions.custom[].assertionKey for this action, and must be a DIFFERENT
-# value from invokeToken - see
-# scout_report_viewer.actions.mint_user_assertion's docstring for why.
-assertionKey: ''
-
-# Keycloak client role the asserted caller must hold, or empty to skip
-# this check (the assertion's signature/expiry are still verified either
-# way). Set this to whatever requiredRole gates this action on
-# report-viewer's side - not read from there automatically, since this
-# App has no notion of report-viewer's action catalog.
-requiredRole: ''
 
 resources:
   requests:

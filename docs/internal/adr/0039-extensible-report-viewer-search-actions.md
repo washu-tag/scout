@@ -110,60 +110,64 @@ Three `action_type` values, matched to what the SPA can do with a click:
   real XNAT integration work. Its own copy of the shared invoke token is likewise a real
   Secret, not a plain Deployment env value.
 
-### The invoke boundary independently verifies the caller, not just a shared secret
+### The invoke boundary relies on network isolation, not a signed assertion
 
 `X-Report-Viewer-Action-Token` proves only that the caller knows a shared secret — it
-says nothing about which end user the call is for or what they're authorized to do.
-Without more, a target that trusts it alone is fully dependent on report-viewer's own
-`requiredRole` check never having a bug, and anything that obtains the token (a log
-line, a captured trace, another compromised in-cluster workload) can invoke the action
-as any user with any cohort. This directly contradicts the framing above — "visibility
-is UX, not the authorization boundary... a real action must still independently enforce
-the same role check at its own endpoint" — unless the target actually has something to
-check.
+says nothing about which end user the call is for or what they're authorized to do. An
+earlier version of this design added a second mechanism on top of it:
+`X-Report-Viewer-User-Assertion`, a short-lived HS256 JWT signed with a separate
+per-action key, carrying `sub`/`roles`/`search_id` so a target could independently
+verify identity and role membership rather than trusting the shared secret alone. A PR
+reviewer raised that this amounted to report-viewer minting its own tokens, and asked
+whether Keycloak could do this instead (its "whole deal").
 
-So `invoke_search_action` also mints `X-Report-Viewer-User-Assertion`: a short-lived
-(60s) HS256 JWT carrying `sub`, `roles`, `search_id`, and `action_id` — enough for a
-target to independently check identity and role membership, plus a `search_id` match
-against the request body that catches a *naive* replay (reusing a captured
-assertion+body wholesale against a different search without updating that field). It is
-not a guarantee against a deliberate one: both the token's `search_id` and the body's are
-visible to, and settable by, anyone holding a captured assertion, so this alone doesn't
-stop someone from keeping `search_id` matched while substituting a different `reports`
-list. Nothing in this contract cryptographically binds `reports` — the actual cohort
-payload — to the assertion at all. That gap is reachable only by bypassing report-viewer
-entirely (network access to the target plus a valid invoke token plus a captured
-assertion); it is not exposed through report-viewer's own UI, which never trusts
-client-supplied report ids (`invoke_search_action`'s `visible_report_ids` only narrows
-report-viewer's own Trino-resolved cohort, never adds to it). A target wanting a
-stronger guarantee than "report-viewer's own resolution and role check are correct"
-needs to query Trino directly rather than trust this payload.
+Investigating that question changed the design rather than just answering it. Keycloak
+token exchange could replace the self-signing with a real Keycloak-issued token for
+identity/role — but it has no mechanism to embed `search_id` or bind the `reports`
+payload into an exchanged token either, since those are report-viewer-specific concepts
+Keycloak has no notion of; closing that gap would need a custom Keycloak SPI, which
+carries the same bug surface as the HS256 code it would replace. So token exchange
+wouldn't actually simplify anything — it would just relocate the same custom signing
+logic into Keycloak's process instead of report-viewer's.
 
-The signing key is a **second, separate** per-action secret
-(`<action_id>.assertion-key` in the same Secret-backed volume as the invoke token, set
-via `actions.custom[].assertionKey`) — never the invoke token itself. Reusing the invoke
-token as the signing key would mean anyone who obtained it (which travels on every
-`/invoke` call and can leak via logs or traces) could also forge arbitrary user/role
-claims, defeating the entire point of a signature the caller couldn't otherwise produce.
-The two secrets have different exposure profiles: the invoke token is transmitted on the
-wire on every call, while the assertion key never is — only its signature output goes
-out, which can't be reversed to recover the key. This protects against the invoke token
-leaking via an ordinary operational mistake; it does not protect against report-viewer's
-own pod or the Secret object itself being compromised, which exposes everything
-regardless of how many distinct values exist.
+That reframed the real question: given a bug in report-viewer's own role-derivation
+would be faithfully signed by *either* approach (a signature only proves the message
+wasn't altered in transit, not that its contents are correct), what is the assertion
+actually defending against? The answer is narrower than it first appears: specifically,
+someone who obtains the invoke token in isolation (it travels on every `/invoke` call
+and can leak via logs or traces) without also compromising report-viewer's own pod or
+process. But `/invoke` is already required to be structurally unreachable except from
+report-viewer's own pod — no public Ingress, NetworkPolicy restricted to report-viewer's
+pod selector (see the Known Limitations entry above). Reaching it at all requires a
+network identity NetworkPolicy already treats as report-viewer; a leaked secret alone
+grants no such path. And anyone who *does* have that network-level access would, in
+practice, also have access to any co-located assertion key, since both secrets are
+mounted from the same Kubernetes Secret on report-viewer's side. The scenario the
+assertion was built to catch doesn't survive contact with how this is actually deployed.
 
-`xnat-explore-poc`, as the reference implementation, actually verifies this rather than
-trusting the shared secret alone: signature and expiry via `assertionKey`, `search_id`
-bound to the current request, and an optional `requiredRole` membership check against
-the asserted `roles` — demonstrating what a real App is expected to do, not just what
-report-viewer sends.
+So the assertion mechanism (`mint_user_assertion`, `X-Report-Viewer-User-Assertion`, the
+`assertionKey`/`<action_id>.assertion-key` secret, and the target-side signature/expiry/
+`search_id`/role checks it required) was removed outright rather than replaced. The
+invoke token is the only credential now: it authenticates "a caller who can reach this
+endpoint at all," which — given a correctly-configured NetworkPolicy — already means
+report-viewer, and report-viewer already enforces `requiredRole` before ever calling out
+(`list_actions`, re-run inside `invoke_search_action`). A target isn't expected to
+independently re-verify role membership; there's no signed claim left to check it
+against, and nothing in the surviving threat model needs one. This directly answers the
+original review concern by elimination: report-viewer no longer mints any tokens at all,
+and token exchange — which only ever would have addressed the identity half, not the
+`reports`-binding gap — is no longer relevant either.
+
+`xnat-explore-poc`, as the reference implementation, demonstrates exactly this reduced
+contract: it checks the shared token and nothing else.
 
 ### Visibility gates on Keycloak client roles, delivered on a Bearer JWT
 
-`list_actions(user_roles)` filters the catalog server-side. Visibility is UX, not the
-authorization boundary (ADR 0034's framing, unchanged here) — a real `backend-call`
-action must still enforce its own check independently, since a hidden action's URL is
-not itself a secret.
+`list_actions(user_roles)` filters the catalog server-side. For `backend-call` actions
+this filter is also the actual enforcement point, not just UX — `invoke_search_action`
+re-runs it before ever calling the target's endpoint, so a caller who can't see a button
+can't invoke it either (see the invoke-boundary section above for why the target itself
+doesn't need to independently re-check).
 
 A dedicated bearer-only `report-viewer` Keycloak client (no OAuth flow of its own — it
 exists solely to own a role namespace) carries the `report-viewer-admin` client role.
@@ -232,21 +236,12 @@ three were removed outright rather than left in place once that was confirmed.
 - Cross-namespace sidecar discovery (ADR 0034's mechanism for third-party contributions)
   is not attempted here. A future need for actions contributed by a chart other than
   report-viewer's own would require that increment.
-- `X-Report-Viewer-User-Assertion` is still a symmetric shared secret under the hood,
-  same trust class as the invoke token — it protects against the invoke token leaking on
-  its own (logs, traces), not against report-viewer's pod or the Secret object itself
-  being compromised. It also doesn't bind the request body: `search_id` matching catches
-  a naive replay, not a deliberate one, and nothing here cryptographically ties the
-  `reports` payload to the assertion at all — see the invoke-boundary section above for
-  what this does and doesn't guarantee. Replacing it with Keycloak-minted tokens (token
-  exchange, verified against Keycloak's JWKS like Path 1 already is) is under active
-  discussion but not decided: a prior attempt at a similar pattern for a different
-  integration (XNAT auth, PR #410) was abandoned without merging, and token exchange
-  alone wouldn't close the request-body-binding gap either — standard token exchange has
-  no mechanism for embedding request-specific data like `search_id` into the issued
-  token, so that part of the gap is orthogonal to which party signs the token. Deferred
-  until an App needs a stronger guarantee than report-viewer's own operational
-  correctness.
+- The invoke boundary relies entirely on the shared invoke token plus network isolation
+  (see above) — it does not cryptographically bind the request body: nothing ties the
+  `reports` payload to a specific invocation beyond trusting report-viewer's own
+  resolution and that its invoke endpoint is genuinely unreachable except from
+  report-viewer's pod. An App needing a stronger guarantee than that needs to query
+  Trino directly rather than trust this payload.
 - `xnat-explore-poc` lives under `examples/xnat-explore-poc/` (source and chart together,
   the chart in a nested `helm/`), matching the `examples/` convention issue #595's own
   reference implementation (`examples/pluggable-app/`, a different Pluggable Apps tier —
@@ -315,6 +310,7 @@ change in OWUI's embedding, not in this repo.
 | Cross-namespace sidecar ConfigMap discovery (full ADR 0034 parity) | Deferred: every action today ships from report-viewer's own chart; no third-party-contribution use case yet to justify the RBAC/sidecar cost |
 | Client-side-only visibility (hide with CSS/JS, no server-side filter) | Rejected outright: the full descriptor, including any secret material, would round-trip to every browser regardless of role membership |
 | `invoke_token` as an `ActionDescriptor` field (`Field(exclude=True)`), catalog stays a single ConfigMap | Rejected: `exclude=True` only stops it leaving the process over the API — it would still sit in plaintext in the catalog ConfigMap, readable by anyone with ConfigMap-read RBAC in the namespace. Moved to a Secret-backed volume keyed by action id instead |
-| Sign `X-Report-Viewer-User-Assertion` with the same value as `invoke_token` | Rejected: collapses two distinct protections into one — anyone who obtains the invoke token (which travels on every call) could forge any assertion claims they wanted, making the "independent" verification not independent at all |
-| No user assertion at all; targets trust `username` in the request body | Rejected: an unsigned string proves nothing: no target-side way to catch a bug in report-viewer's own `requiredRole` check, and anything holding the invoke token can claim to be any user |
-| Keycloak-minted assertion via token exchange, instead of self-signed HS256 | Deferred, not rejected: closes the "this service mints its own tokens" concern for identity/role, but doesn't close the request-body-binding gap either (standard token exchange has no mechanism for embedding `search_id` into the issued token), and a prior attempt at a similar pattern elsewhere (PR #410, XNAT auth) was abandoned without merging. See the invoke-boundary Consequences entry above |
+| Self-signed HS256 `X-Report-Viewer-User-Assertion`, independent of `invoke_token` | Superseded: implemented first, removed after review revealed the scenario it defended against (the invoke token leaking in isolation, without report-viewer's own pod also being compromised) doesn't survive the invoke endpoint's required network isolation — see the invoke-boundary section above |
+| Sign the assertion with the same value as `invoke_token` (while the assertion above still existed) | Rejected: collapses two distinct protections into one — anyone who obtains the invoke token (which travels on every call) could forge any assertion claims they wanted, making the "independent" verification not independent at all |
+| No user assertion at all; targets trust the shared invoke token and an unsigned `username` in the request body | **Accepted**, after the assertion above was removed: sufficient specifically because the invoke endpoint is required to be unreachable except from report-viewer's own pod, and report-viewer already enforces `requiredRole` before ever calling out — see the invoke-boundary section above |
+| Keycloak-minted assertion via token exchange, instead of self-signed HS256 | Moot: investigating this revealed standard token exchange can't bind `search_id`/`reports` into the issued token either (the same gap, just relocated into a custom Keycloak SPI with the same bug surface) — that's what led to removing the assertion mechanism entirely rather than replacing it. A prior attempt at a similar pattern elsewhere (XNAT auth, PR #410) was abandoned without merging |
