@@ -63,7 +63,7 @@ hl7_batcher_enabled: true
 # zipped and uploaded to S3 in one O(n) pass. Sized
 # for the production feed (~200K messages/day, bursty): size dominates at volume (~1000-message
 # zips), the timeout flushes partial batches during lulls. poll_timeout_ms doubles as the Kafka
-# poll timeout, so keep it well under max.poll.interval.ms (5 min).
+# poll timeout, so keep it well under max.poll.interval.ms (15 min, set in the batcher route).
 hl7_batcher_max_poll_records: 1000
 hl7_batcher_poll_timeout_ms: 30000
 # Ceiling on how long a batch stays open. Without it a slow but unbroken feed never idles, so
