@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
  */
 class BatcherRouteTest extends CamelTestSupport {
 
-    private static final long RETRY_DELAY_MS = 300;
+    private static final long RETRY_DELAY_MS = 1000;
 
     @Override
     public void configureTest(TestExecutionConfiguration config) {
