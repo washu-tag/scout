@@ -362,7 +362,7 @@ def test_invoke_backend_call_action_returns_url(
     call = _FakeAsyncClient.last_call
     assert call["headers"]["X-Report-Viewer-Action-Token"] == "test-invoke-token"
     assert call["json"]["search_id"] == search_id
-    assert call["json"]["username"] == "carol-keycloak-uuid"
+    assert call["json"]["username"] == "carol"
     assert call["json"]["reports"] == [
         {"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"},
         {"primary_report_identifier": "s3://x/2", "accession_number": None},
