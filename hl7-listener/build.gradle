@@ -17,8 +17,8 @@ repositories {
 	mavenCentral()
 }
 
-def camelVersion = '4.22.0'
-def hapiVersion = '2.5.1'
+def camelVersion = '4.22.1'
+def hapiVersion = '2.6.0'
 
 // camel-spring-boot-dependencies is the harmonized BOM that reconciles the Camel and
 // Spring Boot dependency trees (it also manages the Spring Boot version), so we import
