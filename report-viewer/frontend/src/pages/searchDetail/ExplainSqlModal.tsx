@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import hljs from 'highlight.js/lib/core';
+import sqlLang from 'highlight.js/lib/languages/sql';
 import type { FilterState } from '../../api/client';
 import { Modal } from '../../Modal';
 import { MatchStats } from './MatchStats';
 import { hasEvidence } from './evidenceStats';
+import './sqlTheme.css';
+
+hljs.registerLanguage('sql', sqlLang);
 
 export function ExplainSqlModal(props: {
   explanation: string;
@@ -94,6 +99,10 @@ function SqlSection(props: {
   copied: boolean;
   onCopy: () => void;
 }) {
+  const highlighted = useMemo(
+    () => hljs.highlight(props.sql, { language: 'sql', ignoreIllegals: true }).value,
+    [props.sql],
+  );
   return (
     <details style={{ marginTop: '0.75rem' }}>
       <summary
@@ -121,17 +130,19 @@ function SqlSection(props: {
             paddingRight: '2.25rem',
             fontSize: '0.74rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-            // The model may emit the whole statement on one line; wrap, and break inside long regexes.
-            whiteSpace: 'pre-wrap',
+            // Keep the model's line layout; only a single-line statement is worth wrapping.
+            whiteSpace: props.sql.includes('\n') ? 'pre' : 'pre-wrap',
             overflowWrap: 'anywhere',
             overflowX: 'auto',
-            maxHeight: '18rem',
+            maxHeight: '24rem',
             overflowY: 'auto',
             margin: 0,
+            lineHeight: 1.45,
+            tabSize: 2,
           }}
-        >
-          {props.sql}
-        </pre>
+          // hljs escapes the source text, so this HTML is safe to inject.
+          dangerouslySetInnerHTML={{ __html: highlighted }}
+        />
         <button
           type="button"
           onClick={props.onCopy}
