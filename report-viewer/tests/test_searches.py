@@ -414,8 +414,6 @@ def test_rows_fall_back_when_trino_rejects_the_rewrite(
 
 
 def test_rows_do_not_retry_a_permission_denial(client, auth_headers, fake_trino):
-    """The splice reads only columns the query already reads, so the original
-    would be denied too."""
     fake_trino(_sample_columns(), _sample_rows())
     created = client.post(
         "/api/searches", json={"sql": _SQL_SCORED}, headers=auth_headers

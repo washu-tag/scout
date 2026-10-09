@@ -72,14 +72,10 @@ async def _run_with_fallback(
     scored: str,
     original: str,
 ) -> tuple[list[str], list[dict[str, Any]], bool]:
-    """Run `scored`, falling back to the sql the model actually wrote.
+    """Run `scored`, falling back to the sql the model wrote.
 
-    The splice cannot change which rows match, but it can name a column the
-    outer query does not expose, and a cohort must never be lost to a
-    reviewing aid. Retrying on most errors is deliberate: Trino does not
-    attribute failures well enough to tell ours from the model's, so the logs
-    say which it was afterwards instead. Denials and kills are not retried,
-    see `trino_client.is_retryable`.
+    Trino cannot say whether the splice or the model's sql failed, so most
+    errors retry; `trino_client.is_retryable` lists the ones that do not.
     """
     try:
         columns, rows = await run(scored)

@@ -55,7 +55,6 @@ def test_read_falls_back_without_highlights(auth_headers, fake_trino, monkeypatc
 
 
 def test_read_does_not_retry_a_permission_denial(auth_headers, fake_trino, monkeypatch):
-    """The plain read reads the same columns, so it would be denied too."""
     _with_highlights(monkeypatch)
     fake_trino.error("PERMISSION_DENIED")
     with TestClient(create_app()) as client:

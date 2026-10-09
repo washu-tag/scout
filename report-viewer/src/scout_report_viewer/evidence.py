@@ -138,16 +138,11 @@ def _blank_sections_in(node: exp.Expression) -> set[str]:
 
 
 def _blank_section_guard(node: exp.Expression) -> set[str]:
-    """Blank-section tests the query conjoins with `node`.
-
-    Read from the predicate rather than assumed: synthesising this guard
-    rejects rows the WHERE admitted, which read back as unexplained.
-    """
+    """Blank-section tests the query conjoins with `node`, never synthesised."""
     found: set[str] = set()
     child = node
     ancestor = node.parent
-    # Through a negation too: a veto sits under one, in the same conjunction as
-    # the positive it guards.
+    # A veto sits under its negation, in the same conjunction as its positive.
     while isinstance(ancestor, (exp.Paren, exp.And, exp.Not)) or (
         ancestor is not None and _compares_false(ancestor, child)
     ):
@@ -174,8 +169,7 @@ def _is_negated(node: exp.Expression) -> bool:
 
 
 def _compares_false(parent: exp.Expression, child: exp.Expression) -> bool:
-    """`x = FALSE`, `x IS FALSE`, `x <> TRUE` and their null-safe forms, which
-    negate without a NOT."""
+    """Whether `parent` negates `child` without a NOT, as `x IS FALSE` does."""
     if not isinstance(
         parent, (exp.EQ, exp.Is, exp.NullSafeEQ, exp.NEQ, exp.NullSafeNEQ)
     ):
@@ -387,8 +381,7 @@ def build_plan(sql: str) -> EvidencePlan | None:
         log.info("evidence: %d text predicates exceeds cap; skipping", len(seen))
         return None
 
-    # A veto holds only if every occurrence of the positive carries it; another
-    # arm can admit the row without it.
+    # A veto applies only if every occurrence of the positive carries it.
     for node, leaf in nodes:
         if leaf.negated:
             continue

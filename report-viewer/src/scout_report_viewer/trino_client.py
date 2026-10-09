@@ -41,8 +41,7 @@ class ClientDisconnected(Exception):
     """The HTTP caller went away while its query was still running."""
 
 
-# Failures a projection-only rewrite cannot cause: the plain query reads the
-# same columns, so it would be denied or stopped the same way.
+# Failures the added columns cannot cause, so a plain rerun would fail too.
 _NOT_RETRYABLE = frozenset(
     {
         "PERMISSION_DENIED",
