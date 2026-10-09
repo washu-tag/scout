@@ -27,6 +27,10 @@ vulnerabilities:
   # derby backs Spark's embedded metastore, which Scout doesn't use (remote
   # HMS); the advisory's 10.16.1.2 was never published to Maven Central
   - id: CVE-2022-46337 # derby 10.16.1.1
+  # lz4-java native-library extraction race in a shared java.io.tmpdir; needs
+  # another local user writing the same temp dir. The worker's tmpdir is the
+  # container's private /tmp, used only by its single spark user. Fixed in 1.11.4.
+  - id: CVE-2026-106451 # at.yawk.lz4:lz4-java 1.11.0
   # ReDoS in JLine's interactive built-in `grep` (a REPL command). Spark bundles
   # jline 3.29.0 for spark-shell and hadoop-client-runtime shades 3.9.0; the
   # headless worker never starts a REPL, and neither upstream has moved yet.
