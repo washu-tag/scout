@@ -80,7 +80,10 @@ traefik.ingress.kubernetes.io/router.middlewares: >
 
 Add this middleware stack to any new service ingress to enable authentication with OAuth2 Proxy.
 
-`oauth2-proxy-error` rewrites every 401 on the route, including 401s the service itself returns. The MinIO console's UI reads its API's JSON 401 to detect a lapsed login, so `minio.{server_hostname}/api/` has its own Ingress with `oauth2-proxy-auth` only.
+`oauth2-proxy-error` rewrites every 401 on the route, including the service's own, and serving that sign-in page deletes the user's oauth2-proxy session, logging them out of all of Scout. If a service's frontend handles its own 401s, put those API paths on a separate Ingress with `oauth2-proxy-auth` only:
+
+- MinIO console: `/api/` (the UI reads the JSON 401 to detect a lapsed login)
+- Open WebUI: `/api/`, `/ollama/`, `/openai/`, `/cache/` (the UI re-runs the OAuth login when its JWT is rejected)
 
 ## Components
 
