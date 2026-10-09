@@ -130,7 +130,9 @@ class FakeGitHub:
             ]
         if tail == "releases" and method == "POST":
             self.mutate("create-draft")
-            self.release = dict(id=303, tag_name=data["tag_name"], draft=True)
+            self.release = dict(
+                id=303, tag_name=data["tag_name"], draft=True, body=data.get("body", "")
+            )
             if self.tag is None:  # GitHub may create the source tag with the draft.
                 self.tag = {
                     "object": {"type": "commit", "sha": data["target_commitish"]}
@@ -173,6 +175,7 @@ class FakeOCI:
         self.events = []
         self.fail = None
         self.bad_signature = None
+        self.chart_revision = SHA
 
     def manifest(self, reference):
         return self.manifests[reference]
@@ -182,7 +185,9 @@ class FakeOCI:
             raise p.PromotionError("missing test tag")
         return self.tags.get(reference)
 
-    def verify(self, reference):
+    def verify(self, reference, *, revision=None):
+        if revision and revision != self.chart_revision:
+            raise p.PromotionError("chart signature revision mismatch")
         if self.bad_signature == reference:
             raise p.PromotionError("wrong key")
         self.verified.append(reference)

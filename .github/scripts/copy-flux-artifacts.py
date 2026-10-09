@@ -14,10 +14,8 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tooling/manifest"))
-from producer_plan import IMAGE_PATHS, context  # noqa: E402
+from producer_plan import IMAGE_PATHS, VENDOR_IMAGES, context  # noqa: E402
 from build_haul import parse_predecessor  # noqa: E402
-
-VENDOR_IMAGES = ("superset", "keycloak")
 
 
 def run(*args):

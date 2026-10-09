@@ -38,7 +38,10 @@ REGISTRIES = {
     "bundleDigest": "ghcr.io/washu-tag/manifests/scout",
     "configDigest": "ghcr.io/washu-tag/manifests/scout-config",
 }
-IMAGES = "hl7log-extractor hl7-transformer hl7-listener scout-notebook launchpad report-viewer keycloak-fragment-reconciler".split()
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "manifest"))
+from producer_plan import IMAGE_PATHS, VENDOR_IMAGES  # noqa: E402
+
+IMAGES = [name for name in IMAGE_PATHS if name not in VENDOR_IMAGES]
 CHARTS = {
     chart["chart-name"]: chart["chart-dir"]
     for chart in yaml.safe_load(
@@ -46,6 +49,7 @@ CHARTS = {
     )["jobs"]["publish-charts"]["strategy"]["matrix"]["include"]
 }
 VERSION = re.compile(r"[1-9][0-9]*\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
+DRAFT_INPUTS = "<!-- scout-release-inputs: "
 MAX_JSON = 16384
 MAX_MANIFEST = 1024 * 1024
 REQUIRED_JOBS = (
@@ -220,17 +224,21 @@ def workflow_id(api, repository, filename):
     return positive(item.get("id"))
 
 
-def run_attempt(api, repository, run_id, attempt, revision):
+def run_attempt(api, repository, run_id, attempt, revision, branch="main"):
     run_id, attempt = positive(run_id), positive(attempt)
     run = api.request(f"/repos/{repository}/actions/runs/{run_id}/attempts/{attempt}")
     expected = {
         "id": run_id,
         "run_attempt": attempt,
         "workflow_id": workflow_id(api, repository, "ci.yaml"),
-        "event": "push",
-        "head_branch": "main",
+        "head_branch": branch,
         "head_sha": revision,
     }
+    require(
+        run.get("event")
+        in (("push",) if branch == "main" else ("push", "workflow_dispatch")),
+        "workflow attempt event mismatch",
+    )
     for key, value in expected.items():
         require(
             type(run.get(key)) is type(value) and run[key] == value,
@@ -339,22 +347,51 @@ def evidence(api, repository, revision, producer_id, producer_attempt):
     return producer
 
 
-def find_evidence(api, repository, revision):
+def find_evidence(api, repository, revision, branch="main"):
     require(
         repository == REPOSITORY and REVISION.fullmatch(revision),
         "unsupported repository or revision",
     )
+    require(
+        bool(branch) and not any(c in branch for c in "\n\r"), "invalid release branch"
+    )
     workflow = workflow_id(api, repository, "ci.yaml")
+    event = "event=push&" if branch == "main" else ""
     candidates = pages(
         api,
-        f"/repos/{repository}/actions/workflows/{workflow}/runs?event=push&branch=main&head_sha={revision}",
+        f"/repos/{repository}/actions/workflows/{workflow}/runs?{event}branch={quote(branch, safe='')}&head_sha={revision}",
         "workflow_runs",
     )
-    candidates = [r for r in candidates if r.get("head_sha") == revision]
-    require(len(candidates) <= 1, "ambiguous producer runs for the release revision")
+    allowed_events = ("push",) if branch == "main" else ("push", "workflow_dispatch")
+    candidates = [
+        r
+        for r in candidates
+        if r.get("head_sha") == revision and r.get("event") in allowed_events
+    ]
+    if branch == "main":
+        require(
+            len(candidates) <= 1, "ambiguous producer runs for the release revision"
+        )
+    # GitHub lists newest first. A branch may need a fresh manual dispatch for
+    # the same stamped source; copy-flux-artifacts rechecks that selected attempt.
     if not candidates:
         raise Pending("producer run has not appeared")
     current = candidates[0]
+    if branch != "main":
+        run = run_attempt(
+            api,
+            repository,
+            positive(current.get("id")),
+            positive(current.get("run_attempt")),
+            revision,
+            branch,
+        )
+        return dict(
+            runId=run["id"],
+            runAttempt=run["run_attempt"],
+            revision=revision,
+            version="",
+        )
     return evidence(
         api,
         repository,
@@ -394,7 +431,7 @@ class OCI:
         )
         return value
 
-    def verify(self, reference):
+    def verify(self, reference, *, revision=None):
         command(
             [
                 "cosign",
@@ -402,6 +439,11 @@ class OCI:
                 "--key",
                 self.public_key,
                 "--insecure-ignore-tlog",
+                *(
+                    ["-a", "org.opencontainers.image.revision=" + revision]
+                    if revision
+                    else []
+                ),
                 reference,
             ],
             output_limit=4 * MAX_MANIFEST,
@@ -497,7 +539,7 @@ def verify_package(oci, producer):
     return documents
 
 
-def compatibility(oci, version, manifest):
+def compatibility(oci, version, manifest, revision):
     # Read the existing signed Hauler inventory; this is not a second component BOM.
     layers = manifest.get("layers", [])
     require(
@@ -543,7 +585,7 @@ def compatibility(oci, version, manifest):
         repository = "ghcr.io/washu-tag/charts/" + name
         sha = oci.resolve(repository + ":" + version)
         reference = repository + "@" + sha
-        oci.verify(reference)
+        oci.verify(reference, revision=revision)
         result["charts"][name] = reference
     return result
 
@@ -660,6 +702,103 @@ def existing_release(api, repository, version):
     return result
 
 
+def promotion_inputs(version, revision, producer_id, producer_attempt, boundary_sha):
+    require(VERSION.fullmatch(version), "release version must be X.Y.Z with major >= 1")
+    require(REVISION.fullmatch(revision), "invalid stamped source revision")
+    require(REVISION.fullmatch(boundary_sha), "invalid release boundary revision")
+    return dict(
+        version=version,
+        revision=revision,
+        runId=positive(producer_id),
+        runAttempt=positive(producer_attempt),
+        boundaryRevision=boundary_sha,
+    )
+
+
+def draft_inputs(release):
+    marker = re.findall(
+        re.escape(DRAFT_INPUTS) + r"(.*?) -->", release.get("body") or ""
+    )
+    require(len(marker) <= 1, "ambiguous draft release inputs")
+    return object_bytes(marker[0].encode()) if marker else None
+
+
+def resume_inputs(api, repository, version):
+    """Discover identities only; execute the selected revision to revalidate them.
+
+    A draft's small body marker survives an interrupted first asset upload. Once
+    present, the signed record is authoritative and must agree with that marker.
+    This bootstrap deliberately does not regenerate a record using current code.
+    """
+    require(repository == REPOSITORY, "release is limited to the upstream repository")
+    require(VERSION.fullmatch(version), "invalid release version")
+    existing = existing_release(api, repository, version)
+    if existing is None:
+        return {}
+    name = f"scout-release-{version}.yaml"
+    saved = release_assets(
+        api,
+        repository,
+        existing,
+        (name, f"scout-release-{version}.sigstore.json"),
+        starters=[],
+    )
+    inputs = draft_inputs(existing)
+    if name in saved:
+        record = object_bytes(saved[name])
+        require(
+            record.get("repository") == repository and record.get("version") == version,
+            "release record identity mismatch",
+        )
+        producer = record.get("producer", {})
+        require(
+            producer.get("revision") == record.get("revision"),
+            "release record source mismatch",
+        )
+        recorded = promotion_inputs(
+            version,
+            record.get("revision", ""),
+            producer.get("runId"),
+            producer.get("runAttempt"),
+            record.get("boundaryRevision", ""),
+        )
+        require(inputs in (None, recorded), "draft inputs conflict with release record")
+        inputs = recorded
+    require(inputs is not None, "existing release has no resumable promotion identity")
+    expected = promotion_inputs(
+        version,
+        inputs.get("revision", ""),
+        inputs.get("runId"),
+        inputs.get("runAttempt"),
+        inputs.get("boundaryRevision", ""),
+    )
+    require(inputs == expected, "draft release input mismatch")
+    require(
+        existing.get("draft") is True or name in saved,
+        "published release lacks a promotion record",
+    )
+    return expected
+
+
+def charts_to_package(oci, version, revision, *, resume=False):
+    """Never replace an existing signed compatibility chart during a retry."""
+    require(VERSION.fullmatch(version), "invalid release version")
+    require(REVISION.fullmatch(revision), "invalid stamped chart revision")
+    missing = {}
+    for name, directory in CHARTS.items():
+        repository = "ghcr.io/washu-tag/charts/" + name
+        sha = oci.resolve(repository + ":" + version, missing_ok=True)
+        if sha is None:
+            require(
+                not resume,
+                "recorded release chart is missing; restore its original digest",
+            )
+            missing[name] = directory
+        else:
+            oci.verify(repository + "@" + sha, revision=revision)
+    return missing
+
+
 def promote(
     api,
     oci,
@@ -672,8 +811,9 @@ def promote(
     boundary_sha,
     work_dir,
 ):
-    require(VERSION.fullmatch(version), "release version must be X.Y.Z with major >= 1")
-    require(REVISION.fullmatch(boundary_sha), "invalid release boundary revision")
+    inputs = promotion_inputs(
+        version, revision, producer_id, producer_attempt, boundary_sha
+    )
     producer = evidence(
         api,
         repository,
@@ -682,7 +822,7 @@ def promote(
         producer_attempt,
     )
     manifests = verify_package(oci, producer)
-    legacy = compatibility(oci, version, manifests["manifestDigest"])
+    legacy = compatibility(oci, version, manifests["manifestDigest"], revision)
     record = canonical(release_record(version, producer, legacy, boundary_sha))
     require(len(record) <= MAX_JSON, "release record exceeds size limit")
     work_dir = Path(work_dir)
@@ -692,6 +832,11 @@ def promote(
     record_path.write_bytes(record)
     names = (record_path.name, bundle_path.name)
     existing = existing_release(api, repository, version)
+    if existing:
+        require(
+            draft_inputs(existing) in (None, inputs),
+            "draft release inputs conflict with selected evidence",
+        )
     starters = []
     saved = (
         release_assets(api, repository, existing, names, starters=starters)
@@ -769,6 +914,7 @@ def promote(
                 "target_commitish": revision,
                 "name": "Scout v" + version,
                 "draft": True,
+                "body": DRAFT_INPUTS + json.dumps(inputs, sort_keys=True) + " -->",
             },
         )
     require(
@@ -829,7 +975,10 @@ def promote(
         and current_release.get("tag_name") == "v" + version,
         "release changed before publication",
     )
-    if not current_release.get("body"):
+    body = re.sub(
+        re.escape(DRAFT_INPUTS) + r".*? -->", "", current_release.get("body") or ""
+    ).strip()
+    if not body:
         notes = api.request(
             f"/repos/{repository}/releases/generate-notes",
             method="POST",
@@ -861,15 +1010,26 @@ def promote(
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser(
-        "charts", help="List compatibility chart names and source directories"
+    sub.add_parser("images", help="List release-versioned images from the CI catalog")
+    charts = sub.add_parser(
+        "charts", help="List compatibility charts still requiring packaging"
     )
+    charts.add_argument("--version")
+    charts.add_argument("--public-key", type=Path)
+    charts.add_argument("--revision")
+    charts.add_argument("--resume", action="store_true")
+    resume = sub.add_parser("resume", help="Discover a saved release's original inputs")
+    resume.add_argument("--repository", required=True)
+    resume.add_argument("--version", required=True)
+    resume.add_argument("--branch", required=True)
+    resume.add_argument("--github-output", type=Path, required=True)
     wait = sub.add_parser("wait")
     publish = sub.add_parser("promote")
     for item in (wait, publish):
         item.add_argument("--repository", required=True)
         item.add_argument("--revision", required=True)
-    wait.add_argument("--timeout", type=int, default=5400)
+    wait.add_argument("--branch", default="main")
+    wait.add_argument("--timeout", type=int, default=10800)
     wait.add_argument("--github-output", type=Path, required=True)
     publish.add_argument("--version", required=True)
     for name in (
@@ -881,18 +1041,47 @@ def main(argv=None):
     publish.add_argument("--public-key", type=Path, required=True)
     publish.add_argument("--work-dir", type=Path, required=True)
     args = parser.parse_args(argv)
-    if args.command == "charts":
-        for name, directory in CHARTS.items():
-            print(name, directory)
-        return 0
     try:
         api = GitHub()
+        if args.command == "images":
+            print("\n".join(IMAGES))
+            return 0
+        if args.command == "charts":
+            rows = CHARTS
+            if args.version:
+                require(
+                    args.public_key and args.public_key.is_file(),
+                    "public verification key is missing",
+                )
+                rows = charts_to_package(
+                    OCI(args.public_key),
+                    args.version,
+                    args.revision or "",
+                    resume=args.resume,
+                )
+            for name, directory in rows.items():
+                print(name, directory)
+            return 0
+        if args.command == "resume":
+            inputs = resume_inputs(api, args.repository, args.version)
+            require(
+                not inputs or args.branch == "main",
+                "an existing branch release cannot be republished",
+            )
+            if inputs:
+                with args.github_output.open("a") as output:
+                    for key, value in inputs.items():
+                        output.write(f"{key}={value}\n")
+                    output.write("exists=true\n")
+            return 0
         if args.command == "wait":
-            require(0 <= args.timeout <= 7200, "invalid build wait timeout")
+            require(0 <= args.timeout <= 10800, "invalid build wait timeout")
             deadline = time.monotonic() + args.timeout
             while True:
                 try:
-                    producer = find_evidence(api, args.repository, args.revision)
+                    producer = find_evidence(
+                        api, args.repository, args.revision, args.branch
+                    )
                     break
                 except (Pending, TransientRead):
                     require(

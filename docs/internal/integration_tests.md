@@ -100,8 +100,8 @@ For an infrastructure failure, rerun all jobs in the CI workflow so the new
 attempt builds and tests a complete candidate. Rerunning only failed jobs cannot
 reuse the previous attempt's artifacts. Manual `Post-Commit Tasks` runs accept
 `values=sops` or `values=plain`; the latter creates the values Secret directly in
-the cluster. Both modes run both Flux legs. The legacy `haul-version` artifact
-and Ansible deployment lane remain available during migration.
+the cluster. Both modes run both Flux legs. The Ansible deployment lane remains
+available during migration.
 
 The site artifact uses its own ephemeral signing key, independent of the Scout
 config key ([ADR 0031](adr/0031-gitops-deployment-base.md)). Both public keys are

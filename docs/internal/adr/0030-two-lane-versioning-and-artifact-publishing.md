@@ -210,12 +210,10 @@ checkouts, and the cutover removes that consumer. A leaner mode, where a
 release re-labels an existing already-tested build instead of rebuilding,
 is specified under Deferred work below.
 
-#### Proposed interim amendment: tested package promotion before Ansible cutover
+#### Interim decision: tested package promotion before Ansible cutover
 
-The on-prem release gate adds an exact-artifact promotion step while retaining
-the existing stamped source commit and dev reset for Ansible consumers. This
-amendment is proposed with the implementation; merging a fork proof does not
-establish that the upstream gate has run.
+The on-prem release gate promotes the exact tested artifacts while retaining
+the existing stamped source commit and dev reset for Ansible consumers.
 
 - A release selects the successful `ci.yaml` run **and attempt** for its stamped
   commit. Both core Flux ingest and authentication legs test the run's candidate
@@ -238,23 +236,27 @@ establish that the upstream gate has run.
   publish the Release last. The early release-please boundary tag is retained;
   only its expected move to the tested stamped commit is permitted, without
   force. A draft or alias alone is not a completed release.
-- Promotion and recovery serialize their registry/release mutations, including
-  release chart packaging. Across repositories the operations are not atomic.
-  `promote-release.yaml` revalidates the original attempt and resumes matching
-  partial work without restamping or repackaging. Existing conflicting assets,
-  aliases or tags fail closed. A complete matching release is a no-op; missing
-  or expired workflow evidence is not reconstructed from a green status.
-- This gate is for the upstream `main` published path. Non-main release
-  publication is rejected before stamping. Activation requires the integrated CI workflow on the upstream default branch
-  plus a successful tested-and-published build;
-  a fork-safe protocol harness does not replace that acceptance run. Artifact
-  retention and the independent signing-key trust root remain prerequisites.
+- Release runs serialize registry/release mutations. Across repositories the
+  operations are not atomic. Re-dispatching `release.yaml` with the same version
+  resumes partial publication using the original stamped source, CI attempt,
+  promotion tooling and chart catalog. Existing charts signed for that source
+  revision are reused;
+  conflicting assets, aliases or tags fail closed. A complete matching release
+  requires no publication changes, and recovery continues to the guarded dev
+  reset. Missing or expired workflow evidence is not reconstructed from a green
+  status.
+- This package gate is for upstream `main`. Maintenance branches retain the
+  Ansible release path: require one successful CI attempt, copy its tested image
+  candidate, and publish signed legacy images/charts without a main build-lane
+  package or signed release record. Release evidence must remain available
+  through publication and recovery. Verification uses an independently
+  provisioned signing-key trust root.
 
 The signed release record certifies the stated core config proof and identity
 of the co-produced haul. It does not certify haul restore, full dependency
 inventory, registry relocation, or a cold-cache disconnected installation.
 Retiring version files and the Ansible compatibility artifacts remains part of
-the later cutover, not this amendment.
+the later cutover.
 
 ### 4. The commit type is a message to operators
 

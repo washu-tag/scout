@@ -50,8 +50,8 @@ class LocalOCI(p.OCI):
     def resolve(self, reference, *, missing_ok=False):
         return super().resolve(self.local(reference), missing_ok=missing_ok)
 
-    def verify(self, reference):
-        return super().verify(self.local(reference))
+    def verify(self, reference, **kwargs):
+        return super().verify(self.local(reference), **kwargs)
 
     def blob(self, repository, descriptor):
         return super().blob(self.local(repository), descriptor)
@@ -143,6 +143,8 @@ def test_real_registry_signatures_exact_aliases_and_recovery(
                 "--use-signing-config=false",
                 "--tlog-upload=false",
                 "--yes",
+                "-a",
+                "org.opencontainers.image.revision=" + SHA,
                 reference,
             ]
         )
@@ -212,6 +214,10 @@ def test_real_registry_signatures_exact_aliases_and_recovery(
     with pytest.raises(p.PromotionError):
         promote(api, wrong, tmp_path)
     assert api.events == [] and wrong.mutations == []
+    # Signed charts from an earlier stamped source cannot be reused after a fix.
+    with pytest.raises(p.PromotionError):
+        p.charts_to_package(oci, VERSION, "c" * 40)
+    assert api.events == [] and oci.mutations == []
 
     # Re-signing after a failure before draft creation must work with a bundle
     # file left in the same work directory by the interrupted invocation.

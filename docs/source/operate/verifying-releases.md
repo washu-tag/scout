@@ -23,6 +23,10 @@ curl -fsSL -o cosign.pub https://raw.githubusercontent.com/washu-tag/scout/main/
 
 ## Verify the release record first
 
+For a release with a signed release record, use the steps below. For a legacy
+or maintenance-branch release, use
+[per-artifact verification](#releases-without-a-release-record).
+
 On the connected side, obtain the two assets from the selected published GitHub
 Release. Replace the example version with the version you intend to install:
 
@@ -84,6 +88,43 @@ site must configure its own trusted site signer; the ephemeral CI site key is
 not a production trust root. The release signature uses the modern Sigstore bundle format emitted by the
 pinned signer.
 
+## Releases without a release record
+
+Earlier releases and maintenance-branch releases have no signed release record.
+Verify each artifact you intend to use directly with the independently
+provisioned public key. Replace the example version with the published version
+of that artifact; older releases may not include all of these artifact types.
+If a release was meant to attach a record but it is missing, wait for the
+maintainer to complete publication.
+
+```bash
+release_version=4.2.0
+
+# A Helm chart
+cosign verify --key cosign.pub --insecure-ignore-tlog \
+  "ghcr.io/washu-tag/charts/hl7-transformer:${release_version}"
+
+# A container image
+cosign verify --key cosign.pub --insecure-ignore-tlog \
+  "ghcr.io/washu-tag/hl7log-extractor:${release_version}"
+
+# The config artifact
+cosign verify --key cosign.pub --insecure-ignore-tlog \
+  "ghcr.io/washu-tag/manifests/scout-config:${release_version}"
+
+# The haul manifest and bundle
+cosign verify --key cosign.pub --insecure-ignore-tlog \
+  "ghcr.io/washu-tag/manifests/scout-manifest:${release_version}"
+cosign verify --key cosign.pub --insecure-ignore-tlog \
+  "ghcr.io/washu-tag/manifests/scout:${release_version}"
+```
+
+A successful check prints the signed payload and exits `0`. Retain its digest
+and use a `repository@sha256:...` reference to pin the verified content. A missing
+signature or failed verification is not evidence that an artifact is safe to
+install. These checks verify artifact identity; they do not establish the
+exact CI attempt and test profile certified by a signed release record.
+
 ## Before upgrading or rolling back
 
 Record the installed config digest, release record and site-repo revision before
@@ -101,9 +142,9 @@ when a version cannot safely consume the current state. Resource prune guards
 reduce accidental deletion but do not replace backups.
 
 If release publication itself was interrupted, the maintainer can resume the
-original identity through `promote-release.yaml`. Operators should wait for the
-published Release with a valid signed record, rather than installing from a
-partial set of aliases.
+original identity by re-dispatching `release.yaml` with the same version.
+Operators should wait for the published Release and verify its signed record
+when present, rather than installing from a partial set of aliases.
 
 (why-keyed)=
 ## Why a key, not keyless

@@ -76,6 +76,7 @@ def catalog(workflow: Path = WORKFLOW) -> tuple[dict, dict, dict]:
 
 
 IMAGE_PATHS, CHART_PATHS, IMAGE_CHARTS = catalog()
+VENDOR_IMAGES = ("superset", "keycloak")
 # These inputs can change build/package contents outside any component directory.
 # Keep broad fail-safe coverage; an unnecessary rebuild is safer than stale carry.
 FULL_PATHS = (
@@ -272,7 +273,7 @@ def create(
         flags=flags,
         legacy={
             name + "-legacy": any(matches(p, IMAGE_PATHS[name]) for p in paths)
-            for name in ("superset", "keycloak")
+            for name in VENDOR_IMAGES
         },
         publish=publish,
     )
