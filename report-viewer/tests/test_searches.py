@@ -113,7 +113,9 @@ def test_create_search_missing_accession_number_is_400(
     assert "accession_number" in r.text
 
 
-def test_get_meta_returns_404_for_other_user(client, auth_headers, fake_trino):
+def test_get_meta_returns_404_for_other_user(
+    client, auth_headers, other_auth_headers, fake_trino
+):
     fake_trino(_sample_columns(), _sample_rows())
     r = client.post(
         "/api/searches",
@@ -124,15 +126,12 @@ def test_get_meta_returns_404_for_other_user(client, auth_headers, fake_trino):
     r1 = client.get(f"/api/searches/{dsid}", headers=auth_headers)
     assert r1.status_code == 200
 
-    r2 = client.get(
-        f"/api/searches/{dsid}",
-        headers={**auth_headers, "X-Auth-Request-Preferred-Username": "bob"},
-    )
+    r2 = client.get(f"/api/searches/{dsid}", headers=other_auth_headers)
     assert r2.status_code == 404
 
 
 def test_delete_by_non_owner_is_404_and_leaves_row_intact(
-    client, auth_headers, fake_trino
+    client, auth_headers, other_auth_headers, fake_trino
 ):
     fake_trino(_sample_columns(), _sample_rows())
     dsid = client.post(
@@ -141,10 +140,7 @@ def test_delete_by_non_owner_is_404_and_leaves_row_intact(
         headers=auth_headers,
     ).json()["id"]
 
-    r = client.delete(
-        f"/api/searches/{dsid}",
-        headers={**auth_headers, "X-Auth-Request-Preferred-Username": "bob"},
-    )
+    r = client.delete(f"/api/searches/{dsid}", headers=other_auth_headers)
     assert r.status_code == 404
 
     # Owner can still read it - the failed delete did not touch the row.

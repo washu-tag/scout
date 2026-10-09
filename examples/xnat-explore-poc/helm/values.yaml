@@ -1,0 +1,91 @@
+# Default values for xnat-explore-poc.
+# Issue #739 PoC: a totally fake report-viewer "backend-call" action
+# target. See src/xnat_explore_poc/app.py - no real XNAT integration.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/washu-tag/xnat-explore-poc
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ''
+fullnameOverride: ''
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+service:
+  port: 8000
+
+# The public landing page /invoke's response points at - see
+# src/xnat_explore_poc/app.py's module comment for why this is a separate
+# port/app from the internal one above, not just a second route on it.
+landingPage:
+  port: 8080
+  ingress:
+    className: traefik
+    # COOP: unsafe-none is required for this page to open as a popup from
+    # OWUI's sandboxed chat embed - see
+    # ansible/roles/traefik/tasks/main.yaml's security-headers-sameorigin-popups
+    # for why.
+    annotations:
+      traefik.ingress.kubernetes.io/router.middlewares: >-
+        kube-system-security-headers-sameorigin-popups@kubernetescrd
+    host: ''
+
+# The invoke port is in-cluster only - called by report-viewer's
+# backend-call proxy, never by a browser. The landing page port is public
+# instead (see landingPage above), and needs its own allow rule below.
+networkPolicy:
+  enabled: true
+  # Namespace report-viewer itself deploys into, so its pod can reach this
+  # service. Set to match the report-viewer deployment.
+  reportViewerNamespace: ''
+  # Narrows the namespace-level allow above to report-viewer's own pods -
+  # a bare namespaceSelector alone would let ANY pod in that namespace
+  # reach this service, not just report-viewer. Matches
+  # report-viewer.selectorLabels' app.kubernetes.io/name (stable
+  # regardless of Helm release name); only needs changing if
+  # report-viewer's chart is deployed with a nameOverride.
+  reportViewerPodSelector:
+    app.kubernetes.io/name: report-viewer
+  # Namespace Traefik itself runs in - allowed to reach the landing page
+  # port only (see networkpolicy.yaml).
+  traefikNamespace: kube-system
+
+# This service's own public base URL (e.g. https://xnat-explore-poc-demo.<host>,
+# matching landingPage.ingress.host below) - what /invoke's response points
+# at. Self-hosted rather than a real XNAT URL - see landingPage above.
+landingBaseUrl: ''
+
+# Shared secret report-viewer sends as X-Report-Viewer-Action-Token
+# (rendered into a real Secret - see templates/secret.yaml). Must match
+# this action's actions.custom[].invokeToken on report-viewer's side. The
+# only credential this app checks - see src/xnat_explore_poc/config.py's
+# invoke_token comment for why that's sufficient given the invoke port's
+# network isolation (networkPolicy above).
+invokeToken: ''
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

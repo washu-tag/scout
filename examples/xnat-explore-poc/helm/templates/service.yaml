@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "xnat-explore-poc.fullname" . }}
+  labels:
+    {{- include "xnat-explore-poc.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "xnat-explore-poc.selectorLabels" . | nindent 4 }}

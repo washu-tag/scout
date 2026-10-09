@@ -99,6 +99,20 @@
             "attributes": {}
           }
         ],
+        {{- /* 739-bearer-token-spike: gates report-viewer's role-gated action
+            buttons. Delivered into resource_access.report-viewer.roles via
+            the client-role mapper on the report-viewer-audience client
+            scope, not via this client's own tokens - report-viewer is
+            bearer-only, it never mints any. */}}
+        "report-viewer": [
+          {
+            "name": "report-viewer-admin",
+            "description": "Scout Admin Role for Report Viewer Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
         "jupyterhub": [
           {
             "name": "jupyterhub-admin",
@@ -255,6 +269,9 @@
           ],
           "launchpad": [
             "launchpad-admin"
+          ],
+          "report-viewer": [
+            "report-viewer-admin"
           ],
           "superset": [
             "superset_admin"
@@ -823,6 +840,27 @@
           "trino-audience"
         ]
       },
+      {{- /* 739-bearer-token-spike: bearer-only, never participates in any
+          OAuth flow of its own (no login, no redirect, no service account) -
+          it exists solely to own the report-viewer-admin client-role
+          namespace. report-viewer-audience's report-viewer-roles-mapper
+          (below) is what actually delivers that role into
+          resource_access.report-viewer.roles on whichever client's token
+          (oauth2-proxy's, forwarded via Traefik; or open-webui's, via the
+          OWUI tool path) the caller holds. */}}
+      {
+        "name": "report-viewer",
+        "description": "Report-viewer client - role namespace only, no login flow (bearer-only resource server)",
+        "enabled": true,
+        "clientId": "report-viewer",
+        "bearerOnly": true,
+        "publicClient": false,
+        "standardFlowEnabled": false,
+        "implicitFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "serviceAccountsEnabled": false,
+        "protocol": "openid-connect"
+      },
       {{- /* The fragment reconciler's principal (ADR 0037). Its three
           realm-management roles are granted on the service-account user under
           `users` below *and* put into this client's scope under
@@ -1283,6 +1321,24 @@
           "roles": ["consoleAdmin"]
         }
       ],
+      {{- /* Not a self-mapping either (report-viewer is bearer-only, it
+          never mints its own tokens) - oauth2-proxy and open-webui are the
+          two clients whose tokens report-viewer's Path 1 validates (the
+          SPA's forwarded bearer, and OWUI's server-side tool calls,
+          respectively - both carry the report-viewer-audience scope and
+          therefore report-viewer-roles-mapper), so both need this grant or
+          the mapper finds zero roles despite the user genuinely holding
+          report-viewer-admin. */}}
+      "report-viewer": [
+        {
+          "client": "oauth2-proxy",
+          "roles": ["report-viewer-admin"]
+        },
+        {
+          "client": "open-webui",
+          "roles": ["report-viewer-admin"]
+        }
+      ],
       {{- /* Not a self-mapping like the rest: these are Keycloak's own
           `realm-management` roles, placed in the reconciler's scope. Without
           this its token carries no admin roles and every write 403s while
@@ -1351,13 +1407,16 @@
           }
         ]
       },
-      {{- /* Adds aud=report-viewer to access tokens. Report-viewer validates
-          required-audience=report-viewer on inbound bearer tokens (ADR 0022).
-          Any client whose users call report-viewer needs this scope in
-          its default scopes. */}}
+      {{- /* Adds aud=report-viewer to access tokens, and to ID tokens too
+          (739-bearer-token-spike: oauth2-proxy's set_authorization_header
+          forwards the ID token, not the access token, so report-viewer's
+          Bearer-JWT path needs the audience there as well). Report-viewer
+          validates required-audience=report-viewer on inbound bearer
+          tokens (ADR 0022). Any client whose users call report-viewer
+          needs this scope in its default scopes. */}}
       {
         "name": "report-viewer-audience",
-        "description": "Adds aud=report-viewer to access tokens for clients calling report-viewer",
+        "description": "Adds aud=report-viewer to access and ID tokens for clients calling report-viewer",
         "protocol": "openid-connect",
         "attributes": {
           "include.in.token.scope": "false",
@@ -1371,10 +1430,45 @@
             "consentRequired": false,
             "config": {
               "included.custom.audience": "report-viewer",
-              "id.token.claim": "false",
+              "id.token.claim": "true",
               "access.token.claim": "true",
               "introspection.token.claim": "true",
               "lightweight.claim": "false"
+            }
+          },
+          {{- /* Delivers the caller's report-viewer client roles (e.g.
+              report-viewer-admin) into resource_access.report-viewer.roles
+              on any token this scope is attached to. claim.name must be set
+              explicitly to that literal dotted path - this mapper has no
+              hardcoded default location; Keycloak builds the nested
+              resource_access.<client>.roles structure from dots in
+              claim.name, the same way the realm's own built-in "client
+              roles" mapper does via a ${client_id} template, which we can't
+              use here since this is cross-client (oauth2-proxy's token
+              carrying report-viewer's roles, not its own). Every other
+              client-role mapper in this realm also sets claim.name
+              explicitly - just to a flat custom "groups" claim instead, for
+              their own self-referential role-sync (see jupyterhub's
+              client-roles mapper for that shape). Without claim.name set,
+              the claim never appears on any issued token - not a crash,
+              just silently absent.
+              id.token.claim is true (not just access.token.claim, unlike
+              this mapper's typical shape elsewhere) because Path 1's bearer
+              is oauth2-proxy's ID token, not its access token - the same
+              class of bug the audience mapper above already hit once. */}}
+          {
+            "name": "report-viewer-roles-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "usermodel.clientRoleMapping.clientId": "report-viewer",
+              "claim.name": "resource_access.report-viewer.roles",
+              "multivalued": "true",
+              "jsonType.label": "String",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true"
             }
           }
         ]

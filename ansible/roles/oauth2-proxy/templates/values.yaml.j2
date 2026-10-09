@@ -29,6 +29,14 @@ config:
     # Voila reads it to set X-Trino-User per ADR 0022; voila_runtime captures
     # it from the request and threads it into spawned kernels.
     set_xauthrequest = true
+    # Also emit a real Authorization: Bearer <id_token> header on /oauth2/auth
+    # responses. Safe to enable here unconditionally - Traefik's forwardAuth
+    # only copies a response header onto the real request if that specific
+    # middleware's authResponseHeaders lists it, so this has no effect on any
+    # ingress except the one(s) that explicitly opt in (see
+    # oauth2-proxy-auth-report-viewer below) - every other service's
+    # middleware still only requests the username header it already did.
+    set_authorization_header = true
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true
 {% endif %}
