@@ -30,6 +30,39 @@ def test_read_defaults_to_curated_not_epic_view(auth_headers, fake_trino):
     assert params == [["s3://b/1"]]
 
 
+def _with_highlights(monkeypatch) -> None:
+    from scout_report_viewer.routes import reports
+
+    async def expression(*_args):
+        return "CAST(ARRAY[] AS JSON)"
+
+    monkeypatch.setattr(reports, "_highlight_expression", expression)
+
+
+def test_read_falls_back_without_highlights(auth_headers, fake_trino, monkeypatch):
+    _with_highlights(monkeypatch)
+    fake_trino.error()
+    fake_trino(
+        ["primary_report_identifier"], [{"primary_report_identifier": "s3://b/1"}]
+    )
+    with TestClient(create_app()) as client:
+        r = _read(client, auth_headers, {"ids": ["s3://b/1"], "search_id": "s_1"})
+    assert r.status_code == 200, r.text
+    sent = [sql for sql, _ in fake_trino.calls]
+    assert len(sent) == 2
+    assert "ev_hits" in sent[0]
+    assert "ev_hits" not in sent[1]
+
+
+def test_read_does_not_retry_a_permission_denial(auth_headers, fake_trino, monkeypatch):
+    _with_highlights(monkeypatch)
+    fake_trino.error("PERMISSION_DENIED")
+    with TestClient(create_app()) as client:
+        r = _read(client, auth_headers, {"ids": ["s3://b/1"], "search_id": "s_1"})
+    assert r.status_code == 400, r.text
+    assert len(fake_trino.calls) == 1
+
+
 def test_read_epic_mrn_default_matches_raw_column_on_curated(auth_headers, fake_trino):
     # epic_mrn with no table -> reports_curated, matching the RAW column.
     fake_trino(
@@ -97,3 +130,16 @@ def test_query_from_file_no_validation_binds_all_ids(auth_headers, fake_trino):
     query_sql, params = fake_trino.calls[0]
     assert 'contains(?, "accession_number")' in query_sql
     assert params == [["ACC1"]]
+
+
+def test_hits_parse_from_either_json_encoding() -> None:
+    """A named ROW casts to a JSON object on some Trino versions and a
+    positional array on others; neither should lose the marks."""
+    from scout_report_viewer.routes.reports import _one_hit
+
+    obj = _one_hit({"field": "report_text", "pos": 4, "len": 6, "polarity": "negative"})
+    arr = _one_hit(["report_text", 4, 6, "negative"])
+    assert obj == arr
+    assert obj is not None and (obj.start, obj.end) == (3, 9)
+    assert _one_hit({"field": "x", "pos": 0, "len": 6}) is None
+    assert _one_hit("junk") is None

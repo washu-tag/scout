@@ -66,27 +66,6 @@ class CreateSearchRequest(BaseModel):
             "primary_report_identifier and accession_number."
         ),
     )
-    match_terms: list[str] | None = Field(
-        default=None,
-        description=(
-            "Clinical text terms (e.g. ['pulmonary embolism', 'PE']) "
-            "matched against report sections to produce the `excerpt` "
-            "field on each evidence row, and highlighted in the "
-            "row-expand viewer. Matched with word boundaries on the "
-            "SPA side. Anatomy/exam-type words belong in the SQL, "
-            "not here."
-        ),
-    )
-    match_diagnoses: list[str] | None = Field(
-        default=None,
-        description=(
-            "ICD codes (or code prefixes) matched against "
-            "`diagnosis_code` to populate `matched_diagnoses` on each "
-            "evidence row, and surfaced as chips in the row-expand "
-            "viewer. Examples: ['R91.1'], ['J18', 'R91']. UI/evidence "
-            "only; the SQL still drives inclusion."
-        ),
-    )
     sql_explanation: str | None = Field(
         default=None,
         description=(
@@ -150,6 +129,13 @@ class ReadReportsRequest(BaseModel):
         default="primary_report_identifier",
         description="Column to match `ids` against.",
     )
+    search_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional search to derive highlight offsets from. When set, the "
+            "response carries a `highlights` entry per row."
+        ),
+    )
     table: str | None = Field(
         default=None,
         description=(
@@ -160,9 +146,20 @@ class ReadReportsRequest(BaseModel):
     )
 
 
+class Highlight(BaseModel):
+    """One match of a search pattern, as offsets into the text in this response."""
+
+    field: str
+    start: int
+    end: int
+    polarity: str
+
+
 class ReadReportsResponse(BaseModel):
     columns: list[str]
     rows: list[dict[str, Any]]
+    # Parallel-indexed to `rows`; empty unless the request named a search.
+    highlights: list[list[Highlight]] = []
 
 
 class CreateSearchResponse(BaseModel):
@@ -172,13 +169,15 @@ class CreateSearchResponse(BaseModel):
     columns: list[str]
     sample: list[dict[str, Any]]
     # Parallel-indexed to `sample`. Each item is {id_column: value,
-    # excerpt: str | None, matched_diagnoses: list[{code, text}]}.
+    # matched_on, positive_evidence, negative_evidence, matched_diagnoses}.
     evidence: list[dict[str, Any]]
 
 
 class SearchMeta(BaseModel):
     id: str
     sql: str
+    # The sql as rewritten to project evidence. Empty when there is none.
+    executed_sql: str = ""
     owner_sub: str
     created_at: datetime
     match_terms: list[str] = []
