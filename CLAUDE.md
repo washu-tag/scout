@@ -249,6 +249,15 @@ detail from the ADR. Do not restate config keys, variable names, thresholds, or
 rationale; duplicated detail goes stale silently and crowds out the rest of this file. If
 a line is growing past one sentence, that is a sign the ADR should be read instead.
 
+## Code Comments
+
+Keep inline comments to a minimum in new code, even where the surrounding file is densely
+commented; let names and structure carry the meaning. Rationale belongs in docs, an ADR,
+or the commit message. A short comment stating a durable constraint the code cannot
+express is fine. Never write comments that narrate a change or a fix ("now X instead of
+Y", "changed because…") — the diff and commit message already carry that. When changing
+code, trim or streamline the existing comments in the area you touch.
+
 ## Common Modification Patterns
 
 - **Add an HL7 field** — parser in `extractor/hl7-transformer/`, then

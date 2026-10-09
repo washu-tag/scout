@@ -284,6 +284,9 @@ jobs:
       - name: 'Unit tests: keycloak event-listener'
         shell: bash
         run: cd keycloak/event-listener && ./gradlew test
+      - name: 'Unit tests: hl7-listener'
+        shell: bash
+        run: cd hl7-listener && ./gradlew test
   hl7-transformer-unit:
     runs-on: ubuntu-latest
     permissions:
@@ -393,7 +396,7 @@ jobs:
         run: cd sdk/python && pytest tests_contract/ -v
       - name: 'Unit tests: Voila chart helpers'
         shell: bash
-        run: cd helm/voila && PYTHONPATH=files pytest tests/ -v
+        run: pip install 'pyjwt[crypto]>=2.14,<3' && cd helm/voila && PYTHONPATH=files pytest tests/ -v
       - name: 'Install OPA'
         shell: bash
         # Pinned to the deployed OPA image (opa_image_tag in versions.yaml):

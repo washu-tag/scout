@@ -42,12 +42,19 @@ def generate_regex_with_ollama(
     model=None,
 ):
     """
-    Generate regex patterns for radiology report text search using Ollama.
+    Generate regex patterns for radiology report text search using an LLM.
+
+    Calls the OpenAI-compatible chat completions endpoint, which Ollama serves
+    and so does an OpenAI-compatible proxy such as LiteLLM. The proxy must
+    accept reasoning_effort or be configured to drop it.
 
     Args:
         user_query: Natural language description of what to search for (e.g., "brain mets")
-        ollama_url: Ollama API endpoint (defaults to OLLAMA_URL env var)
+        ollama_url: Endpoint base URL (defaults to OLLAMA_URL env var)
         model: Model name to use (defaults to OLLAMA_MODEL env var)
+
+    A proxy that requires a key reads it from the OLLAMA_API_KEY env var,
+    sent as a bearer token. Ollama needs none.
 
     Returns:
         Generated regex patterns (one per line) or error message
@@ -78,14 +85,17 @@ Search term: {user_query}
 JSON:"""
 
     try:
+        api_key = os.environ.get("OLLAMA_API_KEY")
         response = requests.post(
-            f"{ollama_url}/api/generate",
+            f"{ollama_url}/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"} if api_key else {},
             json={
                 "model": model,
-                "prompt": prompt,
+                "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0,
-                "stream": False,
-                "thinking": "low",
+                # Ollama turns thinking on by default for models that support it,
+                # which turns a short JSON answer into a minute-long one.
+                "reasoning_effort": "none",
             },
             timeout=60,
         )
@@ -93,10 +103,11 @@ JSON:"""
         result = response.json()
 
         # Extract generated text
-        resp_text = result["response"].strip()
+        resp_text = (result["choices"][0]["message"]["content"] or "").strip()
 
         if not resp_text:
-            return f"Error: Empty response from model. Available fields: {list(result.keys())}"
+            finish_reason = result["choices"][0].get("finish_reason")
+            return f"Error: Empty response from model (finish_reason: {finish_reason})"
 
         # Remove code block fencing if present
         if resp_text.startswith("```json"):
@@ -145,7 +156,7 @@ JSON:"""
             return f"Error: Could not parse JSON. Response: {resp_text[:300]}"
 
     except requests.exceptions.RequestException as e:
-        return f"Error connecting to Ollama: {str(e)}"
+        return f"Error connecting to the LLM: {str(e)}"
     except Exception as e:
         return f"Error generating regex: {str(e)}"
 
@@ -290,7 +301,7 @@ def _create_search_form(container, config=None):
                     f"""
                 <div style='background: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace;'>
                     <div style='font-weight: 600; margin-bottom: 4px;'>Request Details:</div>
-                    <div><b>URL:</b> {os.environ["OLLAMA_URL"]}/api/generate</div>
+                    <div><b>URL:</b> {os.environ["OLLAMA_URL"]}/v1/chat/completions</div>
                     <div><b>Model:</b> {os.environ["OLLAMA_MODEL"]}</div>
                     <div><b>Query:</b> {html_module.escape(query)}</div>
                 </div>

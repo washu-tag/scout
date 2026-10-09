@@ -115,7 +115,7 @@ launchpad_sidecar_image_tag: 2.11.2
 
 # Notebooks & Interactive Computing
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/ depName=jupyterhub
-jupyter_helm_chart_version: 4.3.5
+jupyter_helm_chart_version: 4.4.2
 
 # AI & ML
 # OWUI image tag = the OWUI chart's appVersion (the bootstrap Job discovers the
