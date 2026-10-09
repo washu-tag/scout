@@ -58,7 +58,9 @@ def test_create_search_happy_path(client, auth_headers, fake_trino):
     assert len(body["sample"]) == 3
     assert len(body["evidence"]) == 3
     for ev in body["evidence"]:
-        assert ev["excerpt"] is None
+        # No text predicate, so nothing explains these rows.
+        assert ev["matched_on"] is None
+        assert ev["positive_evidence"] is None
         assert ev["matched_diagnoses"] == []
         assert "primary_report_identifier" in ev
     assert "summary" not in body
@@ -310,3 +312,154 @@ def test_query_from_file_returns_rows_and_substitutes_cohort(
         {"modality": "CT", "n": 5},
         {"modality": "MR", "n": 3},
     ]
+
+
+def test_search_meta_exposes_the_executed_sql() -> None:
+    """The rewrite happens server-side, so the viewer cannot show what really
+    ran unless the metadata carries it."""
+    from datetime import datetime, timezone
+
+    from scout_report_viewer.routes.searches import _meta_from_row
+
+    row = {
+        "id": "s1",
+        "sql": (
+            "SELECT primary_report_identifier FROM reports_latest "
+            "WHERE REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)stroke')"
+        ),
+        "owner_sub": "u1",
+        "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+    }
+    assert _meta_from_row(row).executed_sql == ""
+    executed = _meta_from_row(row, with_executed=True).executed_sql
+    assert "ev_positive_span" in executed
+    assert executed.endswith(row["sql"][row["sql"].index("FROM reports_latest") :])
+
+
+def test_search_meta_executed_sql_is_empty_when_nothing_to_explain() -> None:
+    from datetime import datetime, timezone
+
+    row = {
+        "id": "s2",
+        "sql": "SELECT primary_report_identifier FROM reports_latest WHERE modality = 'MR'",
+        "owner_sub": "u1",
+        "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
+    }
+    from scout_report_viewer.routes.searches import _meta_from_row
+
+    assert _meta_from_row(row, with_executed=True).executed_sql == ""
+
+
+_SQL_SCORED = (
+    "SELECT primary_report_identifier, accession_number, modality FROM reports_latest "
+    "WHERE REGEXP_LIKE(COALESCE(report_section_impression, ''), '(?is)stroke')"
+)
+
+
+def test_rows_fall_back_when_the_rewrite_raises(
+    client, auth_headers, fake_trino, monkeypatch
+):
+    """The plan reads model-written SQL, so a shape it cannot handle must cost
+    the evidence and not the cohort."""
+    fake_trino(_sample_columns(), _sample_rows())
+    created = client.post(
+        "/api/searches", json={"sql": _SQL_SCORED}, headers=auth_headers
+    )
+    assert created.status_code == 201, created.text
+
+    import scout_report_viewer.evidence as evidence
+
+    def boom(_sql: str):
+        raise RuntimeError("unhandled sql shape")
+
+    # The plan itself, not with_evidence: the guard lives inside it.
+    monkeypatch.setattr(evidence, "build_plan", boom)
+    before = len(fake_trino.calls)
+    fake_trino(_sample_columns(), _sample_rows())
+    r = client.get(f"/api/searches/{created.json()['id']}/rows", headers=auth_headers)
+    assert r.status_code == 200, r.text
+    assert len(r.json()["rows"]) == 3
+    # One attempt only: the rewrite never ran, so there was nothing to retry.
+    sent = [sql for sql, _ in fake_trino.calls[before:]]
+    assert len(sent) == 1
+    assert "ev_source" not in sent[0]
+
+
+def test_rows_fall_back_when_trino_rejects_the_rewrite(
+    client, auth_headers, fake_trino
+):
+    """Projection-only, but it can still name a column the outer query does
+    not expose."""
+    fake_trino(_sample_columns(), _sample_rows())
+    created = client.post(
+        "/api/searches", json={"sql": _SQL_SCORED}, headers=auth_headers
+    )
+    assert created.status_code == 201, created.text
+
+    before = len(fake_trino.calls)
+    fake_trino.error()
+    fake_trino(_sample_columns(), _sample_rows())
+    r = client.get(f"/api/searches/{created.json()['id']}/rows", headers=auth_headers)
+    assert r.status_code == 200, r.text
+    assert len(r.json()["rows"]) == 3
+    sent = [sql for sql, _ in fake_trino.calls[before:]]
+    # Scored first, then the model's own sql once Trino rejected it.
+    assert len(sent) == 2
+    assert "ev_source" in sent[0]
+    assert "ev_source" not in sent[1]
+
+
+def test_rows_do_not_retry_a_permission_denial(client, auth_headers, fake_trino):
+    fake_trino(_sample_columns(), _sample_rows())
+    created = client.post(
+        "/api/searches", json={"sql": _SQL_SCORED}, headers=auth_headers
+    )
+    assert created.status_code == 201, created.text
+
+    before = len(fake_trino.calls)
+    fake_trino.error("PERMISSION_DENIED")
+    r = client.get(f"/api/searches/{created.json()['id']}/rows", headers=auth_headers)
+    assert r.status_code == 502, r.text
+    sent = [sql for sql, _ in fake_trino.calls[before:]]
+    assert len(sent) == 1
+    assert "ev_source" in sent[0]
+
+
+def test_create_falls_back_when_the_rewrite_raises(
+    client, auth_headers, fake_trino, monkeypatch
+):
+    """The sample query takes the same path as /rows, so it needs the same
+    guarantee: no evidence rather than no search."""
+    import scout_report_viewer.evidence as evidence
+
+    def boom(_sql: str):
+        raise RuntimeError("unhandled sql shape")
+
+    monkeypatch.setattr(evidence, "build_plan", boom)
+    fake_trino(_sample_columns(), _sample_rows())
+    r = client.post("/api/searches", json={"sql": _SQL_SCORED}, headers=auth_headers)
+    assert r.status_code == 201, r.text
+    assert len(r.json()["sample"]) == 3
+    sent = [sql for sql, _ in fake_trino.calls]
+    assert len(sent) == 1
+    assert "ev_source" not in sent[0]
+    for ev in r.json()["evidence"]:
+        assert ev["matched_on"] is None
+
+
+def test_create_falls_back_when_trino_rejects_the_rewrite(
+    client, auth_headers, fake_trino
+):
+    """Same guarantee as /rows: the sample query retries what the model wrote."""
+    fake_trino.error()
+    fake_trino(_sample_columns(), _sample_rows())
+    r = client.post("/api/searches", json={"sql": _SQL_SCORED}, headers=auth_headers)
+    assert r.status_code == 201, r.text
+    assert len(r.json()["sample"]) == 3
+    sent = [sql for sql, _ in fake_trino.calls]
+    # Scored first, then the model's own sql once Trino rejected it.
+    assert len(sent) == 2
+    assert "ev_source" in sent[0]
+    assert "ev_source" not in sent[1]
+    for ev in r.json()["evidence"]:
+        assert ev["matched_on"] is None

@@ -17,7 +17,7 @@ Single-report reads go through POST /api/reports/read (see routes/reports.py).
 from __future__ import annotations
 
 import logging
-import re
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import httpx
@@ -36,6 +36,7 @@ from fastapi import (
 
 from .. import metrics, progress, trino_client
 from ..actions import ActionDescriptor, list_actions, load_invoke_token
+from ..evidence import EV_COLUMNS, with_evidence
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
 from ..config import settings
@@ -69,6 +70,39 @@ router = APIRouter(prefix="/api/searches", tags=["searches"])
 
 _LLM_SAMPLE_ROWS = 10
 
+
+async def _run_with_fallback(
+    run: Callable[[str], Awaitable[tuple[list[str], list[dict[str, Any]]]]],
+    scored: str,
+    original: str,
+) -> tuple[list[str], list[dict[str, Any]], bool]:
+    """Run `scored`, falling back to the sql the model wrote.
+
+    Trino cannot say whether the splice or the model's sql failed, so most
+    errors retry; `trino_client.is_retryable` lists the ones that do not.
+    """
+    try:
+        columns, rows = await run(scored)
+        return columns, rows, scored != original
+    except trino_client.ClientDisconnected:
+        raise
+    except Exception as exc:
+        if scored == original or not trino_client.is_retryable(exc):
+            raise
+        log.warning(
+            "scored sql failed at trino; retrying without evidence", exc_info=True
+        )
+        try:
+            columns, rows = await run(original)
+        except trino_client.ClientDisconnected:
+            raise
+        except Exception:
+            log.warning("the model's own sql failed too; the rewrite was not at fault")
+            raise
+        log.warning("the evidence rewrite was at fault; cohort loaded without it")
+        return columns, rows, False
+
+
 # Report-body columns never sent to the grid: too large for 50k-row payloads,
 # and the SPA fetches them per-row via /reports/read on expand. Shared by the
 # create-sample response and the full-cohort fetch.
@@ -94,10 +128,6 @@ def _assert_required_projections(columns: list[str]) -> None:
         )
 
 
-def _qualified_reports() -> str:
-    return f"{settings.trino_catalog}.{settings.trino_schema}.reports_curated"
-
-
 def _view_url(search_id: str) -> str:
     return f"{settings.external_url.rstrip('/')}/spa/searches/{search_id}"
 
@@ -107,10 +137,13 @@ def _wrap_sql(sql: str) -> str:
     return sql.rstrip().rstrip(";")
 
 
-def _meta_from_row(r: dict[str, Any]) -> SearchMeta:
+def _meta_from_row(r: dict[str, Any], *, with_executed: bool = False) -> SearchMeta:
+    # Off by default: the list view shows no sql, so parsing every row is waste.
+    scored, rewritten = with_evidence(r["sql"]) if with_executed else ("", False)
     return SearchMeta(
         id=r["id"],
         sql=r["sql"],
+        executed_sql=scored if rewritten else "",
         owner_sub=r["owner_sub"],
         created_at=r["created_at"],
         match_terms=r.get("match_terms") or [],
@@ -142,10 +175,10 @@ async def create_search(
     store: SearchStore = Depends(get_store),
 ) -> CreateSearchResponse:
     """Save a SQL query as a search. No row materialization - fetches a
-    small sample for the LLM, and (if match_terms or match_diagnoses is
-    set) one additional small query against reports_curated to populate
-    per-row evidence (excerpt + matched_diagnoses). An empty `sample`
-    means an empty cohort; `GET /rows` reports the real total.
+    small sample for the LLM. Per-row evidence rides along on that sample:
+    the query is rewritten to project its own match evidence, so no extra
+    read. An empty `sample` means an empty cohort; `GET /rows` reports the
+    real total.
 
     Refinement: when the LLM wants to narrow a search, it writes a new
     `POST /searches` call with the original conditions plus the new
@@ -157,12 +190,21 @@ async def create_search(
     # Sample query doubles as SQL validation: errors surface here before
     # we persist anything. The LIMIT lives outside the saved sql so the
     # LLM's own LIMIT is respected on later /rows reads.
-    sample_sql = f"SELECT s.* FROM ({sql}) s LIMIT {_LLM_SAMPLE_ROWS}"
+    scored_sql, _ = with_evidence(sql)
+    limit = f" s LIMIT {_LLM_SAMPLE_ROWS}"
     try:
-        with metrics.time_trino("create_sample_query"):
-            # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            columns, sample_rows = await trino_client.execute(sample_sql, user=user.sub)
+
+        async def run_sample(query: str) -> tuple[list[str], list[dict[str, Any]]]:
+            with metrics.time_trino("create_sample_query"):
+                # safe: LLM-authored SQL wrapped as subquery, OPA is the AuthZ boundary
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                return await trino_client.execute(query, user=user.sub)
+
+        columns, sample_rows, _ = await _run_with_fallback(
+            run_sample,
+            f"SELECT s.* FROM ({scored_sql}){limit}",
+            f"SELECT s.* FROM ({sql}){limit}",
+        )
     except Exception as exc:
         log.exception("trino sample query failed")
         raise HTTPException(
@@ -172,88 +214,33 @@ async def create_search(
     _assert_required_projections(columns)
     id_column = "primary_report_identifier"
 
-    sample_extras: dict[str, dict[str, Any]] = {}
-    if body.match_terms or body.match_diagnoses:
-        sample_ids = [
-            str(r.get(id_column)) for r in sample_rows if r.get(id_column) is not None
-        ]
-        if sample_ids:
-            col_q = quote_ident(id_column)
-            extras_sql = (
-                f"SELECT {col_q} AS _id, "
-                f"report_section_impression, report_section_findings, "
-                f"report_text, diagnoses "
-                f"FROM {_qualified_reports()} "
-                f"WHERE contains(?, {col_q})"
-            )
-            try:
-                with metrics.time_trino("sample_text_fetch"):
-                    _cols, ex_rows = await trino_client.execute(
-                        extras_sql, user=user.sub, params=[sample_ids]
-                    )
-                for er in ex_rows:
-                    key = er.get("_id")
-                    if key is not None:
-                        sample_extras[str(key)] = er
-            except Exception:
-                # Evidence is a nice-to-have; carry on without it.
-                log.exception("sample-text fetch failed (non-fatal)")
-
-    # \b boundaries so short tokens like "PE" don't match in "pectoralis".
-    match_pattern = None
-    if body.match_terms:
-        atoms = [re.escape(t.strip()) for t in body.match_terms if t and t.strip()]
-        if atoms:
-            match_pattern = re.compile(r"(?is)\b(" + "|".join(atoms) + r")\b")
-
-    # Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
-    dx_prefixes: list[str] = []
-    if body.match_diagnoses:
-        for d in body.match_diagnoses:
-            if d and d.strip():
-                dx_prefixes.append(d.strip().rstrip("%").lower())
-
-    _drop_cols = _HEAVY_COLS
+    # Evidence comes from the query's own predicates, evaluated by Trino in the
+    # sample query above, so no extra read and no whole-cohort count.
+    _drop_cols = _HEAVY_COLS | set(EV_COLUMNS)
     sample: list[dict[str, Any]] = []
     evidence: list[dict[str, Any]] = []
     for r in sample_rows:
-        row_out = {k: v for k, v in r.items() if k not in _drop_cols}
-        ev: dict[str, Any] = {
-            id_column: r.get(id_column),
-            "excerpt": None,
-            "matched_diagnoses": [],
-        }
-        if body.match_terms or dx_prefixes:
-            key = str(r.get(id_column)) if r.get(id_column) is not None else None
-            extra = sample_extras.get(key, {}) if key else {}
-            merged = {**r, **extra}
-            if body.match_terms:
-                ev["excerpt"] = _extract_excerpt(merged, body.match_terms)
-            dxs = extra.get("diagnoses") or r.get("diagnoses") or []
-            matched_diagnoses: list[dict[str, str]] = []
-            for d in dxs if isinstance(dxs, list) else []:
-                if not isinstance(d, dict):
-                    continue
-                code = str(d.get("diagnosis_code") or "")
-                text = str(d.get("diagnosis_code_text") or "")
-                if not code:
-                    continue
-                code_lc = code.lower()
-                if dx_prefixes and any(code_lc.startswith(p) for p in dx_prefixes):
-                    matched_diagnoses.append({"code": code, "text": text})
-                elif match_pattern and match_pattern.search(f"{code} {text}"):
-                    matched_diagnoses.append({"code": code, "text": text})
-            ev["matched_diagnoses"] = matched_diagnoses
-        sample.append(row_out)
-        evidence.append(ev)
+        sample.append({k: v for k, v in r.items() if k not in _drop_cols})
+        codes = r.get("ev_dx_codes")
+        evidence.append(
+            {
+                id_column: r.get(id_column),
+                "matched_on": r.get("ev_source"),
+                "positive_evidence": r.get("ev_positive_span"),
+                "negative_evidence": r.get("ev_negative_span"),
+                "matched_diagnoses": (
+                    [c.strip() for c in codes.split(",")] if codes else []
+                ),
+            }
+        )
 
     search_id = new_search_id()
     stored = await store.insert_search(
         search_id=search_id,
         sql=sql,
         owner_sub=user.sub,
-        match_terms=body.match_terms or [],
-        match_diagnoses=body.match_diagnoses or [],
+        match_terms=[],
+        match_diagnoses=[],
         sql_explanation=body.sql_explanation or "",
         owui_chat_id=body.owui_chat_id or "",
     )
@@ -458,16 +445,7 @@ async def get_search_meta(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="search not found",
         )
-    return SearchMeta(
-        id=ds["id"],
-        sql=ds["sql"],
-        owner_sub=ds["owner_sub"],
-        created_at=ds["created_at"],
-        match_terms=ds.get("match_terms") or [],
-        match_diagnoses=ds.get("match_diagnoses") or [],
-        sql_explanation=ds.get("sql_explanation") or "",
-        owui_chat_id=ds.get("owui_chat_id") or "",
-    )
+    return _meta_from_row(ds, with_executed=True)
 
 
 @router.get("/{search_id}/actions", response_model=list[ActionDescriptor])
@@ -664,19 +642,25 @@ async def get_search_rows(
     source_sql = ds["sql"]
     uploaded_ids = ds.get("uploaded_ids")
     cap = settings.max_cohort_rows
+    # Derived per read, not stored, so the saved search stays a verbatim record
+    # of what the model wrote. Falls back to the original sql for any shape it
+    # cannot rewrite.
+    scored_sql, _ = with_evidence(source_sql)
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
-    all_sql = f"SELECT s.* FROM ({source_sql}) s LIMIT {cap + 1}"
+    limit = f" s LIMIT {cap + 1}"
     token = progress.valid_token(progress_id)
     progress_key = _progress_key(search_id, user.sub, token) if token else None
-    handle = trino_client.QueryHandle()
-    try:
+
+    async def run(query: str) -> tuple[list[str], list[dict[str, Any]]]:
+        # A fresh handle per attempt; a retry cannot reuse a cancelled one.
+        handle = trino_client.QueryHandle()
         with metrics.time_trino("rows_query"):
             # safe: source_sql is persisted validated SQL; ids bind via ?
-            columns, rows = await trino_client.cancel_on_disconnect(
+            return await trino_client.cancel_on_disconnect(
                 request.receive,
                 # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 trino_client.execute(
-                    all_sql,
+                    query,
                     user=user.sub,
                     params=[uploaded_ids] if uploaded_ids else None,
                     progress_key=progress_key,
@@ -684,11 +668,17 @@ async def get_search_rows(
                 ),
                 handle,
             )
+
+    try:
+        columns, rows, _ = await _run_with_fallback(
+            run,
+            f"SELECT s.* FROM ({scored_sql}){limit}",
+            f"SELECT s.* FROM ({source_sql}){limit}",
+        )
     except trino_client.ClientDisconnected:
         raise HTTPException(status_code=499, detail="client disconnected")
     except Exception as exc:
         raise _rows_query_error(exc, "rows")
-
     truncated = len(rows) > cap
     if truncated:
         rows = rows[:cap]
@@ -756,32 +746,3 @@ async def get_search_accessions(
             r["accession_number"] for r in rows if r.get("accession_number")
         ],
     }
-
-
-def _extract_excerpt(
-    row: dict[str, Any], terms: list[str], *, window: int = 80
-) -> str | None:
-    """Excerpt of ±window chars around the first match_terms hit in
-    this row's parsed report sections, falling back to report_text."""
-    if not terms:
-        return None
-    escaped = [re.escape(t.strip()) for t in terms if t and t.strip()]
-    if not escaped:
-        return None
-    pat = re.compile(r"(?is)\b(" + "|".join(escaped) + r")\b")
-    for col in ("report_section_impression", "report_section_findings", "report_text"):
-        text = row.get(col)
-        if not text or not isinstance(text, str):
-            continue
-        m = pat.search(text)
-        if not m:
-            continue
-        start = max(0, m.start() - window)
-        end = min(len(text), m.end() + window)
-        out = text[start:end].replace("\n", " ").strip()
-        if start > 0:
-            out = "…" + out
-        if end < len(text):
-            out = out + "…"
-        return out
-    return None
