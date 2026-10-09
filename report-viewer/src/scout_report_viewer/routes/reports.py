@@ -5,13 +5,17 @@ of one ID to /api/reports/read)."""
 
 from __future__ import annotations
 
+import json
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from .. import metrics, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
+from ..evidence import highlight_hits_expression
+from ..store import SearchStore, get_store
 from ..csv_upload import (
     assert_cohort_placeholder,
     dedup_ids,
@@ -21,6 +25,7 @@ from ..csv_upload import (
     substitute_cohort,
 )
 from ..models import (
+    Highlight,
     DEFAULT_READ_REPORTS_TABLE,
     EPIC_VIEW_TABLES,
     INPUT_ID_COLUMNS,
@@ -122,6 +127,7 @@ async def query_from_file(
 async def read_reports(
     body: ReadReportsRequest,
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> ReadReportsResponse:
     """Fetch full content of specific reports by ID. Backs
     `scout_get_reports` (LLM context) and the SPA row-expand panel
@@ -153,21 +159,112 @@ async def read_reports(
     column = body.id_column
     base = f"{settings.trino_catalog}.{settings.trino_schema}."
     table = base + table_name
-    # contains(?, col) - the driver doesn't expand list params into IN.
-    sql = f'SELECT * FROM {table} WHERE contains(?, "{column}")'
-    try:
+    # Highlight offsets ride along on this read. The standalone query had the
+    # same table and predicate, so it doubled the cost of opening a report.
+    hits_expression = await _highlight_expression(body.search_id, user, store)
+    ids = [[str(i) for i in body.ids]]
+
+    async def read(projection: str) -> tuple[list[str], list[dict[str, Any]]]:
+        # contains(?, col) - the driver doesn't expand list params into IN.
+        sql = f'SELECT {projection} FROM {table} WHERE contains(?, "{column}")'
         with metrics.time_trino("read_reports"):
             # safe: table from READ_REPORTS_TABLES allowlist, column from
             # INPUT_ID_COLUMNS allowlist, IDs bind via ?
             # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            columns, rows = await trino_client.execute(
-                sql, user=user.sub, params=[[str(i) for i in body.ids]]
-            )
-    except Exception as exc:
+            return await trino_client.execute(sql, user=user.sub, params=ids)
+
+    def failed(exc: Exception) -> HTTPException:
         log.exception("trino read_reports failed")
-        raise HTTPException(
+        return HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"trino query failed: {exc}",
         )
+
+    try:
+        columns, rows = await read(
+            f"*, {hits_expression} AS {_HITS_COLUMN}" if hits_expression else "*"
+        )
+    except Exception as exc:
+        if not hits_expression or not trino_client.is_retryable(exc):
+            raise failed(exc)
+        # Never lose a report to a reviewing aid.
+        log.exception("highlight projection failed; re-reading without it")
+        hits_expression = None
+        try:
+            columns, rows = await read("*")
+        except Exception as retry_exc:
+            raise failed(retry_exc)
+
+    highlights = _parse_hits(rows) if hits_expression else []
+    columns = [c for c in columns if c != _HITS_COLUMN]
+    for row in rows:
+        row.pop(_HITS_COLUMN, None)
+
     metrics.RESULT_ROWS.labels(op="read_reports").observe(len(rows))
-    return ReadReportsResponse(columns=columns, rows=rows)
+    return ReadReportsResponse(columns=columns, rows=rows, highlights=highlights)
+
+
+_HITS_COLUMN = "ev_hits"
+
+
+async def _highlight_expression(
+    search_id: str | None, user: User, store: SearchStore
+) -> str | None:
+    """The search's match-offset expression, or None.
+
+    Owner-scoped, so naming someone else's search yields nothing rather than
+    leaking its patterns.
+    """
+    if not search_id:
+        return None
+    try:
+        search = await store.get_search(search_id, owner_sub=user.sub)
+        return highlight_hits_expression(search["sql"]) if search else None
+    except Exception:
+        log.exception("highlight expression lookup failed (non-fatal)")
+        return None
+
+
+def _one_hit(h: Any) -> Highlight | None:
+    """One hit, however Trino encoded the row.
+
+    A named ROW casts to a JSON object on most versions and to a positional
+    array on others, so accept both rather than lose every mark to the shape.
+    Positions are 1-based; the frontend slices from 0.
+    """
+    if isinstance(h, dict):
+        field, pos, length, polarity = (
+            h.get("field"),
+            h.get("pos"),
+            h.get("len"),
+            h.get("polarity"),
+        )
+    elif isinstance(h, (list, tuple)) and len(h) >= 4:
+        field, pos, length, polarity = h[0], h[1], h[2], h[3]
+    else:
+        return None
+    if not field or not isinstance(pos, int) or not isinstance(length, int):
+        return None
+    if pos < 1 or length < 1:
+        return None
+    return Highlight(
+        field=str(field),
+        start=pos - 1,
+        end=pos - 1 + length,
+        polarity=str(polarity or "positive"),
+    )
+
+
+def _parse_hits(rows: list[dict[str, Any]]) -> list[list[Highlight]]:
+    out: list[list[Highlight]] = []
+    for row in rows:
+        raw = row.get(_HITS_COLUMN)
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else (raw or [])
+            hits = [h for h in (_one_hit(x) for x in parsed) if h is not None]
+        except Exception:
+            # An unexpected encoding costs the marks, not the report.
+            log.exception("highlight parse failed (non-fatal)")
+            hits = []
+        out.append(hits)
+    return out

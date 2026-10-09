@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Column } from '@tanstack/react-table';
+import { collapse } from '../../api/client';
 import { profileColumn, type Profile, type Segment } from './columnStats';
 
 type Row = Record<string, unknown>;
@@ -10,12 +11,20 @@ type Row = Record<string, unknown>;
 const RAMP = ['var(--rv-profile-1)', 'var(--rv-profile-2)', 'var(--rv-profile-3)'];
 // Aggregates, not values, so neither sits on the ramp.
 const OTHER_FILL = 'var(--rv-profile-other)';
+// A parallel ramp, so negated segments rank among themselves rather than
+// flattening into one indistinguishable block.
+const NEGATED_RAMP = [
+  'var(--rv-profile-neg-1)',
+  'var(--rv-profile-neg-2)',
+  'var(--rv-profile-neg-3)',
+];
 const EMPTY_FILL = 'var(--rv-profile-empty)';
 
 const BAR_H = 18;
 const GAP = 2;
 // Sex reads better as a part of a whole than as a length.
 const PIE_FIELD = 'sex';
+const MATCHED_ON = 'ev_source';
 // One bucket per ~6px so bars never go sub-pixel.
 const PX_PER_BUCKET = 6;
 
@@ -359,7 +368,15 @@ function Chip({ text, muted }: { text: string; muted?: boolean }) {
   );
 }
 
-function ProfileCell({ profile, field }: { profile: Profile; field: string }) {
+function ProfileCell({
+  profile,
+  field,
+  negated,
+}: {
+  profile: Profile;
+  field: string;
+  negated?: ReadonlySet<string>;
+}) {
   if (profile.kind === 'none') {
     return (
       <div style={{ textAlign: 'center' }}>
@@ -398,8 +415,15 @@ function ProfileCell({ profile, field }: { profile: Profile; field: string }) {
         ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
       ];
     } else {
+      let rank = 0;
+      let negRank = 0;
       parts = [
-        ...segments.map((s, i) => ({ ...s, fill: RAMP[Math.min(i, RAMP.length - 1)] })),
+        ...segments.map((seg) => ({
+          ...seg,
+          fill: negated?.has(seg.label.toLowerCase())
+            ? NEGATED_RAMP[Math.min(negRank++, NEGATED_RAMP.length - 1)]
+            : RAMP[Math.min(rank++, RAMP.length - 1)],
+        })),
         ...(other ? [{ ...other, label: `+${num(rolledUp)} more`, fill: OTHER_FILL }] : []),
         ...(empty ? [{ ...empty, fill: EMPTY_FILL }] : []),
       ];
@@ -437,6 +461,32 @@ export function ColumnProfileRow({
   dateFields: ReadonlySet<string>;
   stickyTop: number;
 }) {
+  // The cell renders chips, not the raw category, so profile the same value
+  // they lead with: the negation, else the matched phrase, else the diagnosis.
+  // A report can match several diagnoses, and each gets its own entry so the
+  // codes rank individually; the bar is then a share of matches, not of rows.
+  const matchedOn = useMemo(() => {
+    const values = rows.flatMap((r) => {
+      const leading = collapse(r.ev_negative_span) || collapse(r.ev_positive_span);
+      if (leading) return [leading];
+      const codes = collapse(r.ev_dx_codes)
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+      return codes.length ? codes : [''];
+    });
+    // Folded like the stats panel, so one phrase is one segment.
+    const label = new Map<string, string>();
+    for (const v of values) {
+      if (v && !label.has(v.toLowerCase())) label.set(v.toLowerCase(), v);
+    }
+    return values.map((v) => ({ [MATCHED_ON]: v ? (label.get(v.toLowerCase()) ?? v) : '' }));
+  }, [rows]);
+  const negatedLabels = useMemo(
+    () => new Set(rows.map((r) => collapse(r.ev_negative_span).toLowerCase()).filter(Boolean)),
+    [rows],
+  );
+
   // getVisibleLeafColumns() is a new array every render, so a useMemo on it
   // would recompute every sort and page click. Cache per column instead.
   const cache = useMemo(() => new Map<string, Profile>(), [rows, dateFields]);
@@ -445,7 +495,8 @@ export function ColumnProfileRow({
     const key = `${col.id}:${buckets}`;
     let profile = cache.get(key);
     if (!profile) {
-      profile = profileColumn(col.id, rows, dateFields.has(col.id), buckets);
+      const source = col.id === MATCHED_ON ? matchedOn : rows;
+      profile = profileColumn(col.id, source, dateFields.has(col.id), buckets);
       cache.set(key, profile);
     }
     return profile;
@@ -470,7 +521,11 @@ export function ColumnProfileRow({
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <ProfileCell profile={profile} field={col.id} />
+              <ProfileCell
+                profile={profile}
+                field={col.id}
+                negated={col.id === MATCHED_ON ? negatedLabels : undefined}
+              />
             </div>
           </td>
         );

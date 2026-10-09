@@ -35,9 +35,8 @@ _MAX_TURNS_TRACKED = 64
 _TURN_EMBEDS: OrderedDict[str, dict[str, Any]] = OrderedDict()
 _SESSION_EXPIRED_MESSAGE = "Session expired - sign out of Open WebUI and back in, then regenerate this response."
 _VIEWER_NOTE = (
-    "The sample table above is a subset of results; when the search "
-    "used match_terms or match_diagnoses, an evidence table with "
-    "excerpts and matched diagnoses is included too. "
+    "The sample table above is a subset of results; an evidence table "
+    "showing why each row matched is included alongside it. "
     "The full results are shown to the user in a search viewer above "
     "this message, alongside any charts you drew this turn, where they "
     "can sort, filter, and explore them. "
@@ -79,8 +78,6 @@ class Tools:
     async def scout_find_reports(
         self,
         sql: Optional[str] = None,
-        match_terms: Optional[list[str]] = None,
-        match_diagnoses: Optional[list[str]] = None,
         sql_explanation: Optional[str] = None,
         file_id: Optional[str] = None,
         id_column: Optional[str] = None,
@@ -97,8 +94,8 @@ class Tools:
         unaffected and stay on screen next to it.
 
         Two modes:
-        * SQL mode: pass `sql` (and optional `match_terms`,
-          `match_diagnoses`, `sql_explanation`). Every row must
+        * SQL mode: pass `sql` (and optional `sql_explanation`).
+          Every row must
           project `primary_report_identifier` and `accession_number`.
           Example:
               SELECT primary_report_identifier, accession_number,
@@ -118,15 +115,6 @@ class Tools:
             custom SQL with `{{cohort}}` placeholder. To narrow an
             earlier search, paste its SQL verbatim and add clauses;
             do not rewrite its regex or negation blocks.
-        :param match_terms: Clinical text terms. Display and evidence
-            only: these do not filter rows, your `sql` does that.
-            Populates the `excerpt` field on each evidence row and
-            highlights the terms in the row-expand viewer.
-        :param match_diagnoses: ICD codes or code prefixes (e.g.
-            `R91`, `R91.1`, `J18%`). Display and evidence only: these do
-            not filter rows. Populates `matched_diagnoses` on each
-            evidence row and lights up matching chips in the row-expand
-            viewer.
         :param sql_explanation: One- to three-sentence plain-language
             description of what the SQL matches. Surfaced in the
             "About this search" panel for the user.
@@ -154,10 +142,6 @@ class Tools:
             return "Error: scout_find_reports requires either `sql` or `file_id`."
 
         payload: dict[str, Any] = {"sql": sql}
-        if match_terms:
-            payload["match_terms"] = match_terms
-        if match_diagnoses:
-            payload["match_diagnoses"] = match_diagnoses
         if sql_explanation:
             payload["sql_explanation"] = sql_explanation
         chat_id = _chat_id(__metadata__)
@@ -732,8 +716,7 @@ class Tools:
 
     @staticmethod
     def _render_search_summary(created: dict) -> str:
-        """Sample table + evidence table (omitted if every row's
-        excerpt is null and matched_diagnoses is empty). Both keyed by
+        """Sample table and per-row match evidence, both keyed by
         id_column so they align visually."""
         columns: list[str] = created.get("columns") or []
         sample: list[dict] = created.get("sample") or []
@@ -752,26 +735,29 @@ class Tools:
             parts.append("")
             parts.extend(_md_table(columns, sample))
 
-        ev_rows: list[dict] = []
-        for ev in evidence:
-            excerpt = ev.get("excerpt")
-            mdx = ev.get("matched_diagnoses") or []
-            if not excerpt and not mdx:
-                continue
-            ev_rows.append(
-                {
-                    id_column: ev.get(id_column, ""),
-                    "excerpt": excerpt or "",
-                    "matched diagnoses": "; ".join(
-                        f"{d.get('code', '')} ({d.get('text', '')})" for d in mdx
-                    ),
-                }
-            )
+        ev_cols = [
+            id_column,
+            "matched on",
+            "positive evidence",
+            "negative evidence",
+            "matched diagnoses",
+        ]
+        ev_rows = [
+            {
+                id_column: ev.get(id_column, ""),
+                "matched on": ev.get("matched_on") or "",
+                "positive evidence": ev.get("positive_evidence") or "",
+                "negative evidence": ev.get("negative_evidence") or "",
+                "matched diagnoses": "; ".join(ev.get("matched_diagnoses") or []),
+            }
+            for ev in evidence
+            if ev.get("matched_on")
+            or ev.get("positive_evidence")
+            or ev.get("matched_diagnoses")
+        ]
         if ev_rows:
             parts.append("")
-            parts.extend(
-                _md_table([id_column, "excerpt", "matched diagnoses"], ev_rows)
-            )
+            parts.extend(_md_table(ev_cols, ev_rows))
 
         parts.append("")
         parts.append(_VIEWER_NOTE)
