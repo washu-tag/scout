@@ -55,7 +55,7 @@ jobs:
       packages: read
     outputs:
       # Every candidate uses the same frozen predecessor and component plan.
-      e2e: ${{ steps.plan.outputs.publish == 'true' || steps.filter.outputs.e2e == 'true' }}
+      e2e: ${{ steps.filter.outputs.e2e == 'true' || inputs.rebuild_images == true }}
       publish: ${{ steps.plan.outputs.publish }}
       release_pr: ${{ steps.filter.outputs.release_pr }}
       hl7log-extractor: ${{ steps.plan.outputs.hl7log-extractor }}
@@ -104,6 +104,26 @@ jobs:
               - '!**/*.md'
               - '!examples/**'
               - '!.github/workflows/!(ci.yaml)'
+            # Shared build/package inputs invalidate only the artifacts they produce.
+            image_build:
+              - '.github/actions/docker-build-cache/**'
+            chart_build:
+              - '.github/scripts/chart-app-version.sh'
+              - '.github/scripts/prepare-flux-artifacts.py'
+            config:
+              - 'deploy/**'
+              - 'cosign.pub'
+              - 'ansible/group_vars/all/versions.yaml'
+              - 'tooling/manifest/components.txt'
+              - 'tooling/manifest/upstream-images.txt'
+              - 'tooling/manifest/build_haul.py'
+              - 'tooling/manifest/haul.py'
+              - 'tooling/manifest/resolve.py'
+              - 'tooling/manifest/resolve_upstream.py'
+              - 'tooling/manifest/producer_plan.py'
+              - 'tooling/deploy/stamp_config.py'
+              - '.github/actions/publish-haul/**'
+              - '.github/scripts/copy-flux-artifacts.py'
             # release-please's PR is the only thing that touches the manifest, so this
             # is an exact "this is the release PR" signal (release-dispatch.yaml keys off
             # the same file). It turns on scan-published, so a CVE fails the release PR
@@ -138,12 +158,14 @@ jobs:
               - 'helm/dcm4chee/**'
             hive-metastore-chart:
               - 'helm/hive-metastore/**'
+              - 'ansible/group_vars/all/versions.yaml'
             hl7-listener-chart:
               - 'helm/hl7-listener/**'
             hl7log-extractor-chart:
               - 'helm/extractor/hl7log-extractor/**'
             keycloak-config-cli-chart:
               - 'helm/keycloak-config-cli/**'
+              - 'ansible/group_vars/all/versions.yaml'
             keycloak-fragment-reconciler-chart:
               - 'helm/keycloak-fragment-reconciler/**'
             launchpad-chart:
@@ -158,8 +180,10 @@ jobs:
               - 'helm/scout-dashboards/**'
             scout-opa-chart:
               - 'helm/scout-opa/**'
+              - 'ansible/group_vars/all/versions.yaml'
             temporal-bootstrap-chart:
               - 'helm/temporal-bootstrap/**'
+              - 'ansible/group_vars/all/versions.yaml'
             voila-chart:
               - 'helm/voila/**'
       - name: 'Mint build version'
@@ -253,7 +277,6 @@ jobs:
     needs: changes
     permissions:
       contents: read
-      # check-image-exists reads ghcr for the derived tag; private packages need auth
       packages: read
       attestations: write
       id-token: write
@@ -309,6 +332,9 @@ jobs:
       - name: 'Unit tests: keycloak event-listener'
         shell: bash
         run: cd keycloak/event-listener && ./gradlew test
+      - name: 'Unit tests: hl7-listener'
+        shell: bash
+        run: cd hl7-listener && ./gradlew test
   hl7-transformer-unit:
     runs-on: ubuntu-latest
     permissions:
@@ -977,11 +1003,13 @@ jobs:
         with:
           subproject: extractor/hl7log-extractor
           image-name: hl7log-extractor
+          artifact-required: ${{ needs.changes.outputs['hl7log-extractor'] }}
       - name: 'Push image to k3s - hl7-transformer'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: extractor/hl7-transformer
           image-name: hl7-transformer
+          artifact-required: ${{ needs.changes.outputs['hl7-transformer'] }}
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
@@ -1173,6 +1201,7 @@ jobs:
         with:
           subproject: keycloak
           image-name: keycloak
+          artifact-required: ${{ needs.changes.outputs['keycloak'] }}
       # Not gated on matrix.side: both sides run the auth playbook, which
       # deploys the reconciler unconditionally.
       - name: 'Push image to k3s - keycloak-fragment-reconciler'
@@ -1180,23 +1209,27 @@ jobs:
         with:
           subproject: keycloak-fragment-reconciler
           image-name: keycloak-fragment-reconciler
+          artifact-required: ${{ needs.changes.outputs['keycloak-fragment-reconciler'] }}
       - name: 'Push image to k3s - launchpad'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: launchpad
           image-name: launchpad
+          artifact-required: ${{ needs.changes.outputs['launchpad'] }}
       - name: 'Push image to k3s - superset'
         if: matrix.side == 'analytics'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: helm/superset
           image-name: superset
+          artifact-required: ${{ needs.changes.outputs['superset'] }}
       - name: 'Push image to k3s - report-viewer'
         if: matrix.side == 'analytics'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: report-viewer
           image-name: report-viewer
+          artifact-required: ${{ needs.changes.outputs['report-viewer'] }}
       # hl7-transformer image is the vehicle for the data-authz seed Job's Spark +
       # Delta + s3a + Hive client (writes the synthetic test_reports Delta table);
       # the transformer itself isn't deployed here (no extractor playbook).
@@ -1206,12 +1239,14 @@ jobs:
         with:
           subproject: extractor/hl7-transformer
           image-name: hl7-transformer
+          artifact-required: ${{ needs.changes.outputs['hl7-transformer'] }}
       - name: 'Push image to k3s - scout-notebook'
         if: matrix.side == 'notebooks'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: helm/scout-notebook
           image-name: scout-notebook
+          artifact-required: ${{ needs.changes.outputs['scout-notebook'] }}
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml

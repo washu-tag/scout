@@ -349,16 +349,64 @@ def test_configuration_changes_publish_without_component_churn(path):
 @pytest.mark.parametrize(
     "path",
     [
+        ".github/workflows/release.yaml",
+        ".github/workflows/renovate.yaml",
         ".github/workflows/ci.yaml",
         ".github/actions/derive-version/action.yaml",
-        "tooling/manifest/components.txt",
-        "tooling/deploy/stamp_config.py",
-        "ansible/group_vars/all/versions.yaml",
+        ".github/actions/docker-push/README.md",
+        "tooling/manifest/test_producer_plan.py",
+        "tooling/deploy/test_stamp_config.py",
     ],
 )
-def test_shared_build_and_version_inputs_rebuild_all(path):
+def test_ci_metadata_and_tests_do_not_rebuild_components(path):
     flags, publish = classify([path])
-    assert publish and all(flags.values())
+    assert not publish and not any(flags.values())
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["tooling/manifest/components.txt", "tooling/deploy/stamp_config.py"],
+)
+def test_package_inputs_do_not_rebuild_components(path):
+    flags, publish = classify([path])
+    assert publish and not any(flags.values())
+
+
+def test_shared_image_build_rebuilds_images_and_their_charts_only():
+    flags, publish = classify([".github/actions/docker-build-cache/action.yaml"])
+    assert publish
+    assert {name for name, changed in flags.items() if changed} == set(IMAGE_PATHS) | {
+        name + "-chart" for name in IMAGE_CHARTS.values()
+    }
+
+
+def test_shared_chart_packaging_does_not_rebuild_images():
+    flags, publish = classify([".github/scripts/chart-app-version.sh"])
+    assert publish
+    assert {name for name, changed in flags.items() if changed} == {
+        name + "-chart" for name in CHART_PATHS
+    }
+
+
+def test_version_pins_only_repackage_charts_that_read_them():
+    flags, publish = classify(["ansible/group_vars/all/versions.yaml"])
+    assert publish
+    assert {name for name, changed in flags.items() if changed} == {
+        name + "-chart"
+        for name in (
+            "hive-metastore",
+            "keycloak-config-cli",
+            "scout-opa",
+            "temporal-bootstrap",
+        )
+    }
+
+
+def test_pr_deployment_gate_keeps_existing_path_exclusions():
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yaml").read_text())
+    assert workflow["jobs"]["changes"]["outputs"]["e2e"] == (
+        "${{ steps.filter.outputs.e2e == 'true' || inputs.rebuild_images == true }}"
+    )
 
 
 @pytest.mark.parametrize("image,chart", IMAGE_CHARTS.items())

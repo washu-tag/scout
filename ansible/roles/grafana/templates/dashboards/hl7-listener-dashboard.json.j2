@@ -222,7 +222,7 @@
           "values": false
         },
         "showPercentChange": false,
-        "textMode": "auto",
+        "textMode": "value_and_name",
         "wideLayout": true
       },
       "pluginVersion": "11.6.0",
@@ -233,12 +233,14 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(camel_exchanges_failed_total{integration=~\"$integration\",eventType=\"context\"})",
-          "legendFormat": "Failed",
-          "range": true,
+          "expr": "sum by(integration) (increase(camel_exchanges_failed_total{integration=~\"$integration\",eventType=\"context\"}[$__range]))",
+          "instant": true,
+          "legendFormat": "{{ integration }}",
+          "range": false,
           "refId": "A"
         }
       ],
+      "description": "Failed exchanges per integration within the selected time range. hl7-listener: usually a message could not be written to Kafka and was NAKed back to the sender, which queues and resends it. hl7-batcher: a batch could not be archived to bronze (e.g. an S3 upload timeout); the batcher retries it, so a growing count means it is stuck on that batch.",
       "title": "Failed Exchanges",
       "type": "stat"
     },
