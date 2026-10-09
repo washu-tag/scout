@@ -9,6 +9,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from scout_report_viewer.app import create_app
+from scout_report_viewer.models import MAX_READ_REPORTS_IDS
 
 
 def _read(client, auth_headers, body):
@@ -27,7 +28,39 @@ def test_read_defaults_to_curated_not_epic_view(auth_headers, fake_trino):
     sql, params = fake_trino.calls[-1]
     assert "reports_curated" in sql
     assert "reports_latest_epic_view" not in sql
-    assert params == [["s3://b/1"]]
+    assert '"primary_report_identifier" IN (?)' in sql
+    assert "contains" not in sql
+    assert params == ["s3://b/1"]
+
+
+def test_read_multiple_ids_one_placeholder_each(auth_headers, fake_trino):
+    fake_trino(["accession_number"], [{"accession_number": "A1"}])
+    with TestClient(create_app()) as client:
+        r = _read(
+            client,
+            auth_headers,
+            {"ids": ["A1", "A2", "A3"], "id_column": "accession_number"},
+        )
+    assert r.status_code == 200, r.text
+    sql, params = fake_trino.calls[-1]
+    assert '"accession_number" IN (?, ?, ?)' in sql
+    assert params == ["A1", "A2", "A3"]
+
+
+def test_read_empty_ids_skips_trino(auth_headers, fake_trino):
+    with TestClient(create_app()) as client:
+        r = _read(client, auth_headers, {"ids": []})
+    assert r.status_code == 200, r.text
+    assert r.json()["rows"] == []
+    assert fake_trino.calls == []
+
+
+def test_read_too_many_ids_422(auth_headers, fake_trino):
+    ids = [f"A{i}" for i in range(MAX_READ_REPORTS_IDS + 1)]
+    with TestClient(create_app()) as client:
+        r = _read(client, auth_headers, {"ids": ids})
+    assert r.status_code == 422
+    assert fake_trino.calls == []
 
 
 def _with_highlights(monkeypatch) -> None:
