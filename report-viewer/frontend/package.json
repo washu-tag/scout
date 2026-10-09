@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.104.0",
+    "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-table": "^8.21.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -22,6 +22,6 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^7",
-    "vite": "^8.3.1"
+    "vite": "^8.3.2"
   }
 }
