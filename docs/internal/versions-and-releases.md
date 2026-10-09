@@ -150,7 +150,13 @@ To release from a non-main branch, ensure the branch name starts with `ci-` (e.g
 
 ### Image Publishing
 
-The CI workflow's `publish` job only runs on `main`. For non-main releases, the release workflow handles image publishing directly: after the CI build succeeds, it downloads the built image artifacts from the CI run and pushes them to GHCR with the release version tag (e.g., `3.0.1`). This ensures versioned images are available regardless of which branch the release is made from, without affecting the `latest` tag.
+The CI workflow's `publish` job only runs on `main`. For non-main releases, the
+release workflow downloads the successful CI attempt's complete candidate and
+copies its tested image digests to GHCR with the release aliases. Branch CI
+builds every component fresh, including vendor images, so publication does not
+depend on an archive from an earlier attempt. The release checks the source,
+branch, successful attempt and requested image aliases again before writing.
+Build-lane haul/config release aliases remain available only for main releases.
 
 ### Why Skip the Dev Reset?
 

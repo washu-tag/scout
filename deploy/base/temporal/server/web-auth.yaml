@@ -1,0 +1,43 @@
+# Temporal UI login, picked by temporal_web_auth (default oidc). oidc: the UI's own OIDC
+# login with the realm's temporal client, which needs the realm's discovery URL to answer
+# with a certificate the UI trusts. none: the UI login is off, for a cluster whose pods
+# can't verify the Keycloak certificate (the CI proof); the edge (oauth2-proxy on-prem,
+# ALB OIDC on aws) and the frontend's JWT authz still apply. Inside a values string the
+# quotes on 'true'/'false' survive Flux's re-serialization, so the env stays a string.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-web-auth-oidc
+  namespace: '${scout_extractor_namespace}'
+data:
+  values.yaml: |
+    web:
+      additionalEnv:
+        - name: TEMPORAL_AUTH_ENABLED
+          value: 'true'
+        - name: TEMPORAL_AUTH_PROVIDER_URL
+          value: '${keycloak_realm_url}'
+        - name: TEMPORAL_AUTH_CLIENT_ID
+          value: temporal
+        - name: TEMPORAL_AUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: temporal-web-oidc
+              key: client-secret
+        - name: TEMPORAL_AUTH_CALLBACK_URL
+          value: 'https://temporal.${server_hostname}/auth/sso/callback'
+        # The UI splits this on commas.
+        - name: TEMPORAL_AUTH_SCOPES
+          value: openid,email,profile
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-web-auth-none
+  namespace: '${scout_extractor_namespace}'
+data:
+  values.yaml: |
+    web:
+      additionalEnv:
+        - name: TEMPORAL_AUTH_ENABLED
+          value: 'false'

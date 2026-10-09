@@ -16,6 +16,9 @@ kind: HelmRelease
 metadata:
   name: '${minio_tenant_namespace}'
   namespace: '${minio_tenant_namespace}'
+  # Pruning this uninstalls the release and with it the Tenant that holds the lake.
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
 spec:
   interval: 30m
   # Version pinned in versions.yaml (minio_version, Renovate-tracked). Literal mirror,

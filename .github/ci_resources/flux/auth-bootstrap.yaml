@@ -1,0 +1,17 @@
+---
+# Layer 0 only: application releases remain owned by the Flux DAG. Inventory
+# group_vars provide the same Helm/cert-manager pins as the Ansible smoke lane.
+- name: Bootstrap authentication infrastructure for the Flux CI leg
+  hosts: server
+  gather_facts: false
+  environment: '{{ cluster_k8s_environment }}'
+  roles:
+    - role: scout_common
+    - role: helm
+    - role: traefik
+    - role: cert_manager
+  tasks:
+    - name: Bootstrap the internal CA for Trino HTTPS
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: cluster_issuer_setup
