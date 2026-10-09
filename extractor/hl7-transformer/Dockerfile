@@ -18,11 +18,14 @@ WORKDIR /app
 # aws-java-sdk-v2 version that hadoop-aws declares in hadoop-project's pom
 # (2.35.4 for 3.5.0); newer 2.x releases are compatible and carry SDK and
 # embedded-netty CVE fixes. 2.54.19 bundles netty 4.1.138.Final, fixing
-# CVE-2026-75595 (CRITICAL, netty-handler).
+# CVE-2026-75595 (CRITICAL, netty-handler). analyticsaccelerator-s3 is a
+# compile dependency of hadoop-aws (version from hadoop-project's pom) and
+# backs S3A's default input stream since 3.5.0.
 ADD --chown=spark \
     https://repo1.maven.org/maven2/io/delta/delta-spark_4.2_2.13/4.4.1/delta-spark_4.2_2.13-4.4.1.jar \
     https://repo1.maven.org/maven2/io/delta/delta-storage/4.4.1/delta-storage-4.4.1.jar \
     https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.5.0/hadoop-aws-3.5.0.jar \
+    https://repo1.maven.org/maven2/software/amazon/s3/analyticsaccelerator/analyticsaccelerator-s3/1.3.1/analyticsaccelerator-s3-1.3.1.jar \
     https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.54.19/bundle-2.54.19.jar \
     ${SPARK_HOME}/jars/
 
