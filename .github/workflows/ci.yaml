@@ -300,7 +300,7 @@ jobs:
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
-      # Python pinned to 3.10 to match the runtime image (spark:4.1.1-...-python3),
+      # Python pinned to 3.10 to match the runtime image (spark:4.2.0-...-python3),
       # so tests hit the shipping interpreter -- matters for version-sensitive
       # behavior like concurrent.futures TimeoutError (a distinct class before 3.11).
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

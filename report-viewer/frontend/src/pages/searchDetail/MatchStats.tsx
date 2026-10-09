@@ -1,0 +1,160 @@
+import { useMemo } from 'react';
+import type { EvCategory, FilterState } from '../../api/client';
+import { evidenceStats, type Tally } from './evidenceStats';
+
+// Not "code": diagnosis_code_text can admit a row without a code matching.
+const CATEGORY_LABEL: Record<string, string> = {
+  text_and_code: 'Report text and diagnosis',
+  text: 'Report text only',
+  diagnosis_code: 'Diagnosis only',
+  unknown: 'Unexplained',
+};
+
+const TOP_N = 8;
+
+const muted: React.CSSProperties = { color: 'var(--rv-muted)', fontSize: '0.78rem' };
+
+const num: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
+
+const linkish: React.CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  padding: 0,
+  font: 'inherit',
+  color: 'var(--rv-accent)',
+  cursor: 'pointer',
+  textAlign: 'left',
+};
+
+function Phrases(props: {
+  title: string;
+  rows: Tally[];
+  distinct: number;
+  onPick?: (label: string) => void;
+}) {
+  if (props.rows.length === 0) return null;
+  return (
+    <div style={{ marginTop: '0.6rem' }}>
+      <div style={{ ...muted, marginBottom: '0.2rem' }}>
+        {props.title} - {props.distinct} distinct
+      </div>
+      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.76rem' }}>
+        <tbody>
+          {props.rows.slice(0, TOP_N).map((r) => (
+            <tr key={r.label}>
+              <td
+                style={{
+                  padding: '1px 0.5rem 1px 0',
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                }}
+              >
+                {props.onPick ? (
+                  <button
+                    type="button"
+                    style={linkish}
+                    title={`Filter the table to this phrase`}
+                    onClick={() => props.onPick?.(r.label)}
+                  >
+                    {r.label}
+                  </button>
+                ) : (
+                  r.label
+                )}
+              </td>
+              <td
+                style={{
+                  padding: '1px 0',
+                  textAlign: 'right',
+                  fontVariantNumeric: 'tabular-nums',
+                  whiteSpace: 'nowrap',
+                  ...muted,
+                }}
+              >
+                {r.count}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** What this search matched, tallied from the cohort's own evidence columns. */
+export function MatchStats(props: {
+  rows: Record<string, unknown>[];
+  onFilter?: (patch: Partial<FilterState>) => void;
+}) {
+  const s = useMemo(() => evidenceStats(props.rows), [props.rows]);
+  const unexplained = s.breakdown.find((r) => r.category === 'unknown')?.rows ?? 0;
+
+  return (
+    <div style={{ marginTop: '1rem' }}>
+      <div style={{ fontWeight: 600, marginBottom: '0.2rem', fontSize: '0.85rem' }}>
+        What this search matched
+      </div>
+      <p style={{ margin: '0 0 0.5rem', lineHeight: 1.4, ...muted }}>
+        Counted from the {s.total.toLocaleString()} loaded rows, using the search SQL&apos;s own
+        predicates. Compare between searches to see what a reworded question changed.
+      </p>
+      {unexplained > 0 && (
+        <p style={{ margin: '0 0 0.5rem', lineHeight: 1.4, ...muted }}>
+          {unexplained.toLocaleString()} rows read as unexplained. The search matched them, but it
+          wrote that condition in a way this panel could not attribute, so no phrase or code is
+          shown for them.
+        </p>
+      )}
+
+      <table style={{ borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+        <thead>
+          <tr style={muted}>
+            <th />
+            <th style={{ padding: '0 0.6rem', fontWeight: 500, textAlign: 'right' }}>Reports</th>
+            <th style={{ padding: '0 0.6rem', fontWeight: 500, textAlign: 'right' }}>
+              Report text may negate
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {s.breakdown.map((r) => (
+            <tr key={r.category}>
+              <td style={{ padding: '1px 0.6rem 1px 0', whiteSpace: 'nowrap' }}>
+                {props.onFilter ? (
+                  <button
+                    type="button"
+                    style={linkish}
+                    title="Filter the table to these rows"
+                    onClick={() => props.onFilter?.({ ev_source: [r.category as EvCategory] })}
+                  >
+                    {CATEGORY_LABEL[r.category] ?? r.category}
+                  </button>
+                ) : (
+                  (CATEGORY_LABEL[r.category] ?? r.category)
+                )}
+              </td>
+              <td style={{ padding: '1px 0.6rem', textAlign: 'right', ...num }}>
+                {r.rows.toLocaleString()}
+              </td>
+              <td style={{ padding: '1px 0.6rem', textAlign: 'right', ...num }}>
+                {r.negative.toLocaleString()}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <Phrases
+        title="Matched phrases"
+        rows={s.positiveSpans}
+        distinct={s.distinctPositive}
+        onPick={props.onFilter && ((label) => props.onFilter?.({ ev_positive_span: label }))}
+      />
+      <Phrases
+        title="Negated phrases"
+        rows={s.negativeSpans}
+        distinct={s.distinctNegative}
+        onPick={props.onFilter && ((label) => props.onFilter?.({ ev_negative_span: label }))}
+      />
+    </div>
+  );
+}

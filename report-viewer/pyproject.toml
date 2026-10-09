@@ -26,6 +26,9 @@ dependencies = [
     "pydantic>=2",
     "pydantic-settings>=2",
     "trino",
+    # The evidence parser reads sqlglot AST internals, which have changed
+    # shape across majors before. Floor is the version this is tested on.
+    "sqlglot>=30.21,<31",
     # trino-python-client 0.337+ imports tzlocal but doesn't declare it
     # as required - packaging bug. Listed explicitly so installs work.
     "tzlocal",
