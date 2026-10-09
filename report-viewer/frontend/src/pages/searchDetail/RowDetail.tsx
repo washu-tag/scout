@@ -1,52 +1,81 @@
 import { Fragment, type ReactNode } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { friendlyError, getReport } from '../../api/client';
+import { friendlyError, getReport, type Highlight } from '../../api/client';
 import { buildDiscussPrompt } from '../../chat';
 import { useChatPrompt } from '../../ChatPrompt';
 import { fmtDate } from './format';
 import { paginationBtn } from './styles';
 
-export function RowDetail(props: {
-  row: Record<string, unknown>;
-  highlightTerms: string[];
-  highlightDiagnosis: string[];
-}) {
+const TEXT_FIELDS = [
+  'report_text',
+  'report_section_impression',
+  'report_section_findings',
+] as const;
+
+export function RowDetail(props: { row: Record<string, unknown>; wide?: boolean }) {
   const requestPrompt = useChatPrompt();
+  const { searchId } = useParams<{ searchId: string }>();
   const reportId = String(props.row['primary_report_identifier'] ?? '');
   const reportQ = useQuery({
-    queryKey: ['report', reportId],
-    queryFn: () => getReport(reportId, 'primary_report_identifier'),
+    queryKey: ['report', reportId, searchId],
+    queryFn: () => getReport(reportId, 'primary_report_identifier', searchId),
     enabled: !!reportId,
     staleTime: 5 * 60_000,
   });
 
-  // \b boundaries so short tokens like "PE" don't match in "pectoralis".
-  const escaped = props.highlightTerms
-    .map((t) => t.trim())
-    .filter((t) => t.length >= 2)
-    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  // safe: all regex metachars escaped above, alternation of literal strings is linear-time
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
-  const highlightRe = escaped.length ? new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi') : null;
+  const highlights = reportQ.data?.highlights ?? [];
+  // The codes the query itself filtered on, not every code on the report.
+  const matchedCodes = new Set(
+    String(props.row['ev_dx_codes'] ?? '')
+      .split(',')
+      .map((c) => c.trim().toLowerCase())
+      .filter(Boolean),
+  );
 
-  // Strip SQL-LIKE `%` so the LLM can pass `R91` or `R91%` - same thing.
-  const dxPrefixes = props.highlightDiagnosis
-    .map((d) => d.trim().replace(/%+$/, '').toLowerCase())
-    .filter((d) => d.length >= 1);
-
-  const applyTextHighlights = (text: string): ReactNode => {
-    if (!text) return null;
-    if (!highlightRe) return text;
-    const parts = text.split(highlightRe);
-    return parts.map((p, i) =>
-      i % 2 === 1 ? (
-        <mark key={i} style={{ background: '#fff3a3', color: '#222', padding: '0 1px' }}>
-          {p}
-        </mark>
-      ) : (
-        <Fragment key={i}>{p}</Fragment>
-      ),
-    );
+  // Negative spans embed the positive phrase, so sorting longest-first lets
+  // them win any overlap and the whole ruled-out phrase reads as one mark.
+  const applyOffsets = (text: string, field: string, hits: Highlight[]): ReactNode => {
+    const ordered = hits
+      .filter((h) => h.field === field && h.start < h.end && h.end <= text.length)
+      .sort(
+        (a, b) =>
+          a.start - b.start ||
+          b.end - b.start - (a.end - a.start) ||
+          (a.polarity === 'negative' ? -1 : 1),
+      );
+    const out: ReactNode[] = [];
+    let at = 0;
+    ordered.forEach((h, i) => {
+      if (h.start < at) return;
+      if (h.start > at) out.push(<Fragment key={`t${i}`}>{text.slice(at, h.start)}</Fragment>);
+      const excluded = h.polarity === 'negative';
+      out.push(
+        <mark
+          key={`m${i}`}
+          title={excluded ? 'Negative evidence' : 'Positive evidence'}
+          style={
+            excluded
+              ? {
+                  background: 'var(--rv-danger-soft)',
+                  color: 'var(--rv-danger)',
+                  padding: '0 1px',
+                  textDecoration: 'underline wavy currentColor',
+                }
+              : {
+                  background: 'var(--rv-ev-positive-soft)',
+                  color: 'var(--rv-ev-positive)',
+                  padding: '0 1px',
+                }
+          }
+        >
+          {text.slice(h.start, h.end)}
+        </mark>,
+      );
+      at = h.end;
+    });
+    if (at < text.length) out.push(<Fragment key="tail">{text.slice(at)}</Fragment>);
+    return out;
   };
 
   const diagnoses = reportQ.data?.diagnoses ?? props.row.diagnoses;
@@ -65,19 +94,8 @@ export function RowDetail(props: {
   const dxList = Array.isArray(diagnoses) ? (diagnoses as Array<Record<string, unknown>>) : [];
   const positiveDxIndex = new Set<number>();
   for (let i = 0; i < dxList.length; i++) {
-    const code = String(dxList[i].diagnosis_code ?? '');
-    const text = String(dxList[i].diagnosis_code_text ?? '');
-    if (!code) continue;
-    const codeLc = code.toLowerCase();
-    if (dxPrefixes.some((p) => codeLc.startsWith(p))) {
-      positiveDxIndex.add(i);
-      continue;
-    }
-    if (highlightRe) {
-      // Reset lastIndex; it sticks across .test() calls on /g regexes.
-      highlightRe.lastIndex = 0;
-      if (highlightRe.test(code + ' ' + text)) positiveDxIndex.add(i);
-    }
+    const code = String(dxList[i].diagnosis_code ?? '').toLowerCase();
+    if (code && matchedCodes.has(code)) positiveDxIndex.add(i);
   }
 
   const m = meta as Partial<{
@@ -175,17 +193,17 @@ export function RowDetail(props: {
                     gap: '0.35rem',
                     padding: '0.15rem 0.4rem',
                     borderRadius: 3,
-                    background: positive ? '#fff3a3' : 'var(--rv-surface-2)',
-                    border: positive ? '1px solid #d6b500' : '1px solid var(--rv-border)',
+                    background: positive ? 'var(--rv-ev-positive-soft)' : 'var(--rv-surface-2)',
+                    border: `1px solid ${positive ? 'var(--rv-ev-positive)' : 'var(--rv-border)'}`,
                     fontSize: '0.72rem',
-                    color: positive ? '#222' : 'var(--rv-fg)',
+                    color: positive ? 'var(--rv-ev-positive)' : 'var(--rv-fg)',
                     fontWeight: positive ? 600 : 400,
                   }}
                 >
                   <code
                     style={{
                       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                      color: positive ? '#7a5a00' : 'var(--rv-accent)',
+                      color: positive ? 'var(--rv-ev-positive)' : 'var(--rv-accent)',
                     }}
                   >
                     {String(d.diagnosis_code ?? '')}
@@ -217,14 +235,17 @@ export function RowDetail(props: {
             padding: '0.4rem 0.6rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
             fontSize: '0.74rem',
+            // report_text is hard-wrapped at ingest (one line per OBX), so
+            // ask for the columns those lines need rather than re-wrapping.
+            ...(props.wide ? { minWidth: '76ch', overflowX: 'auto' } : {}),
           }}
         >
-          {applyTextHighlights(
-            (reportQ.data.report_text as string | null) ??
-              (reportQ.data.report_section_impression as string | null) ??
-              (reportQ.data.report_section_findings as string | null) ??
-              '',
-          ) || <em style={{ color: 'var(--rv-muted)' }}>(empty)</em>}
+          {(() => {
+            const field = TEXT_FIELDS.find((f) => reportQ.data?.[f]) ?? 'report_text';
+            const text = String(reportQ.data?.[field] ?? '');
+            if (!text) return <em style={{ color: 'var(--rv-muted)' }}>(empty)</em>;
+            return applyOffsets(text, field, highlights);
+          })()}
         </div>
       )}
 

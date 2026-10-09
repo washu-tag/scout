@@ -65,6 +65,7 @@ export interface SearchMeta {
   sql: string;
   owner_sub: string;
   created_at: string;
+  executed_sql: string;
   match_terms: string[];
   match_diagnoses: string[];
   sql_explanation: string;
@@ -127,6 +128,23 @@ export function getPlotProgress(plotId: string, progressId: string): Promise<Que
   );
 }
 
+export const EV_CATEGORIES = ['text_and_code', 'text', 'diagnosis_code', 'unknown'] as const;
+
+export type EvCategory = (typeof EV_CATEGORIES)[number];
+
+// An empty ev_source is as unexplained as a missing one.
+export function evidenceCategory(row: Record<string, unknown>): EvCategory {
+  const s = String(row['ev_source'] ?? '').trim();
+  return (EV_CATEGORIES as readonly string[]).includes(s) ? (s as EvCategory) : 'unknown';
+}
+
+// Collapsed so a phrase wrapped across report lines matches one tally.
+export function collapse(v: unknown): string {
+  return String(v ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export interface FilterState {
   patient_age?: { min?: string; max?: string };
   message_dt?: { min?: string; max?: string };
@@ -137,8 +155,15 @@ export interface FilterState {
   patient_mpi?: string;
   accession_number?: string;
   sending_facility?: string;
+  ev_source?: EvCategory[];
+  ev_has_negative?: boolean;
+  /** Exact, not substring, so a click from the stats panel selects its own tally. */
+  ev_positive_span?: string;
+  ev_negative_span?: string;
 }
 
+/** Dialog filters only. The chip row shows its own, so counting them here
+ *  would point at a dialog that cannot clear them. */
 export function activeFilterCount(f: FilterState): number {
   let n = 0;
   if (f.patient_age && (f.patient_age.min || f.patient_age.max)) n++;
@@ -151,6 +176,17 @@ export function activeFilterCount(f: FilterState): number {
   if (f.accession_number && f.accession_number.length > 0) n++;
   if (f.sending_facility && f.sending_facility.length > 0) n++;
   return n;
+}
+
+/** Any filter at all, chips included, unlike the dialog-only badge count. */
+export function anyFilterActive(f: FilterState): boolean {
+  return (
+    activeFilterCount(f) > 0 ||
+    !!f.ev_source?.length ||
+    f.ev_has_negative !== undefined ||
+    !!f.ev_positive_span ||
+    !!f.ev_negative_span
+  );
 }
 
 export interface ReportDetail {
@@ -185,20 +221,35 @@ export interface ReportDetail {
   report_section_findings: string | null;
   report_section_addendum: string | null;
   diagnoses: Array<Record<string, unknown>> | null;
+  highlights?: Highlight[];
 }
 
 // Shares /api/reports/read with the OWUI scout_get_reports tool.
 // Row visibility is enforced by OPA at Trino; no app-side cohort check.
-export async function getReport(reportId: string, idColumn: string): Promise<ReportDetail> {
-  const resp = await api<{ columns: string[]; rows: Array<Record<string, unknown>> }>(
-    '/api/reports/read',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: [reportId], id_column: idColumn }),
-    },
-  );
+export type Highlight = {
+  field: string;
+  start: number;
+  end: number;
+  polarity: 'positive' | 'negative';
+};
+
+export async function getReport(
+  reportId: string,
+  idColumn: string,
+  searchId?: string,
+): Promise<ReportDetail> {
+  const resp = await api<{
+    columns: string[];
+    rows: Array<Record<string, unknown>>;
+    highlights?: Highlight[][];
+  }>('/api/reports/read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [reportId], id_column: idColumn, search_id: searchId }),
+  });
   const row = resp.rows[0] ?? {};
+  // Offsets index the text in this same response, so they cannot drift.
+  row.highlights = resp.highlights?.[0] ?? [];
   // reports_latest exposes the lake file path as `primary_report_identifier`;
   // the frontend refers to it as `source_file`.
   if (row.primary_report_identifier !== undefined && row.source_file === undefined) {
@@ -274,6 +325,10 @@ export function filterRows(
   const ageMax = f.patient_age?.max ? Number(f.patient_age.max) : null;
   const dtMin = f.message_dt?.min || null;
   const dtMax = f.message_dt?.max || null;
+  const evSet = f.ev_source && f.ev_source.length ? new Set<string>(f.ev_source) : null;
+  const posSpan = f.ev_positive_span?.toLowerCase() ?? null;
+  const negSpan = f.ev_negative_span?.toLowerCase() ?? null;
+
   const has = (v: unknown, q: string) =>
     String(v ?? '')
       .toLowerCase()
@@ -286,6 +341,12 @@ export function filterRows(
     if (fac && !has(r.sending_facility, fac)) return false;
     if (sexSet && !sexSet.has(String(r.sex))) return false;
     if (modSet && !modSet.has(String(r.modality))) return false;
+    if (evSet && !evSet.has(evidenceCategory(r))) return false;
+    if (posSpan !== null && collapse(r.ev_positive_span).toLowerCase() !== posSpan) return false;
+    if (negSpan !== null && collapse(r.ev_negative_span).toLowerCase() !== negSpan) return false;
+    if (f.ev_has_negative !== undefined) {
+      if ((collapse(r.ev_negative_span) !== '') !== f.ev_has_negative) return false;
+    }
     if (ageMin !== null || ageMax !== null) {
       const raw = r.patient_age;
       if (raw == null || raw === '') return false;

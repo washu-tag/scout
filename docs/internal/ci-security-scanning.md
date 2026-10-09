@@ -120,7 +120,7 @@ clear the scan. Suppression accepts the stated risk; it does not patch the image
 The October 2026 exceptions expire on December 1, 2026:
 
 - **Transformer Jackson:** five newer parser/deserialization DoS findings are
-  limited to the shipped Spark 4.1.1, Hadoop and Parquet jar paths. Scout reads
+  limited to the shipped Spark 4.2.0, Hadoop and Parquet jar paths. Scout reads
   HL7 as text and does not configure the advisories' async/DataInput parsers,
   polymorphic fallback or identity-enabled mappings directly. This is not proof
   that every transitive path is unreachable, so ingestion DoS remains a residual
@@ -139,10 +139,10 @@ As checked on October 7, 2026, [Delta 4.4.1](https://pypi.org/project/delta-spar
 supports PySpark 4.2.0, and the official
 `spark:4.2.0-scala2.13-java21-python3-ubuntu` image is available. A full scan of that upstream image
 still reports all five Jackson findings above: it bundles Jackson 2.21.2 directly
-and older copies inside Hadoop and Parquet jars. Upgrading to this pair would not
-remove these exceptions. Remove them only when a candidate fixes the relevant
-copies and passes ingestion tests; include Hadoop/S3A and the ingestion test
-dependencies in that upgrade.
+and older copies inside Hadoop and Parquet jars. The transformer now uses this
+pair; the upgrade does not remove these exceptions. Remove them only when a
+candidate fixes the relevant copies and passes ingestion tests; keep Hadoop/S3A
+and the ingestion test dependencies aligned with future upgrades.
 
 Expiration makes these findings block CI again if upstream fixes have not been
 adopted. Reassess the affected paths and upstream releases before renewing an

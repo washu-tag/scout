@@ -89,6 +89,12 @@ configurations.all {
 		} else if (g == 'tools.jackson.core' && n in ['jackson-core', 'jackson-databind']) {
 			details.useVersion '3.1.7' // CVE-2026-89407/-89425/-91776/-91777
 			details.because 'Trivy HIGH'
+		} else if (g == 'at.yawk.lz4' && n == 'lz4-java') {
+			details.useVersion '1.11.4' // CVE-2026-106449/-106450/-106451/-106452/-106453
+			details.because 'Trivy HIGH'
+		} else if (g == 'org.apache.logging.log4j') {
+			details.useVersion '2.25.5' // CVE-2026-49844 (Dependabot MODERATE); bump the modules in lockstep
+			details.because 'Dependabot MODERATE'
 		}
 	}
 }
