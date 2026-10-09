@@ -120,7 +120,7 @@ clear the scan. Suppression accepts the stated risk; it does not patch the image
 The October 2026 exceptions expire on December 1, 2026:
 
 - **Transformer Jackson:** five newer parser/deserialization DoS findings are
-  limited to the shipped Spark 4.1.1, Hadoop and Parquet jar paths. Scout reads
+  limited to the shipped Spark 4.2.0, Hadoop and Parquet jar paths. Scout reads
   HL7 as text and does not configure the advisories' async/DataInput parsers,
   polymorphic fallback or identity-enabled mappings directly. This is not proof
   that every transitive path is unreachable, so ingestion DoS remains a residual
