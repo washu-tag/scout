@@ -612,6 +612,99 @@ def test_vetoes_reach_a_bracketed_positive(where: str, expected: list[str]) -> N
     assert sorted(v.pattern for v in plan.veto_for[positive]) == expected
 
 
+PE_UNVETOED = "(REGEXP_LIKE(report_section_impression, '(?is)pe') AND modality = 'CT')"
+PE_VETOED = (
+    "(REGEXP_LIKE(report_section_impression, '(?is)pe') "
+    "AND NOT REGEXP_LIKE(report_section_impression, '(?is)no pe'))"
+)
+
+
+@pytest.mark.parametrize(
+    "where", [f"{PE_UNVETOED} OR {PE_VETOED}", f"{PE_VETOED} OR {PE_UNVETOED}"]
+)
+def test_a_veto_from_one_arm_does_not_reach_another_arm(where: str) -> None:
+    """The unvetoed arm admits a CT row that says "no pe"."""
+    plan = build_plan(
+        f"SELECT primary_report_identifier FROM reports_latest WHERE {where}"
+    )
+    assert plan is not None
+    assert plan.veto_for == {}
+
+
+def test_a_veto_in_every_arm_is_kept() -> None:
+    plan = build_plan(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        f"({PE_VETOED} AND modality = 'CT') OR ({PE_VETOED} AND modality = 'MR')"
+    )
+    assert plan is not None
+    (positive,) = plan.positives
+    assert [v.pattern for v in plan.veto_for[positive]] == ["(?is)no pe"]
+
+
+@pytest.mark.parametrize(
+    "negation",
+    [
+        "IS FALSE",
+        "IS NOT TRUE",
+        "= FALSE",
+        "<> TRUE",
+        "IS DISTINCT FROM TRUE",
+        "IS NOT DISTINCT FROM FALSE",
+    ],
+)
+def test_a_comparison_to_false_is_a_veto(negation: str) -> None:
+    plan = build_plan(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_text, '(?is)stroke') "
+        f"AND REGEXP_LIKE(report_text, '(?is)no stroke') {negation}"
+    )
+    assert plan is not None
+    assert [p.pattern for p in plan.positives] == ["(?is)stroke"]
+    assert [v.pattern for v in plan.vetoes] == ["(?is)no stroke"]
+
+
+def test_is_not_false_stays_positive() -> None:
+    plan = build_plan(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_text, '(?is)stroke') IS NOT FALSE"
+    )
+    assert plan is not None
+    assert [p.pattern for p in plan.positives] == ["(?is)stroke"]
+    assert plan.vetoes == []
+
+
+@pytest.mark.parametrize(
+    "veto",
+    [
+        "NOT REGEXP_LIKE(report_text, '(?is)no stroke')",
+        "REGEXP_LIKE(report_text, '(?is)no stroke') IS FALSE",
+        "REGEXP_LIKE(report_text, '(?is)no stroke') = FALSE",
+    ],
+)
+def test_a_veto_keeps_its_blank_section_guard_in_any_negated_form(veto: str) -> None:
+    plan = build_plan(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_section_impression, '(?is)stroke') OR "
+        "(COALESCE(TRIM(report_section_impression), '') = '' "
+        f"AND REGEXP_LIKE(report_text, '(?is)stroke') AND {veto})"
+    )
+    assert plan is not None
+    (veto_leaf,) = plan.vetoes
+    assert plan.guard_for[veto_leaf] == [
+        frozenset({"COALESCE(TRIM(report_section_impression), '') = ''"})
+    ]
+
+
+def test_an_excluded_code_set_compared_to_false_is_not_a_code_match() -> None:
+    plan = build_plan(
+        "SELECT primary_report_identifier FROM reports_latest WHERE "
+        "REGEXP_LIKE(report_text, '(?is)stroke') "
+        "AND any_match(diagnoses, d -> d.diagnosis_code LIKE 'I63%') IS FALSE"
+    )
+    assert plan is not None
+    assert plan.dx_tests == []
+
+
 def test_planning_scans_each_sibling_branch_once(monkeypatch) -> None:
     """Rescanning the whole conjunction at every level made this quadratic.
     Counted, not timed, so a loaded runner cannot fail it."""

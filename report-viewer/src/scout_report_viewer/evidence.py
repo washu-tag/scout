@@ -144,13 +144,16 @@ def _blank_section_guard(node: exp.Expression) -> set[str]:
     rejects rows the WHERE admitted, which read back as unexplained.
     """
     found: set[str] = set()
+    child = node
     ancestor = node.parent
-    # Through NOT too: a veto sits under one, in the same conjunction as the
-    # positive it guards.
-    while isinstance(ancestor, (exp.Paren, exp.And, exp.Not)):
+    # Through a negation too: a veto sits under one, in the same conjunction as
+    # the positive it guards.
+    while isinstance(ancestor, (exp.Paren, exp.And, exp.Not)) or (
+        ancestor is not None and _compares_false(ancestor, child)
+    ):
         if isinstance(ancestor, exp.And):
             found |= _blank_sections_in(ancestor)
-        ancestor = ancestor.parent
+        child, ancestor = ancestor, ancestor.parent
     return found
 
 
@@ -171,13 +174,16 @@ def _is_negated(node: exp.Expression) -> bool:
 
 
 def _compares_false(parent: exp.Expression, child: exp.Expression) -> bool:
-    """`x = FALSE` and `x <> TRUE`, which negate without a NOT."""
-    if not isinstance(parent, (exp.EQ, exp.NEQ)):
+    """`x = FALSE`, `x IS FALSE`, `x <> TRUE` and their null-safe forms, which
+    negate without a NOT."""
+    if not isinstance(
+        parent, (exp.EQ, exp.Is, exp.NullSafeEQ, exp.NEQ, exp.NullSafeNEQ)
+    ):
         return False
     other = parent.expression if parent.this is child else parent.this
     if not isinstance(other, exp.Boolean):
         return False
-    return other.this is isinstance(parent, exp.NEQ)
+    return other.this is isinstance(parent, (exp.NEQ, exp.NullSafeNEQ))
 
 
 #: an inline flag group at the start that already sets case-insensitivity
@@ -381,12 +387,16 @@ def build_plan(sql: str) -> EvidencePlan | None:
         log.info("evidence: %d text predicates exceeds cap; skipping", len(seen))
         return None
 
+    # A veto holds only if every occurrence of the positive carries it; another
+    # arm can admit the row without it.
     for node, leaf in nodes:
         if leaf.negated:
             continue
         vetoes = _sibling_vetoes(node, nodes)
-        if vetoes:
-            plan.veto_for.setdefault(leaf, vetoes)
+        if leaf in plan.veto_for:
+            vetoes = [v for v in plan.veto_for[leaf] if v in vetoes]
+        plan.veto_for[leaf] = vetoes
+    plan.veto_for = {leaf: vetoes for leaf, vetoes in plan.veto_for.items() if vetoes}
 
     def source_rank(leaf: TextLeaf) -> int:
         return (
