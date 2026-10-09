@@ -112,6 +112,7 @@ updates:
 
   - package-ecosystem: 'pip'
     directory: '/extractor/hl7-transformer'
+    versioning-strategy: 'increase'
     schedule:
       interval: 'weekly'
     commit-message:
