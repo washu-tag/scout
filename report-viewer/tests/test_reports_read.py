@@ -30,6 +30,40 @@ def test_read_defaults_to_curated_not_epic_view(auth_headers, fake_trino):
     assert params == [["s3://b/1"]]
 
 
+def _with_highlights(monkeypatch) -> None:
+    from scout_report_viewer.routes import reports
+
+    async def expression(*_args):
+        return "CAST(ARRAY[] AS JSON)"
+
+    monkeypatch.setattr(reports, "_highlight_expression", expression)
+
+
+def test_read_falls_back_without_highlights(auth_headers, fake_trino, monkeypatch):
+    _with_highlights(monkeypatch)
+    fake_trino.error()
+    fake_trino(
+        ["primary_report_identifier"], [{"primary_report_identifier": "s3://b/1"}]
+    )
+    with TestClient(create_app()) as client:
+        r = _read(client, auth_headers, {"ids": ["s3://b/1"], "search_id": "s_1"})
+    assert r.status_code == 200, r.text
+    sent = [sql for sql, _ in fake_trino.calls]
+    assert len(sent) == 2
+    assert "ev_hits" in sent[0]
+    assert "ev_hits" not in sent[1]
+
+
+def test_read_does_not_retry_a_permission_denial(auth_headers, fake_trino, monkeypatch):
+    """The plain read reads the same columns, so it would be denied too."""
+    _with_highlights(monkeypatch)
+    fake_trino.error("PERMISSION_DENIED")
+    with TestClient(create_app()) as client:
+        r = _read(client, auth_headers, {"ids": ["s3://b/1"], "search_id": "s_1"})
+    assert r.status_code == 400, r.text
+    assert len(fake_trino.calls) == 1
+
+
 def test_read_epic_mrn_default_matches_raw_column_on_curated(auth_headers, fake_trino):
     # epic_mrn with no table -> reports_curated, matching the RAW column.
     fake_trino(

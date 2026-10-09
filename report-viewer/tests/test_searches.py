@@ -413,6 +413,24 @@ def test_rows_fall_back_when_trino_rejects_the_rewrite(
     assert "ev_source" not in sent[1]
 
 
+def test_rows_do_not_retry_a_permission_denial(client, auth_headers, fake_trino):
+    """The splice reads only columns the query already reads, so the original
+    would be denied too."""
+    fake_trino(_sample_columns(), _sample_rows())
+    created = client.post(
+        "/api/searches", json={"sql": _SQL_SCORED}, headers=auth_headers
+    )
+    assert created.status_code == 201, created.text
+
+    before = len(fake_trino.calls)
+    fake_trino.error("PERMISSION_DENIED")
+    r = client.get(f"/api/searches/{created.json()['id']}/rows", headers=auth_headers)
+    assert r.status_code == 502, r.text
+    sent = [sql for sql, _ in fake_trino.calls[before:]]
+    assert len(sent) == 1
+    assert "ev_source" in sent[0]
+
+
 def test_create_falls_back_when_the_rewrite_raises(
     client, auth_headers, fake_trino, monkeypatch
 ):

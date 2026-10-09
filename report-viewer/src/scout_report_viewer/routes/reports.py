@@ -185,7 +185,7 @@ async def read_reports(
             f"*, {hits_expression} AS {_HITS_COLUMN}" if hits_expression else "*"
         )
     except Exception as exc:
-        if not hits_expression:
+        if not hits_expression or not trino_client.is_retryable(exc):
             raise failed(exc)
         # Never lose a report to a reviewing aid.
         log.exception("highlight projection failed; re-reading without it")

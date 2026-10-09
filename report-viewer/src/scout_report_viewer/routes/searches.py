@@ -76,17 +76,18 @@ async def _run_with_fallback(
 
     The splice cannot change which rows match, but it can name a column the
     outer query does not expose, and a cohort must never be lost to a
-    reviewing aid. Retrying on every error is deliberate: Trino does not
+    reviewing aid. Retrying on most errors is deliberate: Trino does not
     attribute failures well enough to tell ours from the model's, so the logs
-    say which it was afterwards instead.
+    say which it was afterwards instead. Denials and kills are not retried,
+    see `trino_client.is_retryable`.
     """
     try:
         columns, rows = await run(scored)
         return columns, rows, scored != original
     except trino_client.ClientDisconnected:
         raise
-    except Exception:
-        if scored == original:
+    except Exception as exc:
+        if scored == original or not trino_client.is_retryable(exc):
             raise
         log.warning(
             "scored sql failed at trino; retrying without evidence", exc_info=True
