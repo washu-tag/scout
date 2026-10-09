@@ -119,12 +119,19 @@ class QueryFromFileResponse(BaseModel):
     column_inferred: bool
 
 
+MAX_READ_REPORTS_IDS = 100
+
+
 class ReadReportsRequest(BaseModel):
     """Fetch the full content of specific reports by ID. Backs the
     `scout_get_reports` tool surface AND the SPA row-expand panel
     (which sends an array of one)."""
 
-    ids: list[str] = Field(..., description="Report identifiers to fetch.")
+    ids: list[str] = Field(
+        ...,
+        max_length=MAX_READ_REPORTS_IDS,
+        description="Report identifiers to fetch.",
+    )
     id_column: str = Field(
         default="primary_report_identifier",
         description="Column to match `ids` against.",
