@@ -1,5 +1,33 @@
 # Changelog
 
+## [5.1.0](https://github.com/washu-tag/scout/compare/v5.0.0...v5.1.0) (2026-10-09)
+
+
+### Features
+
+* **deploy:** on-prem secret contract as code ([#787](https://github.com/washu-tag/scout/issues/787)) ([6967efc](https://github.com/washu-tag/scout/commit/6967efca5bd4120845401897c1cc8bc6199565bc))
+* **monitoring:** add monitoring for pluggable apps ([#770](https://github.com/washu-tag/scout/issues/770)) ([fbb2db0](https://github.com/washu-tag/scout/commit/fbb2db00b1aca006b7e5782224634187fcd37ed0))
+* **report-viewer:** derive match evidence from the search sql ([#849](https://github.com/washu-tag/scout/issues/849)) ([55f13eb](https://github.com/washu-tag/scout/commit/55f13eb60d5a38d75edce27704ce72e4e8e06393))
+* **voila:** playbooks behind an ALB-OIDC edge ([#851](https://github.com/washu-tag/scout/issues/851)) ([82d5827](https://github.com/washu-tag/scout/commit/82d5827e3f5b5c1261008bcdc3ae8f3e504f0819))
+
+
+### Bug Fixes
+
+* **build:** stop gradlew.bat line-ending churn from Dependabot ([#852](https://github.com/washu-tag/scout/issues/852)) ([69d4e9b](https://github.com/washu-tag/scout/commit/69d4e9baed61da8652f12c81706ac13b968d9438))
+* **deps:** patch spring-webflux, lz4-java, and log4j-api CVEs ([#854](https://github.com/washu-tag/scout/issues/854)) ([5948ac3](https://github.com/washu-tag/scout/commit/5948ac36f3ac2a18d9277314c480f59482475a89))
+* **hl7-listener:** deploy with make all, quiet spurious alerts ([#774](https://github.com/washu-tag/scout/issues/774)) ([c0718fb](https://github.com/washu-tag/scout/commit/c0718fb4d473f045b7104d22220f3550de48ed13))
+* **hl7-listener:** retry a failed batch instead of skipping it ([#813](https://github.com/washu-tag/scout/issues/813)) ([4a80709](https://github.com/washu-tag/scout/commit/4a807093a202774071803adf4a42d7f411ece30b))
+* keep backend keep-alive above reverse-proxy idle timeouts ([#766](https://github.com/washu-tag/scout/issues/766)) ([401db85](https://github.com/washu-tag/scout/commit/401db8545b709871b7c72db3868e195c9eb3688b))
+* **report-viewer:** suppress unfixable trivy cves ([#811](https://github.com/washu-tag/scout/issues/811)) ([d011c77](https://github.com/washu-tag/scout/commit/d011c773468eebd2d930761216a97b1aa28114fa))
+* **security:** address jackson-databind CVE-2026-68497 ([#777](https://github.com/washu-tag/scout/issues/777)) ([c328313](https://github.com/washu-tag/scout/commit/c32831387352cfdb4e6aedae140bf8a8a47086af))
+* **security:** update image dependencies and scope upstream exceptions ([#812](https://github.com/washu-tag/scout/issues/812)) ([280913b](https://github.com/washu-tag/scout/commit/280913b95b461d652711997a3ae595cf5b9b153f))
+* **security:** upgrade openssl and pyjwt to clear new Trivy findings ([#780](https://github.com/washu-tag/scout/issues/780)) ([5c59868](https://github.com/washu-tag/scout/commit/5c59868434f30df79bdf2da53eb0c6078ba3a750))
+
+
+### Performance Improvements
+
+* speed up CI deploy and ingest-test jobs ([#773](https://github.com/washu-tag/scout/issues/773)) ([77d43c0](https://github.com/washu-tag/scout/commit/77d43c024248a8c250e470c31fd71583dfe9e835))
+
 ## [5.0.0](https://github.com/washu-tag/scout/compare/v4.3.0...v5.0.0) (2026-09-25)
 
 
