@@ -395,7 +395,8 @@
           "roles",
           "basic",
           "email",
-          "trino-audience"
+          "trino-audience"{{- if eq (.Values.enableXnat | toString) "true" }},
+          "xnat-audience"{{- end }}
         ],
         "optionalClientScopes": [
           "address",
@@ -1379,6 +1380,39 @@
           }
         ]
       },
+      {{- if eq (.Values.enableXnat | toString) "true" }}
+      {{- /* Adds aud=xnat to access tokens. XNAT's openid plugin validates
+          audCheck.acceptedAudiences=xnat on inbound bearer tokens; a token
+          without this claim is rejected. Any client whose users call XNAT's
+          REST API needs this scope in its default scopes.
+          Roles ride along on the built-in `roles` scope, which is not
+          restricted to the issuing client, so the same token already carries
+          resource_access.xnat.roles for the plugin's role gate. */}}
+      {
+        "name": "xnat-audience",
+        "description": "Adds aud=xnat to access tokens for clients calling XNAT",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "xnat-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "xnat",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
+        ]
+      },
+      {{- end }}
       {{- /* Retired, not deleted */}}
       {
         "name": "microprofile-jwt",
