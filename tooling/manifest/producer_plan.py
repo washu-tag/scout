@@ -28,8 +28,7 @@ REPO = "ghcr.io/washu-tag/"
 WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/ci.yaml"
 
 
-def catalog(workflow: Path = WORKFLOW) -> tuple[dict, dict, dict]:
-    """Read the existing component matrices and their exact/tree path filters."""
+def workflow_catalog(workflow: Path) -> tuple[dict, dict]:
     jobs = yaml.safe_load(workflow.read_text())["jobs"]
     filters = yaml.safe_load(
         next(
@@ -38,34 +37,40 @@ def catalog(workflow: Path = WORKFLOW) -> tuple[dict, dict, dict]:
             if step.get("id") == "filter"
         )
     )
+    return jobs, filters
 
-    def scopes(name: str) -> tuple[str, ...]:
-        patterns = filters.get(name)
-        if not isinstance(patterns, list) or not patterns:
-            raise ValueError(f"missing component path filter: {name}")
-        result = []
-        for pattern in patterns:
-            if not isinstance(pattern, str):
-                raise ValueError(f"unsupported component path filter: {name}")
-            scope = pattern[:-2] if pattern.endswith("/**") else pattern
-            if not scope or re.search(r"[*?!\[\]{}()]", scope):
-                raise ValueError(f"unsupported component path pattern: {pattern}")
-            result.append(scope)
-        return tuple(result)
 
+def scopes(filters: dict, name: str) -> tuple[str, ...]:
+    patterns = filters.get(name)
+    if not isinstance(patterns, list) or not patterns:
+        raise ValueError(f"missing component path filter: {name}")
+    result = []
+    for pattern in patterns:
+        if not isinstance(pattern, str):
+            raise ValueError(f"unsupported component path filter: {name}")
+        scope = pattern[:-2] if pattern.endswith("/**") else pattern
+        if not scope or re.search(r"[*?!\[\]{}()]", scope):
+            raise ValueError(f"unsupported component path pattern: {pattern}")
+        result.append(scope)
+    return tuple(result)
+
+
+def catalog(workflow: Path = WORKFLOW) -> tuple[dict, dict, dict]:
+    """Read component and shared build paths from the existing CI catalog."""
+    jobs, filters = workflow_catalog(workflow)
     images, charts, image_charts = {}, {}, {}
     for item in jobs["build-and-upload"]["strategy"]["matrix"]["include"]:
         name = item["image-name"]
         if name in images:
             raise ValueError(f"duplicate image component: {name}")
-        images[name] = scopes(name)
+        images[name] = scopes(filters, name)
     for item in jobs["publish-charts"]["strategy"]["matrix"]["include"]:
         name = item["chart-name"]
         if name in charts:
             raise ValueError(f"duplicate chart component: {name}")
         if item["changed"] != name + "-chart":
             raise ValueError(f"unexpected chart path filter: {name}")
-        charts[name] = scopes(item["changed"])
+        charts[name] = scopes(filters, item["changed"])
         if image := item.get("image-name"):
             if image not in images or image in image_charts:
                 raise ValueError(f"unknown or multiply mapped chart image: {image}")
@@ -76,15 +81,10 @@ def catalog(workflow: Path = WORKFLOW) -> tuple[dict, dict, dict]:
 
 
 IMAGE_PATHS, CHART_PATHS, IMAGE_CHARTS = catalog()
-# These inputs can change build/package contents outside any component directory.
-# Keep broad fail-safe coverage; an unnecessary rebuild is safer than stale carry.
-FULL_PATHS = (
-    ".github/",
-    "tooling/manifest/",
-    "tooling/deploy/",
-    "ansible/group_vars/all/versions.yaml",
-)
-CONFIG_PATHS = ("deploy/", "cosign.pub", "ansible/group_vars/all/versions.yaml")
+_FILTERS = workflow_catalog(WORKFLOW)[1]
+IMAGE_BUILD_PATHS = scopes(_FILTERS, "image_build")
+CHART_BUILD_PATHS = scopes(_FILTERS, "chart_build")
+CONFIG_PATHS = scopes(_FILTERS, "config")
 
 
 def sha256(path: Path) -> str:
@@ -103,14 +103,14 @@ def matches(path: str, scopes: tuple[str, ...]) -> bool:
 
 
 def classify(paths: list[str], full: bool = False) -> tuple[dict[str, bool], bool]:
-    full = full or any(matches(path, FULL_PATHS) for path in paths)
     flags = {
-        name: full or any(matches(p, scopes) for p in paths)
+        name: full or any(matches(p, scopes + IMAGE_BUILD_PATHS) for p in paths)
         for name, scopes in IMAGE_PATHS.items()
     }
     flags.update(
         {
-            name + "-chart": full or any(matches(p, scopes) for p in paths)
+            name + "-chart": full
+            or any(matches(p, scopes + CHART_BUILD_PATHS) for p in paths)
             for name, scopes in CHART_PATHS.items()
         }
     )

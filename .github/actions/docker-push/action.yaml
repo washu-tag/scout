@@ -14,10 +14,6 @@ inputs:
       record no digest.
     required: false
     default: ''
-  push-derived:
-    description: 'Also update the legacy derived tag (false for an unchanged vendor image rebuilt into the build lane).'
-    required: false
-    default: 'true'
 outputs:
   digest:
     description: 'Registry digest (sha256:...) of the pushed image; empty when no build-lane version was given.'
@@ -36,15 +32,12 @@ runs:
       env:
         IMAGE_NAME: ${{ inputs.image-name }}
         VERSION: ${{ inputs.version }}
-        PUSH_DERIVED: ${{ inputs.push-derived }}
       run: |
         set -euo pipefail
         # docker load prints "Loaded image: <ref>"; that ref carries the derived
         # tag baked into the tar by docker-build-cache. Push it (existing behavior).
         loaded_ref="$(docker load --input "${RUNNER_TEMP}/${IMAGE_NAME}.tar" | sed -e 's/.*: //g')"
-        if [ "$PUSH_DERIVED" = true ]; then
-          docker push "${loaded_ref}"
-        fi
+        docker push "${loaded_ref}"
 
         # No build-lane version (e.g. demo publish): derived tag only, done.
         if [ -z "${VERSION}" ]; then
