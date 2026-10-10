@@ -1,0 +1,1127 @@
+#!/usr/bin/env python3
+"""Promote an exact, proven Scout package before publishing its GitHub Release.
+
+A successful CI attempt binds candidate tests to published digests; managed-key
+OCI signatures establish artifact identity. The release record binds both.
+Mutable build tags and commit statuses are never eligibility evidence.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import io
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import time
+import zipfile
+from urllib.parse import quote
+
+import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "deploy"))
+from artifact_identity import (  # noqa: E402
+    DIGEST,
+    REVISION,
+    IdentityError,
+    _json_object,
+    validate_manifest,
+    validate_receipt,
+)
+
+REPOSITORY = "washu-tag/scout"
+REGISTRIES = {
+    "manifestDigest": "ghcr.io/washu-tag/manifests/scout-manifest",
+    "bundleDigest": "ghcr.io/washu-tag/manifests/scout",
+    "configDigest": "ghcr.io/washu-tag/manifests/scout-config",
+}
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "manifest"))
+from producer_plan import IMAGE_PATHS, VENDOR_IMAGES  # noqa: E402
+
+IMAGES = [name for name in IMAGE_PATHS if name not in VENDOR_IMAGES]
+CHARTS = {
+    chart["chart-name"]: chart["chart-dir"]
+    for chart in yaml.safe_load(
+        (Path(__file__).resolve().parents[2] / ".github/workflows/ci.yaml").read_text()
+    )["jobs"]["publish-charts"]["strategy"]["matrix"]["include"]
+}
+VERSION = re.compile(r"[1-9][0-9]*\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
+DRAFT_INPUTS = "<!-- scout-release-inputs: "
+MAX_JSON = 16384
+MAX_MANIFEST = 1024 * 1024
+REQUIRED_JOBS = (
+    "prepare-flux-artifacts",
+    "deploy-and-test-flux (ingest)",
+    "deploy-and-test-flux (auth)",
+    "publish-haul",
+    "config-artifact-publish",
+)
+
+
+class PromotionError(ValueError):
+    """Missing or conflicting release evidence; no silent fallback is permitted."""
+
+
+class Pending(PromotionError):
+    """The selected CI build is still running or has not appeared."""
+
+
+class TransientRead(PromotionError):
+    """A temporary GitHub read failure; only the bounded build wait retries it."""
+
+
+def require(ok, message):
+    if not ok:
+        raise PromotionError(message)
+
+
+def digest(raw):
+    return "sha256:" + hashlib.sha256(raw).hexdigest()
+
+
+def canonical(value):
+    # JSON is also valid YAML 1.2. Stable bytes make partial publication resumable.
+    return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode()
+
+
+def object_bytes(raw, limit=MAX_JSON):
+    require(len(raw) <= limit, "JSON evidence exceeds size limit")
+    return _json_object(raw)
+
+
+def positive(value):
+    require(
+        type(value) is int and value > 0,
+        "run and attempt identifiers must be positive integers",
+    )
+    return value
+
+
+def command(args, *, output_limit=MAX_MANIFEST, env=None):
+    proc = subprocess.run(args, capture_output=True, env=env)
+    # Do not print external output: API/registry data can contain log commands.
+    require(proc.returncode == 0, f"{args[0]} operation failed")
+    require(len(proc.stdout) <= output_limit, f"{args[0]} output exceeds size limit")
+    return proc.stdout
+
+
+class GitHub:
+    """Use gh's credential handling and redirects, retaining real HTTP status."""
+
+    @staticmethod
+    def mutation_env():
+        env = os.environ.copy()
+        if env.get("RELEASE_GH_TOKEN"):
+            env["GH_TOKEN"] = env["RELEASE_GH_TOKEN"]
+        return env
+
+    def request(self, path, *, method="GET", data=None, missing_ok=False):
+        require(
+            path.startswith("/repos/") and "\n" not in path, "invalid GitHub API path"
+        )
+        args = ["gh", "api", "--include", "--method", method, path]
+        payload = None
+        if data is not None:
+            args += ["--input", "-"]
+            payload = canonical(data)
+        release_access = re.match(r"/repos/[^/]+/[^/]+/releases(?:/|\?|$)", path)
+        result = subprocess.run(
+            args,
+            input=payload,
+            capture_output=True,
+            env=self.mutation_env() if method != "GET" or release_access else None,
+        )
+        raw = result.stdout.replace(b"\r\n", b"\n")
+        if method == "GET" and result.returncode == 1 and not raw:
+            raise TransientRead("GitHub API read failed before receiving a response")
+        match = re.match(rb"HTTP/\S+ (\d{3})[^\n]*\n", raw)
+        require(match is not None, "GitHub API returned no HTTP status")
+        status = int(match.group(1))
+        if method == "GET" and 500 <= status < 600:
+            raise TransientRead(f"GitHub API read failed (HTTP {status})")
+        require(b"\n\n" in raw, "GitHub API response has no body boundary")
+        body = raw.split(b"\n\n", 1)[1]
+        if status == 404 and missing_ok:
+            return None
+        require(
+            result.returncode == 0 and 200 <= status < 300,
+            f"GitHub API request failed (HTTP {status})",
+        )
+        require(len(body) <= 8 * MAX_MANIFEST, "GitHub API response exceeds size limit")
+        if not body.strip():
+            return {}
+        try:
+            value = json.loads(body)
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise PromotionError("invalid GitHub API JSON") from exc
+        require(isinstance(value, (dict, list)), "invalid GitHub API response type")
+        return value
+
+    def download(self, path):
+        # gh follows the artifact's signed storage redirect; no URL from JSON is executed.
+        return command(["gh", "api", path], output_limit=MAX_MANIFEST)
+
+    def upload(self, repository, release_id, file):
+        # Address the selected draft by id; do not resolve a public tag again.
+        url = f"https://uploads.github.com/repos/{repository}/releases/{positive(release_id)}/assets?name={quote(file.name, safe='')}"
+        command(
+            [
+                "gh",
+                "api",
+                "--method",
+                "POST",
+                "-H",
+                "Content-Type: application/octet-stream",
+                "--input",
+                str(file),
+                url,
+            ],
+            env=self.mutation_env(),
+        )
+
+    def asset(self, repository, asset_id):
+        return command(
+            [
+                "gh",
+                "api",
+                "-H",
+                "Accept: application/octet-stream",
+                f"/repos/{repository}/releases/assets/{positive(asset_id)}",
+            ],
+            output_limit=MAX_MANIFEST,
+            env=self.mutation_env(),
+        )
+
+
+def pages(api, path, key):
+    separator = "&" if "?" in path else "?"
+    out = []
+    for page in range(1, 101):
+        result = api.request(f"{path}{separator}per_page=100&page={page}")
+        items = (
+            result
+            if key is None
+            else result.get(key) if isinstance(result, dict) else None
+        )
+        require(
+            isinstance(items, list) and all(isinstance(i, dict) for i in items),
+            "invalid paginated GitHub response",
+        )
+        out.extend(items)
+        if len(items) < 100:
+            return out
+    raise PromotionError("GitHub pagination exceeds bounded evidence search")
+
+
+def workflow_id(api, repository, filename):
+    item = api.request(f"/repos/{repository}/actions/workflows/{filename}")
+    require(
+        item.get("path") == f".github/workflows/{filename}", "unexpected workflow path"
+    )
+    return positive(item.get("id"))
+
+
+def run_attempt(api, repository, run_id, attempt, revision, branch="main"):
+    run_id, attempt = positive(run_id), positive(attempt)
+    run = api.request(f"/repos/{repository}/actions/runs/{run_id}/attempts/{attempt}")
+    expected = {
+        "id": run_id,
+        "run_attempt": attempt,
+        "workflow_id": workflow_id(api, repository, "ci.yaml"),
+        "head_branch": branch,
+        "head_sha": revision,
+    }
+    require(
+        run.get("event")
+        in (("push",) if branch == "main" else ("push", "workflow_dispatch")),
+        "workflow attempt event mismatch",
+    )
+    for key, value in expected.items():
+        require(
+            type(run.get(key)) is type(value) and run[key] == value,
+            "workflow attempt identity mismatch: " + key,
+        )
+    for key in ("repository", "head_repository"):
+        require(
+            isinstance(run.get(key), dict) and run[key].get("full_name") == repository,
+            "workflow attempt repository mismatch",
+        )
+    if run.get("status") != "completed":
+        raise Pending("workflow attempt is not completed")
+    require(run.get("conclusion") == "success", "workflow attempt did not succeed")
+    return run
+
+
+def artifact_json(api, repository, run, name, filename):
+    found = [
+        a
+        for a in pages(
+            api, f"/repos/{repository}/actions/runs/{run['id']}/artifacts", "artifacts"
+        )
+        if a.get("name") == name
+    ]
+    require(len(found) == 1, "missing or ambiguous attempt-specific evidence artifact")
+    artifact = found[0]
+    require(artifact.get("expired") is False, "evidence artifact expired")
+    context = artifact.get("workflow_run")
+    require(
+        isinstance(context, dict)
+        and context.get("id") == run["id"]
+        and context.get("head_sha") == run["head_sha"],
+        "artifact belongs to a different workflow run",
+    )
+    raw = api.download(
+        f"/repos/{repository}/actions/artifacts/{positive(artifact.get('id'))}/zip"
+    )
+    advertised = artifact.get("digest")
+    if advertised is not None:
+        require(
+            DIGEST.fullmatch(advertised) and digest(raw) == advertised,
+            "evidence archive digest mismatch",
+        )
+    try:
+        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+            # GitHub's archive is only a container for the named receipt; no
+            # paths are extracted or repository code executed from its members.
+            return _json_object(archive.read(filename))
+    except (KeyError, zipfile.BadZipFile, RuntimeError, OSError) as exc:
+        raise PromotionError("unreadable evidence archive or missing receipt") from exc
+
+
+def validate_jobs(api, repository, run):
+    jobs = pages(
+        api,
+        f"/repos/{repository}/actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs",
+        "jobs",
+    )
+    for name in REQUIRED_JOBS:
+        matched = [job for job in jobs if job.get("name") == name]
+        require(len(matched) == 1, "missing or ambiguous required CI job")
+        job = matched[0]
+        require(
+            job.get("run_id") == run["id"] and job.get("head_sha") == run["head_sha"],
+            "CI job belongs to a different workflow",
+        )
+        require(
+            job.get("run_attempt", run["run_attempt"]) == run["run_attempt"],
+            "CI job belongs to another attempt",
+        )
+        require(
+            job.get("status") == "completed" and job.get("conclusion") == "success",
+            "required CI job did not succeed in this attempt",
+        )
+
+
+def evidence(api, repository, revision, producer_id, producer_attempt):
+    require(repository == REPOSITORY, "promotion is limited to the upstream repository")
+    require(
+        isinstance(revision, str) and REVISION.fullmatch(revision),
+        "invalid source revision",
+    )
+    producer_run = run_attempt(
+        api,
+        repository,
+        producer_id,
+        producer_attempt,
+        revision,
+    )
+    validate_jobs(api, repository, producer_run)
+    producer = artifact_json(
+        api,
+        repository,
+        producer_run,
+        f"scout-config-ref-{producer_attempt}",
+        "scout-config-ref.json",
+    )
+    validate_receipt(
+        producer,
+        repository=repository,
+        revision=revision,
+        run_id=producer_id,
+        run_attempt=producer_attempt,
+        require_bundle=True,
+    )
+    return producer
+
+
+def find_evidence(api, repository, revision, branch="main"):
+    require(
+        repository == REPOSITORY and REVISION.fullmatch(revision),
+        "unsupported repository or revision",
+    )
+    require(
+        bool(branch) and not any(c in branch for c in "\n\r"), "invalid release branch"
+    )
+    workflow = workflow_id(api, repository, "ci.yaml")
+    event = "event=push&" if branch == "main" else ""
+    candidates = pages(
+        api,
+        f"/repos/{repository}/actions/workflows/{workflow}/runs?{event}branch={quote(branch, safe='')}&head_sha={revision}",
+        "workflow_runs",
+    )
+    allowed_events = ("push",) if branch == "main" else ("push", "workflow_dispatch")
+    candidates = [
+        r
+        for r in candidates
+        if r.get("head_sha") == revision and r.get("event") in allowed_events
+    ]
+    if branch == "main":
+        require(
+            len(candidates) <= 1, "ambiguous producer runs for the release revision"
+        )
+    # GitHub lists newest first. A branch may need a fresh manual dispatch for
+    # the same stamped source; copy-flux-artifacts rechecks that selected attempt.
+    if not candidates:
+        raise Pending("producer run has not appeared")
+    current = candidates[0]
+    if branch != "main":
+        run = run_attempt(
+            api,
+            repository,
+            positive(current.get("id")),
+            positive(current.get("run_attempt")),
+            revision,
+            branch,
+        )
+        return dict(
+            runId=run["id"],
+            runAttempt=run["run_attempt"],
+            revision=revision,
+            version="",
+        )
+    return evidence(
+        api,
+        repository,
+        revision,
+        positive(current.get("id")),
+        positive(current.get("run_attempt")),
+    )
+
+
+class OCI:
+    def __init__(self, public_key):
+        self.public_key = str(public_key)
+
+    def manifest(self, reference):
+        return command(["oras", "manifest", "fetch", reference])
+
+    def resolve(self, reference, *, missing_ok=False):
+        result = subprocess.run(
+            ["oras", "manifest", "fetch", "--descriptor", reference],
+            capture_output=True,
+        )
+        if result.returncode:
+            # Registry auth, timeouts and transport errors must never mean absent.
+            absent = re.search(
+                rb"\b(?:MANIFEST_UNKNOWN|manifest unknown)\b", result.stderr
+            )
+            absent = absent or result.stderr.strip().endswith(
+                (reference + ": not found").encode()
+            )
+            if missing_ok and absent:
+                return None
+            raise PromotionError("OCI descriptor lookup failed")
+        value = object_bytes(result.stdout).get("digest")
+        require(
+            isinstance(value, str) and DIGEST.fullmatch(value),
+            "invalid OCI descriptor digest",
+        )
+        return value
+
+    def verify(self, reference, *, revision=None):
+        command(
+            [
+                "cosign",
+                "verify",
+                "--key",
+                self.public_key,
+                "--insecure-ignore-tlog",
+                *(
+                    ["-a", "org.opencontainers.image.revision=" + revision]
+                    if revision
+                    else []
+                ),
+                reference,
+            ],
+            output_limit=4 * MAX_MANIFEST,
+        )
+
+    def blob(self, repository, descriptor):
+        require(
+            type(descriptor.get("size")) is int
+            and 0 < descriptor["size"] <= MAX_MANIFEST,
+            "invalid haul layer size",
+        )
+        value = descriptor.get("digest")
+        require(
+            isinstance(value, str) and DIGEST.fullmatch(value),
+            "invalid haul layer digest",
+        )
+        raw = command(
+            ["oras", "blob", "fetch", "--output", "-", repository + "@" + value]
+        )
+        require(
+            len(raw) == descriptor["size"] and digest(raw) == value,
+            "haul layer digest/size mismatch",
+        )
+        return raw
+
+    def tag(self, reference, version):
+        command(["oras", "tag", reference, version])
+
+    def sign_record(self, record, bundle):
+        command(
+            [
+                "cosign",
+                "sign-blob",
+                "--key",
+                "env://COSIGN_PRIVATE_KEY",
+                "--use-signing-config=false",
+                "--tlog-upload=false",
+                "--yes",
+                "--bundle",
+                str(bundle),
+                str(record),
+            ]
+        )
+        self.verify_record(record, bundle)
+
+    def verify_record(self, record, bundle):
+        command(
+            [
+                "cosign",
+                "verify-blob",
+                "--key",
+                self.public_key,
+                "--insecure-ignore-tlog",
+                "--bundle",
+                str(bundle),
+                str(record),
+            ]
+        )
+
+
+def verify_package(oci, producer):
+    documents = {}
+    for field, repository in REGISTRIES.items():
+        reference = repository + "@" + producer[field]
+        raw = oci.manifest(reference)
+        require(digest(raw) == producer[field], "package OCI manifest digest mismatch")
+        manifest = object_bytes(raw, MAX_MANIFEST)
+        if field == "configDigest":
+            validate_manifest(raw, producer)
+        else:
+            annotations = manifest.get("annotations", {})
+            expected = {
+                "org.opencontainers.image.source": "https://github.com/"
+                + producer["repository"],
+                "org.opencontainers.image.revision": producer["revision"],
+                "org.opencontainers.image.version": producer["version"],
+                "io.scout.build.run-id": str(producer["runId"]),
+                "io.scout.build.run-attempt": str(producer["runAttempt"]),
+            }
+            if field == "bundleDigest":
+                expected["io.scout.build.manifest-digest"] = producer["manifestDigest"]
+            require(
+                isinstance(annotations, dict)
+                and all(annotations.get(k) == v for k, v in expected.items()),
+                "package OCI producer annotations mismatch",
+            )
+            require(
+                annotations.get("io.scout.build.carry-policy") == "predecessor-v1",
+                "package lacks validated producer carry policy",
+            )
+        oci.verify(reference)
+        documents[field] = manifest
+    return documents
+
+
+def compatibility(oci, version, manifest, revision):
+    # Read the existing signed Hauler inventory; this is not a second component BOM.
+    layers = manifest.get("layers", [])
+    require(
+        isinstance(layers, list) and 1 <= len(layers) <= 8,
+        "invalid haul manifest layers",
+    )
+    refs = {}
+    for layer in layers:
+        require(
+            isinstance(layer, dict) and layer.get("mediaType") == "application/yaml",
+            "unexpected haul manifest layer",
+        )
+        raw = oci.blob(REGISTRIES["manifestDigest"], layer)
+        for match in re.finditer(rb"^\s*- name:\s*(\S+)\s*$", raw, re.MULTILINE):
+            reference = match.group(1).decode("ascii")
+            repository, separator, sha = reference.partition("@")
+            require(
+                separator and DIGEST.fullmatch(sha),
+                "haul inventory has an unpinned component",
+            )
+            repository = repository.rsplit(":", 1)[0]
+            require(
+                repository not in refs, "haul inventory contains a duplicate component"
+            )
+            refs[repository] = sha
+    result = {
+        "scope": "legacy Ansible release outputs; release-version charts are separately packaged and were not tested by the Flux proof",
+        "images": {},
+        "charts": {},
+    }
+    for name in IMAGES:
+        repository = "ghcr.io/washu-tag/" + name
+        expected = refs.get(repository)
+        require(expected is not None, "versioned image is absent from signed haul")
+        require(
+            oci.resolve(repository + ":" + version) == expected,
+            "legacy release image differs from tested package",
+        )
+        reference = repository + "@" + expected
+        oci.verify(reference)
+        result["images"][name] = reference
+    for name in CHARTS:
+        repository = "ghcr.io/washu-tag/charts/" + name
+        sha = oci.resolve(repository + ":" + version)
+        reference = repository + "@" + sha
+        oci.verify(reference, revision=revision)
+        result["charts"][name] = reference
+    return result
+
+
+def release_record(version, producer, legacy, boundary_sha):
+    return {
+        "schemaVersion": 1,
+        "kind": "ScoutRelease",
+        "version": version,
+        "repository": producer["repository"],
+        "revision": producer["revision"],
+        "boundaryRevision": boundary_sha,
+        "producer": producer,
+        "verification": {
+            "workflow": ".github/workflows/ci.yaml",
+            "profile": "onprem-core-ingest-auth",
+            "valuesMode": "sops",
+            "jobs": list(REQUIRED_JOBS),
+        },
+        "artifacts": {
+            field: repository + "@" + producer[field]
+            for field, repository in REGISTRIES.items()
+        },
+        "compatibility": legacy,
+        "scope": "The published config and images passed the same CI attempt's on-prem core ingest/auth tests. The co-produced haul is signed; bundle restore and disconnected completeness are not certified.",
+    }
+
+
+def release_assets(api, repository, release, names, *, starters=None):
+    assets = pages(
+        api, f"/repos/{repository}/releases/{positive(release.get('id'))}/assets", None
+    )
+    require(
+        all(
+            asset.get("state") != "starter" or asset.get("name") in names
+            for asset in assets
+        ),
+        "unexpected incomplete release asset",
+    )
+    result = {}
+    for name in names:
+        matches = [a for a in assets if a.get("name") == name]
+        require(len(matches) <= 1, "duplicate release evidence asset")
+        if matches:
+            asset = matches[0]
+            asset_id = positive(asset.get("id"))
+            require(
+                type(asset.get("size")) is int, "invalid release evidence asset size"
+            )
+            if asset.get("state") == "starter" and asset["size"] == 0:
+                require(
+                    starters is not None and release.get("draft") is True,
+                    "incomplete evidence is allowed only in a recoverable draft",
+                )
+                starters.append(
+                    {"id": asset_id, "name": name, "state": "starter", "size": 0}
+                )
+                continue
+            require(
+                asset.get("state") == "uploaded" and 0 < asset["size"] <= MAX_MANIFEST,
+                "invalid release evidence asset state or size",
+            )
+            result[name] = api.asset(repository, asset_id)
+    return result
+
+
+def remove_empty_starters(api, repository, release, starters):
+    """Remove only rechecked empty placeholders, after promotion's full preflight."""
+    current_release = api.request(
+        f"/repos/{repository}/releases/{positive(release.get('id'))}"
+    )
+    require(
+        current_release.get("id") == release["id"]
+        and current_release.get("draft") is True
+        and current_release.get("tag_name") == release["tag_name"],
+        "release changed before incomplete upload recovery",
+    )
+    # Check the complete deletion set before deleting any member. A completed
+    # upload, renamed asset or another release state must never be overwritten.
+    for expected in starters:
+        current = api.request(f"/repos/{repository}/releases/assets/{expected['id']}")
+        require(
+            isinstance(current, dict)
+            and all(
+                type(current.get(key)) is type(value) and current[key] == value
+                for key, value in expected.items()
+            ),
+            "incomplete upload changed before recovery",
+        )
+    for expected in starters:
+        api.request(
+            f"/repos/{repository}/releases/assets/{expected['id']}", method="DELETE"
+        )
+
+
+def existing_release(api, repository, version):
+    # The tag endpoint is documented as published-only. Drafts are visible in
+    # this listing with the release App's write credentials.
+    matches = [
+        release
+        for release in pages(api, f"/repos/{repository}/releases", None)
+        if release.get("tag_name") == "v" + version
+    ]
+    require(len(matches) <= 1, "multiple releases use the requested version")
+    if not matches:
+        return None
+    result = api.request(
+        f"/repos/{repository}/releases/{positive(matches[0].get('id'))}"
+    )
+    require(
+        result.get("tag_name") == "v" + version and type(result.get("draft")) is bool,
+        "release metadata changed during discovery",
+    )
+    return result
+
+
+def promotion_inputs(version, revision, producer_id, producer_attempt, boundary_sha):
+    require(VERSION.fullmatch(version), "release version must be X.Y.Z with major >= 1")
+    require(REVISION.fullmatch(revision), "invalid stamped source revision")
+    require(REVISION.fullmatch(boundary_sha), "invalid release boundary revision")
+    return dict(
+        version=version,
+        revision=revision,
+        runId=positive(producer_id),
+        runAttempt=positive(producer_attempt),
+        boundaryRevision=boundary_sha,
+    )
+
+
+def draft_inputs(release):
+    marker = re.findall(
+        re.escape(DRAFT_INPUTS) + r"(.*?) -->", release.get("body") or ""
+    )
+    require(len(marker) <= 1, "ambiguous draft release inputs")
+    return object_bytes(marker[0].encode()) if marker else None
+
+
+def resume_inputs(api, repository, version):
+    """Discover identities only; execute the selected revision to revalidate them.
+
+    A draft's small body marker survives an interrupted first asset upload. Once
+    present, the signed record is authoritative and must agree with that marker.
+    This bootstrap deliberately does not regenerate a record using current code.
+    """
+    require(repository == REPOSITORY, "release is limited to the upstream repository")
+    require(VERSION.fullmatch(version), "invalid release version")
+    existing = existing_release(api, repository, version)
+    if existing is None:
+        return {}
+    name = f"scout-release-{version}.yaml"
+    saved = release_assets(
+        api,
+        repository,
+        existing,
+        (name, f"scout-release-{version}.sigstore.json"),
+        starters=[],
+    )
+    inputs = draft_inputs(existing)
+    if name in saved:
+        record = object_bytes(saved[name])
+        require(
+            record.get("repository") == repository and record.get("version") == version,
+            "release record identity mismatch",
+        )
+        producer = record.get("producer", {})
+        require(
+            producer.get("revision") == record.get("revision"),
+            "release record source mismatch",
+        )
+        recorded = promotion_inputs(
+            version,
+            record.get("revision", ""),
+            producer.get("runId"),
+            producer.get("runAttempt"),
+            record.get("boundaryRevision", ""),
+        )
+        require(inputs in (None, recorded), "draft inputs conflict with release record")
+        inputs = recorded
+    require(inputs is not None, "existing release has no resumable promotion identity")
+    expected = promotion_inputs(
+        version,
+        inputs.get("revision", ""),
+        inputs.get("runId"),
+        inputs.get("runAttempt"),
+        inputs.get("boundaryRevision", ""),
+    )
+    require(inputs == expected, "draft release input mismatch")
+    require(
+        existing.get("draft") is True or name in saved,
+        "published release lacks a promotion record",
+    )
+    return expected
+
+
+def charts_to_package(oci, version, revision, *, resume=False):
+    """Never replace an existing signed compatibility chart during a retry."""
+    require(VERSION.fullmatch(version), "invalid release version")
+    require(REVISION.fullmatch(revision), "invalid stamped chart revision")
+    missing = {}
+    for name, directory in CHARTS.items():
+        repository = "ghcr.io/washu-tag/charts/" + name
+        sha = oci.resolve(repository + ":" + version, missing_ok=True)
+        if sha is None:
+            require(
+                not resume,
+                "recorded release chart is missing; restore its original digest",
+            )
+            missing[name] = directory
+        else:
+            oci.verify(repository + "@" + sha, revision=revision)
+    return missing
+
+
+def promote(
+    api,
+    oci,
+    *,
+    repository,
+    version,
+    revision,
+    producer_id,
+    producer_attempt,
+    boundary_sha,
+    work_dir,
+):
+    inputs = promotion_inputs(
+        version, revision, producer_id, producer_attempt, boundary_sha
+    )
+    producer = evidence(
+        api,
+        repository,
+        revision,
+        producer_id,
+        producer_attempt,
+    )
+    manifests = verify_package(oci, producer)
+    legacy = compatibility(oci, version, manifests["manifestDigest"], revision)
+    record = canonical(release_record(version, producer, legacy, boundary_sha))
+    require(len(record) <= MAX_JSON, "release record exceeds size limit")
+    work_dir = Path(work_dir)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    record_path = work_dir / f"scout-release-{version}.yaml"
+    bundle_path = work_dir / f"scout-release-{version}.sigstore.json"
+    record_path.write_bytes(record)
+    names = (record_path.name, bundle_path.name)
+    existing = existing_release(api, repository, version)
+    if existing:
+        require(
+            draft_inputs(existing) in (None, inputs),
+            "draft release inputs conflict with selected evidence",
+        )
+    starters = []
+    saved = (
+        release_assets(api, repository, existing, names, starters=starters)
+        if existing
+        else {}
+    )
+    if record_path.name in saved:
+        require(
+            saved[record_path.name] == record,
+            "existing release record conflicts with selected evidence",
+        )
+    if bundle_path.name in saved:
+        bundle_path.write_bytes(saved[bundle_path.name])
+        oci.verify_record(record_path, bundle_path)
+    if existing and existing.get("draft") is not True:
+        require(
+            set(saved) == set(names),
+            "published release lacks the exact signed promotion record",
+        )
+        require(
+            existing.get("tag_name") == "v" + version, "published release tag mismatch"
+        )
+    # Preflight every alias before changing any of them. Registries do not provide
+    # a cross-repository transaction; workflow serialization protects these writes.
+    for field, registry in REGISTRIES.items():
+        current = oci.resolve(registry + ":" + version, missing_ok=True)
+        require(
+            current in (None, producer[field]),
+            "release alias already identifies different content",
+        )
+        if existing and existing.get("draft") is not True:
+            require(current == producer[field], "published release alias is missing")
+    tag_path = f"/repos/{repository}/git/ref/tags/v{version}"
+    tag = api.request(tag_path, missing_ok=True)
+    if tag:
+        require(
+            tag.get("object", {}).get("type") == "commit",
+            "release boundary must be a lightweight commit tag",
+        )
+        require(
+            tag["object"].get("sha") in (boundary_sha, revision),
+            "release tag points to an unexpected commit",
+        )
+    # Prove the planned move is a fast-forward. Never force-rewrite the source tag.
+    if boundary_sha != revision:
+        compare = api.request(
+            f"/repos/{repository}/compare/{boundary_sha}...{revision}"
+        )
+        require(
+            compare.get("status") == "ahead"
+            and compare.get("merge_base_commit", {}).get("sha") == boundary_sha,
+            "release build does not descend from the boundary",
+        )
+    if existing and existing.get("draft") is not True:
+        require(
+            tag and tag["object"].get("sha") == revision,
+            "published release source tag mismatch",
+        )
+        return record_path
+    if starters:
+        remove_empty_starters(api, repository, existing, starters)
+        rescanned = release_assets(api, repository, existing, names)
+        require(
+            rescanned == saved,
+            "release evidence changed during incomplete upload recovery",
+        )
+    if bundle_path.name not in saved:
+        oci.sign_record(record_path, bundle_path)
+    if existing is None:
+        existing = api.request(
+            f"/repos/{repository}/releases",
+            method="POST",
+            data={
+                "tag_name": "v" + version,
+                "target_commitish": revision,
+                "name": "Scout v" + version,
+                "draft": True,
+                "body": DRAFT_INPUTS + json.dumps(inputs, sort_keys=True) + " -->",
+            },
+        )
+    require(
+        existing.get("draft") is True and existing.get("tag_name") == "v" + version,
+        "release is not the expected draft",
+    )
+    for path in (record_path, bundle_path):
+        if path.name not in saved:
+            api.upload(repository, positive(existing.get("id")), path)
+    attached = release_assets(api, repository, existing, names)
+    require(
+        attached.get(record_path.name) == record
+        and attached.get(bundle_path.name) == bundle_path.read_bytes(),
+        "uploaded release evidence differs",
+    )
+    for field, registry in REGISTRIES.items():
+        if oci.resolve(registry + ":" + version, missing_ok=True) is None:
+            oci.tag(registry + "@" + producer[field], version)
+        require(
+            oci.resolve(registry + ":" + version) == producer[field],
+            "release alias verification failed",
+        )
+    # Creating a draft may also create the target tag. Re-read rather than
+    # assuming that the preflight snapshot still describes this mutable ref.
+    tag = api.request(tag_path, missing_ok=True)
+    if tag:
+        require(
+            tag.get("object", {}).get("type") == "commit"
+            and tag["object"].get("sha") in (boundary_sha, revision),
+            "release tag changed during promotion",
+        )
+    if tag is None:
+        api.request(
+            f"/repos/{repository}/git/refs",
+            method="POST",
+            data={"ref": "refs/tags/v" + version, "sha": revision},
+        )
+    elif tag["object"]["sha"] != revision:
+        api.request(
+            f"/repos/{repository}/git/refs/tags/v{version}",
+            method="PATCH",
+            data={"sha": revision, "force": False},
+        )
+    final_tag = api.request(tag_path)
+    require(
+        final_tag.get("object", {}).get("sha") == revision,
+        "release source tag verification failed",
+    )
+    publication = {"draft": False}
+    # GitHub ignores target_commitish while this tag exists. Generate notes only
+    # after its final target is verified, so restamped fixes are not omitted.
+    # Preserve notes a maintainer has deliberately added to an existing draft.
+    current_release = api.request(
+        f"/repos/{repository}/releases/{positive(existing.get('id'))}"
+    )
+    require(
+        current_release.get("draft") is True
+        and current_release.get("tag_name") == "v" + version,
+        "release changed before publication",
+    )
+    body = re.sub(
+        re.escape(DRAFT_INPUTS) + r".*? -->", "", current_release.get("body") or ""
+    ).strip()
+    if not body:
+        notes = api.request(
+            f"/repos/{repository}/releases/generate-notes",
+            method="POST",
+            data={"tag_name": "v" + version, "target_commitish": revision},
+        )
+        require(isinstance(notes.get("body"), str), "release notes are missing")
+        publication["body"] = notes["body"]
+    # Narrow the legacy mutable-tag window before publishing. The documented
+    # merge hold through dev reset is still necessary; these are snapshot checks.
+    for kind in ("images", "charts"):
+        for reference in legacy[kind].values():
+            registry, expected = reference.split("@", 1)
+            require(
+                oci.resolve(registry + ":" + version) == expected,
+                "legacy release alias changed during promotion",
+            )
+    published = api.request(
+        f"/repos/{repository}/releases/{positive(existing.get('id'))}",
+        method="PATCH",
+        data=publication,
+    )
+    require(
+        published.get("draft") is False and published.get("tag_name") == "v" + version,
+        "release did not publish",
+    )
+    return record_path
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("images", help="List release-versioned images from the CI catalog")
+    charts = sub.add_parser(
+        "charts", help="List compatibility charts still requiring packaging"
+    )
+    charts.add_argument("--version")
+    charts.add_argument("--public-key", type=Path)
+    charts.add_argument("--revision")
+    charts.add_argument("--resume", action="store_true")
+    resume = sub.add_parser("resume", help="Discover a saved release's original inputs")
+    resume.add_argument("--repository", required=True)
+    resume.add_argument("--version", required=True)
+    resume.add_argument("--branch", required=True)
+    resume.add_argument("--github-output", type=Path, required=True)
+    wait = sub.add_parser("wait")
+    publish = sub.add_parser("promote")
+    for item in (wait, publish):
+        item.add_argument("--repository", required=True)
+        item.add_argument("--revision", required=True)
+    wait.add_argument("--branch", default="main")
+    wait.add_argument("--timeout", type=int, default=10800)
+    wait.add_argument("--github-output", type=Path, required=True)
+    publish.add_argument("--version", required=True)
+    for name in (
+        "producer-run-id",
+        "producer-run-attempt",
+    ):
+        publish.add_argument("--" + name, type=int, required=True)
+    publish.add_argument("--boundary-sha", required=True)
+    publish.add_argument("--public-key", type=Path, required=True)
+    publish.add_argument("--work-dir", type=Path, required=True)
+    args = parser.parse_args(argv)
+    try:
+        api = GitHub()
+        if args.command == "images":
+            print("\n".join(IMAGES))
+            return 0
+        if args.command == "charts":
+            rows = CHARTS
+            if args.version:
+                require(
+                    args.public_key and args.public_key.is_file(),
+                    "public verification key is missing",
+                )
+                rows = charts_to_package(
+                    OCI(args.public_key),
+                    args.version,
+                    args.revision or "",
+                    resume=args.resume,
+                )
+            for name, directory in rows.items():
+                print(name, directory)
+            return 0
+        if args.command == "resume":
+            inputs = resume_inputs(api, args.repository, args.version)
+            require(
+                not inputs or args.branch == "main",
+                "an existing branch release cannot be republished",
+            )
+            if inputs:
+                with args.github_output.open("a") as output:
+                    for key, value in inputs.items():
+                        output.write(f"{key}={value}\n")
+                    output.write("exists=true\n")
+            return 0
+        if args.command == "wait":
+            require(0 <= args.timeout <= 10800, "invalid build wait timeout")
+            deadline = time.monotonic() + args.timeout
+            while True:
+                try:
+                    producer = find_evidence(
+                        api, args.repository, args.revision, args.branch
+                    )
+                    break
+                except (Pending, TransientRead):
+                    require(
+                        time.monotonic() < deadline,
+                        "timed out waiting for the exact CI build",
+                    )
+                    print(
+                        "Waiting for the exact tested and published CI build...",
+                        flush=True,
+                    )
+                    time.sleep(min(30, max(0, deadline - time.monotonic())))
+            outputs = {
+                "run_id": producer["runId"],
+                "run_attempt": producer["runAttempt"],
+                "build_version": producer["version"],
+                "sha": producer["revision"],
+            }
+            with args.github_output.open("a") as output:
+                for key, value in outputs.items():
+                    output.write(f"{key}={value}\n")
+        else:
+            require(args.public_key.is_file(), "public verification key is missing")
+            path = promote(
+                api,
+                OCI(args.public_key),
+                repository=args.repository,
+                version=args.version,
+                revision=args.revision,
+                producer_id=args.producer_run_id,
+                producer_attempt=args.producer_run_attempt,
+                boundary_sha=args.boundary_sha,
+                work_dir=args.work_dir,
+            )
+            print("Verified release record: " + path.name)
+    except (PromotionError, IdentityError, OSError, ValueError) as exc:
+        # Deliberately do not echo remote payloads or tool stderr to workflow logs.
+        print("release promotion rejected: " + str(exc), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

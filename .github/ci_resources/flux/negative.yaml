@@ -1,0 +1,58 @@
+# Negative cases, run before the app roots create the Scout namespaces, so a build that
+# got through could not land a Secret anywhere real. @REGISTRY@ and @VERSION@ are filled in
+# at run time; negative_cases.py creates ci-neg-values and asserts the outcomes.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ci-negative
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: ci-negative
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://@REGISTRY@/ci-negative
+  insecure: true
+  ref:
+    tag: '@VERSION@'
+---
+# A dropped value: the on-prem Secret templates from a values Secret missing
+# valkey_password. Strict substitution must fail the build and name the variable.
+# (No targetNamespace: the templates repeat names across namespaces, e.g. superuser-secret.)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: ci-neg-strict
+  namespace: flux-system
+spec:
+  interval: 1h
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  path: ./base/secrets-on-prem
+  prune: false
+  postBuild:
+    substitute:
+      sq: "'"
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+      - kind: Secret
+        name: ci-neg-values
+---
+# An encrypted values file (Secret ci-negative/ci-neg-encrypted) applied without
+# decryption: must be rejected, creating no Secret.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: ci-neg-nodecrypt
+  namespace: flux-system
+spec:
+  interval: 1h
+  sourceRef:
+    kind: OCIRepository
+    name: ci-negative
+  path: ./
+  prune: false

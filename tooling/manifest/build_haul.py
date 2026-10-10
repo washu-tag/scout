@@ -20,6 +20,7 @@ Dependency-free (stdlib only) so it runs on a CI runner with no install step.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 from typing import Optional
@@ -36,7 +37,7 @@ def _split_ref(ref: str) -> Optional[tuple]:
     """
     repo, _, rest = ref.partition(":")
     tag, _, digest = rest.partition("@")
-    if repo and tag and digest.startswith("sha256:"):
+    if repo and tag and re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
         return repo, (tag, digest)
     return None
 
@@ -58,6 +59,8 @@ def parse_fresh(digests_dir: str) -> dict:
         if parsed is None:
             raise ValueError(f"unparseable digest line in {f}: {line!r}")
         repo, td = parsed
+        if repo in fresh:
+            raise ValueError(f"duplicate fresh component: {repo}")
         fresh[repo] = td
     return fresh
 
@@ -84,6 +87,8 @@ def parse_predecessor(path: str) -> dict:
         if parsed is None:
             raise ValueError(f"unparseable predecessor ref: {ref!r}")
         repo, td = parsed
+        if repo in out:
+            raise ValueError(f"duplicate predecessor component: {repo}")
         out[repo] = td
     return out
 

@@ -8,12 +8,20 @@ on:
     paths:
       - deploy/**
       - tooling/deploy/**
+      - tooling/manifest/**
+      - .github/scripts/prepare-flux-artifacts.py
+      - .github/scripts/copy-flux-artifacts.py
+      - .github/actions/start-registry/**
       # The realm config-cli imports + the config-hash it is stamped from live here.
       - helm/keycloak-config-cli/**
       # The per-mode S3A SSE render guard below.
       - helm/hive-metastore/**
       - helm/extractor/hl7-transformer/**
       - .github/workflows/validate-deploy.yaml
+      - .github/workflows/ci.yaml
+      - .github/ci_resources/flux/**
+      - .github/actions/install-flux/**
+      - .github/actions/publish-haul/**
       # OPA data-doc drift guard reads the Ansible source; re-run on those too.
       - ansible/roles/opa/defaults/main.yaml
       - ansible/roles/scout_common/defaults/main.yaml
@@ -27,6 +35,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: python3 -m pip install pytest pyyaml
       - name: Install kustomize
         run: |
           set -euo pipefail
@@ -40,18 +53,37 @@ jobs:
           rm -f kustomize.tar.gz
           kustomize version
 
-      - name: Install flux
+      # The on-prem floor (kustomize-controller v1.9.6); export and dry-run are offline.
+      - uses: ./.github/actions/install-flux
+
+      - name: Test deployment tooling and artifact identity
+        run: python3 -m pytest -q tooling/manifest tooling/deploy .github/ci_resources/flux .github/scripts/test_*flux_artifacts.py
+
+      - name: Validate the on-prem CI inputs
         run: |
           set -euo pipefail
-          # The on-prem floor (kustomize-controller v1.9.6). Only its offline
-          # `flux build --dry-run` is used, which runs the controller's substitution.
-          VER=2.9.6
-          SHA=b4d22673e9246cbd628881f1a9ef3b090085dced291e42d804555cee8e8d42c5
-          curl -sSL "https://github.com/fluxcd/flux2/releases/download/v${VER}/flux_${VER}_linux_amd64.tar.gz" -o flux.tar.gz
-          echo "${SHA}  flux.tar.gz" | sha256sum -c -
-          sudo tar xz -C /usr/local/bin -f flux.tar.gz flux
-          rm -f flux.tar.gz
-          flux version --client
+          python3 .github/ci_resources/flux/check_legs.py
+          jq -s '.[0] * .[1] | del(._comment)' \
+            tooling/deploy/fixtures/cluster-vars.values.json \
+            .github/ci_resources/flux/cluster-vars.values.json > "$RUNNER_TEMP/ci-cluster-vars.values.json"
+          python3 tooling/deploy/gen_cluster_vars.py \
+            --values "$RUNNER_TEMP/ci-cluster-vars.values.json" \
+            --namespace flux-system > "$RUNNER_TEMP/ci-cluster-vars.yaml"
+          trap 'rm -f "$RUNNER_TEMP/ci-secret-values.yaml"' EXIT
+          python3 tooling/deploy/gen_secret_values.py \
+            --values .github/ci_resources/flux/secret-values.json \
+            --cluster-vars-values "$RUNNER_TEMP/ci-cluster-vars.values.json" \
+            --namespace flux-system -o "$RUNNER_TEMP/ci-secret-values.yaml"
+
+      - name: Render the CI Flux installation
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/ci-flux-system"
+          mkdir -p "$dir"
+          cp .github/ci_resources/flux/flux-system/*.yaml "$dir/"
+          cp -R deploy/bootstrap/sops-guard "$dir/sops-guard"
+          flux install --export > "$dir/gotk-components.yaml"
+          kustomize build "$dir" >/dev/null
 
       - name: Render every base
         run: |
@@ -64,7 +96,7 @@ jobs:
             else
               echo "::error file=$d::kustomize build failed for $d"; fail=1
             fi
-          done < <(find deploy/base -name kustomization.yaml -exec dirname {} \; | sort)
+          done < <(find deploy/base deploy/bootstrap -name kustomization.yaml -exec dirname {} \; | sort)
           exit $fail
 
       - name: S3A SSE renders only for aws + s3_sse_type=S3
@@ -165,7 +197,7 @@ jobs:
           while read -r d; do
             grep -qx 'kind: Component' "$d/kustomization.yaml" && continue
             kustomize build "$d" >/dev/null || { echo "::error file=$d::stamped base failed to build"; fail=1; }
-          done < <(find /tmp/stamped/base -name kustomization.yaml -exec dirname {} \; | sort)
+          done < <(find /tmp/stamped/base /tmp/stamped/bootstrap -name kustomization.yaml -exec dirname {} \; | sort)
           exit $fail
 
       - name: OPA data document matches the Ansible source

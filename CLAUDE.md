@@ -280,11 +280,9 @@ code, trim or streamline the existing comments in the area you touch.
   `# renovate:` annotation so CVE monitoring picks it up (ADR 0015), then redeploy. A
   `deploy/` base that mirrors the pin carries the same annotation, so Renovate bumps both,
   and CI fails if the copies differ.
-- **Add a CI-built image or service** — wiring `.github/workflows/ci.yaml` only covers
-  `main`. The release path must be wired too (`.github/scripts/update-versions.sh`, the
-  `SCOUT_VERSIONED_IMAGES` / `UPSTREAM_VERSIONED_IMAGES` lists in
-  `.github/workflows/release.yaml`, and the tables in
-  `docs/internal/versions-and-releases.md`), or a tagged release ships the image frozen
-  at its last `main` build.
+- **Add a CI-built image or service** — add it to the `.github/workflows/ci.yaml`
+  catalog, `.github/scripts/update-versions.sh`, and the version-file tables in
+  `docs/internal/versions-and-releases.md`, so release stamping covers it too.
+  Release image names and chart names/directories are read from the CI catalog.
 - **Write Ansible tasks using `kubernetes.core`** — follow the kubeconfig conventions in
   `docs/internal/ansible_roles.md` (they differ for cluster vs jump-node execution).

@@ -135,6 +135,15 @@ The October 2026 exceptions expire on December 1, 2026:
   without a path, so the exceptions match its exact package version. Keep the
   Dockerfile's separate urllib3 floor to prevent an application copy regressing.
 
+As checked on October 7, 2026, [Delta 4.4.1](https://pypi.org/project/delta-spark/4.4.1/)
+supports PySpark 4.2.0, and the official
+`spark:4.2.0-scala2.13-java21-python3-ubuntu` image is available. A full scan of that upstream image
+still reports all five Jackson findings above: it bundles Jackson 2.21.2 directly
+and older copies inside Hadoop and Parquet jars. The transformer now uses this
+pair; the upgrade does not remove these exceptions. Remove them only when a
+candidate fixes the relevant copies and passes ingestion tests; keep Hadoop/S3A
+and the ingestion test dependencies aligned with future upgrades.
+
 Expiration makes these findings block CI again if upstream fixes have not been
 adopted. Reassess the affected paths and upstream releases before renewing an
 exception. Full image scans still report other packages and new advisory IDs.

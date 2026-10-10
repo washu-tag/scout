@@ -91,10 +91,11 @@ Generate it with `tooling/deploy/gen_secret_values.py --values <site values JSON
 that owner-only file in place (e.g. `sops --encrypt --in-place --encrypted-regex
 '^(data|stringData)$'`). The Kustomization that applies it must set `spec.decryption`:
 without it, kustomize-controller applies the file without decrypting it, ciphertext as
-the values, and `secrets-ready` copies that ciphertext into every Secret above. The tool fails
-closed, never prints a value, and enforces these rules, which keep a value intact through
-Flux and its consumers. Another backend must apply them too; running the tool's validation on
-the values first is the simplest way.
+the values, and `secrets-ready` copies that ciphertext into every Secret above. The
+admission guard in `deploy/README.md` (Site prerequisites) rejects such a Secret. The
+tool fails closed, never prints a value, and enforces these rules, which keep a value
+intact through Flux and its consumers. Another backend must apply them too; running
+the tool's validation on the values first is the simplest way.
 - every value uses only `A-Z a-z 0-9 . _ ~ + / = -`, which passes intact through the
   single-quoted templates, Flux substitution, the realm JSON config-cli parses and the
   `config.env` sh sources (`openssl rand -hex` and `-base64` output fits);
