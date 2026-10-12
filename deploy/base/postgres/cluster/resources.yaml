@@ -15,6 +15,9 @@ kind: Cluster
 metadata:
   name: '${postgres_cluster_name}'
   namespace: '${postgres_cluster_namespace}'
+  # Holds every Scout database: a renamed or removed Kustomization must not delete it.
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
 spec:
   instances: 1
   # postgres_image[_tag] in versions.yaml; the psql Jobs run the same image.

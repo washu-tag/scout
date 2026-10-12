@@ -1,0 +1,39 @@
+# Site root 1 of 2, in flux-system as a site runs it (a site bootstraps these from its own
+# repo; CI applies them with kubectl). scout-site-source applies the site artifact and
+# decrypts scout-secret-values with the sops-age key. The independent site verification
+# key is bootstrapped before this source; @REGISTRY@ and @SITE_DIGEST@ are filled at runtime.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: scout-site
+  namespace: flux-system
+spec:
+  interval: 10m
+  url: oci://@REGISTRY@/scout-site
+  insecure: true
+  ref:
+    digest: '@SITE_DIGEST@'
+  verify:
+    provider: cosign
+    secretRef:
+      name: scout-site-cosign-pub
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: scout-site-source
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-site
+  path: ./
+  prune: true
+  wait: true
+  timeout: 5m
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
