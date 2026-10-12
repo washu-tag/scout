@@ -262,11 +262,11 @@ $ curl -s -u "my-service:$CLIENT_SECRET" \
     -d audience=xnat
 ```
 
-Send both `scope` and `audience`. The `scope` is what brings in the service's audience and access role; `audience` only narrows the new token down to that one service, and on its own is refused because the audience is not available. The response's `access_token` is a token for the same user, addressed to XNAT, which you send as `Authorization: Bearer <token>`. Reuse it until its `expires_in` runs out, then exchange again.
+Send both `scope` and `audience`. The `scope` is what brings in the service's audience and access role; `audience` only narrows the new token down to that one service, and on its own is refused because the audience is not available. The response's `access_token` is a token for the same user, addressed to XNAT, which you send as `Authorization: Bearer <token>`. Cache it in your service and reuse it until its `expires_in` runs out, then exchange again.
 
 The user still needs to be allowed into the other service. For XNAT that means holding Scout's XNAT access, and having signed in to XNAT through the browser at least once, since a token alone does not create an XNAT account.
 
-You can also request an offered scope at login, by adding it to the scopes your OIDC library asks for. That makes every login token a credential for the other service as well as yours, so prefer the exchange.
+Instead of token exchange, your app can instead request an offered scope at login by adding it to the scopes your OIDC library asks for. That makes every login token a credential for the other service as well as yours, which is a mild security concern, so we recommend an explicit token exchange.
 
 ## 5. Test and troubleshoot
 
@@ -308,7 +308,7 @@ The error statuses will be re-published every time the Reconciler resyncs and ch
 | Administrators denied, ordinary users fine | Admin tier not granted your `-user` role |
 | `aud` mismatch validating a token | Requiring `aud` on an access token; check `azp` instead, or validate the ID token |
 | PKCE error from Keycloak | Your library is not sending an `S256` code challenge |
-| `FragmentInvalid` naming `clientScopes` | Your site does not offer that scope, usually because the service is not installed |
+| `FragmentInvalid` naming `clientScopes` | Your site does not offer that scope, possibly because the service is not installed |
 | Token exchange refused: audience not available | The exchange request sent `audience` without the matching `scope` |
 | XNAT refuses an exchanged token | The user lacks XNAT access, or has never signed in to XNAT through the browser |
 
