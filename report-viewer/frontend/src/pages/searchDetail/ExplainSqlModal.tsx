@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import type { HLJSApi } from 'highlight.js';
 import sqlLang from 'highlight.js/lib/languages/sql';
 import { createLowlight } from 'lowlight';
 import type { FilterState } from '../../api/client';
@@ -7,7 +8,38 @@ import { MatchStats } from './MatchStats';
 import { hasEvidence } from './evidenceStats';
 import './sqlTheme.css';
 
-const lowlight = createLowlight({ sql: sqlLang });
+const TRINO_FUNCTIONS = [
+  'regexp_like',
+  'regexp_extract',
+  'array_join',
+  'any_match',
+  'all_match',
+  'none_match',
+  'transform',
+  'filter',
+  'reduce',
+  'element_at',
+  'cardinality',
+  'contains',
+  'split',
+  'strpos',
+  'date_trunc',
+  'date_diff',
+  'count_if',
+  'flatten',
+];
+
+function trinoSql(hljs: HLJSApi) {
+  const lang = sqlLang(hljs);
+  lang.contains.unshift({
+    match: hljs.regex.concat(/\b/, hljs.regex.either(...TRINO_FUNCTIONS), /\s*\(/),
+    keywords: { built_in: TRINO_FUNCTIONS },
+    relevance: 0,
+  });
+  return lang;
+}
+
+const lowlight = createLowlight({ sql: trinoSql });
 
 type HighlightNode = ReturnType<typeof lowlight.highlight>['children'][number];
 
@@ -114,10 +146,13 @@ function SqlSection(props: {
   copied: boolean;
   onCopy: () => void;
 }) {
-  const highlighted = useMemo(
-    () => renderHighlight(lowlight.highlight('sql', props.sql).children),
-    [props.sql],
-  );
+  const highlighted = useMemo(() => {
+    try {
+      return renderHighlight(lowlight.highlight('sql', props.sql).children);
+    } catch {
+      return props.sql;
+    }
+  }, [props.sql]);
   return (
     <details style={{ marginTop: '0.75rem' }}>
       <summary
@@ -147,7 +182,7 @@ function SqlSection(props: {
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
             // Keep the model's line layout; only a single-line statement is worth wrapping.
             whiteSpace: props.sql.includes('\n') ? 'pre' : 'pre-wrap',
-            overflowWrap: 'anywhere',
+            overflowWrap: 'break-word',
             overflowX: 'auto',
             maxHeight: '24rem',
             overflowY: 'auto',
