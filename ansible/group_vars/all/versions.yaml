@@ -8,7 +8,7 @@ k3s_version: v1.36.4+k3s1
 # renovate: datasource=github-releases depName=helm/helm
 helm_version: v3.22.0
 # renovate: datasource=github-releases depName=databus23/helm-diff
-helm_diff_plugin_version: 'v3.15.13'
+helm_diff_plugin_version: 'v3.15.15'
 
 # Databases & Data Storage - Elasticsearch
 # renovate: datasource=helm registryUrl=https://helm.elastic.co depName=eck-operator
@@ -27,7 +27,7 @@ cassandra_server_version: 5.0.8
 
 # Databases & Data Storage - PostgreSQL
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/ depName=cloudnative-pg
-cnpg_version: 0.28.3
+cnpg_version: 0.29.1
 # Server image for the CNPG cluster. The psql Jobs run the same image, so client and
 # server always match.
 postgres_image: ghcr.io/cloudnative-pg/postgresql
@@ -105,7 +105,7 @@ superset_statsd_exporter_tag: v0.31.0
 
 # Data Visualization & BI - Grafana
 # renovate: datasource=helm registryUrl=https://grafana-community.github.io/helm-charts depName=grafana
-grafana_helm_chart_version: 13.2.5
+grafana_helm_chart_version: 13.2.6
 
 # Launchpad - catalog discovery sidecar (ADR 0034). The same image the
 # Grafana chart embeds for dashboard ConfigMap discovery.
@@ -125,7 +125,7 @@ open_webui_helm_chart_version: 16.6.0
 # renovate: datasource=docker depName=ghcr.io/open-webui/open-webui
 open_webui_image_tag: 0.11.4
 # renovate: datasource=docker depName=ollama/ollama
-ollama_image_tag: 0.34.2
+ollama_image_tag: 0.35.1
 
 # Monitoring & Observability - Prometheus
 # Deployed chart is prometheus-community/prometheus (NOT kube-prometheus-stack);
