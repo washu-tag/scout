@@ -319,16 +319,13 @@ export default function SearchDetailPage() {
   const lastPage = table.getPageCount() || 1;
   const pageIndex = table.getState().pagination.pageIndex;
 
-  // The currently client-side-filtered rows' ids, forwarded to backend-call
-  // actions (see ActionsToolbar) so they agree with what downloadCsv already
-  // exports on what "these studies" means, rather than silently reaching
-  // past an active filter to the whole saved search. Derived from `data`
-  // (the already-filtered dataset), not `table.getPrePaginationRowModel()`:
-  // useReactTable returns the same table-instance reference across renders
-  // (it mutates in place), so memoizing on `[table]` would only ever run
-  // once and freeze at whatever was loaded on the first render. Sorting
-  // doesn't change which rows are present, only their order, so `data` is
-  // an equivalent - and reactive - source for this set.
+  // Derived from `data` (the already-filtered dataset), not
+  // `table.getPrePaginationRowModel()`: useReactTable returns the same
+  // table-instance reference across renders (it mutates in place), so
+  // memoizing on `[table]` would only ever run once and freeze at whatever
+  // was loaded on the first render. Sorting doesn't change which rows are
+  // present, only their order, so `data` is an equivalent - and reactive -
+  // source for this set.
   const visibleReportIds = useMemo(
     () =>
       data
@@ -629,7 +626,7 @@ export default function SearchDetailPage() {
               // own minWidth: 0) and manages its own custom-action overflow
               // internally via a "More" dropdown - everything else here
               // keeps its natural size, so nowrap means this row never
-              // wraps a button to a second line (#739 demo feedback).
+              // wraps a button to a second line.
               flexWrap: 'nowrap',
             }}
           >
@@ -800,11 +797,9 @@ export default function SearchDetailPage() {
               searchId={searchId}
               visibleReportIds={visibleReportIds}
               disabled={!rowsQ.data}
-              // "Explain Search" is chart-configurable (see
-              // helm/report-viewer/templates/actions-configmap.yaml)
-              // but its per-search visibility (nothing to explain yet)
-              // stays a page-level concern, not something the generic
-              // toolbar or the backend catalog should encode.
+              // Explain Search's per-search visibility (nothing to explain
+              // yet) is a page-level concern, not something the backend
+              // catalog encodes.
               actions={(actionsQ.data ?? []).filter(
                 (a) => a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
               )}

@@ -32,8 +32,7 @@ export function ActionsToolbar({
   // values - forwarded to backend-call actions so a filtered view and the
   // action agree on scope (see api/client.ts's invokeSearchAction).
   visibleReportIds: string[];
-  // True while rows haven't loaded yet - visibleReportIds is still [] then,
-  // so a backend-call click would send an empty cohort silently.
+  // True while rows are still loading.
   disabled?: boolean;
 }) {
   const { opening, error, resultLink, copied, open, copyLink, dismiss } = useOpenResult();
