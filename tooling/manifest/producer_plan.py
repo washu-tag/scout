@@ -81,6 +81,7 @@ def catalog(workflow: Path = WORKFLOW) -> tuple[dict, dict, dict]:
 
 
 IMAGE_PATHS, CHART_PATHS, IMAGE_CHARTS = catalog()
+VENDOR_IMAGES = ("superset", "keycloak")
 _FILTERS = workflow_catalog(WORKFLOW)[1]
 IMAGE_BUILD_PATHS = scopes(_FILTERS, "image_build")
 CHART_BUILD_PATHS = scopes(_FILTERS, "chart_build")
@@ -272,7 +273,7 @@ def create(
         flags=flags,
         legacy={
             name + "-legacy": any(matches(p, IMAGE_PATHS[name]) for p in paths)
-            for name in ("superset", "keycloak")
+            for name in VENDOR_IMAGES
         },
         publish=publish,
     )
