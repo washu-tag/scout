@@ -242,10 +242,12 @@ export default function SearchDetailPage() {
   // a single line; once anything has wrapped, every line should just flow
   // left-aligned, or the auto margin leaves the exact same dead gap on
   // whichever line "Filters" ends up on that it was meant to avoid.
-  // Detected by comparing children's offsetTop rather than mirroring
-  // ActionsToolbar's own prober-based width math, since what we need here
-  // is literally "did the browser's own flex-wrap put these on different
-  // lines," which offsetTop answers directly.
+  // Detected by comparing children's vertical centers, not raw offsetTop:
+  // the row's alignItems: center means same-line siblings of different
+  // heights (a <select> vs. a small button) naturally land at different
+  // offsetTops, so that comparison alone reported "wrapped" almost always.
+  // Centers coincide for anything actually sharing a line regardless of
+  // height; a second line's centers differ by roughly a full line height.
   const [toolbarWrapped, setToolbarWrapped] = useState(false);
   const toolbarObserver = useRef<ResizeObserver | null>(null);
   const toolbarRowRef = useCallback((el: HTMLDivElement | null) => {
@@ -253,8 +255,9 @@ export default function SearchDetailPage() {
     if (!el) return;
     const measure = () => {
       const children = Array.from(el.children) as HTMLElement[];
-      const firstTop = children[0]?.offsetTop;
-      setToolbarWrapped(children.some((c) => c.offsetTop !== firstTop));
+      const centers = children.map((c) => c.offsetTop + c.offsetHeight / 2);
+      const firstCenter = centers[0];
+      setToolbarWrapped(centers.some((y) => Math.abs(y - firstCenter) > 1));
     };
     measure();
     toolbarObserver.current = new ResizeObserver(measure);
