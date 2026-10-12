@@ -1390,7 +1390,7 @@
       {{- /* Adds aud=xnat to access tokens, and through its clientScopeMappings
           entry puts xnat-access in scope, so the token passes both of the openid
           plugin's bearer gates. Any client whose users call XNAT's REST API
-          needs this scope in its default scopes. */}}
+          needs this scope either in its default or optional scopes. */}}
       {
         "name": "xnat-audience",
         "description": "Adds aud=xnat to access tokens for clients calling XNAT",
