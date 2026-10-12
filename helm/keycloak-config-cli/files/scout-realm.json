@@ -1294,9 +1294,16 @@
           "roles": ["manage-clients", "view-realm", "manage-realm"]
         }
       ]{{- if eq (.Values.enableXnat | toString) "true" }},
+      {{- /* The clientScope entry brings xnat-access along with aud=xnat. A
+          fullScopeAllowed: false client (jupyterhub, every fragment client)
+          otherwise gets the audience but no resource_access.xnat.roles. */}}
       "xnat": [
         {
           "client": "xnat",
+          "roles": ["xnat-access"]
+        },
+        {
+          "clientScope": "xnat-audience",
           "roles": ["xnat-access"]
         }
       ]{{- end }}
@@ -1380,13 +1387,10 @@
         ]
       },
       {{- if eq (.Values.enableXnat | toString) "true" }}
-      {{- /* Adds aud=xnat to access tokens. XNAT's openid plugin validates
-          audCheck.acceptedAudiences=xnat on inbound bearer tokens; a token
-          without this claim is rejected. Any client whose users call XNAT's
-          REST API needs this scope in its default scopes.
-          Roles ride along on the built-in `roles` scope, which is not
-          restricted to the issuing client, so the same token already carries
-          resource_access.xnat.roles for the plugin's role gate. */}}
+      {{- /* Adds aud=xnat to access tokens, and through its clientScopeMappings
+          entry puts xnat-access in scope, so the token passes both of the openid
+          plugin's bearer gates. Any client whose users call XNAT's REST API
+          needs this scope in its default scopes. */}}
       {
         "name": "xnat-audience",
         "description": "Adds aud=xnat to access tokens for clients calling XNAT",
