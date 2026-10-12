@@ -23,6 +23,7 @@ export function ActionsToolbar({
   actions,
   clientHandlers,
   visibleReportIds,
+  disabled,
 }: {
   searchId: string;
   actions: ActionDescriptor[];
@@ -31,6 +32,9 @@ export function ActionsToolbar({
   // values - forwarded to backend-call actions so a filtered view and the
   // action agree on scope (see api/client.ts's invokeSearchAction).
   visibleReportIds: string[];
+  // True while rows haven't loaded yet - visibleReportIds is still [] then,
+  // so a backend-call click would send an empty cohort silently.
+  disabled?: boolean;
 }) {
   const { opening, error, resultLink, copied, open, copyLink, dismiss } = useOpenResult();
   const [invokingId, setInvokingId] = useState<string | null>(null);
@@ -134,6 +138,7 @@ export function ActionsToolbar({
         <button
           key={action.id}
           type="button"
+          disabled={disabled}
           onClick={() => {
             handler();
             if (closeMenuOnClick) setMoreOpen(false);
@@ -151,7 +156,7 @@ export function ActionsToolbar({
         <button
           key={action.id}
           type="button"
-          disabled={invokingId === action.id || opening}
+          disabled={disabled || invokingId === action.id || opening}
           onClick={() => {
             void handleBackendCall(action);
             if (closeMenuOnClick) setMoreOpen(false);
@@ -168,7 +173,7 @@ export function ActionsToolbar({
       <button
         key={action.id}
         type="button"
-        disabled={opening}
+        disabled={disabled || opening}
         onClick={() => {
           if (action.url) open(action.url);
           if (closeMenuOnClick) setMoreOpen(false);

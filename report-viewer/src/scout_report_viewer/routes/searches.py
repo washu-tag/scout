@@ -35,7 +35,7 @@ from fastapi import (
 )
 
 from .. import metrics, progress, trino_client
-from ..actions import ActionDescriptor, list_actions, load_invoke_token
+from ..actions import ActionDescriptor, is_safe_action_url, list_actions, load_invoke_token
 from ..evidence import EV_COLUMNS, with_evidence
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
@@ -583,7 +583,14 @@ async def invoke_search_action(
             detail=f"action invoke failed: {exc}",
         )
     payload = resp.json()
-    return ActionInvokeResponse(url=payload["url"])
+    url = payload.get("url")
+    if not isinstance(url, str) or not is_safe_action_url(url):
+        log.error("action %s returned an unsafe url", scrub_for_log(action_id))
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="action returned an unsafe url",
+        )
+    return ActionInvokeResponse(url=url)
 
 
 @router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -68,7 +68,7 @@ class ActionDescriptor(BaseModel):
     @model_validator(mode="after")
     def _check_action_type_fields(self) -> "ActionDescriptor":
         if self.action_type == "open-url":
-            if not self.url or not _is_safe_action_url(self.url):
+            if not self.url or not is_safe_action_url(self.url):
                 raise ValueError(
                     f"action {self.id!r}: open-url requires a safe http(s) url"
                 )
@@ -77,14 +77,14 @@ class ActionDescriptor(BaseModel):
                 f"action {self.id!r}: client action requires client_handler"
             )
         elif self.action_type == "backend-call":
-            if not self.endpoint_url or not _is_safe_action_url(self.endpoint_url):
+            if not self.endpoint_url or not is_safe_action_url(self.endpoint_url):
                 raise ValueError(
                     f"action {self.id!r}: backend-call requires a safe http(s) endpoint_url"
                 )
         return self
 
 
-def _is_safe_action_url(url: str) -> bool:
+def is_safe_action_url(url: str) -> bool:
     """http(s) with a real host only (no `javascript:`/`data:` schemes) -
     catalog strings are untrusted by definition once this stops being a
     hardcoded list."""

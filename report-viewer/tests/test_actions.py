@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from scout_report_viewer import actions
 from scout_report_viewer.actions import (
     ActionDescriptor,
-    _is_safe_action_url,
+    is_safe_action_url,
     _load_catalog_from_file,
     list_actions,
     load_invoke_token,
@@ -91,7 +91,7 @@ def test_list_actions_sorted_by_weight(catalog_with_admin_action):
     ],
 )
 def test_is_safe_action_url(url, expected):
-    assert _is_safe_action_url(url) is expected
+    assert is_safe_action_url(url) is expected
 
 
 def test_open_url_action_requires_safe_url():
@@ -463,6 +463,34 @@ def test_invoke_backend_call_target_error_returns_502(
             raise httpx.ConnectError("connection refused")
 
     monkeypatch.setattr(httpx, "AsyncClient", _FailingAsyncClient)
+
+    priv, _ = keypair
+    bearer_headers = _bearer_headers(priv)
+    search_id = _create_search(client, bearer_headers, fake_trino)
+
+    fake_trino(
+        ["primary_report_identifier", "accession_number"],
+        [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
+    )
+    r = client.post(
+        f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
+        headers=bearer_headers,
+    )
+    assert r.status_code == 502
+
+
+def test_invoke_backend_call_rejects_unsafe_response_url(
+    client, keypair, fake_trino, catalog_with_backend_call_action, monkeypatch
+):
+    """A compromised or buggy target returning javascript:... must not
+    reach the frontend, which opens whatever url comes back as an anchor
+    href (openResult.ts)."""
+
+    class _UnsafeUrlAsyncClient(_FakeAsyncClient):
+        async def post(self, url, json=None, headers=None):
+            return _FakeInvokeResponse({"url": "javascript:alert(1)"})
+
+    monkeypatch.setattr(httpx, "AsyncClient", _UnsafeUrlAsyncClient)
 
     priv, _ = keypair
     bearer_headers = _bearer_headers(priv)

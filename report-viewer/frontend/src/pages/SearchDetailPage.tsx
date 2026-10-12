@@ -799,6 +799,7 @@ export default function SearchDetailPage() {
             <ActionsToolbar
               searchId={searchId}
               visibleReportIds={visibleReportIds}
+              disabled={!rowsQ.data}
               // "Explain Search" is chart-configurable (see
               // helm/report-viewer/templates/actions-configmap.yaml)
               // but its per-search visibility (nothing to explain yet)
