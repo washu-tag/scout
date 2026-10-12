@@ -454,21 +454,24 @@ class Reconciler:
             source=claim.source,
             offered=self.settings.audience_scopes,
         )
+        problem = ""
         try:
             uuid, stop = self._ensure_client(claim, desired, secret, listed=listed)
             if stop is not None:
                 return stop
             roles, new_roles = self._reconcile_roles(uuid, spec)
             self._reconcile_mappers(uuid, spec)
+            # Reported after the grants rather than instead of them: a missing
+            # audience only withholds access, and a revoked grant must still land.
             problem = self._reconcile_audiences(uuid, spec)
-            if problem:
-                log.error("applying %s failed: %s", spec.client_id, problem)
-                return Outcome(claim.source, spec.client_id, FAILED, problem)
             self._reconcile_tier_edges(uuid, spec, roles=roles, new_roles=new_roles)
         except KeycloakError as exc:
             level = log.warning if exc.retryable else log.error
             level("applying %s failed: %s", spec.client_id, exc)
             return Outcome(claim.source, spec.client_id, FAILED, str(exc))
+        if problem:
+            log.error("applying %s failed: %s", spec.client_id, problem)
+            return Outcome(claim.source, spec.client_id, FAILED, problem)
         return Outcome(claim.source, spec.client_id, APPLIED)
 
     def _ensure_client(

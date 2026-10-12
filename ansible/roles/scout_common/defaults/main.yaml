@@ -369,9 +369,9 @@ xnat_plugins_default:
           openid.keycloak.idToken.typCheck.expectedTypes: ID
           openid.keycloak.usernamePattern: '[preferred_username]'
           openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
-          # Accept a Keycloak access token as Authorization: Bearer, so a script or
-          # notebook can call XNAT's REST API with the caller's own Scout identity
-          # instead of a shared credential. The token must be addressed to XNAT and
+          # Accept a Keycloak access token as Authorization: Bearer, so a client
+          # given the xnat-audience scope can call XNAT's REST API with the user's
+          # own Scout identity instead of a shared credential. The token must be addressed to XNAT and
           # carry the access role; both gates reject rather than fall through.
           openid.keycloak.bearer.enabled: 'true'
           openid.keycloak.bearer.audCheck.enabled: 'true'

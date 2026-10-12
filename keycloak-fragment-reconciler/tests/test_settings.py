@@ -147,6 +147,13 @@ class TestAudienceScopes:
             RequiredSettings()
         assert f"{ENV_PREFIX}AUDIENCE_SCOPES" in str(exit_info.value)
 
+    @pytest.mark.parametrize("scope", ["roles", "offline_access"])
+    def test_a_scope_every_client_gets_cannot_be_offered(self, env, scope):
+        """Every client not asking for the audience would lose that scope."""
+        env(AUDIENCE_SCOPES=f"oops={scope}")
+        with pytest.raises(SystemExit, match="given to every fragment client"):
+            RequiredSettings()
+
     def test_an_audience_listed_twice_is_refused(self, env):
         """Either mapping is a guess at which scope the operator meant."""
         env(AUDIENCE_SCOPES="xnat=xnat-audience,xnat=other")

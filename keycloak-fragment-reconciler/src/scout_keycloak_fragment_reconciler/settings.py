@@ -5,6 +5,8 @@ from typing import Annotated
 from pydantic import Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from .translate import DEFAULT_CLIENT_SCOPES, OPTIONAL_CLIENT_SCOPES
+
 ENV_PREFIX = "KEYCLOAK_FRAGMENT_RECONCILER_"
 
 FRAGMENT_LABEL = "keycloak.scout.xnat.org/fragment"
@@ -102,6 +104,21 @@ class Settings(BaseSettings):
                 raise ValueError(f"audience {name!r} is listed twice")
             pairs[name] = scope
         return pairs
+
+    @field_validator("audience_scopes")
+    @classmethod
+    def _offers_no_base_scope(cls, value: dict[str, str]) -> dict[str, str]:
+        """An offered scope is unlinked from every client that does not ask for
+        it, so offering one that every client carries would strip it from all."""
+        base = sorted(
+            set(value.values()) & {*DEFAULT_CLIENT_SCOPES, *OPTIONAL_CLIENT_SCOPES}
+        )
+        if base:
+            raise ValueError(
+                f"{', '.join(base)} is given to every fragment client, so it "
+                "cannot be offered as an audience"
+            )
+        return value
 
     @field_validator("watched_namespaces")
     @classmethod

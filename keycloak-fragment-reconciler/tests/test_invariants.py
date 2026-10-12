@@ -699,7 +699,7 @@ class TestAudienceScopes:
 
     def test_a_scope_removed_by_hand_is_put_back(self, offering, kc):
         """Keycloak ignores scope lists on update, so this is the only repair
-        there is, and recreating the client is no longer how to get it back."""
+        there is."""
         offering.reconcile_once()
         self.scopes(kc).remove("xnat-audience")
         offering.reconcile_once()
@@ -753,11 +753,12 @@ class TestAudienceScopes:
         assert outcome.status == INVALID
         assert "does not offer" in outcome.detail
 
-    def test_an_offered_scope_missing_from_the_realm_fails_before_any_edge(
+    def test_an_offered_scope_missing_from_the_realm_fails_but_still_grants(
         self, settings, k8s, kc
     ):
-        """A site that offers an audience its realm never created: the app
-        gets a client with no grants, and the outcome names the scope."""
+        """A site that offers an audience its realm never created. The outcome
+        names the scope, and the grants still land: without the audience the
+        app can do less, never more."""
         settings.audience_scopes = {"xnat": "xnat-audience"}
         k8s.add_fragment(fragment_text_with_audiences("xnat"))
         reconciler = Reconciler(settings, k8s, kc)
@@ -765,8 +766,22 @@ class TestAudienceScopes:
         outcome = next(o for o in reconciler.snapshot.outcomes)
         assert outcome.status == FAILED
         assert "xnat-audience" in outcome.detail
-        for tier in TIERS:
-            assert kc.edges(tier) == set()
+        assert kc.edges("scout-user") == {"hello-user"}
+
+    def test_a_missing_scope_does_not_hold_back_a_revocation(self, settings, k8s, kc):
+        settings.audience_scopes = {"xnat": "xnat-audience"}
+        k8s.add_fragment(fragment_text_with_audiences("xnat"))
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        assert kc.edges("scout-admin") == {"hello-admin"}
+
+        k8s.add_fragment(
+            fragment_text_with_audiences("xnat").replace(
+                "      scout-admin: [hello-admin]\n", ""
+            )
+        )
+        reconciler.reconcile_once()
+        assert kc.edges("scout-admin") == set()
 
     def test_dry_run_identifies_the_scope_without_writing(self, offering, kc):
         offering.reconcile_once()

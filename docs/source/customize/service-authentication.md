@@ -101,7 +101,7 @@ A bit more on `roles` and `grants`, since this is an important piece to understa
 
 Some services accept a user's Keycloak access token directly, so your app can call them as the signed-in user rather than with a shared credential. Such a service only accepts tokens addressed to it, so list it under `audiences`, and the Reconciler adds that audience to your app's access tokens, along with the service's access role for users who hold it.
 
-A site offers an audience only for a service it runs. Scout offers `xnat` when XNAT is enabled; with it, send your access token to XNAT's REST API as `Authorization: Bearer <token>`. A fragment that names an audience the site does not offer is rejected, and the rejection lists the ones it does offer.
+A site offers an audience only for a service it runs, through the Reconciler's `audienceScopes` setting. Scout's Ansible install offers `xnat` when XNAT is enabled; with it, send your access token to XNAT's REST API as `Authorization: Bearer <token>`. A fragment that names an audience the site does not offer is rejected, and the rejection lists the ones it does offer.
 
 Once your access token carries another audience, a library that checks the access token's audience against your `clientId` needs to accept that one too. oauth2-proxy, for example, needs `oidc_extra_audiences`.
 
