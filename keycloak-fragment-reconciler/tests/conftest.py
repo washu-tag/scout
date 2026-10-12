@@ -53,8 +53,10 @@ def fragment_text(client_id: str = "hello") -> str:
     return FRAGMENT.format(client_id=client_id)
 
 
-def fragment_text_with_audiences(*audiences: str, client_id: str = "hello") -> str:
-    return f"{fragment_text(client_id)}    audiences: [{', '.join(audiences)}]\n"
+def with_fields(*lines: str) -> str:
+    """The fixture fragment plus extra client-level fields."""
+    extra = "".join(f"{line}\n" for line in lines)
+    return fragment_text().replace("    roles:", f"{extra}    roles:")
 
 
 def fragment_text_without_roles(client_id: str = "hello") -> str:
@@ -87,10 +89,9 @@ class FakeKeycloak:
         self.mappers: dict[str, list[dict]] = {}
         self.secrets: dict[str, str] = {}
         # Realm client scopes by name, and each client's default scope names.
-        self.scopes: dict[str, dict] = {
-            name: {"id": f"scope-{name}", "name": name}
-            for name in translate.DEFAULT_CLIENT_SCOPES
-        }
+        self.scopes: dict[str, dict] = {}
+        for name in translate.DEFAULT_CLIENT_SCOPES:
+            self.add_scope(name)
         self.default_scopes: dict[str, list[str]] = {}
         # tier name -> {role id: role name}
         self.composites: dict[str, dict[str, str]] = {n: {} for n in self.realm_roles}
@@ -115,16 +116,18 @@ class FakeKeycloak:
         self.roles[uuid] = {}
         self.mappers[uuid] = []
         self.secrets[uuid] = secret
-        self.default_scopes[uuid] = self._known(representation)
+        self.default_scopes[uuid] = list(representation.get("defaultClientScopes", []))
         return uuid
 
     def add_scope(self, name: str) -> None:
         self.scopes[name] = {"id": f"scope-{name}", "name": name}
 
-    def _known(self, representation: dict) -> list[str]:
-        """A create's scope list as Keycloak keeps it: unknown names dropped."""
-        names = representation.get("defaultClientScopes") or []
-        return [name for name in names if name in self.scopes]
+    def _rep(self, uuid: str) -> dict:
+        """A client as a listing returns it, scope names included."""
+        return {
+            **self.clients[uuid],
+            "defaultClientScopes": list(self.default_scopes[uuid]),
+        }
 
     def seed_role(self, uuid: str, name: str) -> str:
         role_id = self._uid("role")
@@ -142,14 +145,14 @@ class FakeKeycloak:
 
     def find_client(self, client_id: str) -> dict | None:
         self._check("find_client")
-        for client in self.clients.values():
+        for uuid, client in self.clients.items():
             if client.get("clientId") == client_id:
-                return dict(client)
+                return self._rep(uuid)
         return None
 
     def list_clients(self) -> list[dict]:
         self._check("list_clients")
-        return [dict(c) for c in self.clients.values()]
+        return [self._rep(uuid) for uuid in self.clients]
 
     def create_client(self, representation: dict) -> str:
         self._check("create_client")
@@ -159,7 +162,7 @@ class FakeKeycloak:
         self.roles[uuid] = {}
         self.mappers[uuid] = []
         self.secrets[uuid] = representation.get("secret", "")
-        self.default_scopes[uuid] = self._known(representation)
+        self.default_scopes[uuid] = list(representation.get("defaultClientScopes", []))
         return uuid
 
     # Scope lists in the body are ignored, as `ClientResource.updateClient`
@@ -227,20 +230,16 @@ class FakeKeycloak:
         self._check("client_scopes")
         return [dict(s) for s in self.scopes.values()]
 
-    def default_client_scopes(self, uuid: str) -> list[dict]:
-        self._check("default_client_scopes")
-        return [dict(self.scopes[n]) for n in self.default_scopes.get(uuid, [])]
-
     def add_default_client_scope(self, uuid: str, scope_id: str) -> None:
         self._check("add_default_client_scope")
-        name = next(n for n, s in self.scopes.items() if s["id"] == scope_id)
+        name = scope_id.removeprefix("scope-")
         self.writes.append(f"add_scope:{name}")
         if name not in self.default_scopes[uuid]:
             self.default_scopes[uuid].append(name)
 
     def remove_default_client_scope(self, uuid: str, scope_id: str) -> None:
         self._check("remove_default_client_scope")
-        name = next(n for n, s in self.scopes.items() if s["id"] == scope_id)
+        name = scope_id.removeprefix("scope-")
         self.writes.append(f"remove_scope:{name}")
         self.default_scopes[uuid].remove(name)
 
@@ -467,7 +466,7 @@ __all__ = [
     "TIERS",
     "TransportError",
     "fragment_text",
-    "fragment_text_with_audiences",
     "fragment_text_without_roles",
     "translate",
+    "with_fields",
 ]

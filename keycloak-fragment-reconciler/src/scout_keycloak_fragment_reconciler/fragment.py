@@ -129,23 +129,16 @@ class ClientSpec(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def _check_roles_unique(self) -> ClientSpec:
-        if len(set(self.roles)) != len(self.roles):
-            raise ValueError("roles contains duplicates")
-        return self
-
-    @model_validator(mode="after")
-    def _check_audiences_unique(self) -> ClientSpec:
-        if len(set(self.audiences)) != len(self.audiences):
-            raise ValueError("audiences contains duplicates")
-        return self
-
-    @model_validator(mode="after")
-    def _check_redirect_uris_unique(self) -> ClientSpec:
-        """Keycloak stores these in a Set, so a duplicate reads back
+    def _check_lists_unique(self) -> ClientSpec:
+        """Keycloak stores redirect URIs in a Set, so a duplicate reads back
         deduplicated and the client is rewritten as drifted every pass."""
-        if len(set(self.redirect_uris)) != len(self.redirect_uris):
-            raise ValueError("redirectUris contains duplicates")
+        for field, values in (
+            ("roles", self.roles),
+            ("redirectUris", self.redirect_uris),
+            ("audiences", self.audiences),
+        ):
+            if len(set(values)) != len(values):
+                raise ValueError(f"{field} contains duplicates")
         return self
 
     @model_validator(mode="after")

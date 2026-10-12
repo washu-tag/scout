@@ -1,5 +1,6 @@
 """Process configuration, read from the environment as Settings is built."""
 
+import json
 from typing import Annotated
 
 from pydantic import Field, ValidationError, field_validator
@@ -87,29 +88,24 @@ class Settings(BaseSettings):
 
     @field_validator("audience_scopes", mode="before")
     @classmethod
-    def _split_pairs(cls, value: object) -> object:
-        """Accept `name=scope,name=scope`, which is what the chart renders."""
+    def _decode_map(cls, value: object) -> object:
+        """Accept the JSON object the chart renders; empty is no offer."""
         if not isinstance(value, str):
             return value
-        if value.strip().startswith("{"):
+        try:
+            return json.loads(value) if value.strip() else {}
+        except ValueError:
             raise ValueError(
-                f"expected name=scope pairs, not JSON (got {value.strip()[:40]!r})"
-            )
-        pairs: dict[str, str] = {}
-        for part in filter(None, (p.strip() for p in value.split(","))):
-            name, sep, scope = (s.strip() for s in part.partition("="))
-            if not sep or not name or not scope:
-                raise ValueError(f"expected name=scope, got {part!r}")
-            if name in pairs:
-                raise ValueError(f"audience {name!r} is listed twice")
-            pairs[name] = scope
-        return pairs
+                f"expected a JSON object (got {value.strip()[:40]!r})"
+            ) from None
 
     @field_validator("audience_scopes")
     @classmethod
     def _offers_no_base_scope(cls, value: dict[str, str]) -> dict[str, str]:
         """An offered scope is unlinked from every client that does not ask for
         it, so offering one that every client carries would strip it from all."""
+        if not all(value.values()):
+            raise ValueError("every offered audience must name a client scope")
         base = sorted(
             set(value.values()) & {*DEFAULT_CLIENT_SCOPES, *OPTIONAL_CLIENT_SCOPES}
         )

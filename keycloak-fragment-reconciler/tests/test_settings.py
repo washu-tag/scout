@@ -37,7 +37,7 @@ CHART_ENV = {
     "SERVER_HOSTNAME": "scout.example.edu",
     "TIER_ROLES": "scout-user,scout-admin",
     "WATCHED_NAMESPACES": "",
-    "AUDIENCE_SCOPES": "",
+    "AUDIENCE_SCOPES": "{}",
     "RESYNC_SECONDS": "300",
     "ORPHAN_GRACE_SECONDS": "300",
     "DEBOUNCE_SECONDS": "2",
@@ -126,20 +126,19 @@ class TestTheChartsEnvironment:
 
 
 class TestAudienceScopes:
-    def test_the_default_offers_none(self, env):
+    def test_the_chart_default_offers_none(self, env):
         env()
         assert RequiredSettings().audience_scopes == {}
 
-    def test_pairs_parse(self, env):
-        env(AUDIENCE_SCOPES="xnat=xnat-audience, trino = trino-audience")
+    def test_the_rendered_map_parses(self, env):
+        env(AUDIENCE_SCOPES='{"xnat": "xnat-audience", "trino": "trino-audience"}')
         assert RequiredSettings().audience_scopes == {
             "xnat": "xnat-audience",
             "trino": "trino-audience",
         }
 
     @pytest.mark.parametrize(
-        "value",
-        ['{"xnat": "xnat-audience"}', "xnat", "xnat=", "=xnat-audience"],
+        "value", ["xnat=xnat-audience", '["xnat"]', '{"xnat": 1}', '{"xnat": ""}']
     )
     def test_a_malformed_value_names_the_variable(self, env, value):
         env(AUDIENCE_SCOPES=value)
@@ -150,14 +149,8 @@ class TestAudienceScopes:
     @pytest.mark.parametrize("scope", ["roles", "offline_access"])
     def test_a_scope_every_client_gets_cannot_be_offered(self, env, scope):
         """Every client not asking for the audience would lose that scope."""
-        env(AUDIENCE_SCOPES=f"oops={scope}")
+        env(AUDIENCE_SCOPES=f'{{"oops": "{scope}"}}')
         with pytest.raises(SystemExit, match="given to every fragment client"):
-            RequiredSettings()
-
-    def test_an_audience_listed_twice_is_refused(self, env):
-        """Either mapping is a guess at which scope the operator meant."""
-        env(AUDIENCE_SCOPES="xnat=xnat-audience,xnat=other")
-        with pytest.raises(SystemExit, match="listed twice"):
             RequiredSettings()
 
 

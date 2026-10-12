@@ -16,9 +16,9 @@ from conftest import (
     TIERS,
     TransportError,
     fragment_text,
-    fragment_text_with_audiences,
     fragment_text_without_roles,
     translate,
+    with_fields,
 )
 
 from scout_keycloak_fragment_reconciler import core, metrics
@@ -665,37 +665,41 @@ class TestSafePartialState:
             assert kc.edges(tier) == set(), "an edge survived a failed apply"
 
 
+AUDIENCE = "    audiences: [xnat]"
+
+
 class TestAudienceScopes:
-    """A fragment's audiences become the scopes the site maps them to, kept in
-    step every pass. No other scope on the client is ever touched."""
+    """A fragment's audiences become the scopes the site maps them to, linked
+    last and kept in step every pass. No other scope on the client is touched."""
 
     @pytest.fixture
-    def offering(self, settings, k8s, kc) -> Reconciler:
+    def missing_scope(self, settings, k8s, kc) -> Reconciler:
+        """A site that offers xnat to a realm with no xnat-audience scope."""
         settings.audience_scopes = {"xnat": "xnat-audience"}
-        kc.add_scope("xnat-audience")
-        k8s.add_fragment(fragment_text_with_audiences("xnat"))
+        k8s.add_fragment(with_fields(AUDIENCE))
         return Reconciler(settings, k8s, kc)
+
+    @pytest.fixture
+    def offering(self, missing_scope, kc) -> Reconciler:
+        kc.add_scope("xnat-audience")
+        return missing_scope
 
     @staticmethod
     def scopes(kc) -> list[str]:
         return kc.default_scopes[next(iter(kc.clients))]
 
-    def test_the_scope_arrives_with_the_create(self, offering, kc):
+    def test_the_scope_is_linked_after_the_grants(self, offering, kc):
+        """A linked audience is itself a grant, so it goes where grants go."""
         offering.reconcile_once()
-        assert "xnat-audience" in self.scopes(kc)
-        assert not [w for w in kc.writes if w.startswith("add_scope")]
+        assert kc.writes[-1] == "add_scope:xnat-audience"
+        assert all(w.startswith("add_edge") for w in kc.writes[-3:-1])
 
-    def test_a_second_pass_writes_nothing(self, offering, kc):
+    def test_a_steady_pass_writes_nothing_and_reads_no_scopes(self, offering, kc):
         offering.reconcile_once()
-        after_first = list(kc.writes)
+        after_first, lookups = list(kc.writes), kc.calls["client_scopes"]
         offering.reconcile_once()
         assert kc.writes == after_first
-
-    def test_a_steady_pass_does_not_resolve_scope_ids(self, offering, kc):
-        offering.reconcile_once()
-        before = kc.calls["client_scopes"]
-        offering.reconcile_once()
-        assert kc.calls["client_scopes"] == before
+        assert kc.calls["client_scopes"] == lookups
 
     def test_a_scope_removed_by_hand_is_put_back(self, offering, kc):
         """Keycloak ignores scope lists on update, so this is the only repair
@@ -715,7 +719,7 @@ class TestAudienceScopes:
         reconciler.reconcile_once()
         assert "xnat-audience" not in self.scopes(kc)
 
-        k8s.add_fragment(fragment_text_with_audiences("xnat"))
+        k8s.add_fragment(with_fields(AUDIENCE))
         reconciler.reconcile_once()
         assert kc.writes[-1:] == ["add_scope:xnat-audience"]
 
@@ -739,48 +743,39 @@ class TestAudienceScopes:
     def test_a_site_that_offers_none_never_reads_scopes(self, reconciler, kc):
         reconciler.reconcile_once()
         reconciler.reconcile_once()
-        assert kc.calls["default_client_scopes"] == 0
         assert kc.calls["client_scopes"] == 0
 
     def test_an_audience_the_site_does_not_offer_creates_nothing(
-        self, settings, k8s, kc
+        self, reconciler, k8s, kc
     ):
-        k8s.add_fragment(fragment_text_with_audiences("xnat"))
-        reconciler = Reconciler(settings, k8s, kc)
+        k8s.add_fragment(with_fields(AUDIENCE))
         reconciler.reconcile_once()
         assert kc.clients == {}
         outcome = next(o for o in reconciler.snapshot.outcomes)
         assert outcome.status == INVALID
         assert "does not offer" in outcome.detail
 
-    def test_an_offered_scope_missing_from_the_realm_fails_but_still_grants(
-        self, settings, k8s, kc
+    def test_a_scope_missing_from_the_realm_fails_after_the_grants(
+        self, missing_scope, kc
     ):
-        """A site that offers an audience its realm never created. The outcome
-        names the scope, and the grants still land: without the audience the
-        app can do less, never more."""
-        settings.audience_scopes = {"xnat": "xnat-audience"}
-        k8s.add_fragment(fragment_text_with_audiences("xnat"))
-        reconciler = Reconciler(settings, k8s, kc)
-        reconciler.reconcile_once()
-        outcome = next(o for o in reconciler.snapshot.outcomes)
+        """The outcome names the scope, and the grants have still landed:
+        without the audience the app can do less, never more."""
+        missing_scope.reconcile_once()
+        outcome = next(o for o in missing_scope.snapshot.outcomes)
         assert outcome.status == FAILED
         assert "xnat-audience" in outcome.detail
         assert kc.edges("scout-user") == {"hello-user"}
 
-    def test_a_missing_scope_does_not_hold_back_a_revocation(self, settings, k8s, kc):
-        settings.audience_scopes = {"xnat": "xnat-audience"}
-        k8s.add_fragment(fragment_text_with_audiences("xnat"))
-        reconciler = Reconciler(settings, k8s, kc)
-        reconciler.reconcile_once()
+    def test_a_missing_scope_does_not_hold_back_a_revocation(
+        self, missing_scope, kc, k8s
+    ):
+        missing_scope.reconcile_once()
         assert kc.edges("scout-admin") == {"hello-admin"}
 
         k8s.add_fragment(
-            fragment_text_with_audiences("xnat").replace(
-                "      scout-admin: [hello-admin]\n", ""
-            )
+            with_fields(AUDIENCE).replace("      scout-admin: [hello-admin]\n", "")
         )
-        reconciler.reconcile_once()
+        missing_scope.reconcile_once()
         assert kc.edges("scout-admin") == set()
 
     def test_dry_run_identifies_the_scope_without_writing(self, offering, kc):

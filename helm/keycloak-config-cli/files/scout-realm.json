@@ -1387,10 +1387,8 @@
         ]
       },
       {{- if eq (.Values.enableXnat | toString) "true" }}
-      {{- /* Adds aud=xnat to access tokens, and through its clientScopeMappings
-          entry puts xnat-access in scope, so the token passes both of the openid
-          plugin's bearer gates. Any client whose users call XNAT's REST API
-          needs this scope in its default scopes. */}}
+      {{- /* Adds aud=xnat to access tokens for clients that call XNAT's REST
+          API with the user's token. */}}
       {
         "name": "xnat-audience",
         "description": "Adds aud=xnat to access tokens for clients calling XNAT",

@@ -7,9 +7,10 @@ otherwise do to the realm or to somebody else's tokens.
 from __future__ import annotations
 
 import time
+from collections.abc import Collection
 
 import pytest
-from conftest import HOSTNAME, TIERS, fragment_text
+from conftest import HOSTNAME, TIERS, fragment_text, with_fields
 
 from scout_keycloak_fragment_reconciler.fragment import (
     API_VERSION,
@@ -60,24 +61,18 @@ def nested_clients(depth: int) -> str:
     )
 
 
-def with_fields(*lines: str) -> str:
-    """The fixture fragment plus extra client-level fields."""
-    extra = "".join(f"{line}\n" for line in lines)
-    return fragment_text().replace("    roles:", f"{extra}    roles:")
-
-
 def check(
     spec,
     *,
     hostname: str = HOSTNAME,
     tiers: list[str] | None = None,
-    audiences: list[str] | None = None,
+    audiences: Collection[str] = (),
 ) -> None:
     check_site_rules(
         spec,
         hostname=hostname,
         tiers=TIERS if tiers is None else tiers,
-        audiences=audiences or [],
+        audiences=audiences,
     )
 
 

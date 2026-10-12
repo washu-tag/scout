@@ -318,10 +318,6 @@ class Admin:
         result = self._request("GET", "/client-scopes")
         return list(result or [])
 
-    def default_client_scopes(self, uuid: str) -> list[dict]:
-        result = self._request("GET", f"/clients/{uuid}/default-client-scopes")
-        return list(result or [])
-
     def add_default_client_scope(self, uuid: str, scope_id: str) -> None:
         self._request("PUT", f"/clients/{uuid}/default-client-scopes/{_seg(scope_id)}")
 
