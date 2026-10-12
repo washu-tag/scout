@@ -864,7 +864,9 @@ export default function SearchDetailPage() {
                   setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
                 }}
                 title={
-                  iframeExpanded ? 'Shrink viewer back to compact size' : 'Grow viewer for more room'
+                  iframeExpanded
+                    ? 'Shrink viewer back to compact size'
+                    : 'Grow viewer for more room'
                 }
                 aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
                 className="scout-toolbar-btn"
