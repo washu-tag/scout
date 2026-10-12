@@ -128,6 +128,18 @@ The reconciler will authenticate to keycloak using a dedicated service-account c
 
 `manage-realm` is more than we would ideally want to grant. It is required for a single operation: writing the client role into the composite realm role, which is what binds a fragment's role to a group.
 
+### Client scopes
+
+A pluggable app may need to call another Scout service as the signed-in user, for instance XNAT's REST API, which accepts a Keycloak access token addressed to it and carrying its access role. A fragment asks for that by listing realm client scopes under `clientScopes`. The reconciler holds a site allowlist of the scopes a fragment may name, `offeredClientScopes`, and rejects a fragment that names any other, the same way `tierRoles` bounds `grants`. An allowlist rather than a denylist, because a client scope can carry another service's audience and roles, and a denylist would quietly offer every scope added to the base realm later.
+
+The scope, its audience mapper, and any role it brings along belong to the base realm, under the disjoint-writers rule. The reconciler only links an offered scope to a fragment client, or unlinks it. Keycloak ignores scope lists on client update, so it does this through the client's optional-client-scopes endpoints on every pass, last, after the tier edges, because a linked scope is itself a grant. It touches only scopes the site offers.
+
+Offered scopes are linked as **optional**, never default, and the reconciler turns on Keycloak's standard token exchange for exactly those clients that ask for one. An app's login tokens therefore stay addressed to the app alone. When it needs to call the other service, it exchanges the user's access token for one addressed to that service only. A default scope would make every login token a credential at both, so a leak of one is a leak of both, and each service can replay the token against the other. Keycloak does not let us forbid an app from requesting an optional scope at login instead; the exchange is the documented path, not an enforced one.
+
+Withdrawing an offer works like removing a tier role from `tierRoles`: a fragment that names it becomes invalid, and an invalid fragment's client is left as it is. Revoking an app's access to a service therefore also takes unlinking the scope from that app's client.
+
+Offering a scope hands an app the user's identity at that service, with everything the user may do there. That is the purpose, and it is why the site decides rather than the app.
+
 ## Consequences
 
 The realm as it exists on keycloak isn't defined in any one place. That will make it harder to understand and debug if there is some issue; we could need to look at the base realm, or a fragment realm in some third-party pluggable app, or the reconciler itself. That's kind of unavoidable based on the existence of pluggable apps, but still good to note.
