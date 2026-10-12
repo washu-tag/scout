@@ -284,3 +284,31 @@ def test_a_rejected_representation_surfaces_its_status(admin):
         admin(http).create_client({"clientId": "hello"})
     assert raised.value.status == 400
     assert not raised.value.retryable
+
+
+# --- client scopes ------------------------------------------------------
+
+
+def test_the_scope_calls_hit_the_client_scope_endpoints(admin):
+    """The paths the reconciler's scope sync depends on, verified against
+    Keycloak 26.6.4: a default scope is linked and unlinked by id."""
+    http = FakeHttp(
+        responses=[
+            httpx.Response(200, json=[{"id": "s1", "name": "xnat-audience"}]),
+            httpx.Response(200, json=[{"id": "s2", "name": "roles"}]),
+            httpx.Response(204),
+            httpx.Response(204),
+        ],
+    )
+    client = admin(http)
+    assert client.client_scopes() == [{"id": "s1", "name": "xnat-audience"}]
+    assert client.default_client_scopes("uuid-1") == [{"id": "s2", "name": "roles"}]
+    client.add_default_client_scope("uuid-1", "s1")
+    client.remove_default_client_scope("uuid-1", "s1")
+    realm = f"{BASE}/admin/realms/scout"
+    assert [(sent.method, sent.url) for sent in http.requests] == [
+        ("GET", f"{realm}/client-scopes"),
+        ("GET", f"{realm}/clients/uuid-1/default-client-scopes"),
+        ("PUT", f"{realm}/clients/uuid-1/default-client-scopes/s1"),
+        ("DELETE", f"{realm}/clients/uuid-1/default-client-scopes/s1"),
+    ]

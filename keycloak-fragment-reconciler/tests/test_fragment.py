@@ -41,6 +41,7 @@ clients:
     grants:
       scout-user: [rich-user]
       scout-admin: [rich-admin]
+    audiences: [xnat]
 """
 
 
@@ -65,8 +66,19 @@ def with_fields(*lines: str) -> str:
     return fragment_text().replace("    roles:", f"{extra}    roles:")
 
 
-def check(spec, *, hostname: str = HOSTNAME, tiers: list[str] | None = None) -> None:
-    check_site_rules(spec, hostname=hostname, tiers=TIERS if tiers is None else tiers)
+def check(
+    spec,
+    *,
+    hostname: str = HOSTNAME,
+    tiers: list[str] | None = None,
+    audiences: list[str] | None = None,
+) -> None:
+    check_site_rules(
+        spec,
+        hostname=hostname,
+        tiers=TIERS if tiers is None else tiers,
+        audiences=audiences or [],
+    )
 
 
 class TestHappyPath:
@@ -98,6 +110,7 @@ class TestHappyPath:
         ).clients[0]
         assert spec.role_claim == "groups"
         assert spec.roles == []
+        assert spec.audiences == []
         assert spec.grants == {}
         assert spec.description == ""
 
@@ -173,6 +186,33 @@ class TestGrantsAreConstrained:
         spec = parsed()
         with pytest.raises(FragmentError, match="not a Scout tier role"):
             check(spec, tiers=["scout-admin"])
+
+
+class TestAudiencesAreConstrained:
+    """An audience is a token another service accepts, so the site picks them."""
+
+    def test_an_offered_audience_is_accepted(self):
+        spec = parsed(with_fields("    audiences: [xnat]"))
+        check(spec, audiences=["xnat", "trino"])
+        assert spec.audiences == ["xnat"]
+
+    def test_an_audience_the_site_does_not_offer_is_refused(self):
+        spec = parsed(with_fields("    audiences: [superset]"))
+        with pytest.raises(FragmentError, match=r"does not offer \(offered: xnat\)"):
+            check(spec, audiences=["xnat"])
+
+    def test_a_site_that_offers_none_says_so(self):
+        spec = parsed(with_fields("    audiences: [xnat]"))
+        with pytest.raises(FragmentError, match=r"offered: none"):
+            check(spec)
+
+    def test_duplicates_are_refused(self):
+        with pytest.raises(FragmentError, match="audiences contains duplicates"):
+            parse(with_fields("    audiences: [xnat, xnat]"))
+
+    def test_an_audience_is_a_name_not_a_scope_path(self):
+        with pytest.raises(FragmentError, match="audiences"):
+            parse(with_fields("    audiences: [../client-scopes/x]"))
 
 
 class TestRedirectUrisAreConstrained:
@@ -463,7 +503,7 @@ class TestNestingDepth:
 
     def test_a_fully_populated_fragment_parses(self):
         spec = parsed(FULLY_POPULATED)
-        check(spec)
+        check(spec, audiences=["xnat"])
         assert spec.description == "every field the contract has"
         assert spec.role_claim == "rich.roles"
         assert spec.secret_ref.key == "oidc-client-secret"
@@ -471,6 +511,7 @@ class TestNestingDepth:
             "scout-user": ["rich-user"],
             "scout-admin": ["rich-admin"],
         }
+        assert spec.audiences == ["xnat"]
 
     def test_one_level_past_the_cap_names_the_limit(self):
         with pytest.raises(FragmentError, match=f"{MAX_DEPTH}-level limit"):

@@ -311,6 +311,25 @@ class Admin:
     def delete_protocol_mapper(self, uuid: str, mapper_id: str) -> None:
         self._request("DELETE", f"/clients/{uuid}/protocol-mappers/models/{mapper_id}")
 
+    # --- client scopes --------------------------------------------------
+
+    def client_scopes(self) -> list[dict]:
+        """The realm's client scopes, for resolving a scope name to its id."""
+        result = self._request("GET", "/client-scopes")
+        return list(result or [])
+
+    def default_client_scopes(self, uuid: str) -> list[dict]:
+        result = self._request("GET", f"/clients/{uuid}/default-client-scopes")
+        return list(result or [])
+
+    def add_default_client_scope(self, uuid: str, scope_id: str) -> None:
+        self._request("PUT", f"/clients/{uuid}/default-client-scopes/{_seg(scope_id)}")
+
+    def remove_default_client_scope(self, uuid: str, scope_id: str) -> None:
+        self._request(
+            "DELETE", f"/clients/{uuid}/default-client-scopes/{_seg(scope_id)}"
+        )
+
     # --- composite (tier) edges -----------------------------------------
 
     def tier_edges_for_client(self, tier: str, client_uuid: str) -> list[dict]:

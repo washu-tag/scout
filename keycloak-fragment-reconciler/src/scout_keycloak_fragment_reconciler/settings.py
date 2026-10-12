@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     # Redirect URIs and app URLs must sit under this host, or a fragment's
     # client becomes a token-exfiltration redirect.
     server_hostname: str = ""
+    # Audience name -> the realm client scope that adds it, for the services a
+    # site lets apps call with the user's token. An allowlist, like tier_roles:
+    # a scope list in the fragment would let an app ask for any audience.
+    audience_scopes: Annotated[dict[str, str], NoDecode] = {}
 
     # --- Discovery ------------------------------------------------------
     fragment_label: str = FRAGMENT_LABEL
@@ -78,6 +82,26 @@ class Settings(BaseSettings):
                 )
             return [part.strip() for part in value.split(",") if part.strip()]
         return value
+
+    @field_validator("audience_scopes", mode="before")
+    @classmethod
+    def _split_pairs(cls, value: object) -> object:
+        """Accept `name=scope,name=scope`, which is what the chart renders."""
+        if not isinstance(value, str):
+            return value
+        if value.strip().startswith("{"):
+            raise ValueError(
+                f"expected name=scope pairs, not JSON (got {value.strip()[:40]!r})"
+            )
+        pairs: dict[str, str] = {}
+        for part in filter(None, (p.strip() for p in value.split(","))):
+            name, sep, scope = (s.strip() for s in part.partition("="))
+            if not sep or not name or not scope:
+                raise ValueError(f"expected name=scope, got {part!r}")
+            if name in pairs:
+                raise ValueError(f"audience {name!r} is listed twice")
+            pairs[name] = scope
+        return pairs
 
     @field_validator("watched_namespaces")
     @classmethod

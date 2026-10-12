@@ -37,6 +37,7 @@ CHART_ENV = {
     "SERVER_HOSTNAME": "scout.example.edu",
     "TIER_ROLES": "scout-user,scout-admin",
     "WATCHED_NAMESPACES": "",
+    "AUDIENCE_SCOPES": "",
     "RESYNC_SECONDS": "300",
     "ORPHAN_GRACE_SECONDS": "300",
     "DEBOUNCE_SECONDS": "2",
@@ -122,6 +123,35 @@ class TestTheChartsEnvironment:
         with pytest.raises(SystemExit) as exit_info:
             RequiredSettings()
         assert f"{ENV_PREFIX}WATCHED_NAMESPACES" in str(exit_info.value)
+
+
+class TestAudienceScopes:
+    def test_the_default_offers_none(self, env):
+        env()
+        assert RequiredSettings().audience_scopes == {}
+
+    def test_pairs_parse(self, env):
+        env(AUDIENCE_SCOPES="xnat=xnat-audience, trino = trino-audience")
+        assert RequiredSettings().audience_scopes == {
+            "xnat": "xnat-audience",
+            "trino": "trino-audience",
+        }
+
+    @pytest.mark.parametrize(
+        "value",
+        ['{"xnat": "xnat-audience"}', "xnat", "xnat=", "=xnat-audience"],
+    )
+    def test_a_malformed_value_names_the_variable(self, env, value):
+        env(AUDIENCE_SCOPES=value)
+        with pytest.raises(SystemExit) as exit_info:
+            RequiredSettings()
+        assert f"{ENV_PREFIX}AUDIENCE_SCOPES" in str(exit_info.value)
+
+    def test_an_audience_listed_twice_is_refused(self, env):
+        """Either mapping is a guess at which scope the operator meant."""
+        env(AUDIENCE_SCOPES="xnat=xnat-audience,xnat=other")
+        with pytest.raises(SystemExit, match="listed twice"):
+            RequiredSettings()
 
 
 class TestEveryFieldIsReachable:

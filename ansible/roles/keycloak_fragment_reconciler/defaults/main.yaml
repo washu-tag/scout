@@ -25,6 +25,11 @@ keycloak_fragment_reconciler_secret_key: fragment_reconciler_svc
 keycloak_fragment_reconciler_watched_namespaces:
   - ALL
 
+# Audiences a fragment may ask for, each mapped to the realm client scope that
+# adds it. XNAT's is offered whenever XNAT is enabled, since the realm only has
+# the xnat-audience scope then.
+keycloak_fragment_reconciler_audience_scopes: "{{ {'xnat': 'xnat-audience'} if enable_xnat | default(false) | bool else {} }}"
+
 keycloak_fragment_reconciler_resources_default:
   requests:
     cpu: 10m

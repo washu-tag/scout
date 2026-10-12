@@ -4,9 +4,11 @@ Apps write against this file. It is the whole vocabulary available for
 describing a Keycloak client: a fragment says what the app is and what its users
 need, and Scout decides which Keycloak objects that becomes. There is no syntax
 for protocol mappers, scope lists, `fullScopeAllowed`, service accounts, PKCE, or
-the login flow -- those live in `translate`. A field a fragment cannot vary is a
-field it does not have; the browser code flow with PKCE `S256` is the only shape
-Scout issues, so there is nothing to say about either.
+the login flow -- those live in `translate`. `audiences` is the nearest thing to
+a scope list: it names services the app calls with the user's token, and the
+site decides which client scope each one becomes. A field a fragment cannot
+vary is a field it does not have; the browser code flow with PKCE `S256` is the
+only shape Scout issues, so there is nothing to say about either.
 
 Unknown fields are rejected rather than ignored, unlike launchpad chips (ADR
 0034): a chip that drops a key renders a slightly wrong tile, but a fragment
@@ -17,6 +19,7 @@ public client. `apiVersion` carries forward compatibility instead.
 from __future__ import annotations
 
 import urllib.parse
+from collections.abc import Collection
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
@@ -93,6 +96,8 @@ class ClientSpec(BaseModel):
     secret_ref: SecretRef = Field(alias="secretRef")
     # tier role -> the fragment's own roles to compose into it.
     grants: dict[str, list[str]] = Field(default_factory=dict)
+    # Services whose audience the app's access tokens should carry.
+    audiences: list[Name] = Field(default_factory=list)
 
     @property
     def app_origin(self) -> str:
@@ -127,6 +132,12 @@ class ClientSpec(BaseModel):
     def _check_roles_unique(self) -> ClientSpec:
         if len(set(self.roles)) != len(self.roles):
             raise ValueError("roles contains duplicates")
+        return self
+
+    @model_validator(mode="after")
+    def _check_audiences_unique(self) -> ClientSpec:
+        if len(set(self.audiences)) != len(self.audiences):
+            raise ValueError("audiences contains duplicates")
         return self
 
     @model_validator(mode="after")
@@ -218,7 +229,13 @@ def _https_host(raw: str, field: str) -> str:
     return parsed.hostname
 
 
-def check_site_rules(client: ClientSpec, *, hostname: str, tiers: list[str]) -> None:
+def check_site_rules(
+    client: ClientSpec,
+    *,
+    hostname: str,
+    tiers: list[str],
+    audiences: Collection[str] = (),
+) -> None:
     """The checks that need site configuration, so cannot live on the model."""
     site = hostname.lower()
     for field, raw in [("appUrl", client.app_url)] + [
@@ -240,6 +257,13 @@ def check_site_rules(client: ClientSpec, *, hostname: str, tiers: list[str]) -> 
             raise FragmentError(
                 f"grants names {tier!r}, which is not a Scout tier role "
                 f"({', '.join(tiers)})"
+            )
+    for audience in client.audiences:
+        if audience not in audiences:
+            offered = ", ".join(sorted(audiences)) or "none"
+            raise FragmentError(
+                f"audiences names {audience!r}, which this site does not offer "
+                f"(offered: {offered})"
             )
 
 

@@ -16,6 +16,7 @@ from conftest import (
     TIERS,
     TransportError,
     fragment_text,
+    fragment_text_with_audiences,
     fragment_text_without_roles,
     translate,
 )
@@ -24,6 +25,7 @@ from scout_keycloak_fragment_reconciler import core, metrics
 from scout_keycloak_fragment_reconciler.core import (
     APPLIED,
     FAILED,
+    INVALID,
     REJECTED,
     Reconciler,
 )
@@ -288,7 +290,8 @@ class TestNonAdoption:
 
 
 class TestBoundedBlastRadius:
-    """Only stamped clients, their roles, mappers, and tier edges."""
+    """Only stamped clients, their roles, mappers, tier edges, and offered
+    audience scopes."""
 
     def test_writes_touch_nothing_else(self, reconciler, kc):
         reconciler.reconcile_once()
@@ -302,6 +305,8 @@ class TestBoundedBlastRadius:
             "create_mapper",
             "update_mapper",
             "delete_mapper",
+            "add_scope",
+            "remove_scope",
             "add_edge",
             "remove_edge",
         }
@@ -658,6 +663,119 @@ class TestSafePartialState:
         assert kc.find_client("hello") is not None
         for tier in TIERS:
             assert kc.edges(tier) == set(), "an edge survived a failed apply"
+
+
+class TestAudienceScopes:
+    """A fragment's audiences become the scopes the site maps them to, kept in
+    step every pass. No other scope on the client is ever touched."""
+
+    @pytest.fixture
+    def offering(self, settings, k8s, kc) -> Reconciler:
+        settings.audience_scopes = {"xnat": "xnat-audience"}
+        kc.add_scope("xnat-audience")
+        k8s.add_fragment(fragment_text_with_audiences("xnat"))
+        return Reconciler(settings, k8s, kc)
+
+    @staticmethod
+    def scopes(kc) -> list[str]:
+        return kc.default_scopes[next(iter(kc.clients))]
+
+    def test_the_scope_arrives_with_the_create(self, offering, kc):
+        offering.reconcile_once()
+        assert "xnat-audience" in self.scopes(kc)
+        assert not [w for w in kc.writes if w.startswith("add_scope")]
+
+    def test_a_second_pass_writes_nothing(self, offering, kc):
+        offering.reconcile_once()
+        after_first = list(kc.writes)
+        offering.reconcile_once()
+        assert kc.writes == after_first
+
+    def test_a_steady_pass_does_not_resolve_scope_ids(self, offering, kc):
+        offering.reconcile_once()
+        before = kc.calls["client_scopes"]
+        offering.reconcile_once()
+        assert kc.calls["client_scopes"] == before
+
+    def test_a_scope_removed_by_hand_is_put_back(self, offering, kc):
+        """Keycloak ignores scope lists on update, so this is the only repair
+        there is, and recreating the client is no longer how to get it back."""
+        offering.reconcile_once()
+        self.scopes(kc).remove("xnat-audience")
+        offering.reconcile_once()
+        assert kc.writes[-1:] == ["add_scope:xnat-audience"]
+        assert "xnat-audience" in self.scopes(kc)
+
+    def test_an_existing_client_gains_the_scope_when_its_fragment_asks(
+        self, settings, k8s, kc
+    ):
+        settings.audience_scopes = {"xnat": "xnat-audience"}
+        kc.add_scope("xnat-audience")
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        assert "xnat-audience" not in self.scopes(kc)
+
+        k8s.add_fragment(fragment_text_with_audiences("xnat"))
+        reconciler.reconcile_once()
+        assert kc.writes[-1:] == ["add_scope:xnat-audience"]
+
+    def test_dropping_the_audience_removes_only_that_scope(self, offering, kc, k8s):
+        offering.reconcile_once()
+        k8s.add_fragment(fragment_text())
+        offering.reconcile_once()
+        assert kc.writes[-1:] == ["remove_scope:xnat-audience"]
+        assert self.scopes(kc) == translate.DEFAULT_CLIENT_SCOPES
+
+    def test_a_scope_the_site_does_not_offer_is_left_alone(self, offering, kc):
+        """Added by hand, or offered once and since withdrawn: either way not
+        this service's to remove."""
+        offering.reconcile_once()
+        kc.add_scope("trino-audience")
+        self.scopes(kc).append("trino-audience")
+        offering.reconcile_once()
+        assert "trino-audience" in self.scopes(kc)
+        assert not [w for w in kc.writes if w.startswith("remove_scope")]
+
+    def test_a_site_that_offers_none_never_reads_scopes(self, reconciler, kc):
+        reconciler.reconcile_once()
+        reconciler.reconcile_once()
+        assert kc.calls["default_client_scopes"] == 0
+        assert kc.calls["client_scopes"] == 0
+
+    def test_an_audience_the_site_does_not_offer_creates_nothing(
+        self, settings, k8s, kc
+    ):
+        k8s.add_fragment(fragment_text_with_audiences("xnat"))
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        assert kc.clients == {}
+        outcome = next(o for o in reconciler.snapshot.outcomes)
+        assert outcome.status == INVALID
+        assert "does not offer" in outcome.detail
+
+    def test_an_offered_scope_missing_from_the_realm_fails_before_any_edge(
+        self, settings, k8s, kc
+    ):
+        """A site that offers an audience its realm never created: the app
+        gets a client with no grants, and the outcome names the scope."""
+        settings.audience_scopes = {"xnat": "xnat-audience"}
+        k8s.add_fragment(fragment_text_with_audiences("xnat"))
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        outcome = next(o for o in reconciler.snapshot.outcomes)
+        assert outcome.status == FAILED
+        assert "xnat-audience" in outcome.detail
+        for tier in TIERS:
+            assert kc.edges(tier) == set()
+
+    def test_dry_run_identifies_the_scope_without_writing(self, offering, kc):
+        offering.reconcile_once()
+        self.scopes(kc).remove("xnat-audience")
+        offering.settings.dry_run = True
+        attempts = offering.write_attempts
+        offering.reconcile_once()
+        assert offering.write_attempts == attempts + 1
+        assert "xnat-audience" not in self.scopes(kc)
 
 
 class TestOneWaySecretFlow:

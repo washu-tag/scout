@@ -46,7 +46,9 @@ is the failure the service is designed against and its orphan grace clock assume
 process.
 
 It writes only clients carrying its own ownership attribute, their roles, their protocol
-mappers, and composite edges naming those roles. It holds no standing Secret permission:
+mappers, composite edges naming those roles, and the offered audience scopes on those
+clients. `keycloak_fragment_reconciler_audience_scopes` is the offer; it maps `xnat` to
+the realm's `xnat-audience` scope when `enable_xnat` is true and is empty otherwise. It holds no standing Secret permission:
 each app's chart grants it a `resourceNames`-scoped `get` on that app's own credential.
 **The ServiceAccount name is public contract** — apps name it in a `RoleBinding`, so
 renaming it breaks every installed fragment, and it is deliberately not derived from the

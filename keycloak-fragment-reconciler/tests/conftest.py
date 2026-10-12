@@ -53,6 +53,10 @@ def fragment_text(client_id: str = "hello") -> str:
     return FRAGMENT.format(client_id=client_id)
 
 
+def fragment_text_with_audiences(*audiences: str, client_id: str = "hello") -> str:
+    return f"{fragment_text(client_id)}    audiences: [{', '.join(audiences)}]\n"
+
+
 def fragment_text_without_roles(client_id: str = "hello") -> str:
     """The same client with nothing to grant.
 
@@ -82,6 +86,12 @@ class FakeKeycloak:
         self.roles: dict[str, dict[str, dict]] = {}
         self.mappers: dict[str, list[dict]] = {}
         self.secrets: dict[str, str] = {}
+        # Realm client scopes by name, and each client's default scope names.
+        self.scopes: dict[str, dict] = {
+            name: {"id": f"scope-{name}", "name": name}
+            for name in translate.DEFAULT_CLIENT_SCOPES
+        }
+        self.default_scopes: dict[str, list[str]] = {}
         # tier name -> {role id: role name}
         self.composites: dict[str, dict[str, str]] = {n: {} for n in self.realm_roles}
         self.writes: list[str] = []
@@ -105,7 +115,16 @@ class FakeKeycloak:
         self.roles[uuid] = {}
         self.mappers[uuid] = []
         self.secrets[uuid] = secret
+        self.default_scopes[uuid] = self._known(representation)
         return uuid
+
+    def add_scope(self, name: str) -> None:
+        self.scopes[name] = {"id": f"scope-{name}", "name": name}
+
+    def _known(self, representation: dict) -> list[str]:
+        """A create's scope list as Keycloak keeps it: unknown names dropped."""
+        names = representation.get("defaultClientScopes") or []
+        return [name for name in names if name in self.scopes]
 
     def seed_role(self, uuid: str, name: str) -> str:
         role_id = self._uid("role")
@@ -140,8 +159,11 @@ class FakeKeycloak:
         self.roles[uuid] = {}
         self.mappers[uuid] = []
         self.secrets[uuid] = representation.get("secret", "")
+        self.default_scopes[uuid] = self._known(representation)
         return uuid
 
+    # Scope lists in the body are ignored, as `ClientResource.updateClient`
+    # ignores them.
     def update_client(self, uuid: str, representation: dict) -> None:
         self._check("update_client")
         self.writes.append(f"update_client:{representation['clientId']}")
@@ -156,6 +178,7 @@ class FakeKeycloak:
         self.roles.pop(uuid, None)
         self.mappers.pop(uuid, None)
         self.secrets.pop(uuid, None)
+        self.default_scopes.pop(uuid, None)
 
     def client_secret(self, uuid: str) -> str:
         self._check("client_secret")
@@ -199,6 +222,27 @@ class FakeKeycloak:
         self._check("delete_protocol_mapper")
         self.writes.append(f"delete_mapper:{mapper_id}")
         self.mappers[uuid] = [m for m in self.mappers[uuid] if m["id"] != mapper_id]
+
+    def client_scopes(self) -> list[dict]:
+        self._check("client_scopes")
+        return [dict(s) for s in self.scopes.values()]
+
+    def default_client_scopes(self, uuid: str) -> list[dict]:
+        self._check("default_client_scopes")
+        return [dict(self.scopes[n]) for n in self.default_scopes.get(uuid, [])]
+
+    def add_default_client_scope(self, uuid: str, scope_id: str) -> None:
+        self._check("add_default_client_scope")
+        name = next(n for n, s in self.scopes.items() if s["id"] == scope_id)
+        self.writes.append(f"add_scope:{name}")
+        if name not in self.default_scopes[uuid]:
+            self.default_scopes[uuid].append(name)
+
+    def remove_default_client_scope(self, uuid: str, scope_id: str) -> None:
+        self._check("remove_default_client_scope")
+        name = next(n for n, s in self.scopes.items() if s["id"] == scope_id)
+        self.writes.append(f"remove_scope:{name}")
+        self.default_scopes[uuid].remove(name)
 
     def tier_edges_for_client(self, tier: str, client_uuid: str) -> list[dict]:
         self._check("tier_edges_for_client")
@@ -423,6 +467,7 @@ __all__ = [
     "TIERS",
     "TransportError",
     "fragment_text",
+    "fragment_text_with_audiences",
     "fragment_text_without_roles",
     "translate",
 ]

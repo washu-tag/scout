@@ -128,6 +128,14 @@ The reconciler will authenticate to keycloak using a dedicated service-account c
 
 `manage-realm` is more than we would ideally want to grant. It is required for a single operation: writing the client role into the composite realm role, which is what binds a fragment's role to a group.
 
+### Audiences
+
+A fragment may list under `audiences` the Scout services its app calls with the signed-in user's access token. It names a service, never a client scope. The reconciler holds a site allowlist, `audienceScopes`, mapping each offered name to a client scope in the base realm, and rejects a name the site does not offer, the same way `tierRoles` bounds `grants`. A raw scope list would let any app request any audience or mapper in the realm, including ones that carry another service's roles.
+
+The scope goes in the create call with the rest of the client's scopes, but Keycloak ignores scope lists on update, so on every pass the reconciler also links and unlinks offered scopes through the client's default-client-scopes endpoints. It touches only scopes the site offers and leaves the client's others alone. The scope, its audience mapper, and any role it brings along belong to the base realm, under the disjoint-writers rule: `xnat-audience` adds `aud=xnat` and puts `xnat-access` in scope, and a site offers `xnat` only when XNAT is enabled.
+
+Offering an audience hands an app the user's identity at that service for each token's lifetime, with everything the user may do there. That is the purpose, and it is why the site decides rather than the app.
+
 ## Consequences
 
 The realm as it exists on keycloak isn't defined in any one place. That will make it harder to understand and debug if there is some issue; we could need to look at the base realm, or a fragment realm in some third-party pluggable app, or the reconciler itself. That's kind of unavoidable based on the existence of pluggable apps, but still good to note.

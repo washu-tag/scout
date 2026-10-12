@@ -93,8 +93,17 @@ See also the example pluggable app: https://github.com/washu-tag/scout/tree/main
 | `roleClaim` | Optional, defaults to `groups`. This controls in what token claim Keycloak will write the user's roles, and where in the token your app can expect to read them. |
 | `secretRef` | `name`, and optionally `key`, of the Secret holding your credential. |
 | `grants` | How you map Scout's user groups (`scout-user` and `scout-admin`) to your app's role vocabulary. The roles must exist in the `roles` section above. |
+| `audiences` | Optional. Other Scout services your app calls with the signed-in user's access token, by name, for example `[xnat]`. Each must be one your site offers; see [Calling another service as the user](#calling-another-service-as-the-user). |
 
 A bit more on `roles` and `grants`, since this is an important piece to understand if you are going to get auth right. When a Scout user gets authorized by an admin to use the platform, they will be added to `scout-user` to give them basic access, or `scout-admin` to give them admin access. As of writing those are the _only_ groups and only levels of permission Scout recognizes. In the `grants` section of the Fragment is where you can express something like "When a user is in `scout-user`, they should get these roles in my app: `[...]`". Those roles are the only thing you will see in the tokens that your service gets on user requests; you won't see `scout-user` or `scout-admin`, you'll see the roles that those two groups map to.
+
+### Calling another service as the user
+
+Some services accept a user's Keycloak access token directly, so your app can call them as the signed-in user rather than with a shared credential. Such a service only accepts tokens addressed to it, so list it under `audiences`, and the Reconciler adds that audience to your app's access tokens, along with the service's access role for users who hold it.
+
+A site offers an audience only for a service it runs. Scout offers `xnat` when XNAT is enabled; with it, send your access token to XNAT's REST API as `Authorization: Bearer <token>`. A fragment that names an audience the site does not offer is rejected, and the rejection lists the ones it does offer.
+
+Once your access token carries another audience, a library that checks the access token's audience against your `clientId` needs to accept that one too. oauth2-proxy, for example, needs `oidc_extra_audiences`.
 
 ### The client secret
 
@@ -193,7 +202,7 @@ The Fragment syntax is deliberately a subset of what Keycloak's clients can conf
 | PKCE `S256` required | Send a code challenge — most libraries do by default ([RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636)) |
 | No direct access grants | You cannot get a token with a username and password; see [testing](#5-test-and-troubleshoot) |
 | No service accounts | No `client_credentials` grant for machine-to-machine calls |
-| Sees only its own roles | Your token names your roles and no other service's |
+| Sees only its own roles | Your token names your roles and no other service's, except the access role of a service listed under `audiences` |
 
 ## 4. Read the token and act on roles
 

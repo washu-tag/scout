@@ -36,6 +36,14 @@ tierRoles:
 # Required. A fragment's redirect URIs and app URL must sit under this host.
 serverHostname: ''
 
+# The audiences a fragment's `audiences` may name, each mapped to the realm
+# client scope that adds it to the app's access tokens. An allowlist, like
+# tierRoles: offer an audience only for a service this site runs. Empty offers
+# none, and the reconciler then never reads or writes a client's scopes.
+#   audienceScopes:
+#     xnat: xnat-audience
+audienceScopes: {}
+
 # Namespaces to read fragments from, or the lone value `ALL` for every
 # namespace. Empty is the default and means none: no ClusterRole is created, so
 # the chart alone installs a reconciler that can read nothing and leaves the

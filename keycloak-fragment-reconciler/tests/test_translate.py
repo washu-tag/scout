@@ -15,12 +15,14 @@ import os
 from pathlib import Path
 
 import pytest
-from conftest import HOSTNAME, fragment_text
+from conftest import HOSTNAME, fragment_text, fragment_text_with_audiences
 
 from scout_keycloak_fragment_reconciler import translate
 from scout_keycloak_fragment_reconciler.fragment import parse
 
 GOLDEN = Path(__file__).parent / "golden"
+
+OFFERED = {"xnat": "xnat-audience", "trino": "trino-audience"}
 
 # Copied from the base realm's own clients. A failure here after a realm edit
 # means a fragment's client and a hand-written one have diverged on scopes.
@@ -87,6 +89,20 @@ class TestScoutDecidesNotTheApp:
         client = rendered(fragment_text())["client"]
         assert client["defaultClientScopes"] == REALM_DEFAULT_SCOPES
         assert client["optionalClientScopes"] == REALM_OPTIONAL_SCOPES
+
+    def test_an_audience_adds_the_scope_the_site_maps_it_to(self):
+        spec = parse(fragment_text_with_audiences("xnat")).clients[0]
+        client = translate.client_representation(
+            spec, secret="s", source="demo/hello", offered=OFFERED
+        )
+        assert client["defaultClientScopes"] == REALM_DEFAULT_SCOPES + ["xnat-audience"]
+
+    def test_an_offer_alone_adds_nothing(self):
+        spec = parse(fragment_text()).clients[0]
+        client = translate.client_representation(
+            spec, secret="s", source="demo/hello", offered=OFFERED
+        )
+        assert client["defaultClientScopes"] == REALM_DEFAULT_SCOPES
 
     def test_the_role_mapper_matches_the_realms_own(self):
         mapper = rendered(fragment_text())["protocolMappers"][0]

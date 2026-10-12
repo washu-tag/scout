@@ -18,4 +18,6 @@ serverHostname: '{{ server_hostname }}'
 watchedNamespaces:
   {{ keycloak_fragment_reconciler_watched_namespaces | to_nice_yaml(indent=2) | indent(2) }}
 
+audienceScopes: {{ keycloak_fragment_reconciler_audience_scopes | to_json }}
+
 resources: {{ keycloak_fragment_reconciler_resources_default | combine(keycloak_fragment_reconciler_resources | default({}), recursive=true) | to_json }}

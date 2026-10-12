@@ -10,6 +10,8 @@ predate.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from .fragment import ClientSpec
 
 # A client without this attribute is not ours and is never touched.
@@ -41,7 +43,21 @@ def source_of(client: dict) -> str:
     return (client.get("attributes") or {}).get(SOURCE_ATTRIBUTE, "")
 
 
-def client_representation(spec: ClientSpec, *, secret: str, source: str) -> dict:
+def audience_scopes(spec: ClientSpec, offered: Mapping[str, str]) -> list[str]:
+    """The client scopes for the audiences a fragment asks for.
+
+    `check_site_rules` has already refused an audience the site does not offer.
+    """
+    return [offered[name] for name in spec.audiences]
+
+
+def client_representation(
+    spec: ClientSpec,
+    *,
+    secret: str,
+    source: str,
+    offered: Mapping[str, str] | None = None,
+) -> dict:
     """The ClientRepresentation to POST, or to compare a live client against.
 
     `fullScopeAllowed: false` is set at create time and never patched in
@@ -79,7 +95,8 @@ def client_representation(spec: ClientSpec, *, secret: str, source: str) -> dict
         # The origin, not the URL: see `ClientSpec.app_origin`.
         "webOrigins": [spec.app_origin],
         "attributes": attributes,
-        "defaultClientScopes": list(DEFAULT_CLIENT_SCOPES),
+        "defaultClientScopes": DEFAULT_CLIENT_SCOPES
+        + audience_scopes(spec, offered or {}),
         "optionalClientScopes": list(OPTIONAL_CLIENT_SCOPES),
     }
 
@@ -133,9 +150,10 @@ def tier_edges(spec: ClientSpec) -> dict[str, list[str]]:
 #
 # The client-scope lists are deliberately absent. Keycloak applies them on
 # create and ignores them on update -- `ClientResource.updateClient` never
-# calls `updateClientScopes` -- so managing them would detect drift it could
-# never repair and rewrite the client on every pass forever. They are set once
-# at creation and are immutable thereafter.
+# calls `updateClientScopes` -- so managing them here would detect drift it
+# could never repair and rewrite the client on every pass forever. The base
+# sets are set once at creation; audience scopes are kept in step through
+# their own endpoints (`core.Reconciler._reconcile_audiences`).
 MANAGED_FIELDS = (
     "name",
     "description",

@@ -270,6 +270,7 @@ class Reconciler:
                         spec,
                         hostname=self.settings.server_hostname,
                         tiers=self.settings.tier_roles,
+                        audiences=self.settings.audience_scopes,
                     )
                 except FragmentError as exc:
                     snapshot.outcomes.append(
@@ -448,7 +449,10 @@ class Reconciler:
         if secret is None:
             return Outcome(claim.source, spec.client_id, FAILED, problem)
         desired = translate.client_representation(
-            spec, secret=secret, source=claim.source
+            spec,
+            secret=secret,
+            source=claim.source,
+            offered=self.settings.audience_scopes,
         )
         try:
             uuid, stop = self._ensure_client(claim, desired, secret, listed=listed)
@@ -456,6 +460,10 @@ class Reconciler:
                 return stop
             roles, new_roles = self._reconcile_roles(uuid, spec)
             self._reconcile_mappers(uuid, spec)
+            problem = self._reconcile_audiences(uuid, spec)
+            if problem:
+                log.error("applying %s failed: %s", spec.client_id, problem)
+                return Outcome(claim.source, spec.client_id, FAILED, problem)
             self._reconcile_tier_edges(uuid, spec, roles=roles, new_roles=new_roles)
         except KeycloakError as exc:
             level = log.warning if exc.retryable else log.error
@@ -607,6 +615,43 @@ class Reconciler:
                 f"remove mapper {name} from {spec.client_id}",
                 partial(self.admin.delete_protocol_mapper, uuid, by_name[name]["id"]),
             )
+
+    def _reconcile_audiences(self, uuid: str, spec: ClientSpec) -> str:
+        """Keep the client's offered audience scopes matching its fragment.
+
+        Returns why that could not be done, or "". Only scopes the site offers
+        are added or removed; the client's other default scopes are left alone.
+        A site that offers none pays no read for this.
+        """
+        offered = self.settings.audience_scopes
+        if not offered:
+            return ""
+        want = set(translate.audience_scopes(spec, offered))
+        live = {
+            scope["name"]: scope["id"]
+            for scope in self.admin.default_client_scopes(uuid)
+            if scope.get("name") in offered.values()
+        }
+        missing = sorted(want - set(live))
+        if missing:
+            ids = {s.get("name"): s.get("id") for s in self.admin.client_scopes()}
+            absent = [name for name in missing if not ids.get(name)]
+            if absent:
+                return (
+                    f"the site offers client scope(s) {', '.join(absent)}, which "
+                    "the realm does not have"
+                )
+            for name in missing:
+                self._write(
+                    f"add scope {name} to {spec.client_id}",
+                    partial(self.admin.add_default_client_scope, uuid, ids[name]),
+                )
+        for name in sorted(set(live) - want):
+            self._write(
+                f"remove scope {name} from {spec.client_id}",
+                partial(self.admin.remove_default_client_scope, uuid, live[name]),
+            )
+        return ""
 
     def _reconcile_tier_edges(
         self,
