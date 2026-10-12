@@ -7,8 +7,9 @@
 #
 # Auth matches the Ansible temporal_oidc_enabled default: frontend JWT authz on the
 # realm `temporal` client's `permissions` claim, plus the UI's own OIDC login with that
-# client (secret from the fixed-name temporal-web-oidc Secret). Web ingress is
-# mode-selected via temporal-edge-${service_mode} (edge.yaml).
+# client (secret from the fixed-name temporal-web-oidc Secret), selected via
+# temporal-web-auth-${temporal_web_auth} (web-auth.yaml). Web ingress is mode-selected
+# via temporal-edge-${service_mode} (edge.yaml).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -50,6 +51,8 @@ spec:
   valuesFrom:
     - kind: ConfigMap
       name: 'temporal-edge-${service_mode}'
+    - kind: ConfigMap
+      name: 'temporal-web-auth-${temporal_web_auth:=oidc}'
   values:
     # k3s/air-gapped: no docker-in-schema-job, no ES index tool (Postgres visibility).
     shims:
@@ -112,21 +115,3 @@ spec:
                 manageSchema: true
                 maxConns: 10
                 maxConnLifetime: '1h'
-    web:
-      additionalEnv:
-        - name: TEMPORAL_AUTH_ENABLED
-          value: 'true'
-        - name: TEMPORAL_AUTH_PROVIDER_URL
-          value: '${keycloak_realm_url}'
-        - name: TEMPORAL_AUTH_CLIENT_ID
-          value: temporal
-        - name: TEMPORAL_AUTH_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: temporal-web-oidc
-              key: client-secret
-        - name: TEMPORAL_AUTH_CALLBACK_URL
-          value: 'https://temporal.${server_hostname}/auth/sso/callback'
-        # The UI splits this on commas.
-        - name: TEMPORAL_AUTH_SCOPES
-          value: openid,email,profile
