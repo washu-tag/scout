@@ -43,9 +43,11 @@ spec:
     - kind: ConfigMap
       name: 'launchpad-edge-${service_mode}'
   values:
+    image:
+      repository: ghcr.io/washu-tag/launchpad
+      tag: latest
     # catalog-discovery sidecar: upstream image, literal mirror of versions.yaml
-    # (launchpad_sidecar_image_tag, Renovate-tracked); the Scout image tag defaults
-    # to the chart's stamped appVersion (ADR 0030), so it is not pinned here.
+    # (launchpad_sidecar_image_tag, Renovate-tracked).
     catalog:
       discovery:
         enabled: true

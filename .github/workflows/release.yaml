@@ -237,6 +237,7 @@ jobs:
     outputs:
       commit_sha: ${{ steps.target.outputs.sha }}
       ci_run_id: ${{ steps.wait.outputs.run_id }}
+      ci_run_attempt: ${{ steps.wait.outputs.run_attempt }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -284,8 +285,8 @@ jobs:
               RUN_ID=$(gh run list \
                 --workflow=ci.yaml \
                 --branch="${REF_NAME}" \
-                --json databaseId,headSha,status \
-                --jq ".[] | select(.headSha == \"$TARGET_SHA\") | .databaseId" \
+                --json databaseId,headSha,event \
+                --jq ".[] | select(.headSha == \"$TARGET_SHA\" and (.event == \"push\" or .event == \"workflow_dispatch\")) | .databaseId" \
                 | head -1)
 
               if [[ -n "$RUN_ID" ]]; then
@@ -298,15 +299,24 @@ jobs:
             fi
 
             # Poll run status (tolerate transient API errors)
-            if ! STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '.status + ":" + .conclusion'); then
+            if ! RUN=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}"); then
               echo "[$i/$MAX_ATTEMPTS] API error, will retry..."
               sleep "$SLEEP_SECONDS"
               continue
             fi
+            RUN_ATTEMPT=$(jq -er --arg sha "$TARGET_SHA" --arg branch "$REF_NAME" \
+              --arg repo "$REPO" --argjson id "$RUN_ID" '
+              select(.id == $id and .head_sha == $sha and .head_branch == $branch
+                and .repository.full_name == $repo and .head_repository.full_name == $repo
+                and .path == ".github/workflows/ci.yaml"
+                and (.event == "push" or .event == "workflow_dispatch"))
+              | .run_attempt | select(type == "number" and . > 0 and floor == .)' <<< "$RUN")
+            STATUS=$(jq -r '.status + ":" + (.conclusion // "")' <<< "$RUN")
             case "$STATUS" in
               completed:success)
                 echo "CI workflow completed successfully"
                 echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+                echo "run_attempt=$RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
                 exit 0
                 ;;
               completed:*)
@@ -338,6 +348,20 @@ jobs:
       && !inputs.dry_run
       && needs.wait-for-build.result == 'success'
     steps:
+      - name: Checkout the tested release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.wait-for-build.outputs.commit_sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml
+      - name: Free candidate storage
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /usr/share/swift /opt/ghc
+          sudo apt-get clean
+          docker system prune -af --volumes
       - name: Login to GitHub Container Registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -345,20 +369,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download and push all images
+      - uses: ./.github/actions/install-hauler-oras
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.0.6
+      - name: Download the selected attempt's candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
+          name: flux-candidate-${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          path: candidate
+      - name: Download the selected attempt's canonical images
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
+          name: flux-images-${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          path: candidate/images
+      - name: Recheck the successful attempt and publish its tested images
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
+          RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          TARGET_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
+          REF_NAME: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
-          IMAGES="${SCOUT_VERSIONED_IMAGES} ${UPSTREAM_VERSIONED_IMAGES}"
-          for IMAGE in $IMAGES; do
-            echo "=== Publishing $IMAGE ==="
-            gh run download "$RUN_ID" --repo "${{ github.repository }}" -n "$IMAGE" -D "${{ runner.temp }}/$IMAGE"
-            FULL_TAG=$(docker load --input "${{ runner.temp }}/$IMAGE/$IMAGE.tar" | sed 's/.*: //g')
-            rm -f "${{ runner.temp }}/$IMAGE/$IMAGE.tar"
-            docker push "$FULL_TAG"
-            docker rmi "$FULL_TAG"
-          done
+          VERSION="$(jq -er .version candidate/index.json)" \
+          GITHUB_SHA="$TARGET_SHA" GITHUB_RUN_ID="$RUN_ID" GITHUB_RUN_ATTEMPT="$RUN_ATTEMPT" \
+            python3 .github/scripts/copy-flux-artifacts.py publish-images --candidate candidate \
+              --release-branch "$REF_NAME" --release-version "$RELEASE_VERSION"
 
   release:
     name: Create Release

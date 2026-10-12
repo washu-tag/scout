@@ -87,11 +87,12 @@ with pods restarting only for components that changed.
   realm + per-component clients + user-profile attributes from the shared
   filter map) — the one item here that is design work, touching
   ADRs 0003/0020/0025.
-- Config artifact publishing: placeholder references in git; chart pins
-  and image references stamped from the build manifest at publish
-  (`name:tag@digest`); `cluster-vars` + `StrictPostBuildSubstitutions` +
-  the required-vars file; structured settings as site-overlay values via
-  `valuesFrom`.
+- Config artifact publishing: placeholder references in git; chart digests
+  stamped into native `OCIRepository` sources and image references stamped as
+  `name:tag@digest` from the build manifest before testing. HelmReleases use
+  `chartRef` to consume those immutable chart sources. `cluster-vars` +
+  `StrictPostBuildSubstitutions` + the required-vars file; structured settings
+  as site-overlay values via `valuesFrom`.
 - CI switch: deploy-and-test deploys via Flux from the config artifact;
   the matrix expands to optional components (XNAT, playbooks, data
   generator, CPU-mode chat; GPU stays dev-cluster-proven); CI capacity
@@ -99,8 +100,50 @@ with pods restarting only for components that changed.
   gated on `ansible/**`.
 
 **Done when:** CI stands up the full platform, optional components
-included, from the published config artifact, and passes the ingest and
-authorization suites.
+included, from the same config artifact subsequently published, and passes
+the ingest and authorization suites.
+
+### Transition to Flux as the default
+
+The [on-prem proof](integration_tests.md#on-prem-flux-artifact-proof) runs
+inside `Post-Commit Tasks` before publication. Source builds and candidate
+preparation run first. Separate Flux ingest and authentication jobs deploy the
+candidate alongside the Ansible lane. The aggregate `deploy-and-test` result
+requires both paths, and publication copies the tested images, charts and config
+without changing their digests. Pull requests exercise the same candidate path;
+there is no downstream Flux workflow or commit-status handoff.
+
+The signed predecessor snapshot, source ancestry check, and serialized main
+producer preserve unchanged component digests while rebuilding all accumulated
+source changes. A legacy manifest without source/build provenance bootstraps a
+full rebuild without carrying any of its components or claiming ancestry. This
+migration path is no longer needed once retained predecessors all have verified
+provenance. Main publication still rejects a non-ancestor predecessor. Non-main
+branch builds prepare every component fresh; PR candidates can also rebuild
+everything when the verified predecessor is outside their ancestry, carrying
+nothing from that predecessor. Each consuming job requires the candidate for the
+same workflow run and attempt. Missing inputs and partial reruns fail rather than
+substituting an older candidate. Infrastructure failures are retried by rerunning
+all jobs.
+
+The remaining Phase 3 cutover requires all of the following:
+
+* Maintainer acceptance of the Flux deployment contract, coverage, and required-check
+  behavior, followed by successful integrated runs on the upstream default branch.
+* Full-platform coverage, including the remaining platform services and optional
+  component matrix. Ingest, browser authentication, and data authorization must
+  pass against the same candidate config digest that publication copies to GHCR.
+  Provision the runner capacity needed by that matrix; keep the explicitly
+  documented GPU proof on a development cluster.
+* Validation of producer ordering, artifact ancestry, and attempt binding in the
+  upstream workflow, including failure recovery. Failed tests, absent evidence,
+  and partial reruns must not admit publication or release promotion.
+
+Once that coverage is accepted, restrict the Ansible deploy-and-test lane to
+`ansible/**` changes, with its path signal wired through the aggregate result so
+an intentional skip is not reported as failure. Check the required status on both
+Ansible-changing and unrelated commits before restricting the lane. Until then,
+retain the existing Ansible coverage alongside the two mandatory Flux legs.
 
 ## Phase 4 — site repos and dev cutovers
 
@@ -114,7 +157,7 @@ authorization suites.
   their cloud secrets manager. The on-prem SOPS path (age keys;
   `.sops.yaml` recipients = the cluster's key, one key per site operator
   and an offline recovery key, per ADR 0031 section 3; kustomize-controller
-  decryption) is proven by the consumer-side CI proof and an on-prem lab
+  decryption) is proven by the integrated CI proof and an on-prem lab
   instead, for a full phase before on-prem depends on it.
 - Emergency-change runbook (`flux suspend` procedure, commit-before-resume
   contract, prolonged-suspension alert) — written before any cluster

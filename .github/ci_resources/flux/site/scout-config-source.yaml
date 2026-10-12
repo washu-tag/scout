@@ -1,0 +1,22 @@
+# The exact verified config digest; published mode consumes GHCR directly, local mode
+# consumes the ephemeral HTTP registry. No mutable tag or repack is used by Flux.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: scout-config
+  namespace: flux-system
+spec:
+  interval: 10m
+  url: oci://@CONFIG_SOURCE@
+  insecure: false # The local artifact proof changes this to true for its HTTP registry.
+  # Preserve the producer's tarball byte-for-byte. The default extract/rearchive
+  # path applies sourceignore's media exclusions (including oauth2-proxy/scout.jpg).
+  layerSelector:
+    mediaType: application/gzip
+    operation: copy
+  ref:
+    digest: '@CONFIG_DIGEST@'
+  verify:
+    provider: cosign
+    secretRef:
+      name: scout-cosign-pub
