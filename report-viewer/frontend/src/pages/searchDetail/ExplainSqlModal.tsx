@@ -1,13 +1,28 @@
-import { useMemo, useState } from 'react';
-import hljs from 'highlight.js/lib/core';
+import { useMemo, useState, type ReactNode } from 'react';
 import sqlLang from 'highlight.js/lib/languages/sql';
+import { createLowlight } from 'lowlight';
 import type { FilterState } from '../../api/client';
 import { Modal } from '../../Modal';
 import { MatchStats } from './MatchStats';
 import { hasEvidence } from './evidenceStats';
 import './sqlTheme.css';
 
-hljs.registerLanguage('sql', sqlLang);
+const lowlight = createLowlight({ sql: sqlLang });
+
+type HighlightNode = ReturnType<typeof lowlight.highlight>['children'][number];
+
+function renderHighlight(nodes: HighlightNode[]): ReactNode[] {
+  return nodes.map((node, i) => {
+    if (node.type === 'text') return node.value;
+    if (node.type !== 'element') return null;
+    const className = node.properties.className;
+    return (
+      <span key={i} className={Array.isArray(className) ? className.join(' ') : undefined}>
+        {renderHighlight(node.children)}
+      </span>
+    );
+  });
+}
 
 export function ExplainSqlModal(props: {
   explanation: string;
@@ -100,7 +115,7 @@ function SqlSection(props: {
   onCopy: () => void;
 }) {
   const highlighted = useMemo(
-    () => hljs.highlight(props.sql, { language: 'sql', ignoreIllegals: true }).value,
+    () => renderHighlight(lowlight.highlight('sql', props.sql).children),
     [props.sql],
   );
   return (
@@ -140,9 +155,9 @@ function SqlSection(props: {
             lineHeight: 1.45,
             tabSize: 2,
           }}
-          // hljs escapes the source text, so this HTML is safe to inject.
-          dangerouslySetInnerHTML={{ __html: highlighted }}
-        />
+        >
+          {highlighted}
+        </pre>
         <button
           type="button"
           onClick={props.onCopy}
