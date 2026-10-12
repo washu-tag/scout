@@ -622,12 +622,13 @@ export default function SearchDetailPage() {
               marginTop: '0.75rem',
               fontSize: '0.85rem',
               flex: '0 0 auto',
-              // ActionsToolbar is the only child sized to shrink (it has its
-              // own minWidth: 0) and manages its own custom-action overflow
-              // internally via a "More" dropdown - everything else here
-              // keeps its natural size, so nowrap means this row never
-              // wraps a button to a second line.
-              flexWrap: 'nowrap',
+              // Everything but ActionsToolbar is flexShrink: 0, so it alone
+              // absorbs moderate narrowing by collapsing customs into "More".
+              // Wrap is still the fallback once even that floor (builtins +
+              // "More", or nothing at all configured) doesn't fit - without
+              // it, excess buttons silently overflow past the window edge
+              // instead of reaching a second line.
+              flexWrap: 'wrap',
             }}
           >
             <button
