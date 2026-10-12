@@ -35,7 +35,12 @@ from fastapi import (
 )
 
 from .. import metrics, progress, trino_client
-from ..actions import ActionDescriptor, is_safe_action_url, list_actions, load_invoke_token
+from ..actions import (
+    ActionDescriptor,
+    is_safe_action_url,
+    list_actions,
+    load_invoke_token,
+)
 from ..evidence import EV_COLUMNS, with_evidence
 from ..store import SearchStore, get_store
 from ..auth import User, get_current_user
