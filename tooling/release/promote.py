@@ -16,6 +16,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import zipfile
 from urllib.parse import quote
@@ -723,7 +724,32 @@ def draft_inputs(release):
     return object_bytes(marker[0].encode()) if marker else None
 
 
-def resume_inputs(api, repository, version):
+def source_revision(api, repository, revision, branch):
+    """Authorize an immutable checkout using the upstream branch's ancestry."""
+    require(repository == REPOSITORY, "unsupported release repository")
+    require(
+        isinstance(revision, str) and REVISION.fullmatch(revision),
+        "invalid source revision",
+    )
+    require(
+        bool(branch) and not any(c in branch for c in "\n\r"), "invalid release branch"
+    )
+    head = api.request(f"/repos/{repository}/branches/{quote(branch, safe='')}")
+    tip = head.get("commit", {}).get("sha", "")
+    require(
+        head.get("name") == branch and isinstance(tip, str) and REVISION.fullmatch(tip),
+        "invalid upstream branch",
+    )
+    comparison = api.request(f"/repos/{repository}/compare/{revision}...{tip}")
+    require(
+        comparison.get("status") in ("ahead", "identical")
+        and comparison.get("merge_base_commit", {}).get("sha") == revision,
+        "release source is not on the upstream release branch",
+    )
+    return revision
+
+
+def resume_inputs(api, repository, version, oci):
     """Discover identities only; execute the selected revision to revalidate them.
 
     A draft's small body marker survives an interrupted first asset upload. Once
@@ -743,6 +769,21 @@ def resume_inputs(api, repository, version):
         (name, f"scout-release-{version}.sigstore.json"),
         starters=[],
     )
+    signature = f"scout-release-{version}.sigstore.json"
+    if signature in saved:
+        require(name in saved, "release signature has no record")
+        with tempfile.TemporaryDirectory(prefix="scout-release-verify-") as directory:
+            record_path, signature_path = (
+                Path(directory) / name,
+                Path(directory) / signature,
+            )
+            record_path.write_bytes(saved[name])
+            signature_path.write_bytes(saved[signature])
+            oci.verify_record(record_path, signature_path)
+    else:
+        require(
+            existing.get("draft") is True, "published release has no record signature"
+        )
     inputs = draft_inputs(existing)
     if name in saved:
         record = object_bytes(saved[name])
@@ -776,6 +817,9 @@ def resume_inputs(api, repository, version):
     require(
         existing.get("draft") is True or name in saved,
         "published release lacks a promotion record",
+    )
+    run_attempt(
+        api, repository, expected["runId"], expected["runAttempt"], expected["revision"]
     )
     return expected
 
@@ -1022,7 +1066,15 @@ def main(argv=None):
     resume.add_argument("--repository", required=True)
     resume.add_argument("--version", required=True)
     resume.add_argument("--branch", required=True)
+    resume.add_argument("--public-key", type=Path, required=True)
     resume.add_argument("--github-output", type=Path, required=True)
+    source = sub.add_parser(
+        "source", help="Validate the upstream source before checkout"
+    )
+    source.add_argument("--repository", required=True)
+    source.add_argument("--revision", required=True)
+    source.add_argument("--branch", required=True)
+    source.add_argument("--github-output", type=Path, required=True)
     wait = sub.add_parser("wait")
     publish = sub.add_parser("promote")
     for item in (wait, publish):
@@ -1063,7 +1115,10 @@ def main(argv=None):
                 print(name, directory)
             return 0
         if args.command == "resume":
-            inputs = resume_inputs(api, args.repository, args.version)
+            require(args.public_key.is_file(), "public verification key is missing")
+            inputs = resume_inputs(
+                api, args.repository, args.version, OCI(args.public_key)
+            )
             require(
                 not inputs or args.branch == "main",
                 "an existing branch release cannot be republished",
@@ -1073,6 +1128,11 @@ def main(argv=None):
                     for key, value in inputs.items():
                         output.write(f"{key}={value}\n")
                     output.write("exists=true\n")
+            return 0
+        if args.command == "source":
+            revision = source_revision(api, args.repository, args.revision, args.branch)
+            with args.github_output.open("a") as output:
+                output.write(f"sha={revision}\n")
             return 0
         if args.command == "wait":
             require(0 <= args.timeout <= 10800, "invalid build wait timeout")

@@ -22,15 +22,17 @@ def test_redispatch_retains_original_attempt_through_each_draft_stage(
     api.fail = failure
     with pytest.raises(p.PromotionError, match="injected"):
         promote(api, oci, tmp_path)
-    inputs = p.resume_inputs(api, p.REPOSITORY, VERSION)
+    inputs = p.resume_inputs(api, p.REPOSITORY, VERSION, oci)
     assert inputs == p.promotion_inputs(VERSION, SHA, 101, 2, BOUNDARY)
     # Discovery never substitutes the current attempt for the recorded attempt.
-    api.runs[101]["run_attempt"] = 3
-    assert p.resume_inputs(api, p.REPOSITORY, VERSION) == inputs
+    api.runs[101]["conclusion"] = "failure"
+    with pytest.raises(p.PromotionError, match="did not succeed"):
+        p.resume_inputs(api, p.REPOSITORY, VERSION, oci)
+    api.runs[101]["conclusion"] = "success"
     api.runs[101]["run_attempt"] = 2
     promote(api, oci, tmp_path)
     assert api.release["draft"] is False
-    assert p.resume_inputs(api, p.REPOSITORY, VERSION) == inputs
+    assert p.resume_inputs(api, p.REPOSITORY, VERSION, oci) == inputs
 
 
 def test_current_bootstrap_then_stamped_tooling_survives_policy_and_catalog_drift(
@@ -81,7 +83,7 @@ def test_current_bootstrap_then_stamped_tooling_survives_policy_and_catalog_drif
     bootstrap = load(current, "current_release_bootstrap")
     assert bootstrap.REQUIRED_JOBS != p.REQUIRED_JOBS
     assert bootstrap.CHARTS != p.CHARTS
-    original = bootstrap.resume_inputs(api, p.REPOSITORY, VERSION)
+    original = bootstrap.resume_inputs(api, p.REPOSITORY, VERSION, oci)
     # release.yaml checks out this recovered revision before executing promotion.
     policy = load(stamped, "stamped_release_policy")
     policy.promote(
@@ -108,15 +110,106 @@ def test_marker_and_record_must_agree_before_selecting_tooling(tmp_path):
     api.release["body"] = p.DRAFT_INPUTS + json.dumps(wrong) + " -->"
     before = copy.deepcopy(api.events)
     with pytest.raises(p.PromotionError, match="conflict"):
-        p.resume_inputs(api, p.REPOSITORY, VERSION)
+        p.resume_inputs(api, p.REPOSITORY, VERSION, oci)
     assert api.events == before
 
 
 def test_old_release_without_record_cannot_be_restamped():
-    api, _ = fixture()
+    api, oci = fixture()
     api.release = dict(id=303, tag_name="v" + VERSION, draft=False)
-    with pytest.raises(p.PromotionError, match="no resumable"):
-        p.resume_inputs(api, p.REPOSITORY, VERSION)
+    with pytest.raises(p.PromotionError, match="no record signature"):
+        p.resume_inputs(api, p.REPOSITORY, VERSION, oci)
+
+
+@pytest.mark.parametrize("asset", [".yaml", ".sigstore.json"])
+def test_recovery_rejects_tampered_signed_assets_before_selecting_source(
+    tmp_path, asset
+):
+    api, oci = fixture()
+    api.fail = "publish"
+    with pytest.raises(p.PromotionError):
+        promote(api, oci, tmp_path)
+    api.assets[f"scout-release-{VERSION}{asset}"] += b"tampered"
+    before = copy.deepcopy(api.events)
+    with pytest.raises(p.PromotionError, match="wrong record signature"):
+        p.resume_inputs(api, p.REPOSITORY, VERSION, oci)
+    assert api.events == before
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("head_sha", "c" * 40),
+        ("head_branch", "other"),
+        ("event", "pull_request"),
+        ("head_repository", {"full_name": "fork/scout"}),
+        ("conclusion", "failure"),
+    ],
+)
+def test_unsigned_draft_requires_original_successful_upstream_attempt(
+    tmp_path, field, value
+):
+    api, oci = fixture()
+    api.fail = "upload-.yaml"
+    with pytest.raises(p.PromotionError):
+        promote(api, oci, tmp_path)
+    assert not api.assets
+    api.runs[101][field] = value
+    with pytest.raises(p.PromotionError):
+        p.resume_inputs(api, p.REPOSITORY, VERSION, oci)
+
+
+@pytest.mark.parametrize("branch", ["main", "release/4.2"])
+@pytest.mark.parametrize("status", ["ahead", "identical"])
+def test_source_selection_uses_immutable_upstream_branch_tip(branch, status):
+    tip = "d" * 40 if status == "ahead" else SHA
+    paths = []
+
+    class API:
+        def request(self, path):
+            paths.append(path)
+            if "/branches/" in path:
+                return {"name": branch, "commit": {"sha": tip}}
+            assert path.endswith(f"{SHA}...{tip}")
+            return {"status": status, "merge_base_commit": {"sha": SHA}}
+
+    assert p.source_revision(API(), p.REPOSITORY, SHA, branch) == SHA
+    assert paths[0].endswith(branch.replace("/", "%2F"))
+
+
+@pytest.mark.parametrize(
+    "status,ancestor",
+    [
+        ("diverged", SHA),
+        ("behind", SHA),
+        ("ahead", BOUNDARY),
+    ],
+)
+def test_source_selection_rejects_unmerged_or_unrelated_commits(status, ancestor):
+    class API:
+        def request(self, path):
+            if "/branches/" in path:
+                return {"name": "main", "commit": {"sha": "d" * 40}}
+            return {"status": status, "merge_base_commit": {"sha": ancestor}}
+
+    with pytest.raises(p.PromotionError, match="not on the upstream"):
+        p.source_revision(API(), p.REPOSITORY, SHA, "main")
+
+
+@pytest.mark.parametrize(
+    "repository,revision",
+    [
+        ("fork/scout", SHA),
+        (p.REPOSITORY, "main"),
+        (p.REPOSITORY, "a" * 39),
+        (p.REPOSITORY, SHA + "\n"),
+    ],
+)
+def test_source_selection_rejects_fork_and_non_sha_inputs_before_api_access(
+    repository, revision
+):
+    with pytest.raises(p.PromotionError):
+        p.source_revision(None, repository, revision, "main")
 
 
 def test_missing_chart_is_packaged_but_signed_charts_are_reused():

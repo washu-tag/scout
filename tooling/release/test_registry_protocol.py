@@ -248,6 +248,15 @@ def test_real_registry_signatures_exact_aliases_and_recovery(
     before = list(api.events), list(oci.mutations)
     promote(api, oci, tmp_path)
     assert before == (api.events, oci.mutations)
+    assert p.resume_inputs(api, p.REPOSITORY, VERSION, oci)["revision"] == SHA
+    with pytest.raises(p.PromotionError):
+        p.resume_inputs(api, p.REPOSITORY, VERSION, wrong)
+    asset_name = f"scout-release-{VERSION}.yaml"
+    api.assets[asset_name] += b" "
+    with pytest.raises(p.PromotionError):
+        p.resume_inputs(api, p.REPOSITORY, VERSION, oci)
+    api.assets[asset_name] = original[asset_name]
+    assert before == (api.events, oci.mutations)
     tampered = tmp_path / "tampered.yaml"
     tampered.write_bytes(record.read_bytes() + b" ")
     with pytest.raises(p.PromotionError):

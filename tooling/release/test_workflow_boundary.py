@@ -38,7 +38,17 @@ def test_release_redispatch_uses_stamped_policy_and_serialized_chart_writes():
         for s in release["jobs"]["wait-for-build"]["steps"]
         if "actions/checkout@" in s.get("uses", "")
     )
-    assert "needs.validate.outputs.resume_revision" in wait_checkout["with"]["ref"]
+    assert "ref" not in wait_checkout["with"]
+    wait_steps = release["jobs"]["wait-for-build"]["steps"]
+    validation = next(i for i, s in enumerate(wait_steps) if s.get("id") == "source")
+    stamped = next(
+        i
+        for i, s in enumerate(wait_steps)
+        if s.get("name") == "Checkout the validated stamped source"
+    )
+    assert validation < stamped
+    assert wait_steps[stamped]["with"]["ref"] == "${{ steps.source.outputs.sha }}"
+    assert "--public-key cosign.pub" in str(release["jobs"]["validate"])
     steps = normal["steps"]
     package_index = next(
         i for i, s in enumerate(steps) if "helm push" in s.get("run", "")

@@ -213,6 +213,12 @@ promotion tooling and chart catalog. The draft retains these identities before
 the signed record upload, so an interrupted upload can also resume. Preserve
 that recovery metadata when editing draft notes.
 
+Before executing the recovered tooling, the dispatch checkout verifies any
+uploaded record signature and the original successful upstream CI attempt.
+Every selected source must be an ancestor of the selected upstream branch's
+immutable tip. A draft interrupted before signature upload still requires that
+CI identity and ancestry check; it cannot select arbitrary repository code.
+
 Recovery rechecks live GitHub evidence and signatures, reuses chart tags signed
 for the original stamped source,
 accepts matching existing assets and aliases, and completes missing work. An

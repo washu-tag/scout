@@ -127,6 +127,10 @@ jobs:
           python-version: '3.12'
       - run: pip install pyyaml
         if: ${{ !inputs.dry_run }}
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        if: ${{ !inputs.dry_run }}
+        with:
+          cosign-release: 'v3.0.6'
       - name: Select an existing release's original inputs
         if: ${{ !inputs.dry_run }}
         id: resume
@@ -137,12 +141,8 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
         run: |
           python3 tooling/release/promote.py resume --repository "$REPO" \
-            --version "$VERSION" --branch "$REF_NAME" --github-output "$GITHUB_OUTPUT"
-      - name: Require the recovered source on this branch
-        if: steps.resume.outputs.exists == 'true'
-        env:
-          REVISION: ${{ steps.resume.outputs.revision }}
-        run: git merge-base --is-ancestor "$REVISION" HEAD
+            --version "$VERSION" --branch "$REF_NAME" --public-key cosign.pub \
+            --github-output "$GITHUB_OUTPUT"
 
       - name: Preview changelog (dry run)
         if: inputs.dry_run
@@ -243,7 +243,7 @@ jobs:
     # upstream jobs are skipped; without it, the 'skipped' result check would never be evaluated
     if: ${{ !inputs.dry_run && always() && !cancelled() && needs.validate.result == 'success' && (needs.version-bump.result == 'success' || needs.version-bump.result == 'skipped') }}
     outputs:
-      commit_sha: ${{ steps.target.outputs.sha }}
+      commit_sha: ${{ steps.source.outputs.sha }}
       ci_run_id: ${{ steps.saved.outputs.run_id || steps.wait.outputs.run_id }}
       ci_run_attempt: ${{ steps.saved.outputs.run_attempt || steps.wait.outputs.run_attempt }}
       build_version: ${{ steps.wait.outputs.build_version }}
@@ -252,31 +252,27 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          ref: ${{ needs.validate.outputs.resume_revision || needs.version-bump.outputs.commit_sha || needs.validate.outputs.version_bump_sha }}
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
 
-      - name: Determine target commit
-        id: target
+      - name: Validate the upstream source before checkout
+        id: source
         env:
-          # Pin the release build to the version-bump (stamped) commit, not current HEAD.
-          # This fixes the tag + changelog boundary: the tag can only move from the merge
-          # commit to the stamp commit, so no Conventional Commit merged mid-release is
-          # dropped from a changelog. Legacy X.Y.Z image tags remain mutable;
-          # promotion compares them with the signed haul and rejects a mismatch.
-          # Hold unrelated merges while main is stamped to avoid that conflict.
-          # Before a draft exists, folding in a fix requires reset + re-dispatch
-          # so version-bump re-stamps the fixed HEAD. Draft recovery never rebuilds.
-          BUMP_SHA: ${{ needs.validate.outputs.resume_revision || needs.version-bump.outputs.commit_sha || needs.validate.outputs.version_bump_sha }}
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ needs.validate.outputs.resume_revision || needs.version-bump.outputs.commit_sha || needs.validate.outputs.version_bump_sha }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          if [ -z "${BUMP_SHA}" ]; then
-            echo "::error::no version-bump commit to pin the release to"; exit 1
-          fi
-          echo "Pinning release build to ${BUMP_SHA}"
-          echo "sha=${BUMP_SHA}" >> "$GITHUB_OUTPUT"
+          python3 tooling/release/promote.py source --repository "$REPO" \
+            --revision "$TARGET_SHA" --branch "$REF_NAME" --github-output "$GITHUB_OUTPUT"
+      - name: Checkout the validated stamped source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          persist-credentials: false
 
       - name: Reuse the original producer attempt
         if: needs.validate.outputs.resume == 'true'
@@ -293,7 +289,7 @@ jobs:
         id: wait
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_SHA: ${{ steps.target.outputs.sha }}
+          TARGET_SHA: ${{ steps.source.outputs.sha }}
           REF_NAME: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
