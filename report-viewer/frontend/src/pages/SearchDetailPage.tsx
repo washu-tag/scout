@@ -617,241 +617,254 @@ export default function SearchDetailPage() {
           <div
             style={{
               display: 'flex',
+              justifyContent: 'space-between',
               gap: '0.5rem',
               alignItems: 'center',
               marginTop: '0.75rem',
               fontSize: '0.85rem',
               flex: '0 0 auto',
-              // Everything but ActionsToolbar is flexShrink: 0, so it alone
-              // absorbs moderate narrowing by collapsing customs into "More".
-              // Wrap is still the fallback once even that floor (builtins +
-              // "More", or nothing at all configured) doesn't fit - without
-              // it, excess buttons silently overflow past the window edge
-              // instead of reaching a second line.
+              // Two groups, not individually-wrapped buttons: flex-wrap
+              // decides line membership by each item's natural size before
+              // any flex-grow/shrink is applied, so a single spacer item
+              // splitting one long row would get bumped to line 2 as a
+              // whole, with its unused line-1 space going nowhere. Letting
+              // each group wrap independently avoids that dead gap.
               flexWrap: 'wrap',
             }}
           >
-            <button
-              type="button"
-              onClick={() => table.previousPage()}
-              disabled={!rowsQ.data || !table.getCanPreviousPage()}
-              className="scout-toolbar-btn"
-              style={{ ...paginationBtn, flexShrink: 0 }}
-            >
-              Prev
-            </button>
-            <span
-              style={{
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                fontVariantNumeric: 'tabular-nums',
-                minWidth: 46,
-                textAlign: 'center',
-              }}
-            >
-              {pageIndex + 1} / {lastPage}
-            </span>
-            <button
-              type="button"
-              onClick={() => table.nextPage()}
-              disabled={!rowsQ.data || !table.getCanNextPage()}
-              className="scout-toolbar-btn"
-              style={{ ...paginationBtn, flexShrink: 0 }}
-            >
-              Next
-            </button>
-            <span
-              style={{
-                marginLeft: '0.4rem',
-                color: 'var(--rv-muted)',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              Per page:
-            </span>
-            <select
-              value={pagination.pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
-              disabled={!rowsQ.data}
-              style={{ fontSize: '0.85rem', flexShrink: 0 }}
-            >
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-              <option value={200}>200</option>
-              <option value={500}>500</option>
-            </select>
-            <span
-              style={{
-                color: 'var(--rv-muted)',
-                fontSize: '0.75rem',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {meta.error
-                ? 'Failed to load metadata'
-                : rowsQ.data
-                  ? `${total.toLocaleString()} rows`
-                  : ''}
-            </span>
-            {/* visibility (not mount) so the row doesn't reflow on fetch. */}
-            <span
-              aria-label="Loading"
-              role="status"
-              aria-hidden={!(rowsQ.isFetching && !rowsQ.isLoading)}
-              style={{
-                visibility: rowsQ.isFetching && !rowsQ.isLoading ? 'visible' : 'hidden',
-                width: 13,
-                height: 13,
-                borderRadius: '50%',
-                border: '2px solid var(--rv-border)',
-                borderTopColor: '#ea580c',
-                animation: 'scoutSpin 0.8s linear infinite',
-                display: 'inline-block',
-                flexShrink: 0,
-              }}
-            />
-            <span style={{ flex: 1 }} />
-            <button
-              type="button"
-              disabled={!rowsQ.data}
-              onClick={() => setFiltersModalOpen(true)}
-              style={
-                activeFilterCount(appliedFilters) > 0
-                  ? {
-                      ...paginationBtn,
-                      background: 'var(--rv-accent)',
-                      color: '#fff',
-                      flexShrink: 0,
-                    }
-                  : { ...paginationBtn, flexShrink: 0 }
-              }
-              // The active/accent style keeps paginationBtn's own border
-              // (not accent-colored, so it's an actual visible outline
-              // against the blue fill) and gets a border/brightness-only
-              // hover variant - changing the background would wash out the
-              // white text.
-              className={
-                activeFilterCount(appliedFilters) > 0
-                  ? 'scout-toolbar-btn-accent'
-                  : 'scout-toolbar-btn'
-              }
-              title="Filter rows"
-            >
-              {activeFilterCount(appliedFilters) > 0
-                ? `Filters (${activeFilterCount(appliedFilters)})`
-                : 'Filters'}
-            </button>
-            <div ref={colPickerRef} style={{ position: 'relative', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <button
                 type="button"
-                disabled={!rowsQ.data}
-                onClick={() => setColPickerOpen((v) => !v)}
+                onClick={() => table.previousPage()}
+                disabled={!rowsQ.data || !table.getCanPreviousPage()}
                 className="scout-toolbar-btn"
-                style={paginationBtn}
-                title="Show/hide columns"
+                style={{ ...paginationBtn, flexShrink: 0 }}
               >
-                Columns ▾
+                Prev
               </button>
-              {colPickerOpen && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: '100%',
-                    right: 0,
-                    marginBottom: 4,
-                    background: 'var(--rv-surface)',
-                    border: '1px solid var(--rv-border)',
-                    borderRadius: 4,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                    padding: '0.4rem 0.6rem',
-                    fontSize: '0.78rem',
-                    zIndex: 10,
-                    minWidth: 160,
-                  }}
-                >
-                  {table.getAllLeafColumns().map((col) => (
-                    <label
-                      key={col.id}
-                      style={{
-                        display: 'flex',
-                        gap: '0.4rem',
-                        padding: '0.15rem 0',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={col.getIsVisible()}
-                        onChange={col.getToggleVisibilityHandler()}
-                      />
-                      {String(col.columnDef.header ?? col.id)}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-            <ActionsToolbar
-              searchId={searchId}
-              visibleReportIds={visibleReportIds}
-              disabled={!rowsQ.data}
-              // Explain Search's per-search visibility (nothing to explain
-              // yet) is a page-level concern, not something the backend
-              // catalog encodes.
-              actions={(actionsQ.data ?? []).filter(
-                (a) => a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
-              )}
-              clientHandlers={{
-                'explain-search': () => setSqlModalOpen(true),
-                'download-csv': () => {
-                  // Always include the unique id so exported rows stay
-                  // identifiable even if the user hid the id/accession
-                  // columns.
-                  const cols = table.getVisibleLeafColumns().map((c) => c.id);
-                  if (!cols.includes('primary_report_identifier')) {
-                    cols.unshift('primary_report_identifier');
-                  }
-                  if (cols.includes('ev_source')) {
-                    const present = new Set(rowsQ.data?.columns ?? []);
-                    cols.push(...EVIDENCE_EXPORT.filter((f) => present.has(f)));
-                  }
-                  downloadCsv(
-                    `${searchId}.csv`,
-                    cols,
-                    table.getPrePaginationRowModel().rows.map((r) => r.original),
-                  );
-                },
-              }}
-            />
-            {embedded && (
+              <span
+                style={{
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: 46,
+                  textAlign: 'center',
+                }}
+              >
+                {pageIndex + 1} / {lastPage}
+              </span>
               <button
                 type="button"
-                onClick={() => {
-                  const next = !iframeExpanded;
-                  setIframeExpanded(next);
-                  setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
-                }}
-                title={
-                  iframeExpanded
-                    ? 'Shrink viewer back to compact size'
-                    : 'Grow viewer for more room'
-                }
-                aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
+                onClick={() => table.nextPage()}
+                disabled={!rowsQ.data || !table.getCanNextPage()}
                 className="scout-toolbar-btn"
+                style={{ ...paginationBtn, flexShrink: 0 }}
+              >
+                Next
+              </button>
+              <span
                 style={{
-                  ...paginationBtn,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '0.2rem 0.35rem',
+                  marginLeft: '0.4rem',
+                  color: 'var(--rv-muted)',
+                  whiteSpace: 'nowrap',
                   flexShrink: 0,
                 }}
               >
-                {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
+                Per page:
+              </span>
+              <select
+                value={pagination.pageSize}
+                onChange={(e) => table.setPageSize(Number(e.target.value))}
+                disabled={!rowsQ.data}
+                style={{ fontSize: '0.85rem', flexShrink: 0 }}
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+              </select>
+              <span
+                style={{
+                  color: 'var(--rv-muted)',
+                  fontSize: '0.75rem',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {meta.error
+                  ? 'Failed to load metadata'
+                  : rowsQ.data
+                    ? `${total.toLocaleString()} rows`
+                    : ''}
+              </span>
+              {/* visibility (not mount) so the row doesn't reflow on fetch. */}
+              <span
+                aria-label="Loading"
+                role="status"
+                aria-hidden={!(rowsQ.isFetching && !rowsQ.isLoading)}
+                style={{
+                  visibility: rowsQ.isFetching && !rowsQ.isLoading ? 'visible' : 'hidden',
+                  width: 13,
+                  height: 13,
+                  borderRadius: '50%',
+                  border: '2px solid var(--rv-border)',
+                  borderTopColor: '#ea580c',
+                  animation: 'scoutSpin 0.8s linear infinite',
+                  display: 'inline-block',
+                  flexShrink: 0,
+                }}
+              />
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+                alignItems: 'center',
+                minWidth: 0,
+              }}
+            >
+              <button
+                type="button"
+                disabled={!rowsQ.data}
+                onClick={() => setFiltersModalOpen(true)}
+                style={
+                  activeFilterCount(appliedFilters) > 0
+                    ? {
+                        ...paginationBtn,
+                        background: 'var(--rv-accent)',
+                        color: '#fff',
+                        flexShrink: 0,
+                      }
+                    : { ...paginationBtn, flexShrink: 0 }
+                }
+                // The active/accent style keeps paginationBtn's own border
+                // (not accent-colored, so it's an actual visible outline
+                // against the blue fill) and gets a border/brightness-only
+                // hover variant - changing the background would wash out the
+                // white text.
+                className={
+                  activeFilterCount(appliedFilters) > 0
+                    ? 'scout-toolbar-btn-accent'
+                    : 'scout-toolbar-btn'
+                }
+                title="Filter rows"
+              >
+                {activeFilterCount(appliedFilters) > 0
+                  ? `Filters (${activeFilterCount(appliedFilters)})`
+                  : 'Filters'}
               </button>
-            )}
+              <div ref={colPickerRef} style={{ position: 'relative', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  disabled={!rowsQ.data}
+                  onClick={() => setColPickerOpen((v) => !v)}
+                  className="scout-toolbar-btn"
+                  style={paginationBtn}
+                  title="Show/hide columns"
+                >
+                  Columns ▾
+                </button>
+                {colPickerOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      right: 0,
+                      marginBottom: 4,
+                      background: 'var(--rv-surface)',
+                      border: '1px solid var(--rv-border)',
+                      borderRadius: 4,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                      padding: '0.4rem 0.6rem',
+                      fontSize: '0.78rem',
+                      zIndex: 10,
+                      minWidth: 160,
+                    }}
+                  >
+                    {table.getAllLeafColumns().map((col) => (
+                      <label
+                        key={col.id}
+                        style={{
+                          display: 'flex',
+                          gap: '0.4rem',
+                          padding: '0.15rem 0',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={col.getIsVisible()}
+                          onChange={col.getToggleVisibilityHandler()}
+                        />
+                        {String(col.columnDef.header ?? col.id)}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <ActionsToolbar
+                searchId={searchId}
+                visibleReportIds={visibleReportIds}
+                disabled={!rowsQ.data}
+                // Explain Search's per-search visibility (nothing to explain
+                // yet) is a page-level concern, not something the backend
+                // catalog encodes.
+                actions={(actionsQ.data ?? []).filter(
+                  (a) =>
+                    a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
+                )}
+                clientHandlers={{
+                  'explain-search': () => setSqlModalOpen(true),
+                  'download-csv': () => {
+                    // Always include the unique id so exported rows stay
+                    // identifiable even if the user hid the id/accession
+                    // columns.
+                    const cols = table.getVisibleLeafColumns().map((c) => c.id);
+                    if (!cols.includes('primary_report_identifier')) {
+                      cols.unshift('primary_report_identifier');
+                    }
+                    if (cols.includes('ev_source')) {
+                      const present = new Set(rowsQ.data?.columns ?? []);
+                      cols.push(...EVIDENCE_EXPORT.filter((f) => present.has(f)));
+                    }
+                    downloadCsv(
+                      `${searchId}.csv`,
+                      cols,
+                      table.getPrePaginationRowModel().rows.map((r) => r.original),
+                    );
+                  },
+                }}
+              />
+              {embedded && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !iframeExpanded;
+                    setIframeExpanded(next);
+                    setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
+                  }}
+                  title={
+                    iframeExpanded
+                      ? 'Shrink viewer back to compact size'
+                      : 'Grow viewer for more room'
+                  }
+                  aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
+                  className="scout-toolbar-btn"
+                  style={{
+                    ...paginationBtn,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '0.2rem 0.35rem',
+                    flexShrink: 0,
+                  }}
+                >
+                  {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       }
