@@ -193,7 +193,7 @@ export function ActionsToolbar({
     <div
       style={{
         position: 'relative',
-        flex: '1 1 auto',
+        flex: '0 1 auto',
         minWidth: 0,
         display: 'flex',
         flexDirection: 'column',
@@ -214,9 +214,6 @@ export function ActionsToolbar({
           gap: '0.5rem',
           alignItems: 'center',
           minWidth: 0,
-          // flex-end: this box's own flex-grow should push slack before
-          // the actions, not after.
-          justifyContent: 'flex-end',
         }}
       >
         {hasBuiltins && (
