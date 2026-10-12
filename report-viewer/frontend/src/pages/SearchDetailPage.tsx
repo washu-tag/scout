@@ -237,6 +237,30 @@ export default function SearchDetailPage() {
     headerObserver.current.observe(el);
   }, []);
 
+  // Whether the toolbar row below has actually wrapped to a second line -
+  // "Filters"'s marginLeft: auto (below) should only push it rightward on
+  // a single line; once anything has wrapped, every line should just flow
+  // left-aligned, or the auto margin leaves the exact same dead gap on
+  // whichever line "Filters" ends up on that it was meant to avoid.
+  // Detected by comparing children's offsetTop rather than mirroring
+  // ActionsToolbar's own prober-based width math, since what we need here
+  // is literally "did the browser's own flex-wrap put these on different
+  // lines," which offsetTop answers directly.
+  const [toolbarWrapped, setToolbarWrapped] = useState(false);
+  const toolbarObserver = useRef<ResizeObserver | null>(null);
+  const toolbarRowRef = useCallback((el: HTMLDivElement | null) => {
+    toolbarObserver.current?.disconnect();
+    if (!el) return;
+    const measure = () => {
+      const children = Array.from(el.children) as HTMLElement[];
+      const firstTop = children[0]?.offsetTop;
+      setToolbarWrapped(children.some((c) => c.offsetTop !== firstTop));
+    };
+    measure();
+    toolbarObserver.current = new ResizeObserver(measure);
+    toolbarObserver.current.observe(el);
+  }, []);
+
   const dateFields = useMemo(
     () => new Set(COLUMNS_CONFIG.filter((c) => c.kind === 'date').map((c) => c.field)),
     [],
@@ -615,6 +639,7 @@ export default function SearchDetailPage() {
             />
           )}
           <div
+            ref={toolbarRowRef}
             style={{
               display: 'flex',
               gap: '0.5rem',
@@ -624,13 +649,7 @@ export default function SearchDetailPage() {
               flex: '0 0 auto',
               // Wrap is the fallback once content genuinely doesn't fit one
               // line - without it, buttons overflow past the window edge
-              // instead of reaching a second line. Pushing "Filters" onward
-              // right via its own marginLeft: auto (below), rather than a
-              // separate flex:1 spacer item, matters here specifically:
-              // an auto margin's leftover space is resolved per flex LINE,
-              // so it travels with Filters to line 2 if Filters wraps,
-              // instead of a spacer stuck on line 1 claiming space nothing
-              // there needs once the items after it have wrapped away.
+              // instead of reaching a second line.
               flexWrap: 'wrap',
             }}
           >
@@ -727,9 +746,13 @@ export default function SearchDetailPage() {
                       background: 'var(--rv-accent)',
                       color: '#fff',
                       flexShrink: 0,
-                      marginLeft: 'auto',
+                      marginLeft: toolbarWrapped ? undefined : 'auto',
                     }
-                  : { ...paginationBtn, flexShrink: 0, marginLeft: 'auto' }
+                  : {
+                      ...paginationBtn,
+                      flexShrink: 0,
+                      marginLeft: toolbarWrapped ? undefined : 'auto',
+                    }
               }
               // The active/accent style keeps paginationBtn's own border
               // (not accent-colored, so it's an actual visible outline
