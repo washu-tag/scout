@@ -210,6 +210,9 @@ export function ActionsToolbar({
           gap: '0.5rem',
           alignItems: 'center',
           minWidth: 0,
+          // flex-end: this box's own flex-grow should push slack before
+          // the actions, not after.
+          justifyContent: 'flex-end',
         }}
       >
         {hasBuiltins && (
