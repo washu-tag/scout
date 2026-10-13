@@ -83,6 +83,10 @@ type Row = Record<string, unknown>;
 // standalone tab.
 const embedded = window.parent !== window;
 
+// Non-ActionsToolbar siblings in the toolbar row: pagination cluster,
+// Filters, Columns, and (if embedded) the expander button.
+const OTHER_TOOLBAR_SIBLINGS = 3 + (embedded ? 1 : 0);
+
 // Exported with Matched on so the CSV has the phrases, not just the category.
 const EVIDENCE_EXPORT = ['ev_positive_span', 'ev_negative_span', 'ev_dx_codes', 'ev_dx_text'];
 
@@ -258,7 +262,6 @@ export default function SearchDetailPage() {
   const leftClusterRef = useRef<HTMLDivElement>(null);
   const filtersRef = useRef<HTMLButtonElement>(null);
   const expanderRef = useRef<HTMLButtonElement>(null);
-  const OTHER_TOOLBAR_SIBLINGS = 3 + (embedded ? 1 : 0); // leftCluster, Filters, Columns, [Expander]
   const toolbarObserver = useRef<ResizeObserver | null>(null);
   const toolbarRowRef = useCallback((el: HTMLDivElement | null) => {
     toolbarObserver.current?.disconnect();
