@@ -86,6 +86,12 @@ def _auth(monkeypatch, *, oauth=None, tokens=(), caller=None):
 async def _drain_prompts():
     """Let the fire-and-forget sign-in prompt run to completion."""
     await asyncio.gather(*list(_mod._PENDING_PROMPTS))
+    await asyncio.sleep(0)
+
+
+@pytest.fixture(autouse=True)
+def _no_pending_prompts():
+    _mod._PENDING_PROMPTS.clear()
 
 
 @pytest.mark.parametrize(
@@ -102,7 +108,9 @@ async def test_post_forwards_the_callers_token(oauth, expected, monkeypatch):
 
     tool = _tool_with_transport(handler, monkeypatch)
     auth = _auth(monkeypatch, oauth=oauth)
-    result = await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+    result = await tool._request(
+        "POST", "/api/searches", auth, json={"sql": "SELECT 1"}
+    )
     assert result == {"ok": True}
     assert seen["authorization"] == expected
 
@@ -121,7 +129,7 @@ async def test_get_forwards_the_callers_token(oauth, expected, monkeypatch):
 
     tool = _tool_with_transport(handler, monkeypatch)
     auth = _auth(monkeypatch, oauth=oauth)
-    result = await tool._get("/api/plots/abc123", auth=auth)
+    result = await tool._request("GET", "/api/plots/abc123", auth)
     assert result == {"ok": True}
     assert seen["authorization"] == expected
 
@@ -130,10 +138,6 @@ async def test_get_forwards_the_callers_token(oauth, expected, monkeypatch):
 async def test_token_that_expired_mid_turn_is_refreshed_without_the_browser(
     monkeypatch,
 ):
-    """The commonest case: a multi-query answer outlives the 5-minute access
-    token OWUI resolved at the start of the turn. The session behind it is
-    fine, so re-reading OWUI's session refreshes the token and no browser
-    round trip happens."""
     seen = []
 
     def handler(request):
@@ -151,7 +155,7 @@ async def test_token_that_expired_mid_turn_is_refreshed_without_the_browser(
         caller=caller,
     )
 
-    assert await tool._get("/api/plots/abc123", auth=auth) == {"ok": True}
+    assert await tool._request("GET", "/api/plots/abc123", auth) == {"ok": True}
     assert seen == ["Bearer expired", "Bearer refreshed"]
     assert caller.events == []
 
@@ -159,9 +163,6 @@ async def test_token_that_expired_mid_turn_is_refreshed_without_the_browser(
 @pytest.mark.parametrize("oauth", [None, {"access_token": ""}])
 @pytest.mark.asyncio
 async def test_missing_token_renews_in_the_browser_then_retries(oauth, monkeypatch):
-    """OWUI deleted the session when its refresh token turned out to belong
-    to an SSO session that already ended, so the turn starts with no token
-    at all."""
     seen = []
 
     def handler(request):
@@ -170,7 +171,6 @@ async def test_missing_token_renews_in_the_browser_then_retries(oauth, monkeypat
 
     tool = _tool_with_transport(handler, monkeypatch)
     caller = _Caller()
-    # No session to read at first; the browser round trip mints one.
     auth = _auth(
         monkeypatch,
         oauth=oauth,
@@ -178,9 +178,9 @@ async def test_missing_token_renews_in_the_browser_then_retries(oauth, monkeypat
         caller=caller,
     )
 
-    assert await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth) == {
-        "ok": True
-    }
+    assert await tool._request(
+        "POST", "/api/searches", auth, json={"sql": "SELECT 1"}
+    ) == {"ok": True}
     assert seen == ["Bearer renewed"]
     assert caller.types() == ["execute"]
     assert "/oauth/oidc/login" in caller.code()
@@ -204,17 +204,14 @@ async def test_rejected_token_is_retried_with_a_renewed_one(monkeypatch):
         caller=_Caller(),
     )
 
-    assert await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth) == {
-        "ok": True
-    }
+    assert await tool._request(
+        "POST", "/api/searches", auth, json={"sql": "SELECT 1"}
+    ) == {"ok": True}
     assert seen == ["Bearer stale", "Bearer renewed"]
 
 
 @pytest.mark.asyncio
 async def test_session_renewed_by_an_earlier_call_skips_the_browser(monkeypatch):
-    """`__oauth_token__` is resolved once per turn, so a second tool call in
-    the same turn still carries the dead token - but OWUI's session is
-    already good and no second round trip is needed."""
     seen = []
 
     def handler(request):
@@ -227,15 +224,13 @@ async def test_session_renewed_by_an_earlier_call_skips_the_browser(monkeypatch)
         monkeypatch, oauth=None, tokens=[{"access_token": "renewed"}], caller=caller
     )
 
-    await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+    await tool._request("POST", "/api/searches", auth, json={"sql": "SELECT 1"})
     assert seen == ["Bearer renewed"]
     assert caller.events == []
 
 
 @pytest.mark.asyncio
 async def test_unrenewable_session_raises_and_offers_a_sign_in(monkeypatch):
-    """Keycloak's own session is gone, so the frame can't renew silently and
-    only an interactive sign-in is left."""
     called = False
 
     def handler(request):
@@ -248,7 +243,7 @@ async def test_unrenewable_session_raises_and_offers_a_sign_in(monkeypatch):
     auth = _auth(monkeypatch, oauth=None, tokens=[None, None], caller=caller)
 
     with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
-        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+        await tool._request("POST", "/api/searches", auth, json={"sql": "SELECT 1"})
     assert not called
     await _drain_prompts()
     assert caller.types() == ["execute", "confirmation", "execute"]
@@ -262,16 +257,46 @@ async def test_declining_the_sign_in_prompt_does_not_navigate(monkeypatch):
     auth = _auth(monkeypatch, oauth=None, tokens=[None, None], caller=caller)
 
     with pytest.raises(SessionExpiredError):
-        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+        await tool._request("POST", "/api/searches", auth, json={"sql": "SELECT 1"})
     await _drain_prompts()
     assert caller.types() == ["execute", "confirmation"]
     assert "window.location.assign" not in caller.code()
 
 
 @pytest.mark.asyncio
+async def test_an_event_call_error_is_not_consent(monkeypatch):
+    tool = _tool_with_transport(lambda r: httpx.Response(200, json={}), monkeypatch)
+    caller = _Caller(confirm={"error": "Event call timed out."})
+    auth = _auth(monkeypatch, oauth=None, tokens=[None, None], caller=caller)
+
+    with pytest.raises(SessionExpiredError):
+        await tool._request("POST", "/api/searches", auth, json={"sql": "SELECT 1"})
+    await _drain_prompts()
+    assert "window.location.assign" not in caller.code()
+
+
+@pytest.mark.asyncio
+async def test_each_failing_call_offers_its_own_sign_in(monkeypatch):
+    """OWUI keeps one handler for its dialog, so a later call's renewal frame
+    takes it over; that call's own prompt has to follow for Confirm to work."""
+    tool = _tool_with_transport(lambda r: httpx.Response(200, json={}), monkeypatch)
+    caller = _Caller(confirm=False)
+    for _ in range(2):
+        auth = _auth(monkeypatch, oauth=None, tokens=[None, None], caller=caller)
+        with pytest.raises(SessionExpiredError):
+            await tool._request("POST", "/api/searches", auth, json={"sql": "SELECT 1"})
+    await _drain_prompts()
+    assert caller.types().count("confirmation") == 2
+    assert not _mod._PENDING_PROMPTS
+
+
+def test_renewal_frame_gets_its_src_before_it_is_attached():
+    js = _mod._RENEW_SESSION_JS
+    assert js.index("frame.src") < js.index("appendChild")
+
+
+@pytest.mark.asyncio
 async def test_the_same_token_back_is_not_a_renewal(monkeypatch):
-    """Renewal has to produce a *different* token; handing back the one that
-    was just rejected would only buy a duplicate request."""
     seen = []
 
     def handler(request):
@@ -287,7 +312,7 @@ async def test_the_same_token_back_is_not_a_renewal(monkeypatch):
     )
 
     with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
-        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+        await tool._request("POST", "/api/searches", auth, json={"sql": "SELECT 1"})
     await _drain_prompts()
     assert seen == ["Bearer stale"]
 
@@ -301,8 +326,6 @@ async def test_renewal_is_attempted_once_per_call(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_no_browser_channel_still_fails_cleanly(monkeypatch):
-    """Nothing to drive a renewal with - a background task, say - so report
-    the expiry rather than hanging on an event nobody will answer."""
     called = False
 
     def handler(request):
@@ -314,7 +337,7 @@ async def test_no_browser_channel_still_fails_cleanly(monkeypatch):
     auth = _auth(monkeypatch, oauth=None, tokens=[None, None], caller=None)
 
     with pytest.raises(SessionExpiredError, match=_SESSION_EXPIRED_PATTERN):
-        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+        await tool._request("POST", "/api/searches", auth, json={"sql": "SELECT 1"})
     assert not called
 
 
@@ -334,11 +357,12 @@ async def test_multipart_renews_on_a_missing_token(monkeypatch):
         caller=_Caller(),
     )
 
-    result = await tool._post_multipart(
+    result = await tool._request(
+        "POST",
         "/api/reports/import",
+        auth,
         files={"file": ("x.csv", b"a,b")},
         data={},
-        auth=auth,
     )
     assert result == {"ok": True}
     assert seen == ["Bearer renewed"]
@@ -355,7 +379,7 @@ async def test_non_401_errors_are_not_treated_as_expiry(monkeypatch):
     auth = _auth(monkeypatch, oauth="valid-token", caller=caller)
 
     with pytest.raises(ReportViewerServiceError, match="trino unavailable"):
-        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+        await tool._request("POST", "/api/searches", auth, json={"sql": "SELECT 1"})
     assert caller.events == []
 
 
@@ -368,12 +392,11 @@ async def test_unreachable_service_is_not_treated_as_expiry(monkeypatch):
     auth = _auth(monkeypatch, oauth="valid-token", caller=_Caller())
 
     with pytest.raises(ReportViewerServiceError, match="temporarily unavailable"):
-        await tool._post("/api/searches", {"sql": "SELECT 1"}, auth=auth)
+        await tool._request("POST", "/api/searches", auth, json={"sql": "SELECT 1"})
 
 
 @pytest.mark.asyncio
 async def test_timeout_is_not_retried_or_treated_as_expiry(monkeypatch):
-    """A query that ran out the clock must not run twice."""
     calls = []
     caller = _Caller()
 
@@ -385,7 +408,7 @@ async def test_timeout_is_not_retried_or_treated_as_expiry(monkeypatch):
     auth = _auth(monkeypatch, oauth="valid-token", caller=caller)
 
     with pytest.raises(_mod.ServiceTimeoutError):
-        await tool._post("/api/plots", {"sql": "SELECT 1"}, auth=auth)
+        await tool._request("POST", "/api/plots", auth, json={"sql": "SELECT 1"})
     assert len(calls) == 1
     assert caller.events == []
 

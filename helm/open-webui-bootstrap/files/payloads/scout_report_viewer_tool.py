@@ -40,40 +40,22 @@ _SESSION_EXPIRED_MESSAGE = (
 )
 _RENEW_EVENT_TIMEOUT = 20
 _SIGN_IN_PROMPT_TIMEOUT = 900
-# Renewing OWUI's Keycloak session from inside the page. /oauth/oidc/login is
-# nothing but redirects while the SSO session behind it is alive, so a hidden
-# frame lands back on Scout's own origin with fresh cookies and the user never
-# leaves the chat. Once that session is really gone Keycloak has to render its
-# login page, which it refuses to do in a frame - that refusal is the signal.
+# src must be set before appendChild: a src-less iframe fires load for
+# about:blank on insertion, which would remove the frame before it navigates.
 _RENEW_SESSION_JS = """
 return await new Promise((resolve) => {
   const frame = document.createElement('iframe');
   frame.style.display = 'none';
-  let settled = false;
-  const finish = (renewed) => {
-    if (settled) return;
-    settled = true;
-    clearTimeout(timer);
-    frame.remove();
-    resolve(renewed);
-  };
-  const timer = setTimeout(() => finish(false), 5000);
-  frame.addEventListener('load', () => {
-    // Readable only when the frame came back to Scout's own origin.
-    try {
-      finish(frame.contentWindow.location.origin === window.location.origin);
-    } catch (err) {
-      finish(false);
-    }
-  });
-  document.body.appendChild(frame);
   frame.src = '/oauth/oidc/login';
+  const done = () => { clearTimeout(timer); frame.remove(); resolve(null); };
+  const timer = setTimeout(done, 5000);
+  frame.addEventListener('load', done);
+  document.body.appendChild(frame);
 });
 """
 _SIGN_IN_JS = "window.location.assign('/oauth/oidc/login');"
-# Sign-in prompts outlive the chat turn that raised them, so hold a reference
-# until each finishes - a bare create_task() is collectable mid-flight.
-_PENDING_PROMPTS: set = set()
+# Holds the un-awaited sign-in tasks so they aren't garbage-collected.
+_PENDING_PROMPTS: set[asyncio.Task] = set()
 _VIEWER_NOTE = (
     "The sample table above is a subset of results; an evidence table "
     "showing why each row matched is included alongside it. "
@@ -194,7 +176,7 @@ class Tools:
 
         await self._emit(__event_emitter__, "Searching reports…", done=False)
         try:
-            created = await self._post("/api/searches", payload, auth=auth)
+            created = await self._request("POST", "/api/searches", auth, json=payload)
         except ReportViewerServiceError as exc:
             await self._emit(
                 __event_emitter__, self._status_error(exc, "Search failed"), done=True
@@ -310,15 +292,16 @@ class Tools:
                     metadata=__metadata__,
                 )
             else:
-                plot = await self._post(
+                plot = await self._request(
+                    "POST",
                     "/api/plots",
-                    {
+                    auth,
+                    json={
                         "sql": sql,
                         "vega_lite_spec": vega_lite_spec,
                         "sql_explanation": sql_explanation or "",
                         "owui_chat_id": _chat_id(__metadata__),
                     },
-                    auth=auth,
                 )
         except ServiceTimeoutError:
             await self._emit(__event_emitter__, "Chart timed out", done=True)
@@ -387,11 +370,12 @@ class Tools:
         chat_id = _chat_id(metadata)
         if chat_id:
             form["owui_chat_id"] = chat_id
-        return await self._post_multipart(
+        return await self._request(
+            "POST",
             "/api/plots/from-file",
+            auth,
             files={"file": (filename, contents, "text/csv")},
             data=form,
-            auth=auth,
         )
 
     async def scout_get_chart_data(
@@ -424,7 +408,7 @@ class Tools:
         auth = _Auth(__oauth_token__, __event_call__, __request__, __user__)
         await self._emit(__event_emitter__, "Reading chart data…", done=False)
         try:
-            plot = await self._get(f"/api/plots/{chart_id}", auth=auth)
+            plot = await self._request("GET", f"/api/plots/{chart_id}", auth)
         except ReportViewerServiceError as exc:
             await self._emit(
                 __event_emitter__,
@@ -471,7 +455,9 @@ class Tools:
             )
         await self._emit(__event_emitter__, "Running query…", done=False)
         try:
-            agg = await self._post("/api/reports/query", {"sql": sql}, auth=auth)
+            agg = await self._request(
+                "POST", "/api/reports/query", auth, json={"sql": sql}
+            )
         except ReportViewerServiceError as exc:
             await self._emit(
                 __event_emitter__, self._status_error(exc, "Query failed"), done=True
@@ -571,11 +557,12 @@ class Tools:
         if chat_id:
             form["owui_chat_id"] = chat_id
         try:
-            created = await self._post_multipart(
+            created = await self._request(
+                "POST",
                 "/api/searches/from-file",
+                auth,
                 files={"file": (filename, contents, "text/csv")},
                 data=form,
-                auth=auth,
             )
         except ReportViewerServiceError as exc:
             await self._emit(
@@ -622,11 +609,12 @@ class Tools:
         if id_column:
             form["id_column"] = id_column
         try:
-            agg = await self._post_multipart(
+            agg = await self._request(
+                "POST",
                 "/api/reports/query/from-file",
+                auth,
                 files={"file": (filename, contents, "text/csv")},
                 data=form,
-                auth=auth,
             )
         except ReportViewerServiceError as exc:
             await self._emit(
@@ -670,10 +658,8 @@ class Tools:
         if table:
             payload["table"] = table
         try:
-            result = await self._post(
-                "/api/reports/read",
-                payload,
-                auth=auth,
+            result = await self._request(
+                "POST", "/api/reports/read", auth, json=payload
             )
         except ReportViewerServiceError as exc:
             return self._error_text(exc, "Error reading reports")
@@ -691,94 +677,44 @@ class Tools:
             return oauth
         return None
 
-    async def _post(self, path: str, payload: dict, *, auth: Optional[_Auth]) -> dict:
-        """POST `payload` as JSON to `report_viewer_internal_url + path`,
-        forwarding the caller's OWUI access token as Bearer. Raises
-        SessionExpiredError if the session can't be renewed, or
-        ReportViewerServiceError on any other 4xx/5xx from report-viewer."""
-        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}{path}"
-
-        async def send(bearer: str):
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {bearer}",
-            }
-            async with httpx.AsyncClient(
-                timeout=self.valves.request_timeout_seconds
-            ) as c:
-                return await c.post(url, headers=headers, json=payload)
-
-        return self._json(await self._send(send, auth))
-
-    async def _get(self, path: str, *, auth: Optional[_Auth]) -> dict:
-        """GET `report_viewer_internal_url + path`, forwarding the
-        caller's OWUI access token as Bearer. Same error contract as
-        `_post`."""
-        url = f"{self.valves.report_viewer_internal_url.rstrip('/')}{path}"
-
-        async def send(bearer: str):
-            headers = {"Authorization": f"Bearer {bearer}"}
-            async with httpx.AsyncClient(
-                timeout=self.valves.request_timeout_seconds
-            ) as c:
-                return await c.get(url, headers=headers)
-
-        return self._json(await self._send(send, auth))
-
-    async def _post_multipart(
-        self,
-        path: str,
-        *,
-        files: dict,
-        data: dict,
-        auth: Optional[_Auth],
+    async def _request(
+        self, method: str, path: str, auth: Optional[_Auth], **kwargs: Any
     ) -> dict:
+        """Call report-viewer with the caller's OWUI token, renewing it once
+        when missing or rejected. Safe to retry: report-viewer rejects a bad
+        bearer before doing any work."""
         url = f"{self.valves.report_viewer_internal_url.rstrip('/')}{path}"
 
-        async def send(bearer: str):
-            headers = {"Authorization": f"Bearer {bearer}"}
-            async with httpx.AsyncClient(
-                timeout=self.valves.request_timeout_seconds
-            ) as c:
-                return await c.post(url, headers=headers, files=files, data=data)
+        async def attempt(bearer: Optional[str]) -> Optional[httpx.Response]:
+            if not bearer:
+                return None
+            try:
+                async with httpx.AsyncClient(
+                    timeout=self.valves.request_timeout_seconds
+                ) as c:
+                    return await c.request(
+                        method,
+                        url,
+                        headers={"Authorization": f"Bearer {bearer}"},
+                        **kwargs,
+                    )
+            except httpx.TimeoutException:
+                raise ServiceTimeoutError("timed out")
+            except httpx.RequestError:
+                raise ReportViewerServiceError(
+                    "report-viewer is temporarily unavailable"
+                )
 
-        return self._json(await self._send(send, auth))
-
-    async def _send(
-        self, send: Callable[[str], Awaitable[Any]], auth: Optional[_Auth]
-    ) -> Any:
-        """Run `send(bearer)` with the token OWUI resolved for this turn,
-        renewing the session and running it once more when that token is
-        missing or rejected. report-viewer rejects a bad bearer before doing
-        any work, so the retry never repeats a request that took effect."""
-        bearer = auth.bearer if auth else None
-        r = await self._attempt(send, bearer)
-        if r is not None and r.status_code != 401:
-            return r
-        renewed = await auth.renew() if auth else None
-        if not renewed:
-            if auth:
-                auth.prompt_signin()
-            raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
-        r = await self._attempt(send, renewed)
+        r = await attempt(auth.bearer if auth else None)
         if r is None or r.status_code == 401:
-            raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
-        return r
-
-    @staticmethod
-    async def _attempt(send: Callable[[str], Awaitable[Any]], bearer: Optional[str]):
-        """The response, or None when there was no token to send at all."""
-        if not bearer:
-            return None
-        try:
-            return await send(bearer)
-        except httpx.TimeoutException:
-            raise ServiceTimeoutError("timed out")
-        except httpx.RequestError:
-            raise ReportViewerServiceError("report-viewer is temporarily unavailable")
-
-    @staticmethod
-    def _json(r: Any) -> dict:
+            renewed = await auth.renew() if auth else None
+            if not renewed:
+                if auth:
+                    auth.prompt_signin()
+                raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
+            r = await attempt(renewed)
+            if r.status_code == 401:
+                raise SessionExpiredError(_SESSION_EXPIRED_MESSAGE)
         if r.status_code >= 400:
             raise _service_error(r)
         return r.json()
@@ -1011,8 +947,7 @@ class ReportViewerServiceError(RuntimeError):
 
 
 class SessionExpiredError(ReportViewerServiceError):
-    """No usable OWUI token: none was provided or report-viewer rejected it,
-    and renewing the session did not produce one."""
+    """No usable OWUI token, even after trying to renew it."""
 
 
 class ServiceTimeoutError(ReportViewerServiceError):
@@ -1021,20 +956,9 @@ class ServiceTimeoutError(ReportViewerServiceError):
 
 
 class _Auth:
-    """The caller's Scout credentials for one tool call, and the means to
-    replace them when they turn out to be dead.
-
-    OWUI resolves `__oauth_token__` once per chat turn, so the token goes
-    stale in two ways:
-
-    * The turn outlives the access token. A multi-query answer that runs
-      past Keycloak's access token lifespan (5 minutes) sends every later
-      call with an expired bearer, although the session behind it is fine.
-    * The session itself is dead. OWUI keeps its own session, independent of
-      the launchpad's and of oauth2-proxy's, and only re-runs OIDC once its
-      own cookie expires. A user who signs back in elsewhere therefore
-      arrives holding an OWUI session whose Keycloak refresh token belongs
-      to the SSO session that already ended (issue #655)."""
+    """The caller's token for one tool call, and the means to renew it.
+    `__oauth_token__` is resolved once per turn, so it can expire mid-turn or
+    belong to an SSO session that has since ended (issue #655)."""
 
     def __init__(self, oauth: Any, caller: Any, request: Any, user: Any) -> None:
         self.bearer = Tools._token_from_owui(oauth)
@@ -1044,14 +968,7 @@ class _Auth:
         self._renew_attempted = False
 
     async def renew(self) -> Optional[str]:
-        """A live bearer to retry with, or None when only an interactive
-        sign-in will do.
-
-        Re-reading OWUI's session first refreshes an expired access token
-        and picks up a renewal an earlier call in this turn already did;
-        failing that, the browser goes through /oauth/oidc/login, which
-        mints a fresh token silently for as long as the Keycloak session
-        behind it is alive."""
+        """A new bearer, or None when only an interactive sign-in will do."""
         bearer = await self._session_bearer()
         if bearer and bearer != self.bearer:
             return bearer
@@ -1064,10 +981,8 @@ class _Auth:
         return bearer if bearer and bearer != self.bearer else None
 
     def prompt_signin(self) -> None:
-        """Offer the only move left once the Keycloak session is really
-        gone. Deliberately not awaited: the answer is the user's to give
-        whenever they notice it, while the chat turn ends now with an
-        explanation rather than spinning on an unanswered modal."""
+        """Not awaited, so the turn ends with an explanation instead of
+        waiting on the modal."""
         if not callable(self._caller):
             return
         task = asyncio.create_task(self._signin_flow())
@@ -1088,14 +1003,13 @@ class _Auth:
             },
             timeout=_SIGN_IN_PROMPT_TIMEOUT,
         )
-        if confirmed:
+        # OWUI reports a timeout or a closed tab as a truthy {"error": ...}.
+        if confirmed is True:
             await self._call({"type": "execute", "data": {"code": _SIGN_IN_JS}})
 
     async def _session_bearer(self) -> Optional[str]:
-        """OWUI's own token resolution, minus the once-per-turn caching that
-        makes `__oauth_token__` stale. Tolerant of import failure by design:
-        this reaches into OWUI internals, so a version bump that moves them
-        should cost the retry, not the tool."""
+        """OWUI's own token resolution, which refreshes an expired token.
+        Reaches into OWUI internals, so failure costs the retry, not the tool."""
         if self._request is None or not self._user_id:
             return None
         try:
@@ -1110,9 +1024,8 @@ class _Auth:
         return Tools._token_from_owui(token)
 
     async def _call(self, event: dict, timeout: int = _RENEW_EVENT_TIMEOUT) -> Any:
-        """Round-trip an event through the user's browser, bounded - the
-        socket call has no timeout of its own unless OWUI is configured
-        with one, and a closed tab would otherwise hang the caller."""
+        """Round-trip an event through the user's browser. OWUI's own call has
+        no timeout by default."""
         if not callable(self._caller):
             return None
         try:
