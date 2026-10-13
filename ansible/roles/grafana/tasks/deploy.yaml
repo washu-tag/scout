@@ -23,6 +23,7 @@
   when: air_gapped | default(false)
 
 - name: Compute harbor URL from staging host variables
+  no_log: true
   vars:
     _harbor_subdomain: "{{ _staging_vars.harbor_subdomain | default('harbor') }}"
     _external_url: '{{ _staging_vars.external_url | default(_staging_host) }}'
@@ -35,6 +36,16 @@
 - name: Stage Grafana plugins to Harbor (air-gapped only)
   ansible.builtin.include_tasks: stage_plugins.yaml
   when: air_gapped | default(false)
+
+- name: Parse Grafana Helm values
+  no_log: true
+  ansible.builtin.set_fact:
+    grafana_helm_chart_values: "{{ (lookup('template', 'grafana.values.yaml.j2') | from_yaml) | combine(grafana_helm_values_override, recursive=true) }}"
+
+- name: Validate Grafana Helm values
+  ansible.builtin.assert:
+    that:
+      - grafana_helm_chart_values is mapping
 
 - name: Create SMTP secret
   no_log: true
@@ -230,7 +241,7 @@
     helm_repo_url: '{{ grafana_helm_repo_url }}'
     helm_chart_version: '{{ grafana_helm_chart_version }}'
     helm_chart_create_namespace: false
-    helm_chart_values: "{{ lookup('template', 'grafana.values.yaml.j2') | from_yaml }}"
+    helm_chart_values: '{{ grafana_helm_chart_values }}'
 
 # The Monitor chip ships with Grafana (ADR 0034).
 - name: Publish launchpad catalog entry

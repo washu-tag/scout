@@ -7,6 +7,7 @@ voila_namespace: '{{ scout_analytics_namespace }}'
 
 # Helm configuration
 voila_helm_chart_ref: '{{ scout_repo_dir }}/helm/voila'
+voila_helm_values_override: {}
 
 # Replicas (increase for load balancing)
 voila_replicas: 1

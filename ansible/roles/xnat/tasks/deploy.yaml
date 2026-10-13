@@ -99,7 +99,7 @@
 - name: Parse Helm values
   no_log: true
   ansible.builtin.set_fact:
-    xnat_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+    xnat_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml | combine(xnat_helm_values_override | default({}), recursive=true) }}"
 
 - name: Deploy XNAT using Helm
   ansible.builtin.include_role:

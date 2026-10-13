@@ -1,4 +1,14 @@
 ---
+- name: Parse Loki Helm values
+  no_log: true
+  ansible.builtin.set_fact:
+    loki_helm_chart_values: "{{ (lookup('template', 'loki.values.yaml.j2') | from_yaml) | combine(loki_helm_values_override, recursive=true) }}"
+
+- name: Validate Loki Helm values
+  ansible.builtin.assert:
+    that:
+      - loki_helm_chart_values is mapping
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -17,6 +27,7 @@
     sa_role_arn: '{{ loki_writer_role_arn }}'
 
 - name: Create S3 secret for Loki
+  no_log: true
   when: not aws_deployment
   kubernetes.core.k8s:
     state: present
@@ -44,4 +55,4 @@
     helm_chart_version: '{{ loki_helm_chart_version }}'
     helm_chart_create_namespace: false
     helm_chart_timeout: '{{ loki_helm_timeout }}'
-    helm_chart_values: "{{ lookup('template', 'loki.values.yaml.j2') | from_yaml }}"
+    helm_chart_values: '{{ loki_helm_chart_values }}'

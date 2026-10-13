@@ -7,6 +7,8 @@ alloy_helm_repo_name: grafana
 alloy_helm_repo_url: https://grafana.github.io/helm-charts
 alloy_helm_timeout: 5m
 
+alloy_helm_values_override: {}
+
 # Loki write endpoint (DaemonSet ships logs here). loki-gateway is the
 # nginx fronting Loki and exposes port 80 (the underlying loki Service
 # exposes 3100, but the gateway is the supported entry point).
