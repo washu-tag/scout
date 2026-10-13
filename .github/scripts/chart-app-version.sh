@@ -5,7 +5,7 @@
 #
 # Usage: chart-app-version.sh <chart-name> <version> [<predecessor-haul.yaml>]
 #   IMAGE_REBUILT=true  this run rebuilt the chart's Scout image, so it is published
-#                       at <version> (ci.yaml sets it from the changes filter)
+#                       at <version> (ci.yaml sets it from the frozen producer plan)
 #
 # appVersion is what a chart's image.tag falls back to (`default .Chart.AppVersion`),
 # so it has to name an image that exists when the chart is published:
@@ -72,10 +72,13 @@ case "$CHART" in
     hive-metastore)       from_versions_yaml hive_image_tag ;;
     temporal-bootstrap)   from_versions_yaml temporal_admin_tools_image_tag ;;
     keycloak-config-cli)  from_versions_yaml keycloak_config_cli_image_tag ;;
-    # scout-dashboards imports into Superset via a Job on Scout's superset image.
-    # That image is upstream-versioned (UPSTREAM_VERSIONED_IMAGES, never retagged to
-    # a build or X.Y.Z tag), so the chart couples to Superset's own version from
-    # helm/superset/VERSION rather than the build tag the image carries in the haul.
-    scout-dashboards)     tr -d '[:space:]' < helm/superset/VERSION; echo ;;
+    # Build-lane Superset has a digest-pinned build tag, including forced rebuilds
+    # that preserve its legacy vendor tag. The legacy release lane has no haul.
+    scout-dashboards)
+        if [[ -n "$HAUL" ]]; then
+            scout_image_tag superset
+        else
+            tr -d '[:space:]' < helm/superset/VERSION; echo
+        fi ;;
     *) ;;
 esac

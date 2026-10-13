@@ -37,6 +37,7 @@ CHART_ENV = {
     "SERVER_HOSTNAME": "scout.example.edu",
     "TIER_ROLES": "scout-user,scout-admin",
     "WATCHED_NAMESPACES": "",
+    "OFFERED_CLIENT_SCOPES": "",
     "RESYNC_SECONDS": "300",
     "ORPHAN_GRACE_SECONDS": "300",
     "DEBOUNCE_SECONDS": "2",
@@ -122,6 +123,26 @@ class TestTheChartsEnvironment:
         with pytest.raises(SystemExit) as exit_info:
             RequiredSettings()
         assert f"{ENV_PREFIX}WATCHED_NAMESPACES" in str(exit_info.value)
+
+
+class TestOfferedClientScopes:
+    def test_the_chart_default_offers_none(self, env):
+        env()
+        assert RequiredSettings().offered_client_scopes == []
+
+    def test_the_rendered_list_parses(self, env):
+        env(OFFERED_CLIENT_SCOPES="xnat-audience,trino-audience")
+        assert RequiredSettings().offered_client_scopes == [
+            "xnat-audience",
+            "trino-audience",
+        ]
+
+    @pytest.mark.parametrize("scope", ["roles", "offline_access"])
+    def test_a_scope_every_client_gets_cannot_be_offered(self, env, scope):
+        """Every client not asking for the scope would lose it."""
+        env(OFFERED_CLIENT_SCOPES=f"xnat-audience,{scope}")
+        with pytest.raises(SystemExit, match="given to every fragment client"):
+            RequiredSettings()
 
 
 class TestEveryFieldIsReachable:

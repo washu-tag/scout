@@ -5,6 +5,8 @@ from typing import Annotated
 from pydantic import Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from .translate import DEFAULT_CLIENT_SCOPES, OPTIONAL_CLIENT_SCOPES
+
 ENV_PREFIX = "KEYCLOAK_FRAGMENT_RECONCILER_"
 
 FRAGMENT_LABEL = "keycloak.scout.xnat.org/fragment"
@@ -38,6 +40,10 @@ class Settings(BaseSettings):
     # Redirect URIs and app URLs must sit under this host, or a fragment's
     # client becomes a token-exfiltration redirect.
     server_hostname: str = ""
+    # Realm client scopes a fragment's `clientScopes` may name. An allowlist,
+    # not any realm scope: a scope can carry another service's audience and
+    # roles, and the base realm may gain new ones at any time.
+    offered_client_scopes: CommaList = []
 
     # --- Discovery ------------------------------------------------------
     fragment_label: str = FRAGMENT_LABEL
@@ -60,7 +66,9 @@ class Settings(BaseSettings):
     port: int = Field(default=8080, ge=1024, le=65535)
     dry_run: bool = False
 
-    @field_validator("tier_roles", "watched_namespaces", mode="before")
+    @field_validator(
+        "tier_roles", "watched_namespaces", "offered_client_scopes", mode="before"
+    )
     @classmethod
     def _split_list(cls, value: object) -> object:
         """Accept a comma-separated string, which is what a chart renders.
@@ -88,6 +96,19 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"{WATCH_ALL} means every namespace, so it cannot be combined "
                 f"with namespace names (got {','.join(value)!r})"
+            )
+        return value
+
+    @field_validator("offered_client_scopes")
+    @classmethod
+    def _offers_no_base_scope(cls, value: list[str]) -> list[str]:
+        """An offered scope is unlinked from every client that does not ask for
+        it, so offering one that every client carries would strip it from all."""
+        base = sorted(set(value) & {*DEFAULT_CLIENT_SCOPES, *OPTIONAL_CLIENT_SCOPES})
+        if base:
+            raise ValueError(
+                f"{', '.join(base)} is given to every fragment client, so it "
+                "cannot be offered"
             )
         return value
 

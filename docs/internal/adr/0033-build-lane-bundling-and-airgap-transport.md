@@ -36,8 +36,8 @@ build-lane bundler, signer, and air-gap transport. Flux stays the consumer,
 unchanged.
 
 - **The record is a Hauler haul, not hand-rolled JSON.** CI resolves the digest
-  set for the build (changed components rebuilt; unchanged resolved live at
-  their current stable-tag digest), renders a Hauler content manifest
+  set for the build (changed components rebuilt; unchanged carried by digest
+  from a frozen, verified predecessor with checked Git ancestry), renders a Hauler content manifest
   under `kind: Images` for both the images and the OCI charts, each pinned by
   digest (OCI charts ride as `kind: Images` so they copy verbatim; `kind: Charts`
   re-packages them under a `hauler/<name>` path with a new digest, which would
@@ -46,26 +46,29 @@ unchanged.
   --key cosign.pub` pulls and verifies every artifact into a local OCI store and
   `hauler store save` collapses it into one `scout-0.YYYYMMDD.<run>.tar.zst`.
   That haul is the versioned, relocatable "what is Scout at this version" record
-  ADR 0030 §1 asks for; it carries each artifact with its own keyed cosign
-  signature (not one signature over the archive, see the open sub-decision).
+  ADR 0030 §1 asks for. CI signs both the OCI manifest artifact and bundle
+  artifact, in addition to the Scout-owned component signatures.
 - **Air-gap transport is `hauler store copy`, on the ADR 0031 staging
   reconciler.** The reconciler runs `hauler store load` on the sneakernetted
   tarball then `hauler store copy registry://harbor.<site>` to push every image
   and chart into Harbor **preserving the original sha256 digests byte for byte**.
   The cluster is untouched: containerd resolves `ghcr.io/...@digest` image refs
   through the Harbor mirror, Flux `OCIRepository`/`chartRef` fetch charts and the
-  config artifact by the same digests, and cosign `.spec.verify` (keyed, via a
-  public-key `secretRef`) checks the per-artifact signatures fully offline, with
+  config artifact by the same digests. Cosign `.spec.verify` (keyed, via a
+  public-key `secretRef`) checks Flux source signatures fully offline, with
   no Rekor/Fulcio reachability. (`--use-tlog-verify` is Hauler's own sync-time
   flag, defaulting off; it is unrelated to Flux's in-cluster verification.)
+  Flux source verification does not verify arbitrary Pod image signatures;
+  image verification is a separate ingestion or admission policy.
 - **Redeploy-only-on-change still comes from Flux + stable digests**, exactly as
   ADR 0030/0031 intend: an unchanged component keeps its prior digest, so nothing
   restarts it. Hauler is pure digest-preserving transport, not a reconciler; it
   does not compete with Flux, inject a registry, or run an in-cluster agent.
-- **Keyed cosign, not keyless.** Air-gapped verification cannot reach a Sigstore
-  transparency log, so signing uses a managed key (matches Phase 2 open decision
-  2). The key lifecycle (generation, escrow, rotation) is the ADR 0031 Layer-0
-  item this makes concrete.
+- **Managed-key cosign.** The selected Flux/Hauler verification path uses an
+  independently provisioned public key. Keyless verification is also possible
+  offline with exported signature bundles, proofs and trusted roots, but is not
+  the selected trust model. Key generation, escrow and rotation remain Layer-0
+  responsibilities. See [offline verification](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/verify-attestations-offline).
 - **Preconditions for the verify chain.** Two enablements must be in place, both
   one-time: (a) images and charts are cosign-signed with the managed key **at
   publish to ghcr**, so `store sync --key` can verify them and their signatures
@@ -75,18 +78,14 @@ unchanged.
   `.spec.verify` can find them after relocation. Confirm both before the air-gap
   phase.
 
-### The one open sub-decision
+### Package identity and acceptance
 
-A Hauler haul carries **per-artifact keyed cosign signatures plus the tarball's
-own integrity**, not a single signature over one merkle-rooted index of all
-components. Flux already verifies each image and chart independently via
-`.spec.verify`, so per-artifact signing is the natural and sufficient trust
-model. If the team instead wants **one signature over the whole platform** as a
-single audit object, that is the one place Carvel imgpkg (an `ImagesLock`
-Bundle) or Zarf (a whole-package signature) is stronger, at the Flux-fit cost in
-Alternatives below. Recommendation: accept per-artifact signing; do not take on
-imgpkg's or Zarf's consumer-side baggage for a single-signature nicety Flux does
-not need.
+CI signs the OCI haul manifest, bundle and config artifacts. The immutable haul
+manifest is the component inventory; the signed release record binds these
+artifact digests to the successful CI attempt and supported test profile. The
+config and images are tested before publication, then copied without rebuilding.
+The bundle remains separately signed transport content. Core Flux tests do not
+certify bundle restore, full dependency inventory or a disconnected installation.
 
 ## Consequences
 
@@ -98,11 +97,12 @@ not need.
   `changes` job and the build `if:` guard and comes out. See the follow-up plan.
 - **What stays custom is small and load-bearing.** Deciding the rebuild set and
   resolving the digest set (changed components at their fresh digest, unchanged
-  at their current stable-tag digest) is a build-lane decision no bundler owns; it
+  at the verified predecessor digest) is a build-lane decision no bundler owns; it
   reduces to a thin step that renders the Hauler manifest. The `appVersion`
   <-> image coupling (ADR 0030 §2) is likewise producer-side authoring.
-- **One artifact, not two.** The Hauler haul is the ADR 0030 §1 record; do not
-  also maintain a separate JSON manifest, or the two can disagree. The ADR 0031
+- **One component inventory.** The Hauler manifest is the ADR 0030 §1 record.
+  Build-output metadata and the release record reference its digest; they do
+  not duplicate its component list. The ADR 0031
   config artifact continues to stamp `name:tag@digest` into the deploy base from
   the same resolved digest set.
 - **New dependency, small.** Hauler is a single static Go binary added to CI and
@@ -177,10 +177,10 @@ decision and its evaluation of record.
   overlapping the committed Harbor + pure-Flux design. Worth keeping as the
   fallback if a single whole-package signature becomes a hard requirement.
 - **Carvel imgpkg + kbld.** Cleanest single-bundle semantics (`ImagesLock` is a
-  digest-pinned lock), but its relocation-aware consumer is kapp-controller, which
-  ADR 0031 rejected in favor of Flux; Flux ignores `ImagesLock` relocation, so
-  you would bolt on a `kbld` render step or fall back to Harbor pull-through, at
-  which point Hauler's verbatim copy is simpler. Charts are second-class.
+  digest-pinned lock). Both tools are standalone CLIs; [the basic workflow](https://carvel.dev/imgpkg/docs/v0.46.x/basic-workflow/)
+  does not require kapp-controller. A Flux consumer would still need a configuration step to apply the
+  relocated references. Hauler remains selected for the current verbatim-copy
+  workflow; a package-tool migration requires demonstrated maintenance savings.
 - **Timoni / Helmfile / oc-mirror / plain oras+regctl.** Poor fit: Timoni and
   kapp-controller replace Flux and rewrite charts into their own module format;
   Helmfile cannot pin OCI charts by digest and has no image or bundle story;

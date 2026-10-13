@@ -119,12 +119,19 @@ class QueryFromFileResponse(BaseModel):
     column_inferred: bool
 
 
+MAX_READ_REPORTS_IDS = 100
+
+
 class ReadReportsRequest(BaseModel):
     """Fetch the full content of specific reports by ID. Backs the
     `scout_get_reports` tool surface AND the SPA row-expand panel
     (which sends an array of one)."""
 
-    ids: list[str] = Field(..., description="Report identifiers to fetch.")
+    ids: list[str] = Field(
+        ...,
+        max_length=MAX_READ_REPORTS_IDS,
+        description="Report identifiers to fetch.",
+    )
     id_column: str = Field(
         default="primary_report_identifier",
         description="Column to match `ids` against.",
@@ -233,6 +240,24 @@ class PlotMeta(BaseModel):
     # OWUI conversation ID - the SPA groups charts with the searches from
     # the same chat. Empty when the caller didn't supply it.
     owui_chat_id: str = ""
+
+
+class ActionInvokeRequest(BaseModel):
+    """Optional filter narrowing a backend-call invoke to a subset of the
+    search's cohort - e.g. the SPA's currently client-side-filtered rows,
+    the same set Download CSV already exports. None/omitted (or no
+    request body at all) means the full search, unfiltered - today's
+    behavior."""
+
+    visible_report_ids: list[str] | None = None
+
+
+class ActionInvokeResponse(BaseModel):
+    """The result URL a backend-call action's own endpoint_url returned,
+    ready for the same open/copy-fallback handling as an open-url
+    action."""
+
+    url: str
 
 
 class PlotDetail(BaseModel):

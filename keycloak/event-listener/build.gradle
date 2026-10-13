@@ -31,7 +31,7 @@ def commonsCompressVersion = "1.28.0"
 // DefaultCredentialsProvider's WebIdentityTokenFile path). The SDK shades
 // its internal Jackson under software.amazon.awssdk.thirdparty, so it
 // doesn't conflict with Keycloak's bundled Jackson.
-def awsSdkVersion = "2.55.8"
+def awsSdkVersion = "2.55.10"
 def junitVersion = "6.1.3"
 def mockitoVersion = "5.24.0"
 

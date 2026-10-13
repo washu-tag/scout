@@ -17,6 +17,20 @@ export const compactBtn: CSSProperties = {
 
 export const paginationBtn: CSSProperties = {
   fontSize: '0.72rem',
+  // Fixes the line box height to a plain multiple of font-size - the
+  // browser's own default ('normal') derives from the font's internal
+  // ascent/descent metrics, which differ per glyph/font-fallback (e.g. the
+  // "▾" in "Columns ▾" isn't necessarily covered by the same font as plain
+  // Latin text), making otherwise-identical buttons a subpixel or more
+  // taller than their plain-text siblings.
+  lineHeight: 1,
+  // Explicit, content-independent height - without it, an icon button
+  // (e.g. the expand/contract toggle, whose SVG is taller than a text
+  // line) still ends up taller than its text-only siblings even with
+  // lineHeight fixed above. calc() keeps this in sync with fontSize/
+  // padding/border above instead of hardcoding a px value that would
+  // silently drift out of sync with them.
+  height: 'calc(1em + 0.4rem + 2px)',
   padding: '0.2rem 0.45rem',
   border: '1px solid var(--rv-border)',
   background: 'var(--rv-surface)',

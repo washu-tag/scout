@@ -162,11 +162,13 @@ async def read_reports(
     # Highlight offsets ride along on this read. The standalone query had the
     # same table and predicate, so it doubled the cost of opening a report.
     hits_expression = await _highlight_expression(body.search_id, user, store)
-    ids = [[str(i) for i in body.ids]]
+    ids = [str(i) for i in body.ids]
+    # One placeholder per ID: the driver won't expand a list param, and
+    # contains(?, col) defeats Delta stats-based file skipping.
+    placeholders = ", ".join("?" * len(ids))
 
     async def read(projection: str) -> tuple[list[str], list[dict[str, Any]]]:
-        # contains(?, col) - the driver doesn't expand list params into IN.
-        sql = f'SELECT {projection} FROM {table} WHERE contains(?, "{column}")'
+        sql = f'SELECT {projection} FROM {table} WHERE "{column}" IN ({placeholders})'
         with metrics.time_trino("read_reports"):
             # safe: table from READ_REPORTS_TABLES allowlist, column from
             # INPUT_ID_COLUMNS allowlist, IDs bind via ?

@@ -3,20 +3,21 @@
 # are hauled by @digest and synced WITHOUT our cosign --key (trust = immutable
 # digest + upstream provenance), separate from the --key-verified Scout components.
 #
-# Each line is "<repo> <version-var>": the TAG is read at build time from
+# Each line is "<repo> <version-var>"; fully qualify repos for Docker and ORAS.
+# The TAG is read at build time from
 # ansible/group_vars/all/versions.yaml (the Renovate-tracked, deploy-time source
 # of truth), NOT hardcoded here, so the hauled tag can't drift from the deployed
 # one. The repo half IS hardcoded here; for images whose repo is also a
 # versions.yaml var (keycloak_config_cli_image, orthanc_image), keep this in sync
 # if that var is ever repointed. See tooling/manifest/resolve_upstream.py.
-openpolicyagent/opa opa_image_tag
-starburstdata/hive hive_image_tag
+docker.io/openpolicyagent/opa opa_image_tag
+docker.io/starburstdata/hive hive_image_tag
 docker.io/adorsys/keycloak-config-cli keycloak_config_cli_image_tag
-dcm4che/dcm4chee-arc-psql dcm4chee_arc_version
-dcm4che/postgres-dcm4chee dcm4chee_db_version
-dcm4che/slapd-dcm4chee dcm4chee_ldap_version
-jodogne/orthanc-plugins orthanc_version
+docker.io/dcm4che/dcm4chee-arc-psql dcm4chee_arc_version
+docker.io/dcm4che/postgres-dcm4chee dcm4chee_db_version
+docker.io/dcm4che/slapd-dcm4chee dcm4chee_ldap_version
+docker.io/jodogne/orthanc-plugins orthanc_version
 # admin-tools + OWUI: tag == the wrapper chart's appVersion, now pinned in
 # versions.yaml (was resolved via `helm show` while the chart versions used ~).
-temporalio/admin-tools temporal_admin_tools_image_tag
+docker.io/temporalio/admin-tools temporal_admin_tools_image_tag
 ghcr.io/open-webui/open-webui open_webui_image_tag
