@@ -24,6 +24,7 @@ export function ActionsToolbar({
   clientHandlers,
   visibleReportIds,
   disabled,
+  availableWidth,
 }: {
   searchId: string;
   actions: ActionDescriptor[];
@@ -34,6 +35,9 @@ export function ActionsToolbar({
   visibleReportIds: string[];
   // True while rows are still loading.
   disabled?: boolean;
+  // Width budgeted for this component within the parent row - computed
+  // from sibling widths, not this component's own rendered size.
+  availableWidth: number;
 }) {
   const { opening, error, resultLink, copied, open, copyLink, dismiss } = useOpenResult();
   const [invokingId, setInvokingId] = useState<string | null>(null);
@@ -49,60 +53,41 @@ export function ActionsToolbar({
   const proberRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const moreProberRef = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
-  // Zero visual footprint, but a real flex-grow: 1 sibling in the
-  // *parent's* row (a second root element, not nested in the box below) -
-  // its width is exactly the space nothing else there has claimed.
-  const growthSensorRef = useRef<HTMLDivElement>(null);
   const [visibleCustomCount, setVisibleCustomCount] = useState(customs.length);
   const hasBuiltins = builtins.length > 0;
 
-  // Recomputes how many customs fit whenever the row is resized (window
-  // resize, iframe expand/contract, sidebar toggle, ...) or the action
-  // list itself changes.
   useLayoutEffect(() => {
     const row = rowRef.current;
-    const sensor = growthSensorRef.current;
-    if (!row || !sensor) return;
-    const recompute = () => {
-      // Read the actual computed gap rather than assuming a px value for
-      // the row's `gap: '0.5rem'` - correct regardless of root font-size.
-      const gapPx = parseFloat(getComputedStyle(row).columnGap) || 0;
-      // row.clientWidth (currently-rendered content) plus the growth
-      // sensor's width (unclaimed space the sensor absorbed instead) is
-      // the row's true available width - see the sensor's own comment.
-      // builtins are always rendered first and always visible, so their
-      // measured width (plus the one gap between them and whatever comes
-      // next) has to come out of the budget before deciding how many
-      // customs fit, or this overcounts by exactly the builtins' width.
-      const builtinsWidth = builtinsRef.current?.offsetWidth ?? 0;
-      const boundaryGap = hasBuiltins && customs.length > 0 ? gapPx : 0;
-      const available = row.clientWidth + sensor.offsetWidth - builtinsWidth - boundaryGap;
-      const moreWidth = moreProberRef.current?.offsetWidth ?? 0;
-      let used = 0;
-      let fit = 0;
-      for (let i = 0; i < customs.length; i++) {
-        const width = proberRefs.current.get(customs[i].id)?.offsetWidth ?? 0;
-        const hasMoreAfter = i + 1 < customs.length;
-        // Reserve room for the "More" button unless this is the last
-        // custom action - no point reserving space for a dropdown that
-        // would end up empty. Safe: if an earlier item's own check passed
-        // with this same reserve subtracted, that already guarantees
-        // room for "More" later if this last item doesn't fit after all.
-        const reserve = hasMoreAfter ? moreWidth + gapPx : 0;
-        const next = used + (fit > 0 ? gapPx : 0) + width;
-        if (next + reserve > available) break;
-        used = next;
-        fit++;
-      }
-      setVisibleCustomCount(fit);
-    };
-    recompute();
-    const ro = new ResizeObserver(recompute);
-    ro.observe(row);
-    ro.observe(sensor);
-    return () => ro.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customIdsKey, hasBuiltins]);
+    if (!row) return;
+    // Read the actual computed gap rather than assuming a px value for the
+    // row's `gap: '0.5rem'` - correct regardless of root font-size.
+    const gapPx = parseFloat(getComputedStyle(row).columnGap) || 0;
+    // builtins are always rendered first and always visible, so their width
+    // (plus the one gap between them and whatever comes next) has to come
+    // out of the budget before deciding how many customs fit, or this
+    // overcounts by exactly the builtins' width.
+    const builtinsWidth = builtinsRef.current?.offsetWidth ?? 0;
+    const boundaryGap = hasBuiltins && customs.length > 0 ? gapPx : 0;
+    const available = availableWidth - builtinsWidth - boundaryGap;
+    const moreWidth = moreProberRef.current?.offsetWidth ?? 0;
+    let used = 0;
+    let fit = 0;
+    for (let i = 0; i < customs.length; i++) {
+      const width = proberRefs.current.get(customs[i].id)?.offsetWidth ?? 0;
+      const hasMoreAfter = i + 1 < customs.length;
+      // Reserve room for the "More" button unless this is the last
+      // custom action - no point reserving space for a dropdown that
+      // would end up empty. Safe: if an earlier item's own check passed
+      // with this same reserve subtracted, that already guarantees
+      // room for "More" later if this last item doesn't fit after all.
+      const reserve = hasMoreAfter ? moreWidth + gapPx : 0;
+      const next = used + (fit > 0 ? gapPx : 0) + width;
+      if (next + reserve > available) break;
+      used = next;
+      fit++;
+    }
+    setVisibleCustomCount(fit);
+  }, [customIdsKey, hasBuiltins, availableWidth]);
 
   // Outside-click/Escape dismiss - mirrors the column-picker's dismiss
   // effect in SearchDetailPage.tsx.
@@ -198,7 +183,6 @@ export function ActionsToolbar({
   const overflowCustoms = customs.slice(visibleCustomCount);
 
   return (
-    <>
     <div
       style={{
         position: 'relative',
@@ -318,11 +302,5 @@ export function ActionsToolbar({
         />
       )}
     </div>
-    <div
-      ref={growthSensorRef}
-      aria-hidden="true"
-      style={{ flex: '1 0 0%', minWidth: 0, height: 0, overflow: 'hidden', visibility: 'hidden' }}
-    />
-    </>
   );
 }

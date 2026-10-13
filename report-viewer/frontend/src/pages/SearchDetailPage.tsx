@@ -249,6 +249,12 @@ export default function SearchDetailPage() {
   // Centers coincide for anything actually sharing a line regardless of
   // height; a second line's centers differ by roughly a full line height.
   const [toolbarWrapped, setToolbarWrapped] = useState(false);
+  // Width available to ActionsToolbar: row width minus its other siblings'
+  // natural widths, read from their own refs rather than ActionsToolbar's.
+  const [actionsAvailableWidth, setActionsAvailableWidth] = useState(0);
+  const leftClusterRef = useRef<HTMLDivElement>(null);
+  const filtersRef = useRef<HTMLButtonElement>(null);
+  const expanderRef = useRef<HTMLButtonElement>(null);
   const toolbarObserver = useRef<ResizeObserver | null>(null);
   const toolbarRowRef = useCallback((el: HTMLDivElement | null) => {
     toolbarObserver.current?.disconnect();
@@ -258,10 +264,21 @@ export default function SearchDetailPage() {
       const centers = children.map((c) => c.offsetTop + c.offsetHeight / 2);
       const firstCenter = centers[0];
       setToolbarWrapped(centers.some((y) => Math.abs(y - firstCenter) > 1));
+
+      const gapPx = parseFloat(getComputedStyle(el).columnGap) || 0;
+      const fixedWidth =
+        (leftClusterRef.current?.offsetWidth ?? 0) +
+        (filtersRef.current?.offsetWidth ?? 0) +
+        (colPickerRef.current?.offsetWidth ?? 0) +
+        (expanderRef.current?.offsetWidth ?? 0);
+      const gapCount = Math.max(children.length - 1, 0);
+      setActionsAvailableWidth(Math.max(0, el.clientWidth - fixedWidth - gapPx * gapCount));
     };
     measure();
     toolbarObserver.current = new ResizeObserver(measure);
     toolbarObserver.current.observe(el);
+    if (leftClusterRef.current) toolbarObserver.current.observe(leftClusterRef.current);
+    if (filtersRef.current) toolbarObserver.current.observe(filtersRef.current);
   }, []);
 
   const dateFields = useMemo(
@@ -656,89 +673,95 @@ export default function SearchDetailPage() {
               flexWrap: 'wrap',
             }}
           >
+            <div
+              ref={leftClusterRef}
+              style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+            >
+              <button
+                type="button"
+                onClick={() => table.previousPage()}
+                disabled={!rowsQ.data || !table.getCanPreviousPage()}
+                className="scout-toolbar-btn"
+                style={{ ...paginationBtn, flexShrink: 0 }}
+              >
+                Prev
+              </button>
+              <span
+                style={{
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: 46,
+                  textAlign: 'center',
+                }}
+              >
+                {pageIndex + 1} / {lastPage}
+              </span>
+              <button
+                type="button"
+                onClick={() => table.nextPage()}
+                disabled={!rowsQ.data || !table.getCanNextPage()}
+                className="scout-toolbar-btn"
+                style={{ ...paginationBtn, flexShrink: 0 }}
+              >
+                Next
+              </button>
+              <span
+                style={{
+                  marginLeft: '0.4rem',
+                  color: 'var(--rv-muted)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                Per page:
+              </span>
+              <select
+                value={pagination.pageSize}
+                onChange={(e) => table.setPageSize(Number(e.target.value))}
+                disabled={!rowsQ.data}
+                style={{ fontSize: '0.85rem', flexShrink: 0 }}
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+              </select>
+              <span
+                style={{
+                  color: 'var(--rv-muted)',
+                  fontSize: '0.75rem',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {meta.error
+                  ? 'Failed to load metadata'
+                  : rowsQ.data
+                    ? `${total.toLocaleString()} rows`
+                    : ''}
+              </span>
+              {/* visibility (not mount) so the row doesn't reflow on fetch. */}
+              <span
+                aria-label="Loading"
+                role="status"
+                aria-hidden={!(rowsQ.isFetching && !rowsQ.isLoading)}
+                style={{
+                  visibility: rowsQ.isFetching && !rowsQ.isLoading ? 'visible' : 'hidden',
+                  width: 13,
+                  height: 13,
+                  borderRadius: '50%',
+                  border: '2px solid var(--rv-border)',
+                  borderTopColor: '#ea580c',
+                  animation: 'scoutSpin 0.8s linear infinite',
+                  display: 'inline-block',
+                  flexShrink: 0,
+                }}
+              />
+            </div>
             <button
-              type="button"
-              onClick={() => table.previousPage()}
-              disabled={!rowsQ.data || !table.getCanPreviousPage()}
-              className="scout-toolbar-btn"
-              style={{ ...paginationBtn, flexShrink: 0 }}
-            >
-              Prev
-            </button>
-            <span
-              style={{
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                fontVariantNumeric: 'tabular-nums',
-                minWidth: 46,
-                textAlign: 'center',
-              }}
-            >
-              {pageIndex + 1} / {lastPage}
-            </span>
-            <button
-              type="button"
-              onClick={() => table.nextPage()}
-              disabled={!rowsQ.data || !table.getCanNextPage()}
-              className="scout-toolbar-btn"
-              style={{ ...paginationBtn, flexShrink: 0 }}
-            >
-              Next
-            </button>
-            <span
-              style={{
-                marginLeft: '0.4rem',
-                color: 'var(--rv-muted)',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              Per page:
-            </span>
-            <select
-              value={pagination.pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
-              disabled={!rowsQ.data}
-              style={{ fontSize: '0.85rem', flexShrink: 0 }}
-            >
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-              <option value={200}>200</option>
-              <option value={500}>500</option>
-            </select>
-            <span
-              style={{
-                color: 'var(--rv-muted)',
-                fontSize: '0.75rem',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {meta.error
-                ? 'Failed to load metadata'
-                : rowsQ.data
-                  ? `${total.toLocaleString()} rows`
-                  : ''}
-            </span>
-            {/* visibility (not mount) so the row doesn't reflow on fetch. */}
-            <span
-              aria-label="Loading"
-              role="status"
-              aria-hidden={!(rowsQ.isFetching && !rowsQ.isLoading)}
-              style={{
-                visibility: rowsQ.isFetching && !rowsQ.isLoading ? 'visible' : 'hidden',
-                width: 13,
-                height: 13,
-                borderRadius: '50%',
-                border: '2px solid var(--rv-border)',
-                borderTopColor: '#ea580c',
-                animation: 'scoutSpin 0.8s linear infinite',
-                display: 'inline-block',
-                flexShrink: 0,
-              }}
-            />
-            <button
+              ref={filtersRef}
               type="button"
               disabled={!rowsQ.data}
               onClick={() => setFiltersModalOpen(true)}
@@ -827,6 +850,7 @@ export default function SearchDetailPage() {
               searchId={searchId}
               visibleReportIds={visibleReportIds}
               disabled={!rowsQ.data}
+              availableWidth={actionsAvailableWidth}
               // Explain Search's per-search visibility (nothing to explain
               // yet) is a page-level concern, not something the backend
               // catalog encodes.
@@ -857,6 +881,7 @@ export default function SearchDetailPage() {
             />
             {embedded && (
               <button
+                ref={expanderRef}
                 type="button"
                 onClick={() => {
                   const next = !iframeExpanded;
