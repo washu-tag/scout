@@ -17,13 +17,19 @@ const BUILTIN_ACTION_IDS = new Set(['explain-search', 'download-csv']);
  * button (see the aria-hidden block below), so the natural width of a
  * button currently in the menu is still known without needing to render
  * it inline first - the naive approach of measuring only what's already
- * visible can't discover that a hidden button would actually fit. */
+ * visible can't discover that a hidden button would actually fit.
+ *
+ * Renders builtins/visible-customs/"More" as flat Fragment siblings of the
+ * parent row, so the row's own flex-wrap can place each one independently
+ * if the budget below is ever exceeded. */
 export function ActionsToolbar({
   searchId,
   actions,
   clientHandlers,
   visibleReportIds,
   disabled,
+  availableWidth,
+  gapPx,
 }: {
   searchId: string;
   actions: ActionDescriptor[];
@@ -34,6 +40,12 @@ export function ActionsToolbar({
   visibleReportIds: string[];
   // True while rows are still loading.
   disabled?: boolean;
+  // Width budgeted for this component within the parent row - computed
+  // from sibling widths, not this component's own rendered size.
+  availableWidth: number;
+  // The parent row's own computed gap, in px - this component has no row
+  // element of its own to read it from now that it renders flat.
+  gapPx: number;
 }) {
   const { opening, error, resultLink, copied, open, copyLink, dismiss } = useOpenResult();
   const [invokingId, setInvokingId] = useState<string | null>(null);
@@ -44,57 +56,40 @@ export function ActionsToolbar({
   const customs = actions.filter((a) => !BUILTIN_ACTION_IDS.has(a.id));
   const customIdsKey = customs.map((a) => a.id).join(',');
 
-  const rowRef = useRef<HTMLDivElement>(null);
-  const builtinsRef = useRef<HTMLDivElement>(null);
+  const builtinRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const proberRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const moreProberRef = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const [visibleCustomCount, setVisibleCustomCount] = useState(customs.length);
   const hasBuiltins = builtins.length > 0;
 
-  // Recomputes how many customs fit whenever the row is resized (window
-  // resize, iframe expand/contract, sidebar toggle, ...) or the action
-  // list itself changes.
   useLayoutEffect(() => {
-    const row = rowRef.current;
-    if (!row) return;
-    const recompute = () => {
-      // Read the actual computed gap rather than assuming a px value for
-      // the row's `gap: '0.5rem'` - correct regardless of root font-size.
-      const gapPx = parseFloat(getComputedStyle(row).columnGap) || 0;
-      // row.clientWidth is the WHOLE row's width, builtins included - the
-      // builtins are always rendered first and always visible, so their
-      // measured width (plus the one gap between them and whatever comes
-      // next) has to come out of the budget before deciding how many
-      // customs fit, or this overcounts by exactly the builtins' width.
-      const builtinsWidth = builtinsRef.current?.offsetWidth ?? 0;
-      const boundaryGap = hasBuiltins && customs.length > 0 ? gapPx : 0;
-      const available = row.clientWidth - builtinsWidth - boundaryGap;
+    const builtinsWidth = builtins.reduce((sum, b, i) => {
+      const w = builtinRefs.current.get(b.id)?.offsetWidth ?? 0;
+      return sum + w + (i > 0 ? gapPx : 0);
+    }, 0);
+    const boundaryGap = hasBuiltins && customs.length > 0 ? gapPx : 0;
+    const available = availableWidth - builtinsWidth - boundaryGap;
+    const widths = customs.map((a) => proberRefs.current.get(a.id)?.offsetWidth ?? 0);
+    const totalWidth = widths.reduce((sum, w, i) => sum + w + (i > 0 ? gapPx : 0), 0);
+    let fit = customs.length;
+    if (totalWidth > available) {
+      // Something won't fit, so "More" renders - its own width plus the gap
+      // before it has to come out of the budget too.
       const moreWidth = moreProberRef.current?.offsetWidth ?? 0;
+      const budget = available - moreWidth - gapPx;
       let used = 0;
-      let fit = 0;
-      for (let i = 0; i < customs.length; i++) {
-        const width = proberRefs.current.get(customs[i].id)?.offsetWidth ?? 0;
-        const hasMoreAfter = i + 1 < customs.length;
-        // Reserve room for the "More" button unless this is the last
-        // custom action - no point reserving space for a dropdown that
-        // would end up empty. Safe: if an earlier item's own check passed
-        // with this same reserve subtracted, that already guarantees
-        // room for "More" later if this last item doesn't fit after all.
-        const reserve = hasMoreAfter ? moreWidth + gapPx : 0;
+      fit = 0;
+      for (const width of widths) {
         const next = used + (fit > 0 ? gapPx : 0) + width;
-        if (next + reserve > available) break;
+        if (next > budget) break;
         used = next;
         fit++;
       }
-      setVisibleCustomCount(fit);
-    };
-    recompute();
-    const ro = new ResizeObserver(recompute);
-    ro.observe(row);
-    return () => ro.disconnect();
+    }
+    setVisibleCustomCount(fit);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customIdsKey, hasBuiltins]);
+  }, [customIdsKey, hasBuiltins, availableWidth, gapPx]);
 
   // Outside-click/Escape dismiss - mirrors the column-picker's dismiss
   // effect in SearchDetailPage.tsx.
@@ -126,7 +121,11 @@ export function ActionsToolbar({
     }
   };
 
-  const renderAction = (action: ActionDescriptor, closeMenuOnClick: boolean) => {
+  const renderAction = (
+    action: ActionDescriptor,
+    closeMenuOnClick: boolean,
+    ref?: (el: HTMLButtonElement | null) => void,
+  ) => {
     if (action.action_type === 'client') {
       const handler = action.client_handler ? clientHandlers[action.client_handler] : undefined;
       if (!handler) {
@@ -136,6 +135,7 @@ export function ActionsToolbar({
       return (
         <button
           key={action.id}
+          ref={ref}
           type="button"
           disabled={disabled}
           onClick={() => {
@@ -154,6 +154,7 @@ export function ActionsToolbar({
       return (
         <button
           key={action.id}
+          ref={ref}
           type="button"
           disabled={disabled || invokingId === action.id || opening}
           onClick={() => {
@@ -171,6 +172,7 @@ export function ActionsToolbar({
     return (
       <button
         key={action.id}
+        ref={ref}
         type="button"
         disabled={disabled || opening}
         onClick={() => {
@@ -190,86 +192,56 @@ export function ActionsToolbar({
   const overflowCustoms = customs.slice(visibleCustomCount);
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        flex: '0 1 auto',
-        minWidth: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.25rem',
-      }}
-    >
-      <div
-        ref={rowRef}
-        style={{
-          display: 'flex',
-          flexWrap: 'nowrap',
-          // No overflow: hidden here - the fit calculation above only ever
-          // renders builtins + however many customs actually fit + "More",
-          // so this row should never genuinely overflow. overflow: hidden
-          // would also clip the "More" dropdown panel below, since it's a
-          // DOM descendant of this row - position: absolute only escapes
-          // this row's normal flow, not its ancestor's overflow clipping.
-          gap: '0.5rem',
-          alignItems: 'center',
-          minWidth: 0,
-        }}
-      >
-        {hasBuiltins && (
-          <div ref={builtinsRef} style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-            {builtins.map((a) => renderAction(a, false))}
-          </div>
-        )}
-        {visibleCustoms.map((a) => renderAction(a, false))}
-        {overflowCustoms.length > 0 && (
-          <div ref={moreRef} style={{ position: 'relative', flexShrink: 0 }}>
-            <button
-              type="button"
-              onClick={() => setMoreOpen((v) => !v)}
-              className="scout-toolbar-btn"
-              style={paginationBtn}
-              title="More actions"
+    <>
+      {builtins.map((a) =>
+        renderAction(a, false, (el) => {
+          if (el) builtinRefs.current.set(a.id, el);
+          else builtinRefs.current.delete(a.id);
+        }),
+      )}
+      {visibleCustoms.map((a) => renderAction(a, false))}
+      {overflowCustoms.length > 0 && (
+        <div ref={moreRef} style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => setMoreOpen((v) => !v)}
+            className="scout-toolbar-btn"
+            style={paginationBtn}
+            title="More actions"
+          >
+            More ▾
+          </button>
+          {moreOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                // Opens upward, like "Columns ▾" - this row can sit at
+                // the bottom of a height-constrained iframe.
+                bottom: '100%',
+                right: 0,
+                marginBottom: 4,
+                background: 'var(--rv-surface)',
+                border: '1px solid var(--rv-border)',
+                borderRadius: 4,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                padding: '0.3rem',
+                zIndex: 10,
+                minWidth: 140,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem',
+              }}
             >
-              More ▾
-            </button>
-            {moreOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  // Opens upward, like "Columns ▾" - this row can sit at
-                  // the bottom of a height-constrained iframe.
-                  bottom: '100%',
-                  right: 0,
-                  marginBottom: 4,
-                  background: 'var(--rv-surface)',
-                  border: '1px solid var(--rv-border)',
-                  borderRadius: 4,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                  padding: '0.3rem',
-                  zIndex: 10,
-                  minWidth: 140,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.25rem',
-                }}
-              >
-                {overflowCustoms.map((a) => renderAction(a, true))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      {/* Hidden, always-fully-rendered probers - see the doc comment above. */}
+              {overflowCustoms.map((a) => renderAction(a, true))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Hidden, always-fully-rendered probers - see the doc comment above.
+          Anchored to the parent toolbar row, which is position: relative. */}
       <div
         aria-hidden="true"
         style={{
-          // position: absolute takes this out of the column's normal flow
-          // entirely - as a regular flex child (even at height: 0) it still
-          // consumed the column's `gap`, which shifted the visible button
-          // row up by half that gap once the whole column got vertically
-          // centered by the outer toolbar row (a real ~2px misalignment
-          // this caused). The parent has position: relative for this.
           position: 'absolute',
           visibility: 'hidden',
           pointerEvents: 'none',
@@ -298,7 +270,9 @@ export function ActionsToolbar({
         </button>
       </div>
       {(error || invokeError) && (
-        <p style={{ color: 'var(--rv-danger)', margin: 0 }}>{error || invokeError}</p>
+        <p style={{ color: 'var(--rv-danger)', margin: 0, flexBasis: '100%' }}>
+          {error || invokeError}
+        </p>
       )}
       {resultLink && (
         <ResultLinkModal
@@ -308,6 +282,6 @@ export function ActionsToolbar({
           onClose={dismiss}
         />
       )}
-    </div>
+    </>
   );
 }
