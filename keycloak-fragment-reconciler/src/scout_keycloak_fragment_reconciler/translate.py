@@ -18,6 +18,8 @@ STAMP_ATTRIBUTE = "scout.fragment.reconciler"
 # ownership test, so a fragment moving to a new ConfigMap is an update rather
 # than a delete-and-recreate with a window where the client is absent.
 SOURCE_ATTRIBUTE = "scout.fragment.source"
+# On only for a client that asks for scopes, which it takes by token exchange.
+TOKEN_EXCHANGE_ATTRIBUTE = "standard.token.exchange.enabled"
 
 PROTOCOL = "openid-connect"
 
@@ -51,6 +53,7 @@ def client_representation(spec: ClientSpec, *, secret: str, source: str) -> dict
     attributes = dict(stamp(source))
     attributes["post.logout.redirect.uris"] = spec.app_url
     attributes["pkce.code.challenge.method"] = "S256"
+    attributes[TOKEN_EXCHANGE_ATTRIBUTE] = str(bool(spec.client_scopes)).lower()
 
     return {
         "clientId": spec.client_id,
@@ -134,8 +137,8 @@ def tier_edges(spec: ClientSpec) -> dict[str, list[str]]:
 # The client-scope lists are deliberately absent. Keycloak applies them on
 # create and ignores them on update -- `ClientResource.updateClient` never
 # calls `updateClientScopes` -- so managing them would detect drift it could
-# never repair and rewrite the client on every pass forever. They are set once
-# at creation and are immutable thereafter.
+# never repair and rewrite the client on every pass forever. They are set at
+# creation; offered scopes are linked afterwards through their own endpoints.
 MANAGED_FIELDS = (
     "name",
     "description",
@@ -164,6 +167,7 @@ MANAGED_ATTRIBUTES = (
     SOURCE_ATTRIBUTE,
     "post.logout.redirect.uris",
     "pkce.code.challenge.method",
+    TOKEN_EXCHANGE_ATTRIBUTE,
 )
 
 

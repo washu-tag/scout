@@ -284,3 +284,27 @@ def test_a_rejected_representation_surfaces_its_status(admin):
         admin(http).create_client({"clientId": "hello"})
     assert raised.value.status == 400
     assert not raised.value.retryable
+
+
+# --- client scopes ------------------------------------------------------
+
+
+def test_the_scope_calls_hit_the_optional_client_scope_endpoints(admin):
+    """An optional scope is linked and unlinked by id."""
+    http = FakeHttp(
+        responses=[
+            httpx.Response(200, json=[{"id": "s1", "name": "xnat-audience"}]),
+            httpx.Response(204),
+            httpx.Response(204),
+        ],
+    )
+    client = admin(http)
+    assert client.client_scopes() == [{"id": "s1", "name": "xnat-audience"}]
+    client.add_optional_client_scope("uuid-1", "s1")
+    client.remove_optional_client_scope("uuid-1", "s1")
+    realm = f"{BASE}/admin/realms/scout"
+    assert [(sent.method, sent.url) for sent in http.requests] == [
+        ("GET", f"{realm}/client-scopes"),
+        ("PUT", f"{realm}/clients/uuid-1/optional-client-scopes/s1"),
+        ("DELETE", f"{realm}/clients/uuid-1/optional-client-scopes/s1"),
+    ]

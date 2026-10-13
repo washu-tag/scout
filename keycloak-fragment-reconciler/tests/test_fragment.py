@@ -7,9 +7,10 @@ otherwise do to the realm or to somebody else's tokens.
 from __future__ import annotations
 
 import time
+from collections.abc import Collection
 
 import pytest
-from conftest import HOSTNAME, TIERS, fragment_text
+from conftest import HOSTNAME, TIERS, fragment_text, with_fields
 
 from scout_keycloak_fragment_reconciler.fragment import (
     API_VERSION,
@@ -41,6 +42,7 @@ clients:
     grants:
       scout-user: [rich-user]
       scout-admin: [rich-admin]
+    clientScopes: [xnat-audience]
 """
 
 
@@ -59,14 +61,19 @@ def nested_clients(depth: int) -> str:
     )
 
 
-def with_fields(*lines: str) -> str:
-    """The fixture fragment plus extra client-level fields."""
-    extra = "".join(f"{line}\n" for line in lines)
-    return fragment_text().replace("    roles:", f"{extra}    roles:")
-
-
-def check(spec, *, hostname: str = HOSTNAME, tiers: list[str] | None = None) -> None:
-    check_site_rules(spec, hostname=hostname, tiers=TIERS if tiers is None else tiers)
+def check(
+    spec,
+    *,
+    hostname: str = HOSTNAME,
+    tiers: list[str] | None = None,
+    offered_scopes: Collection[str] = (),
+) -> None:
+    check_site_rules(
+        spec,
+        hostname=hostname,
+        tiers=TIERS if tiers is None else tiers,
+        offered_scopes=offered_scopes,
+    )
 
 
 class TestHappyPath:
@@ -98,6 +105,7 @@ class TestHappyPath:
         ).clients[0]
         assert spec.role_claim == "groups"
         assert spec.roles == []
+        assert spec.client_scopes == []
         assert spec.grants == {}
         assert spec.description == ""
 
@@ -173,6 +181,36 @@ class TestGrantsAreConstrained:
         spec = parsed()
         with pytest.raises(FragmentError, match="not a Scout tier role"):
             check(spec, tiers=["scout-admin"])
+
+
+class TestClientScopesAreConstrained:
+    """A scope can carry another service's audience and roles, so the site
+    picks which ones a fragment may name."""
+
+    def test_an_offered_scope_is_accepted(self):
+        spec = parsed(with_fields("    clientScopes: [xnat-audience]"))
+        check(spec, offered_scopes=["xnat-audience", "other-audience"])
+        assert spec.client_scopes == ["xnat-audience"]
+
+    def test_a_scope_the_site_does_not_offer_is_refused(self):
+        spec = parsed(with_fields("    clientScopes: [trino-audience]"))
+        with pytest.raises(
+            FragmentError, match=r"does not offer \(offered: xnat-audience\)"
+        ):
+            check(spec, offered_scopes=["xnat-audience"])
+
+    def test_a_site_that_offers_none_says_so(self):
+        spec = parsed(with_fields("    clientScopes: [xnat-audience]"))
+        with pytest.raises(FragmentError, match=r"offered: none"):
+            check(spec)
+
+    def test_duplicates_are_refused(self):
+        with pytest.raises(FragmentError, match="clientScopes contains duplicates"):
+            parse(with_fields("    clientScopes: [xnat-audience, xnat-audience]"))
+
+    def test_a_scope_is_a_name_not_a_path(self):
+        with pytest.raises(FragmentError, match="clientScopes"):
+            parse(with_fields("    clientScopes: [../client-scopes/x]"))
 
 
 class TestRedirectUrisAreConstrained:
@@ -463,7 +501,7 @@ class TestNestingDepth:
 
     def test_a_fully_populated_fragment_parses(self):
         spec = parsed(FULLY_POPULATED)
-        check(spec)
+        check(spec, offered_scopes=["xnat-audience"])
         assert spec.description == "every field the contract has"
         assert spec.role_claim == "rich.roles"
         assert spec.secret_ref.key == "oidc-client-secret"
@@ -471,6 +509,7 @@ class TestNestingDepth:
             "scout-user": ["rich-user"],
             "scout-admin": ["rich-admin"],
         }
+        assert spec.client_scopes == ["xnat-audience"]
 
     def test_one_level_past_the_cap_names_the_limit(self):
         with pytest.raises(FragmentError, match=f"{MAX_DEPTH}-level limit"):

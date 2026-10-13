@@ -4,7 +4,8 @@
       "pkce.code.challenge.method": "S256",
       "post.logout.redirect.uris": "https://hello.scout.example.edu",
       "scout.fragment.reconciler": "true",
-      "scout.fragment.source": "demo/hello-keycloak"
+      "scout.fragment.source": "demo/hello-keycloak",
+      "standard.token.exchange.enabled": "false"
     },
     "bearerOnly": false,
     "clientAuthenticatorType": "client-secret",
