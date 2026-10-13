@@ -251,10 +251,16 @@ export default function SearchDetailPage() {
   const [toolbarWrapped, setToolbarWrapped] = useState(false);
   // Width available to ActionsToolbar: row width minus its other siblings'
   // natural widths, read from their own refs rather than ActionsToolbar's.
+  // ActionsToolbar itself now renders as flat siblings in this same row
+  // (not one wrapping block), so the gap count below is fixed at the
+  // number of *other* siblings - it can't be read off live DOM child
+  // count, which depends on how many of ActionsToolbar's own items render.
   const [actionsAvailableWidth, setActionsAvailableWidth] = useState(0);
+  const [toolbarGapPx, setToolbarGapPx] = useState(8);
   const leftClusterRef = useRef<HTMLDivElement>(null);
   const filtersRef = useRef<HTMLButtonElement>(null);
   const expanderRef = useRef<HTMLButtonElement>(null);
+  const OTHER_TOOLBAR_SIBLINGS = 3 + (embedded ? 1 : 0); // leftCluster, Filters, Columns, [Expander]
   const toolbarObserver = useRef<ResizeObserver | null>(null);
   const toolbarRowRef = useCallback((el: HTMLDivElement | null) => {
     toolbarObserver.current?.disconnect();
@@ -266,13 +272,16 @@ export default function SearchDetailPage() {
       setToolbarWrapped(centers.some((y) => Math.abs(y - firstCenter) > 1));
 
       const gapPx = parseFloat(getComputedStyle(el).columnGap) || 0;
+      setToolbarGapPx(gapPx);
       const fixedWidth =
         (leftClusterRef.current?.offsetWidth ?? 0) +
         (filtersRef.current?.offsetWidth ?? 0) +
         (colPickerRef.current?.offsetWidth ?? 0) +
         (expanderRef.current?.offsetWidth ?? 0);
-      const gapCount = Math.max(children.length - 1, 0);
-      const nextAvailable = Math.max(0, el.clientWidth - fixedWidth - gapPx * gapCount);
+      const nextAvailable = Math.max(
+        0,
+        el.clientWidth - fixedWidth - gapPx * OTHER_TOOLBAR_SIBLINGS,
+      );
       // eslint-disable-next-line no-console
       console.debug('[ToolbarRow budget]', {
         clientWidth: el.clientWidth,
@@ -281,7 +290,7 @@ export default function SearchDetailPage() {
         colPickerWidth: colPickerRef.current?.offsetWidth,
         expanderWidth: expanderRef.current?.offsetWidth,
         gapPx,
-        gapCount,
+        otherSiblings: OTHER_TOOLBAR_SIBLINGS,
         childCount: children.length,
         nextAvailable,
       });
@@ -674,6 +683,7 @@ export default function SearchDetailPage() {
           <div
             ref={toolbarRowRef}
             style={{
+              position: 'relative',
               display: 'flex',
               gap: '0.5rem',
               alignItems: 'center',
@@ -864,6 +874,7 @@ export default function SearchDetailPage() {
               visibleReportIds={visibleReportIds}
               disabled={!rowsQ.data}
               availableWidth={actionsAvailableWidth}
+              gapPx={toolbarGapPx}
               // Explain Search's per-search visibility (nothing to explain
               // yet) is a page-level concern, not something the backend
               // catalog encodes.
