@@ -12,10 +12,14 @@ at /opt/scout/ and placed on PYTHONPATH. The kernel manager subclass is
 registered via Voila's own hook (NOT `c.ServerApp.kernel_manager_class`:
 Voila instantiates its kernel manager from
 `VoilaConfiguration.multi_kernel_manager_class`, not ServerApp's setting).
+The kernel websocket filter is a trait on the Voila app itself.
 """
 
 import voila_runtime  # noqa: F401 — monkey-patches TornadoVoilaHandler on import
 
 c.VoilaConfiguration.multi_kernel_manager_class = (
     "voila_runtime.ScoutMappingKernelManager"  # noqa: F821
+)
+c.Voila.kernel_websocket_connection_class = (
+    "voila_runtime.ScoutKernelWebsocketConnection"  # noqa: F821
 )

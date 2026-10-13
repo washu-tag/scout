@@ -15,6 +15,11 @@ spec:
         # Roll the pod when the rendered Secret (DB URL / shared secret /
         # Trino CA) changes, since env values are only read at start.
         checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        # Same reasoning for the action catalog (#739) - actions.py
+        # reads it once at import time, not live-reloaded from the
+        # mounted file.
+        checksum/actions-configmap: {{ include (print $.Template.BasePath "/actions-configmap.yaml") . | sha256sum }}
+        checksum/actions-secret: {{ include (print $.Template.BasePath "/actions-secret.yaml") . | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -95,6 +100,17 @@ spec:
             # for uvicorn scratch space and any transient library writes.
             - name: tmp
               mountPath: /tmp
+            # Action-catalog ConfigMap - see actions-configmap.yaml and
+            # scout_report_viewer/actions.py.
+            - name: action-catalog
+              mountPath: /app/action-catalog
+              readOnly: true
+            # Invoke tokens, keyed by action id as separate files - see
+            # actions-secret.yaml and routes/searches.py's invoke lookup.
+            # Kept out of action-catalog entirely.
+            - name: action-tokens
+              mountPath: /app/action-tokens
+              readOnly: true
             {{- if .Values.trinoCaCert }}
             - name: trino-ca
               mountPath: /etc/trino-ca
@@ -108,6 +124,12 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: action-catalog
+          configMap:
+            name: {{ include "report-viewer.fullname" . }}-actions
+        - name: action-tokens
+          secret:
+            secretName: {{ include "report-viewer.fullname" . }}-action-tokens
         {{- if .Values.trinoCaCert }}
         - name: trino-ca
           secret:

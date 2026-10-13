@@ -5,37 +5,41 @@ import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
-  getExpandedRowModel,
   getSortedRowModel,
   getPaginationRowModel,
   useReactTable,
   type SortingState,
-  type ExpandedState,
   type VisibilityState,
   type PaginationState,
 } from '@tanstack/react-table';
 import {
   activeFilterCount,
+  anyFilterActive,
   downloadCsv,
   filterRows,
   friendlyError,
   getSearch,
   getSearchProgress,
   getSearchRows,
+  listSearchActions,
   newProgressId,
   type FilterState,
 } from '../api/client';
 import { HEIGHT_COMPACT, HEIGHT_EXPANDED, setHeight as setIframeHeight } from '../iframeHeight';
 import { buildFilterPrompt } from '../chat';
 import { useChatPrompt } from '../ChatPrompt';
-import { RowDetail } from './searchDetail/RowDetail';
 import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../QueryProgress';
+import { EvidenceFilterChips } from './searchDetail/EvidenceFilterChips';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
+import { ActionsToolbar } from './searchDetail/ActionsToolbar';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
-import { ROW_ACTIVE_BG, DETAIL_ZONE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
+import { EvidenceCell } from './searchDetail/EvidenceCell';
+import { hasEvidence } from './searchDetail/evidenceStats';
+import { ReviewPanel } from './searchDetail/ReviewPanel';
+import { ROW_ACTIVE_BG, compactBtn, paginationBtn } from './searchDetail/styles';
 
 const COLUMNS_CONFIG: Array<{
   field: string;
@@ -44,9 +48,11 @@ const COLUMNS_CONFIG: Array<{
   defaultHidden?: boolean;
   align?: 'right' | 'center';
   mono?: boolean;
-  kind?: 'date';
+  kind?: 'date' | 'evidence';
 }> = [
   { field: 'epic_mrn', title: 'Epic MRN', width: 80, mono: true },
+  { field: 'patient_mpi', title: 'Patient MPI', width: 90, mono: true, defaultHidden: true },
+  { field: 'accession_number', title: 'Accession', width: 76, mono: true },
   {
     field: 'resolved_epic_mrn',
     title: 'Resolved MRN',
@@ -54,7 +60,6 @@ const COLUMNS_CONFIG: Array<{
     mono: true,
     defaultHidden: true,
   },
-  { field: 'patient_mpi', title: 'Patient MPI', width: 90, mono: true, defaultHidden: true },
   {
     field: 'resolved_mpi',
     title: 'Resolved MPI',
@@ -62,22 +67,49 @@ const COLUMNS_CONFIG: Array<{
     mono: true,
     defaultHidden: true,
   },
-  { field: 'accession_number', title: 'Accession', width: 85, mono: true },
-  { field: 'message_dt', title: 'Date', width: 100, kind: 'date' },
-  { field: 'modality', title: 'Modality', width: 60 },
-  { field: 'service_name', title: 'Service', width: 180 },
+  { field: 'message_dt', title: 'Date', width: 118, kind: 'date' },
+  { field: 'modality', title: 'Modality', width: 84 },
+  { field: 'service_name', title: 'Service', width: 162 },
   { field: 'sending_facility', title: 'Facility', width: 120, defaultHidden: true },
-  { field: 'patient_age', title: 'Age', width: 50, align: 'right' },
-  { field: 'sex', title: 'Sex', width: 40, align: 'center' },
+  { field: 'patient_age', title: 'Age', width: 50, align: 'right', defaultHidden: true },
+  { field: 'sex', title: 'Sex', width: 40, align: 'center', defaultHidden: true },
   { field: 'evidence', title: 'Label', width: 110, defaultHidden: true },
+  { field: 'ev_source', title: 'Matched on', width: 140, kind: 'evidence' },
 ];
 
 type Row = Record<string, unknown>;
+
+// The height toggle resizes the embedding iframe, so it means nothing in a
+// standalone tab.
+const embedded = window.parent !== window;
+
+// Exported with Matched on so the CSV has the phrases, not just the category.
+const EVIDENCE_EXPORT = ['ev_positive_span', 'ev_negative_span', 'ev_dx_codes', 'ev_dx_text'];
 
 const columnHelper = createColumnHelper<Row>();
 
 // Lets the empty table render its headers before the first fetch returns.
 const DEFAULT_COLUMNS = COLUMNS_CONFIG.filter((c) => !c.defaultHidden).map((c) => c.field);
+
+// Least self-evidencing first: a code-only row has no text in the report to
+// check against, while a text match shows the reviewer its own phrase.
+const REVIEW_ORDER = ['diagnosis_code', 'text', 'text_and_code'];
+
+/** The phrase the chip shows, so equal evidence sorts together. */
+function evidenceText(row: Row): string {
+  return String(
+    row.ev_negative_span || row.ev_positive_span || row.ev_dx_codes || '',
+  ).toLowerCase();
+}
+
+function reviewRank(row: Row): number {
+  if (row.ev_negative_span) return 0;
+  // Unknown outranks everything explained: we could not say why it is here.
+  const source = String(row.ev_source ?? '');
+  if (!source) return 1;
+  const i = REVIEW_ORDER.indexOf(source);
+  return 2 + (i === -1 ? REVIEW_ORDER.length : i);
+}
 
 export default function SearchDetailPage() {
   const { searchId = '' } = useParams<{ searchId: string }>();
@@ -89,11 +121,11 @@ export default function SearchDetailPage() {
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const colPickerRef = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
     Object.fromEntries(COLUMNS_CONFIG.filter((c) => c.defaultHidden).map((c) => [c.field, false])),
   );
   const [iframeExpanded, setIframeExpanded] = useState(false);
+  const [review, setReview] = useState<{ id: string; at: number } | null>(null);
   const appliedFiltersKey = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
 
   const meta = useQuery({
@@ -127,19 +159,34 @@ export default function SearchDetailPage() {
   const loadingState = useLoadingProgress(!rowsQ.data && rowsQ.isLoading, fetchProgress);
   const showLoading = loadingState.show;
 
-  // Expansion is keyed by row id (primary_report_identifier); clear on a new
-  // cohort fetch so a fresh search doesn't inherit stale expansions.
+  const actionsQ = useQuery({
+    queryKey: ['search', searchId, 'actions'],
+    queryFn: () => listSearchActions(searchId),
+    enabled: !!searchId,
+  });
+
+  // A fresh cohort must not inherit a selection or an open reader.
   useEffect(() => {
-    setExpanded({});
+    setReview(null);
   }, [rowsQ.data]);
 
-  // Reveal the hidden patient_mpi column for legacy cohorts whose only
-  // identifier is the mpi (rows with an mpi but no epic_mrn).
-  const autoMpiSearchRef = useRef<string | null>(null);
+  // Four columns reads thin for a plain "latest reports" search. Once per
+  // search, so hiding them again survives a refetch.
+  const demographicsFor = useRef<string | null>(null);
+  useEffect(() => {
+    const columns = rowsQ.data?.columns;
+    if (!columns || demographicsFor.current === searchId) return;
+    demographicsFor.current = searchId;
+    const bare = !columns.includes('ev_source');
+    setColumnVisibility((v) => ({ ...v, patient_age: bare, sex: bare }));
+  }, [rowsQ.data, searchId]);
+
+  // MPI-only legacy cohorts would otherwise show no patient ID.
+  const autoMpiFor = useRef<string | null>(null);
   useEffect(() => {
     const rows = rowsQ.data?.rows;
-    if (!rows || autoMpiSearchRef.current === searchId) return;
-    autoMpiSearchRef.current = searchId;
+    if (!rows || autoMpiFor.current === searchId) return;
+    autoMpiFor.current = searchId;
     const blank = (v: unknown) => v == null || v === '';
     if (rows.some((r) => blank(r.epic_mrn) && !blank(r.patient_mpi))) {
       setColumnVisibility((v) => ({ ...v, patient_mpi: true }));
@@ -190,6 +237,33 @@ export default function SearchDetailPage() {
     headerObserver.current.observe(el);
   }, []);
 
+  // Whether the toolbar row below has actually wrapped to a second line -
+  // "Filters"'s marginLeft: auto (below) should only push it rightward on
+  // a single line; once anything has wrapped, every line should just flow
+  // left-aligned, or the auto margin leaves the exact same dead gap on
+  // whichever line "Filters" ends up on that it was meant to avoid.
+  // Detected by comparing children's vertical centers, not raw offsetTop:
+  // the row's alignItems: center means same-line siblings of different
+  // heights (a <select> vs. a small button) naturally land at different
+  // offsetTops, so that comparison alone reported "wrapped" almost always.
+  // Centers coincide for anything actually sharing a line regardless of
+  // height; a second line's centers differ by roughly a full line height.
+  const [toolbarWrapped, setToolbarWrapped] = useState(false);
+  const toolbarObserver = useRef<ResizeObserver | null>(null);
+  const toolbarRowRef = useCallback((el: HTMLDivElement | null) => {
+    toolbarObserver.current?.disconnect();
+    if (!el) return;
+    const measure = () => {
+      const children = Array.from(el.children) as HTMLElement[];
+      const centers = children.map((c) => c.offsetTop + c.offsetHeight / 2);
+      const firstCenter = centers[0];
+      setToolbarWrapped(centers.some((y) => Math.abs(y - firstCenter) > 1));
+    };
+    measure();
+    toolbarObserver.current = new ResizeObserver(measure);
+    toolbarObserver.current.observe(el);
+  }, []);
+
   const dateFields = useMemo(
     () => new Set(COLUMNS_CONFIG.filter((c) => c.kind === 'date').map((c) => c.field)),
     [],
@@ -202,7 +276,17 @@ export default function SearchDetailPage() {
           id: c.field,
           header: c.title,
           size: c.width,
-          cell: (info) => (c.kind === 'date' ? fmtDate(info.getValue()) : fmtCell(info.getValue())),
+          cell: (info) => {
+            if (c.kind === 'date') return fmtDate(info.getValue());
+            if (c.kind === 'evidence') return <EvidenceCell row={info.row.original} />;
+            return fmtCell(info.getValue());
+          },
+          sortingFn:
+            c.kind === 'evidence'
+              ? (a, b) =>
+                  reviewRank(a.original) - reviewRank(b.original) ||
+                  evidenceText(a.original).localeCompare(evidenceText(b.original))
+              : 'auto',
           meta: { align: c.align, mono: c.mono },
         }),
       ),
@@ -220,30 +304,62 @@ export default function SearchDetailPage() {
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, expanded, columnVisibility, pagination },
+    state: { sorting, columnVisibility, pagination },
     onSortingChange: (updater) => {
       setSorting(updater);
       setPagination((p) => ({ ...p, pageIndex: 0 }));
     },
-    onExpandedChange: setExpanded,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
-    // Stable id so an expanded row tracks the right report across
-    // client-side sort/filter/paginate.
+    // Stable id so selection survives client-side sort/filter/paginate.
     getRowId: (row: Row, index) =>
       row.primary_report_identifier != null ? String(row.primary_report_identifier) : String(index),
-    getRowCanExpand: () => true,
     getCoreRowModel: getCoreRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     columnResizeMode: 'onChange',
     defaultColumn: { minSize: 40 },
   });
 
+  // Sorted, not paginated: the reader walks the whole filtered cohort.
+  const queue = table.getSortedRowModel().rows;
+  const pageSize = pagination.pageSize;
+
+  // Position first, since report ids repeat on a row-per-diagnosis cohort;
+  // the id only re-finds the row after a filter reshuffles the queue.
+  const reviewAt =
+    review === null
+      ? -1
+      : queue[review.at]?.id === review.id
+        ? review.at
+        : queue.findIndex((r) => r.id === review.id);
+
+  // Follow the reader, so closing the panel lands where they stopped.
+  const goToReview = (next: number) => {
+    const row = queue[next];
+    if (!row) return;
+    setReview({ id: row.id, at: next });
+    setPagination((p) => ({ ...p, pageIndex: Math.floor(next / pageSize) }));
+  };
+
   const total = data.length;
   const lastPage = table.getPageCount() || 1;
   const pageIndex = table.getState().pagination.pageIndex;
+
+  // Derived from `data` (the already-filtered dataset), not
+  // `table.getPrePaginationRowModel()`: useReactTable returns the same
+  // table-instance reference across renders (it mutates in place), so
+  // memoizing on `[table]` would only ever run once and freeze at whatever
+  // was loaded on the first render. Sorting doesn't change which rows are
+  // present, only their order, so `data` is an equivalent - and reactive -
+  // source for this set.
+  const visibleReportIds = useMemo(
+    () =>
+      data
+        .map((row) => row.primary_report_identifier)
+        .filter((id): id is string => typeof id === 'string'),
+    [data],
+  );
 
   return (
     <div
@@ -343,185 +459,190 @@ export default function SearchDetailPage() {
               narrow the cohort.
             </div>
           )}
-          <div
-            style={{
-              overflowX: 'auto',
-              overflowY: 'auto',
-              flex: '1 1 auto',
-              minHeight: 0,
-              position: 'relative',
-              background: 'var(--rv-surface)',
-              border: '1px solid var(--rv-border)',
-              borderRadius: 4,
-            }}
-          >
-            <table
+          {/* Containing block for the review panel. The box inside scrolls,
+              so anchoring to it would scroll the panel away with the rows. */}
+          <div style={{ position: 'relative', flex: '1 1 auto', minHeight: 0 }}>
+            <div
               style={{
-                borderCollapse: 'collapse',
-                fontSize: '0.85rem',
-                width: '100%',
-                // Fixed layout so column-resize widths actually render.
-                tableLayout: 'fixed',
+                position: 'absolute',
+                inset: 0,
+                overflowX: 'hidden',
+                overflowY: 'auto',
+                background: 'var(--rv-surface)',
+                border: '1px solid var(--rv-border)',
+                borderRadius: 4,
               }}
             >
-              <thead>
-                {table.getHeaderGroups().map((hg, hgIndex) => (
-                  <tr key={hg.id} ref={hgIndex === 0 ? headerRowRef : undefined}>
-                    {hg.headers.map((header) => {
-                      const colMeta = header.column.columnDef.meta as
-                        | { align?: 'right' | 'center' }
-                        | undefined;
-                      const sorted = header.column.getIsSorted();
-                      const isResizing = header.column.getIsResizing();
-                      return (
-                        <th
-                          key={header.id}
-                          onClick={header.column.getToggleSortingHandler()}
-                          style={{
-                            textAlign: colMeta?.align ?? 'left',
-                            padding: '0.35rem 0.45rem',
-                            fontSize: '0.78rem',
-                            fontWeight: 600,
-                            color: 'var(--rv-muted)',
-                            background: 'var(--rv-surface-2)',
-                            // border-collapse: collapse + sticky drops
-                            // border-bottom on scroll; box-shadow survives.
-                            boxShadow: 'inset 0 -1px 0 var(--rv-border)',
-                            whiteSpace: 'nowrap',
-                            width: header.getSize(),
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                            position: 'sticky',
-                            top: 0,
-                            zIndex: 1,
-                          }}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {sorted === 'asc' ? ' ↑' : sorted === 'desc' ? ' ↓' : ''}
-                          <div
-                            className="scout-col-resize"
-                            onMouseDown={header.getResizeHandler()}
-                            onTouchStart={header.getResizeHandler()}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              position: 'absolute',
-                              right: 0,
-                              top: 0,
-                              bottom: 0,
-                              width: 8,
-                              cursor: 'col-resize',
-                              userSelect: 'none',
-                              touchAction: 'none',
-                              ...(isResizing ? { borderRight: '2px solid var(--rv-accent)' } : {}),
-                            }}
-                          />
-                        </th>
-                      );
-                    })}
-                  </tr>
-                ))}
-                {!!rowsQ.data && (
-                  <ColumnProfileRow
-                    columns={table.getVisibleLeafColumns()}
-                    rows={data}
-                    dateFields={dateFields}
-                    stickyTop={headerHeight}
-                  />
-                )}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map((row) => {
-                  const isExpanded = row.getIsExpanded();
-                  return (
-                    <React.Fragment key={row.id}>
-                      <tr
-                        className={isExpanded ? undefined : 'scout-row'}
-                        onClick={() => row.toggleExpanded()}
-                        style={{
-                          borderBottom: '1px solid var(--rv-border)',
-                          cursor: 'pointer',
-                          background: isExpanded ? ROW_ACTIVE_BG : 'transparent',
-                        }}
-                      >
-                        {row.getVisibleCells().map((cell) => {
-                          const colMeta = cell.column.columnDef.meta as
-                            | { align?: 'right' | 'center'; mono?: boolean }
-                            | undefined;
-                          return (
-                            <td
-                              key={cell.id}
-                              style={{
-                                padding: '0.3rem 0.45rem',
-                                fontSize: '0.78rem',
-                                textAlign: colMeta?.align ?? 'left',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                fontFamily: colMeta?.mono
-                                  ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
-                                  : 'inherit',
-                              }}
-                            >
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                      {isExpanded && (
-                        <tr style={{ background: DETAIL_ZONE_BG }}>
-                          <td colSpan={row.getVisibleCells().length} style={{ padding: 0 }}>
-                            <div style={{ padding: '0.75rem 1rem' }}>
-                              <RowDetail
-                                row={row.original}
-                                highlightTerms={[
-                                  ...(meta.data?.match_terms ?? []),
-                                  ...(appliedFilters.service_name
-                                    ? [appliedFilters.service_name]
-                                    : []),
-                                ]}
-                                highlightDiagnosis={meta.data?.match_diagnoses ?? []}
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-                {table.getRowModel().rows.length === 0 && !!rowsQ.data && (
-                  <tr>
-                    <td
-                      colSpan={table.getVisibleFlatColumns().length}
-                      style={{ padding: '1rem', textAlign: 'center', color: 'var(--rv-muted)' }}
-                    >
-                      {activeFilterCount(appliedFilters) > 0
-                        ? 'No rows match your filters.'
-                        : 'No reports in this search.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            {!rowsQ.data && !cancelled && !rowsQ.error && (
-              <LoadingSpinner show={showLoading} fill />
-            )}
-            {!rowsQ.data && cancelled && (
-              <div
+              <table
                 style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--rv-muted)',
-                  fontSize: '0.8rem',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.85rem',
+                  width: '100%',
+                  // Fixed layout so column-resize widths actually render.
+                  tableLayout: 'fixed',
                 }}
               >
-                Query cancelled. Retry to load these reports.
-              </div>
+                <thead>
+                  {table.getHeaderGroups().map((hg, hgIndex) => (
+                    <tr key={hg.id} ref={hgIndex === 0 ? headerRowRef : undefined}>
+                      {hg.headers.map((header) => {
+                        const colMeta = header.column.columnDef.meta as
+                          | { align?: 'right' | 'center' }
+                          | undefined;
+                        const sorted = header.column.getIsSorted();
+                        const isResizing = header.column.getIsResizing();
+                        return (
+                          <th
+                            key={header.id}
+                            onClick={header.column.getToggleSortingHandler()}
+                            style={{
+                              textAlign: colMeta?.align ?? 'left',
+                              padding: '0.35rem 0.45rem',
+                              fontSize: '0.78rem',
+                              fontWeight: 600,
+                              color: 'var(--rv-muted)',
+                              background: 'var(--rv-surface-2)',
+                              // border-collapse: collapse + sticky drops
+                              // border-bottom on scroll; box-shadow survives.
+                              boxShadow: 'inset 0 -1px 0 var(--rv-border)',
+                              whiteSpace: 'nowrap',
+                              // Shares of the table, so columns shrink to fit instead of scrolling.
+                              width: `${(header.getSize() / table.getTotalSize()) * 100}%`,
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 1,
+                            }}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {sorted === 'asc' ? ' ↑' : sorted === 'desc' ? ' ↓' : ''}
+                            <div
+                              className="scout-col-resize"
+                              onMouseDown={header.getResizeHandler()}
+                              onTouchStart={header.getResizeHandler()}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: 'absolute',
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: 8,
+                                cursor: 'col-resize',
+                                userSelect: 'none',
+                                touchAction: 'none',
+                                ...(isResizing
+                                  ? { borderRight: '2px solid var(--rv-accent)' }
+                                  : {}),
+                              }}
+                            />
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                  {!!rowsQ.data && (
+                    <ColumnProfileRow
+                      columns={table.getVisibleLeafColumns()}
+                      rows={data}
+                      dateFields={dateFields}
+                      stickyTop={headerHeight}
+                    />
+                  )}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.map((row, onPage) => {
+                    const at = pageIndex * pageSize + onPage;
+                    const active = reviewAt === at;
+                    return (
+                      <React.Fragment key={row.id}>
+                        <tr
+                          className={active ? undefined : 'scout-row'}
+                          onClick={() => setReview({ id: row.id, at })}
+                          style={{
+                            borderBottom: '1px solid var(--rv-border)',
+                            cursor: 'pointer',
+                            background: active ? ROW_ACTIVE_BG : 'transparent',
+                          }}
+                        >
+                          {row.getVisibleCells().map((cell) => {
+                            const colMeta = cell.column.columnDef.meta as
+                              | { align?: 'right' | 'center'; mono?: boolean }
+                              | undefined;
+                            return (
+                              <td
+                                key={cell.id}
+                                style={{
+                                  padding: '0.3rem 0.45rem',
+                                  fontSize: '0.78rem',
+                                  textAlign: colMeta?.align ?? 'left',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  fontFamily: colMeta?.mono
+                                    ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
+                                    : 'inherit',
+                                }}
+                              >
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
+                  {table.getRowModel().rows.length === 0 && !!rowsQ.data && (
+                    <tr>
+                      <td
+                        colSpan={table.getVisibleFlatColumns().length}
+                        style={{ padding: '1rem', textAlign: 'center', color: 'var(--rv-muted)' }}
+                      >
+                        {anyFilterActive(appliedFilters)
+                          ? 'No rows match your filters.'
+                          : 'No reports in this search.'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {!rowsQ.data && !cancelled && !rowsQ.error && (
+                <LoadingSpinner show={showLoading} fill />
+              )}
+              {!rowsQ.data && cancelled && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--rv-muted)',
+                    fontSize: '0.8rem',
+                  }}
+                >
+                  Query cancelled. Retry to load these reports.
+                </div>
+              )}
+            </div>
+            {reviewAt >= 0 && (
+              <ReviewPanel
+                queue={queue.map((r) => r.original)}
+                index={reviewAt}
+                onIndex={goToReview}
+                onClose={() => setReview(null)}
+              />
             )}
           </div>
+          {hasEvidence(rowsQ.data?.rows ?? []) && (
+            <EvidenceFilterChips
+              rows={rowsQ.data?.rows ?? []}
+              filters={appliedFilters}
+              onChange={setAppliedFilters}
+            />
+          )}
           <div
+            ref={toolbarRowRef}
             style={{
               display: 'flex',
               gap: '0.5rem',
@@ -529,6 +650,9 @@ export default function SearchDetailPage() {
               marginTop: '0.75rem',
               fontSize: '0.85rem',
               flex: '0 0 auto',
+              // Wrap is the fallback once content genuinely doesn't fit one
+              // line - without it, buttons overflow past the window edge
+              // instead of reaching a second line.
               flexWrap: 'wrap',
             }}
           >
@@ -536,29 +660,46 @@ export default function SearchDetailPage() {
               type="button"
               onClick={() => table.previousPage()}
               disabled={!rowsQ.data || !table.getCanPreviousPage()}
-              style={paginationBtn}
+              className="scout-toolbar-btn"
+              style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Prev
             </button>
-            <span style={{ whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                fontVariantNumeric: 'tabular-nums',
+                minWidth: 46,
+                textAlign: 'center',
+              }}
+            >
               {pageIndex + 1} / {lastPage}
             </span>
             <button
               type="button"
               onClick={() => table.nextPage()}
               disabled={!rowsQ.data || !table.getCanNextPage()}
-              style={paginationBtn}
+              className="scout-toolbar-btn"
+              style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Next
             </button>
-            <span style={{ marginLeft: '0.4rem', color: 'var(--rv-muted)', whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                marginLeft: '0.4rem',
+                color: 'var(--rv-muted)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
               Per page:
             </span>
             <select
               value={pagination.pageSize}
               onChange={(e) => table.setPageSize(Number(e.target.value))}
               disabled={!rowsQ.data}
-              style={{ fontSize: '0.85rem' }}
+              style={{ fontSize: '0.85rem', flexShrink: 0 }}
             >
               <option value={50}>50</option>
               <option value={100}>100</option>
@@ -570,6 +711,8 @@ export default function SearchDetailPage() {
                 color: 'var(--rv-muted)',
                 fontSize: '0.75rem',
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
+                fontVariantNumeric: 'tabular-nums',
               }}
             >
               {meta.error
@@ -592,9 +735,9 @@ export default function SearchDetailPage() {
                 borderTopColor: '#ea580c',
                 animation: 'scoutSpin 0.8s linear infinite',
                 display: 'inline-block',
+                flexShrink: 0,
               }}
             />
-            <span style={{ flex: 1 }} />
             <button
               type="button"
               disabled={!rowsQ.data}
@@ -605,9 +748,24 @@ export default function SearchDetailPage() {
                       ...paginationBtn,
                       background: 'var(--rv-accent)',
                       color: '#fff',
-                      borderColor: 'var(--rv-accent)',
+                      flexShrink: 0,
+                      marginLeft: toolbarWrapped ? undefined : 'auto',
                     }
-                  : paginationBtn
+                  : {
+                      ...paginationBtn,
+                      flexShrink: 0,
+                      marginLeft: toolbarWrapped ? undefined : 'auto',
+                    }
+              }
+              // The active/accent style keeps paginationBtn's own border
+              // (not accent-colored, so it's an actual visible outline
+              // against the blue fill) and gets a border/brightness-only
+              // hover variant - changing the background would wash out the
+              // white text.
+              className={
+                activeFilterCount(appliedFilters) > 0
+                  ? 'scout-toolbar-btn-accent'
+                  : 'scout-toolbar-btn'
               }
               title="Filter rows"
             >
@@ -615,11 +773,12 @@ export default function SearchDetailPage() {
                 ? `Filters (${activeFilterCount(appliedFilters)})`
                 : 'Filters'}
             </button>
-            <div ref={colPickerRef} style={{ position: 'relative' }}>
+            <div ref={colPickerRef} style={{ position: 'relative', flexShrink: 0 }}>
               <button
                 type="button"
                 disabled={!rowsQ.data}
                 onClick={() => setColPickerOpen((v) => !v)}
+                className="scout-toolbar-btn"
                 style={paginationBtn}
                 title="Show/hide columns"
               >
@@ -664,57 +823,64 @@ export default function SearchDetailPage() {
                 </div>
               )}
             </div>
-            {(meta.data?.sql_explanation || meta.data?.sql) && (
+            <ActionsToolbar
+              searchId={searchId}
+              visibleReportIds={visibleReportIds}
+              disabled={!rowsQ.data}
+              // Explain Search's per-search visibility (nothing to explain
+              // yet) is a page-level concern, not something the backend
+              // catalog encodes.
+              actions={(actionsQ.data ?? []).filter(
+                (a) => a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
+              )}
+              clientHandlers={{
+                'explain-search': () => setSqlModalOpen(true),
+                'download-csv': () => {
+                  // Always include the unique id so exported rows stay
+                  // identifiable even if the user hid the id/accession
+                  // columns.
+                  const cols = table.getVisibleLeafColumns().map((c) => c.id);
+                  if (!cols.includes('primary_report_identifier')) {
+                    cols.unshift('primary_report_identifier');
+                  }
+                  if (cols.includes('ev_source')) {
+                    const present = new Set(rowsQ.data?.columns ?? []);
+                    cols.push(...EVIDENCE_EXPORT.filter((f) => present.has(f)));
+                  }
+                  downloadCsv(
+                    `${searchId}.csv`,
+                    cols,
+                    table.getPrePaginationRowModel().rows.map((r) => r.original),
+                  );
+                },
+              }}
+            />
+            {embedded && (
               <button
                 type="button"
-                onClick={() => setSqlModalOpen(true)}
-                style={paginationBtn}
-                title="See what this search matches and the underlying SQL"
+                onClick={() => {
+                  const next = !iframeExpanded;
+                  setIframeExpanded(next);
+                  setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
+                }}
+                title={
+                  iframeExpanded
+                    ? 'Shrink viewer back to compact size'
+                    : 'Grow viewer for more room'
+                }
+                aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
+                className="scout-toolbar-btn"
+                style={{
+                  ...paginationBtn,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0.2rem 0.35rem',
+                  flexShrink: 0,
+                }}
               >
-                Explain Search
+                {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                // Always include the unique id so exported rows stay identifiable
-                // even if the user hid the id/accession columns.
-                const cols = table.getVisibleLeafColumns().map((c) => c.id);
-                if (!cols.includes('primary_report_identifier')) {
-                  cols.unshift('primary_report_identifier');
-                }
-                downloadCsv(
-                  `${searchId}.csv`,
-                  cols,
-                  table.getPrePaginationRowModel().rows.map((r) => r.original),
-                );
-              }}
-              disabled={!rowsQ.data}
-              style={paginationBtn}
-              title="Download the current filtered and sorted rows as CSV"
-            >
-              Download CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const next = !iframeExpanded;
-                setIframeExpanded(next);
-                setIframeHeight(next ? HEIGHT_EXPANDED : HEIGHT_COMPACT);
-              }}
-              title={
-                iframeExpanded ? 'Shrink viewer back to compact size' : 'Grow viewer for more room'
-              }
-              aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
-              style={{
-                ...paginationBtn,
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '0.2rem 0.35rem',
-              }}
-            >
-              {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}
-            </button>
           </div>
         </div>
       }
@@ -722,8 +888,12 @@ export default function SearchDetailPage() {
         <ExplainSqlModal
           explanation={meta.data?.sql_explanation ?? ''}
           sql={meta.data?.sql ?? ''}
-          highlightTerms={meta.data?.match_terms ?? []}
-          highlightDiagnosis={meta.data?.match_diagnoses ?? []}
+          executedSql={meta.data?.executed_sql ?? ''}
+          rows={rowsQ.data?.rows ?? []}
+          onFilter={(patch) => {
+            setAppliedFilters((f) => ({ ...f, ...patch }));
+            setSqlModalOpen(false);
+          }}
           onClose={() => setSqlModalOpen(false)}
         />
       )}

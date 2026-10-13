@@ -41,6 +41,22 @@ class ClientDisconnected(Exception):
     """The HTTP caller went away while its query was still running."""
 
 
+# Failures the added columns cannot cause, so a plain rerun would fail too.
+_NOT_RETRYABLE = frozenset(
+    {
+        "PERMISSION_DENIED",
+        "USER_CANCELED",
+        "ADMINISTRATIVELY_KILLED",
+        "ADMINISTRATIVELY_PREEMPTED",
+    }
+)
+
+
+def is_retryable(exc: BaseException) -> bool:
+    """Whether rerunning without the evidence or highlight columns could succeed."""
+    return getattr(exc, "error_name", None) not in _NOT_RETRYABLE
+
+
 # Separate from asyncio's default pool, which the scans themselves occupy: a
 # cancel queued behind them would wait on the query it is meant to end.
 _CANCEL_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="trino-cancel")

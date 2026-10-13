@@ -14,6 +14,7 @@ ghcr.io/washu-tag/launchpad
 ghcr.io/washu-tag/superset
 ghcr.io/washu-tag/keycloak
 ghcr.io/washu-tag/report-viewer
+ghcr.io/washu-tag/xnat-explore-poc
 ghcr.io/washu-tag/keycloak-fragment-reconciler
 
 # --- charts: repo = ghcr.io/washu-tag/charts/<name> ---

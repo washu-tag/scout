@@ -64,6 +64,8 @@ spec:
               value: {{ join "," .Values.tierRoles | quote }}
             - name: KEYCLOAK_FRAGMENT_RECONCILER_WATCHED_NAMESPACES
               value: {{ join "," .Values.watchedNamespaces | quote }}
+            - name: KEYCLOAK_FRAGMENT_RECONCILER_OFFERED_CLIENT_SCOPES
+              value: {{ join "," .Values.offeredClientScopes | quote }}
             - name: KEYCLOAK_FRAGMENT_RECONCILER_RESYNC_SECONDS
               value: {{ .Values.reconcile.resyncSeconds | quote }}
             - name: KEYCLOAK_FRAGMENT_RECONCILER_ORPHAN_GRACE_SECONDS

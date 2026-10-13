@@ -10,8 +10,8 @@ Hive settings.
 Run from extractor/hl7-transformer. Spark/Delta versions are NOT pinned here — they come
 from pyproject.toml (the single Python-side source of truth), so these tests track a
 Spark upgrade automatically. Locally select a Spark-compatible interpreter + JVM: Spark
-4.1.x runs on Python 3.10–3.13 and Java 17 or 21. Any supported pair works; the CI job
-pins Python 3.10 to match the runtime image (spark:4.1.1-...-python3 ships Python 3.10),
+4.2.x runs on Python 3.10–3.14 and Java 17 or 21. Any supported pair works; the CI job
+pins Python 3.10 to match the runtime image (spark:4.2.0-...-python3 ships Python 3.10),
 so the tests exercise the interpreter that actually ships — matters for version-sensitive
 behavior like concurrent.futures TimeoutError, which is a distinct class before 3.11:
 

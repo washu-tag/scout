@@ -1,0 +1,78 @@
+# Site root 2 of 2: the artifact's shared DAG (./flux) and the on-prem mode set
+# (./modes/on-prem). Both substitute from cluster-vars, which resolves the one ${var} in the
+# Flux files themselves (keycloak-operator's targetNamespace). Siblings of
+# scout-site-source, not children: with wait, a parent that applies a child that dependsOn
+# it deadlocks. The patches are CI's: a 1m retryInterval (the children default to their 30m
+# interval after a failed health check), and the ingest leg suspends what the extractor's
+# dependsOn closure doesn't reach (check_legs.py keeps these lists in step with the DAG).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: apps-scout
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  path: ./flux
+  prune: true
+  wait: false # the children carry their own wait and health checks
+  timeout: 5m
+  dependsOn:
+    - name: scout-site-source
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  patches:
+    - target:
+        kind: Kustomization
+      patch: |
+        - op: add
+          path: /spec/retryInterval
+          value: 1m
+    - target:
+        kind: Kustomization
+        name: ^(valkey|launchpad|keycloak-operator|keycloak-instance|keycloak-realm|keycloak-fragment-reconciler|opa|trino-ro|superset-server|superset-dashboards)$
+      patch: |
+        - op: add
+          path: /spec/suspend
+          value: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: apps-scout-on-prem
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  path: ./modes/on-prem
+  prune: true
+  wait: false
+  timeout: 5m
+  dependsOn:
+    - name: scout-site-source
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  patches:
+    - target:
+        kind: Kustomization
+      patch: |
+        - op: add
+          path: /spec/retryInterval
+          value: 1m
+    - target:
+        kind: Kustomization
+        name: ^(oauth2-proxy|edge-on-prem)$
+      patch: |
+        - op: add
+          path: /spec/suspend
+          value: true

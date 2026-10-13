@@ -35,3 +35,21 @@ vulnerabilities:
   # runtime app deps. Drop when a pip release re-vendors the fixes.
   - id: CVE-2025-47273 # setuptools 70.3.0 (vendored in pip)
   - id: GHSA-6v7p-g79w-8964 # msgpack 1.1.2 (vendored in pip)
+  # pip's embedded SBOM reports this vendor without a filesystem path.
+  # Keep the application urllib3 floor in the Dockerfile at >=2.8.0.
+  - id: CVE-2026-97687
+    purls:
+      - pkg:pypi/urllib3@2.7.0
+    expired_at: 2026-12-01
+    statement: >-
+      pip 26.2.1 vendors urllib3 2.7.0. Scout uses an HTTPS package index,
+      not the advisory's separately configured HTTPS forwarding proxy.
+      Accept residual risk for user-supplied proxy settings until pip re-vendors.
+  - id: CVE-2026-97689
+    purls:
+      - pkg:pypi/urllib3@2.7.0
+    expired_at: 2026-12-01
+    statement: >-
+      pip 26.2.1 vendors urllib3 2.7.0. A malicious package server can exhaust
+      a pip process through an unbounded chunk-size line. Accept this install-time
+      DoS risk temporarily; remove when released pip vendors urllib3 >=2.8.0.

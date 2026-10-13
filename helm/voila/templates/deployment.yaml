@@ -67,6 +67,11 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
           env:
+            # Fail startup on an error in /etc/jupyter/voila.py. Traitlets otherwise
+            # logs it and serves without voila_runtime, so every playbook runs as
+            # anonymous behind a Ready pod.
+            - name: TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR
+              value: "1"
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}

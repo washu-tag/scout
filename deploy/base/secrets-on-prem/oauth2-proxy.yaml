@@ -1,0 +1,22 @@
+# oauth2-proxy (on-prem only). Chart-owned under Ansible, hence keep.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth2-proxy
+  namespace: ${oauth2_proxy_namespace}
+  annotations:
+    helm.sh/resource-policy: keep
+type: Opaque
+stringData:
+  client-id: oauth2-proxy
+  client-secret: ${sq}${keycloak_oauth2_proxy_client_secret}${sq}
+  cookie-secret: ${sq}${oauth2_proxy_cookie_secret}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth2-proxy-redis
+  namespace: ${oauth2_proxy_namespace}
+type: Opaque
+stringData:
+  redis-password: ${sq}${valkey_password}${sq}

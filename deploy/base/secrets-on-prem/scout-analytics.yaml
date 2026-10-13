@@ -1,0 +1,72 @@
+# trino-ro, superset (+ dashboards) and the OPA bundle reader.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: trino-s3
+  namespace: ${scout_analytics_namespace}
+type: Opaque
+stringData:
+  S3_ACCESS_KEY: ${sq}${s3_lake_reader}${sq}
+  S3_SECRET_KEY: ${sq}${s3_lake_reader_secret}${sq}
+---
+# KEYSTORE_PASSWORD encrypts the issued trino-tls keystore.p12; changing it needs a re-issue.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: trino-authz-env
+  namespace: ${scout_analytics_namespace}
+type: Opaque
+stringData:
+  KEYSTORE_PASSWORD: ${sq}${trino_keystore_password}${sq}
+  INTERNAL_SHARED_SECRET: ${sq}${trino_internal_shared_secret}${sq}
+---
+# Read whole via envFromSecret by the superset chart and the scout-dashboards import Job.
+# Chart-owned under Ansible, hence keep.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: superset-env
+  namespace: ${scout_analytics_namespace}
+  annotations:
+    helm.sh/resource-policy: keep
+type: Opaque
+stringData:
+  SUPERSET_SECRET_KEY: ${sq}${superset_secret}${sq}
+  DB_HOST: ${sq}${postgres_host}${sq}
+  DB_PORT: ${sq}${db_port}${sq}
+  DB_USER: superset
+  DB_PASS: ${sq}${superset_postgres_password}${sq}
+  DB_NAME: superset
+  REDIS_HOST: ${sq}valkey.${valkey_namespace}${sq}
+  REDIS_PORT: '6379'
+  REDIS_PROTO: redis
+  REDIS_PASSWORD: ${sq}${valkey_password}${sq}
+  REDIS_DB: '0'
+  REDIS_CELERY_DB: '0'
+  KEYCLOAK_SUPERSET_CLIENT_SECRET: ${sq}${keycloak_superset_client_secret}${sq}
+  KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET: ${sq}${keycloak_superset_svc_client_secret}${sq}
+  KEYCLOAK_SUPERSET_SVC_CLIENT_ID: superset_svc
+  KEYCLOAK_TOKEN_URL: ${sq}${keycloak_internal_url}/realms/${keycloak_realm_name}/protocol/openid-connect/token${sq}
+  TRINO_CA_CERT: /etc/trino-ca/ca.crt
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: superset-valkey-auth
+  namespace: ${scout_analytics_namespace}
+type: Opaque
+stringData:
+  REDIS_PASSWORD: ${sq}${valkey_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opa-bundle-reader
+  namespace: ${scout_analytics_namespace}
+  labels:
+    app: opa-trino
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: ${sq}${s3_opa_bundle_reader}${sq}
+  AWS_SECRET_ACCESS_KEY: ${sq}${s3_opa_bundle_reader_secret}${sq}
+  AWS_REGION: ${sq}${s3_region}${sq}

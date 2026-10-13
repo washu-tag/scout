@@ -1,0 +1,52 @@
+# extractor, hl7-transformer, temporal and trino-rw. The DB coordinates are cluster-vars;
+# they are wrapped too, so DB_PORT stays the string "5432".
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: ${scout_extractor_namespace}
+type: Opaque
+stringData:
+  DB_HOST: ${sq}${postgres_host}${sq}
+  DB_PORT: ${sq}${db_port}${sq}
+  DB_NAME: ${sq}${ingest_postgres_table_name}${sq}
+  DB_USER: ${sq}${postgres_user}${sq}
+  DB_PASSWORD: ${sq}${postgres_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-secret
+  namespace: ${scout_extractor_namespace}
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: ${sq}${s3_lake_writer}${sq}
+  AWS_SECRET_ACCESS_KEY: ${sq}${s3_lake_writer_secret}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: temporal-db-secret
+  namespace: ${scout_extractor_namespace}
+type: Opaque
+stringData:
+  password: ${sq}${temporal_postgres_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: temporal-web-oidc
+  namespace: ${scout_extractor_namespace}
+type: Opaque
+stringData:
+  client-secret: ${sq}${keycloak_temporal_client_secret}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: trino-rw-s3
+  namespace: ${scout_extractor_namespace}
+type: Opaque
+stringData:
+  S3_ACCESS_KEY: ${sq}${s3_lake_writer}${sq}
+  S3_SECRET_KEY: ${sq}${s3_lake_writer_secret}${sq}

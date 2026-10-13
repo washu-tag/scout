@@ -1,0 +1,179 @@
+# CNPG superuser + managed-role passwords, keycloak, valkey, launchpad. CNPG requires the
+# superuser username to be exactly postgres and each role Secret's username to equal its
+# managed.roles[].name (base/postgres/cluster); cnpg.io/reload applies a change at once.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: superuser-secret
+  namespace: ${postgres_cluster_namespace}
+  labels:
+    cnpg.io/reload: 'true'
+type: kubernetes.io/basic-auth
+stringData:
+  username: postgres
+  password: ${sq}${postgres_superuser_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cnpg-role-hive
+  namespace: ${postgres_cluster_namespace}
+  labels:
+    cnpg.io/reload: 'true'
+type: kubernetes.io/basic-auth
+stringData:
+  username: hive
+  password: ${sq}${hive_postgres_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cnpg-role-hive-readonly
+  namespace: ${postgres_cluster_namespace}
+  labels:
+    cnpg.io/reload: 'true'
+type: kubernetes.io/basic-auth
+stringData:
+  username: hive_readonly
+  password: ${sq}${hive_readonly_postgres_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cnpg-role-keycloak
+  namespace: ${postgres_cluster_namespace}
+  labels:
+    cnpg.io/reload: 'true'
+type: kubernetes.io/basic-auth
+stringData:
+  username: keycloak
+  password: ${sq}${keycloak_postgres_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cnpg-role-superset
+  namespace: ${postgres_cluster_namespace}
+  labels:
+    cnpg.io/reload: 'true'
+type: kubernetes.io/basic-auth
+stringData:
+  username: superset
+  password: ${sq}${superset_postgres_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cnpg-role-extractor
+  namespace: ${postgres_cluster_namespace}
+  labels:
+    cnpg.io/reload: 'true'
+type: kubernetes.io/basic-auth
+stringData:
+  username: ${sq}${postgres_user}${sq}
+  password: ${sq}${postgres_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cnpg-role-temporal
+  namespace: ${postgres_cluster_namespace}
+  labels:
+    cnpg.io/reload: 'true'
+type: kubernetes.io/basic-auth
+stringData:
+  username: temporal
+  password: ${sq}${temporal_postgres_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-db-secret
+  namespace: ${keycloak_namespace}
+type: Opaque
+stringData:
+  username: keycloak
+  password: ${sq}${keycloak_postgres_password}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-admin-secret
+  namespace: ${keycloak_namespace}
+type: Opaque
+stringData:
+  username: ${sq}${keycloak_bootstrap_admin_user}${sq}
+  password: ${sq}${keycloak_bootstrap_admin_password}${sq}
+---
+# Keys are the $(env:...) names the realm var-substitutes. The IdP and xnat keys default
+# to empty: the realm only references them when their cluster-var flag is "true".
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-client-secrets
+  namespace: ${keycloak_namespace}
+type: Opaque
+stringData:
+  oauth2_proxy: ${sq}${keycloak_oauth2_proxy_client_secret}${sq}
+  superset: ${sq}${keycloak_superset_client_secret}${sq}
+  superset_svc: ${sq}${keycloak_superset_svc_client_secret}${sq}
+  jupyterhub: ${sq}${keycloak_jupyterhub_client_secret}${sq}
+  grafana: ${sq}${keycloak_grafana_client_secret}${sq}
+  temporal: ${sq}${keycloak_temporal_client_secret}${sq}
+  launchpad_client: ${sq}${keycloak_launchpad_client_secret}${sq}
+  minio: ${sq}${keycloak_minio_client_secret}${sq}
+  open_webui: ${sq}${keycloak_open_webui_client_secret}${sq}
+  voila_svc: ${sq}${keycloak_voila_svc_client_secret}${sq}
+  report_viewer_svc: ${sq}${keycloak_report_viewer_svc_client_secret}${sq}
+  fragment_reconciler_svc: ${sq}${keycloak_fragment_reconciler_svc_client_secret}${sq}
+  xnat: ${sq}${keycloak_xnat_client_secret:=}${sq}
+  github_client_id: ${sq}${keycloak_gh_client_id:=}${sq}
+  github_client_secret: ${sq}${keycloak_gh_client_secret:=}${sq}
+  microsoft_client_id: ${sq}${keycloak_microsoft_client_id:=}${sq}
+  microsoft_client_secret: ${sq}${keycloak_microsoft_client_secret:=}${sq}
+  microsoft_tenant_id: ${sq}${keycloak_microsoft_tenant_id:=}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opa-bundle-writer
+  namespace: ${keycloak_namespace}
+type: Opaque
+stringData:
+  access-key: ${sq}${s3_opa_bundle_writer}${sq}
+  secret-key: ${sq}${s3_opa_bundle_writer_secret}${sq}
+---
+# password-file is the exporter's JSON form, kept byte-identical to the Ansible role.
+# kustomize re-emits it single-quoted, so the value sits inside quotes after substitution.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: valkey-auth
+  namespace: ${valkey_namespace}
+type: Opaque
+stringData:
+  password: ${sq}${valkey_password}${sq}
+  password-file: '{"redis://localhost:6379": "${valkey_password}"}'
+---
+# The Ansible-installed chart owns this name; keep stops the Flux upgrade deleting it.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: launchpad-keycloak-secret
+  namespace: ${scout_core_namespace}
+  annotations:
+    helm.sh/resource-policy: keep
+type: Opaque
+stringData:
+  client-secret: ${sq}${keycloak_launchpad_client_secret}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: launchpad-nextauth-secret
+  namespace: ${scout_core_namespace}
+  annotations:
+    helm.sh/resource-policy: keep
+type: Opaque
+stringData:
+  secret: ${sq}${launchpad_nextauth_secret}${sq}

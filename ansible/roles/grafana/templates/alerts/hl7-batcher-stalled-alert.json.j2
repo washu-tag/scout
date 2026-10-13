@@ -76,7 +76,8 @@
           "for": "10m",
           "annotations": {
             "description": "The HL7 listener is receiving messages but the batcher has consumed none for 30 minutes. Kafka lag is building; un-batched messages risk aging out of retention before reaching MinIO bronze.",
-            "summary": "HL7 batcher not consuming while the listener is receiving (Kafka lag building).",
+            "summary": "HL7 batcher not consuming while the listener is receiving (Kafka lag building, see runbook).",
+            "runbook_url": "https://github.com/washu-tag/scout/blob/main/ansible/roles/hl7-listener/README.md#hl7-batcher-stalled-kafka-lag-building",
             "URL": "[% server_hostname %]"
           },
           "labels": {},

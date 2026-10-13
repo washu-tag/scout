@@ -8,9 +8,8 @@ USER ${NB_UID}
 
 # Platform packages + Jupyter extensions via mamba. Everything else
 # (torch, transformers, scikit-learn, etc.) is user-installed via the
-# package proxy. gitpython, jupyterlab, jupyter_server, and pyjwt are pinned above
-# the scipy-notebook base to clear Trivy findings; drop the pins once a
-# newer base ships them.
+# package proxy. Security floors override vulnerable base packages; drop them
+# once a newer scipy-notebook base includes these fixes.
 RUN mamba install -y -n base \
     trino-python-client \
     voila \
@@ -19,7 +18,10 @@ RUN mamba install -y -n base \
     jupyter-resource-usage \
     nb_conda_kernels \
     'gitpython>=3.1.59' \
-    'jupyterlab>=4.6.2' \
+    'jupyterlab>=4.6.4' \
+    'notebook>=7.6.3' \
+    'urllib3>=2.8.0' \
+    'tornado>=6.5.9' \
     'jupyter_server>=2.21.0' \
     'pyjwt>=2.14.0' \
     && mamba clean -afy \

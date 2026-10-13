@@ -4,7 +4,7 @@ voila_runtime and playbook_helpers import third-party modules
 (voila, jupyter_server, trino) that aren't installed in the unit-test
 environment - voila in particular pulls a large dependency tree. Stub
 them in sys.modules before the helpers are imported so the tests need
-nothing but pytest.
+only pytest and pyjwt[crypto] (voila_runtime validates JWTs).
 
 Run with: cd helm/voila && PYTHONPATH=files pytest tests/ -v
 """
@@ -70,6 +70,29 @@ js_km_stub.AsyncMappingKernelManager = FakeAsyncMappingKernelManager
 js_kernels_stub.kernelmanager = js_km_stub
 js_services_stub.kernels = js_kernels_stub
 js_stub.services = js_services_stub
+
+
+# --- ...connection.channels.ZMQChannelsWebsocketConnection (voila_runtime subclasses it) ---
+KERNEL_ID = "kernel-test-id"
+
+
+class FakeZMQChannelsWebsocketConnection:
+    kernel_id = KERNEL_ID
+
+    def __init__(self, subprotocol=None):
+        self.subprotocol = subprotocol
+        self.forwarded = []
+
+    def handle_incoming_message(self, incoming_msg):
+        # Record the frames the subclass passes on so tests can assert on them.
+        self.forwarded.append(incoming_msg)
+
+
+js_connection_stub = _stub("jupyter_server.services.kernels.connection")
+js_channels_stub = _stub("jupyter_server.services.kernels.connection.channels")
+js_channels_stub.ZMQChannelsWebsocketConnection = FakeZMQChannelsWebsocketConnection
+js_connection_stub.channels = js_channels_stub
+js_kernels_stub.connection = js_connection_stub
 
 
 # --- scout._identity.resolve_audit_user (playbook_helpers depends on it) ---

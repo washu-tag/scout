@@ -1,0 +1,28 @@
+name: 'Install sops and age'
+description: >-
+  Installs pinned, sha256-verified sops and age (age, age-keygen) binaries into
+  /usr/local/bin, for encrypting on-prem secret values the way a site does before
+  kustomize-controller decrypts them.
+runs:
+  using: 'composite'
+  steps:
+    - name: Install sops and age
+      shell: bash
+      env:
+        SOPS_VERSION: '3.13.3'
+        SOPS_SHA256: 'e5bec3346a873ae91d871550f3e698c1aad962aff462a080e40f25fde17fef6b'
+        AGE_VERSION: '1.3.2'
+        AGE_SHA256: 'cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10'
+      run: |
+        set -euo pipefail
+        curl -fsSL -o /tmp/sops \
+          "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
+        echo "${SOPS_SHA256}  /tmp/sops" | sha256sum -c -
+        sudo install -m 0755 /tmp/sops /usr/local/bin/sops
+        curl -fsSL -o /tmp/age.tar.gz \
+          "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz"
+        echo "${AGE_SHA256}  /tmp/age.tar.gz" | sha256sum -c -
+        sudo tar -xzf /tmp/age.tar.gz -C /usr/local/bin --strip-components=1 age/age age/age-keygen
+        rm -f /tmp/sops /tmp/age.tar.gz
+        sops --disable-version-check --version
+        age --version

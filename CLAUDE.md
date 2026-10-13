@@ -237,6 +237,8 @@ the ADR itself before changing anything it covers.
 - **0034** launchpad catalog — chips/groups come from ConfigMaps labelled `launchpad.scout.xnat.org/catalog`, discovered at runtime. Read before adding a service tile or touching launchpad rendering
 - **0035** service-mode deploy base — one `service_mode` (aws|on-prem) var flips the storage/identity + ingress/auth edges in the `deploy/` base and `scout-config` artifact. Read before touching the aws/on-prem edge, IRSA roles, or the ALB-OIDC ingress
 - **0037** Keycloak realm fragments — an app ships its own client as a labelled ConfigMap that a reconciler applies. Read before adding a client or changing `scout-realm.json`
+- **0038** pluggable monitoring — Pluggable Apps get logs, metrics, and sidecar-discovered dashboards from any namespace; alert rules and datasources are deferred. Read before adding a Pluggable App's monitoring or making alerts/datasources pluggable
+- **0039** report-viewer search actions — toolbar buttons are a chart-rendered action catalog, gated by Keycloak client roles on a Bearer JWT Traefik injects on every request (including the SPA's own). Read before adding/gating a search-detail action or touching report-viewer's auth path
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.
@@ -247,6 +249,15 @@ summaries — an agent decides from this line whether to open the ADR, and gets 
 detail from the ADR. Do not restate config keys, variable names, thresholds, or
 rationale; duplicated detail goes stale silently and crowds out the rest of this file. If
 a line is growing past one sentence, that is a sign the ADR should be read instead.
+
+## Code Comments
+
+Keep inline comments to a minimum in new code, even where the surrounding file is densely
+commented; let names and structure carry the meaning. Rationale belongs in docs, an ADR,
+or the commit message. A short comment stating a durable constraint the code cannot
+express is fine. Never write comments that narrate a change or a fix ("now X instead of
+Y", "changed because…") — the diff and commit message already carry that. When changing
+code, trim or streamline the existing comments in the area you touch.
 
 ## Common Modification Patterns
 
@@ -262,6 +273,11 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   labelled `launchpad.scout.xnat.org/catalog: "true"` with the owning component (chart
   template, or `scout_common`'s `launchpad_catalog` task for Ansible roles).
   Authoring guide: `docs/source/customize/launchpad-chips.md` (ADR 0034).
+- **Add or gate a report-viewer search action** — no report-viewer code change or image
+  rebuild; an `inventory.yaml` change (`report_viewer_custom_actions`,
+  `report_viewer_explain_search`/`report_viewer_download_csv`) plus a redeploy, which
+  renders through to `helm/report-viewer`'s `actions.*` values. Authoring guide:
+  `docs/source/customize/report-viewer-actions.md` (ADR 0039).
 - **Add a Superset dashboard, chart, or dataset** — export the asset YAML into
   `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`; a new
   bundle also needs its name in `scout_dashboard_bundles` in inventory. See
@@ -270,11 +286,9 @@ a line is growing past one sentence, that is a sign the ADR should be read inste
   `# renovate:` annotation so CVE monitoring picks it up (ADR 0015), then redeploy. A
   `deploy/` base that mirrors the pin carries the same annotation, so Renovate bumps both,
   and CI fails if the copies differ.
-- **Add a CI-built image or service** — wiring `.github/workflows/ci.yaml` only covers
-  `main`. The release path must be wired too (`.github/scripts/update-versions.sh`, the
-  `SCOUT_VERSIONED_IMAGES` / `UPSTREAM_VERSIONED_IMAGES` lists in
-  `.github/workflows/release.yaml`, and the tables in
-  `docs/internal/versions-and-releases.md`), or a tagged release ships the image frozen
-  at its last `main` build.
+- **Add a CI-built image or service** — add it to the `.github/workflows/ci.yaml`
+  catalog, `.github/scripts/update-versions.sh`, and the version-file tables in
+  `docs/internal/versions-and-releases.md`, so release stamping covers it too.
+  Release image names and chart names/directories are read from the CI catalog.
 - **Write Ansible tasks using `kubernetes.core`** — follow the kubeconfig conventions in
   `docs/internal/ansible_roles.md` (they differ for cluster vs jump-node execution).

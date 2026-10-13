@@ -66,27 +66,6 @@ class CreateSearchRequest(BaseModel):
             "primary_report_identifier and accession_number."
         ),
     )
-    match_terms: list[str] | None = Field(
-        default=None,
-        description=(
-            "Clinical text terms (e.g. ['pulmonary embolism', 'PE']) "
-            "matched against report sections to produce the `excerpt` "
-            "field on each evidence row, and highlighted in the "
-            "row-expand viewer. Matched with word boundaries on the "
-            "SPA side. Anatomy/exam-type words belong in the SQL, "
-            "not here."
-        ),
-    )
-    match_diagnoses: list[str] | None = Field(
-        default=None,
-        description=(
-            "ICD codes (or code prefixes) matched against "
-            "`diagnosis_code` to populate `matched_diagnoses` on each "
-            "evidence row, and surfaced as chips in the row-expand "
-            "viewer. Examples: ['R91.1'], ['J18', 'R91']. UI/evidence "
-            "only; the SQL still drives inclusion."
-        ),
-    )
     sql_explanation: str | None = Field(
         default=None,
         description=(
@@ -140,15 +119,29 @@ class QueryFromFileResponse(BaseModel):
     column_inferred: bool
 
 
+MAX_READ_REPORTS_IDS = 100
+
+
 class ReadReportsRequest(BaseModel):
     """Fetch the full content of specific reports by ID. Backs the
     `scout_get_reports` tool surface AND the SPA row-expand panel
     (which sends an array of one)."""
 
-    ids: list[str] = Field(..., description="Report identifiers to fetch.")
+    ids: list[str] = Field(
+        ...,
+        max_length=MAX_READ_REPORTS_IDS,
+        description="Report identifiers to fetch.",
+    )
     id_column: str = Field(
         default="primary_report_identifier",
         description="Column to match `ids` against.",
+    )
+    search_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional search to derive highlight offsets from. When set, the "
+            "response carries a `highlights` entry per row."
+        ),
     )
     table: str | None = Field(
         default=None,
@@ -160,9 +153,20 @@ class ReadReportsRequest(BaseModel):
     )
 
 
+class Highlight(BaseModel):
+    """One match of a search pattern, as offsets into the text in this response."""
+
+    field: str
+    start: int
+    end: int
+    polarity: str
+
+
 class ReadReportsResponse(BaseModel):
     columns: list[str]
     rows: list[dict[str, Any]]
+    # Parallel-indexed to `rows`; empty unless the request named a search.
+    highlights: list[list[Highlight]] = []
 
 
 class CreateSearchResponse(BaseModel):
@@ -172,13 +176,15 @@ class CreateSearchResponse(BaseModel):
     columns: list[str]
     sample: list[dict[str, Any]]
     # Parallel-indexed to `sample`. Each item is {id_column: value,
-    # excerpt: str | None, matched_diagnoses: list[{code, text}]}.
+    # matched_on, positive_evidence, negative_evidence, matched_diagnoses}.
     evidence: list[dict[str, Any]]
 
 
 class SearchMeta(BaseModel):
     id: str
     sql: str
+    # The sql as rewritten to project evidence. Empty when there is none.
+    executed_sql: str = ""
     owner_sub: str
     created_at: datetime
     match_terms: list[str] = []
@@ -234,6 +240,24 @@ class PlotMeta(BaseModel):
     # OWUI conversation ID - the SPA groups charts with the searches from
     # the same chat. Empty when the caller didn't supply it.
     owui_chat_id: str = ""
+
+
+class ActionInvokeRequest(BaseModel):
+    """Optional filter narrowing a backend-call invoke to a subset of the
+    search's cohort - e.g. the SPA's currently client-side-filtered rows,
+    the same set Download CSV already exports. None/omitted (or no
+    request body at all) means the full search, unfiltered - today's
+    behavior."""
+
+    visible_report_ids: list[str] | None = None
+
+
+class ActionInvokeResponse(BaseModel):
+    """The result URL a backend-call action's own endpoint_url returned,
+    ready for the same open/copy-fallback handling as an open-url
+    action."""
+
+    url: str
 
 
 class PlotDetail(BaseModel):

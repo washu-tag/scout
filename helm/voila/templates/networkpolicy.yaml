@@ -1,9 +1,14 @@
+{{- if and (not .Values.networkPolicy.enabled) (not .Values.env.VOILA_FORWARDED_TOKEN_HEADER) }}
+{{- fail "networkPolicy.enabled=false requires env.VOILA_FORWARDED_TOKEN_HEADER: without the policy, anyone who reaches Voila can set X-Auth-Request-Preferred-Username" }}
+{{- end }}
 {{- if .Values.networkPolicy.enabled }}
 # The X-Trino-User impersonation pattern trusts that the
 # X-Auth-Request-Preferred-Username header on each request came from
 # oauth2-proxy via Traefik. Without this NetworkPolicy, an in-cluster pod
 # could connect directly to Voila and forge the header, bypassing the
 # per-user AuthZ. Egress is unrestricted (Voila needs Keycloak + Trino + DNS).
+# Behind an ALB-OIDC edge the policy is off and VOILA_FORWARDED_TOKEN_HEADER
+# replaces the header with a validated token (see files/voila_runtime.py).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
