@@ -69,22 +69,22 @@ export function ActionsToolbar({
     const builtinsWidth = builtinsRef.current?.offsetWidth ?? 0;
     const boundaryGap = hasBuiltins && customs.length > 0 ? gapPx : 0;
     const available = availableWidth - builtinsWidth - boundaryGap;
-    const moreWidth = moreProberRef.current?.offsetWidth ?? 0;
-    let used = 0;
-    let fit = 0;
-    for (let i = 0; i < customs.length; i++) {
-      const width = proberRefs.current.get(customs[i].id)?.offsetWidth ?? 0;
-      const hasMoreAfter = i + 1 < customs.length;
-      // Reserve room for the "More" button unless this is the last
-      // custom action - no point reserving space for a dropdown that
-      // would end up empty. Safe: if an earlier item's own check passed
-      // with this same reserve subtracted, that already guarantees
-      // room for "More" later if this last item doesn't fit after all.
-      const reserve = hasMoreAfter ? moreWidth + gapPx : 0;
-      const next = used + (fit > 0 ? gapPx : 0) + width;
-      if (next + reserve > available) break;
-      used = next;
-      fit++;
+    const widths = customs.map((a) => proberRefs.current.get(a.id)?.offsetWidth ?? 0);
+    const totalWidth = widths.reduce((sum, w, i) => sum + w + (i > 0 ? gapPx : 0), 0);
+    let fit = customs.length;
+    if (totalWidth > available) {
+      // Something won't fit, so "More" renders - its own width plus the gap
+      // before it has to come out of the budget too.
+      const moreWidth = moreProberRef.current?.offsetWidth ?? 0;
+      const budget = available - moreWidth - gapPx;
+      let used = 0;
+      fit = 0;
+      for (const width of widths) {
+        const next = used + (fit > 0 ? gapPx : 0) + width;
+        if (next > budget) break;
+        used = next;
+        fit++;
+      }
     }
     setVisibleCustomCount(fit);
   }, [customIdsKey, hasBuiltins, availableWidth]);
