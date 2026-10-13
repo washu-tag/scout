@@ -7,6 +7,8 @@ grafana_helm_repo_name: grafana-community
 grafana_helm_repo_url: https://grafana-community.github.io/helm-charts
 grafana_helm_chart_name: grafana
 
+grafana_helm_values_override: {}
+
 # Storage configuration
 grafana_storage_size: 5Gi
 grafana_storage_class: ''
@@ -59,6 +61,9 @@ grafana_plugins:
 grafana_plugins_harbor_project: grafana-plugins
 grafana_plugins_harbor_robot_name: robot$grafana-plugin-puller
 
+grafana_plugins_registry_ca_path: >-
+  {{ _staging_vars.staging_api_ca_path | default(staging_api_ca_path) }}
+grafana_plugins_registry_ca_configmap: grafana-plugin-registry-ca
 # ORAS image for plugin push/pull operations
 # This image is pulled through Harbor's ghcr proxy in air-gapped mode
 oras_version: 1.3.4

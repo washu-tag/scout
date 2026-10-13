@@ -97,8 +97,9 @@
             ca.crt: '{{ _traefik_tls_secret.resources[0].data["tls.crt"] }}'
 
 - name: Parse Helm values
+  no_log: true
   ansible.builtin.set_fact:
-    owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+    owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml | combine(open_webui_helm_values_override | default({}), recursive=true) }}"
 
 - name: Deploy Open WebUI using Helm
   ansible.builtin.include_role:

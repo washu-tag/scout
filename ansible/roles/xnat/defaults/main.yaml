@@ -9,6 +9,7 @@
 # Dev override: set xnat_chart_path to a local chart dir for unpublished edits.
 xnat_chart_oci_ref: oci://ghcr.io/nrgxnat/charts/xnat
 xnat_helm_release_name: xnat
+xnat_helm_values_override: {}
 
 # --- XNAT image -----------------------------------------------------------
 # GHCR only — Scout does not pull the legacy Docker Hub `xnatworks/xnat-web`

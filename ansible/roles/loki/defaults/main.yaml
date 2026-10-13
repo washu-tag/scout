@@ -7,6 +7,8 @@ loki_helm_repo_name: grafana-community
 loki_helm_repo_url: https://grafana-community.github.io/helm-charts
 loki_helm_timeout: 5m
 
+loki_helm_values_override: {}
+
 # Storage configuration
 loki_storage_size: 10Gi
 loki_storage_class: ''

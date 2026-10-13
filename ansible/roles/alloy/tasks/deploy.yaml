@@ -10,8 +10,14 @@
 # play immediately. An inline lookup() in helm_chart_values would
 # silently coerce a render error to null.
 - name: Parse Helm values
+  no_log: true
   ansible.builtin.set_fact:
-    alloy_helm_chart_values: "{{ lookup('template', 'alloy.values.yaml.j2') | from_yaml }}"
+    alloy_helm_chart_values: "{{ (lookup('template', 'alloy.values.yaml.j2') | from_yaml) | combine(alloy_helm_values_override, recursive=true) }}"
+
+- name: Validate Alloy Helm values
+  ansible.builtin.assert:
+    that:
+      - alloy_helm_chart_values is mapping
 
 - name: Deploy Alloy
   ansible.builtin.include_role:
