@@ -251,10 +251,8 @@ export default function SearchDetailPage() {
   const [toolbarWrapped, setToolbarWrapped] = useState(false);
   // Width available to ActionsToolbar: row width minus its other siblings'
   // natural widths, read from their own refs rather than ActionsToolbar's.
-  // ActionsToolbar itself now renders as flat siblings in this same row
-  // (not one wrapping block), so the gap count below is fixed at the
-  // number of *other* siblings - it can't be read off live DOM child
-  // count, which depends on how many of ActionsToolbar's own items render.
+  // The sibling count is fixed rather than read from live DOM child count,
+  // since ActionsToolbar renders a variable number of its own flat items.
   const [actionsAvailableWidth, setActionsAvailableWidth] = useState(0);
   const [toolbarGapPx, setToolbarGapPx] = useState(8);
   const leftClusterRef = useRef<HTMLDivElement>(null);
@@ -282,18 +280,6 @@ export default function SearchDetailPage() {
         0,
         el.clientWidth - fixedWidth - gapPx * OTHER_TOOLBAR_SIBLINGS,
       );
-      // eslint-disable-next-line no-console
-      console.debug('[ToolbarRow budget]', {
-        clientWidth: el.clientWidth,
-        leftClusterWidth: leftClusterRef.current?.offsetWidth,
-        filtersWidth: filtersRef.current?.offsetWidth,
-        colPickerWidth: colPickerRef.current?.offsetWidth,
-        expanderWidth: expanderRef.current?.offsetWidth,
-        gapPx,
-        otherSiblings: OTHER_TOOLBAR_SIBLINGS,
-        childCount: children.length,
-        nextAvailable,
-      });
       setActionsAvailableWidth(nextAvailable);
     };
     measure();

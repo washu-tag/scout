@@ -19,10 +19,9 @@ const BUILTIN_ACTION_IDS = new Set(['explain-search', 'download-csv']);
  * it inline first - the naive approach of measuring only what's already
  * visible can't discover that a hidden button would actually fit.
  *
- * Renders builtins/visible-customs/"More" as flat siblings (a Fragment),
- * not wrapped in its own row - so if even this floor doesn't fit the
- * parent row's budget, the parent's own flex-wrap can still place each
- * item independently instead of moving the whole set as one block. */
+ * Renders builtins/visible-customs/"More" as flat Fragment siblings of the
+ * parent row, so the row's own flex-wrap can place each one independently
+ * if the budget below is ever exceeded. */
 export function ActionsToolbar({
   searchId,
   actions,
@@ -88,20 +87,9 @@ export function ActionsToolbar({
         fit++;
       }
     }
-    // eslint-disable-next-line no-console
-    console.debug('[ActionsToolbar fit]', {
-      availableWidth,
-      builtinsWidth,
-      boundaryGap,
-      available,
-      widths,
-      totalWidth,
-      moreWidth: moreProberRef.current?.offsetWidth,
-      fit,
-      customCount: customs.length,
-    });
     setVisibleCustomCount(fit);
-  }, [customIdsKey, hasBuiltins, availableWidth, gapPx, builtins, customs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customIdsKey, hasBuiltins, availableWidth, gapPx]);
 
   // Outside-click/Escape dismiss - mirrors the column-picker's dismiss
   // effect in SearchDetailPage.tsx.
