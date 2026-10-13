@@ -21,6 +21,7 @@ import {
   getSearch,
   getSearchProgress,
   getSearchRows,
+  listSearchActions,
   newProgressId,
   type FilterState,
 } from '../api/client';
@@ -31,6 +32,7 @@ import { LoadingSpinner, QueryProgressInline, useLoadingProgress } from '../Quer
 import { EvidenceFilterChips } from './searchDetail/EvidenceFilterChips';
 import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
+import { ActionsToolbar } from './searchDetail/ActionsToolbar';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
@@ -157,6 +159,12 @@ export default function SearchDetailPage() {
   const loadingState = useLoadingProgress(!rowsQ.data && rowsQ.isLoading, fetchProgress);
   const showLoading = loadingState.show;
 
+  const actionsQ = useQuery({
+    queryKey: ['search', searchId, 'actions'],
+    queryFn: () => listSearchActions(searchId),
+    enabled: !!searchId,
+  });
+
   // A fresh cohort must not inherit a selection or an open reader.
   useEffect(() => {
     setReview(null);
@@ -227,6 +235,33 @@ export default function SearchDetailPage() {
     measure();
     headerObserver.current = new ResizeObserver(measure);
     headerObserver.current.observe(el);
+  }, []);
+
+  // Whether the toolbar row below has actually wrapped to a second line -
+  // "Filters"'s marginLeft: auto (below) should only push it rightward on
+  // a single line; once anything has wrapped, every line should just flow
+  // left-aligned, or the auto margin leaves the exact same dead gap on
+  // whichever line "Filters" ends up on that it was meant to avoid.
+  // Detected by comparing children's vertical centers, not raw offsetTop:
+  // the row's alignItems: center means same-line siblings of different
+  // heights (a <select> vs. a small button) naturally land at different
+  // offsetTops, so that comparison alone reported "wrapped" almost always.
+  // Centers coincide for anything actually sharing a line regardless of
+  // height; a second line's centers differ by roughly a full line height.
+  const [toolbarWrapped, setToolbarWrapped] = useState(false);
+  const toolbarObserver = useRef<ResizeObserver | null>(null);
+  const toolbarRowRef = useCallback((el: HTMLDivElement | null) => {
+    toolbarObserver.current?.disconnect();
+    if (!el) return;
+    const measure = () => {
+      const children = Array.from(el.children) as HTMLElement[];
+      const centers = children.map((c) => c.offsetTop + c.offsetHeight / 2);
+      const firstCenter = centers[0];
+      setToolbarWrapped(centers.some((y) => Math.abs(y - firstCenter) > 1));
+    };
+    measure();
+    toolbarObserver.current = new ResizeObserver(measure);
+    toolbarObserver.current.observe(el);
   }, []);
 
   const dateFields = useMemo(
@@ -310,6 +345,21 @@ export default function SearchDetailPage() {
   const total = data.length;
   const lastPage = table.getPageCount() || 1;
   const pageIndex = table.getState().pagination.pageIndex;
+
+  // Derived from `data` (the already-filtered dataset), not
+  // `table.getPrePaginationRowModel()`: useReactTable returns the same
+  // table-instance reference across renders (it mutates in place), so
+  // memoizing on `[table]` would only ever run once and freeze at whatever
+  // was loaded on the first render. Sorting doesn't change which rows are
+  // present, only their order, so `data` is an equivalent - and reactive -
+  // source for this set.
+  const visibleReportIds = useMemo(
+    () =>
+      data
+        .map((row) => row.primary_report_identifier)
+        .filter((id): id is string => typeof id === 'string'),
+    [data],
+  );
 
   return (
     <div
@@ -592,6 +642,7 @@ export default function SearchDetailPage() {
             />
           )}
           <div
+            ref={toolbarRowRef}
             style={{
               display: 'flex',
               gap: '0.5rem',
@@ -599,6 +650,9 @@ export default function SearchDetailPage() {
               marginTop: '0.75rem',
               fontSize: '0.85rem',
               flex: '0 0 auto',
+              // Wrap is the fallback once content genuinely doesn't fit one
+              // line - without it, buttons overflow past the window edge
+              // instead of reaching a second line.
               flexWrap: 'wrap',
             }}
           >
@@ -606,13 +660,15 @@ export default function SearchDetailPage() {
               type="button"
               onClick={() => table.previousPage()}
               disabled={!rowsQ.data || !table.getCanPreviousPage()}
-              style={paginationBtn}
+              className="scout-toolbar-btn"
+              style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Prev
             </button>
             <span
               style={{
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
                 fontVariantNumeric: 'tabular-nums',
                 minWidth: 46,
                 textAlign: 'center',
@@ -624,18 +680,26 @@ export default function SearchDetailPage() {
               type="button"
               onClick={() => table.nextPage()}
               disabled={!rowsQ.data || !table.getCanNextPage()}
-              style={paginationBtn}
+              className="scout-toolbar-btn"
+              style={{ ...paginationBtn, flexShrink: 0 }}
             >
               Next
             </button>
-            <span style={{ marginLeft: '0.4rem', color: 'var(--rv-muted)', whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                marginLeft: '0.4rem',
+                color: 'var(--rv-muted)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
               Per page:
             </span>
             <select
               value={pagination.pageSize}
               onChange={(e) => table.setPageSize(Number(e.target.value))}
               disabled={!rowsQ.data}
-              style={{ fontSize: '0.85rem' }}
+              style={{ fontSize: '0.85rem', flexShrink: 0 }}
             >
               <option value={50}>50</option>
               <option value={100}>100</option>
@@ -647,6 +711,7 @@ export default function SearchDetailPage() {
                 color: 'var(--rv-muted)',
                 fontSize: '0.75rem',
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
                 fontVariantNumeric: 'tabular-nums',
               }}
             >
@@ -670,9 +735,9 @@ export default function SearchDetailPage() {
                 borderTopColor: '#ea580c',
                 animation: 'scoutSpin 0.8s linear infinite',
                 display: 'inline-block',
+                flexShrink: 0,
               }}
             />
-            <span style={{ flex: 1 }} />
             <button
               type="button"
               disabled={!rowsQ.data}
@@ -683,9 +748,24 @@ export default function SearchDetailPage() {
                       ...paginationBtn,
                       background: 'var(--rv-accent)',
                       color: '#fff',
-                      borderColor: 'var(--rv-accent)',
+                      flexShrink: 0,
+                      marginLeft: toolbarWrapped ? undefined : 'auto',
                     }
-                  : paginationBtn
+                  : {
+                      ...paginationBtn,
+                      flexShrink: 0,
+                      marginLeft: toolbarWrapped ? undefined : 'auto',
+                    }
+              }
+              // The active/accent style keeps paginationBtn's own border
+              // (not accent-colored, so it's an actual visible outline
+              // against the blue fill) and gets a border/brightness-only
+              // hover variant - changing the background would wash out the
+              // white text.
+              className={
+                activeFilterCount(appliedFilters) > 0
+                  ? 'scout-toolbar-btn-accent'
+                  : 'scout-toolbar-btn'
               }
               title="Filter rows"
             >
@@ -693,11 +773,12 @@ export default function SearchDetailPage() {
                 ? `Filters (${activeFilterCount(appliedFilters)})`
                 : 'Filters'}
             </button>
-            <div ref={colPickerRef} style={{ position: 'relative' }}>
+            <div ref={colPickerRef} style={{ position: 'relative', flexShrink: 0 }}>
               <button
                 type="button"
                 disabled={!rowsQ.data}
                 onClick={() => setColPickerOpen((v) => !v)}
+                className="scout-toolbar-btn"
                 style={paginationBtn}
                 title="Show/hide columns"
               >
@@ -742,41 +823,38 @@ export default function SearchDetailPage() {
                 </div>
               )}
             </div>
-            {(meta.data?.sql_explanation || meta.data?.sql) && (
-              <button
-                type="button"
-                onClick={() => setSqlModalOpen(true)}
-                style={paginationBtn}
-                title="See what this search matches and the underlying SQL"
-              >
-                Explain Search
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                // Always include the unique id so exported rows stay identifiable
-                // even if the user hid the id/accession columns.
-                const cols = table.getVisibleLeafColumns().map((c) => c.id);
-                if (!cols.includes('primary_report_identifier')) {
-                  cols.unshift('primary_report_identifier');
-                }
-                if (cols.includes('ev_source')) {
-                  const present = new Set(rowsQ.data?.columns ?? []);
-                  cols.push(...EVIDENCE_EXPORT.filter((f) => present.has(f)));
-                }
-                downloadCsv(
-                  `${searchId}.csv`,
-                  cols,
-                  table.getPrePaginationRowModel().rows.map((r) => r.original),
-                );
-              }}
+            <ActionsToolbar
+              searchId={searchId}
+              visibleReportIds={visibleReportIds}
               disabled={!rowsQ.data}
-              style={paginationBtn}
-              title="Download the current filtered and sorted rows as CSV"
-            >
-              Download CSV
-            </button>
+              // Explain Search's per-search visibility (nothing to explain
+              // yet) is a page-level concern, not something the backend
+              // catalog encodes.
+              actions={(actionsQ.data ?? []).filter(
+                (a) => a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
+              )}
+              clientHandlers={{
+                'explain-search': () => setSqlModalOpen(true),
+                'download-csv': () => {
+                  // Always include the unique id so exported rows stay
+                  // identifiable even if the user hid the id/accession
+                  // columns.
+                  const cols = table.getVisibleLeafColumns().map((c) => c.id);
+                  if (!cols.includes('primary_report_identifier')) {
+                    cols.unshift('primary_report_identifier');
+                  }
+                  if (cols.includes('ev_source')) {
+                    const present = new Set(rowsQ.data?.columns ?? []);
+                    cols.push(...EVIDENCE_EXPORT.filter((f) => present.has(f)));
+                  }
+                  downloadCsv(
+                    `${searchId}.csv`,
+                    cols,
+                    table.getPrePaginationRowModel().rows.map((r) => r.original),
+                  );
+                },
+              }}
+            />
             {embedded && (
               <button
                 type="button"
@@ -791,11 +869,13 @@ export default function SearchDetailPage() {
                     : 'Grow viewer for more room'
                 }
                 aria-label={iframeExpanded ? 'Contract viewer' : 'Expand viewer'}
+                className="scout-toolbar-btn"
                 style={{
                   ...paginationBtn,
                   display: 'inline-flex',
                   alignItems: 'center',
                   padding: '0.2rem 0.35rem',
+                  flexShrink: 0,
                 }}
               >
                 {iframeExpanded ? <ContractIcon /> : <ExpandIcon />}

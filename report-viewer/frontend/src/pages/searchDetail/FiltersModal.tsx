@@ -155,11 +155,21 @@ export function FiltersModal(props: {
               : ' '}
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button type="button" onClick={() => setStaged({})} style={paginationBtn}>
+            <button
+              type="button"
+              onClick={() => setStaged({})}
+              className="scout-toolbar-btn"
+              style={paginationBtn}
+            >
               Reset
             </button>
             <span style={{ flex: 1 }} />
-            <button type="button" onClick={props.onClose} style={paginationBtn}>
+            <button
+              type="button"
+              onClick={props.onClose}
+              className="scout-toolbar-btn"
+              style={paginationBtn}
+            >
               Cancel
             </button>
             <button
@@ -168,6 +178,7 @@ export function FiltersModal(props: {
                 if (activeFilterCount(staged) === 0) setNeedFilters(true);
                 else props.onRefineInChat(staged);
               }}
+              className="scout-toolbar-btn"
               style={paginationBtn}
             >
               Filter in Chat
@@ -175,11 +186,14 @@ export function FiltersModal(props: {
             <button
               type="button"
               onClick={() => props.onApply(staged)}
+              // Keeps paginationBtn's own border (a real outline against
+              // the blue fill, not accent-on-accent) and only changes
+              // border/brightness on hover - see .scout-toolbar-btn-accent.
+              className="scout-toolbar-btn-accent"
               style={{
                 ...paginationBtn,
                 background: 'var(--rv-accent)',
                 color: '#fff',
-                borderColor: 'var(--rv-accent)',
               }}
             >
               Apply

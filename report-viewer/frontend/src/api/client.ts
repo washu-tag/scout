@@ -128,6 +128,43 @@ export function getPlotProgress(plotId: string, progressId: string): Promise<Que
   );
 }
 
+// Backend-declared, role-filtered toolbar actions - see
+// scout_report_viewer.actions.ActionDescriptor for what each
+// action_type does.
+export interface ActionDescriptor {
+  id: string;
+  title: string;
+  weight: number;
+  action_type: 'open-url' | 'client' | 'backend-call';
+  url: string | null;
+  required_role: string | null;
+  client_handler: string | null;
+}
+
+export function listSearchActions(searchId: string): Promise<ActionDescriptor[]> {
+  return api<ActionDescriptor[]>(`/api/searches/${encodeURIComponent(searchId)}/actions`);
+}
+
+// visibleReportIds narrows the invoke to the caller's currently
+// client-side-filtered rows (the same set downloadCsv already exports),
+// so a filtered view and a backend-call action agree on what "these
+// studies" means - see routes/searches.py's invoke_search_action.
+// Omit (or pass undefined) for the full, unfiltered search.
+export function invokeSearchAction(
+  searchId: string,
+  actionId: string,
+  visibleReportIds?: string[],
+): Promise<{ url: string }> {
+  return api<{ url: string }>(
+    `/api/searches/${encodeURIComponent(searchId)}/actions/${encodeURIComponent(actionId)}/invoke`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visible_report_ids: visibleReportIds ?? null }),
+    },
+  );
+}
+
 export const EV_CATEGORIES = ['text_and_code', 'text', 'diagnosis_code', 'unknown'] as const;
 
 export type EvCategory = (typeof EV_CATEGORIES)[number];

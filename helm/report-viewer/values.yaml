@@ -50,8 +50,9 @@ ingress:
   host: ''
   tls: []
 
-# Defence-in-depth only: the bearer path is cryptographic and the header path
-# is gated by gatewaySecret, so this just narrows who can reach the service.
+# Defence-in-depth only: the bearer path is already cryptographic
+# (Keycloak-signed, JWKS-verified), so this just narrows who can reach the
+# service at the network layer too.
 networkPolicy:
   enabled: true
   traefikNamespace: kube-system
@@ -67,6 +68,41 @@ resources:
   limits:
     cpu: 2
     memory: 4Gi
+
+# Search-detail toolbar actions, rendered into a ConfigMap and mounted at
+# /app/action-catalog/catalog.yaml. explainSearch/downloadCsv are objects,
+# not plain booleans, so a site can override just `enabled` or
+# `requiredRole` on one without restating the other (Helm deep-merges map
+# values; `custom`, being a list, is replaced wholesale by any override).
+# Full authoring guide, including what invokeToken does and doesn't
+# prove: docs/source/customize/report-viewer-actions.md.
+actions:
+  explainSearch:
+    enabled: true
+    # Keycloak client role required to see this button. Empty = visible
+    # to every authenticated user.
+    requiredRole: ''
+  downloadCsv:
+    enabled: true
+    requiredRole: ''
+  # Site-admin-authorable buttons - no report-viewer code change or image
+  # rebuild needed, just a values change + helm upgrade. `client` actions
+  # can't be added this way - they need a handler already registered in
+  # the frontend, so there's structurally no values field for one.
+  #
+  #   custom:
+  #     - id: pacs-viewer
+  #       title: Open in PACS
+  #       url: https://pacs.example.org/
+  #       weight: 50
+  #       requiredRole: report-viewer-admin
+  #
+  #     - id: explore-xnat
+  #       title: Explore in XNAT
+  #       actionType: backend-call
+  #       endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
+  #       invokeToken: <matches xnat-explore-poc's invokeToken value>
+  custom: []
 
 # Env vars injected as REPORT_VIEWER_* - see scout_report_viewer.config.Settings.
 # Populated by the Ansible role's values.yaml.j2 in production.
@@ -89,10 +125,6 @@ trinoCaCert: ''
 
 # report_viewer_svc client_secret for outbound Trino auth (ADR 0022).
 trinoAuthClientSecret: ''
-
-# Shared secret Traefik injects as X-Report-Viewer-Gateway; gates the header
-# path. Rendered into both the Secret and the gateway Middleware.
-gatewaySecret: ''
 
 # Extra CA bundle mounted into the main container for outbound HTTPS
 # (Trino, Keycloak, anything behind the staging cert).

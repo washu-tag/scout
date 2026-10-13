@@ -66,6 +66,10 @@ jobs:
       superset: ${{ steps.plan.outputs.superset }}
       keycloak: ${{ steps.plan.outputs.keycloak }}
       report-viewer: ${{ steps.plan.outputs.report-viewer }}
+      # Not in tooling/manifest/components.txt - reference material, never a
+      # published/versioned component (ADR 0039) - so steps.plan (scoped to
+      # components.txt) has no output for it; read the raw path-filter result.
+      xnat-explore-poc: ${{ steps.filter.outputs.xnat-explore-poc }}
       keycloak-fragment-reconciler: ${{ steps.plan.outputs.keycloak-fragment-reconciler }}
       hl7-transformer-chart: ${{ steps.plan.outputs.hl7-transformer-chart }}
       dcm4chee-chart: ${{ steps.plan.outputs.dcm4chee-chart }}
@@ -150,6 +154,8 @@ jobs:
               - 'keycloak/**'
             report-viewer:
               - 'report-viewer/**'
+            xnat-explore-poc:
+              - 'examples/xnat-explore-poc/**'
             keycloak-fragment-reconciler:
               - 'keycloak-fragment-reconciler/**'
             hl7-transformer-chart:
@@ -304,6 +310,8 @@ jobs:
             subproject: keycloak
           - image-name: report-viewer
             subproject: report-viewer
+          - image-name: xnat-explore-poc
+            subproject: examples/xnat-explore-poc
           - image-name: keycloak-fragment-reconciler
             subproject: keycloak-fragment-reconciler
     steps:
@@ -412,6 +420,9 @@ jobs:
         env:
           REPORT_VIEWER_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/report_viewer_test
         run: cd report-viewer && pip install -e '.[dev]' && pytest -v
+      - name: 'Unit tests: xnat-explore-poc'
+        shell: bash
+        run: cd examples/xnat-explore-poc && pip install -e '.[dev]' && pytest -v
       - name: 'Unit tests: keycloak-fragment-reconciler'
         shell: bash
         run: cd keycloak-fragment-reconciler && pip install -e '.[test]' && pytest -v
@@ -1660,6 +1671,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: report-viewer
+      - name: 'Push Image - xnat-explore-poc'
+        if: needs.changes.outputs.xnat-explore-poc == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: xnat-explore-poc
       - name: 'Push Image - keycloak-fragment-reconciler'
         if: needs.changes.outputs.keycloak-fragment-reconciler == 'true'
         uses: ./.github/actions/docker-push

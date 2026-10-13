@@ -1,0 +1,28 @@
+# Public, unauthenticated on purpose: this is a fake demo page with no
+# real data (see app.py's landing() - it only ever echoes back a report
+# count and a username, both already safe to log/display today). A real
+# backend-call target's own landing page would likely need its own auth
+# (a slice of the front-door "pluggable app" pattern, not this one) -
+# deliberately not demonstrated here to keep this example focused on the
+# COOP/popup mechanism alone.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "xnat-explore-poc.fullname" . }}-landing
+  labels:
+    {{- include "xnat-explore-poc.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.landingPage.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.landingPage.ingress.className }}
+  rules:
+    - host: {{ required "landingPage.ingress.host is required" .Values.landingPage.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "xnat-explore-poc.fullname" . }}-landing
+                port:
+                  number: {{ .Values.landingPage.port }}

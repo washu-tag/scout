@@ -98,6 +98,37 @@
           authResponseHeaders:
             - X-Auth-Request-Preferred-Username
 
+# Scoped variant for report-viewer only - NOT referenced by any other
+# ingress. Identical to oauth2-proxy-auth above, plus Authorization in
+# authResponseHeaders, so report-viewer's own requests can carry a real,
+# Keycloak-issued Bearer token (validated by its existing _validate_jwt
+# path) instead of only the plain username header. Deliberately
+# not added to the shared oauth2-proxy-auth middleware: Traefik's
+# forwardAuth *overwrites* any client-supplied header of the same name
+# (see the comment above), and that middleware has over a dozen other
+# consumers - some of which may already send their own Authorization
+# header for an unrelated purpose (e.g. report-viewer's own OWUI
+# tool-call path already sends Authorization: Bearer __oauth_token__
+# through the shared middleware today; a service like MinIO's console
+# may have its own notion of this header too). A second, narrowly-scoped
+# middleware avoids clobbering any of that.
+- name: Install OAuth2 Proxy Auth Middleware (report-viewer, adds Authorization)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: oauth2-proxy-auth-report-viewer
+        namespace: '{{ oauth2_proxy_namespace }}'
+      spec:
+        forwardAuth:
+          address: '{{ oauth2_proxy_auth_url }}'
+          trustForwardHeader: true
+          authResponseHeaders:
+            - X-Auth-Request-Preferred-Username
+            - Authorization
+
 - name: Install OAuth2 Proxy Error Middleware
   kubernetes.core.k8s:
     state: present
