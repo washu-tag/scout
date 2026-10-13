@@ -2,5 +2,8 @@
 name={{ yum_repo.name }}{{ ' (via proxy)' if yum_proxy_base_url else '' }}
 baseurl={{ (yum_proxy_base_url ~ '/' ~ yum_repo.name ~ '/') if yum_proxy_base_url else yum_repo.url }}
 enabled=1
-gpgcheck=0
+gpgcheck={{ 1 if yum_repo.gpgcheck | default(false) | bool else 0 }}
+{% if yum_repo.gpgkey | default('') | length > 0 %}
+gpgkey={{ yum_repo.gpgkey }}
+{% endif %}
 sslverify=1

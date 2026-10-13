@@ -26,6 +26,9 @@ k3s_token: ''
 # Additional arguments to pass to k3s server (e.g., '--snapshotter=native' for container environments)
 k3s_extra_args: ''
 
+# API hostname used by the external Ansible control node and included in the server certificate
+k3s_api_host: '{{ ansible_host | default(inventory_hostname) }}'
+
 # Path to directory for container images and sandbox data
 base_dir: /var/lib/rancher/k3s/storage
 
