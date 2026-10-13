@@ -74,6 +74,7 @@ export function ReviewPanel(props: {
             type="button"
             onClick={() => step(-1)}
             disabled={index === 0}
+            className="scout-toolbar-btn"
             style={paginationBtn}
             title="Previous report (k)"
           >
@@ -86,6 +87,7 @@ export function ReviewPanel(props: {
             type="button"
             onClick={() => step(1)}
             disabled={index >= queue.length - 1}
+            className="scout-toolbar-btn"
             style={paginationBtn}
             title="Next report (j)"
           >
