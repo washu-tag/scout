@@ -49,6 +49,10 @@ export function ActionsToolbar({
   const proberRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const moreProberRef = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
+  // Zero visual footprint, but a real flex-grow: 1 sibling in the
+  // *parent's* row (a second root element, not nested in the box below) -
+  // its width is exactly the space nothing else there has claimed.
+  const growthSensorRef = useRef<HTMLDivElement>(null);
   const [visibleCustomCount, setVisibleCustomCount] = useState(customs.length);
   const hasBuiltins = builtins.length > 0;
 
@@ -57,19 +61,22 @@ export function ActionsToolbar({
   // list itself changes.
   useLayoutEffect(() => {
     const row = rowRef.current;
-    if (!row) return;
+    const sensor = growthSensorRef.current;
+    if (!row || !sensor) return;
     const recompute = () => {
       // Read the actual computed gap rather than assuming a px value for
       // the row's `gap: '0.5rem'` - correct regardless of root font-size.
       const gapPx = parseFloat(getComputedStyle(row).columnGap) || 0;
-      // row.clientWidth is the WHOLE row's width, builtins included - the
+      // row.clientWidth (currently-rendered content) plus the growth
+      // sensor's width (unclaimed space the sensor absorbed instead) is
+      // the row's true available width - see the sensor's own comment.
       // builtins are always rendered first and always visible, so their
       // measured width (plus the one gap between them and whatever comes
       // next) has to come out of the budget before deciding how many
       // customs fit, or this overcounts by exactly the builtins' width.
       const builtinsWidth = builtinsRef.current?.offsetWidth ?? 0;
       const boundaryGap = hasBuiltins && customs.length > 0 ? gapPx : 0;
-      const available = row.clientWidth - builtinsWidth - boundaryGap;
+      const available = row.clientWidth + sensor.offsetWidth - builtinsWidth - boundaryGap;
       const moreWidth = moreProberRef.current?.offsetWidth ?? 0;
       let used = 0;
       let fit = 0;
@@ -92,6 +99,7 @@ export function ActionsToolbar({
     recompute();
     const ro = new ResizeObserver(recompute);
     ro.observe(row);
+    ro.observe(sensor);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customIdsKey, hasBuiltins]);
@@ -190,6 +198,7 @@ export function ActionsToolbar({
   const overflowCustoms = customs.slice(visibleCustomCount);
 
   return (
+    <>
     <div
       style={{
         position: 'relative',
@@ -309,5 +318,11 @@ export function ActionsToolbar({
         />
       )}
     </div>
+    <div
+      ref={growthSensorRef}
+      aria-hidden="true"
+      style={{ flex: '1 0 0%', minWidth: 0, height: 0, overflow: 'hidden', visibility: 'hidden' }}
+    />
+    </>
   );
 }
