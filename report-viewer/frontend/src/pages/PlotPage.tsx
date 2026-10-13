@@ -560,8 +560,7 @@ export default function PlotPage() {
         <ExplainSqlModal
           explanation={explain.sql_explanation}
           sql={explain.sql}
-          highlightTerms={[]}
-          highlightDiagnosis={[]}
+          rows={[]}
           onClose={() => setSqlModalOpen(false)}
         />
       )}

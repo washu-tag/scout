@@ -1,0 +1,23 @@
+name: 'Install flux'
+description: >-
+  Installs the pinned, sha256-verified Flux CLI into /usr/local/bin. 2.9.6 is the on-prem
+  floor (kustomize-controller v1.9.6 masks Secret-sourced values in apply errors). Shared
+  by validate-deploy (offline flux build) and deploy-flux (flux install on k3s), so the
+  CLI and the controllers it installs are one version.
+runs:
+  using: 'composite'
+  steps:
+    - name: Install flux
+      shell: bash # default shell is `bash -e` (no pipefail); be explicit
+      env:
+        FLUX_VERSION: '2.9.6'
+        FLUX_SHA256: 'b4d22673e9246cbd628881f1a9ef3b090085dced291e42d804555cee8e8d42c5'
+      # Bump the version and its checksum together (from the release's checksums.txt).
+      run: |
+        set -euo pipefail
+        curl -fsSL -o /tmp/flux.tar.gz \
+          "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}/flux_${FLUX_VERSION}_linux_amd64.tar.gz"
+        echo "${FLUX_SHA256}  /tmp/flux.tar.gz" | sha256sum -c -
+        sudo tar -xzf /tmp/flux.tar.gz -C /usr/local/bin flux
+        rm -f /tmp/flux.tar.gz
+        flux version --client

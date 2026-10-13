@@ -33,3 +33,8 @@ data:
           scout-admin: [{{ .Values.clientId }}-user, {{ .Values.clientId }}-admin]
         secretRef:
           name: {{ include "example.clientSecretName" . }}
+        # To call XNAT as the signed-in user, ask for its scope and exchange
+        # the user's token for one addressed to XNAT. Only valid on a site that
+        # offers the scope, i.e. one running XNAT; elsewhere the whole fragment
+        # is rejected.
+        # clientScopes: [xnat-audience]

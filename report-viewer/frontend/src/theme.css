@@ -24,12 +24,23 @@ body {
   --rv-border: #e2e2e2;
   --rv-accent: #4477aa;
   --rv-danger: #b00;
+  --rv-danger-soft: #fdeaea;
+
+  /* Match evidence. Chips and the marks in the report share these, so a chip
+     colour predicts the mark colour. Text and code are both reasons a row
+     qualifies and share one colour; red is only for contradicting text. */
+  --rv-ev-positive: #1d4e75;
+  --rv-ev-positive-soft: #d6e6f7;
   --rv-success: #1a7a3a;
 
   /* Column profile bars. */
   --rv-profile-1: #4477aa;
   --rv-profile-2: #7ba8d2;
   --rv-profile-3: #cfe3f5;
+  /* Negated segments step like the blues, so rank reads the same either side. */
+  --rv-profile-neg-1: #b03434;
+  --rv-profile-neg-2: #d48989;
+  --rv-profile-neg-3: #f5d6d6;
   --rv-profile-other: #808080;
   --rv-profile-empty: #b4b4b4;
 }
@@ -45,12 +56,19 @@ body {
     --rv-border: #3a3a3a;
     --rv-accent: #5b9bd5;
     --rv-danger: #ff6b6b;
+    --rv-danger-soft: #4a2b2b;
+
+    --rv-ev-positive: #9fc9ee;
+    --rv-ev-positive-soft: #26415c;
     --rv-success: #3fbf6a;
 
     /* Column profile bars dark. */
     --rv-profile-1: #4a7ba4;
     --rv-profile-2: #77aed8;
     --rv-profile-3: #cfe6fa;
+    --rv-profile-neg-1: #b85a5a;
+    --rv-profile-neg-2: #d99191;
+    --rv-profile-neg-3: #f2cfcf;
     --rv-profile-other: #b0b0b0;
     --rv-profile-empty: #787878;
   }
@@ -69,6 +87,27 @@ body {
 }
 tr.scout-row:hover {
   background: var(--rv-surface-2) !important;
+}
+/* !important: paginationBtn sets background/border-color inline, which
+   otherwise always wins over a plain class rule regardless of :hover. */
+.scout-toolbar-btn:hover:not(:disabled) {
+  background: var(--rv-surface-2) !important;
+  border-color: var(--rv-muted) !important;
+}
+.scout-toolbar-btn:active:not(:disabled) {
+  background: var(--rv-accent-soft) !important;
+  border-color: var(--rv-accent) !important;
+}
+/* For buttons with an always-on accent background (active Filters, Apply) -
+   changing background on hover would wash out their white text, so this
+   only ever touches border-color/brightness instead. */
+.scout-toolbar-btn-accent:hover:not(:disabled) {
+  border-color: var(--rv-fg) !important;
+  filter: brightness(1.08);
+}
+.scout-toolbar-btn-accent:active:not(:disabled) {
+  border-color: var(--rv-fg) !important;
+  filter: brightness(0.92);
 }
 
 /* vega-embed pins its action menu to the top-right corner of the drawing, hard

@@ -53,6 +53,12 @@ def fragment_text(client_id: str = "hello") -> str:
     return FRAGMENT.format(client_id=client_id)
 
 
+def with_fields(*lines: str) -> str:
+    """The fixture fragment plus extra client-level fields."""
+    extra = "".join(f"{line}\n" for line in lines)
+    return fragment_text().replace("    roles:", f"{extra}    roles:")
+
+
 def fragment_text_without_roles(client_id: str = "hello") -> str:
     """The same client with nothing to grant.
 
@@ -82,6 +88,11 @@ class FakeKeycloak:
         self.roles: dict[str, dict[str, dict]] = {}
         self.mappers: dict[str, list[dict]] = {}
         self.secrets: dict[str, str] = {}
+        # Realm client scopes by name, and each client's optional scope names.
+        self.scopes: dict[str, dict] = {}
+        for name in translate.OPTIONAL_CLIENT_SCOPES:
+            self.add_scope(name)
+        self.optional_scopes: dict[str, list[str]] = {}
         # tier name -> {role id: role name}
         self.composites: dict[str, dict[str, str]] = {n: {} for n in self.realm_roles}
         self.writes: list[str] = []
@@ -105,7 +116,20 @@ class FakeKeycloak:
         self.roles[uuid] = {}
         self.mappers[uuid] = []
         self.secrets[uuid] = secret
+        self.optional_scopes[uuid] = list(
+            representation.get("optionalClientScopes", [])
+        )
         return uuid
+
+    def add_scope(self, name: str) -> None:
+        self.scopes[name] = {"id": f"scope-{name}", "name": name}
+
+    def _rep(self, uuid: str) -> dict:
+        """A client as a listing returns it, scope names included."""
+        return {
+            **self.clients[uuid],
+            "optionalClientScopes": list(self.optional_scopes[uuid]),
+        }
 
     def seed_role(self, uuid: str, name: str) -> str:
         role_id = self._uid("role")
@@ -123,14 +147,14 @@ class FakeKeycloak:
 
     def find_client(self, client_id: str) -> dict | None:
         self._check("find_client")
-        for client in self.clients.values():
+        for uuid, client in self.clients.items():
             if client.get("clientId") == client_id:
-                return dict(client)
+                return self._rep(uuid)
         return None
 
     def list_clients(self) -> list[dict]:
         self._check("list_clients")
-        return [dict(c) for c in self.clients.values()]
+        return [self._rep(uuid) for uuid in self.clients]
 
     def create_client(self, representation: dict) -> str:
         self._check("create_client")
@@ -140,8 +164,13 @@ class FakeKeycloak:
         self.roles[uuid] = {}
         self.mappers[uuid] = []
         self.secrets[uuid] = representation.get("secret", "")
+        self.optional_scopes[uuid] = list(
+            representation.get("optionalClientScopes", [])
+        )
         return uuid
 
+    # Scope lists in the body are ignored, as `ClientResource.updateClient`
+    # ignores them.
     def update_client(self, uuid: str, representation: dict) -> None:
         self._check("update_client")
         self.writes.append(f"update_client:{representation['clientId']}")
@@ -156,6 +185,7 @@ class FakeKeycloak:
         self.roles.pop(uuid, None)
         self.mappers.pop(uuid, None)
         self.secrets.pop(uuid, None)
+        self.optional_scopes.pop(uuid, None)
 
     def client_secret(self, uuid: str) -> str:
         self._check("client_secret")
@@ -199,6 +229,23 @@ class FakeKeycloak:
         self._check("delete_protocol_mapper")
         self.writes.append(f"delete_mapper:{mapper_id}")
         self.mappers[uuid] = [m for m in self.mappers[uuid] if m["id"] != mapper_id]
+
+    def client_scopes(self) -> list[dict]:
+        self._check("client_scopes")
+        return [dict(s) for s in self.scopes.values()]
+
+    def add_optional_client_scope(self, uuid: str, scope_id: str) -> None:
+        self._check("add_optional_client_scope")
+        name = scope_id.removeprefix("scope-")
+        self.writes.append(f"add_scope:{name}")
+        if name not in self.optional_scopes[uuid]:
+            self.optional_scopes[uuid].append(name)
+
+    def remove_optional_client_scope(self, uuid: str, scope_id: str) -> None:
+        self._check("remove_optional_client_scope")
+        name = scope_id.removeprefix("scope-")
+        self.writes.append(f"remove_scope:{name}")
+        self.optional_scopes[uuid].remove(name)
 
     def tier_edges_for_client(self, tier: str, client_uuid: str) -> list[dict]:
         self._check("tier_edges_for_client")
@@ -425,4 +472,5 @@ __all__ = [
     "fragment_text",
     "fragment_text_without_roles",
     "translate",
+    "with_fields",
 ]

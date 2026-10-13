@@ -99,9 +99,13 @@ spec:
       SPRING_APPLICATION_JSON: >-
         {"import":{"var-substitution":{"enabled":true},"managed":{"client":"no-delete","client-scope":"no-delete","client-scope-mapping":"no-delete","scope-mapping":"no-delete","role":"no-delete","group":"no-delete","identity-provider":"no-delete","identity-provider-mapper":"no-delete","required-action":"no-delete","authentication-flow":"no-delete","component":"no-delete","sub-component":"no-delete"}}}
     # Client + GitHub-IdP secrets the realm var-substitutes ($(env:oauth2_proxy),
-    # $(env:github_client_id), ...). Site-materialized fixed-name Secret whose keys
-    # are the $(env:...) names (see required-secrets.md).
+    # $(env:github_client_id), ...). Fixed-name Secret whose keys are the $(env:...)
+    # names (see required-secrets.md). The optional -site Secret carries keys only a
+    # site's own IdP documents use; it comes first so keycloak-client-secrets wins a clash.
     envFrom:
+      - secretRef:
+          name: keycloak-client-secrets-site
+          optional: true
       - secretRef:
           name: keycloak-client-secrets
     existingSecret: keycloak-admin-secret

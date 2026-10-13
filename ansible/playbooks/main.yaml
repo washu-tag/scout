@@ -52,6 +52,10 @@
 - name: Install Extractor
   import_playbook: extractor.yaml
 
+# After lake, which creates the hl7-raw bucket the batcher writes to.
+- name: Install HL7 Listener
+  import_playbook: hl7-listener.yaml
+
 - name: Install Jupyter
   import_playbook: jupyter.yaml
 

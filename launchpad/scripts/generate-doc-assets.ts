@@ -66,7 +66,9 @@ export function tailwindPalette(): Map<string, string> {
   );
   const palette = new Map<string, string>();
   for (const match of css.matchAll(/--color-([a-z]+-\d+):\s*oklch\(([^)]+)\)/g)) {
-    const [l, c, h] = match[2].split(/\s+/).map(Number);
+    const [l, c, h] = match[2]
+      .split(/\s+/)
+      .map((v) => (v.endsWith('%') ? parseFloat(v) / 100 : Number(v)));
     palette.set(match[1], oklchToHex(l, c, h));
   }
   return palette;

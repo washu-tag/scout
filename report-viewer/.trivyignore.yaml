@@ -1,0 +1,12 @@
+# No fixed version available yet. Drop each once a fix ships.
+vulnerabilities:
+  - id: CVE-2026-76642 # util-linux 2.41.5
+  - id: CVE-2026-78408 # util-linux 2.41.5
+  - id: CVE-2026-78409 # util-linux 2.41.5
+  - id: CVE-2026-78410 # util-linux 2.41.5
+  - id: CVE-2026-16742 # libsystemd0, libudev1 257.13
+  - id: CVE-2026-9538 # perl-base 5.40.1
+  - id: CVE-2025-69720 # ncurses 6.5
+  - id: CVE-2026-54369 # libacl1 2.3.2
+  - id: CVE-2024-23342 # ecdsa 0.19.2 (via python-jose), we only verify RS256
+  - id: CVE-2026-85394 # python-jose 3.5.0, we only accept RS256

@@ -42,6 +42,8 @@ ingress:
 # impersonation trust model depends on it: any in-cluster pod able to reach
 # Voila directly could forge X-Auth-Request-Preferred-Username and impersonate
 # arbitrary users. Defence-in-depth (label-based, not cryptographic).
+# Disabling it (an ALB edge, whose targets are pod IPs) requires
+# env.VOILA_FORWARDED_TOKEN_HEADER; the chart refuses to render otherwise.
 networkPolicy:
   enabled: true
   traefikNamespace: kube-system
@@ -65,6 +67,11 @@ playbooks: []
 # leaves this empty so role-supplied env wins cleanly via Helm's
 # dict-merge (a default key here would persist even when the role
 # omits it, since merge doesn't delete).
+#
+# Behind an ALB-OIDC edge instead of oauth2-proxy, also set
+# VOILA_FORWARDED_TOKEN_HEADER (e.g. X-Amzn-Oidc-Accesstoken), VOILA_OIDC_ISSUER,
+# VOILA_OIDC_JWKS_URL and VOILA_OIDC_AUTHORIZED_PARTY (the edge's Keycloak
+# client); see files/voila_runtime.py.
 env: {}
 
 # voila_svc Keycloak client secret for the client_credentials JWT mint

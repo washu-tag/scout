@@ -1,0 +1,38 @@
+{
+  "_comment": "CI-only overrides for tooling/deploy/fixtures/cluster-vars.values.json. The workflows merge these with jq and set extractor_data_dir to the runner checkout at runtime. Keep only values that intentionally differ from the shared fixture.",
+  "deployer_name": "CI",
+  "extractor_data_dir": "WORK_DIR/tests/ingest/staging_test_data",
+  "keycloak_alb_oidc_hosts": "",
+  "keycloak_default_provider": "",
+  "keycloak_github_enabled": "false",
+  "lake_bucket": "ci-lake",
+  "minio_oidc_enabled": "off",
+  "minio_storage_size": "5Gi",
+  "postgres_storage_size": "5Gi",
+  "scratch_bucket": "ci-scratch",
+  "server_hostname": "scout.test",
+  "spark_sql_shuffle_partitions": "8",
+  "temporal_web_auth": "none",
+  "trino_view_enabled": "false",
+  "valkey_storage_size": "1Gi",
+  "postgres_parameters": {
+    "shared_buffers": "128MB",
+    "effective_cache_size": "512MB",
+    "min_wal_size": "80MB",
+    "max_wal_size": "1GB"
+  },
+  "postgres_resources_default": {
+    "requests": {
+      "cpu": "100m",
+      "memory": "256Mi"
+    },
+    "limits": {
+      "memory": "1Gi"
+    }
+  },
+  "hl7log_extractor_resources_default": {
+    "requests": {
+      "memory": "512Mi"
+    }
+  }
+}

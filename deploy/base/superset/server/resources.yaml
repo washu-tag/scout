@@ -130,6 +130,7 @@ spec:
     # externally-seeded fixed-name `superset-env` (see header).
     secretEnv:
       create: false
+    envFromSecret: superset-env
     # Embedded Redis off -- centralized Valkey backs cache + Celery.
     redis:
       enabled: false

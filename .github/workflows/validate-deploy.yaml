@@ -8,12 +8,20 @@ on:
     paths:
       - deploy/**
       - tooling/deploy/**
+      - tooling/manifest/**
+      - .github/scripts/prepare-flux-artifacts.py
+      - .github/scripts/copy-flux-artifacts.py
+      - .github/actions/start-registry/**
       # The realm config-cli imports + the config-hash it is stamped from live here.
       - helm/keycloak-config-cli/**
       # The per-mode S3A SSE render guard below.
       - helm/hive-metastore/**
       - helm/extractor/hl7-transformer/**
       - .github/workflows/validate-deploy.yaml
+      - .github/workflows/ci.yaml
+      - .github/ci_resources/flux/**
+      - .github/actions/install-flux/**
+      - .github/actions/publish-haul/**
       # OPA data-doc drift guard reads the Ansible source; re-run on those too.
       - ansible/roles/opa/defaults/main.yaml
       - ansible/roles/scout_common/defaults/main.yaml
@@ -27,6 +35,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: python3 -m pip install pytest pyyaml
       - name: Install kustomize
         run: |
           set -euo pipefail
@@ -40,6 +53,38 @@ jobs:
           rm -f kustomize.tar.gz
           kustomize version
 
+      # The on-prem floor (kustomize-controller v1.9.6); export and dry-run are offline.
+      - uses: ./.github/actions/install-flux
+
+      - name: Test deployment tooling and artifact identity
+        run: python3 -m pytest -q tooling/manifest tooling/deploy .github/ci_resources/flux .github/scripts/test_*flux_artifacts.py
+
+      - name: Validate the on-prem CI inputs
+        run: |
+          set -euo pipefail
+          python3 .github/ci_resources/flux/check_legs.py
+          jq -s '.[0] * .[1] | del(._comment)' \
+            tooling/deploy/fixtures/cluster-vars.values.json \
+            .github/ci_resources/flux/cluster-vars.values.json > "$RUNNER_TEMP/ci-cluster-vars.values.json"
+          python3 tooling/deploy/gen_cluster_vars.py \
+            --values "$RUNNER_TEMP/ci-cluster-vars.values.json" \
+            --namespace flux-system > "$RUNNER_TEMP/ci-cluster-vars.yaml"
+          trap 'rm -f "$RUNNER_TEMP/ci-secret-values.yaml"' EXIT
+          python3 tooling/deploy/gen_secret_values.py \
+            --values .github/ci_resources/flux/secret-values.json \
+            --cluster-vars-values "$RUNNER_TEMP/ci-cluster-vars.values.json" \
+            --namespace flux-system -o "$RUNNER_TEMP/ci-secret-values.yaml"
+
+      - name: Render the CI Flux installation
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/ci-flux-system"
+          mkdir -p "$dir"
+          cp .github/ci_resources/flux/flux-system/*.yaml "$dir/"
+          cp -R deploy/bootstrap/sops-guard "$dir/sops-guard"
+          flux install --export > "$dir/gotk-components.yaml"
+          kustomize build "$dir" >/dev/null
+
       - name: Render every base
         run: |
           set -euo pipefail
@@ -51,7 +96,7 @@ jobs:
             else
               echo "::error file=$d::kustomize build failed for $d"; fail=1
             fi
-          done < <(find deploy/base -name kustomization.yaml -exec dirname {} \; | sort)
+          done < <(find deploy/base deploy/bootstrap -name kustomization.yaml -exec dirname {} \; | sort)
           exit $fail
 
       - name: S3A SSE renders only for aws + s3_sse_type=S3
@@ -86,45 +131,51 @@ jobs:
           done
           exit $fail
 
-      - name: required-vars covers every substitution
+      - name: Contract lists cover every substitution
         run: |
           python3 - <<'PY'
-          import re, glob, subprocess, sys
-          # kustomize-controller runs drone/envsubst over the BUILT output,
-          # substituting ${NAME} AND unbraced $NAME (any case), with $$ the literal-$
-          # escape. So the surface is the rendered bases + flux/ files, not just
-          # braced-lowercase source tokens. Assert required-vars.txt lists every
-          # envsubst target; else it's green here but fails
-          # StrictPostBuildSubstitutions (or substitutes empty) at deploy -- how
-          # unbraced runtime shell vars like $HIVE_PW / $MINIO_ROOT_USER slipped through.
-          blob = ""
-          dirs = subprocess.run(
-              ["bash", "-c", "find deploy/base -name kustomization.yaml -exec dirname {} \\;"],
-              capture_output=True, text=True).stdout.split()
-          dirs = [d for d in dirs if "kind: Component" not in open(d + "/kustomization.yaml").read()]
-          for d in sorted(dirs):
-              blob += subprocess.run(["kustomize", "build", d],
-                                     capture_output=True, text=True).stdout + "\n"
-          # shared DAG + both mode sets (deploy/modes/{aws,on-prem}/), so aws-only edge
-          # vars (ALB, IRSA role-arns) are covered too and neither mode can rot.
-          for f in glob.glob("deploy/flux/*.yaml") + glob.glob("deploy/modes/*/*.yaml"):
-              if f.endswith("kustomization.yaml"):
-                  continue
-              blob += open(f).read() + "\n"
-          blob = blob.replace("$$", "\x00")  # drop $$-escaped literals before matching
-          used = set(re.findall(r'\$\{([A-Za-z0-9_]+)[:}]', blob))  # ${NAME} / ${NAME:-def}
-          used |= set(re.findall(r'\$([A-Za-z0-9_]+)', blob))       # unbraced $NAME
-          declared = {l.strip() for l in open("deploy/required-vars.txt")
-                      if l.strip() and not l.lstrip().startswith("#")}
-          missing = sorted(used - declared)
-          if missing:
-              print("::error::envsubst targets used in deploy/ but not in required-vars.txt.")
-              print("::error::Add them as site vars, or $$-escape runtime shell vars so Flux leaves them literal:")
-              for m in missing:
-                  print("  " + m)
+          import os, re, sys
+          sys.path.insert(0, "tooling/deploy")
+          from check_secret_templates import flux_files, kustomizations, kustomize_text
+          from gen_cluster_vars import load_required
+          # Each scout-config Kustomization's render may use only its own postBuild
+          # sources (StrictPostBuildSubstitutions fails on the rest), and the Flux files
+          # themselves only cluster-vars, which the site's parent substitutes. Unbraced
+          # $NAME is matched too, so runtime shell vars stay $$-escaped.
+          lists = {("ConfigMap", "cluster-vars"): set(load_required("deploy/required-vars.txt")),
+                   ("Secret", "scout-secret-values"): set(load_required("deploy/required-secret-values.txt"))}
+          cluster_vars = lists[("ConfigMap", "cluster-vars")]
+          def used(text):
+              text = text.replace("$$", "\x00")  # drop $$-escaped literals before matching
+              return (set(re.findall(r'\$\{([A-Za-z0-9_]+)[:}]', text))  # ${NAME} / ${NAME:=def}
+                      | set(re.findall(r'\$([A-Za-z0-9_]+)', text)))     # unbraced $NAME
+          errs, paths = [], set()
+          for mode in ("on-prem", "aws"):
+              for f in flux_files(mode):
+                  errs += [f"{os.path.relpath(f)}: {m} is not in required-vars.txt"
+                           for m in sorted(used(f.read_text()) - cluster_vars)]
+              for path, d in kustomizations(mode):
+                  name, pb = d["metadata"]["name"], d["spec"].get("postBuild", {})
+                  declared = set(pb.get("substitute", {}))
+                  for s in pb.get("substituteFrom", []):
+                      if (s["kind"], s["name"]) not in lists:
+                          errs.append(f"{name}: substituteFrom {s['kind']}/{s['name']} has no contract list")
+                      declared |= lists.get((s["kind"], s["name"]), set())
+                  paths.add(path)
+                  errs += [f"{name} ({path}) uses {m}, which none of its postBuild sources declares"
+                           for m in sorted(used(kustomize_text(path)) - declared)]
+          if errs:
+              print("::error::Add site vars to required-vars.txt (on-prem secret values to required-secret-values.txt),")
+              print("::error::or $$-escape runtime shell vars so Flux leaves them literal:")
+              for e in dict.fromkeys(errs):  # shared files repeat per mode
+                  print("::error::" + e)
               sys.exit(1)
-          print(f"required-vars.txt covers all {len(used)} envsubst targets")
+          print(f"{len(paths)} rendered Flux paths: every substitution is declared by its own sources")
           PY
+
+      - name: On-prem Secret templates render exactly through Flux
+        # Fixture values only; flux build --dry-run never reads a cluster.
+        run: python3 tooling/deploy/check_secret_templates.py
 
       - name: config-artifact tooling stamps + generates cleanly
         run: |
@@ -146,7 +197,7 @@ jobs:
           while read -r d; do
             grep -qx 'kind: Component' "$d/kustomization.yaml" && continue
             kustomize build "$d" >/dev/null || { echo "::error file=$d::stamped base failed to build"; fail=1; }
-          done < <(find /tmp/stamped/base -name kustomization.yaml -exec dirname {} \; | sort)
+          done < <(find /tmp/stamped/base /tmp/stamped/bootstrap -name kustomization.yaml -exec dirname {} \; | sort)
           exit $fail
 
       - name: OPA data document matches the Ansible source

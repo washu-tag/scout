@@ -104,3 +104,29 @@ def test_token_lifetime_floor_when_nothing_useful():
         trino_client._token_lifetime("not.a.jwt", expires_in=None)
         == trino_client._FALLBACK_LIFETIME_SECONDS
     )
+
+
+class _NamedError(Exception):
+    def __init__(self, error_name: str | None) -> None:
+        super().__init__(error_name)
+        self.error_name = error_name
+
+
+@pytest.mark.parametrize(
+    "error_name",
+    [
+        "PERMISSION_DENIED",
+        "USER_CANCELED",
+        "ADMINISTRATIVELY_KILLED",
+        "ADMINISTRATIVELY_PREEMPTED",
+    ],
+)
+def test_denials_and_kills_are_not_retryable(error_name: str) -> None:
+    assert not trino_client.is_retryable(_NamedError(error_name))
+
+
+@pytest.mark.parametrize(
+    "error_name", ["COLUMN_NOT_FOUND", "EXCEEDED_TIME_LIMIT", None]
+)
+def test_other_failures_are_retryable(error_name: str | None) -> None:
+    assert trino_client.is_retryable(_NamedError(error_name))

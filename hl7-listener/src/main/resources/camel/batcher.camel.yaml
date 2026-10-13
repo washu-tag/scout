@@ -11,6 +11,19 @@
 # manifest publish succeed. A crash mid-batch therefore replays the batch rather than dropping it
 # (auto-commit would advance offsets as records enter the route, before the durable write).
 #
+# breakOnFirstError=true extends that to a batch that fails without a crash (e.g. an S3 upload
+# timeout): Camel reconnects the consumer, which resumes from the last committed offset and
+# redelivers the batch. Without it Camel logs the failure, discards the batch and keeps polling,
+# and the next successful batch commits past the failed one, so it never reaches bronze. A batch
+# that keeps failing therefore stalls the batcher (consumer lag grows, Kafka holds the records)
+# until the cause is fixed, instead of leaving gaps.
+#
+# Camel reconnects without a delay, so with a backlog a failing batch would be retried
+# back-to-back. The route-scoped onException below pauses before letting the failure through,
+# capping retries at about one per hl7.batcher.retry.delay.ms. The pause and the upload attempt
+# both run between Kafka polls, and an upload against stalled storage can take 3 minutes to fail,
+# so maxPollIntervalMs raises Kafka's 5-minute default, past which the broker evicts the consumer.
+#
 # Config values are Camel property placeholders resolved from the Deployment env.
 #
 # Canonical YAML DSL (camel validate normalize); Camel 4.22 warns on the compact form.
@@ -26,10 +39,24 @@
         batching: true
         allowManualCommit: true
         autoCommitEnable: false
+        breakOnFirstError: true
+        maxPollIntervalMs: 900000
         maxPollRecords: '{{hl7.batcher.max.poll.records}}'
         pollTimeoutMs: '{{hl7.batcher.poll.timeout.ms}}'
         batchingIntervalMs: '{{hl7.batcher.batching.interval.ms}}'
       steps:
+        # Not handled: after the pause the batch still fails, so breakOnFirstError redelivers it.
+        - onException:
+            exception:
+              - java.lang.Exception
+            steps:
+              - log:
+                  message: 'Batch failed, retrying after {{hl7.batcher.retry.delay.ms:60000}} ms: ${exception.message}'
+                  loggingLevel: WARN
+              - delay:
+                  expression:
+                    constant:
+                      expression: '{{hl7.batcher.retry.delay.ms:60000}}'
         - setHeader:
             name: CamelAwsS3Key
             expression:

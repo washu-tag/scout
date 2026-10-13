@@ -25,6 +25,10 @@ keycloak_fragment_reconciler_secret_key: fragment_reconciler_svc
 keycloak_fragment_reconciler_watched_namespaces:
   - ALL
 
+# Realm client scopes a fragment may name under `clientScopes`. The realm only
+# has xnat-audience when XNAT is enabled.
+keycloak_fragment_reconciler_offered_client_scopes: "{{ ['xnat-audience'] if enable_xnat | default(false) | bool else [] }}"
+
 keycloak_fragment_reconciler_resources_default:
   requests:
     cpu: 10m

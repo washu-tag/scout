@@ -93,6 +93,7 @@ See also the example pluggable app: https://github.com/washu-tag/scout/tree/main
 | `roleClaim` | Optional, defaults to `groups`. This controls in what token claim Keycloak will write the user's roles, and where in the token your app can expect to read them. |
 | `secretRef` | `name`, and optionally `key`, of the Secret holding your credential. |
 | `grants` | How you map Scout's user groups (`scout-user` and `scout-admin`) to your app's role vocabulary. The roles must exist in the `roles` section above. |
+| `clientScopes` | Optional. Keycloak client scopes your app needs in order to call another Scout service as the signed-in user, for example `[xnat-audience]`. Each must be one your site offers; see [Calling another Scout service as the user](#calling-another-scout-service-as-the-user). |
 
 A bit more on `roles` and `grants`, since this is an important piece to understand if you are going to get auth right. When a Scout user gets authorized by an admin to use the platform, they will be added to `scout-user` to give them basic access, or `scout-admin` to give them admin access. As of writing those are the _only_ groups and only levels of permission Scout recognizes. In the `grants` section of the Fragment is where you can express something like "When a user is in `scout-user`, they should get these roles in my app: `[...]`". Those roles are the only thing you will see in the tokens that your service gets on user requests; you won't see `scout-user` or `scout-admin`, you'll see the roles that those two groups map to.
 
@@ -193,7 +194,7 @@ The Fragment syntax is deliberately a subset of what Keycloak's clients can conf
 | PKCE `S256` required | Send a code challenge — most libraries do by default ([RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636)) |
 | No direct access grants | You cannot get a token with a username and password; see [testing](#5-test-and-troubleshoot) |
 | No service accounts | No `client_credentials` grant for machine-to-machine calls |
-| Sees only its own roles | Your token names your roles and no other service's |
+| Sees only its own roles | Your login tokens name your roles and no other service's; a token for another service comes from [token exchange](#calling-another-scout-service-as-the-user) |
 
 ## 4. Read the token and act on roles
 
@@ -235,6 +236,38 @@ Once you have validated the token, the user is Authenticated and you can make Au
 
 The role values belong to your app. They are whatever you defined in the `roles` section of the Fragment. Your app must define what they mean. Note that it is possible for the token to contain no claim or an empty claim, which means the user has no roles assigned for your app.
 
+### Calling another Scout service as the user
+
+Some Scout services accept a user's access token directly, so your app can call them as the signed-in user rather than with a shared credential. XNAT's REST API is one. Such a service only accepts a token that is addressed to it and carries its access role, and your app's login tokens carry neither. You get one in two steps.
+
+**Ask for the service's scope in your Fragment.** List it under `clientScopes`:
+
+```yaml
+        clientScopes: [xnat-audience]
+```
+
+A site offers a scope only for a service it runs. Scout's Ansible install offers `xnat-audience` when XNAT is enabled. A Fragment that names a scope the site does not offer is rejected as a whole, with an event listing the scopes the site does offer.
+
+The scope is added to your client as an _optional_ scope, so it changes nothing about your login tokens: they are still addressed to your app alone. What it does is let your app exchange a user's token for one addressed to the other service.
+
+**Exchange the user's access token when you need to call the service.** This is a standard token exchange ([RFC 8693](https://datatracker.ietf.org/doc/html/rfc8693)) at Keycloak's token endpoint, authenticated with your client secret. The `subject_token` is the user's access token that your app received at login:
+
+```console
+$ curl -s -u "my-service:$CLIENT_SECRET" \
+    https://keycloak.<scout-host>/realms/scout/protocol/openid-connect/token \
+    -d grant_type=urn:ietf:params:oauth:grant-type:token-exchange \
+    -d subject_token="$USER_ACCESS_TOKEN" \
+    -d subject_token_type=urn:ietf:params:oauth:token-type:access_token \
+    -d scope=xnat-audience \
+    -d audience=xnat
+```
+
+Send both `scope` and `audience`. The `scope` is what brings in the service's audience and access role; `audience` only narrows the new token down to that one service, and on its own is refused because the audience is not available. The response's `access_token` is a token for the same user, addressed to XNAT, which you send as `Authorization: Bearer <token>`. Cache it in your service and reuse it until its `expires_in` runs out, then exchange again.
+
+The user still needs to be allowed into the other service. For XNAT that means holding Scout's XNAT access, and having signed in to XNAT through the browser at least once, since a token alone does not create an XNAT account.
+
+Instead of token exchange, your app can instead request an offered scope at login by adding it to the scopes your OIDC library asks for. That makes every login token a credential for the other service as well as yours, which is a mild security concern, so we recommend an explicit token exchange.
+
 ## 5. Test and troubleshoot
 
 ### Was the fragment applied?
@@ -275,6 +308,9 @@ The error statuses will be re-published every time the Reconciler resyncs and ch
 | Administrators denied, ordinary users fine | Admin tier not granted your `-user` role |
 | `aud` mismatch validating a token | Requiring `aud` on an access token; check `azp` instead, or validate the ID token |
 | PKCE error from Keycloak | Your library is not sending an `S256` code challenge |
+| `FragmentInvalid` naming `clientScopes` | Your site does not offer that scope, possibly because the service is not installed |
+| Token exchange refused: audience not available | The exchange request sent `audience` without the matching `scope` |
+| XNAT refuses an exchanged token | The user lacks XNAT access, or has never signed in to XNAT through the browser |
 
 ### Removal
 
