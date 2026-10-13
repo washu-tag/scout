@@ -272,7 +272,20 @@ export default function SearchDetailPage() {
         (colPickerRef.current?.offsetWidth ?? 0) +
         (expanderRef.current?.offsetWidth ?? 0);
       const gapCount = Math.max(children.length - 1, 0);
-      setActionsAvailableWidth(Math.max(0, el.clientWidth - fixedWidth - gapPx * gapCount));
+      const nextAvailable = Math.max(0, el.clientWidth - fixedWidth - gapPx * gapCount);
+      // eslint-disable-next-line no-console
+      console.debug('[ToolbarRow budget]', {
+        clientWidth: el.clientWidth,
+        leftClusterWidth: leftClusterRef.current?.offsetWidth,
+        filtersWidth: filtersRef.current?.offsetWidth,
+        colPickerWidth: colPickerRef.current?.offsetWidth,
+        expanderWidth: expanderRef.current?.offsetWidth,
+        gapPx,
+        gapCount,
+        childCount: children.length,
+        nextAvailable,
+      });
+      setActionsAvailableWidth(nextAvailable);
     };
     measure();
     toolbarObserver.current = new ResizeObserver(measure);

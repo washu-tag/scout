@@ -86,6 +86,18 @@ export function ActionsToolbar({
         fit++;
       }
     }
+    // eslint-disable-next-line no-console
+    console.debug('[ActionsToolbar fit]', {
+      availableWidth,
+      builtinsWidth,
+      boundaryGap,
+      available,
+      widths,
+      totalWidth,
+      moreWidth: moreProberRef.current?.offsetWidth,
+      fit,
+      customCount: customs.length,
+    });
     setVisibleCustomCount(fit);
   }, [customIdsKey, hasBuiltins, availableWidth]);
 
