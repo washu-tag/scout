@@ -7,6 +7,7 @@ Run with:
 
 import asyncio
 import importlib.util
+import json
 import re
 from pathlib import Path
 
@@ -259,12 +260,56 @@ def _routing_handler():
 async def _chart(tool, emitter, message_id="m1"):
     return await tool.scout_chart_sql(
         sql="SELECT modality, count(*) n FROM reports_latest GROUP BY modality",
-        vega_lite_spec={"mark": "bar"},
+        vega_lite_spec='{"mark": "bar"}',
         __event_emitter__=emitter,
         __oauth_token__="tok",
         __metadata__={"chat_id": "c1"},
         __message_id__=message_id,
     )
+
+
+@pytest.mark.parametrize("spec", ['{"mark": "bar"}', {"mark": "bar"}])
+@pytest.mark.asyncio
+async def test_chart_posts_spec_as_object(spec, monkeypatch):
+    seen = {}
+
+    def handler(request):
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(
+            200, json={"id": "pl_1", "view_url": "https://rv/spa/plots/pl_1"}
+        )
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    await tool.scout_chart_sql(
+        sql="SELECT 1 AS n", vega_lite_spec=spec, __oauth_token__="tok"
+    )
+    assert seen["body"]["vega_lite_spec"] == {"mark": "bar"}
+
+
+@pytest.mark.parametrize(
+    "spec,error",
+    [
+        ('{mark: "bar"}', "not valid JSON"),
+        ('{"encoding": {"x": {"type": "quantitative}}}', "not valid JSON"),
+        ('["bar"]', "must be a JSON object"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_chart_bad_spec_returns_retryable_error(spec, error, monkeypatch):
+    called = False
+
+    def handler(request):
+        nonlocal called
+        called = True
+        return httpx.Response(200, json={})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    result = await tool.scout_chart_sql(
+        sql="SELECT 1 AS n", vega_lite_spec=spec, __oauth_token__="tok"
+    )
+    assert error in result
+    assert "call scout_chart_sql again" in result
+    assert not called
 
 
 async def _cohort(tool, emitter, message_id="m1"):
