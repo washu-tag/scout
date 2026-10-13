@@ -1,9 +1,61 @@
-import { useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import type { HLJSApi } from 'highlight.js';
+import sqlLang from 'highlight.js/lib/languages/sql';
+import { createLowlight } from 'lowlight';
 import type { FilterState } from '../../api/client';
 import { Modal } from '../../Modal';
 import { CheckIcon, CopyIcon } from './icons';
 import { MatchStats } from './MatchStats';
 import { hasEvidence } from './evidenceStats';
+import './sqlTheme.css';
+
+const TRINO_FUNCTIONS = [
+  'regexp_like',
+  'regexp_extract',
+  'array_join',
+  'any_match',
+  'all_match',
+  'none_match',
+  'transform',
+  'filter',
+  'reduce',
+  'element_at',
+  'cardinality',
+  'contains',
+  'split',
+  'strpos',
+  'date_trunc',
+  'date_diff',
+  'count_if',
+  'flatten',
+];
+
+function trinoSql(hljs: HLJSApi) {
+  const lang = sqlLang(hljs);
+  lang.contains.unshift({
+    match: hljs.regex.concat(/\b/, hljs.regex.either(...TRINO_FUNCTIONS), /\s*\(/),
+    keywords: { built_in: TRINO_FUNCTIONS },
+    relevance: 0,
+  });
+  return lang;
+}
+
+const lowlight = createLowlight({ sql: trinoSql });
+
+type HighlightNode = ReturnType<typeof lowlight.highlight>['children'][number];
+
+function renderHighlight(nodes: HighlightNode[]): ReactNode[] {
+  return nodes.map((node, i) => {
+    if (node.type === 'text') return node.value;
+    if (node.type !== 'element') return null;
+    const className = node.properties.className;
+    return (
+      <span key={i} className={Array.isArray(className) ? className.join(' ') : undefined}>
+        {renderHighlight(node.children)}
+      </span>
+    );
+  });
+}
 
 export function ExplainSqlModal(props: {
   explanation: string;
@@ -95,6 +147,13 @@ function SqlSection(props: {
   copied: boolean;
   onCopy: () => void;
 }) {
+  const highlighted = useMemo(() => {
+    try {
+      return renderHighlight(lowlight.highlight('sql', props.sql).children);
+    } catch {
+      return props.sql;
+    }
+  }, [props.sql]);
   return (
     <details style={{ marginTop: '0.75rem' }}>
       <summary
@@ -122,16 +181,18 @@ function SqlSection(props: {
             paddingRight: '2.25rem',
             fontSize: '0.74rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-            // The model may emit the whole statement on one line; wrap, and break inside long regexes.
-            whiteSpace: 'pre-wrap',
-            overflowWrap: 'anywhere',
+            // Keep the model's line layout; only a single-line statement is worth wrapping.
+            whiteSpace: props.sql.includes('\n') ? 'pre' : 'pre-wrap',
+            overflowWrap: 'break-word',
             overflowX: 'auto',
-            maxHeight: '18rem',
+            maxHeight: '24rem',
             overflowY: 'auto',
             margin: 0,
+            lineHeight: 1.45,
+            tabSize: 2,
           }}
         >
-          {props.sql}
+          {highlighted}
         </pre>
         <button
           type="button"

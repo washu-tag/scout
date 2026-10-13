@@ -1,3 +1,6 @@
+# Legacy recovery publisher: deliberately does not advance the authoritative
+# :main carry pointer. Normal CI migrates an unmarked predecessor with a real
+# full component rebuild; never seed the corrected chain from live image tags.
 # One-time bootstrap for the build-lane haul (ADR 0033, roadmap step 5b-2).
 #
 # The steady-state publish-haul job (in ci.yaml) carries unchanged components
@@ -90,7 +93,7 @@ jobs:
       - name: Render the first haul manifest (no predecessor)
         run: |
           set -euo pipefail
-          echo "VERSION=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          echo "VERSION=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}-bootstrap" >> "$GITHUB_ENV"
           # The OCI charts (in components.txt since #618) aren't published until
           # seed-charts.yaml runs, so the first haul seeds ONLY the images and has
           # no predecessor to carry charts from. Render the images-only subset; the
@@ -110,5 +113,6 @@ jobs:
           core-manifest: haul.yaml
           manifest-repo: ${{ env.MANIFEST_REPO }}
           bundle-repo: ${{ env.BUNDLE_REPO }}
+          advance-main: 'false'
           cosign-private-key: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}

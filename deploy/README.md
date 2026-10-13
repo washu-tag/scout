@@ -1,12 +1,13 @@
 # `deploy/` — Scout GitOps deployment base (ADR 0031, Phase 3)
 
 Kustomize bases + Flux `Kustomization`s that stand Scout up by *pulling* signed,
-digest-pinned artifacts instead of the Ansible push. WIP scaffold: the ingest
-vertical slice first (postgres -> lake -> orchestrator -> extractor), unconsumed
-until CI switches `deploy-and-test` to deploy from it. See
+digest-pinned artifacts. The on-prem CI proof consumes the ingest and authentication
+dependency graphs; the full-platform CI cutover from Ansible is still pending. See
 `docs/internal/gitops-implementation-plan.md` and ADRs 0030 / 0031.
 
 ## Layout
+- `bootstrap/sops-guard/` — the on-prem admission policy installed before site Secrets.
+  It ships in the config artifact but is not reconciled by the application DAG.
 - `base/<component>/{operator,cluster,...}/` — Kustomize bases (the k8s resources).
   CRD-owning operators split into `operator/` (install) and the CR (`cluster/`),
   so a CR never dry-runs before its CRD exists.
@@ -66,7 +67,7 @@ until CI switches `deploy-and-test` to deploy from it. See
      path isn't substituted.
 
 ## Site prerequisites (Layer 0)
-Not in the artifact; a site provides them before reconciling it: cert-manager with the
+A site provides these runtime dependencies before reconciling the artifact: cert-manager with the
 `scout-internal-ca` ClusterIssuer, External Secrets Operator + a `ClusterSecretStore`
 (cloud), and on aws the `alb` IngressClass/IngressClassParams plus the IRSA roles in
 `required-secrets.md`. A site that seeds secrets from a Kustomization the artifact
@@ -78,6 +79,26 @@ and the `scout-secret-values` Secret in `flux-system` before `secrets-ready` rec
 apply it from a site Kustomization (with `decryption` for SOPS) that the Kustomizations
 reconciling `./flux` and `./modes/on-prem` dependsOn. Generate it with
 `tooling/deploy/gen_secret_values.py`.
+
+Those two Kustomizations (the site roots) live in `flux-system`, next to `cluster-vars`
+and the `scout-config` source, because Flux substitutes only from its own namespace.
+The `scout-config` OCIRepository must select its `application/gzip` layer with
+`layerSelector.operation: copy`, preserving the packaged tarball. Flux's default
+extract/rearchive behavior filters media files, including the OAuth2 Proxy logo.
+Both site roots carry `postBuild.substituteFrom: cluster-vars`, which resolves the one `${var}` in
+the Flux files themselves (keycloak-operator's `targetNamespace`), and both are siblings
+of the site Kustomization rather than its children: with `wait`, a parent that applies a
+child that dependsOn it deadlocks.
+
+A site that keeps SOPS-encrypted Secrets in git must install the shipped
+`bootstrap/sops-guard/` base before any site Kustomization can apply a Secret:
+`kubectl apply -k <verified-config-directory>/bootstrap/sops-guard`. The source copy
+is `deploy/bootstrap/sops-guard/`; no `.github/` resources are required by a site.
+This cluster-scoped policy requires Kubernetes' `admissionregistration.k8s.io/v1`
+[ValidatingAdmissionPolicy API](https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/) (stable in Kubernetes 1.30) and rejects Secret data
+that starts with SOPS ciphertext. It supplements `spec.decryption`; it does not
+decrypt data or supply an age key. For the observed controller behavior and the CI
+negative case, see [integration tests](../docs/internal/integration_tests.md#sops-admission-guard).
 
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared
@@ -91,5 +112,9 @@ Remaining components: jupyter, report-viewer, monitoring, and the feature Compon
 
 Done since the scaffold: the per-namespace foundation bases (`base/scout-*-foundation`,
 one owner per Namespace + shared HelmRepository) and the config-artifact publish job
-(stamps the Scout charts' `0.0.0` placeholders from the haul). Remaining: the
-**`deploy-and-test` switch** to deploy the ingest slice via Flux (ingest suite = gate).
+(stamps the Scout charts' `0.0.0` placeholders from the haul). The on-prem Flux proof
+(`.github/workflows/deploy-flux.yaml`) deploys the ingest and authentication dependency
+closures on separate k3s runners from signed config/site artifacts. It runs ingest,
+browser sign-in/access, and data-authorization tests. Superset and the components
+listed above remain outside this CI proof; see the
+[integration test scope](../docs/internal/integration_tests.md#on-prem-flux-artifact-proof).

@@ -1350,9 +1350,16 @@
           "roles": ["manage-clients", "view-realm", "manage-realm"]
         }
       ]{{- if eq (.Values.enableXnat | toString) "true" }},
+      {{- /* The clientScope entry brings xnat-access along with aud=xnat. A
+          fullScopeAllowed: false client (jupyterhub, every fragment client)
+          otherwise gets the audience but no resource_access.xnat.roles. */}}
       "xnat": [
         {
           "client": "xnat",
+          "roles": ["xnat-access"]
+        },
+        {
+          "clientScope": "xnat-audience",
           "roles": ["xnat-access"]
         }
       ]{{- end }}
@@ -1473,6 +1480,36 @@
           }
         ]
       },
+      {{- if eq (.Values.enableXnat | toString) "true" }}
+      {{- /* Adds aud=xnat to access tokens, and through its clientScopeMappings
+          entry puts xnat-access in scope, so the token passes both of the openid
+          plugin's bearer gates. Any client whose users call XNAT's REST API
+          needs this scope either in its default or optional scopes. */}}
+      {
+        "name": "xnat-audience",
+        "description": "Adds aud=xnat to access tokens for clients calling XNAT",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "xnat-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "xnat",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
+        ]
+      },
+      {{- end }}
       {{- /* Retired, not deleted */}}
       {
         "name": "microprofile-jwt",

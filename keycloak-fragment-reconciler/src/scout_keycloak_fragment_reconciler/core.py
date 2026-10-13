@@ -270,6 +270,7 @@ class Reconciler:
                         spec,
                         hostname=self.settings.server_hostname,
                         tiers=self.settings.tier_roles,
+                        offered_scopes=self.settings.offered_client_scopes,
                     )
                 except FragmentError as exc:
                     snapshot.outcomes.append(
@@ -451,12 +452,16 @@ class Reconciler:
             spec, secret=secret, source=claim.source
         )
         try:
-            uuid, stop = self._ensure_client(claim, desired, secret, listed=listed)
+            client, stop = self._ensure_client(claim, desired, secret, listed=listed)
             if stop is not None:
                 return stop
+            uuid = client["id"]
             roles, new_roles = self._reconcile_roles(uuid, spec)
             self._reconcile_mappers(uuid, spec)
             self._reconcile_tier_edges(uuid, spec, roles=roles, new_roles=new_roles)
+            self._reconcile_client_scopes(
+                uuid, spec, linked=client.get("optionalClientScopes") or []
+            )
         except KeycloakError as exc:
             level = log.warning if exc.retryable else log.error
             level("applying %s failed: %s", spec.client_id, exc)
@@ -465,8 +470,8 @@ class Reconciler:
 
     def _ensure_client(
         self, claim: Claim, desired: dict, secret: str, *, listed: dict | None
-    ) -> tuple[str, Outcome | None]:
-        """The client's uuid, or the outcome that ends the apply here.
+    ) -> tuple[dict, Outcome | None]:
+        """The client as it now stands, or the outcome that ends the apply here.
 
         Two of the three branches end it. A dry-run create leaves nothing for
         anything downstream to be diffed against, and a client already in the
@@ -481,12 +486,12 @@ class Reconciler:
                 partial(self.admin.create_client, desired),
             )
             if uuid is None:
-                return "", Outcome(
+                return {}, Outcome(
                     claim.source, spec.client_id, APPLIED, "dry-run: would create"
                 )
-            return uuid, None
+            return {**desired, "id": uuid}, None
         if not translate.is_ours(live):
-            return "", Outcome(
+            return {}, Outcome(
                 claim.source,
                 spec.client_id,
                 REJECTED,
@@ -494,7 +499,7 @@ class Reconciler:
                 "does not carry this reconciler's stamp; refusing to modify it",
             )
         self._update(live["id"], live, desired, secret)
-        return live["id"], None
+        return live, None
 
     def _read_secret(self, claim: Claim) -> tuple[str | None, str]:
         """The client credential, or why it could not be read.
@@ -676,6 +681,40 @@ class Reconciler:
                         [{"id": roles[n]["id"], "name": n} for n in drop],
                     ),
                 )
+
+    def _reconcile_client_scopes(
+        self, uuid: str, spec: ClientSpec, *, linked: list[str]
+    ) -> None:
+        """After the tier edges, because a linked scope is itself a grant.
+
+        `linked` is the client's optional scopes as listed or created this pass,
+        so a converged client costs no read. Scopes the site does not offer are
+        never touched. Removals go first, so a scope missing from the realm can
+        never hold back a revocation.
+        """
+        offered = set(self.settings.offered_client_scopes)
+        want = set(spec.client_scopes)
+        have = set(linked) & offered
+        if want == have:
+            return
+        ids = {s.get("name"): s.get("id") for s in self.admin.client_scopes()}
+        for name in sorted(have - want):
+            self._write(
+                f"remove scope {name} from {spec.client_id}",
+                partial(self.admin.remove_optional_client_scope, uuid, ids[name]),
+            )
+        absent = sorted(name for name in want - have if not ids.get(name))
+        if absent:
+            raise KeycloakError(
+                404,
+                f"the site offers client scope(s) {', '.join(absent)}, which the "
+                "realm does not have",
+            )
+        for name in sorted(want - have):
+            self._write(
+                f"add scope {name} to {spec.client_id}",
+                partial(self.admin.add_optional_client_scope, uuid, ids[name]),
+            )
 
     # --- garbage collection ---------------------------------------------
 

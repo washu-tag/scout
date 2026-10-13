@@ -36,6 +36,11 @@ tierRoles:
 # Required. A fragment's redirect URIs and app URL must sit under this host.
 serverHostname: ''
 
+# Realm client scopes a fragment's `clientScopes` may name; each is linked to
+# the client as an optional scope. An allowlist, like tierRoles: offer a scope
+# only for a service this site runs. Empty offers none.
+offeredClientScopes: []
+
 # Namespaces to read fragments from, or the lone value `ALL` for every
 # namespace. Empty is the default and means none: no ClusterRole is created, so
 # the chart alone installs a reconciler that can read nothing and leaves the
