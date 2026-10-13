@@ -247,7 +247,6 @@ async def test_unrenewable_session_raises_and_offers_a_sign_in(monkeypatch):
     assert not called
     await _drain_prompts()
     assert caller.types() == ["execute", "confirmation", "execute"]
-    assert "localStorage.setItem('redirectPath'" in caller.code()
     assert "window.location.assign" in caller.code()
 
 

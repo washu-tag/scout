@@ -53,11 +53,7 @@ return await new Promise((resolve) => {
   document.body.appendChild(frame);
 });
 """
-# OWUI's /auth page returns to localStorage.redirectPath after sign-in.
-_SIGN_IN_JS = (
-    "localStorage.setItem('redirectPath', window.location.pathname);"
-    "window.location.assign('/oauth/oidc/login');"
-)
+_SIGN_IN_JS = "window.location.assign('/oauth/oidc/login');"
 # Holds the un-awaited sign-in tasks so they aren't garbage-collected.
 _PENDING_PROMPTS: set[asyncio.Task] = set()
 _VIEWER_NOTE = (

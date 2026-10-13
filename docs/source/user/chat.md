@@ -295,7 +295,7 @@ If Chat doesn't appear on the Launchpad, the service may not be enabled in your 
 
 ### Authentication Issues
 
-Chat holds its own session, separate from the Launchpad's, so signing in at the Launchpad does not by itself refresh Chat. When Chat's sign-in goes stale partway through a long answer, or because you signed back in elsewhere, it renews it silently and carries on. If your Scout sign-in has expired outright it cannot do that, and offers you a sign-in prompt instead: accept it, sign in, then regenerate the response. Your conversation is saved either way.
+Chat holds its own session, separate from the Launchpad's, so signing in at the Launchpad does not by itself refresh Chat. When Chat's sign-in goes stale partway through a long answer, or because you signed back in elsewhere, it renews it silently and carries on. If your Scout sign-in has expired outright it cannot do that, and offers you a sign-in prompt instead: accept it and sign in. Chat opens on its home page afterwards, so reopen your conversation from the sidebar and regenerate the response. Your conversation is saved either way.
 
 ### Unexpected Results
 
