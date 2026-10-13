@@ -3,6 +3,14 @@
 # Installs and configures k3s server (control plane) node
 # Only runs on hosts in the 'server' group
 
+- name: Require a hostname or IPv4 address for the external API
+  ansible.builtin.assert:
+    that:
+      - k3s_api_host is string
+      - k3s_api_host is match('^[A-Za-z0-9][A-Za-z0-9.-]*$')
+    fail_msg: k3s_api_host must be a hostname or IPv4 address without a scheme or port.
+  when: ansible_control_node_external_to_cluster
+
 - name: Create directory for K3s data
   ansible.builtin.file:
     path: '{{ base_dir }}'
@@ -18,6 +26,8 @@
     INSTALL_K3S_EXEC: >-
       --default-local-storage-path={{ base_dir }}
       {% if use_staging_node | default(false) %}--disable-default-registry-endpoint{% endif %}
+      {% if ansible_control_node_external_to_cluster %}--tls-san={{ k3s_api_host | quote }}{% endif %}
+      {% if ansible_control_node_external_to_cluster and k3s_api_host != inventory_hostname %}--tls-san={{ inventory_hostname | quote }}{% endif %}
       {{ k3s_extra_args }}
     INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
     K3S_TOKEN: '{{ k3s_token }}'
@@ -51,10 +61,17 @@
         src: '{{ kubeconfig_yaml }}'
       register: k3s_kubeconfig_raw
 
-    - name: Parse and modify kubeconfig
+    - name: Parse kubeconfig
       no_log: true
       ansible.builtin.set_fact:
         k3s_kubeconfig: '{{ k3s_kubeconfig_raw.content | b64decode | from_yaml }}'
+
+    - name: Require a verified kubeconfig
+      no_log: true
+      ansible.builtin.assert:
+        that:
+          - k3s_kubeconfig.clusters[0].cluster['certificate-authority-data'] | default('') | length > 0
+          - not (k3s_kubeconfig.clusters[0].cluster['insecure-skip-tls-verify'] | default(false) | bool)
 
     - name: Update server address in kubeconfig
       no_log: true
@@ -62,16 +79,12 @@
         modified_kubeconfig: '{{ k3s_kubeconfig | combine(cluster_update, recursive=True) }}'
       vars:
         cluster_update:
-          clusters:
-            - name: '{{ k3s_kubeconfig.clusters[0].name }}'
-              # insecure-skip-tls-verify is required here: the k3s server certificate
-              # is only valid for hostnames we can't use to reach the API (see NOTE below).
-              # nosemgrep: yaml.kubernetes.security.skip-tls-verify-cluster.skip-tls-verify-cluster
-              cluster:
-                server: 'https://{{ ansible_host | default(inventory_hostname) }}:6443'
-                # certificate-authority-data: '{{ k3s_kubeconfig.clusters[0].cluster["certificate-authority-data"] }}'
-                # NOTE: The certificates we have are only valid for hostnames that we can't use to reach the machines, so we cannot TLS validate the connection
-                insecure-skip-tls-verify: true
+          clusters: >-
+            {{ [k3s_kubeconfig.clusters[0] | combine({
+              'cluster': k3s_kubeconfig.clusters[0].cluster | combine({
+                'server': 'https://' ~ k3s_api_host ~ ':6443'
+              })
+            })] + k3s_kubeconfig.clusters[1:] }}
 
     - name: Create local kubeconfig directory on jump node
       ansible.builtin.file:
@@ -79,6 +92,7 @@
         state: directory
         mode: '0700'
       delegate_to: localhost
+      become: false
 
     - name: Write modified kubeconfig locally on jump node
       no_log: true
@@ -87,6 +101,7 @@
         dest: '{{ local_kubeconfig_yaml }}'
         mode: '0600'
       delegate_to: localhost
+      become: false
 
 - name: Ensure k3s control plane server is started
   ansible.builtin.systemd:

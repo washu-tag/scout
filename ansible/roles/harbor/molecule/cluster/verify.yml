@@ -56,7 +56,8 @@
     - name: Verify Harbor API is accessible
       ansible.builtin.uri:
         url: 'https://{{ harbor_hostname }}/api/v2.0/systeminfo'
-        validate_certs: false
+        validate_certs: true
+        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
         status_code: 200
       register: harbor_api_check
       retries: 30
@@ -68,18 +69,24 @@
         msg: 'Harbor version: {{ harbor_api_check.json.harbor_version }}'
 
     - name: Get all registries
+      no_log: true
       ansible.builtin.uri:
         url: 'https://{{ harbor_hostname }}/api/v2.0/registries'
-        validate_certs: false
+        validate_certs: true
+        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
+        follow_redirects: none
         user: admin
         password: '{{ harbor_admin_password }}'
         force_basic_auth: true
       register: registries
 
     - name: Get all projects
+      no_log: true
       ansible.builtin.uri:
         url: 'https://{{ harbor_hostname }}/api/v2.0/projects'
-        validate_certs: false
+        validate_certs: true
+        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
+        follow_redirects: none
         user: admin
         password: '{{ harbor_admin_password }}'
         force_basic_auth: true

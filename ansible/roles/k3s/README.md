@@ -15,6 +15,18 @@ See [Creating the Ansible Inventory File](../../../docs/source/technical/invento
 
 See `defaults/main.yaml` for complete variable definitions and defaults.
 
+When Ansible runs outside the cluster, `k3s_api_host` selects the API hostname in
+the local kubeconfig. It defaults to `ansible_host` or `inventory_hostname`, and
+the initial server installation adds it and the server inventory hostname to the
+certificate's TLS SANs. The local
+kubeconfig retains the server's CA and verifies TLS. Changing this hostname on an
+existing installation requires updating the server's K3s TLS SAN configuration;
+the role's installation task does not replace an existing service.
+
+When staging registry mirrors are enabled, both servers and agents disable
+containerd's default registry endpoint fallback. Registries without a configured
+mirror can still use their default endpoint.
+
 ## Dependencies
 
 - `scout_common` role (for Helm chart deployment patterns)
@@ -103,6 +115,7 @@ uvx --with molecule-plugins[docker] molecule test -s integration
 - Verify k3s cluster is responsive (`kubectl get nodes`)
 - Verify node reaches Ready state
 - Check kubeconfig file generation and permissions
+- Verify the configured API hostname passes certificate validation and the external kubeconfig retains its CA
 
 **Why integration tests (not unit tests):**
 The k3s role performs system-level operations (systemd service management, privileged installation, Kubernetes cluster creation) that cannot be meaningfully mocked. Integration tests validate real installation behavior including systemd integration and cluster health.

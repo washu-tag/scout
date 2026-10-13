@@ -47,3 +47,33 @@
       register: coredns_status
       changed_when: false
       failed_when: coredns_status.rc != 0
+
+    - name: Verify API certificate through the configured hostname
+      ansible.builtin.command:
+        argv:
+          - k3s
+          - kubectl
+          - --kubeconfig=/etc/rancher/k3s/k3s.yaml
+          - '--server=https://{{ k3s_api_host }}:6443'
+          - get
+          - --raw=/readyz
+      changed_when: false
+
+    - name: Read server kubeconfig
+      no_log: true
+      ansible.builtin.slurp:
+        src: /etc/rancher/k3s/k3s.yaml
+      register: server_kubeconfig_raw
+
+    - name: Verify external kubeconfig retains CA verification
+      no_log: true
+      ansible.builtin.assert:
+        that:
+          - external_config.clusters[0].cluster.server == 'https://' ~ k3s_api_host ~ ':6443'
+          - external_config.clusters[0].cluster['certificate-authority-data'] == server_config.clusters[0].cluster['certificate-authority-data']
+          - not (external_config.clusters[0].cluster['insecure-skip-tls-verify'] | default(false) | bool)
+          - external_config.users == server_config.users
+          - external_config.contexts == server_config.contexts
+      vars:
+        server_config: '{{ server_kubeconfig_raw.content | b64decode | from_yaml }}'
+        external_config: '{{ lookup("file", local_kubeconfig_yaml) | from_yaml }}'

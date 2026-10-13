@@ -1,3 +1,6 @@
 ---
 # Python Kubernetes Library Role Defaults
-# (No defaults currently defined - all directories created dynamically)
+python_kubernetes_epel_key_path: /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-9
+# Fedora publishes this trust anchor at https://fedoraproject.org/security/
+python_kubernetes_epel_key_fingerprint: FF8AD1344597106ECE813B918A3872BF3228467C
+python_kubernetes_epel_url: https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/

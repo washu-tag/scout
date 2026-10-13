@@ -16,7 +16,8 @@
 #   - package_type: Description for logging (e.g., "Python", "GPU")
 #
 # Optional parameters:
-#   - yum_repo: Dict with 'name' and 'url' — used in proxy mode to configure the repo.
+#   - yum_repo: Dict with 'name', 'url', optional 'gpgcheck' and 'gpgkey'.
+#     Callers enabling gpgcheck must provision and authenticate the signing key.
 #   - online_repo_setup: Path to a tasks file for online-mode repo setup.
 #   - verify_command: Command to verify installation (optional)
 
@@ -61,6 +62,15 @@
     - online_repo_setup is defined
     - packages_check.rc != 0
 
+- name: Require a signing key for signature-checked proxy packages
+  ansible.builtin.assert:
+    that: yum_repo.gpgkey | default('') | length > 0
+    fail_msg: Signature-checked proxy packages require an authenticated yum_repo.gpgkey.
+  when:
+    - package_proxy_mode | default('none') != 'none'
+    - yum_repo is defined
+    - yum_repo.gpgcheck | default(false) | bool
+
 - name: Configure {{ yum_repo.name | default('') }} yum repository for proxy
   ansible.builtin.template:
     src: yum-repo.j2
@@ -69,7 +79,6 @@
   when:
     - package_proxy_mode | default('none') != 'none'
     - yum_repo is defined
-    - packages_check.rc != 0
 
 ################################################################################
 # Install packages

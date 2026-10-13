@@ -117,6 +117,12 @@ squid_github_domains:
 staging_self_signed_tls_cert_path: /etc/rancher/k3s/tls/staging-tls.crt
 staging_self_signed_tls_key_path: /etc/rancher/k3s/tls/staging-tls.key
 
+# CA bundle on the host executing staging API calls; empty uses system trust.
+staging_api_ca_path: >-
+  {{ staging_self_signed_tls_cert_path
+     if (tls_cert_path | default(staging_self_signed_tls_cert_path)) == staging_self_signed_tls_cert_path
+     else '' }}
+
 # Service-to-namespace mappings
 # Core infrastructure
 postgres_cluster_namespace: '{{ scout_core_namespace }}'

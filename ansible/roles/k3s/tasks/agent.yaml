@@ -16,6 +16,7 @@
         creates: /usr/local/bin/k3s-agent-uninstall.sh
       environment:
         INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
+        INSTALL_K3S_EXEC: "{{ '--disable-default-registry-endpoint' if use_staging_node | default(false) else omit }}"
         INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
         K3S_URL: 'https://{{ groups["server"][0] }}:6443'
         K3S_TOKEN: '{{ k3s_token }}'

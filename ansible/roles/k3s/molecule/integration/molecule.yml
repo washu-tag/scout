@@ -30,6 +30,9 @@ provisioner:
         air_gapped: false
         k3s_selinux_enabled: true
         k3s_token: test-token-for-molecule
+        k3s_api_host: k3s-rockylinux9
+        local_kubeconfig_dir: '{{ lookup("env", "MOLECULE_EPHEMERAL_DIRECTORY") }}/kubeconfig'
+        local_kubeconfig_yaml: '{{ local_kubeconfig_dir }}/config'
         # Use native snapshotter for Docker container environment (overlayfs doesn't work in nested containers)
         k3s_extra_args: '--snapshotter=native'
 verifier:
