@@ -53,7 +53,11 @@ return await new Promise((resolve) => {
   document.body.appendChild(frame);
 });
 """
-_SIGN_IN_JS = "window.location.assign('/oauth/oidc/login');"
+# OWUI's /auth page returns to localStorage.redirectPath after sign-in.
+_SIGN_IN_JS = (
+    "localStorage.setItem('redirectPath', window.location.pathname);"
+    "window.location.assign('/oauth/oidc/login');"
+)
 # Holds the un-awaited sign-in tasks so they aren't garbage-collected.
 _PENDING_PROMPTS: set[asyncio.Task] = set()
 _VIEWER_NOTE = (
@@ -1030,6 +1034,11 @@ class _Auth:
             return None
         try:
             return await asyncio.wait_for(self._caller(event), timeout=timeout)
+        except asyncio.TimeoutError:
+            log.info(
+                "OWUI event call timed out after %ss: %s", timeout, event.get("type")
+            )
+            return None
         except Exception:
             log.exception("OWUI event call failed: %s", event.get("type"))
             return None

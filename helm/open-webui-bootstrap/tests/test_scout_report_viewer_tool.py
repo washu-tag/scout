@@ -247,6 +247,7 @@ async def test_unrenewable_session_raises_and_offers_a_sign_in(monkeypatch):
     assert not called
     await _drain_prompts()
     assert caller.types() == ["execute", "confirmation", "execute"]
+    assert "localStorage.setItem('redirectPath'" in caller.code()
     assert "window.location.assign" in caller.code()
 
 
@@ -288,6 +289,19 @@ async def test_each_failing_call_offers_its_own_sign_in(monkeypatch):
     await _drain_prompts()
     assert caller.types().count("confirmation") == 2
     assert not _mod._PENDING_PROMPTS
+
+
+@pytest.mark.asyncio
+async def test_unanswered_event_call_logs_without_a_traceback(monkeypatch, caplog):
+    async def never_answers(event):
+        await asyncio.sleep(1)
+
+    auth = _auth(monkeypatch, caller=never_answers)
+    with caplog.at_level("INFO"):
+        assert await auth._call({"type": "confirmation"}, timeout=0.01) is None
+    [record] = [r for r in caplog.records if "timed out" in r.getMessage()]
+    assert record.levelname == "INFO"
+    assert record.exc_info is None
 
 
 def test_renewal_frame_gets_its_src_before_it_is_attached():
