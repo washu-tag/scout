@@ -18,7 +18,7 @@ configurations {
     testImplementation.extendsFrom compileOnly
 }
 
-def kcVersion = "26.8.0"
+def kcVersion = "26.8.1"
 def checkstyleVersion = "13.4.2"
 // ADR 0021: OPA bundle publisher uses tar.gz as OPA's standard bundle
 // format. Commons Compress (plus its commons-codec/io/lang3 deps) is a

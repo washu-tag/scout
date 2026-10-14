@@ -53,3 +53,21 @@ vulnerabilities:
       pip 26.2.1 vendors urllib3 2.7.0. A malicious package server can exhaust
       a pip process through an unbounded chunk-size line. Accept this install-time
       DoS risk temporarily; remove when released pip vendors urllib3 >=2.8.0.
+  - id: CVE-2026-78667
+    paths:
+      - usr/bin/pebble
+    expired_at: 2026-12-01
+    statement: &pebble-statement >-
+      Go 1.26.7 stdlib in Canonical's pebble, shipped by the ubuntu:26.04 base
+      under scipy-notebook. The notebook entrypoint is tini + start.sh, so
+      pebble never runs. Remove when an ubuntu:26.04 rebuild ships Go >=1.26.9.
+  - id: CVE-2026-78669
+    paths:
+      - usr/bin/pebble
+    expired_at: 2026-12-01
+    statement: *pebble-statement
+  - id: CVE-2026-97031
+    paths:
+      - usr/bin/pebble
+    expired_at: 2026-12-01
+    statement: *pebble-statement
