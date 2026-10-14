@@ -19,7 +19,7 @@ repositories {
 }
 
 def temporalVersion = "1.40.0"
-def s3Version = "2.55.9"
+def s3Version = "2.55.10"
 def checkstyleVersion = "13.4.2"
 
 // TODO: Remove once Spring Boot ships a release that manages postgresql >= 42.7.13.
