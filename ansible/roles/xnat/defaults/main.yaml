@@ -60,6 +60,10 @@ xnat_admin_email: 'admin@{{ server_hostname }}'
 xnat_enabled_providers:
   - keycloak
 
+# Opt in when inventory must also manage an initialized site's provider list.
+# prefs-init.ini otherwise remains the only source, preserving existing policy.
+xnat_apply_enabled_providers_on_startup: false
+
 # --- Outbound mail --------------------------------------------------------
 # XNAT sends through Scout's shared relay (no per-XNAT postfix). The chart's
 # bundled Postfix subchart is disabled via mail.enabled: false in values.yaml.j2.
