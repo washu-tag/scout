@@ -348,7 +348,7 @@ jobs:
           docker system prune -af --volumes
       - name: Download the selected attempt's candidate
         if: github.ref_name != 'main'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           github-token: ${{ github.token }}
           run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
@@ -356,7 +356,7 @@ jobs:
           path: candidate
       - name: Download the selected attempt's canonical images
         if: github.ref_name != 'main'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           github-token: ${{ github.token }}
           run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
