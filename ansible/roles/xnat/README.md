@@ -195,6 +195,18 @@ fails the deploy if any is unset. `xnat_admin_password` seeds XNAT's `admin`
 account at first boot (`[system] defaultAdminPassword`), so the default
 `admin:admin` never survives a fresh deployment.
 
+The role encodes that first-boot preference as `{bcrypt}` before XNAT inserts it
+into its password column, and preserves an existing matching encoding on re-runs.
+The controller Python environment needs `bcrypt`; the plaintext inventory value
+is still used for the native administrative API and must fit within bcrypt's
+72-byte input limit.
+
+`xnat_enabled_providers` normally seeds the first-boot provider list only.
+Set `xnat_apply_enabled_providers_on_startup: true` to manage that list through
+`prefs-override.ini` on an initialized site. This opt-in defaults to false.
+For a POC that needs the seeded local administrator as well as Keycloak SSO,
+set the inventory provider list to `[localdb, keycloak]` and enable this option.
+
 > **Set `enable_xnat` AND `xnat_plugins` in `all.vars`, not a cluster group.** In
 > air-gapped deployments the staging Nexus role derives one `scout-maven` Maven
 > proxy per distinct coordinate-plugin `repo_url` (from the shared plugin list,

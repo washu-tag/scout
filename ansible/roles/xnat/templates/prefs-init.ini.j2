@@ -7,7 +7,7 @@ requireLogin=true
 enabledProviders={{ xnat_enabled_providers | to_json | replace('"', "'") }}
 
 [system]
-defaultAdminPassword={{ xnat_admin_password }}
+defaultAdminPassword={{ _xnat_encoded_admin_password }}
 
 [notifications]
 smtpEnabled={{ xnat_smtp_enabled | string | lower }}
