@@ -1,0 +1,54 @@
+---
+- name: Verify Grafana staging CA selection
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../../../roles/scout_common/defaults/main.yaml
+    - ../../../roles/grafana/defaults/main.yaml
+  tasks:
+    - name: Verify independent production and staging certificate settings
+      ansible.builtin.assert:
+        that: grafana_plugins_registry_ca_path == item.expected
+      vars:
+        tls_cert_path: '{{ item.production_certificate }}'
+        _staging_vars: '{{ item.staging }}'
+      loop:
+        - name: Production public CA and staging generated certificate
+          production_certificate: /etc/enterprise/production.crt
+          staging: {}
+          expected: /etc/rancher/k3s/tls/staging-tls.crt
+        - name: Production generated certificate and staging public CA
+          production_certificate: /etc/rancher/k3s/tls/staging-tls.crt
+          staging:
+            tls_cert_path: /etc/enterprise/staging.crt
+          expected: ''
+        - name: Explicit staging CA bundle
+          production_certificate: /etc/enterprise/production.crt
+          staging:
+            staging_api_ca_path: /etc/enterprise/staging-ca-bundle.crt
+          expected: /etc/enterprise/staging-ca-bundle.crt
+        - name: Explicit staging system trust
+          production_certificate: /etc/rancher/k3s/tls/staging-tls.crt
+          staging:
+            staging_api_ca_path: ''
+          expected: ''
+        - name: Custom staging generated certificate path
+          production_certificate: /etc/enterprise/production.crt
+          staging:
+            staging_self_signed_tls_cert_path: /etc/scout/staging-tls.crt
+          expected: /etc/scout/staging-tls.crt
+        - name: Both generated certificate defaults
+          production_certificate: /etc/rancher/k3s/tls/staging-tls.crt
+          staging: {}
+          expected: /etc/rancher/k3s/tls/staging-tls.crt
+      loop_control:
+        label: '{{ item.name }}'
+
+    - name: Verify non-air-gapped defaults do not require staging host variables
+      ansible.builtin.assert:
+        that:
+          - _staging_vars is undefined
+          - grafana_plugins_registry_ca_path == staging_self_signed_tls_cert_path
+      vars:
+        air_gapped: false
