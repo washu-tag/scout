@@ -1,5 +1,42 @@
 # Changelog
 
+## [5.1.0](https://github.com/washu-tag/scout/compare/v5.0.0...v5.1.0) (2026-10-14)
+
+
+### Features
+
+* **deploy:** on-prem secret contract as code ([#787](https://github.com/washu-tag/scout/issues/787)) ([6967efc](https://github.com/washu-tag/scout/commit/6967efca5bd4120845401897c1cc8bc6199565bc))
+* **keycloak-fragment-reconciler:** add client scopes for xnat token access ([#868](https://github.com/washu-tag/scout/issues/868)) ([8072d72](https://github.com/washu-tag/scout/commit/8072d72af23c6d541be821406cf304275fac753a))
+* **monitoring:** add monitoring for pluggable apps ([#770](https://github.com/washu-tag/scout/issues/770)) ([fbb2db0](https://github.com/washu-tag/scout/commit/fbb2db00b1aca006b7e5782224634187fcd37ed0))
+* **report-viewer:** derive match evidence from the search sql ([#849](https://github.com/washu-tag/scout/issues/849)) ([55f13eb](https://github.com/washu-tag/scout/commit/55f13eb60d5a38d75edce27704ce72e4e8e06393))
+* **report-viewer:** Extensible report-viewer Buttons ([#785](https://github.com/washu-tag/scout/issues/785)) ([3d39884](https://github.com/washu-tag/scout/commit/3d39884ce10418f405f77bd7a7552363d623bc53))
+* **report-viewer:** highlight sql in explain search panel ([#866](https://github.com/washu-tag/scout/issues/866)) ([0ec3764](https://github.com/washu-tag/scout/commit/0ec376430f9948e56287f99b0dbcb2fa68e3ae7d))
+* **voila:** playbooks behind an ALB-OIDC edge ([#851](https://github.com/washu-tag/scout/issues/851)) ([82d5827](https://github.com/washu-tag/scout/commit/82d5827e3f5b5c1261008bcdc3ae8f3e504f0819))
+
+
+### Bug Fixes
+
+* **build:** stop gradlew.bat line-ending churn from Dependabot ([#852](https://github.com/washu-tag/scout/issues/852)) ([69d4e9b](https://github.com/washu-tag/scout/commit/69d4e9baed61da8652f12c81706ac13b968d9438))
+* **chat:** pass the chart spec as a string so bad specs are retried ([#850](https://github.com/washu-tag/scout/issues/850)) ([dedfa4a](https://github.com/washu-tag/scout/commit/dedfa4ab693be5a1ec0b4e57ccaddacaf73172c6))
+* **deps:** patch spring-webflux, lz4-java, and log4j-api CVEs ([#854](https://github.com/washu-tag/scout/issues/854)) ([5948ac3](https://github.com/washu-tag/scout/commit/5948ac36f3ac2a18d9277314c480f59482475a89))
+* **hl7-listener:** deploy with make all, quiet spurious alerts ([#774](https://github.com/washu-tag/scout/issues/774)) ([c0718fb](https://github.com/washu-tag/scout/commit/c0718fb4d473f045b7104d22220f3550de48ed13))
+* **hl7-listener:** retry a failed batch instead of skipping it ([#813](https://github.com/washu-tag/scout/issues/813)) ([4a80709](https://github.com/washu-tag/scout/commit/4a807093a202774071803adf4a42d7f411ece30b))
+* keep backend keep-alive above reverse-proxy idle timeouts ([#766](https://github.com/washu-tag/scout/issues/766)) ([401db85](https://github.com/washu-tag/scout/commit/401db8545b709871b7c72db3868e195c9eb3688b))
+* **open-webui:** re-login on stale OWUI token ([#855](https://github.com/washu-tag/scout/issues/855)) ([88ee7fa](https://github.com/washu-tag/scout/commit/88ee7fa4609f2ff400ae748949d3c5fa398b265f))
+* **open-webui:** renew a stale chat token instead of reporting it ([#805](https://github.com/washu-tag/scout/issues/805)) ([4cac311](https://github.com/washu-tag/scout/commit/4cac311858629f80af14aa1113ad1f18b9fcec5a))
+* **open-webui:** skip oauth2-proxy-error on api routes so stale OWUI tokens do not 500 ([88ee7fa](https://github.com/washu-tag/scout/commit/88ee7fa4609f2ff400ae748949d3c5fa398b265f))
+* **report-viewer:** fix ActionsToolbar wrap/collapse behavior ([#873](https://github.com/washu-tag/scout/issues/873)) ([1e48a3f](https://github.com/washu-tag/scout/commit/1e48a3f44cd09bc09fa4b21a0acdb971b4cfc3fb))
+* **report-viewer:** suppress unfixable trivy cves ([#811](https://github.com/washu-tag/scout/issues/811)) ([d011c77](https://github.com/washu-tag/scout/commit/d011c773468eebd2d930761216a97b1aa28114fa))
+* **security:** address jackson-databind CVE-2026-68497 ([#777](https://github.com/washu-tag/scout/issues/777)) ([c328313](https://github.com/washu-tag/scout/commit/c32831387352cfdb4e6aedae140bf8a8a47086af))
+* **security:** update image dependencies and scope upstream exceptions ([#812](https://github.com/washu-tag/scout/issues/812)) ([280913b](https://github.com/washu-tag/scout/commit/280913b95b461d652711997a3ae595cf5b9b153f))
+* **security:** upgrade openssl and pyjwt to clear new Trivy findings ([#780](https://github.com/washu-tag/scout/issues/780)) ([5c59868](https://github.com/washu-tag/scout/commit/5c59868434f30df79bdf2da53eb0c6078ba3a750))
+
+
+### Performance Improvements
+
+* **report-viewer:** read reports with IN instead of contains ([#864](https://github.com/washu-tag/scout/issues/864)) ([caa8a99](https://github.com/washu-tag/scout/commit/caa8a99c076bd8ae2c94672d090b52ae8b3a982a))
+* speed up CI deploy and ingest-test jobs ([#773](https://github.com/washu-tag/scout/issues/773)) ([77d43c0](https://github.com/washu-tag/scout/commit/77d43c024248a8c250e470c31fd71583dfe9e835))
+
 ## [5.0.0](https://github.com/washu-tag/scout/compare/v4.3.0...v5.0.0) (2026-09-25)
 
 
