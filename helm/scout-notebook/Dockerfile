@@ -1,4 +1,4 @@
-FROM quay.io/jupyter/scipy-notebook:python-3.13.15
+FROM quay.io/jupyter/scipy-notebook:python-3.13.16
 
 USER root
 RUN apt-get update \
