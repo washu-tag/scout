@@ -25,15 +25,17 @@
 
 - name: Prepare cert-manager Helm values
   ansible.builtin.set_fact:
-    cert_manager_helm_values: "{{ {'crds': {'enabled': true}} | combine(cert_manager_extra_helm_values, recursive=true) }}"
+    cert_manager_helm_values: "{{ {'crds': {'enabled': cert_manager_extra_helm_values.installCRDs | default(true)}} | combine(cert_manager_extra_helm_values, recursive=true) }}"
 
 - name: Validate cert-manager Helm values
   ansible.builtin.assert:
     that:
+      - cert_manager_extra_helm_values is mapping
       - cert_manager_helm_values is mapping
       - cert_manager_helm_values.crds is mapping
       - cert_manager_helm_values.crds.enabled is boolean
-    fail_msg: cert-manager requires a values mapping with a boolean crds.enabled setting.
+      - cert_manager_helm_values.installCRDs is not defined or cert_manager_helm_values.installCRDs is boolean
+    fail_msg: cert-manager requires a values mapping with boolean CRD settings.
 
 - name: Deploy cert-manager
   ansible.builtin.include_role:

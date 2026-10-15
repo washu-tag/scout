@@ -8,12 +8,15 @@ driver:
   name: docker
 platforms:
   - name: k3s-rockylinux9
+    hostname: baseline-k3s
     image: geerlingguy/docker-rockylinux9-ansible:latest
     command: /lib/systemd/systemd
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     cgroupns_mode: host
     privileged: true
+    published_ports:
+      - '127.0.0.1:6443:6443'
     pre_build_image: true
     groups:
       - server
@@ -30,7 +33,7 @@ provisioner:
         air_gapped: false
         k3s_selinux_enabled: true
         k3s_token: test-token-for-molecule
-        k3s_api_host: k3s-rockylinux9
+        k3s_api_host: 127.0.0.1
         local_kubeconfig_dir: '{{ lookup("env", "MOLECULE_EPHEMERAL_DIRECTORY") }}/kubeconfig'
         local_kubeconfig_yaml: '{{ local_kubeconfig_dir }}/config'
         # Use native snapshotter for Docker container environment (overlayfs doesn't work in nested containers)

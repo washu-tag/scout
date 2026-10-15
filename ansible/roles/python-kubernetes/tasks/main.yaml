@@ -1,38 +1,4 @@
 ---
-# Python Kubernetes Library Installation
-# Installs python3-kubernetes package required by Ansible kubernetes.core modules
-# Handles both online and air-gapped installation modes automatically
-
-- name: Configure signed EPEL packages on Enterprise Linux
-  when: ansible_os_family == 'RedHat'
-  block:
-    - name: Require the supported EPEL major version
-      ansible.builtin.assert:
-        that: ansible_distribution_major_version == '9'
-        fail_msg: The Python Kubernetes RPM installation requires Enterprise Linux 9.
-
-    - name: Install the EPEL public signing key
-      ansible.builtin.copy:
-        src: RPM-GPG-KEY-EPEL-9
-        dest: '{{ python_kubernetes_epel_key_path }}'
-        mode: '0644'
-
-    - name: Authenticate and trust the EPEL signing key
-      ansible.builtin.rpm_key:
-        key: '{{ python_kubernetes_epel_key_path }}'
-        fingerprint: '{{ python_kubernetes_epel_key_fingerprint }}'
-        state: present
-
-    - name: Configure signed EPEL packages without a proxy
-      ansible.builtin.yum_repository:
-        name: epel-9
-        description: Extra Packages for Enterprise Linux 9
-        baseurl: '{{ python_kubernetes_epel_url }}'
-        gpgcheck: true
-        gpgkey: 'file://{{ python_kubernetes_epel_key_path }}'
-        sslverify: true
-      when: package_proxy_mode | default('none') == 'none'
-
 - name: Ensure python3-kubernetes is installed
   ansible.builtin.include_role:
     name: scout_common
@@ -41,6 +7,8 @@
     package_names:
       - python3-kubernetes
     package_type: 'Python'
+    online_repo_setup: '{{ playbook_dir }}/../roles/python-kubernetes/tasks/online_repo_setup.yaml'
+    proxy_repo_setup: '{{ playbook_dir }}/../roles/python-kubernetes/tasks/proxy_repo_setup.yaml'
     yum_repo:
       name: epel-9
       url: '{{ python_kubernetes_epel_url }}'

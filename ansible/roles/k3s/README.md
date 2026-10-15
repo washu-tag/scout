@@ -16,12 +16,18 @@ See [Creating the Ansible Inventory File](../../../docs/source/technical/invento
 See `defaults/main.yaml` for complete variable definitions and defaults.
 
 When Ansible runs outside the cluster, `k3s_api_host` selects the API hostname in
-the local kubeconfig. It defaults to `ansible_host` or `inventory_hostname`, and
-the initial server installation adds it and the server inventory hostname to the
-certificate's TLS SANs. The local
-kubeconfig retains the server's CA and verifies TLS. Changing this hostname on an
-existing installation requires updating the server's K3s TLS SAN configuration;
-the role's installation task does not replace an existing service.
+the local kubeconfig. It defaults to `ansible_host` or `inventory_hostname`.
+The role maintains these certificate names in a native K3s configuration drop-in
+on new and existing installations, preserving other SANs and restarting an
+existing server only when configuration changes. It verifies the external API
+with a private candidate kubeconfig before replacing the local copy. Failed DNS,
+connectivity or certificate checks leave the existing local kubeconfig intact.
+
+The kubeconfig embeds the K3s CA, so `kubectl` needs no additional laptop trust
+store configuration. Copied client certificates must be refreshed when K3s renews
+them. The role uses the default `/etc/rancher/k3s/config.yaml` configuration path;
+installations using `--config` or `K3S_CONFIG_FILE` must include the required
+`tls-san` names in their custom configuration or corresponding drop-in directory.
 
 When staging registry mirrors are enabled, both servers and agents disable
 containerd's default registry endpoint fallback. Registries without a configured
@@ -115,7 +121,9 @@ uvx --with molecule-plugins[docker] molecule test -s integration
 - Verify k3s cluster is responsive (`kubectl get nodes`)
 - Verify node reaches Ready state
 - Check kubeconfig file generation and permissions
-- Verify the configured API hostname passes certificate validation and the external kubeconfig retains its CA
+- Install a baseline cluster and confirm its certificate lacks the requested inventory name
+- Re-run the role to add the name while preserving existing YAML and CLI SANs, the CA and a cluster identity marker
+- Verify the external kubeconfig passes API verification and has private permissions
 
 **Why integration tests (not unit tests):**
 The k3s role performs system-level operations (systemd service management, privileged installation, Kubernetes cluster creation) that cannot be meaningfully mocked. Integration tests validate real installation behavior including systemd integration and cluster health.
