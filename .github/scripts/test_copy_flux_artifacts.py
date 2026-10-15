@@ -308,6 +308,80 @@ def test_different_published_manifest_cannot_copy_or_sign_config(
 
 
 @pytest.fixture
+def chart_row():
+    return {
+        "repository": REPOSITORY + "charts/fixture",
+        "tag": CONTEXT["version"],
+        "digest": digest(b"chart"),
+        "layout": "chart",
+    }
+
+
+def test_registry_calls_retry_transient_failures_before_the_digest_check(
+    chart_row, tmp_path, monkeypatch
+):
+    calls, delays = [], []
+
+    def flaky(name, result=None):
+        def call(*args, **kwargs):
+            calls.append(name)
+            if calls.count(name) == 1:
+                raise subprocess.CalledProcessError(1, ["oras", name])
+            return result
+
+        return call
+
+    descriptor = json.dumps({"digest": chart_row["digest"]})
+    monkeypatch.setattr(transport.subprocess, "run", flaky("copy"))
+    monkeypatch.setattr(transport, "run", flaky("fetch", descriptor))
+    monkeypatch.setattr(transport.time, "sleep", delays.append)
+    reference = transport.copy(chart_row, tmp_path)
+    assert reference == chart_row["repository"] + "@" + chart_row["digest"]
+    assert calls == ["copy", "copy", "fetch", "fetch"]
+    assert delays == [5, 5]
+
+
+def test_registry_retry_never_accepts_a_different_digest(
+    chart_row, tmp_path, monkeypatch
+):
+    reads = []
+
+    def read(*args):
+        reads.append(args)
+        return json.dumps({"digest": "sha256:" + "f" * 64})
+
+    monkeypatch.setattr(transport.subprocess, "run", lambda *args, **kwargs: None)
+    monkeypatch.setattr(transport, "run", read)
+    with pytest.raises(ValueError, match="changed the tested digest"):
+        transport.copy(chart_row, tmp_path)
+    assert len(reads) == 1
+
+
+def test_publish_fails_closed_when_the_registry_keeps_failing(candidate, monkeypatch):
+    path, index = candidate
+    row = index["charts"][0]
+    row.update(fresh=True, layout="charts/" + row["name"])
+    save(candidate)
+    attempts, signed = [], []
+
+    def failing(args, **kwargs):
+        attempts.append(args[:2])
+        raise subprocess.CalledProcessError(1, args)
+
+    monkeypatch.setattr(transport.subprocess, "run", failing)
+    monkeypatch.setattr(transport.time, "sleep", lambda delay: None)
+    monkeypatch.setattr(transport, "sign", signed.append)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["copy", "publish-chart", "--candidate", str(path), "--chart", row["name"]],
+    )
+    with pytest.raises(subprocess.CalledProcessError):
+        transport.main()
+    assert attempts == [["oras", "copy"]] * 3
+    assert signed == []
+
+
+@pytest.fixture
 def branch_release(candidate, monkeypatch):
     path, index = candidate
     for row in index["images"]:

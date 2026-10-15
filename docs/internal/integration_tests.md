@@ -83,7 +83,9 @@ Hauler remains the component manifest owner
 On main, publication requires both Flux legs, the Ansible tests, and the existing
 image scans and smoke tests to pass. Publication copies the candidate's OCI
 content to GHCR, verifies that the digests are unchanged, and signs it with the
-repository's release key. The haul bundle is assembled from those published
+repository's release key. Copy, read-back, signing and tagging calls retry twice
+because GHCR can briefly report content it just accepted as missing; a digest
+mismatch still fails immediately. The haul bundle is assembled from those published
 components. The aggregate `deploy-and-test` check includes both deployment paths;
 there is no separate post-publication Flux workflow or advisory commit status.
 A green pull request run proves that candidate's deployment, without publishing

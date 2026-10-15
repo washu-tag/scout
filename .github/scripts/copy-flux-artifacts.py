@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import time
 
 import yaml
 
@@ -20,6 +21,18 @@ from build_haul import parse_predecessor  # noqa: E402
 
 def run(*args):
     return subprocess.check_output(args, text=True).strip()
+
+
+def retry(call, *args, **kwargs):
+    """Repeat a registry call; GHCR can briefly 404 content it just accepted."""
+    for delay in (5, 15):
+        try:
+            return call(*args, **kwargs)
+        except subprocess.CalledProcessError as error:
+            command = " ".join(error.cmd[:2])
+            print(f"::warning::{command} failed, retrying in {delay}s", flush=True)
+            time.sleep(delay)
+    return call(*args, **kwargs)
 
 
 def load(candidate):
@@ -123,9 +136,10 @@ def copy(row, candidate, registry=None):
         args.append("--to-plain-http")
         repository = registry + "/" + repository.split("/", 1)[1]
     target = repository + ":" + row["tag"]
-    subprocess.run([*args, source, target], check=True)
+    retry(subprocess.run, [*args, source, target], check=True)
     descriptor = json.loads(
-        run(
+        retry(
+            run,
             "oras",
             "manifest",
             "fetch",
@@ -182,7 +196,8 @@ def require_release_attempt(index, branch, version):
 
 
 def sign(ref):
-    subprocess.run(
+    retry(
+        subprocess.run,
         [
             "cosign",
             "sign",
@@ -328,7 +343,7 @@ def main():
             raise ValueError("published haul differs from the tested candidate")
         ref = copy(index["config"], candidate)
         sign(ref)
-        subprocess.run(["oras", "tag", ref, "main"], check=True)
+        retry(subprocess.run, ["oras", "tag", ref, "main"], check=True)
     else:
         rows = (
             index["images"]
@@ -357,7 +372,7 @@ def main():
                         raise ValueError("ambiguous legacy tag lookup")
                     advance = exists == "false"
                 if advance:
-                    subprocess.run(["oras", "tag", ref, legacy], check=True)
+                    retry(subprocess.run, ["oras", "tag", ref, legacy], check=True)
 
 
 if __name__ == "__main__":
