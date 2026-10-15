@@ -27,8 +27,7 @@
     helm_repo_name: harbor
     helm_repo_url: https://helm.goharbor.io
     helm_chart_timeout: 15m
-    helm_chart_values: '{{ harbor_helm_values_default | combine(harbor_helm_values, recursive=true) }}'
-    harbor_helm_values_default:
+    helm_chart_values:
       expose:
         type: ingress
         tls:
@@ -80,7 +79,6 @@
   loop: '{{ harbor_registry_proxies }}'
 
 - name: Create registry endpoints
-  no_log: true
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/registries'
     validate_certs: true
@@ -102,7 +100,6 @@
   changed_when: registry_create_result.status == 201
 
 - name: Get registries list
-  no_log: true
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/registries'
     validate_certs: true
@@ -114,7 +111,6 @@
   register: registries_response
 
 - name: Create proxy cache projects
-  no_log: true
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/projects'
     validate_certs: true

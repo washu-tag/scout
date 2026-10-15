@@ -16,6 +16,7 @@
     ns: '{{ grafana_namespace }}'
 
 - name: Set harbor variables from staging host for air-gapped deployments
+  no_log: true
   ansible.builtin.set_fact:
     # Get harbor config from staging host where Harbor is deployed
     _staging_host: "{{ groups['staging'][0] }}"
@@ -38,9 +39,8 @@
   when: air_gapped | default(false)
 
 - name: Parse Grafana Helm values
-  no_log: true
   ansible.builtin.set_fact:
-    grafana_helm_chart_values: "{{ (lookup('template', 'grafana.values.yaml.j2') | from_yaml) | combine(grafana_helm_values_override, recursive=true) }}"
+    grafana_helm_chart_values: "{{ lookup('template', 'grafana.values.yaml.j2') | from_yaml }}"
 
 - name: Validate Grafana Helm values
   ansible.builtin.assert:

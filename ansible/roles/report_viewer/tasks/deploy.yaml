@@ -36,13 +36,15 @@
 
 - name: Parse Helm values
   ansible.builtin.set_fact:
-    report_viewer_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml | combine(report_viewer_helm_values_override | default({}), recursive=true) }}"
+    report_viewer_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
   no_log: true
 
 - name: Deploy report-viewer
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
   vars:
     helm_chart_name: '{{ report_viewer_helm_release_name }}'
     helm_chart_ref: '{{ report_viewer_helm_chart_ref }}'
