@@ -99,12 +99,14 @@
 - name: Parse Helm values
   no_log: true
   ansible.builtin.set_fact:
-    xnat_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml | combine(xnat_helm_values_override | default({}), recursive=true) }}"
+    xnat_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
 - name: Deploy XNAT using Helm
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
   vars:
     helm_chart_name: '{{ xnat_helm_release_name }}'
     # Pull the published OCI chart from GHCR (helm runs on the jump node via the

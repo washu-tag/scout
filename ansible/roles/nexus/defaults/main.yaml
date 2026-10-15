@@ -8,7 +8,6 @@ nexus_namespace: nexus
 nexus_helm_repo_name: stevehipwell
 nexus_helm_repo_url: https://stevehipwell.github.io/helm-charts/
 nexus_helm_chart_name: nexus3
-nexus_helm_values: {}
 
 # Admin password — REQUIRED, must be set in inventory (vault-encrypted)
 # The role writes this to the nexus-root-password K8s secret on every run.

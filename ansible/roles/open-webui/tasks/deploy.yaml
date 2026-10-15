@@ -77,6 +77,7 @@
   when: open_webui_trust_traefik_ca | bool
   block:
     - name: Read Traefik TLS secret
+      no_log: true
       kubernetes.core.k8s_info:
         api_version: v1
         kind: Secret
@@ -97,9 +98,8 @@
             ca.crt: '{{ _traefik_tls_secret.resources[0].data["tls.crt"] }}'
 
 - name: Parse Helm values
-  no_log: true
   ansible.builtin.set_fact:
-    owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml | combine(open_webui_helm_values_override | default({}), recursive=true) }}"
+    owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
 - name: Deploy Open WebUI using Helm
   ansible.builtin.include_role:

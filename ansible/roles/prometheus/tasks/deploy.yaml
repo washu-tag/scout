@@ -1,8 +1,7 @@
 ---
 - name: Parse Prometheus Helm values
-  no_log: true
   ansible.builtin.set_fact:
-    prometheus_helm_chart_values: "{{ (lookup('template', 'values.yaml.j2') | from_yaml) | combine(prometheus_helm_values_override, recursive=true) }}"
+    prometheus_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
 - name: Validate Prometheus Helm values
   ansible.builtin.assert:

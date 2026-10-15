@@ -67,12 +67,14 @@
 - name: Parse Helm values
   no_log: true
   ansible.builtin.set_fact:
-    voila_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml | combine(voila_helm_values_override | default({}), recursive=true) }}"
+    voila_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
 - name: Deploy Voilà
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
   vars:
     helm_chart_name: voila
     helm_chart_ref: '{{ voila_helm_chart_ref }}'

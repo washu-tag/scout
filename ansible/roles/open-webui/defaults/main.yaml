@@ -7,7 +7,6 @@ open_webui_helm_repo_name: open-webui
 open_webui_helm_repo_url: https://helm.openwebui.com/
 open_webui_helm_chart_name: open-webui
 open_webui_helm_release_name: open-webui
-open_webui_helm_values_override: {}
 
 # Local Helm chart for the post-deploy bootstrap Job (admin user, filter
 # functions, custom models, PersistentConfig re-push). Override to point at

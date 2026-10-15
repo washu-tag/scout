@@ -7,7 +7,6 @@ report_viewer_namespace: '{{ chatbot_namespace }}'
 # Helm
 report_viewer_helm_chart_ref: '{{ scout_repo_dir }}/helm/report-viewer'
 report_viewer_helm_release_name: report-viewer
-report_viewer_helm_values_override: {}
 
 # Image
 report_viewer_image_repository: ghcr.io/washu-tag/report-viewer

@@ -6,7 +6,6 @@
 jupyter_helm_repo_name: jupyterhub
 jupyter_helm_repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
 jupyter_helm_chart_name: jupyterhub
-jupyter_helm_values_override: {}
 
 # Storage configuration
 jupyter_hub_storage_size: 1Gi

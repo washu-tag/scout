@@ -129,12 +129,14 @@
 - name: Parse Helm values
   no_log: true
   ansible.builtin.set_fact:
-    jh_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml | combine(jupyter_helm_values_override | default({}), recursive=true) }}"
+    jh_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
 - name: Deploy JupyterHub
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
   vars:
     helm_chart_name: jupyter
     helm_chart_ref: '{{ jupyter_helm_repo_name }}/{{ jupyter_helm_chart_name }}'

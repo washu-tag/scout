@@ -1,8 +1,7 @@
 ---
 - name: Parse Loki Helm values
-  no_log: true
   ansible.builtin.set_fact:
-    loki_helm_chart_values: "{{ (lookup('template', 'loki.values.yaml.j2') | from_yaml) | combine(loki_helm_values_override, recursive=true) }}"
+    loki_helm_chart_values: "{{ lookup('template', 'loki.values.yaml.j2') | from_yaml }}"
 
 - name: Validate Loki Helm values
   ansible.builtin.assert:

@@ -48,17 +48,13 @@
       when: existing_root_password_secret.resources | length == 0
 
 - name: Parse Nexus Helm values
-  no_log: true
   ansible.builtin.set_fact:
-    nexus_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml | combine(nexus_helm_values, recursive=true) }}"
+    nexus_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
 - name: Deploy Nexus
-  no_log: true
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
-    apply:
-      no_log: true
   vars:
     helm_chart_name: '{{ nexus_helm_chart_name }}'
     helm_chart_ref: '{{ nexus_helm_repo_name }}/{{ nexus_helm_chart_name }}'
@@ -84,7 +80,6 @@
   when: accept_nexus_eula | bool
   block:
     - name: Get EULA status
-      no_log: true
       ansible.builtin.uri:
         url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
         validate_certs: true
@@ -98,7 +93,6 @@
       register: nexus_eula
 
     - name: Accept EULA
-      no_log: true
       ansible.builtin.uri:
         url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
         validate_certs: true
