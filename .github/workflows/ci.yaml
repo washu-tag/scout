@@ -400,9 +400,9 @@ jobs:
       - name: 'Version copies agree with versions.yaml'
         shell: bash
         run: cd tooling/versions && pytest -v
-      - name: 'Unit tests: filter plugins'
+      - name: 'Unit tests: Ansible package setup and filters'
         shell: bash
-        run: cd ansible && pytest tests/unit/filter_plugins/ -v
+        run: cd ansible && pytest tests/unit/filter_plugins/ tests/unit/test_python_kubernetes_packages.py -v
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v

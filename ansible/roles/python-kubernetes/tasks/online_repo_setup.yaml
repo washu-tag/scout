@@ -1,0 +1,6 @@
+---
+- name: Install the distribution EPEL repository
+  ansible.builtin.package:
+    name: epel-release
+    state: present
+  when: ansible_facts['distribution'] in ['Rocky', 'AlmaLinux', 'CentOS']

@@ -3,7 +3,110 @@
 # Installs dependencies needed by the k3s role that aren't in the base image
 - name: Prepare
   hosts: all
-  tasks:
+  vars_files:
+    - ../../../../group_vars/all/versions.yaml
+  environment: '{{ cluster_k8s_environment }}'
+  pre_tasks:
     - name: Install kubernetes Python library for kubernetes.core module
       ansible.builtin.pip:
         name: kubernetes
+
+    - name: Preserve a pre-existing native K3s configuration
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: '0755'
+
+    - name: Configure a SAN outside the Scout drop-in
+      ansible.builtin.copy:
+        content: |
+          tls-san:
+            - preserved-base.example.test
+        dest: /etc/rancher/k3s/config.yaml
+        mode: '0644'
+
+  roles:
+    - role: k3s
+      vars:
+        ansible_control_node_external_to_cluster: false
+        k3s_extra_args: '--snapshotter=native --tls-san=preserved-cli.example.test'
+
+  tasks:
+    - name: Verify both existing certificate names before migration
+      ansible.builtin.command:
+        argv:
+          - k3s
+          - kubectl
+          - --kubeconfig=/etc/rancher/k3s/k3s.yaml
+          - '--tls-server-name={{ item }}'
+          - --request-timeout=10s
+          - get
+          - --raw=/readyz
+      changed_when: false
+      loop:
+        - preserved-base.example.test
+        - preserved-cli.example.test
+
+    - name: Verify the requested name is absent from the existing certificate
+      ansible.builtin.command:
+        argv:
+          - k3s
+          - kubectl
+          - --kubeconfig=/etc/rancher/k3s/k3s.yaml
+          - '--tls-server-name={{ inventory_hostname }}'
+          - --request-timeout=10s
+          - get
+          - --raw=/readyz
+      register: existing_api_certificate
+      changed_when: false
+      failed_when: >-
+        existing_api_certificate.rc == 0 or
+        'x509' not in existing_api_certificate.stderr or
+        inventory_hostname not in existing_api_certificate.stderr
+
+    - name: Create a cluster identity marker
+      kubernetes.core.k8s:
+        kubeconfig: /etc/rancher/k3s/k3s.yaml
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: scout-migration-marker
+            namespace: default
+          data:
+            preserved: 'true'
+
+    - name: Read the existing cluster CA
+      ansible.builtin.command:
+        argv:
+          - k3s
+          - kubectl
+          - --kubeconfig=/etc/rancher/k3s/k3s.yaml
+          - config
+          - view
+          - --raw
+          - -o
+          - jsonpath={.clusters[0].cluster.certificate-authority-data}
+      register: existing_cluster_ca
+      changed_when: false
+
+    - name: Read the cluster marker identity
+      ansible.builtin.command:
+        argv:
+          - k3s
+          - kubectl
+          - --kubeconfig=/etc/rancher/k3s/k3s.yaml
+          - get
+          - configmap
+          - scout-migration-marker
+          - -o
+          - jsonpath={.metadata.uid}
+      register: existing_marker_uid
+      changed_when: false
+
+    - name: Save the pre-migration identities
+      ansible.builtin.copy:
+        content: "{{ {'ca': existing_cluster_ca.stdout, 'marker_uid': existing_marker_uid.stdout} | to_nice_yaml }}"
+        dest: /var/tmp/scout-k3s-migration-baseline.yaml
+        mode: '0600'
