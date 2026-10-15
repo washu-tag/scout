@@ -19,8 +19,25 @@ from producer_plan import IMAGE_PATHS, VENDOR_IMAGES, context  # noqa: E402
 from build_haul import parse_predecessor  # noqa: E402
 
 
+def execute(args, *, output=False):
+    result = subprocess.run(args, capture_output=True, text=True)
+    if result.stdout and (not output or result.returncode):
+        print(result.stdout, end="", flush=True)
+    if result.stderr:
+        print(result.stderr, end="", file=sys.stderr, flush=True)
+    if result.returncode:
+        message = (
+            f"Command exited {result.returncode}: {shlex.join(args)}. "
+            "See the command output immediately above for the underlying error."
+        )
+        message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        print(f"::error title=Artifact command failed::{message}", file=sys.stderr)
+        raise SystemExit(result.returncode if result.returncode > 0 else 1)
+    return result.stdout
+
+
 def run(*args):
-    return subprocess.check_output(args, text=True).strip()
+    return execute(args, output=True).strip()
 
 
 def load(candidate):
@@ -124,7 +141,7 @@ def copy(row, candidate, registry=None):
         args.append("--to-plain-http")
         repository = registry + "/" + repository.split("/", 1)[1]
     target = repository + ":" + row["tag"]
-    subprocess.run([*args, source, target], check=True)
+    execute([*args, source, target])
     descriptor = json.loads(
         run(
             "oras",
@@ -183,7 +200,7 @@ def require_release_attempt(index, branch, version):
 
 
 def sign(ref):
-    subprocess.run(
+    execute(
         [
             "cosign",
             "sign",
@@ -194,7 +211,6 @@ def sign(ref):
             "--yes",
             ref,
         ],
-        check=True,
     )
 
 
@@ -329,7 +345,7 @@ def main():
             raise ValueError("published haul differs from the tested candidate")
         ref = copy(index["config"], candidate)
         sign(ref)
-        subprocess.run(["oras", "tag", ref, "main"], check=True)
+        execute(["oras", "tag", ref, "main"])
     else:
         rows = (
             index["images"]
@@ -358,27 +374,8 @@ def main():
                         raise ValueError("ambiguous legacy tag lookup")
                     advance = exists == "false"
                 if advance:
-                    subprocess.run(["oras", "tag", ref, legacy], check=True)
-
-
-def cli():
-    try:
-        main()
-    except subprocess.CalledProcessError as error:
-        for output in (error.stdout, error.stderr):
-            if output:
-                if isinstance(output, bytes):
-                    output = output.decode(errors="replace")
-                print(output, file=sys.stderr, flush=True)
-        command = shlex.join(error.cmd)
-        message = (
-            f"Command exited {error.returncode}: {command}. "
-            "See the command output immediately above for the underlying error."
-        )
-        message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-        print(f"::error title=Artifact command failed::{message}", file=sys.stderr)
-        raise SystemExit(error.returncode if error.returncode > 0 else 1) from None
+                    execute(["oras", "tag", ref, legacy])
 
 
 if __name__ == "__main__":
-    cli()
+    main()

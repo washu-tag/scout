@@ -345,7 +345,7 @@ def branch_release(candidate, monkeypatch):
     monkeypatch.setattr(transport, "copy", copied)
     monkeypatch.setattr(transport, "sign", lambda ref: effects.append(("sign", ref)))
     monkeypatch.setattr(
-        transport.subprocess, "run", lambda args, **kw: effects.append(tuple(args))
+        transport, "execute", lambda args, **kw: effects.append(tuple(args))
     )
     monkeypatch.setattr(
         "sys.argv",
@@ -676,34 +676,66 @@ def test_real_registry_copy_preserves_manifest_and_layer_bytes(tmp_path):
 
 
 @pytest.mark.parametrize("captured", [True, False])
-def test_cli_reports_underlying_command_failure(monkeypatch, capfd, captured):
-    def fail():
-        command = [
-            sys.executable,
-            "-c",
-            "import sys; print('registry detail on stdout', flush=True); "
-            "print('manifest not found', file=sys.stderr); sys.exit(7)",
-        ]
+def test_command_reports_underlying_failure(capfd, captured):
+    command = [
+        sys.executable,
+        "-c",
+        "import sys; print('registry detail on stdout', flush=True); "
+        "print('manifest not found', file=sys.stderr); sys.exit(7)",
+    ]
+    with pytest.raises(SystemExit) as error:
         if captured:
             transport.run(*command)
         else:
-            subprocess.run(command, check=True)
-
-    monkeypatch.setattr(transport, "main", fail)
-    with pytest.raises(SystemExit) as error:
-        transport.cli()
+            transport.execute(command)
     assert error.value.code == 7
     output = capfd.readouterr()
-    assert "registry detail on stdout" in output.out + output.err
+    assert "registry detail on stdout" in output.out
     assert "manifest not found" in output.err
     assert "::error title=Artifact command failed::Command exited 7:" in output.err
     assert "Traceback" not in output.err
 
 
-def test_cli_leaves_validation_failures_fatal(monkeypatch):
-    def fail():
-        raise ValueError("registry copy changed the tested digest")
+@pytest.mark.parametrize("captured", [True, False])
+def test_successful_command_output(capfd, captured):
+    command = [
+        sys.executable,
+        "-c",
+        "import sys; print('result'); print('warning', file=sys.stderr)",
+    ]
+    result = transport.run(*command) if captured else transport.execute(command)
+    output = capfd.readouterr()
+    assert result.strip() == "result"
+    assert output.out == ("" if captured else "result\n")
+    assert output.err == "warning\n"
 
-    monkeypatch.setattr(transport, "main", fail)
-    with pytest.raises(ValueError, match="tested digest"):
-        transport.cli()
+
+def test_failed_copy_stops_before_signing(candidate, monkeypatch):
+    path, index = candidate
+    index["charts"][0].update(fresh=True, layout="charts/test")
+    monkeypatch.setattr(transport, "load", lambda _: index)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "copy",
+            "publish-chart",
+            "--candidate",
+            str(path),
+            "--chart",
+            index["charts"][0]["name"],
+        ],
+    )
+    monkeypatch.setattr(
+        transport.subprocess,
+        "run",
+        lambda args, **kw: subprocess.CompletedProcess(
+            args, 7, "", "manifest not found\n"
+        ),
+    )
+    monkeypatch.setattr(
+        transport, "sign", lambda _: pytest.fail("signed after failed copy")
+    )
+    with pytest.raises(SystemExit) as error:
+        transport.main()
+    assert error.value.code == 7
