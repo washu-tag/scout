@@ -345,7 +345,7 @@ def branch_release(candidate, monkeypatch):
     monkeypatch.setattr(transport, "copy", copied)
     monkeypatch.setattr(transport, "sign", lambda ref: effects.append(("sign", ref)))
     monkeypatch.setattr(
-        transport.subprocess, "run", lambda args, **kw: effects.append(tuple(args))
+        transport, "execute", lambda args, **kw: effects.append(tuple(args))
     )
     monkeypatch.setattr(
         "sys.argv",
@@ -673,3 +673,161 @@ def test_real_registry_copy_preserves_manifest_and_layer_bytes(tmp_path):
         finally:
             process.terminate()
             process.wait(timeout=10)
+
+
+@pytest.mark.parametrize("captured", [True, False])
+def test_command_reports_underlying_failure(capfd, captured):
+    command = [
+        sys.executable,
+        "-c",
+        "import sys; print('registry detail on stdout', flush=True); "
+        "print('manifest not found', file=sys.stderr); sys.exit(7)",
+    ]
+    with pytest.raises(SystemExit) as error:
+        if captured:
+            transport.run(*command)
+        else:
+            transport.execute(command)
+    assert error.value.code == 7
+    output = capfd.readouterr()
+    assert "registry detail on stdout" in output.out
+    assert "manifest not found" in output.err
+    assert "::error title=Artifact command failed::Command exited 7:" in output.err
+    assert "Traceback" not in output.err
+
+
+@pytest.mark.parametrize("captured", [True, False])
+def test_successful_command_output(capfd, captured):
+    command = [
+        sys.executable,
+        "-c",
+        "import sys; print('result'); print('warning', file=sys.stderr)",
+    ]
+    result = transport.run(*command) if captured else transport.execute(command)
+    output = capfd.readouterr()
+    assert result.strip() == "result"
+    assert output.out == ("" if captured else "result\n")
+    assert output.err == "warning\n"
+
+
+def test_failed_copy_stops_before_signing(candidate, monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(transport.time, "sleep", sleeps.append)
+    path, index = candidate
+    index["charts"][0].update(fresh=True, layout="charts/test")
+    monkeypatch.setattr(transport, "load", lambda _: index)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "copy",
+            "publish-chart",
+            "--candidate",
+            str(path),
+            "--chart",
+            index["charts"][0]["name"],
+        ],
+    )
+    monkeypatch.setattr(
+        transport.subprocess,
+        "run",
+        lambda args, **kw: subprocess.CompletedProcess(
+            args, 7, "", "manifest not found\n"
+        ),
+    )
+    monkeypatch.setattr(
+        transport, "sign", lambda _: pytest.fail("signed after failed copy")
+    )
+    with pytest.raises(SystemExit) as error:
+        transport.main()
+    assert error.value.code == 7
+
+
+@pytest.mark.parametrize("output", [True, False])
+def test_registry_retries_preserve_diagnostics(monkeypatch, capfd, output):
+    results = iter(
+        [(1, "first", "not found"), (1, "second", "unavailable"), (0, "success", "")]
+    )
+    calls, sleeps = [], []
+
+    def invoke(args, **kwargs):
+        calls.append(args)
+        code, stdout, stderr = next(results)
+        return subprocess.CompletedProcess(args, code, stdout, stderr)
+
+    monkeypatch.setattr(transport.subprocess, "run", invoke)
+    monkeypatch.setattr(transport.time, "sleep", sleeps.append)
+    assert (
+        transport.execute(
+            ["oras", "copy", "source", "target"], output=output, registry=True
+        )
+        == "success"
+    )
+    assert len(calls) == 3
+    assert sleeps == [5, 15]
+    log = capfd.readouterr()
+    assert "first" in log.out and "second" in log.out
+    assert "not found" in log.err and "unavailable" in log.err
+    assert log.err.count("::warning") == 2
+    assert "::error" not in log.err
+
+
+def test_registry_exhaustion_is_fatal(monkeypatch, capfd):
+    calls, sleeps = [], []
+
+    def invoke(args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 7, "", "still unavailable")
+
+    monkeypatch.setattr(transport.subprocess, "run", invoke)
+    monkeypatch.setattr(transport.time, "sleep", sleeps.append)
+    with pytest.raises(SystemExit) as error:
+        transport.execute(["oras", "copy"], registry=True)
+    assert error.value.code == 7
+    assert len(calls) == 3 and sleeps == [5, 15]
+    assert capfd.readouterr().err.count("::error") == 1
+
+
+def test_digest_mismatch_is_not_retried(monkeypatch, tmp_path):
+    calls = []
+
+    def invoke(args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(
+            args, 0, json.dumps({"digest": "sha256:wrong"}), ""
+        )
+
+    monkeypatch.setattr(transport.subprocess, "run", invoke)
+    monkeypatch.setattr(
+        transport.time, "sleep", lambda _: pytest.fail("retried mismatch")
+    )
+    row = {
+        "repository": REPOSITORY + "fixture",
+        "tag": "test",
+        "digest": "sha256:expected",
+    }
+    with pytest.raises(ValueError, match="tested digest"):
+        transport.copy(row, tmp_path)
+    assert len(calls) == 2
+
+
+def test_copy_retries_transport_and_readback(monkeypatch, tmp_path):
+    row = {
+        "repository": REPOSITORY + "fixture",
+        "tag": "test",
+        "digest": "sha256:expected",
+    }
+    calls, sleeps = [], []
+
+    def invoke(args, **kwargs):
+        calls.append(args)
+        if len(calls) in (1, 3):
+            return subprocess.CompletedProcess(args, 1, "", "not found")
+        return subprocess.CompletedProcess(
+            args, 0, json.dumps({"digest": row["digest"]}), ""
+        )
+
+    monkeypatch.setattr(transport.subprocess, "run", invoke)
+    monkeypatch.setattr(transport.time, "sleep", sleeps.append)
+    assert transport.copy(row, tmp_path) == row["repository"] + "@" + row["digest"]
+    assert len(calls) == 4 and sleeps == [5, 5]
