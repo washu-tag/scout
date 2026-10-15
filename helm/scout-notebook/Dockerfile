@@ -3,6 +3,7 @@ FROM quay.io/jupyter/scipy-notebook:python-3.13.15
 USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --only-upgrade openssl libssl3t64 \
+        curl libcurl4t64 libcurl3t64-gnutls \
     && rm -rf /var/lib/apt/lists/*
 USER ${NB_UID}
 
