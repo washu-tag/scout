@@ -68,6 +68,16 @@ runs:
         ADVANCE_MAIN: ${{ inputs.advance-main }}
       run: |
         set -euo pipefail
+        # GHCR can briefly 404 content it just accepted.
+        retry() {
+          local delay
+          for delay in 5 15; do
+            "$@" && return
+            echo "::warning::$* exited $?, retrying in ${delay}s" >&2
+            sleep "$delay"
+          done
+          "$@"
+        }
         if [ -n "$PRODUCER_PLAN" ]; then
           python3 tooling/manifest/producer_plan.py validate --snapshot "$PRODUCER_PLAN"
         elif [ "$ADVANCE_MAIN" = true ]; then
@@ -113,8 +123,8 @@ runs:
         fi
         if [ -n "$MANIFEST_LAYOUT" ]; then
           manifest_digest="$(oras manifest fetch --oci-layout --descriptor "${MANIFEST_LAYOUT}:${VERSION}" | jq -er .digest)"
-          oras copy --from-oci-layout "${MANIFEST_LAYOUT}@${manifest_digest}" "${MANIFEST_REPO}:${VERSION}"
-          published_digest="$(oras manifest fetch --descriptor "${MANIFEST_REPO}:${VERSION}" | jq -er .digest)"
+          retry oras copy --from-oci-layout "${MANIFEST_LAYOUT}@${manifest_digest}" "${MANIFEST_REPO}:${VERSION}"
+          published_digest="$(retry oras manifest fetch --descriptor "${MANIFEST_REPO}:${VERSION}" | jq -er .digest)"
           test "$published_digest" = "$manifest_digest"
         else
           oras push "${MANIFEST_REPO}:${VERSION}" "${manifests[@]}" "${annotations[@]}" \
@@ -127,13 +137,13 @@ runs:
           --annotation "io.scout.build.manifest-digest=${manifest_digest}" \
           --export-manifest "$RUNNER_TEMP/haul-bundle.json"
         bundle_digest="sha256:$(sha256sum "$RUNNER_TEMP/haul-bundle.json" | cut -d ' ' -f 1)"
-        cosign sign --key env://COSIGN_PRIVATE_KEY \
+        retry cosign sign --key env://COSIGN_PRIVATE_KEY \
           --use-signing-config=false --tlog-upload=false --yes "${MANIFEST_REPO}@${manifest_digest}"
-        cosign sign --key env://COSIGN_PRIVATE_KEY \
+        retry cosign sign --key env://COSIGN_PRIVATE_KEY \
           --use-signing-config=false --tlog-upload=false --yes "${BUNDLE_REPO}@${bundle_digest}"
         if [ "$ADVANCE_MAIN" = true ]; then
-          oras tag "${MANIFEST_REPO}@${manifest_digest}" main
-          oras tag "${BUNDLE_REPO}@${bundle_digest}" main
+          retry oras tag "${MANIFEST_REPO}@${manifest_digest}" main
+          retry oras tag "${BUNDLE_REPO}@${bundle_digest}" main
         fi
         echo "manifest-digest=${manifest_digest}" >> "$GITHUB_OUTPUT"
         echo "bundle-digest=${bundle_digest}" >> "$GITHUB_OUTPUT"

@@ -10,6 +10,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 
 import yaml
 
@@ -19,25 +20,33 @@ from producer_plan import IMAGE_PATHS, VENDOR_IMAGES, context  # noqa: E402
 from build_haul import parse_predecessor  # noqa: E402
 
 
-def execute(args, *, output=False):
-    result = subprocess.run(args, capture_output=True, text=True)
-    if result.stdout and (not output or result.returncode):
-        print(result.stdout, end="", flush=True)
-    if result.stderr:
-        print(result.stderr, end="", file=sys.stderr, flush=True)
-    if result.returncode:
-        message = (
-            f"Command exited {result.returncode}: {shlex.join(args)}. "
-            "See the command output immediately above for the underlying error."
-        )
+def execute(args, *, output=False, registry=False):
+    for delay in (5, 15, None) if registry else (None,):
+        result = subprocess.run(args, capture_output=True, text=True)
+        if result.stdout and (not output or result.returncode):
+            print(result.stdout, end="", flush=True)
+        if result.stderr:
+            print(result.stderr, end="", file=sys.stderr, flush=True)
+        if not result.returncode:
+            return result.stdout
+        message = f"Command exited {result.returncode}: {shlex.join(args)}. "
+        if delay is not None:
+            message += f"Retrying in {delay}s."
+            level = "warning"
+        else:
+            message += (
+                "See the command output immediately above for the underlying error."
+            )
+            level = "error"
         message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-        print(f"::error title=Artifact command failed::{message}", file=sys.stderr)
-        raise SystemExit(result.returncode if result.returncode > 0 else 1)
-    return result.stdout
+        print(f"::{level} title=Artifact command failed::{message}", file=sys.stderr)
+        if delay is None:
+            raise SystemExit(result.returncode if result.returncode > 0 else 1)
+        time.sleep(delay)
 
 
-def run(*args):
-    return execute(args, output=True).strip()
+def run(*args, registry=False):
+    return execute(args, output=True, registry=registry).strip()
 
 
 def load(candidate):
@@ -141,7 +150,7 @@ def copy(row, candidate, registry=None):
         args.append("--to-plain-http")
         repository = registry + "/" + repository.split("/", 1)[1]
     target = repository + ":" + row["tag"]
-    execute([*args, source, target])
+    execute([*args, source, target], registry=True)
     descriptor = json.loads(
         run(
             "oras",
@@ -150,6 +159,7 @@ def copy(row, candidate, registry=None):
             "--descriptor",
             *(["--plain-http"] if registry else []),
             target,
+            registry=True,
         )
     )
     if descriptor["digest"] != row["digest"]:
@@ -211,6 +221,7 @@ def sign(ref):
             "--yes",
             ref,
         ],
+        registry=True,
     )
 
 
@@ -345,7 +356,7 @@ def main():
             raise ValueError("published haul differs from the tested candidate")
         ref = copy(index["config"], candidate)
         sign(ref)
-        execute(["oras", "tag", ref, "main"])
+        execute(["oras", "tag", ref, "main"], registry=True)
     else:
         rows = (
             index["images"]
@@ -374,7 +385,7 @@ def main():
                         raise ValueError("ambiguous legacy tag lookup")
                     advance = exists == "false"
                 if advance:
-                    execute(["oras", "tag", ref, legacy])
+                    execute(["oras", "tag", ref, legacy], registry=True)
 
 
 if __name__ == "__main__":
