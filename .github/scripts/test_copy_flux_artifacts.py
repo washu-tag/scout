@@ -673,3 +673,37 @@ def test_real_registry_copy_preserves_manifest_and_layer_bytes(tmp_path):
         finally:
             process.terminate()
             process.wait(timeout=10)
+
+
+@pytest.mark.parametrize("captured", [True, False])
+def test_cli_reports_underlying_command_failure(monkeypatch, capfd, captured):
+    def fail():
+        command = [
+            sys.executable,
+            "-c",
+            "import sys; print('registry detail on stdout', flush=True); "
+            "print('manifest not found', file=sys.stderr); sys.exit(7)",
+        ]
+        if captured:
+            transport.run(*command)
+        else:
+            subprocess.run(command, check=True)
+
+    monkeypatch.setattr(transport, "main", fail)
+    with pytest.raises(SystemExit) as error:
+        transport.cli()
+    assert error.value.code == 7
+    output = capfd.readouterr()
+    assert "registry detail on stdout" in output.out + output.err
+    assert "manifest not found" in output.err
+    assert "::error title=Artifact command failed::Command exited 7:" in output.err
+    assert "Traceback" not in output.err
+
+
+def test_cli_leaves_validation_failures_fatal(monkeypatch):
+    def fail():
+        raise ValueError("registry copy changed the tested digest")
+
+    monkeypatch.setattr(transport, "main", fail)
+    with pytest.raises(ValueError, match="tested digest"):
+        transport.cli()

@@ -618,6 +618,10 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ github.token }}
+      - name: Explain candidate identity on reruns
+        if: github.run_attempt > 1
+        run: |
+          echo "::notice::This job requires flux-candidate-${{ github.run_attempt }}, built and tested in this attempt. Earlier artifacts remain under their original names until expiry or deletion. Re-run failed jobs does not recreate successful producer jobs; use Re-run all jobs if this attempt's candidate is missing."
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
@@ -1473,6 +1477,10 @@ jobs:
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
         with:
           cosign-release: v3.0.6
+      - name: Explain candidate identity on reruns
+        if: github.run_attempt > 1
+        run: |
+          echo "::notice::This job requires flux-candidate-${{ github.run_attempt }}, built and tested in this attempt. Earlier artifacts remain under their original names until expiry or deletion. Re-run failed jobs does not recreate successful producer jobs; use Re-run all jobs if this attempt's candidate is missing."
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
@@ -1580,6 +1588,10 @@ jobs:
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
         with:
           cosign-release: v3.0.6
+      - name: Explain candidate identity on reruns
+        if: github.run_attempt > 1
+        run: |
+          echo "::notice::This job requires flux-candidate-${{ github.run_attempt }}, built and tested in this attempt. Earlier artifacts remain under their original names until expiry or deletion. Re-run failed jobs does not recreate successful producer jobs; use Re-run all jobs if this attempt's candidate is missing."
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
@@ -1750,6 +1762,10 @@ jobs:
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
       - name: Install hauler and oras
         uses: ./.github/actions/install-hauler-oras
+      - name: Explain candidate identity on reruns
+        if: github.run_attempt > 1
+        run: |
+          echo "::notice::This job requires flux-candidate-${{ github.run_attempt }}, built and tested in this attempt. Earlier artifacts remain under their original names until expiry or deletion. Re-run failed jobs does not recreate successful producer jobs; use Re-run all jobs if this attempt's candidate is missing."
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
@@ -1805,6 +1821,10 @@ jobs:
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
         with:
           cosign-release: v3.0.6
+      - name: Explain candidate identity on reruns
+        if: github.run_attempt > 1
+        run: |
+          echo "::notice::This job requires flux-candidate-${{ github.run_attempt }}, built and tested in this attempt. Earlier artifacts remain under their original names until expiry or deletion. Re-run failed jobs does not recreate successful producer jobs; use Re-run all jobs if this attempt's candidate is missing."
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:

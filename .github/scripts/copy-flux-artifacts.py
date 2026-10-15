@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 
@@ -360,5 +361,24 @@ def main():
                     subprocess.run(["oras", "tag", ref, legacy], check=True)
 
 
+def cli():
+    try:
+        main()
+    except subprocess.CalledProcessError as error:
+        for output in (error.stdout, error.stderr):
+            if output:
+                if isinstance(output, bytes):
+                    output = output.decode(errors="replace")
+                print(output, file=sys.stderr, flush=True)
+        command = shlex.join(error.cmd)
+        message = (
+            f"Command exited {error.returncode}: {command}. "
+            "See the command output immediately above for the underlying error."
+        )
+        message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        print(f"::error title=Artifact command failed::{message}", file=sys.stderr)
+        raise SystemExit(error.returncode if error.returncode > 0 else 1) from None
+
+
 if __name__ == "__main__":
-    main()
+    cli()
