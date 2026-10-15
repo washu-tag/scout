@@ -307,19 +307,11 @@ def test_different_published_manifest_cannot_copy_or_sign_config(
     assert effects == []
 
 
-@pytest.fixture
-def chart_row():
-    return {
-        "repository": REPOSITORY + "charts/fixture",
-        "tag": CONTEXT["version"],
-        "digest": digest(b"chart"),
-        "layout": "chart",
-    }
-
-
 def test_registry_calls_retry_transient_failures_before_the_digest_check(
-    chart_row, tmp_path, monkeypatch
+    candidate, monkeypatch
 ):
+    path, index = candidate
+    row = index["config"]
     calls, delays = [], []
 
     def flaky(name, result=None):
@@ -331,19 +323,17 @@ def test_registry_calls_retry_transient_failures_before_the_digest_check(
 
         return call
 
-    descriptor = json.dumps({"digest": chart_row["digest"]})
+    descriptor = json.dumps({"digest": row["digest"]})
     monkeypatch.setattr(transport.subprocess, "run", flaky("copy"))
     monkeypatch.setattr(transport, "run", flaky("fetch", descriptor))
     monkeypatch.setattr(transport.time, "sleep", delays.append)
-    reference = transport.copy(chart_row, tmp_path)
-    assert reference == chart_row["repository"] + "@" + chart_row["digest"]
+    assert transport.copy(row, path) == row["repository"] + "@" + row["digest"]
     assert calls == ["copy", "copy", "fetch", "fetch"]
     assert delays == [5, 5]
 
 
-def test_registry_retry_never_accepts_a_different_digest(
-    chart_row, tmp_path, monkeypatch
-):
+def test_registry_retry_never_accepts_a_different_digest(candidate, monkeypatch):
+    path, index = candidate
     reads = []
 
     def read(*args):
@@ -352,8 +342,9 @@ def test_registry_retry_never_accepts_a_different_digest(
 
     monkeypatch.setattr(transport.subprocess, "run", lambda *args, **kwargs: None)
     monkeypatch.setattr(transport, "run", read)
+    monkeypatch.setattr(transport.time, "sleep", lambda delay: None)
     with pytest.raises(ValueError, match="changed the tested digest"):
-        transport.copy(chart_row, tmp_path)
+        transport.copy(index["config"], path)
     assert len(reads) == 1
 
 
@@ -362,23 +353,22 @@ def test_publish_fails_closed_when_the_registry_keeps_failing(candidate, monkeyp
     row = index["charts"][0]
     row.update(fresh=True, layout="charts/" + row["name"])
     save(candidate)
-    attempts, signed = [], []
+    attempts, delays = [], []
 
     def failing(args, **kwargs):
         attempts.append(args[:2])
         raise subprocess.CalledProcessError(1, args)
 
     monkeypatch.setattr(transport.subprocess, "run", failing)
-    monkeypatch.setattr(transport.time, "sleep", lambda delay: None)
-    monkeypatch.setattr(transport, "sign", signed.append)
+    monkeypatch.setattr(transport.time, "sleep", delays.append)
     monkeypatch.setattr(
         "sys.argv",
         ["copy", "publish-chart", "--candidate", str(path), "--chart", row["name"]],
     )
     with pytest.raises(subprocess.CalledProcessError):
         transport.main()
-    assert attempts == [["oras", "copy"]] * 3
-    assert signed == []
+    assert attempts == [("oras", "copy")] * 3
+    assert delays == [5, 15]
 
 
 @pytest.fixture

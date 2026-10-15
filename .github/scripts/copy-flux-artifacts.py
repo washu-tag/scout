@@ -23,16 +23,19 @@ def run(*args):
     return subprocess.check_output(args, text=True).strip()
 
 
-def retry(call, *args, **kwargs):
-    """Repeat a registry call; GHCR can briefly 404 content it just accepted."""
+def run_registry(*args, output=False):
+    """GHCR can briefly 404 content it just accepted."""
     for delay in (5, 15):
         try:
-            return call(*args, **kwargs)
+            return run(*args) if output else subprocess.run(args, check=True)
         except subprocess.CalledProcessError as error:
-            command = " ".join(error.cmd[:2])
-            print(f"::warning::{command} failed, retrying in {delay}s", flush=True)
+            command = " ".join(error.cmd)
+            print(
+                f"::warning::{command} exited {error.returncode}, retrying in {delay}s",
+                flush=True,
+            )
             time.sleep(delay)
-    return call(*args, **kwargs)
+    return run(*args) if output else subprocess.run(args, check=True)
 
 
 def load(candidate):
@@ -136,16 +139,16 @@ def copy(row, candidate, registry=None):
         args.append("--to-plain-http")
         repository = registry + "/" + repository.split("/", 1)[1]
     target = repository + ":" + row["tag"]
-    retry(subprocess.run, [*args, source, target], check=True)
+    run_registry(*args, source, target)
     descriptor = json.loads(
-        retry(
-            run,
+        run_registry(
             "oras",
             "manifest",
             "fetch",
             "--descriptor",
             *(["--plain-http"] if registry else []),
             target,
+            output=True,
         )
     )
     if descriptor["digest"] != row["digest"]:
@@ -196,19 +199,15 @@ def require_release_attempt(index, branch, version):
 
 
 def sign(ref):
-    retry(
-        subprocess.run,
-        [
-            "cosign",
-            "sign",
-            "--key",
-            "env://COSIGN_PRIVATE_KEY",
-            "--use-signing-config=false",
-            "--tlog-upload=false",
-            "--yes",
-            ref,
-        ],
-        check=True,
+    run_registry(
+        "cosign",
+        "sign",
+        "--key",
+        "env://COSIGN_PRIVATE_KEY",
+        "--use-signing-config=false",
+        "--tlog-upload=false",
+        "--yes",
+        ref,
     )
 
 
@@ -343,7 +342,7 @@ def main():
             raise ValueError("published haul differs from the tested candidate")
         ref = copy(index["config"], candidate)
         sign(ref)
-        retry(subprocess.run, ["oras", "tag", ref, "main"], check=True)
+        run_registry("oras", "tag", ref, "main")
     else:
         rows = (
             index["images"]
@@ -372,7 +371,7 @@ def main():
                         raise ValueError("ambiguous legacy tag lookup")
                     advance = exists == "false"
                 if advance:
-                    retry(subprocess.run, ["oras", "tag", ref, legacy], check=True)
+                    run_registry("oras", "tag", ref, legacy)
 
 
 if __name__ == "__main__":
