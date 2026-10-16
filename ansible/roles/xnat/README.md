@@ -195,11 +195,19 @@ fails the deploy if any is unset. `xnat_admin_password` seeds XNAT's `admin`
 account at first boot (`[system] defaultAdminPassword`), so the default
 `admin:admin` never survives a fresh deployment.
 
-The role encodes that first-boot preference as `{bcrypt}` before XNAT inserts it
-into its password column, and preserves an existing matching encoding on re-runs.
-The controller Python environment needs `bcrypt`; the plaintext inventory value
-is still used for the native administrative API and must fit within bcrypt's
-72-byte input limit.
+XNAT's native startup encodes ordinary plaintext passwords. In XNAT 1.10.1, its
+[startup migration](https://github.com/NrgXnat/xnat/blob/1.10.1/xnat-web/src/main/java/org/nrg/xnat/initialization/tasks/EncryptXnatPasswords.java#L39-L54)
+skips values shaped like legacy hashes (including exactly 64 hexadecimal characters)
+or `{id}`-prefixed encodings. Using those shapes as plaintext leaves the seeded
+account unable to authenticate. The role
+pre-encodes only those exceptional inputs as `{bcrypt}`, preserving a matching
+encoding on re-runs. This path requires `bcrypt` in the controller Python
+environment and accepts up to 72 UTF-8 bytes. Ordinary inputs use native XNAT
+initialization without that controller dependency. `xnat_admin_password` always
+remains the plaintext credential used for administrative API access; changing the
+first-boot seed does not rotate an initialized administrator account. Remove this
+compatibility path when the pinned native bootstrap no longer skips these
+plaintext inputs.
 
 `xnat_enabled_providers` normally seeds the first-boot provider list only.
 Set `xnat_apply_enabled_providers_on_startup: true` to manage that list through

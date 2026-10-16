@@ -23,13 +23,3 @@ For a fully disconnected installation, provision the key at
 `python_kubernetes_epel_key_url`; key rotation requires an independently verified
 fingerprint change. A disconnected host missing the package fails before repository
 setup unless a package proxy is configured.
-
-Run the task-flow regression tests with an Ansible Python environment:
-
-```bash
-python ansible/tests/unit/test_python_kubernetes_packages.py
-```
-
-These tests execute Ansible's role includes and conditions with package, file and
-network actions intercepted. They cover installed hosts, offline failures, native
-repository setup, delegated key retrieval and rejection before proxy configuration.

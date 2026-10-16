@@ -1,4 +1,7 @@
 import importlib.util
+import json
+import subprocess
+import sys
 from pathlib import Path
 import unittest
 
@@ -22,8 +25,8 @@ class XnatPasswordTests(unittest.TestCase):
         self.assertTrue(encoded.startswith("{bcrypt}$2a$10$"))
         self.assertTrue(bcrypt.checkpw(password.encode(), encoded[8:].encode()))
 
-    def test_first_boot_is_native_bcrypt(self):
-        password = "synthetic-first-boot"
+    def test_ambiguous_hex_password_is_native_bcrypt(self):
+        password = "a" * 64
         encoded = encoder.encode(password, "")
         self.assert_matches(password, encoded)
         self.assertFalse(bcrypt.checkpw(b"different-password", encoded[8:].encode()))
@@ -44,6 +47,23 @@ class XnatPasswordTests(unittest.TestCase):
                 encoded = encoder.encode("synthetic-password", previous)
                 self.assertNotEqual(previous, encoded)
                 self.assert_matches("synthetic-password", encoded)
+
+    def test_existing_seed_encoding_is_reused(self):
+        password = "a" * 64
+        encoded = encoder.encode(password, "")
+        result = subprocess.run(
+            [sys.executable, str(encoder_path)],
+            input=json.dumps(
+                {
+                    "password": password,
+                    "previous_ini": "[system]\ndefaultAdminPassword=" + encoded + "\n",
+                }
+            ),
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        self.assertEqual(result.stdout.strip(), encoded)
 
     def test_utf8_byte_limit(self):
         for password in ("x" * 72, "é" * 36):

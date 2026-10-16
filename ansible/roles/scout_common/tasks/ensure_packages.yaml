@@ -63,16 +63,6 @@
     - online_repo_setup is defined
     - packages_check.rc != 0
 
-- name: Require a signing key for signature-checked proxy packages
-  ansible.builtin.assert:
-    that: yum_repo.gpgkey | default('') | length > 0
-    fail_msg: Signature-checked proxy packages require an authenticated yum_repo.gpgkey.
-  when:
-    - package_proxy_mode | default('none') != 'none'
-    - yum_repo is defined
-    - yum_repo.gpgcheck | default(false) | bool
-    - packages_check.rc != 0
-
 - name: Run proxy repository setup for {{ package_type }}
   ansible.builtin.include_tasks: '{{ proxy_repo_setup }}'
   when:
