@@ -27,11 +27,13 @@ The kubeconfig embeds the K3s CA, so `kubectl` needs no additional laptop trust
 store configuration. Copied client certificates must be refreshed when K3s renews
 them. The role uses the default `/etc/rancher/k3s/config.yaml` configuration path;
 installations using `--config` or `K3S_CONFIG_FILE` must include the required
-`tls-san` names in their custom configuration or corresponding drop-in directory.
+`tls-san` names and registry fallback setting in their custom configuration or
+corresponding drop-in directory.
 
-When staging registry mirrors are enabled, both servers and agents disable
-containerd's default registry endpoint fallback. Registries without a configured
-mirror can still use their default endpoint.
+When staging registry mirrors are enabled, a native configuration drop-in disables
+containerd's default registry endpoint fallback on new and existing servers and
+agents. Changes trigger the same restart as registry mirror updates. Registries
+without a configured mirror can still use their default endpoint.
 
 ## Dependencies
 
@@ -106,7 +108,9 @@ coredns_extra_server_blocks:
 
 ## Testing
 
-This role includes Molecule integration tests that perform actual k3s installation in Docker containers:
+This role includes Molecule integration tests that install K3s in Docker containers.
+The scenario runs manually because it requires privileged Docker containers and
+downloads the pinned K3s release; the unit-test CI job does not invoke it.
 
 ```bash
 cd ansible/roles/k3s

@@ -1,13 +1,4 @@
 ---
-- name: Parse Prometheus Helm values
-  ansible.builtin.set_fact:
-    prometheus_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
-
-- name: Validate Prometheus Helm values
-  ansible.builtin.assert:
-    that:
-      - prometheus_helm_chart_values is mapping
-
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -40,4 +31,4 @@
     helm_repo_name: '{{ prometheus_helm_repo_name }}'
     helm_repo_url: '{{ prometheus_helm_repo_url }}'
     helm_chart_version: '{{ prometheus_helm_chart_version }}'
-    helm_chart_values: '{{ prometheus_helm_chart_values }}'
+    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

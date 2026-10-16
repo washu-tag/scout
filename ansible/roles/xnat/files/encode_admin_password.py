@@ -24,8 +24,8 @@ def encode(password, previous):
 
 if __name__ == "__main__":
     values = json.load(sys.stdin)
-    previous = values.get("previous_encoded", "")
-    if not previous and values.get("previous_ini"):
+    previous = ""
+    if values.get("previous_ini"):
         prefs = configparser.RawConfigParser()
         prefs.read_string(values["previous_ini"])
         previous = prefs.get("system", "defaultAdminPassword", fallback="")

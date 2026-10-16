@@ -38,15 +38,6 @@
   ansible.builtin.include_tasks: stage_plugins.yaml
   when: air_gapped | default(false)
 
-- name: Parse Grafana Helm values
-  ansible.builtin.set_fact:
-    grafana_helm_chart_values: "{{ lookup('template', 'grafana.values.yaml.j2') | from_yaml }}"
-
-- name: Validate Grafana Helm values
-  ansible.builtin.assert:
-    that:
-      - grafana_helm_chart_values is mapping
-
 - name: Create SMTP secret
   no_log: true
   kubernetes.core.k8s:
@@ -241,7 +232,7 @@
     helm_repo_url: '{{ grafana_helm_repo_url }}'
     helm_chart_version: '{{ grafana_helm_chart_version }}'
     helm_chart_create_namespace: false
-    helm_chart_values: '{{ grafana_helm_chart_values }}'
+    helm_chart_values: "{{ lookup('template', 'grafana.values.yaml.j2') | from_yaml }}"
 
 # The Monitor chip ships with Grafana (ADR 0034).
 - name: Publish launchpad catalog entry

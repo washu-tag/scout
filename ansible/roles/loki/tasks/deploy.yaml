@@ -1,13 +1,4 @@
 ---
-- name: Parse Loki Helm values
-  ansible.builtin.set_fact:
-    loki_helm_chart_values: "{{ lookup('template', 'loki.values.yaml.j2') | from_yaml }}"
-
-- name: Validate Loki Helm values
-  ansible.builtin.assert:
-    that:
-      - loki_helm_chart_values is mapping
-
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -54,4 +45,4 @@
     helm_chart_version: '{{ loki_helm_chart_version }}'
     helm_chart_create_namespace: false
     helm_chart_timeout: '{{ loki_helm_timeout }}'
-    helm_chart_values: '{{ loki_helm_chart_values }}'
+    helm_chart_values: "{{ lookup('template', 'loki.values.yaml.j2') | from_yaml }}"

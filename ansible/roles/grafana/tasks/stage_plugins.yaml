@@ -384,6 +384,18 @@
         msg: 'Successfully staged {{ grafana_plugins | length }} Grafana plugins to Harbor'
       delegate_to: localhost
       run_once: true
+
+    - name: Delete plugin staging Job
+      kubernetes.core.k8s:
+        state: absent
+        api_version: batch/v1
+        kind: Job
+        name: grafana-plugin-stager
+        namespace: '{{ package_download_namespace }}'
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      when: job_created is defined and job_created is changed
   always:
     - name: Remove temporary staging registry credentials
       no_log: true
@@ -396,17 +408,6 @@
         kubeconfig: '{{ kubeconfig_yaml }}'
       delegate_to: "{{ groups['staging'][0] }}"
       run_once: true
-    - name: Delete plugin staging Job
-      kubernetes.core.k8s:
-        state: absent
-        api_version: batch/v1
-        kind: Job
-        name: grafana-plugin-stager
-        namespace: '{{ package_download_namespace }}'
-        kubeconfig: '{{ kubeconfig_yaml }}'
-      delegate_to: "{{ groups['staging'][0] }}"
-      run_once: true
-      when: job_created is defined and job_created is changed
 
 # Create plugin configuration ConfigMap
 - name: Create plugin configuration ConfigMap
