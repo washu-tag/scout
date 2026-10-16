@@ -16,6 +16,7 @@
     ns: '{{ grafana_namespace }}'
 
 - name: Set harbor variables from staging host for air-gapped deployments
+  no_log: true
   ansible.builtin.set_fact:
     # Get harbor config from staging host where Harbor is deployed
     _staging_host: "{{ groups['staging'][0] }}"
@@ -23,6 +24,7 @@
   when: air_gapped | default(false)
 
 - name: Compute harbor URL from staging host variables
+  no_log: true
   vars:
     _harbor_subdomain: "{{ _staging_vars.harbor_subdomain | default('harbor') }}"
     _external_url: '{{ _staging_vars.external_url | default(_staging_host) }}'

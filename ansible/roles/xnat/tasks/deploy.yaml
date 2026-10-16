@@ -105,6 +105,8 @@
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
   vars:
     helm_chart_name: '{{ xnat_helm_release_name }}'
     # Pull the published OCI chart from GHCR (helm runs on the jump node via the

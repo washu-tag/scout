@@ -8,6 +8,13 @@
       nexus_root_password must be set in inventory (vault-encrypted).
       See inventory.example.yaml for details.
 
+- name: Require HTTPS for the Nexus API
+  ansible.builtin.assert:
+    that:
+      - nexus_api_base_url is match('^https://')
+      - nexus_health_check_url is match('^https://')
+    fail_msg: Nexus API and health check URLs must use HTTPS.
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -18,6 +25,7 @@
 - name: Create root password secret
   block:
     - name: Check if root password secret already exists
+      no_log: true
       kubernetes.core.k8s_info:
         kind: Secret
         namespace: '{{ nexus_namespace }}'
@@ -60,7 +68,8 @@
 - name: Wait for Nexus to be ready
   ansible.builtin.uri:
     url: '{{ nexus_health_check_url }}'
-    validate_certs: false
+    validate_certs: true
+    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
     status_code: 200
   register: nexus_health
   until: nexus_health.status == 200
@@ -73,7 +82,9 @@
     - name: Get EULA status
       ansible.builtin.uri:
         url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
-        validate_certs: false
+        validate_certs: true
+        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
+        follow_redirects: none
         method: GET
         user: admin
         password: '{{ nexus_root_password }}'
@@ -84,7 +95,9 @@
     - name: Accept EULA
       ansible.builtin.uri:
         url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
-        validate_certs: false
+        validate_certs: true
+        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
+        follow_redirects: none
         method: POST
         user: admin
         password: '{{ nexus_root_password }}'

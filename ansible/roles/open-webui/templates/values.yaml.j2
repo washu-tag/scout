@@ -192,6 +192,13 @@ extraEnvFrom:
 # Note: WEBUI_SECRET_KEY and OAUTH_CLIENT_SECRET are loaded from secret above
 # REDIS_URL and WEBSOCKET_REDIS_URL are loaded from secret via valueFrom below
 extraEnvVars:
+  # Scout's public ingress uses HTTPS, including OAuth callback sessions.
+  - name: WEBUI_AUTH_COOKIE_SECURE
+    value: 'true'
+
+  - name: WEBUI_SESSION_COOKIE_SECURE
+    value: 'true'
+
   # Route RAG embeddings through Ollama instead of OWUI's default
   # sentence-transformers (which fetches the model from HuggingFace
   # Hub on first startup). Air-gapped clusters degrade silently

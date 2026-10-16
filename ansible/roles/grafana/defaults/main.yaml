@@ -59,6 +59,17 @@ grafana_plugins:
 grafana_plugins_harbor_project: grafana-plugins
 grafana_plugins_harbor_robot_name: robot$grafana-plugin-puller
 
+_grafana_plugins_staging_self_signed_tls_cert_path: >-
+  {{ (_staging_vars | default({})).staging_self_signed_tls_cert_path
+     | default(staging_self_signed_tls_cert_path) }}
+grafana_plugins_registry_ca_path: >-
+  {{ (_staging_vars | default({})).staging_api_ca_path
+     | default(_grafana_plugins_staging_self_signed_tls_cert_path
+               if ((_staging_vars | default({})).tls_cert_path
+                   | default(_grafana_plugins_staging_self_signed_tls_cert_path))
+                  == _grafana_plugins_staging_self_signed_tls_cert_path
+               else '') }}
+grafana_plugins_registry_ca_configmap: grafana-plugin-registry-ca
 # ORAS image for plugin push/pull operations
 # This image is pulled through Harbor's ghcr proxy in air-gapped mode
 oras_version: 1.3.4

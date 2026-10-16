@@ -1,8 +1,4 @@
 ---
-# Python Kubernetes Library Installation
-# Installs python3-kubernetes package required by Ansible kubernetes.core modules
-# Handles both online and air-gapped installation modes automatically
-
 - name: Ensure python3-kubernetes is installed
   ansible.builtin.include_role:
     name: scout_common
@@ -11,7 +7,11 @@
     package_names:
       - python3-kubernetes
     package_type: 'Python'
+    online_repo_setup: '{{ playbook_dir }}/../roles/python-kubernetes/tasks/online_repo_setup.yaml'
+    proxy_repo_setup: '{{ playbook_dir }}/../roles/python-kubernetes/tasks/proxy_repo_setup.yaml'
     yum_repo:
       name: epel-9
-      url: https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/
+      url: '{{ python_kubernetes_epel_url }}'
+      gpgcheck: true
+      gpgkey: 'file://{{ python_kubernetes_epel_key_path }}'
     verify_command: python3 -c "import kubernetes; print(kubernetes.__version__)"

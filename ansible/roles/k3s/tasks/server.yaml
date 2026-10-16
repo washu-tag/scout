@@ -1,13 +1,35 @@
 ---
-# k3s Server Installation
-# Installs and configures k3s server (control plane) node
-# Only runs on hosts in the 'server' group
+# K3s server installation and configuration
+
+- name: Require a hostname or IPv4 address for the external API
+  ansible.builtin.assert:
+    that:
+      - k3s_api_host is string
+      - k3s_api_host is match('^[A-Za-z0-9][A-Za-z0-9.-]*$')
+    fail_msg: k3s_api_host must be a hostname or IPv4 address without a scheme or port.
+  when: ansible_control_node_external_to_cluster
 
 - name: Create directory for K3s data
   ansible.builtin.file:
     path: '{{ base_dir }}'
     state: directory
     mode: '0755'
+
+- name: Configure API certificate names
+  when: ansible_control_node_external_to_cluster
+  block:
+    - name: Create native K3s configuration directory
+      ansible.builtin.file:
+        path: /etc/rancher/k3s/config.yaml.d
+        state: directory
+        mode: '0755'
+
+    - name: Include external API names in the serving certificate
+      ansible.builtin.copy:
+        content: "{{ {'tls-san+': [k3s_api_host, inventory_hostname] | unique} | to_nice_yaml }}"
+        dest: /etc/rancher/k3s/config.yaml.d/zz-scout-api-san.yaml
+        mode: '0644'
+      register: k3s_api_san_config
 
 - name: Install k3s server
   ansible.builtin.command:
@@ -17,7 +39,6 @@
     INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
     INSTALL_K3S_EXEC: >-
       --default-local-storage-path={{ base_dir }}
-      {% if use_staging_node | default(false) %}--disable-default-registry-endpoint{% endif %}
       {{ k3s_extra_args }}
     INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
     K3S_TOKEN: '{{ k3s_token }}'
@@ -27,12 +48,12 @@
     K3S_KUBECONFIG_GROUP: '{{ kubeconfig_group }}'
   register: k3s_install_result
 
-- name: Restart k3s to pick up registry config changes
+- name: Restart k3s to apply configuration changes
   ansible.builtin.systemd:
     name: k3s
     state: restarted
   when:
-    - registry_config_changed | default(false)
+    - registry_config_changed | default(false) or k3s_api_san_config.changed | default(false)
     - not k3s_install_result.changed
 
 - name: Update kubeconfig group permissions since write-kubeconfig-group/K3S_KUBECONFIG_GROUP isn't working
@@ -41,52 +62,6 @@
     state: file
     mode: '0640'
     group: '{{ kubeconfig_group }}'
-
-- name: Setup kubeconfig for remote control node
-  when: ansible_control_node_external_to_cluster
-  block:
-    - name: Fetch k3s kubeconfig
-      no_log: true
-      ansible.builtin.slurp:
-        src: '{{ kubeconfig_yaml }}'
-      register: k3s_kubeconfig_raw
-
-    - name: Parse and modify kubeconfig
-      no_log: true
-      ansible.builtin.set_fact:
-        k3s_kubeconfig: '{{ k3s_kubeconfig_raw.content | b64decode | from_yaml }}'
-
-    - name: Update server address in kubeconfig
-      no_log: true
-      ansible.builtin.set_fact:
-        modified_kubeconfig: '{{ k3s_kubeconfig | combine(cluster_update, recursive=True) }}'
-      vars:
-        cluster_update:
-          clusters:
-            - name: '{{ k3s_kubeconfig.clusters[0].name }}'
-              # insecure-skip-tls-verify is required here: the k3s server certificate
-              # is only valid for hostnames we can't use to reach the API (see NOTE below).
-              # nosemgrep: yaml.kubernetes.security.skip-tls-verify-cluster.skip-tls-verify-cluster
-              cluster:
-                server: 'https://{{ ansible_host | default(inventory_hostname) }}:6443'
-                # certificate-authority-data: '{{ k3s_kubeconfig.clusters[0].cluster["certificate-authority-data"] }}'
-                # NOTE: The certificates we have are only valid for hostnames that we can't use to reach the machines, so we cannot TLS validate the connection
-                insecure-skip-tls-verify: true
-
-    - name: Create local kubeconfig directory on jump node
-      ansible.builtin.file:
-        path: '{{ local_kubeconfig_dir }}'
-        state: directory
-        mode: '0700'
-      delegate_to: localhost
-
-    - name: Write modified kubeconfig locally on jump node
-      no_log: true
-      ansible.builtin.copy:
-        content: '{{ modified_kubeconfig | to_nice_yaml }}'
-        dest: '{{ local_kubeconfig_yaml }}'
-        mode: '0600'
-      delegate_to: localhost
 
 - name: Ensure k3s control plane server is started
   ansible.builtin.systemd:
@@ -125,6 +100,96 @@
     - kubectl_get_nodes_result.stdout.find("NotReady") == -1
   retries: 30
   delay: 5
+
+- name: Setup kubeconfig for remote control node
+  when: ansible_control_node_external_to_cluster
+  block:
+    - name: Fetch k3s kubeconfig
+      no_log: true
+      ansible.builtin.slurp:
+        src: '{{ kubeconfig_yaml }}'
+      register: k3s_kubeconfig_raw
+
+    - name: Parse kubeconfig
+      no_log: true
+      ansible.builtin.set_fact:
+        k3s_kubeconfig: '{{ k3s_kubeconfig_raw.content | b64decode | from_yaml }}'
+
+    - name: Require a verified kubeconfig
+      no_log: true
+      ansible.builtin.assert:
+        that:
+          - k3s_kubeconfig.clusters[0].cluster['certificate-authority-data'] | default('') | length > 0
+          - not (k3s_kubeconfig.clusters[0].cluster['insecure-skip-tls-verify'] | default(false) | bool)
+
+    - name: Update server address in kubeconfig
+      no_log: true
+      ansible.builtin.set_fact:
+        modified_kubeconfig: '{{ k3s_kubeconfig | combine(cluster_update, recursive=True) }}'
+      vars:
+        cluster_update:
+          clusters: >-
+            {{ [k3s_kubeconfig.clusters[0] | combine({
+              'cluster': k3s_kubeconfig.clusters[0].cluster | combine({
+                'server': 'https://' ~ k3s_api_host ~ ':6443'
+              })
+            })] + k3s_kubeconfig.clusters[1:] }}
+
+    - name: Create local kubeconfig directory on jump node
+      ansible.builtin.file:
+        path: '{{ local_kubeconfig_dir }}'
+        state: directory
+        mode: '0700'
+      delegate_to: localhost
+      become: false
+
+    - name: Validate and publish the external kubeconfig
+      when: not ansible_check_mode
+      delegate_to: localhost
+      become: false
+      block:
+        - name: Create a private candidate kubeconfig
+          ansible.builtin.tempfile:
+            state: file
+            suffix: .kubeconfig
+          register: k3s_candidate_kubeconfig
+          changed_when: false
+
+        - name: Write the candidate kubeconfig
+          no_log: true
+          ansible.builtin.copy:
+            content: '{{ modified_kubeconfig | to_nice_yaml }}'
+            dest: '{{ k3s_candidate_kubeconfig.path }}'
+            mode: '0600'
+          changed_when: false
+
+        - name: Verify the external API before replacing the local kubeconfig
+          ansible.builtin.command:
+            argv:
+              - kubectl
+              - '--kubeconfig={{ k3s_candidate_kubeconfig.path }}'
+              - --request-timeout=10s
+              - get
+              - --raw=/readyz
+          register: k3s_external_api_ready
+          until: k3s_external_api_ready is succeeded
+          retries: 12
+          delay: 5
+          changed_when: false
+
+        - name: Publish the verified kubeconfig on the jump node
+          ansible.builtin.copy:
+            src: '{{ k3s_candidate_kubeconfig.path }}'
+            dest: '{{ local_kubeconfig_yaml }}'
+            remote_src: true
+            mode: '0600'
+      always:
+        - name: Remove the candidate kubeconfig
+          ansible.builtin.file:
+            path: '{{ k3s_candidate_kubeconfig.path }}'
+            state: absent
+          when: k3s_candidate_kubeconfig.path is defined
+          changed_when: false
 
 - name: Apply taint to control plane node
   kubernetes.core.k8s_taint:

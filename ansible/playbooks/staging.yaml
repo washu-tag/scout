@@ -45,9 +45,11 @@
         mode: '0755'
 
     - name: Install python kubernetes library
-      ansible.builtin.package:
-        name: python3-kubernetes
-        state: present
+      ansible.builtin.include_role:
+        name: python-kubernetes
+      vars:
+        air_gapped: false
+        package_proxy_mode: none
 
     - name: Install Helm
       ansible.builtin.include_role:
@@ -60,8 +62,16 @@
       ansible.builtin.meta: end_play
       when: not (run_deploy | default(false) | bool)
 
+    - name: Validate staging TLS certificate configuration
+      ansible.builtin.assert:
+        that:
+          - (tls_cert_path is defined) == (tls_key_path is defined)
+          - tls_cert_path is not defined or tls_cert_path | length > 0
+          - tls_key_path is not defined or tls_key_path | length > 0
+        fail_msg: Provide both tls_cert_path and tls_key_path, or omit both to generate the staging certificate.
+
     - name: Generate self-signed TLS certificate for ingress
-      when: tls_cert_path is not defined or tls_key_path is not defined
+      when: tls_cert_path is not defined
       block:
         - name: Check if cert already exists
           ansible.builtin.stat:
@@ -80,12 +90,24 @@
             - name: Generate certificate
               vars:
                 _staging_domain: '{{ external_url | default(inventory_hostname) }}'
-              ansible.builtin.shell: |
-                openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                  -keyout {{ staging_self_signed_tls_key_path }} \
-                  -out {{ staging_self_signed_tls_cert_path }} \
-                  -subj "/CN={{ _staging_domain }}/O=Scout" \
-                  -addext "subjectAltName=DNS:{{ _staging_domain }},DNS:*.{{ _staging_domain }}"
+              ansible.builtin.command:
+                argv:
+                  - openssl
+                  - req
+                  - -x509
+                  - -nodes
+                  - -days
+                  - '365'
+                  - -newkey
+                  - rsa:2048
+                  - -keyout
+                  - '{{ staging_self_signed_tls_key_path }}'
+                  - -out
+                  - '{{ staging_self_signed_tls_cert_path }}'
+                  - -subj
+                  - '/CN={{ _staging_domain }}/O=Scout'
+                  - -addext
+                  - 'subjectAltName=DNS:{{ _staging_domain }},DNS:*.{{ _staging_domain }}'
               changed_when: true
 
         - name: Set tls_cert_path to self-signed location

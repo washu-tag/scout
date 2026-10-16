@@ -11,6 +11,8 @@ voila_helm_chart_ref: '{{ scout_repo_dir }}/helm/voila'
 # Replicas (increase for load balancing)
 voila_replicas: 1
 
+voila_ollama_model: '{{ ollama_default_model }}'
+
 # Resource limits - sized for POC with multiple concurrent users
 voila_resources_default:
   requests:

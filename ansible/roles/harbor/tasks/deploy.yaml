@@ -1,5 +1,11 @@
 ---
 # Main Harbor deployment tasks
+- name: Require HTTPS for the Harbor API
+  ansible.builtin.assert:
+    that:
+      - harbor_registry_url is match('^https://')
+    fail_msg: harbor_registry_url must use HTTPS.
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -11,6 +17,8 @@
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
   vars:
     helm_chart_name: harbor
     helm_chart_ref: harbor/harbor
@@ -44,7 +52,8 @@
 - name: Wait for Harbor to be ready
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/systeminfo'
-    validate_certs: false
+    validate_certs: true
+    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
     status_code: 200
   register: harbor_health
   until: harbor_health.status == 200
@@ -72,7 +81,9 @@
 - name: Create registry endpoints
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/registries'
-    validate_certs: false
+    validate_certs: true
+    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
+    follow_redirects: none
     method: POST
     user: admin
     password: '{{ harbor_admin_password }}'
@@ -91,7 +102,9 @@
 - name: Get registries list
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/registries'
-    validate_certs: false
+    validate_certs: true
+    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
+    follow_redirects: none
     user: admin
     password: '{{ harbor_admin_password }}'
     force_basic_auth: true
@@ -100,7 +113,9 @@
 - name: Create proxy cache projects
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/projects'
-    validate_certs: false
+    validate_certs: true
+    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
+    follow_redirects: none
     method: POST
     user: admin
     password: '{{ harbor_admin_password }}'
