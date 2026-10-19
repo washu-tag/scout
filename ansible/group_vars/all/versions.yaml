@@ -136,7 +136,7 @@ prometheus_helm_chart_version: 29.31.1
 # Monitoring & Observability - Loki & Alloy
 # Loki comes from grafana-community; Alloy is still published only by grafana.
 # renovate: datasource=helm registryUrl=https://grafana-community.github.io/helm-charts depName=loki
-loki_helm_chart_version: 18.13.7
+loki_helm_chart_version: 18.13.8
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=alloy
 alloy_helm_chart_version: 1.12.1
 
