@@ -35,8 +35,14 @@
   when: air_gapped | default(false)
 
 - name: Stage Grafana plugins to Harbor (air-gapped only)
-  ansible.builtin.include_tasks: stage_plugins.yaml
+  module_defaults:
+    ansible.builtin.uri:
+      validate_certs: true
+      ca_path: '{{ grafana_plugins_registry_ca_resolved_path }}'
   when: air_gapped | default(false)
+  block:
+    - name: Include plugin staging tasks
+      ansible.builtin.include_tasks: stage_plugins.yaml
 
 - name: Create SMTP secret
   no_log: true

@@ -52,8 +52,6 @@
 - name: Wait for Harbor to be ready
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/systeminfo'
-    validate_certs: true
-    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
     status_code: 200
   register: harbor_health
   until: harbor_health.status == 200
@@ -81,8 +79,6 @@
 - name: Create registry endpoints
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/registries'
-    validate_certs: true
-    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
     follow_redirects: none
     method: POST
     user: admin
@@ -102,8 +98,6 @@
 - name: Get registries list
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/registries'
-    validate_certs: true
-    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
     follow_redirects: none
     user: admin
     password: '{{ harbor_admin_password }}'
@@ -113,8 +107,6 @@
 - name: Create proxy cache projects
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/projects'
-    validate_certs: true
-    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
     follow_redirects: none
     method: POST
     user: admin

@@ -68,8 +68,6 @@
 - name: Wait for Nexus to be ready
   ansible.builtin.uri:
     url: '{{ nexus_health_check_url }}'
-    validate_certs: true
-    ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
     status_code: 200
   register: nexus_health
   until: nexus_health.status == 200
@@ -82,8 +80,6 @@
     - name: Get EULA status
       ansible.builtin.uri:
         url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
-        validate_certs: true
-        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
         follow_redirects: none
         method: GET
         user: admin
@@ -95,8 +91,6 @@
     - name: Accept EULA
       ansible.builtin.uri:
         url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
-        validate_certs: true
-        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
         follow_redirects: none
         method: POST
         user: admin

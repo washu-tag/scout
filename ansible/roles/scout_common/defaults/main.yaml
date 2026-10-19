@@ -114,14 +114,21 @@ squid_github_domains:
 
 # Staging node self-signed TLS certificate paths
 # Used when tls_cert_path/tls_key_path not provided in inventory
-staging_self_signed_tls_cert_path: /etc/rancher/k3s/tls/staging-tls.crt
+_staging_self_signed_tls_cert_default_path: /etc/rancher/k3s/tls/staging-tls.crt
+staging_self_signed_tls_cert_path: '{{ _staging_self_signed_tls_cert_default_path }}'
 staging_self_signed_tls_key_path: /etc/rancher/k3s/tls/staging-tls.key
 
+# Resolve staging TLS independently of the application host's certificate.
+_staging_tls_hostvars: >-
+  {{ hostvars[(groups['staging'] | default([inventory_hostname], true))[0]] }}
+_staging_self_signed_cert_path: >-
+  {{ _staging_tls_hostvars.staging_self_signed_tls_cert_path | default(_staging_self_signed_tls_cert_default_path) }}
+staging_tls_cert_path: >-
+  {{ _staging_tls_hostvars.tls_cert_path | default(_staging_self_signed_cert_path) }}
+staging_uses_self_signed_cert: '{{ staging_tls_cert_path == _staging_self_signed_cert_path }}'
 # CA bundle on the host executing staging API calls; empty uses system trust.
 staging_api_ca_path: >-
-  {{ staging_self_signed_tls_cert_path
-     if (tls_cert_path | default(staging_self_signed_tls_cert_path)) == staging_self_signed_tls_cert_path
-     else '' }}
+  {{ staging_tls_cert_path if staging_uses_self_signed_cert else '' }}
 
 # Service-to-namespace mappings
 # Core infrastructure

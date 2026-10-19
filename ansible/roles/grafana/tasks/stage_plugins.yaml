@@ -67,8 +67,6 @@
 - name: Create Grafana plugins Harbor project
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/projects'
-    validate_certs: true
-    ca_path: '{{ grafana_plugins_registry_ca_resolved_path }}'
     method: POST
     user: admin
     password: '{{ harbor_admin_password }}'
@@ -87,8 +85,6 @@
 - name: Get Grafana plugins Harbor project details
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/projects/{{ grafana_plugins_harbor_project }}'
-    validate_certs: true
-    ca_path: '{{ grafana_plugins_registry_ca_resolved_path }}'
     user: admin
     password: '{{ harbor_admin_password }}'
     force_basic_auth: true
@@ -101,8 +97,6 @@
 - name: Check if robot account exists in Harbor
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/robots?q=Level%3Dproject%2CProjectID%3D{{ grafana_plugins_project.json.project_id }}'
-    validate_certs: true
-    ca_path: '{{ grafana_plugins_registry_ca_resolved_path }}'
     user: admin
     password: '{{ harbor_admin_password }}'
     force_basic_auth: true
@@ -150,8 +144,6 @@
 - name: Delete orphaned robot account (secret missing)
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/robots/{{ item.id }}'
-    validate_certs: true
-    ca_path: '{{ grafana_plugins_registry_ca_resolved_path }}'
     method: DELETE
     user: admin
     password: '{{ harbor_admin_password }}'
@@ -167,8 +159,6 @@
   no_log: true
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/robots'
-    validate_certs: true
-    ca_path: '{{ grafana_plugins_registry_ca_resolved_path }}'
     method: POST
     user: admin
     password: '{{ harbor_admin_password }}'

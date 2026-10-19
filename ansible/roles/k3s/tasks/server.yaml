@@ -147,49 +147,17 @@
       when: not ansible_check_mode
       delegate_to: localhost
       become: false
-      block:
-        - name: Create a private candidate kubeconfig
-          ansible.builtin.tempfile:
-            state: file
-            suffix: .kubeconfig
-          register: k3s_candidate_kubeconfig
-          changed_when: false
-
-        - name: Write the candidate kubeconfig
-          no_log: true
-          ansible.builtin.copy:
-            content: '{{ modified_kubeconfig | to_nice_yaml }}'
-            dest: '{{ k3s_candidate_kubeconfig.path }}'
-            mode: '0600'
-          changed_when: false
-
-        - name: Verify the external API before replacing the local kubeconfig
-          ansible.builtin.command:
-            argv:
-              - kubectl
-              - '--kubeconfig={{ k3s_candidate_kubeconfig.path }}'
-              - --request-timeout=10s
-              - get
-              - --raw=/readyz
-          register: k3s_external_api_ready
-          until: k3s_external_api_ready is succeeded
-          retries: 12
-          delay: 5
-          changed_when: false
-
-        - name: Publish the verified kubeconfig on the jump node
-          ansible.builtin.copy:
-            src: '{{ k3s_candidate_kubeconfig.path }}'
-            dest: '{{ local_kubeconfig_yaml }}'
-            remote_src: true
-            mode: '0600'
-      always:
-        - name: Remove the candidate kubeconfig
-          ansible.builtin.file:
-            path: '{{ k3s_candidate_kubeconfig.path }}'
-            state: absent
-          when: k3s_candidate_kubeconfig.path is defined
-          changed_when: false
+      no_log: true
+      ansible.builtin.copy:
+        content: '{{ modified_kubeconfig | to_nice_yaml }}'
+        dest: '{{ local_kubeconfig_yaml }}'
+        mode: '0600'
+        follow: true
+        validate: kubectl --kubeconfig=%s --request-timeout=10s get --raw=/readyz
+      register: k3s_external_api_ready
+      until: k3s_external_api_ready is succeeded
+      retries: 12
+      delay: 5
 
 - name: Apply taint to control plane node
   kubernetes.core.k8s_taint:

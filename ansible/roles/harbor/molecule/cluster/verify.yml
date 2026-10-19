@@ -5,6 +5,10 @@
 - name: Verify Harbor deployment
   hosts: all
   gather_facts: false
+  module_defaults:
+    ansible.builtin.uri:
+      validate_certs: true
+      ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
   tasks:
     - name: Check Harbor namespace with kubectl
       ansible.builtin.command:
@@ -56,8 +60,6 @@
     - name: Verify Harbor API is accessible
       ansible.builtin.uri:
         url: 'https://{{ harbor_hostname }}/api/v2.0/systeminfo'
-        validate_certs: true
-        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
         status_code: 200
       register: harbor_api_check
       retries: 30
@@ -72,8 +74,6 @@
       no_log: true
       ansible.builtin.uri:
         url: 'https://{{ harbor_hostname }}/api/v2.0/registries'
-        validate_certs: true
-        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
         follow_redirects: none
         user: admin
         password: '{{ harbor_admin_password }}'
@@ -84,8 +84,6 @@
       no_log: true
       ansible.builtin.uri:
         url: 'https://{{ harbor_hostname }}/api/v2.0/projects'
-        validate_certs: true
-        ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
         follow_redirects: none
         user: admin
         password: '{{ harbor_admin_password }}'

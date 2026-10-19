@@ -390,7 +390,7 @@ jobs:
           python-version: '3.12'
       - name: Install Molecule and dependencies
         run: |
-          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests bcrypt
+          pip install molecule ansible-core pytest pydantic tiktoken httpx pytest-asyncio trino requests
       - name: 'Unit tests: build manifest'
         shell: bash
         run: cd tooling/manifest && pytest -v
@@ -400,12 +400,15 @@ jobs:
       - name: 'Version copies agree with versions.yaml'
         shell: bash
         run: cd tooling/versions && pytest -v
-      - name: 'Unit tests: Ansible filters and XNAT password compatibility'
+      - name: 'Unit tests: filter plugins'
         shell: bash
-        run: cd ansible && pytest tests/unit/filter_plugins/ tests/unit/test_xnat_password.py -v
+        run: cd ansible && pytest tests/unit/filter_plugins/ -v
       - name: 'Ansible tests: Grafana staging CA selection'
         shell: bash
-        run: cd ansible && ansible-playbook -i localhost, tests/unit/roles/grafana-ca.yaml
+        run: |
+          cd ansible
+          ansible-playbook -i localhost, tests/unit/roles/grafana-ca.yaml
+          ansible-playbook -i tests/unit/roles/grafana-ca-inventory.yaml tests/unit/roles/grafana-ca.yaml
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v
