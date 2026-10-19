@@ -179,6 +179,9 @@ def test_recovered_release_reset_cannot_change_later_stamp(tmp_path, current, al
 
 def test_ci_handoff_waits_for_all_jobs_and_preserves_generation():
     jobs = workflow("ci.yaml")["jobs"]
+    assert jobs["config-artifact-publish"]["env"]["MANIFEST_DIGEST"] == (
+        "${{ needs.publish-haul.outputs.manifest-digest }}"
+    )
     handoff = jobs["record-ci-artifacts"]
     assert set(handoff["needs"]) == jobs.keys() - {"record-ci-artifacts"}
     assert "!contains(needs.*.result, 'failure')" in handoff["if"]

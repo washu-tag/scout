@@ -1788,6 +1788,7 @@ jobs:
       VERSION: ${{ needs.changes.outputs.version }}
       MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
       CONFIG_REPO: ghcr.io/washu-tag/manifests/scout-config
+      MANIFEST_DIGEST: ${{ needs.publish-haul.outputs.manifest-digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
