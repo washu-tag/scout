@@ -49,7 +49,7 @@ The build lane records concrete artifact digests. Legacy derived image tags
 Flux ingest and authentication tests run alongside the Ansible tests in
 Post-Commit Tasks. Publication requires both Flux legs to pass using the run's
 candidate images and config. Publication copies the tested artifacts without
-rebuilding them. The release workflow requires that same CI attempt to succeed.
+rebuilding them. The release workflow requires a successful CI attempt authorizing those exact artifacts.
 This gate covers the core on-prem profile, not disconnected installation or
 optional components.
 
@@ -91,8 +91,9 @@ Partial draft/promotion: re-dispatch Release with the same version.
    the Ansible cutover.
 3. Wait up to three hours for the stamped commit's `ci.yaml` attempt. Validate
    repository, workflow, commit, run and attempt through GitHub's API. Both Flux
-   legs and package publication must succeed in that attempt; skipped jobs or
-   artifacts left by an earlier attempt cannot authorize release.
+   legs and package publication must have successful results for the same
+   immutable artifact generation. The final receipt binds that generation to
+   the successful CI attempt, including retained jobs from a partial rerun.
 4. Use the tooling and chart catalog from the stamped source. Package and sign
    the fifteen release-version Helm charts for existing Ansible consumers,
    reusing an existing chart only after verifying its signature and stamped
@@ -171,11 +172,20 @@ backup/rollback limits are described in
 ### Before a draft or release exists
 
 If build, Flux or Ansible tests fail because of a temporary runner or network
-problem, repair that problem and choose **Re-run all jobs** on the original
-**Post-Commit Tasks** run. All required tests and publication jobs must succeed
-in one attempt. **Re-run failed jobs** cannot combine earlier tests with a new
-publication. A rerun can rebuild artifacts; it must test the new candidate
-before publishing that attempt's outputs.
+problem, repair that problem and choose **Re-run failed jobs** on the original
+**Post-Commit Tasks** run. Consumers reuse the immutable artifact generation
+selected by the successful `changes` job. Successful tests and uploads are
+retained; failed jobs use those same artifacts. The final receipt is written only
+after all CI jobs finish without failures and records both the successful
+execution attempt and the artifact generation.
+
+Use **Re-run all jobs** to rebuild already-uploaded artifacts or recover after
+artifact deletion or expiry (candidate artifacts are retained for seven days).
+Uploads never overwrite an existing generation. Rerunning an already-successful
+producer, or retrying a producer that failed after uploading part of its output,
+can therefore stop at an artifact-name conflict. A full rerun creates a new
+generation and reruns its dependent tests before publication. No missing artifact
+is replaced by a registry image or by an artifact from another generation.
 
 The Release workflow waits up to three hours for CI and retries temporary GitHub
 status-read failures within that deadline. Authentication failures and invalid

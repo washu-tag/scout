@@ -292,13 +292,13 @@ def artifact_json(api, repository, run, name, filename):
         raise PromotionError("unreadable evidence archive or missing receipt") from exc
 
 
-def validate_jobs(api, repository, run):
+def validate_jobs(api, repository, run, required_jobs=REQUIRED_JOBS):
     jobs = pages(
         api,
         f"/repos/{repository}/actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs",
         "jobs",
     )
-    for name in REQUIRED_JOBS:
+    for name in required_jobs:
         matched = [job for job in jobs if job.get("name") == name]
         require(len(matched) == 1, "missing or ambiguous required CI job")
         job = matched[0]
@@ -329,7 +329,6 @@ def evidence(api, repository, revision, producer_id, producer_attempt):
         producer_attempt,
         revision,
     )
-    validate_jobs(api, repository, producer_run)
     producer = artifact_json(
         api,
         repository,
@@ -345,6 +344,10 @@ def evidence(api, repository, revision, producer_id, producer_attempt):
         run_attempt=producer_attempt,
         require_bundle=True,
     )
+    required = REQUIRED_JOBS
+    if producer["schemaVersion"] == 3:
+        required += ("record-ci-artifacts",)
+    validate_jobs(api, repository, producer_run, required)
     return producer
 
 
@@ -387,6 +390,27 @@ def find_evidence(api, repository, revision, branch="main"):
             revision,
             branch,
         )
+        name = f"scout-config-ref-{run['run_attempt']}"
+        artifacts = pages(
+            api, f"/repos/{repository}/actions/runs/{run['id']}/artifacts", "artifacts"
+        )
+        if any(artifact.get("name") == name for artifact in artifacts):
+            producer = artifact_json(
+                api, repository, run, name, "scout-config-ref.json"
+            )
+            validate_receipt(
+                producer,
+                repository=repository,
+                revision=revision,
+                run_id=run["id"],
+                run_attempt=run["run_attempt"],
+            )
+            if producer["schemaVersion"] == 3:
+                validate_jobs(
+                    api, repository, run, REQUIRED_JOBS[:3] + ("record-ci-artifacts",)
+                )
+            return producer
+        # Branches predating the generation handoff require an exact-attempt candidate.
         return dict(
             runId=run["id"],
             runAttempt=run["run_attempt"],
@@ -522,7 +546,9 @@ def verify_package(oci, producer):
                 "org.opencontainers.image.revision": producer["revision"],
                 "org.opencontainers.image.version": producer["version"],
                 "io.scout.build.run-id": str(producer["runId"]),
-                "io.scout.build.run-attempt": str(producer["runAttempt"]),
+                "io.scout.build.run-attempt": str(
+                    producer.get("artifactAttempt", producer["runAttempt"])
+                ),
             }
             if field == "bundleDigest":
                 expected["io.scout.build.manifest-digest"] = producer["manifestDigest"]
@@ -1156,6 +1182,9 @@ def main(argv=None):
             outputs = {
                 "run_id": producer["runId"],
                 "run_attempt": producer["runAttempt"],
+                "artifact_attempt": producer.get(
+                    "artifactAttempt", producer["runAttempt"]
+                ),
                 "build_version": producer["version"],
                 "sha": producer["revision"],
             }

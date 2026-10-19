@@ -439,3 +439,21 @@ def test_schema_and_field_set_must_agree(release_identity, schema, has_bundle):
         receipt.pop("bundleDigest")
     with pytest.raises(IdentityError):
         validate_receipt(receipt, **CONTEXT)
+
+
+def test_rerun_receipt_keeps_original_manifest_identity(identity):
+    receipt, raw = identity
+    receipt.update(schemaVersion=3, artifactAttempt=receipt["runAttempt"], runAttempt=3)
+    validate_receipt(receipt, **{**CONTEXT, "run_attempt": 3})
+    validate_manifest(raw, receipt)
+    receipt["artifactAttempt"] = 1
+    with pytest.raises(IdentityError, match="OCI annotation mismatch"):
+        validate_manifest(raw, receipt)
+
+
+@pytest.mark.parametrize("attempt", [0, -1, True, 2.0, "2", 4])
+def test_rerun_receipt_rejects_invalid_generation(identity, attempt):
+    receipt, _ = identity
+    receipt.update(schemaVersion=3, artifactAttempt=attempt, runAttempt=3)
+    with pytest.raises(IdentityError, match="invalid artifactAttempt"):
+        validate_receipt(receipt, **{**CONTEXT, "run_attempt": 3})

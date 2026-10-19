@@ -50,7 +50,7 @@ def test_required_download_failure_stops_the_job():
         if step.get("uses", "").startswith("actions/download-artifact@")
     )
     assert not download.get("continue-on-error", False)
-    assert "github.run_attempt" in download["with"]["name"]
+    assert "env.SCOUT_ARTIFACT_ATTEMPT" in download["with"]["name"]
     assert ACTION["inputs"]["artifact-required"]["default"] == "true"
 
 

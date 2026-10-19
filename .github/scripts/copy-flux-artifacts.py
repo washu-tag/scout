@@ -55,7 +55,9 @@ def load(candidate):
         os.environ["GITHUB_REPOSITORY"],
         os.environ["GITHUB_SHA"],
         int(os.environ["GITHUB_RUN_ID"]),
-        int(os.environ["GITHUB_RUN_ATTEMPT"]),
+        int(
+            os.environ.get("SCOUT_ARTIFACT_ATTEMPT") or os.environ["GITHUB_RUN_ATTEMPT"]
+        ),
         os.environ["VERSION"],
     )
     if any(
@@ -178,7 +180,8 @@ def require_release_attempt(index, branch, version):
     )
     if (
         ci.get("id") != index["runId"]
-        or ci.get("run_attempt") != index["runAttempt"]
+        or ci.get("run_attempt")
+        != int(os.environ.get("GITHUB_RUN_ATTEMPT", index["runAttempt"]))
         or ci.get("head_sha") != index["revision"]
         or ci.get("head_branch") != branch
         or ci.get("repository", {}).get("full_name") != index["repository"]

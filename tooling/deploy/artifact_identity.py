@@ -65,16 +65,20 @@ def validate_receipt(
     """Validate all fields, then bind the receipt to caller-supplied context."""
     if not isinstance(receipt, dict):
         raise IdentityError("receipt must contain exactly the schema fields")
+    if not FIELDS <= receipt.keys():
+        raise IdentityError("receipt must contain exactly the schema fields")
     schema = receipt.get("schemaVersion")
-    fields = (
-        FIELDS | {"bundleDigest"} if type(schema) is int and schema == 2 else FIELDS
-    )
+    if type(schema) is not int or schema not in (1, 2, 3):
+        raise IdentityError("unsupported schemaVersion")
+    fields = FIELDS.copy()
+    if schema == 2 or (schema == 3 and "bundleDigest" in receipt):
+        fields.add("bundleDigest")
+    if schema == 3:
+        fields.add("artifactAttempt")
     if set(receipt) != fields:
         raise IdentityError("receipt must contain exactly the schema fields")
-    if type(schema) is not int or schema not in (1, 2):
-        raise IdentityError("unsupported schemaVersion")
-    if require_bundle and schema != 2:
-        raise IdentityError("release requires schemaVersion 2 with bundleDigest")
+    if require_bundle and "bundleDigest" not in fields:
+        raise IdentityError("release requires schemaVersion 2 or 3 with bundleDigest")
     if not _matches(REPOSITORY, receipt["repository"]) or receipt["repository"].split(
         "/"
     )[1] in (".", ".."):
@@ -84,6 +88,11 @@ def validate_receipt(
     for field in ("runId", "runAttempt"):
         if type(receipt[field]) is not int or receipt[field] <= 0:
             raise IdentityError("invalid " + field)
+    if schema == 3 and (
+        type(receipt["artifactAttempt"]) is not int
+        or not 0 < receipt["artifactAttempt"] <= receipt["runAttempt"]
+    ):
+        raise IdentityError("invalid artifactAttempt")
     if not _matches(VERSION, receipt["version"]):
         raise IdentityError("invalid version")
     try:
@@ -91,7 +100,7 @@ def validate_receipt(
     except ValueError as exc:
         raise IdentityError("invalid version date") from exc
     digests = ("manifestDigest", "configDigest")
-    if schema == 2:
+    if "bundleDigest" in fields:
         digests += ("bundleDigest",)
     for field in digests:
         if not _matches(DIGEST, receipt[field]):
@@ -122,7 +131,9 @@ def validate_manifest(raw, receipt):
         "org.opencontainers.image.revision": receipt["revision"],
         "org.opencontainers.image.version": receipt["version"],
         "io.scout.build.run-id": str(receipt["runId"]),
-        "io.scout.build.run-attempt": str(receipt["runAttempt"]),
+        "io.scout.build.run-attempt": str(
+            receipt.get("artifactAttempt", receipt["runAttempt"])
+        ),
         "io.scout.build.manifest-digest": receipt["manifestDigest"],
     }
     for key, value in expected.items():
@@ -140,6 +151,7 @@ def main(argv=None):
         command.add_argument("--revision", required=True)
         command.add_argument("--run-id", required=True, type=int)
         command.add_argument("--run-attempt", required=True, type=int)
+    create.add_argument("--artifact-attempt", type=int)
     create.add_argument("--version", required=True)
     create.add_argument("--manifest-digest", required=True)
     create.add_argument("--bundle-digest")
@@ -153,7 +165,11 @@ def main(argv=None):
     try:
         if args.command == "create":
             receipt = {
-                "schemaVersion": 2 if args.bundle_digest is not None else 1,
+                "schemaVersion": (
+                    3
+                    if args.artifact_attempt is not None
+                    else (2 if args.bundle_digest is not None else 1)
+                ),
                 "repository": args.repository,
                 "revision": args.revision,
                 "runId": args.run_id,
@@ -162,6 +178,8 @@ def main(argv=None):
                 "manifestDigest": args.manifest_digest,
                 "configDigest": args.config_digest,
             }
+            if args.artifact_attempt is not None:
+                receipt["artifactAttempt"] = args.artifact_attempt
             if args.bundle_digest is not None:
                 receipt["bundleDigest"] = args.bundle_digest
         else:
@@ -191,7 +209,7 @@ def main(argv=None):
                         ("manifest_digest", "manifestDigest"),
                     ):
                         output.write(name + "=" + receipt[field] + "\n")
-                    if receipt["schemaVersion"] == 2:
+                    if "bundleDigest" in receipt:
                         output.write("bundle_digest=" + receipt["bundleDigest"] + "\n")
     except (IdentityError, OSError) as exc:
         # Never echo receipt contents into the runner's command-aware log.

@@ -106,6 +106,11 @@ class FakeGitHub:
         if tail.startswith("actions/runs/"):
             run_id = int(tail.split("/")[2])
             if tail.endswith("/artifacts"):
+                if (
+                    self.runs[run_id]["head_branch"] != "main"
+                    and self.producer["schemaVersion"] != 3
+                ):
+                    return {"artifacts": []}
                 item = self.artifact(run_id)
                 return {"artifacts": [item, item] if self.extra_artifact else [item]}
             if tail.endswith("/jobs"):
@@ -678,3 +683,73 @@ def test_signed_bundle_must_bind_the_tested_manifest_and_attempt(
     with pytest.raises(p.PromotionError, match="producer annotations mismatch"):
         promote(api, oci, tmp_path)
     assert api.events == [] and oci.events == []
+
+
+def rerun_fixture():
+    api, oci = fixture()
+    api.producer.update(schemaVersion=3, artifactAttempt=2, runAttempt=3)
+    api.runs[101]["run_attempt"] = 3
+    for job in api.jobs:
+        job["run_attempt"] = 3
+    api.jobs.append(dict(api.jobs[0], name="record-ci-artifacts"))
+    artifact = api.artifact
+
+    def rerun_artifact(run_id):
+        return dict(artifact(run_id), name="scout-config-ref-3")
+
+    api.artifact = rerun_artifact
+    return api, oci
+
+
+def test_partial_rerun_promotes_original_digests(tmp_path):
+    api, oci = rerun_fixture()
+    result = p.promote(
+        api,
+        oci,
+        repository=p.REPOSITORY,
+        version=VERSION,
+        revision=SHA,
+        producer_id=101,
+        producer_attempt=3,
+        boundary_sha=BOUNDARY,
+        work_dir=tmp_path,
+    )
+    assert result is not None
+    assert api.producer["artifactAttempt"] == 2
+
+
+@pytest.mark.parametrize(
+    "failed_job", ["record-ci-artifacts", "deploy-and-test-flux (auth)"]
+)
+def test_rerun_cannot_authorize_failed_required_job(failed_job):
+    api, _ = rerun_fixture()
+    next(job for job in api.jobs if job["name"] == failed_job)["conclusion"] = "failure"
+    with pytest.raises(p.PromotionError, match="required CI job did not succeed"):
+        p.evidence(api, p.REPOSITORY, SHA, 101, 3)
+
+
+def test_rerun_cannot_substitute_new_generation_for_tested_manifests(tmp_path):
+    api, oci = rerun_fixture()
+    api.producer["artifactAttempt"] = 3
+    with pytest.raises((p.PromotionError, p.IdentityError), match="annotation"):
+        p.promote(
+            api,
+            oci,
+            repository=p.REPOSITORY,
+            version=VERSION,
+            revision=SHA,
+            producer_id=101,
+            producer_attempt=3,
+            boundary_sha=BOUNDARY,
+            work_dir=tmp_path,
+        )
+    assert api.events == []
+
+
+def test_branch_partial_rerun_selects_exact_receipt_generation():
+    api, _ = rerun_fixture()
+    api.runs[101]["head_branch"] = "release/4.2"
+    del api.producer["bundleDigest"]
+    selected = p.find_evidence(api, p.REPOSITORY, SHA, "release/4.2")
+    assert selected["runAttempt"] == 3
+    assert selected["artifactAttempt"] == 2

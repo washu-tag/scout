@@ -256,7 +256,9 @@ def prepare(images: Path, predecessor: Path, output: Path, registry: str):
         os.environ["GITHUB_REPOSITORY"],
         os.environ["GITHUB_SHA"],
         int(os.environ["GITHUB_RUN_ID"]),
-        int(os.environ["GITHUB_RUN_ATTEMPT"]),
+        int(
+            os.environ.get("SCOUT_ARTIFACT_ATTEMPT") or os.environ["GITHUB_RUN_ATTEMPT"]
+        ),
         os.environ["VERSION"],
     )
     plan = producer_plan.validate(predecessor, context)

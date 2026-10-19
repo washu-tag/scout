@@ -57,6 +57,7 @@ jobs:
           tooling/deploy/test_artifact_identity.py
           .github/ci_resources/flux/test_verify_config.py
           .github/scripts/test_copy_flux_artifacts.py
+          .github/scripts/test_k3s_image_import.py
           --junitxml="$RUNNER_TEMP/release-protocol.xml"
       - name: Save test results
         if: always()
