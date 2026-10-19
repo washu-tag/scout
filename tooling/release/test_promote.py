@@ -77,9 +77,8 @@ class FakeGitHub:
         self.events.append(event)
 
     def artifact(self, run_id):
-        assert run_id == 101
         name, filename, value = (
-            "scout-config-ref-2",
+            f"scout-config-ref-{self.runs[run_id]['run_attempt']}",
             "scout-config-ref.json",
             self.producer,
         )
@@ -106,11 +105,6 @@ class FakeGitHub:
         if tail.startswith("actions/runs/"):
             run_id = int(tail.split("/")[2])
             if tail.endswith("/artifacts"):
-                if (
-                    self.runs[run_id]["head_branch"] != "main"
-                    and self.producer["schemaVersion"] != 3
-                ):
-                    return {"artifacts": []}
                 item = self.artifact(run_id)
                 return {"artifacts": [item, item] if self.extra_artifact else [item]}
             if tail.endswith("/jobs"):
@@ -692,12 +686,6 @@ def rerun_fixture():
     for job in api.jobs:
         job["run_attempt"] = 3
     api.jobs.append(dict(api.jobs[0], name="record-ci-artifacts"))
-    artifact = api.artifact
-
-    def rerun_artifact(run_id):
-        return dict(artifact(run_id), name="scout-config-ref-3")
-
-    api.artifact = rerun_artifact
     return api, oci
 
 
@@ -753,3 +741,19 @@ def test_branch_partial_rerun_selects_exact_receipt_generation():
     selected = p.find_evidence(api, p.REPOSITORY, SHA, "release/4.2")
     assert selected["runAttempt"] == 3
     assert selected["artifactAttempt"] == 2
+
+
+@pytest.mark.parametrize("branch", ["main", "release/4.2"])
+def test_successful_rerun_requires_its_final_receipt(branch):
+    api, _ = rerun_fixture()
+    api.runs[101]["head_branch"] = branch
+    request = api.request
+
+    def missing_receipt(path, **kwargs):
+        if "/artifacts?" in path:
+            return {"artifacts": []}
+        return request(path, **kwargs)
+
+    api.request = missing_receipt
+    with pytest.raises(p.PromotionError, match="missing or ambiguous.*evidence"):
+        p.find_evidence(api, p.REPOSITORY, SHA, branch)

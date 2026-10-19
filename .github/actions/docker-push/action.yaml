@@ -24,7 +24,7 @@ runs:
     - name: Download artifact
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
-        name: ${{ inputs.image-name }}-attempt-${{ env.SCOUT_ARTIFACT_ATTEMPT || github.run_attempt }}
+        name: ${{ inputs.image-name }}-attempt-${{ env.SCOUT_ARTIFACT_ATTEMPT }}
         path: ${{ runner.temp }}
     - name: Push image
       id: push

@@ -95,6 +95,7 @@ def candidate(tmp_path, monkeypatch):
         ("GITHUB_SHA", "revision"),
         ("GITHUB_RUN_ID", "runId"),
         ("GITHUB_RUN_ATTEMPT", "runAttempt"),
+        ("SCOUT_ARTIFACT_ATTEMPT", "runAttempt"),
         ("VERSION", "version"),
     ):
         monkeypatch.setenv(name, str(CONTEXT[field]))
@@ -839,7 +840,7 @@ def test_consumer_retry_uses_frozen_generation(candidate, monkeypatch):
     monkeypatch.setenv("SCOUT_ARTIFACT_ATTEMPT", "2")
     assert transport.load(path) == index
     monkeypatch.setenv("SCOUT_ARTIFACT_ATTEMPT", "3")
-    with pytest.raises(ValueError, match="another attempt"):
+    with pytest.raises(ValueError, match="another artifact generation"):
         transport.load(path)
 
 
@@ -854,3 +855,11 @@ def test_branch_retry_checks_execution_separately_from_candidate(
     ci["run_attempt"] = 4
     with pytest.raises(ValueError, match="successful attempt changed"):
         transport.require_release_attempt(index, "ci-hotfix-4.2", "4.2.1")
+
+
+def test_consumer_cannot_default_missing_generation_to_execution(
+    candidate, monkeypatch
+):
+    monkeypatch.delenv("SCOUT_ARTIFACT_ATTEMPT")
+    with pytest.raises(KeyError, match="SCOUT_ARTIFACT_ATTEMPT"):
+        transport.load(candidate[0])

@@ -840,6 +840,7 @@ def scan_mode(tmp_path, frozen, identity, scan_all):
             "GITHUB_SHA": identity["revision"],
             "GITHUB_RUN_ID": str(identity["runId"]),
             "GITHUB_RUN_ATTEMPT": str(identity["runAttempt"]),
+            "SCOUT_ARTIFACT_ATTEMPT": str(identity["runAttempt"]),
             "VERSION": identity["version"],
             "GITHUB_OUTPUT": str(output),
             "IMAGE_NAME": "launchpad",
@@ -875,7 +876,7 @@ def test_scan_requires_planned_archive_without_download_fallback(
     assert download["if"] == "steps.mode.outputs.mode == 'tar'"
     assert (
         download["with"]["name"]
-        == "${{ inputs.image-name }}-attempt-${{ env.SCOUT_ARTIFACT_ATTEMPT || github.run_attempt }}"
+        == "${{ inputs.image-name }}-attempt-${{ env.SCOUT_ARTIFACT_ATTEMPT }}"
     )
     assert not any(step.get("continue-on-error") for step in SCAN_ACTION)
 

@@ -92,7 +92,7 @@ Partial draft/promotion: re-dispatch Release with the same version.
 3. Wait up to three hours for the stamped commit's `ci.yaml` attempt. Validate
    repository, workflow, commit, run and attempt through GitHub's API. Both Flux
    legs and package publication must have successful results for the same
-   immutable artifact generation. The final receipt binds that generation to
+   artifact generation. The final receipt binds that generation to
    the successful CI attempt, including retained jobs from a partial rerun.
 4. Use the tooling and chart catalog from the stamped source. Package and sign
    the fifteen release-version Helm charts for existing Ansible consumers,
@@ -173,19 +173,21 @@ backup/rollback limits are described in
 
 If build, Flux or Ansible tests fail because of a temporary runner or network
 problem, repair that problem and choose **Re-run failed jobs** on the original
-**Post-Commit Tasks** run. Consumers reuse the immutable artifact generation
-selected by the successful `changes` job. Successful tests and uploads are
-retained; failed jobs use those same artifacts. The final receipt is written only
-after all CI jobs finish without failures and records both the successful
-execution attempt and the artifact generation.
+**Post-Commit Tasks** run. Consumers use the artifact generation selected by the
+successful `changes` job. Successful producers retain their uploads for retried
+consumers. If a producer reruns, GitHub also reruns its dependent jobs, so rebuilt
+artifacts must pass their tests again. The final receipt is written only after
+all CI jobs finish without failures and records both the successful execution
+attempt and the artifact generation.
 
 Use **Re-run all jobs** to rebuild already-uploaded artifacts or recover after
 artifact deletion or expiry (candidate artifacts are retained for seven days).
-Uploads never overwrite an existing generation. Rerunning an already-successful
-producer, or retrying a producer that failed after uploading part of its output,
-can therefore stop at an artifact-name conflict. A full rerun creates a new
-generation and reruns its dependent tests before publication. No missing artifact
-is replaced by a registry image or by an artifact from another generation.
+A full rerun creates a new generation and reruns its dependent tests before
+publication. Artifact names alone do not establish immutable identity: GitHub can
+retain same-name uploads across reruns, and named downloads select the newest.
+Safety depends on rerunning dependent tests and checking candidate identities and
+digests. No missing artifact is replaced by a registry image or by an artifact
+from another generation.
 
 The Release workflow waits up to three hours for CI and retries temporary GitHub
 status-read failures within that deadline. Authentication failures and invalid

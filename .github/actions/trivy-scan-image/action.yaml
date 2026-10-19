@@ -41,7 +41,7 @@ runs:
         from producer_plan import REPO, context, validate
 
         expected = context(os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_SHA"],
-                           int(os.environ["GITHUB_RUN_ID"]), int(os.environ.get("SCOUT_ARTIFACT_ATTEMPT") or os.environ["GITHUB_RUN_ATTEMPT"]),
+                           int(os.environ["GITHUB_RUN_ID"]), int(os.environ["SCOUT_ARTIFACT_ATTEMPT"]),
                            os.environ["VERSION"])
         snapshot = Path("predecessor")
         plan = validate(snapshot, expected)
@@ -64,7 +64,7 @@ runs:
       if: steps.mode.outputs.mode == 'tar'
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
-        name: ${{ inputs.image-name }}-attempt-${{ env.SCOUT_ARTIFACT_ATTEMPT || github.run_attempt }}
+        name: ${{ inputs.image-name }}-attempt-${{ env.SCOUT_ARTIFACT_ATTEMPT }}
         path: ${{ runner.temp }}
 
     - name: Configure Trivy
