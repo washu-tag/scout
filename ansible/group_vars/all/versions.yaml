@@ -177,7 +177,7 @@ orthanc_version: latest
 # GHCR lane (ghcr.io/nrgxnat/xnat, set in the xnat role); Docker Hub xnat-web no longer pulled.
 # Pinned here because the chart's appVersion (1.9.x) is too old for Scout's 1.10 plugins.
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/xnat
-xnat_image_tag: 1.10.1
+xnat_image_tag: 1.10.2
 # openid SSO plugin (NrgXnat Artifactory); consumed by roles/xnat/defaults coordinates.
 # renovate: datasource=maven registryUrl=https://nrgxnat.jfrog.io/nrgxnat/libs-release depName=au.edu.qcif.xnat.openid:openid-auth-plugin
 xnat_openid_plugin_version: 1.6.0
