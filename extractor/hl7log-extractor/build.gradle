@@ -19,7 +19,7 @@ repositories {
 }
 
 def temporalVersion = "1.40.0"
-def s3Version = "2.55.12"
+def s3Version = "2.55.15"
 def checkstyleVersion = "13.4.2"
 
 // TODO: Remove once Spring Boot ships a release that manages postgresql >= 42.7.13.
@@ -51,7 +51,7 @@ ext['jackson-bom.version'] = '3.1.7'
 // nearest-version resolution (a plain platform() import loses to transitives).
 dependencyManagement {
 	imports {
-		mavenBom 'io.opentelemetry:opentelemetry-bom:1.66.0'
+		mavenBom 'io.opentelemetry:opentelemetry-bom:1.67.0'
 	}
 }
 
