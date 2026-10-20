@@ -1,1 +1,7 @@
-vulnerabilities: []
+vulnerabilities:
+  # X11 client libs pulled in only as dependencies of the amazon-corretto-21
+  # apk (for AWT). They load only for on-screen AWT (libawt_xawt); this headless
+  # worker never uses AWT and has no X display.
+  - id: CVE-2026-88806 # libx11 1.8.13
+  - id: CVE-2026-88807 # libxrender 0.9.12
+  - id: CVE-2026-94286 # libxtst 1.2.5
