@@ -389,7 +389,7 @@ k3s_cluster:
     #
     # First-boot site config. Set a real xnat_admin_email for prod — it is also
     # the From address on XNAT outbound mail (relays may reject the placeholder):
-    # xnat_site_id: SCOUT_XNAT
+    # xnat_site_id: SCOUT
     # xnat_admin_email: admin@your-org.example
     #
     # Outbound mail relay; defaults to in-cluster MailHog. Point at your org relay

@@ -1016,7 +1016,7 @@ The remaining XNAT variables have sane defaults and only need to be set to overr
 
 ```yaml
 # Site config seeded on XNAT's first boot (skips the setup wizard).
-xnat_site_id: SCOUT_XNAT
+xnat_site_id: SCOUT
 
 # Namespace where XNAT is deployed (default: xnat)
 xnat_namespace: xnat
