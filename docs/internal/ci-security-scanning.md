@@ -11,7 +11,7 @@ Scout's CI pipeline includes several layers of automated security scanning. This
 | **Semgrep** | K8s, YAML, Dockerfiles, secrets, OWASP | `security.yaml` | Yes (new findings only, via Require code scanning results) | Security tab, PR annotations |
 | **Dependency review** | New dependencies introduced in a PR | `dependency-review.yaml` | Yes (critical vulns only) | PR comment |
 | **Dependabot** | Application deps (npm, pip, gradle, Docker) via GitHub UI; GitHub Actions via `dependabot.yml` | GitHub UI + `dependabot.yml` | N/A (security-only PRs; version updates for Actions only) | Pull requests |
-| **Renovate** | `versions.yaml` — Helm charts, Docker images, GitHub releases | `renovate.yaml` | N/A (auto PRs for CVEs; manual approval for others) | Pull requests, Dependency Dashboard issue |
+| **Renovate** | `versions.yaml` — Helm charts, Docker images, GitHub releases; application deps (npm, pip, gradle) and Dockerfile base images | `renovate.yaml` | N/A (auto PRs for CVEs; manual approval for others) | Pull requests, Dependency Dashboard issue |
 
 ## Files
 
@@ -25,9 +25,9 @@ Scout's CI pipeline includes several layers of automated security scanning. This
 │   ├── codeql.yml               # CodeQL with security-extended queries
 │   ├── dependency-review.yaml   # GitHub-native dependency diff on PRs
 │   ├── security.yaml            # Semgrep
-│   └── renovate.yaml            # Self-hosted Renovate for versions.yaml
+│   └── renovate.yaml            # Self-hosted Renovate
 └── dependabot.yml               # Dependabot: GitHub Actions version updates only
-renovate.json5                     # Renovate config (custom regex manager for versions.yaml)
+renovate.json5                     # Renovate config
 .semgrepignore                     # Excluded paths for Semgrep
 ```
 
@@ -192,7 +192,9 @@ Configured in `renovate.json5` and runs as a self-hosted GitHub Action (`.github
 
 Renovate monitors `ansible/group_vars/all/versions.yaml` for infrastructure dependencies: Helm charts, Docker images, and GitHub releases (~40 pinned versions). It uses a custom regex manager that reads `# renovate:` annotation comments above each version line to determine the datasource, package name, and registry URL.
 
-CVE PRs are created automatically. All other available updates are listed on the Dependency Dashboard (a single GitHub issue updated on each run) but require manual approval before a PR is created.
+Renovate also proposes version updates for application dependencies (`package.json`, `pyproject.toml`, `build.gradle`, Gradle wrappers) and Dockerfile base images through its built-in managers, which need no annotations. These are grouped into one PR per component (e.g. `chore(deps): update launchpad dependencies`), with majors on a separate branch. Dependabot keeps GitHub Actions version updates and all application-dependency security PRs.
+
+CVE PRs and patch updates are created automatically. All other available updates are listed on the Dependency Dashboard (a single GitHub issue updated on each run) but require manual approval before a PR is created.
 
 **Key configuration:**
 - `dependencyDashboardApproval: true` — all available updates listed on dashboard; PRs require manual approval (check the box on the dashboard issue)
@@ -200,7 +202,7 @@ CVE PRs are created automatically. All other available updates are listed on the
 - `dependencyDashboard: true` — creates a "Dependency Dashboard" GitHub issue listing all detected dependencies, available updates, and OSV vulnerability summary
 - `prConcurrentLimit: 5` — limits concurrent open PRs
 - `automerge: false` — all updates require human review
-- `enabledManagers: ["custom.regex"]` — only the custom regex managers (`versions.yaml` and the files that mirror it); standard ecosystems are handled by Dependabot
+- `enabledManagers` — the custom regex managers (`versions.yaml` and the files that mirror it) plus `dockerfile`, `gradle`, `gradle-wrapper`, `npm` and `pep621`; GitHub Actions is left to Dependabot
 
 **Authentication:** Uses a dedicated GitHub App (`scout-renovate`) via `RENOVATE_APP_ID` and `RENOVATE_APP_PRIVATE_KEY` repository secrets. The app needs Contents (R/W), Issues (R/W), Pull requests (R/W), and Metadata (R) permissions.
 

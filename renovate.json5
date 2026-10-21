@@ -55,6 +55,40 @@
       "matchUpdateTypes": ["patch"],
       "dependencyDashboardApproval": false
     },
+    // One PR per component across package managers. These come before the
+    // coupled-dependency groups below, which override them (e.g. Keycloak).
+    { "matchFileNames": ["extractor/hl7-transformer/**"], "groupName": "hl7-transformer dependencies" },
+    { "matchFileNames": ["extractor/hl7log-extractor/**"], "groupName": "hl7log-extractor dependencies" },
+    { "matchFileNames": ["hl7-listener/**"], "groupName": "hl7-listener dependencies" },
+    { "matchFileNames": ["keycloak/**"], "groupName": "keycloak dependencies" },
+    { "matchFileNames": ["keycloak-fragment-reconciler/**"], "groupName": "keycloak-fragment-reconciler dependencies" },
+    { "matchFileNames": ["launchpad/**"], "groupName": "launchpad dependencies" },
+    { "matchFileNames": ["report-viewer/**"], "groupName": "report-viewer dependencies" },
+    { "matchFileNames": ["helm/scout-notebook/**"], "groupName": "scout-notebook dependencies" },
+    { "matchFileNames": ["helm/superset/**"], "groupName": "superset dependencies" },
+    { "matchFileNames": ["sdk/python/**"], "groupName": "sdk dependencies" },
+    { "matchFileNames": ["tests/**"], "groupName": "test dependencies" },
+    // These follow their versions.yaml pins through the custom managers below.
+    {
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["org.keycloak:*"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "matchDepNames": ["quay.io/keycloak/keycloak", "apache/superset"],
+      "enabled": false
+    },
+    {
+      "matchDepNames": ["quay.io/jupyter/scipy-notebook"],
+      "versioning": "regex:^python-(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    },
+    // No lockfile, so ranges like temporalio's `~=` resolve at build time;
+    // move the floor with each release.
+    {
+      "matchFileNames": ["extractor/hl7-transformer/pyproject.toml"],
+      "rangeStrategy": "bump"
+    },
     // k3s uses non-standard versioning (v1.34.1+k3s1); regex versioning
     // keeps the +k3s suffix locked and tracks the build number
     {
@@ -175,9 +209,18 @@
     }
   ],
 
-  // Only the custom regex managers below: versions.yaml and the files that
-  // mirror it (leave npm/pip/gradle to Dependabot)
-  "enabledManagers": ["custom.regex"],
+  // GitHub Actions pins stay with Dependabot (dependabot.yml).
+  "enabledManagers": [
+    "custom.regex",
+    "dockerfile",
+    "gradle",
+    "gradle-wrapper",
+    "npm",
+    "pep621"
+  ],
+
+  // Replaces config:recommended's default, which would skip tests/.
+  "ignorePaths": ["**/node_modules/**", "examples/**", "docs/**", "verify-node/**"],
 
   "customManagers": [
     {
@@ -214,8 +257,9 @@
     // image-tag derivation -- ghcr.io/washu-tag/keycloak:<this>) and
     // `keycloak/Dockerfile` FROM lines (the upstream base image used
     // for the multi-stage build). Renovate groups updates by depName,
-    // so the three managers' matches surface as a single PR per
-    // Keycloak release.
+    // so the managers' matches surface as a single PR per Keycloak
+    // release. The Dockerfile stays on a custom manager (the dockerfile
+    // manager skips this image) so check_version_copies.py covers it.
     {
       "customType": "regex",
       "managerFilePatterns": ["keycloak/VERSION"],
@@ -237,7 +281,8 @@
     // old API surface — easy way to miss an internal-API break (the
     // eventsListener + RequiredAction SPIs are KC-SERVICES0047 internal
     // and have had compat breaks at major boundaries). Same depName as
-    // the three managers above so the bump arrives as one PR.
+    // the image so the bump arrives in the same PR; the gradle manager's
+    // own org.keycloak matches are disabled in packageRules.
     {
       "customType": "regex",
       "managerFilePatterns": ["keycloak/event-listener/build.gradle"],
