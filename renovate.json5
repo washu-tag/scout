@@ -14,10 +14,10 @@
   // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below.
   "dependencyDashboardApproval": true,
 
-  // Wait 14 days after a release before considering an update. Lets upstream
+  // Wait 7 days after a release before considering an update. Lets upstream
   // ship a follow-up patch for any regressions before we adopt the version.
   // Overridden to 0 for CVE alerts so security fixes aren't delayed.
-  "minimumReleaseAge": "14 days",
+  "minimumReleaseAge": "7 days",
 
   // CVE PRs are created automatically (no dashboard approval needed,
   // no release-age delay)
