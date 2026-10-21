@@ -192,7 +192,7 @@ Configured in `renovate.json5` and runs as a self-hosted GitHub Action (`.github
 
 Renovate monitors `ansible/group_vars/all/versions.yaml` for infrastructure dependencies: Helm charts, Docker images, and GitHub releases (~40 pinned versions). It uses a custom regex manager that reads `# renovate:` annotation comments above each version line to determine the datasource, package name, and registry URL.
 
-Renovate also proposes version updates for application dependencies (`package.json`, `pyproject.toml`, `build.gradle`, Gradle wrappers) and Dockerfile base images through its built-in managers, which need no annotations. These are grouped into one PR per component (e.g. `chore(deps): update launchpad dependencies`), with majors on a separate branch. Dependabot keeps GitHub Actions version updates and all application-dependency security PRs.
+Renovate also proposes version updates for application dependencies (`package.json`, `pyproject.toml`, `build.gradle`, Gradle wrappers) and Dockerfile base images through its built-in managers, which need no annotations. Dependabot keeps GitHub Actions version updates and all application-dependency security PRs.
 
 CVE PRs are created automatically. All other available updates are listed on the Dependency Dashboard (a single GitHub issue updated on each run) but require manual approval before a PR is created.
 

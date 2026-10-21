@@ -45,19 +45,6 @@
 
   // Remind reviewers about coupled dependencies
   "packageRules": [
-    // One PR per component across package managers. These come before the
-    // coupled-dependency groups below, which override them (e.g. Keycloak).
-    { "matchFileNames": ["extractor/hl7-transformer/**"], "groupName": "hl7-transformer dependencies" },
-    { "matchFileNames": ["extractor/hl7log-extractor/**"], "groupName": "hl7log-extractor dependencies" },
-    { "matchFileNames": ["hl7-listener/**"], "groupName": "hl7-listener dependencies" },
-    { "matchFileNames": ["keycloak/**"], "groupName": "keycloak dependencies" },
-    { "matchFileNames": ["keycloak-fragment-reconciler/**"], "groupName": "keycloak-fragment-reconciler dependencies" },
-    { "matchFileNames": ["launchpad/**"], "groupName": "launchpad dependencies" },
-    { "matchFileNames": ["report-viewer/**"], "groupName": "report-viewer dependencies" },
-    { "matchFileNames": ["helm/scout-notebook/**"], "groupName": "scout-notebook dependencies" },
-    { "matchFileNames": ["helm/superset/**"], "groupName": "superset dependencies" },
-    { "matchFileNames": ["sdk/python/**"], "groupName": "sdk dependencies" },
-    { "matchFileNames": ["tests/**"], "groupName": "test dependencies" },
     // These follow their versions.yaml pins through the custom managers below.
     {
       "matchManagers": ["gradle"],
