@@ -1,4 +1,4 @@
-FROM gradle:9.7.1-jdk21 AS extension-builder
+FROM gradle:9.8.0-jdk21 AS extension-builder
 
 COPY --chown=gradle:gradle event-listener/ /app/event-listener/
 WORKDIR /app/event-listener
