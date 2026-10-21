@@ -11,13 +11,11 @@
 
   // Require manual approval on the Dependency Dashboard before opening PRs.
   // This lets the dashboard list all available updates (visibility) without
-  // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below,
-  // and patch updates bypass this via the packageRules entry below.
+  // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below.
   "dependencyDashboardApproval": true,
 
   // Wait 14 days after a release before considering an update. Lets upstream
-  // ship a follow-up patch for any regressions before we adopt the version,
-  // and pairs with the patch-auto-open rule below to keep that flow safe.
+  // ship a follow-up patch for any regressions before we adopt the version.
   // Overridden to 0 for CVE alerts so security fixes aren't delayed.
   "minimumReleaseAge": "14 days",
 
@@ -47,14 +45,6 @@
 
   // Remind reviewers about coupled dependencies
   "packageRules": [
-    // Patch updates bypass dashboard approval and get a PR opened directly.
-    // CI exercises every deployed service end-to-end, so green CI is a
-    // sufficient gate for patch-level changes. Minor/major still require
-    // dashboard approval (the global default).
-    {
-      "matchUpdateTypes": ["patch"],
-      "dependencyDashboardApproval": false
-    },
     // One PR per component across package managers. These come before the
     // coupled-dependency groups below, which override them (e.g. Keycloak).
     { "matchFileNames": ["extractor/hl7-transformer/**"], "groupName": "hl7-transformer dependencies" },

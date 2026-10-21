@@ -194,7 +194,7 @@ Renovate monitors `ansible/group_vars/all/versions.yaml` for infrastructure depe
 
 Renovate also proposes version updates for application dependencies (`package.json`, `pyproject.toml`, `build.gradle`, Gradle wrappers) and Dockerfile base images through its built-in managers, which need no annotations. These are grouped into one PR per component (e.g. `chore(deps): update launchpad dependencies`), with majors on a separate branch. Dependabot keeps GitHub Actions version updates and all application-dependency security PRs.
 
-CVE PRs and patch updates are created automatically. All other available updates are listed on the Dependency Dashboard (a single GitHub issue updated on each run) but require manual approval before a PR is created.
+CVE PRs are created automatically. All other available updates are listed on the Dependency Dashboard (a single GitHub issue updated on each run) but require manual approval before a PR is created.
 
 **Key configuration:**
 - `dependencyDashboardApproval: true` — all available updates listed on dashboard; PRs require manual approval (check the box on the dashboard issue)
