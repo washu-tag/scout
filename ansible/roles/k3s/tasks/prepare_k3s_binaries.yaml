@@ -76,6 +76,7 @@
     - name: Download k3s binary
       ansible.builtin.get_url:
         url: '{{ k3s_binary_base_url }}/{{ k3s_version }}/k3s'
+        checksum: 'sha256:{{ k3s_binary_base_url }}/{{ k3s_version }}/sha256sum-amd64.txt'
         dest: '{{ k3s_temp_dir.path }}/k3s'
         mode: '0755'
         timeout: '{{ k3s_artifact_download_timeout }}'

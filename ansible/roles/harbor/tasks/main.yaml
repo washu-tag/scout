@@ -1,4 +1,10 @@
 ---
 # Main entry point for harbor role
-- name: Include deployment tasks
-  ansible.builtin.include_tasks: deploy.yaml
+- name: Deploy Harbor
+  module_defaults:
+    ansible.builtin.uri:
+      validate_certs: true
+      ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
+  block:
+    - name: Include deployment tasks
+      ansible.builtin.include_tasks: deploy.yaml

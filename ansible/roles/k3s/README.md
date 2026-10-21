@@ -15,6 +15,26 @@ See [Creating the Ansible Inventory File](../../../docs/source/technical/invento
 
 See `defaults/main.yaml` for complete variable definitions and defaults.
 
+When Ansible runs outside the cluster, `k3s_api_host` selects the API hostname in
+the local kubeconfig. It defaults to `ansible_host` or `inventory_hostname`.
+The role maintains these certificate names in a native K3s configuration drop-in
+on new and existing installations, preserving other SANs and restarting an
+existing server only when configuration changes. It verifies the external API
+with a private candidate kubeconfig before replacing the local copy. Failed DNS,
+connectivity or certificate checks leave the existing local kubeconfig intact.
+
+The kubeconfig embeds the K3s CA, so `kubectl` needs no additional laptop trust
+store configuration. Copied client certificates must be refreshed when K3s renews
+them. The role uses the default `/etc/rancher/k3s/config.yaml` configuration path;
+installations using `--config` or `K3S_CONFIG_FILE` must include the required
+`tls-san` names and registry fallback setting in their custom configuration or
+corresponding drop-in directory.
+
+When staging registry mirrors are enabled, a native configuration drop-in disables
+containerd's default registry endpoint fallback on new and existing servers and
+agents. Changes trigger the same restart as registry mirror updates. Registries
+without a configured mirror can still use their default endpoint.
+
 ## Dependencies
 
 - `scout_common` role (for Helm chart deployment patterns)
@@ -88,7 +108,9 @@ coredns_extra_server_blocks:
 
 ## Testing
 
-This role includes Molecule integration tests that perform actual k3s installation in Docker containers:
+This role includes Molecule integration tests that install K3s in Docker containers.
+The scenario runs manually because it requires privileged Docker containers and
+downloads the pinned K3s release; the unit-test CI job does not invoke it.
 
 ```bash
 cd ansible/roles/k3s
@@ -103,6 +125,9 @@ uvx --with molecule-plugins[docker] molecule test -s integration
 - Verify k3s cluster is responsive (`kubectl get nodes`)
 - Verify node reaches Ready state
 - Check kubeconfig file generation and permissions
+- Install a baseline cluster and confirm its certificate lacks the requested inventory name
+- Re-run the role to add the name while preserving existing YAML and CLI SANs, the CA and a cluster identity marker
+- Verify the external kubeconfig passes API verification and has private permissions
 
 **Why integration tests (not unit tests):**
 The k3s role performs system-level operations (systemd service management, privileged installation, Kubernetes cluster creation) that cannot be meaningfully mocked. Integration tests validate real installation behavior including systemd integration and cluster health.

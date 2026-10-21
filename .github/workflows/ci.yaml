@@ -403,6 +403,12 @@ jobs:
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
+      - name: 'Ansible tests: Grafana staging CA selection'
+        shell: bash
+        run: |
+          cd ansible
+          ansible-playbook -i localhost, tests/unit/roles/grafana-ca.yaml
+          ansible-playbook -i tests/unit/roles/grafana-ca-inventory.yaml tests/unit/roles/grafana-ca.yaml
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v

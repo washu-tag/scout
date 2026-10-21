@@ -798,6 +798,8 @@ k3s_cluster:
     # Uncomment the following line to enable interactive notebook playbooks
     # enable_playbooks: true
     # voila_replicas: 1
+    # Select a model already served by Ollama, or inherit the shared default.
+    # voila_ollama_model: '{{ ollama_default_model }}'
     # voila_resources:
     #   requests:
     #     cpu: 500m
