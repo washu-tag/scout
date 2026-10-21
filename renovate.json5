@@ -60,8 +60,7 @@
       "matchDepNames": ["quay.io/jupyter/scipy-notebook"],
       "versioning": "regex:^python-(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     },
-    // No lockfile, so ranges like temporalio's `~=` resolve at build time;
-    // move the floor with each release.
+    // No lockfile, so move `~=` floors like temporalio's with each release.
     {
       "matchFileNames": ["extractor/hl7-transformer/pyproject.toml"],
       "rangeStrategy": "bump"
@@ -235,8 +234,8 @@
     // `keycloak/Dockerfile` FROM lines (the upstream base image used
     // for the multi-stage build). Renovate groups updates by depName,
     // so the managers' matches surface as a single PR per Keycloak
-    // release. The Dockerfile stays on a custom manager (the dockerfile
-    // manager skips this image) so check_version_copies.py covers it.
+    // release. The Dockerfile stays on a custom manager so
+    // check_version_copies.py covers it.
     {
       "customType": "regex",
       "managerFilePatterns": ["keycloak/VERSION"],
@@ -258,8 +257,7 @@
     // old API surface — easy way to miss an internal-API break (the
     // eventsListener + RequiredAction SPIs are KC-SERVICES0047 internal
     // and have had compat breaks at major boundaries). Same depName as
-    // the image so the bump arrives in the same PR; the gradle manager's
-    // own org.keycloak matches are disabled in packageRules.
+    // the image so the bump arrives in the same PR.
     {
       "customType": "regex",
       "managerFilePatterns": ["keycloak/event-listener/build.gradle"],
