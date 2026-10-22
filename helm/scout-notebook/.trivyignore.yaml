@@ -53,15 +53,6 @@ vulnerabilities:
       pip 26.2.1 vendors urllib3 2.7.0. A malicious package server can exhaust
       a pip process through an unbounded chunk-size line. Accept this install-time
       DoS risk temporarily; remove when released pip vendors urllib3 >=2.8.0.
-  - id: GHSA-6q48-6c7w-9gw2
-    purls:
-      - pkg:pypi/certifi@2026.6.17
-    expired_at: 2026-12-01
-    statement: >-
-      pip 26.2.1 vendors certifi 2026.6.17, whose bundle still trusts the
-      compromised emSign roots. Used only for pip's own index TLS at install
-      time. Keep the application certifi floor in the Dockerfile at
-      >=2026.10.19; remove when released pip vendors certifi >=2026.10.19.
   - id: CVE-2026-78667
     paths:
       - usr/bin/pebble

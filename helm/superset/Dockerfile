@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     pkg-config \
     zip \
+    ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /tmp/* /var/tmp/*
 
@@ -20,7 +21,8 @@ RUN uv pip install --no-cache \
     trino \
     pillow \
     prometheus_client \
-    statsd
+    statsd \
+    'certifi>=2026.10.19'
 
 # Switch to user that runs Superset
 USER superset

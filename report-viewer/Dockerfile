@@ -1,7 +1,7 @@
 # Stage 1: build the Vite SPA. Output lands at
 # /work/src/scout_report_viewer/static (vite.config.ts writes to
 # `../src/scout_report_viewer/static` relative to the frontend dir).
-FROM node:25-alpine AS frontend
+FROM node:24-alpine AS frontend
 WORKDIR /work
 COPY frontend/package.json frontend/package-lock.json frontend/
 RUN cd frontend && npm ci
@@ -16,7 +16,7 @@ FROM python:3.12-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade \
         bsdutils libblkid1 liblastlog2-2 libmount1 libsmartcols1 libuuid1 login mount util-linux \
         libssl3t64 openssl openssl-provider-legacy \
-        perl-base libsqlite3-0 gzip libpcre2-8-0 \
+        perl-base libsqlite3-0 gzip libpcre2-8-0 ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED=1 \
@@ -29,7 +29,8 @@ WORKDIR /app
 COPY pyproject.toml /app/
 COPY src /app/src
 COPY --from=frontend /work/src/scout_report_viewer/static /app/src/scout_report_viewer/static
-RUN pip install .
+# pip >= 26.2.2 and certifi >= 2026.10.19 drop the compromised eMudhra roots.
+RUN pip install --upgrade 'pip>=26.2.2' && pip install . 'certifi>=2026.10.19'
 
 EXPOSE 8000
 

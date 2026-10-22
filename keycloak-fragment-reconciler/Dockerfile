@@ -6,7 +6,7 @@ FROM ${BASE_IMAGE}
 # until upstream rebuilds. No-op once the base image catches up.
 RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade \
         perl-base libsqlite3-0 gzip libpcre2-8-0 \
-        openssl libssl3t64 openssl-provider-legacy \
+        openssl libssl3t64 openssl-provider-legacy ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED=1 \
@@ -21,6 +21,7 @@ COPY pyproject.toml ./
 # Dependencies come from pyproject.toml alone, so editing src does not re-resolve
 # them. pip check then proves the split left nothing unsatisfied.
 RUN python -c "import tomllib,pathlib;pathlib.Path('/tmp/requirements.txt').write_text(chr(10).join(tomllib.load(open('pyproject.toml','rb'))['project']['dependencies']))" \
+    && pip install --upgrade 'pip>=26.2.2' \
     && pip install -r /tmp/requirements.txt
 
 COPY src ./src
