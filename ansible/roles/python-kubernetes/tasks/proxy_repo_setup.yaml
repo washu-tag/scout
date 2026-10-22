@@ -1,0 +1,28 @@
+---
+- name: Check for a provisioned EPEL signing key
+  ansible.builtin.stat:
+    path: '{{ python_kubernetes_epel_key_path }}'
+  register: python_kubernetes_epel_key
+
+- name: Download the EPEL signing key on the connected node
+  ansible.builtin.uri:
+    url: '{{ python_kubernetes_epel_key_url }}'
+    return_content: true
+    validate_certs: true
+  delegate_to: "{{ groups['staging'] | default([]) | first | default('localhost') }}"
+  become: false
+  register: python_kubernetes_epel_key_download
+  when: not python_kubernetes_epel_key.stat.exists
+
+- name: Copy the EPEL signing key to the package client
+  ansible.builtin.copy:
+    content: '{{ python_kubernetes_epel_key_download.content }}'
+    dest: '{{ python_kubernetes_epel_key_path }}'
+    mode: '0644'
+  when: not python_kubernetes_epel_key.stat.exists
+
+- name: Authenticate and trust the EPEL signing key
+  ansible.builtin.rpm_key:
+    key: '{{ python_kubernetes_epel_key_path }}'
+    fingerprint: '{{ python_kubernetes_epel_key_fingerprint }}'
+    state: present

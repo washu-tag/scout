@@ -22,6 +22,7 @@ RUN mamba install -y -n base \
     'jupyterlab>=4.6.4' \
     'notebook>=7.6.3' \
     'urllib3>=2.8.0' \
+    'certifi>=2026.10.19' \
     'tornado>=6.5.9' \
     'jupyter_server>=2.21.0' \
     'pyjwt>=2.14.0' \

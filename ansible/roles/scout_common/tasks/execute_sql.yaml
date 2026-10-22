@@ -6,6 +6,7 @@
 # run against the hive database.) Instead we derive everything below into
 # distinct psql_* facts, applying defaults inline so each call starts clean.
 - name: Configure DB derived variables
+  no_log: true
   ansible.builtin.set_fact:
     psql_dbname: "{{ sql_dbname | default('postgres', true) }}"
     psql_user: "{{ db_connect_user | default('postgres', true) }}"
@@ -36,6 +37,7 @@
         name: '{{ maintenance_namespace }}'
 
 - name: Submit PSQL job
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
@@ -88,6 +90,7 @@
                 emptyDir: {}
 
 - name: Wait for PSQL job to complete
+  no_log: true
   kubernetes.core.k8s_info:
     api_version: batch/v1
     kind: Job

@@ -65,6 +65,7 @@
   delegate_to: localhost
 
 - name: Parse Helm values
+  no_log: true
   ansible.builtin.set_fact:
     voila_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
@@ -72,6 +73,8 @@
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
   vars:
     helm_chart_name: voila
     helm_chart_ref: '{{ voila_helm_chart_ref }}'

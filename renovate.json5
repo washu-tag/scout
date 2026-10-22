@@ -11,15 +11,13 @@
 
   // Require manual approval on the Dependency Dashboard before opening PRs.
   // This lets the dashboard list all available updates (visibility) without
-  // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below,
-  // and patch updates bypass this via the packageRules entry below.
+  // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below.
   "dependencyDashboardApproval": true,
 
-  // Wait 14 days after a release before considering an update. Lets upstream
-  // ship a follow-up patch for any regressions before we adopt the version,
-  // and pairs with the patch-auto-open rule below to keep that flow safe.
+  // Wait 7 days after a release before considering an update. Lets upstream
+  // ship a follow-up patch for any regressions before we adopt the version.
   // Overridden to 0 for CVE alerts so security fixes aren't delayed.
-  "minimumReleaseAge": "14 days",
+  "minimumReleaseAge": "7 days",
 
   // CVE PRs are created automatically (no dashboard approval needed,
   // no release-age delay)
@@ -47,13 +45,25 @@
 
   // Remind reviewers about coupled dependencies
   "packageRules": [
-    // Patch updates bypass dashboard approval and get a PR opened directly.
-    // CI exercises every deployed service end-to-end, so green CI is a
-    // sufficient gate for patch-level changes. Minor/major still require
-    // dashboard approval (the global default).
+    // These follow their versions.yaml pins through the custom managers below.
     {
-      "matchUpdateTypes": ["patch"],
-      "dependencyDashboardApproval": false
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["org.keycloak:*"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "matchDepNames": ["quay.io/keycloak/keycloak", "apache/superset"],
+      "enabled": false
+    },
+    {
+      "matchDepNames": ["quay.io/jupyter/scipy-notebook"],
+      "versioning": "regex:^python-(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    },
+    // No lockfile, so move `~=` floors like temporalio's with each release.
+    {
+      "matchFileNames": ["extractor/hl7-transformer/pyproject.toml"],
+      "rangeStrategy": "bump"
     },
     // k3s uses non-standard versioning (v1.34.1+k3s1); regex versioning
     // keeps the +k3s suffix locked and tracks the build number
@@ -175,9 +185,18 @@
     }
   ],
 
-  // Only the custom regex managers below: versions.yaml and the files that
-  // mirror it (leave npm/pip/gradle to Dependabot)
-  "enabledManagers": ["custom.regex"],
+  // GitHub Actions pins stay with Dependabot (dependabot.yml).
+  "enabledManagers": [
+    "custom.regex",
+    "dockerfile",
+    "gradle",
+    "gradle-wrapper",
+    "npm",
+    "pep621"
+  ],
+
+  // Replaces config:recommended's default, which would skip tests/.
+  "ignorePaths": ["**/node_modules/**", "examples/**", "docs/**", "verify-node/**"],
 
   "customManagers": [
     {
@@ -214,8 +233,9 @@
     // image-tag derivation -- ghcr.io/washu-tag/keycloak:<this>) and
     // `keycloak/Dockerfile` FROM lines (the upstream base image used
     // for the multi-stage build). Renovate groups updates by depName,
-    // so the three managers' matches surface as a single PR per
-    // Keycloak release.
+    // so the managers' matches surface as a single PR per Keycloak
+    // release. The Dockerfile stays on a custom manager so
+    // check_version_copies.py covers it.
     {
       "customType": "regex",
       "managerFilePatterns": ["keycloak/VERSION"],
@@ -237,7 +257,7 @@
     // old API surface — easy way to miss an internal-API break (the
     // eventsListener + RequiredAction SPIs are KC-SERVICES0047 internal
     // and have had compat breaks at major boundaries). Same depName as
-    // the three managers above so the bump arrives as one PR.
+    // the image so the bump arrives in the same PR.
     {
       "customType": "regex",
       "managerFilePatterns": ["keycloak/event-listener/build.gradle"],

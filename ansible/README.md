@@ -21,6 +21,7 @@ Scout uses Ansible to orchestrate deployment of a distributed data analysis plat
 
 - [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) 2.20 or later
 - `make` (for using Makefile targets)
+- `kubectl` on the Ansible control node when accessing the cluster remotely
 - SSH access to target nodes
 - Sufficient storage on target nodes (see storage requirements below)
 
