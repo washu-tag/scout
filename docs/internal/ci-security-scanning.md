@@ -126,7 +126,7 @@ The October 2026 exceptions expire on December 1, 2026:
   that every transitive path is unreachable, so ingestion DoS remains a residual
   risk. Remove the exceptions when a supported Spark/Delta combination includes
   fixed Jackson copies, including the shaded copies, and passes ingestion tests.
-- **Notebook pip:** pip 26.2.1 still vendors urllib3 2.7.0. The main environment
+- **Notebook pip:** pip 26.2.2 still vendors urllib3 2.7.0. The main environment
   uses urllib3 >=2.8.0. The TLS advisory concerns HTTPS forwarding-proxy settings,
   unlike Scout's HTTPS package-index URL; custom user proxy settings remain a risk.
   The chunk-parser finding can exhaust pip when downloading from a malicious

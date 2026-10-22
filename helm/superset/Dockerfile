@@ -9,18 +9,21 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     pkg-config \
     zip \
+    ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /tmp/* /var/tmp/*
 
 # Install required Python packages using uv
-RUN uv pip install --no-cache \
+# uv's built-in roots predate the CVE-2026-91403 fix; use the upgraded system store.
+RUN UV_NATIVE_TLS=1 uv pip install --no-cache \
     authlib \
     psycopg2-binary \
     pyhive \
     trino \
     pillow \
     prometheus_client \
-    statsd
+    statsd \
+    'certifi>=2026.10.19'
 
 # Switch to user that runs Superset
 USER superset

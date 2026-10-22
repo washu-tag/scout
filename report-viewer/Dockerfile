@@ -1,7 +1,7 @@
 # Stage 1: build the Vite SPA. Output lands at
 # /work/src/scout_report_viewer/static (vite.config.ts writes to
 # `../src/scout_report_viewer/static` relative to the frontend dir).
-FROM node:25-alpine AS frontend
+FROM node:24-alpine AS frontend
 WORKDIR /work
 COPY frontend/package.json frontend/package-lock.json frontend/
 RUN cd frontend && npm ci
@@ -29,7 +29,10 @@ WORKDIR /app
 COPY pyproject.toml /app/
 COPY src /app/src
 COPY --from=frontend /work/src/scout_report_viewer/static /app/src/scout_report_viewer/static
-RUN pip install .
+# pip trusts its own vendored certifi (CVE-2026-91403): install over the system bundle,
+# then drop pip, which nothing uses at runtime.
+RUN pip install --use-deprecated=legacy-certs --cert /etc/ssl/certs/ca-certificates.crt . \
+    && pip uninstall -y pip
 
 EXPOSE 8000
 

@@ -3,7 +3,7 @@ FROM quay.io/jupyter/scipy-notebook:python-3.13.16
 USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --only-upgrade openssl libssl3t64 \
-        curl libcurl4t64 libcurl3t64-gnutls \
+        curl libcurl4t64 libcurl3t64-gnutls ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 USER ${NB_UID}
 
@@ -23,6 +23,7 @@ RUN mamba install -y -n base \
     'notebook>=7.6.3' \
     'urllib3>=2.8.0' \
     'certifi>=2026.10.19' \
+    'pip>=26.2.2' \
     'tornado>=6.5.9' \
     'jupyter_server>=2.21.0' \
     'pyjwt>=2.14.0' \
