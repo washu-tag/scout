@@ -45,5 +45,5 @@ runs:
     - name: Upload artifact
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
-        name: ${{ inputs.image-name }}-attempt-${{ github.run_attempt }}
+        name: ${{ inputs.image-name }}-attempt-${{ env.SCOUT_ARTIFACT_ATTEMPT }}
         path: ${{ runner.temp }}/${{ inputs.image-name }}.tar

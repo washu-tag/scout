@@ -347,7 +347,8 @@ def main() -> None:
     parser.add_argument(
         "--run-attempt",
         type=int,
-        default=os.environ.get("GITHUB_RUN_ATTEMPT"),
+        default=os.environ.get("SCOUT_ARTIFACT_ATTEMPT")
+        or os.environ.get("GITHUB_RUN_ATTEMPT"),
         required="GITHUB_RUN_ATTEMPT" not in os.environ,
     )
     parser.add_argument(

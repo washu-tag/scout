@@ -248,13 +248,22 @@ def test_chart_written_before_draft_cannot_be_reused_after_a_new_stamp():
     assert oci.events == []
 
 
+def branch_fixture():
+    api, oci = fixture()
+    api.producer.update(schemaVersion=3, artifactAttempt=2)
+    del api.producer["bundleDigest"]
+    api.jobs = [job for job in api.jobs if job["name"] in p.TEST_JOBS]
+    api.jobs.append(dict(api.jobs[0], name="record-ci-artifacts"))
+    return api, oci
+
+
 @pytest.mark.parametrize("event", ["push", "workflow_dispatch"])
 def test_branch_wait_accepts_exact_successful_candidate_without_main_publication(event):
-    api, _ = fixture()
+    api, _ = branch_fixture()
     api.runs[101].update(head_branch="release/4.2", event=event)
     selected = p.find_evidence(api, p.REPOSITORY, SHA, "release/4.2")
     assert selected["runId"] == 101 and selected["runAttempt"] == 2
-    assert api.downloads == 0
+    assert api.downloads == 1
 
 
 @pytest.mark.parametrize(
@@ -267,7 +276,7 @@ def test_branch_wait_accepts_exact_successful_candidate_without_main_publication
     ],
 )
 def test_branch_wait_rejects_mismatched_or_failed_attempt(field, value):
-    api, _ = fixture()
+    api, _ = branch_fixture()
     api.runs[101].update(head_branch="release/4.2")
     api.runs[101][field] = value
     with pytest.raises(p.PromotionError):
@@ -275,7 +284,7 @@ def test_branch_wait_rejects_mismatched_or_failed_attempt(field, value):
 
 
 def test_branch_wait_ignores_same_sha_pull_request_runs():
-    api, _ = fixture()
+    api, _ = branch_fixture()
     api.runs[101].update(head_branch="release/4.2", event="workflow_dispatch")
     request = api.request
 
@@ -294,11 +303,14 @@ def test_branch_wait_ignores_same_sha_pull_request_runs():
 
 
 def test_branch_retry_selects_newest_manual_dispatch_for_the_same_stamp():
-    api, _ = fixture()
+    api, _ = branch_fixture()
     api.runs[101].update(
         head_branch="release/4.2", event="workflow_dispatch", conclusion="failure"
     )
     api.runs[102] = dict(api.runs[101], id=102, run_attempt=1, conclusion="success")
+    api.producer.update(runId=102, runAttempt=1, artifactAttempt=1)
+    for job in api.jobs:
+        job.update(run_id=102, run_attempt=1)
     request = api.request
 
     def newest_first(path, **kwargs):

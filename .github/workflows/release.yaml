@@ -246,6 +246,7 @@ jobs:
       commit_sha: ${{ steps.source.outputs.sha }}
       ci_run_id: ${{ steps.saved.outputs.run_id || steps.wait.outputs.run_id }}
       ci_run_attempt: ${{ steps.saved.outputs.run_attempt || steps.wait.outputs.run_attempt }}
+      ci_artifact_attempt: ${{ steps.wait.outputs.artifact_attempt || steps.wait.outputs.run_attempt }}
       build_version: ${{ steps.wait.outputs.build_version }}
     steps:
       - name: Checkout
@@ -352,7 +353,7 @@ jobs:
         with:
           github-token: ${{ github.token }}
           run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
-          name: flux-candidate-${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          name: flux-candidate-${{ needs.wait-for-build.outputs.ci_artifact_attempt }}
           path: candidate
       - name: Download the selected attempt's canonical images
         if: github.ref_name != 'main'
@@ -360,7 +361,7 @@ jobs:
         with:
           github-token: ${{ github.token }}
           run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
-          name: flux-images-${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          name: flux-images-${{ needs.wait-for-build.outputs.ci_artifact_attempt }}
           path: candidate/images
       - name: Recheck the successful attempt and publish its tested images
         if: github.ref_name != 'main'
@@ -368,6 +369,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
           RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          SCOUT_ARTIFACT_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_artifact_attempt }}
           TARGET_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
           REF_NAME: ${{ github.ref_name }}
           RELEASE_VERSION: ${{ inputs.version }}

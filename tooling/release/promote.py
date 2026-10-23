@@ -53,10 +53,12 @@ VERSION = re.compile(r"[1-9][0-9]*\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 DRAFT_INPUTS = "<!-- scout-release-inputs: "
 MAX_JSON = 16384
 MAX_MANIFEST = 1024 * 1024
-REQUIRED_JOBS = (
+TEST_JOBS = (
     "prepare-flux-artifacts",
     "deploy-and-test-flux (ingest)",
     "deploy-and-test-flux (auth)",
+)
+REQUIRED_JOBS = TEST_JOBS + (
     "publish-haul",
     "config-artifact-publish",
 )
@@ -292,13 +294,13 @@ def artifact_json(api, repository, run, name, filename):
         raise PromotionError("unreadable evidence archive or missing receipt") from exc
 
 
-def validate_jobs(api, repository, run):
+def validate_jobs(api, repository, run, required_jobs):
     jobs = pages(
         api,
         f"/repos/{repository}/actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs",
         "jobs",
     )
-    for name in REQUIRED_JOBS:
+    for name in required_jobs:
         matched = [job for job in jobs if job.get("name") == name]
         require(len(matched) == 1, "missing or ambiguous required CI job")
         job = matched[0]
@@ -316,7 +318,7 @@ def validate_jobs(api, repository, run):
         )
 
 
-def evidence(api, repository, revision, producer_id, producer_attempt):
+def evidence(api, repository, revision, producer_id, producer_attempt, branch="main"):
     require(repository == REPOSITORY, "promotion is limited to the upstream repository")
     require(
         isinstance(revision, str) and REVISION.fullmatch(revision),
@@ -328,8 +330,8 @@ def evidence(api, repository, revision, producer_id, producer_attempt):
         producer_id,
         producer_attempt,
         revision,
+        branch,
     )
-    validate_jobs(api, repository, producer_run)
     producer = artifact_json(
         api,
         repository,
@@ -343,8 +345,12 @@ def evidence(api, repository, revision, producer_id, producer_attempt):
         revision=revision,
         run_id=producer_id,
         run_attempt=producer_attempt,
-        require_bundle=True,
+        require_bundle=branch == "main",
     )
+    required = REQUIRED_JOBS if branch == "main" else TEST_JOBS
+    if producer["schemaVersion"] == 3:
+        required += ("record-ci-artifacts",)
+    validate_jobs(api, repository, producer_run, required)
     return producer
 
 
@@ -378,27 +384,13 @@ def find_evidence(api, repository, revision, branch="main"):
     if not candidates:
         raise Pending("producer run has not appeared")
     current = candidates[0]
-    if branch != "main":
-        run = run_attempt(
-            api,
-            repository,
-            positive(current.get("id")),
-            positive(current.get("run_attempt")),
-            revision,
-            branch,
-        )
-        return dict(
-            runId=run["id"],
-            runAttempt=run["run_attempt"],
-            revision=revision,
-            version="",
-        )
     return evidence(
         api,
         repository,
         revision,
         positive(current.get("id")),
         positive(current.get("run_attempt")),
+        branch,
     )
 
 
@@ -522,7 +514,9 @@ def verify_package(oci, producer):
                 "org.opencontainers.image.revision": producer["revision"],
                 "org.opencontainers.image.version": producer["version"],
                 "io.scout.build.run-id": str(producer["runId"]),
-                "io.scout.build.run-attempt": str(producer["runAttempt"]),
+                "io.scout.build.run-attempt": str(
+                    producer.get("artifactAttempt", producer["runAttempt"])
+                ),
             }
             if field == "bundleDigest":
                 expected["io.scout.build.manifest-digest"] = producer["manifestDigest"]
@@ -1156,6 +1150,9 @@ def main(argv=None):
             outputs = {
                 "run_id": producer["runId"],
                 "run_attempt": producer["runAttempt"],
+                "artifact_attempt": producer.get(
+                    "artifactAttempt", producer["runAttempt"]
+                ),
                 "build_version": producer["version"],
                 "sha": producer["revision"],
             }
