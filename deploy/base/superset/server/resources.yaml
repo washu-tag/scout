@@ -140,6 +140,10 @@ spec:
     # ingress + security-headers are mode-specific (Traefik + middleware chain on-prem
     # vs ALB + app-side Talisman in aws) -> the superset-edge-${service_mode} ConfigMap.
     supersetNode:
+      command:
+        - /bin/sh
+        - -c
+        - . {{ .Values.configMountPath }}/superset_bootstrap.sh; exec /usr/bin/run-server.sh
       connections:
         # Connection values arrive at runtime from `superset-env` via os.getenv.
         # redis_password just needs to be non-empty at render time (chart templates
@@ -185,6 +189,11 @@ spec:
             - name: statsd-mapping
               mountPath: /etc/statsd-exporter
               readOnly: true
+    supersetWorker:
+      command:
+        - /bin/sh
+        - -c
+        - . {{ .Values.configMountPath }}/superset_bootstrap.sh; exec celery --app=superset.tasks.celery_app:app worker
     init:
       # Local fallback admin display name only. Applied on first install only (init
       # Job creates the admin row if absent); OAuth via Keycloak is the real login.
