@@ -1,7 +1,7 @@
 # Everything below is bundled inside the upstream
 # quay.io/jupyter/scipy-notebook base image (or vendored inside its
-# dependencies' assets), not in the layers we add. There is nothing to bump in
-# our layer and no rebuilt base adopting the fixes yet. Recurring
+# dependencies' assets, including pip's), not code we write. There is no fixed
+# release to bump to and no rebuilt base adopting the fixes yet. Recurring
 # linux-libc-dev kernel-header CVEs are handled separately, by package, in
 # .trivyignore.rego — not enumerated here. Revisit when a newer
 # scipy-notebook base ships these fixes.
@@ -42,7 +42,7 @@ vulnerabilities:
       - pkg:pypi/urllib3@2.7.0
     expired_at: 2026-12-01
     statement: >-
-      pip 26.2.1 vendors urllib3 2.7.0. Scout uses an HTTPS package index,
+      pip 26.2.2 still vendors urllib3 2.7.0. Scout uses an HTTPS package index,
       not the advisory's separately configured HTTPS forwarding proxy.
       Accept residual risk for user-supplied proxy settings until pip re-vendors.
   - id: CVE-2026-97689
@@ -50,18 +50,9 @@ vulnerabilities:
       - pkg:pypi/urllib3@2.7.0
     expired_at: 2026-12-01
     statement: >-
-      pip 26.2.1 vendors urllib3 2.7.0. A malicious package server can exhaust
+      pip 26.2.2 still vendors urllib3 2.7.0. A malicious package server can exhaust
       a pip process through an unbounded chunk-size line. Accept this install-time
       DoS risk temporarily; remove when released pip vendors urllib3 >=2.8.0.
-  - id: GHSA-6q48-6c7w-9gw2
-    purls:
-      - pkg:pypi/certifi@2026.6.17
-    expired_at: 2026-12-01
-    statement: >-
-      pip 26.2.1 vendors certifi 2026.6.17, whose bundle still trusts the
-      compromised emSign roots. Used only for pip's own index TLS at install
-      time. Keep the application certifi floor in the Dockerfile at
-      >=2026.10.19; remove when released pip vendors certifi >=2026.10.19.
   - id: CVE-2026-78667
     paths:
       - usr/bin/pebble

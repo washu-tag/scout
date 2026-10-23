@@ -14,7 +14,8 @@ scout_dashboards_helm_chart_ref: '{{ scout_repo_dir }}/helm/scout-dashboards'
 
 # Custom Superset image (override from inventory for CI/CD)
 superset_image_repository: ghcr.io/washu-tag/superset
-superset_image_tag: 5.0.0
+# Matches helm/superset/VERSION; the -ca rebuild needs a new tag for IfNotPresent nodes.
+superset_image_tag: 5.0.0-ca
 
 # Branding
 superset_app_name: Scout Analytics

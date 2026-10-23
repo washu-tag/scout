@@ -5,7 +5,7 @@ USER root
 RUN set -ex; \
     apt-get update; \
     apt-get install -y python3.10-venv; \
-    apt-get install -y --only-upgrade openssl libssl3; \
+    apt-get install -y --only-upgrade openssl libssl3 ca-certificates; \
     rm -rf /var/lib/apt/lists/*
 
 USER spark
@@ -48,6 +48,22 @@ RUN venv/bin/python3 -m pip install . \
               venv/lib/python3.10/site-packages/pip \
               venv/lib/python3.10/site-packages/pip-*.dist-info \
               venv/bin/pip venv/bin/pip3 venv/bin/pip3.10
+
+USER root
+# Drop the trust anchors the compromised intermediates chain to (CVE-2026-91403)
+# until the JDK's cacerts is fixed upstream. Fails the build if either survives.
+RUN ks="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java.home = //p')/lib/security/cacerts" \
+    && bad() { out="$(keytool -list -v -keystore "$ks" -storepass changeit 2>&1)" || { printf '%s\n' "$out" >&2; return 1; }; \
+         case "$out" in *"Alias name: "*"Owner: CN="*) ;; *) printf 'unexpected keytool output for %s\n%s\n' "$ks" "$out" >&2; return 1 ;; esac; \
+         printf '%s\n' "$out" | while IFS= read -r l; do \
+           case "$l" in "Alias name: "*) a=${l#Alias name: } ;; \
+             "Owner: "*"emSign ECC Root CA - G3"*|"Owner: "*"AAA Certificate Services"*) printf '%s\n' "$a" ;; esac; \
+         done; } \
+    && aliases="$(bad)" \
+    && printf '%s\n' "$aliases" | while IFS= read -r a; do [ -z "$a" ] || keytool -delete -alias "$a" -keystore "$ks" -storepass changeit; done \
+    && left="$(bad)" \
+    && { [ -z "$left" ] || { printf 'anchors still in %s: %s\n' "$ks" "$left" >&2; exit 1; }; }
+USER spark
 
 # Define environment variable
 ENV PYTHONUNBUFFERED=1

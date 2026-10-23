@@ -26,6 +26,8 @@ dependencies = [
     "pydantic>=2",
     "pydantic-settings>=2",
     "trino",
+    # trino pulls in requests -> certifi; older certifi trusts the compromised CA chain.
+    "certifi>=2026.10.19",
     # The evidence parser reads sqlglot AST internals, which have changed
     # shape across majors before. Floor is the version this is tested on.
     "sqlglot>=30.21,<31",
