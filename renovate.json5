@@ -239,7 +239,8 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["keycloak/VERSION"],
-      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)\\s*$"],
+      // An optional -<suffix> (e.g. -ca) tags a rebuild of the same upstream version.
+      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)(?:-[a-z]+)?\\s*$"],
       "datasourceTemplate": "docker",
       "depNameTemplate": "quay.io/keycloak/keycloak"
     },
@@ -276,7 +277,8 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["helm/superset/VERSION"],
-      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)\\s*$"],
+      // An optional -<suffix> (e.g. -ca) tags a rebuild of the same upstream version.
+      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)(?:-[a-z]+)?\\s*$"],
       "datasourceTemplate": "docker",
       "depNameTemplate": "apache/superset"
     },

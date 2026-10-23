@@ -28,7 +28,7 @@ RUN apk add --no-cache --upgrade libssl3 libcrypto3
 # until the JDK's cacerts is fixed upstream. Fails the build if either survives.
 RUN ks="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java.home = //p')/lib/security/cacerts" \
     && bad() { out="$(keytool -list -v -keystore "$ks" -storepass changeit 2>&1)" || { printf '%s\n' "$out" >&2; return 1; }; \
-         case "$out" in *"Alias name: "*) ;; *) printf 'cannot list %s\n%s\n' "$ks" "$out" >&2; return 1 ;; esac; \
+         case "$out" in *"Alias name: "*"Owner: CN="*) ;; *) printf 'unexpected keytool output for %s\n%s\n' "$ks" "$out" >&2; return 1 ;; esac; \
          printf '%s\n' "$out" | while IFS= read -r l; do \
            case "$l" in "Alias name: "*) a=${l#Alias name: } ;; \
              "Owner: "*"emSign ECC Root CA - G3"*|"Owner: "*"AAA Certificate Services"*) printf '%s\n' "$a" ;; esac; \
