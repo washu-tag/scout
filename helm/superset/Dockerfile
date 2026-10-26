@@ -14,7 +14,9 @@ RUN apt-get update && apt-get install -y \
 
 # Remove this backport once the base includes apache/superset#41173.
 RUN sed -i 's/^gunicorn /exec gunicorn /' \
-    /usr/bin/run-server.sh /app/docker/entrypoints/run-server.sh
+    /usr/bin/run-server.sh /app/docker/entrypoints/run-server.sh \
+    && grep -q '^exec gunicorn ' /usr/bin/run-server.sh \
+    && grep -q '^exec gunicorn ' /app/docker/entrypoints/run-server.sh
 
 # Install required Python packages using uv
 RUN uv pip install --no-cache \
