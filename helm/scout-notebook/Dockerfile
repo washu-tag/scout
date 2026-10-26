@@ -27,6 +27,7 @@ RUN mamba install -y -n base \
     'tornado>=6.5.9' \
     'jupyter_server>=2.21.0' \
     'pyjwt>=2.14.0' \
+    'brotli-python>=1.2.1' \
     && mamba clean -afy \
     && fix-permissions "${CONDA_DIR}" \
     && fix-permissions "/home/${NB_USER}"
