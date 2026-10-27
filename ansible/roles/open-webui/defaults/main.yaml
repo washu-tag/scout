@@ -92,6 +92,18 @@ open_webui_storage_class: ''
 # it to reach Keycloak over HTTPS. Off on envs with public certs.
 open_webui_trust_traefik_ca: false
 
+# Air-gapped clusters route OWUI's outbound HTTPS (external model APIs) through
+# the staging Squid proxy; NO_PROXY keeps in-cluster and Scout-hostname traffic direct.
+open_webui_https_proxy: >-
+  {{ ('http://' ~ groups['staging'][0] ~ ':' ~ squid_port)
+     if (air_gapped | default(false) | bool
+         and (groups['staging'] | default([]) | length > 0))
+     else '' }}
+open_webui_no_proxy: >-
+  {{ ['localhost', '127.0.0.1', '.svc', '.cluster.local', '10.42.0.0/16', '10.43.0.0/16',
+      '.' ~ server_hostname]
+     | unique | join(',') }}
+
 # PostgreSQL configuration
 open_webui_postgres_user: openwebui
 # REQUIRED: Must be set in inventory.yaml (use vault encryption)
